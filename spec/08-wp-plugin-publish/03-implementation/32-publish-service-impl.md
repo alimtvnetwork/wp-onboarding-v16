@@ -219,189 +219,349 @@ import (
 	"github.com/google/uuid"
 )
 
+// publishContext holds resolved data for a single publish operation
+type publishContext struct {
+	publishID  string
+	plugin     *models.Plugin
+	site       models.Site
+	remoteSlug string
+	startTime  time.Time
+}
+
+// --- SQL constants ---
+
+const siteSelectQuery = `
+	SELECT Id, Name, Url, Username, PasswordEncrypted
+	FROM Sites WHERE Id = ?
+`
+
+const remotSlugSelectQuery = `
+	SELECT RemoteSlug FROM PluginMappings
+	WHERE PluginId = ? AND SiteId = ?
+`
+
+const updateMappingSyncQuery = `
+	UPDATE PluginMappings
+	SET LastSyncAt = datetime('now'), SyncStatus = ?, UpdatedAt = datetime('now')
+	WHERE PluginId = ? AND SiteId = ?
+`
+
+// --- Publish entry point ---
+
 func (s *serviceImpl) Publish(
 	ctx context.Context,
 	pluginID int64,
 	siteID int64,
 	opts PublishOptions,
 ) (*PublishResult, error) {
-	publishID := uuid.New().String()[:8]
-	startTime := time.Now()
+	result := s.newPublishResult(pluginID, siteID)
+	pctx, err := s.loadPublishContext(ctx, pluginID, siteID, result.PublishID)
 
-	s.log.Info("Starting publish", "publishId", publishID, "pluginId", pluginID, "siteId", siteID)
+	if err != nil {
+		return s.failPublish(result, "validate", err)
+	}
 
-	result := &PublishResult{
-		PublishID: publishID,
+	s.broadcastPublishStarted(pctx, opts.Mode)
+
+	return s.executePipeline(ctx, pctx, result, opts)
+}
+
+func (s *serviceImpl) newPublishResult(pluginID, siteID int64) *PublishResult {
+	return &PublishResult{
+		PublishID: uuid.New().String()[:8],
 		PluginID:  pluginID,
 		SiteID:    siteID,
 		Stages:    make([]StageResult, 0),
 	}
+}
 
-	// Broadcast publish started
-	s.wsHub.Broadcast(ws.EventPublishStarted, PublishStartedEvent{
-		PublishID: publishID,
-		PluginID:  pluginID,
-		SiteID:    siteID,
-		Mode:      opts.Mode,
-	})
+func (s *serviceImpl) loadPublishContext(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+	publishID string,
+) (*publishContext, error) {
+	pctx := &publishContext{
+		publishID: publishID,
+		startTime: time.Now(),
+	}
 
-	// Get plugin details
-	plugin, err := s.pluginService.GetByID(ctx, pluginID)
+	s.log.Info("Starting publish", "publishId", publishID, "pluginId", pluginID, "siteId", siteID)
+
+	var err error
+	pctx.plugin, err = s.pluginService.GetByID(ctx, pluginID)
+
 	if err != nil {
-		return s.failPublish(result, "validate", err, startTime)
+		return nil, err
 	}
 
-	// Get site details
-	var site models.Site
-	err = s.db.QueryRowContext(ctx, `
-		SELECT Id, Name, Url, Username, PasswordEncrypted
-		FROM Sites WHERE Id = ?
-	`, siteID).Scan(&site.ID, &site.Name, &site.URL, &site.Username, &site.PasswordEncrypted)
+	return pctx, s.loadSiteAndSlug(ctx, pluginID, siteID, pctx)
+}
+
+func (s *serviceImpl) loadSiteAndSlug(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+	pctx *publishContext,
+) error {
+	err := s.db.QueryRowContext(ctx, siteSelectQuery, siteID).Scan(
+		&pctx.site.ID, &pctx.site.Name, &pctx.site.URL,
+		&pctx.site.Username, &pctx.site.PasswordEncrypted,
+	)
+
 	if err != nil {
-		return s.failPublish(result, "validate", apperror.New(apperror.ErrNotFound, "site not found"), startTime)
+		return apperror.New(apperror.ErrNotFound, "site not found")
 	}
 
-	// Get remote slug from mapping
-	var remoteSlug string
-	err = s.db.QueryRowContext(ctx, `
-		SELECT RemoteSlug FROM PluginMappings
-		WHERE PluginId = ? AND SiteId = ?
-	`, pluginID, siteID).Scan(&remoteSlug)
+	return s.loadRemoteSlug(ctx, pluginID, siteID, pctx)
+}
+
+func (s *serviceImpl) loadRemoteSlug(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+	pctx *publishContext,
+) error {
+	err := s.db.QueryRowContext(ctx, remotSlugSelectQuery, pluginID, siteID).Scan(&pctx.remoteSlug)
+
 	if err != nil {
-		return s.failPublish(result, "validate", apperror.New(apperror.ErrNotFound, "plugin not mapped to site"), startTime)
+		return apperror.New(apperror.ErrNotFound, "plugin not mapped to site")
 	}
 
-	// Stage 1: Validate
-	result.Stages = append(result.Stages, s.runStage("validate", func() error {
-		return s.pluginService.ValidatePath(ctx, plugin.Path)
-	}))
-	if result.Stages[0].Status == StageStatusFailed {
-		return s.failPublish(result, "validate", fmt.Errorf(result.Stages[0].Error), startTime)
+	return nil
+}
+
+// --- Pipeline execution ---
+
+func (s *serviceImpl) executePipeline(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) (*PublishResult, error) {
+	if err := s.runPreUploadStages(ctx, pctx, result, opts); err != nil {
+		return result, err
 	}
 
-	// Stage 2: Backup (optional)
-	if opts.CreateBackup {
-		result.Stages = append(result.Stages, s.runStage("backup", func() error {
-			backup, err := s.backupService.CreateFromRemote(ctx, pluginID, siteID)
-			if err != nil {
-				return err
-			}
-			result.BackupID = &backup.ID
-			return nil
-		}))
-		if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
-			s.log.Warn("Backup failed, continuing publish", "error", result.Stages[len(result.Stages)-1].Error)
-		}
-	}
-
-	// Stage 3: Package
-	var pkg *PackageInfo
-	result.Stages = append(result.Stages, s.runStage("package", func() error {
-		var err error
-		pkg, err = s.CreatePackage(ctx, pluginID, opts.Files)
-		return err
-	}))
-	if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
-		return s.failPublish(result, "package", fmt.Errorf(result.Stages[len(result.Stages)-1].Error), startTime)
-	}
-
-	// Dry run stops here
 	if opts.DryRun {
-		result.Success = true
-		result.Duration = time.Since(startTime).Milliseconds()
-		return result, nil
+		return s.finalizeDryRun(result, pctx.startTime), nil
 	}
 
-	// Stage 4: Upload
-	wpClient := s.wpClientFactory(site.URL, site.Username, string(site.PasswordEncrypted))
-	result.Stages = append(result.Stages, s.runStage("upload", func() error {
-		return s.uploadPackage(ctx, wpClient, pkg.Path, remoteSlug)
-	}))
-	if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
-		return s.failPublish(result, "upload", fmt.Errorf(result.Stages[len(result.Stages)-1].Error), startTime)
-	}
-	result.FilesUploaded = pkg.FileCount
-	result.BytesTransferred = pkg.Size
+	return s.runUploadAndFinalize(ctx, pctx, result, opts)
+}
 
-	// Stage 5: Activate (optional)
-	if opts.Activate {
-		result.Stages = append(result.Stages, s.runStage("activate", func() error {
-			return wpClient.ActivatePlugin(ctx, remoteSlug)
-		}))
-		if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
-			result.ActivationStatus = ActivationError
-		} else {
-			result.ActivationStatus = ActivationActive
-		}
-	} else {
-		result.ActivationStatus = ActivationInactive
+func (s *serviceImpl) runPreUploadStages(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) error {
+	if err := s.runValidateStage(ctx, pctx, result); err != nil {
+		return err
 	}
 
-	// Mark files as synced
-	if len(opts.Files) > 0 {
-		s.syncService.MarkSynced(ctx, pluginID, siteID, opts.Files)
-	}
+	s.runOptionalBackup(ctx, pctx, result, opts)
 
-	// Update publish timestamp
-	s.db.ExecContext(ctx, `
-		UPDATE PluginMappings
-		SET LastSyncAt = datetime('now'), SyncStatus = ?, UpdatedAt = datetime('now')
-		WHERE PluginId = ? AND SiteId = ?
-	`, string(sync.SyncStatusSynced), pluginID, siteID)
+	return s.runPackageStage(ctx, pctx, result, opts)
+}
 
-	result.Success = true
-	result.Duration = time.Since(startTime).Milliseconds()
-
-	// Broadcast publish complete
-	s.wsHub.Broadcast(ws.EventPublishComplete, PublishCompleteEvent{
-		PublishID:     publishID,
-		PluginID:      pluginID,
-		SiteID:        siteID,
-		Success:       true,
-		FilesUploaded: result.FilesUploaded,
+func (s *serviceImpl) runValidateStage(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+) error {
+	stage := s.runStage("validate", func() error {
+		return s.pluginService.ValidatePath(ctx, pctx.plugin.Path)
 	})
+	result.Stages = append(result.Stages, stage)
 
-	s.log.Info("Publish complete", "publishId", publishID, "duration", result.Duration)
+	if stage.Status == StageStatusFailed {
+		return s.setFailure(result, "validate", stage.Error, pctx.startTime)
+	}
+
+	return nil
+}
+
+func (s *serviceImpl) runOptionalBackup(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) {
+	if !opts.CreateBackup {
+		return
+	}
+
+	stage := s.runStage("backup", func() error {
+		backup, err := s.backupService.CreateFromRemote(ctx, pctx.plugin.ID, result.SiteID)
+		if err != nil {
+			return err
+		}
+		result.BackupID = &backup.ID
+
+		return nil
+	})
+	result.Stages = append(result.Stages, stage)
+
+	if stage.Status == StageStatusFailed {
+		s.log.Warn("Backup failed, continuing publish", "error", stage.Error)
+	}
+}
+
+func (s *serviceImpl) runPackageStage(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) error {
+	stage := s.runStage("package", func() error {
+		pkg, err := s.CreatePackage(ctx, pctx.plugin.ID, opts.Files)
+		if err != nil {
+			return err
+		}
+		result.FilesUploaded = pkg.FileCount
+		result.BytesTransferred = pkg.Size
+
+		return nil
+	})
+	result.Stages = append(result.Stages, stage)
+
+	if stage.Status == StageStatusFailed {
+		return s.setFailure(result, "package", stage.Error, pctx.startTime)
+	}
+
+	return nil
+}
+
+func (s *serviceImpl) runUploadAndFinalize(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) (*PublishResult, error) {
+	if err := s.runUploadStage(ctx, pctx, result); err != nil {
+		return result, err
+	}
+
+	s.resolveActivation(ctx, pctx, result, opts)
+	s.finalizePublish(ctx, pctx, result, opts)
+
 	return result, nil
 }
 
-func (s *serviceImpl) runStage(name string, fn func() error) StageResult {
-	start := time.Now()
-	stage := StageResult{Name: name, Status: StageStatusRunning}
+func (s *serviceImpl) runUploadStage(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+) error {
+	wpClient := s.wpClientFactory(pctx.site.URL, pctx.site.Username, string(pctx.site.PasswordEncrypted))
 
-	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
-		Stage:  name,
-		Status: StageStatusRunning,
+	stage := s.runStage("upload", func() error {
+		return s.uploadPackage(ctx, wpClient, "", pctx.remoteSlug)
 	})
+	result.Stages = append(result.Stages, stage)
 
-	err := fn()
-	stage.Duration = time.Since(start).Milliseconds()
-
-	if err != nil {
-		stage.Status = StageStatusFailed
-		stage.Error = err.Error()
-	} else {
-		stage.Status = StageStatusSuccess
+	if stage.Status == StageStatusFailed {
+		return s.setFailure(result, "upload", stage.Error, pctx.startTime)
 	}
 
-	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
-		Stage:    name,
-		Status:   stage.Status,
-		Duration: stage.Duration,
+	return nil
+}
+
+func (s *serviceImpl) resolveActivation(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) {
+	if !opts.Activate {
+		result.ActivationStatus = ActivationInactive
+
+		return
+	}
+
+	wpClient := s.wpClientFactory(pctx.site.URL, pctx.site.Username, string(pctx.site.PasswordEncrypted))
+	stage := s.runStage("activate", func() error {
+		return wpClient.ActivatePlugin(ctx, pctx.remoteSlug)
 	})
+	result.Stages = append(result.Stages, stage)
+	result.ActivationStatus = s.activationStatusFromStage(stage)
+}
+
+func (s *serviceImpl) activationStatusFromStage(stage StageResult) ActivationStatusType {
+	if stage.Status == StageStatusFailed {
+		return ActivationError
+	}
+
+	return ActivationActive
+}
+
+func (s *serviceImpl) finalizePublish(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) {
+	if len(opts.Files) > 0 {
+		s.syncService.MarkSynced(ctx, pctx.plugin.ID, result.SiteID, opts.Files)
+	}
+
+	s.db.ExecContext(ctx, updateMappingSyncQuery, string(sync.SyncStatusSynced), pctx.plugin.ID, result.SiteID)
+
+	result.Success = true
+	result.Duration = time.Since(pctx.startTime).Milliseconds()
+
+	s.broadcastPublishComplete(pctx, result)
+	s.log.Info("Publish complete", "publishId", pctx.publishID, "duration", result.Duration)
+}
+
+func (s *serviceImpl) finalizeDryRun(result *PublishResult, startTime time.Time) *PublishResult {
+	result.Success = true
+	result.Duration = time.Since(startTime).Milliseconds()
+
+	return result
+}
+
+// --- Stage runner ---
+
+func (s *serviceImpl) runStage(name string, fn func() error) StageResult {
+	start := time.Now()
+	s.broadcastStageProgress(name, StageStatusRunning, 0)
+
+	err := fn()
+	duration := time.Since(start).Milliseconds()
+	stage := s.buildStageResult(name, err, duration)
+
+	s.broadcastStageProgress(name, stage.Status, duration)
 
 	return stage
 }
+
+func (s *serviceImpl) buildStageResult(name string, err error, duration int64) StageResult {
+	if err != nil {
+		return StageResult{Name: name, Status: StageStatusFailed, Error: err.Error(), Duration: duration}
+	}
+
+	return StageResult{Name: name, Status: StageStatusSuccess, Duration: duration}
+}
+
+func (s *serviceImpl) broadcastStageProgress(stage string, status StageStatusType, duration int64) {
+	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
+		Stage:    stage,
+		Status:   status,
+		Duration: duration,
+	})
+}
+
+// --- Failure helpers ---
 
 func (s *serviceImpl) failPublish(
 	result *PublishResult,
 	stage string,
 	err error,
-	startTime time.Time,
 ) (*PublishResult, error) {
 	result.Success = false
 	result.Error = err.Error()
-	result.Duration = time.Since(startTime).Milliseconds()
 
 	s.wsHub.Broadcast(ws.EventPublishFailed, PublishFailedEvent{
 		PublishID: result.PublishID,
@@ -411,6 +571,48 @@ func (s *serviceImpl) failPublish(
 
 	return result, err
 }
+
+func (s *serviceImpl) setFailure(
+	result *PublishResult,
+	stage string,
+	errMsg string,
+	startTime time.Time,
+) error {
+	result.Success = false
+	result.Error = errMsg
+	result.Duration = time.Since(startTime).Milliseconds()
+
+	s.wsHub.Broadcast(ws.EventPublishFailed, PublishFailedEvent{
+		PublishID: result.PublishID,
+		Stage:     stage,
+		Error:     errMsg,
+	})
+
+	return fmt.Errorf("%s", errMsg)
+}
+
+// --- Broadcast helpers ---
+
+func (s *serviceImpl) broadcastPublishStarted(pctx *publishContext, mode string) {
+	s.wsHub.Broadcast(ws.EventPublishStarted, PublishStartedEvent{
+		PublishID: pctx.publishID,
+		PluginID:  pctx.plugin.ID,
+		SiteID:    pctx.site.ID,
+		Mode:      mode,
+	})
+}
+
+func (s *serviceImpl) broadcastPublishComplete(pctx *publishContext, result *PublishResult) {
+	s.wsHub.Broadcast(ws.EventPublishComplete, PublishCompleteEvent{
+		PublishID:     pctx.publishID,
+		PluginID:      pctx.plugin.ID,
+		SiteID:        pctx.site.ID,
+		Success:       true,
+		FilesUploaded: result.FilesUploaded,
+	})
+}
+
+// --- PublishToAll, GetHistory, Rollback ---
 
 func (s *serviceImpl) PublishToAll(
 	ctx context.Context,
@@ -422,13 +624,22 @@ func (s *serviceImpl) PublishToAll(
 		return nil, err
 	}
 
+	return s.publishToMappings(ctx, pluginID, opts, mappings)
+}
+
+func (s *serviceImpl) publishToMappings(
+	ctx context.Context,
+	pluginID int64,
+	opts PublishOptions,
+	mappings []models.PluginMapping,
+) []PublishResult {
 	results := make([]PublishResult, 0, len(mappings))
 	for _, m := range mappings {
 		result, _ := s.Publish(ctx, pluginID, m.SiteID, opts)
 		results = append(results, *result)
 	}
 
-	return results, nil
+	return results
 }
 
 func (s *serviceImpl) GetHistory(
@@ -553,24 +764,38 @@ func (s *serviceImpl) isFileExcluded(base string, excludes []string) bool {
 	return false
 }
 
-func (s *serviceImpl) writeZipPackage(plugin *models.Plugin, zipPath string, filesToPackage []string) (*PackageInfo, error) {
+func (s *serviceImpl) writeZipPackage(
+	plugin *models.Plugin,
+	zipPath string,
+	filesToPackage []string,
+) (*PackageInfo, error) {
 	zipFile, err := os.Create(zipPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFileWrite, "failed to create zip file")
 	}
 	defer zipFile.Close()
 
+	hash := md5.New()
+	stats := s.writeFilesToZip(zipFile, hash, plugin.Path, filesToPackage)
+
+	return s.buildPackageInfo(zipPath, stats, hash)
+}
+
+func (s *serviceImpl) writeFilesToZip(
+	zipFile *os.File,
+	hash io.Writer,
+	pluginPath string,
+	filesToPackage []string,
+) zipStats {
 	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
-	hash := md5.New()
-	pluginDirName := filepath.Base(plugin.Path)
+	pluginDirName := filepath.Base(pluginPath)
 
-	stats := s.addFilesToZip(zipWriter, hash, plugin.Path, pluginDirName, filesToPackage)
+	return s.addFilesToZip(zipWriter, hash, pluginPath, pluginDirName, filesToPackage)
+}
 
-	zipWriter.Close()
-	zipFile.Close()
-
+func (s *serviceImpl) buildPackageInfo(zipPath string, stats zipStats, hash *md5.Hash) (*PackageInfo, error) {
 	zipInfo, _ := os.Stat(zipPath)
 
 	pkg := &PackageInfo{
@@ -618,32 +843,47 @@ func (s *serviceImpl) addSingleFileToZip(
 	pluginDirName string,
 	relPath string,
 ) int64 {
-	fullPath := filepath.Join(pluginPath, relPath)
-	info, err := os.Stat(fullPath)
+	header, err := s.createZipHeader(pluginPath, pluginDirName, relPath)
 	if err != nil {
 		return -1
 	}
-
-	header, err := zip.FileInfoHeader(info)
-	if err != nil {
-		return -1
-	}
-	header.Name = filepath.Join(pluginDirName, relPath)
-	header.Method = zip.Deflate
 
 	writer, err := zipWriter.CreateHeader(header)
 	if err != nil {
 		return -1
 	}
 
+	return s.copyFileToZip(filepath.Join(pluginPath, relPath), writer, hash)
+}
+
+func (s *serviceImpl) createZipHeader(pluginPath, pluginDirName, relPath string) (*zip.FileHeader, error) {
+	fullPath := filepath.Join(pluginPath, relPath)
+	info, err := os.Stat(fullPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return nil, err
+	}
+
+	header.Name = filepath.Join(pluginDirName, relPath)
+	header.Method = zip.Deflate
+
+	return header, nil
+}
+
+func (s *serviceImpl) copyFileToZip(fullPath string, writer io.Writer, hash io.Writer) int64 {
 	file, err := os.Open(fullPath)
 	if err != nil {
 		return -1
 	}
+	defer file.Close()
 
 	multiWriter := io.MultiWriter(writer, hash)
 	written, _ := io.Copy(multiWriter, file)
-	file.Close()
 
 	return written
 }
