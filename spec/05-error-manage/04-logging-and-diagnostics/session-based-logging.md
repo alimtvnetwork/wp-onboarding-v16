@@ -255,7 +255,11 @@ The `SessionId` field connects session logs to the error envelope:
 
 ```go
 // In respondErrorWithSession helper:
-func respondErrorWithSession(w http.ResponseWriter, r *http.Request, appErr *apperror.AppError) {
+func respondErrorWithSession(
+	w http.ResponseWriter,
+	r *http.Request,
+	appErr *apperror.AppError,
+) {
     sessionId := extractSessionID(appErr, r)
     envelope := buildErrorEnvelope(appErr)
 

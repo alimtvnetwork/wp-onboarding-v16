@@ -216,7 +216,12 @@ When the Go backend proxies a request to any downstream server and the request f
 
 ```go
 // In the HTTP client wrapper (e.g., wordpress.(*Client).doRequest)
-func (c *Client) doRequest(ctx context.Context, method, url string, body interface{}) (*http.Response, error) {
+func (c *Client) doRequest(
+	ctx context.Context,
+	method string,
+	url string,
+	body any,
+) (*http.Response, error) {
     // ... execute request ...
     
     if resp.StatusCode >= 400 {

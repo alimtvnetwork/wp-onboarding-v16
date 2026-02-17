@@ -43,7 +43,11 @@ type DelegatedRequestServer struct {
 In the handler or service layer that makes the delegated HTTP call:
 
 ```go
-func (s *Service) fetchFromDelegatedServer(ctx context.Context, site *models.Site, path string) (*Envelope, error) {
+func (s *Service) fetchFromDelegatedServer(
+	ctx context.Context,
+	site *models.Site,
+	path string,
+) (*Envelope, error) {
     delegatedURL := fmt.Sprintf("%s/wp-json/%s", site.URL, path)
 
     resp, bodyBytes, err := s.executeDelegatedRequest(ctx, delegatedURL)

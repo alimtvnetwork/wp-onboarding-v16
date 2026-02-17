@@ -152,7 +152,12 @@ func captureRequestBody(r *http.Request) []byte {
     return bodyBytes
 }
 
-func logRequest(log *logger.Logger, r *http.Request, rw *responseWriter, duration time.Duration) {
+func logRequest(
+	log *logger.Logger,
+	r *http.Request,
+	rw *responseWriter,
+	duration time.Duration,
+) {
     log.Info("HTTP request",
         "method", r.Method,
         "path", r.URL.Path,
@@ -161,7 +166,12 @@ func logRequest(log *logger.Logger, r *http.Request, rw *responseWriter, duratio
     )
 }
 
-func persistErrorIfNeeded(r *http.Request, rw *responseWriter, duration time.Duration, body []byte) {
+func persistErrorIfNeeded(
+	r *http.Request,
+	rw *responseWriter,
+	duration time.Duration,
+	body []byte,
+) {
     isError := rw.statusCode >= 400 && ErrorLogDir != ""
     if !isError {
         return

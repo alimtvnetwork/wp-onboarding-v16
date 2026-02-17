@@ -228,7 +228,11 @@ type Service struct {
     log      *logger.Logger
 }
 
-func New(db *database.DB, wpClient *wordpress.Client, log *logger.Logger) *Service {
+func New(
+	db *database.DB,
+	wpClient *wordpress.Client,
+	log *logger.Logger,
+) *Service {
     return &Service{
         db:       db,
         wpClient: wpClient,

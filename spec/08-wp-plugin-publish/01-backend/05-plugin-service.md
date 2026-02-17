@@ -153,7 +153,11 @@ type serviceImpl struct {
     log         *logger.Logger
 }
 
-func New(db *sql.DB, siteService site.Service, log *logger.Logger) Service {
+func New(
+	db *sql.DB,
+	siteService site.Service,
+	log *logger.Logger,
+) Service {
     return &serviceImpl{
         db:          db,
         siteService: siteService,
@@ -521,7 +525,11 @@ func (s *serviceImpl) CalculateHash(ctx context.Context, id int64) (string, erro
     return s.calculateDirectoryHash(plugin.LocalPath)
 }
 
-func (s *serviceImpl) UpdateHash(ctx context.Context, id int64, hash string) error {
+func (s *serviceImpl) UpdateHash(
+	ctx context.Context,
+	id int64,
+	hash string,
+) error {
     _, err := s.db.ExecContext(ctx,
         "UPDATE Plugins SET LastHash = ?, UpdatedAt = datetime('now') WHERE Id = ?",
         hash, id,
@@ -601,7 +609,11 @@ import (
     "wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) SetWatching(ctx context.Context, id int64, watching bool) error {
+func (s *serviceImpl) SetWatching(
+	ctx context.Context,
+	id int64,
+	watching bool,
+) error {
     s.log.Info("Setting plugin watching status", "plugin_id", id, "watching", watching)
     
     watchingInt := 0

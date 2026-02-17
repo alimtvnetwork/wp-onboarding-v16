@@ -219,7 +219,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts PublishOptions) (*PublishResult, error) {
+func (s *serviceImpl) Publish(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+	opts PublishOptions,
+) (*PublishResult, error) {
 	publishID := uuid.New().String()[:8]
 	startTime := time.Now()
 
@@ -388,7 +393,12 @@ func (s *serviceImpl) runStage(name string, fn func() error) StageResult {
 	return stage
 }
 
-func (s *serviceImpl) failPublish(result *PublishResult, stage string, err error, startTime time.Time) (*PublishResult, error) {
+func (s *serviceImpl) failPublish(
+	result *PublishResult,
+	stage string,
+	err error,
+	startTime time.Time,
+) (*PublishResult, error) {
 	result.Success = false
 	result.Error = err.Error()
 	result.Duration = time.Since(startTime).Milliseconds()
@@ -402,7 +412,11 @@ func (s *serviceImpl) failPublish(result *PublishResult, stage string, err error
 	return result, err
 }
 
-func (s *serviceImpl) PublishToAll(ctx context.Context, pluginID int64, opts PublishOptions) ([]PublishResult, error) {
+func (s *serviceImpl) PublishToAll(
+	ctx context.Context,
+	pluginID int64,
+	opts PublishOptions,
+) ([]PublishResult, error) {
 	mappings, err := s.pluginService.GetMappings(ctx, pluginID)
 	if err != nil {
 		return nil, err
@@ -417,12 +431,21 @@ func (s *serviceImpl) PublishToAll(ctx context.Context, pluginID int64, opts Pub
 	return results, nil
 }
 
-func (s *serviceImpl) GetHistory(ctx context.Context, pluginID int64, siteID *int64) ([]PublishResult, error) {
+func (s *serviceImpl) GetHistory(
+	ctx context.Context,
+	pluginID int64,
+	siteID *int64,
+) ([]PublishResult, error) {
 	// TODO: Query publish history from database
 	return []PublishResult{}, nil
 }
 
-func (s *serviceImpl) Rollback(ctx context.Context, pluginID, siteID, backupID int64) (*PublishResult, error) {
+func (s *serviceImpl) Rollback(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+	backupID int64,
+) (*PublishResult, error) {
 	// TODO: Implement rollback using backup
 	return nil, apperror.New(apperror.ErrNotImplemented, "rollback not yet implemented")
 }
@@ -449,7 +472,11 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) CreatePackage(ctx context.Context, pluginID int64, files []string) (*PackageInfo, error) {
+func (s *serviceImpl) CreatePackage(
+	ctx context.Context,
+	pluginID int64,
+	files []string,
+) (*PackageInfo, error) {
 	s.log.Info("Creating package", "pluginId", pluginID, "files", len(files))
 
 	// Get plugin details
@@ -577,7 +604,12 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) uploadPackage(ctx context.Context, client *wordpress.Client, zipPath, remoteSlug string) error {
+func (s *serviceImpl) uploadPackage(
+	ctx context.Context,
+	client *wordpress.Client,
+	zipPath string,
+	remoteSlug string,
+) error {
 	s.log.Info("Uploading package", "path", zipPath, "slug", remoteSlug)
 
 	// Read zip file

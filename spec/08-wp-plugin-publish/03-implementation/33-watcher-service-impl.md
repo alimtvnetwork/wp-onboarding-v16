@@ -274,7 +274,11 @@ func (s *serviceImpl) GetCachedPlugins() []int64 {
 }
 
 // performScan executes the actual directory scan
-func (s *serviceImpl) performScan(ctx context.Context, pluginID int64, triggerType string) (*ScanResult, error) {
+func (s *serviceImpl) performScan(
+	ctx context.Context,
+	pluginID int64,
+	triggerType string,
+) (*ScanResult, error) {
 	startTime := time.Now()
 
 	s.log.Info("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
