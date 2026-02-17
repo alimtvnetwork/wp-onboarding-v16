@@ -53,7 +53,8 @@ trait ManagerSettingsTrait {
 
     private function readSettingsFromDb(): array {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return array();
         }
 

@@ -35,7 +35,8 @@ trait UploadZipTrait
             return $detected_slug;
         }
 
-        $final_slug = !empty($slug) ? $slug : $detected_slug;
+        $hasSlug = BooleanHelpers::hasValue($slug);
+        $final_slug = $hasSlug ? $slug : $detected_slug;
         $this->fileLogger->info('Plugin slug determined', array('slug' => $final_slug));
 
         return array('temp_file' => $temp_file, 'slug' => $final_slug);
@@ -72,7 +73,8 @@ trait UploadZipTrait
         $detected_slug = $this->detectPluginSlugFromZip($zip);
         $zip->close();
 
-        if (!$detected_slug) {
+        $isSlugMissing = ($detected_slug === null);
+        if ($isSlugMissing) {
             @unlink($temp_file);
             $this->fileLogger->error('Could not detect plugin in ZIP');
             $this->logger->logUploadFailed($slug, 'Could not detect plugin in ZIP');
@@ -116,7 +118,8 @@ trait UploadZipTrait
             return false;
         }
 
-        if (!$this->isDuplicatePlugin($pdata, $pfile, $slug)) {
+        $isUniquePlugin = ($this->isDuplicatePlugin($pdata, $pfile, $slug) === false);
+        if ($isUniquePlugin) {
             return false;
         }
 

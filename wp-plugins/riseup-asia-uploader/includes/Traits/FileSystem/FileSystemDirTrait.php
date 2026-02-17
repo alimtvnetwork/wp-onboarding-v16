@@ -87,7 +87,8 @@ trait FileSystemDirTrait {
         UploadIgnore $ignore,
     ): void {
         $dir = opendir($srcDir);
-        if (!$dir) {
+        $isDirHandleMissing = ($dir === false);
+        if ($isDirHandleMissing) {
             return;
         }
 

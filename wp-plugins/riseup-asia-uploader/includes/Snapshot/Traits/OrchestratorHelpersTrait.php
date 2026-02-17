@@ -17,6 +17,7 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait OrchestratorHelpersTrait {
 
@@ -56,8 +57,14 @@ trait OrchestratorHelpersTrait {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [ORCHESTRATOR] ' . $message;
-        if (!empty($context)) $full .= ' ' . json_encode($context);
-        if (!$this->logger) return;
+        $hasContext = BooleanHelpers::hasValue($context);
+        if ($hasContext) {
+            $full .= ' ' . json_encode($context);
+        }
+        $isLoggerMissing = ($this->logger === null);
+        if ($isLoggerMissing) {
+            return;
+        }
         switch ($level) {
             case LogLevelType::Warn->value:  $this->logger->warn($full); break;
             case LogLevelType::Error->value: $this->logger->error($full); break;

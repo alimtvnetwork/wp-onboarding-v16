@@ -22,6 +22,7 @@ use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait CleanerHelperTrait {
 
@@ -107,11 +108,13 @@ trait CleanerHelperTrait {
         $prefix = '[SNAPSHOT] [CLEANER]';
         $fullMessage = $prefix . ' ' . $message;
 
-        if (!empty($context)) {
+        $hasContext = BooleanHelpers::hasValue($context);
+        if ($hasContext) {
             $fullMessage .= ' ' . json_encode($context);
         }
 
-        if (!$this->logger) {
+        $isLoggerMissing = ($this->logger === null);
+        if ($isLoggerMissing) {
             return;
         }
 

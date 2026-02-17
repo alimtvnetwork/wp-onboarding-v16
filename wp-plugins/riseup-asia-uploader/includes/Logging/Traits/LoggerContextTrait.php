@@ -45,10 +45,12 @@ trait LoggerContextTrait {
 
     /** Get source machine hostname from request header. */
     private function getSourceMachine(): ?string {
-        if (!empty($_SERVER[self::SOURCE_MACHINE_HEADER])) {
+        $hasSourceHeader = BooleanHelpers::hasValue($_SERVER[self::SOURCE_MACHINE_HEADER] ?? null);
+        if ($hasSourceHeader) {
             $machine = preg_replace('/[^a-zA-Z0-9.\\\\-_]/', '', $_SERVER[self::SOURCE_MACHINE_HEADER]);
+            $hasMachine = BooleanHelpers::hasValue($machine);
 
-            return !empty($machine) ? $machine : null;
+            return $hasMachine ? $machine : null;
         }
 
         return null;
@@ -78,7 +80,8 @@ trait LoggerContextTrait {
         if (empty($enhanced['plugin_version'])) {
             $enhanced['plugin_version'] = PluginConfigType::Version->value;
         }
-        if (!empty($extraEnhanced)) {
+        $hasExtraEnhanced = BooleanHelpers::hasValue($extraEnhanced);
+        if ($hasExtraEnhanced) {
             $enhanced = array_merge($enhanced, $extraEnhanced);
         }
 

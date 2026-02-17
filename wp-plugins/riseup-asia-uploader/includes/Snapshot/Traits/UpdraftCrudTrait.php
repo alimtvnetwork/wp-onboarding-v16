@@ -20,7 +20,8 @@ use RiseupAsia\Enums\TableType;
 trait UpdraftCrudTrait {
 
     public function createSnapshot(array $options): array {
-        if (!$this->isAvailable()) {
+        $isUnavailable = ($this->isAvailable() === false);
+        if ($isUnavailable) {
             return array('success' => false, 'error' => 'UpdraftPlus is not available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 

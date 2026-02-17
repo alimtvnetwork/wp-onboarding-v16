@@ -24,6 +24,7 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SyncActionType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SyncPushTrait
 {
@@ -171,7 +172,8 @@ trait SyncPushTrait
 
         $written = file_put_contents($full_path, $decoded) !== false;
         $result = array('path' => $path, 'action' => $action, 'status' => $written ? 'success' : 'error');
-        if (!$written) {
+        $isWriteFailed = ($written === false);
+        if ($isWriteFailed) {
             $result['reason'] = 'Failed to write file';
         }
 
@@ -194,7 +196,8 @@ trait SyncPushTrait
             $this->db->logTransaction(ActionType::SyncDelete->value, $slug, StatusType::Success->value, 'Deleted via sync: ' . $path, null, null, TriggerSourceType::Api->value);
         }
 
-        if (!unlink($full_path)) {
+        $isDeleteFailed = (unlink($full_path) === false);
+        if ($isDeleteFailed) {
             return array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Failed to delete file');
         }
 
@@ -233,7 +236,8 @@ trait SyncPushTrait
 
     /** Log the completion of a sync push operation. */
     private function logSyncCompletion(string $slug, array $counters): void {
-        if (!$this->db) {
+        $isDbMissing = ($this->db === null);
+        if ($isDbMissing) {
             return;
         }
         $this->db->logTransaction(

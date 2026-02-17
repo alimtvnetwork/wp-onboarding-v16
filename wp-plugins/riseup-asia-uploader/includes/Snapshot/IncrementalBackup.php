@@ -19,6 +19,7 @@ use wpdb;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalRegistrationTrait;
@@ -91,7 +92,8 @@ class IncrementalBackup {
     ): array {
         try {
             $prepared = $this->prepareIncrementalDir($rootPath);
-            if (!$prepared['success']) {
+            $isPrepFailed = BooleanHelpers::isResultFailed($prepared);
+            if ($isPrepFailed) {
                 return $prepared;
             }
 
@@ -134,10 +136,14 @@ class IncrementalBackup {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [INCREMENTAL] ' . $message;
-        if (!empty($context)) {
+        $hasContext = BooleanHelpers::hasValue($context);
+        if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
-        if (!$this->logger) return;
+        $isLoggerMissing = ($this->logger === null);
+        if ($isLoggerMissing) {
+            return;
+        }
         switch ($level) {
             case LogLevelType::Warn->value:  $this->logger->warn($full); break;
             case LogLevelType::Error->value: $this->logger->error($full); break;

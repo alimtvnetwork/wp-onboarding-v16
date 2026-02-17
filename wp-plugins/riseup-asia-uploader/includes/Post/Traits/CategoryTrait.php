@@ -17,6 +17,7 @@ use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\StatusType;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait CategoryTrait {
 
@@ -33,7 +34,8 @@ trait CategoryTrait {
                 'description' => sanitize_textarea_field($data['description'] ?? ''),
                 'parent'      => (int) ($data['parent'] ?? 0),
             );
-            if (!empty($data['slug'])) {
+            $hasSlug = BooleanHelpers::hasValue($data['slug'] ?? null);
+            if ($hasSlug) {
                 $args['slug'] = sanitize_title($data['slug']);
             }
 
@@ -69,7 +71,8 @@ trait CategoryTrait {
                 'orderby'    => 'name',
                 'order'      => 'ASC',
             );
-            if (!empty($params['search'])) {
+            $hasSearch = BooleanHelpers::hasValue($params['search'] ?? null);
+            if ($hasSearch) {
                 $args['search'] = sanitize_text_field($params['search']);
             }
 

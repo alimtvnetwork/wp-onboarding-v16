@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ManagerCoreTrait {
 
@@ -26,7 +27,8 @@ trait ManagerCoreTrait {
 
     public function createSnapshot(array $options = array()): array {
         $provider = $this->getProvider();
-        if (!$provider) {
+        $isProviderMissing = ($provider === null);
+        if ($isProviderMissing) {
 
             return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
@@ -41,7 +43,8 @@ trait ManagerCoreTrait {
 
     public function deleteSnapshot(int $snapshotId): array {
         $provider = $this->getProvider();
-        if (!$provider) {
+        $isProviderMissing = ($provider === null);
+        if ($isProviderMissing) {
 
             return array('success' => false, 'error' => 'No provider available');
         }
@@ -51,7 +54,8 @@ trait ManagerCoreTrait {
 
     public function getSnapshot(int $snapshotId): ?array {
         $provider = $this->getProvider();
-        if (!$provider) {
+        $isProviderMissing = ($provider === null);
+        if ($isProviderMissing) {
             return null;
         }
 
@@ -82,7 +86,8 @@ trait ManagerCoreTrait {
 
     public function getAvailableTables(): array {
         $provider = $this->getProvider();
-        if (!$provider) {
+        $isProviderMissing = ($provider === null);
+        if ($isProviderMissing) {
             return array();
         }
 
@@ -95,11 +100,13 @@ trait ManagerCoreTrait {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [MANAGER] ' . $message;
-        if (!empty($context)) {
+        $hasContext = BooleanHelpers::hasValue($context);
+        if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
 
-        if (!$this->logger) {
+        $isLoggerMissing = ($this->logger === null);
+        if ($isLoggerMissing) {
             return;
         }
 

@@ -65,12 +65,13 @@ trait DetectorValidationTrait {
             $settings['storage_mode'] = 'per-table';
         }
 
-        $isInvalidTime = !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $settings['schedule_time']);
+        $isInvalidTime = (preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $settings['schedule_time']) === 0);
         if ($isInvalidTime) {
             $settings['schedule_time'] = '03:00';
         }
 
-        if (!is_array($settings['custom_tables'])) {
+        $isCustomTablesInvalid = (is_array($settings['custom_tables']) === false);
+        if ($isCustomTablesInvalid) {
             $settings['custom_tables'] = array();
         }
     }

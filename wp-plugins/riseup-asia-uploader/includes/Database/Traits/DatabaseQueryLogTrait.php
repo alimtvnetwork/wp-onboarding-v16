@@ -18,6 +18,7 @@ use RiseupAsia\Database\Orm;
 
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait DatabaseQueryLogTrait {
 
@@ -38,7 +39,8 @@ trait DatabaseQueryLogTrait {
         ?string $errorMsg = null,
         array $enhanced = array(),
     ): int|false {
-        if (!$this->isReady()) {
+        $isDbUnready = ($this->isReady() === false);
+        if ($isDbUnready) {
             $this->fileLogger->warn('Database not ready, cannot log transaction');
 
             return false;
@@ -82,6 +84,9 @@ trait DatabaseQueryLogTrait {
         string $status,
         ?string $errorMsg,
     ) {
+        $hasDetails = BooleanHelpers::hasValue($details);
+        $detailsJson = $hasDetails ? json_encode($details) : null;
+
         return Orm::forTable(TableType::Transactions->value)
             ->create()
             ->set('action', $action)
@@ -90,7 +95,7 @@ trait DatabaseQueryLogTrait {
             ->set('user_login', $userLogin)
             ->set('user_id', $userId)
             ->set('ip_address', $ipAddress)
-            ->set('details', !empty($details) ? json_encode($details) : null)
+            ->set('details', $detailsJson)
             ->set('status', $status)
             ->set('error_msg', $errorMsg)
             ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'));
@@ -99,12 +104,14 @@ trait DatabaseQueryLogTrait {
     private function applyEnhancedFields($record, array $enhanced): void {
         $stringFields = array('plugin_file', 'triggered_by', 'source_machine', 'plugin_version', 'upload_source');
         foreach ($stringFields as $field) {
-            if (!empty($enhanced[$field])) {
+            $hasField = BooleanHelpers::hasValue($enhanced[$field] ?? null);
+            if ($hasField) {
                 $record->set($field, $enhanced[$field]);
             }
         }
 
-        if (!empty($enhanced['agent_site_id'])) {
+        $hasAgentSiteId = BooleanHelpers::hasValue($enhanced['agent_site_id'] ?? null);
+        if ($hasAgentSiteId) {
             $record->set('agent_site_id', (int) $enhanced['agent_site_id']);
         }
 
@@ -136,7 +143,8 @@ trait DatabaseQueryLogTrait {
     }
 
     public function getTransaction(int $id): ?array {
-        if (!$this->isReady()) {
+        $isDbUnready = ($this->isReady() === false);
+        if ($isDbUnready) {
             return null;
         }
 
@@ -144,7 +152,8 @@ trait DatabaseQueryLogTrait {
             $log = Orm::forTable(TableType::Transactions->value)
                 ->findOne($id);
 
-            if ($log && !empty($log['details'])) {
+            $hasLogDetails = $log && BooleanHelpers::hasValue($log['details'] ?? null);
+            if ($hasLogDetails) {
                 $log['details'] = json_decode($log['details'], true);
             }
 

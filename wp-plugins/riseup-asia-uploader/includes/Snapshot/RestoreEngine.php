@@ -26,6 +26,7 @@ use RiseupAsia\Snapshot\Traits\RestoreGraphTrait;
 use RiseupAsia\Snapshot\Traits\RestoreHelperTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 class RestoreEngine {
 
@@ -91,7 +92,8 @@ class RestoreEngine {
         $meta = $this->getSnapshotMeta($rootPdo);
         $restoreOrder = $this->prepareRestoreOrder($rootPdo, $options);
 
-        if (!$restoreOrder['success']) {
+        $isRestoreOrderFailed = BooleanHelpers::isResultFailed($restoreOrder);
+        if ($isRestoreOrderFailed) {
             $rootPdo = null;
 
             return $restoreOrder;

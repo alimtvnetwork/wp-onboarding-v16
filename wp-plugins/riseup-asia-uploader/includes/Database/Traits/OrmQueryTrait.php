@@ -14,14 +14,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Helpers\BooleanHelpers;
+
 trait OrmQueryTrait {
 
-    /**
-     * Set columns to select.
-     *
-     * @param mixed $columns Column name(s) - string or array.
-     * @return $this
-     */
     public function select($columns) {
         $this->selectColumns = is_array($columns) ? $columns : func_get_args();
         return $this;
@@ -51,11 +47,7 @@ trait OrmQueryTrait {
         return $this;
     }
 
-    /**
-     * Add ORDER BY with custom direction.
-     *
-     * @return $this
-     */
+    /** Add ORDER BY with custom direction. */
     public function orderBy(string $column, string $direction = 'ASC') {
         $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
         $this->orderBy[] = "{$column} {$direction}";
@@ -80,13 +72,10 @@ trait OrmQueryTrait {
         return $this;
     }
 
-    /**
-     * Find a single record by ID.
-     *
-     * @return array|null Record data or null.
-     */
+    /** Find a single record by ID. */
     public function findOne(int $id): ?array {
-        if (!self::$pdo) {
+        $isPdoMissing = (self::$pdo === null);
+        if ($isPdoMissing) {
             return null;
         }
 
@@ -102,11 +91,10 @@ trait OrmQueryTrait {
         }
     }
 
-    /**
-     * Find multiple records.
-     */
+    /** Find multiple records. */
     public function findMany(): array {
-        if (!self::$pdo) {
+        $isPdoMissing = (self::$pdo === null);
+        if ($isPdoMissing) {
             return array();
         }
 
@@ -121,17 +109,17 @@ trait OrmQueryTrait {
         }
     }
 
-    /**
-     * Count records.
-     */
+    /** Count records. */
     public function count(): int {
-        if (!self::$pdo) {
+        $isPdoMissing = (self::$pdo === null);
+        if ($isPdoMissing) {
             return 0;
         }
 
         $sql = "SELECT COUNT(*) as count FROM {$this->tableName}";
 
-        if (!empty($this->whereClauses)) {
+        $hasWhereClauses = BooleanHelpers::hasValue($this->whereClauses);
+        if ($hasWhereClauses) {
             $sql .= ' WHERE ' . implode(' AND ', $this->whereClauses);
         }
 
@@ -145,22 +133,23 @@ trait OrmQueryTrait {
         }
     }
 
-    /**
-     * Build SELECT SQL.
-     */
+    /** Build SELECT SQL. */
     private function buildSelectSql(): string {
         $columns = implode(', ', $this->selectColumns);
         $sql = "SELECT {$columns} FROM {$this->tableName}";
 
-        if (!empty($this->whereClauses)) {
+        $hasWhereClauses = BooleanHelpers::hasValue($this->whereClauses);
+        if ($hasWhereClauses) {
             $sql .= ' WHERE ' . implode(' AND ', $this->whereClauses);
         }
 
-        if (!empty($this->groupBy)) {
+        $hasGroupBy = BooleanHelpers::hasValue($this->groupBy);
+        if ($hasGroupBy) {
             $sql .= ' GROUP BY ' . implode(', ', $this->groupBy);
         }
 
-        if (!empty($this->orderBy)) {
+        $hasOrderBy = BooleanHelpers::hasValue($this->orderBy);
+        if ($hasOrderBy) {
             $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }
 
