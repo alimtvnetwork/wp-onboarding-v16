@@ -376,37 +376,45 @@ func (s *ConfigService) SeedWithVersionCheck() error {
 // mergeSeed adds new settings without overwriting existing
 func (s *ConfigService) mergeSeed(seed SeedConfig, previousVersion string) error {
     for catKey, cat := range seed.Categories {
-        for settingKey, setting := range cat.Settings {
-            // Check if setting exists
-            var existing Setting
-            err := s.db.Where("category = ? AND key = ?", catKey, settingKey).First(&existing).Error
-            
-            if err == gorm.ErrRecordNotFound {
-                // New setting - insert with default
-                valueJSON, _ := json.Marshal(setting.Default)
-                newSetting := Setting{
-                    ID:            generateID(),
-                    Category:      catKey,
-                    Key:           settingKey,
-                    Value:         string(valueJSON),
-                    Type:          setting.Type,
-                    AddedInVersion: seed.Version,
-                }
-                s.db.Create(&newSetting)
-            }
-            // Existing settings are preserved
-        }
+        s.seedCategory(catKey, cat, seed.Version)
     }
-    
-    // Update meta
-    s.db.Model(&ConfigMeta{}).Where("id = 'singleton'").Updates(configMetaUpdate{
-        SeedVersion:    seed.Version,
-        CurrentVersion: seed.Version,
+
+    return s.updateMetaVersion(seed.Version)
+}
+
+func (s *ConfigService) seedCategory(catKey string, cat CategoryConfig, version string) {
+    for settingKey, setting := range cat.Settings {
+        s.seedSettingIfNew(catKey, settingKey, setting, version)
+    }
+}
+
+func (s *ConfigService) seedSettingIfNew(catKey, settingKey string, setting SettingConfig, version string) {
+    var existing Setting
+    err := s.db.Where("category = ? AND key = ?", catKey, settingKey).First(&existing).Error
+
+    if err != gorm.ErrRecordNotFound {
+        return
+    }
+
+    valueJSON, _ := json.Marshal(setting.Default)
+    newSetting := Setting{
+        ID:             generateID(),
+        Category:       catKey,
+        Key:            settingKey,
+        Value:          string(valueJSON),
+        Type:           setting.Type,
+        AddedInVersion: version,
+    }
+    s.db.Create(&newSetting)
+}
+
+func (s *ConfigService) updateMetaVersion(version string) error {
+    return s.db.Model(&ConfigMeta{}).Where("id = 'singleton'").Updates(configMetaUpdate{
+        SeedVersion:    version,
+        CurrentVersion: version,
         LastSeededAt:   time.Now(),
         UpdatedAt:      time.Now(),
-    })
-    
-    return nil
+    }).Error
 }
 
 // updateChangelog appends version entry to CHANGELOG.md
@@ -414,34 +422,37 @@ func (s *ConfigService) updateChangelog(seed SeedConfig) error {
     if seed.Changelog == "" {
         return nil
     }
-    
-    entry := fmt.Sprintf("\n## [%s] - %s\n\n%s\n",
-        seed.Version,
+
+    entry := formatChangelogEntry(seed.Version, seed.Changelog)
+    content := s.readOrCreateChangelog()
+
+    return s.writeChangelogWithEntry(content, entry)
+}
+
+func formatChangelogEntry(version, changelog string) string {
+    return fmt.Sprintf("\n## [%s] - %s\n\n%s\n",
+        version,
         time.Now().Format("2006-01-02"),
-        seed.Changelog,
+        changelog,
     )
-    
-    // Read existing changelog
-    content, err := os.ReadFile(s.changelogPath)
-    if err != nil && !os.IsNotExist(err) {
-        return err
-    }
-    
-    // Insert after header
+}
+
+func (s *ConfigService) readOrCreateChangelog() []byte {
     header := "# Changelog\n\nAll notable configuration changes are documented here.\n"
-    
-    if len(content) == 0 {
-        content = []byte(header)
+
+    content, err := os.ReadFile(s.changelogPath)
+    if err != nil || len(content) == 0 {
+        return []byte(header)
     }
-    
-    // Find insert position (after header)
+
+    return content
+}
+
+func (s *ConfigService) writeChangelogWithEntry(content []byte, entry string) error {
+    header := "# Changelog\n\nAll notable configuration changes are documented here.\n"
     insertPos := len(header)
-    if len(content) >= len(header) {
-        insertPos = len(header)
-    }
-    
     newContent := string(content[:insertPos]) + entry + string(content[insertPos:])
-    
+
     return os.WriteFile(s.changelogPath, []byte(newContent), 0644)
 }
 ```

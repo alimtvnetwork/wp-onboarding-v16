@@ -130,31 +130,44 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             start := time.Now()
-
-            // Capture request body before handler consumes it
-            var requestBodyBytes []byte
-            if r.Body != nil {
-                requestBodyBytes, _ = io.ReadAll(r.Body)
-                r.Body = io.NopCloser(bytes.NewBuffer(requestBodyBytes))
-            }
+            requestBodyBytes := captureRequestBody(r)
 
             rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
             next.ServeHTTP(rw, r)
 
-            duration := time.Since(start)
-            log.Info("HTTP request",
-                "method", r.Method,
-                "path", r.URL.Path,
-                "status", rw.statusCode,
-                "duration", duration.String(),
-            )
-
-            // Persist error responses (>= 400) to error.log.txt
-            if rw.statusCode >= 400 && ErrorLogDir != "" {
-                appendToErrorLog(r, rw, duration, requestBodyBytes)
-            }
+            logRequest(log, r, rw, time.Since(start))
+            persistErrorIfNeeded(r, rw, time.Since(start), requestBodyBytes)
         })
     }
+}
+
+func captureRequestBody(r *http.Request) []byte {
+    if r.Body == nil {
+        return nil
+    }
+
+    bodyBytes, _ := io.ReadAll(r.Body)
+    r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+    return bodyBytes
+}
+
+func logRequest(log *logger.Logger, r *http.Request, rw *responseWriter, duration time.Duration) {
+    log.Info("HTTP request",
+        "method", r.Method,
+        "path", r.URL.Path,
+        "status", rw.statusCode,
+        "duration", duration.String(),
+    )
+}
+
+func persistErrorIfNeeded(r *http.Request, rw *responseWriter, duration time.Duration, body []byte) {
+    isError := rw.statusCode >= 400 && ErrorLogDir != ""
+    if !isError {
+        return
+    }
+
+    appendToErrorLog(r, rw, duration, body)
 }
 ```
 

@@ -45,59 +45,68 @@ In the handler or service layer that makes the delegated HTTP call:
 ```go
 func (s *Service) fetchFromDelegatedServer(ctx context.Context, site *models.Site, path string) (*Envelope, error) {
     delegatedURL := fmt.Sprintf("%s/wp-json/%s", site.URL, path)
-    
-    req, err := http.NewRequestWithContext(ctx, http.MethodGet, delegatedURL, nil)
-    if err != nil {
-        return nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to build delegated request")
-    }
 
-    resp, err := s.httpClient.Do(req)
+    resp, bodyBytes, err := s.executeDelegatedRequest(ctx, delegatedURL)
     if err != nil {
-        return nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to reach delegated server").
-            WithEndpoint(delegatedURL)
+        return nil, err
     }
     defer resp.Body.Close()
 
-    bodyBytes, _ := io.ReadAll(resp.Body)
-
-    // ALWAYS set RequestDelegatedAt
     envelope := NewEnvelope()
     envelope.Attributes.RequestDelegatedAt = delegatedURL
 
     if resp.StatusCode >= 400 {
-        // Preserve raw JSON for the envelope (json.RawMessage)
-        responseBody := json.RawMessage(bodyBytes)
-
-        // Parse into typed struct for stack trace / hint extraction
-        var parsed DelegatedResponseBody
-        _ = json.Unmarshal(bodyBytes, &parsed)
-
-        // Extract PHP stack trace if present in response
-        phpStack := parsed.Data.StackTrace
-
-        // Extract additional messages / log hints
-        additionalMsg := parsed.Data.LogHint
-
-        envelope.Errors = &EnvelopeErrors{
-            BackendMessage: fmt.Sprintf("[E3001] failed to fetch %s: %s (GET %s): status %d",
-                path, path, path, resp.StatusCode),
-            DelegatedRequestServer: &DelegatedRequestServer{
-                DelegatedEndpoint:  delegatedURL,
-                Method:             http.MethodGet,
-                StatusCode:         resp.StatusCode,
-                RequestBody:        nil, // GET request
-                Response:           responseBody,
-                StackTrace:         phpStack,
-                AdditionalMessages: additionalMsg,
-            },
-        }
-
-        return envelope, apperror.New("E3001", fmt.Sprintf("delegated request failed with status %d", resp.StatusCode))
+        return s.buildDelegatedErrorEnvelope(envelope, delegatedURL, path, resp.StatusCode, bodyBytes)
     }
 
     // Success path — RequestDelegatedAt is still set so frontend knows a hop occurred
     // ... parse Results ...
     return envelope, nil
+}
+
+func (s *Service) executeDelegatedRequest(ctx context.Context, url string) (*http.Response, []byte, error) {
+    req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+    if err != nil {
+        return nil, nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to build delegated request")
+    }
+
+    resp, err := s.httpClient.Do(req)
+    if err != nil {
+        return nil, nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to reach delegated server").
+            WithEndpoint(url)
+    }
+
+    bodyBytes, _ := io.ReadAll(resp.Body)
+
+    return resp, bodyBytes, nil
+}
+
+func (s *Service) buildDelegatedErrorEnvelope(
+    envelope *Envelope,
+    delegatedURL, path string,
+    statusCode int,
+    bodyBytes []byte,
+) (*Envelope, error) {
+    responseBody := json.RawMessage(bodyBytes)
+
+    var parsed DelegatedResponseBody
+    _ = json.Unmarshal(bodyBytes, &parsed)
+
+    envelope.Errors = &EnvelopeErrors{
+        BackendMessage: fmt.Sprintf("[E3001] failed to fetch %s: %s (GET %s): status %d",
+            path, path, path, statusCode),
+        DelegatedRequestServer: &DelegatedRequestServer{
+            DelegatedEndpoint:  delegatedURL,
+            Method:             http.MethodGet,
+            StatusCode:         statusCode,
+            RequestBody:        nil,
+            Response:           responseBody,
+            StackTrace:         parsed.Data.StackTrace,
+            AdditionalMessages: parsed.Data.LogHint,
+        },
+    }
+
+    return envelope, apperror.New("E3001", fmt.Sprintf("delegated request failed with status %d", statusCode))
 }
 ```
 
