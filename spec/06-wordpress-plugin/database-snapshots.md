@@ -191,12 +191,12 @@ Even "Snapshot Now" uses cron to prevent request timeouts:
 
 ```php
 // API receives "snapshot now" request
-public function handle_snapshot_now() {
+public function handleSnapshotNow() {
     // Schedule for 5 seconds from now
     $scheduled = wp_schedule_single_event(
         time() + 5,
         'riseup_snapshot_immediate',
-        array('tables' => $this->get_selected_tables())
+        array('tables' => $this->getSelectedTables())
     );
     
     return array(
@@ -212,12 +212,12 @@ public function handle_snapshot_now() {
 For large databases, tables can be exported in parallel cron jobs:
 
 ```php
-public function schedule_parallel_export($tables) {
+public function scheduleParallelExport($tables) {
     foreach ($tables as $index => $table) {
         wp_schedule_single_event(
             time() + ($index * 2), // Stagger by 2 seconds
             'riseup_snapshot_table',
-            array('snapshot_id' => $this->snapshot_id, 'table' => $table)
+            array('snapshot_id' => $this->snapshotId, 'table' => $table)
         );
     }
 }
@@ -280,16 +280,16 @@ array(
 ### 7.2 Cleanup Logic
 
 ```php
-public function apply_retention_policy() {
-    $settings = $this->get_settings();
-    $snapshots = $this->list_snapshots();
+public function applyRetentionPolicy() {
+    $settings = $this->getSettings();
+    $snapshots = $this->listSnapshots();
     
     switch ($settings['retention_type']) {
         case 'days':
             $cutoff = strtotime("-{$settings['retention_days']} days");
             foreach ($snapshots as $snapshot) {
                 if ($snapshot['created_at'] < $cutoff) {
-                    $this->delete_snapshot($snapshot['id']);
+                    $this->deleteSnapshot($snapshot['id']);
                 }
             }
             break;
@@ -297,9 +297,9 @@ public function apply_retention_policy() {
         case 'count':
             // Sort by date descending, keep first N
             usort($snapshots, fn($a, $b) => $b['created_at'] <=> $a['created_at']);
-            $to_delete = array_slice($snapshots, $settings['retention_count']);
-            foreach ($to_delete as $snapshot) {
-                $this->delete_snapshot($snapshot['id']);
+            $toDelete = array_slice($snapshots, $settings['retention_count']);
+            foreach ($toDelete as $snapshot) {
+                $this->deleteSnapshot($snapshot['id']);
             }
             break;
     }

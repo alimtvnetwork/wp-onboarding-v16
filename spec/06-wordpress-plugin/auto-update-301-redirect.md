@@ -112,69 +112,69 @@ RISEUP_ACTION_UPDATE_INSTALL  = 'update_install'
 
 ## API Reference
 
-### Riseup_Update_Resolver Class
+### UpdateResolver Class
 
-#### get_instance()
+#### getInstance()
 Returns singleton instance.
 
 ```php
-$resolver = Riseup_Update_Resolver::get_instance();
+$resolver = UpdateResolver::getInstance();
 ```
 
-#### get_settings()
+#### getSettings()
 Returns current settings array with defaults applied.
 
 ```php
-$settings = $resolver->get_settings();
+$settings = $resolver->getSettings();
 // array('enabled' => false, 'master_url' => '', ...)
 ```
 
-#### save_settings(array $settings)
+#### saveSettings(array $settings)
 Saves settings, merging with existing values.
 
 ```php
-$resolver->save_settings(array('enabled' => true));
+$resolver->saveSettings(array('enabled' => true));
 ```
 
-#### resolve_url(string $url, int $max_redirects = 5)
+#### resolveUrl(string $url, int $maxRedirects = 5)
 Follows redirects to find final URL.
 
 ```php
-$final = $resolver->resolve_url('https://updates.example.com/plugin');
+$final = $resolver->resolveUrl('https://updates.example.com/plugin');
 // Returns: 'https://cdn.example.com/plugin-1.8.0.json' or WP_Error
 ```
 
-#### get_update_url(bool $force_resolve = false)
+#### getUpdateUrl(bool $forceResolve = false)
 Returns cached URL or resolves fresh.
 
 ```php
-$url = $resolver->get_update_url();
+$url = $resolver->getUpdateUrl();
 // Uses cache if valid
 
-$url = $resolver->get_update_url(true);
+$url = $resolver->getUpdateUrl(true);
 // Forces fresh resolution
 ```
 
-#### clear_cache()
+#### clearCache()
 Clears cached resolved URL.
 
 ```php
-$resolver->clear_cache();
+$resolver->clearCache();
 ```
 
-#### fetch_update_info(bool $force_check = false)
+#### fetchUpdateInfo(bool $forceCheck = false)
 Fetches update metadata from server.
 
 ```php
-$info = $resolver->fetch_update_info();
+$info = $resolver->fetchUpdateInfo();
 // array('version' => '1.9.0', 'package' => 'https://...', ...)
 ```
 
-#### test_connection()
+#### testConnection()
 Tests connection and returns result.
 
 ```php
-$result = $resolver->test_connection();
+$result = $resolver->testConnection();
 // array('success' => true, 'message' => '...', 'resolved_url' => '...')
 ```
 
@@ -185,10 +185,10 @@ $result = $resolver->test_connection();
 ### Update Check Hook
 
 ```php
-add_filter('pre_set_site_transient_update_plugins', array($this, 'check_for_plugin_update'));
+add_filter('pre_set_site_transient_update_plugins', array($this, 'checkForPluginUpdate'));
 ```
 
-The `check_for_plugin_update()` method:
+The `checkForPluginUpdate()` method:
 1. Checks if auto-update is enabled
 2. Fetches update info from server
 3. Compares versions
@@ -197,7 +197,7 @@ The `check_for_plugin_update()` method:
 ### Plugin Info Hook
 
 ```php
-add_filter('plugins_api', array($this, 'plugin_info'), 10, 3);
+add_filter('plugins_api', array($this, 'pluginInfo'), 10, 3);
 ```
 
 Provides detailed information for WordPress "View Details" modal.
@@ -248,9 +248,9 @@ Located in WordPress Admin → Riseup Uploader → Settings
 
 | Action | Handler | Description |
 |--------|---------|-------------|
-| `riseup_test_update_connection` | `ajax_test_update_connection` | Tests URL resolution |
-| `riseup_clear_update_cache` | `ajax_clear_update_cache` | Clears cached URL |
-| `riseup_check_for_updates` | `ajax_check_for_updates` | Forces update check |
+| `riseup_test_update_connection` | `ajaxTestUpdateConnection` | Tests URL resolution |
+| `riseup_clear_update_cache` | `ajaxClearUpdateCache` | Clears cached URL |
+| `riseup_check_for_updates` | `ajaxCheckForUpdates` | Forces update check |
 
 All AJAX actions require `riseup_admin_nonce` and `manage_options` capability.
 
@@ -268,7 +268,7 @@ All AJAX actions require `riseup_admin_nonce` and `manage_options` capability.
 
 Errors are stored in settings:
 ```php
-$resolver->save_settings(array(
+$resolver->saveSettings(array(
     'last_error' => 'Connection timeout',
     'last_check' => current_time('mysql', true),
 ));

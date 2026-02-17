@@ -107,7 +107,7 @@ private function hash_file(string $path): string {
     $quick_hash = md5($stat['mtime'] . $stat['size']);
     
     // Full content hash only if quick hash differs
-    if ($this->requires_full_hash($path, $quick_hash)) {
+    if ($this->requiresFullHash($path, $quick_hash)) {
         return md5_file($path);
     }
     
@@ -253,8 +253,8 @@ $this->emit('files:batch_changed', [
 
 ```php
 // Process files in batches to avoid memory issues
-foreach (array_chunk($files, $this->batch_size) as $batch) {
-    $this->process_batch($batch);
+foreach (array_chunk($files, $this->batchSize) as $batch) {
+    $this->processBatch($batch);
     
     // Yield to prevent blocking
     if (function_exists('gc_collect_cycles')) {
@@ -269,8 +269,8 @@ For large plugins, use incremental scanning:
 
 ```php
 // Only scan directories modified since last full scan
-$modified_dirs = array_filter($dirs, function($dir) {
-    return filemtime($dir) > $this->last_scan_time;
+$modifiedDirs = array_filter($dirs, function($dir) {
+    return filemtime($dir) > $this->lastScanTime;
 });
 ```
 
