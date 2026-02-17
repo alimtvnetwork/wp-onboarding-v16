@@ -14,10 +14,12 @@
 | [03-golang-standards/](./03-golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `readme.md` |
 | [04-php-standards/](./04-php-standards/) | PHP coding standards (`Throwable`, `safe_execute`, constants) | `readme.md` |
 | [05-error-manage/](./05-error-manage/) | Error handling, modal, logging, response envelope | Per-feature files |
+| [06-wordpress-plugin/](./06-wordpress-plugin/) | WordPress companion plugin architecture and API | Per-feature files |
 | [07-wordpress-plugin-development/](./07-wordpress-plugin-development/) | Plugin development workflow and conventions | Per-topic files |
 | [08-wp-plugin-publish/](./08-wp-plugin-publish/) | Publishing pipeline specification | Per-feature files |
 | [09-upload-scripts/](./09-upload-scripts/) | PowerShell upload scripts (V1, V2, V3) for WordPress plugin deployment | `readme.md` |
 | [10-powershell-integration/](./10-powershell-integration/) | PowerShell runner (`run.ps1`) for Go+React projects with pnpm PnP | `00-overview.md` |
+| [11-e2-activity-feed/](./11-e2-activity-feed/) | E2E testing and activity feed specification | Per-feature files |
 | [12-generic-enforce/](./12-generic-enforce/) | Cross-language generic/type enforcement patterns | `readme.md` |
 
 ---
