@@ -7,13 +7,14 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, FileText, ChevronDown } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, FileText, ChevronDown, Download } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { formatDateTimeUtc, toClipboardText } from "@/lib/logText";
 import { generateCompactReport, generateErrorReport } from "./errorReportGenerator";
 import { errorLogToCapturedError } from "./errorLogAdapter";
+import { DownloadDropdown } from "./ErrorModalActions";
 import type { ErrorLog } from "@/lib/api";
 
 interface ErrorDetailModalProps {
@@ -285,6 +286,7 @@ export function ErrorDetailModal({ open, onOpenChange, error }: ErrorDetailModal
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
+          <DownloadDropdown error={capturedError} appName={appName} appVersion={appVersion} />
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
