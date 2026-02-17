@@ -813,6 +813,14 @@ func statErr(path string) error {
 func (m *DBManager) extractAndRegister(reader *zip.ReadCloser, projectSlug string) error {
     projectDir := filepath.Join(m.dataDir, projectSlug)
 
+    if err := m.extractAllFiles(reader, projectDir); err != nil {
+        return err
+    }
+
+    return m.finalizeImport(projectSlug, len(reader.File))
+}
+
+func (m *DBManager) extractAllFiles(reader *zip.ReadCloser, projectDir string) error {
     for _, file := range reader.File {
         if file.FileInfo().IsDir() {
             continue
@@ -823,11 +831,15 @@ func (m *DBManager) extractAndRegister(reader *zip.ReadCloser, projectSlug strin
         }
     }
 
+    return nil
+}
+
+func (m *DBManager) finalizeImport(projectSlug string, fileCount int) error {
     if err := m.registerImportedDatabases(projectSlug); err != nil {
         m.logger.Warn("Failed to register databases", "error", err)
     }
 
-    m.logger.Info("Import complete", "project", projectSlug, "files", len(reader.File))
+    m.logger.Info("Import complete", "project", projectSlug, "files", fileCount)
 
     return nil
 }
@@ -917,6 +929,10 @@ func (m *DBManager) writeFilteredZip(
     zipWriter := zip.NewWriter(zipFile)
     defer zipWriter.Close()
 
+    return m.addFilteredDBsToZip(zipWriter, dbs, projectSlug)
+}
+
+func (m *DBManager) addFilteredDBsToZip(zipWriter *zip.Writer, dbs []Database, projectSlug string) error {
     for _, db := range dbs {
         m.logger.Debug("Including", "type", db.Type, "path", db.Path)
         relPath := strings.TrimPrefix(db.Path, projectSlug+"/")

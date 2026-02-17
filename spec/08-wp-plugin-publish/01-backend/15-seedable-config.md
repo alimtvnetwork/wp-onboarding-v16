@@ -351,25 +351,24 @@ func (s *ConfigService) SeedWithVersionCheck() error {
     
     meta, err := s.getMeta()
     if err != nil {
-        // First time - full seed
         return s.fullSeed(seed)
     }
     
-    // Compare versions
+    return s.seedIfVersionChanged(seed, meta)
+}
+
+func (s *ConfigService) seedIfVersionChanged(seed SeedConfig, meta *ConfigMeta) error {
     currentVer, _ := semver.NewVersion(meta.SeedVersion)
     seedVer, _ := semver.NewVersion(seed.Version)
     
     if !seedVer.GreaterThan(currentVer) {
-        // No version change, skip seed
         return nil
     }
     
-    // Version increased - merge new settings
     if err := s.mergeSeed(seed, meta.SeedVersion); err != nil {
         return err
     }
     
-    // Update changelog
     return s.updateChangelog(seed)
 }
 
@@ -405,6 +404,15 @@ func (s *ConfigService) seedSettingIfNew(
         return
     }
 
+    s.createNewSetting(catKey, settingKey, setting, version)
+}
+
+func (s *ConfigService) createNewSetting(
+	catKey string,
+	settingKey string,
+	setting SettingConfig,
+	version string,
+) {
     valueJSON, _ := json.Marshal(setting.Default)
     newSetting := Setting{
         ID:             generateID(),
@@ -414,6 +422,7 @@ func (s *ConfigService) seedSettingIfNew(
         Type:           setting.Type,
         AddedInVersion: version,
     }
+
     s.db.Create(&newSetting)
 }
 
