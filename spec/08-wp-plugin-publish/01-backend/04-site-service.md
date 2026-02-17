@@ -131,7 +131,12 @@ type serviceImpl struct {
     encKey    []byte  // AES-256 encryption key
 }
 
-func New(db *sql.DB, wpClient *wordpress.Client, log *logger.Logger, encKey []byte) Service {
+func New(
+	db *sql.DB,
+	wpClient *wordpress.Client,
+	log *logger.Logger,
+	encKey []byte,
+) Service {
     return &serviceImpl{
         db:       db,
         wpClient: wpClient,
@@ -276,7 +281,11 @@ func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Si
     return s.GetByID(ctx, id)
 }
 
-func (s *serviceImpl) Update(ctx context.Context, id int64, input UpdateInput) (*models.Site, error) {
+func (s *serviceImpl) Update(
+	ctx context.Context,
+	id int64,
+	input UpdateInput,
+) (*models.Site, error) {
     s.log.Info("Updating site", "site_id", id)
     
     // Verify site exists
@@ -379,7 +388,12 @@ func (s *serviceImpl) TestConnection(ctx context.Context, id int64) (*Connection
     return s.TestCredentials(ctx, site.URL, site.Username, site.AppPassword)
 }
 
-func (s *serviceImpl) TestCredentials(ctx context.Context, url, username, password string) (*ConnectionResult, error) {
+func (s *serviceImpl) TestCredentials(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+) (*ConnectionResult, error) {
     s.log.Debug("Testing credentials", "url", url, "username", username)
     
     // Test connection via WP REST API
@@ -432,7 +446,11 @@ func (s *serviceImpl) UpdateLastSync(ctx context.Context, id int64) error {
     return nil
 }
 
-func (s *serviceImpl) SetActive(ctx context.Context, id int64, active bool) error {
+func (s *serviceImpl) SetActive(
+	ctx context.Context,
+	id int64,
+	active bool,
+) error {
     activeInt := 0
     if active {
         activeInt = 1

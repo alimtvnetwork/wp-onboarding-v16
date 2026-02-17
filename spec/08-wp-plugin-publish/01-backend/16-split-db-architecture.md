@@ -438,7 +438,11 @@ func initManager(rootDB *sql.DB, dataDir string) (*DBManager, error) {
 }
 
 // GetOrCreateDB returns a database, creating it if it doesn't exist
-func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB, error) {
+func (m *DBManager) GetOrCreateDB(
+	projectSlug string,
+	dbType string,
+	entityID string,
+) (*sql.DB, error) {
     m.mu.Lock()
     defer m.mu.Unlock()
 
@@ -450,7 +454,12 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
     return m.openNewDB(projectSlug, dbType, entityID, key)
 }
 
-func (m *DBManager) openNewDB(projectSlug, dbType, entityID, cacheKey string) (*sql.DB, error) {
+func (m *DBManager) openNewDB(
+	projectSlug string,
+	dbType string,
+	entityID string,
+	cacheKey string,
+) (*sql.DB, error) {
     project, err := m.getOrCreateProject(projectSlug)
     if err != nil {
         return nil, err
@@ -712,7 +721,13 @@ func (m *DBManager) writeProjectZip(projectDir, outputPath string) error {
     })
 }
 
-func (m *DBManager) addDBFileToZip(zipWriter *zip.Writer, projectDir, path string, info os.FileInfo, walkErr error) error {
+func (m *DBManager) addDBFileToZip(
+	zipWriter *zip.Writer,
+	projectDir string,
+	path string,
+	info os.FileInfo,
+	walkErr error,
+) error {
     if walkErr != nil {
         m.logger.Warn("Skip file due to error", "path", path, "error", walkErr)
 
@@ -730,7 +745,11 @@ func (m *DBManager) addDBFileToZip(zipWriter *zip.Writer, projectDir, path strin
     return m.copyFileToZip(zipWriter, relPath, path)
 }
 
-func (m *DBManager) copyFileToZip(zipWriter *zip.Writer, relPath, srcPath string) error {
+func (m *DBManager) copyFileToZip(
+	zipWriter *zip.Writer,
+	relPath string,
+	srcPath string,
+) error {
     writer, err := zipWriter.Create(relPath)
     if err != nil {
         return err
@@ -752,7 +771,11 @@ func (m *DBManager) copyFileToZip(zipWriter *zip.Writer, relPath, srcPath string
 
 ```go
 // ImportProjectFromZip imports databases from a zip file
-func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite bool) error {
+func (m *DBManager) ImportProjectFromZip(
+	zipPath string,
+	projectSlug string,
+	overwrite bool,
+) error {
     m.logger.Info("Starting import", "zip", zipPath, "project", projectSlug, "overwrite", overwrite)
 
     reader, err := zip.OpenReader(zipPath)
@@ -842,7 +865,11 @@ func (m *DBManager) extractZipFile(file *zip.File, destPath string) error {
 
 ```go
 // ExportByType exports only specific database types
-func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPath string) error {
+func (m *DBManager) ExportByType(
+	projectSlug string,
+	dbTypes []string,
+	outputPath string,
+) error {
     m.logger.Info("Selective export", "project", projectSlug, "types", dbTypes)
 
     dbs, err := m.ListDatabases(projectSlug)
@@ -876,7 +903,11 @@ func filterDBsByType(dbs []Database, typeSet map[string]bool) []Database {
     return filtered
 }
 
-func (m *DBManager) writeFilteredZip(dbs []Database, projectSlug, outputPath string) error {
+func (m *DBManager) writeFilteredZip(
+	dbs []Database,
+	projectSlug string,
+	outputPath string,
+) error {
     zipFile, err := os.Create(outputPath)
     if err != nil {
         return err
@@ -939,7 +970,11 @@ func (l *DBLogger) Error(msg string, args ...any) {
 
 ```go
 // GetOrCreateDB with logging
-func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB, error) {
+func (m *DBManager) GetOrCreateDB(
+	projectSlug string,
+	dbType string,
+	entityID string,
+) (*sql.DB, error) {
     m.logger.Debug("GetOrCreateDB called", "project", projectSlug, "type", dbType, "entity", entityID)
     startTime := time.Now()
 
@@ -957,14 +992,25 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
     return db, nil
 }
 
-func (m *DBManager) logDBError(project, dbType, entity string, err error, d time.Duration) {
+func (m *DBManager) logDBError(
+	project string,
+	dbType string,
+	entity string,
+	err error,
+	d time.Duration,
+) {
     m.logger.Error("GetOrCreateDB failed",
         "project", project, "type", dbType, "entity", entity,
         "error", err, "duration_ms", d.Milliseconds(),
     )
 }
 
-func (m *DBManager) logDBReady(project, dbType, entity string, d time.Duration) {
+func (m *DBManager) logDBReady(
+	project string,
+	dbType string,
+	entity string,
+	d time.Duration,
+) {
     m.logger.Info("Database ready",
         "project", project, "type", dbType, "entity", entity,
         "duration_ms", d.Milliseconds(),

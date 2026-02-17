@@ -149,7 +149,15 @@ func NewClient(log *logger.Logger) Client {
     }
 }
 
-func (c *clientImpl) doRequest(ctx context.Context, method, url, username, password string, body io.Reader, contentType string) (*http.Response, error) {
+func (c *clientImpl) doRequest(
+	ctx context.Context,
+	method string,
+	url string,
+	username string,
+	password string,
+	body io.Reader,
+	contentType string,
+) (*http.Response, error) {
     req, err := http.NewRequestWithContext(ctx, method, url, body)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to create request")
@@ -243,7 +251,12 @@ import (
     "wp-plugin-publish/pkg/apperror"
 )
 
-func (c *clientImpl) GetSiteInfo(ctx context.Context, url, username, password string) (*SiteInfo, error) {
+func (c *clientImpl) GetSiteInfo(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+) (*SiteInfo, error) {
     c.log.Info("Getting site info", "url", url)
     
     // Normalize URL
@@ -339,7 +352,12 @@ import (
     "wp-plugin-publish/pkg/apperror"
 )
 
-func (c *clientImpl) ListPlugins(ctx context.Context, url, username, password string) ([]Plugin, error) {
+func (c *clientImpl) ListPlugins(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+) ([]Plugin, error) {
     c.log.Debug("Listing plugins", "url", url)
     
     url = strings.TrimSuffix(url, "/")
@@ -368,7 +386,13 @@ func (c *clientImpl) ListPlugins(ctx context.Context, url, username, password st
     return plugins, nil
 }
 
-func (c *clientImpl) GetPlugin(ctx context.Context, url, username, password, slug string) (*Plugin, error) {
+func (c *clientImpl) GetPlugin(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	slug string,
+) (*Plugin, error) {
     c.log.Debug("Getting plugin", "url", url, "slug", slug)
     
     plugins, err := c.ListPlugins(ctx, url, username, password)
@@ -386,7 +410,13 @@ func (c *clientImpl) GetPlugin(ctx context.Context, url, username, password, slu
         WithContext("slug", slug)
 }
 
-func (c *clientImpl) ActivatePlugin(ctx context.Context, url, username, password, slug string) error {
+func (c *clientImpl) ActivatePlugin(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	slug string,
+) error {
     c.log.Info("Activating plugin", "url", url, "slug", slug)
     
     plugin, err := c.GetPlugin(ctx, url, username, password, slug)
@@ -417,7 +447,13 @@ func (c *clientImpl) ActivatePlugin(ctx context.Context, url, username, password
     return nil
 }
 
-func (c *clientImpl) DeactivatePlugin(ctx context.Context, url, username, password, slug string) error {
+func (c *clientImpl) DeactivatePlugin(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	slug string,
+) error {
     c.log.Info("Deactivating plugin", "url", url, "slug", slug)
     
     plugin, err := c.GetPlugin(ctx, url, username, password, slug)
@@ -448,7 +484,13 @@ func (c *clientImpl) DeactivatePlugin(ctx context.Context, url, username, passwo
     return nil
 }
 
-func (c *clientImpl) DeletePlugin(ctx context.Context, url, username, password, slug string) error {
+func (c *clientImpl) DeletePlugin(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	slug string,
+) error {
     c.log.Info("Deleting plugin", "url", url, "slug", slug)
     
     plugin, err := c.GetPlugin(ctx, url, username, password, slug)
@@ -498,7 +540,13 @@ import (
     "wp-plugin-publish/pkg/apperror"
 )
 
-func (c *clientImpl) UploadPlugin(ctx context.Context, url, username, password string, zipPath string) (*UploadResult, error) {
+func (c *clientImpl) UploadPlugin(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	zipPath string,
+) (*UploadResult, error) {
     c.log.Info("Uploading plugin", "url", url, "zip", zipPath)
     
     // Open the zip file
@@ -584,7 +632,13 @@ func (c *clientImpl) UploadPlugin(ctx context.Context, url, username, password s
 }
 
 // GetPluginFiles requires a companion WP plugin to expose file information
-func (c *clientImpl) GetPluginFiles(ctx context.Context, url, username, password, slug string) ([]RemoteFile, error) {
+func (c *clientImpl) GetPluginFiles(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	slug string,
+) ([]RemoteFile, error) {
     c.log.Debug("Getting plugin files", "url", url, "slug", slug)
     
     // This requires a custom endpoint - the standard WP REST API doesn't expose plugin files
@@ -606,7 +660,15 @@ func (c *clientImpl) GetPluginFiles(ctx context.Context, url, username, password
 }
 
 // UploadPluginFile requires a companion WP plugin
-func (c *clientImpl) UploadPluginFile(ctx context.Context, url, username, password, slug, filePath string, content []byte) error {
+func (c *clientImpl) UploadPluginFile(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	slug string,
+	filePath string,
+	content []byte,
+) error {
     c.log.Debug("Uploading single file", "url", url, "slug", slug, "file", filePath)
     
     // This requires a custom endpoint

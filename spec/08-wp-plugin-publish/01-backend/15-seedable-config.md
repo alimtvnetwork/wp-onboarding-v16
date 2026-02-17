@@ -382,13 +382,22 @@ func (s *ConfigService) mergeSeed(seed SeedConfig, previousVersion string) error
     return s.updateMetaVersion(seed.Version)
 }
 
-func (s *ConfigService) seedCategory(catKey string, cat CategoryConfig, version string) {
+func (s *ConfigService) seedCategory(
+	catKey string,
+	cat CategoryConfig,
+	version string,
+) {
     for settingKey, setting := range cat.Settings {
         s.seedSettingIfNew(catKey, settingKey, setting, version)
     }
 }
 
-func (s *ConfigService) seedSettingIfNew(catKey, settingKey string, setting SettingConfig, version string) {
+func (s *ConfigService) seedSettingIfNew(
+	catKey string,
+	settingKey string,
+	setting SettingConfig,
+	version string,
+) {
     var existing Setting
     err := s.db.Where("category = ? AND key = ?", catKey, settingKey).First(&existing).Error
 

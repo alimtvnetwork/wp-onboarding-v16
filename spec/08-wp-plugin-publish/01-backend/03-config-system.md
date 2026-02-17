@@ -233,7 +233,11 @@ func seedSite(db *sql.DB, site SiteSeed) (int64, error) {
     return result.LastInsertId()
 }
 
-func seedPlugin(db *sql.DB, plugin PluginSeed, siteID int64) error {
+func seedPlugin(
+	db *sql.DB,
+	plugin PluginSeed,
+	siteID int64,
+) error {
     // Check if exists
     var exists bool
     err := db.QueryRow(
@@ -304,7 +308,11 @@ func GetSetting(db *sql.DB, key string) (string, error) {
     return value, nil
 }
 
-func SetSetting(db *sql.DB, key, value string) error {
+func SetSetting(
+	db *sql.DB,
+	key string,
+	value string,
+) error {
     _, err := db.Exec(
         `INSERT OR REPLACE INTO AppConfig (Key, Value, UpdatedAt) 
          VALUES (?, ?, datetime('now'))`,

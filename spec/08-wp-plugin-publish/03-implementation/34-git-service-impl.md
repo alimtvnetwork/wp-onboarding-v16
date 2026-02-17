@@ -273,7 +273,11 @@ func newPullResult(pluginID int64, pluginName string) *PullResult {
 	}
 }
 
-func (s *serviceImpl) executePull(ctx context.Context, plugin *Plugin, result *PullResult) error {
+func (s *serviceImpl) executePull(
+	ctx context.Context,
+	plugin *Plugin,
+	result *PullResult,
+) error {
 	gitDir := filepath.Join(plugin.Path, ".git")
 	if !dirExists(gitDir) {
 		result.Success = false
@@ -322,7 +326,11 @@ func (s *serviceImpl) populateCommitInfo(path string, result *PullResult) {
 	result.CommitMsg = strings.TrimSpace(commitMsg)
 }
 
-func (s *serviceImpl) handlePostPull(ctx context.Context, pluginID int64, result *PullResult) {
+func (s *serviceImpl) handlePostPull(
+	ctx context.Context,
+	pluginID int64,
+	result *PullResult,
+) {
 	s.triggerPostPullScan(ctx, pluginID, result)
 
 	s.wsHub.Broadcast(ws.EventGitPullComplete, GitPullCompleteEvent{
@@ -339,7 +347,11 @@ func (s *serviceImpl) handlePostPull(ctx context.Context, pluginID int64, result
 	)
 }
 
-func (s *serviceImpl) triggerPostPullScan(ctx context.Context, pluginID int64, result *PullResult) {
+func (s *serviceImpl) triggerPostPullScan(
+	ctx context.Context,
+	pluginID int64,
+	result *PullResult,
+) {
 	hasChanges := result.FilesChanged > 0 && s.watcherService != nil
 	if !hasChanges {
 		return
@@ -402,7 +414,11 @@ func (s *serviceImpl) pullEachPlugin(ctx context.Context, plugins []Plugin) *Bat
 	return batch
 }
 
-func (s *serviceImpl) appendPullResult(ctx context.Context, pluginID int64, batch *BatchPullResult) {
+func (s *serviceImpl) appendPullResult(
+	ctx context.Context,
+	pluginID int64,
+	batch *BatchPullResult,
+) {
 	result, _ := s.Pull(ctx, pluginID)
 	if result == nil {
 		return

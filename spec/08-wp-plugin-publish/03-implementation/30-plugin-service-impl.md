@@ -283,7 +283,11 @@ func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Pl
 	return s.GetByID(ctx, id)
 }
 
-func (s *serviceImpl) Update(ctx context.Context, id int64, input UpdateInput) (*models.Plugin, error) {
+func (s *serviceImpl) Update(
+	ctx context.Context,
+	id int64,
+	input UpdateInput,
+) (*models.Plugin, error) {
 	s.log.Info("Updating plugin", "pluginId", id)
 
 	// Verify plugin exists

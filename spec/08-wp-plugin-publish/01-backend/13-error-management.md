@@ -73,7 +73,11 @@ func New(code string, message string) *AppError {
 }
 
 // Wrap wraps an existing error with additional context
-func Wrap(err error, code string, message string) *AppError {
+func Wrap(
+	err error,
+	code string,
+	message string,
+) *AppError {
     return newWithSkip(code, message, err, 2)
 }
 
@@ -99,7 +103,12 @@ func (e *AppError) WithLevel(level string) *AppError {
     return e
 }
 
-func newWithSkip(code, message string, cause error, skip int) *AppError {
+func newWithSkip(
+	code string,
+	message string,
+	cause error,
+	skip int,
+) *AppError {
     file, line, funcName := callerInfo(skip + 1)
 
     return &AppError{

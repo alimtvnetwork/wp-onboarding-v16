@@ -195,7 +195,11 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*SyncResult, error) {
+func (s *serviceImpl) CheckSync(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+) (*SyncResult, error) {
 	s.log.Info("Checking sync status", "pluginId", pluginID, "siteId", siteID)
 
 	// Broadcast sync started event
@@ -314,7 +318,10 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	return result, nil
 }
 
-func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*BatchSyncResult, error) {
+func (s *serviceImpl) CheckAllSites(
+	ctx context.Context,
+	pluginID int64,
+) (*BatchSyncResult, error) {
 	s.log.Info("Checking sync for all sites", "pluginId", pluginID)
 
 	// Get all mappings for this plugin
@@ -466,7 +473,11 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error) {
+func (s *serviceImpl) GetFileChanges(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+) ([]models.FileChange, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT Id, PluginId, FilePath, ChangeType, LocalHash, RemoteHash,
 		       LocalModifiedAt, DetectedAt, SyncedAt
@@ -533,7 +544,12 @@ func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileC
 	return err
 }
 
-func (s *serviceImpl) MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) error {
+func (s *serviceImpl) MarkSynced(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+	files []string,
+) error {
 	s.log.Info("Marking files as synced", "pluginId", pluginID, "siteId", siteID, "files", len(files))
 
 	for _, path := range files {
