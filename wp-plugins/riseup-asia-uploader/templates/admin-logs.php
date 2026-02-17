@@ -8,6 +8,7 @@
  */
 
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Enums\PluginConfigType;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -51,7 +52,7 @@ $upload_source_classes = array(
     <h1>
         <span class="dashicons dashicons-list-view"></span>
         <?php esc_html_e('Riseup Asia Uploader - Activity Logs', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
     
     <p class="description">
@@ -262,7 +263,8 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-version">
                             <?php if ($hasPluginVersion): ?>
-                                <?php if ($plugin_version === PLUGIN_VERSION): ?>
+                                <?php $isCurrentVersion = ($plugin_version === PluginConfigType::Version->value); ?>
+                                <?php if ($isCurrentVersion): ?>
                                     <code class="version-badge version-current">v<?php echo esc_html($plugin_version); ?></code>
                                 <?php else: ?>
                                     <code class="version-badge version-old">v<?php echo esc_html($plugin_version); ?></code>
