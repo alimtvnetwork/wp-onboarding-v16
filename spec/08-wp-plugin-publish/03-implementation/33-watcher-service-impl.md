@@ -208,22 +208,29 @@ func (s *serviceImpl) InitializeCache(ctx context.Context, pluginID int64) error
 		return err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	cache := s.buildNewCache(plugin)
+	s.populateCache(cache)
+	s.storeCache(pluginID, cache)
 
-	cache := &pluginScanCache{
-		pluginID: pluginID,
+	s.log.Info("Initialized file cache", "pluginId", pluginID, "files", len(cache.lastScan))
+
+	return nil
+}
+
+func (s *serviceImpl) buildNewCache(plugin *models.Plugin) *pluginScanCache {
+	return &pluginScanCache{
+		pluginID: plugin.ID,
 		path:     plugin.Path,
 		excludes: plugin.ExcludePatterns,
 		lastScan: make(map[string]fileInfo),
 	}
+}
 
-	// Perform initial scan to populate cache (no change detection)
-	s.populateCache(cache)
+func (s *serviceImpl) storeCache(pluginID int64, cache *pluginScanCache) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.cache[pluginID] = cache
-
-	s.log.Info("Initialized file cache", "pluginId", pluginID, "files", len(cache.lastScan))
-	return nil
 }
 
 // TriggerScan performs a manual scan (user clicked refresh)
@@ -238,31 +245,12 @@ func (s *serviceImpl) ScanAfterGitPull(ctx context.Context, pluginID int64) (*Sc
 
 // ScanAll scans all cached plugins
 func (s *serviceImpl) ScanAll(ctx context.Context) ([]ScanResult, error) {
-	s.mu.RLock()
-	pluginIDs := make([]int64, 0, len(s.cache))
-	for id := range s.cache {
-		pluginIDs = append(pluginIDs, id)
-	}
-	s.mu.RUnlock()
+	pluginIDs := s.getCachedPluginIDs()
 
-	var results []ScanResult
-	for _, id := range pluginIDs {
-		result, err := s.TriggerScan(ctx, id)
-		if err == nil && result != nil {
-			results = append(results, *result)
-		}
-	}
-	return results, nil
+	return s.scanPlugins(ctx, pluginIDs), nil
 }
 
-func (s *serviceImpl) ClearCache(pluginID int64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.cache, pluginID)
-	s.log.Info("Cleared file cache", "pluginId", pluginID)
-}
-
-func (s *serviceImpl) GetCachedPlugins() []int64 {
+func (s *serviceImpl) getCachedPluginIDs() []int64 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -270,29 +258,56 @@ func (s *serviceImpl) GetCachedPlugins() []int64 {
 	for id := range s.cache {
 		ids = append(ids, id)
 	}
+
 	return ids
 }
 
-// performScan executes the actual directory scan
+func (s *serviceImpl) scanPlugins(ctx context.Context, pluginIDs []int64) []ScanResult {
+	var results []ScanResult
+	for _, id := range pluginIDs {
+		result, err := s.TriggerScan(ctx, id)
+		if err != nil || result == nil {
+			continue
+		}
+		results = append(results, *result)
+	}
+
+	return results
+}
+
+func (s *serviceImpl) ClearCache(pluginID int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.cache, pluginID)
+	s.log.Info("Cleared file cache", "pluginId", pluginID)
+}
+
+func (s *serviceImpl) GetCachedPlugins() []int64 {
+	return s.getCachedPluginIDs()
+}
+
+// --- Scan execution ---
+
 func (s *serviceImpl) performScan(
 	ctx context.Context,
 	pluginID int64,
 	triggerType string,
 ) (*ScanResult, error) {
-	startTime := time.Now()
-
 	s.log.Info("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
 
 	cache, err := s.getOrInitCache(ctx, pluginID)
 	if err != nil {
 		return nil, err
 	}
-	_ = cache
 
-func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*pluginCache, error) {
-	s.mu.Lock()
+	return s.executeScan(cache, pluginID, triggerType), nil
+}
+
+func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*pluginScanCache, error) {
+	s.mu.RLock()
 	cache, exists := s.cache[pluginID]
-	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	if exists {
 		return cache, nil
@@ -302,17 +317,38 @@ func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*plug
 		return nil, err
 	}
 
-	s.mu.Lock()
+	s.mu.RLock()
 	cache = s.cache[pluginID]
-	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	return cache, nil
 }
 
-	// Perform scan and detect changes
+func (s *serviceImpl) executeScan(
+	cache *pluginScanCache,
+	pluginID int64,
+	triggerType string,
+) *ScanResult {
+	startTime := time.Now()
 	changes := s.scanAndCompare(cache)
 
-	result := &ScanResult{
+	result := s.buildScanResult(cache, pluginID, triggerType, startTime, changes)
+
+	if len(changes) > 0 {
+		s.broadcastChanges(pluginID, changes)
+	}
+
+	return result
+}
+
+func (s *serviceImpl) buildScanResult(
+	cache *pluginScanCache,
+	pluginID int64,
+	triggerType string,
+	startTime time.Time,
+	changes []FileChange,
+) *ScanResult {
+	return &ScanResult{
 		PluginID:     pluginID,
 		Path:         cache.path,
 		ScanTime:     startTime,
@@ -321,104 +357,65 @@ func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*plug
 		Changes:      changes,
 		TriggerType:  triggerType,
 	}
-
-	// Broadcast changes if any
-	if len(changes) > 0 {
-		s.broadcastChanges(pluginID, changes, triggerType)
-	}
-
-	return result, nil
 }
 ```
 
 ---
 
-## Implementation: scanner.go
+## Implementation: scanner.go — Broadcast Helpers
 
 ```go
 package watcher
 
 import (
-	"time"
-
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/ws"
 )
 
-// watchLoop is the main loop for watching a plugin directory
-func (s *serviceImpl) watchLoop(w *pluginWatcher) {
-	ticker := time.NewTicker(s.pollInterval)
-	defer ticker.Stop()
-
-	// Initial scan to populate baseline
-	s.scanDirectory(w)
-
-	var pendingChanges []FileChange
-	var debounceTimer *time.Timer
-
-	for {
-		select {
-		case <-w.stopCh:
-			if debounceTimer != nil {
-				debounceTimer.Stop()
-			}
-			return
-
-		case <-ticker.C:
-			changes := s.scanDirectory(w)
-			if len(changes) > 0 {
-				pendingChanges = append(pendingChanges, changes...)
-
-				// Reset debounce timer
-				if debounceTimer != nil {
-					debounceTimer.Stop()
-				}
-				debounceTimer = time.AfterFunc(time.Duration(s.debounceMs)*time.Millisecond, func() {
-					s.broadcastChanges(w.pluginID, pendingChanges)
-					pendingChanges = nil
-				})
-			}
-		}
-	}
-}
-
 // broadcastChanges sends file changes via WebSocket and records them
 func (s *serviceImpl) broadcastChanges(pluginID int64, changes []FileChange) {
-	if len(changes) == 0 {
-		return
-	}
+	summary := s.summarizeChanges(changes)
 
-	// Count change types
-	var created, modified, deleted int
-	for _, c := range changes {
-		switch c.ChangeType {
-		case WatcherChangeCreated:
-			created++
-		case WatcherChangeModified:
-			modified++
-		case WatcherChangeDeleted:
-			deleted++
-		}
-	}
-
-	s.log.Info("File changes detected",
-		"pluginId", pluginID,
-		"created", created,
-		"modified", modified,
-		"deleted", deleted,
-	)
-
-	// Broadcast via WebSocket
+	s.logChangeSummary(pluginID, summary)
 	s.wsHub.Broadcast(ws.EventFileChange, FileChangeEvent{
 		PluginID: pluginID,
 		Changes:  changes,
-		Summary: FileChangeSummary{
-			Created:  created,
-			Modified: modified,
-			Deleted:  deleted,
-		},
+		Summary:  summary,
 	})
 
-	// Record changes in sync service
+	s.recordChanges(pluginID, changes)
+}
+
+func (s *serviceImpl) summarizeChanges(changes []FileChange) FileChangeSummary {
+	var summary FileChangeSummary
+	for _, c := range changes {
+		s.incrementChangeSummary(&summary, c.ChangeType)
+	}
+
+	return summary
+}
+
+func (s *serviceImpl) incrementChangeSummary(summary *FileChangeSummary, changeType WatcherChangeType) {
+	switch changeType {
+	case WatcherChangeCreated:
+		summary.Created++
+	case WatcherChangeModified:
+		summary.Modified++
+	case WatcherChangeDeleted:
+		summary.Deleted++
+	}
+}
+
+func (s *serviceImpl) logChangeSummary(pluginID int64, summary FileChangeSummary) {
+	s.log.Info("File changes detected",
+		"pluginId", pluginID,
+		"created", summary.Created,
+		"modified", summary.Modified,
+		"deleted", summary.Deleted,
+	)
+}
+
+func (s *serviceImpl) recordChanges(pluginID int64, changes []FileChange) {
 	for _, c := range changes {
 		s.syncService.RecordFileChange(nil, &models.FileChange{
 			PluginID:   pluginID,
@@ -428,52 +425,11 @@ func (s *serviceImpl) broadcastChanges(pluginID int64, changes []FileChange) {
 		})
 	}
 }
-
-func (s *serviceImpl) TriggerScan(pluginID int64) (*ScanResult, error) {
-	w, err := s.getOrCreateWatcher(pluginID)
-	if err != nil {
-		return nil, err
-	}
-
-	startTime := time.Now()
-	changes := s.scanDirectory(w)
-
-	return &ScanResult{
-		PluginID:     pluginID,
-		Path:         w.path,
-		ScanTime:     startTime,
-		DurationMs:   time.Since(startTime).Milliseconds(),
-		FilesScanned: len(w.lastScan),
-		Changes:      changes,
-	}, nil
-}
-
-func (s *serviceImpl) getOrCreateWatcher(pluginID int64) (*pluginWatcher, error) {
-	s.mu.RLock()
-	w, exists := s.watchers[pluginID]
-	s.mu.RUnlock()
-
-	if exists {
-		return w, nil
-	}
-
-	plugin, err := s.pluginService.GetByID(nil, pluginID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pluginWatcher{
-		pluginID: pluginID,
-		path:     plugin.Path,
-		excludes: plugin.ExcludePatterns,
-		lastScan: make(map[string]fileInfo),
-	}, nil
-}
 ```
 
 ---
 
-## Implementation: scanner.go
+## Implementation: scanner.go — Scanning Logic
 
 ```go
 package watcher
@@ -487,8 +443,19 @@ import (
 	"strings"
 )
 
+// Default directories always excluded from scans
+var defaultExcludes = []string{"node_modules", "vendor", ".git", ".svn", ".idea", ".vscode"}
+
 // scanDirectory scans a directory and returns detected changes
 func (s *serviceImpl) scanDirectory(w *pluginWatcher) []FileChange {
+	currentFiles := s.walkPluginDirectory(w)
+	changes := s.detectChanges(w, currentFiles)
+	w.lastScan = currentFiles
+
+	return changes
+}
+
+func (s *serviceImpl) walkPluginDirectory(w *pluginWatcher) map[string]fileInfo {
 	currentFiles := make(map[string]fileInfo)
 
 	err := filepath.Walk(w.path, func(path string, info os.FileInfo, err error) error {
@@ -499,10 +466,7 @@ func (s *serviceImpl) scanDirectory(w *pluginWatcher) []FileChange {
 		s.log.Error("Error scanning directory", "path", w.path, "error", err)
 	}
 
-	changes := s.detectChanges(w, currentFiles)
-	w.lastScan = currentFiles
-
-	return changes
+	return currentFiles
 }
 
 func (s *serviceImpl) processWatchEntry(
@@ -525,7 +489,17 @@ func (s *serviceImpl) processWatchEntry(
 		return s.handleWatchDir(path, w.excludes)
 	}
 
-	if s.isExcluded(filepath.Base(path), w.excludes) {
+	return s.indexFile(path, relPath, info, w.excludes, currentFiles)
+}
+
+func (s *serviceImpl) indexFile(
+	path string,
+	relPath string,
+	info os.FileInfo,
+	excludes []string,
+	currentFiles map[string]fileInfo,
+) error {
+	if s.isExcluded(filepath.Base(path), excludes) {
 		return nil
 	}
 
@@ -547,9 +521,16 @@ func (s *serviceImpl) handleWatchDir(path string, excludes []string) error {
 	return nil
 }
 
-func (s *serviceImpl) detectChanges(w *pluginWatcher, currentFiles map[string]fileInfo) []FileChange {
-	var changes []FileChange
+// --- Change detection ---
 
+func (s *serviceImpl) detectChanges(w *pluginWatcher, currentFiles map[string]fileInfo) []FileChange {
+	changes := s.detectAddedAndModified(w, currentFiles)
+
+	return append(changes, s.detectDeleted(w, currentFiles)...)
+}
+
+func (s *serviceImpl) detectAddedAndModified(w *pluginWatcher, currentFiles map[string]fileInfo) []FileChange {
+	var changes []FileChange
 	for relPath, fi := range currentFiles {
 		change := s.classifyFileChange(w, relPath, fi)
 		if change != nil {
@@ -557,11 +538,15 @@ func (s *serviceImpl) detectChanges(w *pluginWatcher, currentFiles map[string]fi
 		}
 	}
 
+	return changes
+}
+
+func (s *serviceImpl) detectDeleted(w *pluginWatcher, currentFiles map[string]fileInfo) []FileChange {
+	var changes []FileChange
 	for path := range w.lastScan {
 		if _, exists := currentFiles[path]; exists {
 			continue
 		}
-
 		changes = append(changes, FileChange{
 			Path:       path,
 			ChangeType: WatcherChangeDeleted,
@@ -574,43 +559,47 @@ func (s *serviceImpl) detectChanges(w *pluginWatcher, currentFiles map[string]fi
 func (s *serviceImpl) classifyFileChange(w *pluginWatcher, relPath string, fi fileInfo) *FileChange {
 	lastInfo, exists := w.lastScan[relPath]
 	if !exists {
-		return &FileChange{
-			Path:       relPath,
-			ChangeType: WatcherChangeCreated,
-			Hash:       fi.Hash,
-			Size:       fi.Size,
-			ModTime:    time.Unix(fi.ModTime, 0),
-		}
+		return s.newFileChange(relPath, WatcherChangeCreated, fi)
 	}
 
 	if lastInfo.Hash == fi.Hash {
 		return nil
 	}
 
+	return s.newFileChange(relPath, WatcherChangeModified, fi)
+}
+
+func (s *serviceImpl) newFileChange(relPath string, changeType WatcherChangeType, fi fileInfo) *FileChange {
 	return &FileChange{
 		Path:       relPath,
-		ChangeType: WatcherChangeModified,
+		ChangeType: changeType,
 		Hash:       fi.Hash,
 		Size:       fi.Size,
 		ModTime:    time.Unix(fi.ModTime, 0),
 	}
 }
 
-// isExcluded checks if a file/directory should be excluded
+// --- Exclusion checks ---
+
 func (s *serviceImpl) isExcluded(name string, excludes []string) bool {
-	// Always exclude hidden files and common directories
 	if strings.HasPrefix(name, ".") {
 		return true
 	}
 
-	defaultExcludes := []string{"node_modules", "vendor", ".git", ".svn", ".idea", ".vscode"}
+	return s.isDefaultExclude(name) || s.matchesCustomExclude(name, excludes)
+}
+
+func (s *serviceImpl) isDefaultExclude(name string) bool {
 	for _, ex := range defaultExcludes {
 		if name == ex {
 			return true
 		}
 	}
 
-	// Check custom excludes
+	return false
+}
+
+func (s *serviceImpl) matchesCustomExclude(name string, excludes []string) bool {
 	for _, pattern := range excludes {
 		if matched, _ := filepath.Match(pattern, name); matched {
 			return true
@@ -620,7 +609,8 @@ func (s *serviceImpl) isExcluded(name string, excludes []string) bool {
 	return false
 }
 
-// calculateHash computes MD5 hash of a file
+// --- Hashing ---
+
 func (s *serviceImpl) calculateHash(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
