@@ -20,7 +20,6 @@ use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
-use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait PluginLifecycleHelpersTrait
 {
