@@ -154,90 +154,125 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// --- SQL constants ---
+
+const pluginListQuery = `
+	SELECT Id, Name, Path, WatchEnabled, ExcludePatterns,
+	       FileCount, LastScannedAt, CreatedAt, UpdatedAt
+	FROM Plugins
+	ORDER BY Name ASC
+`
+
+const pluginGetByIDQuery = `
+	SELECT Id, Name, Path, WatchEnabled, ExcludePatterns,
+	       FileCount, LastScannedAt, CreatedAt, UpdatedAt
+	FROM Plugins
+	WHERE Id = ?
+`
+
+const pluginInsertQuery = `
+	INSERT INTO Plugins (Name, Path, WatchEnabled, ExcludePatterns, FileCount, LastScannedAt, CreatedAt, UpdatedAt)
+	VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'), datetime('now'))
+`
+
+// --- List ---
+
 func (s *serviceImpl) List(ctx context.Context) ([]models.Plugin, error) {
 	s.log.Debug("Listing all plugins")
 
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT Id, Name, Path, WatchEnabled, ExcludePatterns, 
-		       FileCount, LastScannedAt, CreatedAt, UpdatedAt
-		FROM Plugins
-		ORDER BY Name ASC
-	`)
+	rows, err := s.db.QueryContext(ctx, pluginListQuery)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list plugins")
 	}
 	defer rows.Close()
 
+	return s.scanPluginRows(ctx, rows)
+}
+
+func (s *serviceImpl) scanPluginRows(ctx context.Context, rows *sql.Rows) ([]models.Plugin, error) {
 	var plugins []models.Plugin
 	for rows.Next() {
-		var p models.Plugin
-		var excludeJSON string
-		var lastScannedAt sql.NullString
-
-		err := rows.Scan(
-			&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
-			&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
-		)
+		p, err := s.scanSinglePlugin(rows)
 		if err != nil {
-			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan plugin row")
+			return nil, err
 		}
 
-		// Parse exclude patterns JSON
-		if excludeJSON != "" {
-			json.Unmarshal([]byte(excludeJSON), &p.ExcludePatterns)
-		}
-
-		// Parse last scanned timestamp
-		if lastScannedAt.Valid {
-			t, _ := time.Parse(time.RFC3339, lastScannedAt.String)
-			p.LastScannedAt = &t
-		}
-
-		// Load mappings for each plugin
 		p.Mappings, _ = s.GetMappings(ctx, p.ID)
-
 		plugins = append(plugins, p)
 	}
 
 	return plugins, nil
 }
 
-func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
-	s.log.Debug("Getting plugin by ID", "pluginId", id)
-
+func (s *serviceImpl) scanSinglePlugin(rows *sql.Rows) (models.Plugin, error) {
 	var p models.Plugin
 	var excludeJSON string
 	var lastScannedAt sql.NullString
 
-	err := s.db.QueryRowContext(ctx, `
-		SELECT Id, Name, Path, WatchEnabled, ExcludePatterns, 
-		       FileCount, LastScannedAt, CreatedAt, UpdatedAt
-		FROM Plugins
-		WHERE Id = ?
-	`, id).Scan(
+	err := rows.Scan(
+		&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
+		&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
+	)
+
+	if err != nil {
+		return p, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan plugin row")
+	}
+
+	s.parsePluginFields(&p, excludeJSON, lastScannedAt)
+
+	return p, nil
+}
+
+func (s *serviceImpl) parsePluginFields(p *models.Plugin, excludeJSON string, lastScannedAt sql.NullString) {
+	if excludeJSON != "" {
+		json.Unmarshal([]byte(excludeJSON), &p.ExcludePatterns)
+	}
+
+	if lastScannedAt.Valid {
+		t, _ := time.Parse(time.RFC3339, lastScannedAt.String)
+		p.LastScannedAt = &t
+	}
+}
+
+// --- GetByID ---
+
+func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
+	s.log.Debug("Getting plugin by ID", "pluginId", id)
+
+	p, err := s.queryPluginByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	p.Mappings, _ = s.GetMappings(ctx, p.ID)
+
+	return p, nil
+}
+
+func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*models.Plugin, error) {
+	var p models.Plugin
+	var excludeJSON string
+	var lastScannedAt sql.NullString
+
+	err := s.db.QueryRowContext(ctx, pluginGetByIDQuery, id).Scan(
 		&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
 		&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, apperror.New(apperror.ErrNotFound, "plugin not found").
-			WithContext("pluginId", id)
+		return nil, apperror.New(apperror.ErrNotFound, "plugin not found").WithContext("pluginId", id)
 	}
+
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
 	}
 
-	if excludeJSON != "" {
-		json.Unmarshal([]byte(excludeJSON), &p.ExcludePatterns)
-	}
-	if lastScannedAt.Valid {
-		t, _ := time.Parse(time.RFC3339, lastScannedAt.String)
-		p.LastScannedAt = &t
-	}
+	s.parsePluginFields(&p, excludeJSON, lastScannedAt)
 
-	p.Mappings, _ = s.GetMappings(ctx, p.ID)
 	return &p, nil
 }
+
+// --- Create ---
 
 func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Plugin, error) {
 	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path)
@@ -250,10 +285,7 @@ func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Pl
 		return nil, err
 	}
 
-	fileCount := s.countFiles(ctx, input.Path)
-	excludeJSON, _ := json.Marshal(input.ExcludePatterns)
-
-	id, err := s.insertPlugin(ctx, input, string(excludeJSON), fileCount)
+	id, err := s.createPluginRecord(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -265,15 +297,20 @@ func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Pl
 
 func (s *serviceImpl) checkDuplicatePath(ctx context.Context, path string) error {
 	var exists int
-	err := s.db.QueryRowContext(ctx,
-		"SELECT 1 FROM Plugins WHERE Path = ?", path,
-	).Scan(&exists)
+	err := s.db.QueryRowContext(ctx, "SELECT 1 FROM Plugins WHERE Path = ?", path).Scan(&exists)
+
 	if err != sql.ErrNoRows {
-		return apperror.New(apperror.ErrDuplicate, "plugin path already registered").
-			WithContext("path", path)
+		return apperror.New(apperror.ErrDuplicate, "plugin path already registered").WithContext("path", path)
 	}
 
 	return nil
+}
+
+func (s *serviceImpl) createPluginRecord(ctx context.Context, input CreateInput) (int64, error) {
+	fileCount := s.countFiles(ctx, input.Path)
+	excludeJSON, _ := json.Marshal(input.ExcludePatterns)
+
+	return s.insertPlugin(ctx, input, string(excludeJSON), fileCount)
 }
 
 func (s *serviceImpl) countFiles(ctx context.Context, path string) int {
@@ -286,10 +323,9 @@ func (s *serviceImpl) countFiles(ctx context.Context, path string) int {
 }
 
 func (s *serviceImpl) insertPlugin(ctx context.Context, input CreateInput, excludeJSON string, fileCount int) (int64, error) {
-	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO Plugins (Name, Path, WatchEnabled, ExcludePatterns, FileCount, LastScannedAt, CreatedAt, UpdatedAt)
-		VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'), datetime('now'))
-	`, input.Name, input.Path, input.WatchEnabled, excludeJSON, fileCount)
+	result, err := s.db.ExecContext(ctx, pluginInsertQuery,
+		input.Name, input.Path, input.WatchEnabled, excludeJSON, fileCount,
+	)
 
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create plugin")
@@ -299,6 +335,8 @@ func (s *serviceImpl) insertPlugin(ctx context.Context, input CreateInput, exclu
 
 	return id, nil
 }
+
+// --- Update ---
 
 func (s *serviceImpl) Update(
 	ctx context.Context,
@@ -324,27 +362,53 @@ func (s *serviceImpl) buildUpdateFields(ctx context.Context, input UpdateInput) 
 	var updates []string
 	var args []any
 
-	if input.Name != nil {
-		updates = append(updates, "Name = ?")
-		args = append(args, *input.Name)
-	}
-	if input.Path != nil {
-		if err := s.ValidatePath(ctx, *input.Path); err == nil {
-			updates = append(updates, "Path = ?")
-			args = append(args, *input.Path)
-		}
-	}
-	if input.WatchEnabled != nil {
-		updates = append(updates, "WatchEnabled = ?")
-		args = append(args, *input.WatchEnabled)
-	}
-	if input.ExcludePatterns != nil {
-		excludeJSON, _ := json.Marshal(*input.ExcludePatterns)
-		updates = append(updates, "ExcludePatterns = ?")
-		args = append(args, string(excludeJSON))
-	}
+	s.appendNameUpdate(input, &updates, &args)
+	s.appendPathUpdate(ctx, input, &updates, &args)
+	s.appendWatchUpdate(input, &updates, &args)
+	s.appendExcludeUpdate(input, &updates, &args)
 
 	return updates, args
+}
+
+func (s *serviceImpl) appendNameUpdate(input UpdateInput, updates *[]string, args *[]any) {
+	if input.Name == nil {
+		return
+	}
+
+	*updates = append(*updates, "Name = ?")
+	*args = append(*args, *input.Name)
+}
+
+func (s *serviceImpl) appendPathUpdate(ctx context.Context, input UpdateInput, updates *[]string, args *[]any) {
+	if input.Path == nil {
+		return
+	}
+
+	if err := s.ValidatePath(ctx, *input.Path); err != nil {
+		return
+	}
+
+	*updates = append(*updates, "Path = ?")
+	*args = append(*args, *input.Path)
+}
+
+func (s *serviceImpl) appendWatchUpdate(input UpdateInput, updates *[]string, args *[]any) {
+	if input.WatchEnabled == nil {
+		return
+	}
+
+	*updates = append(*updates, "WatchEnabled = ?")
+	*args = append(*args, *input.WatchEnabled)
+}
+
+func (s *serviceImpl) appendExcludeUpdate(input UpdateInput, updates *[]string, args *[]any) {
+	if input.ExcludePatterns == nil {
+		return
+	}
+
+	excludeJSON, _ := json.Marshal(*input.ExcludePatterns)
+	*updates = append(*updates, "ExcludePatterns = ?")
+	*args = append(*args, string(excludeJSON))
 }
 
 func (s *serviceImpl) executeUpdate(ctx context.Context, id int64, updates []string, args []any) (*models.Plugin, error) {
@@ -353,6 +417,7 @@ func (s *serviceImpl) executeUpdate(ctx context.Context, id int64, updates []str
 
 	query := "UPDATE Plugins SET " + strings.Join(updates, ", ") + " WHERE Id = ?"
 	_, err := s.db.ExecContext(ctx, query, args...)
+
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update plugin")
 	}
@@ -360,27 +425,39 @@ func (s *serviceImpl) executeUpdate(ctx context.Context, id int64, updates []str
 	return s.GetByID(ctx, id)
 }
 
+// --- Delete ---
+
 func (s *serviceImpl) Delete(ctx context.Context, id int64) error {
 	s.log.Info("Deleting plugin", "pluginId", id)
 
-	// Verify plugin exists
 	if _, err := s.GetByID(ctx, id); err != nil {
 		return err
 	}
 
-	// Delete mappings first (foreign key)
+	if err := s.deletePluginMappings(ctx, id); err != nil {
+		return err
+	}
+
+	return s.deletePluginRecord(ctx, id)
+}
+
+func (s *serviceImpl) deletePluginMappings(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE PluginId = ?", id)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to delete plugin mappings")
 	}
 
-	// Delete plugin
-	_, err = s.db.ExecContext(ctx, "DELETE FROM Plugins WHERE Id = ?", id)
+	return nil
+}
+
+func (s *serviceImpl) deletePluginRecord(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM Plugins WHERE Id = ?", id)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to delete plugin")
 	}
 
 	s.log.Info("Plugin deleted", "pluginId", id)
+
 	return nil
 }
 ```
@@ -406,6 +483,13 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// --- Header regex patterns ---
+
+var pluginNameRegex = regexp.MustCompile(`Plugin Name:\s*(.+)`)
+var versionRegex = regexp.MustCompile(`Version:\s*(.+)`)
+
+// --- ScanDirectory ---
+
 func (s *serviceImpl) ScanDirectory(ctx context.Context, path string) (*ScanResult, error) {
 	s.log.Debug("Scanning directory", "path", path)
 
@@ -428,19 +512,28 @@ func (s *serviceImpl) validateDirectory(path string, scan *ScanResult) error {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		scan.Error = "directory does not exist"
-		return nil
-	}
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrDirRead, "failed to stat directory")
-	}
-	if !info.IsDir() {
-		scan.Error = "path is not a directory"
+
 		return nil
 	}
 
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDirRead, "failed to stat directory")
+	}
+
+	if !info.IsDir() {
+		scan.Error = "path is not a directory"
+
+		return nil
+	}
+
+	return s.populatePluginInfo(path, scan)
+}
+
+func (s *serviceImpl) populatePluginInfo(path string, scan *ScanResult) error {
 	mainFile, pluginName, version, err := s.findMainPluginFile(path)
 	if err != nil {
 		scan.Error = err.Error()
+
 		return nil
 	}
 
@@ -507,6 +600,8 @@ func (s *serviceImpl) buildFileInfo(relPath, filePath string, info os.FileInfo, 
 	return fileInfo
 }
 
+// --- ValidatePath ---
+
 func (s *serviceImpl) ValidatePath(ctx context.Context, path string) error {
 	scan, err := s.ScanDirectory(ctx, path)
 	if err != nil {
@@ -514,12 +609,13 @@ func (s *serviceImpl) ValidatePath(ctx context.Context, path string) error {
 	}
 
 	if !scan.IsValid {
-		return apperror.New(apperror.ErrPathInvalid, scan.Error).
-			WithContext("path", path)
+		return apperror.New(apperror.ErrPathInvalid, scan.Error).WithContext("path", path)
 	}
 
 	return nil
 }
+
+// --- RefreshFileCount ---
 
 func (s *serviceImpl) RefreshFileCount(ctx context.Context, id int64) error {
 	plugin, err := s.GetByID(ctx, id)
@@ -532,16 +628,21 @@ func (s *serviceImpl) RefreshFileCount(ctx context.Context, id int64) error {
 		return err
 	}
 
-	_, err = s.db.ExecContext(ctx, `
-		UPDATE Plugins 
+	return s.updateFileCount(ctx, id, scan.FileCount)
+}
+
+func (s *serviceImpl) updateFileCount(ctx context.Context, id int64, fileCount int) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE Plugins
 		SET FileCount = ?, LastScannedAt = datetime('now'), UpdatedAt = datetime('now')
 		WHERE Id = ?
-	`, scan.FileCount, id)
+	`, fileCount, id)
 
 	return err
 }
 
-// findMainPluginFile locates the main plugin PHP file with the plugin header
+// --- findMainPluginFile ---
+
 func (s *serviceImpl) findMainPluginFile(path string) (string, string, string, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -563,6 +664,8 @@ func (s *serviceImpl) findMainPluginFile(path string) (string, string, string, e
 		"no valid WordPress plugin file found (missing Plugin Name header)")
 }
 
+// --- parsePluginHeader ---
+
 func (s *serviceImpl) parsePluginHeader(filePath string) (string, string) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -570,19 +673,16 @@ func (s *serviceImpl) parsePluginHeader(filePath string) (string, string) {
 	}
 	defer file.Close()
 
-	pluginNameRegex := regexp.MustCompile(`Plugin Name:\s*(.+)`)
-	versionRegex := regexp.MustCompile(`Version:\s*(.+)`)
+	return s.scanHeaderLines(file)
+}
 
+func (s *serviceImpl) scanHeaderLines(file *os.File) (string, string) {
 	scanner := bufio.NewScanner(file)
-	lineCount := 0
 	var pluginName, version string
 
-	for scanner.Scan() && lineCount < 30 {
-		line := scanner.Text()
-		lineCount++
-
-		pluginName = extractMatch(pluginNameRegex, line, pluginName)
-		version = extractMatch(versionRegex, line, version)
+	for lineCount := 0; scanner.Scan() && lineCount < 30; lineCount++ {
+		pluginName = extractMatch(pluginNameRegex, scanner.Text(), pluginName)
+		version = extractMatch(versionRegex, scanner.Text(), version)
 	}
 
 	return pluginName, version
@@ -596,7 +696,8 @@ func extractMatch(re *regexp.Regexp, line, current string) string {
 	return current
 }
 
-// calculateFileHash computes MD5 hash of a file
+// --- calculateFileHash ---
+
 func (s *serviceImpl) calculateFileHash(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -629,28 +730,57 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// --- SQL constants ---
+
+const mappingsByPluginQuery = `
+	SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
+	       pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
+	       s.Name, s.Url
+	FROM PluginMappings pm
+	JOIN Sites s ON pm.SiteId = s.Id
+	WHERE pm.PluginId = ?
+	ORDER BY s.Name ASC
+`
+
+const mappingsBySiteQuery = `
+	SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
+	       pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
+	       p.Name as PluginName
+	FROM PluginMappings pm
+	JOIN Plugins p ON pm.PluginId = p.Id
+	WHERE pm.SiteId = ?
+	ORDER BY p.Name ASC
+`
+
+const mappingByIDQuery = `
+	SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
+	       pm.CreatedAt, pm.UpdatedAt, s.Name, s.Url
+	FROM PluginMappings pm
+	JOIN Sites s ON pm.SiteId = s.Id
+	WHERE pm.Id = ?
+`
+
+const insertMappingQuery = `
+	INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
+	VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
+`
+
+// --- GetMappings ---
+
 func (s *serviceImpl) GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
-		       pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
-		       s.Name, s.Url
-		FROM PluginMappings pm
-		JOIN Sites s ON pm.SiteId = s.Id
-		WHERE pm.PluginId = ?
-		ORDER BY s.Name ASC
-	`, pluginID)
+	rows, err := s.db.QueryContext(ctx, mappingsByPluginQuery, pluginID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get mappings")
 	}
 	defer rows.Close()
 
-	return s.scanMappingRows(rows, true)
+	return s.scanMappingRowsWithSiteInfo(rows)
 }
 
-func (s *serviceImpl) scanMappingRows(rows *sql.Rows, hasSiteInfo bool) ([]models.PluginMapping, error) {
+func (s *serviceImpl) scanMappingRowsWithSiteInfo(rows *sql.Rows) ([]models.PluginMapping, error) {
 	var mappings []models.PluginMapping
 	for rows.Next() {
-		m, err := s.scanSingleMapping(rows, hasSiteInfo)
+		m, err := s.scanMappingWithSiteInfo(rows)
 		if err != nil {
 			continue
 		}
@@ -661,26 +791,16 @@ func (s *serviceImpl) scanMappingRows(rows *sql.Rows, hasSiteInfo bool) ([]model
 	return mappings, nil
 }
 
-func (s *serviceImpl) scanSingleMapping(rows *sql.Rows, hasSiteInfo bool) (models.PluginMapping, error) {
+func (s *serviceImpl) scanMappingWithSiteInfo(rows *sql.Rows) (models.PluginMapping, error) {
 	var m models.PluginMapping
 	var lastSyncAt, lastBackupAt sql.NullString
 
-	var err error
-	if hasSiteInfo {
-		err = rows.Scan(
-			&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-			&lastSyncAt, &lastBackupAt, &m.CreatedAt, &m.UpdatedAt,
-			&m.SiteName, &m.SiteURL,
-		)
-	} else {
-		var pluginName string
-		err = rows.Scan(
-			&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-			&lastSyncAt, &lastBackupAt, &m.CreatedAt, &m.UpdatedAt,
-			&pluginName,
-		)
-		_ = pluginName
-	}
+	err := rows.Scan(
+		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
+		&lastSyncAt, &lastBackupAt, &m.CreatedAt, &m.UpdatedAt,
+		&m.SiteName, &m.SiteURL,
+	)
+
 	if err != nil {
 		return m, err
 	}
@@ -695,29 +815,61 @@ func (s *serviceImpl) parseMappingDates(m *models.PluginMapping, lastSyncAt, las
 		t, _ := time.Parse(time.RFC3339, lastSyncAt.String)
 		m.LastSyncAt = &t
 	}
+
 	if lastBackupAt.Valid {
 		t, _ := time.Parse(time.RFC3339, lastBackupAt.String)
 		m.LastBackupAt = &t
 	}
 }
 
+// --- GetMappingsBySite ---
+
 func (s *serviceImpl) GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
-		       pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
-		       p.Name as PluginName
-		FROM PluginMappings pm
-		JOIN Plugins p ON pm.PluginId = p.Id
-		WHERE pm.SiteId = ?
-		ORDER BY p.Name ASC
-	`, siteID)
+	rows, err := s.db.QueryContext(ctx, mappingsBySiteQuery, siteID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get mappings by site")
 	}
 	defer rows.Close()
 
-	return s.scanMappingRows(rows, false)
+	return s.scanMappingRowsWithPluginName(rows)
 }
+
+func (s *serviceImpl) scanMappingRowsWithPluginName(rows *sql.Rows) ([]models.PluginMapping, error) {
+	var mappings []models.PluginMapping
+	for rows.Next() {
+		m, err := s.scanMappingWithPluginName(rows)
+		if err != nil {
+			continue
+		}
+
+		mappings = append(mappings, m)
+	}
+
+	return mappings, nil
+}
+
+func (s *serviceImpl) scanMappingWithPluginName(rows *sql.Rows) (models.PluginMapping, error) {
+	var m models.PluginMapping
+	var lastSyncAt, lastBackupAt sql.NullString
+	var pluginName string
+
+	err := rows.Scan(
+		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
+		&lastSyncAt, &lastBackupAt, &m.CreatedAt, &m.UpdatedAt,
+		&pluginName,
+	)
+	_ = pluginName
+
+	if err != nil {
+		return m, err
+	}
+
+	s.parseMappingDates(&m, lastSyncAt, lastBackupAt)
+
+	return m, nil
+}
+
+// --- CreateMapping ---
 
 func (s *serviceImpl) CreateMapping(ctx context.Context, input CreateMappingInput) (*models.PluginMapping, error) {
 	s.log.Info("Creating plugin mapping", "pluginId", input.PluginID, "siteId", input.SiteID)
@@ -740,6 +892,7 @@ func (s *serviceImpl) checkDuplicateMapping(ctx context.Context, pluginID, siteI
 		"SELECT 1 FROM PluginMappings WHERE PluginId = ? AND SiteId = ?",
 		pluginID, siteID,
 	).Scan(&exists)
+
 	if err != sql.ErrNoRows {
 		return apperror.New(apperror.ErrDuplicate, "mapping already exists").
 			WithContext("pluginId", pluginID).
@@ -750,10 +903,9 @@ func (s *serviceImpl) checkDuplicateMapping(ctx context.Context, pluginID, siteI
 }
 
 func (s *serviceImpl) insertMapping(ctx context.Context, input CreateMappingInput) (int64, error) {
-	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
-		VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-	`, input.PluginID, input.SiteID, input.RemoteSlug)
+	result, err := s.db.ExecContext(ctx, insertMappingQuery,
+		input.PluginID, input.SiteID, input.RemoteSlug,
+	)
 
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create mapping")
@@ -766,22 +918,19 @@ func (s *serviceImpl) insertMapping(ctx context.Context, input CreateMappingInpu
 
 func (s *serviceImpl) getMappingByID(ctx context.Context, id int64) (*models.PluginMapping, error) {
 	var m models.PluginMapping
-	err := s.db.QueryRowContext(ctx, `
-		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
-		       pm.CreatedAt, pm.UpdatedAt, s.Name, s.Url
-		FROM PluginMappings pm
-		JOIN Sites s ON pm.SiteId = s.Id
-		WHERE pm.Id = ?
-	`, id).Scan(
+	err := s.db.QueryRowContext(ctx, mappingByIDQuery, id).Scan(
 		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
 		&m.CreatedAt, &m.UpdatedAt, &m.SiteName, &m.SiteURL,
 	)
+
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get mapping")
 	}
 
 	return &m, nil
 }
+
+// --- DeleteMapping ---
 
 func (s *serviceImpl) DeleteMapping(ctx context.Context, mappingID int64) error {
 	s.log.Info("Deleting plugin mapping", "mappingId", mappingID)

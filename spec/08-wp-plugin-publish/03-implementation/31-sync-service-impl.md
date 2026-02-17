@@ -191,9 +191,32 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )
+
+// --- SQL constants ---
+
+const siteSelectForSync = `
+	SELECT Id, Name, Url, Username, PasswordEncrypted
+	FROM Sites WHERE Id = ?
+`
+
+const remoteSlugForSync = `
+	SELECT RemoteSlug FROM PluginMappings
+	WHERE PluginId = ? AND SiteId = ?
+`
+
+const updateSyncStatusQuery = `
+	UPDATE PluginMappings
+	SET SyncStatus = ?, UpdatedAt = datetime('now')
+	WHERE PluginId = ? AND SiteId = ?
+`
+
+const allMappingsQuery = `SELECT PluginId, SiteId FROM PluginMappings`
+
+// --- CheckSync entry point ---
 
 func (s *serviceImpl) CheckSync(
 	ctx context.Context,
@@ -201,38 +224,63 @@ func (s *serviceImpl) CheckSync(
 	siteID int64,
 ) (*SyncResult, error) {
 	s.log.Info("Checking sync status", "pluginId", pluginID, "siteId", siteID)
+	s.broadcastSyncStarted(pluginID, siteID)
 
-	s.wsHub.Broadcast(ws.EventSyncStarted, SyncStartedEvent{
-		PluginID: pluginID,
-		SiteID:   siteID,
-	})
+	result := s.newSyncResult(pluginID, siteID)
 
-	result := &SyncResult{
+	return s.executeCheckSync(ctx, result, pluginID, siteID)
+}
+
+func (s *serviceImpl) newSyncResult(pluginID, siteID int64) *SyncResult {
+	return &SyncResult{
 		PluginID:  pluginID,
 		SiteID:    siteID,
 		CheckedAt: time.Now(),
 		Changes:   []FileChange{},
 	}
+}
 
+func (s *serviceImpl) broadcastSyncStarted(pluginID, siteID int64) {
+	s.wsHub.Broadcast(ws.EventSyncStarted, SyncStartedEvent{
+		PluginID: pluginID,
+		SiteID:   siteID,
+	})
+}
+
+func (s *serviceImpl) executeCheckSync(
+	ctx context.Context,
+	result *SyncResult,
+	pluginID int64,
+	siteID int64,
+) (*SyncResult, error) {
 	if err := s.populateSyncContext(ctx, result, pluginID, siteID); err != nil {
 		return result, err
 	}
 
-	localScan, err := s.pluginService.ScanDirectory(ctx, result.pluginPath)
+	localScan, err := s.scanLocalPlugin(ctx, result)
 	if err != nil {
-		result.Status = SyncStatusError
-		result.Error = err.Error()
-
 		return result, err
 	}
-	result.TotalFiles = localScan.FileCount
 
-	s.analyzeSyncChanges(ctx, result, localScan, siteID)
-	s.updateMappingSyncStatus(ctx, result.Status, pluginID, siteID)
+	s.analyzeSyncChanges(ctx, result, localScan)
+	s.updateMappingSyncStatus(ctx, string(result.Status), pluginID, siteID)
 	s.broadcastSyncComplete(result)
 
 	return result, nil
 }
+
+func (s *serviceImpl) scanLocalPlugin(ctx context.Context, result *SyncResult) (*plugin.ScanResult, error) {
+	localScan, err := s.pluginService.ScanDirectory(ctx, result.pluginPath)
+	if err != nil {
+		return nil, s.setSyncError(result, err.Error(), err)
+	}
+
+	result.TotalFiles = localScan.FileCount
+
+	return localScan, nil
+}
+
+// --- Context loading ---
 
 func (s *serviceImpl) populateSyncContext(
 	ctx context.Context,
@@ -240,54 +288,80 @@ func (s *serviceImpl) populateSyncContext(
 	pluginID int64,
 	siteID int64,
 ) error {
-	plugin, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		result.Status = SyncStatusError
-		result.Error = err.Error()
-
+	if err := s.loadSyncPlugin(ctx, result, pluginID); err != nil {
 		return err
 	}
-	result.PluginName = plugin.Name
-	result.pluginPath = plugin.Path
 
-	var site models.Site
-	err = s.db.QueryRowContext(ctx, `
-		SELECT Id, Name, Url, Username, PasswordEncrypted
-		FROM Sites WHERE Id = ?
-	`, siteID).Scan(&site.ID, &site.Name, &site.URL, &site.Username, &site.PasswordEncrypted)
-	if err != nil {
-		result.Status = SyncStatusError
-		result.Error = "site not found"
-
-		return apperror.New(apperror.ErrNotFound, "site not found")
+	if err := s.loadSyncSite(ctx, result, siteID); err != nil {
+		return err
 	}
+
+	return s.loadSyncRemoteSlug(ctx, result, pluginID, siteID)
+}
+
+func (s *serviceImpl) loadSyncPlugin(ctx context.Context, result *SyncResult, pluginID int64) error {
+	p, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return s.setSyncError(result, err.Error(), err)
+	}
+
+	result.PluginName = p.Name
+	result.pluginPath = p.Path
+
+	return nil
+}
+
+func (s *serviceImpl) loadSyncSite(ctx context.Context, result *SyncResult, siteID int64) error {
+	var site models.Site
+	err := s.db.QueryRowContext(ctx, siteSelectForSync, siteID).Scan(
+		&site.ID, &site.Name, &site.URL, &site.Username, &site.PasswordEncrypted,
+	)
+
+	if err != nil {
+		return s.setSyncError(result, "site not found", apperror.New(apperror.ErrNotFound, "site not found"))
+	}
+
 	result.SiteName = site.Name
 	result.site = site
 
-	var remoteSlug string
-	err = s.db.QueryRowContext(ctx, `
-		SELECT RemoteSlug FROM PluginMappings
-		WHERE PluginId = ? AND SiteId = ?
-	`, pluginID, siteID).Scan(&remoteSlug)
-	if err != nil {
-		result.Status = SyncStatusError
-		result.Error = "plugin not mapped to site"
+	return nil
+}
 
-		return apperror.New(apperror.ErrNotFound, "mapping not found")
+func (s *serviceImpl) loadSyncRemoteSlug(
+	ctx context.Context,
+	result *SyncResult,
+	pluginID int64,
+	siteID int64,
+) error {
+	var remoteSlug string
+	err := s.db.QueryRowContext(ctx, remoteSlugForSync, pluginID, siteID).Scan(&remoteSlug)
+
+	if err != nil {
+		return s.setSyncError(result, "plugin not mapped to site", apperror.New(apperror.ErrNotFound, "mapping not found"))
 	}
+
 	result.remoteSlug = remoteSlug
 
 	return nil
 }
 
+func (s *serviceImpl) setSyncError(result *SyncResult, msg string, err error) error {
+	result.Status = SyncStatusError
+	result.Error = msg
+
+	return err
+}
+
+// --- Change analysis ---
+
 func (s *serviceImpl) analyzeSyncChanges(
 	ctx context.Context,
 	result *SyncResult,
 	localScan *plugin.ScanResult,
-	siteID int64,
 ) {
 	wpClient := s.wpClientFactory(result.site.URL, result.site.Username, string(result.site.PasswordEncrypted))
 	remoteFiles, err := wpClient.GetPluginFiles(ctx, result.remoteSlug)
+
 	if err != nil {
 		s.log.Warn("Could not fetch remote files", "error", err)
 		s.markAllFilesAsAdded(result, localScan.Files)
@@ -295,14 +369,26 @@ func (s *serviceImpl) analyzeSyncChanges(
 		return
 	}
 
-	result.Changes = s.compareFiles(localScan.Files, remoteFiles)
+	s.computeSyncDiff(result, localScan.Files, remoteFiles)
+}
+
+func (s *serviceImpl) computeSyncDiff(
+	result *SyncResult,
+	localFiles []plugin.FileInfo,
+	remoteFiles []wordpress.RemoteFile,
+) {
+	result.Changes = s.compareFiles(localFiles, remoteFiles)
 	s.tallySyncChanges(result)
 	result.ChangedFiles = len(result.Changes)
+	result.Status = s.resolveSyncStatus(result.ChangedFiles)
+}
 
-	result.Status = SyncStatusSynced
-	if result.ChangedFiles > 0 {
-		result.Status = SyncStatusPending
+func (s *serviceImpl) resolveSyncStatus(changedFiles int) SyncStatusType {
+	if changedFiles > 0 {
+		return SyncStatusPending
 	}
+
+	return SyncStatusSynced
 }
 
 func (s *serviceImpl) markAllFilesAsAdded(result *SyncResult, files []plugin.FileInfo) {
@@ -311,17 +397,22 @@ func (s *serviceImpl) markAllFilesAsAdded(result *SyncResult, files []plugin.Fil
 			continue
 		}
 
-		result.Changes = append(result.Changes, FileChange{
-			Path:       f.Path,
-			ChangeType: ChangeTypeAdded,
-			LocalHash:  f.Hash,
-			LocalSize:  f.Size,
-			LocalMTime: f.ModifiedAt,
-		})
+		result.Changes = append(result.Changes, s.newAddedChange(f))
 		result.AddedFiles++
 	}
+
 	result.ChangedFiles = result.AddedFiles
 	result.Status = SyncStatusPending
+}
+
+func (s *serviceImpl) newAddedChange(f plugin.FileInfo) FileChange {
+	return FileChange{
+		Path:       f.Path,
+		ChangeType: ChangeTypeAdded,
+		LocalHash:  f.Hash,
+		LocalSize:  f.Size,
+		LocalMTime: f.ModifiedAt,
+	}
 }
 
 func (s *serviceImpl) tallySyncChanges(result *SyncResult) {
@@ -338,23 +429,19 @@ func (s *serviceImpl) tallySyncChanges(result *SyncResult) {
 }
 
 func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, status string, pluginID, siteID int64) {
-	s.db.ExecContext(ctx, `
-		UPDATE PluginMappings 
-		SET SyncStatus = ?, UpdatedAt = datetime('now')
-		WHERE PluginId = ? AND SiteId = ?
-	`, status, pluginID, siteID)
+	s.db.ExecContext(ctx, updateSyncStatusQuery, status, pluginID, siteID)
 }
 
 func (s *serviceImpl) broadcastSyncComplete(result *SyncResult) {
 	s.wsHub.Broadcast(ws.EventSyncComplete, SyncCompleteEvent{
-		PluginID:     pluginID,
-		SiteID:       siteID,
-		Status:       result.Status,
+		PluginID:     result.PluginID,
+		SiteID:       result.SiteID,
+		Status:       string(result.Status),
 		ChangedFiles: result.ChangedFiles,
 	})
-
-	return result, nil
 }
+
+// --- Batch operations ---
 
 func (s *serviceImpl) CheckAllSites(
 	ctx context.Context,
@@ -362,12 +449,19 @@ func (s *serviceImpl) CheckAllSites(
 ) (*BatchSyncResult, error) {
 	s.log.Info("Checking sync for all sites", "pluginId", pluginID)
 
-	// Get all mappings for this plugin
 	mappings, err := s.pluginService.GetMappings(ctx, pluginID)
 	if err != nil {
 		return nil, err
 	}
 
+	return s.checkMappings(ctx, pluginID, mappings), nil
+}
+
+func (s *serviceImpl) checkMappings(
+	ctx context.Context,
+	pluginID int64,
+	mappings []models.PluginMapping,
+) *BatchSyncResult {
 	batch := &BatchSyncResult{
 		PluginID: pluginID,
 		Results:  make([]SyncResult, 0, len(mappings)),
@@ -375,19 +469,23 @@ func (s *serviceImpl) CheckAllSites(
 	}
 
 	for _, m := range mappings {
-		result, err := s.CheckSync(ctx, pluginID, m.SiteID)
-		if err != nil {
-			batch.Summary.ErrorSites++
-			batch.Results = append(batch.Results, *result)
-
-			continue
-		}
-
-		s.classifyBatchResult(batch, result)
-		batch.Results = append(batch.Results, *result)
+		s.checkSingleMapping(ctx, batch, pluginID, m.SiteID)
 	}
 
-	return batch, nil
+	return batch
+}
+
+func (s *serviceImpl) checkSingleMapping(ctx context.Context, batch *BatchSyncResult, pluginID, siteID int64) {
+	result, err := s.CheckSync(ctx, pluginID, siteID)
+	if err != nil {
+		batch.Summary.ErrorSites++
+		batch.Results = append(batch.Results, *result)
+
+		return
+	}
+
+	s.classifyBatchResult(batch, result)
+	batch.Results = append(batch.Results, *result)
 }
 
 func (s *serviceImpl) classifyBatchResult(batch *BatchSyncResult, result *SyncResult) {
@@ -399,33 +497,48 @@ func (s *serviceImpl) classifyBatchResult(batch *BatchSyncResult, result *SyncRe
 	default:
 		batch.Summary.ErrorSites++
 	}
+
 	batch.Summary.TotalChanges += result.ChangedFiles
 }
 
 func (s *serviceImpl) CheckAllPlugins(ctx context.Context) ([]SyncResult, error) {
 	s.log.Info("Checking sync for all plugins")
 
-	// Get all mappings
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT PluginId, SiteId FROM PluginMappings
-	`)
+	mappings, err := s.loadAllMappings(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.checkAllMappingPairs(ctx, mappings), nil
+}
+
+func (s *serviceImpl) loadAllMappings(ctx context.Context) ([][2]int64, error) {
+	rows, err := s.db.QueryContext(ctx, allMappingsQuery)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var results []SyncResult
+	var mappings [][2]int64
 	for rows.Next() {
 		var pluginID, siteID int64
 		rows.Scan(&pluginID, &siteID)
+		mappings = append(mappings, [2]int64{pluginID, siteID})
+	}
 
-		result, _ := s.CheckSync(ctx, pluginID, siteID)
+	return mappings, nil
+}
+
+func (s *serviceImpl) checkAllMappingPairs(ctx context.Context, mappings [][2]int64) []SyncResult {
+	var results []SyncResult
+	for _, m := range mappings {
+		result, _ := s.CheckSync(ctx, m[0], m[1])
 		if result != nil {
 			results = append(results, *result)
 		}
 	}
 
-	return results, nil
+	return results
 }
 ```
 
@@ -445,22 +558,29 @@ import (
 func (s *serviceImpl) compareFiles(local []plugin.FileInfo, remote []wordpress.RemoteFile) []FileChange {
 	remoteMap := buildRemoteMap(remote)
 	localPaths := make(map[string]bool)
-	var changes []FileChange
 
+	changes := s.findLocalChanges(local, remoteMap, localPaths)
+
+	return append(changes, s.findDeletedFiles(remote, localPaths)...)
+}
+
+func (s *serviceImpl) findLocalChanges(
+	local []plugin.FileInfo,
+	remoteMap map[string]wordpress.RemoteFile,
+	localPaths map[string]bool,
+) []FileChange {
+	var changes []FileChange
 	for _, lf := range local {
 		if lf.IsDirectory {
 			continue
 		}
-		localPaths[lf.Path] = true
 
+		localPaths[lf.Path] = true
 		change := s.compareLocalFile(lf, remoteMap)
 		if change != nil {
 			changes = append(changes, *change)
 		}
 	}
-
-	deletions := s.findDeletedFiles(remote, localPaths)
-	changes = append(changes, deletions...)
 
 	return changes
 }
@@ -490,6 +610,10 @@ func (s *serviceImpl) compareLocalFile(lf plugin.FileInfo, remoteMap map[string]
 		return nil
 	}
 
+	return s.newModifiedChange(lf, rf)
+}
+
+func (s *serviceImpl) newModifiedChange(lf plugin.FileInfo, rf wordpress.RemoteFile) *FileChange {
 	return &FileChange{
 		Path:        lf.Path,
 		ChangeType:  ChangeTypeModified,
@@ -538,43 +662,66 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// --- SQL constants ---
+
+const fileChangesQuery = `
+	SELECT Id, PluginId, FilePath, ChangeType, LocalHash, RemoteHash,
+	       LocalModifiedAt, DetectedAt, SyncedAt
+	FROM FileChanges
+	WHERE PluginId = ? AND SyncedAt IS NULL
+	ORDER BY DetectedAt DESC
+`
+
+const insertFileChangeQuery = `
+	INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, LocalModifiedAt, DetectedAt)
+	VALUES (?, ?, ?, ?, ?, datetime('now'))
+`
+
+const updateFileChangeQuery = `
+	UPDATE FileChanges
+	SET ChangeType = ?, LocalHash = ?, LocalModifiedAt = ?, DetectedAt = datetime('now')
+	WHERE Id = ?
+`
+
+const existingChangeQuery = `
+	SELECT Id FROM FileChanges
+	WHERE PluginId = ? AND FilePath = ? AND SyncedAt IS NULL
+`
+
+const markSyncedQuery = `
+	UPDATE FileChanges
+	SET SyncedAt = datetime('now')
+	WHERE PluginId = ? AND FilePath = ? AND SyncedAt IS NULL
+`
+
+const updateMappingAfterSyncQuery = `
+	UPDATE PluginMappings
+	SET SyncStatus = 'synced', LastSyncAt = datetime('now'), UpdatedAt = datetime('now')
+	WHERE PluginId = ? AND SiteId = ?
+`
+
+// --- GetFileChanges ---
+
 func (s *serviceImpl) GetFileChanges(
 	ctx context.Context,
 	pluginID int64,
 	siteID int64,
 ) ([]models.FileChange, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT Id, PluginId, FilePath, ChangeType, LocalHash, RemoteHash,
-		       LocalModifiedAt, DetectedAt, SyncedAt
-		FROM FileChanges
-		WHERE PluginId = ? AND SyncedAt IS NULL
-		ORDER BY DetectedAt DESC
-	`, pluginID)
+	rows, err := s.db.QueryContext(ctx, fileChangesQuery, pluginID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get file changes")
 	}
 	defer rows.Close()
 
+	return s.scanFileChangeRows(rows)
+}
+
+func (s *serviceImpl) scanFileChangeRows(rows *sql.Rows) ([]models.FileChange, error) {
 	var changes []models.FileChange
 	for rows.Next() {
-		var c models.FileChange
-		var localModAt, syncedAt sql.NullString
-
-		err := rows.Scan(
-			&c.ID, &c.PluginID, &c.FilePath, &c.ChangeType,
-			&c.LocalHash, &c.RemoteHash, &localModAt, &c.DetectedAt, &syncedAt,
-		)
+		c, err := s.scanSingleFileChange(rows)
 		if err != nil {
 			continue
-		}
-
-		if localModAt.Valid {
-			t, _ := time.Parse(time.RFC3339, localModAt.String)
-			c.LocalModifiedAt = &t
-		}
-		if syncedAt.Valid {
-			t, _ := time.Parse(time.RFC3339, syncedAt.String)
-			c.SyncedAt = &t
 		}
 
 		changes = append(changes, c)
@@ -583,31 +730,70 @@ func (s *serviceImpl) GetFileChanges(
 	return changes, nil
 }
 
+func (s *serviceImpl) scanSingleFileChange(rows *sql.Rows) (models.FileChange, error) {
+	var c models.FileChange
+	var localModAt, syncedAt sql.NullString
+
+	err := rows.Scan(
+		&c.ID, &c.PluginID, &c.FilePath, &c.ChangeType,
+		&c.LocalHash, &c.RemoteHash, &localModAt, &c.DetectedAt, &syncedAt,
+	)
+
+	if err != nil {
+		return c, err
+	}
+
+	s.parseFileChangeDates(&c, localModAt, syncedAt)
+
+	return c, nil
+}
+
+func (s *serviceImpl) parseFileChangeDates(c *models.FileChange, localModAt, syncedAt sql.NullString) {
+	if localModAt.Valid {
+		t, _ := time.Parse(time.RFC3339, localModAt.String)
+		c.LocalModifiedAt = &t
+	}
+
+	if syncedAt.Valid {
+		t, _ := time.Parse(time.RFC3339, syncedAt.String)
+		c.SyncedAt = &t
+	}
+}
+
+// --- RecordFileChange ---
+
 func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileChange) error {
-	// Check if change already exists for this file
 	var existingID int64
-	err := s.db.QueryRowContext(ctx, `
-		SELECT Id FROM FileChanges
-		WHERE PluginId = ? AND FilePath = ? AND SyncedAt IS NULL
-	`, change.PluginID, change.FilePath).Scan(&existingID)
+	err := s.db.QueryRowContext(ctx, existingChangeQuery, change.PluginID, change.FilePath).Scan(&existingID)
 
 	if err == sql.ErrNoRows {
-		// Insert new change
-		_, err = s.db.ExecContext(ctx, `
-			INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, LocalModifiedAt, DetectedAt)
-			VALUES (?, ?, ?, ?, ?, datetime('now'))
-		`, change.PluginID, change.FilePath, change.ChangeType, change.LocalHash, change.LocalModifiedAt)
-	} else if err == nil {
-		// Update existing change
-		_, err = s.db.ExecContext(ctx, `
-			UPDATE FileChanges
-			SET ChangeType = ?, LocalHash = ?, LocalModifiedAt = ?, DetectedAt = datetime('now')
-			WHERE Id = ?
-		`, change.ChangeType, change.LocalHash, change.LocalModifiedAt, existingID)
+		return s.insertFileChange(ctx, change)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	return s.updateFileChange(ctx, change, existingID)
+}
+
+func (s *serviceImpl) insertFileChange(ctx context.Context, change *models.FileChange) error {
+	_, err := s.db.ExecContext(ctx, insertFileChangeQuery,
+		change.PluginID, change.FilePath, change.ChangeType, change.LocalHash, change.LocalModifiedAt,
+	)
 
 	return err
 }
+
+func (s *serviceImpl) updateFileChange(ctx context.Context, change *models.FileChange, existingID int64) error {
+	_, err := s.db.ExecContext(ctx, updateFileChangeQuery,
+		change.ChangeType, change.LocalHash, change.LocalModifiedAt, existingID,
+	)
+
+	return err
+}
+
+// --- MarkSynced ---
 
 func (s *serviceImpl) MarkSynced(
 	ctx context.Context,
@@ -617,31 +803,35 @@ func (s *serviceImpl) MarkSynced(
 ) error {
 	s.log.Info("Marking files as synced", "pluginId", pluginID, "siteId", siteID, "files", len(files))
 
+	if err := s.markFilesAsSynced(ctx, pluginID, files); err != nil {
+		return err
+	}
+
+	return s.updateMappingAfterSync(ctx, pluginID, siteID)
+}
+
+func (s *serviceImpl) markFilesAsSynced(ctx context.Context, pluginID int64, files []string) error {
 	for _, path := range files {
-		_, err := s.db.ExecContext(ctx, `
-			UPDATE FileChanges
-			SET SyncedAt = datetime('now')
-			WHERE PluginId = ? AND FilePath = ? AND SyncedAt IS NULL
-		`, pluginID, path)
+		_, err := s.db.ExecContext(ctx, markSyncedQuery, pluginID, path)
 		if err != nil {
 			return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to mark file synced")
 		}
 	}
 
-	// Update mapping sync status
-	_, err := s.db.ExecContext(ctx, `
-		UPDATE PluginMappings
-		SET SyncStatus = 'synced', LastSyncAt = datetime('now'), UpdatedAt = datetime('now')
-		WHERE PluginId = ? AND SiteId = ?
-	`, pluginID, siteID)
+	return nil
+}
+
+func (s *serviceImpl) updateMappingAfterSync(ctx context.Context, pluginID, siteID int64) error {
+	_, err := s.db.ExecContext(ctx, updateMappingAfterSyncQuery, pluginID, siteID)
 
 	return err
 }
 
+// --- ClearChanges ---
+
 func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
-	_, err := s.db.ExecContext(ctx, `
-		DELETE FROM FileChanges WHERE PluginId = ?
-	`, pluginID)
+	_, err := s.db.ExecContext(ctx, `DELETE FROM FileChanges WHERE PluginId = ?`, pluginID)
+
 	return err
 }
 ```
