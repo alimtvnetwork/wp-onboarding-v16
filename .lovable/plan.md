@@ -46,9 +46,19 @@ spec/
 ├── 12-generic-enforce/        — Cross-language enforcement patterns
 ```
 
+## ✅ COMPLETED — Part D: Spec Modernization Sweep
+
+Full grep across all `spec/` files verified zero remaining legacy patterns (2026-02-17):
+
+- `class Riseup_` / `new Riseup_` → **0 matches**
+- `\Throwable`, `\PDO`, `\WP_Error`, `\Exception` (backslash-prefixed) → **0 matches**
+- `HookEnum`, `PathUtils`, `CapabilityEnum`, `HttpMethodEnum` → **0 matches**
+- `$this->snake_case` internal methods → **0 matches**
+- `define('RISEUP_'` → 1 match, intentional `❌ WRONG` example
+- `function riseup_asia_init()` → 3 matches, correct (WP-registered global hooks stay snake_case)
+
 ## 🔵 Next Priority
 
-All plan items (Parts A, B, C) are complete. Potential next steps:
-- Review `spec/07-wordpress-plugin-development/` specs for unenforced standards
+All plan items (Parts A–D) are complete. Potential next steps:
 - Manual C3 audit on high-traffic PHP files
-- Audit for any remaining legacy class references
+- Autoloader class refactored — verify plugin bootstrap works end-to-end
