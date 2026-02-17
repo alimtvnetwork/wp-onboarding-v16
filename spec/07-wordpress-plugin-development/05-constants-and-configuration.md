@@ -2,355 +2,258 @@
 
 ## The Golden Rule
 
-> **NEVER use magic strings in code. ALWAYS use constants.**
+> **NEVER use magic strings in code. ALWAYS use backed enums or private class constants.**
 
-Every string that represents a name, path, key, or identifier must be defined as a constant in a centralized file.
+Every string that represents a name, path, key, endpoint, or identifier must be defined as a backed enum case in the `RiseupAsia\Enums` namespace or as a `private const` within the owning class.
 
-## Constants File Structure
+## Enum-Based Configuration (replaces `constants.php`)
 
-Create `includes/constants.php` as the FIRST file included in your plugin:
+The legacy `constants.php` file with global `define()` calls has been fully replaced by domain-specific backed enums in `includes/Enums/`. Each enum uses PascalCase naming with a `Type` suffix.
+
+### Plugin Identity — `PluginConfigType`
 
 ```php
 <?php
-/**
- * Plugin Constants
- * 
- * ALL magic strings, keys, and identifiers are defined here.
- * This file is included FIRST and contains NO function calls.
- */
 
-// Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// ============================================================================
-// PLUGIN IDENTITY
-// ============================================================================
+namespace RiseupAsia\Enums;
 
-/** Plugin slug - used for directories, options, etc. */
-define('RISEUP_PLUGIN_SLUG', 'riseup-asia-uploader');
+enum PluginConfigType: string {
+    case Slug       = 'riseup-asia-uploader';
+    case Name       = 'Riseup Asia Uploader';
+    case Version    = '1.56.0';
+    case LogPrefix  = '[RiseupAsia]';
+    case ApiBase    = 'riseup-asia-uploader';
+    case ApiVersion = 'v1';
 
-/** Plugin display name */
-define('RISEUP_PLUGIN_NAME', 'Riseup Asia Uploader');
+    public function isEqual(self $other): bool {
+        return $this === $other;
+    }
+}
+```
 
-/** Plugin version - update with each release */
-define('RISEUP_VERSION', '1.4.0');
+Access: `PluginConfigType::Slug->value`
 
-// ============================================================================
-// API CONFIGURATION
-// ============================================================================
+### API Endpoints — `EndpointType`
 
-/** REST API namespace (without version) */
-define('RISEUP_API_BASE', 'riseup-asia-uploader');
+```php
+<?php
 
-/** REST API version */
-define('RISEUP_API_VERSION', 'v1');
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-/** Full REST API namespace */
-define('RISEUP_API_NAMESPACE', RISEUP_API_BASE . '/' . RISEUP_API_VERSION);
+namespace RiseupAsia\Enums;
 
-// ============================================================================
-// API ENDPOINTS
-// ============================================================================
+enum EndpointType: string {
+    case Health        = 'health';
+    case Upload        = 'upload';
+    case Status        = 'status';
+    case Plugins       = 'plugins';
+    case PluginEnable  = 'plugin-enable';
+    case PluginDisable = 'plugin-disable';
+    case Posts         = 'posts';
+    case PostCreate    = 'post-create';
+    case Categories    = 'categories';
+    case Media         = 'media';
 
-/** Health check endpoint */
-define('RISEUP_ENDPOINT_HEALTH', 'health');
+    /** Returns the endpoint path prefixed with a forward slash. */
+    public function route(): string {
+        return '/' . $this->value;
+    }
 
-/** File upload endpoint */
-define('RISEUP_ENDPOINT_UPLOAD', 'upload');
+    public function isEqual(self $other): bool {
+        return $this === $other;
+    }
+}
+```
 
-/** Status check endpoint */
-define('RISEUP_ENDPOINT_STATUS', 'status');
+### WordPress Options — `OptionNameType`
 
-/** Plugin management endpoints */
-define('RISEUP_ENDPOINT_PLUGINS', 'plugins');
-define('RISEUP_ENDPOINT_PLUGIN_ENABLE', 'plugin-enable');
-define('RISEUP_ENDPOINT_PLUGIN_DISABLE', 'plugin-disable');
-define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugin-delete');
+```php
+<?php
 
-/** Post management endpoints */
-define('RISEUP_ENDPOINT_POSTS', 'posts');
-define('RISEUP_ENDPOINT_POST_CREATE', 'post-create');
-define('RISEUP_ENDPOINT_POST_UPDATE', 'post-update');
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-/** Category endpoints */
-define('RISEUP_ENDPOINT_CATEGORIES', 'categories');
+namespace RiseupAsia\Enums;
 
-/** Media endpoints */
-define('RISEUP_ENDPOINT_MEDIA', 'media');
+enum OptionNameType: string {
+    case ApiToken = 'riseup_api_token';
+    case Settings = 'riseup_settings';
+    case LastSync = 'riseup_last_sync';
 
-// ============================================================================
-// DATABASE
-// ============================================================================
+    public function isEqual(self $other): bool {
+        return $this === $other;
+    }
+}
+```
 
-/** SQLite database filename */
-define('RISEUP_DB_FILENAME', 'riseup-asia-uploader.db');
+### WordPress Hooks — `HookType`
 
-/** Transactions table name */
-define('RISEUP_TABLE_TRANSACTIONS', 'riseup_transactions');
+```php
+<?php
 
-/** Logs table name */
-define('RISEUP_TABLE_LOGS', 'riseup_logs');
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-/** Schema version table */
-define('RISEUP_TABLE_SCHEMA_VERSION', 'schema_version');
+namespace RiseupAsia\Enums;
 
-// ============================================================================
-// OPTIONS (WordPress wp_options keys)
-// ============================================================================
+enum HookType: string {
+    case PluginsLoaded = 'plugins_loaded';
+    case AdminInit     = 'admin_init';
+    case RestApiInit   = 'rest_api_init';
+    case BeforeUpload  = 'riseup_before_upload';
+    case AfterUpload   = 'riseup_after_upload';
 
-/** API token option key */
-define('RISEUP_OPTION_API_TOKEN', 'riseup_api_token');
+    public function isEqual(self $other): bool {
+        return $this === $other;
+    }
+}
+```
 
-/** Settings option key */
-define('RISEUP_OPTION_SETTINGS', 'riseup_settings');
+### Operational Config — `SnapshotConfigType`, `UpdateConfigType`, `PaginationConfigType`
 
-/** Last sync timestamp */
-define('RISEUP_OPTION_LAST_SYNC', 'riseup_last_sync');
+Numeric and sizing defaults are also backed enums with `int` backing:
 
-// ============================================================================
-// DIRECTORIES
-// ============================================================================
+```php
+<?php
 
-/** Logs subdirectory name */
-define('RISEUP_DIR_LOGS', 'logs');
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-/** Data subdirectory name */
-define('RISEUP_DIR_DATA', 'data');
+namespace RiseupAsia\Enums;
 
-/** Uploads subdirectory name */
-define('RISEUP_DIR_UPLOADS', 'uploads');
+enum SnapshotConfigType: int {
+    case BatchSize       = 500;
+    case RetentionDays   = 30;
+    case MaxFileSizeBytes = 52428800; // 50 MB
 
-// ============================================================================
-// FILES
-// ============================================================================
+    public function isEqual(self $other): bool {
+        return $this === $other;
+    }
+}
+```
 
-/** Main log file name */
-define('RISEUP_FILE_LOG', 'log.txt');
+### Private Class Constants
 
-/** Error log file name */
-define('RISEUP_FILE_ERROR_LOG', 'error.txt');
+Values used only within a single class are defined as `private const`:
 
-/** Upload ignore file name */
-define('RISEUP_FILE_UPLOADIGNORE', '.uploadignore');
-
-// ============================================================================
-// TRANSIENT KEYS (for caching)
-// ============================================================================
-
-/** Rate limit prefix */
-define('RISEUP_TRANSIENT_RATE_LIMIT', 'riseup_rate_');
-
-/** Cache prefix */
-define('RISEUP_TRANSIENT_CACHE', 'riseup_cache_');
-
-// ============================================================================
-// HOOK NAMES
-// ============================================================================
-
-/** Plugin activated hook */
-define('RISEUP_HOOK_ACTIVATED', 'riseup_plugin_activated');
-
-/** Plugin deactivated hook */
-define('RISEUP_HOOK_DEACTIVATED', 'riseup_plugin_deactivated');
-
-/** Before upload hook */
-define('RISEUP_HOOK_BEFORE_UPLOAD', 'riseup_before_upload');
-
-/** After upload hook */
-define('RISEUP_HOOK_AFTER_UPLOAD', 'riseup_after_upload');
-
-// ============================================================================
-// DEFAULTS
-// ============================================================================
-
-/** Default rate limit (requests per minute) */
-define('RISEUP_DEFAULT_RATE_LIMIT', 60);
-
-/** Default log retention (days) */
-define('RISEUP_DEFAULT_LOG_RETENTION', 30);
-
-/** Maximum upload size (bytes) - 50MB */
-define('RISEUP_MAX_UPLOAD_SIZE', 52428800);
+```php
+class LogWriter {
+    private const TIMESTAMP_FORMAT = 'Y-m-d\TH:i:s';
+    private const SEPARATOR_WIDTH  = 80;
+    private const MAX_CONTEXT_DEPTH = 3;
+}
 ```
 
 ## Usage Examples
 
-### In REST Route Registration
+### REST Route Registration
 
 ```php
-// ❌ WRONG - Magic strings everywhere
-register_rest_route(
-    'riseup-asia-uploader/v1',  // Magic string!
-    '/upload',                   // Magic string!
-    [...]
-);
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\EndpointType;
 
-// ✅ CORRECT - Using constants
+// ❌ WRONG — magic strings
+register_rest_route('riseup-asia-uploader/v1', '/upload', [...]);
+
+// ✅ CORRECT — enum values
+$namespace = PluginConfigType::ApiBase->value . '/' . PluginConfigType::ApiVersion->value;
+
 register_rest_route(
-    RISEUP_API_NAMESPACE,
-    '/' . RISEUP_ENDPOINT_UPLOAD,
-    [...]
+    $namespace,
+    EndpointType::Upload->route(),
+    [...],
 );
 ```
 
-### In Database Operations
+### WordPress Options
 
 ```php
-// ❌ WRONG
-$this->pdo->exec("CREATE TABLE riseup_transactions (...)");
+use RiseupAsia\Enums\OptionNameType;
 
-// ✅ CORRECT
-$this->pdo->exec("CREATE TABLE " . RISEUP_TABLE_TRANSACTIONS . " (...)");
-```
-
-### In WordPress Options
-
-```php
 // ❌ WRONG
 update_option('riseup_api_token', $token);
 
 // ✅ CORRECT
-update_option(RISEUP_OPTION_API_TOKEN, $token);
+update_option(OptionNameType::ApiToken->value, $token);
 ```
 
-### In File Paths
+### File Paths
 
 ```php
+use RiseupAsia\Helpers\PathHelper;
+
 // ❌ WRONG
-$log_path = $upload_dir . '/riseup-asia-uploader/logs/log.txt';
+$logPath = $uploadDir . '/riseup-asia-uploader/logs/log.txt';
 
 // ✅ CORRECT
-$log_path = $upload_dir . '/' . RISEUP_PLUGIN_SLUG . '/' . RISEUP_DIR_LOGS . '/' . RISEUP_FILE_LOG;
+$logPath = PathHelper::logsDir() . '/log.txt';
 ```
 
-## Configuration Options
-
-For runtime configuration (user settings), use WordPress options:
+### Hook Registration
 
 ```php
-class Riseup_Config {
-    private static $defaults = [
-        'rate_limit' => RISEUP_DEFAULT_RATE_LIMIT,
-        'log_retention_days' => RISEUP_DEFAULT_LOG_RETENTION,
-        'allowed_ips' => [],
-        'debug_mode' => false,
-    ];
-    
-    public static function get($key, $default = null) {
-        $options = get_option(RISEUP_OPTION_SETTINGS, []);
-        
-        if (isset($options[$key])) {
-            return $options[$key];
-        }
-        
-        if (isset(self::$defaults[$key])) {
-            return self::$defaults[$key];
-        }
-        
-        return $default;
-    }
-    
-    public static function set($key, $value) {
-        $options = get_option(RISEUP_OPTION_SETTINGS, []);
-        $options[$key] = $value;
-        update_option(RISEUP_OPTION_SETTINGS, $options);
-    }
-    
-    public static function get_all() {
-        $options = get_option(RISEUP_OPTION_SETTINGS, []);
+use RiseupAsia\Enums\HookType;
 
-        return array_merge(self::$defaults, $options);
-    }
+// ❌ WRONG
+add_action('plugins_loaded', 'riseup_asia_init');
+
+// ✅ CORRECT
+add_action(HookType::PluginsLoaded->value, 'riseup_asia_init');
+```
+
+## Enum Exception: Property Defaults
+
+Due to PHP language constraints, enum `->value` access is not permitted in constant expressions (property defaults, parameter defaults). This is the **only** accepted use of literal strings matching enum values:
+
+```php
+class Example {
+    // PHP does not allow: private string $slug = PluginConfigType::Slug->value;
+    // Literal is acceptable here:
+    private string $slug = 'riseup-asia-uploader';
 }
 ```
+
+## Benefits of Backed Enums Over `define()`
+
+| Feature | `define()` | Backed Enum |
+|---|---|---|
+| Type safety | ❌ Loose string | ✅ Strict enum type |
+| IDE autocomplete | Partial | ✅ Full with `->value` |
+| Namespace isolation | ❌ Global | ✅ PSR-4 namespaced |
+| Grouping | ❌ Flat list | ✅ Domain-specific classes |
+| Helper methods | ❌ None | ✅ `route()`, `isEqual()`, etc. |
+| Pattern matching | ❌ N/A | ✅ `match()` expressions |
+| Exhaustiveness checks | ❌ N/A | ✅ Compiler-enforced |
+| Redefinition risk | ⚠️ Runtime error | ✅ Impossible |
 
 ## Environment-Specific Configuration
 
-For sensitive or environment-specific values, check wp-config.php first:
+For sensitive or environment-specific values, use `wp-config.php` constants checked at runtime:
 
 ```php
-// In wp-config.php (not committed to git)
-define('RISEUP_DEBUG', true);
-define('RISEUP_ALLOWED_IPS', '192.168.1.1,10.0.0.1');
-
-// In plugin code
-class Riseup_Config {
-    public static function is_debug() {
+class DebugConfig {
+    public static function isDebug(): bool {
         return defined('RISEUP_DEBUG') && RISEUP_DEBUG;
     }
-    
-    public static function get_allowed_ips() {
-        if (defined('RISEUP_ALLOWED_IPS')) {
-            return array_map('trim', explode(',', RISEUP_ALLOWED_IPS));
+
+    /** @return list<string> */
+    public static function getAllowedIps(): array {
+        if (!defined('RISEUP_ALLOWED_IPS')) {
+            return [];
         }
 
-        return self::get('allowed_ips', []);
+        return array_map('trim', explode(',', RISEUP_ALLOWED_IPS));
     }
 }
 ```
 
-## Benefits of This Approach
-
-### 1. **Find and Replace**
-When you need to change a value, change it in ONE place:
-```php
-// Change from 'v1' to 'v2'
-define('RISEUP_API_VERSION', 'v2');  // All routes updated!
-```
-
-### 2. **IDE Autocomplete**
-Constants are recognized by IDEs, providing autocomplete and preventing typos.
-
-### 3. **Documentation**
-Constants serve as self-documenting code:
-```php
-RISEUP_ENDPOINT_PLUGIN_ENABLE  // Clear what this does
-'plugin-enable'                 // What is this string for?
-```
-
-### 4. **Refactoring Safety**
-Renaming a constant will cause errors if any usage is missed. Magic strings fail silently.
-
-### 5. **Testing**
-Constants can be easily mocked or overridden in tests:
-```php
-// In test setup
-if (!defined('RISEUP_API_NAMESPACE')) {
-    define('RISEUP_API_NAMESPACE', 'test-namespace/v1');
-}
-```
-
-## Common Mistakes to Avoid
-
-### 1. Concatenating Constants Incorrectly
-```php
-// ❌ WRONG - Creates undefined constant warning
-define('RISEUP_FULL_PATH', RISEUP_DIR_LOGS . RISEUP_FILE_LOG);
-
-// ✅ CORRECT - Use at runtime
-$path = RISEUP_DIR_LOGS . '/' . RISEUP_FILE_LOG;
-```
-
-### 2. Using Constants Before Definition
-```php
-// ❌ WRONG - constants.php must be included first
-require_once 'class-database.php';  // Uses constants
-require_once 'constants.php';       // Too late!
-
-// ✅ CORRECT
-require_once 'constants.php';       // ALWAYS first
-require_once 'class-database.php';
-```
-
-### 3. Defining Constants Conditionally Without Check
-```php
-// ❌ WRONG - Will error if already defined
-define('MY_CONSTANT', 'value');
-
-// ✅ CORRECT - Safe to include multiple times
-if (!defined('MY_CONSTANT')) {
-    define('MY_CONSTANT', 'value');
-}
-```
+These `wp-config.php` defines are the **only** acceptable use of `define()` — they are controlled by the hosting environment, not the plugin.
