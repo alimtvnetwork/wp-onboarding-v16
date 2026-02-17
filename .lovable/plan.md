@@ -14,20 +14,20 @@ All 12+ doc/spec files updated: `RiseupPathUtils` → `PathHelper`, `CleanerUtil
 
 All three rules added to `spec/01-coding-guidelines/code-style.md` and cross-referenced in PHP specs.
 
-## 🔵 PENDING — Part C: PHP Code Enforcement
+## ✅ COMPLETED — Part C: PHP Code Enforcement
 
-### C1: Remove `\` from `Throwable` — ~20 PHP files
+All three sub-tasks fully enforced across ~70 PHP files in `riseup-asia-uploader` as of 2026-02-16:
 
-All `\Throwable` → `Throwable` in catch blocks and type hints.
+- **C1**: `\Throwable`, `\PDO`, `\PDOException`, `\WP_Error` → unqualified with `use` imports
+- **C2**: All functions with >2 params reformatted to one-per-line with trailing comma
+- **C3**: Blank line before `return`/`throw` enforced in all multi-statement blocks
 
-### C2: Multi-line params for functions with >2 params — ~26 PHP files
+Additionally: `!PathHelper::dirExists()` → `PathHelper::isDirMissing()` and `!PathHelper::isSafePath()` → `PathHelper::isPathMissing()` guard conversions applied.
 
-Reformat all function signatures with 3+ parameters to one-per-line with trailing comma.
-
-### C3: Blank line before `return`/`throw` enforcement in PHP
-
-Audit and fix all catch/if blocks missing blank line before return/throw.
+`plugins-onboard` confirmed out of scope per companion-plugin-scope.md.
 
 ---
 
-**Next step:** Execute Part C (C1 → C2 → C3) across all PHP files.
+## 🔵 Next Priority
+
+All plan items (Parts A, B, C) are complete. Awaiting new tasks from the user.
