@@ -81,7 +81,7 @@ trait SyncPushTrait
         array $file,
         string $plugin_dir,
         string $slug,
-        $ignore,
+        UploadIgnore $ignore,
     ): array {
         $path   = isset($file['path']) ? $file['path'] : '';
         $action = isset($file['action']) ? $file['action'] : '';
@@ -101,12 +101,12 @@ trait SyncPushTrait
         string $path,
         string $action,
         string $plugin_dir,
-        $ignore,
+        UploadIgnore $ignore,
     ): ?array {
         if (empty($path) || empty($action)) {
             return array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
         }
-        if ($ignore && $ignore->is_ignored($path)) {
+        if ($ignore->shouldIgnore($path)) {
             return array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => ResponseMessageType::FileIgnored->value);
         }
 
