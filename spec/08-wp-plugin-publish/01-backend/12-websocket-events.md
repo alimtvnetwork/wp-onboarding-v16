@@ -341,32 +341,39 @@ class EventHub {
 ## JavaScript Client
 
 ```typescript
+type WsEventCallback<T = unknown> = (payload: T) => void;
+
+interface WsOutgoingMessage<T = unknown> {
+    type: string;
+    payload: T;
+}
+
 class PluginsOnboardWS {
     private ws: WebSocket;
-    private listeners: Map<string, Set<Function>>;
+    private listeners: Map<string, Set<WsEventCallback>>;
     private reconnectAttempts: number = 0;
     
     constructor(url: string, token: string) {
         this.connect(url, token);
     }
     
-    on(event: string, callback: Function): () => void {
+    on<T = unknown>(event: string, callback: WsEventCallback<T>): () => void {
         // Add listener, return unsubscribe function
     }
     
-    emit(event: string, payload: any): void {
+    emit<T>(event: string, payload: T): void {
         // Send message to server
     }
     
     subscribe(channels: string[]): void {
         this.ws.send(JSON.stringify({
             type: 'subscribe',
-            channels
+            channels,
         }));
     }
     
     private handleMessage(event: MessageEvent): void {
-        const msg = JSON.parse(event.data);
+        const msg: WsOutgoingMessage = JSON.parse(event.data);
         this.listeners.get(msg.type)?.forEach(cb => cb(msg.payload));
         this.listeners.get('*')?.forEach(cb => cb(msg));
     }
