@@ -47,7 +47,8 @@ class RestoreEngine {
         ?Database $db = null,
         ?SnapshotOrchestrator $orchestrator = null,
     ): self {
-        if (self::$instance === null && $logger && $db) {
+        $isReadyToInit = self::$instance === null && $logger && $db;
+        if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $orchestrator);
         }
 

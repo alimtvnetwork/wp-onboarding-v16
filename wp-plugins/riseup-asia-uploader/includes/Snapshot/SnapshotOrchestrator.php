@@ -34,7 +34,8 @@ class SnapshotOrchestrator {
         ?Database $db = null,
         ?SnapshotManager $manager = null,
     ): self {
-        if (self::$instance === null && $logger && $db && $manager) {
+        $isReadyToInit = self::$instance === null && $logger && $db && $manager;
+        if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $manager);
         }
         return self::$instance;

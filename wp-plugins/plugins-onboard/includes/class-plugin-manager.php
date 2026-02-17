@@ -328,7 +328,8 @@ class OnboardPluginManager {
         $existing_plugin = $this->get_plugin($slug);
         $backup = null;
 
-        if ($existing_plugin && $auto_backup && $this->should_backup('upload')) {
+        $isBackupRequired = $existing_plugin && $auto_backup && $this->should_backup('upload');
+        if ($isBackupRequired) {
             $backup = $this->snapshot->create($slug, 'pre_upload', $app_id, $ip_address);
 
             // Delete existing plugin.

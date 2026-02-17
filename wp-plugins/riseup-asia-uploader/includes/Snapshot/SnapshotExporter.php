@@ -19,7 +19,8 @@ class SnapshotExporter {
     private static ?SnapshotExporter $instance = null;
 
     public static function getInstance(?FileLogger $logger = null, ?Database $db = null): ?static {
-        if (self::$instance === null && $logger && $db) {
+        $isReadyToInit = self::$instance === null && $logger && $db;
+        if ($isReadyToInit) {
             self::$instance = new self($logger, $db);
         }
 

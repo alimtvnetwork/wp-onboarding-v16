@@ -157,7 +157,8 @@ class OnboardTokenEncryption {
 
         $payload = json_decode(self::base64_url_decode($payload_encoded), true);
 
-        if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+        $isPayloadInvalid = empty($payload) || empty($payload['exp']) || $payload['exp'] < time();
+        if ($isPayloadInvalid) {
             return false;
         }
 

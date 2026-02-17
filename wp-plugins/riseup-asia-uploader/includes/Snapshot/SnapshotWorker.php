@@ -38,7 +38,8 @@ class SnapshotWorker {
         ?RootDb $rootDb = null,
         ?DependencyAnalyzer $analyzer = null,
     ): self {
-        if (self::$instance === null && $logger && $db && $rootDb && $analyzer) {
+        $isReadyToInit = self::$instance === null && $logger && $db && $rootDb && $analyzer;
+        if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
         return self::$instance;

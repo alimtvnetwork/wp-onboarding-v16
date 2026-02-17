@@ -32,7 +32,8 @@ class RootDb {
     private static ?self $instance = null;
 
     public static function getInstance(?FileLogger $logger = null, ?DependencyAnalyzer $analyzer = null): self {
-        if (self::$instance === null && $logger && $analyzer) {
+        $isReadyToInit = self::$instance === null && $logger && $analyzer;
+        if ($isReadyToInit) {
             self::$instance = new self($logger, $analyzer);
         }
         return self::$instance;

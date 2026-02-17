@@ -862,7 +862,9 @@ jQuery(document).ready(function($) {
                 // Render orphan incrementals (no parent in current page)
                 snapshots.forEach(function(s) {
                     var isIncr = (s.snapshot_type === 'incremental' || s.scope === 'incremental');
-                    if (isIncr && s.parent_id && !fullSnapshots.find(function(f) { return f.id === s.parent_id; })) {
+                    var isParentMissing = s.parent_id && fullSnapshots.every(function(f) { return f.id !== s.parent_id; });
+                    var isOrphanIncremental = isIncr && isParentMissing;
+                    if (isOrphanIncremental) {
                         html += buildSnapshotRow(s, true, 0);
                     }
                 });
