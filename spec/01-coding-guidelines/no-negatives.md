@@ -248,6 +248,7 @@ Raw negation is **only** acceptable for:
 [ ] No `!strings.Contains()` — use `IsMissingSubstring()` / guard function
 [ ] Guard functions live in dedicated utility classes/packages
 [ ] Every boolean method on objects has a semantic inverse
+[ ] No mixed-polarity conditions (`isX && !y`) — extract to a named boolean (see P6 in boolean-principles.md)
 ```
 
 ---
@@ -262,4 +263,4 @@ Raw negation is **only** acceptable for:
 
 ---
 
-*No-negatives specification v2.0.0 — 2026-02-16*
+*No-negatives specification v2.1.0 — 2026-02-17*

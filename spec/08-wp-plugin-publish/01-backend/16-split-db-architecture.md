@@ -787,9 +787,9 @@ func (m *DBManager) copyFileToZip(
 func (m *DBManager) ImportProjectFromZip(
 	zipPath string,
 	projectSlug string,
-	overwrite bool,
+	isOverwrite bool,
 ) error {
-    m.logger.Info("Starting import", "zip", zipPath, "project", projectSlug, "overwrite", overwrite)
+    m.logger.Info("Starting import", "zip", zipPath, "project", projectSlug, "isOverwrite", isOverwrite)
 
     reader, err := zip.OpenReader(zipPath)
     if err != nil {
@@ -797,19 +797,20 @@ func (m *DBManager) ImportProjectFromZip(
     }
     defer reader.Close()
 
-    if err := m.prepareImportDir(projectSlug, overwrite); err != nil {
+    if err := m.prepareImportDir(projectSlug, isOverwrite); err != nil {
         return err
     }
 
     return m.extractAndRegister(reader, projectSlug)
 }
 
-func (m *DBManager) prepareImportDir(projectSlug string, overwrite bool) error {
+func (m *DBManager) prepareImportDir(projectSlug string, isOverwrite bool) error {
     projectDir := filepath.Join(m.dataDir, projectSlug)
     _, err := os.Stat(projectDir)
     isProjectExists := err == nil
+    isConflict := isProjectExists && !isOverwrite
 
-    if isProjectExists && !overwrite {
+    if isConflict {
         return fmt.Errorf("project exists, use overwrite=true to replace")
     }
 

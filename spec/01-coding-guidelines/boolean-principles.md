@@ -1,6 +1,6 @@
 # Cross-Language Boolean Principles
 
-> **Version:** 1.0.0  
+> **Version:** 2.0.0  
 > **Updated:** 2026-02-17  
 > **Applies to:** PHP, TypeScript, Go, C#, and any delegated language
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-Boolean variables, parameters, return values, and method names are the most frequently read tokens in any codebase. Poorly named booleans silently degrade readability, cause logic bugs, and increase cognitive load during code review. This spec defines **five non-negotiable principles** that every programming language in this project must follow.
+Boolean variables, parameters, return values, and method names are the most frequently read tokens in any codebase. Poorly named booleans silently degrade readability, cause logic bugs, and increase cognitive load during code review. This spec defines **six non-negotiable principles** that every programming language in this project must follow.
 
 ---
 
@@ -251,6 +251,70 @@ See also: [function-naming.md](./function-naming.md)
 
 ---
 
+## Principle 6: Never Mix Positive and Negative Booleans in a Single Condition
+
+Combining a positive boolean with a negated boolean in the same `if` condition (e.g., `isX && !y`, `IsReady && !overwrite`) is a **code smell**. It forces the reader to mentally switch polarity mid-expression, creating cognitive load and hiding intent.
+
+**The fix:** Extract the combined condition into a single, positively named boolean that captures the **actual intent**.
+
+```go
+// ❌ FORBIDDEN — Mixed polarity: positive + negative
+if isProjectExists && !isOverwrite {
+    return fmt.Errorf("conflict")
+}
+
+// ✅ REQUIRED — Extract to single-intent named boolean
+isConflict := isProjectExists && !isOverwrite
+
+if isConflict {
+    return fmt.Errorf("conflict")
+}
+```
+
+```php
+// ❌ FORBIDDEN — Mixed polarity
+if ($isAuthenticated && !$isAuthorized) {
+    throw new ForbiddenException();
+}
+
+// ✅ REQUIRED — Single intent
+$isAccessDenied = $isAuthenticated && !$isAuthorized;
+
+if ($isAccessDenied) {
+    throw new ForbiddenException();
+}
+```
+
+```typescript
+// ❌ FORBIDDEN — Mixed polarity
+if (isLoggedIn && !hasPermission) {
+    redirect('/unauthorized');
+}
+
+// ✅ REQUIRED — Single intent
+const isUnauthorized = isLoggedIn && !hasPermission;
+
+if (isUnauthorized) {
+    redirect('/unauthorized');
+}
+```
+
+### Why This Matters
+
+| Pattern | Problem | Fix |
+|---|---|---|
+| `isX && !y` | Reader must switch polarity mid-expression | Extract to `isConflict` / `isUnauthorized` / `isDenied` |
+| `isReady && !isOverwrite` | `!isOverwrite` lacks semantic meaning | Use `isFreshImport` or extract full condition |
+| `hasData && !isProcessed` | Two separate concerns crammed together | Extract to `isPendingProcessing` |
+
+### Rule Summary
+
+1. **Never combine `isX` with `!isY`** in the same `if` condition
+2. **Always extract** the combined condition into a named boolean with a positive semantic name
+3. The named boolean should express the **intent** (e.g., `isConflict`, `isAccessDenied`, `isPending`) — not just restate the logic
+
+---
+
 ## Quick Reference
 
 | ❌ Forbidden | ✅ Required | Principle |
@@ -262,6 +326,7 @@ See also: [function-naming.md](./function-naming.md)
 | `!$obj->isValid()` | `$obj->isInvalid()` | P3: Named guards |
 | `if (a && b \|\| c)` | `if (isValid(x))` | P4: Extract expressions |
 | `fn(true)` | `fnWithOption()` | P5: Explicit params |
+| `isX && !isY` | `isConflict` (extracted) | P6: No mixed polarity |
 
 ---
 
@@ -275,4 +340,4 @@ See also: [function-naming.md](./function-naming.md)
 
 ---
 
-*Boolean principles specification v1.0.0 — 2026-02-17*
+*Boolean principles specification v2.0.0 — 2026-02-17*
