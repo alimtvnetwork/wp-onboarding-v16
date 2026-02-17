@@ -56,11 +56,19 @@ func (s *Service) fetchFromDelegatedServer(
     }
     defer resp.Body.Close()
 
+    return s.buildDelegatedEnvelope(delegatedURL, path, resp.StatusCode, bodyBytes)
+}
+
+func (s *Service) buildDelegatedEnvelope(
+    delegatedURL, path string,
+    statusCode int,
+    bodyBytes []byte,
+) (*Envelope, error) {
     envelope := NewEnvelope()
     envelope.Attributes.RequestDelegatedAt = delegatedURL
 
-    if resp.StatusCode >= 400 {
-        return s.buildDelegatedErrorEnvelope(envelope, delegatedURL, path, resp.StatusCode, bodyBytes)
+    if statusCode >= 400 {
+        return s.buildDelegatedErrorEnvelope(envelope, delegatedURL, path, statusCode, bodyBytes)
     }
 
     // Success path — RequestDelegatedAt is still set so frontend knows a hop occurred
@@ -91,26 +99,37 @@ func (s *Service) buildDelegatedErrorEnvelope(
     statusCode int,
     bodyBytes []byte,
 ) (*Envelope, error) {
-    responseBody := json.RawMessage(bodyBytes)
-
     var parsed DelegatedResponseBody
     _ = json.Unmarshal(bodyBytes, &parsed)
 
     envelope.Errors = &EnvelopeErrors{
-        BackendMessage: fmt.Sprintf("[E3001] failed to fetch %s: %s (GET %s): status %d",
-            path, path, path, statusCode),
-        DelegatedRequestServer: &DelegatedRequestServer{
-            DelegatedEndpoint:  delegatedURL,
-            Method:             http.MethodGet,
-            StatusCode:         statusCode,
-            RequestBody:        nil,
-            Response:           responseBody,
-            StackTrace:         parsed.Data.StackTrace,
-            AdditionalMessages: parsed.Data.LogHint,
-        },
+        BackendMessage:         s.formatDelegatedError(path, statusCode),
+        DelegatedRequestServer: s.newDelegatedServer(delegatedURL, statusCode, bodyBytes, &parsed),
     }
 
     return envelope, apperror.New("E3001", fmt.Sprintf("delegated request failed with status %d", statusCode))
+}
+
+func (s *Service) formatDelegatedError(path string, statusCode int) string {
+    return fmt.Sprintf("[E3001] failed to fetch %s: %s (GET %s): status %d",
+        path, path, path, statusCode)
+}
+
+func (s *Service) newDelegatedServer(
+    delegatedURL string,
+    statusCode int,
+    bodyBytes []byte,
+    parsed *DelegatedResponseBody,
+) *DelegatedRequestServer {
+    return &DelegatedRequestServer{
+        DelegatedEndpoint:  delegatedURL,
+        Method:             http.MethodGet,
+        StatusCode:         statusCode,
+        RequestBody:        nil,
+        Response:           json.RawMessage(bodyBytes),
+        StackTrace:         parsed.Data.StackTrace,
+        AdditionalMessages: parsed.Data.LogHint,
+    }
 }
 ```
 

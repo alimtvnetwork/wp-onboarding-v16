@@ -257,18 +257,24 @@ func (b *EnvelopeBuilder) BuildErrorResponse(ctx context.Context, err error) *Re
             Backend:        getGoStackTrace(err),
         },
     }
-    
-    // Inject DelegatedRequestServer if present in context
-    if delegated, ok := ctx.Value(delegatedServerKey).(*DelegatedRequestServer); ok {
-        resp.Errors.DelegatedRequestServer = delegated
-        
-        // Also populate legacy DelegatedServiceErrorStack for backward compatibility
-        if len(delegated.StackTrace) > 0 {
-            resp.Errors.DelegatedServiceErrorStack = delegated.StackTrace
-        }
-    }
-    
+
+    b.injectDelegatedServer(ctx, resp)
+
     return resp
+}
+
+func (b *EnvelopeBuilder) injectDelegatedServer(ctx context.Context, resp *Response) {
+    delegated, ok := ctx.Value(delegatedServerKey).(*DelegatedRequestServer)
+    if !ok {
+        return
+    }
+
+    resp.Errors.DelegatedRequestServer = delegated
+
+    // Populate legacy field for backward compatibility
+    if len(delegated.StackTrace) > 0 {
+        resp.Errors.DelegatedServiceErrorStack = delegated.StackTrace
+    }
 }
 ```
 

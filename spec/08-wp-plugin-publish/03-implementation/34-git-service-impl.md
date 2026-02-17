@@ -329,11 +329,7 @@ func (s *serviceImpl) runPullAndParse(plugin *Plugin, result *PullResult) error 
 	result.Output = output
 
 	if err != nil {
-		result.Success = false
-		result.Error = err.Error()
-		s.broadcastPullFailed(result.PluginID, result.Error)
-
-		return err
+		return s.recordPullFailure(result, err)
 	}
 
 	result.Success = true
@@ -341,6 +337,14 @@ func (s *serviceImpl) runPullAndParse(plugin *Plugin, result *PullResult) error 
 	s.populateCommitInfo(plugin.Path, result)
 
 	return nil
+}
+
+func (s *serviceImpl) recordPullFailure(result *PullResult, err error) error {
+	result.Success = false
+	result.Error = err.Error()
+	s.broadcastPullFailed(result.PluginID, result.Error)
+
+	return err
 }
 
 func (s *serviceImpl) populateCommitInfo(path string, result *PullResult) {
@@ -472,19 +476,23 @@ func (s *serviceImpl) GetStatus(ctx context.Context, pluginID int64) (*GitStatus
 		return nil, err
 	}
 
+	return s.buildGitStatus(pluginID, plugin.Path), nil
+}
+
+func (s *serviceImpl) buildGitStatus(pluginID int64, path string) *GitStatus {
 	status := &GitStatus{PluginID: pluginID}
 
-	gitDir := filepath.Join(plugin.Path, ".git")
+	gitDir := filepath.Join(path, ".git")
 	if !dirExists(gitDir) {
 		status.IsRepo = false
 
-		return status, nil
+		return status
 	}
 
 	status.IsRepo = true
-	s.populateGitStatus(plugin.Path, status)
+	s.populateGitStatus(path, status)
 
-	return status, nil
+	return status
 }
 
 func (s *serviceImpl) populateGitStatus(path string, status *GitStatus) {
