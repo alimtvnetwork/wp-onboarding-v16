@@ -1,7 +1,7 @@
 # Generic Enforce — Golang
 
 > This file covers **Go-specific syntax and idioms only**.  
-> For rules, rationale, and the canonical example, see [`README.md`](./README.md).
+> For rules, rationale, and the canonical example, see [`readme.md`](./readme.md).
 
 ---
 

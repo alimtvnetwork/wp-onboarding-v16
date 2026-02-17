@@ -10,16 +10,16 @@
 | Folder | Description | Key Files |
 |--------|-------------|-----------|
 | [coding-guidelines/](./coding-guidelines/) | DRY principles and general coding standards | `dry-principles.md` |
-| [error-handling/](./error-handling/) | Cross-stack error chain (PHP → Go → React) | `README.md` |
-| [error-modal/](./error-modal/) | Frontend Global Error Modal specification with UI layout diagrams | `README.md` |
+| [error-handling/](./error-handling/) | Cross-stack error chain (PHP → Go → React) | `readme.md` |
+| [error-modal/](./error-modal/) | Frontend Global Error Modal specification with UI layout diagrams | `readme.md` |
 | [error-resolution/](./error-resolution/) | Specific resolved error patterns and fixes | Per-issue files |
-| [golang-standards/](./golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `README.md` |
+| [golang-standards/](./golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `readme.md` |
 | [logging-and-diagnostics/](./logging-and-diagnostics/) | Session-based logging, React execution logger | Per-feature files |
-| [php-standards/](./php-standards/) | PHP coding standards (`Throwable`, `safe_execute`, constants) | `README.md` |
+| [php-standards/](./php-standards/) | PHP coding standards (`Throwable`, `safe_execute`, constants) | `readme.md` |
 | [powershell-integration/](./powershell-integration/) | PowerShell runner (`run.ps1`) for Go+React projects with pnpm PnP | `00-overview.md` |
-| [response-envelope/](./response-envelope/) | Universal Response Envelope JSON Schema (v1.0.0) and samples | `envelope.schema.json`, `ADR.md` |
-| [typescript-standards/](./typescript-standards/) | TypeScript coding standards (no `any`/`unknown` in public APIs) | `README.md` |
-| [upload-scripts/](./upload-scripts/) | PowerShell upload scripts (V1, V2, V3) for WordPress plugin deployment | `README.md` |
+| [response-envelope/](./response-envelope/) | Universal Response Envelope JSON Schema (v1.0.0) and samples | `envelope.schema.json`, `adr.md` |
+| [typescript-standards/](./typescript-standards/) | TypeScript coding standards (no `any`/`unknown` in public APIs) | `readme.md` |
+| [upload-scripts/](./upload-scripts/) | PowerShell upload scripts (V1, V2, V3) for WordPress plugin deployment | `readme.md` |
 | [wordpress-plugin/](./wordpress-plugin/) | WordPress companion plugin architecture and API | Per-feature files |
 | [wordpress-plugin-development/](./wordpress-plugin-development/) | Plugin development workflow and conventions | Per-topic files |
 | [wp-plugin-publish/](./wp-plugin-publish/) | Publishing pipeline specification | Per-feature files |

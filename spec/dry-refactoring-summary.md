@@ -140,7 +140,7 @@ The 10-phase DRY (Don't Repeat Yourself) refactoring initiative modernized the f
 - Validated all reference samples against the schema
 - Documented decision in ADR #7
 
-**Files affected:** `spec/response-envelope/envelope.schema.json`, `spec/response-envelope/ADR.md`, `spec/response-envelope/CHANGELOG.md`
+**Files affected:** `spec/response-envelope/envelope.schema.json`, `spec/response-envelope/adr.md`, `spec/response-envelope/changelog.md`
 
 ---
 
@@ -170,10 +170,10 @@ The 10-phase DRY (Don't Repeat Yourself) refactoring initiative modernized the f
 
 ## Cross-References
 
-- [Response Envelope Spec](spec/response-envelope/README.md)
+- [Response Envelope Spec](spec/response-envelope/readme.md)
 - [Envelope JSON Schema](spec/response-envelope/envelope.schema.json)
-- [ADR #7: JSON Schema Strategy](spec/response-envelope/ADR.md)
-- [CHANGELOG](spec/response-envelope/CHANGELOG.md)
+- [ADR #7: JSON Schema Strategy](spec/response-envelope/adr.md)
+- [CHANGELOG](spec/response-envelope/changelog.md)
 
 ---
 

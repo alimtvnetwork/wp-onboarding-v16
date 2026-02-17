@@ -6,10 +6,10 @@ All notable milestones in the design, migration, and adoption of the Universal R
 
 ## v2.0.1 — 2026-02-11 · Cross-Check & Consistency Pass
 
-- Fixed `CapturedError` in `spec/error-handling/README.md` — removed incorrect top-level `delegatedRequestServer` field; data is accessed via `envelopeErrors.DelegatedRequestServer`.
-- Fixed `CapturedError` in `spec/error-modal/README.md` — same correction, added clarifying comment.
-- Fixed `spec/error-modal/COPY-FORMATS.md` session endpoint reference — corrected to `GET /api/v1/sessions/{id}/diagnostics`.
-- Updated `COPY-FORMATS.md` version to 2.0.0.
+- Fixed `CapturedError` in `spec/error-handling/readme.md` — removed incorrect top-level `delegatedRequestServer` field; data is accessed via `envelopeErrors.DelegatedRequestServer`.
+- Fixed `CapturedError` in `spec/error-modal/readme.md` — same correction, added clarifying comment.
+- Fixed `spec/error-modal/copy-formats.md` session endpoint reference — corrected to `GET /api/v1/sessions/{id}/diagnostics`.
+- Updated `copy-formats.md` version to 2.0.0.
 - Added `DelegatedRequestServer` interface to `src/lib/api/types.ts` and exported from barrel index.
 - Verified all 7 spec files have consistent field names, types, and JSON key casing (PascalCase for envelope, camelCase for frontend).
 
@@ -18,13 +18,13 @@ All notable milestones in the design, migration, and adoption of the Universal R
 - **Added `DelegatedRequestServer` to `Errors` block** — Structured error details from downstream servers (PHP, Chrome extension, or any 3rd-party). Includes `DelegatedEndpoint`, `Method`, `StatusCode`, `RequestBody`, `Response`, `StackTrace`, and `AdditionalMessages`.
 - Updated `envelope.schema.json` with `DelegatedRequestServer` definition (`$defs`).
 - Updated `envelope-error.json` with realistic delegated server error sample (snapshot settings 403).
-- Updated `CONFIGURABILITY.md` with `DelegatedRequestServer` presence rules and `includeDelegatedServerInfo` config toggle.
-- **Created `spec/error-modal/COPY-FORMATS.md`** — Complete samples for all copy/export formats: Full Report (MD), Report with Backend Logs, error.log.txt, backend error.log.txt with delegated server info.
+- Updated `configurability.md` with `DelegatedRequestServer` presence rules and `includeDelegatedServerInfo` config toggle.
+- **Created `spec/error-modal/copy-formats.md`** — Complete samples for all copy/export formats: Full Report (MD), Report with Backend Logs, error.log.txt, backend error.log.txt with delegated server info.
 - Added `SessionId` to error sample `Attributes` block for session ↔ error linkage.
-- **Updated `spec/error-handling/README.md`** (v2.0.0) — 3-hop architecture, DelegatedRequestServer injection flow, E8000 error code range.
-- **Updated `spec/error-modal/README.md`** (v2.0.0) — DelegatedRequestServer UI rendering in Stack/Request/Traversal tabs.
+- **Updated `spec/error-handling/readme.md`** (v2.0.0) — 3-hop architecture, DelegatedRequestServer injection flow, E8000 error code range.
+- **Updated `spec/error-modal/readme.md`** (v2.0.0) — DelegatedRequestServer UI rendering in Stack/Request/Traversal tabs.
 - **Updated `spec/logging-and-diagnostics/session-based-logging.md`** (v2.0.0) — DelegatedRequestInfo in session data model, session-error linkage, diagnostics API.
-- **Created `spec/error-modal/REACT-COMPONENTS.md`** — Portable React code reference for rebuilding the error modal.
+- **Created `spec/error-modal/react-components.md`** — Portable React code reference for rebuilding the error modal.
 
 ## v1.9.0 — 2026-02-09 · JSON Schema & DRY Refactoring Complete
 

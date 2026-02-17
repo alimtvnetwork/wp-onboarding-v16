@@ -649,9 +649,9 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 
 ## Cross-References
 
-- [PHP Coding Standards](../04-php-standards/README.md) — ErrorChecker, safeExecute, boolean rules
+- [PHP Coding Standards](../04-php-standards/readme.md) — ErrorChecker, safeExecute, boolean rules
 - [PHP Enum Spec](../04-php-standards/enums.md) — ErrorTypeEnum, HookType full listings
-- [Error Handling Cross-Stack](../05-error-manage/01-error-handling/README.md) — Three-tier error architecture
+- [Error Handling Cross-Stack](../05-error-manage/01-error-handling/readme.md) — Three-tier error architecture
 - [WordPress Initialization](./01-initialization-patterns.md) — Shutdown handler registration timing
 
 ---

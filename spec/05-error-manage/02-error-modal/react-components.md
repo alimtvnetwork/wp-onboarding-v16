@@ -629,7 +629,7 @@ export function generateErrorReport(error: CapturedError, app?: AppInfo): string
 }
 ```
 
-**Sample output:** See `spec/error-modal/COPY-FORMATS.md` for complete examples.
+**Sample output:** See `spec/05-error-manage/02-error-modal/copy-formats.md` for complete examples.
 
 ### 8.1 Suggested Fixes
 

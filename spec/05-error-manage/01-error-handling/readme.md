@@ -514,12 +514,12 @@ The Errors page implements a 3-tier fallback:
 - [Error Resolution Retrospectives](../error-resolution/00-overview.md)
 - [Session-Based Logging](../logging-and-diagnostics/session-based-logging.md)
 - [React Execution Logger](../logging-and-diagnostics/react-execution-logger.md)
-- [Error Modal Spec](../error-modal/README.md)
-- [Copy Format Samples](../error-modal/COPY-FORMATS.md)
-- [Response Envelope Schema](../response-envelope/envelope.schema.json)
-- [Envelope Configurability](../response-envelope/CONFIGURABILITY.md)
-- [PHP Standards](../php-standards/README.md)
-- [Golang Standards](../golang-standards/README.md)
+- [Error Modal Spec](../02-error-modal/readme.md)
+- [Copy Format Samples](../02-error-modal/copy-formats.md)
+- [Response Envelope Schema](../05-response-envelope/envelope.schema.json)
+- [Envelope Configurability](../05-response-envelope/configurability.md)
+- [PHP Standards](../../04-php-standards/readme.md)
+- [Golang Standards](../../03-golang-standards/readme.md)
 
 ---
 

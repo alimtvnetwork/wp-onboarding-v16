@@ -136,10 +136,10 @@ A unified response contract was needed to eliminate these problems without break
 
 ## References
 
-- [spec/response-envelope/README.md](./README.md) — Canonical specification
-- [spec/response-envelope/CHANGELOG.md](./CHANGELOG.md) — Migration timeline
+- [spec/response-envelope/readme.md](./readme.md) — Canonical specification
+- [spec/response-envelope/changelog.md](./changelog.md) — Migration timeline
 - [spec/response-envelope/envelope.schema.json](./envelope.schema.json) — JSON Schema (Draft 2020-12) source of truth
-- [spec/response-envelope/CONFIGURABILITY.md](./CONFIGURABILITY.md) — Debug toggle rules
+- [spec/response-envelope/configurability.md](./configurability.md) — Debug toggle rules
 - RFC 8288 — Web Linking (absolute URL convention)
 
 ---

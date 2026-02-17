@@ -69,7 +69,7 @@ PHP does not support type declarations on local variables. Types apply to parame
 
 Already enforced by the generics-first rule and `strict: true` in tsconfig. Key reinforcements:
 
-- `any` is **prohibited** everywhere (see [TypeScript Standards](../02-typescript-standards/README.md))
+- `any` is **prohibited** everywhere (see [TypeScript Standards](../02-typescript-standards/readme.md))
 - `unknown` only at parse boundaries with immediate narrowing
 - All function signatures must have explicit parameter and return types
 
@@ -79,7 +79,7 @@ Already enforced by the generics-first rule and `strict: true` in tsconfig. Key 
 
 Already statically typed. Key reinforcements:
 
-- `interface{}` / `any` is **prohibited** in exported APIs (see [Go Standards](../03-golang-standards/README.md))
+- `interface{}` / `any` is **prohibited** in exported APIs (see [Go Standards](../03-golang-standards/readme.md))
 - Use concrete types or constrained generics (`[T any]` in generic signatures is acceptable)
 - All struct fields must use concrete types, not `map[string]interface{}`
 
@@ -186,11 +186,11 @@ func CreateUser(params CreateUserParams) (User, error) { ... }
 
 ## Cross-References
 
-- [PHP Standards](../04-php-standards/README.md)
-- [TypeScript Standards](../02-typescript-standards/README.md)
-- [Go Standards](../03-golang-standards/README.md)
+- [PHP Standards](../04-php-standards/readme.md)
+- [TypeScript Standards](../02-typescript-standards/readme.md)
+- [Go Standards](../03-golang-standards/readme.md)
 - [Function Naming](./function-naming.md)
-- [Generic Enforce](../12-generic-enforce/README.md)
+- [Generic Enforce](../12-generic-enforce/readme.md)
 
 ---
 
