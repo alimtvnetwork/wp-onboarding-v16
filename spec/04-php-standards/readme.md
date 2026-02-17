@@ -61,14 +61,14 @@ All REST endpoint handlers must be wrapped in `safeExecute`:
 
 ```php
 // ✅ Pattern: safeExecute wrapper
-public function handleUpload($request) {
+public function handleUpload(WP_REST_Request $request): WP_REST_Response {
     return $this->safeExecute(function() use ($request) {
         // Business logic here
         return $this->envelope->success($result);
     });
 }
 
-private function safeExecute(callable $callback) {
+private function safeExecute(callable $callback): WP_REST_Response {
     try {
         return $callback();
     } catch (Throwable $e) {
@@ -605,7 +605,7 @@ public function handleUpload($request) {
 }
 
 // ✅ REQUIRED: Short top-level, helpers do the work
-public function handleUpload($request) {
+public function handleUpload(WP_REST_Request $request): WP_REST_Response {
     $params = $this->extractUploadParams($request);
     $this->validateUpload($params);
     $result = $this->processUpload($params);
