@@ -320,7 +320,7 @@ if ($this->initialized) {
     return;
 }
 $this->initialized = true;
-add_action(HookEnum::INIT, [$this, 'setup']);
+add_action(HookType::Init->value, [$this, 'setup']);
 
 // ✅ REQUIRED: Blank line after block when code follows
 if ($this->initialized) {
@@ -328,7 +328,7 @@ if ($this->initialized) {
 }
 
 $this->initialized = true;
-add_action(HookEnum::INIT, [$this, 'setup']);
+add_action(HookType::Init->value, [$this, 'setup']);
 ```
 
 ```typescript
