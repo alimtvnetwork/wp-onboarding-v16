@@ -68,7 +68,7 @@ trait ImportExecutionFileTrait {
     }
 
     private function copyDirectory(string $src, string $dest): void {
-        if (!PathHelper::ensureDir($dest, false)) {
+        if (!PathHelper::makeDirectory($dest, false)) {
             throw new Exception("Failed to create directory: {$dest}");
         }
 

@@ -49,7 +49,7 @@ trait SnapshotProviderHelpersTrait {
     }
 
     protected function ensureSnapshotsDir(): bool {
-        $dir = PathHelper::ensurePath(true, PathHelper::getSnapshotsDir());
+        $dir = PathHelper::makePath(true, PathHelper::getSnapshotsDir());
 
         if ($dir === false) {
             $this->log(LogLevelType::Error->value, 'Failed to ensure snapshots directory');

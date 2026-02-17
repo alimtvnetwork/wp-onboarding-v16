@@ -19,7 +19,7 @@ This document codifies the mandatory development standards for the WordPress com
 | `RiseupSnapshotManager` (global) | `RiseupAsia\Snapshot\SnapshotManager` |
 
 ### Methods
-- **camelCase** for all methods: `ensureDir()`, `isSafePath()`, `formatBytes()`.
+- **camelCase** for all methods: `makeDirectory()`, `isSafePath()`, `formatBytes()`.
 
 ### Constants
 - **PascalCase** enum members: `case Success`, `case ActionUpload`.
@@ -62,12 +62,12 @@ $db     = PathHelper::getDbPath();
 ### Path Operations
 ```php
 $path = PathHelper::join($base, $subdir, $filename);
-$dir  = PathHelper::ensurePath(true, $base, $subdir);
+$dir  = PathHelper::makePath(true, $base, $subdir);
 $safe = PathHelper::isSafePath($path, $base);
 ```
 
 ### Security
-Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php` (silence) files via `PathHelper::addSecurityFiles()` or `ensureDir($path, true)`.
+Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php` (silence) files via `PathHelper::addSecurityFiles()` or `makeDirectory($path, true)`.
 
 ---
 
@@ -110,7 +110,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 Use `InitHelpers` for idempotent resource setup:
 
-- **Directory creation**: `ensureDir($path, $secure)` — cached per-request to avoid redundant filesystem checks.
+- **Directory creation**: `makeDirectory($path, $secure)` — cached per-request to avoid redundant filesystem checks.
 - **SQLite connections**: `initSqliteConnection($path, $logger)` — checks PDO/driver availability, enables WAL mode and auto-vacuum.
 - **Component startup**: `initComponent($name, $callable)` — wraps init in try/catch with timing, records results for diagnostics.
 

@@ -89,8 +89,8 @@ trait ImportExecutionTrait {
     /** Move snapshot to final location in snapshots directory. */
     private function moveSnapshotToFinalLocation(string $snapshotRoot, array $metadata): string {
         $snapshotsDir = PathHelper::getSnapshotsDir();
-        if (!PathHelper::ensureDir($snapshotsDir, true)) {
-            throw new Exception('Failed to ensure snapshots directory');
+        if (!PathHelper::makeDirectory($snapshotsDir, true)) {
+            throw new Exception('Failed to create snapshots directory');
         }
 
         $title = $metadata['title'] ?? 'imported';

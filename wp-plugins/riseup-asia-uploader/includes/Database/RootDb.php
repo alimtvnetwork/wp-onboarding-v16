@@ -48,7 +48,7 @@ class RootDb {
 
         $dir = dirname($filepath);
         if (PathHelper::isDirMissing($dir)) {
-            PathHelper::ensureDir($dir);
+            PathHelper::makeDirectory($dir);
         }
 
         $pdo = new PDO('sqlite:' . $filepath);

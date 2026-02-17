@@ -51,7 +51,7 @@ trait DatabaseConnectionTrait {
         $baseDir = $this->fileLogger->getBaseDir();
         $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
-        if (!PathHelper::ensureDir($baseDir, true)) {
+        if (!PathHelper::makeDirectory($baseDir, true)) {
             $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
 
             throw new Exception('Failed to create data directory: ' . $baseDir);

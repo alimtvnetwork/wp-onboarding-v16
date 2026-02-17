@@ -137,7 +137,7 @@
 | `isDirMissing()` | `is_dir_missing()` |
 | `getInstance()` | `get_instance()` |
 | `initSqliteConnection()` | `init_sqlite_connection()` |
-| `ensureDir()` | `ensure_dir()` |
+| `makeDirectory()` | `make_directory()` |
 | `formatStackFrames()` | `format_stack_frames()` |
 | `registerCronSchedules()` | `register_cron_schedules()` |
 

@@ -50,8 +50,8 @@ Namespace: `RiseupAsia\Helpers`
 class PathHelper {
     // Core path operations (via PathHelperCoreTrait)
     public static function join(string ...$segments): string;
-    public static function ensureDir(string $path, bool $secure = false): bool;
-    public static function ensurePath(bool $secure, string ...$segments): string|false;
+    public static function makeDirectory(string $path, bool $secure = false): bool;
+    public static function makePath(bool $secure, string ...$segments): string|false;
     public static function getBaseDir(): string;
     public static function isSafePath(string $path, string $basePath): bool;
 
@@ -79,7 +79,7 @@ use RiseupAsia\Helpers\PathHelper;
 // CORRECT: Guard with isDirMissing — single semantic call
 $snapshotsDir = PathHelper::getSnapshotsDir();
 
-if (!PathHelper::ensureDir($snapshotsDir)) {
+if (!PathHelper::makeDirectory($snapshotsDir)) {
     $this->logger->error('Failed to create snapshots directory');
 
     return false;

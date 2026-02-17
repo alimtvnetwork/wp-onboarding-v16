@@ -35,7 +35,7 @@ trait WorkerSetupTrait {
         $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
         $snapshot_dir = $base_dir . '/' . $dir_name;
 
-        if (!PathHelper::ensureDir($snapshot_dir, true)) {
+        if (!PathHelper::makeDirectory($snapshot_dir, true)) {
             return array('success' => false, 'error' => 'Failed to create snapshot directory');
         }
 
@@ -60,7 +60,7 @@ trait WorkerSetupTrait {
 
     private function getSnapshotsBaseDir(): string {
         $base = PathHelper::getSnapshotsDir();
-        PathHelper::ensureDir($base, true);
+        PathHelper::makeDirectory($base, true);
 
         return $base;
     }

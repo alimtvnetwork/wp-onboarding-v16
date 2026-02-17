@@ -44,7 +44,7 @@ class SnapshotImport {
         ));
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
-        if (!PathHelper::ensureDir($tempDir, false)) {
+        if (!PathHelper::makeDirectory($tempDir, false)) {
             return $this->fail('Failed to create temp directory');
         }
 

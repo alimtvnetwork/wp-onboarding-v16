@@ -20,7 +20,7 @@ trait FileSystemDirTrait {
 
     private function getTempDir(): string {
         $tempDir = PathHelper::getTempDir();
-        PathHelper::ensureDir($tempDir);
+        PathHelper::makeDirectory($tempDir);
 
         return $tempDir;
     }

@@ -75,10 +75,10 @@ trait PathHelperDirTrait {
 
     // ── Directory Creation ──
 
-    public static function ensureDir(string $path, bool $secure = false): bool {
+    public static function makeDirectory(string $path, bool $secure = false): bool {
         $path = self::join($path);
         if (empty($path)) {
-            self::safeLog(LogLevelType::Error->value, '[PATH] Empty path provided to ensureDir');
+            self::safeLog(LogLevelType::Error->value, '[PATH] Empty path provided to makeDirectory');
             return false;
         }
 
@@ -134,13 +134,13 @@ trait PathHelperDirTrait {
         return $success;
     }
 
-    public static function ensurePath(bool $secure, string ...$segments) {
+    public static function makePath(bool $secure, string ...$segments) {
         $path = self::join(...$segments);
         if (empty($path)) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Empty path from segments', array('segments' => $segments));
             return false;
         }
-        if (!self::ensureDir($path, $secure)) { return false; }
+        if (!self::makeDirectory($path, $secure)) { return false; }
         return $path;
     }
 }
