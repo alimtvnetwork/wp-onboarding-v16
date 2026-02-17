@@ -205,6 +205,17 @@ func (s *serviceImpl) scanPluginRows(ctx context.Context, rows *sql.Rows) ([]mod
 }
 
 func (s *serviceImpl) scanSinglePlugin(rows *sql.Rows) (models.Plugin, error) {
+	p, excludeJSON, lastScannedAt, err := s.scanPluginColumns(rows)
+	if err != nil {
+		return p, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan plugin row")
+	}
+
+	s.parsePluginFields(&p, excludeJSON, lastScannedAt)
+
+	return p, nil
+}
+
+func (s *serviceImpl) scanPluginColumns(rows *sql.Rows) (models.Plugin, string, sql.NullString, error) {
 	var p models.Plugin
 	var excludeJSON string
 	var lastScannedAt sql.NullString
@@ -214,13 +225,7 @@ func (s *serviceImpl) scanSinglePlugin(rows *sql.Rows) (models.Plugin, error) {
 		&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
 	)
 
-	if err != nil {
-		return p, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan plugin row")
-	}
-
-	s.parsePluginFields(&p, excludeJSON, lastScannedAt)
-
-	return p, nil
+	return p, excludeJSON, lastScannedAt, err
 }
 
 func (s *serviceImpl) parsePluginFields(p *models.Plugin, excludeJSON string, lastScannedAt sql.NullString) {
@@ -250,19 +255,10 @@ func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Plugin, er
 }
 
 func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*models.Plugin, error) {
-	var p models.Plugin
-	var excludeJSON string
-	var lastScannedAt sql.NullString
-
-	err := s.db.QueryRowContext(ctx, pluginGetByIDQuery, id).Scan(
-		&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
-		&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
-	)
-
+	p, excludeJSON, lastScannedAt, err := s.scanPluginByID(ctx, id)
 	if err == sql.ErrNoRows {
 		return nil, apperror.New(apperror.ErrNotFound, "plugin not found").WithContext("pluginId", id)
 	}
-
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
 	}
@@ -272,16 +268,25 @@ func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*models.Pl
 	return &p, nil
 }
 
+func (s *serviceImpl) scanPluginByID(ctx context.Context, id int64) (models.Plugin, string, sql.NullString, error) {
+	var p models.Plugin
+	var excludeJSON string
+	var lastScannedAt sql.NullString
+
+	err := s.db.QueryRowContext(ctx, pluginGetByIDQuery, id).Scan(
+		&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
+		&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
+	)
+
+	return p, excludeJSON, lastScannedAt, err
+}
+
 // --- Create ---
 
 func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Plugin, error) {
 	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path)
 
-	if err := s.ValidatePath(ctx, input.Path); err != nil {
-		return nil, err
-	}
-
-	if err := s.checkDuplicatePath(ctx, input.Path); err != nil {
+	if err := s.validateAndCheckDuplicate(ctx, input); err != nil {
 		return nil, err
 	}
 
@@ -293,6 +298,14 @@ func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Pl
 	s.log.Info("Plugin created", "pluginId", id, "name", input.Name)
 
 	return s.GetByID(ctx, id)
+}
+
+func (s *serviceImpl) validateAndCheckDuplicate(ctx context.Context, input CreateInput) error {
+	if err := s.ValidatePath(ctx, input.Path); err != nil {
+		return err
+	}
+
+	return s.checkDuplicatePath(ctx, input.Path)
 }
 
 func (s *serviceImpl) checkDuplicatePath(ctx context.Context, path string) error {
@@ -515,11 +528,14 @@ func (s *serviceImpl) validateDirectory(path string, scan *ScanResult) error {
 
 		return nil
 	}
-
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDirRead, "failed to stat directory")
 	}
 
+	return s.validateIsDir(info, path, scan)
+}
+
+func (s *serviceImpl) validateIsDir(info os.FileInfo, path string, scan *ScanResult) error {
 	if !info.IsDir() {
 		scan.Error = "path is not a directory"
 
@@ -566,11 +582,14 @@ func (s *serviceImpl) processWalkEntry(basePath, filePath string, info os.FileIn
 	if relPath == "." {
 		return nil
 	}
-
 	if s.shouldSkipEntry(filePath, info) {
 		return filepath.SkipDir
 	}
 
+	return s.appendScannedFile(relPath, filePath, info, scan)
+}
+
+func (s *serviceImpl) appendScannedFile(relPath, filePath string, info os.FileInfo, scan *ScanResult) error {
 	scan.Files = append(scan.Files, s.buildFileInfo(relPath, filePath, info, scan))
 
 	return nil
@@ -649,12 +668,16 @@ func (s *serviceImpl) findMainPluginFile(path string) (string, string, string, e
 		return "", "", "", err
 	}
 
+	return s.searchPHPHeaders(path, entries)
+}
+
+func (s *serviceImpl) searchPHPHeaders(dir string, entries []os.DirEntry) (string, string, string, error) {
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
 			continue
 		}
 
-		name, version := s.parsePluginHeader(filepath.Join(path, entry.Name()))
+		name, version := s.parsePluginHeader(filepath.Join(dir, entry.Name()))
 		if name != "" {
 			return entry.Name(), name, version, nil
 		}
@@ -792,6 +815,17 @@ func (s *serviceImpl) scanMappingRowsWithSiteInfo(rows *sql.Rows) ([]models.Plug
 }
 
 func (s *serviceImpl) scanMappingWithSiteInfo(rows *sql.Rows) (models.PluginMapping, error) {
+	m, lastSyncAt, lastBackupAt, err := s.scanMappingSiteColumns(rows)
+	if err != nil {
+		return m, err
+	}
+
+	s.parseMappingDates(&m, lastSyncAt, lastBackupAt)
+
+	return m, nil
+}
+
+func (s *serviceImpl) scanMappingSiteColumns(rows *sql.Rows) (models.PluginMapping, sql.NullString, sql.NullString, error) {
 	var m models.PluginMapping
 	var lastSyncAt, lastBackupAt sql.NullString
 
@@ -801,13 +835,7 @@ func (s *serviceImpl) scanMappingWithSiteInfo(rows *sql.Rows) (models.PluginMapp
 		&m.SiteName, &m.SiteURL,
 	)
 
-	if err != nil {
-		return m, err
-	}
-
-	s.parseMappingDates(&m, lastSyncAt, lastBackupAt)
-
-	return m, nil
+	return m, lastSyncAt, lastBackupAt, err
 }
 
 func (s *serviceImpl) parseMappingDates(m *models.PluginMapping, lastSyncAt, lastBackupAt sql.NullString) {
@@ -849,6 +877,17 @@ func (s *serviceImpl) scanMappingRowsWithPluginName(rows *sql.Rows) ([]models.Pl
 }
 
 func (s *serviceImpl) scanMappingWithPluginName(rows *sql.Rows) (models.PluginMapping, error) {
+	m, lastSyncAt, lastBackupAt, err := s.scanMappingPluginColumns(rows)
+	if err != nil {
+		return m, err
+	}
+
+	s.parseMappingDates(&m, lastSyncAt, lastBackupAt)
+
+	return m, nil
+}
+
+func (s *serviceImpl) scanMappingPluginColumns(rows *sql.Rows) (models.PluginMapping, sql.NullString, sql.NullString, error) {
 	var m models.PluginMapping
 	var lastSyncAt, lastBackupAt sql.NullString
 	var pluginName string
@@ -860,13 +899,7 @@ func (s *serviceImpl) scanMappingWithPluginName(rows *sql.Rows) (models.PluginMa
 	)
 	_ = pluginName
 
-	if err != nil {
-		return m, err
-	}
-
-	s.parseMappingDates(&m, lastSyncAt, lastBackupAt)
-
-	return m, nil
+	return m, lastSyncAt, lastBackupAt, err
 }
 
 // --- CreateMapping ---
