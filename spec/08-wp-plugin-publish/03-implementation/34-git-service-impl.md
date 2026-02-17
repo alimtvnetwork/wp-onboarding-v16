@@ -106,6 +106,27 @@ type GitPullAllCompleteEvent struct {
 	Failed    int   `json:"failed"`
 	Duration  int64 `json:"duration"`
 }
+
+// BuildStartedEvent is broadcast when a build begins
+type BuildStartedEvent struct {
+	PluginID   int64  `json:"pluginId"`
+	PluginName string `json:"pluginName"`
+	Command    string `json:"command"`
+}
+
+// BuildFailedEvent is broadcast when a build fails
+type BuildFailedEvent struct {
+	PluginID int64  `json:"pluginId"`
+	Error    string `json:"error"`
+	ExitCode int    `json:"exitCode"`
+}
+
+// BuildCompleteEvent is broadcast when a build succeeds
+type BuildCompleteEvent struct {
+	PluginID int64 `json:"pluginId"`
+	Success  bool  `json:"success"`
+	Duration int64 `json:"duration"`
+}
 ```
 
 ---
@@ -534,10 +555,10 @@ func (s *serviceImpl) Build(ctx context.Context, pluginID int64) (*BuildResult, 
 	}
 
 	// Broadcast build started
-	s.wsHub.Broadcast(ws.EventBuildStarted, map[string]interface{}{
-		"pluginId":   pluginID,
-		"pluginName": plugin.Name,
-		"command":    config.BuildCommand,
+	s.wsHub.Broadcast(ws.EventBuildStarted, BuildStartedEvent{
+		PluginID:   pluginID,
+		PluginName: plugin.Name,
+		Command:    config.BuildCommand,
 	})
 
 	// Execute build command
@@ -567,10 +588,10 @@ func (s *serviceImpl) Build(ctx context.Context, pluginID int64) (*BuildResult, 
 			result.ExitCode = exitErr.ExitCode()
 		}
 
-		s.wsHub.Broadcast(ws.EventBuildFailed, map[string]interface{}{
-			"pluginId": pluginID,
-			"error":    result.Error,
-			"exitCode": result.ExitCode,
+		s.wsHub.Broadcast(ws.EventBuildFailed, BuildFailedEvent{
+			PluginID: pluginID,
+			Error:    result.Error,
+			ExitCode: result.ExitCode,
 		})
 
 		return result, apperror.Wrap(err, apperror.ErrBuildFailed, result.Error)
@@ -579,10 +600,10 @@ func (s *serviceImpl) Build(ctx context.Context, pluginID int64) (*BuildResult, 
 	result.Success = true
 	result.ExitCode = 0
 
-	s.wsHub.Broadcast(ws.EventBuildComplete, map[string]interface{}{
-		"pluginId": pluginID,
-		"success":  true,
-		"duration": result.Duration,
+	s.wsHub.Broadcast(ws.EventBuildComplete, BuildCompleteEvent{
+		PluginID: pluginID,
+		Success:  true,
+		Duration: result.Duration,
 	})
 
 	s.log.Info("Build complete", "pluginId", pluginID, "duration", result.Duration)

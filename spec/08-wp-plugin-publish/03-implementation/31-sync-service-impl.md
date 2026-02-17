@@ -82,6 +82,22 @@ type SyncSummary struct {
 	ErrorSites    int `json:"errorSites"`
 	TotalChanges  int `json:"totalChanges"`
 }
+
+// --- Broadcast detail structs (broadcast_details.go) ---
+
+// SyncStartedEvent is broadcast when a sync check begins
+type SyncStartedEvent struct {
+	PluginID int64 `json:"pluginId"`
+	SiteID   int64 `json:"siteId"`
+}
+
+// SyncCompleteEvent is broadcast when a sync check completes
+type SyncCompleteEvent struct {
+	PluginID     int64  `json:"pluginId"`
+	SiteID       int64  `json:"siteId"`
+	Status       string `json:"status"`
+	ChangedFiles int    `json:"changedFiles"`
+}
 ```
 
 ---
@@ -165,9 +181,9 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	s.log.Info("Checking sync status", "pluginId", pluginID, "siteId", siteID)
 
 	// Broadcast sync started event
-	s.wsHub.Broadcast(ws.EventSyncStarted, map[string]interface{}{
-		"pluginId": pluginID,
-		"siteId":   siteID,
+	s.wsHub.Broadcast(ws.EventSyncStarted, SyncStartedEvent{
+		PluginID: pluginID,
+		SiteID:   siteID,
 	})
 
 	result := &SyncResult{
@@ -270,11 +286,11 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	`, result.Status, pluginID, siteID)
 
 	// Broadcast sync complete event
-	s.wsHub.Broadcast(ws.EventSyncComplete, map[string]interface{}{
-		"pluginId":     pluginID,
-		"siteId":       siteID,
-		"status":       result.Status,
-		"changedFiles": result.ChangedFiles,
+	s.wsHub.Broadcast(ws.EventSyncComplete, SyncCompleteEvent{
+		PluginID:     pluginID,
+		SiteID:       siteID,
+		Status:       result.Status,
+		ChangedFiles: result.ChangedFiles,
 	})
 
 	return result, nil

@@ -455,7 +455,7 @@ func ProcessUpload(ctx context.Context, req UploadRequest) error {
 
     result, err := executeUpload(ctx, req)
     if err != nil {
-        return apperror.Wrap(err, "E5001", "upload failed")
+        return apperror.Wrap(err, apperror.ErrSyncCheck, "upload failed")
     }
 
     return logAndRespond(ctx, result)

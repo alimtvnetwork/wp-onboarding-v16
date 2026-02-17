@@ -48,13 +48,13 @@ func (s *Service) fetchFromDelegatedServer(ctx context.Context, site *models.Sit
     
     req, err := http.NewRequestWithContext(ctx, http.MethodGet, delegatedURL, nil)
     if err != nil {
-        return nil, apperror.Wrap(err, "E3001", "failed to build delegated request")
+        return nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to build delegated request")
     }
 
     resp, err := s.httpClient.Do(req)
     if err != nil {
-        return nil, apperror.Wrap(err, "E3001", "failed to reach delegated server").
-            WithContext("delegatedURL", delegatedURL)
+        return nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to reach delegated server").
+            WithEndpoint(delegatedURL)
     }
     defer resp.Body.Close()
 
