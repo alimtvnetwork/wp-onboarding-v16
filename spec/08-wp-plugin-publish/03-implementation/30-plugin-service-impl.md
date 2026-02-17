@@ -298,7 +298,7 @@ func (s *serviceImpl) Update(
 
 	// Build update query dynamically
 	var updates []string
-	var args []interface{}
+	var args []any
 
 	if input.Name != nil {
 		updates = append(updates, "Name = ?")
