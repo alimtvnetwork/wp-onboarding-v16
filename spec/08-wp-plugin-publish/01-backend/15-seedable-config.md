@@ -309,6 +309,14 @@ type ConfigService struct {
     changelogPath string
 }
 
+// configMetaUpdate is a typed struct for GORM Updates() calls on config_meta
+type configMetaUpdate struct {
+    SeedVersion    string    `gorm:"column:seed_version"`
+    CurrentVersion string    `gorm:"column:current_version"`
+    LastSeededAt   time.Time `gorm:"column:last_seeded_at"`
+    UpdatedAt      time.Time `gorm:"column:updated_at"`
+}
+
 type SeedConfig struct {
     Version    string                       `json:"version"`
     Changelog  string                       `json:"changelog"`
@@ -327,7 +335,7 @@ type SettingConfig struct {
     Type        string      `json:"type"`
     Label       string      `json:"label"`
     Description string      `json:"description,omitempty"`
-    Default     interface{} `json:"default"`
+    Default     any         `json:"default"`
     Min         *float64    `json:"min,omitempty"`
     Max         *float64    `json:"max,omitempty"`
     Options     []string    `json:"options,omitempty"`
@@ -391,11 +399,11 @@ func (s *ConfigService) mergeSeed(seed SeedConfig, previousVersion string) error
     }
     
     // Update meta
-    s.db.Model(&ConfigMeta{}).Where("id = 'singleton'").Updates(map[string]interface{}{
-        "seed_version":    seed.Version,
-        "current_version": seed.Version,
-        "last_seeded_at":  time.Now(),
-        "updated_at":      time.Now(),
+    s.db.Model(&ConfigMeta{}).Where("id = 'singleton'").Updates(configMetaUpdate{
+        SeedVersion:    seed.Version,
+        CurrentVersion: seed.Version,
+        LastSeededAt:   time.Now(),
+        UpdatedAt:      time.Now(),
     })
     
     return nil
