@@ -412,7 +412,7 @@ public function handleUpload($request) {
 }
 
 // ✅ REQUIRED: Short top-level, helpers do the work
-public function handleUpload($request) {
+public function handleUpload(WP_REST_Request $request): WP_REST_Response {
     $params = $this->extractUploadParams($request);
     $this->validateUpload($params);
     $result = $this->processUpload($params);

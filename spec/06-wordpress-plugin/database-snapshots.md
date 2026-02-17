@@ -212,7 +212,7 @@ public function handleSnapshotNow() {
 For large databases, tables can be exported in parallel cron jobs:
 
 ```php
-public function scheduleParallelExport($tables) {
+public function scheduleParallelExport(array $tables): void {
     foreach ($tables as $index => $table) {
         wp_schedule_single_event(
             time() + ($index * 2), // Stagger by 2 seconds
