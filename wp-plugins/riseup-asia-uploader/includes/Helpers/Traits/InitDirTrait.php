@@ -18,7 +18,7 @@ use RiseupAsia\Helpers\PathHelper;
 
 trait InitDirTrait {
 
-    public static function ensureDir(string $path, bool $secure = false): bool {
+    public static function makeDirectory(string $path, bool $secure = false): bool {
         $normalized = str_replace('\\', '/', $path);
 
         if (isset(self::$ensured_dirs[$normalized])) {
@@ -26,17 +26,17 @@ trait InitDirTrait {
         }
 
         if (BooleanHelpers::isClassExists(PathHelper::class)) {
-            $result = PathHelper::ensureDir($path, $secure);
+            $result = PathHelper::makeDirectory($path, $secure);
             self::$ensured_dirs[$normalized] = $result;
             return $result;
         }
 
-        $result = self::ensureDirNative($path, $secure);
+        $result = self::makeDirectoryNative($path, $secure);
         self::$ensured_dirs[$normalized] = $result;
         return $result;
     }
 
-    public static function ensureDirNative(string $path, bool $secure = false): bool {
+    public static function makeDirectoryNative(string $path, bool $secure = false): bool {
         if (empty($path)) { return false; }
 
         if (PathHelper::isDirMissing($path)) {
@@ -71,15 +71,15 @@ trait InitDirTrait {
         return $success;
     }
 
-    public static function ensureSubDir(
+    public static function makeSubDirectory(
         string $baseDir,
         string $subDir,
         bool $secure = false,
     ): string|false {
-        if (!self::ensureDir($baseDir, $secure)) { return false; }
+        if (!self::makeDirectory($baseDir, $secure)) { return false; }
 
         $fullPath = rtrim($baseDir, '/') . '/' . ltrim($subDir, '/');
-        if (!self::ensureDir($fullPath, false)) { return false; }
+        if (!self::makeDirectory($fullPath, false)) { return false; }
 
         return $fullPath;
     }

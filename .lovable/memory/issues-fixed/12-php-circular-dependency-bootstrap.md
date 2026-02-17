@@ -21,8 +21,8 @@ Circular dependency chain during plugin initialization:
 ```
 Riseup_File_Logger::write()
   → Riseup_File_Logger::initialize_paths()
-    → RiseupInitHelpers::ensureDir()
-      → PathHelper::ensureDir()
+    → RiseupInitHelpers::makeDirectory()
+      → PathHelper::makeDirectory()
         → PathHelper::getLogger()  ← tries to instantiate RiseupFileLogger (not loaded yet!)
 ```
 

@@ -87,7 +87,7 @@ class FileLogger {
         }
 
         $logsDir = PathHelper::logsDir();
-        PathHelper::ensureDir($logsDir, secure: true);
+        PathHelper::makeDirectory($logsDir, secure: true);
 
         $this->logPath = $logsDir . '/log.txt';
         $this->errorPath = $logsDir . '/error.txt';

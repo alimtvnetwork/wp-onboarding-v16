@@ -28,7 +28,7 @@ trait OrchestratorPluginTrait {
 
     private function snapshotPlugins(string $snapshotDir, string $selection = 'all'): array {
         $plugins_dir = $snapshotDir . '/plugins';
-        if (!PathHelper::ensureDir($plugins_dir, true)) {
+        if (!PathHelper::makeDirectory($plugins_dir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
 
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());

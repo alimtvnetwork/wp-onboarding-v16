@@ -230,8 +230,8 @@ class UploadValidator {
 ```php
 use RiseupAsia\Helpers\PathHelper;
 
-// Use PathHelper::ensureDir with secure flag
-PathHelper::ensureDir($dataDir, secure: true);
+// Use PathHelper::makeDirectory with secure flag
+PathHelper::makeDirectory($dataDir, secure: true);
 // Automatically creates .htaccess and index.php
 ```
 

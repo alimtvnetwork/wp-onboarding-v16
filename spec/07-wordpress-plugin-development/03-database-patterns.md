@@ -117,7 +117,7 @@ class Database {
             throw new RuntimeException("Failed to create data directory: {$dataDir}");
         }
 
-        PathHelper::ensureDir($dataDir, secure: true);
+        PathHelper::makeDirectory($dataDir, secure: true);
     }
 
     private function connect(): void {

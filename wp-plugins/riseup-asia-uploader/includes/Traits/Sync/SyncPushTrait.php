@@ -166,7 +166,7 @@ trait SyncPushTrait
 
         $dir = dirname($full_path);
         if (PathHelper::isDirMissing($dir)) {
-            PathHelper::ensureDir($dir);
+            PathHelper::makeDirectory($dir);
         }
 
         $written = file_put_contents($full_path, $decoded) !== false;

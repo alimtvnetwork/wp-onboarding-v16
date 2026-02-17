@@ -15,7 +15,7 @@ All file path operations must use centralized utility methods. Never use raw str
 | `Riseup_Snapshot_Provider` | `RiseupSnapshotProvider` |
 | `get_base_dir()` | `getBaseDir()` |
 
-Method names should use camelCase: `ensureDir()`, `isSafePath()`, `formatBytes()`.
+Method names should use camelCase: `makeDirectory()`, `isSafePath()`, `formatBytes()`.
 
 **Note**: Legacy classes (`Riseup_File_Logger`, `Riseup_Database`, etc.) still use underscore style for backward compatibility. New classes must use PascalCase.
 

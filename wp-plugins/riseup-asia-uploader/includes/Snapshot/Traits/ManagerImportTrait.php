@@ -38,7 +38,7 @@ trait ManagerImportTrait {
         ));
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
-        $isDirCreationFailed = !PathHelper::ensureDir($tempDir, false);
+        $isDirCreationFailed = !PathHelper::makeDirectory($tempDir, false);
         if ($isDirCreationFailed) {
             return array('success' => false, 'error' => 'Failed to create temp directory');
         }
@@ -120,7 +120,7 @@ trait ManagerImportTrait {
         string $tempDir,
     ): array {
         $snapshotsDir = PathHelper::getSnapshotsDir();
-        $isDirCreationFailed = !PathHelper::ensureDir($snapshotsDir, true);
+        $isDirCreationFailed = !PathHelper::makeDirectory($snapshotsDir, true);
         if ($isDirCreationFailed) {
             throw new Exception('Failed to ensure snapshots directory');
         }
