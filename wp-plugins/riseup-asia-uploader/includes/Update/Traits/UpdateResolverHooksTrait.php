@@ -60,7 +60,11 @@ trait UpdateResolverFetchTrait {
         return $response;
     }
 
-    private function handleFetchFailure(array $settings, bool $forceCheck, \WP_Error $error) {
+    private function handleFetchFailure(
+        array $settings,
+        bool $forceCheck,
+        \WP_Error $error,
+    ) {
         if (!$forceCheck && !empty($settings['resolved_url'])) {
             $this->fileLogger->info('Cached URL failed, resolving fresh');
             $this->clearCache();
@@ -71,7 +75,11 @@ trait UpdateResolverFetchTrait {
         return $error;
     }
 
-    private function handleNon200Response(array $settings, bool $forceCheck, int $statusCode) {
+    private function handleNon200Response(
+        array $settings,
+        bool $forceCheck,
+        int $statusCode,
+    ) {
         $errorMsg = "HTTP $statusCode from update server";
         $this->fileLogger->error('Update server error', array('status' => $statusCode));
 

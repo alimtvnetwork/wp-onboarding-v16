@@ -77,7 +77,12 @@ trait FileSystemDirTrait {
         return true;
     }
 
-    private function addDirToZip(ZipArchive $zip, string $srcDir, string $zipDir, object $ignore): void {
+    private function addDirToZip(
+        ZipArchive $zip,
+        string $srcDir,
+        string $zipDir,
+        object $ignore,
+    ): void {
         $dir = opendir($srcDir);
         if (!$dir) {
             return;
@@ -95,7 +100,13 @@ trait FileSystemDirTrait {
         closedir($dir);
     }
 
-    private function processZipEntry(ZipArchive $zip, string $srcDir, string $zipDir, string $file, object $ignore): void {
+    private function processZipEntry(
+        ZipArchive $zip,
+        string $srcDir,
+        string $zipDir,
+        string $file,
+        object $ignore,
+    ): void {
         $srcPath = $srcDir . '/' . $file;
         $zipPath = $zipDir . '/' . $file;
 

@@ -62,7 +62,11 @@ trait WorkerSetupTrait {
         return $base;
     }
 
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $full = '[SNAPSHOT] [WORKER] ' . $message;
         if (!empty($context)) {
             $full .= ' ' . json_encode($context);

@@ -18,14 +18,25 @@ use RiseupAsia\Helpers\PathHelper;
 trait RootDbRegistrationTrait {
 
     /** Register a table export in a-root.db. */
-    public function registerTable(PDO $pdo, string $tableName, int $rowCount, string $sqliteFile, int $fileSize = 0, string $checksum = ''): void {
+    public function registerTable(
+        PDO $pdo,
+        string $tableName,
+        int $rowCount,
+        string $sqliteFile,
+        int $fileSize = 0,
+        string $checksum = '',
+    ): void {
         $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_tables
             (table_name, row_count, sqlite_file, file_size_bytes, checksum_md5, exported_at) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array($tableName, $rowCount, $sqliteFile, $fileSize, $checksum, gmdate('c')));
     }
 
     /** Update final stats in snapshot_meta. */
-    public function updateStats(PDO $pdo, int $tableCount, int $totalRows): void {
+    public function updateStats(
+        PDO $pdo,
+        int $tableCount,
+        int $totalRows,
+    ): void {
         $stmt = $pdo->prepare("UPDATE snapshot_meta SET table_count = ?, total_rows = ? WHERE id = 1");
         $stmt->execute(array($tableCount, $totalRows));
     }

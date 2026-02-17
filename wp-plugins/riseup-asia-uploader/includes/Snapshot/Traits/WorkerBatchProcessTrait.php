@@ -50,7 +50,11 @@ trait WorkerBatchProcessTrait {
         }
     }
 
-    private function processJobBatch(PDO $pdo, int $jobId, array $job): void {
+    private function processJobBatch(
+        PDO $pdo,
+        int $jobId,
+        array $job,
+    ): void {
         $all_tables  = json_decode($job['tables_json'], true);
         $pool_size   = (int) $job['pool_size'];
         $batch_index = (int) $job['current_batch'];

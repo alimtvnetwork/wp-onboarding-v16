@@ -68,7 +68,12 @@ trait SyncManifestTrait
     }
 
     /** Recursively scan a directory and collect file info with hashes. */
-    private function scanDirectoryForFiles(string $baseDir, string $dir, \RiseupUploadIgnore $ignore, array &$files): void {
+    private function scanDirectoryForFiles(
+        string $baseDir,
+        string $dir,
+        \RiseupUploadIgnore $ignore,
+        array &$files,
+    ): void {
         $items = @scandir($dir);
         if ($items === false) {
             return;

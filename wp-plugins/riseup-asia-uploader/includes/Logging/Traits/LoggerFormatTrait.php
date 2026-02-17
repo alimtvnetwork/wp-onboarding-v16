@@ -11,7 +11,13 @@ namespace RiseupAsia\Logging\Traits;
 trait LoggerFormatTrait {
 
     /** Format a log entry. */
-    private function formatEntry(string $level, string $message, string $file, int $line, array $context = array()): string {
+    private function formatEntry(
+        string $level,
+        string $message,
+        string $file,
+        int $line,
+        array $context = array(),
+    ): string {
         $timestamp = gmdate(self::TIMESTAMP_FORMAT);
         $basename  = basename($file);
 
@@ -89,7 +95,11 @@ trait LoggerFormatTrait {
     }
 
     /** Prepare context for logging by enriching with request metadata. */
-    private function prepareContext(array $context, ?array $trace = null, bool $includeChain = false): array {
+    private function prepareContext(
+        array $context,
+        ?array $trace = null,
+        bool $includeChain = false,
+    ): array {
         $context = $this->enrichContextWithRequest($context);
 
         $shouldSkipChain = !$includeChain || $trace === null || isset($context['_invocation_chain']);

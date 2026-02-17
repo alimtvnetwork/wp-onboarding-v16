@@ -90,7 +90,11 @@ class ActivationHandler
         self::writeStacktraceLog($logsDir, $timestamp);
     }
 
-    private static function writeMainLog(string $logsDir, string $timestamp, string $version): void {
+    private static function writeMainLog(
+        string $logsDir,
+        string $timestamp,
+        string $version,
+    ): void {
         $logFile = $logsDir . PathLogFileType::Log->value;
         @file_put_contents($logFile, sprintf(
             "[%s] [INFO] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"version\":\"%s\",\"php\":\"%s\",\"wp\":\"%s\"}\n",
@@ -98,7 +102,11 @@ class ActivationHandler
         ), FILE_APPEND | LOCK_EX);
     }
 
-    private static function writeErrorLog(string $logsDir, string $timestamp, string $version): void {
+    private static function writeErrorLog(
+        string $logsDir,
+        string $timestamp,
+        string $version,
+    ): void {
         $errorFile = $logsDir . PathLogFileType::Error->value;
         @file_put_contents($errorFile, sprintf(
             "[%s] [INFO] Plugin activated — error log initialized (v%s)\n",

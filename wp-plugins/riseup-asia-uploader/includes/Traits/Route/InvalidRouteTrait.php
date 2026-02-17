@@ -37,7 +37,11 @@ trait InvalidRouteTrait
             ->toResponse();
     }
 
-    private function buildInvalidRouteTrace(string $method, string $path, array $backtrace): array {
+    private function buildInvalidRouteTrace(
+        string $method,
+        string $path,
+        array $backtrace,
+    ): array {
         $frames = class_exists(FrameBuilder::class) ? FrameBuilder::backtraceToFrames($backtrace) : array();
 
         return array(
@@ -70,7 +74,11 @@ trait InvalidRouteTrait
         }, $frames);
     }
 
-    public function enrichErrorResponse(WP_REST_Response $response, WP_REST_Server $server, WP_REST_Request $request): WP_REST_Response {
+    public function enrichErrorResponse(
+        WP_REST_Response $response,
+        WP_REST_Server $server,
+        WP_REST_Request $request,
+    ): WP_REST_Response {
         $route = $request->get_route();
         if (strpos($route, '/' . PluginConfigType::apiFullNamespace()) === false) {
             return $response;
@@ -107,7 +115,11 @@ trait InvalidRouteTrait
         return $data;
     }
 
-    private function logRestApiError(string $route, int $status, array $data): void {
+    private function logRestApiError(
+        string $route,
+        int $status,
+        array $data,
+    ): void {
         $this->fileLogger->error('REST API error response', array(
             'route'          => $route,
             'status'         => $status,

@@ -71,7 +71,11 @@ trait InitDirTrait {
         return $success;
     }
 
-    public static function ensureSubDir(string $baseDir, string $subDir, bool $secure = false): string|false {
+    public static function ensureSubDir(
+        string $baseDir,
+        string $subDir,
+        bool $secure = false,
+    ): string|false {
         if (!self::ensureDir($baseDir, $secure)) { return false; }
 
         $fullPath = rtrim($baseDir, '/') . '/' . ltrim($subDir, '/');

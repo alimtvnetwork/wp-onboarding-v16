@@ -81,7 +81,11 @@ trait SnapshotCrudRestoreTrait {
         );
     }
 
-    private function routeRestoreToEngine(int $id, array $options, SnapshotManager $manager): array {
+    private function routeRestoreToEngine(
+        int $id,
+        array $options,
+        SnapshotManager $manager,
+    ): array {
         $snapshot = $manager->getSnapshotById($id);
 
         if ($snapshot && $this->isPerTableSnapshot($snapshot)) {

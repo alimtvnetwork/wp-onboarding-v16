@@ -82,7 +82,11 @@ trait RestoreGraphTrait {
         return array('adjacency' => $graph, 'in_degree' => $in_degree);
     }
 
-    private function topologicalSort(array $graph, array $inDegree, array $allTables): array {
+    private function topologicalSort(
+        array $graph,
+        array $inDegree,
+        array $allTables,
+    ): array {
         $queue = array();
         foreach ($inDegree as $table => $degree) {
             if ($degree === 0) {

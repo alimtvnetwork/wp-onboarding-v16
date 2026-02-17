@@ -66,7 +66,11 @@ trait UpdateResolverUrlTrait {
         return $location;
     }
 
-    private function logResolvedUrl(string $original, string $final, int $hops): string {
+    private function logResolvedUrl(
+        string $original,
+        string $final,
+        int $hops,
+    ): string {
         $this->fileLogger->info('URL resolved', array('original' => $original, 'final' => $final, 'hops' => $hops));
         return $final;
     }

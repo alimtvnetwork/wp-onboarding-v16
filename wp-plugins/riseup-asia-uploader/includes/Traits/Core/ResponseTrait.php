@@ -25,7 +25,11 @@ trait ResponseTrait {
      * Safely execute a callable with comprehensive error handling.
      * Catches both Exception and Error (Throwable) for complete coverage.
      */
-    private function safeExecute(callable $callback, string $context = 'operation', array $logContext = array()): WP_REST_Response {
+    private function safeExecute(
+        callable $callback,
+        string $context = 'operation',
+        array $logContext = array(),
+    ): WP_REST_Response {
         try {
             return call_user_func($callback);
         } catch (Throwable $e) {
@@ -48,7 +52,11 @@ trait ResponseTrait {
     }
 
     /** Create an error response with optional exception details. */
-    private function errorResponse(string $message, int $status, ?Throwable $exception = null): WP_REST_Response {
+    private function errorResponse(
+        string $message,
+        int $status,
+        ?Throwable $exception = null,
+    ): WP_REST_Response {
         $this->logErrorWithBacktrace($message, $status, $exception);
 
         $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
@@ -60,7 +68,11 @@ trait ResponseTrait {
     }
 
     /** Log an error with backtrace context. */
-    private function logErrorWithBacktrace(string $message, int $status, ?Throwable $exception): void {
+    private function logErrorWithBacktrace(
+        string $message,
+        int $status,
+        ?Throwable $exception,
+    ): void {
         if ($exception instanceof Throwable) {
             $this->fileLogger->logException($exception, $message);
 

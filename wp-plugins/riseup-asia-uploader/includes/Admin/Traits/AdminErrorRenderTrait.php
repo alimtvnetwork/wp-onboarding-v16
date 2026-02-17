@@ -115,7 +115,12 @@ trait AdminErrorRenderTrait {
     }
 
     /** Fetch paginated filtered error sessions. */
-    private function fetchFilteredErrors(\PDO $pdo, array $filter, int $perPage, int $offset): array {
+    private function fetchFilteredErrors(
+        \PDO $pdo,
+        array $filter,
+        int $perPage,
+        int $offset,
+    ): array {
         $stmt = $pdo->prepare("SELECT * FROM error_sessions {$filter['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?");
         $stmt->execute(array_merge($filter['params'], array($perPage, $offset)));
 
@@ -123,7 +128,13 @@ trait AdminErrorRenderTrait {
     }
 
     /** Assemble the final error page result array. */
-    private function assembleErrorPageResult(array $errors, int $total, int $totalPages, int $page, array $defaults): array {
+    private function assembleErrorPageResult(
+        array $errors,
+        int $total,
+        int $totalPages,
+        int $page,
+        array $defaults,
+    ): array {
         $lastSeenId = $this->getFlashValue('last_seen_error_id', 0);
         $hasUnseen = ($this->getFlashValue('has_unseen_errors', '0') === '1');
         $unseenCount = $this->getUnseenErrorCount();

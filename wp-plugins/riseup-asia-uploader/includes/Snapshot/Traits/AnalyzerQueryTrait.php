@@ -111,7 +111,11 @@ trait AnalyzerQueryTrait {
     /**
      * Log a message with analyzer context.
      */
-    private function log($level, $message, $context = array()) {
+    private function log(
+        $level,
+        $message,
+        $context = array(),
+    ) {
         $full = '[SNAPSHOT] [DEPENDENCY] ' . $message;
         if (!empty($context)) {
             $full .= ' ' . json_encode($context);

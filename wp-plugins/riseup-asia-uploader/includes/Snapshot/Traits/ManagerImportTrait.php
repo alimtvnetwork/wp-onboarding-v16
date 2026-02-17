@@ -95,7 +95,10 @@ trait ManagerImportTrait {
         return $manifest;
     }
 
-    private function validateSnapshotSqlite(array $manifest, string $tempDir): string {
+    private function validateSnapshotSqlite(
+        array $manifest,
+        string $tempDir,
+    ): string {
         $sqliteFilename = $manifest['snapshot']['filename'];
         $sqlitePath = PathHelper::join($tempDir, $sqliteFilename);
 
@@ -111,7 +114,11 @@ trait ManagerImportTrait {
         return $sqlitePath;
     }
 
-    private function moveAndRecordSnapshot(array $manifest, string $sqlitePath, string $tempDir): array {
+    private function moveAndRecordSnapshot(
+        array $manifest,
+        string $sqlitePath,
+        string $tempDir,
+    ): array {
         $snapshotsDir = PathHelper::getSnapshotsDir();
         $isDirCreationFailed = !PathHelper::ensureDir($snapshotsDir, true);
         if ($isDirCreationFailed) {
