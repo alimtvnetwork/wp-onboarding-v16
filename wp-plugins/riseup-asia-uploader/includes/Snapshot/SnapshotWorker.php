@@ -31,14 +31,24 @@ class SnapshotWorker {
     private int $poolSize;
     private static ?self $instance = null;
 
-    public static function getInstance(?FileLogger $logger = null, ?Database $db = null, ?RootDb $rootDb = null, ?DependencyAnalyzer $analyzer = null): self {
+    public static function getInstance(
+        ?FileLogger $logger = null,
+        ?Database $db = null,
+        ?RootDb $rootDb = null,
+        ?DependencyAnalyzer $analyzer = null,
+    ): self {
         if (self::$instance === null && $logger && $db && $rootDb && $analyzer) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
         return self::$instance;
     }
 
-    private function __construct(FileLogger $logger, Database $db, RootDb $rootDb, DependencyAnalyzer $analyzer) {
+    private function __construct(
+        FileLogger $logger,
+        Database $db,
+        RootDb $rootDb,
+        DependencyAnalyzer $analyzer,
+    ) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;

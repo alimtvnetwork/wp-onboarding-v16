@@ -66,7 +66,11 @@ class FatalErrorHandler
         return self::ERROR_TYPE_MAP[$type] ?? 'UNKNOWN_ERROR_TYPE';
     }
 
-    private static function buildResponse(array $error, array $traceLines, array $frames): array {
+    private static function buildResponse(
+        array $error,
+        array $traceLines,
+        array $frames,
+    ): array {
         return array(
             'success' => false,
             'error'   => array(

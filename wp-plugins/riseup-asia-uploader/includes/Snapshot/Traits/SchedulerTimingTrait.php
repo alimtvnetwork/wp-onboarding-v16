@@ -18,7 +18,11 @@ use RiseupAsia\Enums\SnapshotFrequencyType;
 
 trait SchedulerTimingTrait {
 
-    private function calculateNextRunTime(string $frequency, string $time, int $day): int {
+    private function calculateNextRunTime(
+        string $frequency,
+        string $time,
+        int $day,
+    ): int {
         list($hour, $minute) = explode(':', $time);
         $hour = intval($hour);
         $minute = intval($minute);
@@ -37,7 +41,11 @@ trait SchedulerTimingTrait {
         return ($next <= $now) ? strtotime("tomorrow {$hour}:{$minute}:00") : $next;
     }
 
-    private function nextWeeklyRun(int $hour, int $minute, int $day): int {
+    private function nextWeeklyRun(
+        int $hour,
+        int $minute,
+        int $day,
+    ): int {
         $now = current_time('timestamp');
         $day_name = $this->getDayName($day);
         $next = strtotime("next {$day_name} {$hour}:{$minute}:00");
@@ -52,7 +60,11 @@ trait SchedulerTimingTrait {
         return $next;
     }
 
-    private function nextMonthlyRun(int $hour, int $minute, int $day): int {
+    private function nextMonthlyRun(
+        int $hour,
+        int $minute,
+        int $day,
+    ): int {
         $now = current_time('timestamp');
         $day = min(28, max(1, $day));
         $current_month = date('Y-m');

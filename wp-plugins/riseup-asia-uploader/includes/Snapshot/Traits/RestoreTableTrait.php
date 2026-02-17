@@ -33,7 +33,12 @@ trait RestoreTableTrait {
      * @param array  $options        Restore options.
      * @return array Result with tables_restored, total_rows, errors.
      */
-    private function restoreMasterTables(array $restoreOrder, array $tableInventory, string $snapshotDir, array $options): array {
+    private function restoreMasterTables(
+        array $restoreOrder,
+        array $tableInventory,
+        string $snapshotDir,
+        array $options,
+    ): array {
         $tables_restored = 0;
         $total_rows = 0;
         $errors = array();
@@ -72,7 +77,11 @@ trait RestoreTableTrait {
      * @param string $snapshotDir    Snapshot directory.
      * @return array|null Result or null if missing.
      */
-    private function restoreSingleMasterTable(string $table, array $tableInventory, string $snapshotDir): ?array {
+    private function restoreSingleMasterTable(
+        string $table,
+        array $tableInventory,
+        string $snapshotDir,
+    ): ?array {
         $table_info = $tableInventory[$table] ?? null;
         if (!$table_info) {
             return array('success' => false, 'error' => $table . ': not found in inventory', 'rows' => 0);
@@ -95,7 +104,11 @@ trait RestoreTableTrait {
      * @param string $strategy    RestoreStrategyType value ('truncate' or 'merge').
      * @return array Result: success, rows, error.
      */
-    private function restoreTableFromFile(string $sqlitePath, string $table, string $strategy = 'truncate'): array {
+    private function restoreTableFromFile(
+        string $sqlitePath,
+        string $table,
+        string $strategy = 'truncate',
+    ): array {
         try {
             $validated = $this->openAndValidateSqliteTable($sqlitePath, $table);
             if (!$validated['success']) {

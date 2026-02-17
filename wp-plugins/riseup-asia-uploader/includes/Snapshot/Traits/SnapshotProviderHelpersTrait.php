@@ -18,7 +18,11 @@ use RiseupAsia\Helpers\PathHelper;
 
 trait SnapshotProviderHelpersTrait {
 
-    protected function log(string $level, string $message, array $context = array()): void {
+    protected function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $prefix = '[SNAPSHOT] [' . strtoupper($this->provider_id) . ']';
         $full_message = $prefix . ' ' . $message;
 

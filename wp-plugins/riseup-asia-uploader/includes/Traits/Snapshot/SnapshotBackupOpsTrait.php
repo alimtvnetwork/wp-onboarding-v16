@@ -112,7 +112,11 @@ trait SnapshotBackupOpsTrait {
     }
 
     /** Build a progress error response. */
-    private function buildProgressError(string $message, int $code, string $errorCode = ''): WP_REST_Response {
+    private function buildProgressError(
+        string $message,
+        int $code,
+        string $errorCode = '',
+    ): WP_REST_Response {
         $data = array('IsSuccess' => false, 'HasAnyErrors' => true, 'error' => $message);
         if ($errorCode) {
             $data['code'] = $errorCode;

@@ -59,7 +59,11 @@ trait OrchestratorZipTrait {
         return $count;
     }
 
-    private function validateZipExport(string $path, string $filename, int $files): array {
+    private function validateZipExport(
+        string $path,
+        string $filename,
+        int $files,
+    ): array {
         $size = filesize($path);
         if ($size === 0) {
             @unlink($path);

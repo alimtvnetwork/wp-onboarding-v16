@@ -85,7 +85,11 @@ trait ExporterHelpersTrait {
     }
 
     /** Log helper. */
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $context['class'] = 'RiseupSnapshotExporter';
         switch ($level) {
             case LogLevelType::Error->value:

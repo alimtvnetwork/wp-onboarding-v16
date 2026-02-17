@@ -68,7 +68,11 @@ trait PluginExportTrait
     }
 
     /** Create a ZIP archive of a plugin directory and return its binary content. */
-    private function createPluginZip(string $plugin_dir, string $slug, \RiseupUploadIgnore $ignore): ?string {
+    private function createPluginZip(
+        string $plugin_dir,
+        string $slug,
+        \RiseupUploadIgnore $ignore,
+    ): ?string {
         $temp_dir = $this->get_temp_dir();
         $zip_file = $temp_dir . '/' . $slug . '.zip';
 

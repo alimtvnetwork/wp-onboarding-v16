@@ -79,7 +79,12 @@ trait SchedulerCronTrait {
      * @param array  $auditData   Extra audit data.
      * @return array Standardized result.
      */
-    private function buildCronResult(array $result, string $action, string $triggeredBy, array $auditData = array()): array {
+    private function buildCronResult(
+        array $result,
+        string $action,
+        string $triggeredBy,
+        array $auditData = array(),
+    ): array {
         return array(
             'success'      => $result['success'] ?? false,
             'error'        => $result['error'] ?? null,

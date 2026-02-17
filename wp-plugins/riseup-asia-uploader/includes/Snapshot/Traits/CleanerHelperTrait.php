@@ -98,7 +98,11 @@ trait CleanerHelperTrait {
         }
     }
 
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $prefix = '[SNAPSHOT] [CLEANER]';
         $fullMessage = $prefix . ' ' . $message;
 

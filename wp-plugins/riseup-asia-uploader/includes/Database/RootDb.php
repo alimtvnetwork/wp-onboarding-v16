@@ -60,7 +60,11 @@ class RootDb {
         return $pdo;
     }
 
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $prefix = '[SNAPSHOT] [ROOT-DB]';
         $full = $prefix . ' ' . $message;
         if (!empty($context)) {

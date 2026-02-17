@@ -25,7 +25,11 @@ trait EnvelopeSettersTrait {
 
     public function setDelegatedAt(string $url): static { $this->delegated_at = $url; return $this; }
 
-    public function setPagination(int $totalRecords, int $perPage, int $currentPage): static {
+    public function setPagination(
+        int $totalRecords,
+        int $perPage,
+        int $currentPage,
+    ): static {
         $this->total_records = $totalRecords;
         $this->per_page = $perPage;
         $this->current_page = $currentPage;
@@ -33,7 +37,11 @@ trait EnvelopeSettersTrait {
         return $this;
     }
 
-    public function setNavigation(?string $nextPage = null, ?string $prevPage = null, array $closerLinks = array()): static {
+    public function setNavigation(
+        ?string $nextPage = null,
+        ?string $prevPage = null,
+        array $closerLinks = array(),
+    ): static {
         $this->navigation = array('NextPage' => $nextPage, 'PrevPage' => $prevPage, 'CloserLinks' => $closerLinks);
         return $this;
     }

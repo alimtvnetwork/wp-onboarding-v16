@@ -39,7 +39,11 @@ trait ManagerExportTrait {
         return $this->createSnapshotZip($snapshotId, $filepath, $snapshot);
     }
 
-    private function createSnapshotZip(int $snapshotId, string $filepath, array $snapshot): array {
+    private function createSnapshotZip(
+        int $snapshotId,
+        string $filepath,
+        array $snapshot,
+    ): array {
         $zipPath = preg_replace('/\.sqlite$/', '.zip', $filepath);
 
         $zip = new ZipArchive();
