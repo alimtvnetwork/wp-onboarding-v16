@@ -175,36 +175,49 @@ func (s *serviceImpl) List(ctx context.Context) ([]models.Site, error) {
     }
     defer rows.Close()
     
+    return s.scanSiteRows(rows)
+}
+
+func (s *serviceImpl) scanSiteRows(rows *sql.Rows) ([]models.Site, error) {
     var sites []models.Site
     for rows.Next() {
-        var site models.Site
-        var encryptedPassword string
-        var lastSyncAt sql.NullString
-        
-        if err := rows.Scan(
-            &site.ID, &site.Name, &site.URL, &site.Username,
-            &encryptedPassword, &site.IsActive, &lastSyncAt,
-            &site.CreatedAt, &site.UpdatedAt,
-        ); err != nil {
-            return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to scan site row")
-        }
-        
-        // Decrypt password
-        site.AppPassword, err = DecryptPassword(encryptedPassword, s.encKey)
+        site, err := s.scanSingleSite(rows)
         if err != nil {
-            s.log.Warn("Failed to decrypt password for site", "site_id", site.ID)
+            return nil, err
         }
-        
-        if lastSyncAt.Valid {
-            t, _ := time.Parse(time.RFC3339, lastSyncAt.String)
-            site.LastSyncAt = &t
-        }
-        
+
         sites = append(sites, site)
     }
     
     s.log.Info("Listed sites", "count", len(sites))
+
     return sites, nil
+}
+
+func (s *serviceImpl) scanSingleSite(rows *sql.Rows) (models.Site, error) {
+    var site models.Site
+    var encryptedPassword string
+    var lastSyncAt sql.NullString
+    
+    if err := rows.Scan(
+        &site.ID, &site.Name, &site.URL, &site.Username,
+        &encryptedPassword, &site.IsActive, &lastSyncAt,
+        &site.CreatedAt, &site.UpdatedAt,
+    ); err != nil {
+        return site, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to scan site row")
+    }
+    
+    site.AppPassword, _ = DecryptPassword(encryptedPassword, s.encKey)
+    s.parseSiteLastSync(&site, lastSyncAt)
+
+    return site, nil
+}
+
+func (s *serviceImpl) parseSiteLastSync(site *models.Site, lastSyncAt sql.NullString) {
+    if lastSyncAt.Valid {
+        t, _ := time.Parse(time.RFC3339, lastSyncAt.String)
+        site.LastSyncAt = &t
+    }
 }
 
 func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Site, error) {
@@ -232,11 +245,7 @@ func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Site, erro
     }
     
     site.AppPassword, _ = DecryptPassword(encryptedPassword, s.encKey)
-    
-    if lastSyncAt.Valid {
-        t, _ := time.Parse(time.RFC3339, lastSyncAt.String)
-        site.LastSyncAt = &t
-    }
+    s.parseSiteLastSync(&site, lastSyncAt)
     
     return &site, nil
 }
@@ -244,41 +253,54 @@ func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Site, erro
 func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Site, error) {
     s.log.Info("Creating site", "name", input.Name, "url", input.URL)
     
-    // Validate input
     if err := s.validateCreateInput(input); err != nil {
         return nil, err
     }
     
-    // Normalize URL (remove trailing slash)
     url := strings.TrimSuffix(input.URL, "/")
     
-    // Check for duplicate URL
+    if err := s.checkDuplicateURL(ctx, url); err != nil {
+        return nil, err
+    }
+    
+    id, err := s.insertSite(ctx, input, url)
+    if err != nil {
+        return nil, err
+    }
+    
+    s.log.Info("Site created", "site_id", id, "name", input.Name)
+    
+    return s.GetByID(ctx, id)
+}
+
+func (s *serviceImpl) checkDuplicateURL(ctx context.Context, url string) error {
     existing, _ := s.GetByURL(ctx, url)
     if existing != nil {
-        return nil, apperror.New(apperror.ErrDuplicate, "site with this URL already exists").
+        return apperror.New(apperror.ErrDuplicate, "site with this URL already exists").
             WithContext("url", url)
     }
-    
-    // Encrypt password
+
+    return nil
+}
+
+func (s *serviceImpl) insertSite(ctx context.Context, input CreateInput, url string) (int64, error) {
     encryptedPassword, err := EncryptPassword(input.AppPassword, s.encKey)
     if err != nil {
-        return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to encrypt password")
+        return 0, apperror.Wrap(err, apperror.ErrInternal, "failed to encrypt password")
     }
     
-    // Insert site
     result, err := s.db.ExecContext(ctx, `
         INSERT INTO Sites (Name, Url, Username, AppPassword, IsActive, CreatedAt, UpdatedAt)
         VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
     `, input.Name, url, input.Username, encryptedPassword)
     
     if err != nil {
-        return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create site")
+        return 0, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create site")
     }
     
     id, _ := result.LastInsertId()
-    s.log.Info("Site created", "site_id", id, "name", input.Name)
-    
-    return s.GetByID(ctx, id)
+
+    return id, nil
 }
 
 func (s *serviceImpl) Update(
@@ -288,15 +310,26 @@ func (s *serviceImpl) Update(
 ) (*models.Site, error) {
     s.log.Info("Updating site", "site_id", id)
     
-    // Verify site exists
     existing, err := s.GetByID(ctx, id)
     if err != nil {
         return nil, err
     }
     
-    // Build update query dynamically
+    updates, args, err := s.buildSiteUpdateFields(input)
+    if err != nil {
+        return nil, err
+    }
+    
+    if len(updates) == 0 {
+        return existing, nil
+    }
+    
+    return s.executeSiteUpdate(ctx, id, updates, args)
+}
+
+func (s *serviceImpl) buildSiteUpdateFields(input UpdateInput) ([]string, []any, error) {
     var updates []string
-    var args []interface{}
+    var args []any
     
     if input.Name != nil {
         updates = append(updates, "Name = ?")
@@ -314,7 +347,7 @@ func (s *serviceImpl) Update(
     if input.AppPassword != nil {
         encrypted, err := EncryptPassword(*input.AppPassword, s.encKey)
         if err != nil {
-            return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to encrypt password")
+            return nil, nil, apperror.Wrap(err, apperror.ErrInternal, "failed to encrypt password")
         }
         updates = append(updates, "AppPassword = ?")
         args = append(args, encrypted)
@@ -327,22 +360,23 @@ func (s *serviceImpl) Update(
         updates = append(updates, "IsActive = ?")
         args = append(args, active)
     }
-    
-    if len(updates) == 0 {
-        return existing, nil
-    }
-    
+
+    return updates, args, nil
+}
+
+func (s *serviceImpl) executeSiteUpdate(ctx context.Context, id int64, updates []string, args []any) (*models.Site, error) {
     updates = append(updates, "UpdatedAt = datetime('now')")
     args = append(args, id)
     
     query := "UPDATE Sites SET " + strings.Join(updates, ", ") + " WHERE Id = ?"
     
-    _, err = s.db.ExecContext(ctx, query, args...)
+    _, err := s.db.ExecContext(ctx, query, args...)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update site")
     }
     
     s.log.Info("Site updated", "site_id", id)
+
     return s.GetByID(ctx, id)
 }
 
@@ -396,36 +430,14 @@ func (s *serviceImpl) TestCredentials(
 ) (*ConnectionResult, error) {
     s.log.Debug("Testing credentials", "url", url, "username", username)
     
-    // Test connection via WP REST API
     info, err := s.wpClient.GetSiteInfo(ctx, url, username, password)
     if err != nil {
-        appErr, ok := err.(*apperror.AppError)
-        if ok {
-            return &ConnectionResult{
-                Success:   false,
-                Error:     appErr.Message,
-                ErrorCode: appErr.Code,
-            }, nil
-        }
-        return &ConnectionResult{
-            Success:   false,
-            Error:     err.Error(),
-            ErrorCode: apperror.ErrWPConnect,
-        }, nil
+        return s.buildFailedConnectionResult(err), nil
     }
     
-    // Get plugin count
-    plugins, err := s.wpClient.ListPlugins(ctx, url, username, password)
-    pluginCount := 0
-    if err == nil {
-        pluginCount = len(plugins)
-    }
+    pluginCount := s.countRemotePlugins(ctx, url, username, password)
     
-    s.log.Info("Connection test successful",
-        "url", url,
-        "wp_version", info.Version,
-        "site_name", info.Name,
-    )
+    s.log.Info("Connection test successful", "url", url, "wp_version", info.Version, "site_name", info.Name)
     
     return &ConnectionResult{
         Success:     true,
@@ -433,6 +445,37 @@ func (s *serviceImpl) TestCredentials(
         SiteName:    info.Name,
         PluginCount: pluginCount,
     }, nil
+}
+
+func (s *serviceImpl) buildFailedConnectionResult(err error) *ConnectionResult {
+    appErr, ok := err.(*apperror.AppError)
+    if ok {
+        return &ConnectionResult{
+            Success:   false,
+            Error:     appErr.Message,
+            ErrorCode: appErr.Code,
+        }
+    }
+
+    return &ConnectionResult{
+        Success:   false,
+        Error:     err.Error(),
+        ErrorCode: apperror.ErrWPConnect,
+    }
+}
+
+func (s *serviceImpl) countRemotePlugins(
+    ctx context.Context,
+    url string,
+    username string,
+    password string,
+) int {
+    plugins, err := s.wpClient.ListPlugins(ctx, url, username, password)
+    if err != nil {
+        return 0
+    }
+
+    return len(plugins)
 }
 
 func (s *serviceImpl) UpdateLastSync(ctx context.Context, id int64) error {
