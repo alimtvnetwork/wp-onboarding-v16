@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use ZipArchive;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Upload\UploadIgnore;
 
 trait FileSystemDirTrait {
 
@@ -34,6 +35,7 @@ trait FileSystemDirTrait {
                 }
             }
         }
+
         return null;
     }
 
@@ -82,7 +84,7 @@ trait FileSystemDirTrait {
         ZipArchive $zip,
         string $srcDir,
         string $zipDir,
-        object $ignore,
+        UploadIgnore $ignore,
     ): void {
         $dir = opendir($srcDir);
         if (!$dir) {
@@ -106,7 +108,7 @@ trait FileSystemDirTrait {
         string $srcDir,
         string $zipDir,
         string $file,
-        object $ignore,
+        UploadIgnore $ignore,
     ): void {
         $srcPath = $srcDir . '/' . $file;
         $zipPath = $zipDir . '/' . $file;
