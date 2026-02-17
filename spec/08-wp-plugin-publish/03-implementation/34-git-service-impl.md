@@ -199,12 +199,7 @@ type serviceImpl struct {
 
 // New creates a new git service
 func New(cfg Config) Service {
-	if cfg.DefaultBranch == "" {
-		cfg.DefaultBranch = "main"
-	}
-	if cfg.Timeout == 0 {
-		cfg.Timeout = 60
-	}
+	applyConfigDefaults(&cfg)
 
 	return &serviceImpl{
 		db:             cfg.DB,
@@ -214,6 +209,16 @@ func New(cfg Config) Service {
 		wsHub:          cfg.WSHub,
 		defaultBranch:  cfg.DefaultBranch,
 		timeout:        cfg.Timeout,
+	}
+}
+
+func applyConfigDefaults(cfg *Config) {
+	if cfg.DefaultBranch == "" {
+		cfg.DefaultBranch = "main"
+	}
+
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 60
 	}
 }
 ```
@@ -250,9 +255,17 @@ func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, er
 	}
 
 	result := newPullResult(pluginID, plugin.Name)
-
 	s.broadcastPullStarted(pluginID, plugin.Name)
 
+	return s.executePullAndFinalize(ctx, plugin, result, startTime)
+}
+
+func (s *serviceImpl) executePullAndFinalize(
+	ctx context.Context,
+	plugin *Plugin,
+	result *PullResult,
+	startTime time.Time,
+) (*PullResult, error) {
 	if err := s.executePull(ctx, plugin, result); err != nil {
 		result.Duration = time.Since(startTime).Milliseconds()
 
@@ -260,7 +273,7 @@ func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, er
 	}
 
 	result.Duration = time.Since(startTime).Milliseconds()
-	s.handlePostPull(ctx, pluginID, result)
+	s.handlePostPull(ctx, result.PluginID, result)
 
 	return result, nil
 }
@@ -278,14 +291,26 @@ func (s *serviceImpl) executePull(
 	plugin *Plugin,
 	result *PullResult,
 ) error {
-	gitDir := filepath.Join(plugin.Path, ".git")
-	if !dirExists(gitDir) {
+	if err := s.validateGitRepo(plugin.Path); err != nil {
 		result.Success = false
-		result.Error = "not a git repository"
+		result.Error = err.Error()
 
+		return err
+	}
+
+	return s.fetchBranchAndPull(plugin, result)
+}
+
+func (s *serviceImpl) validateGitRepo(path string) error {
+	gitDir := filepath.Join(path, ".git")
+	if !dirExists(gitDir) {
 		return apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
+	return nil
+}
+
+func (s *serviceImpl) fetchBranchAndPull(plugin *Plugin, result *PullResult) error {
 	branch, err := s.runGitCommand(plugin.Path, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		result.Success = false
@@ -447,44 +472,48 @@ func (s *serviceImpl) GetStatus(ctx context.Context, pluginID int64) (*GitStatus
 		return nil, err
 	}
 
-	status := &GitStatus{
-		PluginID: pluginID,
-	}
+	status := &GitStatus{PluginID: pluginID}
 
 	gitDir := filepath.Join(plugin.Path, ".git")
 	if !dirExists(gitDir) {
 		status.IsRepo = false
+
 		return status, nil
 	}
-	status.IsRepo = true
 
-	// Get branch
-	branch, _ := s.runGitCommand(plugin.Path, "rev-parse", "--abbrev-ref", "HEAD")
+	status.IsRepo = true
+	s.populateGitStatus(plugin.Path, status)
+
+	return status, nil
+}
+
+func (s *serviceImpl) populateGitStatus(path string, status *GitStatus) {
+	branch, _ := s.runGitCommand(path, "rev-parse", "--abbrev-ref", "HEAD")
 	status.Branch = strings.TrimSpace(branch)
 
-	// Get commit hash
-	hash, _ := s.runGitCommand(plugin.Path, "rev-parse", "--short", "HEAD")
+	hash, _ := s.runGitCommand(path, "rev-parse", "--short", "HEAD")
 	status.CommitHash = strings.TrimSpace(hash)
 
-	// Get commit message
-	msg, _ := s.runGitCommand(plugin.Path, "log", "-1", "--format=%s")
+	msg, _ := s.runGitCommand(path, "log", "-1", "--format=%s")
 	status.CommitMsg = strings.TrimSpace(msg)
 
-	// Check for local changes
-	diffOutput, _ := s.runGitCommand(plugin.Path, "status", "--porcelain")
+	diffOutput, _ := s.runGitCommand(path, "status", "--porcelain")
 	status.HasChanges = len(strings.TrimSpace(diffOutput)) > 0
 
-	// Check ahead/behind
-	s.runGitCommand(plugin.Path, "fetch", "origin", status.Branch)
-	aheadBehind, _ := s.runGitCommand(plugin.Path, "rev-list", "--left-right", "--count",
+	s.populateAheadBehind(path, status)
+}
+
+func (s *serviceImpl) populateAheadBehind(path string, status *GitStatus) {
+	s.runGitCommand(path, "fetch", "origin", status.Branch)
+
+	aheadBehind, _ := s.runGitCommand(path, "rev-list", "--left-right", "--count",
 		fmt.Sprintf("%s...origin/%s", status.Branch, status.Branch))
+
 	parts := strings.Fields(aheadBehind)
 	if len(parts) >= 2 {
 		status.Ahead, _ = strconv.Atoi(parts[0])
 		status.Behind, _ = strconv.Atoi(parts[1])
 	}
-
-	return status, nil
 }
 
 // runGitCommand executes a git command in the specified directory
@@ -495,6 +524,10 @@ func (s *serviceImpl) runGitCommand(dir string, args ...string) (string, error) 
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = dir
 
+	return s.captureCommandOutput(cmd)
+}
+
+func (s *serviceImpl) captureCommandOutput(cmd *exec.Cmd) (string, error) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -580,87 +613,124 @@ import (
 
 func (s *serviceImpl) Build(ctx context.Context, pluginID int64) (*BuildResult, error) {
 	startTime := time.Now()
-
 	s.log.Info("Starting build", "pluginId", pluginID)
 
-	// Get plugin and config
-	plugin, err := s.pluginService.GetByID(ctx, pluginID)
+	plugin, config, err := s.loadBuildContext(ctx, pluginID)
 	if err != nil {
 		return nil, err
 	}
 
-	config, err := s.GetConfig(ctx, pluginID)
-	if err != nil || !config.BuildEnabled || config.BuildCommand == "" {
-		return nil, apperror.New(apperror.ErrBuildNotConfigured, "build not configured for this plugin")
+	result := s.newBuildResult(pluginID, plugin.Name, config.BuildCommand)
+	s.broadcastBuildStarted(pluginID, plugin.Name, config.BuildCommand)
+
+	return s.executeBuild(ctx, plugin, config, result, startTime)
+}
+
+func (s *serviceImpl) loadBuildContext(ctx context.Context, pluginID int64) (*Plugin, *PluginGitConfig, error) {
+	plugin, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	result := &BuildResult{
+	config, err := s.GetConfig(ctx, pluginID)
+	buildNotConfigured := err != nil || !config.BuildEnabled || config.BuildCommand == ""
+
+	if buildNotConfigured {
+		return nil, nil, apperror.New(apperror.ErrBuildNotConfigured, "build not configured for this plugin")
+	}
+
+	return plugin, config, nil
+}
+
+func (s *serviceImpl) newBuildResult(pluginID int64, pluginName, command string) *BuildResult {
+	return &BuildResult{
 		PluginID:   pluginID,
-		PluginName: plugin.Name,
-		Command:    config.BuildCommand,
+		PluginName: pluginName,
+		Command:    command,
 		BuiltAt:    time.Now(),
 	}
+}
 
-	// Broadcast build started
+func (s *serviceImpl) broadcastBuildStarted(pluginID int64, pluginName, command string) {
 	s.wsHub.Broadcast(ws.EventBuildStarted, BuildStartedEvent{
 		PluginID:   pluginID,
-		PluginName: plugin.Name,
-		Command:    config.BuildCommand,
+		PluginName: pluginName,
+		Command:    command,
 	})
+}
 
-	// Execute build command
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		// PowerShell on Windows
-		cmd = exec.CommandContext(ctx, "powershell", "-ExecutionPolicy", "Bypass", "-File", config.BuildCommand)
-	} else {
-		// Bash on Linux/Mac
-		cmd = exec.CommandContext(ctx, "bash", "-c", config.BuildCommand)
-	}
-
+func (s *serviceImpl) executeBuild(
+	ctx context.Context,
+	plugin *Plugin,
+	config *PluginGitConfig,
+	result *BuildResult,
+	startTime time.Time,
+) (*BuildResult, error) {
+	cmd := s.createBuildCommand(ctx, config.BuildCommand)
 	cmd.Dir = plugin.Path
 
+	stdout, stderr := s.runBuildCommand(cmd, result, startTime)
+
+	if result.Success {
+		s.broadcastBuildComplete(result.PluginID, result.Duration)
+
+		return result, nil
+	}
+
+	return s.handleBuildFailure(result, fmt.Errorf("%s", stderr), stderr, result.PluginID)
+}
+
+func (s *serviceImpl) createBuildCommand(ctx context.Context, command string) *exec.Cmd {
+	if runtime.GOOS == "windows" {
+		return exec.CommandContext(ctx, "powershell", "-ExecutionPolicy", "Bypass", "-File", command)
+	}
+
+	return exec.CommandContext(ctx, "bash", "-c", command)
+}
+
+func (s *serviceImpl) runBuildCommand(cmd *exec.Cmd, result *BuildResult, startTime time.Time) (string, string) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err = cmd.Run()
+	err := cmd.Run()
 	result.Duration = time.Since(startTime).Milliseconds()
 	result.Output = stdout.String()
 
-	if err != nil {
-		return s.handleBuildFailure(result, err, stderr.String(), pluginID)
+	if err == nil {
+		result.Success = true
+		result.ExitCode = 0
 	}
 
-	result.Success = true
-	result.ExitCode = 0
+	return stdout.String(), stderr.String()
+}
 
+func (s *serviceImpl) broadcastBuildComplete(pluginID int64, duration int64) {
 	s.wsHub.Broadcast(ws.EventBuildComplete, BuildCompleteEvent{
 		PluginID: pluginID,
 		Success:  true,
-		Duration: result.Duration,
+		Duration: duration,
 	})
 
-	s.log.Info("Build complete", "pluginId", pluginID, "duration", result.Duration)
-	return result, nil
+	s.log.Info("Build complete", "pluginId", pluginID, "duration", duration)
 }
 
 func (s *serviceImpl) PullAndBuild(ctx context.Context, pluginID int64) (*PullResult, *BuildResult, error) {
 	s.log.Info("Starting pull and build", "pluginId", pluginID)
 
-	// First pull
 	pullResult, err := s.Pull(ctx, pluginID)
 	if err != nil {
 		return pullResult, nil, err
 	}
 
-	// Only build if pull was successful and there were changes
-	if pullResult.Success && pullResult.FilesChanged > 0 {
-		buildResult, err := s.Build(ctx, pluginID)
-		return pullResult, buildResult, err
+	shouldBuild := pullResult.Success && pullResult.FilesChanged > 0
+	if !shouldBuild {
+		return pullResult, nil, nil
 	}
 
-	return pullResult, nil, nil
+	buildResult, err := s.Build(ctx, pluginID)
+
+	return pullResult, buildResult, err
 }
 
 func (s *serviceImpl) PullAndBuildAll(ctx context.Context) ([]PullResult, []BuildResult, error) {
@@ -671,41 +741,65 @@ func (s *serviceImpl) PullAndBuildAll(ctx context.Context) ([]PullResult, []Buil
 		return nil, nil, err
 	}
 
+	return s.pullAndBuildEachPlugin(ctx, plugins)
+}
+
+func (s *serviceImpl) pullAndBuildEachPlugin(ctx context.Context, plugins []Plugin) ([]PullResult, []BuildResult, error) {
 	var pullResults []PullResult
 	var buildResults []BuildResult
 
 	for _, p := range plugins {
-		pullResult, buildResult, _ := s.PullAndBuild(ctx, p.ID)
-		if pullResult != nil {
-			pullResults = append(pullResults, *pullResult)
-		}
-		if buildResult != nil {
-			buildResults = append(buildResults, *buildResult)
-		}
+		s.appendPullAndBuildResult(ctx, p.ID, &pullResults, &buildResults)
 	}
 
 	return pullResults, buildResults, nil
 }
 
+func (s *serviceImpl) appendPullAndBuildResult(
+	ctx context.Context,
+	pluginID int64,
+	pullResults *[]PullResult,
+	buildResults *[]BuildResult,
+) {
+	pullResult, buildResult, _ := s.PullAndBuild(ctx, pluginID)
+
+	if pullResult != nil {
+		*pullResults = append(*pullResults, *pullResult)
+	}
+
+	if buildResult != nil {
+		*buildResults = append(*buildResults, *buildResult)
+	}
+}
+
+const gitConfigSelectQuery = `
+	SELECT GitEnabled, GitBranch, BuildEnabled, BuildCommand
+	FROM PluginGitConfig
+	WHERE PluginId = ?
+`
+
 func (s *serviceImpl) GetConfig(ctx context.Context, pluginID int64) (*PluginGitConfig, error) {
 	var config PluginGitConfig
 	config.PluginID = pluginID
 
-	err := s.db.QueryRowContext(ctx, `
-		SELECT GitEnabled, GitBranch, BuildEnabled, BuildCommand
-		FROM PluginGitConfig
-		WHERE PluginId = ?
-	`, pluginID).Scan(&config.GitEnabled, &config.Branch, &config.BuildEnabled, &config.BuildCommand)
+	err := s.db.QueryRowContext(ctx, gitConfigSelectQuery, pluginID).Scan(
+		&config.GitEnabled, &config.Branch, &config.BuildEnabled, &config.BuildCommand,
+	)
 
 	if err != nil {
-		// Return default config
-		config.GitEnabled = true
-		config.Branch = s.defaultBranch
-		config.BuildEnabled = false
-		return &config, nil
+		return s.defaultGitConfig(pluginID), nil
 	}
 
 	return &config, nil
+}
+
+func (s *serviceImpl) defaultGitConfig(pluginID int64) *PluginGitConfig {
+	return &PluginGitConfig{
+		PluginID:     pluginID,
+		GitEnabled:   true,
+		Branch:       s.defaultBranch,
+		BuildEnabled: false,
+	}
 }
 
 func (s *serviceImpl) UpdateConfig(ctx context.Context, config PluginGitConfig) error {

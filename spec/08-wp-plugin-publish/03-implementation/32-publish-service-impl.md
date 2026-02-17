@@ -393,19 +393,24 @@ func (s *serviceImpl) runOptionalBackup(
 	}
 
 	stage := s.runStage("backup", func() error {
-		backup, err := s.backupService.CreateFromRemote(ctx, pctx.plugin.ID, result.SiteID)
-		if err != nil {
-			return err
-		}
-		result.BackupID = &backup.ID
-
-		return nil
+		return s.captureBackup(ctx, pctx, result)
 	})
 	result.Stages = append(result.Stages, stage)
 
 	if stage.Status == StageStatusFailed {
 		s.log.Warn("Backup failed, continuing publish", "error", stage.Error)
 	}
+}
+
+func (s *serviceImpl) captureBackup(ctx context.Context, pctx *publishContext, result *PublishResult) error {
+	backup, err := s.backupService.CreateFromRemote(ctx, pctx.plugin.ID, result.SiteID)
+	if err != nil {
+		return err
+	}
+
+	result.BackupID = &backup.ID
+
+	return nil
 }
 
 func (s *serviceImpl) runPackageStage(
@@ -415,20 +420,30 @@ func (s *serviceImpl) runPackageStage(
 	opts PublishOptions,
 ) error {
 	stage := s.runStage("package", func() error {
-		pkg, err := s.CreatePackage(ctx, pctx.plugin.ID, opts.Files)
-		if err != nil {
-			return err
-		}
-		result.FilesUploaded = pkg.FileCount
-		result.BytesTransferred = pkg.Size
-
-		return nil
+		return s.capturePackageInfo(ctx, pctx, result, opts)
 	})
 	result.Stages = append(result.Stages, stage)
 
 	if stage.Status == StageStatusFailed {
 		return s.setFailure(result, "package", stage.Error, pctx.startTime)
 	}
+
+	return nil
+}
+
+func (s *serviceImpl) capturePackageInfo(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+	opts PublishOptions,
+) error {
+	pkg, err := s.CreatePackage(ctx, pctx.plugin.ID, opts.Files)
+	if err != nil {
+		return err
+	}
+
+	result.FilesUploaded = pkg.FileCount
+	result.BytesTransferred = pkg.Size
 
 	return nil
 }
@@ -738,20 +753,24 @@ func (s *serviceImpl) filterPluginFile(
 		return nil
 	}
 
-	relPath, _ := filepath.Rel(plugin.Path, path)
 	base := filepath.Base(path)
 
-	if strings.HasPrefix(base, ".") {
+	if s.shouldSkipFile(base, plugin.ExcludePatterns) {
 		return nil
 	}
 
-	if s.isFileExcluded(base, plugin.ExcludePatterns) {
-		return nil
-	}
-
+	relPath, _ := filepath.Rel(plugin.Path, path)
 	*filesToPackage = append(*filesToPackage, relPath)
 
 	return nil
+}
+
+func (s *serviceImpl) shouldSkipFile(base string, excludePatterns []string) bool {
+	if strings.HasPrefix(base, ".") {
+		return true
+	}
+
+	return s.isFileExcluded(base, excludePatterns)
 }
 
 func (s *serviceImpl) isFileExcluded(base string, excludes []string) bool {
@@ -858,13 +877,8 @@ func (s *serviceImpl) addSingleFileToZip(
 
 func (s *serviceImpl) createZipHeader(pluginPath, pluginDirName, relPath string) (*zip.FileHeader, error) {
 	fullPath := filepath.Join(pluginPath, relPath)
-	info, err := os.Stat(fullPath)
 
-	if err != nil {
-		return nil, err
-	}
-
-	header, err := zip.FileInfoHeader(info)
+	header, err := s.fileInfoHeader(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -873,6 +887,15 @@ func (s *serviceImpl) createZipHeader(pluginPath, pluginDirName, relPath string)
 	header.Method = zip.Deflate
 
 	return header, nil
+}
+
+func (s *serviceImpl) fileInfoHeader(fullPath string) (*zip.FileHeader, error) {
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return zip.FileInfoHeader(info)
 }
 
 func (s *serviceImpl) copyFileToZip(fullPath string, writer io.Writer, hash io.Writer) int64 {
@@ -912,23 +935,28 @@ func (s *serviceImpl) uploadPackage(
 ) error {
 	s.log.Info("Uploading package", "path", zipPath, "slug", remoteSlug)
 
-	// Read zip file
-	data, err := os.ReadFile(zipPath)
+	data, err := s.readPackageFile(zipPath)
 	if err != nil {
-		return apperror.Wrap(err, apperror.ErrFileRead, "failed to read package")
+		return err
 	}
 
-	// Upload via WordPress REST API
-	err = client.UploadPlugin(ctx, remoteSlug, data)
-	if err != nil {
+	if err := client.UploadPlugin(ctx, remoteSlug, data); err != nil {
 		return apperror.Wrap(err, apperror.ErrRemoteUpload, "failed to upload to WordPress")
 	}
 
-	// Clean up temp file
 	os.Remove(zipPath)
-
 	s.log.Info("Package uploaded successfully", "slug", remoteSlug)
+
 	return nil
+}
+
+func (s *serviceImpl) readPackageFile(zipPath string) ([]byte, error) {
+	data, err := os.ReadFile(zipPath)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFileRead, "failed to read package")
+	}
+
+	return data, nil
 }
 ```
 
