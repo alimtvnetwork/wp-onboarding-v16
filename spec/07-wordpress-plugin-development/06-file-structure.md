@@ -17,11 +17,11 @@ my-plugin/
 │   │   └── Admin.php          # Admin interface
 │   ├── Activation/
 │   │   └── ActivationHandler.php
-│   ├── Enums/                 # Backed enums (HookType, etc.)
-│   ├── Helpers/               # Utility classes
+│   ├── Enums/                 # Backed enums (HookType, EndpointType, etc.)
+│   ├── Helpers/               # Utility classes (PathHelper, BooleanHelpers)
 │   ├── Logging/               # FileLogger, Logger
-│   ├── Database/              # ORM, Database, FileCache
-│   ├── ErrorHandling/         # FatalErrorHandler, FrameBuilder
+│   ├── Database/              # Orm, Database, FileCache
+│   ├── ErrorHandling/         # FatalErrorHandler, FrameBuilder, ErrorResponse
 │   └── ...                    # Other namespaced subdirectories
 │
 ├── assets/                    # Static assets
@@ -48,11 +48,14 @@ my-plugin/
 includes/Logging/FileLogger.php    → RiseupAsia\Logging\FileLogger
 includes/Database/Database.php     → RiseupAsia\Database\Database
 includes/Post/PostManager.php      → RiseupAsia\Post\PostManager
+includes/Helpers/PathHelper.php    → RiseupAsia\Helpers\PathHelper
+includes/Enums/HookType.php       → RiseupAsia\Enums\HookType
 ```
 
 ### Class Naming
 - Fully namespaced under `RiseupAsia\`
 - PascalCase, no prefix needed (namespace provides scope)
+- Helper/utility classes use `Helper` suffix (not `Utils`)
 
 ```php
 namespace RiseupAsia\Logging;
@@ -60,6 +63,9 @@ class FileLogger { }
 
 namespace RiseupAsia\Database;
 class Database { }
+
+namespace RiseupAsia\Helpers;
+class PathHelper { }
 ```
 
 ### Main Plugin File
@@ -147,26 +153,34 @@ assets/
 ### Enqueue Assets Properly
 
 ```php
-public function enqueue_admin_assets($hook) {
-    // Only load on our admin pages
-    if (strpos($hook, 'riseup') === false) {
-        return;
+namespace RiseupAsia\Admin;
+
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\PathHelper;
+
+class Admin {
+    public function enqueueAdminAssets(string $hook): void {
+        $isOurPage = str_contains($hook, 'riseup');
+
+        if (!$isOurPage) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'riseup-admin',
+            PathHelper::pluginUrl() . 'assets/css/admin.css',
+            [],
+            PluginConfigType::Version->value,
+        );
+
+        wp_enqueue_script(
+            'riseup-admin',
+            PathHelper::pluginUrl() . 'assets/js/admin.js',
+            ['jquery'],
+            PluginConfigType::Version->value,
+            true,
+        );
     }
-    
-    wp_enqueue_style(
-        'riseup-admin',
-        plugin_dir_url(RISEUP_PLUGIN_FILE) . 'assets/css/admin.css',
-        [],
-        RISEUP_VERSION
-    );
-    
-    wp_enqueue_script(
-        'riseup-admin',
-        plugin_dir_url(RISEUP_PLUGIN_FILE) . 'assets/js/admin.js',
-        ['jquery'],
-        RISEUP_VERSION,
-        true  // Load in footer
-    );
 }
 ```
 
@@ -175,11 +189,14 @@ public function enqueue_admin_assets($hook) {
 Keep HTML templates separate from PHP logic:
 
 ```php
-// admin/class-admin-ui.php
-class Riseup_Admin_UI {
-    public function render_dashboard() {
-        $data = $this->get_dashboard_data();
-        include RISEUP_PLUGIN_DIR . 'admin/views/dashboard.php';
+namespace RiseupAsia\Admin;
+
+use RiseupAsia\Enums\PluginConfigType;
+
+class AdminUi {
+    public function renderDashboard(): void {
+        $data = $this->getDashboardData();
+        include PathHelper::pluginDir() . 'admin/views/dashboard.php';
     }
 }
 
@@ -190,49 +207,9 @@ if (!defined('ABSPATH')) {
 }
 ?>
 <div class="wrap">
-    <h1><?php echo esc_html(RISEUP_PLUGIN_NAME); ?></h1>
-    <p>Version: <?php echo esc_html(RISEUP_VERSION); ?></p>
-    <!-- Dashboard content -->
+    <h1><?php echo esc_html(PluginConfigType::Name->value); ?></h1>
+    <p>Version: <?php echo esc_html(PluginConfigType::Version->value); ?></p>
 </div>
-```
-
-## File Header Comments
-
-Every PHP file should have a header:
-
-```php
-<?php
-/**
- * File Logger
- * 
- * Handles low-level file logging without WordPress dependencies.
- * 
- * @package    Riseup_Asia_Uploader
- * @subpackage Includes
- * @since      1.0.0
- */
-
-// Prevent direct access
-if (!defined('ABSPATH')) {
-    exit;
-}
-
-class Riseup_File_Logger {
-    // ...
-}
-```
-
-## Minimum Required Files
-
-For a minimal working plugin:
-
-```
-my-plugin/
-├── my-plugin.php           # Entry point + main class
-├── includes/
-│   ├── constants.php       # All constants
-│   └── class-file-logger.php  # Logging
-└── README.md               # Documentation
 ```
 
 ## Scaling Up
@@ -257,10 +234,12 @@ includes/                       # RiseupAsia\ namespace root
 │   ├── SnapshotManager.php
 │   └── ...
 ├── Helpers/
-│   ├── PathUtils.php
+│   ├── PathHelper.php
 │   ├── BooleanHelpers.php
 │   └── EnvelopeBuilder.php
 └── Enums/
     ├── HookType.php
+    ├── EndpointType.php
+    ├── PluginConfigType.php
     └── ...
 ```

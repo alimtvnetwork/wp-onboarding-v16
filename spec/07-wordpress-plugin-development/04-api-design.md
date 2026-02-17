@@ -11,14 +11,12 @@ WordPress plugins should use the REST API for external communication. This provi
 ## API Namespace Convention
 
 ```php
-// constants.php
-define('MYPLUGIN_API_NAMESPACE', 'myplugin/v1');
-define('MYPLUGIN_API_FULL_NAMESPACE', 'myplugin/v1');  // Without leading slash
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\EndpointType;
 
-// Endpoints
-define('MYPLUGIN_ENDPOINT_HEALTH', 'health');
-define('MYPLUGIN_ENDPOINT_UPLOAD', 'upload');
-define('MYPLUGIN_ENDPOINT_STATUS', 'status');
+// Namespace built from enum values
+$namespace = PluginConfigType::ApiBase->value . '/' . PluginConfigType::ApiVersion->value;
+// Result: 'riseup-asia-uploader/v1'
 ```
 
 ## Route Registration Pattern
@@ -26,37 +24,54 @@ define('MYPLUGIN_ENDPOINT_STATUS', 'status');
 Register routes during `rest_api_init` hook:
 
 ```php
-class My_Plugin {
-    public function __construct() {
-        add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
+namespace RiseupAsia\Api;
+
+use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
+use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Logging\FileLogger;
+
+class RouteRegistrar {
+    private FileLogger $fileLogger;
+    private string $namespace;
+
+    public function __construct(private readonly FileLogger $logger) {
+        $this->fileLogger = $logger;
+        $this->namespace = PluginConfigType::ApiBase->value . '/' . PluginConfigType::ApiVersion->value;
     }
-    
-    public function register_routes() {
-        $this->file_logger->log('Registering REST routes', __FILE__, __LINE__);
-        
-        // Health check - public
+
+    public function register(): void {
+        add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
+    }
+
+    public function registerRoutes(): void {
+        $this->fileLogger->log('Registering REST routes', __FILE__, __LINE__);
+
         register_rest_route(
-            MYPLUGIN_API_NAMESPACE,
-            '/' . MYPLUGIN_ENDPOINT_HEALTH,
+            $this->namespace,
+            EndpointType::Health->route(),
             [
-            'methods' => HttpMethodEnum::GET,
-            'callback' => [$this, 'handle_health'],
-            'permission_callback' => '__return_true',
-        ]
-    );
-        
-        // Upload - requires authentication
-        register_rest_route(
-            MYPLUGIN_API_NAMESPACE,
-            '/' . MYPLUGIN_ENDPOINT_UPLOAD,
-            [
-                'methods' => HttpMethodEnum::POST,
-                'callback' => [$this, 'handle_upload'],
-                'permission_callback' => [$this, 'check_upload_permission'],
-            ]
+                'methods' => HttpMethodType::Get->value,
+                'callback' => [$this, 'handleHealth'],
+                'permission_callback' => '__return_true',
+            ],
         );
-        
-        $this->file_logger->log('REST routes registered', __FILE__, __LINE__);
+
+        register_rest_route(
+            $this->namespace,
+            EndpointType::Upload->route(),
+            [
+                'methods' => HttpMethodType::Post->value,
+                'callback' => [$this, 'handleUpload'],
+                'permission_callback' => [$this, 'checkUploadPermission'],
+            ],
+        );
+
+        $this->fileLogger->log('REST routes registered', __FILE__, __LINE__);
     }
 }
 ```
@@ -65,18 +80,17 @@ class My_Plugin {
 
 ### DO
 ```
-/myplugin/v1/health          # Health check
-/myplugin/v1/upload          # Upload files
-/myplugin/v1/plugins         # List plugins
-/myplugin/v1/plugins/123     # Get single plugin
-/myplugin/v1/sync            # Sync operation
+/riseup-asia-uploader/v1/health          # Health check
+/riseup-asia-uploader/v1/upload          # Upload files
+/riseup-asia-uploader/v1/plugins         # List plugins
+/riseup-asia-uploader/v1/sync            # Sync operation
 ```
 
 ### DON'T
 ```
-/myplugin/v1/getHealth       # Don't prefix with HTTP verb
-/myplugin/v1/plugin_list     # Don't use underscores
-/myplugin/v1/doUpload        # Don't use action prefixes
+/riseup-asia-uploader/v1/getHealth       # Don't prefix with HTTP verb
+/riseup-asia-uploader/v1/plugin_list     # Don't use underscores
+/riseup-asia-uploader/v1/doUpload        # Don't use action prefixes
 ```
 
 ## Plain String Endpoints (Avoid Regex)
@@ -84,40 +98,22 @@ class My_Plugin {
 **Critical**: Always use plain string endpoints, NOT regex patterns.
 
 ```php
-// ❌ WRONG - Regex patterns are error-prone
+// ❌ WRONG — Regex patterns are error-prone
 register_rest_route(
-    'myplugin/v1',
-    '/plugins/(?P<id>\d+)',  // Regex can cause loading issues
-    [...]
+    'riseup-asia-uploader/v1',
+    '/plugins/(?P<id>\d+)',
+    [...],
 );
 
-// ✅ CORRECT - Use WordPress's built-in parameter handling
+// ✅ CORRECT — Use EndpointType enum with route() helper
 register_rest_route(
-    MYPLUGIN_API_NAMESPACE,
-    '/' . MYPLUGIN_ENDPOINT_PLUGINS,  // '/plugins'
+    $this->namespace,
+    EndpointType::Plugins->route(),
     [
-        'methods' => HttpMethodEnum::GET,
-        'callback' => [$this, 'handle_list_plugins'],
-        'permission_callback' => [$this, 'check_permission'],
-    ]
-);
-
-// For single item, use separate route
-register_rest_route(
-    MYPLUGIN_API_NAMESPACE,
-    '/' . MYPLUGIN_ENDPOINT_PLUGIN,  // '/plugin'
-    [
-        'methods' => HttpMethodEnum::GET,
-        'callback' => [$this, 'handle_get_plugin'],
-        'permission_callback' => [$this, 'check_permission'],
-        'args' => [
-            'id' => [
-                'required' => true,
-                'type' => 'integer',
-                'sanitize_callback' => 'absint',
-            ],
-        ],
-    ]
+        'methods' => HttpMethodType::Get->value,
+        'callback' => [$this, 'handleListPlugins'],
+        'permission_callback' => [$this, 'checkPermission'],
+    ],
 );
 ```
 
@@ -130,70 +126,63 @@ register_rest_route(
 
 ### Authenticated Endpoints (Application Passwords)
 ```php
-public function check_permission($request) {
-    // Check for Application Password authentication
-    $user = wp_get_current_user();
-    $is_unauthenticated = !$user || $user->ID === 0;
+use WP_Error;
+use WP_REST_Request;
 
-    if ($is_unauthenticated) {
-        $this->file_logger->log('Permission denied: not authenticated', __FILE__, __LINE__);
+public function checkPermission(WP_REST_Request $request): bool|WP_Error {
+    $user = wp_get_current_user();
+    $isUnauthenticated = !$user || $user->ID === 0;
+
+    if ($isUnauthenticated) {
+        $this->fileLogger->log('Permission denied: not authenticated', __FILE__, __LINE__);
 
         return new WP_Error(
             'rest_forbidden',
             'Authentication required',
-            ['status' => 401]
+            ['status' => 401],
         );
     }
-    
-    // Check for specific capability
-    if (!current_user_can(CapabilityEnum::MANAGE_OPTIONS)) {
-        $this->file_logger->log(
+
+    if (!current_user_can('manage_options')) {
+        $this->fileLogger->log(
             sprintf('Permission denied: user %d lacks capability', $user->ID),
             __FILE__,
-            __LINE__
+            __LINE__,
         );
 
         return new WP_Error(
             'rest_forbidden',
             'Insufficient permissions',
-            ['status' => 403]
+            ['status' => 403],
         );
     }
-    
-    $this->file_logger->log(
-        sprintf('Permission granted for user %d', $user->ID),
-        __FILE__,
-        __LINE__
-    );
-    
+
     return true;
 }
 ```
 
 ### IP Whitelist + Auth
 ```php
-public function check_permission_with_ip($request) {
-    // First check IP whitelist
-    $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
-    $allowed_ips = get_option('myplugin_allowed_ips', []);
-    $is_ip_blocked = !empty($allowed_ips) && !in_array($client_ip, $allowed_ips);
+public function checkPermissionWithIp(WP_REST_Request $request): bool|WP_Error {
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    $allowedIps = get_option('riseup_allowed_ips', []);
+    $isIpBlocked = !empty($allowedIps) && !in_array($clientIp, $allowedIps, true);
 
-    if ($is_ip_blocked) {
-        $this->file_logger->log(
-            sprintf('Permission denied: IP %s not whitelisted', $client_ip),
+    if ($isIpBlocked) {
+        $this->fileLogger->log(
+            sprintf('Permission denied: IP %s not whitelisted', $clientIp),
             __FILE__,
-            __LINE__
+            __LINE__,
         );
 
         return new WP_Error(
             'rest_forbidden',
             'IP not allowed',
-            ['status' => 403]
+            ['status' => 403],
         );
     }
-    
-    // Then check authentication
-    return $this->check_permission($request);
+
+    return $this->checkPermission($request);
 }
 ```
 
@@ -202,12 +191,16 @@ public function check_permission_with_ip($request) {
 ### Standard Response Format
 
 ```php
-public function handle_health($request) {
-    $this->file_logger->log('Health check requested', __FILE__, __LINE__);
-    
+use WP_REST_Request;
+use WP_REST_Response;
+use RiseupAsia\Enums\PluginConfigType;
+
+public function handleHealth(WP_REST_Request $request): WP_REST_Response {
+    $this->fileLogger->log('Health check requested', __FILE__, __LINE__);
+
     return new WP_REST_Response([
         'status' => 'healthy',
-        'version' => MYPLUGIN_VERSION,
+        'version' => PluginConfigType::Version->value,
         'timestamp' => gmdate('c'),
     ], 200);
 }
@@ -216,12 +209,16 @@ public function handle_health($request) {
 ### Error Response Format
 
 ```php
-public function handle_upload($request) {
-    $this->file_logger->log('Upload requested', __FILE__, __LINE__);
-    
+use Throwable;
+use WP_REST_Request;
+use WP_REST_Response;
+
+public function handleUpload(WP_REST_Request $request): WP_REST_Response {
+    $this->fileLogger->log('Upload requested', __FILE__, __LINE__);
+
     try {
         // Process upload...
-        
+
         return new WP_REST_Response([
             'success' => true,
             'message' => 'File uploaded successfully',
@@ -230,14 +227,13 @@ public function handle_upload($request) {
                 'size' => $size,
             ],
         ], 200);
-        
-    } catch (\Throwable $e) {
-        $this->file_logger->error(
+    } catch (Throwable $e) {
+        $this->fileLogger->error(
             sprintf('Upload failed: %s', $e->getMessage()),
             __FILE__,
-            __LINE__
+            __LINE__,
         );
-        
+
         return new WP_REST_Response([
             'success' => false,
             'error' => [
@@ -253,20 +249,18 @@ public function handle_upload($request) {
 
 ```php
 register_rest_route(
-    MYPLUGIN_API_NAMESPACE,
-    '/update',
+    $this->namespace,
+    EndpointType::Update->route(),
     [
-        'methods' => HttpMethodEnum::POST,
-        'callback' => [$this, 'handle_update'],
-        'permission_callback' => [$this, 'check_permission'],
+        'methods' => HttpMethodType::Post->value,
+        'callback' => [$this, 'handleUpdate'],
+        'permission_callback' => [$this, 'checkPermission'],
         'args' => [
             'name' => [
                 'required' => true,
                 'type' => 'string',
                 'sanitize_callback' => 'sanitize_text_field',
-                'validate_callback' => function($value) {
-                    return strlen($value) >= 3 && strlen($value) <= 100;
-                },
+                'validate_callback' => fn(string $value): bool => strlen($value) >= 3 && strlen($value) <= 100,
             ],
             'status' => [
                 'required' => false,
@@ -282,37 +276,8 @@ register_rest_route(
                 'default' => 50,
             ],
         ],
-    ]
+    ],
 );
-```
-
-## Logging API Requests
-
-```php
-public function handle_upload($request) {
-    // Log request details
-    $this->file_logger->log(
-        sprintf(
-            'API Request: %s %s from %s',
-            $request->get_method(),
-            $request->get_route(),
-            $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-        ),
-        __FILE__,
-        __LINE__
-    );
-    
-    // Process request...
-    
-    // Log response
-    $this->file_logger->log(
-        sprintf('API Response: %d', $status_code),
-        __FILE__,
-        __LINE__
-    );
-    
-    return $response;
-}
 ```
 
 ## Authentication Methods
@@ -327,30 +292,31 @@ WordPress 5.6+ supports Application Passwords natively:
 
 // WordPress handles authentication automatically
 // Just check if user is logged in
-public function check_permission($request) {
-    return is_user_logged_in() && current_user_can(CapabilityEnum::MANAGE_OPTIONS);
+public function checkPermission(WP_REST_Request $request): bool {
+    return is_user_logged_in() && current_user_can('manage_options');
 }
 ```
 
 ### 2. Custom Token (for backward compatibility)
 
 ```php
-// constants.php
-define('MYPLUGIN_OPTION_API_TOKEN', 'myplugin_api_token');
+use RiseupAsia\Enums\OptionNameType;
+use WP_Error;
+use WP_REST_Request;
 
-public function check_token_permission($request) {
+public function checkTokenPermission(WP_REST_Request $request): bool|WP_Error {
     $token = $request->get_header('X-API-Token');
-    
+
     if (empty($token)) {
         return new WP_Error('no_token', 'API token required', ['status' => 401]);
     }
-    
-    $stored_token = get_option(MYPLUGIN_OPTION_API_TOKEN);
-    
-    if (!hash_equals($stored_token, $token)) {
+
+    $storedToken = get_option(OptionNameType::ApiToken->value);
+
+    if (!hash_equals($storedToken, $token)) {
         return new WP_Error('invalid_token', 'Invalid API token', ['status' => 403]);
     }
-    
+
     return true;
 }
 ```
@@ -358,83 +324,42 @@ public function check_token_permission($request) {
 ## Rate Limiting
 
 ```php
-class Rate_Limiter {
-    private $prefix = 'myplugin_rate_';
-    private $limit = 60;      // requests
-    private $window = 60;     // seconds
-    
-    public function check($identifier) {
-        $key = $this->prefix . md5($identifier);
+namespace RiseupAsia\Security;
+
+use WP_Error;
+use WP_REST_Request;
+
+class RateLimiter {
+    private const PREFIX = 'riseup_rate_';
+    private const DEFAULT_LIMIT = 60;
+    private const DEFAULT_WINDOW = 60;
+
+    public function check(string $identifier): bool {
+        $key = self::PREFIX . md5($identifier);
         $count = get_transient($key) ?: 0;
-        
-        if ($count >= $this->limit) {
-            return false;  // Rate limited
+
+        if ($count >= self::DEFAULT_LIMIT) {
+            return false;
         }
-        
-        set_transient($key, $count + 1, $this->window);
+
+        set_transient($key, $count + 1, self::DEFAULT_WINDOW);
+
         return true;
     }
 }
 
 // In permission callback
-public function check_permission($request) {
+public function checkPermission(WP_REST_Request $request): bool|WP_Error {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-    
-    if (!$this->rate_limiter->check($ip)) {
+
+    if (!$this->rateLimiter->check($ip)) {
         return new WP_Error(
             'rate_limited',
             'Too many requests',
-            ['status' => 429]
+            ['status' => 429],
         );
     }
-    
-    return $this->check_auth($request);
-}
-```
 
-## Complete Route Registration Example
-
-```php
-public function register_routes() {
-    $this->file_logger->log('Registering REST routes', __FILE__, __LINE__);
-    
-    // Health check - public
-    register_rest_route(
-        RISEUP_API_NAMESPACE,
-        '/' . RISEUP_ENDPOINT_HEALTH,
-        [
-            'methods' => HttpMethodEnum::GET,
-            'callback' => [$this, 'handle_health'],
-            'permission_callback' => '__return_true',
-        ]
-    );
-    
-    // Upload - authenticated
-    register_rest_route(
-        RISEUP_API_NAMESPACE,
-        '/' . RISEUP_ENDPOINT_UPLOAD,
-        [
-            'methods' => HttpMethodEnum::POST,
-            'callback' => [$this, 'handle_upload'],
-            'permission_callback' => [$this, 'check_admin_permission'],
-        ]
-    );
-    
-    // Status - authenticated
-    register_rest_route(
-        RISEUP_API_NAMESPACE,
-        '/' . RISEUP_ENDPOINT_STATUS,
-        [
-            'methods' => HttpMethodEnum::GET,
-            'callback' => [$this, 'handle_status'],
-            'permission_callback' => [$this, 'check_admin_permission'],
-        ]
-    );
-    
-    $this->file_logger->log(
-        sprintf('Registered %d REST routes', 3),
-        __FILE__,
-        __LINE__
-    );
+    return $this->checkAuth($request);
 }
 ```

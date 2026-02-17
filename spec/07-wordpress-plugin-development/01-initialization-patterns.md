@@ -39,14 +39,16 @@ require_once __DIR__ . '/includes/Autoloader.php';
 Create instances, but constructors must NOT call WordPress functions:
 
 ```php
-// ✅ SAFE - Constructor only sets defaults
-class My_File_Logger {
-    private $log_path = null;  // Will be set lazily
-    private $initialized = false;
-    
+namespace RiseupAsia\Logging;
+
+// ✅ SAFE — Constructor only sets defaults
+class FileLogger {
+    private ?string $logPath = null;
+    private bool $isInitialized = false;
+
     public function __construct() {
         // Only set non-WP-dependent defaults
-        $this->initialized = false;
+        $this->isInitialized = false;
     }
 }
 ```
@@ -56,13 +58,19 @@ class My_File_Logger {
 Register hooks to defer work until WordPress is ready:
 
 ```php
-// After class includes
-$my_plugin = new My_Plugin();
+use RiseupAsia\Enums\HookType;
+use RiseupAsia\Core\Plugin;
+use RiseupAsia\Admin\Admin;
 
-// Register for later execution — hook names from HookEnum (see PHP Standards)
-add_action(HookEnum::PLUGINS_LOADED, [$my_plugin, 'on_plugins_loaded']);
-add_action(HookEnum::INIT, [$my_plugin, 'on_init']);
-add_action(HookEnum::REST_API_INIT, [$my_plugin, 'register_routes']);
+function riseup_asia_init(): void {
+    Plugin::getInstance();
+
+    if (is_admin()) {
+        Admin::getInstance();
+    }
+}
+
+add_action(HookType::PluginsLoaded->value, 'riseup_asia_init');
 ```
 
 ### Phase 4: plugins_loaded Hook
@@ -70,10 +78,9 @@ add_action(HookEnum::REST_API_INIT, [$my_plugin, 'register_routes']);
 First safe point for most WordPress function calls:
 
 ```php
-public function on_plugins_loaded() {
-    // NOW safe to call WordPress functions
-    $this->init_database();
-    $this->load_textdomain();
+public function onPluginsLoaded(): void {
+    $this->initDatabase();
+    $this->loadTextdomain();
 }
 ```
 
@@ -82,9 +89,8 @@ public function on_plugins_loaded() {
 All WordPress core is ready:
 
 ```php
-public function on_init() {
-    // Register custom post types, taxonomies, etc.
-    $this->register_post_types();
+public function onInit(): void {
+    $this->registerPostTypes();
 }
 ```
 
@@ -93,15 +99,21 @@ public function on_init() {
 REST API is ready:
 
 ```php
-public function register_routes() {
+use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\PluginConfigType;
+
+public function registerRoutes(): void {
+    $namespace = PluginConfigType::ApiBase->value . '/' . PluginConfigType::ApiVersion->value;
+
     register_rest_route(
-        MYPLUGIN_API_NAMESPACE,
-        '/' . MYPLUGIN_ENDPOINT_HEALTH,
+        $namespace,
+        EndpointType::Health->route(),
         [
-            'methods' => HttpMethodEnum::GET,
-            'callback' => [$this, 'health_check'],
+            'methods' => HttpMethodType::Get->value,
+            'callback' => [$this, 'handleHealth'],
             'permission_callback' => '__return_true',
-        ]
+        ],
     );
 }
 ```
@@ -111,39 +123,30 @@ public function register_routes() {
 The key pattern for avoiding early WordPress function calls:
 
 ```php
-class My_Component {
-    private $upload_dir = null;
-    private $data_path = null;
-    
-    /**
-     * Get WordPress upload directory - lazy loaded
-     */
-    private function get_upload_dir() {
-        if ($this->upload_dir === null) {
-            $this->upload_dir = wp_upload_dir();
+namespace RiseupAsia\Helpers;
+
+class AssetLocator {
+    private ?array $uploadDir = null;
+    private ?string $dataPath = null;
+
+    private function getUploadDir(): array {
+        $this->uploadDir ??= wp_upload_dir();
+
+        return $this->uploadDir;
+    }
+
+    public function getDataPath(): string {
+        if ($this->dataPath === null) {
+            $upload = $this->getUploadDir();
+            $this->dataPath = $upload['basedir'] . '/' . PluginConfigType::Slug->value . '/data/';
         }
 
-        return $this->upload_dir;
+        return $this->dataPath;
     }
-    
-    /**
-     * Get data directory path - depends on upload dir
-     */
-    public function get_data_path() {
-        if ($this->data_path === null) {
-            $upload = $this->get_upload_dir();
-            $this->data_path = $upload['basedir'] . '/' . MYPLUGIN_SLUG . '/data/';
-        }
 
-        return $this->data_path;
-    }
-    
-    /**
-     * Ensure directory exists - called when actually needed
-     */
-    private function ensure_directory($path) {
-        if (!file_exists($path) && !@mkdir($path, 0755, true) && !is_dir($path)) {
-            throw new Exception("Failed to create directory: {$path}");
+    private function ensureDirectory(string $path): string {
+        if (PathHelper::isDirMissing($path) && !@mkdir($path, 0755, true) && !is_dir($path)) {
+            throw new RuntimeException("Failed to create directory: {$path}");
         }
 
         return $path;
@@ -158,43 +161,34 @@ class My_Component {
 ```php
 // ❌ CAUSES INFINITE LOOP
 class Database {
-    public function __construct(Logger $logger) {
-        $this->logger = $logger;
-    }
+    public function __construct(private Logger $logger) {}
 }
 
 class Logger {
-    public function __construct(Database $db) {
-        $this->db = $db;  // Needs Database for DB logging
-    }
+    public function __construct(private Database $db) {}
 }
-
-// How to create either one?
-$db = new Database(new Logger(new Database(...))); // Infinite!
 ```
 
 ### Solution: Lazy Dependency Loading
 
 ```php
-// ✅ CORRECT - Lazy loading breaks the cycle
+namespace RiseupAsia\Logging;
+
+use RiseupAsia\Database\Database;
+
+// ✅ CORRECT — Lazy loading breaks the cycle
 class Logger {
-    private $db = null;
-    
-    public function __construct() {
-        // Don't require Database here
-    }
-    
-    private function get_db() {
-        if ($this->db === null) {
-            // Get it when actually needed
-            $this->db = Riseup_Database::get_instance();
-        }
+    private ?Database $db = null;
+
+    private function getDb(): Database {
+        $this->db ??= Database::getInstance();
+
         return $this->db;
     }
-    
-    public function log_to_db($message) {
-        $db = $this->get_db();  // Now safe to get
-        $db->insert_log($message);
+
+    public function logToDb(string $message): void {
+        $db = $this->getDb();
+        $db->insertLog($message);
     }
 }
 ```
@@ -206,32 +200,35 @@ For plugins that need to log during initialization (before Database is ready):
 ### Tier 1: File Logger (Always Available)
 
 ```php
-class File_Logger {
-    // Uses only native PHP - no WordPress dependencies
-    private $log_path = null;
-    
-    private function ensure_paths() {
-        if ($this->log_path === null) {
-            // Lazy but still uses wp_upload_dir
-            $upload = wp_upload_dir();
-            $base = $upload['basedir'] . '/' . MYPLUGIN_SLUG . '/logs/';
-            
-            // Create with native PHP
-            if (!is_dir($base)) {
-                @mkdir($base, 0755, true);
-            }
-            
-            $this->log_path = $base . 'log.txt';
+namespace RiseupAsia\Logging;
+
+use RiseupAsia\Helpers\PathHelper;
+
+class FileLogger {
+    private ?string $logPath = null;
+    private ?string $errorPath = null;
+    private bool $isInitialized = false;
+
+    private function ensurePaths(): void {
+        if ($this->isInitialized) {
+            return;
         }
-        return $this->log_path;
+
+        $logsDir = PathHelper::logsDir();
+        PathHelper::ensureDir($logsDir, secure: true);
+
+        $this->logPath = $logsDir . '/log.txt';
+        $this->errorPath = $logsDir . '/error.txt';
+        $this->isInitialized = true;
     }
-    
-    public function log($message, $file = '', $line = 0) {
-        $path = $this->ensure_paths();
-        $timestamp = gmdate('Y-m-d\TH:i:s.') . sprintf('%03d', (microtime(true) * 1000) % 1000) . 'Z';
-        $context = $file ? basename($file) . ':' . $line : '';
-        $entry = "[{$timestamp}] {$message}" . ($context ? " ({$context})" : "") . "\n";
-        @file_put_contents($path, $entry, FILE_APPEND | LOCK_EX);
+
+    public function log(string $message, string $file = '', int $line = 0): bool {
+        $this->ensurePaths();
+
+        $entry = $this->formatEntry($message, $file, $line);
+        @file_put_contents($this->logPath, $entry, FILE_APPEND | LOCK_EX);
+
+        return true;
     }
 }
 ```
@@ -239,26 +236,30 @@ class File_Logger {
 ### Tier 2: Database Logger (Available After Init)
 
 ```php
-class DB_Logger {
-    private $file_logger;
-    private $db = null;
-    
-    public function __construct(File_Logger $file_logger) {
-        $this->file_logger = $file_logger;
-    }
-    
-    public function log($message, $level = 'INFO') {
-        // Always write to file first (reliable)
-        $this->file_logger->log("[{$level}] {$message}", __FILE__, __LINE__);
-        
-        // Try database if available
+namespace RiseupAsia\Logging;
+
+use RiseupAsia\Database\Database;
+use Throwable;
+
+class Logger {
+    private ?Database $db = null;
+    private bool $isDbAvailable = true;
+
+    public function __construct(
+        private readonly FileLogger $fileLogger,
+    ) {}
+
+    public function log(string $message, string $level = 'INFO'): void {
+        $this->fileLogger->log("[{$level}] {$message}", __FILE__, __LINE__);
+
         try {
-            $db = $this->get_db();
-            if ($db && $db->is_ready()) {
-                $db->insert_log($message, $level);
+            $db = $this->getDb();
+
+            if ($db?->isReady()) {
+                $db->insertLog($message, $level);
             }
-        } catch (Exception $e) {
-            $this->file_logger->log("DB log failed: " . $e->getMessage(), __FILE__, __LINE__);
+        } catch (Throwable $e) {
+            $this->fileLogger->log("DB log failed: " . $e->getMessage(), __FILE__, __LINE__);
         }
     }
 }
@@ -307,29 +308,21 @@ add_action(HookType::PluginsLoaded->value, 'riseup_asia_init');
 ### 1. Using `plugin_dir_url()` in Constants
 
 ```php
-// ❌ WRONG - Function call at parse time
+// ❌ WRONG — Function call at parse time
 define('MYPLUGIN_URL', plugin_dir_url(__FILE__));
 
-// ✅ CORRECT - Function call is safe for paths
-define('MYPLUGIN_DIR', plugin_dir_path(__FILE__));
-
-// ✅ CORRECT - URL determined when needed
-function myplugin_get_url() {
-    static $url = null;
-    if ($url === null) {
-        $url = plugin_dir_url(MYPLUGIN_FILE);
-    }
-
-    return $url;
-}
+// ✅ CORRECT — Use PathHelper or lazy resolution
+$url = PathHelper::pluginUrl();
 ```
 
 ### 2. Database Connection in Constructor
 
 ```php
+use PDO;
+
 // ❌ WRONG
 public function __construct() {
-    $this->pdo = new PDO('sqlite:' . $this->get_db_path()); // Calls WP function!
+    $this->pdo = new PDO('sqlite:' . $this->getDbPath());
 }
 
 // ✅ CORRECT
@@ -337,9 +330,9 @@ public function __construct() {
     $this->pdo = null;
 }
 
-private function get_pdo() {
+private function getPdo(): PDO {
     if ($this->pdo === null) {
-        $this->pdo = new PDO('sqlite:' . $this->get_db_path());
+        $this->pdo = new PDO('sqlite:' . $this->getDbPath());
     }
 
     return $this->pdo;
@@ -349,13 +342,15 @@ private function get_pdo() {
 ### 3. Calling `is_admin()` Too Early
 
 ```php
-// ❌ WRONG - is_admin() may not work during plugin load
+use RiseupAsia\Enums\HookType;
+
+// ❌ WRONG — is_admin() may not work during plugin load
 if (is_admin()) {
-    require_once 'admin/class-admin.php';
+    require_once 'admin/Admin.php';
 }
 
-// ✅ CORRECT - Defer to appropriate hook (use HookEnum)
-add_action(HookEnum::ADMIN_INIT, function() {
-    require_once MYPLUGIN_DIR . 'admin/class-admin.php';
+// ✅ CORRECT — Defer to appropriate hook
+add_action(HookType::AdminInit->value, function(): void {
+    Admin::getInstance();
 });
 ```

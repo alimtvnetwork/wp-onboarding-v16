@@ -48,7 +48,7 @@ Expected response:
 ```json
 {
     "status": "healthy",
-    "version": "1.4.0",
+    "version": "1.56.0",
     "timestamp": "2026-02-04T11:32:15Z"
 }
 ```
@@ -57,7 +57,7 @@ Expected response:
 ```bash
 curl -X POST "https://your-site.com/wp-json/riseup-asia-uploader/v1/upload" \
     -u "admin:XXXX XXXX XXXX XXXX XXXX XXXX" \
-    -F "plugin=@plugin.zip"
+    -F "plugin_zip=@plugin.zip"
 ```
 
 #### Test Invalid Authentication
@@ -72,12 +72,7 @@ Expected: 401 Unauthorized
 
 ### Check Log Creation
 ```bash
-# SSH into server
 ls -la /path/to/wp-content/uploads/riseup-asia-uploader/logs/
-
-# Expected:
-# -rw-r--r-- 1 www-data www-data  1234 Feb  4 11:32 log.txt
-# -rw-r--r-- 1 www-data www-data   567 Feb  4 11:32 error.txt
 ```
 
 ### Verify Log Content
@@ -87,9 +82,9 @@ tail -50 /path/to/wp-content/uploads/riseup-asia-uploader/logs/log.txt
 
 Expected format:
 ```
-[2026-02-04T11:32:15.123Z] Plugin initialization starting (riseup-asia-uploader.php:45)
-[2026-02-04T11:32:15.156Z] Database init starting (class-database.php:67)
-[2026-02-04T11:32:15.189Z] Running migration v1 (class-database.php:142)
+[2026-02-04T11:32:15.123Z] Plugin initialization starting (Plugin.php:45)
+[2026-02-04T11:32:15.156Z] Database init starting (Database.php:67)
+[2026-02-04T11:32:15.189Z] Running migration v1 (Database.php:142)
 ```
 
 ## WordPress Debug Mode
@@ -112,15 +107,17 @@ tail -100 /path/to/wp-content/debug.log
 
 ### Verify Tables Created
 ```php
-// In PHP or via wp-cli
-global $wpdb;
-$tables = $wpdb->get_results("SELECT name FROM sqlite_master WHERE type='table'");
-print_r($tables);
+use PDO;
+
+$pdo = new PDO('sqlite:/path/to/uploads/riseup-asia-uploader/riseup-asia-uploader.db');
+$result = $pdo->query("SELECT name FROM sqlite_master WHERE type='table'");
+print_r($result->fetchAll());
 ```
 
 ### Check Schema Version
 ```php
-// Read SQLite directly
+use PDO;
+
 $pdo = new PDO('sqlite:/path/to/uploads/riseup-asia-uploader/riseup-asia-uploader.db');
 $result = $pdo->query("SELECT * FROM schema_version");
 print_r($result->fetchAll());
@@ -138,7 +135,7 @@ print_r($result->fetchAll());
 **Common Causes:**
 - Calling WordPress functions in constructor
 - Circular dependencies
-- Missing file includes
+- Missing autoloader registration
 
 ### Issue: REST Endpoints Not Registered
 
@@ -170,7 +167,7 @@ echo extension_loaded('pdo_sqlite') ? 'Yes' : 'No';
 
 **Diagnosis:**
 1. Check directory permissions: `ls -la wp-content/uploads/`
-2. Verify PHP can write: 
+2. Verify PHP can write:
 ```php
 file_put_contents('/tmp/test.txt', 'test');
 ```
@@ -185,21 +182,23 @@ file_put_contents('/tmp/test.txt', 'test');
 ### PHPUnit for WordPress
 
 ```php
-// tests/test-plugin.php
-class Test_Plugin extends WP_UnitTestCase {
-    public function test_plugin_loaded() {
-        $this->assertTrue(class_exists('Riseup_Asia_Uploader'));
+namespace RiseupAsia\Tests;
+
+use WP_REST_Request;
+use WP_UnitTestCase;
+use RiseupAsia\Core\Plugin;
+use RiseupAsia\Enums\PluginConfigType;
+
+class PluginTest extends WP_UnitTestCase {
+    public function testPluginLoaded(): void {
+        $this->assertTrue(class_exists(Plugin::class));
     }
-    
-    public function test_constants_defined() {
-        $this->assertTrue(defined('RISEUP_API_NAMESPACE'));
-        $this->assertEquals('riseup-asia-uploader/v1', RISEUP_API_NAMESPACE);
-    }
-    
-    public function test_health_endpoint() {
-        $request = new WP_REST_Request('GET', '/riseup-asia-uploader/v1/health');
+
+    public function testHealthEndpoint(): void {
+        $namespace = PluginConfigType::ApiBase->value . '/' . PluginConfigType::ApiVersion->value;
+        $request = new WP_REST_Request('GET', '/' . $namespace . '/health');
         $response = rest_do_request($request);
-        
+
         $this->assertEquals(200, $response->get_status());
         $data = $response->get_data();
         $this->assertEquals('healthy', $data['status']);
@@ -209,10 +208,7 @@ class Test_Plugin extends WP_UnitTestCase {
 
 ### Running Tests
 ```bash
-# Install WordPress test suite
 ./bin/install-wp-tests.sh wordpress_test root password localhost latest
-
-# Run tests
 ./vendor/bin/phpunit
 ```
 
@@ -221,15 +217,17 @@ class Test_Plugin extends WP_UnitTestCase {
 ### Baseline Metrics
 
 ```php
-// Add to plugin for development
-add_action('shutdown', function() {
-    $is_debug_enabled = defined('RISEUP_DEBUG') && RISEUP_DEBUG;
+use RiseupAsia\Enums\PluginConfigType;
 
-    if ($is_debug_enabled) {
+add_action('shutdown', function(): void {
+    $isDebugEnabled = defined('RISEUP_DEBUG') && RISEUP_DEBUG;
+
+    if ($isDebugEnabled) {
         error_log(sprintf(
-            '[RISEUP] Memory: %s | Time: %ss',
+            '[%s] Memory: %s | Time: %ss',
+            PluginConfigType::Slug->value,
             size_format(memory_get_peak_usage(true)),
-            number_format(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4)
+            number_format(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4),
         ));
     }
 });
@@ -237,7 +235,6 @@ add_action('shutdown', function() {
 
 ### Load Testing
 ```bash
-# Using Apache Bench
 ab -n 100 -c 10 "https://your-site.com/wp-json/riseup-asia-uploader/v1/health"
 ```
 
@@ -248,8 +245,8 @@ ab -n 100 -c 10 "https://your-site.com/wp-json/riseup-asia-uploader/v1/health"
 - [ ] No PHP warnings in debug.log
 - [ ] Database migrations work on fresh install
 - [ ] Database migrations work on upgrade
-- [ ] Plugin works on PHP 7.4
-- [ ] Plugin works on PHP 8.0+
+- [ ] Plugin works on PHP 8.2+
+- [ ] Plugin works on PHP 8.3+
 - [ ] Plugin works on WordPress 5.6
 - [ ] Plugin works on latest WordPress
 - [ ] All endpoints return expected responses
