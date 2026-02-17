@@ -36,32 +36,32 @@ The File Watcher Service monitors plugin directories for changes and triggers sy
 <?php
 namespace PluginsOnboard\Services;
 
-class File_Watcher {
+class FileWatcher {
     
     /** @var int Polling interval in seconds */
-    private int $poll_interval = 5;
+    private int $pollInterval = 5;
     
     /** @var array<string, string> File hash cache [path => hash] */
-    private array $hash_cache = [];
+    private array $hashCache = [];
     
     /** @var array<string> Directories being watched */
-    private array $watch_dirs = [];
+    private array $watchDirs = [];
     
     /** @var array<string> File patterns to include */
-    private array $include_patterns = ['*.php', '*.js', '*.css', '*.json'];
+    private array $includePatterns = ['*.php', '*.js', '*.css', '*.json'];
     
     /** @var array<string> Directories to exclude */
-    private array $exclude_dirs = ['node_modules', 'vendor', '.git', '.svn'];
+    private array $excludeDirs = ['node_modules', 'vendor', '.git', '.svn'];
     
     /**
      * Start watching a plugin directory
      */
-    public function watch(string $plugin_slug): void;
+    public function watch(string $pluginSlug): void;
     
     /**
      * Stop watching a plugin directory
      */
-    public function unwatch(string $plugin_slug): void;
+    public function unwatch(string $pluginSlug): void;
     
     /**
      * Perform a single scan cycle
@@ -71,22 +71,22 @@ class File_Watcher {
     /**
      * Get changed files since last scan
      */
-    public function get_changes(string $plugin_slug): array;
+    public function getChanges(string $pluginSlug): array;
     
     /**
      * Calculate file hash for change detection
      */
-    private function hash_file(string $path): string;
+    private function hashFile(string $path): string;
     
     /**
      * Check if file matches include patterns
      */
-    private function matches_pattern(string $filename): bool;
+    private function matchesPattern(string $filename): bool;
     
     /**
      * Check if path is in excluded directory
      */
-    private function is_excluded(string $path): bool;
+    private function isExcluded(string $path): bool;
 }
 ```
 
@@ -97,21 +97,21 @@ class File_Watcher {
 ### File Hash Calculation
 
 ```php
-private function hash_file(string $path): string {
+private function hashFile(string $path): string {
     if (!file_exists($path)) {
         return '';
     }
     
     // Use content hash + mtime for efficiency
     $stat = stat($path);
-    $quick_hash = md5($stat['mtime'] . $stat['size']);
+    $quickHash = md5($stat['mtime'] . $stat['size']);
     
     // Full content hash only if quick hash differs
-    if ($this->requiresFullHash($path, $quick_hash)) {
+    if ($this->requiresFullHash($path, $quickHash)) {
         return md5_file($path);
     }
     
-    return $quick_hash;
+    return $quickHash;
 }
 ```
 
@@ -224,13 +224,13 @@ When changes are detected, events are emitted via WebSocket:
 // Single file change
 $this->emit('file:changed', [
     'plugin_slug' => $slug,
-    'change' => $change_data
+    'change' => $changeData
 ]);
 
 // Batch changes (after debounce)
 $this->emit('files:batch_changed', [
     'plugin_slug' => $slug,
-    'changes' => $changes_array,
+    'changes' => $changesArray,
     'summary' => [
         'created' => 2,
         'modified' => 5,
