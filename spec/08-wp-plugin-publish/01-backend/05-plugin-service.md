@@ -182,152 +182,157 @@ import (
     "wp-plugin-publish/pkg/apperror"
 )
 
+const pluginSelectQuery = `
+    SELECT p.Id, p.Name, p.LocalPath, p.RemoteSlug, p.SiteId, 
+           p.IsActive, p.IsWatching, p.LastPublishedAt, p.LastHash,
+           p.CreatedAt, p.UpdatedAt,
+           s.Id, s.Name, s.Url
+    FROM Plugins p
+    JOIN Sites s ON p.SiteId = s.Id`
+
 func (s *serviceImpl) List(ctx context.Context) ([]models.Plugin, error) {
     s.log.Debug("Listing all plugins")
-    
-    rows, err := s.db.QueryContext(ctx, `
-        SELECT p.Id, p.Name, p.LocalPath, p.RemoteSlug, p.SiteId, 
-               p.IsActive, p.IsWatching, p.LastPublishedAt, p.LastHash,
-               p.CreatedAt, p.UpdatedAt,
-               s.Id, s.Name, s.Url
-        FROM Plugins p
-        JOIN Sites s ON p.SiteId = s.Id
-        ORDER BY p.Name ASC
-    `)
+
+    rows, err := s.db.QueryContext(ctx, pluginSelectQuery+" ORDER BY p.Name ASC")
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list plugins")
     }
     defer rows.Close()
-    
+
     return s.scanPlugins(rows)
 }
 
 func (s *serviceImpl) ListBySite(ctx context.Context, siteID int64) ([]models.Plugin, error) {
     s.log.Debug("Listing plugins by site", "site_id", siteID)
-    
-    rows, err := s.db.QueryContext(ctx, `
-        SELECT p.Id, p.Name, p.LocalPath, p.RemoteSlug, p.SiteId, 
-               p.IsActive, p.IsWatching, p.LastPublishedAt, p.LastHash,
-               p.CreatedAt, p.UpdatedAt,
-               s.Id, s.Name, s.Url
-        FROM Plugins p
-        JOIN Sites s ON p.SiteId = s.Id
-        WHERE p.SiteId = ?
-        ORDER BY p.Name ASC
-    `, siteID)
+
+    rows, err := s.db.QueryContext(ctx, pluginSelectQuery+" WHERE p.SiteId = ? ORDER BY p.Name ASC", siteID)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list plugins by site")
     }
     defer rows.Close()
-    
+
     return s.scanPlugins(rows)
 }
 
 func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
     s.log.Debug("Getting plugin by ID", "plugin_id", id)
-    
-    var plugin models.Plugin
-    var site models.Site
-    var lastPublishedAt, lastHash sql.NullString
-    
-    err := s.db.QueryRowContext(ctx, `
-        SELECT p.Id, p.Name, p.LocalPath, p.RemoteSlug, p.SiteId, 
-               p.IsActive, p.IsWatching, p.LastPublishedAt, p.LastHash,
-               p.CreatedAt, p.UpdatedAt,
-               s.Id, s.Name, s.Url
-        FROM Plugins p
-        JOIN Sites s ON p.SiteId = s.Id
-        WHERE p.Id = ?
-    `, id).Scan(
-        &plugin.ID, &plugin.Name, &plugin.LocalPath, &plugin.RemoteSlug,
-        &plugin.SiteID, &plugin.IsActive, &plugin.IsWatching,
-        &lastPublishedAt, &lastHash, &plugin.CreatedAt, &plugin.UpdatedAt,
-        &site.ID, &site.Name, &site.URL,
+
+    raw, err := s.queryPluginByID(ctx, id)
+    if err != nil {
+        return nil, err
+    }
+
+    return s.finalizePlugin(raw)
+}
+
+// pluginScanRow holds raw scan output including nullable fields.
+type pluginScanRow struct {
+    plugin        models.Plugin
+    site          models.Site
+    lastPublished sql.NullString
+    lastHash      sql.NullString
+}
+
+func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*pluginScanRow, error) {
+    row := &pluginScanRow{}
+
+    err := s.db.QueryRowContext(ctx, pluginSelectQuery+" WHERE p.Id = ?", id).Scan(
+        &row.plugin.ID, &row.plugin.Name, &row.plugin.LocalPath, &row.plugin.RemoteSlug,
+        &row.plugin.SiteID, &row.plugin.IsActive, &row.plugin.IsWatching,
+        &row.lastPublished, &row.lastHash, &row.plugin.CreatedAt, &row.plugin.UpdatedAt,
+        &row.site.ID, &row.site.Name, &row.site.URL,
     )
-    
+
     if err == sql.ErrNoRows {
-        return nil, apperror.New(apperror.ErrNotFound, "plugin not found").
-            WithContext("plugin_id", id)
+        return nil, apperror.New(apperror.ErrNotFound, "plugin not found").WithContext("plugin_id", id)
     }
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
     }
-    
-    if lastPublishedAt.Valid {
-        t, _ := time.Parse(time.RFC3339, lastPublishedAt.String)
-        plugin.LastPublishedAt = &t
+
+    return row, nil
+}
+
+func (s *serviceImpl) finalizePlugin(raw *pluginScanRow) (*models.Plugin, error) {
+    if raw.lastPublished.Valid {
+        t, _ := time.Parse(time.RFC3339, raw.lastPublished.String)
+        raw.plugin.LastPublishedAt = &t
     }
-    if lastHash.Valid {
-        plugin.LastHash = lastHash.String
+    if raw.lastHash.Valid {
+        raw.plugin.LastHash = raw.lastHash.String
     }
-    
-    plugin.Site = &site
-    return &plugin, nil
+
+    raw.plugin.Site = &raw.site
+
+    return &raw.plugin, nil
 }
 
 func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Plugin, error) {
     s.log.Info("Creating plugin", "name", input.Name, "path", input.LocalPath)
-    
-    // Validate input
+
     if err := s.validateCreateInput(ctx, input); err != nil {
         return nil, err
     }
-    
-    // Verify site exists
-    if _, err := s.siteService.GetByID(ctx, input.SiteID); err != nil {
+    if err := s.checkDuplicatePlugin(ctx, input); err != nil {
         return nil, err
     }
-    
-    // Check for duplicate path + site combo
+    if err := s.ValidatePath(ctx, input.LocalPath); err != nil {
+        return nil, err
+    }
+
+    return s.insertPlugin(ctx, input)
+}
+
+func (s *serviceImpl) checkDuplicatePlugin(ctx context.Context, input CreateInput) error {
+    if _, err := s.siteService.GetByID(ctx, input.SiteID); err != nil {
+        return err
+    }
+
     var exists int
     err := s.db.QueryRowContext(ctx,
         "SELECT 1 FROM Plugins WHERE LocalPath = ? AND SiteId = ?",
         input.LocalPath, input.SiteID,
     ).Scan(&exists)
+
     if err != sql.ErrNoRows {
-        return nil, apperror.New(apperror.ErrDuplicate, "plugin already registered for this site").
-            WithContext("path", input.LocalPath).
-            WithContext("site_id", input.SiteID)
+        return apperror.New(apperror.ErrDuplicate, "plugin already registered for this site").
+            WithContext("path", input.LocalPath).WithContext("site_id", input.SiteID)
     }
-    
-    // Validate directory exists and is a valid plugin
-    if err := s.ValidatePath(ctx, input.LocalPath); err != nil {
-        return nil, err
-    }
-    
-    // Calculate initial hash
+
+    return nil
+}
+
+func (s *serviceImpl) insertPlugin(ctx context.Context, input CreateInput) (*models.Plugin, error) {
     hash, _ := s.calculateDirectoryHash(input.LocalPath)
-    
-    // Insert plugin
+
     result, err := s.db.ExecContext(ctx, `
         INSERT INTO Plugins (Name, LocalPath, RemoteSlug, SiteId, IsActive, IsWatching, LastHash, CreatedAt, UpdatedAt)
         VALUES (?, ?, ?, ?, 1, 0, ?, datetime('now'), datetime('now'))
     `, input.Name, input.LocalPath, strings.ToLower(input.RemoteSlug), input.SiteID, hash)
-    
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create plugin")
     }
-    
+
     id, _ := result.LastInsertId()
     s.log.Info("Plugin created", "plugin_id", id, "name", input.Name)
-    
+
     return s.GetByID(ctx, id)
 }
 
 func (s *serviceImpl) Delete(ctx context.Context, id int64) error {
     s.log.Info("Deleting plugin", "plugin_id", id)
-    
-    // Verify plugin exists
+
     if _, err := s.GetByID(ctx, id); err != nil {
         return err
     }
-    
+
     _, err := s.db.ExecContext(ctx, "DELETE FROM Plugins WHERE Id = ?", id)
     if err != nil {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to delete plugin")
     }
-    
+
     s.log.Info("Plugin deleted", "plugin_id", id)
+
     return nil
 }
 ```
@@ -349,19 +354,29 @@ import (
     "wp-plugin-publish/pkg/apperror"
 )
 
+var (
+    pluginNameRegex = regexp.MustCompile(`Plugin Name:\s*(.+)`)
+    versionRegex    = regexp.MustCompile(`Version:\s*(.+)`)
+)
+
 func (s *serviceImpl) ScanDirectory(ctx context.Context, path string) (*DirectoryScan, error) {
     s.log.Debug("Scanning directory", "path", path)
-    
-    scan := &DirectoryScan{
-        Path:    path,
-        IsValid: false,
-        Files:   []FileInfo{},
+
+    scan, err := s.validatePluginDir(path)
+    if scan != nil || err != nil {
+        return scan, err
     }
-    
-    // Check if directory exists
+
+    return s.buildDirectoryScan(ctx, path)
+}
+
+func (s *serviceImpl) validatePluginDir(path string) (*DirectoryScan, error) {
+    scan := &DirectoryScan{Path: path, IsValid: false, Files: []FileInfo{}}
+
     info, err := os.Stat(path)
     if os.IsNotExist(err) {
         scan.Error = "directory does not exist"
+
         return scan, nil
     }
     if err != nil {
@@ -369,70 +384,94 @@ func (s *serviceImpl) ScanDirectory(ctx context.Context, path string) (*Director
     }
     if !info.IsDir() {
         scan.Error = "path is not a directory"
+
         return scan, nil
     }
-    
-    // Find main plugin file
+
+    return nil, nil
+}
+
+func (s *serviceImpl) buildDirectoryScan(ctx context.Context, path string) (*DirectoryScan, error) {
+    scan := &DirectoryScan{Path: path, Files: []FileInfo{}}
+
     mainFile, pluginName, version, err := s.findMainPluginFile(path)
     if err != nil {
         scan.Error = err.Error()
+
         return scan, nil
     }
-    
+
     scan.IsValid = true
     scan.MainFile = mainFile
     scan.PluginName = pluginName
     scan.Version = version
-    
-    // Walk directory and collect files
-    err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
-        if err != nil {
-            return nil // Skip inaccessible files
-        }
-        
-        // Get relative path
-        relPath, _ := filepath.Rel(path, filePath)
-        if relPath == "." {
-            return nil
-        }
-        
-        // Skip hidden files and common ignored directories
-        base := filepath.Base(filePath)
-        if strings.HasPrefix(base, ".") || base == "node_modules" || base == "vendor" {
-            if info.IsDir() {
-                return filepath.SkipDir
-            }
-            return nil
-        }
-        
-        fileInfo := FileInfo{
-            Path:        relPath,
-            Size:        info.Size(),
-            ModifiedAt:  info.ModTime(),
-            IsDirectory: info.IsDir(),
-        }
-        
-        if !info.IsDir() {
-            fileInfo.Hash, _ = calculateFileHash(filePath)
-            scan.TotalSize += info.Size()
-        }
-        
-        scan.Files = append(scan.Files, fileInfo)
-        return nil
+
+    return s.collectPluginFiles(path, scan)
+}
+
+func (s *serviceImpl) collectPluginFiles(path string, scan *DirectoryScan) (*DirectoryScan, error) {
+    err := filepath.Walk(path, func(fp string, info os.FileInfo, err error) error {
+        return s.processWalkEntry(path, fp, info, err, scan)
     })
-    
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDirRead, "failed to scan directory")
     }
-    
-    s.log.Info("Directory scanned",
-        "path", path,
-        "plugin_name", pluginName,
-        "files", len(scan.Files),
-        "size", scan.TotalSize,
-    )
-    
+
+    s.log.Info("Directory scanned", "path", path, "files", len(scan.Files), "size", scan.TotalSize)
+
     return scan, nil
+}
+
+func (s *serviceImpl) processWalkEntry(
+    basePath string,
+    filePath string,
+    info os.FileInfo,
+    walkErr error,
+    scan *DirectoryScan,
+) error {
+    if walkErr != nil {
+        return nil
+    }
+
+    relPath, _ := filepath.Rel(basePath, filePath)
+    if relPath == "." {
+        return nil
+    }
+
+    if shouldSkipEntry(filepath.Base(filePath), info.IsDir()) {
+        return skipOrContinue(info.IsDir())
+    }
+
+    scan.Files = append(scan.Files, buildFileInfo(filePath, relPath, info))
+    if !info.IsDir() {
+        scan.TotalSize += info.Size()
+    }
+
+    return nil
+}
+
+func shouldSkipEntry(base string, isDir bool) bool {
+    return strings.HasPrefix(base, ".") || base == "node_modules" || base == "vendor"
+}
+
+func skipOrContinue(isDir bool) error {
+    if isDir {
+        return filepath.SkipDir
+    }
+
+    return nil
+}
+
+func buildFileInfo(fullPath string, relPath string, info os.FileInfo) FileInfo {
+    fi := FileInfo{
+        Path: relPath, Size: info.Size(),
+        ModifiedAt: info.ModTime(), IsDirectory: info.IsDir(),
+    }
+    if !info.IsDir() {
+        fi.Hash, _ = calculateFileHash(fullPath)
+    }
+
+    return fi
 }
 
 func (s *serviceImpl) ValidatePath(ctx context.Context, path string) error {
@@ -440,60 +479,63 @@ func (s *serviceImpl) ValidatePath(ctx context.Context, path string) error {
     if err != nil {
         return err
     }
-    
     if !scan.IsValid {
-        return apperror.New(apperror.ErrPathInvalid, scan.Error).
-            WithContext("path", path)
+        return apperror.New(apperror.ErrPathInvalid, scan.Error).WithContext("path", path)
     }
-    
+
     return nil
 }
 
-// findMainPluginFile locates the main plugin PHP file with the plugin header
 func (s *serviceImpl) findMainPluginFile(path string) (string, string, string, error) {
     entries, err := os.ReadDir(path)
     if err != nil {
         return "", "", "", err
     }
-    
-    pluginNameRegex := regexp.MustCompile(`Plugin Name:\s*(.+)`)
-    versionRegex := regexp.MustCompile(`Version:\s*(.+)`)
-    
+
+    return searchPHPHeaders(path, entries)
+}
+
+func searchPHPHeaders(dir string, entries []os.DirEntry) (string, string, string, error) {
     for _, entry := range entries {
-        if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
+        isPHP := !entry.IsDir() && strings.HasSuffix(entry.Name(), ".php")
+        if !isPHP {
             continue
         }
-        
-        filePath := filepath.Join(path, entry.Name())
-        file, err := os.Open(filePath)
-        if err != nil {
-            continue
-        }
-        
-        scanner := bufio.NewScanner(file)
-        lineCount := 0
-        var pluginName, version string
-        
-        for scanner.Scan() && lineCount < 30 {
-            line := scanner.Text()
-            lineCount++
-            
-            if matches := pluginNameRegex.FindStringSubmatch(line); len(matches) > 1 {
-                pluginName = strings.TrimSpace(matches[1])
-            }
-            if matches := versionRegex.FindStringSubmatch(line); len(matches) > 1 {
-                version = strings.TrimSpace(matches[1])
-            }
-        }
-        file.Close()
-        
-        if pluginName != "" {
-            return entry.Name(), pluginName, version, nil
+
+        name, version := parsePluginHeader(filepath.Join(dir, entry.Name()))
+        if name != "" {
+            return entry.Name(), name, version, nil
         }
     }
-    
-    return "", "", "", apperror.New(apperror.ErrPathInvalid, 
+
+    return "", "", "", apperror.New(apperror.ErrPathInvalid,
         "no valid WordPress plugin file found (missing Plugin Name header)")
+}
+
+func parsePluginHeader(filePath string) (string, string) {
+    file, err := os.Open(filePath)
+    if err != nil {
+        return "", ""
+    }
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+    var pluginName, version string
+
+    for lineCount := 0; scanner.Scan() && lineCount < 30; lineCount++ {
+        pluginName = extractMatch(pluginNameRegex, scanner.Text(), pluginName)
+        version = extractMatch(versionRegex, scanner.Text(), version)
+    }
+
+    return pluginName, version
+}
+
+func extractMatch(re *regexp.Regexp, line string, current string) string {
+    if matches := re.FindStringSubmatch(line); len(matches) > 1 {
+        return strings.TrimSpace(matches[1])
+    }
+
+    return current
 }
 ```
 
@@ -521,7 +563,7 @@ func (s *serviceImpl) CalculateHash(ctx context.Context, id int64) (string, erro
     if err != nil {
         return "", err
     }
-    
+
     return s.calculateDirectoryHash(plugin.LocalPath)
 }
 
@@ -537,47 +579,54 @@ func (s *serviceImpl) UpdateHash(
     if err != nil {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update plugin hash")
     }
+
     return nil
 }
 
 func (s *serviceImpl) calculateDirectoryHash(path string) (string, error) {
-    hasher := sha256.New()
-    
-    // Collect all file hashes in sorted order for deterministic output
-    var fileHashes []string
-    
-    err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
-        if err != nil || info.IsDir() {
-            return nil
-        }
-        
-        // Skip hidden files
-        if strings.HasPrefix(filepath.Base(filePath), ".") {
-            return nil
-        }
-        
-        relPath, _ := filepath.Rel(path, filePath)
-        fileHash, err := calculateFileHash(filePath)
-        if err != nil {
-            return nil // Skip files we can't read
-        }
-        
-        fileHashes = append(fileHashes, relPath+":"+fileHash)
-        return nil
-    })
-    
+    fileHashes, err := collectFileHashes(path)
     if err != nil {
         return "", apperror.Wrap(err, apperror.ErrDirRead, "failed to walk directory")
     }
-    
-    // Sort for deterministic ordering
+
     sort.Strings(fileHashes)
-    
-    for _, fh := range fileHashes {
-        hasher.Write([]byte(fh))
+
+    return hashEntries(fileHashes), nil
+}
+
+func collectFileHashes(path string) ([]string, error) {
+    var hashes []string
+
+    err := filepath.Walk(path, func(fp string, info os.FileInfo, err error) error {
+        return appendFileHash(path, fp, info, err, &hashes)
+    })
+
+    return hashes, err
+}
+
+func appendFileHash(basePath string, fp string, info os.FileInfo, walkErr error, hashes *[]string) error {
+    if walkErr != nil || info.IsDir() || strings.HasPrefix(filepath.Base(fp), ".") {
+        return nil
     }
-    
-    return hex.EncodeToString(hasher.Sum(nil)), nil
+
+    relPath, _ := filepath.Rel(basePath, fp)
+    fileHash, err := calculateFileHash(fp)
+    if err != nil {
+        return nil
+    }
+
+    *hashes = append(*hashes, relPath+":"+fileHash)
+
+    return nil
+}
+
+func hashEntries(entries []string) string {
+    hasher := sha256.New()
+    for _, e := range entries {
+        hasher.Write([]byte(e))
+    }
+
+    return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func calculateFileHash(path string) (string, error) {
@@ -586,12 +635,12 @@ func calculateFileHash(path string) (string, error) {
         return "", err
     }
     defer file.Close()
-    
+
     hasher := sha256.New()
     if _, err := io.Copy(hasher, file); err != nil {
         return "", err
     }
-    
+
     return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 ```
@@ -615,12 +664,9 @@ func (s *serviceImpl) SetWatching(
 	watching bool,
 ) error {
     s.log.Info("Setting plugin watching status", "plugin_id", id, "watching", watching)
-    
-    watchingInt := 0
-    if watching {
-        watchingInt = 1
-    }
-    
+
+    watchingInt := boolToInt(watching)
+
     _, err := s.db.ExecContext(ctx,
         "UPDATE Plugins SET IsWatching = ?, UpdatedAt = datetime('now') WHERE Id = ?",
         watchingInt, id,
@@ -628,28 +674,27 @@ func (s *serviceImpl) SetWatching(
     if err != nil {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update watching status")
     }
-    
+
     return nil
+}
+
+func boolToInt(b bool) int {
+    if b {
+        return 1
+    }
+
+    return 0
 }
 
 func (s *serviceImpl) GetWatchedPlugins(ctx context.Context) ([]models.Plugin, error) {
     s.log.Debug("Getting watched plugins")
-    
-    rows, err := s.db.QueryContext(ctx, `
-        SELECT p.Id, p.Name, p.LocalPath, p.RemoteSlug, p.SiteId, 
-               p.IsActive, p.IsWatching, p.LastPublishedAt, p.LastHash,
-               p.CreatedAt, p.UpdatedAt,
-               s.Id, s.Name, s.Url
-        FROM Plugins p
-        JOIN Sites s ON p.SiteId = s.Id
-        WHERE p.IsWatching = 1 AND p.IsActive = 1
-        ORDER BY p.Name ASC
-    `)
+
+    rows, err := s.db.QueryContext(ctx, pluginSelectQuery+" WHERE p.IsWatching = 1 AND p.IsActive = 1 ORDER BY p.Name ASC")
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get watched plugins")
     }
     defer rows.Close()
-    
+
     return s.scanPlugins(rows)
 }
 
@@ -661,6 +706,7 @@ func (s *serviceImpl) UpdateLastPublished(ctx context.Context, id int64) error {
     if err != nil {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update last published")
     }
+
     return nil
 }
 ```
@@ -683,45 +729,55 @@ import (
 var slugRegex = regexp.MustCompile(`^[a-z0-9-]+$`)
 
 func (s *serviceImpl) validateCreateInput(ctx context.Context, input CreateInput) error {
-    if strings.TrimSpace(input.Name) == "" {
+    if err := validatePluginName(input.Name); err != nil {
+        return err
+    }
+    if err := validateLocalPath(input.LocalPath); err != nil {
+        return err
+    }
+
+    return validateRemoteSlug(input.RemoteSlug)
+}
+
+func validatePluginName(name string) error {
+    if strings.TrimSpace(name) == "" {
         return apperror.New(apperror.ErrValidationEmpty, "plugin name is required")
     }
-    
-    if len(input.Name) > 255 {
+    if len(name) > 255 {
         return apperror.New(apperror.ErrValidationLength, "plugin name must be 255 characters or less")
     }
-    
-    if strings.TrimSpace(input.LocalPath) == "" {
+
+    return nil
+}
+
+func validateLocalPath(path string) error {
+    if strings.TrimSpace(path) == "" {
         return apperror.New(apperror.ErrValidationEmpty, "local path is required")
     }
-    
-    // Must be absolute path
-    if !filepath.IsAbs(input.LocalPath) {
+    if !filepath.IsAbs(path) {
         return apperror.New(apperror.ErrValidationPath, "local path must be absolute")
     }
-    
-    if len(input.LocalPath) > 4096 {
+    if len(path) > 4096 {
         return apperror.New(apperror.ErrValidationLength, "local path must be 4096 characters or less")
     }
-    
-    if strings.TrimSpace(input.RemoteSlug) == "" {
+
+    return nil
+}
+
+func validateRemoteSlug(slug string) error {
+    if strings.TrimSpace(slug) == "" {
         return apperror.New(apperror.ErrValidationEmpty, "remote slug is required")
     }
-    
-    slug := strings.ToLower(strings.TrimSpace(input.RemoteSlug))
-    if !slugRegex.MatchString(slug) {
-        return apperror.New(apperror.ErrValidationFormat, 
+
+    normalized := strings.ToLower(strings.TrimSpace(slug))
+    if !slugRegex.MatchString(normalized) {
+        return apperror.New(apperror.ErrValidationFormat,
             "remote slug must be lowercase with only letters, numbers, and hyphens")
     }
-    
-    if len(input.RemoteSlug) > 255 {
+    if len(slug) > 255 {
         return apperror.New(apperror.ErrValidationLength, "remote slug must be 255 characters or less")
     }
-    
-    if input.SiteID <= 0 {
-        return apperror.New(apperror.ErrValidationEmpty, "site ID is required")
-    }
-    
+
     return nil
 }
 ```
