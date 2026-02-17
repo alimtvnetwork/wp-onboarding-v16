@@ -24,7 +24,6 @@ use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SnapshotBackupOpsTrait {
 
-    /** Handle per-table snapshot export. */
     public function handleExportPertable(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
@@ -41,7 +40,6 @@ trait SnapshotBackupOpsTrait {
         }, 'export_pertable');
     }
 
-    /** Handle snapshot cleanup. */
     public function handleSnapshotCleanup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
@@ -49,11 +47,11 @@ trait SnapshotBackupOpsTrait {
             $result = $cleaner->execute($this->extractCleanupOptions($body));
 
             $this->logCleanupIfNotDryRun($body, $result);
+
             return $this->buildCleanupResponse($result);
         }, 'snapshot_cleanup');
     }
 
-    /** Handle snapshot job progress polling. */
     public function handleSnapshotProgress(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
@@ -64,7 +62,9 @@ trait SnapshotBackupOpsTrait {
             }
 
             $progress = $this->fetchJobProgress((int) $job_id);
-            if (!$progress) {
+            $isProgressMissing = ($progress === null || $progress === false);
+
+            if ($isProgressMissing) {
                 return $this->buildProgressError('Job not found', HttpStatusType::NotFound->value, 'JOB_NOT_FOUND');
             }
 
@@ -92,7 +92,9 @@ trait SnapshotBackupOpsTrait {
 
     /** Log cleanup if not a dry run. */
     private function logCleanupIfNotDryRun(array $body, array $result): void {
-        if ($body['dry_run'] ?? false) {
+        $isDryRun = ($body['dry_run'] ?? false);
+
+        if ($isDryRun) {
             return;
         }
 
@@ -121,6 +123,7 @@ trait SnapshotBackupOpsTrait {
         if ($errorCode) {
             $data['code'] = $errorCode;
         }
+
         return new WP_REST_Response($data, $code);
     }
 
@@ -128,6 +131,7 @@ trait SnapshotBackupOpsTrait {
     private function fetchJobProgress(int $jobId) {
         $rootDb = RootDb::getInstance($this->fileLogger, DependencyAnalyzer::getInstance($this->fileLogger));
         $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, DependencyAnalyzer::getInstance($this->fileLogger));
+
         return $worker->getJobProgress($jobId);
     }
 

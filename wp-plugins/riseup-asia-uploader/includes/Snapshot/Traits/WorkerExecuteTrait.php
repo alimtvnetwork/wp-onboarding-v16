@@ -14,13 +14,16 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait WorkerExecuteTrait {
 
     public function execute(array $config): array {
         $start_time = microtime(true);
         $prepared = $this->prepareSnapshotDir($config);
-        if (!$prepared['success']) {
+        $isPreparationFailed = BooleanHelpers::isResultFailed($prepared);
+
+        if ($isPreparationFailed) {
             return $prepared;
         }
 
@@ -31,7 +34,9 @@ trait WorkerExecuteTrait {
 
             $this->initProgressRecords($seed_order);
             $job_id = $this->createJob($prepared['snapshot_dir'], $seed_order, $config);
-            if (!$job_id) {
+            $isJobCreationFailed = ($job_id === null || $job_id === false || $job_id === 0);
+
+            if ($isJobCreationFailed) {
                 return array('success' => false, 'error' => 'Failed to create snapshot job');
             }
 
@@ -40,6 +45,7 @@ trait WorkerExecuteTrait {
             return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
@@ -47,7 +53,9 @@ trait WorkerExecuteTrait {
     public function executeSynchronous(array $config): array {
         $start_time = microtime(true);
         $prepared = $this->prepareSnapshotDir($config);
-        if (!$prepared['success']) {
+        $isPreparationFailed = BooleanHelpers::isResultFailed($prepared);
+
+        if ($isPreparationFailed) {
             return $prepared;
         }
 
@@ -63,6 +71,7 @@ trait WorkerExecuteTrait {
             return $this->buildSyncSnapshotResult($prepared, $export, $start_time);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+
             return array('success' => false, 'error' => $e->getMessage());
         }
     }

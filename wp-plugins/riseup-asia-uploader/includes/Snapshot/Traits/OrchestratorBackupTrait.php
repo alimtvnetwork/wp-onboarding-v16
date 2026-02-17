@@ -12,11 +12,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Snapshot\IncrementalBackup;
 
 trait OrchestratorBackupTrait {
@@ -47,7 +49,9 @@ trait OrchestratorBackupTrait {
     private function executeAsyncBackup(array $resolved): array {
         try {
             $worker_result = $this->runWorkerExport($resolved, true);
-            if (!$worker_result['success']) {
+            $isExportFailed = BooleanHelpers::isResultFailed($worker_result);
+
+            if ($isExportFailed) {
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
@@ -73,7 +77,9 @@ trait OrchestratorBackupTrait {
         $start_time = microtime(true);
         try {
             $worker_result = $this->runWorkerExport($resolved, false);
-            if (!$worker_result['success']) {
+            $isExportFailed = BooleanHelpers::isResultFailed($worker_result);
+
+            if ($isExportFailed) {
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
@@ -126,8 +132,9 @@ trait OrchestratorBackupTrait {
         try {
             $incremental = IncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
             $master_dir = $this->resolveMasterDir($options, $incremental);
+            $isMasterDirMissing = ($master_dir === null);
 
-            if (!$master_dir) {
+            if ($isMasterDirMissing) {
                 return array('success' => false, 'error' => 'No full snapshot found. A full backup is required before creating an incremental.', 'phase' => 'incremental_lookup');
             }
 
@@ -143,7 +150,9 @@ trait OrchestratorBackupTrait {
     }
 
     private function resolveMasterDir(array $options, object $incremental): ?string {
-        if (!empty($options['master_snapshot_id'])) {
+        $hasMasterSnapshotId = BooleanHelpers::hasValue($options['master_snapshot_id'] ?? null);
+
+        if ($hasMasterSnapshotId) {
             $pdo = $this->db->getPdo();
             if ($pdo) {
                 $stmt = $pdo->prepare("SELECT filepath FROM " . TableType::Snapshots->value . " WHERE id = ?");

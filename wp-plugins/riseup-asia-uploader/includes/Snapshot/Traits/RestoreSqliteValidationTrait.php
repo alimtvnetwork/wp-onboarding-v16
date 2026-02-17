@@ -23,7 +23,9 @@ trait RestoreSqliteValidationTrait {
         $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $tableExists = $this->sqliteTableExists($sqlite, $table);
-        if (!$tableExists) {
+        $isTableMissing = ($tableExists === false);
+
+        if ($isTableMissing) {
             $sqlite = null;
 
             return array('success' => false, 'error' => 'Table not found in SQLite file', 'rows' => 0);

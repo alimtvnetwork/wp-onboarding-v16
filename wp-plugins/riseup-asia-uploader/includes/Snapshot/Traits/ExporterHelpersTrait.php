@@ -24,7 +24,9 @@ trait ExporterHelpersTrait {
     /** Get a full snapshot record by ID (validates it's not incremental). */
     private function getFullSnapshot(int $snapshotId): ?array {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
             return null;
         }
 
@@ -32,7 +34,9 @@ trait ExporterHelpersTrait {
         $stmt->execute(array($snapshotId));
         $snapshot = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$snapshot) {
+        $isSnapshotMissing = ($snapshot === null || $snapshot === false);
+
+        if ($isSnapshotMissing) {
             return null;
         }
 
@@ -52,7 +56,9 @@ trait ExporterHelpersTrait {
     /** Get a valid (non-expired) export record for a snapshot. */
     private function getValidExport(int $snapshotId): ?array {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
             return null;
         }
 
@@ -64,7 +70,9 @@ trait ExporterHelpersTrait {
     /** Get an export record by ID. */
     private function getExportById(int $exportId): ?array {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
             return null;
         }
 
@@ -76,7 +84,9 @@ trait ExporterHelpersTrait {
     /** Delete an export record. */
     private function deleteExportRecord(int $exportId): void {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
             return;
         }
 

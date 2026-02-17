@@ -16,6 +16,7 @@ use PDO;
 use PDOException;
 use WP_Error;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudWriteTrait {
 
@@ -29,7 +30,9 @@ trait AgentCrudWriteTrait {
 
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+
+            if ($isPdoMissing) {
                 return new WP_Error('db_error', 'Database not available');
             }
 
@@ -40,7 +43,11 @@ trait AgentCrudWriteTrait {
     }
 
     private function validateAgentData(array $data): ?WP_Error {
-        $hasAllFields = !empty($data['name']) && !empty($data['url']) && !empty($data['username']) && !empty($data['app_password']);
+        $hasAllFields = BooleanHelpers::hasValue($data['name'] ?? null)
+            && BooleanHelpers::hasValue($data['url'] ?? null)
+            && BooleanHelpers::hasValue($data['username'] ?? null)
+            && BooleanHelpers::hasValue($data['app_password'] ?? null);
+
         if ($hasAllFields) {
             return null;
         }
@@ -73,7 +80,9 @@ trait AgentCrudWriteTrait {
 
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+
+            if ($isPdoMissing) {
                 return new WP_Error('db_error', 'Database not available');
             }
 
@@ -132,7 +141,9 @@ trait AgentCrudWriteTrait {
         );
 
         foreach ($fieldMap as $field => $transform) {
-            if (!isset($data[$field])) {
+            $isFieldMissing = array_key_exists($field, $data) === false;
+
+            if ($isFieldMissing) {
                 continue;
             }
 
@@ -147,8 +158,10 @@ trait AgentCrudWriteTrait {
         array &$sets,
         array &$params,
     ): void {
-        $hasPassword = isset($data['app_password']) && !empty($data['app_password']);
-        if (!$hasPassword) {
+        $hasPassword = isset($data['app_password']) && BooleanHelpers::hasValue($data['app_password']);
+        $isPasswordMissing = ($hasPassword === false);
+
+        if ($isPasswordMissing) {
             return;
         }
 
@@ -161,7 +174,9 @@ trait AgentCrudWriteTrait {
 
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+
+            if ($isPdoMissing) {
                 return new WP_Error('db_error', 'Database not available');
             }
 

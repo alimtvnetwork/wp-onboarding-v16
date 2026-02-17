@@ -30,8 +30,9 @@ trait RestoreIncrementalTrait {
         bool $applyIncrementals,
     ): array {
         $shouldApply = ($applyIncrementals && $mode !== RestoreModeType::Incremental->value) || $mode === RestoreModeType::Incremental->value;
+        $isSkipped = ($shouldApply === false);
 
-        if (!$shouldApply) {
+        if ($isSkipped) {
 
             return array('applied' => 0, 'total_rows' => 0, 'errors' => array());
         }
@@ -63,7 +64,9 @@ trait RestoreIncrementalTrait {
             $result = $this->applySingleIncremental($inc, $snapshotDir, $restoreOrder);
             $total_rows += $result['rows'];
             $applied++;
-            if (!empty($result['errors'])) {
+            $hasErrors = BooleanHelpers::hasValue($result['errors']);
+
+            if ($hasErrors) {
                 $errors = array_merge($errors, $result['errors']);
             }
         }

@@ -18,21 +18,13 @@ use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreStrategyType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
 trait RestoreTableTrait {
 
     use RestoreSqliteValidationTrait;
 
-    /**
-     * Restore master tables from SQLite files.
-     *
-     * @param array  $restoreOrder   Tables in restore order.
-     * @param array  $tableInventory Table inventory map.
-     * @param string $snapshotDir    Snapshot directory.
-     * @param array  $options        Restore options.
-     * @return array Result with tables_restored, total_rows, errors.
-     */
     private function restoreMasterTables(
         array $restoreOrder,
         array $tableInventory,
@@ -61,7 +53,9 @@ trait RestoreTableTrait {
             $errors[] = $table . ': ' . $result['error'];
             $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, array('error' => $result['error']));
 
-            if (!empty($options['strict'])) {
+            $isStrictMode = BooleanHelpers::hasValue($options['strict'] ?? null);
+
+            if ($isStrictMode) {
                 throw new Exception('Strict mode: table restore failed for ' . $table);
             }
         }
@@ -69,21 +63,15 @@ trait RestoreTableTrait {
         return array('tables_restored' => $tables_restored, 'total_rows' => $total_rows, 'errors' => $errors);
     }
 
-    /**
-     * Restore a single master table.
-     *
-     * @param string $table          Table name.
-     * @param array  $tableInventory Table inventory.
-     * @param string $snapshotDir    Snapshot directory.
-     * @return array|null Result or null if missing.
-     */
     private function restoreSingleMasterTable(
         string $table,
         array $tableInventory,
         string $snapshotDir,
     ): ?array {
         $table_info = $tableInventory[$table] ?? null;
-        if (!$table_info) {
+        $isTableInfoMissing = ($table_info === null);
+
+        if ($isTableInfoMissing) {
             return array('success' => false, 'error' => $table . ': not found in inventory', 'rows' => 0);
         }
 
@@ -97,14 +85,6 @@ trait RestoreTableTrait {
         return $this->restoreTableFromFile($sqlite_path, $table, RestoreStrategyType::Truncate->value);
     }
 
-    /**
-     * Restore a single table from its individual SQLite file into MySQL.
-     *
-     * @param string $sqlite_path Path to the table's .sqlite file.
-     * @param string $table       MySQL table name.
-     * @param string $strategy    RestoreStrategyType value ('truncate' or 'merge').
-     * @return array Result: success, rows, error.
-     */
     private function restoreTableFromFile(
         string $sqlitePath,
         string $table,
@@ -112,7 +92,9 @@ trait RestoreTableTrait {
     ): array {
         try {
             $validated = $this->openAndValidateSqliteTable($sqlitePath, $table);
-            if (!$validated['success']) {
+            $isValidationFailed = BooleanHelpers::isResultFailed($validated);
+
+            if ($isValidationFailed) {
                 return $validated;
             }
 

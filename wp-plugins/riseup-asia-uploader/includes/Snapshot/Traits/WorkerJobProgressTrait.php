@@ -20,10 +20,18 @@ trait WorkerJobProgressTrait {
 
     public function getJobProgress(int $jobId): ?array {
         $pdo = $this->db->getPdo();
-        if (!$pdo) return null;
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
+            return null;
+        }
 
         $job = $this->getJob($pdo, $jobId);
-        if (!$job) return null;
+        $isJobMissing = ($job === null || $job === false);
+
+        if ($isJobMissing) {
+            return null;
+        }
 
         $all_tables = json_decode($job['tables_json'], true);
         $total_tables = count($all_tables);
@@ -49,6 +57,7 @@ trait WorkerJobProgressTrait {
             $stmt = $pdo->prepare("SELECT table_name, status, rows_total, rows_exported, error_message
                 FROM " . TableType::SnapshotProgress->value . " WHERE snapshot_id = 0");
             $stmt->execute();
+
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
             return array();
