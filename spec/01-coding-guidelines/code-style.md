@@ -481,8 +481,8 @@ This is a **reinforcement of Rule 2** with stricter language. Nested `if` blocks
 ```php
 // ❌ FORBIDDEN: Triple nesting
 if ($request !== null) {
-    if ($request->has_param('file')) {
-        if ($this->is_valid_file($request->get_param('file'))) {
+    if ($request->hasParam('file')) {
+        if ($this->isValidFile($request->getParam('file'))) {
             $this->process($request);
         }
     }
@@ -493,8 +493,8 @@ if ($request === null) {
     return;
 }
 
-$hasValidFile = $request->has_param('file')
-    && $this->is_valid_file($request->get_param('file'));
+$hasValidFile = $request->hasParam('file')
+    && $this->isValidFile($request->getParam('file'));
 
 if ($hasValidFile) {
     $this->process($request);

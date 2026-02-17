@@ -309,7 +309,7 @@ class Event_Hub {
             'payload' => $payload
         ];
         
-        foreach ($this->get_subscribers($event) as $connection) {
+        foreach ($this->getSubscribers($event) as $connection) {
             $connection->send(json_encode($message));
         }
     }

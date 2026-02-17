@@ -211,10 +211,10 @@ const RETENTION_DEFAULTS = [
 ### Pruning Logic
 
 ```php
-public function prune(): Prune_Result {
+public function prune(): PruneResult {
     $deleted = [];
     
-    foreach ($this->get_all_plugins() as $slug) {
+    foreach ($this->getAllPlugins() as $slug) {
         $backups = $this->list($slug);
         
         // Sort by date descending
@@ -222,14 +222,14 @@ public function prune(): Prune_Result {
         
         // Apply rules
         foreach ($backups as $i => $backup) {
-            if ($this->should_delete($backup, $i)) {
+            if ($this->shouldDelete($backup, $i)) {
                 $this->delete($backup['id']);
                 $deleted[] = $backup['id'];
             }
         }
     }
     
-    return new Prune_Result($deleted);
+    return new PruneResult($deleted);
 }
 ```
 
@@ -240,26 +240,26 @@ public function prune(): Prune_Result {
 ### Local Storage
 
 ```php
-class Local_Storage implements Storage_Backend {
-    private string $base_path;
+class LocalStorage implements StorageBackend {
+    private string $basePath;
     
     public function store(string $path, string $content): bool;
     public function retrieve(string $path): string;
     public function delete(string $path): bool;
     public function exists(string $path): bool;
-    public function get_url(string $path): string;
+    public function getUrl(string $path): string;
 }
 ```
 
 ### S3-Compatible Storage
 
 ```php
-class S3_Storage implements Storage_Backend {
+class S3Storage implements StorageBackend {
     private string $bucket;
     private string $region;
     private S3Client $client;
     
-    // Same interface as Local_Storage
+    // Same interface as LocalStorage
 }
 ```
 

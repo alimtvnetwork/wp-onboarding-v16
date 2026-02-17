@@ -490,7 +490,7 @@ GlobalErrorModal.tsx
 │  │  └──────────────────────────────────────────────────────┘   │  │
 │  │  Stack Trace:                                               │  │
 │  │  #0 riseup-asia-uploader.php(1098): Logger->error()         │  │
-│  │  #1 class-wp-hook.php(341): Riseup_Asia->enrich_error()     │  │
+│  │  #1 class-wp-hook.php(341): Plugin->enrichError()          │  │
 │  │  #2 plugin.php(205): WP_Hook->apply_filters()               │  │
 │  │  Response:                                                  │  │
 │  │  ▸ { "code": "rest_forbidden", "message": "...", ... }     │  │
