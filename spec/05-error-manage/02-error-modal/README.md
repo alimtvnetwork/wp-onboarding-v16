@@ -1,7 +1,7 @@
 # Error Modal — Frontend Specification
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-11  
+> **Version:** 2.1.0  
+> **Updated:** 2026-02-17  
 > **Status:** Active  
 > **Location:** `src/components/errors/`  
 > **Purpose:** Comprehensive specification for the Global Error Modal — how errors are captured, enriched, displayed, and exported across the React → Go → Delegated Server request chain.
@@ -410,7 +410,7 @@ GlobalErrorModal.tsx
 ├── DialogFooter
 │   ├── DownloadDropdown (ZIP bundle, error.log.txt, log.txt, report.md)
 │   ├── Close button
-│   └── CopyDropdown (full report, with backend logs, error.log.txt, log.txt)
+│   └── CopyDropdown (Split Button: main click = compact report, chevron dropdown = full report, with backend logs, error.log.txt, log.txt)
 │
 └── ErrorModalTypes.ts (shared types: PHPStackFrame, AppInfo, SectionCommonProps)
 ```
@@ -630,17 +630,23 @@ GlobalErrorModal.tsx
 
 #### DialogFooter — Action Menus
 
+The **Copy** button uses a **Split Button** pattern: the main button area copies the **Compact Report** instantly (no API call), while the chevron arrow opens a dropdown with all copy options.
+
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  [▼ Download]                              [Close]  [▼ Copy]    │
+│  [▼ Download]                       [Close]  [ Copy ][▼]        │
 │  ┌─────────────────┐                    ┌──────────────────────┐│
-│  │ Full Bundle (ZIP)│                    │ Full Report          ││
-│  │ error.log.txt    │                    │ With Backend Logs    ││
-│  │ log.txt          │                    │ error.log.txt        ││
-│  │ Report (.md)     │                    │ log.txt              ││
-│  └─────────────────┘                    └──────────────────────┘│
+│  │ Full Bundle (ZIP)│        main click: │ (copies compact)     ││
+│  │ error.log.txt    │        chevron ▼:  │ Compact Report       ││
+│  │ log.txt          │                    │ Full Report          ││
+│  │ Report (.md)     │                    │ With Backend Logs    ││
+│  └─────────────────┘                    │ error.log.txt        ││
+│                                         │ log.txt              ││
+│                                         └──────────────────────┘│
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+The **ErrorDetailModal** (standalone viewer used on E2E Tests page) uses the same Split Button pattern via an `errorLogAdapter.ts` bridge that maps the `ErrorLog` API shape to a `CapturedError`-compatible object for report generation.
 
 ### Full-Screen Layout
 
@@ -1011,33 +1017,69 @@ interface SessionStackFrame {
 
 ## 11. Error Report Generation
 
-The `errorReportGenerator.ts` produces a full Markdown report from any `CapturedError`:
+The `errorReportGenerator.ts` produces two report formats from any `CapturedError`:
+
+### Compact Report (Default)
+
+The **Compact Error Report** is the default copy format. It is designed for high-signal diagnostic sharing — stripped of noise, built entirely from client-side memory (no API calls). The main "Copy" button uses this format.
 
 ```typescript
-export function generateErrorReport(error: CapturedError, app?: AppInfo): string {
+export function generateCompactReport(error: CapturedError, app?: AppInfo): string {
   // Sections generated:
-  // 1. App metadata (name, version, git commit, build time)
-  // 2. Error identity (ID, code, level, timestamp)
-  // 3. Trigger context (component → action)
-  // 4. Invocation chain (indented tree)
-  // 5. Target site URL
-  // 6. Session info + API to fetch full logs
-  // 7. Message and details
-  // 8. Request (method, endpoint, status, body)
-  // 9. Backend execution logs (timestamped entries)
-  // 10. Backend stack trace (Go)
-  // 11. PHP stack trace (structured frames table)
-  // 12. User interaction path (click history)
-  // 13. Frontend execution chain (React logger)
-  // 14. Parsed stack frames table
-  // 15. Error location (file:line, function)
-  // 16. Full context JSON
-  // 17. Raw frontend stack trace
+  // 1. App metadata (name, version)
+  // 2. Error code + level
+  // 3. Page (route + component)
+  // 4. User Interaction (arrow-joined click path)
+  // 5. Trigger Context (component, action, source)
+  // 6. Message
+  // 7. Request (method, endpoint, status)
+  // 8. Frontend Execution Chain (stripped: no timestamps, no base URLs)
+  // 9. Context JSON
+  // 10. Frontend Stack Trace
+  // 11. Backend error.log.txt (reconstructed from CapturedError memory)
   return markdownReport;
 }
 ```
 
+**Stripping rules for execution chain:**
+- Timestamps (e.g., `[12:58:22 AM] ⬡`) are removed
+- Base API URLs (e.g., `http://localhost:8080/api/v1`) are stripped to relative paths (e.g., `/sites`)
+- Result: clean, scannable list like `GET /sites`, `POST /error-history`
+
+### Full Report
+
+```typescript
+export function generateErrorReport(error: CapturedError, app?: AppInfo): string {
+  // 17 sections including full URLs, backend logs, PHP traces, etc.
+  return markdownReport;
+}
+```
+
+### ErrorDetailModal Adapter
+
+The standalone `ErrorDetailModal` (used on E2E Tests page) receives `ErrorLog` objects from the backend API, not `CapturedError`. The `errorLogAdapter.ts` bridges this gap:
+
+```typescript
+// src/components/errors/errorLogAdapter.ts
+export function errorLogToCapturedError(error: ErrorLog): CapturedError;
+```
+
+This allows both modals to use `generateCompactReport` and `generateErrorReport` with the same interface.
+
 ### Download/Copy Options
+
+**Copy (Split Button):**
+
+| Action | Trigger | Content |
+|--------|---------|---------|
+| **Copy (main click)** | Primary button area | Compact Report (instant, from memory) |
+| **Copy Compact Report** | Chevron dropdown | Same as main click |
+| **Copy Full Report** | Chevron dropdown | Full 17-section Markdown report |
+| **Copy with Backend Logs** | Chevron dropdown | Full report + error.log.txt (API fetch) |
+| **Copy error.log.txt** | Chevron dropdown | Raw error log content (API fetch) |
+| **Copy log.txt** | Chevron dropdown | Raw full log content (API fetch) |
+
+**Download:**
 
 | Action | Content |
 |--------|---------|
@@ -1045,8 +1087,6 @@ export function generateErrorReport(error: CapturedError, app?: AppInfo): string
 | **error.log.txt** | Backend error log file |
 | **log.txt** | Backend full diagnostic log |
 | **Report (.md)** | Markdown error report |
-| **Copy Full Report** | Markdown to clipboard |
-| **Copy with Backend Logs** | Report + error.log.txt content |
 
 ---
 
