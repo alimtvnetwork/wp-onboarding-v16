@@ -198,13 +198,12 @@ All errors crossing service boundaries must use `apperror`:
 
 ```go
 // Wrap existing errors with code and context
-return apperror.Wrap(err, "E5001", "failed to upload plugin").
-    WithContext("url", requestURL).
-    WithContext("slug", pluginSlug).
-    WithContext("statusCode", resp.StatusCode)
+return apperror.Wrap(err, apperror.ErrSyncCheck, "failed to upload plugin").
+    WithPluginContext(pluginID, pluginSlug).
+    WithEndpoint(requestURL)
 
 // Create new errors
-return apperror.New("E4001", "invalid plugin slug")
+return apperror.New(apperror.ErrFileRead, "invalid plugin slug")
 ```
 
 **Forbidden:** `fmt.Errorf` for errors leaving a service (no stack trace).
@@ -235,9 +234,9 @@ func (c *Client) doRequest(ctx context.Context, method, url string, body interfa
         // Attach to the request context for envelope builder to pick up
         ctx = context.WithValue(ctx, delegatedServerKey, delegated)
         
-        return resp, apperror.Wrap(err, "E3001", "delegated request failed").
-            WithContext("delegatedEndpoint", url).
-            WithContext("delegatedStatus", resp.StatusCode)
+        return resp, apperror.Wrap(err, apperror.ErrWPConnect, "delegated request failed").
+            WithEndpoint(url).
+            WithStatusCode(resp.StatusCode)
     }
 }
 ```

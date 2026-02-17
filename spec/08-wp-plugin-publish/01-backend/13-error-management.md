@@ -106,7 +106,7 @@ func newWithSkip(code, message string, cause error, skip int) *AppError {
         Code:       code,
         Message:    message,
         Cause:      cause,
-        Level:      "error",
+        Level:      LevelError,
         File:       file,
         Line:       line,
         Function:   funcName,
@@ -220,6 +220,16 @@ Categories:
 ```go
 // pkg/apperror/codes.go
 package apperror
+
+// Error level constants
+const (
+    LevelError = "error"
+    LevelWarn  = "warn"
+    LevelInfo  = "info"
+)
+
+// Error code prefix for category matching
+const errPrefixValidation = "E6"
 
 // Configuration errors (E1xxx)
 const (
@@ -397,11 +407,11 @@ func buildErrorResponse(appErr *apperror.AppError) ErrorResponse {
 
 func getHTTPStatus(code string) int {
     switch {
-    case strings.HasPrefix(code, "E2005"): // Not found
+    case code == ErrNotFound:
         return http.StatusNotFound
-    case strings.HasPrefix(code, "E3002"): // Auth failed
+    case code == ErrWPAuth:
         return http.StatusUnauthorized
-    case strings.HasPrefix(code, "E6"):    // Validation
+    case strings.HasPrefix(code, errPrefixValidation):
         return http.StatusBadRequest
     default:
         return http.StatusInternalServerError
@@ -646,11 +656,11 @@ All errors that occur during session-tracked operations are automatically logged
 
 ```go
 // In publish service
-sessionService.Log(sessionID, "error", "upload", "Upload failed", map[string]interface{}{
-    "url":        uploadURL,
-    "httpStatus": resp.StatusCode,
-    "response":   truncateString(string(body), 2000),
-    "error":      err.Error(),
+sessionService.Log(sessionID, apperror.LevelError, "upload", "Upload failed", SessionUploadFailedDetails{
+    URL:        uploadURL,
+    HTTPStatus: resp.StatusCode,
+    Response:   truncateString(string(body), 2000),
+    Error:      err.Error(),
 })
 ```
 

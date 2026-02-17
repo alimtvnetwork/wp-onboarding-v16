@@ -99,6 +99,22 @@ type fileInfo struct {
 	Hash    string
 }
 
+// --- Broadcast detail structs (broadcast_details.go) ---
+
+// FileChangeEvent is broadcast when file changes are detected
+type FileChangeEvent struct {
+	PluginID int64              `json:"pluginId"`
+	Changes  []FileChange       `json:"changes"`
+	Summary  FileChangeSummary  `json:"summary"`
+}
+
+// FileChangeSummary counts changes by type
+type FileChangeSummary struct {
+	Created  int `json:"created"`
+	Modified int `json:"modified"`
+	Deleted  int `json:"deleted"`
+}
+
 // pluginScanCache stores the last known state of a plugin's files
 type pluginScanCache struct {
 	pluginID int64
@@ -366,13 +382,13 @@ func (s *serviceImpl) broadcastChanges(pluginID int64, changes []FileChange) {
 	)
 
 	// Broadcast via WebSocket
-	s.wsHub.Broadcast(ws.EventFileChange, map[string]interface{}{
-		"pluginId": pluginID,
-		"changes":  changes,
-		"summary": map[string]int{
-			"created":  created,
-			"modified": modified,
-			"deleted":  deleted,
+	s.wsHub.Broadcast(ws.EventFileChange, FileChangeEvent{
+		PluginID: pluginID,
+		Changes:  changes,
+		Summary: FileChangeSummary{
+			Created:  created,
+			Modified: modified,
+			Deleted:  deleted,
 		},
 	})
 

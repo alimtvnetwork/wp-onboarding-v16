@@ -72,6 +72,39 @@ type PackageInfo struct {
 	Checksum  string    `json:"checksum"`
 	CreatedAt time.Time `json:"createdAt"`
 }
+
+// --- Broadcast detail structs (broadcast_details.go) ---
+
+// PublishStartedEvent is broadcast when a publish operation begins
+type PublishStartedEvent struct {
+	PublishID string `json:"publishId"`
+	PluginID  int64  `json:"pluginId"`
+	SiteID    int64  `json:"siteId"`
+	Mode      string `json:"mode"`
+}
+
+// PublishCompleteEvent is broadcast when a publish operation completes
+type PublishCompleteEvent struct {
+	PublishID     string `json:"publishId"`
+	PluginID      int64  `json:"pluginId"`
+	SiteID        int64  `json:"siteId"`
+	Success       bool   `json:"success"`
+	FilesUploaded int    `json:"filesUploaded"`
+}
+
+// PublishProgressEvent is broadcast during publish stage transitions
+type PublishProgressEvent struct {
+	Stage    string `json:"stage"`
+	Status   string `json:"status"`
+	Duration int64  `json:"duration,omitempty"`
+}
+
+// PublishFailedEvent is broadcast when a publish operation fails
+type PublishFailedEvent struct {
+	PublishID string `json:"publishId"`
+	Stage     string `json:"stage"`
+	Error     string `json:"error"`
+}
 ```
 
 ---
@@ -180,11 +213,11 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 	}
 
 	// Broadcast publish started
-	s.wsHub.Broadcast(ws.EventPublishStarted, map[string]interface{}{
-		"publishId": publishID,
-		"pluginId":  pluginID,
-		"siteId":    siteID,
-		"mode":      opts.Mode,
+	s.wsHub.Broadcast(ws.EventPublishStarted, PublishStartedEvent{
+		PublishID: publishID,
+		PluginID:  pluginID,
+		SiteID:    siteID,
+		Mode:      opts.Mode,
 	})
 
 	// Get plugin details
@@ -295,12 +328,12 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 	result.Duration = time.Since(startTime).Milliseconds()
 
 	// Broadcast publish complete
-	s.wsHub.Broadcast(ws.EventPublishComplete, map[string]interface{}{
-		"publishId":     publishID,
-		"pluginId":      pluginID,
-		"siteId":        siteID,
-		"success":       true,
-		"filesUploaded": result.FilesUploaded,
+	s.wsHub.Broadcast(ws.EventPublishComplete, PublishCompleteEvent{
+		PublishID:     publishID,
+		PluginID:      pluginID,
+		SiteID:        siteID,
+		Success:       true,
+		FilesUploaded: result.FilesUploaded,
 	})
 
 	s.log.Info("Publish complete", "publishId", publishID, "duration", result.Duration)
@@ -311,9 +344,9 @@ func (s *serviceImpl) runStage(name string, fn func() error) StageResult {
 	start := time.Now()
 	stage := StageResult{Name: name, Status: "running"}
 
-	s.wsHub.Broadcast(ws.EventPublishProgress, map[string]interface{}{
-		"stage":  name,
-		"status": "running",
+	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
+		Stage:  name,
+		Status: "running",
 	})
 
 	err := fn()
@@ -326,10 +359,10 @@ func (s *serviceImpl) runStage(name string, fn func() error) StageResult {
 		stage.Status = "success"
 	}
 
-	s.wsHub.Broadcast(ws.EventPublishProgress, map[string]interface{}{
-		"stage":    name,
-		"status":   stage.Status,
-		"duration": stage.Duration,
+	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
+		Stage:    name,
+		Status:   stage.Status,
+		Duration: stage.Duration,
 	})
 
 	return stage
@@ -340,10 +373,10 @@ func (s *serviceImpl) failPublish(result *PublishResult, stage string, err error
 	result.Error = err.Error()
 	result.Duration = time.Since(startTime).Milliseconds()
 
-	s.wsHub.Broadcast(ws.EventPublishFailed, map[string]interface{}{
-		"publishId": result.PublishID,
-		"stage":     stage,
-		"error":     err.Error(),
+	s.wsHub.Broadcast(ws.EventPublishFailed, PublishFailedEvent{
+		PublishID: result.PublishID,
+		Stage:     stage,
+		Error:     err.Error(),
 	})
 
 	return result, err
