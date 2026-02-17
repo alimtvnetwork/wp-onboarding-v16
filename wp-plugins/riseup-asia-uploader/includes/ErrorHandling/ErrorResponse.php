@@ -9,6 +9,8 @@
 namespace RiseupAsia\ErrorHandling;
 
 use Throwable;
+use WP_Error;
+use WP_REST_Response;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Logging\FileLogger;
 
@@ -55,10 +57,10 @@ class ErrorResponse {
         Throwable $e,
         string $context = '',
         int $status = 500,
-    ): \WP_REST_Response {
+    ): WP_REST_Response {
         $logger->logException($e, $context);
 
-        return new \WP_REST_Response(
+        return new WP_REST_Response(
             array(
                 'success' => false,
                 'error'   => $e->getMessage(),
@@ -74,10 +76,10 @@ class ErrorResponse {
         string $context = '',
         string $code = 'internal_error',
         int $status = 500,
-    ): \WP_Error {
+    ): WP_Error {
         $logger->logException($e, $context);
 
-        return new \WP_Error(
+        return new WP_Error(
             $code,
             $e->getMessage(),
             array('status' => $status)

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use wpdb;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
@@ -38,7 +39,7 @@ class IncrementalBackup {
     private FileLogger $logger;
     private Database $db;
     private RootDb $rootDb;
-    private \wpdb $wpdb;
+    private wpdb $wpdb;
     private int $batchSize;
     private static ?IncrementalBackup $instance = null;
 

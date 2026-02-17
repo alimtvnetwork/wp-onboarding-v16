@@ -12,18 +12,20 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_Error;
+
 trait UpdateResolverFetchTrait {
 
-    public function fetchUpdateInfo(bool $forceCheck = false): array|\WP_Error {
+    public function fetchUpdateInfo(bool $forceCheck = false): array|WP_Error {
         $settings = $this->getSettings();
         if (!$settings['enabled']) {
-            return new \WP_Error('disabled', 'Auto-update is disabled');
+            return new WP_Error('disabled', 'Auto-update is disabled');
         }
 
         $updateUrl = $this->resolveUpdateUrl($settings, $forceCheck);
         $response = $this->fetchUpdateResponse($updateUrl);
 
-        if ($response instanceof \WP_Error) {
+        if ($response instanceof WP_Error) {
             return $this->handleFetchFailure($settings, $forceCheck, $response);
         }
 
@@ -63,7 +65,7 @@ trait UpdateResolverFetchTrait {
     private function handleFetchFailure(
         array $settings,
         bool $forceCheck,
-        \WP_Error $error,
+        WP_Error $error,
     ) {
         if (!$forceCheck && !empty($settings['resolved_url'])) {
             $this->fileLogger->info('Cached URL failed, resolving fresh');
@@ -90,10 +92,10 @@ trait UpdateResolverFetchTrait {
         }
 
         $this->saveSettings(array('last_error' => $errorMsg, 'last_check' => current_time('mysql', true)));
-        return new \WP_Error('http_error', $errorMsg);
+        return new WP_Error('http_error', $errorMsg);
     }
 
-    private function parseUpdateResponseBody(array|\WP_Error $response, string $updateUrl): array {
+    private function parseUpdateResponseBody(array|WP_Error $response, string $updateUrl): array {
         $body = wp_remote_retrieve_body($response);
         $contentType = wp_remote_retrieve_header($response, 'content-type');
 

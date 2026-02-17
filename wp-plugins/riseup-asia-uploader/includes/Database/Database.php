@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
 use RiseupAsia\Database\Traits\DatabaseConnectionTrait;
 use RiseupAsia\Database\Traits\DatabaseMigrationsEarlyTrait;
 use RiseupAsia\Database\Traits\DatabaseMigrationsLateTrait;
@@ -39,7 +40,7 @@ class Database {
     public const DEFAULT_LIMIT = 50;
     public const MAX_LIMIT     = 1000;
 
-    /** @var \PDO|null */
+    /** @var PDO|null */
     private $pdo = null;
 
     /** @var string */

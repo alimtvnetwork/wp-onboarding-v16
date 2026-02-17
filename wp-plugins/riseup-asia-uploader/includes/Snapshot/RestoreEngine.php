@@ -14,7 +14,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
 use Throwable;
+use wpdb;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Snapshot\Traits\RestoreValidationTrait;
@@ -36,7 +38,7 @@ class RestoreEngine {
     private FileLogger $logger;
     private Database $db;
     private ?SnapshotOrchestrator $orchestrator;
-    private \wpdb $wpdb;
+    private wpdb $wpdb;
     private int $batchSize;
     private static ?self $instance = null;
 
@@ -106,15 +108,15 @@ class RestoreEngine {
         );
     }
 
-    private function openRootPdo(string $snapshotDir): \PDO {
-        $pdo = new \PDO('sqlite:' . $snapshotDir . '/a-root.db');
-        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    private function openRootPdo(string $snapshotDir): PDO {
+        $pdo = new PDO('sqlite:' . $snapshotDir . '/a-root.db');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         return $pdo;
     }
 
     private function runRestoreWithFkDisabled(
-        \PDO $rootPdo,
+        PDO $rootPdo,
         string $snapshotDir,
         array $restoreOrder,
         array $options,

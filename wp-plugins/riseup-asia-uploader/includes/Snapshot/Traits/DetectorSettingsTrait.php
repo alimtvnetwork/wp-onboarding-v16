@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Exception;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
@@ -102,7 +103,7 @@ trait DetectorSettingsTrait {
             }
         }
 
-        throw new \Exception(sprintf('Snapshot provider "%s" is not available', $providerId));
+        throw new Exception(sprintf('Snapshot provider "%s" is not available', $providerId));
     }
 
     /**

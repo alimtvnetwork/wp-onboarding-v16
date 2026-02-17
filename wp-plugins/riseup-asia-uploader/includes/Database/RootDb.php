@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Database\Traits\RootDbSchemaTrait;
 use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
+use PDO;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
@@ -42,7 +43,7 @@ class RootDb {
         $this->analyzer = $analyzer;
     }
 
-    public function create(string $filepath): \PDO {
+    public function create(string $filepath): PDO {
         $this->log(LogLevelType::Info->value, 'Creating a-root.db', array('path' => $filepath));
 
         $dir = dirname($filepath);
@@ -50,8 +51,8 @@ class RootDb {
             PathHelper::ensureDir($dir);
         }
 
-        $pdo = new \PDO('sqlite:' . $filepath);
-        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $pdo = new PDO('sqlite:' . $filepath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('PRAGMA journal_mode = WAL');
 
         $this->createSchema($pdo);
