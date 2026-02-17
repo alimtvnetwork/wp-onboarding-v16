@@ -152,7 +152,9 @@ trait AdminErrorRenderTrait {
 
     /** Resolve the latest error time string. */
     private function resolveLatestErrorTime(array $errors, bool $hasUnseen): string {
-        if (empty($errors) || !$hasUnseen) {
+        $isNoRecentErrors = empty($errors) || !$hasUnseen;
+
+        if ($isNoRecentErrors) {
             return '';
         }
 
