@@ -284,24 +284,29 @@ public function applyRetentionPolicy() {
     $settings = $this->getSettings();
     $snapshots = $this->listSnapshots();
     
-    switch ($settings['retention_type']) {
-        case 'days':
-            $cutoff = strtotime("-{$settings['retention_days']} days");
-            foreach ($snapshots as $snapshot) {
-                if ($snapshot['created_at'] < $cutoff) {
-                    $this->deleteSnapshot($snapshot['id']);
-                }
-            }
-            break;
-            
-        case 'count':
-            // Sort by date descending, keep first N
-            usort($snapshots, fn($a, $b) => $b['created_at'] <=> $a['created_at']);
-            $toDelete = array_slice($snapshots, $settings['retention_count']);
-            foreach ($toDelete as $snapshot) {
-                $this->deleteSnapshot($snapshot['id']);
-            }
-            break;
+    match ($settings['retention_type']) {
+        'days'  => $this->deleteSnapshotsOlderThan($snapshots, $settings['retention_days']),
+        'count' => $this->deleteSnapshotsBeyondLimit($snapshots, $settings['retention_count']),
+        default => null,
+    };
+}
+
+private function deleteSnapshotsOlderThan(array $snapshots, int $days): void {
+    $cutoff = strtotime("-{$days} days");
+
+    foreach ($snapshots as $snapshot) {
+        if ($snapshot['created_at'] < $cutoff) {
+            $this->deleteSnapshot($snapshot['id']);
+        }
+    }
+}
+
+private function deleteSnapshotsBeyondLimit(array $snapshots, int $limit): void {
+    usort($snapshots, fn($a, $b) => $b['created_at'] <=> $a['created_at']);
+    $toDelete = array_slice($snapshots, $limit);
+
+    foreach ($toDelete as $snapshot) {
+        $this->deleteSnapshot($snapshot['id']);
     }
 }
 ```

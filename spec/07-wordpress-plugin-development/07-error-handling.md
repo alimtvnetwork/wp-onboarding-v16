@@ -55,28 +55,40 @@ use Throwable;
 
 public function databaseOperation(): array {
     try {
-        $pdo = $this->getPdo();
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll();
+        return $this->executeDatabaseQuery($sql, $params);
     } catch (PDOException $e) {
-        $this->fileLogger->error(
-            sprintf('Database error [%s]: %s', $e->getCode(), $e->getMessage()),
-            __FILE__,
-            __LINE__,
-        );
+        $this->logDatabaseError($e);
 
         return [];
     } catch (Throwable $e) {
-        $this->fileLogger->error(
-            sprintf('Unexpected error: %s', $e->getMessage()),
-            __FILE__,
-            __LINE__,
-        );
+        $this->logUnexpectedError($e);
 
         throw $e;
     }
+}
+
+private function executeDatabaseQuery(string $sql, array $params): array {
+    $pdo = $this->getPdo();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll();
+}
+
+private function logDatabaseError(PDOException $e): void {
+    $this->fileLogger->error(
+        sprintf('Database error [%s]: %s', $e->getCode(), $e->getMessage()),
+        __FILE__,
+        __LINE__,
+    );
+}
+
+private function logUnexpectedError(Throwable $e): void {
+    $this->fileLogger->error(
+        sprintf('Unexpected error: %s', $e->getMessage()),
+        __FILE__,
+        __LINE__,
+    );
 }
 ```
 
@@ -223,6 +235,14 @@ class FatalErrorHandler {
             return;
         }
 
+        $this->logFatalError($error);
+
+        if ($this->isRestRequest()) {
+            $this->sendFatalJsonResponse($error);
+        }
+    }
+
+    private function logFatalError(array $error): void {
         $severity = ErrorChecker::getSeverityLabel($error);
         $logPath = PathHelper::getFatalErrorLog();
         $timestamp = gmdate('Y-m-d\TH:i:s.') . sprintf('%03d', (int) ((microtime(true) * 1000) % 1000)) . 'Z';
@@ -239,19 +259,19 @@ class FatalErrorHandler {
         );
 
         @file_put_contents($logPath, $entry, FILE_APPEND | LOCK_EX);
+    }
 
-        if ($this->isRestRequest()) {
-            @header('Content-Type: application/json; charset=utf-8');
-            echo wp_json_encode([
-                'success' => false,
-                'error' => [
-                    'code'    => WpErrorCodeType::FatalError->value,
-                    'message' => 'A fatal error occurred',
-                    'file'    => basename($error['file']),
-                    'line'    => $error['line'],
-                ],
-            ]);
-        }
+    private function sendFatalJsonResponse(array $error): void {
+        @header('Content-Type: application/json; charset=utf-8');
+        echo wp_json_encode([
+            'success' => false,
+            'error' => [
+                'code'    => WpErrorCodeType::FatalError->value,
+                'message' => 'A fatal error occurred',
+                'file'    => basename($error['file']),
+                'line'    => $error['line'],
+            ],
+        ]);
     }
 
     private function isRestRequest(): bool {
@@ -278,31 +298,43 @@ public function insertRecord(array $data): int|false {
     );
 
     try {
-        $pdo = $this->db->getPdo();
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($values);
-
-        $id = (int) $pdo->lastInsertId();
-        $this->fileLogger->log(sprintf('Inserted record ID: %d', $id), __FILE__, __LINE__);
-
-        return $id;
+        return $this->executeInsert($sql, $values);
     } catch (PDOException $e) {
-        $this->fileLogger->error(
-            sprintf('Insert failed: %s | SQL: %s', $e->getMessage(), $sql),
-            __FILE__,
-            __LINE__,
-        );
+        $this->logInsertError($e, $sql);
 
         return false;
     } catch (Throwable $e) {
-        $this->fileLogger->error(
-            sprintf('Unexpected insert error: %s', $e->getMessage()),
-            __FILE__,
-            __LINE__,
-        );
+        $this->logUnexpectedInsertError($e);
 
         return false;
     }
+}
+
+private function executeInsert(string $sql, array $values): int {
+    $pdo = $this->db->getPdo();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($values);
+
+    $id = (int) $pdo->lastInsertId();
+    $this->fileLogger->log(sprintf('Inserted record ID: %d', $id), __FILE__, __LINE__);
+
+    return $id;
+}
+
+private function logInsertError(PDOException $e, string $sql): void {
+    $this->fileLogger->error(
+        sprintf('Insert failed: %s | SQL: %s', $e->getMessage(), $sql),
+        __FILE__,
+        __LINE__,
+    );
+}
+
+private function logUnexpectedInsertError(Throwable $e): void {
+    $this->fileLogger->error(
+        sprintf('Unexpected insert error: %s', $e->getMessage()),
+        __FILE__,
+        __LINE__,
+    );
 }
 ```
 
@@ -317,18 +349,8 @@ public function saveFile(string $path, string $content): bool {
     $this->fileLogger->log(sprintf('Saving file: %s', $path), __FILE__, __LINE__);
 
     try {
-        $dir = dirname($path);
-
-        if (PathHelper::isDirMissing($dir) && !@mkdir($dir, 0755, true)) {
-            throw new RuntimeException("Failed to create directory: {$dir}");
-        }
-
-        $bytes = @file_put_contents($path, $content, LOCK_EX);
-
-        if ($bytes === false) {
-            throw new RuntimeException("Failed to write file: {$path}");
-        }
-
+        $this->ensureParentDirectory($path);
+        $bytes = $this->writeFileContent($path, $content);
         $this->fileLogger->log(sprintf('Saved %d bytes to %s', $bytes, $path), __FILE__, __LINE__);
 
         return true;
@@ -337,6 +359,24 @@ public function saveFile(string $path, string $content): bool {
 
         return false;
     }
+}
+
+private function ensureParentDirectory(string $path): void {
+    $dir = dirname($path);
+
+    if (PathHelper::isDirMissing($dir) && !@mkdir($dir, 0755, true)) {
+        throw new RuntimeException("Failed to create directory: {$dir}");
+    }
+}
+
+private function writeFileContent(string $path, string $content): int {
+    $bytes = @file_put_contents($path, $content, LOCK_EX);
+
+    if ($bytes === false) {
+        throw new RuntimeException("Failed to write file: {$path}");
+    }
+
+    return $bytes;
 }
 ```
 
@@ -350,30 +390,10 @@ public function callExternalApi(string $url, array $data): ?array {
     $this->fileLogger->log(sprintf('API request: POST %s', $url), __FILE__, __LINE__);
 
     try {
-        $response = wp_remote_post($url, [
-            'body' => wp_json_encode($data),
-            'headers' => ['Content-Type' => 'application/json'],
-            'timeout' => 30,
-        ]);
+        $response = $this->sendPostRequest($url, $data);
+        $this->validateApiResponse($response);
 
-        if (is_wp_error($response)) {
-            throw new RuntimeException($response->get_error_message());
-        }
-
-        $code = wp_remote_retrieve_response_code($response);
-        $body = wp_remote_retrieve_body($response);
-
-        $this->fileLogger->log(
-            sprintf('API response: %d | Body length: %d', $code, strlen($body)),
-            __FILE__,
-            __LINE__,
-        );
-
-        if ($code >= 400) {
-            throw new RuntimeException("API error {$code}: {$body}");
-        }
-
-        return json_decode($body, true);
+        return json_decode(wp_remote_retrieve_body($response), true);
     } catch (Throwable $e) {
         $this->fileLogger->error(
             sprintf('API call failed: %s', $e->getMessage()),
@@ -382,6 +402,35 @@ public function callExternalApi(string $url, array $data): ?array {
         );
 
         return null;
+    }
+}
+
+private function sendPostRequest(string $url, array $data): array {
+    $response = wp_remote_post($url, [
+        'body' => wp_json_encode($data),
+        'headers' => ['Content-Type' => 'application/json'],
+        'timeout' => 30,
+    ]);
+
+    if (is_wp_error($response)) {
+        throw new RuntimeException($response->get_error_message());
+    }
+
+    return $response;
+}
+
+private function validateApiResponse(array $response): void {
+    $code = wp_remote_retrieve_response_code($response);
+    $body = wp_remote_retrieve_body($response);
+
+    $this->fileLogger->log(
+        sprintf('API response: %d | Body length: %d', $code, strlen($body)),
+        __FILE__,
+        __LINE__,
+    );
+
+    if ($code >= 400) {
+        throw new RuntimeException("API error {$code}: {$body}");
     }
 }
 ```
@@ -455,21 +504,25 @@ class Logger {
         }
 
         if ($this->db === null) {
-            try {
-                $this->db = Database::getInstance();
-            } catch (Throwable $e) {
-                $this->fileLogger->error(
-                    'Database unavailable, falling back to file-only logging',
-                    __FILE__,
-                    __LINE__,
-                );
-                $this->isDbAvailable = false;
-
-                return null;
-            }
+            $this->db = $this->attemptDbConnection();
         }
 
         return $this->db;
+    }
+
+    private function attemptDbConnection(): ?Database {
+        try {
+            return Database::getInstance();
+        } catch (Throwable $e) {
+            $this->fileLogger->error(
+                'Database unavailable, falling back to file-only logging',
+                __FILE__,
+                __LINE__,
+            );
+            $this->isDbAvailable = false;
+
+            return null;
+        }
     }
 
     public function log(string $message, string $level = 'INFO'): void {
@@ -533,14 +586,18 @@ public function handleRequest(WP_REST_Request $request): WP_REST_Response {
     } catch (AuthenticationException $e) {
         return $this->envelope->error($e->getMessage(), 401, WpErrorCodeType::AuthenticationFailed->value);
     } catch (Throwable $e) {
-        $this->fileLogger->error(
-            sprintf('Unhandled error in API: %s', $e->getMessage()),
-            __FILE__,
-            __LINE__,
-        );
-
-        return $this->envelope->error('An unexpected error occurred', 500);
+        return $this->handleUnexpectedError($e);
     }
+}
+
+private function handleUnexpectedError(Throwable $e): WP_REST_Response {
+    $this->fileLogger->error(
+        sprintf('Unhandled error in API: %s', $e->getMessage()),
+        __FILE__,
+        __LINE__,
+    );
+
+    return $this->envelope->error('An unexpected error occurred', 500);
 }
 ```
 
@@ -555,12 +612,18 @@ use Throwable;
 use RiseupAsia\Helpers\PathHelper;
 
 public function logException(Throwable $e, string $context = ''): void {
-    $frames = $this->formatStackFrames($e);
+    $this->writeStacktraceFile($e);
+    $this->writeErrorEntry($e, $context);
+}
 
+private function writeStacktraceFile(Throwable $e): void {
     $backtrace = debug_backtrace(0, 0);
     $stacktracePath = PathHelper::getStacktraceFile();
-    @file_put_contents($stacktracePath, $this->formatBacktrace($backtrace), FILE_APPEND);
 
+    @file_put_contents($stacktracePath, $this->formatBacktrace($backtrace), FILE_APPEND);
+}
+
+private function writeErrorEntry(Throwable $e, string $context): void {
     $errorPath = PathHelper::getErrorFile();
     $entry = sprintf(
         "[%s] [%s] %s: %s\n  File: %s:%d\n  Trace: %s\n",
