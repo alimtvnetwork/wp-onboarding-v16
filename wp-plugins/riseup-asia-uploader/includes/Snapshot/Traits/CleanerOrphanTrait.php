@@ -26,7 +26,7 @@ trait CleanerOrphanTrait {
         $known_paths = array_map(function ($f) { return $f['filepath']; }, $files);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
-        if (!is_dir($scan_dir)) {
+        if (PathHelper::isDirMissing($scan_dir)) {
             return $result;
         }
 
@@ -40,7 +40,9 @@ trait CleanerOrphanTrait {
             if (in_array($path, $known_paths)) { continue; }
             if ($item->isDir()) { continue; }
 
-            if (!$dryRun) {
+            $isLiveRun = ($dryRun === false);
+
+            if ($isLiveRun) {
                 try {
                     if (@unlink($path)) {
                         $result['removed']++;
@@ -67,7 +69,7 @@ trait CleanerOrphanTrait {
         $known_files = array_map(function ($f) { return $f['filename']; }, $files);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
-        if (!is_dir($scan_dir)) {
+        if (PathHelper::isDirMissing($scan_dir)) {
             return $result;
         }
 
@@ -83,7 +85,9 @@ trait CleanerOrphanTrait {
             if (substr($filename, -7) !== '.sqlite3') { continue; }
             if (in_array($filename, $known_files)) { continue; }
 
-            if (!$dryRun) {
+            $isLiveRun = ($dryRun === false);
+
+            if ($isLiveRun) {
                 try {
                     if (@unlink($path)) {
                         $result['removed']++;
@@ -111,7 +115,7 @@ trait CleanerOrphanTrait {
         $known_paths = array_unique($known_paths);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
-        if (!is_dir($scan_dir)) {
+        if (PathHelper::isDirMissing($scan_dir)) {
             return $result;
         }
 
@@ -131,7 +135,9 @@ trait CleanerOrphanTrait {
         foreach ($dirs as $dir) {
             if (in_array($dir, $known_paths)) { continue; }
             if (PathHelper::isDirEmpty($dir)) {
-                if (!$dryRun) {
+                $isLiveRun = ($dryRun === false);
+
+                if ($isLiveRun) {
                     try {
                         if (@rmdir($dir)) {
                             $result['removed']++;
@@ -171,8 +177,9 @@ trait CleanerOrphanTrait {
 
         foreach ($stuck as $snapshot) {
             $result['ids'][] = (int) $snapshot['id'];
+            $isLiveRun = ($dryRun === false);
 
-            if (!$dryRun) {
+            if ($isLiveRun) {
                 $this->db->execute(
                     'UPDATE ' . TableType::Snapshots->value . ' SET status = ?, error = ? WHERE id = ?',
                     array(

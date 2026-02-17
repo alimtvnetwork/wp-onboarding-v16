@@ -26,4 +26,9 @@ trait BooleanDomainTrait {
     public static function isAbsentFromList($needle, array $haystack): bool { return !in_array($needle, $haystack); }
     public static function isDbConnected($db): bool { return $db !== null && method_exists($db, 'isReady') && $db->isReady(); }
     public static function isDbDisconnected($db): bool { return $db === null || !method_exists($db, 'isReady') || !$db->isReady(); }
+    public static function isConstantMissing(string $name): bool { return !defined($name); }
+    public static function hasValue(mixed $value): bool { return !empty($value); }
+    public static function isValueEmpty(mixed $value): bool { return empty($value); }
+    public static function isNull(mixed $value): bool { return $value === null; }
+    public static function isResultFailed(array $result): bool { return empty($result['success']); }
 }

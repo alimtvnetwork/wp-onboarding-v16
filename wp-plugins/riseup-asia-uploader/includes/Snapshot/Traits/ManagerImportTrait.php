@@ -16,6 +16,7 @@ use ZipArchive;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
 trait ManagerImportTrait {
@@ -38,7 +39,8 @@ trait ManagerImportTrait {
         ));
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
-        $isDirCreationFailed = !PathHelper::makeDirectory($tempDir, false);
+        $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
+
         if ($isDirCreationFailed) {
             return array('success' => false, 'error' => 'Failed to create temp directory');
         }
@@ -48,6 +50,7 @@ trait ManagerImportTrait {
             $result = $this->moveAndRecordSnapshot($extracted['manifest'], $extracted['sqlite_path'], $tempDir);
 
             $this->deleteDirectory($tempDir);
+
             return $result;
         } catch (Throwable $e) {
             if (PathHelper::dirExists($tempDir)) {
@@ -55,6 +58,7 @@ trait ManagerImportTrait {
             }
 
             $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
+
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
@@ -83,12 +87,16 @@ trait ManagerImportTrait {
         }
 
         $manifest = json_decode(file_get_contents($manifestPath), true);
-        if (!$manifest) {
+        $isManifestInvalid = ($manifest === null || $manifest === false);
+
+        if ($isManifestInvalid) {
             throw new Exception('Invalid manifest.json format');
         }
 
         $validation = $this->validateManifest($manifest);
-        if (!$validation['valid']) {
+        $isValidationFailed = ($validation['valid'] === false);
+
+        if ($isValidationFailed) {
             throw new Exception('Manifest validation failed: ' . $validation['error']);
         }
 
@@ -107,7 +115,9 @@ trait ManagerImportTrait {
         }
 
         $integrity = $this->validateSqliteIntegrity($sqlitePath);
-        if (!$integrity['valid']) {
+        $isIntegrityFailed = ($integrity['valid'] === false);
+
+        if ($isIntegrityFailed) {
             throw new Exception('SQLite integrity check failed: ' . $integrity['error']);
         }
 
@@ -120,7 +130,8 @@ trait ManagerImportTrait {
         string $tempDir,
     ): array {
         $snapshotsDir = PathHelper::getSnapshotsDir();
-        $isDirCreationFailed = !PathHelper::makeDirectory($snapshotsDir, true);
+        $isDirCreationFailed = (PathHelper::makeDirectory($snapshotsDir, true) === false);
+
         if ($isDirCreationFailed) {
             throw new Exception('Failed to ensure snapshots directory');
         }
@@ -134,8 +145,11 @@ trait ManagerImportTrait {
         }
 
         $snapshotId = $this->createImportedSnapshotRecord($manifest, $sequence, $newFilename, $destPath);
-        if (!$snapshotId) {
+        $isRecordCreationFailed = ($snapshotId === null || $snapshotId === false || $snapshotId === 0);
+
+        if ($isRecordCreationFailed) {
             PathHelper::deleteFile($destPath);
+
             throw new Exception('Failed to create snapshot record');
         }
 

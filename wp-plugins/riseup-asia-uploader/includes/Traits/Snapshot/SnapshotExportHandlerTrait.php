@@ -18,6 +18,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Snapshot\SnapshotManager;
@@ -25,9 +26,6 @@ use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait SnapshotExportHandlerTrait {
 
-    /**
-     * Handle exporting a snapshot as ZIP.
-     */
     public function handleExportSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
@@ -41,13 +39,15 @@ trait SnapshotExportHandlerTrait {
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $manager->exportSnapshot($id);
+            $isExportFailed = BooleanHelpers::isResultFailed($result);
 
-            if (!$result['success']) {
+            if ($isExportFailed) {
                 $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, 'snapshot', StatusType::Failed->value,
                     array('snapshot_id' => $id),
                     $result['error'] ?? 'Export failed'
                 );
+
                 return $this->errorResponse($result['error'], 400);
             }
 
@@ -58,6 +58,7 @@ trait SnapshotExportHandlerTrait {
                     array('snapshot_id' => $id),
                     'Export file not found'
                 );
+
                 return $this->errorResponse('Export file not found', 500);
             }
 
@@ -75,9 +76,6 @@ trait SnapshotExportHandlerTrait {
         }, 'export_snapshot');
     }
 
-    /**
-     * Handle ZIP download request.
-     */
     public function handleSnapshotDownload(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
@@ -91,12 +89,6 @@ trait SnapshotExportHandlerTrait {
         }, 'snapshot_download');
     }
 
-    /**
-     * Build the download response for a snapshot ZIP.
-     *
-     * @param int $snapshotId Snapshot ID.
-     * @return WP_REST_Response
-     */
     private function buildDownloadResponse(int $snapshotId) {
         $this->fileLogger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
 
@@ -107,8 +99,9 @@ trait SnapshotExportHandlerTrait {
 
         $exporter = SnapshotExporter::getInstance($this->fileLogger, $this->db);
         $result = $exporter->getOrBuildZip($snapshotId);
+        $isDownloadFailed = BooleanHelpers::isResultFailed($result);
 
-        if (!$result['success']) {
+        if ($isDownloadFailed) {
             $this->logger->logPluginAction(
                 ActionType::SnapshotZipDownload->value, 'snapshot', StatusType::Failed->value,
                 array('snapshot_id' => $snapshotId),

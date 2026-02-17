@@ -22,7 +22,11 @@ trait WorkerProgressTrait {
 
     private function initProgressRecords(array $tables): void {
         $pdo = $this->db->getPdo();
-        if (!$pdo) return;
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
+            return;
+        }
 
         try {
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TableType::SnapshotProgress->value . "
@@ -49,7 +53,11 @@ trait WorkerProgressTrait {
         ?string $error = null,
     ): void {
         $pdo = $this->db->getPdo();
-        if (!$pdo) return;
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
+            return;
+        }
 
         try {
             $now = gmdate('c');

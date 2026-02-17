@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Database\Database;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AdminErrorRenderTrait {
 
@@ -56,17 +57,21 @@ trait AdminErrorRenderTrait {
     private function fetchErrorsForPage(array $defaults): array {
         $db = Database::getInstance();
         $pdo = $db->getPdo();
+        $isPdoMissing = ($pdo === null);
 
-        if (!$pdo) {
+        if ($isPdoMissing) {
             $defaults['db_error_message'] = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
+
             return $defaults;
         }
 
         $tableCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
         $tableExists = $tableCheck && $tableCheck->fetchColumn();
+        $isTableMissing = ($tableExists === false || $tableExists === null);
 
-        if (!$tableExists) {
+        if ($isTableMissing) {
             $defaults['db_error_message'] = __('The error_sessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
+
             return $defaults;
         }
 
@@ -92,17 +97,22 @@ trait AdminErrorRenderTrait {
         $where = array();
         $params = array();
 
-        if (!empty($defaults['filter_level'])) {
+        $hasLevelFilter = BooleanHelpers::hasValue($defaults['filter_level']);
+
+        if ($hasLevelFilter) {
             $where[] = 'level = ?';
             $params[] = $defaults['filter_level'];
         }
 
-        if (!empty($defaults['filter_search'])) {
+        $hasSearchFilter = BooleanHelpers::hasValue($defaults['filter_search']);
+
+        if ($hasSearchFilter) {
             $where[] = 'message LIKE ?';
             $params[] = '%' . $defaults['filter_search'] . '%';
         }
 
-        $whereSql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        $hasWhereClause = BooleanHelpers::hasValue($where);
+        $whereSql = $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '';
 
         return array('where_sql' => $whereSql, 'params' => $params);
     }
@@ -152,7 +162,7 @@ trait AdminErrorRenderTrait {
 
     /** Resolve the latest error time string. */
     private function resolveLatestErrorTime(array $errors, bool $hasUnseen): string {
-        $isErrorListClear = empty($errors) || !$hasUnseen;
+        $isErrorListClear = empty($errors) || ($hasUnseen === false);
 
         if ($isErrorListClear) {
             return '';

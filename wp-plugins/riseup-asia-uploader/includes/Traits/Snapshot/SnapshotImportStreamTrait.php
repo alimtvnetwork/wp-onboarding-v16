@@ -23,9 +23,6 @@ use RiseupAsia\Snapshot\SnapshotImport;
 
 trait SnapshotImportStreamTrait {
 
-    /**
-     * Handle ZIP file download.
-     */
     public function handleSnapshotDownloadFile(WP_REST_Request $request): ?WP_REST_Response {
         $validated = $this->validateAndResolveExport($request);
         if ($validated instanceof WP_REST_Response) {
@@ -35,9 +32,6 @@ trait SnapshotImportStreamTrait {
         $this->streamZipFile($validated['export_id'], $validated['export']);
     }
 
-    /**
-     * Validate download token and resolve the export record.
-     */
     private function validateAndResolveExport(WP_REST_Request $request): array|WP_REST_Response {
         $exportId = (int) $request->get_param('id');
         $token    = sanitize_text_field($request->get_param('token'));
@@ -49,8 +43,9 @@ trait SnapshotImportStreamTrait {
         }
 
         $export = SnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
+        $isExportMissing = ($export === null || $export === false);
 
-        if (!$export) {
+        if ($isExportMissing) {
             return new WP_REST_Response(array(
                 'success' => false, 'error' => 'Invalid or expired download token', 'code' => SnapshotErrorType::ExportTokenInvalid->value,
             ), 403);
@@ -59,12 +54,6 @@ trait SnapshotImportStreamTrait {
         return array('export_id' => $exportId, 'export' => $export);
     }
 
-    /**
-     * Send ZIP file headers for streaming.
-     *
-     * @param string $filename Filename for Content-Disposition.
-     * @param int    $filesize File size in bytes.
-     */
     private function sendZipHeaders(string $filename, int $filesize) {
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -73,12 +62,6 @@ trait SnapshotImportStreamTrait {
         header('Pragma: no-cache');
     }
 
-    /**
-     * Stream a ZIP file to the client with proper headers.
-     *
-     * @param int   $exportId Export record ID.
-     * @param array $export   Export record with zip_path and zip_filename.
-     */
     private function streamZipFile(int $exportId, array $export) {
         $filepath = $export['zip_path'];
         $filename = $export['zip_filename'];
@@ -95,7 +78,7 @@ trait SnapshotImportStreamTrait {
 
         $handle = fopen($filepath, 'rb');
         if ($handle) {
-            while (!feof($handle)) {
+            while (feof($handle) === false) {
                 echo fread($handle, 8192);
                 flush();
             }
@@ -107,9 +90,6 @@ trait SnapshotImportStreamTrait {
         exit;
     }
 
-    /**
-     * Handle importing a snapshot from ZIP upload.
-     */
     public function handleImportSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $files = $request->get_file_params();
@@ -142,6 +122,7 @@ trait SnapshotImportStreamTrait {
             );
 
             $status_code = $result['success'] ? 201 : 400;
+
             return new WP_REST_Response($result, $status_code);
         }, 'import_snapshot');
     }

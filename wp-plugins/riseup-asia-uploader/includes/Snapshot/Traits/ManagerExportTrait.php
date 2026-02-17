@@ -22,17 +22,21 @@ trait ManagerExportTrait {
 
     public function exportSnapshot(int $snapshotId): array {
         $provider = $this->getProvider();
-        if (!$provider) {
+        $isProviderMissing = ($provider === null);
+
+        if ($isProviderMissing) {
             return array('success' => false, 'error' => 'No snapshot provider available');
         }
 
         $snapshot = $provider->getSnapshot($snapshotId);
-        if (!$snapshot) {
+        $isSnapshotMissing = ($snapshot === null || $snapshot === false);
+
+        if ($isSnapshotMissing) {
             return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
 
         $filepath = $snapshot['filepath'];
-        if (!PathHelper::fileExists($filepath)) {
+        if (PathHelper::isFileMissing($filepath)) {
             return array('success' => false, 'error' => 'Snapshot file not found');
         }
 

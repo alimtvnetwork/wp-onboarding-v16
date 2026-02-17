@@ -39,7 +39,9 @@ trait DetectorProviderTrait {
             $result['detection_method'] = 'class_exists';
         }
 
-        if (!$result['available']) {
+        $isStillUnavailable = ($result['available'] === false);
+
+        if ($isStillUnavailable) {
             $plugin_file = 'wp-reset/wp-reset.php';
             if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
                 $result['available'] = true;
@@ -47,7 +49,9 @@ trait DetectorProviderTrait {
             }
         }
 
-        if (!$result['available'] && class_exists('WP_Reset_Pro')) {
+        $isStillUnavailableForPro = ($result['available'] === false) && class_exists('WP_Reset_Pro');
+
+        if ($isStillUnavailableForPro) {
             $result['available'] = true;
             $result['name'] = 'WP Reset Pro';
             $result['detection_method'] = 'class_exists_pro';
@@ -77,12 +81,16 @@ trait DetectorProviderTrait {
             $result['detection_method'] = 'class_exists';
         }
 
-        if (!$result['available'] && isset($GLOBALS['updraftplus'])) {
+        $isStillUnavailableWithGlobal = ($result['available'] === false) && isset($GLOBALS['updraftplus']);
+
+        if ($isStillUnavailableWithGlobal) {
             $result['available'] = true;
             $result['detection_method'] = 'global_instance';
         }
 
-        if (!$result['available']) {
+        $isStillUnavailable = ($result['available'] === false);
+
+        if ($isStillUnavailable) {
             $plugin_files = array('updraftplus/updraftplus.php', 'updraftplus-premium/updraftplus.php');
             foreach ($plugin_files as $plugin_file) {
                 if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
@@ -112,6 +120,7 @@ trait DetectorProviderTrait {
 
     private function detectNative(): array {
         $has_sqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
+
         return array(
             'id' => SnapshotProviderType::Native->value, 'name' => 'Native SQLite', 'available' => $has_sqlite,
             'capabilities' => array(
@@ -133,11 +142,13 @@ trait DetectorProviderTrait {
         if (extension_loaded('pdo_sqlite')) {
             try {
                 $pdo = new PDO('sqlite::memory:');
+
                 return $pdo->query('SELECT sqlite_version()')->fetchColumn();
             } catch (Throwable $e) {
                 return null;
             }
         }
+
         return null;
     }
 

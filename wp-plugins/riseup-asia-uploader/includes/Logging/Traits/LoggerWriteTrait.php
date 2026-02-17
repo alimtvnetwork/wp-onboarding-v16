@@ -18,7 +18,10 @@ trait LoggerWriteTrait {
 
     /** Write to log file. */
     private function write(string $entry, bool $isError = false): bool {
-        if (!$this->isInitialized && !$this->initializePaths()) {
+        $isUninitialized = ($this->isInitialized === false);
+        $isInitFailed = $isUninitialized && ($this->initializePaths() === false);
+
+        if ($isInitFailed) {
             error_log(PluginConfigType::LogPrefix->value . ' ' . trim($entry));
 
             return false;
@@ -44,7 +47,10 @@ trait LoggerWriteTrait {
             return;
         }
 
-        if (!$this->isInitialized && !$this->initializePaths()) {
+        $isUninitialized = ($this->isInitialized === false);
+        $isInitFailed = $isUninitialized && ($this->initializePaths() === false);
+
+        if ($isInitFailed) {
             return;
         }
 
@@ -72,7 +78,9 @@ trait LoggerWriteTrait {
     ): void {
         try {
             $pdo = $this->getErrorSessionsPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+
+            if ($isPdoMissing) {
                 return;
             }
 
@@ -90,7 +98,9 @@ trait LoggerWriteTrait {
 
         $db  = Database::getInstance();
         $pdo = $db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
             return null;
         }
 
@@ -111,7 +121,8 @@ trait LoggerWriteTrait {
         string $stackTrace,
     ): void {
         $now = gmdate(self::TIMESTAMP_FORMAT);
-        $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
+        $hasContext = BooleanHelpers::hasValue($context);
+        $contextJson = $hasContext ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 
         $stmt = $pdo->prepare(
             'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'

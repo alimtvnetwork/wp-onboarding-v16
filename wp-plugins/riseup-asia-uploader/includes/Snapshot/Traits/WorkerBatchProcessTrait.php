@@ -22,21 +22,30 @@ trait WorkerBatchProcessTrait {
 
     public function processWorkerBatch(array $args): void {
         $job_id = $args['job_id'] ?? 0;
-        if (!$job_id) {
+        $isJobIdMissing = ($job_id === 0);
+
+        if ($isJobIdMissing) {
             $this->log(LogLevelType::Error->value, 'Worker batch called without job_id');
+
             return;
         }
 
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+
+        if ($isPdoMissing) {
             $this->log(LogLevelType::Error->value, 'No database connection for worker batch');
+
             return;
         }
 
         try {
             $job = $this->getJob($pdo, $job_id);
-            if (!$job) {
+            $isJobMissing = ($job === null || $job === false);
+
+            if ($isJobMissing) {
                 $this->log(LogLevelType::Error->value, 'Job not found', array('job_id' => $job_id));
+
                 return;
             }
 
@@ -62,6 +71,7 @@ trait WorkerBatchProcessTrait {
 
         if ($batch_index >= count($batches)) {
             $this->finalizeJob($pdo, $jobId, $job['snapshot_dir']);
+
             return;
         }
 

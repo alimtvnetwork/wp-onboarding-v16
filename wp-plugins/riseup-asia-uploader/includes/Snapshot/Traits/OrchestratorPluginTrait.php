@@ -28,7 +28,9 @@ trait OrchestratorPluginTrait {
 
     private function snapshotPlugins(string $snapshotDir, string $selection = 'all'): array {
         $plugins_dir = $snapshotDir . '/plugins';
-        if (!PathHelper::makeDirectory($plugins_dir, true)) {
+        $isDirCreationFailed = (PathHelper::makeDirectory($plugins_dir, true) === false);
+
+        if ($isDirCreationFailed) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
 
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
@@ -73,7 +75,9 @@ trait OrchestratorPluginTrait {
             if ($slug === PluginConfigType::Slug->value) continue;
 
             $isEligible = ($selection === PluginSelectionType::All->value || in_array($plugin_file, $active_plugins));
-            if (!$isEligible) continue;
+            $isIneligible = ($isEligible === false);
+
+            if ($isIneligible) continue;
 
             $plugins_to_snapshot[$plugin_file] = array(
                 'slug' => $slug, 'name' => $plugin_data['Name'] ?? $slug, 'version' => $plugin_data['Version'] ?? '0.0.0',
@@ -102,8 +106,9 @@ trait OrchestratorPluginTrait {
         $zip_filename = $slug . '.zip';
         $zip_path = $pluginsDir . '/' . $zip_filename;
         $zip_result = $this->createPluginZip($plugin_path, $zip_path, $slug);
+        $isZipFailed = BooleanHelpers::isResultFailed($zip_result);
 
-        if (!$zip_result['success']) {
+        if ($isZipFailed) {
             $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array('error' => $zip_result['error']));
 
             return array('success' => false);
