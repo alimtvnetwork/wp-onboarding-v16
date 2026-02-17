@@ -806,9 +806,10 @@ func (m *DBManager) ImportProjectFromZip(
 
 func (m *DBManager) prepareImportDir(projectSlug string, overwrite bool) error {
     projectDir := filepath.Join(m.dataDir, projectSlug)
-    projectExists := !os.IsNotExist(statErr(projectDir))
+    _, err := os.Stat(projectDir)
+    isProjectExists := err == nil
 
-    if projectExists && !overwrite {
+    if isProjectExists && !overwrite {
         return fmt.Errorf("project exists, use overwrite=true to replace")
     }
 
@@ -817,11 +818,6 @@ func (m *DBManager) prepareImportDir(projectSlug string, overwrite bool) error {
     return os.MkdirAll(projectDir, 0755)
 }
 
-func statErr(path string) error {
-    _, err := os.Stat(path)
-
-    return err
-}
 
 func (m *DBManager) extractAndRegister(reader *zip.ReadCloser, projectSlug string) error {
     projectDir := filepath.Join(m.dataDir, projectSlug)
