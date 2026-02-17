@@ -184,15 +184,7 @@ func formatFrames(frames *runtime.Frames) string {
 
     for {
         frame, more := frames.Next()
-        isRuntime := strings.Contains(frame.File, "runtime/")
-
-        if !isRuntime {
-            sb.WriteString(fmt.Sprintf("  at %s\n     %s:%d\n",
-                frame.Function,
-                frame.File,
-                frame.Line,
-            ))
-        }
+        appendFrameIfRelevant(&sb, frame)
 
         if !more {
             break
@@ -200,6 +192,17 @@ func formatFrames(frames *runtime.Frames) string {
     }
 
     return sb.String()
+}
+
+func appendFrameIfRelevant(sb *strings.Builder, frame runtime.Frame) {
+    isRuntime := strings.Contains(frame.File, "runtime/")
+    if isRuntime {
+        return
+    }
+
+    sb.WriteString(fmt.Sprintf("  at %s\n     %s:%d\n",
+        frame.Function, frame.File, frame.Line,
+    ))
 }
 ```
 
@@ -334,21 +337,19 @@ func NewDBWriter(db *sql.DB) *DBWriter {
 
 func (w *DBWriter) Write(err *apperror.AppError) error {
     contextJSON, _ := json.Marshal(err.Context)
-    
+
+    return w.insertErrorLog(err, string(contextJSON))
+}
+
+func (w *DBWriter) insertErrorLog(err *apperror.AppError, contextJSON string) error {
     _, dbErr := w.db.Exec(`
         INSERT INTO ErrorLogs (Level, Code, Message, Context, StackTrace, File, Line, Function)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
-        err.Level,
-        err.Code,
-        err.Message,
-        string(contextJSON),
-        err.StackTrace,
-        err.File,
-        err.Line,
-        err.Function,
+        err.Level, err.Code, err.Message, contextJSON,
+        err.StackTrace, err.File, err.Line, err.Function,
     )
-    
+
     return dbErr
 }
 ```

@@ -766,16 +766,24 @@ import (
 
 func NewRouter(h *handlers.Handlers, log *logger.Logger) *mux.Router {
     r := mux.NewRouter()
-    
-    // Apply global middleware
+    applyMiddleware(r, log)
+
+    api := r.PathPrefix("/api/v1").Subrouter()
+    registerSiteRoutes(api, h)
+    registerPluginRoutes(api, h)
+    registerBackupRoutes(api, h)
+    registerUtilityRoutes(api, h)
+
+    return r
+}
+
+func applyMiddleware(r *mux.Router, log *logger.Logger) {
     r.Use(middleware.Logging(log))
     r.Use(middleware.Recovery(log))
     r.Use(middleware.CORS())
-    
-    // API v1 routes
-    api := r.PathPrefix("/api/v1").Subrouter()
-    
-    // Sites
+}
+
+func registerSiteRoutes(api *mux.Router, h *handlers.Handlers) {
     api.HandleFunc("/sites", h.Sites.List).Methods("GET")
     api.HandleFunc("/sites", h.Sites.Create).Methods("POST")
     api.HandleFunc("/sites/test", h.Sites.TestCredentials).Methods("POST")
@@ -784,8 +792,9 @@ func NewRouter(h *handlers.Handlers, log *logger.Logger) *mux.Router {
     api.HandleFunc("/sites/{id:[0-9]+}", h.Sites.Delete).Methods("DELETE")
     api.HandleFunc("/sites/{id:[0-9]+}/test", h.Sites.TestConnection).Methods("POST")
     api.HandleFunc("/sites/{id:[0-9]+}/plugins", h.Plugins.ListBySite).Methods("GET")
-    
-    // Plugins
+}
+
+func registerPluginRoutes(api *mux.Router, h *handlers.Handlers) {
     api.HandleFunc("/plugins", h.Plugins.List).Methods("GET")
     api.HandleFunc("/plugins", h.Plugins.Create).Methods("POST")
     api.HandleFunc("/plugins/scan", h.Plugins.Scan).Methods("POST")
@@ -798,25 +807,21 @@ func NewRouter(h *handlers.Handlers, log *logger.Logger) *mux.Router {
     api.HandleFunc("/plugins/{id:[0-9]+}/sync/check", h.Sync.Check).Methods("POST")
     api.HandleFunc("/plugins/{id:[0-9]+}/publish", h.Publish.Publish).Methods("POST")
     api.HandleFunc("/plugins/{id:[0-9]+}/backups", h.Backup.List).Methods("GET")
-    
-    // Backups
+}
+
+func registerBackupRoutes(api *mux.Router, h *handlers.Handlers) {
     api.HandleFunc("/backups/{id:[0-9]+}", h.Backup.Delete).Methods("DELETE")
     api.HandleFunc("/backups/{id:[0-9]+}/restore", h.Backup.Restore).Methods("POST")
-    
-    // Errors
+}
+
+func registerUtilityRoutes(api *mux.Router, h *handlers.Handlers) {
     api.HandleFunc("/errors", h.Errors.List).Methods("GET")
     api.HandleFunc("/errors", h.Errors.Clear).Methods("DELETE")
-    
-    // Settings
     api.HandleFunc("/settings", h.Settings.Get).Methods("GET")
     api.HandleFunc("/settings", h.Settings.Update).Methods("PUT")
-    
-    // Watcher
     api.HandleFunc("/watcher/status", h.Watcher.Status).Methods("GET")
     api.HandleFunc("/watcher/start", h.Watcher.Start).Methods("POST")
     api.HandleFunc("/watcher/stop", h.Watcher.Stop).Methods("POST")
-    
-    return r
 }
 ```
 
