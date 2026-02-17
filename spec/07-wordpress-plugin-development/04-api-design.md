@@ -126,6 +126,7 @@ register_rest_route(
 
 ### Authenticated Endpoints (Application Passwords)
 ```php
+use RiseupAsia\Enums\WpErrorCodeType;
 use WP_Error;
 use WP_REST_Request;
 
@@ -137,7 +138,7 @@ public function checkPermission(WP_REST_Request $request): bool|WP_Error {
         $this->fileLogger->log('Permission denied: not authenticated', __FILE__, __LINE__);
 
         return new WP_Error(
-            'rest_forbidden',
+            WpErrorCodeType::RestForbidden->value,
             'Authentication required',
             ['status' => 401],
         );
@@ -151,7 +152,7 @@ public function checkPermission(WP_REST_Request $request): bool|WP_Error {
         );
 
         return new WP_Error(
-            'rest_forbidden',
+            WpErrorCodeType::RestForbidden->value,
             'Insufficient permissions',
             ['status' => 403],
         );
@@ -176,7 +177,7 @@ public function checkPermissionWithIp(WP_REST_Request $request): bool|WP_Error {
         );
 
         return new WP_Error(
-            'rest_forbidden',
+            WpErrorCodeType::RestForbidden->value,
             'IP not allowed',
             ['status' => 403],
         );
@@ -209,6 +210,7 @@ public function handleHealth(WP_REST_Request $request): WP_REST_Response {
 ### Error Response Format
 
 ```php
+use RiseupAsia\Enums\WpErrorCodeType;
 use Throwable;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -237,7 +239,7 @@ public function handleUpload(WP_REST_Request $request): WP_REST_Response {
         return new WP_REST_Response([
             'success' => false,
             'error' => [
-                'code' => 'upload_failed',
+                'code' => WpErrorCodeType::UploadFailed->value,
                 'message' => $e->getMessage(),
             ],
         ], 500);
@@ -301,6 +303,7 @@ public function checkPermission(WP_REST_Request $request): bool {
 
 ```php
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\WpErrorCodeType;
 use WP_Error;
 use WP_REST_Request;
 
@@ -308,13 +311,13 @@ public function checkTokenPermission(WP_REST_Request $request): bool|WP_Error {
     $token = $request->get_header('X-API-Token');
 
     if (empty($token)) {
-        return new WP_Error('no_token', 'API token required', ['status' => 401]);
+        return new WP_Error(WpErrorCodeType::NoToken->value, 'API token required', ['status' => 401]);
     }
 
     $storedToken = get_option(OptionNameType::ApiToken->value);
 
     if (!hash_equals($storedToken, $token)) {
-        return new WP_Error('invalid_token', 'Invalid API token', ['status' => 403]);
+        return new WP_Error(WpErrorCodeType::InvalidToken->value, 'Invalid API token', ['status' => 403]);
     }
 
     return true;
@@ -354,7 +357,7 @@ public function checkPermission(WP_REST_Request $request): bool|WP_Error {
 
     if (!$this->rateLimiter->check($ip)) {
         return new WP_Error(
-            'rate_limited',
+            WpErrorCodeType::RateLimited->value,
             'Too many requests',
             ['status' => 429],
         );

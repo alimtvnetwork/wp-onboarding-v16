@@ -7,6 +7,7 @@
 The recommended method for REST API authentication:
 
 ```php
+use RiseupAsia\Enums\WpErrorCodeType;
 use WP_Error;
 use WP_REST_Request;
 
@@ -17,11 +18,11 @@ public function checkPermission(WP_REST_Request $request): bool|WP_Error {
     if ($isUnauthenticated) {
         $this->fileLogger->log('Permission denied: not authenticated', __FILE__, __LINE__);
 
-        return new WP_Error('not_authenticated', 'Authentication required', ['status' => 401]);
+        return new WP_Error(WpErrorCodeType::NotAuthenticated->value, 'Authentication required', ['status' => 401]);
     }
 
     if (!current_user_can('manage_options')) {
-        return new WP_Error('insufficient_permissions', 'Admin access required', ['status' => 403]);
+        return new WP_Error(WpErrorCodeType::InsufficientPermissions->value, 'Admin access required', ['status' => 403]);
     }
 
     return true;
@@ -121,7 +122,7 @@ public function validateUploadRequest(WP_REST_Request $request): bool|WP_Error {
     }
 
     if (!empty($errors)) {
-        return new WP_Error('validation_failed', implode('. ', $errors), ['status' => 400]);
+        return new WP_Error(WpErrorCodeType::ValidationFailed->value, implode('. ', $errors), ['status' => 400]);
     }
 
     return true;

@@ -208,6 +208,7 @@ register_shutdown_function(function(): void {
 ```php
 namespace RiseupAsia\ErrorHandling;
 
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\PathHelper;
 
 class FatalErrorHandler {
@@ -244,7 +245,7 @@ class FatalErrorHandler {
             echo wp_json_encode([
                 'success' => false,
                 'error' => [
-                    'code'    => 'fatal_error',
+                    'code'    => WpErrorCodeType::FatalError->value,
                     'message' => 'A fatal error occurred',
                     'file'    => basename($error['file']),
                     'line'    => $error['line'],
@@ -514,6 +515,7 @@ public function handleRequest(WP_REST_Request $request): WP_REST_Response {
 For cases where you need specific HTTP status codes per exception type:
 
 ```php
+use RiseupAsia\Enums\WpErrorCodeType;
 use Throwable;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -527,9 +529,9 @@ public function handleRequest(WP_REST_Request $request): WP_REST_Response {
             'data' => $result,
         ], 200);
     } catch (ValidationException $e) {
-        return $this->envelope->error($e->getMessage(), 400, 'validation_error');
+        return $this->envelope->error($e->getMessage(), 400, WpErrorCodeType::ValidationError->value);
     } catch (AuthenticationException $e) {
-        return $this->envelope->error($e->getMessage(), 401, 'authentication_failed');
+        return $this->envelope->error($e->getMessage(), 401, WpErrorCodeType::AuthenticationFailed->value);
     } catch (Throwable $e) {
         $this->fileLogger->error(
             sprintf('Unhandled error in API: %s', $e->getMessage()),
