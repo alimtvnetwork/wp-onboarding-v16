@@ -221,85 +221,89 @@ import (
 
 func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, error) {
 	startTime := time.Now()
-
 	s.log.Info("Starting git pull", "pluginId", pluginID)
 
-	// Get plugin details
 	plugin, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		return nil, err
 	}
 
-	result := &PullResult{
-		PluginID:   pluginID,
-		PluginName: plugin.Name,
-		PulledAt:   time.Now(),
+	result := newPullResult(pluginID, plugin.Name)
+
+	s.broadcastPullStarted(pluginID, plugin.Name)
+
+	if err := s.executePull(ctx, plugin, result); err != nil {
+		result.Duration = time.Since(startTime).Milliseconds()
+
+		return result, err
 	}
 
-	// Broadcast pull started
-	s.wsHub.Broadcast(ws.EventGitPullStarted, GitPullStartedEvent{
-		PluginID:   pluginID,
-		PluginName: plugin.Name,
-	})
+	result.Duration = time.Since(startTime).Milliseconds()
+	s.handlePostPull(ctx, pluginID, result)
 
-	// Check if directory is a git repo
+	return result, nil
+}
+
+func newPullResult(pluginID int64, pluginName string) *PullResult {
+	return &PullResult{
+		PluginID:   pluginID,
+		PluginName: pluginName,
+		PulledAt:   time.Now(),
+	}
+}
+
+func (s *serviceImpl) executePull(ctx context.Context, plugin *Plugin, result *PullResult) error {
 	gitDir := filepath.Join(plugin.Path, ".git")
 	if !dirExists(gitDir) {
 		result.Success = false
 		result.Error = "not a git repository"
-		result.Duration = time.Since(startTime).Milliseconds()
-		return result, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+
+		return apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
-	// Get current branch
 	branch, err := s.runGitCommand(plugin.Path, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		result.Success = false
 		result.Error = err.Error()
-		result.Duration = time.Since(startTime).Milliseconds()
-		return result, err
+
+		return err
 	}
+
 	result.Branch = strings.TrimSpace(branch)
 
-	// Run git pull
+	return s.runPullAndParse(plugin, result)
+}
+
+func (s *serviceImpl) runPullAndParse(plugin *Plugin, result *PullResult) error {
 	output, err := s.runGitCommand(plugin.Path, "pull", "origin", result.Branch)
 	result.Output = output
-	result.Duration = time.Since(startTime).Milliseconds()
 
 	if err != nil {
 		result.Success = false
 		result.Error = err.Error()
+		s.broadcastPullFailed(result.PluginID, result.Error)
 
-		s.wsHub.Broadcast(ws.EventGitPullFailed, GitPullFailedEvent{
-			PluginID: pluginID,
-			Error:    result.Error,
-		})
-		return result, err
+		return err
 	}
 
-	// Parse output for stats
 	result.Success = true
 	s.parseGitOutput(output, result)
+	s.populateCommitInfo(plugin.Path, result)
 
-	// Get latest commit info
-	commitHash, _ := s.runGitCommand(plugin.Path, "rev-parse", "--short", "HEAD")
+	return nil
+}
+
+func (s *serviceImpl) populateCommitInfo(path string, result *PullResult) {
+	commitHash, _ := s.runGitCommand(path, "rev-parse", "--short", "HEAD")
 	result.CommitHash = strings.TrimSpace(commitHash)
 
-	commitMsg, _ := s.runGitCommand(plugin.Path, "log", "-1", "--format=%s")
+	commitMsg, _ := s.runGitCommand(path, "log", "-1", "--format=%s")
 	result.CommitMsg = strings.TrimSpace(commitMsg)
+}
 
-	// ========================================
-	// HYBRID WATCHER: Trigger scan after pull
-	// ========================================
-	if result.FilesChanged > 0 && s.watcherService != nil {
-		s.log.Info("Git pull detected changes, triggering file scan", "pluginId", pluginID)
-		scanResult, _ := s.watcherService.ScanAfterGitPull(ctx, pluginID)
-		if scanResult != nil && len(scanResult.Changes) > 0 {
-			s.log.Info("File scan complete", "changes", len(scanResult.Changes))
-		}
-	}
+func (s *serviceImpl) handlePostPull(ctx context.Context, pluginID int64, result *PullResult) {
+	s.triggerPostPullScan(ctx, pluginID, result)
 
-	// Broadcast pull complete
 	s.wsHub.Broadcast(ws.EventGitPullComplete, GitPullCompleteEvent{
 		PluginID:     pluginID,
 		Success:      true,
@@ -312,52 +316,92 @@ func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, er
 		"filesChanged", result.FilesChanged,
 		"duration", result.Duration,
 	)
+}
 
-	return result, nil
+func (s *serviceImpl) triggerPostPullScan(ctx context.Context, pluginID int64, result *PullResult) {
+	hasChanges := result.FilesChanged > 0 && s.watcherService != nil
+	if !hasChanges {
+		return
+	}
+
+	s.log.Info("Git pull detected changes, triggering file scan", "pluginId", pluginID)
+	scanResult, _ := s.watcherService.ScanAfterGitPull(ctx, pluginID)
+
+	hasScanChanges := scanResult != nil && len(scanResult.Changes) > 0
+	if hasScanChanges {
+		s.log.Info("File scan complete", "changes", len(scanResult.Changes))
+	}
+}
+
+func (s *serviceImpl) broadcastPullStarted(pluginID int64, pluginName string) {
+	s.wsHub.Broadcast(ws.EventGitPullStarted, GitPullStartedEvent{
+		PluginID:   pluginID,
+		PluginName: pluginName,
+	})
+}
+
+func (s *serviceImpl) broadcastPullFailed(pluginID int64, errMsg string) {
+	s.wsHub.Broadcast(ws.EventGitPullFailed, GitPullFailedEvent{
+		PluginID: pluginID,
+		Error:    errMsg,
+	})
 }
 
 func (s *serviceImpl) PullAll(ctx context.Context) (*BatchPullResult, error) {
 	startTime := time.Now()
-
 	s.log.Info("Starting git pull for all plugins")
 
-	// Get all plugins with git enabled
 	plugins, err := s.pluginService.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	batch := s.pullEachPlugin(ctx, plugins)
+	batch.Duration = time.Since(startTime).Milliseconds()
+
+	s.broadcastPullAllComplete(batch)
+
+	return batch, nil
+}
+
+func (s *serviceImpl) pullEachPlugin(ctx context.Context, plugins []Plugin) *BatchPullResult {
 	batch := &BatchPullResult{
 		Results: make([]PullResult, 0),
 	}
 
 	for _, p := range plugins {
-		// Check if git directory exists
 		gitDir := filepath.Join(p.Path, ".git")
 		if !dirExists(gitDir) {
 			continue
 		}
 
-		result, _ := s.Pull(ctx, p.ID)
-		if result != nil {
-			batch.Results = append(batch.Results, *result)
-			if result.Success {
-				batch.Succeeded++
-			} else {
-				batch.Failed++
-			}
-		}
+		s.appendPullResult(ctx, p.ID, batch)
 	}
 
-	batch.Duration = time.Since(startTime).Milliseconds()
+	return batch
+}
 
+func (s *serviceImpl) appendPullResult(ctx context.Context, pluginID int64, batch *BatchPullResult) {
+	result, _ := s.Pull(ctx, pluginID)
+	if result == nil {
+		return
+	}
+
+	batch.Results = append(batch.Results, *result)
+
+	if result.Success {
+		batch.Succeeded++
+	} else {
+		batch.Failed++
+	}
+}
+
+func (s *serviceImpl) broadcastPullAllComplete(batch *BatchPullResult) {
 	s.wsHub.Broadcast(ws.EventGitPullAllComplete, GitPullAllCompleteEvent{
 		Succeeded: batch.Succeeded,
 		Failed:    batch.Failed,
 		Duration:  batch.Duration,
 	})
-
-	return batch, nil
 }
 
 func (s *serviceImpl) GetStatus(ctx context.Context, pluginID int64) (*GitStatus, error) {

@@ -100,23 +100,8 @@ func (e *AppError) WithLevel(level string) *AppError {
 }
 
 func newWithSkip(code, message string, cause error, skip int) *AppError {
-    pc, file, line, ok := runtime.Caller(skip)
-    funcName := "unknown"
-    if ok {
-        fn := runtime.FuncForPC(pc)
-        if fn != nil {
-            funcName = fn.Name()
-            // Extract just the function name
-            if idx := strings.LastIndex(funcName, "."); idx >= 0 {
-                funcName = funcName[idx+1:]
-            }
-        }
-        // Extract just the filename
-        if idx := strings.LastIndex(file, "/"); idx >= 0 {
-            file = file[idx+1:]
-        }
-    }
-    
+    file, line, funcName := callerInfo(skip + 1)
+
     return &AppError{
         Code:       code,
         Message:    message,
@@ -127,6 +112,37 @@ func newWithSkip(code, message string, cause error, skip int) *AppError {
         Function:   funcName,
         StackTrace: captureStackTrace(skip + 1),
     }
+}
+
+func callerInfo(skip int) (string, int, string) {
+    pc, file, line, ok := runtime.Caller(skip)
+    if !ok {
+        return "unknown", 0, "unknown"
+    }
+
+    return shortenPath(file), line, shortenFuncName(pc)
+}
+
+func shortenFuncName(pc uintptr) string {
+    fn := runtime.FuncForPC(pc)
+    if fn == nil {
+        return "unknown"
+    }
+
+    name := fn.Name()
+    if idx := strings.LastIndex(name, "."); idx >= 0 {
+        return name[idx+1:]
+    }
+
+    return name
+}
+
+func shortenPath(path string) string {
+    if idx := strings.LastIndex(path, "/"); idx >= 0 {
+        return path[idx+1:]
+    }
+
+    return path
 }
 ```
 
@@ -147,34 +163,33 @@ import (
 const maxStackDepth = 32
 
 func captureStackTrace(skip int) string {
-    var sb strings.Builder
     pcs := make([]uintptr, maxStackDepth)
     n := runtime.Callers(skip+1, pcs)
     frames := runtime.CallersFrames(pcs[:n])
-    
+
+    return formatFrames(frames)
+}
+
+func formatFrames(frames *runtime.Frames) string {
+    var sb strings.Builder
+
     for {
         frame, more := frames.Next()
-        
-        // Skip runtime internals
-        if strings.Contains(frame.File, "runtime/") {
-            if !more {
-                break
-            }
-            continue
+        isRuntime := strings.Contains(frame.File, "runtime/")
+
+        if !isRuntime {
+            sb.WriteString(fmt.Sprintf("  at %s\n     %s:%d\n",
+                frame.Function,
+                frame.File,
+                frame.Line,
+            ))
         }
-        
-        // Format: file:line function
-        sb.WriteString(fmt.Sprintf("  at %s\n     %s:%d\n",
-            frame.Function,
-            frame.File,
-            frame.Line,
-        ))
-        
+
         if !more {
             break
         }
     }
-    
+
     return sb.String()
 }
 ```
@@ -345,14 +360,26 @@ type Error struct {
 }
 
 func WriteError(w http.ResponseWriter, err error) {
-    appErr, ok := err.(*apperror.AppError)
-    if !ok {
-        appErr = apperror.Wrap(err, apperror.ErrInternal, "unexpected error")
-    }
-    
+    appErr := toAppError(err)
     status := getHTTPStatus(appErr.Code)
-    
-    resp := ErrorResponse{
+    resp := buildErrorResponse(appErr)
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(resp)
+}
+
+func toAppError(err error) *apperror.AppError {
+    appErr, ok := err.(*apperror.AppError)
+    if ok {
+        return appErr
+    }
+
+    return apperror.Wrap(err, apperror.ErrInternal, "unexpected error")
+}
+
+func buildErrorResponse(appErr *apperror.AppError) ErrorResponse {
+    return ErrorResponse{
         Success: false,
         Error: Error{
             Code:       appErr.Code,
@@ -366,10 +393,6 @@ func WriteError(w http.ResponseWriter, err error) {
             Timestamp:  time.Now().UTC().Format(time.RFC3339),
         },
     }
-    
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(status)
-    json.NewEncoder(w).Encode(resp)
 }
 
 func getHTTPStatus(code string) int {
