@@ -102,7 +102,6 @@ trait SchedulerCronTrait {
      * @return array{0: \RiseupAsia\Snapshot\SnapshotManager, 1: \RiseupAsia\Snapshot\SnapshotOrchestrator}
      */
     private function createOrchestrator(): array {
-        require_once dirname(__FILE__) . '/../SnapshotFactory.php';
         $manager = SnapshotFactory::manager($this->logger, $this->db);
         $orchestrator = SnapshotFactory::orchestrator($this->logger, $this->db, $manager);
         return array($manager, $orchestrator);
