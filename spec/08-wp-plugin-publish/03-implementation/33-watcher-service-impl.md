@@ -305,11 +305,7 @@ func (s *serviceImpl) performScan(
 }
 
 func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*pluginScanCache, error) {
-	s.mu.RLock()
-	cache, exists := s.cache[pluginID]
-	s.mu.RUnlock()
-
-	if exists {
+	if cache := s.lookupCache(pluginID); cache != nil {
 		return cache, nil
 	}
 
@@ -317,11 +313,14 @@ func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*plug
 		return nil, err
 	}
 
-	s.mu.RLock()
-	cache = s.cache[pluginID]
-	s.mu.RUnlock()
+	return s.lookupCache(pluginID), nil
+}
 
-	return cache, nil
+func (s *serviceImpl) lookupCache(pluginID int64) *pluginScanCache {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.cache[pluginID]
 }
 
 func (s *serviceImpl) executeScan(

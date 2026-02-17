@@ -597,20 +597,23 @@ func buildRemoteMap(remote []wordpress.RemoteFile) map[string]wordpress.RemoteFi
 func (s *serviceImpl) compareLocalFile(lf plugin.FileInfo, remoteMap map[string]wordpress.RemoteFile) *FileChange {
 	rf, exists := remoteMap[lf.Path]
 	if !exists {
-		return &FileChange{
-			Path:       lf.Path,
-			ChangeType: ChangeTypeAdded,
-			LocalHash:  lf.Hash,
-			LocalSize:  lf.Size,
-			LocalMTime: lf.ModifiedAt,
-		}
+		return s.newAddedChange(lf)
 	}
-
 	if lf.Hash == rf.Hash {
 		return nil
 	}
 
 	return s.newModifiedChange(lf, rf)
+}
+
+func (s *serviceImpl) newAddedChange(lf plugin.FileInfo) *FileChange {
+	return &FileChange{
+		Path:       lf.Path,
+		ChangeType: ChangeTypeAdded,
+		LocalHash:  lf.Hash,
+		LocalSize:  lf.Size,
+		LocalMTime: lf.ModifiedAt,
+	}
 }
 
 func (s *serviceImpl) newModifiedChange(lf plugin.FileInfo, rf wordpress.RemoteFile) *FileChange {
@@ -633,16 +636,20 @@ func (s *serviceImpl) findDeletedFiles(remote []wordpress.RemoteFile, localPaths
 			continue
 		}
 
-		changes = append(changes, FileChange{
-			Path:        rf.Path,
-			ChangeType:  ChangeTypeDeleted,
-			RemoteHash:  rf.Hash,
-			RemoteSize:  rf.Size,
-			RemoteMTime: rf.ModifiedAt,
-		})
+		changes = append(changes, s.newDeletedChange(rf))
 	}
 
 	return changes
+}
+
+func (s *serviceImpl) newDeletedChange(rf wordpress.RemoteFile) FileChange {
+	return FileChange{
+		Path:        rf.Path,
+		ChangeType:  ChangeTypeDeleted,
+		RemoteHash:  rf.Hash,
+		RemoteSize:  rf.Size,
+		RemoteMTime: rf.ModifiedAt,
+	}
 }
 ```
 
