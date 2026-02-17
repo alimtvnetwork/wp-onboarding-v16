@@ -50,6 +50,7 @@ trait ErrorSessionHandlerTrait {
     /** Check if a table exists in SQLite. */
     private function isTableExists(PDO $pdo, string $table): bool {
         $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");
+
         return (bool) $check->fetchColumn();
     }
 
@@ -77,6 +78,7 @@ trait ErrorSessionHandlerTrait {
     private function countErrorSessions(PDO $pdo, array $query): int {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$query['where_sql']}");
         $stmt->execute($query['params']);
+
         return (int) $stmt->fetchColumn();
     }
 
@@ -85,6 +87,7 @@ trait ErrorSessionHandlerTrait {
         $sql = "SELECT * FROM error_sessions {$query['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(array_merge($query['params'], array($query['limit'], $query['offset'])));
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -103,6 +106,7 @@ trait ErrorSessionHandlerTrait {
             }
             $entries[] = $entry;
         }
+
         return $entries;
     }
 
@@ -110,6 +114,7 @@ trait ErrorSessionHandlerTrait {
     private function parseContextJson(string $json): mixed {
         if (empty($json)) { return null; }
         $decoded = json_decode($json, true);
+
         return (json_last_error() === JSON_ERROR_NONE) ? $decoded : $json;
     }
 
@@ -118,6 +123,7 @@ trait ErrorSessionHandlerTrait {
         try {
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
             $stmt->execute(array($last_seen_id));
+
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
             return 0;
@@ -133,6 +139,7 @@ trait ErrorSessionHandlerTrait {
                 $frames[] = $frame;
             }
         }
+
         return $frames;
     }
 

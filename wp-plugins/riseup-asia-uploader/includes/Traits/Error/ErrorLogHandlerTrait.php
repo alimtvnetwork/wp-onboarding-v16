@@ -83,6 +83,7 @@ trait ErrorLogHandlerTrait {
         $allLines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($allLines === false) {
             $result['content'] = 'Failed to read file';
+
             return $result;
         }
 

@@ -170,7 +170,7 @@ All enums reside in `RiseupAsia\Enums` with PascalCase naming and `Type` suffix.
 
 ## 6. Legacy Alias Migration — Complete Inventory
 
-All 28 `class_alias()` shims are retained for backward compatibility. **Zero internal references remain** — all call sites now use namespaced `use` imports.
+All 33 `class_alias()` shims were retained for backward compatibility during migration. **Zero internal references remain** — all call sites now use namespaced `use` imports.
 
 | Legacy Alias | Namespaced Class | Migration Batch |
 |---|---|---|
@@ -216,8 +216,8 @@ All 28 `class_alias()` shims are retained for backward compatibility. **Zero int
 |---|---|
 | **Total alias references migrated** | ~800+ |
 | **Files touched across all batches** | 65+ |
-| **Distinct legacy aliases eliminated** | 25 |
-| **Backward-compat `class_alias()` shims retained** | **0** (all 36 removed) |
+| **Distinct legacy aliases eliminated** | 33 |
+| **Backward-compat `class_alias()` shims retained** | **0** (all 33 removed) |
 | **Internal alias references remaining** | **0** |
 | **Global-namespace classes remaining** | **0** |
 
@@ -229,7 +229,7 @@ All 28 `class_alias()` shims are retained for backward compatibility. **Zero int
 | **Batch 2** (SnapshotExporter, SnapshotFactory, ORM — prior session) | 3 | 12 | ~50 |
 | **Batch 3** (all remaining — current session) | 20 | 34 | ~438 |
 | **Batch 4** (global-namespace classes) | 3 | 3 | ~8 |
-| **Total** | **28** | **68+** | **~849** |
+| **Total** | **33** | **68+** | **~849** |
 
 ---
 
@@ -261,5 +261,5 @@ All 3 previously global classes have been migrated to PSR-4 namespaced classes w
 
 ## 10. Remaining Opportunities
 
-1. **Remove `class_alias()` shims** — Once all external consumers (companion plugins, Go backend calls) are verified to use namespaced imports, the 36 `class_alias()` shims can be deleted.
+1. **Remove `class_alias()` shims** — Once all external consumers (companion plugins, Go backend calls) are verified to use namespaced imports, the 33 `class_alias()` shims can be deleted.
 2. **`constants.php` removal** — The empty backward-compat placeholder can be deleted once all `require_once` references are removed.

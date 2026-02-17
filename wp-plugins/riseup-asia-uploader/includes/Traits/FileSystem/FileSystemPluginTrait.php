@@ -119,6 +119,7 @@ trait FileSystemPluginTrait {
             $this->fileLogger->info('findDirPlugin: Found directory plugin', array(
                 'plugin_file' => $slug . '/' . $slug . '.php',
             ));
+
             return $slug . '/' . $slug . '.php';
         }
 
@@ -137,7 +138,8 @@ trait FileSystemPluginTrait {
                 $relative = $slug . '/' . basename($file);
                 $this->fileLogger->info('scanDirForPluginHeader: Found plugin via header scan', array(
                     'plugin_file' => $relative,
-                ));
+            ));
+
                 return $relative;
             }
         }
@@ -151,6 +153,7 @@ trait FileSystemPluginTrait {
             $this->fileLogger->info('findSingleFilePlugin: Found single-file plugin', array(
                 'plugin_file' => $slug . '.php',
             ));
+
             return $slug . '.php';
         }
 

@@ -28,6 +28,7 @@ trait AgentHandlerActionTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->testConnection($id);
             $status_code = $result['success'] ? 200 : 400;
+
             return new WP_REST_Response($result, $status_code);
         }, 'test_agent');
     }
@@ -42,6 +43,7 @@ trait AgentHandlerActionTrait {
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);
             }
+
             return new WP_REST_Response(array('success' => true, 'plugins' => $result, 'count' => count($result)), 200);
         }, 'sync_agent');
     }
@@ -65,6 +67,7 @@ trait AgentHandlerActionTrait {
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);
             }
+
             return new WP_REST_Response($result, 200);
         }, 'agent_action');
     }
@@ -78,6 +81,7 @@ trait AgentHandlerActionTrait {
             $this->fileLogger->info('Getting agent action history', array('id' => $id));
             $manager = AgentManager::getInstance();
             $result = $manager->getActionHistory($id, $limit, $offset);
+
             return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'actions' => $result['actions']), 200);
         }, 'agent_history');
     }

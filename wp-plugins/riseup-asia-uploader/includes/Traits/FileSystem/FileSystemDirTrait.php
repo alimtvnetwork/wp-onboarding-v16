@@ -20,6 +20,7 @@ trait FileSystemDirTrait {
     private function getTempDir(): string {
         $tempDir = PathHelper::getTempDir();
         PathHelper::ensureDir($tempDir);
+
         return $tempDir;
     }
 
@@ -52,6 +53,9 @@ trait FileSystemDirTrait {
         }
 
         return @rmdir($dir);
+    }
+
+    private function copyDirectory(string $src, string $dst): bool {
     }
 
     private function copyDirectory(string $src, string $dst): bool {

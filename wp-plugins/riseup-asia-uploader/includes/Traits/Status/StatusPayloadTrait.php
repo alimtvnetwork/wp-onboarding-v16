@@ -119,7 +119,9 @@ trait StatusPayloadTrait {
                 return null;
             }
         }
+
         $content = @file_get_contents($path);
+
         return ($content !== false) ? json_decode($content, true) : null;
     }
 
