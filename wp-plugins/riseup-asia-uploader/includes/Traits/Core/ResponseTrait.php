@@ -106,6 +106,7 @@ trait ResponseTrait {
         if (empty($short)) {
             return 'EXCEPTION';
         }
+
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '_', $short));
     }
 }

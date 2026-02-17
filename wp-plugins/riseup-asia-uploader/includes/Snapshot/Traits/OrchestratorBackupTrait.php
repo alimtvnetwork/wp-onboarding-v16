@@ -80,6 +80,7 @@ trait OrchestratorBackupTrait {
             $context = $this->finalizeSyncExport($resolved, $worker_result);
             $context['duration'] = microtime(true) - $start_time;
             $context['errors'] = $worker_result['errors'] ?? array();
+
             return $context;
         } catch (Throwable $e) {
             return $this->buildExceptionResult($e, 'sync_orchestration');
@@ -103,6 +104,7 @@ trait OrchestratorBackupTrait {
 
     private function runWorkerExport(array $resolved, bool $async): array {
         $config = array('title' => $resolved['title'], 'scope' => $resolved['scope'], 'type' => 'full', 'settings' => $resolved['settings']);
+
         return $async ? $this->worker->execute($config) : $this->worker->executeSynchronous($config);
     }
 
@@ -112,6 +114,7 @@ trait OrchestratorBackupTrait {
             return array('path' => $zip_result['path'], 'size' => $zip_result['size']);
         }
         $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array('error' => $zip_result['error']));
+
         return array('path' => null, 'size' => 0);
     }
 
@@ -132,6 +135,7 @@ trait OrchestratorBackupTrait {
             $this->log(LogLevelType::Info->value, 'Incremental backup orchestration ' . ($result['success'] ? 'complete' : 'failed'), array(
                 'master' => basename($master_dir), 'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
             ));
+
             return $result;
         } catch (Throwable $e) {
             return $this->buildExceptionResult($e, 'incremental_orchestration');
@@ -150,6 +154,7 @@ trait OrchestratorBackupTrait {
                 }
             }
         }
+
         return $incremental->findLatestMasterSnapshot();
     }
 }

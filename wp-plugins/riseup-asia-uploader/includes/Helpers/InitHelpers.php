@@ -64,9 +64,11 @@ class InitHelpers {
             $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             self::applySqlitePragmas($pdo);
             $logger->info('[INIT] SQLite connection established', array('path' => $dbPath));
+
             return $pdo;
         } catch (PDOException $e) {
             $logger->error('[INIT] SQLite connection failed: ' . $e->getMessage(), array('path' => $dbPath, 'code' => $e->getCode()));
+
             return null;
         }
     }

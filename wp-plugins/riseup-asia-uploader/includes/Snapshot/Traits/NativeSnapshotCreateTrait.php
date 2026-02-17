@@ -75,6 +75,7 @@ trait NativeSnapshotCreateTrait {
      */
     private function isSnapshotRunning(): bool {
         $lock = $this->getLock();
+
         return $lock->isLocked();
     }
 

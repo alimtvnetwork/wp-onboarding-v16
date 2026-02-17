@@ -74,6 +74,7 @@ trait CleanerHelperTrait {
                 $size += $file->getSize();
             }
         }
+
         return $size;
     }
 

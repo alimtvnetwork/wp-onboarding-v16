@@ -24,6 +24,7 @@ trait DetectorProviderTrait {
             $this->detectNative(),
         );
         $this->logDetectionResults($providers);
+
         return $providers;
     }
 
@@ -126,6 +127,7 @@ trait DetectorProviderTrait {
     private function getSqliteVersion(): ?string {
         if (class_exists('SQLite3')) {
             $version = SQLite3::version();
+
             return $version['versionString'];
         }
         if (extension_loaded('pdo_sqlite')) {
