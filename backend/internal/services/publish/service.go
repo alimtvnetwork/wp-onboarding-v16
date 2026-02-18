@@ -1030,7 +1030,10 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
 
 	// Create zip file with slug-based name (no timestamp, no spaces)
-	absZipPath := pathutil.MustJoin(absTempDir, fmt.Sprintf("%s.zip", slug))
+	absZipPath, err := pathutil.Join(absTempDir, fmt.Sprintf("%s.zip", slug))
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve zip path")
+	}
 	zipFile, err := os.Create(absZipPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
@@ -1144,7 +1147,10 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
 
 	// Create zip file with slug-based name (no timestamp, no spaces)
-	absZipPath := pathutil.MustJoin(absTempDir, fmt.Sprintf("%s-patch.zip", slug))
+	absZipPath, err := pathutil.Join(absTempDir, fmt.Sprintf("%s-patch.zip", slug))
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve patch zip path")
+	}
 	zipFile, err := os.Create(absZipPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
@@ -1154,7 +1160,10 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 	ziputil.RegisterBestCompression(zipWriter)
 
 	for _, relPath := range files {
-		fullPath := pathutil.MustJoin(absPluginPath, relPath)
+		fullPath, err := pathutil.Join(absPluginPath, relPath)
+		if err != nil {
+			return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve file path").WithFilePath(relPath)
+		}
 		
 		// Check if file exists
 		info, err := os.Stat(fullPath)
@@ -1805,7 +1814,10 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 	}
 
 	// Read local file content
-	localPath := pathutil.MustJoin(pluginInfo.Path, filePath)
+	localPath, err := pathutil.Join(pluginInfo.Path, filePath)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve local file path").WithFilePath(filePath)
+	}
 	localFile, err := os.Open(localPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -1854,7 +1866,10 @@ func (s *Service) getLocalPluginVersion(pluginPath string) string {
 			continue
 		}
 
-		filePath := pathutil.MustJoin(absPath, entry.Name())
+		filePath, err := pathutil.Join(absPath, entry.Name())
+		if err != nil {
+			continue
+		}
 		content, err := os.ReadFile(filePath)
 		if err != nil {
 			continue

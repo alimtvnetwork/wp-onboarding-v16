@@ -30,23 +30,25 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) (*ScanResult, 
 	}
 
 	// Check if .plugin-detected.json exists first
-	detectedPath := pathutil.MustJoin(path, pluginDetectedFile)
-	if _, err := os.Stat(detectedPath); err == nil {
-		detected, err := s.readPluginDetected(detectedPath)
-		if err == nil {
-			scan.IsValid = true
-			scan.PluginName = detected.PluginName
-			scan.Version = detected.Version
-			scan.MainFile = detected.MainFile
-			scan.Description = detected.Description
-			scan.Author = detected.Author
-			scan.AuthorURI = detected.AuthorURI
-			scan.PluginURI = detected.PluginURI
-			scan.TextDomain = detected.TextDomain
-			scan.RequiresPHP = detected.RequiresPHP
-			scan.RequiresWP = detected.RequiresWP
-			s.log.Info("Found .plugin-detected.json", "path", path, "pluginName", detected.PluginName)
-			return scan, nil
+	detectedPath, err := pathutil.Join(path, pluginDetectedFile)
+	if err == nil {
+		if _, err := os.Stat(detectedPath); err == nil {
+			detected, err := s.readPluginDetected(detectedPath)
+			if err == nil {
+				scan.IsValid = true
+				scan.PluginName = detected.PluginName
+				scan.Version = detected.Version
+				scan.MainFile = detected.MainFile
+				scan.Description = detected.Description
+				scan.Author = detected.Author
+				scan.AuthorURI = detected.AuthorURI
+				scan.PluginURI = detected.PluginURI
+				scan.TextDomain = detected.TextDomain
+				scan.RequiresPHP = detected.RequiresPHP
+				scan.RequiresWP = detected.RequiresWP
+				s.log.Info("Found .plugin-detected.json", "path", path, "pluginName", detected.PluginName)
+				return scan, nil
+			}
 		}
 	}
 
@@ -158,7 +160,10 @@ func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to marshal plugin detected")
 	}
 
-	detectedPath := pathutil.MustJoin(path, pluginDetectedFile)
+	detectedPath, err := pathutil.Join(path, pluginDetectedFile)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to resolve plugin detected path")
+	}
 	if err := os.WriteFile(detectedPath, data, 0644); err != nil {
 		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to write plugin detected file")
 	}
@@ -227,7 +232,10 @@ func (s *Service) findMainPluginFile(path string) (*pluginHeaderInfo, error) {
 			continue
 		}
 
-		filePath := pathutil.MustJoin(path, entry.Name())
+		filePath, err := pathutil.Join(path, entry.Name())
+		if err != nil {
+			continue
+		}
 		file, err := os.Open(filePath)
 		if err != nil {
 			continue

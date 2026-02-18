@@ -28,7 +28,10 @@ func Default() *Info {
 
 // Load reads version info from the specified version.json file
 func Load(frontendDistDir string) (*Info, error) {
-	versionFile := pathutil.MustJoin(frontendDistDir, "version.json")
+	versionFile, err := pathutil.Join(frontendDistDir, "version.json")
+	if err != nil {
+		return Default(), nil
+	}
 
 	// Try frontend/dist first, then fall back to public/
 	if _, err := os.Stat(versionFile); os.IsNotExist(err) {

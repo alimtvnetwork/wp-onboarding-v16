@@ -36,7 +36,10 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	startTime := time.Now()
 	m.log.Info("Starting export", "project", projectSlug, "output", outputPath)
 
-	projectDir := pathutil.MustJoin(m.dataDir, projectSlug)
+	projectDir, err := pathutil.Join(m.dataDir, projectSlug)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve project directory")
+	}
 	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
 		return nil, apperror.New(apperror.ErrNotFound, "project not found").
 			WithContext("project", projectSlug)
@@ -147,7 +150,10 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 	}
 	defer reader.Close()
 
-	projectDir := pathutil.MustJoin(m.dataDir, projectSlug)
+	projectDir, err := pathutil.Join(m.dataDir, projectSlug)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve project directory")
+	}
 
 	// Check if project exists
 	if _, err := os.Stat(projectDir); err == nil && !overwrite {
@@ -182,7 +188,10 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 			continue
 		}
 
-		destPath := pathutil.MustJoin(projectDir, file.Name)
+		destPath, err := pathutil.Join(projectDir, file.Name)
+		if err != nil {
+			return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve import file path").WithFilePath(file.Name)
+		}
 
 		m.log.Debug("Extracting", "file", file.Name, "size", file.UncompressedSize64)
 
@@ -250,7 +259,10 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 		return err
 	}
 
-	projectDir := pathutil.MustJoin(m.dataDir, projectSlug)
+	projectDir, err := pathutil.Join(m.dataDir, projectSlug)
+	if err != nil {
+		return err
+	}
 
 	return filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".db") {
@@ -330,7 +342,10 @@ func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPat
 
 		m.log.Debug("Including", "type", db.Type, "path", db.Path)
 
-		fullPath := pathutil.MustJoin(m.dataDir, db.Path)
+		fullPath, err := pathutil.Join(m.dataDir, db.Path)
+		if err != nil {
+			return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve db path").WithPath(db.Path)
+		}
 		relPath := strings.TrimPrefix(db.Path, projectSlug+"/")
 
 		header := &zip.FileHeader{

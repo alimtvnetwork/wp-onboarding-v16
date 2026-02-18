@@ -136,7 +136,10 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	})
 
 	// Check if directory is a git repo
-	gitDir := pathutil.MustJoin(p.Path, ".git")
+	gitDir, err := pathutil.Join(p.Path, ".git")
+	if err != nil {
+		return result, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+	}
 	if !pathutil.IsDir(gitDir) {
 		result.Success = false
 		result.Error = "not a git repository"
@@ -216,8 +219,8 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 
 	for _, p := range plugins {
 		// Check if git directory exists
-		gitDir := pathutil.MustJoin(p.Path, ".git")
-		if !pathutil.IsDir(gitDir) {
+		gitDir, err := pathutil.Join(p.Path, ".git")
+		if err != nil || !pathutil.IsDir(gitDir) {
 			continue
 		}
 
@@ -396,7 +399,10 @@ func (s *Service) Status(ctx context.Context, pluginID int64) (*StatusResult, er
 	result := &StatusResult{PluginID: pluginID}
 
 	// Check if git repo
-	gitDir := pathutil.MustJoin(p.Path, ".git")
+	gitDir, err := pathutil.Join(p.Path, ".git")
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+	}
 	if !pathutil.IsDir(gitDir) {
 		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
@@ -459,7 +465,10 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*
 	result := &CommitResult{PluginID: pluginID}
 
 	// Check if git repo
-	gitDir := pathutil.MustJoin(p.Path, ".git")
+	gitDir, err := pathutil.Join(p.Path, ".git")
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+	}
 	if !pathutil.IsDir(gitDir) {
 		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
@@ -512,7 +521,10 @@ func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error)
 	result := &PushResult{PluginID: pluginID}
 
 	// Check if git repo
-	gitDir := pathutil.MustJoin(p.Path, ".git")
+	gitDir, err := pathutil.Join(p.Path, ".git")
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+	}
 	if !pathutil.IsDir(gitDir) {
 		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}

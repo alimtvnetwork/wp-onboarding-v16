@@ -281,14 +281,19 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func resolveSpaStaticDir(dir string) string {
 	// Normal case: index.html exists at the configured static dir.
-	if fileExists(pathutil.MustJoin(dir, "index.html")) {
+	indexPath, err := pathutil.Join(dir, "index.html")
+	if err == nil && fileExists(indexPath) {
 		return dir
 	}
 
 	// Common packaging/copy mistake: copying the entire dist folder into the target
 	// directory, resulting in "<dir>/dist/index.html".
-	if fileExists(pathutil.MustJoin(dir, "dist", "index.html")) {
-		return pathutil.MustJoin(dir, "dist")
+	distIndexPath, err := pathutil.Join(dir, "dist", "index.html")
+	if err == nil && fileExists(distIndexPath) {
+		distDir, err := pathutil.Join(dir, "dist")
+		if err == nil {
+			return distDir
+		}
 	}
 
 	return dir
@@ -313,19 +318,33 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestedPath := filepath.Clean(r.URL.Path)
 	requestedPath = strings.TrimPrefix(requestedPath, "/")
 
+	// Helper to resolve and serve the SPA index.
+	serveIndex := func() {
+		indexPath, err := pathutil.Join(h.staticDir, h.indexPath)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		http.ServeFile(w, r, indexPath)
+	}
+
 	// Root or directory routes should render the SPA entrypoint.
 	if requestedPath == "" || requestedPath == "." {
-		http.ServeFile(w, r, pathutil.MustJoin(h.staticDir, h.indexPath))
+		serveIndex()
 		return
 	}
 
-	path := pathutil.MustJoin(h.staticDir, requestedPath)
+	path, err := pathutil.Join(h.staticDir, requestedPath)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
 	fi, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Missing file (including client-side routes) -> SPA fallback
-			http.ServeFile(w, r, pathutil.MustJoin(h.staticDir, h.indexPath))
+			serveIndex()
 			return
 		}
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -333,7 +352,7 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if fi.IsDir() {
-		http.ServeFile(w, r, pathutil.MustJoin(h.staticDir, h.indexPath))
+		serveIndex()
 		return
 	}
 

@@ -94,7 +94,10 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 			WithContext("path", cfg.DataDir)
 	}
 
-	rootPath := pathutil.MustJoin(cfg.DataDir, "root.db")
+	rootPath, err := pathutil.Join(cfg.DataDir, "root.db")
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to resolve root db path")
+	}
 	rootDB, err := sql.Open("sqlite3", rootPath+"?_foreign_keys=on&_journal_mode=WAL")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open root db").
@@ -233,14 +236,18 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 	}
 
 	// Ensure directory exists
-	dir := filepath.Dir(pathutil.MustJoin(m.dataDir, dbRecord.Path))
+	fullPath, err := pathutil.Join(m.dataDir, dbRecord.Path)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve db path").
+			WithPath(dbRecord.Path)
+	}
+	dir := filepath.Dir(fullPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create db dir").
 			WithContext("path", dir)
 	}
 
 	// Open the database
-	fullPath := pathutil.MustJoin(m.dataDir, dbRecord.Path)
 	db, err := sql.Open("sqlite3", fullPath+"?_foreign_keys=on&_journal_mode=WAL")
 	if err != nil {
 		m.log.Error("Failed to open database", "error", err, "path", fullPath)
@@ -466,7 +473,11 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 	for rows.Next() {
 		var path string
 		rows.Scan(&path)
-		fullPath := pathutil.MustJoin(m.dataDir, path)
+		fullPath, err := pathutil.Join(m.dataDir, path)
+		if err != nil {
+			m.log.Warn("Failed to resolve archived database path", "path", path, "error", err)
+			continue
+		}
 		if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
 			m.log.Warn("Failed to delete archived database file", "path", pathutil.ForDisplay(fullPath), "error", err)
 		} else {

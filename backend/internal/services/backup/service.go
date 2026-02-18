@@ -87,7 +87,10 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	// Generate backup filename with timestamp
 	timestamp := time.Now().Format("20060102-150405")
 	filename := fmt.Sprintf("backup-%d-%s.zip", mappingID, timestamp)
-	backupPath := pathutil.MustJoin(s.backupDir, filename)
+	backupPath, err := pathutil.Join(s.backupDir, filename)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve backup path").WithPath(filename)
+	}
 
 	s.broadcastLog(mappingID, "info", "prepare", fmt.Sprintf("Preparing backup file: %s", filename), nil)
 
@@ -411,7 +414,11 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		}
 
 		// Security: prevent zip slip attacks
-		destPath := pathutil.MustJoin(destDir, file.Name)
+		destPath, err := pathutil.Join(destDir, file.Name)
+		if err != nil {
+			s.log.Warn("Failed to resolve zip entry path", "path", file.Name, "error", err)
+			continue
+		}
 		if !strings.HasPrefix(destPath, filepath.Clean(destDir)+string(os.PathSeparator)) {
 			s.log.Warn("Skipping potentially dangerous file path", "path", file.Name)
 			s.broadcastLog(0, "warn", "security", fmt.Sprintf("Skipping dangerous path: %s", file.Name), nil)

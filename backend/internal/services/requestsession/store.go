@@ -38,7 +38,10 @@ func New(cfg Config) (*Store, error) {
 		retentionDays = 1 // Keep request sessions for 1 day by default (high volume)
 	}
 
-	dataDir := pathutil.MustJoin(cfg.DataDir, "request-sessions")
+	dataDir, err := pathutil.Join(cfg.DataDir, "request-sessions")
+	if err != nil {
+		return nil, fmt.Errorf("resolve request sessions directory: %w", err)
+	}
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return nil, fmt.Errorf("create request sessions directory: %w", err)
 	}
@@ -65,14 +68,20 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
 	// Create date-based directory structure for organization
 	dateDir := session.StartedAt.Format("2006-01-02")
 	hourDir := session.StartedAt.Format("15")
-	sessionDir := pathutil.MustJoin(s.dataDir, dateDir, hourDir)
+	sessionDir, err := pathutil.Join(s.dataDir, dateDir, hourDir)
+	if err != nil {
+		return fmt.Errorf("resolve session directory: %w", err)
+	}
 	
 	if err := os.MkdirAll(sessionDir, 0755); err != nil {
 		return fmt.Errorf("create session directory: %w", err)
 	}
 
 	// Write session JSON
-	sessionPath := pathutil.MustJoin(sessionDir, session.ID+".json")
+	sessionPath, err := pathutil.Join(sessionDir, session.ID+".json")
+	if err != nil {
+		return fmt.Errorf("resolve session file path: %w", err)
+	}
 	data, err := json.MarshalIndent(session, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal session: %w", err)
@@ -230,7 +239,11 @@ func (s *Store) ClearRequestSessions() error {
 	}
 
 	for _, entry := range entries {
-		path := pathutil.MustJoin(s.dataDir, entry.Name())
+		path, err := pathutil.Join(s.dataDir, entry.Name())
+		if err != nil {
+			s.log.Error("Failed to resolve session entry path", "entry", entry.Name(), "error", err)
+			continue
+		}
 		if err := os.RemoveAll(path); err != nil {
 			s.log.Error("Failed to remove session entry", "path", path, "error", err)
 		}
@@ -269,8 +282,10 @@ func (s *Store) cleanupOldSessions() {
 		}
 		// Date directories are named YYYY-MM-DD
 		if entry.Name() < cutoffDate {
-			path := pathutil.MustJoin(s.dataDir, entry.Name())
-			os.RemoveAll(path)
+			path, err := pathutil.Join(s.dataDir, entry.Name())
+			if err == nil {
+				os.RemoveAll(path)
+			}
 		}
 	}
 }
@@ -284,5 +299,5 @@ func (s *Store) GetSessionFiles(id string) (string, error) {
 
 	dateDir := session.StartedAt.Format("2006-01-02")
 	hourDir := session.StartedAt.Format("15")
-	return pathutil.MustJoin(s.dataDir, dateDir, hourDir, id+".json"), nil
+	return pathutil.Join(s.dataDir, dateDir, hourDir, id+".json")
 }

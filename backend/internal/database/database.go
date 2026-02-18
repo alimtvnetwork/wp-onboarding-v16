@@ -108,14 +108,25 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 	// Build path for child database
 	var childPath string
 	if entityID == "" {
-		childPath = pathutil.MustJoin(db.dataDir, dbType+".db")
+		p, err := pathutil.Join(db.dataDir, dbType+".db")
+		if err != nil {
+			return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db path")
+		}
+		childPath = p
 	} else {
-		childDir := pathutil.MustJoin(db.dataDir, dbType)
+		childDir, err := pathutil.Join(db.dataDir, dbType)
+		if err != nil {
+			return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db directory")
+		}
 		if err := os.MkdirAll(childDir, 0755); err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create child db directory").
 				WithContext("path", childDir)
 		}
-		childPath = pathutil.MustJoin(childDir, entityID+".db")
+		p, err := pathutil.Join(childDir, entityID+".db")
+		if err != nil {
+			return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db path")
+		}
+		childPath = p
 	}
 
 	// Open child database

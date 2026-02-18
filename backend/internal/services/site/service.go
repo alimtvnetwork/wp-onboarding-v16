@@ -1663,8 +1663,16 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	s.errorLogHashes[hashHex] = struct{}{}
 	s.errorLogHashesMu.Unlock()
 
-	errorsDir := pathutil.MustJoin(filepath.Dir(s.db.Path()), "errors")
-	errorLogPath := pathutil.MustJoin(errorsDir, "error.log.txt")
+	errorsDir, err := pathutil.Join(filepath.Dir(s.db.Path()), "errors")
+	if err != nil {
+		s.log.Error("Failed to resolve errors directory path", "error", err)
+		return
+	}
+	errorLogPath, err := pathutil.Join(errorsDir, "error.log.txt")
+	if err != nil {
+		s.log.Error("Failed to resolve error log path", "error", err)
+		return
+	}
 
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(errorsDir, 0755); err != nil {
