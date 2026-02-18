@@ -16,6 +16,7 @@ use RiseupAsia\Update\Traits\UpdateResolverUrlTrait;
 use RiseupAsia\Update\Traits\UpdateResolverFetchTrait;
 use RiseupAsia\Update\Traits\UpdateResolverWpHooksTrait;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Database\Database;
 

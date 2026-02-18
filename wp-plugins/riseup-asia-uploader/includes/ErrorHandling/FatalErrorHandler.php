@@ -2,6 +2,10 @@
 
 namespace RiseupAsia\ErrorHandling;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 use RiseupAsia\Enums\PathLogFileType;
 
 /**

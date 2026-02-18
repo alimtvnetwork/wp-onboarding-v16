@@ -29,7 +29,7 @@ class Logger {
     private const SOURCE_MACHINE_HEADER = 'HTTP_X_RISEUP_SOURCE_MACHINE';
     private const USER_AGENT_MAX_LENGTH = 200;
 
-    private ?\RiseupDatabase $db = null;
+    private ?\RiseupAsia\Database\Database $db = null;
     private FileLogger $fileLogger;
     private static ?self $instance = null;
 
