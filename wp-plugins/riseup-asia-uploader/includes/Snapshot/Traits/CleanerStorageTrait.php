@@ -89,7 +89,8 @@ trait CleanerStorageTrait {
             }
 
             $snapshots = array_filter($snapshots, function($s) {
-                return !$this->isMasterSnapshot($s);
+                $isOrdinarySnapshot = ($this->isMasterSnapshot($s) === false);
+                return $isOrdinarySnapshot;
             });
 
             $estimate['snapshots_count'] = count($snapshots);

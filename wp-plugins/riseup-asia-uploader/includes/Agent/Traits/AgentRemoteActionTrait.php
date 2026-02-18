@@ -67,7 +67,7 @@ trait AgentRemoteActionTrait {
             }
 
             $location = wp_remote_retrieve_header($response, 'location');
-            if (!empty($location)) {
+            if (BooleanHelpers::hasValue($location)) {
                 $url = $location;
             }
         }

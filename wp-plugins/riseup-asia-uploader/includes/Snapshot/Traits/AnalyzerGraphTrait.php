@@ -59,7 +59,7 @@ trait AnalyzerGraphTrait {
         sort($queue);
 
         $sorted = array();
-        while (!empty($queue)) {
+        while (\RiseupAsia\Helpers\BooleanHelpers::hasValue($queue)) {
             $current = array_shift($queue);
             $sorted[] = $current;
 

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use WP_Error;
 use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentRemoteCoreTrait {
 
@@ -48,7 +49,8 @@ trait AgentRemoteCoreTrait {
         array $body = array(),
     ): array|WP_Error {
         $agent = $this->getAgent($agentId, true);
-        if (!$agent) {
+        $isAgentMissing = ($agent === null || $agent === false);
+        if ($isAgentMissing) {
             return new WP_Error('not_found', 'Agent site not found');
         }
 
@@ -66,9 +68,10 @@ trait AgentRemoteCoreTrait {
 
     private function resolveAgentBaseUrl(array $agent, string $endpoint): string {
         $baseUrl = $agent['url'];
-        if (!empty($agent['redirect_url'])) {
+        if (BooleanHelpers::hasValue($agent['redirect_url'])) {
             $resolved = $this->resolveRedirectUrl($agent);
-            if (!is_wp_error($resolved)) {
+            $isResolveFailed = is_wp_error($resolved);
+            if ($isResolveFailed === false) {
                 $baseUrl = $resolved;
             }
         }
@@ -91,7 +94,10 @@ trait AgentRemoteCoreTrait {
             'sslverify' => true,
         );
 
-        if (!empty($body) && in_array($method, array(HttpMethodType::Post->value, HttpMethodType::Put->value, HttpMethodType::Patch->value))) {
+        $hasBody = BooleanHelpers::hasValue($body);
+        $isBodyMethod = in_array($method, array(HttpMethodType::Post->value, HttpMethodType::Put->value, HttpMethodType::Patch->value));
+        $shouldAttachBody = ($hasBody && $isBodyMethod);
+        if ($shouldAttachBody) {
             $args['body'] = json_encode($body);
         }
 

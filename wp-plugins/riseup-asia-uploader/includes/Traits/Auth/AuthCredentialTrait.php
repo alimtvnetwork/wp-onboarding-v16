@@ -25,13 +25,13 @@ trait AuthCredentialTrait
 {
     private function resolveAuthHeader(WP_REST_Request $request): ?string {
         $authHeader = $request->get_header('Authorization');
-        if (!empty($authHeader)) {
+        if (BooleanHelpers::hasValue($authHeader)) {
             return $authHeader;
         }
-        if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        if (BooleanHelpers::hasValue($_SERVER['HTTP_AUTHORIZATION'] ?? null)) {
             return $_SERVER['HTTP_AUTHORIZATION'];
         }
-        if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        if (BooleanHelpers::hasValue($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null)) {
             return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }
 
@@ -57,15 +57,17 @@ trait AuthCredentialTrait
         }
 
         $credentials = base64_decode(substr($authHeader, 6));
-        $isInvalidFormat = (!$credentials || strpos($credentials, ':') === false);
-        if ($isInvalidFormat) {
+        $isCredentialsMissing = ($credentials === false);
+        $isFormatInvalid = ($isCredentialsMissing || strpos($credentials, ':') === false);
+        if ($isFormatInvalid) {
             return $this->buildAuthError('Invalid credentials format');
         }
 
         list($username, $password) = explode(':', $credentials, 2);
         $user = wp_authenticate_application_password(null, $username, $password);
 
-        if (is_wp_error($user) || !$user) {
+        $isAuthFailed = (is_wp_error($user) || $user === false);
+        if ($isAuthFailed) {
             return $this->buildAuthError('Invalid credentials', array('username' => $username));
         }
 

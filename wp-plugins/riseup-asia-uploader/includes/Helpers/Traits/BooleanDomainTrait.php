@@ -33,4 +33,7 @@ trait BooleanDomainTrait {
     public static function isResultFailed(array $result): bool { return empty($result['success']); }
     public static function isKeyMissing(array $data, string|int $key): bool { return !isset($data[$key]); }
     public static function isKeySet(array $data, string|int $key): bool { return isset($data[$key]); }
+    public static function isWpScheduleMissing(string $hook): bool { return !wp_next_scheduled($hook); }
+    public static function isCapabilityMissing(string $capability): bool { return !current_user_can($capability); }
+    public static function isPropertyMissing(object $obj, string $prop): bool { return !isset($obj->$prop); }
 }

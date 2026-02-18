@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait AdminAjaxSnapshotTrait {
@@ -23,7 +24,7 @@ trait AdminAjaxSnapshotTrait {
     public function ajaxSaveSnapshotSettings() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
-        if (!current_user_can(CapabilityType::ManageOptions->value)) {
+        if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
@@ -75,7 +76,7 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse worker_pool_size with clamping from $_POST. */
     private function parsePostWorkerPool(array &$settings) {
-        if (!isset($_POST['worker_pool_size'])) {
+        if (BooleanHelpers::isKeyMissing($_POST, 'worker_pool_size')) {
             return;
         }
 
@@ -87,7 +88,7 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse storage_mode with validation from $_POST. */
     private function parsePostStorageMode(array &$settings) {
-        if (!isset($_POST['storage_mode'])) {
+        if (BooleanHelpers::isKeyMissing($_POST, 'storage_mode')) {
             return;
         }
 
@@ -118,7 +119,7 @@ trait AdminAjaxSnapshotTrait {
     public function ajaxRunSnapshotCleanup() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
-        if (!current_user_can(CapabilityType::ManageOptions->value)) {
+        if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
@@ -141,7 +142,7 @@ trait AdminAjaxSnapshotTrait {
     public function ajaxGetSnapshotStorageStats() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
-        if (!current_user_can(CapabilityType::ManageOptions->value)) {
+        if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 

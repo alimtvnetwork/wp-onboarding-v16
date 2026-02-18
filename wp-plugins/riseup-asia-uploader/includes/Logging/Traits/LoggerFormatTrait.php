@@ -8,6 +8,8 @@
 
 namespace RiseupAsia\Logging\Traits;
 
+use RiseupAsia\Helpers\BooleanHelpers;
+
 trait LoggerFormatTrait {
 
     /** Format a log entry. */
@@ -23,7 +25,7 @@ trait LoggerFormatTrait {
 
         $entry = sprintf("[%s] [%s] %s (%s:%d)", $timestamp, $level, $message, $basename, $line);
 
-        if (!empty($context)) {
+        if (BooleanHelpers::hasValue($context)) {
             $entry .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES);
         }
 
@@ -87,7 +89,7 @@ trait LoggerFormatTrait {
     /** Merge request metadata into a context array (non-destructive). */
     private function enrichContextWithRequest(array $context): array {
         $meta = $this->getRequestMetadata();
-        if (!isset($context['_request'])) {
+        if (BooleanHelpers::isKeyMissing($context, '_request')) {
             $context = array_merge($meta, $context);
         }
 
@@ -102,13 +104,13 @@ trait LoggerFormatTrait {
     ): array {
         $context = $this->enrichContextWithRequest($context);
 
-        $shouldSkipChain = !$includeChain || $trace === null || isset($context['_invocation_chain']);
+        $shouldSkipChain = ($includeChain === false || $trace === null || isset($context['_invocation_chain']));
         if ($shouldSkipChain) {
             return $context;
         }
 
         $chain = $this->buildInvocationChain($trace);
-        if (!empty($chain)) {
+        if (BooleanHelpers::hasValue($chain)) {
             $context['_invocation_chain'] = $chain;
         }
 
@@ -124,7 +126,7 @@ trait LoggerFormatTrait {
             }
 
             $entry = $this->extractChainEntry($frame);
-            if (!empty($entry)) {
+            if (BooleanHelpers::hasValue($entry)) {
                 $chain[] = $entry;
             }
         }

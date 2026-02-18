@@ -17,6 +17,7 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait NativeSnapshotCreateTrait {
 
@@ -33,15 +34,18 @@ trait NativeSnapshotCreateTrait {
     public function createSnapshot(string $scope, string $trigger): array {
         $this->log(LogLevelType::Info->value, 'Snapshot creation requested', array('scope' => $scope, 'trigger' => $trigger));
 
-        if (!in_array($scope, array(SnapshotScopeType::Full->value, SnapshotScopeType::Database->value, SnapshotScopeType::Plugins->value))) {
+        $isScopeInvalid = BooleanHelpers::isAbsentFromList($scope, array(SnapshotScopeType::Full->value, SnapshotScopeType::Database->value, SnapshotScopeType::Plugins->value));
+        if ($isScopeInvalid) {
             return $this->error(SnapshotErrorType::InvalidScope, 'Invalid snapshot scope: ' . $scope);
         }
 
-        if (!in_array($trigger, array('manual', 'scheduled', 'api'))) {
+        $isTriggerInvalid = BooleanHelpers::isAbsentFromList($trigger, array('manual', 'scheduled', 'api'));
+        if ($isTriggerInvalid) {
             return $this->error(SnapshotErrorType::InvalidTrigger, 'Invalid snapshot trigger: ' . $trigger);
         }
 
-        if (!$this->isAvailable()) {
+        $isProviderUnavailable = ($this->isAvailable() === false);
+        if ($isProviderUnavailable) {
             return $this->error(SnapshotErrorType::ProviderMissing, 'Native SQLite provider is not available');
         }
 
@@ -85,7 +89,7 @@ trait NativeSnapshotCreateTrait {
      * @return void
      */
     private function scheduleSnapshotCleanup(): void {
-        if (!wp_next_scheduled(HookType::CleanupSnapshots->value)) {
+        if (BooleanHelpers::isWpScheduleMissing(HookType::CleanupSnapshots->value)) {
             wp_schedule_event(time(), 'daily', HookType::CleanupSnapshots->value);
         }
     }

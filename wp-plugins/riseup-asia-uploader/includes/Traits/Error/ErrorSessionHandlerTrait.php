@@ -17,6 +17,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Database\Database;
 
 trait ErrorSessionHandlerTrait {
@@ -27,10 +28,12 @@ trait ErrorSessionHandlerTrait {
             $this->fileLogger->info('Error sessions endpoint called');
 
             $pdo = Database::getInstance()->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+            if ($isPdoMissing) {
                 return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::ServerError->value);
             }
-            if (!$this->isTableExists($pdo, 'error_sessions')) {
+            $isTableMissing = ($this->isTableExists($pdo, 'error_sessions') === false);
+            if ($isTableMissing) {
                 return EnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
                     ->autoDetectRequestedAt()->setResults(array())->toResponse();
             }
@@ -64,12 +67,13 @@ trait ErrorSessionHandlerTrait {
 
         $where  = array();
         $params = array();
-        if (!empty($level))  { $where[] = 'level = ?';      $params[] = strtoupper($level); }
-        if (!empty($search)) { $where[] = 'message LIKE ?'; $params[] = '%' . $search . '%'; }
+        if (BooleanHelpers::hasValue($level))  { $where[] = 'level = ?';      $params[] = strtoupper($level); }
+        if (BooleanHelpers::hasValue($search)) { $where[] = 'message LIKE ?'; $params[] = '%' . $search . '%'; }
         if ($since_id > 0)   { $where[] = 'id > ?';         $params[] = $since_id; }
 
+        $hasWhereClause = BooleanHelpers::hasValue($where);
         return array(
-            'where_sql' => !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '',
+            'where_sql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
             'params' => $params, 'limit' => $limit, 'offset' => $offset,
         );
     }
@@ -101,7 +105,7 @@ trait ErrorSessionHandlerTrait {
                 'line' => $row['line'] ? (int) $row['line'] : null, 'stackTrace' => $row['stack_trace'],
                 'context' => $this->parseContextJson($row['context_json'] ?? ''), 'created_at' => $row['created_at'],
             );
-            if (!empty($row['stack_trace'])) {
+            if (BooleanHelpers::hasValue($row['stack_trace'])) {
                 $entry['stackTraceFrames'] = $this->parseStackTraceString($row['stack_trace']);
             }
             $entries[] = $entry;

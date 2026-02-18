@@ -128,7 +128,8 @@ trait FileSystemPluginTrait {
 
     private function scanDirForPluginHeader(string $slug, string $pluginDir): ?string {
         $phpFiles = glob($pluginDir . '/*.php');
-        if (!$phpFiles) {
+        $isPhpFilesMissing = ($phpFiles === false || empty($phpFiles));
+        if ($isPhpFilesMissing) {
             return null;
         }
 

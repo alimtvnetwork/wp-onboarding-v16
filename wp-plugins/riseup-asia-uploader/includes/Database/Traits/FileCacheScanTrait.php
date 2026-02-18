@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Helpers\BooleanHelpers;
+
 trait FileCacheScanTrait {
 
     public function getManifest(
@@ -21,7 +23,8 @@ trait FileCacheScanTrait {
     ): array {
         $this->logger->debug('FileCache: Building manifest', array('slug' => $pluginSlug));
 
-        if (!$this->db->isReady()) {
+        $isDbUnavailable = ($this->db->isReady() === false);
+        if ($isDbUnavailable) {
             $this->logger->warn('FileCache: Database not ready, falling back to full scan');
 
             return $this->fullScan($pluginDir, $ignore);
@@ -104,7 +107,8 @@ trait FileCacheScanTrait {
     ): int {
         $removed = 0;
         foreach ($cachedEntries as $path => $entry) {
-            if (!isset($activePaths[$path])) {
+            $isPathStale = BooleanHelpers::isKeyMissing($activePaths, $path);
+            if ($isPathStale) {
                 $this->deleteCacheEntry($pluginSlug, $path);
                 $removed++;
             }

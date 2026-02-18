@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\PathHelper;
 
 trait ExporterBuildCollectTrait {
 
@@ -36,7 +37,7 @@ trait ExporterBuildCollectTrait {
 
     private function collectIncrementalFiles(string $incrementalDir): array {
         $files = array();
-        if (!is_dir($incrementalDir)) {
+        if (PathHelper::isDirMissing($incrementalDir)) {
             return $files;
         }
 
@@ -55,7 +56,8 @@ trait ExporterBuildCollectTrait {
 
     private function getIncrementalSnapshots(int $parentId, string $parentName): array {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return array();
         }
 

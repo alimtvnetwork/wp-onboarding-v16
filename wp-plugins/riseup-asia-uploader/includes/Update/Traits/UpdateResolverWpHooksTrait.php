@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UpdateResolverWpHooksTrait {
 
@@ -22,7 +23,8 @@ trait UpdateResolverWpHooksTrait {
         }
 
         $settings = $this->getSettings();
-        if (!$settings['enabled'] || empty($settings['master_url'])) {
+        $isUpdateDisabled = (empty($settings['enabled']) || empty($settings['master_url']));
+        if ($isUpdateDisabled) {
             return $transient;
         }
 
@@ -72,7 +74,8 @@ trait UpdateResolverWpHooksTrait {
             return $result;
         }
 
-        if (!isset($args->slug) || $args->slug !== PluginConfigType::Slug->value) {
+        $isSlugMismatch = (BooleanHelpers::isPropertyMissing($args, 'slug') || $args->slug !== PluginConfigType::Slug->value);
+        if ($isSlugMismatch) {
             return $result;
         }
 

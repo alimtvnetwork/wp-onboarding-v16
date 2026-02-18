@@ -19,7 +19,8 @@ use RiseupAsia\Database\Orm;
 trait FileCacheStoreTrait {
 
     public function invalidate(string $pluginSlug): int {
-        if (!$this->db->isReady()) {
+        $isDbUnavailable = ($this->db->isReady() === false);
+        if ($isDbUnavailable) {
             return 0;
         }
 
@@ -75,7 +76,8 @@ trait FileCacheStoreTrait {
     ): void {
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+            if ($isPdoMissing) {
                 return;
             }
 

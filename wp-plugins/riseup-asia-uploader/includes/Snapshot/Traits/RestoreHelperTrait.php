@@ -61,7 +61,8 @@ trait RestoreHelperTrait {
         float $duration,
     ): void {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return;
         }
 
@@ -102,7 +103,8 @@ trait RestoreHelperTrait {
         string $message,
         array $context = array(),
     ): void {
-        if (!$this->logger) {
+        $isLoggerMissing = ($this->logger === null);
+        if ($isLoggerMissing) {
             return;
         }
 

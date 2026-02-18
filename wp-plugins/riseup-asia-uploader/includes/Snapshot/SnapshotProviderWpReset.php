@@ -30,7 +30,8 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     }
 
     public function createSnapshot(array $options): array {
-        if (!$this->isAvailable()) {
+        $isProviderUnavailable = ($this->isAvailable() === false);
+        if ($isProviderUnavailable) {
             return array('success' => false, 'error' => 'WP Reset is not available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
         $this->log(LogLevelType::Info->value, 'Creating snapshot via WP Reset', $options);

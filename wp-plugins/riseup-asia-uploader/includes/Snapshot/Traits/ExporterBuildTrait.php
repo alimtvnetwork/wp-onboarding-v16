@@ -32,14 +32,16 @@ trait ExporterBuildTrait {
         $this->log(LogLevelType::Info->value, 'Building ZIP export', array('snapshot_id' => $snapshotId, 'dir' => basename($snapshotDir)));
 
         $exportsDir = $this->ensureExportsDir();
-        if (!$exportsDir) {
+        $isExportsDirMissing = ($exportsDir === null);
+        if ($isExportsDirMissing) {
 
             return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => SnapshotErrorType::ExportBuildFailed->value);
         }
 
         $zipMeta = $this->prepareZipPaths($exportsDir, $snapshot);
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
 
             return array('success' => false, 'error' => 'Database unavailable', 'code' => SnapshotErrorType::ExportBuildFailed->value);
         }
@@ -51,11 +53,12 @@ trait ExporterBuildTrait {
 
     private function ensureExportsDir(): ?string {
         $exportsDir = PathHelper::getSnapshotsDir() . PathSubdirType::Exports->value;
-        if (!PathHelper::isDirMissing($exportsDir)) {
+        if (PathHelper::dirExists($exportsDir)) {
             return $exportsDir;
         }
 
-        if (!wp_mkdir_p($exportsDir)) {
+        $isMkdirFailed = (wp_mkdir_p($exportsDir) === false);
+        if ($isMkdirFailed) {
             return null;
         }
 

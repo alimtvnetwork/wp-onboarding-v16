@@ -45,7 +45,7 @@ class UpdateResolver {
         $this->db = Database::getInstance();
 
         $settings = $this->getSettings();
-        if (!empty($settings['enabled'])) {
+        if (BooleanHelpers::hasValue($settings['enabled'])) {
             add_filter(HookType::PreSetSiteTransientUpdatePlugins->value, array($this, 'checkForPluginUpdate'));
             add_filter(HookType::PluginsApi->value, array($this, 'pluginInfo'), 10, 3);
             $this->fileLogger->info('Auto-update hooks registered');
