@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use Throwable;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
 trait ManagerImportValidationTrait {
@@ -21,14 +22,16 @@ trait ManagerImportValidationTrait {
     private function validateManifest(array $manifest): array {
         $required = array('version', 'snapshot');
         foreach ($required as $field) {
-            if (!isset($manifest[$field])) {
+            $isFieldMissing = BooleanHelpers::isKeyMissing($manifest, $field);
+            if ($isFieldMissing) {
                 return array('valid' => false, 'error' => "Missing required field: {$field}");
             }
         }
 
         $snapshotRequired = array('filename', 'tables', 'scope');
         foreach ($snapshotRequired as $field) {
-            if (!isset($manifest['snapshot'][$field])) {
+            $isSnapshotFieldMissing = BooleanHelpers::isKeyMissing($manifest['snapshot'], $field);
+            if ($isSnapshotFieldMissing) {
                 return array('valid' => false, 'error' => "Missing snapshot field: {$field}");
             }
         }
@@ -54,7 +57,8 @@ trait ManagerImportValidationTrait {
             }
 
             $metaCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='_snapshot_meta'");
-            if (!$metaCheck->fetch()) {
+            $isMetaTableAbsent = ($metaCheck->fetch() === false);
+            if ($isMetaTableAbsent) {
                 return array('valid' => false, 'error' => 'Missing _snapshot_meta table');
             }
 
