@@ -24,7 +24,8 @@ trait ManagerTableRestoreTrait {
     private function restoreTable(PDO $sqlite, string $table): array {
         try {
             $check = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");
-            if (!$check->fetch()) {
+            $isTableAbsent = ($check->fetch() === false);
+            if ($isTableAbsent) {
 
                 return array('success' => false, 'error' => 'Table not found in snapshot', 'rows' => 0);
             }
@@ -102,7 +103,8 @@ trait ManagerTableRestoreTrait {
 
     private function createPreRestoreBackup(int $originalSnapshotId): array {
         $provider = $this->getProvider();
-        if (!$provider) {
+        $isProviderMissing = ($provider === null);
+        if ($isProviderMissing) {
 
             return array('success' => false, 'error' => 'No provider available');
         }

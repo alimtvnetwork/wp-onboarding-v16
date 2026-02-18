@@ -62,7 +62,8 @@ trait PathHelperDirTrait {
         string $realBase,
     ): bool {
         $isSafe = strpos($realPath, $realBase) === 0;
-        if (!$isSafe) {
+        $isTraversalDetected = ($isSafe === false);
+        if ($isTraversalDetected) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Path traversal attempt detected', array('path' => $path, 'resolved' => $realPath, 'base' => $realBase));
         }
 

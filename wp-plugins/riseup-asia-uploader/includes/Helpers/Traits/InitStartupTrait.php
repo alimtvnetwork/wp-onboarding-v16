@@ -41,7 +41,7 @@ trait InitStartupTrait {
     public static function getStartupResults(): array { return self::$startup_results; }
 
     public static function getFailedStartups(): array {
-        return array_filter(self::$startup_results, function (array $r): bool { return !$r['success']; });
+        return array_filter(self::$startup_results, function (array $r): bool { $isStartupFailed = ($r['success'] === false); return $isStartupFailed; });
     }
 
     public static function allStartupsSucceeded(): bool { return empty(self::getFailedStartups()); }

@@ -52,7 +52,8 @@ trait IncrementalExportTrait {
         $sqlite->exec('PRAGMA synchronous = OFF');
 
         $createResult = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
-        if (!$createResult) {
+        $isCreateResultMissing = ($createResult === null);
+        if ($isCreateResultMissing) {
 
             throw new Exception('Failed to get CREATE TABLE for ' . $table);
         }

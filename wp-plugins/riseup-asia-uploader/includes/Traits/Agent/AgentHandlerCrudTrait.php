@@ -66,7 +66,8 @@ trait AgentHandlerCrudTrait {
             $this->fileLogger->info('Getting agent site', array('id' => $id));
             $manager = AgentManager::getInstance();
             $agent = $manager->getAgent($id, false);
-            if (!$agent) {
+            $isAgentMissing = ($agent === null);
+            if ($isAgentMissing) {
                 return $this->errorResponse('Agent site not found', 404);
             }
 
