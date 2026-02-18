@@ -18,12 +18,14 @@ class SnapshotExporter {
     private Database $db;
     private static ?SnapshotExporter $instance = null;
 
-    public static function getInstance(?FileLogger $logger = null, ?Database $db = null): ?static {
+    public static function getInstance(?FileLogger $logger = null, ?Database $db = null): static {
         $isReadyToInit = self::$instance === null && $logger && $db;
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db);
         }
-
+        if (self::$instance === null) {
+            throw new \LogicException('SnapshotExporter::getInstance() called before initialization.');
+        }
         return self::$instance;
     }
 

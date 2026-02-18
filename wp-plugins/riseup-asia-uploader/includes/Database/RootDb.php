@@ -37,6 +37,9 @@ class RootDb {
         if ($isReadyToInit) {
             self::$instance = new self($logger, $analyzer);
         }
+        if (self::$instance === null) {
+            throw new \LogicException('RootDb::getInstance() called before initialization.');
+        }
         return self::$instance;
     }
 

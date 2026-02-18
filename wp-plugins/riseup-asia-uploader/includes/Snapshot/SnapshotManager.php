@@ -32,7 +32,9 @@ class SnapshotManager {
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db);
         }
-
+        if (self::$instance === null) {
+            throw new \LogicException('SnapshotManager::getInstance() called before initialization.');
+        }
         return self::$instance;
     }
 
