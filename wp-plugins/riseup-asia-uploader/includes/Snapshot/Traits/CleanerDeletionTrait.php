@@ -72,7 +72,8 @@ trait CleanerDeletionTrait {
 
         if (PathHelper::fileExists($filepath)) {
             $bytes_freed = filesize($filepath);
-            if (!PathHelper::deleteFile($filepath)) {
+            $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
+            if ($isDeleteFailed) {
                 $this->log(LogLevelType::Warn->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
                 return -1;
             }

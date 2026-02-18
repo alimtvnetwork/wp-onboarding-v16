@@ -71,7 +71,8 @@ trait RestoreGraphTrait {
             $parent = $dep['parent_table'];
             $child = $dep['child_table'];
 
-            if (!isset($graph[$parent]) || !isset($graph[$child])) {
+            $isParentOrChildMissing = (BooleanHelpers::isKeyMissing($graph, $parent) || BooleanHelpers::isKeyMissing($graph, $child));
+            if ($isParentOrChildMissing) {
                 continue;
             }
 
@@ -95,7 +96,7 @@ trait RestoreGraphTrait {
         }
 
         $sorted = array();
-        while (!empty($queue)) {
+        while (BooleanHelpers::hasValue($queue)) {
             sort($queue);
             $table = array_shift($queue);
             $sorted[] = $table;

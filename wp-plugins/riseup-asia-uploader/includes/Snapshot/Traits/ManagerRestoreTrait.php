@@ -18,6 +18,7 @@ use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ManagerRestoreTrait {
 
@@ -31,8 +32,9 @@ trait ManagerRestoreTrait {
 
         $snapshot = $this->getProvider()->getSnapshot($snapshotId);
 
+        $hasBackupOption = BooleanHelpers::hasValue($options['create_backup']);
         $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
-            'snapshot_id' => $snapshotId, 'filename' => $snapshot['filename'], 'create_backup' => !empty($options['create_backup']),
+            'snapshot_id' => $snapshotId, 'filename' => $snapshot['filename'], 'create_backup' => $hasBackupOption,
         ));
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
@@ -52,13 +54,15 @@ trait ManagerRestoreTrait {
         }
 
         $provider = $this->getProvider();
-        if (!$provider) {
+        $isProviderMissing = ($provider === null || $provider === false);
+        if ($isProviderMissing) {
 
             return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $snapshot = $provider->getSnapshot($snapshotId);
-        if (!$snapshot) {
+        $isSnapshotMissing = ($snapshot === null || $snapshot === false);
+        if ($isSnapshotMissing) {
 
             return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
@@ -87,7 +91,7 @@ trait ManagerRestoreTrait {
         $startTime = microtime(true);
         $filepath = $snapshot['filepath'];
 
-        if (!PathHelper::fileExists($filepath)) {
+        if (PathHelper::isFileMissing($filepath)) {
 
             return array('success' => false, 'error' => 'Snapshot file not found: ' . basename($filepath));
         }
@@ -131,7 +135,7 @@ trait ManagerRestoreTrait {
             }
 
             $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array('error' => $result['error']));
-            if (!empty($options['strict'])) {
+            if (BooleanHelpers::hasValue($options['strict'])) {
 
                 throw new Exception('Table restore failed: ' . $table);
             }

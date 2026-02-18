@@ -51,7 +51,8 @@ trait DatabaseConnectionTrait {
         $baseDir = $this->fileLogger->getBaseDir();
         $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
-        if (!PathHelper::makeDirectory($baseDir, true)) {
+        $isDirCreationFailed = (PathHelper::makeDirectory($baseDir, true) === false);
+        if ($isDirCreationFailed) {
             $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
 
             throw new Exception('Failed to create data directory: ' . $baseDir);
@@ -159,7 +160,8 @@ trait DatabaseConnectionTrait {
      * @return PDO|null
      */
     public function getPdo() {
-        if (!$this->isInitAttempted) {
+        $isInitPending = ($this->isInitAttempted === false);
+        if ($isInitPending) {
             $this->init();
         }
 
@@ -172,7 +174,8 @@ trait DatabaseConnectionTrait {
      * @return bool
      */
     public function isReady() {
-        if (!$this->isInitAttempted) {
+        $isInitPending = ($this->isInitAttempted === false);
+        if ($isInitPending) {
             $this->init();
         }
 

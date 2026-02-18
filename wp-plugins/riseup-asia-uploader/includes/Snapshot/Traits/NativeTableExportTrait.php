@@ -30,7 +30,8 @@ trait NativeTableExportTrait {
     ): array {
         try {
             $create_sql = $this->getCreateTableSql($table);
-            if (!$create_sql) {
+            $isCreateSqlMissing = ($create_sql === null || $create_sql === false);
+            if ($isCreateSqlMissing) {
 
                 throw new Exception('Failed to get table structure');
             }

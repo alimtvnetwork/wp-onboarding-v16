@@ -27,7 +27,8 @@ trait WorkerJobLifecycleTrait {
         array $config,
     ): int|false {
         $pdo = $this->db->getPdo();
-        if (!$pdo) return false;
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) return false;
 
         try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::SnapshotJobs->value . " (

@@ -19,6 +19,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait InvalidRouteTrait
 {
@@ -90,7 +91,8 @@ trait InvalidRouteTrait
         }
 
         $data = $response->get_data();
-        if (!is_array($data)) {
+        $isDataInvalid = (is_array($data) === false);
+        if ($isDataInvalid) {
             return $response;
         }
 
@@ -102,13 +104,13 @@ trait InvalidRouteTrait
     }
 
     private function injectErrorMetadata(array $data): array {
-        if (!isset($data['plugin_version'])) {
+        if (BooleanHelpers::isKeyMissing($data, 'plugin_version')) {
             $data['plugin_version'] = PluginConfigType::Version->value;
         }
-        if (!isset($data['timestamp'])) {
+        if (BooleanHelpers::isKeyMissing($data, 'timestamp')) {
             $data['timestamp'] = gmdate('c');
         }
-        if (!isset($data['log_hint'])) {
+        if (BooleanHelpers::isKeyMissing($data, 'log_hint')) {
             $data['log_hint'] = 'Check the plugin error logs or the Activity Logs page for details.';
         }
 

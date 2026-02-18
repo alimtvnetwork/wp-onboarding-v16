@@ -19,6 +19,7 @@ use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ExporterPublicApiTrait {
 
@@ -32,7 +33,8 @@ trait ExporterPublicApiTrait {
         $this->log(LogLevelType::Info->value, 'getOrBuildZip called', array('snapshot_id' => $fullSnapshotId));
 
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
-        if (!$snapshot) {
+        $isSnapshotMissing = ($snapshot === null || $snapshot === false);
+        if ($isSnapshotMissing) {
             return array('success' => false, 'error' => 'Full snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
 
@@ -52,20 +54,19 @@ trait ExporterPublicApiTrait {
 
     /**
      * Invalidate (expire) the cached ZIP for a full snapshot.
-     *
-     * @param int $fullSnapshotId The full snapshot's ID.
-     * @return bool True if an export was invalidated.
      */
     public function invalidateZip(int $fullSnapshotId): bool {
         $this->log(LogLevelType::Info->value, 'Invalidating ZIP export', array('snapshot_id' => $fullSnapshotId));
 
         $pdo = $this->db->get_pdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return false;
         }
 
         $export = $this->getValidExport($fullSnapshotId);
-        if (!$export) {
+        $isExportMissing = ($export === null || $export === false);
+        if ($isExportMissing) {
             $this->log(LogLevelType::Debug->value, 'No valid export to invalidate');
             return false;
         }
@@ -85,12 +86,11 @@ trait ExporterPublicApiTrait {
 
     /**
      * Remove all export records and files for a full snapshot.
-     *
-     * @param int $fullSnapshotId The full snapshot's ID.
      */
     public function removeExports(int $fullSnapshotId): void {
         $pdo = $this->db->get_pdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return;
         }
 
@@ -99,7 +99,8 @@ trait ExporterPublicApiTrait {
         $exports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($exports as $export) {
-            if (!empty($export['zip_path']) && file_exists($export['zip_path'])) {
+            $hasZipPath = (BooleanHelpers::hasValue($export['zip_path']) && file_exists($export['zip_path']));
+            if ($hasZipPath) {
                 @unlink($export['zip_path']);
                 $this->log(LogLevelType::Debug->value, 'Deleted export ZIP', array('path' => basename($export['zip_path'])));
             }
@@ -113,13 +114,11 @@ trait ExporterPublicApiTrait {
 
     /**
      * Generate a time-limited download URL for an export.
-     *
-     * @param int $exportId The export record ID.
-     * @return string|null Download URL or null.
      */
     public function getDownloadUrl(int $exportId): ?string {
         $export = $this->getExportById($exportId);
-        if (!$export || $export['status'] !== SnapshotExportStatusType::Valid->value) {
+        $isExportInvalid = ($export === null || $export === false || $export['status'] !== SnapshotExportStatusType::Valid->value);
+        if ($isExportInvalid) {
             return null;
         }
 
@@ -130,20 +129,18 @@ trait ExporterPublicApiTrait {
 
     /**
      * Validate a download token and return the export record.
-     *
-     * @param int    $exportId The export ID.
-     * @param string $token    The nonce token.
-     * @return array|null The export record, or null if invalid.
      */
     public function validateDownloadToken(int $exportId, string $token): ?array {
         $valid = wp_verify_nonce($token, 'riseup_snapshot_download_' . $exportId);
-        if (!$valid) {
+        $isTokenInvalid = ($valid === false);
+        if ($isTokenInvalid) {
             $this->log(LogLevelType::Warn->value, 'Invalid download token', array('export_id' => $exportId));
             return null;
         }
 
         $export = $this->getExportById($exportId);
-        if (!$export) {
+        $isExportMissing = ($export === null || $export === false);
+        if ($isExportMissing) {
             $this->log(LogLevelType::Warn->value, 'Export not found for download', array('export_id' => $exportId));
             return null;
         }
@@ -163,13 +160,11 @@ trait ExporterPublicApiTrait {
 
     /**
      * Get export status for a full snapshot.
-     *
-     * @param int $fullSnapshotId The full snapshot's ID.
-     * @return array|null Export metadata or null.
      */
     public function getExportStatus(int $fullSnapshotId): ?array {
         $pdo = $this->db->get_pdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return null;
         }
 

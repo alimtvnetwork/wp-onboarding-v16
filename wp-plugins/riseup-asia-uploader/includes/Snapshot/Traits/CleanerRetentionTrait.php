@@ -114,7 +114,9 @@ trait CleanerRetentionTrait {
             array(SnapshotStatusType::Complete->value)
         );
 
-        if (!$total_result || $total_result['cnt'] <= $count) {
+        $isResultMissing = ($total_result === null || $total_result === false);
+        $isBelowThreshold = ($isResultMissing || $total_result['cnt'] <= $count);
+        if ($isBelowThreshold) {
             return array();
         }
 

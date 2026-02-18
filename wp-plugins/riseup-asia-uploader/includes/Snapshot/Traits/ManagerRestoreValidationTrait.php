@@ -17,25 +17,29 @@ use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ManagerRestoreValidationTrait {
 
     private function validateIncrementalParent(array $snapshot, int $snapshotId): ?array {
         $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === SnapshotModeType::Incremental->value);
-        if (!$isIncremental) {
+        $isFullSnapshot = ($isIncremental === false);
+        if ($isFullSnapshot) {
             return null;
         }
 
         $tablesMeta = json_decode($snapshot['tables_json'] ?? '{}', true);
         $masterDirname = $tablesMeta['master'] ?? null;
 
-        if (!$masterDirname) {
+        $isMasterDirnameMissing = ($masterDirname === null);
+        if ($isMasterDirnameMissing) {
             return null;
         }
 
         $masterDir = dirname(dirname($snapshot['filepath']));
         $isMasterMissing = PathHelper::isDirMissing($masterDir) || PathHelper::isFileMissing($masterDir . '/a-root.db');
-        if (!$isMasterMissing) {
+        $isMasterPresent = ($isMasterMissing === false);
+        if ($isMasterPresent) {
             return null;
         }
 
@@ -56,8 +60,8 @@ trait ManagerRestoreValidationTrait {
      * @return int|array|null Backup ID, error array, or null.
      */
     private function handlePreRestoreBackup(array $options, int $snapshotId): int|array|null {
-        $shouldBackup = (!isset($options['create_backup']) || $options['create_backup'] === true);
-        if (!$shouldBackup) {
+        $isBackupExplicitlyDisabled = (isset($options['create_backup']) && $options['create_backup'] === false);
+        if ($isBackupExplicitlyDisabled) {
             return null;
         }
 
@@ -70,7 +74,7 @@ trait ManagerRestoreValidationTrait {
 
         $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', array('error' => $backupResult['error']));
 
-        if (!empty($options['require_backup'])) {
+        if (BooleanHelpers::hasValue($options['require_backup'])) {
             return array('success' => false, 'error' => 'Pre-restore backup failed: ' . $backupResult['error']);
         }
 
@@ -81,7 +85,7 @@ trait ManagerRestoreValidationTrait {
         $allTables = json_decode($snapshot['tables_json'], true);
         $mode = $options['mode'] ?? RestoreModeType::Full->value;
 
-        $isSelective = ($mode === RestoreModeType::Selective->value && !empty($options['tables']));
+        $isSelective = ($mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($options['tables']));
         if ($isSelective) {
             return array_intersect($allTables, $options['tables']);
         }

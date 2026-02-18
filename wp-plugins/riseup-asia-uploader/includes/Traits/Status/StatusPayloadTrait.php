@@ -97,7 +97,7 @@ trait StatusPayloadTrait {
     private function extractRouteMethods(array $handlers): array {
         $methods = array();
         foreach ($handlers as $handler) {
-            if (!isset($handler['methods'])) {
+            if (BooleanHelpers::isKeyMissing($handler, 'methods')) {
                 continue;
             }
             $methods = array_merge($methods, is_array($handler['methods'])

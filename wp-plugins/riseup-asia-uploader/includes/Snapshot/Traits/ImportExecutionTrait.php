@@ -44,7 +44,8 @@ trait ImportExecutionTrait {
         $this->validateSqliteFile($rootDbPath, 'a-root.db');
         $metadata = $this->readRootDbMetadata($rootDbPath);
 
-        if (!$metadata) {
+        $isMetadataMissing = ($metadata === null || $metadata === false);
+        if ($isMetadataMissing) {
             throw new Exception('Failed to read metadata from a-root.db');
         }
 
@@ -89,7 +90,8 @@ trait ImportExecutionTrait {
     /** Move snapshot to final location in snapshots directory. */
     private function moveSnapshotToFinalLocation(string $snapshotRoot, array $metadata): string {
         $snapshotsDir = PathHelper::getSnapshotsDir();
-        if (!PathHelper::makeDirectory($snapshotsDir, true)) {
+        $isDirCreationFailed = (PathHelper::makeDirectory($snapshotsDir, true) === false);
+        if ($isDirCreationFailed) {
             throw new Exception('Failed to create snapshots directory');
         }
 

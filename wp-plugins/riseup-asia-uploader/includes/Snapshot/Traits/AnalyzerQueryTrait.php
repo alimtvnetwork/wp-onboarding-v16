@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AnalyzerQueryTrait {
 
@@ -117,11 +118,12 @@ trait AnalyzerQueryTrait {
         $context = array(),
     ) {
         $full = '[SNAPSHOT] [DEPENDENCY] ' . $message;
-        if (!empty($context)) {
+        if (BooleanHelpers::hasValue($context)) {
             $full .= ' ' . json_encode($context);
         }
 
-        if (!$this->logger) {
+        $isLoggerMissing = ($this->logger === null);
+        if ($isLoggerMissing) {
             return;
         }
 

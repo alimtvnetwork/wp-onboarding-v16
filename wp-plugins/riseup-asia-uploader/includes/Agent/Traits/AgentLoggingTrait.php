@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use PDOException;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentLoggingTrait {
 
@@ -28,7 +29,8 @@ trait AgentLoggingTrait {
     ): int|false {
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+            if ($isPdoMissing) {
                 return false;
             }
 
@@ -67,7 +69,8 @@ trait AgentLoggingTrait {
     ): array {
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+            if ($isPdoMissing) {
                 return array('total' => 0, 'actions' => array());
             }
 
@@ -107,7 +110,7 @@ trait AgentLoggingTrait {
 
     private function decodeActionDetails(array &$actions): void {
         foreach ($actions as &$action) {
-            if (!empty($action['details'])) {
+            if (BooleanHelpers::hasValue($action['details'])) {
                 $action['details'] = json_decode($action['details'], true);
             }
         }

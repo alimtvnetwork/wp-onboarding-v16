@@ -32,10 +32,12 @@ trait AuthPermissionTrait
     /** Build permission callback with optional auth bypass. */
     private function buildPermissionCallback(string $endpoint, callable $authCheck): callable {
         return function(WP_REST_Request $request) use ($endpoint, $authCheck) {
-            if (!$this->isEndpointEnabled($endpoint)) {
+            $isEndpointDisabled = ($this->isEndpointEnabled($endpoint) === false);
+            if ($isEndpointDisabled) {
                 return new WP_Error('rest_disabled', 'This endpoint is disabled', array('status' => 403));
             }
-            if (!$this->isAuthRequired($endpoint)) {
+            $isAuthOptional = ($this->isAuthRequired($endpoint) === false);
+            if ($isAuthOptional) {
                 return true;
             }
             return call_user_func($authCheck, $request);

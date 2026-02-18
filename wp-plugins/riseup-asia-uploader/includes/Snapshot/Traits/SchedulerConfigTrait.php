@@ -14,18 +14,19 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SchedulerConfigTrait {
 
     public function registerCronSchedules(array $schedules): array {
-        if (!isset($schedules[SnapshotFrequencyType::Weekly->value])) {
+        if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Weekly->value)) {
             $schedules[SnapshotFrequencyType::Weekly->value] = array(
                 'interval' => WEEK_IN_SECONDS,
                 'display' => __('Once Weekly', 'riseup-asia-uploader'),
             );
         }
 
-        if (!isset($schedules[SnapshotFrequencyType::Monthly->value])) {
+        if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Monthly->value)) {
             $schedules[SnapshotFrequencyType::Monthly->value] = array(
                 'interval' => 30 * DAY_IN_SECONDS,
                 'display' => __('Once Monthly', 'riseup-asia-uploader'),
@@ -36,7 +37,7 @@ trait SchedulerConfigTrait {
     }
 
     private function ensureCleanupScheduled(): void {
-        if (!wp_next_scheduled(HookType::CronSnapshotCleanup->value)) {
+        if (BooleanHelpers::isWpScheduleMissing(HookType::CronSnapshotCleanup->value)) {
             $timestamp = strtotime('tomorrow 04:00:00');
             wp_schedule_event($timestamp, 'daily', HookType::CronSnapshotCleanup->value);
             $this->logger->info('[SCHEDULER] Cleanup cron scheduled', array('next_run' => date('c', $timestamp)));
@@ -47,7 +48,8 @@ trait SchedulerConfigTrait {
         $settings = $this->detector->getSettings();
         $this->clearScheduledSnapshot();
 
-        if (!$settings['schedule_enabled']) {
+        $isScheduleDisabled = ($settings['schedule_enabled'] === false || empty($settings['schedule_enabled']));
+        if ($isScheduleDisabled) {
             $this->logger->debug('[SCHEDULER] Scheduled snapshots disabled');
             return;
         }
