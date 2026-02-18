@@ -29,7 +29,8 @@ trait UploadInstallExtractTrait
     ) {
         $this->fileLogger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array('slug' => $slug));
 
-        if (!$is_update) {
+        $isFreshInstall = ($is_update === false);
+        if ($isFreshInstall) {
             return false;
         }
 
