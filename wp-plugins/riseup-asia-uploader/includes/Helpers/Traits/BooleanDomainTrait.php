@@ -31,4 +31,6 @@ trait BooleanDomainTrait {
     public static function isValueEmpty(mixed $value): bool { return empty($value); }
     public static function isNull(mixed $value): bool { return $value === null; }
     public static function isResultFailed(array $result): bool { return empty($result['success']); }
+    public static function isKeyMissing(array $data, string|int $key): bool { return !isset($data[$key]); }
+    public static function isKeySet(array $data, string|int $key): bool { return isset($data[$key]); }
 }

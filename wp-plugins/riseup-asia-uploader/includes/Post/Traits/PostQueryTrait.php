@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
@@ -30,13 +31,15 @@ trait PostQueryTrait {
                 'order'          => 'DESC',
             );
 
-            if (!empty($params['status'])) {
+            $hasStatus = BooleanHelpers::hasValue($params['status'] ?? null);
+            if ($hasStatus) {
                 $args['post_status'] = $this->validatePostStatus($params['status']);
             } else {
                 $args['post_status'] = array('publish', 'draft', 'pending');
             }
 
-            if (!empty($params['search'])) {
+            $hasSearch = BooleanHelpers::hasValue($params['search'] ?? null);
+            if ($hasSearch) {
                 $args['s'] = sanitize_text_field($params['search']);
             }
 

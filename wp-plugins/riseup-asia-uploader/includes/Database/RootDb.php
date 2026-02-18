@@ -18,6 +18,7 @@ use RiseupAsia\Database\Traits\RootDbSchemaTrait;
 use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
@@ -69,11 +70,13 @@ class RootDb {
     ): void {
         $prefix = '[SNAPSHOT] [ROOT-DB]';
         $full = $prefix . ' ' . $message;
-        if (!empty($context)) {
+        $hasContext = BooleanHelpers::hasValue($context);
+        if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
 
-        if (!$this->logger) {
+        $isLoggerAbsent = BooleanHelpers::isValueEmpty($this->logger);
+        if ($isLoggerAbsent) {
             return;
         }
 
