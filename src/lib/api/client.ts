@@ -3,6 +3,7 @@
 import { resolveApiBase, resolveApiOrigin, resolveApiUrl, toAbsoluteUrl } from "@/lib/endpoints";
 import { logger } from "@/lib/logger";
 import { withCircuitBreaker } from "@/lib/circuitBreaker";
+import { CircuitBreakerError } from "@/lib/errors/CircuitBreakerError";
 import { logApiCall } from "@/hooks/useExecutionLogger";
 import type { ApiResponse, ApiError, ApiMethod, ApiCallMeta, ErrorDiagnosticContext } from './types';
 import { isEnvelope, parseEnvelope, looksLikeJson } from './envelope';
@@ -208,7 +209,7 @@ export async function request<T>(
     return await withCircuitBreaker(circuitKey, () => fetchRequest<T>(endpoint, options));
   } catch (error: unknown) {
     // If circuit breaker blocked the call, return a user-friendly error
-    if (error instanceof Error && (error as unknown as { code?: string }).code === 'E_CIRCUIT_OPEN') {
+    if (error instanceof CircuitBreakerError) {
       logger.warn(`Circuit breaker open for ${endpoint}, request blocked`);
       return {
         success: false,

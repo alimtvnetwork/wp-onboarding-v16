@@ -9,6 +9,7 @@
  */
 
 import { logger } from './logger';
+import { CircuitBreakerError } from './errors/CircuitBreakerError';
 
 export interface CircuitBreakerConfig {
   /** Number of failures before circuit opens. Default: 5 */
@@ -255,9 +256,7 @@ export async function withCircuitBreaker<T>(
 ): Promise<T> {
   // Check if we can execute
   if (!circuitBreaker.canExecute(functionKey)) {
-    const error = new Error(`Circuit breaker open for ${functionKey}`);
-    (error as unknown as { code: string }).code = 'E_CIRCUIT_OPEN';
-    throw error;
+    throw new CircuitBreakerError(functionKey);
   }
 
   try {
