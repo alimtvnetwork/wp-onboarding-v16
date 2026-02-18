@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait CleanerRetentionTrait {
 
@@ -29,7 +30,8 @@ trait CleanerRetentionTrait {
     }
 
     private function resolveRetentionSnapshots(array $settings): array {
-        if ($settings['retention_type'] === RetentionType::Days->value && !empty($settings['retention_days'])) {
+        $isDaysRetention = ($settings['retention_type'] === RetentionType::Days->value && BooleanHelpers::hasValue($settings['retention_days']));
+        if ($isDaysRetention) {
 
             return array(
                 'snapshots' => $this->getSnapshotsOlderThan((int) $settings['retention_days']),
@@ -37,7 +39,8 @@ trait CleanerRetentionTrait {
             );
         }
 
-        if ($settings['retention_type'] === RetentionType::Count->value && !empty($settings['retention_count'])) {
+        $isCountRetention = ($settings['retention_type'] === RetentionType::Count->value && BooleanHelpers::hasValue($settings['retention_count']));
+        if ($isCountRetention) {
 
             return array(
                 'snapshots' => $this->getSnapshotsBeyondCount((int) $settings['retention_count']),

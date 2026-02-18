@@ -149,7 +149,8 @@ trait ErrorSessionHandlerTrait {
 
     /** Parse a single stack trace line into a frame. */
     private function parseTraceFrame(string $line): ?array {
-        if (empty($line) || !preg_match('/^#\d+\s+(.+?)\((\d+)\):\s*(.*)$/', $line, $m)) {
+        $isLineUnparseable = (BooleanHelpers::isValueEmpty($line) || preg_match('/^#\d+\s+(.+?)\((\d+)\):\s*(.*)$/', $line, $m) === 0);
+        if ($isLineUnparseable) {
             return null;
         }
 

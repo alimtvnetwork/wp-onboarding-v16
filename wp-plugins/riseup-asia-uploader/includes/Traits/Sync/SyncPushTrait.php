@@ -37,7 +37,8 @@ trait SyncPushTrait
         if (empty($slug)) {
             return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
-        if (empty($files) || !is_array($files)) {
+        $isFilesInvalid = (BooleanHelpers::isValueEmpty($files) || is_array($files) === false);
+        if ($isFilesInvalid) {
             return $this->errorResponse('Files array is required', HttpStatusType::BadRequest->value);
         }
 

@@ -31,7 +31,8 @@ trait IncrementalCoreTrait {
         $master_dir = dirname($rootPath);
         $incremental_dir = $master_dir . '/incremental/' . $folder_name;
 
-        if (!PathHelper::makeDirectory($incremental_dir, true)) {
+        $isDirCreationFailed = (PathHelper::makeDirectory($incremental_dir, true) === false);
+        if ($isDirCreationFailed) {
             $rootPdo = null;
 
             return array('success' => false, 'error' => 'Failed to create incremental directory: ' . $folder_name);

@@ -44,7 +44,8 @@ class SnapshotImport {
         ));
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
-        if (!PathHelper::makeDirectory($tempDir, false)) {
+        $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
+        if ($isDirCreationFailed) {
             return $this->fail('Failed to create temp directory');
         }
 
@@ -52,7 +53,9 @@ class SnapshotImport {
     }
 
     private function guardImportFile(string $path): ?array {
-        if (!PathHelper::fileExists($path)) { return $this->fail('Uploaded file not found'); }
+        if (PathHelper::isFileMissing($path)) {
+            return $this->fail('Uploaded file not found');
+        }
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         if ($ext !== 'zip') { return $this->fail('Invalid file type. Expected ZIP file.'); }
 

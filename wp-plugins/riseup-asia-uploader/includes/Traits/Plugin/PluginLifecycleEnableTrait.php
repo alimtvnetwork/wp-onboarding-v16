@@ -56,7 +56,8 @@ trait PluginLifecycleEnableTrait {
             return $resolved;
         }
 
-        if (!is_plugin_active($resolved['plugin_file'])) {
+        $isPluginInactive = (is_plugin_active($resolved['plugin_file']) === false);
+        if ($isPluginInactive) {
             return $this->buildAlreadyInactiveResponse($resolved['slug']);
         }
 

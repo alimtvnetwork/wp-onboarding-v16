@@ -63,7 +63,7 @@ trait RootDbRegistrationTrait {
 
     /** Read metadata from an existing a-root.db. */
     public function readMetadata(string $filepath): ?array {
-        if (!PathHelper::fileExists($filepath)) {
+        if (PathHelper::isFileMissing($filepath)) {
             return null;
         }
 
