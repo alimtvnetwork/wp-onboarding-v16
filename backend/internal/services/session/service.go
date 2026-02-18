@@ -119,7 +119,10 @@ func New(cfg Config) (*Service, error) {
 		retentionDays = 7
 	}
 
-	sessionsDir := pathutil.MustJoin(cfg.DataDir, "sessions")
+	sessionsDir, err := pathutil.Join(cfg.DataDir, "sessions")
+	if err != nil {
+		return nil, fmt.Errorf("resolve sessions directory: %w", err)
+	}
 
 	// Ensure sessions directory exists
 	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
@@ -141,28 +144,44 @@ func New(cfg Config) (*Service, error) {
 }
 
 // getSessionDir returns the directory path for a session
-func (s *Service) getSessionDir(sessionID string) string {
-	return pathutil.MustJoin(s.sessionsDir, sessionID)
+func (s *Service) getSessionDir(sessionID string) (string, error) {
+	return pathutil.Join(s.sessionsDir, sessionID)
 }
 
 // getLogPath returns the file path for a session's main log
-func (s *Service) getLogPath(sessionID string) string {
-	return pathutil.MustJoin(s.getSessionDir(sessionID), "session.log")
+func (s *Service) getLogPath(sessionID string) (string, error) {
+	dir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return "", err
+	}
+	return pathutil.Join(dir, "session.log")
 }
 
 // getRequestPath returns the file path for request.json
-func (s *Service) getRequestPath(sessionID string) string {
-	return pathutil.MustJoin(s.getSessionDir(sessionID), "request.json")
+func (s *Service) getRequestPath(sessionID string) (string, error) {
+	dir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return "", err
+	}
+	return pathutil.Join(dir, "request.json")
 }
 
 // getResponsePath returns the file path for response.json
-func (s *Service) getResponsePath(sessionID string) string {
-	return pathutil.MustJoin(s.getSessionDir(sessionID), "response.json")
+func (s *Service) getResponsePath(sessionID string) (string, error) {
+	dir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return "", err
+	}
+	return pathutil.Join(dir, "response.json")
 }
 
 // getErrorLogPath returns the file path for error.log
-func (s *Service) getErrorLogPath(sessionID string) string {
-	return pathutil.MustJoin(s.getSessionDir(sessionID), "error.log")
+func (s *Service) getErrorLogPath(sessionID string) (string, error) {
+	dir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return "", err
+	}
+	return pathutil.Join(dir, "error.log")
 }
 
 // StartSession creates a new session directory and returns its ID
@@ -182,13 +201,19 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 	}
 
 	// Create session directory
-	sessionDir := s.getSessionDir(sessionID)
+	sessionDir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return "", fmt.Errorf("resolve session directory: %w", err)
+	}
 	if err := os.MkdirAll(sessionDir, 0755); err != nil {
 		return "", fmt.Errorf("create session directory: %w", err)
 	}
 
 	// Create session.log file
-	logPath := s.getLogPath(sessionID)
+	logPath, err := s.getLogPath(sessionID)
+	if err != nil {
+		return "", fmt.Errorf("resolve session log path: %w", err)
+	}
 	file, err := os.Create(logPath)
 	if err != nil {
 		return "", fmt.Errorf("create session log file: %w", err)
@@ -364,7 +389,13 @@ func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
 		}
 		return
 	}
-	path := s.getRequestPath(sessionID)
+	path, err := s.getRequestPath(sessionID)
+	if err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to resolve request path", "sessionId", sessionID, "error", err)
+		}
+		return
+	}
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		if s.log != nil {
 			s.log.Error("Failed to write request.json", "sessionId", sessionID, "error", err)
@@ -384,7 +415,13 @@ func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
 		}
 		return
 	}
-	path := s.getResponsePath(sessionID)
+	path, err := s.getResponsePath(sessionID)
+	if err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to resolve response path", "sessionId", sessionID, "error", err)
+		}
+		return
+	}
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		if s.log != nil {
 			s.log.Error("Failed to write response.json", "sessionId", sessionID, "error", err)
@@ -416,7 +453,13 @@ func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, err
 		}
 		return
 	}
-	path := s.getErrorLogPath(sessionID)
+	path, err := s.getErrorLogPath(sessionID)
+	if err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to resolve error log path", "sessionId", sessionID, "error", err)
+		}
+		return
+	}
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		if s.log != nil {
 			s.log.Error("Failed to write error.log", "sessionId", sessionID, "error", err)
@@ -440,12 +483,18 @@ func (s *Service) GetSession(sessionID string) (*Session, error) {
 
 // GetSessionLogs returns the full log content for a session
 func (s *Service) GetSessionLogs(sessionID string) (string, error) {
-	logPath := s.getLogPath(sessionID)
+	logPath, err := s.getLogPath(sessionID)
+	if err != nil {
+		return "", fmt.Errorf("resolve session log path: %w", err)
+	}
 	data, err := os.ReadFile(logPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Fallback: check for legacy flat file
-			legacyPath := pathutil.MustJoin(s.sessionsDir, sessionID+".log")
+			legacyPath, legacyErr := pathutil.Join(s.sessionsDir, sessionID+".log")
+			if legacyErr != nil {
+				return "", fmt.Errorf("session not found: %s", sessionID)
+			}
 			data, err = os.ReadFile(legacyPath)
 			if err != nil {
 				return "", fmt.Errorf("session not found: %s", sessionID)
@@ -462,23 +511,28 @@ func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, 
 	diag := &SessionDiagnostics{}
 
 	// Read request.json
-	if data, err := os.ReadFile(s.getRequestPath(sessionID)); err == nil {
-		var req SessionRequest
-		if json.Unmarshal(data, &req) == nil {
-			diag.Request = &req
+	if reqPath, err := s.getRequestPath(sessionID); err == nil {
+		if data, err := os.ReadFile(reqPath); err == nil {
+			var req SessionRequest
+			if json.Unmarshal(data, &req) == nil {
+				diag.Request = &req
+			}
 		}
 	}
 
 	// Read response.json
-	if data, err := os.ReadFile(s.getResponsePath(sessionID)); err == nil {
-		var resp SessionResponse
-		if json.Unmarshal(data, &resp) == nil {
-			diag.Response = &resp
+	if respPath, err := s.getResponsePath(sessionID); err == nil {
+		if data, err := os.ReadFile(respPath); err == nil {
+			var resp SessionResponse
+			if json.Unmarshal(data, &resp) == nil {
+				diag.Response = &resp
+			}
 		}
 	}
 
 	// Read error.log for stack traces
-	if data, err := os.ReadFile(s.getErrorLogPath(sessionID)); err == nil {
+	if errPath, err := s.getErrorLogPath(sessionID); err == nil {
+		if data, err := os.ReadFile(errPath); err == nil {
 		var errorData ErrorLogData
 		if json.Unmarshal(data, &errorData) == nil {
 			if errorData.StackTrace != nil {
@@ -639,7 +693,10 @@ func (s *Service) DeleteSession(sessionID string) error {
 	s.mu.Unlock()
 
 	// Try removing directory first (new format)
-	sessionDir := s.getSessionDir(sessionID)
+	sessionDir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return fmt.Errorf("resolve session directory: %w", err)
+	}
 	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
 		if err := os.RemoveAll(sessionDir); err != nil {
 			return fmt.Errorf("delete session directory: %w", err)
@@ -648,7 +705,10 @@ func (s *Service) DeleteSession(sessionID string) error {
 	}
 
 	// Fallback: try removing legacy flat file
-	legacyPath := pathutil.MustJoin(s.sessionsDir, sessionID+".log")
+	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
+	if err != nil {
+		return fmt.Errorf("resolve legacy session path: %w", err)
+	}
 	if err := os.Remove(legacyPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("delete session log: %w", err)
 	}
@@ -658,7 +718,10 @@ func (s *Service) DeleteSession(sessionID string) error {
 // loadSessionFromDisk attempts to load session info from disk
 func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	// Check for folder-based session
-	sessionDir := s.getSessionDir(sessionID)
+	sessionDir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("resolve session directory: %w", err)
+	}
 	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
 		return &Session{
 			ID:        sessionID,
@@ -668,7 +731,10 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	}
 
 	// Fallback: check for legacy flat file
-	legacyPath := pathutil.MustJoin(s.sessionsDir, sessionID+".log")
+	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
+	if err != nil {
+		return nil, fmt.Errorf("resolve legacy session path: %w", err)
+	}
 	info, err := os.Stat(legacyPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -709,7 +775,10 @@ func (s *Service) cleanupOldSessions() {
 			continue
 		}
 		if info.ModTime().Before(cutoff) {
-			fullPath := pathutil.MustJoin(s.sessionsDir, entry.Name())
+			fullPath, err := pathutil.Join(s.sessionsDir, entry.Name())
+			if err != nil {
+				continue
+			}
 			if entry.IsDir() {
 				os.RemoveAll(fullPath)
 			} else {
@@ -742,7 +811,10 @@ func (s *Service) ClearAllSessions() error {
 
 	var removeErrors []error
 	for _, entry := range entries {
-		fullPath := pathutil.MustJoin(s.sessionsDir, entry.Name())
+		fullPath, err := pathutil.Join(s.sessionsDir, entry.Name())
+		if err != nil {
+			continue
+		}
 		var err error
 		if entry.IsDir() {
 			err = os.RemoveAll(fullPath)

@@ -207,16 +207,22 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 
 // FindUploadScript looks for upload-plugin.ps1 in common locations.
 func FindUploadScript(backendDir string) string {
-	candidates := []string{
-		pathutil.MustJoin(backendDir, "scripts", "upload-plugin.ps1"),
-		pathutil.MustJoin(backendDir, "upload-plugin.ps1"),
-		"scripts/upload-plugin.ps1",
-		"upload-plugin.ps1",
+	// Build candidates, skipping paths that fail resolution
+	var candidates []string
+	if p, err := pathutil.Join(backendDir, "scripts", "upload-plugin.ps1"); err == nil {
+		candidates = append(candidates, p)
 	}
+	if p, err := pathutil.Join(backendDir, "upload-plugin.ps1"); err == nil {
+		candidates = append(candidates, p)
+	}
+	candidates = append(candidates, "scripts/upload-plugin.ps1", "upload-plugin.ps1")
 
 	for _, path := range candidates {
 		if _, err := os.Stat(path); err == nil {
-			absPath := pathutil.MustAbsolute(path)
+			absPath, err := pathutil.ToAbsolute(path)
+			if err != nil {
+				return path // Return unresolved if absolute fails
+			}
 			return absPath
 		}
 	}

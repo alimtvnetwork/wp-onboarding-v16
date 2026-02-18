@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -55,7 +56,11 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pluginPath := pluginData.Path
-	filePath := pathutil.MustJoin(pluginPath, req.Path)
+	filePath, err := pathutil.Join(pluginPath, req.Path)
+	if err != nil {
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrInternal, "failed to resolve file path: "+err.Error())
+		return
+	}
 
 	content, err := readFileContent(filePath)
 	if err != nil {
