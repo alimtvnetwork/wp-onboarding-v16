@@ -42,6 +42,9 @@ class SnapshotWorker {
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
+        if (self::$instance === null) {
+            throw new \LogicException('SnapshotWorker::getInstance() called before initialization.');
+        }
         return self::$instance;
     }
 

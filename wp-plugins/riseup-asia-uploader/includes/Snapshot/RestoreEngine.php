@@ -52,7 +52,9 @@ class RestoreEngine {
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $orchestrator);
         }
-
+        if (self::$instance === null) {
+            throw new \LogicException('RestoreEngine::getInstance() called before initialization.');
+        }
         return self::$instance;
     }
 
