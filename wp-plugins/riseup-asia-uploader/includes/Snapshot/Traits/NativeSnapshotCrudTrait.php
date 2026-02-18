@@ -23,13 +23,15 @@ trait NativeSnapshotCrudTrait {
 
     public function deleteSnapshot(int $snapshotId): array {
         $snapshot = $this->getSnapshot($snapshotId);
-        if (!$snapshot) {
+        $isSnapshotMissing = ($snapshot === null);
+        if ($isSnapshotMissing) {
             return array('success' => false, 'error' => 'Snapshot not found');
         }
 
         $filepath = $snapshot['filepath'];
         if (PathHelper::fileExists($filepath)) {
-            if (!PathHelper::deleteFile($filepath)) {
+            $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
+            if ($isDeleteFailed) {
                 $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
 
                 return array('success' => false, 'error' => 'Failed to delete snapshot file');
@@ -49,12 +51,13 @@ trait NativeSnapshotCrudTrait {
 
     public function exportSnapshot(int $snapshotId): array {
         $snapshot = $this->getSnapshot($snapshotId);
-        if (!$snapshot) {
+        $isSnapshotMissing = ($snapshot === null);
+        if ($isSnapshotMissing) {
             return array('success' => false, 'error' => 'Snapshot not found');
         }
 
         $filepath = $snapshot['filepath'];
-        if (!PathHelper::fileExists($filepath)) {
+        if (PathHelper::isFileMissing($filepath)) {
             return array('success' => false, 'error' => 'Snapshot file not found');
         }
 

@@ -83,7 +83,8 @@ trait UpdateResolverUrlTrait {
             return new WP_Error('no_master_url', 'No master update URL configured');
         }
 
-        if (!$forceResolve && $this->isCacheValid($settings)) {
+        $isCacheUsable = ($forceResolve === false && $this->isCacheValid($settings));
+        if ($isCacheUsable) {
             $this->fileLogger->debug('Using cached resolved URL', array('url' => $settings['resolved_url']));
             return $settings['resolved_url'];
         }

@@ -44,7 +44,8 @@ trait LifecycleHooksTrait
      * Handle WordPress core deleted_plugin hook.
      */
     public function onPluginDeleted(string $plugin, bool $isDeleted = true): void {
-        if (!$isDeleted) {
+        $isDeletionSkipped = ($isDeleted === false);
+        if ($isDeletionSkipped) {
             return;
         }
 

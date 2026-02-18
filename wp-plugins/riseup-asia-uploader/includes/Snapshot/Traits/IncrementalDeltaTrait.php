@@ -75,7 +75,8 @@ trait IncrementalDeltaTrait {
         array $info,
     ): int {
         $sqliteFile = $this->findMasterSqliteFile($rootPdo, $tableName);
-        if (!$sqliteFile) {
+        $isSqliteFileMissing = ($sqliteFile === null);
+        if ($isSqliteFileMissing) {
 
             return (int) $info['row_count'];
         }
@@ -143,7 +144,8 @@ trait IncrementalDeltaTrait {
         $stmt->execute(array($tableName));
         $filename = $stmt->fetchColumn();
 
-        if (!$filename) {
+        $isFilenameAbsent = ($filename === false || $filename === null);
+        if ($isFilenameAbsent) {
             return null;
         }
 

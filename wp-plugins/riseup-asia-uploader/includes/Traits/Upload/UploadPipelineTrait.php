@@ -80,7 +80,8 @@ trait UploadPipelineTrait
     }
 
     private function logUploadResult(array $result, array $input): void {
-        if (!$result['is_self_update']) {
+        $isExternalUpload = ($result['is_self_update'] === false);
+        if ($isExternalUpload) {
             $this->logger->logUpload($result['slug'], array(
                 'is_update' => $result['is_update'], 'activated' => $result['activated'],
                 'file_size' => strlen($input['zip_content']), 'plugin_version' => $result['plugin_version'],

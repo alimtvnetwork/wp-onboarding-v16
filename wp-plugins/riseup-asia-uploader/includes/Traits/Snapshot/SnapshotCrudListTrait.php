@@ -47,12 +47,14 @@ trait SnapshotCrudListTrait {
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $provider = $manager->getProvider();
-            if (!$provider) {
+            $isProviderMissing = ($provider === null);
+            if ($isProviderMissing) {
                 return $this->errorResponse('No snapshot provider available', 500);
             }
 
             $snapshot = $provider->getSnapshot($id);
-            if (!$snapshot) {
+            $isSnapshotMissing = ($snapshot === null);
+            if ($isSnapshotMissing) {
                 return $this->errorResponse('Snapshot not found', 404);
             }
 

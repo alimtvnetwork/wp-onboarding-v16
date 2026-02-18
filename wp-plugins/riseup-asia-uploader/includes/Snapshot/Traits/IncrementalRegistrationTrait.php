@@ -36,7 +36,8 @@ trait IncrementalRegistrationTrait {
         string $incrementalDir,
     ): int|false {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return false;
         }
 
@@ -115,7 +116,8 @@ trait IncrementalRegistrationTrait {
     private function invalidateParentZipExport(string $masterDir): void {
         try {
             $parent = $this->findParentSnapshot($masterDir);
-            if (!$parent) {
+            $isParentMissing = ($parent === null);
+            if ($isParentMissing) {
                 return;
             }
 
@@ -127,7 +129,8 @@ trait IncrementalRegistrationTrait {
 
     private function findParentSnapshot(string $masterDir): ?array {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return null;
         }
 
@@ -135,7 +138,8 @@ trait IncrementalRegistrationTrait {
         $stmt->execute(array($masterDir, SnapshotStatusType::Complete->value));
         $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$parent) {
+        $isParentMissing = ($parent === false || $parent === null);
+        if ($isParentMissing) {
             $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($masterDir)));
 
             return null;
@@ -146,7 +150,8 @@ trait IncrementalRegistrationTrait {
 
     private function doInvalidateZip(array $parent, string $masterDir): void {
         $exporter = SnapshotExporter::getInstance($this->logger, $this->db);
-        if (!$exporter) {
+        $isExporterMissing = ($exporter === null);
+        if ($isExporterMissing) {
             return;
         }
 
