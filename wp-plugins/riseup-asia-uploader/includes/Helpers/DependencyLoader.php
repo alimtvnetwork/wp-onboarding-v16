@@ -55,7 +55,8 @@ class DependencyLoader {
     public static function loadManifest(array $manifest): int {
         $failures = 0;
         foreach ($manifest as $entry) {
-            if (!self::load($entry[0], $entry[1])) {
+            $isLoadFailed = (self::load($entry[0], $entry[1]) === false);
+            if ($isLoadFailed) {
                 $failures++;
             }
         }
@@ -67,7 +68,7 @@ class DependencyLoader {
 
     public static function getFailures(): array {
         return array_filter(self::$results, function (array $r): bool {
-            return !$r['success'];
+            return BooleanHelpers::isResultFailed($r);
         });
     }
 
