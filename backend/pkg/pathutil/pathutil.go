@@ -40,15 +40,6 @@ func ToAbsolute(path string) (string, error) {
 	return abs, nil
 }
 
-// MustAbsolute is like ToAbsolute but panics on error. Use only when path is guaranteed valid.
-func MustAbsolute(path string) string {
-	abs, err := ToAbsolute(path)
-	if err != nil {
-		panic("pathutil: invalid path: " + err.Error())
-	}
-	return abs
-}
-
 // Join joins path elements and returns an absolute path.
 // This should be used instead of filepath.Join when the result will be passed to external systems.
 func Join(elem ...string) (string, error) {
@@ -57,15 +48,6 @@ func Join(elem ...string) (string, error) {
 	}
 	joined := filepath.Join(elem...)
 	return ToAbsolute(joined)
-}
-
-// MustJoin is like Join but panics on error.
-func MustJoin(elem ...string) string {
-	abs, err := Join(elem...)
-	if err != nil {
-		panic("pathutil: invalid join: " + err.Error())
-	}
-	return abs
 }
 
 // ensureWindowsLongPath adds the long path prefix if needed on Windows.
