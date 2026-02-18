@@ -26,7 +26,10 @@ class SnapshotScheduler {
     private static ?SnapshotScheduler $instance = null;
 
     public static function getInstance(?FileLogger $logger = null, ?Database $db = null): static {
-        if (self::$instance === null) { self::$instance = new self($logger, $db); }
+        $isReadyToInit = self::$instance === null && $logger !== null && $db !== null;
+        if ($isReadyToInit) {
+            self::$instance = new self($logger, $db);
+        }
         return self::$instance;
     }
 

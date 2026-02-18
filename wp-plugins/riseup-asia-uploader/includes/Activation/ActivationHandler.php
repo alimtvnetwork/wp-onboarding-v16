@@ -46,17 +46,7 @@ class ActivationHandler
     }
 
     private static function loadDependencies(): void {
-        $pluginDir = dirname(__DIR__, 2);
-
-        $constantsFile = $pluginDir . '/includes/constants.php';
-        if (file_exists($constantsFile)) {
-            require_once $constantsFile;
-        }
-
-        $helpersFile = $pluginDir . '/includes/Helpers/BooleanHelpers.php';
-        if (file_exists($helpersFile)) {
-            require_once $helpersFile;
-        }
+        // PSR-4 autoloader handles all class loading — no manual requires needed.
     }
 
     /**
