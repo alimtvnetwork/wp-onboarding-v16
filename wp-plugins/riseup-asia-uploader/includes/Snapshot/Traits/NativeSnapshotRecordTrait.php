@@ -33,7 +33,8 @@ trait NativeSnapshotRecordTrait {
         }
 
         $parentDir = dirname($filepath);
-        if (!PathHelper::makeDirectory($parentDir, true)) {
+        $isDirCreationFailed = (PathHelper::makeDirectory($parentDir, true) === false);
+        if ($isDirCreationFailed) {
             $this->log(LogLevelType::Error->value, 'Failed to create parent directory for SQLite', array('parent' => $parentDir));
 
             return null;
