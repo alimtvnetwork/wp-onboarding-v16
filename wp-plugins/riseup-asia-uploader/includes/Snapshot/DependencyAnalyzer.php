@@ -32,8 +32,12 @@ class DependencyAnalyzer {
     private static ?self $instance = null;
 
     public static function getInstance(?FileLogger $logger = null): self {
-        if (self::$instance === null && $logger) {
+        $isReadyToInit = self::$instance === null && $logger;
+        if ($isReadyToInit) {
             self::$instance = new self($logger);
+        }
+        if (self::$instance === null) {
+            throw new \LogicException('DependencyAnalyzer::getInstance() called before initialization.');
         }
         return self::$instance;
     }
