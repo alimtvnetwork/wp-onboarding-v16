@@ -38,6 +38,9 @@ class SnapshotOrchestrator {
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $manager);
         }
+        if (self::$instance === null) {
+            throw new \LogicException('SnapshotOrchestrator::getInstance() called before initialization.');
+        }
         return self::$instance;
     }
 
