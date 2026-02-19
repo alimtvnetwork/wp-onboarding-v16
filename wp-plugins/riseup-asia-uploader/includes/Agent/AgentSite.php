@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\AgentStatusType;
+
 final readonly class AgentSite {
 
     public function __construct(
@@ -49,7 +51,7 @@ final readonly class AgentSite {
             redirectUrl:        $row['redirect_url'] ?? null,
             redirectResolved:   $row['redirect_resolved'] ?? null,
             redirectResolvedAt: $row['redirect_resolved_at'] ?? null,
-            status:             $row['status'] ?? 'pending',
+            status:             $row['status'] ?? AgentStatusType::Pending->value,
             lastSync:           $row['last_sync'] ?? null,
             lastError:          $row['last_error'] ?? null,
             createdAt:          $row['created_at'],
