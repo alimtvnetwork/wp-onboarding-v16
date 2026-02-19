@@ -102,10 +102,10 @@
 2. ✅ Register `AgentAction` and `AgentHistory` in `registerAgentRoutes()`
 3. ✅ Fix `AgentsPlugins` handler mismatch (was mapped to `handleAgentAction`, corrected to `handleSyncAgent`)
 
-### Phase 3: Endpoint Parity (Medium Risk)
-1. Add `UploadActive` to PHP `EndpointType` + route registration (or remove from Go)
-2. Add `PluginInfo` to PHP `EndpointType` + route registration (or remove from Go)
-3. Fix snapshot settings HTTP method mismatch (PUT vs POST)
+### Phase 3: Endpoint Parity (Medium Risk) ✅ COMPLETED
+1. ✅ Added `UploadActive` to PHP `EndpointType` + route registration + `handleUploadActive` handler
+2. ✅ Added `PluginInfo` to PHP `EndpointType` + route registration + `handlePluginInfo` handler
+3. ✅ Fixed snapshot settings to accept both POST and PUT methods
 
 ### Phase 4: Endpoint Map Completeness (Low Priority)
 1. Add snapshot entries to Go `GoEndpointMap` and `WPEndpointMap`

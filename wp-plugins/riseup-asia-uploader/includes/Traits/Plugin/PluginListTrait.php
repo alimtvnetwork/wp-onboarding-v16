@@ -56,6 +56,51 @@ trait PluginListTrait
     }
 
     /**
+     * Handle plugin info — return details for a single plugin by slug.
+     *
+     * @param WP_REST_Request $request Request object (expects 'slug' in JSON body).
+     * @return WP_REST_Response
+     */
+    public function handlePluginInfo(WP_REST_Request $request): WP_REST_Response {
+        return $this->safeExecute(function() use ($request) {
+            $body = $request->get_json_params();
+            $slug = isset($body['slug']) ? sanitize_text_field($body['slug']) : '';
+            if (empty($slug)) {
+                return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
+            }
+
+            if (BooleanHelpers::isFuncMissing('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+
+            $all_plugins    = get_plugins();
+            $active_plugins = get_option(OptionNameType::ActivePlugins->value, array());
+
+            foreach ($all_plugins as $plugin_file => $plugin_data) {
+                $plugin_slug = dirname($plugin_file);
+                if ($plugin_slug === '.') {
+                    $plugin_slug = basename($plugin_file, '.php');
+                }
+                if ($plugin_slug === $slug) {
+                    return EnvelopeBuilder::success()
+                        ->autoDetectRequestedAt()
+                        ->setSingleResult(array(
+                            'slug'        => $plugin_slug,
+                            'name'        => $plugin_data['Name'],
+                            'version'     => $plugin_data['Version'],
+                            'author'      => $plugin_data['Author'],
+                            'description' => $plugin_data['Description'],
+                            'active'      => in_array($plugin_file, $active_plugins, true),
+                            'plugin_file' => $plugin_file,
+                        ))
+                        ->toResponse();
+                }
+            }
+
+            return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
+        }, 'plugin_info');
+    }
+
      * Collect all installed plugins into a normalized array.
      *
      * @return array Plugin list.

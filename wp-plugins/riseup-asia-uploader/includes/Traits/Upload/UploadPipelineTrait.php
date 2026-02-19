@@ -37,6 +37,18 @@ trait UploadPipelineTrait
         }
     }
 
+    /** Handle upload-active endpoint — upload and force-activate in one call. */
+    public function handleUploadActive(WP_REST_Request $request): WP_REST_Response {
+        $this->fileLogger->info('Upload-active endpoint called');
+        $request->set_param('activate', true);
+
+        try {
+            return $this->executeUploadPipeline($request);
+        } catch (Throwable $e) {
+            return ErrorResponse::logAndReturnEnvelope($this->fileLogger, $e, 'Upload-active failed: ' . $e->getMessage());
+        }
+    }
+
     private function executeUploadPipeline(WP_REST_Request $request): WP_REST_Response {
         $input = $this->parseUploadInput($request);
         if ($input instanceof WP_REST_Response) {
