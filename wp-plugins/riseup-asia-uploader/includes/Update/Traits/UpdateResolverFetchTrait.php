@@ -119,6 +119,7 @@ trait UpdateResolverFetchTrait {
 
         return array(
             'version' => $data['version'] ?? '', 'package' => $data['package'] ?? '',
+            'sha256' => $data['sha256'] ?? '',
             'tested' => $data['tested'] ?? '', 'requires' => $data['requires'] ?? '',
             'requires_php' => $data['requires_php'] ?? '', 'changelog' => $data['changelog'] ?? '',
         );

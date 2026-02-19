@@ -13,12 +13,14 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Enums\UpdateConfigType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UpdateResolverUrlTrait {
 
-    public function resolveUrl(string $url, int $maxRedirects = 5): string|WP_Error {
+    public function resolveUrl(string $url, ?int $maxRedirects = null): string|WP_Error {
+        $maxRedirects ??= UpdateConfigType::MaxRedirects->value;
         $this->fileLogger->info('Resolving URL through redirects', array('url' => $url));
 
         $currentUrl = $url;

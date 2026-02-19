@@ -31,7 +31,11 @@ enum WpErrorCodeType: string
     case NoMasterUrl   = 'no_master_url';
     case Disabled      = 'disabled';
     case HttpError     = 'http_error';
-    case InternalError = 'internal_error';
+    case InternalError    = 'internal_error';
+    case FileNotFound     = 'file_not_found';
+    case ChecksumMismatch = 'checksum_mismatch';
+    case BackupFailed     = 'backup_failed';
+    case RollbackFailed   = 'rollback_failed';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool

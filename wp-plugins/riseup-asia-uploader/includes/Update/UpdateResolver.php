@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Update\Traits\UpdateResolverUrlTrait;
 use RiseupAsia\Update\Traits\UpdateResolverFetchTrait;
 use RiseupAsia\Update\Traits\UpdateResolverWpHooksTrait;
+use RiseupAsia\Update\Traits\UpdateResolverIntegrityTrait;
+use RiseupAsia\Update\Traits\UpdateResolverBackupTrait;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\UpdateConfigType;
@@ -27,11 +29,8 @@ class UpdateResolver {
     use UpdateResolverUrlTrait;
     use UpdateResolverFetchTrait;
     use UpdateResolverWpHooksTrait;
-
-    /** @deprecated Use OptionNameType::UpdateSettings->value */
-    const OPTION_NAME = 'riseup_update_settings'; // Kept for backward compat; internal code uses OptionNameType
-    /** @deprecated Use UpdateConfigType::CacheDaysDefault->value */
-    const DEFAULT_CACHE_DAYS = 7; // Kept for backward compat; internal code uses UpdateConfigType
+    use UpdateResolverIntegrityTrait;
+    use UpdateResolverBackupTrait;
 
     private FileLogger $fileLogger;
     private Database $db;
