@@ -117,7 +117,9 @@ trait PluginRouteRegistrationTrait {
             array('endpoint' => EndpointType::AgentsRemove,  'method' => HttpMethodType::Post, 'handler' => 'handleRemoveAgent'),
             array('endpoint' => EndpointType::AgentsTest,    'method' => HttpMethodType::Post, 'handler' => 'handleTestAgent'),
             array('endpoint' => EndpointType::AgentsSync,    'method' => HttpMethodType::Post, 'handler' => 'handleSyncAgent'),
-            array('endpoint' => EndpointType::AgentsPlugins, 'method' => HttpMethodType::Post, 'handler' => 'handleAgentAction'),
+            array('endpoint' => EndpointType::AgentsPlugins, 'method' => HttpMethodType::Post, 'handler' => 'handleSyncAgent'),
+            array('endpoint' => EndpointType::AgentAction,   'method' => HttpMethodType::Post, 'handler' => 'handleAgentAction'),
+            array('endpoint' => EndpointType::AgentHistory,  'method' => HttpMethodType::Get,  'handler' => 'handleAgentHistory'),
         );
 
         foreach ($agent_routes as $route) {

@@ -97,9 +97,10 @@
 2. Replace all hardcoded `$limit = 50` defaults with `PaginationConfigType::DefaultLimit->value`
 3. Replace hardcoded `$perPage = 50` in admin traits
 
-### Phase 2: Missing Route Registration (Medium Risk)
-1. Register `ErrorLogs` and `ErrorSessions` in `registerLogRoutes()`
-2. Register `AgentAction` and `AgentHistory` in `registerAgentRoutes()`
+### Phase 2: Missing Route Registration (Medium Risk) ✅ COMPLETED
+1. ✅ Register `ErrorLogs` and `ErrorSessions` in `registerLogRoutes()`
+2. ✅ Register `AgentAction` and `AgentHistory` in `registerAgentRoutes()`
+3. ✅ Fix `AgentsPlugins` handler mismatch (was mapped to `handleAgentAction`, corrected to `handleSyncAgent`)
 
 ### Phase 3: Endpoint Parity (Medium Risk)
 1. Add `UploadActive` to PHP `EndpointType` + route registration (or remove from Go)
