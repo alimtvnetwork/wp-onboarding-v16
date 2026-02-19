@@ -64,7 +64,7 @@ trait AgentLoggingTrait {
 
     public function getActionHistory(
         int $agentId,
-        int $limit = 50,
+        int $limit = 50, // PaginationConfigType::DefaultLimit (PHP constraint: no enum in defaults)
         int $offset = 0,
     ): array {
         try {

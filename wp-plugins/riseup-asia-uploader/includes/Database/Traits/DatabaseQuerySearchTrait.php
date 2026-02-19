@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -21,7 +22,7 @@ trait DatabaseQuerySearchTrait {
 
     public function queryTransactions(
         array $filters = array(),
-        int $limit = self::DEFAULT_LIMIT,
+        int $limit = 50, // PaginationConfigType::DefaultLimit (PHP constraint: no enum in defaults)
         int $offset = 0,
     ): array {
         $isDbUnready = ($this->isReady() === false);
@@ -31,7 +32,7 @@ trait DatabaseQuerySearchTrait {
             return array('total' => 0, 'logs' => array());
         }
 
-        $limit = min(max(1, $limit), self::MAX_LIMIT);
+        $limit = min(max(1, $limit), PaginationConfigType::MaxLimit->value);
         $offset = max(0, $offset);
 
         try {

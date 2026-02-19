@@ -34,11 +34,12 @@ class Database {
     use DatabaseMigrationsLateTrait;
     use DatabaseQueryTrait;
 
-    /** Default and max limits for queries */
-
-    /** Default and max limits for queries */
-    public const DEFAULT_LIMIT = 50;
-    public const MAX_LIMIT     = 1000;
+    /**
+     * @deprecated Use PaginationConfigType::DefaultLimit->value and PaginationConfigType::MaxLimit->value.
+     * Kept temporarily for backward compatibility with traits referencing self::DEFAULT_LIMIT / self::MAX_LIMIT.
+     */
+    public const DEFAULT_LIMIT = 50;  // canonical: PaginationConfigType::DefaultLimit
+    public const MAX_LIMIT     = 500; // canonical: PaginationConfigType::MaxLimit (was 1000, aligned to Go + enum)
 
     /** @var PDO|null */
     private $pdo = null;

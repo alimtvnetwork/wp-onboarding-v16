@@ -33,6 +33,7 @@ abstract class SnapshotProviderInterface {
     abstract public function exportSnapshot(int $snapshotId): array;
     abstract public function importSnapshot(string $filepath): array;
     abstract public function getSnapshot(int $snapshotId): ?array;
+    /** @param int $limit PaginationConfigType::DefaultLimit (PHP constraint: no enum in defaults) */
     abstract public function listSnapshots(int $limit = 50, int $offset = 0): array;
     abstract public function getAvailableTables(): array;
 }

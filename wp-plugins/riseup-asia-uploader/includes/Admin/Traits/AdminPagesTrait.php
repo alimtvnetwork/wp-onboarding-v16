@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
@@ -24,7 +25,7 @@ trait AdminPagesTrait {
     public function renderLogsPage() {
         $filters = $this->buildLogFilters();
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        $perPage = 50;
+        $perPage = PaginationConfigType::DefaultLimit->value;
         $offset = ($page - 1) * $perPage;
 
         $db = Database::getInstance();
