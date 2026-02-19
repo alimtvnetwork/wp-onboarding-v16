@@ -648,6 +648,54 @@ public function handleUpload(WP_REST_Request $request): WP_REST_Response {
 
 ---
 
+## Database Wrapper — `TypedQuery`
+
+All database queries SHOULD use the generic `TypedQuery` class. It wraps `PDO` and returns typed result envelopes with automatic stack traces.
+
+### Result Types
+
+| Class | Purpose | Key Methods |
+|-------|---------|-------------|
+| `DbResult<T>` | Single-row query | `isDefined()`, `isEmpty()`, `hasError()`, `isSafe()`, `value()`, `error()`, `stackTrace()` |
+| `DbResultSet<T>` | Multi-row query | `hasAny()`, `isEmpty()`, `count()`, `hasError()`, `isSafe()`, `items()`, `first()`, `error()`, `stackTrace()` |
+| `DbExecResult` | INSERT/UPDATE/DELETE | `isEmpty()`, `hasError()`, `isSafe()`, `affectedRows()`, `lastInsertId()`, `error()`, `stackTrace()` |
+
+### Usage
+
+```php
+$tq = new TypedQuery($pdo);
+
+// Single row — returns DbResult<PluginInfo>
+$result = $tq->queryOne(
+    'SELECT * FROM plugins WHERE id = :id',
+    [':id' => $id],
+    fn(array $row): PluginInfo => PluginInfo::fromRow($row),
+);
+
+if ($result->hasError()) { /* handle */ }
+if ($result->isEmpty()) { /* not found */ }
+$plugin = $result->value();
+
+// Multiple rows — returns DbResultSet<SiteInfo>
+$set = $tq->queryMany(
+    'SELECT * FROM sites ORDER BY name',
+    [],
+    fn(array $row): SiteInfo => SiteInfo::fromRow($row),
+);
+foreach ($set->items() as $site) { /* ... */ }
+
+// Exec — returns DbExecResult
+$res = $tq->exec('DELETE FROM plugins WHERE id = :id', [':id' => $id]);
+if ($res->hasError()) { /* handle */ }
+echo $res->affectedRows();
+```
+
+### Mapper Closures
+
+Callers provide a `Closure(array): T` mapper for type-safe row mapping (equivalent to Go's scanner functions). Use static `fromRow()` factory methods on domain models for consistency.
+
+---
+
 ## Cross-References
 
 - [WordPress Plugin Development Spec](../07-wordpress-plugin-development/) — Full 10-document guide
