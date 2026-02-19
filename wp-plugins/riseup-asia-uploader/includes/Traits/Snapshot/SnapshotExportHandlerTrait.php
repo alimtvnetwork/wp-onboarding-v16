@@ -17,7 +17,9 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
@@ -34,8 +36,8 @@ trait SnapshotExportHandlerTrait {
             $this->fileLogger->info('Exporting snapshot', array('id' => $id));
 
             $this->logger->logPluginAction(
-                ActionType::SnapshotExport->value, 'snapshot', StatusType::Success->value,
-                array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
+                ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
+                array('snapshot_id' => $id, 'trigger' => SnapshotTriggerType::Api->value, 'phase' => 'initiated')
             );
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -44,7 +46,7 @@ trait SnapshotExportHandlerTrait {
 
             if ($isExportFailed) {
                 $this->logger->logPluginAction(
-                    ActionType::SnapshotExport->value, 'snapshot', StatusType::Failed->value,
+                    ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Failed->value,
                     array('snapshot_id' => $id),
                     $result['error'] ?? 'Export failed'
                 );
@@ -55,7 +57,7 @@ trait SnapshotExportHandlerTrait {
             $filepath = $result['filepath'];
             if (PathHelper::isFileMissing($filepath)) {
                 $this->logger->logPluginAction(
-                    ActionType::SnapshotExport->value, 'snapshot', StatusType::Failed->value,
+                    ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Failed->value,
                     array('snapshot_id' => $id),
                     'Export file not found'
                 );
@@ -64,7 +66,7 @@ trait SnapshotExportHandlerTrait {
             }
 
             $this->logger->logPluginAction(
-                ActionType::SnapshotExport->value, 'snapshot', StatusType::Success->value,
+                ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
                 array('snapshot_id' => $id, 'filename' => $result['filename'], 'size' => $result['size'])
             );
 
@@ -94,7 +96,7 @@ trait SnapshotExportHandlerTrait {
         $this->fileLogger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
 
         $this->logger->logPluginAction(
-            ActionType::SnapshotZipDownload->value, 'snapshot', StatusType::Success->value,
+            ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
             array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
         );
 
@@ -104,7 +106,7 @@ trait SnapshotExportHandlerTrait {
 
         if ($isDownloadFailed) {
             $this->logger->logPluginAction(
-                ActionType::SnapshotZipDownload->value, 'snapshot', StatusType::Failed->value,
+                ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Failed->value,
                 array('snapshot_id' => $snapshotId),
                 $result['error'] ?? 'Download failed'
             );
@@ -116,7 +118,7 @@ trait SnapshotExportHandlerTrait {
         $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
 
         $this->logger->logPluginAction(
-            ActionType::SnapshotZipDownload->value, 'snapshot', StatusType::Success->value,
+            ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
             array(
                 'snapshot_id' => $snapshotId,
                 'cached'      => $result['cached'] ?? false,

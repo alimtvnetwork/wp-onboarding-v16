@@ -59,6 +59,7 @@ enum ActionType: string
     case AgentPluginDisable = 'agent_plugin_disable';
     case AgentPluginDelete  = 'agent_plugin_delete';
     case AgentPluginUpdate  = 'agent_plugin_update';
+    case AgentApiError      = 'agent_api_error';
 
     // Snapshot actions
     case SnapshotCreate          = 'snapshot_create';

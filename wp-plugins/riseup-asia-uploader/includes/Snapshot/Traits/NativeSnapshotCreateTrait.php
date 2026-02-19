@@ -17,6 +17,7 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait NativeSnapshotCreateTrait {
@@ -39,7 +40,7 @@ trait NativeSnapshotCreateTrait {
             return $this->error(SnapshotErrorType::InvalidScope, 'Invalid snapshot scope: ' . $scope);
         }
 
-        $isTriggerInvalid = BooleanHelpers::isAbsentFromList($trigger, array('manual', 'scheduled', 'api'));
+        $isTriggerInvalid = BooleanHelpers::isAbsentFromList($trigger, array(SnapshotTriggerType::Manual->value, SnapshotTriggerType::Scheduled->value, SnapshotTriggerType::Api->value));
         if ($isTriggerInvalid) {
             return $this->error(SnapshotErrorType::InvalidTrigger, 'Invalid snapshot trigger: ' . $trigger);
         }

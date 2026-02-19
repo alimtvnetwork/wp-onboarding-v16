@@ -14,7 +14,9 @@ if (!defined('ABSPATH')) {
 
 use WP_Error;
 use RiseupAsia\Agent\AgentSite;
+use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -103,7 +105,7 @@ trait AgentRemoteCoreTrait {
 
     private function parseAgentResponse(array|WP_Error $response, int $agentId): array|WP_Error {
         if (is_wp_error($response)) {
-            $this->logAction($agentId, 'api_error', null, 'failed', null, $response->get_error_message());
+            $this->logAction($agentId, ActionType::AgentApiError->value, null, StatusType::Failed->value, null, $response->get_error_message());
 
             return $response;
         }

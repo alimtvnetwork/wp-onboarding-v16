@@ -23,7 +23,7 @@ trait AgentLoggingTrait {
         int $agentId,
         string $action,
         ?string $plugin = null,
-        string $status = 'success',
+        string $status = 'success', // StatusType::Success->value — PHP disallows enum in defaults
         ?array $details = null,
         ?string $errorMsg = null,
     ): int|false {
