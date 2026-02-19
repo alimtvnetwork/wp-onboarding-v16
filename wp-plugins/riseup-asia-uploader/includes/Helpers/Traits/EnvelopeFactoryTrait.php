@@ -14,10 +14,11 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use RiseupAsia\ErrorHandling\FrameBuilder;
+use RiseupAsia\Enums\HttpStatusType;
 
 trait EnvelopeFactoryTrait {
 
-    public static function success(string $message = 'OK', int $code = 200): static {
+    public static function success(string $message = 'OK', int $code = HttpStatusType::Ok->value): static {
         $builder = new self();
         $builder->is_success = true;
         $builder->code = $code;
@@ -28,7 +29,7 @@ trait EnvelopeFactoryTrait {
 
     public static function error(
         string $message,
-        int $code = 500,
+        int $code = HttpStatusType::ServerError->value,
         ?Throwable $exception = null,
     ): static {
         $builder = new self();

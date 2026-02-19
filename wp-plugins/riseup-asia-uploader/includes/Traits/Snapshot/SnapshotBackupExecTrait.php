@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
@@ -97,7 +98,7 @@ trait SnapshotBackupExecTrait {
             'total_rows' => $result['total_rows'] ?? 0, 'plugins' => $result['plugins'] ?? 0,
             'zip_size' => $result['zip_size'] ?? 0, 'duration' => $result['duration'] ?? 0,
             'errors' => $result['errors'] ?? array(), 'error' => $result['error'] ?? null, 'phase' => $result['phase'] ?? null,
-        ), $result['success'] ? 201 : 500);
+        ), $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 
     /** Resolve the master directory for an incremental backup. */
@@ -114,7 +115,7 @@ trait SnapshotBackupExecTrait {
         if ($isMasterDirInvalid) {
             return new WP_REST_Response(array(
                 'success' => false, 'error' => 'No master (full) snapshot found. Create a full backup first.',
-            ), 400);
+            ), HttpStatusType::BadRequest->value);
         }
 
         return $master_dir;
@@ -143,6 +144,6 @@ trait SnapshotBackupExecTrait {
             'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
             'tables' => $result['tables'] ?? array(), 'duration' => $result['duration'] ?? 0,
             'errors' => $result['errors'] ?? array(), 'error' => $result['error'] ?? null,
-        ), $result['success'] ? 201 : 500);
+        ), $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 }

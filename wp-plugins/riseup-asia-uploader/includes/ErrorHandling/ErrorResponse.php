@@ -11,6 +11,7 @@ namespace RiseupAsia\ErrorHandling;
 use Throwable;
 use WP_Error;
 use WP_REST_Response;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Logging\FileLogger;
 
@@ -56,7 +57,7 @@ class ErrorResponse {
         FileLogger $logger,
         Throwable $e,
         string $context = '',
-        int $status = 500,
+        int $status = HttpStatusType::ServerError->value,
     ): WP_REST_Response {
         $logger->logException($e, $context);
 
@@ -75,7 +76,7 @@ class ErrorResponse {
         Throwable $e,
         string $context = '',
         string $code = 'internal_error',
-        int $status = 500,
+        int $status = HttpStatusType::ServerError->value,
     ): WP_Error {
         $logger->logException($e, $context);
 
