@@ -277,6 +277,77 @@ if IsMissingSubstring(s, substr) { ... }
 
 ---
 
+## Database Wrapper — `pkg/dbutil`
+
+All database queries MUST use the generic `dbutil` package. It wraps `*sql.DB` in a `DB` struct and returns typed result envelopes with automatic `apperror` stack traces.
+
+### DB Struct
+
+```go
+// Create once, inject everywhere — no more passing *sql.DB on every call
+db := dbutil.New(sqlDB)
+```
+
+### Result Types
+
+| Type | Purpose | Key Methods |
+|------|---------|-------------|
+| `Result[T]` | Single-row query | `IsDefined()`, `IsEmpty()`, `HasError()`, `IsSafe()`, `Value()`, `Error()`, `StackTrace()` |
+| `ResultSet[T]` | Multi-row query | `HasAny()`, `IsEmpty()`, `Count()`, `HasError()`, `IsSafe()`, `Items()`, `Error()`, `StackTrace()` |
+| `ExecResult` | INSERT/UPDATE/DELETE | `IsEmpty()`, `HasError()`, `IsSafe()`, `AffectedRows`, `LastInsertID`, `Error()`, `StackTrace()` |
+
+### Generic Query Functions
+
+Go doesn't allow generic methods on structs, so these are package-level functions:
+
+```go
+// Single row — returns Result[T] (IsEmpty for sql.ErrNoRows, not an error)
+result := dbutil.QueryOne[Plugin](db, query, scanPlugin, pluginID)
+if result.HasError() {
+    return result.Error() // stack trace already captured
+}
+if result.IsEmpty() {
+    return apperror.New("E4004", "plugin not found")
+}
+plugin := result.Value()
+
+// Multiple rows — returns ResultSet[T]
+set := dbutil.QueryMany[Site](db, query, scanSite)
+if set.HasError() {
+    return set.Error()
+}
+for _, site := range set.Items() { ... }
+
+// Exec — returns ExecResult
+res := dbutil.Exec(db, query, args...)
+if res.HasError() {
+    return res.Error()
+}
+fmt.Println(res.AffectedRows)
+```
+
+### Scanner Functions
+
+Callers provide a scanner function for type-safe row mapping:
+
+```go
+// RowScanner[T] for QueryOne (scans *sql.Row)
+func scanPlugin(row *sql.Row) (Plugin, error) {
+    var p Plugin
+    err := row.Scan(&p.ID, &p.Name, &p.Slug)
+    return p, err
+}
+
+// RowsScanner[T] for QueryMany (scans *sql.Rows)
+func scanSite(rows *sql.Rows) (Site, error) {
+    var s Site
+    err := rows.Scan(&s.ID, &s.Name, &s.URL)
+    return s, err
+}
+```
+
+---
+
 ## Cross-References
 
 - [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
