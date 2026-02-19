@@ -28,28 +28,47 @@ Instead of hashing ZIP files, the system uses a **file manifest approach**:
 function generateManifestHash(pluginDir):
     files = recursiveScan(pluginDir)
     files = excludeIgnored(files)          // remove .git/, cache/, logs, etc.
-    files = sortAlphabetically(files)      // by relative path, case-sensitive
+    files = excludeSymlinks(files)         // skip all symbolic links
+    files = normalizeSlashes(files)        // convert \ to / (Windows compat)
+    files = sortAlphabetically(files)      // by relative path, case-sensitive ASCII
 
     fileHashes = []
     for file in files:
-        relativePath = removePrefix(file, pluginDir)
-        contentHash  = SHA-256(readBinary(file))
+        relativePath = removePrefix(file, pluginDir)  // e.g. "includes/Core/Boot.php"
+        contentHash  = lowercase(hex(SHA-256(readBinary(file))))
         fileHashes.append(relativePath + ":" + contentHash)
 
     // Concatenate all "path:hash" strings with newline separator
+    // NO trailing newline — join only places \n between items
     combined = join(fileHashes, "\n")
 
-    return SHA-256(combined)
+    return lowercase(hex(SHA-256(combined)))
 ```
 
 #### Detailed Steps
 
 1. **Recursive directory scan** — Traverse the plugin directory depth-first
 2. **Exclude ignored paths** — Skip files/dirs matching exclusion rules (see below)
-3. **Sort alphabetically** — All remaining file paths sorted case-sensitively (`A` < `a`) by their relative path from plugin root
-4. **Hash each file** — Read raw binary contents, compute `SHA-256(contents)` → hex string
-5. **Build hash string** — For each file: `"relative/path.php:a1b2c3d4..."`, join all with `\n`
-6. **Final hash** — `SHA-256(concatenated_string)` → this is the **manifest hash**
+3. **Skip symlinks** — Do not follow or hash symbolic links (security + determinism)
+4. **Normalize path separators** — All paths use forward slash `/` regardless of OS
+5. **Sort alphabetically** — Case-sensitive ASCII order (`A` 0x41 < `a` 0x61) by relative path
+6. **Hash each file** — Read raw binary contents, compute `SHA-256(contents)` → **lowercase hex** string (64 chars)
+7. **Build hash string** — For each file: `"relative/path.php:a1b2c3d4..."`, join with `\n` (**no trailing newline**)
+8. **Final hash** — `SHA-256(concatenated_string)` → **lowercase hex** → this is the **manifest hash**
+
+> **Empty directories are ignored** — only files contribute to the hash. This is intentional; directory-only changes don't affect plugin behavior.
+
+#### Normalization Rules (Critical for Cross-Platform Determinism)
+
+| Rule | Specification |
+|------|---------------|
+| **Path separator** | Always `/` — convert `\` to `/` before hashing |
+| **Hash case** | Always **lowercase hex** (`a1b2c3`, never `A1B2C3`) |
+| **Sort order** | Case-sensitive ASCII (`A` < `Z` < `a` < `z`) |
+| **Trailing newline** | **None** — `join()` places `\n` between items only |
+| **Symlinks** | **Skipped entirely** — not followed, not hashed |
+| **Empty dirs** | **Ignored** — only regular files are hashed |
+| **Encoding** | File contents read as raw bytes (no charset conversion) |
 
 #### Exclusion Rules
 
@@ -57,11 +76,12 @@ function generateManifestHash(pluginDir):
 |---------|--------|
 | `.git/` | Version control metadata |
 | `node_modules/` | JS dependencies (not shipped) |
-| `vendor/` | Composer dependencies (if autoloaded separately) |
 | `*.log` | Runtime logs |
 | `.DS_Store`, `Thumbs.db` | OS artifacts |
 | `cache/`, `tmp/` | Transient runtime files |
 | `.uploadignore` | Plugin-specific ignore file |
+
+> **`vendor/` is NOT excluded** — Composer dependencies shipped with the plugin MUST be included in the hash to prevent dependency-swapping attacks. Only exclude `vendor/` if dependencies are installed at runtime by the host, not bundled.
 
 > **Note:** The exclusion list is defined as a constant in the plugin config enum, making it auditable and deterministic.
 
@@ -101,13 +121,13 @@ build_fingerprint = SHA-256(manifest_hash_base + ":" + manifest_hash_pro)
 
 **Example:**
 ```
-manifest_hash_base = "3a7f2c...e91d"  (SHA-256, 64 chars)
-manifest_hash_pro  = "b4d8f1...a03c"  (SHA-256, 64 chars)
-input              = "3a7f2c...e91d:b4d8f1...a03c"
-build_fingerprint  = SHA-256(input) = "c9e2a7...f150"
+manifest_hash_base = "3a7f2ce4...e91d"  (lowercase hex, 64 chars)
+manifest_hash_pro  = "b4d8f19a...a03c"  (lowercase hex, 64 chars)
+input              = "3a7f2ce4...e91d:b4d8f19a...a03c"
+build_fingerprint  = SHA-256(input) = "c9e2a71b...f150"  (lowercase hex)
 ```
 
-The server stores the expected `build_fingerprint` for each version. The plugin computes it locally and compares.
+The server stores the expected `build_fingerprint` for each version. The plugin computes it locally and compares using **constant-time comparison** (`hash_equals()` in PHP) to prevent timing attacks.
 
 #### Why This Works
 
@@ -115,6 +135,7 @@ The server stores the expected `build_fingerprint` for each version. The plugin 
 - **Tamper-evident** — modifying, adding, or removing any file changes the manifest hash
 - **Version-locked** — base and pro must both be from the same build to produce the expected fingerprint
 - **No ZIP dependency** — avoids non-deterministic ZIP metadata issues
+- **Cross-platform safe** — explicit normalization rules eliminate OS-specific differences
 
 ### Step 2 — Remote License Validation
 
