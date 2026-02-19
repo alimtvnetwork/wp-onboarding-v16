@@ -112,5 +112,11 @@
 2. ✅ Added `UploadActive`, `PluginInfo`, `ErrorLogs`, `ErrorSessions` to both maps
 3. ✅ Audited Go snapshot proxy param translation — confirmed correct: Go router extracts `{snapshotId}` from URL path, service passes it as `int64` to WP client, which sends it in JSON body to PHP fixed endpoints. No translation bug found.
 
-### Phase 5: HTTP Status Code Enum Migration (Low Risk)
-1. Replace hardcoded status codes in ErrorResponse, EnvelopeFactoryTrait, SnapshotBackupExecTrait
+### Phase 5: HTTP Status Code Enum Migration (Low Risk) ✅ COMPLETED
+1. ✅ `ErrorResponse`: Replaced default `500` params with `HttpStatusType::ServerError->value` in `logAndReturnEnvelope` and `logAndReturnWpError`
+2. ✅ `EnvelopeFactoryTrait`: Replaced `200` and `500` defaults with `HttpStatusType::Ok->value` and `HttpStatusType::ServerError->value`
+3. ✅ `SnapshotBackupExecTrait`: Replaced `201`, `400`, `500` literals with `HttpStatusType::Created`, `BadRequest`, `ServerError`
+
+---
+
+## ✅ ALL PHASES COMPLETE
