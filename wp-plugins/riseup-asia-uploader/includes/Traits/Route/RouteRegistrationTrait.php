@@ -116,16 +116,30 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerLogRoutes(callable $safeRegister): void {
+        $logPerm = array($this, 'checkLogsPermission');
+
         $safeRegister(EndpointType::Logs->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleQueryLogs'),
-            'permission_callback' => $this->buildPermissionCallback('logs', array($this, 'checkLogsPermission')),
+            'permission_callback' => $this->buildPermissionCallback('logs', $logPerm),
         ));
 
         $safeRegister(EndpointType::LogsStats->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleLogsStats'),
-            'permission_callback' => $this->buildPermissionCallback('logs', array($this, 'checkLogsPermission')),
+            'permission_callback' => $this->buildPermissionCallback('logs', $logPerm),
+        ));
+
+        $safeRegister(EndpointType::ErrorLogs->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleErrorLogs'),
+            'permission_callback' => $this->buildPermissionCallback('error_logs', $logPerm),
+        ));
+
+        $safeRegister(EndpointType::ErrorSessions->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleErrorSessions'),
+            'permission_callback' => $this->buildPermissionCallback('error_sessions', $logPerm),
         ));
     }
 
