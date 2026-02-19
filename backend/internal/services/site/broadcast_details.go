@@ -205,3 +205,47 @@ type ExtractedErrorDetails struct {
 	RemotePHPStackTrace      string          `json:"remotePHPStackTrace,omitempty"`
 	RemotePHPStackTraceLines int             `json:"remotePHPStackTraceLines,omitempty"`
 }
+
+// --- Typed structs for error response parsing (replaces map[string]any in extractErrorDetails) ---
+
+// errorResponseEnvelope is the typed structure for parsing WordPress API error responses.
+// Covers both the modern Errors envelope and the legacy error.details format.
+type errorResponseEnvelope struct {
+	Errors      errorEnvelopeErrors `json:"Errors"`
+	ErrorLegacy errorLegacyBlock    `json:"error"`
+}
+
+// errorEnvelopeErrors holds the modern error envelope fields.
+type errorEnvelopeErrors struct {
+	BackendMessage             string          `json:"BackendMessage"`
+	DelegatedServiceErrorStack []string        `json:"DelegatedServiceErrorStack"`
+	Backend                    json.RawMessage `json:"Backend"`
+}
+
+// errorLegacyBlock holds the legacy "error" top-level object.
+type errorLegacyBlock struct {
+	Details errorLegacyDetails `json:"details"`
+}
+
+// errorLegacyDetails holds legacy error detail fields.
+type errorLegacyDetails struct {
+	StackTraceFrames []legacyStackFrame `json:"stackTraceFrames"`
+	FileFull         string             `json:"fileFull"`
+	Line             int                `json:"line"`
+}
+
+// legacyStackFrame is a single frame from the legacy PHP stack trace format.
+type legacyStackFrame struct {
+	Function string `json:"function"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Class    string `json:"class"`
+}
+
+// remoteActionLogContext holds typed fields extracted from log details JSON
+// for name resolution in logRemoteAction. Replaces map[string]any parsing.
+type remoteActionLogContext struct {
+	SiteName   string `json:"siteName"`
+	SiteURL    string `json:"siteUrl"`
+	PluginSlug string `json:"pluginSlug"`
+}

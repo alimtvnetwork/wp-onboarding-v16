@@ -289,7 +289,7 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 // GetFileChanges returns detected file changes for a plugin
 func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SyncService == nil {
-		respondSuccess(w, []any{})
+		respondSuccess(w, []struct{}{})
 		return
 	}
 

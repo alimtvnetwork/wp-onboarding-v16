@@ -1,7 +1,9 @@
 // Package session provides session-based logging for operations
 package session
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // ToJSON marshals a typed struct into json.RawMessage for use as log/error details.
 // This generic helper avoids map[string]any at call sites.
@@ -45,8 +47,8 @@ type ServiceInterface interface {
 	// DeleteSession removes a session's log file
 	DeleteSession(sessionID string) error
 
-	// SetMetadata sets metadata on a session
-	SetMetadata(sessionID, key string, value any)
+	// SetMetadata sets a key-value pair on a session's metadata JSON object
+	SetMetadata(sessionID, key string, value json.RawMessage)
 
 	// SaveRequest persists the inbound request as request.json
 	SaveRequest(sessionID string, req *SessionRequest)

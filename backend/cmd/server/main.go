@@ -476,25 +476,8 @@ func (a *E2EServiceAdapter) GetCases(ctx context.Context, suiteID string) ([]e2e
 	return a.svc.GetCases(ctx, suiteID)
 }
 
-func (a *E2EServiceAdapter) StartRun(ctx context.Context, opts any) (*e2e.TestRun, error) {
-	// Convert opts from map to RunOptions
-	runOpts := e2e.RunOptions{}
-	if m, ok := opts.(map[string]any); ok {
-		if suites, ok := m["suites"].([]any); ok {
-			for _, s := range suites {
-				if str, ok := s.(string); ok {
-					runOpts.Suites = append(runOpts.Suites, str)
-				}
-			}
-		}
-		if v, ok := m["stopOnFailure"].(bool); ok {
-			runOpts.StopOnFailure = v
-		}
-		if v, ok := m["parallel"].(bool); ok {
-			runOpts.Parallel = v
-		}
-	}
-	return a.svc.StartRun(ctx, runOpts)
+func (a *E2EServiceAdapter) StartRun(ctx context.Context, opts e2e.RunOptions) (*e2e.TestRun, error) {
+	return a.svc.StartRun(ctx, opts)
 }
 
 func (a *E2EServiceAdapter) AbortRun(ctx context.Context, runID string) error {

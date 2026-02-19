@@ -7,13 +7,54 @@ import (
 	"fmt"
 )
 
+// --- Typed request body structs (replaces map[string]any literals per GE-1) ---
+
+// pluginCreateBody is the request body for plugin creation.
+type pluginCreateBody struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	ForceCreate bool   `json:"forceCreate,omitempty"`
+}
+
+// pluginUpdateBody is the request body for plugin update.
+type pluginUpdateBody struct {
+	Name string `json:"name"`
+}
+
+// siteCreateBody is the request body for site registration.
+type siteCreateBody struct {
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// mappingCreateBody is the request body for plugin-site mapping.
+type mappingCreateBody struct {
+	SiteID     int64  `json:"siteId"`
+	RemoteSlug string `json:"remoteSlug"`
+}
+
+// publishPreviewBody is the request body for publish preview.
+type publishPreviewBody struct {
+	PluginID int64 `json:"pluginId"`
+	SiteID   int64 `json:"siteId"`
+}
+
+// credentialsTestBody is the request body for credentials testing.
+type credentialsTestBody struct {
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 // --- Plugin CRUD Tests ---
 
 func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult) error {
-	body := map[string]any{
-		"name":        "E2E Test Plugin",
-		"path":        s.testPluginPath,
-		"forceCreate": true,
+	body := pluginCreateBody{
+		Name:        "E2E Test Plugin",
+		Path:        s.testPluginPath,
+		ForceCreate: true,
 	}
 	result.RequestData = toJSON(body)
 
@@ -27,11 +68,7 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 		return fmt.Errorf("expected success, got HTTP %d: %s", resp.StatusCode, resp.errorCode())
 	}
 
-	data := resp.dataMap()
-	if data == nil {
-		return fmt.Errorf("expected data object in response")
-	}
-	if _, ok := data["id"]; !ok {
+	if !resp.hasDataField("id") {
 		return fmt.Errorf("expected 'id' field in response data")
 	}
 
@@ -40,13 +77,12 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 	if err != nil {
 		return fmt.Errorf("GET /plugins failed: %w", err)
 	}
-	plugins := listResp.dataSlice()
-	if len(plugins) == 0 {
+	if !listResp.isDataArray() {
 		return fmt.Errorf("plugin list is empty after creation")
 	}
 
 	// Store created ID for cleanup
-	if id, ok := data["id"].(float64); ok {
+	if id, ok := resp.dataFieldFloat("id"); ok {
 		s.setCleanupID("plugin", int64(id))
 	}
 
@@ -54,9 +90,9 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 }
 
 func (s *serviceImpl) testRegisterInvalidPath(ctx context.Context, result *TestResult) error {
-	body := map[string]any{
-		"name": "Invalid Plugin",
-		"path": "/nonexistent/path/e2e-test-invalid",
+	body := pluginCreateBody{
+		Name: "Invalid Plugin",
+		Path: "/nonexistent/path/e2e-test-invalid",
 	}
 	result.RequestData = toJSON(body)
 
@@ -86,9 +122,7 @@ func (s *serviceImpl) testUpdatePlugin(ctx context.Context, result *TestResult) 
 	}
 	defer s.cleanupPlugin(pluginID)
 
-	body := map[string]any{
-		"name": "E2E Updated Plugin",
-	}
+	body := pluginUpdateBody{Name: "E2E Updated Plugin"}
 	result.RequestData = toJSON(body)
 
 	resp, err := s.api.put(fmt.Sprintf("/plugins/%d", pluginID), body)
@@ -106,11 +140,8 @@ func (s *serviceImpl) testUpdatePlugin(ctx context.Context, result *TestResult) 
 	if err != nil {
 		return fmt.Errorf("GET /plugins/%d failed: %w", pluginID, err)
 	}
-	data := getResp.dataMap()
-	if data == nil {
-		return fmt.Errorf("expected plugin data in response")
-	}
-	if name, ok := data["name"].(string); !ok || name != "E2E Updated Plugin" {
+	name := getResp.dataField("name")
+	if name != "E2E Updated Plugin" {
 		return fmt.Errorf("expected name 'E2E Updated Plugin', got '%s'", name)
 	}
 
@@ -172,13 +203,13 @@ func (s *serviceImpl) testScanPluginFiles(ctx context.Context, result *TestResul
 // --- Site Connection Tests ---
 
 func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) error {
-	body := map[string]any{
-		"name":     "E2E Test Site",
-		"url":      s.testSiteURL,
-		"username": s.testSiteUsername,
-		"password": s.testSitePassword,
+	body := siteCreateBody{
+		Name:     "E2E Test Site",
+		URL:      s.testSiteURL,
+		Username: s.testSiteUsername,
+		Password: s.testSitePassword,
 	}
-	result.RequestData = toJSON(redactPassword(body))
+	result.RequestData = toJSON(redactSiteBody(body))
 
 	resp, err := s.api.post("/sites", body)
 	if err != nil {
@@ -190,12 +221,11 @@ func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) 
 		return fmt.Errorf("expected success, got HTTP %d: %s", resp.StatusCode, resp.errorCode())
 	}
 
-	data := resp.dataMap()
-	if data == nil {
+	if !resp.hasDataField("id") {
 		return fmt.Errorf("expected data object in response")
 	}
 
-	if id, ok := data["id"].(float64); ok {
+	if id, ok := resp.dataFieldFloat("id"); ok {
 		s.setCleanupID("site", int64(id))
 	}
 
@@ -225,10 +255,10 @@ func (s *serviceImpl) testSiteConnection(ctx context.Context, result *TestResult
 }
 
 func (s *serviceImpl) testInvalidCredentials(ctx context.Context, result *TestResult) error {
-	body := map[string]any{
-		"url":      s.testSiteURL,
-		"username": "invalid_user_e2e",
-		"password": "invalid_password_e2e",
+	body := credentialsTestBody{
+		URL:      s.testSiteURL,
+		Username: "invalid_user_e2e",
+		Password: "invalid_password_e2e",
 	}
 	result.RequestData = toJSON(body)
 
@@ -260,9 +290,9 @@ func (s *serviceImpl) testCreatePluginMapping(ctx context.Context, result *TestR
 	}
 	defer s.cleanupSite(siteID)
 
-	body := map[string]any{
-		"siteId":     siteID,
-		"remoteSlug": "e2e-test-plugin",
+	body := mappingCreateBody{
+		SiteID:     siteID,
+		RemoteSlug: "e2e-test-plugin",
 	}
 	result.RequestData = toJSON(body)
 
@@ -329,9 +359,9 @@ func (s *serviceImpl) testPreviewPublish(ctx context.Context, result *TestResult
 	defer s.cleanupPlugin(pluginID)
 	defer s.cleanupSite(siteID)
 
-	body := map[string]any{
-		"pluginId": pluginID,
-		"siteId":   siteID,
+	body := publishPreviewBody{
+		PluginID: pluginID,
+		SiteID:   siteID,
 	}
 	result.RequestData = toJSON(body)
 
@@ -375,10 +405,10 @@ func (s *serviceImpl) testBackupList(ctx context.Context, result *TestResult) er
 
 // createTestPlugin creates a plugin for testing and returns its ID
 func (s *serviceImpl) createTestPlugin() (int64, error) {
-	resp, err := s.api.post("/plugins", map[string]any{
-		"name":        "E2E Temp Plugin",
-		"path":        s.testPluginPath,
-		"forceCreate": true,
+	resp, err := s.api.post("/plugins", pluginCreateBody{
+		Name:        "E2E Temp Plugin",
+		Path:        s.testPluginPath,
+		ForceCreate: true,
 	})
 	if err != nil {
 		return 0, err
@@ -386,11 +416,7 @@ func (s *serviceImpl) createTestPlugin() (int64, error) {
 	if resp.StatusCode >= 400 {
 		return 0, fmt.Errorf("create plugin failed: HTTP %d - %s", resp.StatusCode, resp.RawBody)
 	}
-	data := resp.dataMap()
-	if data == nil {
-		return 0, fmt.Errorf("no data in create plugin response")
-	}
-	id, ok := data["id"].(float64)
+	id, ok := resp.dataFieldFloat("id")
 	if !ok {
 		return 0, fmt.Errorf("no id in create plugin response")
 	}
@@ -399,11 +425,11 @@ func (s *serviceImpl) createTestPlugin() (int64, error) {
 
 // createTestSite creates a site for testing and returns its ID
 func (s *serviceImpl) createTestSite() (int64, error) {
-	resp, err := s.api.post("/sites", map[string]any{
-		"name":     "E2E Temp Site",
-		"url":      s.testSiteURL,
-		"username": s.testSiteUsername,
-		"password": s.testSitePassword,
+	resp, err := s.api.post("/sites", siteCreateBody{
+		Name:     "E2E Temp Site",
+		URL:      s.testSiteURL,
+		Username: s.testSiteUsername,
+		Password: s.testSitePassword,
 	})
 	if err != nil {
 		return 0, err
@@ -411,11 +437,7 @@ func (s *serviceImpl) createTestSite() (int64, error) {
 	if resp.StatusCode >= 400 {
 		return 0, fmt.Errorf("create site failed: HTTP %d - %s", resp.StatusCode, resp.RawBody)
 	}
-	data := resp.dataMap()
-	if data == nil {
-		return 0, fmt.Errorf("no data in create site response")
-	}
-	id, ok := data["id"].(float64)
+	id, ok := resp.dataFieldFloat("id")
 	if !ok {
 		return 0, fmt.Errorf("no id in create site response")
 	}
@@ -433,9 +455,9 @@ func (s *serviceImpl) createTestMapping() (int64, int64, error) {
 		s.cleanupPlugin(pluginID)
 		return 0, 0, fmt.Errorf("create site: %w", err)
 	}
-	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", pluginID), map[string]any{
-		"siteId":     siteID,
-		"remoteSlug": "e2e-test-plugin",
+	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", pluginID), mappingCreateBody{
+		SiteID:     siteID,
+		RemoteSlug: "e2e-test-plugin",
 	})
 	if err != nil {
 		s.cleanupPlugin(pluginID)
@@ -485,15 +507,12 @@ func toJSON(v any) string {
 	return string(b)
 }
 
-// redactPassword creates a copy of the map with password redacted
-func redactPassword(m map[string]any) map[string]any {
-	out := make(map[string]any)
-	for k, v := range m {
-		if k == "password" || k == "applicationPassword" {
-			out[k] = "***REDACTED***"
-		} else {
-			out[k] = v
-		}
+// redactSiteBody creates a copy of the site body with password redacted
+func redactSiteBody(body siteCreateBody) siteCreateBody {
+	return siteCreateBody{
+		Name:     body.Name,
+		URL:      body.URL,
+		Username: body.Username,
+		Password: "***REDACTED***",
 	}
-	return out
 }
