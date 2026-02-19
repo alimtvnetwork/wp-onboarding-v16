@@ -29,6 +29,12 @@ enum PostStatusType: string
         return $this === $other;
     }
 
+    /** Check if this enum case differs from the given case. */
+    public function isOtherThan(self $other): bool
+    {
+        return $this !== $other;
+    }
+
     /** Check if this status is publicly visible. */
     public function isPublic(): bool
     {

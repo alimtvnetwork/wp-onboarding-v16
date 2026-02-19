@@ -17,6 +17,7 @@ enum AgentStatusType: string
     case Error     = 'error';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isPending(): bool   { return $this->isEqual(self::Pending); }
     public function isConnected(): bool { return $this->isEqual(self::Connected); }

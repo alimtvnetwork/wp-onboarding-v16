@@ -18,6 +18,7 @@ enum SnapshotProviderType: string
     case Auto    = 'auto';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isWpReset(): bool { return $this->isEqual(self::WpReset); }
     public function isUpdraft(): bool { return $this->isEqual(self::Updraft); }

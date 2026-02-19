@@ -17,6 +17,7 @@ enum SnapshotTriggerType: string
     case Api    = 'api';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isManual(): bool { return $this->isEqual(self::Manual); }
     public function isCron(): bool   { return $this->isEqual(self::Cron); }

@@ -18,6 +18,7 @@ enum SnapshotJobStatusType: string
     case Failed     = 'failed';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isQueued(): bool     { return $this->isEqual(self::Queued); }
     public function isProcessing(): bool { return $this->isEqual(self::Processing); }

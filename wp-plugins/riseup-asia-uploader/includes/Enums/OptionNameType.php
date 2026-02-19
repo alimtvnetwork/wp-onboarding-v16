@@ -19,4 +19,5 @@ enum OptionNameType: string
     case ActivePlugins    = 'active_plugins';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 }

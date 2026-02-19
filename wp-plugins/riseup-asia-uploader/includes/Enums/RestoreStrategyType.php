@@ -16,6 +16,7 @@ enum RestoreStrategyType: string
     case Merge    = 'merge';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isTruncate(): bool { return $this->isEqual(self::Truncate); }
     public function isMerge(): bool    { return $this->isEqual(self::Merge); }

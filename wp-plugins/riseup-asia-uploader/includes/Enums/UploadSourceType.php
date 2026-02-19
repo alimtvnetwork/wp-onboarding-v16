@@ -31,6 +31,12 @@ enum UploadSourceType: string
         return $this === $other;
     }
 
+    /** Check if this enum case differs from the given case. */
+    public function isOtherThan(self $other): bool
+    {
+        return $this !== $other;
+    }
+
     /** @return string[] */
     public static function validValues(): array
     {
