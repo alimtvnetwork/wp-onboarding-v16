@@ -71,6 +71,7 @@ enum ActionType: string
     case SnapshotIncremental     = 'snapshot_incremental';
     case SnapshotRestorePerTable = 'snapshot_restore_pertable';
     case SnapshotImportPerTable  = 'snapshot_import_pertable';
+    case SnapshotSettingsUpdate  = 'snapshot_settings_update';
     case SnapshotZipBuild        = 'snapshot_zip_build';
     case SnapshotZipExpire       = 'snapshot_zip_expire';
     case SnapshotZipDownload     = 'snapshot_zip_download';

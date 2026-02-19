@@ -16,6 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StatusType;
@@ -100,7 +101,7 @@ trait SnapshotBackupOpsTrait {
             return;
         }
 
-        $this->logger->logPluginAction(ActionType::SnapshotCleanup->value, 'snapshot',
+        $this->logger->logPluginAction(ActionType::SnapshotCleanup->value, LogCategoryType::Snapshot->value,
             $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
             array('retention_removed' => $result['retention']['deleted'] ?? 0, 'orphans_removed' => $result['orphans']['removed'] ?? 0,
                 'stuck_marked' => $result['stuck']['cleaned'] ?? 0, 'duration' => $result['duration'] ?? 0),

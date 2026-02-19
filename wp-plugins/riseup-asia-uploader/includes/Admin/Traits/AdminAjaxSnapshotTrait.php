@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Snapshot\SnapshotFactory;
@@ -93,7 +94,7 @@ trait AdminAjaxSnapshotTrait {
         }
 
         $mode = sanitize_text_field($_POST['storage_mode']);
-        if (in_array($mode, array('single', 'per-table'))) {
+        if (in_array($mode, StorageModeType::validValues())) {
             $settings['storage_mode'] = $mode;
         }
     }

@@ -14,10 +14,12 @@ if (!defined('ABSPATH')) {
 
 use Exception;
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Snapshot\SnapshotProviderWPReset;
 use RiseupAsia\Snapshot\SnapshotProviderUpdraft;
 use RiseupAsia\Snapshot\SnapshotProviderNative;
@@ -134,11 +136,11 @@ trait DetectorSettingsTrait {
             'schedule_enabled' => false, 'schedule_frequency' => SnapshotFrequencyType::Daily->value,
             'schedule_time' => '03:00', 'schedule_day' => 1,
             'default_scope' => SnapshotScopeType::WordPress->value, 'custom_tables' => array(),
-            'retention_type' => 'days', 'retention_days' => SnapshotConfigType::RetentionDaysDefault->value,
+            'retention_type' => RetentionType::Days->value, 'retention_days' => SnapshotConfigType::RetentionDaysDefault->value,
             'retention_count' => SnapshotConfigType::RetentionCountDefault->value,
             'pre_restore_backup' => true, 'require_restore_confirm' => true,
             'max_snapshot_size_mb' => SnapshotConfigType::MaxSizeMb->value, 'batch_size' => SnapshotConfigType::BatchSize->value,
-            'worker_pool_size' => SnapshotConfigType::WorkerPoolDefault->value, 'storage_mode' => 'per-table',
+            'worker_pool_size' => SnapshotConfigType::WorkerPoolDefault->value, 'storage_mode' => StorageModeType::PerTable->value,
         );
 
         $saved = get_option(OptionNameType::SnapshotSettings->value, array());

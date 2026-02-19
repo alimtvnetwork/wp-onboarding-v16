@@ -16,6 +16,9 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\SnapshotConfigType;
+use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\SnapshotOrchestrator;
@@ -31,7 +34,7 @@ trait SnapshotCrudRestoreTrait {
             $this->fileLogger->info('Deleting snapshot', array('id' => $id));
 
             $this->logger->logPluginAction(
-                ActionType::SnapshotDelete->value, 'snapshot', StatusType::Success->value,
+                ActionType::SnapshotDelete->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
@@ -39,7 +42,7 @@ trait SnapshotCrudRestoreTrait {
             $result = $manager->deleteSnapshot($id);
 
             $this->logger->logPluginAction(
-                ActionType::SnapshotDelete->value, 'snapshot',
+                ActionType::SnapshotDelete->value, LogCategoryType::Snapshot->value,
                 $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Delete failed')
@@ -56,7 +59,7 @@ trait SnapshotCrudRestoreTrait {
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $options = $this->parseRestoreOptions($body);
 
-            $this->logger->logPluginAction(ActionType::SnapshotRestore->value, 'snapshot', StatusType::Success->value,
+            $this->logger->logPluginAction(ActionType::SnapshotRestore->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
                 array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated'));
             $this->fileLogger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
@@ -96,17 +99,19 @@ trait SnapshotCrudRestoreTrait {
 
         if ($snapshot && $this->isPerTableSnapshot($snapshot)) {
             $dir = $this->resolveSnapshotDir($snapshot);
-            if ($dir && file_exists($dir . '/a-root.db')) {
+            if ($dir && file_exists($dir . '/' . SnapshotConfigType::RootDbFilename)) {
                 $orchestrator = SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
                 $engine = RestoreEngine::getInstance($this->fileLogger, $this->db, $orchestrator);
                 $result = $engine->execute($dir, $options);
-                $result['_mode'] = 'per_table';
+                $result['_mode'] = SnapshotWorkerModeType::PerTable->value;
+
                 return $result;
             }
         }
 
         $result = $manager->restoreSnapshot($id, $options);
-        $result['_mode'] = 'legacy';
+        $result['_mode'] = SnapshotWorkerModeType::Legacy->value;
+
         return $result;
     }
 

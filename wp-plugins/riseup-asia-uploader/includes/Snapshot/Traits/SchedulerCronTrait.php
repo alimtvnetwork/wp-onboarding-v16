@@ -62,7 +62,7 @@ trait SchedulerCronTrait {
 
         $this->db->logTransaction(
             $result['action'],
-            'snapshot', null, '', null, '',
+            \RiseupAsia\Enums\LogCategoryType::Snapshot->value, null, '', null, '',
             $result['audit_data'] ?? array(),
             $isSuccess ? \RiseupAsia\Enums\StatusType::Success->value : \RiseupAsia\Enums\StatusType::Failed->value,
             $isSuccess ? null : ($result['error'] ?? 'Unknown'),

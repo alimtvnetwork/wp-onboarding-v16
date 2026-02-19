@@ -12,9 +12,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait DetectorValidationTrait {
@@ -33,9 +35,9 @@ trait DetectorValidationTrait {
             'preferred_provider' => array(SnapshotProviderType::Auto->value, SnapshotProviderType::WpReset->value, SnapshotProviderType::Updraft->value, SnapshotProviderType::Native->value),
             'schedule_frequency' => array(SnapshotFrequencyType::Manual->value, SnapshotFrequencyType::Daily->value, SnapshotFrequencyType::Weekly->value, SnapshotFrequencyType::Monthly->value),
             'default_scope'      => array(SnapshotScopeType::All->value, SnapshotScopeType::WordPress->value, SnapshotScopeType::Content->value, SnapshotScopeType::Custom->value),
-            'retention_type'     => array('days', 'count', 'none'),
+            'retention_type'     => array(RetentionType::Days->value, RetentionType::Count->value, RetentionType::None->value),
         );
-        $defaults = array('preferred_provider' => SnapshotProviderType::Auto->value, 'schedule_frequency' => SnapshotFrequencyType::Daily->value, 'default_scope' => SnapshotScopeType::WordPress->value, 'retention_type' => 'days');
+        $defaults = array('preferred_provider' => SnapshotProviderType::Auto->value, 'schedule_frequency' => SnapshotFrequencyType::Daily->value, 'default_scope' => SnapshotScopeType::WordPress->value, 'retention_type' => RetentionType::Days->value);
 
         foreach ($rules as $key => $valid) {
             if (BooleanHelpers::isAbsentFromList($settings[$key], $valid)) {
@@ -60,9 +62,9 @@ trait DetectorValidationTrait {
     }
 
     private function validateMiscFields(array &$settings): void {
-        $valid_storage = array('single', 'per-table');
-        if (BooleanHelpers::isAbsentFromList($settings['storage_mode'] ?? 'per-table', $valid_storage)) {
-            $settings['storage_mode'] = 'per-table';
+        $valid_storage = StorageModeType::validValues();
+        if (BooleanHelpers::isAbsentFromList($settings['storage_mode'] ?? StorageModeType::PerTable->value, $valid_storage)) {
+            $settings['storage_mode'] = StorageModeType::PerTable->value;
         }
 
         $isInvalidTime = (preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $settings['schedule_time']) === 0);

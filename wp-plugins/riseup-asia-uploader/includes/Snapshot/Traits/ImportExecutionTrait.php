@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
@@ -44,12 +45,12 @@ trait ImportExecutionTrait {
 
     /** Extract and validate the root database file and metadata. */
     private function extractAndValidateRootDb(string $rootDbPath, string $snapshotRoot): array {
-        $this->validateSqliteFile($rootDbPath, 'a-root.db');
+        $this->validateSqliteFile($rootDbPath, SnapshotConfigType::RootDbFilename);
         $metadata = $this->readRootDbMetadata($rootDbPath);
 
         $isMetadataMissing = ($metadata === null || $metadata === false);
         if ($isMetadataMissing) {
-            throw new Exception('Failed to read metadata from a-root.db');
+            throw new Exception('Failed to read metadata from ' . SnapshotConfigType::RootDbFilename);
         }
 
         return $metadata;
