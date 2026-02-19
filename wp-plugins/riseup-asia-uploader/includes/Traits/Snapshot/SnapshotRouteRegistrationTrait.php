@@ -47,7 +47,7 @@ trait SnapshotRouteRegistrationTrait {
                 'methods' => HttpMethodType::Get->value, 'callback' => array($this, 'handleGetSnapshotSettings'), 'permission_callback' => $perm,
             ),
             array(
-                'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleUpdateSnapshotSettings'), 'permission_callback' => $perm,
+                'methods' => HttpMethodType::Post->value . ',' . HttpMethodType::Put->value, 'callback' => array($this, 'handleUpdateSnapshotSettings'), 'permission_callback' => $perm,
             ),
         ));
         $safeRegister(EndpointType::SnapshotProviders->route(), array(

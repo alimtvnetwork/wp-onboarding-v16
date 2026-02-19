@@ -30,10 +30,22 @@ trait PluginRouteRegistrationTrait {
             'permission_callback' => $this->buildPermissionCallback('upload', $perm),
         ));
 
+        $safeRegister(EndpointType::UploadActive->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleUploadActive'),
+            'permission_callback' => $this->buildPermissionCallback('upload_active', $perm),
+        ));
+
         $safeRegister(EndpointType::Plugins->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleListPlugins'),
             'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
+        ));
+
+        $safeRegister(EndpointType::PluginInfo->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handlePluginInfo'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_info', $perm),
         ));
 
         $safeRegister(EndpointType::ExportSelf->route(), array(

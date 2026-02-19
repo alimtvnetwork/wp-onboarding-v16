@@ -22,7 +22,9 @@ enum EndpointType: string
     // ── Core ─────────────────────────────────────────────────────────
     case Status        = 'status';
     case Upload        = 'upload';
+    case UploadActive  = 'upload-active';
     case Plugins       = 'plugins';
+    case PluginInfo    = 'plugins/info';
     case ExportSelf    = 'export-self';
     case Posts         = 'posts';
     case Categories    = 'categories';
