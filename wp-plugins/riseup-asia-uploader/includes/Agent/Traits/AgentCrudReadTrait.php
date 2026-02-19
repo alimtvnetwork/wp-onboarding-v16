@@ -12,103 +12,109 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use PDO;
-use PDOException;
+use Throwable;
+use RiseupAsia\Database\TypedQuery;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudReadTrait {
 
+    private const AGENT_SELECT_QUERY = 'SELECT * FROM agent_sites WHERE id = ?';
+
+    private const AGENT_COUNT_QUERY = 'SELECT COUNT(*) as total FROM agent_sites';
+
+    private const AGENT_LIST_QUERY = <<<'SQL'
+        SELECT id, name, url, username, redirect_url, status, 
+               last_sync, last_error, created_at, updated_at
+        FROM agent_sites
+    SQL;
+
     public function getAgent(int $id, bool $includePassword = false): ?array {
-        try {
-            $pdo = $this->db->getPdo();
-            $isPdoMissing = ($pdo === null);
-            if ($isPdoMissing) {
-                return null;
-            }
-
-            $stmt = $pdo->prepare("SELECT * FROM agent_sites WHERE id = ?");
-            $stmt->execute(array($id));
-            $agent = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($agent && $includePassword) {
-                $agent['app_password'] = $this->decrypt($agent['app_password_encrypted']);
-            }
-
-            if ($agent) {
-                unset($agent['app_password_encrypted']);
-            }
-
-            return $agent;
-        } catch (PDOException $e) {
-            $this->fileLogger->logException($e, 'Failed to get agent site');
-
+        $pdo = $this->db->getPdo();
+        if ($pdo === null) {
             return null;
         }
+
+        $query = new TypedQuery($pdo);
+        $mapper = fn(array $row): array => $this->mapAgentRow($row, $includePassword);
+        $result = $query->queryOne(self::AGENT_SELECT_QUERY, [$id], $mapper);
+
+        if ($result->hasError()) {
+            $this->fileLogger->logException($result->error(), 'Failed to get agent site');
+            return null;
+        }
+
+        return $result->value();
     }
 
     public function listAgents(
-        array $filters = array(),
+        array $filters = [],
         int $limit = 100,
         int $offset = 0,
     ): array {
-        try {
-            $pdo = $this->db->getPdo();
-            $isPdoMissing = ($pdo === null);
-            if ($isPdoMissing) {
-                return array('total' => 0, 'agents' => array());
-            }
-
-            $query = $this->buildAgentListQuery($filters);
-            $total = $this->countAgents($pdo, $query);
-            $agents = $this->fetchAgents($pdo, $query, $limit, $offset);
-
-            return array('total' => $total, 'agents' => $agents);
-        } catch (PDOException $e) {
-            $this->fileLogger->logException($e, 'Failed to list agent sites');
-
-            return array('total' => 0, 'agents' => array());
+        $pdo = $this->db->getPdo();
+        if ($pdo === null) {
+            return ['total' => 0, 'agents' => []];
         }
+
+        $query = new TypedQuery($pdo);
+        $where = $this->buildAgentWhereClause($filters);
+
+        $countResult = $query->queryOne(
+            self::AGENT_COUNT_QUERY . " {$where['sql']}",
+            $where['params'],
+            fn(array $row): int => (int) $row['total'],
+        );
+
+        if ($countResult->hasError()) {
+            $this->fileLogger->logException($countResult->error(), 'Failed to list agent sites');
+            return ['total' => 0, 'agents' => []];
+        }
+
+        $listParams = array_merge($where['params'], [$limit, $offset]);
+        $listSql = self::AGENT_LIST_QUERY . " {$where['sql']} ORDER BY created_at DESC LIMIT ? OFFSET ?";
+
+        $listResult = $query->queryMany(
+            $listSql,
+            $listParams,
+            fn(array $row): array => $row,
+        );
+
+        if ($listResult->hasError()) {
+            $this->fileLogger->logException($listResult->error(), 'Failed to list agent sites');
+            return ['total' => 0, 'agents' => []];
+        }
+
+        return [
+            'total'  => $countResult->value() ?? 0,
+            'agents' => $listResult->items(),
+        ];
     }
 
-    private function buildAgentListQuery(array $filters): array {
-        $where = array();
-        $params = array();
+    private function mapAgentRow(array $row, bool $includePassword): array {
+        if ($includePassword) {
+            $row['app_password'] = $this->decrypt($row['app_password_encrypted']);
+        }
+
+        unset($row['app_password_encrypted']);
+
+        return $row;
+    }
+
+    private function buildAgentWhereClause(array $filters): array {
+        $conditions = [];
+        $params = [];
 
         $hasStatusFilter = BooleanHelpers::hasValue($filters['status'] ?? null);
         if ($hasStatusFilter) {
-            $where[] = 'status = ?';
+            $conditions[] = 'status = ?';
             $params[] = $filters['status'];
         }
 
-        $hasWhereClause = BooleanHelpers::hasValue($where);
+        $hasConditions = BooleanHelpers::hasValue($conditions);
 
-        return array(
-            'where_sql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
-            'params'    => $params,
-        );
-    }
-
-    private function countAgents(PDO $pdo, array $query): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM agent_sites {$query['where_sql']}");
-        $stmt->execute($query['params']);
-
-        return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    }
-
-    private function fetchAgents(
-        PDO $pdo,
-        array $query,
-        int $limit,
-        int $offset,
-    ): array {
-        $params = array_merge($query['params'], array($limit, $offset));
-        $sql = "SELECT id, name, url, username, redirect_url, status, last_sync, last_error, created_at, updated_at 
-                FROM agent_sites {$query['where_sql']} 
-                ORDER BY created_at DESC 
-                LIMIT ? OFFSET ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return [
+            'sql'    => $hasConditions ? 'WHERE ' . implode(' AND ', $conditions) : '',
+            'params' => $params,
+        ];
     }
 }
