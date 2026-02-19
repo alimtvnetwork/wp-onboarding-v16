@@ -17,6 +17,7 @@ enum RestoreModeType: string
     case Incremental = 'incremental';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isFull(): bool        { return $this->isEqual(self::Full); }
     public function isSelective(): bool   { return $this->isEqual(self::Selective); }

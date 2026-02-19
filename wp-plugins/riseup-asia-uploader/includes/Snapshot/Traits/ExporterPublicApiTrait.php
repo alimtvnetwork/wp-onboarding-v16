@@ -117,7 +117,8 @@ trait ExporterPublicApiTrait {
      */
     public function getDownloadUrl(int $exportId): ?string {
         $export = $this->getExportById($exportId);
-        $isExportInvalid = ($export === null || $export === false || $export['status'] !== SnapshotExportStatusType::Valid->value);
+        $exportStatus = SnapshotExportStatusType::tryFrom($export['status'] ?? '');
+        $isExportInvalid = ($export === null || $export === false || $exportStatus === null || $exportStatus->isOtherThan(SnapshotExportStatusType::Valid));
         if ($isExportInvalid) {
             return null;
         }
@@ -145,7 +146,9 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        if ($export['status'] !== SnapshotExportStatusType::Valid->value) {
+        $exportStatus = SnapshotExportStatusType::tryFrom($export['status'] ?? '');
+        $isExportNotValid = ($exportStatus === null || $exportStatus->isOtherThan(SnapshotExportStatusType::Valid));
+        if ($isExportNotValid) {
             $this->log(LogLevelType::Warn->value, 'Export is not valid', array('export_id' => $exportId, 'status' => $export['status']));
             return null;
         }

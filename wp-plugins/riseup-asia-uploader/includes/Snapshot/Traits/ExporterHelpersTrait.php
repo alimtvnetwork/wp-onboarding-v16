@@ -45,7 +45,9 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        if ($snapshot['status'] !== SnapshotStatusType::Complete->value) {
+        $snapshotStatus = SnapshotStatusType::tryFrom($snapshot['status'] ?? '');
+        $isSnapshotIncomplete = ($snapshotStatus === null || $snapshotStatus->isOtherThan(SnapshotStatusType::Complete));
+        if ($isSnapshotIncomplete) {
             $this->log(LogLevelType::Warn->value, 'Snapshot not complete', array('id' => $snapshotId, 'status' => $snapshot['status']));
             return null;
         }

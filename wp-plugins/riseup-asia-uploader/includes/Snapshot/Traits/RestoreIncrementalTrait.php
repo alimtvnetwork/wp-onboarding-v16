@@ -29,7 +29,9 @@ trait RestoreIncrementalTrait {
         string $mode,
         bool $applyIncrementals,
     ): array {
-        $shouldApply = ($applyIncrementals && $mode !== RestoreModeType::Incremental->value) || $mode === RestoreModeType::Incremental->value;
+        $restoreMode = RestoreModeType::tryFrom($mode);
+        $isIncrementalMode = ($restoreMode !== null && $restoreMode->isIncremental());
+        $shouldApply = ($applyIncrementals && ($restoreMode === null || $restoreMode->isOtherThan(RestoreModeType::Incremental))) || $isIncrementalMode;
         $isSkipped = ($shouldApply === false);
 
         if ($isSkipped) {

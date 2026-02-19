@@ -74,7 +74,7 @@ trait UpdateResolverWpHooksTrait {
             return $result;
         }
 
-        $isSlugMismatch = (BooleanHelpers::isPropertyMissing($args, 'slug') || $args->slug !== PluginConfigType::Slug->value);
+        $isSlugMismatch = (BooleanHelpers::isPropertyMissing($args, 'slug') || $args->slug !== PluginConfigType::Slug->value); // WP hook provides raw slug string; enum property default constraint applies
         if ($isSlugMismatch) {
             return $result;
         }

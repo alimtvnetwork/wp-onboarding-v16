@@ -26,6 +26,7 @@ enum PluginConfigType: string
     case SettingsGroup   = 'riseup_asia_settings_group';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     /** Get the full REST API namespace (e.g., 'riseup-asia-uploader/v1'). */
     public static function apiFullNamespace(): string
