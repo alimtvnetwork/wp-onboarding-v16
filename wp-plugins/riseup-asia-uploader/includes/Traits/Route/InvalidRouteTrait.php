@@ -17,6 +17,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -97,10 +98,48 @@ trait InvalidRouteTrait
         }
 
         $data = $this->injectErrorMetadata($data);
-        $this->logRestApiError($route, $status, $data);
+        $errorCode = $this->resolveErrorCode($data);
+        $data = $this->injectErrorCategory($data, $errorCode);
+        $this->logRestApiError($route, $status, $data, $errorCode);
         $response->set_data($data);
 
         return $response;
+    }
+
+    private function resolveErrorCode(array $data): ?WpErrorCodeType {
+        $code = $data['code'] ?? null;
+        if ($code === null) {
+            return null;
+        }
+
+        return WpErrorCodeType::tryFrom($code);
+    }
+
+    private function injectErrorCategory(array $data, ?WpErrorCodeType $errorCode): array {
+        if ($errorCode === null) {
+            return $data;
+        }
+
+        $data['error_category'] = $this->classifyErrorCode($errorCode);
+
+        return $data;
+    }
+
+    private function classifyErrorCode(WpErrorCodeType $errorCode): string {
+        if ($errorCode->isAuthError()) {
+            return 'authentication';
+        }
+        if ($errorCode->isDatabaseError()) {
+            return 'database';
+        }
+        if ($errorCode->isValidationError()) {
+            return 'validation';
+        }
+        if ($errorCode->isNetworkError()) {
+            return 'network';
+        }
+
+        return 'general';
     }
 
     private function injectErrorMetadata(array $data): array {
@@ -121,12 +160,22 @@ trait InvalidRouteTrait
         string $route,
         int $status,
         array $data,
+        ?WpErrorCodeType $errorCode,
     ): void {
-        $this->fileLogger->error('REST API error response', array(
+        $context = array(
             'route'          => $route,
             'status'         => $status,
-            'message'        => isset($data['message']) ? $data['message'] : (isset($data['Status']['Message']) ? $data['Status']['Message'] : 'Unknown'),
+            'error_category' => $data['error_category'] ?? 'unknown',
+            'message'        => $data['message'] ?? $data['Status']['Message'] ?? 'Unknown',
             'plugin_version' => PluginConfigType::Version->value,
-        ));
+        );
+
+        $isWarnLevel = ($errorCode !== null && ($errorCode->isAuthError() || $errorCode->isValidationError()));
+        if ($isWarnLevel) {
+            $this->fileLogger->warn('REST API error response', $context);
+            return;
+        }
+
+        $this->fileLogger->error('REST API error response', $context);
     }
 }
