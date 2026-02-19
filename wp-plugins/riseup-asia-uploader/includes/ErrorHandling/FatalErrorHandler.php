@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PathLogFileType;
 
 /**
@@ -111,7 +112,7 @@ class FatalErrorHandler
         $isHeadersUnsent = (headers_sent() === false);
         if ($isHeadersUnsent) {
             header('Content-Type: application/json; charset=utf-8');
-            http_response_code(500);
+            http_response_code(HttpStatusType::ServerError->value);
         }
 
         $frameData = FrameBuilder::buildFatalFrames($error);

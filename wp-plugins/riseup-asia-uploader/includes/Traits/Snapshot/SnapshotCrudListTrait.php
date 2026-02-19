@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Snapshot\SnapshotManager;
 
 trait SnapshotCrudListTrait {
@@ -33,7 +34,7 @@ trait SnapshotCrudListTrait {
                 'success'   => true,
                 'snapshots' => $snapshots['snapshots'],
                 'total'     => $snapshots['total'],
-            ), 200);
+            ), HttpStatusType::Ok->value);
         }, 'list_snapshots');
     }
 
@@ -49,19 +50,19 @@ trait SnapshotCrudListTrait {
             $provider = $manager->getProvider();
             $isProviderMissing = ($provider === null);
             if ($isProviderMissing) {
-                return $this->errorResponse('No snapshot provider available', 500);
+                return $this->errorResponse('No snapshot provider available', HttpStatusType::ServerError->value);
             }
 
             $snapshot = $provider->getSnapshot($id);
             $isSnapshotMissing = ($snapshot === null);
             if ($isSnapshotMissing) {
-                return $this->errorResponse('Snapshot not found', 404);
+                return $this->errorResponse('Snapshot not found', HttpStatusType::NotFound->value);
             }
 
             return new WP_REST_Response(array(
                 'success'  => true,
                 'snapshot' => $snapshot,
-            ), 200);
+            ), HttpStatusType::Ok->value);
         }, 'get_snapshot');
     }
 

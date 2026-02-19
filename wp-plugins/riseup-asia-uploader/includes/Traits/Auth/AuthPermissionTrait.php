@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_Error;
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Admin\Admin;
 
 trait AuthPermissionTrait
@@ -34,7 +35,7 @@ trait AuthPermissionTrait
         return function(WP_REST_Request $request) use ($endpoint, $authCheck) {
             $isEndpointDisabled = ($this->isEndpointEnabled($endpoint) === false);
             if ($isEndpointDisabled) {
-                return new WP_Error('rest_disabled', 'This endpoint is disabled', array('status' => 403));
+                return new WP_Error('rest_disabled', 'This endpoint is disabled', array('status' => HttpStatusType::Forbidden->value));
             }
             $isAuthOptional = ($this->isAuthRequired($endpoint) === false);
             if ($isAuthOptional) {

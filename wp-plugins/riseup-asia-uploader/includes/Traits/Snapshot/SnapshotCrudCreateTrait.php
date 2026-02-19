@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Snapshot\SnapshotManager;
@@ -49,7 +50,7 @@ trait SnapshotCrudCreateTrait {
 
             $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? 'per_table' : 'legacy', $result);
 
-            return new WP_REST_Response($result, $result['success'] ? 201 : 500);
+            return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
         }, 'create_snapshot');
     }
 

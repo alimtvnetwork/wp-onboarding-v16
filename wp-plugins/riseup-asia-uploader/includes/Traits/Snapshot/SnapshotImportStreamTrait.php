@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotExporter;
@@ -39,7 +40,7 @@ trait SnapshotImportStreamTrait {
         if ($exportId <= 0 || empty($token)) {
             return new WP_REST_Response(array(
                 'success' => false, 'error' => 'Missing id or token parameter', 'code' => SnapshotErrorType::ExportTokenInvalid->value,
-            ), 400);
+            ), HttpStatusType::BadRequest->value);
         }
 
         $export = SnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
@@ -48,7 +49,7 @@ trait SnapshotImportStreamTrait {
         if ($isExportMissing) {
             return new WP_REST_Response(array(
                 'success' => false, 'error' => 'Invalid or expired download token', 'code' => SnapshotErrorType::ExportTokenInvalid->value,
-            ), 403);
+            ), HttpStatusType::Forbidden->value);
         }
 
         return array('export_id' => $exportId, 'export' => $export);
@@ -95,7 +96,7 @@ trait SnapshotImportStreamTrait {
             $files = $request->get_file_params();
 
             if (empty($files['file']['tmp_name'])) {
-                return $this->errorResponse('No file uploaded', 400);
+                return $this->errorResponse('No file uploaded', HttpStatusType::BadRequest->value);
             }
 
             $tmp_file = $files['file']['tmp_name'];
@@ -121,7 +122,7 @@ trait SnapshotImportStreamTrait {
                 $result['success'] ? null : ($result['error'] ?? 'Import failed')
             );
 
-            $status_code = $result['success'] ? 201 : 400;
+            $status_code = $result['success'] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value;
 
             return new WP_REST_Response($result, $status_code);
         }, 'import_snapshot');
