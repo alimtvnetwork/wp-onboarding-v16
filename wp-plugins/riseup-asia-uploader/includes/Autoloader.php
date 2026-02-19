@@ -38,6 +38,7 @@ final class RiseupAsiaAutoloader {
             $errorMsg = 'File not found';
             error_log(self::LOG_PREFIX . 'class file not found for "' . $class . '" — expected at "' . $file . '"');
             self::$failedClasses[] = ['class' => $class, 'file' => $file, 'error' => $errorMsg];
+            self::reportToBootCollector('autoloader', 'Class file not found: ' . $class . ' — expected at ' . $file);
 
             return;
         }
@@ -47,6 +48,7 @@ final class RiseupAsiaAutoloader {
         } catch (\Throwable $e) {
             error_log(self::LOG_PREFIX . 'failed to load "' . $class . '" — ' . $e->getMessage());
             self::$failedClasses[] = ['class' => $class, 'file' => $file, 'error' => $e->getMessage()];
+            self::reportToBootCollector('autoloader', 'Failed to load ' . $class . ': ' . $e->getMessage());
         }
     }
 
@@ -125,6 +127,17 @@ final class RiseupAsiaAutoloader {
         }
 
         return ['loaded' => $loaded, 'failed' => $failed];
+    }
+
+    /**
+     * Report an error to the BootErrorCollector if available.
+     * Must not trigger autoloading loops — checks class_exists with autoload=false.
+     */
+    private static function reportToBootCollector(string $context, string $message): void {
+        $isCollectorLoaded = class_exists('RiseupAsia\\ErrorHandling\\BootErrorCollector', false);
+        if ($isCollectorLoaded) {
+            \RiseupAsia\ErrorHandling\BootErrorCollector::getInstance()->addError($context, $message);
+        }
     }
 }
 

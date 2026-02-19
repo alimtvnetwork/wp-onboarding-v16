@@ -24,6 +24,7 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Activation\ActivationHandler;
 use RiseupAsia\Core\Plugin;
 use RiseupAsia\Admin\Admin;
+use RiseupAsia\ErrorHandling\BootErrorCollector;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all RiseupAsia\ classes resolve automatically
@@ -37,10 +38,18 @@ register_activation_hook(__FILE__, [ActivationHandler::class, 'activate']);
  * Initialize the plugin.
  */
 function riseup_asia_init(): void {
-    Plugin::getInstance();
+    try {
+        Plugin::getInstance();
+    } catch (\Throwable $e) {
+        BootErrorCollector::getInstance()->addError('plugin_init', $e->getMessage());
+    }
 
     if (is_admin()) {
-        Admin::getInstance();
+        try {
+            Admin::getInstance();
+        } catch (\Throwable $e) {
+            BootErrorCollector::getInstance()->addError('admin_init', $e->getMessage());
+        }
     }
 }
 

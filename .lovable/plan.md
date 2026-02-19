@@ -205,51 +205,25 @@ New enum: `SnapshotConfigType::LockTimeoutSeconds` (1800), `SnapshotConfigType::
 
 ---
 
-## Phase 3: Boot-Time Error Email Notification
+## ✅ COMPLETED — Phase 3: Boot-Time Error Email Notification (2026-02-19)
 
-### Concept
+All 4 sub-tasks (3A–3D) implemented across 6 files:
 
-When the plugin encounters errors during loading (autoloader failures, missing dependencies, DB connection issues), send an email notification to the WordPress admin.
-
-### Design
-
-#### 3A — Error Collector
-
-Create `RiseupAsia\ErrorHandling\BootErrorCollector` (singleton):
-
-- Collects errors during boot via `addError(string $context, string $message)`.
-- Registers a `shutdown` hook to process collected errors.
-- On shutdown, if errors exist, triggers email notification.
-
-#### 3B — Email Dispatcher
-
-Create `RiseupAsia\Notification\AdminMailer`:
-
-- `sendBootErrorReport(array $errors): bool` — uses `wp_mail()` to send to `get_option('admin_email')`.
-- Throttled: stores a transient (`riseup_last_error_email`) to prevent email flooding (max 1 per hour).
-- Email contains: site URL, plugin version, PHP version, error list with file/line/message.
-- Subject: `[Riseup Asia] Plugin Boot Errors on {site_name}`.
-
-#### 3C — Integration Points
-
-| Hook | Action |
-|------|--------|
-| Autoloader `load()` failure | `BootErrorCollector::addError('autoloader', ...)` |
-| `Plugin::getInstance()` catch block | `BootErrorCollector::addError('plugin_init', ...)` |
-| `Admin::getInstance()` catch block | `BootErrorCollector::addError('admin_init', ...)` |
-| `shutdown` hook | `BootErrorCollector::flush()` → `AdminMailer::sendBootErrorReport()` |
-
-#### 3D — Configuration
-
-Add to `OptionNameType`:
-```php
-case ErrorNotification = 'riseup_error_notification_settings';
-```
-
-Settings: `['enabled' => true, 'email' => '', 'throttle_minutes' => 60]`  
-Default email falls back to `get_option('admin_email')`.
-
-#### Estimated Effort: 3–4 tasks
+- **3A** ✅ `BootErrorCollector` singleton created at `ErrorHandling/BootErrorCollector.php`:
+  - `addError(context, message)` collects errors with timestamps
+  - Registers `register_shutdown_function` on first error (once)
+  - `flush()` sends via `AdminMailer` then clears errors
+- **3B** ✅ `AdminMailer` created at `Notification/AdminMailer.php`:
+  - `sendBootErrorReport()` sends plain-text email via `wp_mail()`
+  - Throttled via `riseup_last_error_email` transient (default 60 minutes)
+  - Body includes: site URL, plugin version, PHP version, WP version, numbered error list
+  - Subject: `[Riseup Asia] Plugin Boot Errors on {site_name}`
+- **3C** ✅ Integration points wired:
+  - `Autoloader::load()` failures → `reportToBootCollector('autoloader', ...)`
+  - `riseup_asia_init()` wraps `Plugin::getInstance()` in try/catch → `BootErrorCollector::addError('plugin_init', ...)`
+  - `riseup_asia_init()` wraps `Admin::getInstance()` in try/catch → `BootErrorCollector::addError('admin_init', ...)`
+  - Shutdown hook auto-registered by BootErrorCollector
+- **3D** ✅ `OptionNameType::ErrorNotification` added (`riseup_error_notification_settings`)
 
 ---
 
