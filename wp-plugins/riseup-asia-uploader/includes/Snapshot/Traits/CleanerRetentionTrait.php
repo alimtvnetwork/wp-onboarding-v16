@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -94,9 +95,14 @@ trait CleanerRetentionTrait {
     }
 
     private function isMasterSnapshot(array $snap): bool {
-        if (isset($snap['scope']) && $snap['scope'] === 'full') return true;
-        if (isset($snap['type']) && $snap['type'] === 'full') return true;
-        if (isset($snap['filename']) && strpos($snap['filename'], '_full_') !== false) return true;
+        $isScopeFull = (isset($snap['scope']) && $snap['scope'] === SnapshotModeType::Full->value);
+        if ($isScopeFull) return true;
+
+        $isTypeFull = (isset($snap['type']) && $snap['type'] === SnapshotModeType::Full->value);
+        if ($isTypeFull) return true;
+
+        $isFilenameFull = (isset($snap['filename']) && strpos($snap['filename'], '_full_') !== false);
+        if ($isFilenameFull) return true;
 
         return false;
     }

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use WP_Error;
 use RiseupAsia\Agent\AgentSite;
+use RiseupAsia\Enums\AgentStatusType;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -90,7 +91,7 @@ trait AgentRemoteActionTrait {
 
     private function handleTestConnectionFailure(int $agentId, WP_Error $error): array {
         $this->updateAgent($agentId, array(
-            'status'     => 'error',
+            'status'     => AgentStatusType::Error->value,
             'last_error' => $error->get_error_message(),
         ));
         $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Failed->value, null, $error->get_error_message());
@@ -100,7 +101,7 @@ trait AgentRemoteActionTrait {
 
     private function handleTestConnectionSuccess(int $agentId, array $result): array {
         $this->updateAgent($agentId, array(
-            'status'     => 'connected',
+            'status'     => AgentStatusType::Connected->value,
             'last_sync'  => gmdate('Y-m-d\TH:i:s\Z'),
             'last_error' => null,
         ));
@@ -121,7 +122,7 @@ trait AgentRemoteActionTrait {
         }
 
         $this->updateAgent($agentId, array(
-            'status'    => 'connected',
+            'status'    => AgentStatusType::Connected->value,
             'last_sync' => gmdate('Y-m-d\TH:i:s\Z'),
         ));
 

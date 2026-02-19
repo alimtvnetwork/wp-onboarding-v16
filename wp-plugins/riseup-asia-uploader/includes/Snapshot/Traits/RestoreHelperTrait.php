@@ -18,6 +18,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
@@ -83,7 +84,7 @@ trait RestoreHelperTrait {
 
         return json_encode(array(
             'directory' => basename($snapshotDir), 'tables_restored' => $tablesRestored,
-            'total_rows' => $totalRows, 'duration' => round($duration, 2), 'type' => 'per_table',
+            'total_rows' => $totalRows, 'duration' => round($duration, 2), 'type' => SnapshotWorkerModeType::PerTable->value,
         ));
     }
 

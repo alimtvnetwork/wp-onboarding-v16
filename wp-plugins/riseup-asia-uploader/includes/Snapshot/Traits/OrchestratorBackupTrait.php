@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -109,7 +110,7 @@ trait OrchestratorBackupTrait {
     }
 
     private function runWorkerExport(array $resolved, bool $async): array {
-        $config = array('title' => $resolved['title'], 'scope' => $resolved['scope'], 'type' => 'full', 'settings' => $resolved['settings']);
+        $config = array('title' => $resolved['title'], 'scope' => $resolved['scope'], 'type' => SnapshotModeType::Full->value, 'settings' => $resolved['settings']);
 
         return $async ? $this->worker->execute($config) : $this->worker->executeSynchronous($config);
     }

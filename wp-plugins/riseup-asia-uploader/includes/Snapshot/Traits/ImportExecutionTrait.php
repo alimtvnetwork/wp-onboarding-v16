@@ -15,9 +15,12 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 use Exception;
@@ -81,7 +84,7 @@ trait ImportExecutionTrait {
 
         return array(
             'success' => true, 'snapshot_id' => $snapshotId, 'folder' => basename($destDir),
-            'type' => $metadata['type'] ?? 'full', 'tables' => count($inventories['tables']),
+            'type' => $metadata['type'] ?? SnapshotModeType::Full->value, 'tables' => count($inventories['tables']),
             'total_rows' => $metadata['total_rows'] ?? 0,
             'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
         );
@@ -152,7 +155,7 @@ trait ImportExecutionTrait {
             'filepath' => $destDir, 'provider' => SnapshotProviderType::Native->value,
             'scope' => SnapshotScopeType::All->value, 'tables_json' => json_encode($tableNames),
             'total_rows' => $metadata['total_rows'] ?? 0, 'file_size' => $this->getDirectorySize($destDir),
-            'trigger_source' => 'import', 'status' => SnapshotStatusType::Complete->value,
+            'trigger_source' => SnapshotTriggerType::Api->value, 'status' => SnapshotStatusType::Complete->value,
             'created_at' => date('c'), 'completed_at' => date('c'),
             'import_source' => json_encode($this->buildImportSourceMeta($metadata, $tables, $incrementals, $plugins)),
         );
@@ -170,7 +173,7 @@ trait ImportExecutionTrait {
             'original_created_at' => $metadata['created_at'] ?? null,
             'wp_version' => $metadata['wp_version'] ?? null, 'mysql_version' => $metadata['mysql_version'] ?? null,
             'table_count' => count($tables), 'incremental_count' => count($incrementals),
-            'plugin_count' => count($plugins), 'format' => 'per_table',
+            'plugin_count' => count($plugins), 'format' => SnapshotWorkerModeType::PerTable->value,
         );
     }
 }

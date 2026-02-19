@@ -17,6 +17,7 @@ use Throwable;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Snapshot\SnapshotExporter;
 use RiseupAsia\Enums\SnapshotStatusType;
@@ -69,7 +70,7 @@ trait IncrementalRegistrationTrait {
     ): string {
 
         return json_encode(array(
-            'type' => 'incremental', 'master' => basename($masterDir), 'sequence' => $sequence,
+            'type' => SnapshotModeType::Incremental->value, 'master' => basename($masterDir), 'sequence' => $sequence,
             'folder' => $folderName, 'tables_changed' => $tablesChanged, 'total_new_rows' => $totalNewRows,
         ));
     }
@@ -106,7 +107,7 @@ trait IncrementalRegistrationTrait {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $stmt->execute(array(
-            $sequence, $filename, $filepath, SnapshotProviderType::Native->value, 'incremental',
+            $sequence, $filename, $filepath, SnapshotProviderType::Native->value, SnapshotModeType::Incremental->value,
             $tablesJson, $totalRows, $dirSize, SnapshotTriggerType::Api->value, SnapshotStatusType::Complete->value, $now, $now,
         ));
 

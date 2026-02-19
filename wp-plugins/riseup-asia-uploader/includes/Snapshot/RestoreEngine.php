@@ -18,6 +18,7 @@ use PDO;
 use Throwable;
 use wpdb;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Snapshot\Traits\RestoreValidationTrait;
 use RiseupAsia\Snapshot\Traits\RestoreTableTrait;
@@ -78,7 +79,7 @@ class RestoreEngine {
         }
 
         $this->log(LogLevelType::Info->value, 'Starting per-table restore', array(
-            'directory' => basename($snapshotDir), 'mode' => $options['mode'] ?? 'full',
+            'directory' => basename($snapshotDir), 'mode' => $options['mode'] ?? RestoreModeType::Full->value,
         ));
 
         try {
@@ -128,7 +129,7 @@ class RestoreEngine {
     ): array {
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
         $master = $this->restoreMasterTables($restoreOrder['tables'], $restoreOrder['inventory'], $snapshotDir, $options);
-        $inc = $this->applyIncrementalsPhase($rootPdo, $snapshotDir, $restoreOrder['tables'], $options['mode'] ?? 'full', $options['apply_incrementals'] ?? true);
+        $inc = $this->applyIncrementalsPhase($rootPdo, $snapshotDir, $restoreOrder['tables'], $options['mode'] ?? RestoreModeType::Full->value, $options['apply_incrementals'] ?? true);
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
 
         return array(

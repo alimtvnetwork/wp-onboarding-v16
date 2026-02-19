@@ -39,7 +39,7 @@ class Admin {
     /**
      * Option name for plugin settings.
      */
-    const OPTION_NAME = 'riseup_asia_settings';
+    const OPTION_NAME = 'riseup_asia_settings'; // Maps to OptionNameType::PluginSettings->value
 
     /**
      * Default settings.
