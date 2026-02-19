@@ -20,6 +20,7 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/dbutil"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -104,6 +105,7 @@ type Config struct {
 
 type serviceImpl struct {
 	db                    *database.DB
+	dbu                   *dbutil.DB
 	log                   *logger.Logger
 	pluginService         *plugin.Service
 	sitePasswordDecryptor SitePasswordDecryptor
@@ -115,6 +117,7 @@ type serviceImpl struct {
 func New(cfg Config) Service {
 	return &serviceImpl{
 		db:                    cfg.DB,
+		dbu:                   dbutil.New(cfg.DB.DB),
 		log:                   cfg.Logger,
 		pluginService:         cfg.PluginService,
 		sitePasswordDecryptor: cfg.SitePasswordDecryptor,
@@ -420,120 +423,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*Pu
 	return result, nil
 }
 
-// GetFileChanges returns pending file changes for a plugin
-func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error) {
-	query := `
-		SELECT Id, PluginId, FilePath, ChangeType, LocalHash, RemoteHash, 
-		       LocalModifiedAt, DetectedAt, SyncedAt
-		FROM FileChanges
-		WHERE PluginId = ? AND SyncedAt IS NULL
-		ORDER BY DetectedAt DESC
-	`
-
-	rows, err := s.db.QueryContext(ctx, query, pluginID)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get file changes")
-	}
-	defer rows.Close()
-
-	var changes []models.FileChange
-	for rows.Next() {
-		var change models.FileChange
-		var localModifiedAt, detectedAt, syncedAt string
-
-		err := rows.Scan(
-			&change.ID,
-			&change.PluginID,
-			&change.FilePath,
-			&change.ChangeType,
-			&change.LocalHash,
-			&change.RemoteHash,
-			&localModifiedAt,
-			&detectedAt,
-			&syncedAt,
-		)
-		if err != nil {
-			return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to scan file change")
-		}
-
-		changes = append(changes, change)
-	}
-
-	if changes == nil {
-		changes = []models.FileChange{}
-	}
-
-	return changes, nil
-}
-
-// RecordFileChange records a file change in the database
-func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileChange) error {
-	// Check if change already exists
-	query := `
-		INSERT OR REPLACE INTO FileChanges 
-		(PluginId, FilePath, ChangeType, LocalHash, DetectedAt)
-		VALUES (?, ?, ?, ?, datetime('now'))
-	`
-
-	_, err := s.db.ExecContext(ctx, query, 
-		change.PluginID,
-		change.FilePath,
-		change.ChangeType,
-		change.LocalHash,
-	)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to record file change")
-	}
-
-	// Broadcast file change event
-	if s.wsHub != nil {
-		s.wsHub.BroadcastFileChange(change.PluginID, change.FilePath, change.ChangeType)
-	}
-
-	return nil
-}
-
-// MarkSynced marks specific files as synced
-func (s *serviceImpl) MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) error {
-	if len(files) == 0 {
-		return nil
-	}
-
-	// Build placeholders for IN clause
-	placeholders := make([]string, len(files))
-	args := make([]interface{}, len(files)+1)
-	args[0] = pluginID
-	for i, f := range files {
-		placeholders[i] = "?"
-		args[i+1] = f
-	}
-
-	query := `
-		UPDATE FileChanges 
-		SET SyncedAt = datetime('now')
-		WHERE PluginId = ? AND FilePath IN (` + strings.Join(placeholders, ",") + `)
-	`
-
-	_, err := s.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrDatabaseUpdate, "failed to mark files as synced")
-	}
-
-	return nil
-}
-
-// ClearChanges removes all pending changes for a plugin
-func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
-	query := `
-		UPDATE FileChanges 
-		SET SyncedAt = datetime('now')
-		WHERE PluginId = ? AND SyncedAt IS NULL
-	`
-
-	_, err := s.db.ExecContext(ctx, query, pluginID)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrDatabaseUpdate, "failed to clear changes")
-	}
+// GetFileChanges, RecordFileChange, MarkSynced, ClearChanges moved to crud.go.
 
 	return nil
 }
@@ -665,97 +555,7 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 	return changes
 }
 
-// getMappings retrieves all mappings for a plugin
-func (s *serviceImpl) getMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error) {
-	query := `
-		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus, 
-		       pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
-		       s.Name as SiteName, s.Url as SiteUrl
-		FROM PluginMappings pm
-		JOIN Sites s ON s.Id = pm.SiteId
-		WHERE pm.PluginId = ?
-	`
-
-	rows, err := s.db.QueryContext(ctx, query, pluginID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var mappings []models.PluginMapping
-	for rows.Next() {
-		var m models.PluginMapping
-		var lastSyncAt, lastBackupAt, createdAt, updatedAt string
-
-		err := rows.Scan(
-			&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-			&lastSyncAt, &lastBackupAt, &createdAt, &updatedAt,
-			&m.SiteName, &m.SiteURL,
-		)
-		if err != nil {
-			continue
-		}
-		mappings = append(mappings, m)
-	}
-
-	return mappings, nil
-}
-
-// siteInfo holds minimal site data needed for sync
-type siteInfo struct {
-	URL      string
-	Username string
-}
-
-// getSiteInfo retrieves minimal site info for creating a WP client
-func (s *serviceImpl) getSiteInfo(ctx context.Context, siteID int64) (*siteInfo, error) {
-	query := `SELECT Url, Username FROM Sites WHERE Id = ?`
-	row := s.db.QueryRowContext(ctx, query, siteID)
-
-	var info siteInfo
-	if err := row.Scan(&info.URL, &info.Username); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site info").
-			WithContext("siteId", siteID)
-	}
-	return &info, nil
-}
-
-// getMapping retrieves a specific plugin-site mapping
-func (s *serviceImpl) getMapping(ctx context.Context, pluginID, siteID int64) (*models.PluginMapping, error) {
-	query := `
-		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
-		       s.Name as SiteName, s.Url as SiteUrl
-		FROM PluginMappings pm
-		JOIN Sites s ON s.Id = pm.SiteId
-		WHERE pm.PluginId = ? AND pm.SiteId = ?
-	`
-	row := s.db.QueryRowContext(ctx, query, pluginID, siteID)
-
-	var m models.PluginMapping
-	var syncStatus string
-	if err := row.Scan(&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &syncStatus, &m.SiteName, &m.SiteURL); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin-site mapping").
-			WithPluginID(pluginID).WithSiteID(siteID)
-	}
-	m.SyncStatus = syncStatus
-	return &m, nil
-}
-
-// updateMappingSyncStatus updates the sync status of a mapping
-func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginID, siteID int64, inSync bool) {
-	status := "out_of_sync"
-	if inSync {
-		status = "synced"
-	}
-
-	query := `
-		UPDATE PluginMappings 
-		SET SyncStatus = ?, LastSyncAt = datetime('now'), UpdatedAt = datetime('now')
-		WHERE PluginId = ? AND SiteId = ?
-	`
-
-	s.db.ExecContext(ctx, query, status, pluginID, siteID)
-}
+// getMappings, getSiteInfo, getMapping, updateMappingSyncStatus moved to crud.go.
 
 // broadcastProgress sends sync progress via WebSocket with detailed step info
 func (s *serviceImpl) broadcastProgress(pluginID, siteID int64, step string, progress int, message string) {
