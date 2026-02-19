@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Database\TypedQuery;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -23,8 +24,9 @@ trait AgentCrudReadTrait {
     private const AGENT_COUNT_QUERY = 'SELECT COUNT(*) as total FROM agent_sites';
 
     private const AGENT_LIST_QUERY = <<<'SQL'
-        SELECT id, name, url, username, redirect_url, status, 
-               last_sync, last_error, created_at, updated_at
+        SELECT id, name, url, username, redirect_url, redirect_resolved,
+               redirect_resolved_at, status, last_sync, last_error,
+               created_at, updated_at
         FROM agent_sites
     SQL;
 
@@ -35,15 +37,18 @@ trait AgentCrudReadTrait {
         }
 
         $query = new TypedQuery($pdo);
-        $mapper = fn(array $row): array => $this->mapAgentRow($row, $includePassword);
-        $result = $query->queryOne(self::AGENT_SELECT_QUERY, [$id], $mapper);
+        $result = $query->queryOne(
+            self::AGENT_SELECT_QUERY,
+            [$id],
+            fn(array $row): AgentSite => $this->mapAgentRow($row, $includePassword),
+        );
 
         if ($result->hasError()) {
             $this->fileLogger->logException($result->error(), 'Failed to get agent site');
             return null;
         }
 
-        return $result->value();
+        return $result->value()?->toArray();
     }
 
     public function listAgents(
@@ -76,7 +81,7 @@ trait AgentCrudReadTrait {
         $listResult = $query->queryMany(
             $listSql,
             $listParams,
-            fn(array $row): array => $row,
+            AgentSite::fromRow(...),
         );
 
         if ($listResult->hasError()) {
@@ -84,20 +89,23 @@ trait AgentCrudReadTrait {
             return ['total' => 0, 'agents' => []];
         }
 
+        $agents = array_map(
+            fn(AgentSite $site): array => $site->toArray(),
+            $listResult->items(),
+        );
+
         return [
             'total'  => $countResult->value() ?? 0,
-            'agents' => $listResult->items(),
+            'agents' => $agents,
         ];
     }
 
-    private function mapAgentRow(array $row, bool $includePassword): array {
-        if ($includePassword) {
-            $row['app_password'] = $this->decrypt($row['app_password_encrypted']);
-        }
+    private function mapAgentRow(array $row, bool $includePassword): AgentSite {
+        $password = $includePassword
+            ? $this->decrypt($row['app_password_encrypted'])
+            : null;
 
-        unset($row['app_password_encrypted']);
-
-        return $row;
+        return AgentSite::fromRow($row, $password);
     }
 
     private function buildAgentWhereClause(array $filters): array {
