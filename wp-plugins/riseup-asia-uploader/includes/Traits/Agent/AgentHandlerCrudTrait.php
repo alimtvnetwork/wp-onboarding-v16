@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Agent\AgentManager;
 
 trait AgentHandlerCrudTrait {
@@ -31,7 +32,7 @@ trait AgentHandlerCrudTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->listAgents($filters, $limit, $offset);
 
-            return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'agents' => $result['agents']), 200);
+            return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'agents' => $result['agents']), HttpStatusType::Ok->value);
         }, 'list_agents');
     }
 
@@ -43,10 +44,10 @@ trait AgentHandlerCrudTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->addAgent($data);
             if (is_wp_error($result)) {
-                return $this->errorResponse($result->get_error_message(), 400);
+                return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
             }
 
-            return new WP_REST_Response(array('success' => true, 'agent_id' => $result, 'message' => 'Agent site added successfully'), 201);
+            return new WP_REST_Response(array('success' => true, 'agent_id' => $result, 'message' => 'Agent site added successfully'), HttpStatusType::Created->value);
         }, 'add_agent');
     }
 
@@ -68,10 +69,10 @@ trait AgentHandlerCrudTrait {
             $agent = $manager->getAgent($id, false);
             $isAgentMissing = ($agent === null);
             if ($isAgentMissing) {
-                return $this->errorResponse('Agent site not found', 404);
+                return $this->errorResponse('Agent site not found', HttpStatusType::NotFound->value);
             }
 
-            return new WP_REST_Response(array('success' => true, 'agent' => $agent), 200);
+            return new WP_REST_Response(array('success' => true, 'agent' => $agent), HttpStatusType::Ok->value);
         }, 'get_agent');
     }
 
@@ -83,10 +84,10 @@ trait AgentHandlerCrudTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->removeAgent($id);
             if (is_wp_error($result)) {
-                return $this->errorResponse($result->get_error_message(), 400);
+                return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
             }
 
-            return new WP_REST_Response(array('success' => true, 'message' => 'Agent site removed successfully'), 200);
+            return new WP_REST_Response(array('success' => true, 'message' => 'Agent site removed successfully'), HttpStatusType::Ok->value);
         }, 'remove_agent');
     }
 }

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use Throwable;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Agent\AgentManager;
 
@@ -27,7 +28,7 @@ trait AgentHandlerActionTrait {
             $this->fileLogger->info('Testing agent connection', array('id' => $id));
             $manager = AgentManager::getInstance();
             $result = $manager->testConnection($id);
-            $status_code = $result['success'] ? 200 : 400;
+            $status_code = $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value;
 
             return new WP_REST_Response($result, $status_code);
         }, 'test_agent');
@@ -41,10 +42,10 @@ trait AgentHandlerActionTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->syncPlugins($id);
             if (is_wp_error($result)) {
-                return $this->errorResponse($result->get_error_message(), 400);
+                return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
             }
 
-            return new WP_REST_Response(array('success' => true, 'plugins' => $result, 'count' => count($result)), 200);
+            return new WP_REST_Response(array('success' => true, 'plugins' => $result, 'count' => count($result)), HttpStatusType::Ok->value);
         }, 'sync_agent');
     }
 
@@ -57,18 +58,18 @@ trait AgentHandlerActionTrait {
             $this->fileLogger->info('Executing agent action', array('id' => $id, 'action' => $action, 'slug' => $slug));
             $allowed_actions = array('enable', 'disable', 'delete');
             if (BooleanHelpers::isAbsentFromList($action, $allowed_actions)) {
-                return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowed_actions), 400);
+                return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowed_actions), HttpStatusType::BadRequest->value);
             }
             if (empty($slug)) {
-                return $this->errorResponse('Plugin slug is required', 400);
+                return $this->errorResponse('Plugin slug is required', HttpStatusType::BadRequest->value);
             }
             $manager = AgentManager::getInstance();
             $result = $manager->executePluginAction($id, $action, $slug);
             if (is_wp_error($result)) {
-                return $this->errorResponse($result->get_error_message(), 400);
+                return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
             }
 
-            return new WP_REST_Response($result, 200);
+            return new WP_REST_Response($result, HttpStatusType::Ok->value);
         }, 'agent_action');
     }
 
@@ -82,7 +83,7 @@ trait AgentHandlerActionTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->getActionHistory($id, $limit, $offset);
 
-            return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'actions' => $result['actions']), 200);
+            return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'actions' => $result['actions']), HttpStatusType::Ok->value);
         }, 'agent_history');
     }
 }

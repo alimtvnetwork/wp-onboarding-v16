@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
@@ -23,7 +24,7 @@ trait SnapshotSettingsHandlerTrait {
     public function handleGetSnapshotSettings(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
-            return new WP_REST_Response(array('success' => true, 'settings' => $manager->getSettings()), 200);
+            return new WP_REST_Response(array('success' => true, 'settings' => $manager->getSettings()), HttpStatusType::Ok->value);
         }, 'get_snapshot_settings');
     }
 
@@ -35,7 +36,7 @@ trait SnapshotSettingsHandlerTrait {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $updated = $manager->updateSettings($body);
             $this->logger->logPluginAction('snapshot_settings_update', 'snapshot', StatusType::Success->value, array('keys' => array_keys($body)));
-            return new WP_REST_Response(array('success' => true, 'settings' => $updated), 200);
+            return new WP_REST_Response(array('success' => true, 'settings' => $updated), HttpStatusType::Ok->value);
         }, 'update_snapshot_settings');
     }
 
@@ -43,7 +44,7 @@ trait SnapshotSettingsHandlerTrait {
     public function handleListSnapshotProviders(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
-            return new WP_REST_Response(array('success' => true, 'providers' => $manager->getProviders()), 200);
+            return new WP_REST_Response(array('success' => true, 'providers' => $manager->getProviders()), HttpStatusType::Ok->value);
         }, 'list_snapshot_providers');
     }
 
@@ -51,7 +52,7 @@ trait SnapshotSettingsHandlerTrait {
     public function handleListSnapshotTables(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
-            return new WP_REST_Response(array('success' => true, 'tables' => $manager->getAvailableTables()), 200);
+            return new WP_REST_Response(array('success' => true, 'tables' => $manager->getAvailableTables()), HttpStatusType::Ok->value);
         }, 'list_snapshot_tables');
     }
 
@@ -65,7 +66,7 @@ trait SnapshotSettingsHandlerTrait {
             return new WP_REST_Response(array(
                 'success' => true, 'tables' => $analysis['tables'], 'dependencies' => $analysis['dependencies'],
                 'seed_order' => $analysis['seed_order'], 'table_count' => $analysis['table_count'], 'dep_count' => $analysis['dep_count'],
-            ), 200);
+            ), HttpStatusType::Ok->value);
         }, 'analyze_dependencies');
     }
 }

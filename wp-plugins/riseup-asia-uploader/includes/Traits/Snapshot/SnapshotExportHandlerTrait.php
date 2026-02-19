@@ -16,6 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -48,7 +49,7 @@ trait SnapshotExportHandlerTrait {
                     $result['error'] ?? 'Export failed'
                 );
 
-                return $this->errorResponse($result['error'], 400);
+                return $this->errorResponse($result['error'], HttpStatusType::BadRequest->value);
             }
 
             $filepath = $result['filepath'];
@@ -59,7 +60,7 @@ trait SnapshotExportHandlerTrait {
                     'Export file not found'
                 );
 
-                return $this->errorResponse('Export file not found', 500);
+                return $this->errorResponse('Export file not found', HttpStatusType::ServerError->value);
             }
 
             $this->logger->logPluginAction(
@@ -72,7 +73,7 @@ trait SnapshotExportHandlerTrait {
                 'filename' => $result['filename'],
                 'size'     => $result['size'],
                 'downloadUrl' => rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::SnapshotList->value . '/' . $id . '/download'),
-            ), 200);
+            ), HttpStatusType::Ok->value);
         }, 'export_snapshot');
     }
 
@@ -82,7 +83,7 @@ trait SnapshotExportHandlerTrait {
             $snapshotId = isset($body['snapshot_id']) ? (int) $body['snapshot_id'] : 0;
 
             if ($snapshotId <= 0) {
-                return $this->errorResponse('Missing or invalid snapshot_id', 400);
+                return $this->errorResponse('Missing or invalid snapshot_id', HttpStatusType::BadRequest->value);
             }
 
             return $this->buildDownloadResponse($snapshotId);
@@ -108,7 +109,7 @@ trait SnapshotExportHandlerTrait {
                 $result['error'] ?? 'Download failed'
             );
 
-            return $this->errorResponse($result['error'] ?? 'Export failed', 400);
+            return $this->errorResponse($result['error'] ?? 'Export failed', HttpStatusType::BadRequest->value);
         }
 
         $export = $result['export'];

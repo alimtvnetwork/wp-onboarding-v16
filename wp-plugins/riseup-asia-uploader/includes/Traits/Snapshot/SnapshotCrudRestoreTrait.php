@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\SnapshotOrchestrator;
@@ -44,7 +45,7 @@ trait SnapshotCrudRestoreTrait {
                 $result['success'] ? null : ($result['error'] ?? 'Delete failed')
             );
 
-            $statusCode = $result['success'] ? 200 : 400;
+            $statusCode = $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value;
             return new WP_REST_Response($result, $statusCode);
         }, 'delete_snapshot');
     }
@@ -66,7 +67,7 @@ trait SnapshotCrudRestoreTrait {
             unset($result['_mode']);
             $this->logSnapshotResult(ActionType::SnapshotRestore->value, '', $mode, $result);
 
-            return new WP_REST_Response($result, $result['success'] ? 200 : 400);
+            return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value);
         }, 'restore_snapshot');
     }
 

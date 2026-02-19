@@ -79,7 +79,7 @@ trait SnapshotBackupOpsTrait {
             'tables' => $result['tables'] ?? 0, 'total_rows' => $result['total_rows'] ?? 0,
             'errors' => $result['errors'] ?? array(), 'duration' => $result['duration'] ?? 0,
             'error' => $result['error'] ?? null,
-        ), $result['success'] ? 200 : 500);
+        ), $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
 
     /** Extract cleanup options from body. */
@@ -110,7 +110,7 @@ trait SnapshotBackupOpsTrait {
         return new WP_REST_Response(array(
             'success' => $result['success'], 'retention' => $result['retention'], 'orphans' => $result['orphans'],
             'stuck' => $result['stuck'], 'duration' => $result['duration'], 'dry_run' => $result['dry_run'], 'errors' => $result['errors'],
-        ), 200);
+        ), HttpStatusType::Ok->value);
     }
 
     /** Build a progress error response. */
