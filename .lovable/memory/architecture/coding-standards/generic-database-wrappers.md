@@ -64,4 +64,27 @@ Database operations across Go and PHP utilize a generic wrapper pattern to centr
 
 ---
 
+## Migration Status
+
+All database operations across both stacks are fully migrated to the generic wrapper pattern:
+
+### Go Services (pkg/dbutil)
+
+| Service | File | Methods migrated |
+|---------|------|-----------------|
+| Plugin | `plugin/crud.go` | All CRUD + query operations |
+| Site | `site/crud.go` | List, GetByID, GetByURL, Create, Update, Delete, updateConnectionStatus, cache queries (getRemotePluginsFromCache, cacheRemotePlugins, InvalidateRemotePluginsCache) |
+| Sync | `sync/crud.go` | GetFileChanges, RecordFileChange, MarkSynced, ClearChanges, getMappings, getMapping, getSiteInfo, updateMappingSyncStatus |
+
+### PHP Agent Traits (TypedQuery)
+
+| Trait | Status |
+|-------|--------|
+| `AgentCrudReadTrait` | Migrated — uses `AgentSite::fromRow(...)` mapper, returns `AgentSite` model via `getAgentModel()` |
+| `AgentCrudWriteTrait` | Migrated — uses `TypedQuery::exec()` with `DbExecResult` |
+| `AgentRemoteCoreTrait` | Migrated — accepts `AgentSite` model instead of raw arrays |
+| `AgentRemoteActionTrait` | Migrated — accepts `AgentSite` model instead of raw arrays |
+
+---
+
 *All new database operations MUST use `pkg/dbutil` (Go) or `TypedQuery` (PHP) instead of raw queries.*
