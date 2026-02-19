@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Database\Database;
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AdminErrorRenderTrait {
@@ -81,7 +82,7 @@ trait AdminErrorRenderTrait {
     /** Query error sessions for page rendering. */
     private function queryErrorPage(PDO $pdo, array $defaults): array {
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        $perPage = 50;
+        $perPage = PaginationConfigType::DefaultLimit->value;
         $offset = ($page - 1) * $perPage;
 
         $filter = $this->buildErrorFilters($defaults);
