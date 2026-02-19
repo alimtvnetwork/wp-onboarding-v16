@@ -42,6 +42,12 @@ enum TableType: string
         return $this === $other;
     }
 
+    /** Check if this enum case differs from the given case. */
+    public function isOtherThan(self $other): bool
+    {
+        return $this !== $other;
+    }
+
     /** Check if this table belongs to the snapshot domain. */
     public function isSnapshot(): bool
     {

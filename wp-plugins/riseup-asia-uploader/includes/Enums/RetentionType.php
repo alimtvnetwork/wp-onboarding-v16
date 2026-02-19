@@ -17,6 +17,7 @@ enum RetentionType: string
     case None  = 'none';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isDays(): bool  { return $this->isEqual(self::Days); }
     public function isCount(): bool { return $this->isEqual(self::Count); }

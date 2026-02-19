@@ -18,6 +18,7 @@ enum SnapshotScopeType: string
     case Custom    = 'custom';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isAll(): bool       { return $this->isEqual(self::All); }
     public function isWordPress(): bool { return $this->isEqual(self::WordPress); }

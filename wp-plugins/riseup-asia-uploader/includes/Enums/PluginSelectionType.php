@@ -17,6 +17,7 @@ enum PluginSelectionType: string
     case None   = 'none';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isAll(): bool    { return $this->isEqual(self::All); }
     public function isActive(): bool { return $this->isEqual(self::Active); }

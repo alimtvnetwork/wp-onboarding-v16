@@ -19,6 +19,7 @@ enum TriggerSourceType: string
     case Cli       = 'cli';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isApi(): bool       { return $this->isEqual(self::Api); }
     public function isDashboard(): bool { return $this->isEqual(self::Dashboard); }

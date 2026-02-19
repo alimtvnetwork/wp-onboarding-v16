@@ -87,6 +87,12 @@ enum EndpointType: string
         return $this === $other;
     }
 
+    /** Check if this enum case differs from the given case. */
+    public function isOtherThan(self $other): bool
+    {
+        return $this !== $other;
+    }
+
     /**
      * Return the route path ready for register_rest_route().
      * Encapsulates the '/' prefix so callers never touch ->value for routing.

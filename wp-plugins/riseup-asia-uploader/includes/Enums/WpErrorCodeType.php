@@ -39,6 +39,12 @@ enum WpErrorCodeType: string
         return $this === $other;
     }
 
+    /** Check if this enum case differs from the given case. */
+    public function isOtherThan(self $other): bool
+    {
+        return $this !== $other;
+    }
+
     /** Check if this code represents an authentication/authorization error. */
     public function isAuthError(): bool
     {

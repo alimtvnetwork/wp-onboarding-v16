@@ -18,6 +18,7 @@ enum SnapshotFrequencyType: string
     case Monthly = 'monthly';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isManual(): bool  { return $this->isEqual(self::Manual); }
     public function isDaily(): bool   { return $this->isEqual(self::Daily); }
