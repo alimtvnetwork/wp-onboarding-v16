@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -35,10 +36,8 @@ trait AgentRemoteCoreTrait {
         return $url;
     }
 
-    private function buildAuthHeader(array $agent): string {
-        $credentials = $agent['username'] . ':' . $agent['app_password'];
-
-        return 'Basic ' . base64_encode($credentials);
+    private function buildAuthHeader(AgentSite $agent): string {
+        return 'Basic ' . base64_encode($agent->username . ':' . $agent->appPassword);
     }
 
     /** Make an API request to an agent site. */
@@ -48,9 +47,8 @@ trait AgentRemoteCoreTrait {
         string $endpoint,
         array $body = array(),
     ): array|WP_Error {
-        $agent = $this->getAgent($agentId, true);
-        $isAgentMissing = ($agent === null || $agent === false);
-        if ($isAgentMissing) {
+        $agent = $this->getAgentModel($agentId, true);
+        if ($agent === null) {
             return new WP_Error('not_found', 'Agent site not found');
         }
 
@@ -66,12 +64,11 @@ trait AgentRemoteCoreTrait {
         return $this->parseAgentResponse($response, $agentId);
     }
 
-    private function resolveAgentBaseUrl(array $agent, string $endpoint): string {
-        $baseUrl = $agent['url'];
-        if (BooleanHelpers::hasValue($agent['redirect_url'])) {
+    private function resolveAgentBaseUrl(AgentSite $agent, string $endpoint): string {
+        $baseUrl = $agent->url;
+        if (BooleanHelpers::hasValue($agent->redirectUrl)) {
             $resolved = $this->resolveRedirectUrl($agent);
-            $isResolveFailed = is_wp_error($resolved);
-            if ($isResolveFailed === false) {
+            if (!is_wp_error($resolved)) {
                 $baseUrl = $resolved;
             }
         }
@@ -80,7 +77,7 @@ trait AgentRemoteCoreTrait {
     }
 
     private function buildAgentRequestArgs(
-        array $agent,
+        AgentSite $agent,
         string $method,
         array $body,
     ): array {
@@ -96,8 +93,7 @@ trait AgentRemoteCoreTrait {
 
         $hasBody = BooleanHelpers::hasValue($body);
         $isBodyMethod = in_array($method, array(HttpMethodType::Post->value, HttpMethodType::Put->value, HttpMethodType::Patch->value));
-        $shouldAttachBody = ($hasBody && $isBodyMethod);
-        if ($shouldAttachBody) {
+        if ($hasBody && $isBodyMethod) {
             $args['body'] = json_encode($body);
         }
 
