@@ -12,9 +12,10 @@ namespace RiseupAsia\Enums;
  */
 enum SnapshotTriggerType: string
 {
-    case Manual = 'manual';
-    case Cron   = 'cron';
-    case Api    = 'api';
+    case Manual    = 'manual';
+    case Scheduled = 'scheduled';
+    case Cron      = 'cron';
+    case Api       = 'api';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

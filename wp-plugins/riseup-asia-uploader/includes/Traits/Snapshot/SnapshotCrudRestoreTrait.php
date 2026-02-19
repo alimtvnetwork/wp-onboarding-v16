@@ -66,7 +66,7 @@ trait SnapshotCrudRestoreTrait {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $this->routeRestoreToEngine($id, $options, $manager);
 
-            $mode = $result['_mode'] ?? 'legacy';
+            $mode = $result['_mode'] ?? SnapshotWorkerModeType::Legacy->value;
             unset($result['_mode']);
             $this->logSnapshotResult(ActionType::SnapshotRestore->value, '', $mode, $result);
 
