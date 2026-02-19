@@ -21,4 +21,10 @@ enum SnapshotConfigType: int {
     case WorkerPoolMax         = 10;
     case WorkerPoolDefault     = 5;
     case StuckHours            = 24;
+
+    /** Default snapshot title prefix. */
+    public const DefaultTitle = 'Snapshot';
+
+    /** Root database filename used in per-table snapshots. */
+    public const RootDbFilename = 'a-root.db';
 }

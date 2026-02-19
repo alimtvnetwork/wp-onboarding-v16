@@ -13,7 +13,9 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
+use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
@@ -35,7 +37,7 @@ trait SnapshotSettingsHandlerTrait {
             $this->fileLogger->info('Updating snapshot settings', array('keys' => array_keys($body)));
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $updated = $manager->updateSettings($body);
-            $this->logger->logPluginAction('snapshot_settings_update', 'snapshot', StatusType::Success->value, array('keys' => array_keys($body)));
+            $this->logger->logPluginAction(ActionType::SnapshotSettingsUpdate->value, LogCategoryType::Snapshot->value, StatusType::Success->value, array('keys' => array_keys($body)));
             return new WP_REST_Response(array('success' => true, 'settings' => $updated), HttpStatusType::Ok->value);
         }, 'update_snapshot_settings');
     }

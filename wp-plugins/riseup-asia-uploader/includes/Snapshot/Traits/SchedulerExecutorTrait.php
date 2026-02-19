@@ -60,7 +60,7 @@ trait SchedulerExecutorTrait {
         $action = ($snapshotType === SnapshotModeType::Incremental->value) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
 
         return $this->buildCronResult($result, $action, TriggerSourceType::Dashboard->value, array(
-            'trigger' => 'manual', 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshotType,
+            'trigger' => SnapshotTriggerType::Manual->value, 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshotType,
         ));
     }
 

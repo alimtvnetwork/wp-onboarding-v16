@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\PathHelper;
@@ -22,7 +23,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 trait WorkerSetupTrait {
 
     private function prepareSnapshotDir(array $config): array {
-        $title = $config['title'] ?? ('Snapshot ' . date('Y-m-d H:i'));
+        $title = $config['title'] ?? (SnapshotConfigType::DefaultTitle . ' ' . date('Y-m-d H:i'));
         $scope = $config['scope'] ?? SnapshotScopeType::WordPress->value;
         $type  = $config['type'] ?? SnapshotModeType::Full->value;
 
@@ -48,9 +49,9 @@ trait WorkerSetupTrait {
     }
 
     private function initRootDb(string $snapshotDir, array $config): PDO {
-        $rootPdo = $this->rootDb->create($snapshotDir . '/a-root.db');
+        $rootPdo = $this->rootDb->create($snapshotDir . '/' . SnapshotConfigType::RootDbFilename);
         $this->rootDb->populateMetadata($rootPdo, array(
-            'title' => $config['title'] ?? 'Snapshot', 'type' => $config['type'] ?? SnapshotModeType::Full->value, 'settings' => $config['settings'] ?? null,
+            'title' => $config['title'] ?? SnapshotConfigType::DefaultTitle, 'type' => $config['type'] ?? SnapshotModeType::Full->value, 'settings' => $config['settings'] ?? null,
         ));
 
         return $rootPdo;

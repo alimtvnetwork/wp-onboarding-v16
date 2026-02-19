@@ -16,6 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotExporter;
@@ -68,7 +69,7 @@ trait SnapshotImportStreamTrait {
         $filename = $export['zip_filename'];
         $filesize = filesize($filepath);
 
-        $this->logger->logPluginAction(ActionType::SnapshotZipDownload->value, 'snapshot', StatusType::Success->value,
+        $this->logger->logPluginAction(ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
             array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming'));
 
         $this->sendZipHeaders($filename, $filesize);
@@ -107,7 +108,7 @@ trait SnapshotImportStreamTrait {
             ));
 
             $this->logger->logPluginAction(
-                ActionType::SnapshotImport->value, 'snapshot', StatusType::Success->value,
+                ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
                 array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
             );
 
@@ -116,7 +117,7 @@ trait SnapshotImportStreamTrait {
             $result = $importer->import($tmp_file);
 
             $this->logger->logPluginAction(
-                ActionType::SnapshotImport->value, 'snapshot',
+                ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value,
                 $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
                 array('filename' => $original_name, 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Import failed')

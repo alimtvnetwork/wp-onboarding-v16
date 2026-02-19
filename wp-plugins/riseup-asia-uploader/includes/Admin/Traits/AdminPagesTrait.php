@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Snapshot\SnapshotFactory;
@@ -59,21 +60,21 @@ trait AdminPagesTrait {
     /** Get action label map for display. */
     private function getActionLabels(): array {
         return array(
-            'upload_initiated' => 'Upload Initiated',
-            'upload'          => 'Plugin Upload',
-            'upload_active'   => 'Upload & Activate',
-            'enable'          => 'Plugin Enable',
-            'disable'         => 'Plugin Disable',
-            'delete'          => 'Plugin Delete',
-            'file_replace'    => 'File Replace',
-            'file_delete'     => 'File Delete',
-            'sync'            => 'Sync Check',
-            'post_create'     => 'Post Create',
-            'post_update'     => 'Post Update',
-            'category_create' => 'Category Create',
-            'media_upload'    => 'Media Upload',
-            'auth_failed'     => 'Auth Failed',
-            'export_self'     => 'Export Self',
+            ActionType::UploadInitiated->value => 'Upload Initiated',
+            ActionType::Upload->value          => 'Plugin Upload',
+            ActionType::UploadActive->value    => 'Upload & Activate',
+            ActionType::Enable->value          => 'Plugin Enable',
+            ActionType::Disable->value         => 'Plugin Disable',
+            ActionType::Delete->value          => 'Plugin Delete',
+            ActionType::FileReplace->value     => 'File Replace',
+            ActionType::FileDelete->value      => 'File Delete',
+            ActionType::Sync->value            => 'Sync Check',
+            ActionType::PostCreate->value      => 'Post Create',
+            ActionType::PostUpdate->value      => 'Post Update',
+            ActionType::CategoryCreate->value  => 'Category Create',
+            ActionType::MediaUpload->value     => 'Media Upload',
+            ActionType::AuthFailed->value      => 'Auth Failed',
+            ActionType::ExportSelf->value      => 'Export Self',
         );
     }
 

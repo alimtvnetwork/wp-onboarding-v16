@@ -7,6 +7,7 @@ use Exception;
 use Throwable;
 use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Snapshot\Traits\ImportValidationTrait;
 use RiseupAsia\Snapshot\Traits\ImportExecutionTrait;
 use RiseupAsia\Database\Database;
@@ -65,7 +66,7 @@ class SnapshotImport {
     private function extractAndImport(string $uploadedPath, string $tempDir): array {
         try {
             $this->extractZipTo($uploadedPath, $tempDir);
-            $rootDbPath = $this->findFileRecursive($tempDir, 'a-root.db');
+            $rootDbPath = $this->findFileRecursive($tempDir, SnapshotConfigType::RootDbFilename);
             $result = ($rootDbPath !== null)
                 ? $this->importPerTable($tempDir, $rootDbPath)
                 : $this->manager->importSnapshot($uploadedPath);

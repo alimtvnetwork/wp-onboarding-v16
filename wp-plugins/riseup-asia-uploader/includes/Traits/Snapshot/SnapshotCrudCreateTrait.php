@@ -16,6 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
@@ -39,7 +40,7 @@ trait SnapshotCrudCreateTrait {
             $body = $request->get_json_params();
             $scope = isset($body['scope']) ? sanitize_key($body['scope']) : 'all';
 
-            $this->logger->logPluginAction(ActionType::SnapshotCreate->value, 'snapshot', StatusType::Success->value,
+            $this->logger->logPluginAction(ActionType::SnapshotCreate->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -49,7 +50,7 @@ trait SnapshotCrudCreateTrait {
                 ? $this->executePerTableSnapshot($body, $scope, $manager)
                 : $this->executeLegacySnapshot($body, $scope, $manager);
 
-            $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? SnapshotWorkerModeType::PerTable->value : 'legacy', $result);
+            $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? SnapshotWorkerModeType::PerTable->value : SnapshotWorkerModeType::Legacy->value, $result);
 
             return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
         }, 'create_snapshot');
@@ -101,7 +102,7 @@ trait SnapshotCrudCreateTrait {
         array $result,
     ) {
         $this->logger->logPluginAction(
-            $action, 'snapshot',
+            $action, LogCategoryType::Snapshot->value,
             $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
             array('scope' => $scope, 'mode' => $mode, 'phase' => 'complete'),
             $result['success'] ? null : ($result['error'] ?? 'Unknown error')
