@@ -42,7 +42,7 @@ type Session struct {
 	StartedAt  time.Time              `json:"startedAt"`
 	EndedAt    *time.Time             `json:"endedAt,omitempty"`
 	ErrorMsg   string                 `json:"errorMessage,omitempty"`
-	Metadata   map[string]any         `json:"metadata,omitempty"`
+	Metadata   json.RawMessage        `json:"metadata,omitempty"`
 	logFile    *os.File
 	mu         sync.Mutex
 }
@@ -197,7 +197,7 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 		SiteName:   siteName,
 		Status:     "running",
 		StartedAt:  time.Now().UTC(),
-		Metadata:   make(map[string]any),
+		Metadata:   json.RawMessage(`{}`),
 	}
 
 	// Create session directory
@@ -837,8 +837,8 @@ func (s *Service) ClearAllSessions() error {
 	return nil
 }
 
-// SetMetadata sets metadata on a session
-func (s *Service) SetMetadata(sessionID, key string, value any) {
+// SetMetadata sets a key-value pair on a session's metadata JSON object.
+func (s *Service) SetMetadata(sessionID, key string, value json.RawMessage) {
 	s.mu.RLock()
 	session, exists := s.sessions[sessionID]
 	s.mu.RUnlock()
@@ -848,9 +848,11 @@ func (s *Service) SetMetadata(sessionID, key string, value any) {
 	}
 
 	session.mu.Lock()
-	if session.Metadata == nil {
-		session.Metadata = make(map[string]any)
+	var m map[string]json.RawMessage
+	if len(session.Metadata) == 0 || json.Unmarshal(session.Metadata, &m) != nil {
+		m = make(map[string]json.RawMessage)
 	}
-	session.Metadata[key] = value
+	m[key] = value
+	session.Metadata, _ = json.Marshal(m)
 	session.mu.Unlock()
 }

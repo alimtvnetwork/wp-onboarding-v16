@@ -29,9 +29,15 @@ func newAPIClient(baseURL string) *apiClient {
 type apiResponse struct {
 	StatusCode int
 	Success    bool              `json:"success"`
-	Data       any               `json:"data"`
-	Error      map[string]any    `json:"error"`
+	Data       json.RawMessage   `json:"data"`
+	Error      json.RawMessage   `json:"error"`
 	RawBody    string
+}
+
+// apiErrorPayload is the typed structure for parsed error responses.
+type apiErrorPayload struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // get performs a GET request
@@ -92,45 +98,91 @@ func (c *apiClient) do(method, path string, body any) (*apiResponse, error) {
 		RawBody:    string(rawBytes),
 	}
 
-	// Parse JSON response
-	var parsed map[string]any
-	if err := json.Unmarshal(rawBytes, &parsed); err == nil {
-		if s, ok := parsed["success"].(bool); ok {
-			result.Success = s
-		}
-		if d, ok := parsed["data"]; ok {
-			result.Data = d
-		}
-		if e, ok := parsed["error"].(map[string]any); ok {
-			result.Error = e
-		}
+	// Parse JSON response into typed envelope
+	var envelope struct {
+		Success bool            `json:"success"`
+		Data    json.RawMessage `json:"data"`
+		Error   json.RawMessage `json:"error"`
+	}
+	if json.Unmarshal(rawBytes, &envelope) == nil {
+		result.Success = envelope.Success
+		result.Data = envelope.Data
+		result.Error = envelope.Error
 	}
 
 	return result, nil
 }
 
-// dataMap returns the response data as a map, or nil
-func (r *apiResponse) dataMap() map[string]any {
-	if m, ok := r.Data.(map[string]any); ok {
-		return m
+// dataField extracts a string field from the data JSON object, or returns empty string
+func (r *apiResponse) dataField(key string) string {
+	if len(r.Data) == 0 {
+		return ""
 	}
-	return nil
-}
-
-// dataSlice returns the response data as a slice, or nil
-func (r *apiResponse) dataSlice() []any {
-	if s, ok := r.Data.([]any); ok {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(r.Data, &m) != nil {
+		return ""
+	}
+	raw, ok := m[key]
+	if !ok {
+		return ""
+	}
+	var s string
+	if json.Unmarshal(raw, &s) == nil {
 		return s
 	}
-	return nil
+	return ""
+}
+
+// dataFieldFloat extracts a float64 field from the data JSON object
+func (r *apiResponse) dataFieldFloat(key string) (float64, bool) {
+	if len(r.Data) == 0 {
+		return 0, false
+	}
+	var m map[string]json.RawMessage
+	if json.Unmarshal(r.Data, &m) != nil {
+		return 0, false
+	}
+	raw, ok := m[key]
+	if !ok {
+		return 0, false
+	}
+	var f float64
+	if json.Unmarshal(raw, &f) == nil {
+		return f, true
+	}
+	return 0, false
+}
+
+// hasDataField checks if the data JSON object contains a given key
+func (r *apiResponse) hasDataField(key string) bool {
+	if len(r.Data) == 0 {
+		return false
+	}
+	var m map[string]json.RawMessage
+	if json.Unmarshal(r.Data, &m) != nil {
+		return false
+	}
+	_, ok := m[key]
+	return ok
+}
+
+// isDataArray checks if the data is a non-empty JSON array
+func (r *apiResponse) isDataArray() bool {
+	if len(r.Data) == 0 {
+		return false
+	}
+	var arr []json.RawMessage
+	return json.Unmarshal(r.Data, &arr) == nil && len(arr) > 0
 }
 
 // errorCode returns the error code from the response, or empty string
 func (r *apiResponse) errorCode() string {
-	if r.Error != nil {
-		if code, ok := r.Error["code"].(string); ok {
-			return code
-		}
+	if len(r.Error) == 0 {
+		return ""
+	}
+	var ep apiErrorPayload
+	if json.Unmarshal(r.Error, &ep) == nil {
+		return ep.Code
 	}
 	return ""
 }

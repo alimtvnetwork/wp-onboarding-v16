@@ -36,10 +36,10 @@ type RequestSession struct {
 
 // SessionLogEntry is a single log entry within a request session
 type SessionLogEntry struct {
-	Timestamp string                 `json:"timestamp"`
-	Level     string                 `json:"level"`
-	Message   string                 `json:"message"`
-	Details   map[string]any `json:"details,omitempty"`
+	Timestamp string          `json:"timestamp"`
+	Level     string          `json:"level"`
+	Message   string          `json:"message"`
+	Details   json.RawMessage `json:"details,omitempty"`
 }
 
 // SessionStore interface for persisting request sessions

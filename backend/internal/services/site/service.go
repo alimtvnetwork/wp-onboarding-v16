@@ -1413,65 +1413,39 @@ func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 		details.PluginIDUsed = apiErr.PluginIDUsed
 	}
 
-	// Try to parse structured data from response body
-	var respData map[string]any
-	if json.Unmarshal([]byte(apiErr.ResponseBody), &respData) != nil {
+	// Try to parse structured data from response body using typed envelope structs
+	var envResp errorResponseEnvelope
+	if json.Unmarshal([]byte(apiErr.ResponseBody), &envResp) != nil {
 		return details
 	}
 
 	// Envelope format: Errors.Backend and Errors.DelegatedServiceErrorStack
-	if errorsObj, ok := respData["Errors"].(map[string]any); ok {
-		if backendMsg, ok := errorsObj["BackendMessage"].(string); ok {
-			details.ErrorMessage = backendMsg
-		}
-		if delegatedStack, ok := errorsObj["DelegatedServiceErrorStack"].([]any); ok {
-			lines := make([]string, 0, len(delegatedStack))
-			for _, line := range delegatedStack {
-				if str, ok := line.(string); ok {
-					lines = append(lines, str)
-				}
-			}
-			details.DelegatedServiceErrorStack = lines
-		}
-		if backendStack, ok := errorsObj["Backend"].([]any); ok && len(backendStack) > 0 {
-			if raw, marshalErr := json.Marshal(backendStack); marshalErr == nil {
-				details.PHPBackendStack = raw
-			}
-		}
+	if envResp.Errors.BackendMessage != "" {
+		details.ErrorMessage = envResp.Errors.BackendMessage
+	}
+	if len(envResp.Errors.DelegatedServiceErrorStack) > 0 {
+		details.DelegatedServiceErrorStack = envResp.Errors.DelegatedServiceErrorStack
+	}
+	if len(envResp.Errors.Backend) > 0 {
+		details.PHPBackendStack = envResp.Errors.Backend
 	}
 
 	// Legacy format: error.details.stackTraceFrames
-	if errObj, ok := respData["error"].(map[string]any); ok {
-		if detailsObj, ok := errObj["details"].(map[string]any); ok {
-			if frames, ok := detailsObj["stackTraceFrames"].([]any); ok {
-				parsed := make([]PHPStackFrame, 0, len(frames))
-				for _, f := range frames {
-					if fm, ok := f.(map[string]any); ok {
-						frame := PHPStackFrame{}
-						if fn, ok := fm["function"].(string); ok {
-							frame.Function = fn
-						}
-						if file, ok := fm["file"].(string); ok {
-							frame.File = file
-						}
-						if line, ok := fm["line"].(float64); ok {
-							frame.Line = int(line)
-						}
-						if class, ok := fm["class"].(string); ok {
-							frame.Class = class
-						}
-						parsed = append(parsed, frame)
-					}
-				}
-				details.StackTraceFrames = parsed
-			}
-			if file, ok := detailsObj["fileFull"].(string); ok {
-				details.ErrorFile = file
-			}
-			if line, ok := detailsObj["line"].(float64); ok {
-				details.ErrorLine = int(line)
-			}
+	if envResp.ErrorLegacy.Details.StackTraceFrames != nil {
+		parsed := make([]PHPStackFrame, 0, len(envResp.ErrorLegacy.Details.StackTraceFrames))
+		for _, fm := range envResp.ErrorLegacy.Details.StackTraceFrames {
+			parsed = append(parsed, PHPStackFrame{
+				Function: fm.Function,
+				File:     fm.File,
+				Line:     fm.Line,
+				Class:    fm.Class,
+			})
 		}
+		details.StackTraceFrames = parsed
+		if envResp.ErrorLegacy.Details.FileFull != "" {
+			details.ErrorFile = envResp.ErrorLegacy.Details.FileFull
+		}
+		details.ErrorLine = envResp.ErrorLegacy.Details.Line
 	}
 
 	return details
@@ -1491,26 +1465,15 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 	}
 
 	// Parse details for name resolution in structured logging
-	var detailsMap map[string]any
+	var logCtx remoteActionLogContext
 	if len(details) > 0 {
-		_ = json.Unmarshal(details, &detailsMap)
+		_ = json.Unmarshal(details, &logCtx)
 	}
 
 	// Resolve names from details or DB for structured logging
-	siteName := ""
-	siteURL := ""
-	pluginSlug := ""
-	if detailsMap != nil {
-		if v, ok := detailsMap["siteName"].(string); ok {
-			siteName = v
-		}
-		if v, ok := detailsMap["siteUrl"].(string); ok {
-			siteURL = v
-		}
-		if v, ok := detailsMap["pluginSlug"].(string); ok {
-			pluginSlug = v
-		}
-	}
+	siteName := logCtx.SiteName
+	siteURL := logCtx.SiteURL
+	pluginSlug := logCtx.PluginSlug
 	// DB fallback for site info
 	if (siteName == "" || siteURL == "") && siteID > 0 {
 		if site, err := s.GetByID(context.Background(), siteID); err == nil {
