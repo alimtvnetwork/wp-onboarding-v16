@@ -12,23 +12,24 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait AdminSettingsTrait {
 
     /** Register settings. */
     public function registerSettings(): void {
         register_setting(
-            'riseup_asia_settings_group',
-            self::OPTION_NAME,
+            PluginConfigType::SettingsGroup->value,
+            OptionNameType::PluginSettings->value,
             array($this, 'sanitizeSettings')
         );
 
         register_setting(
-            'riseup_asia_settings_group',
-            UpdateResolver::OPTION_NAME,
+            PluginConfigType::SettingsGroup->value,
+            OptionNameType::UpdateSettings->value,
             array($this, 'sanitizeUpdateSettings')
         );
     }
@@ -61,7 +62,7 @@ trait AdminSettingsTrait {
 
     /** Sanitize auto-update settings on save. */
     public function sanitizeUpdateSettings(array $input): array {
-        $current = get_option(UpdateResolver::OPTION_NAME, array());
+        $current = get_option(OptionNameType::UpdateSettings->value, array());
         $sanitized = $this->buildSanitizedUpdateFields($input, $current);
 
         if (isset($current['master_url']) && $current['master_url'] !== $sanitized['master_url']) {
@@ -90,7 +91,7 @@ trait AdminSettingsTrait {
 
     /** Get plugin settings. */
     public static function getSettings(): array {
-        $settings = get_option(self::OPTION_NAME, array());
+        $settings = get_option(OptionNameType::PluginSettings->value, array());
 
         return wp_parse_args($settings, self::$defaults);
     }

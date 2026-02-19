@@ -11,8 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Admin\Admin;
-use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Helpers\BooleanHelpers;
 ?>
 <style>
@@ -40,7 +40,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
     <?php endif; ?>
 
     <form method="post" action="options.php">
-        <?php settings_fields('riseup_asia_settings_group'); ?>
+        <?php settings_fields(PluginConfigType::SettingsGroup->value); ?>
 
         <!-- Plugin Info -->
         <div class="riseup-card">
@@ -80,7 +80,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="update_enabled"
-                                   name="<?php echo esc_attr(UpdateResolver::OPTION_NAME); ?>[enabled]" 
+                                   name="<?php echo esc_attr(OptionNameType::UpdateSettings->value); ?>[enabled]" 
                                    value="1" 
                                    <?php $isUpdateEnabled = BooleanHelpers::hasValue($update_settings['enabled'] ?? null); checked($isUpdateEnabled); ?>>
                             <span class="toggle-slider"></span>
@@ -95,7 +95,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     <td>
                         <input type="url" 
                                id="master_url"
-                               name="<?php echo esc_attr(UpdateResolver::OPTION_NAME); ?>[master_url]" 
+                               name="<?php echo esc_attr(OptionNameType::UpdateSettings->value); ?>[master_url]" 
                                value="<?php echo esc_attr($update_settings['master_url']); ?>" 
                                class="regular-text"
                                placeholder="https://updates.example.com/plugin">
@@ -107,7 +107,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <label for="cache_days"><?php esc_html_e('Cache Duration', 'riseup-asia-uploader'); ?></label>
                     </th>
                     <td>
-                        <select id="cache_days" name="<?php echo esc_attr(UpdateResolver::OPTION_NAME); ?>[cache_days]">
+                        <select id="cache_days" name="<?php echo esc_attr(OptionNameType::UpdateSettings->value); ?>[cache_days]">
                             <option value="1" <?php selected($update_settings['cache_days'], 1); ?>>1 <?php esc_html_e('day', 'riseup-asia-uploader'); ?></option>
                             <option value="7" <?php selected($update_settings['cache_days'], 7); ?>>7 <?php esc_html_e('days', 'riseup-asia-uploader'); ?></option>
                             <option value="14" <?php selected($update_settings['cache_days'], 14); ?>>14 <?php esc_html_e('days', 'riseup-asia-uploader'); ?></option>
