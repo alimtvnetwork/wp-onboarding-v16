@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
@@ -35,7 +36,7 @@ trait PostQueryTrait {
             if ($hasStatus) {
                 $args['post_status'] = $this->validatePostStatus($params['status']);
             } else {
-                $args['post_status'] = array('publish', 'draft', 'pending');
+                $args['post_status'] = PostStatusType::validValues();
             }
 
             $hasSearch = BooleanHelpers::hasValue($params['search'] ?? null);
