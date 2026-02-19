@@ -26,11 +26,13 @@ trait AdminMenuTrait {
 
     /** Register the main admin menu page. */
     private function registerMainMenu() {
+        $slug = PluginConfigType::Slug->value;
+
         add_menu_page(
             __('Riseup Asia Uploader', 'riseup-asia-uploader'),
             __('Riseup Uploader', 'riseup-asia-uploader'),
             CapabilityType::ManageOptions->value,
-            'riseup-asia-uploader',
+            $slug,
             array($this, 'renderLogsPage'),
             'dashicons-upload',
             80
@@ -39,8 +41,10 @@ trait AdminMenuTrait {
 
     /** Register standard submenus. */
     private function registerSubmenus() {
+        $slug = PluginConfigType::Slug->value;
+
         $submenus = array(
-            array('riseup-asia-uploader', 'Activity Logs', 'renderLogsPage'),
+            array($slug, 'Activity Logs', 'renderLogsPage'),
             array('riseup-asia-settings', 'Settings', 'renderSettingsPage'),
             array('riseup-asia-agents', 'Agent Sites', 'renderAgentsPage'),
             array('riseup-asia-snapshots', 'Snapshots', 'renderSnapshotsPage'),
@@ -48,7 +52,7 @@ trait AdminMenuTrait {
 
         foreach ($submenus as $item) {
             add_submenu_page(
-                'riseup-asia-uploader',
+                $slug,
                 __($item[1], 'riseup-asia-uploader'),
                 __($item[1], 'riseup-asia-uploader'),
                 CapabilityType::ManageOptions->value,
@@ -60,10 +64,11 @@ trait AdminMenuTrait {
 
     /** Register the error log submenu with notification bubble. */
     private function registerErrorSubmenu() {
+        $slug = PluginConfigType::Slug->value;
         $errorBubble = $this->buildErrorBubble();
 
         add_submenu_page(
-            'riseup-asia-uploader',
+            $slug,
             __('Error Log', 'riseup-asia-uploader'),
             __('Error Log', 'riseup-asia-uploader') . $errorBubble,
             CapabilityType::ManageOptions->value,
@@ -84,7 +89,8 @@ trait AdminMenuTrait {
 
     /** Enqueue admin assets. */
     public function enqueueAdminAssets($hook) {
-        if (strpos($hook, 'riseup-asia') === false) {
+        $isNonPluginPage = (strpos($hook, 'riseup-asia') === false);
+        if ($isNonPluginPage) {
             return;
         }
 
