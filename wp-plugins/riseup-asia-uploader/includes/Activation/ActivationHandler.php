@@ -23,6 +23,8 @@ class ActivationHandler
 {
     private const TIMESTAMP_FORMAT = 'Y-m-d\TH:i:s';
     private const VERSION_UNKNOWN = 'unknown';
+    private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
+    private const DIAGNOSTICS_EXPIRY = 86400; // 24 hours
 
     public static function activate(): void {
         error_log('[Riseup Asia] ActivationHandler::activate() — starting activation');
@@ -39,9 +41,40 @@ class ActivationHandler
             error_log('[Riseup Asia] ActivationHandler::activate() — directories ensured');
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
+            self::runBootDiagnostics();
             error_log('[Riseup Asia] ActivationHandler::activate() — activation complete');
         } catch (Throwable $e) {
             error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Run autoloader diagnostics and store results in a transient.
+     * Uses native error_log() since FileLogger may not be available.
+     */
+    private static function runBootDiagnostics(): void {
+        $isAutoloaderMissing = !class_exists('RiseupAsiaAutoloader', false);
+        if ($isAutoloaderMissing) {
+            error_log('[Riseup Asia] ActivationHandler: autoloader class not available for diagnostics');
+
+            return;
+        }
+
+        $result = \RiseupAsiaAutoloader::runDiagnostics();
+        $hasFailures = (count($result['failed']) > 0);
+
+        $diagnosticData = [
+            'timestamp'    => gmdate(self::TIMESTAMP_FORMAT) . 'Z',
+            'loaded_count' => count($result['loaded']),
+            'failed_count' => count($result['failed']),
+            'failures'     => $result['failed'],
+            'runtime_failures' => \RiseupAsiaAutoloader::getFailedClasses(),
+        ];
+
+        set_transient(self::DIAGNOSTICS_TRANSIENT, $diagnosticData, self::DIAGNOSTICS_EXPIRY);
+
+        if ($hasFailures) {
+            error_log('[Riseup Asia] ActivationHandler: boot diagnostics found ' . count($result['failed']) . ' file(s) with errors');
         }
     }
 

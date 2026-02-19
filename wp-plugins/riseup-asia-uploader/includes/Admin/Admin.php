@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Admin\Traits\AdminMenuSettingsTrait;
+use RiseupAsia\Admin\Traits\AdminNoticesTrait;
 use RiseupAsia\Admin\Traits\AdminPagesTrait;
 use RiseupAsia\Admin\Traits\AdminAjaxTrait;
 use RiseupAsia\Admin\Traits\AdminErrorPageTrait;
@@ -31,6 +32,7 @@ use RiseupAsia\Enums\PaginationConfigType;
 class Admin {
 
     use AdminMenuSettingsTrait;
+    use AdminNoticesTrait;
     use AdminPagesTrait;
     use AdminAjaxTrait;
     use AdminErrorPageTrait;
@@ -83,6 +85,7 @@ class Admin {
     /** Constructor. */
     private function __construct() {
         error_log('[Riseup Asia] Admin::__construct() — registering admin hooks');
+        $this->registerBootNotices();
         add_action(HookType::AdminMenu->value, array($this, 'addAdminMenu'));
         add_action(HookType::AdminInit->value, array($this, 'registerSettings'));
         add_action(HookType::AdminEnqueue->value, array($this, 'enqueueAdminAssets'));
