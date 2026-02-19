@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UpdateResolverFetchTrait {
@@ -21,7 +22,7 @@ trait UpdateResolverFetchTrait {
         $settings = $this->getSettings();
         $isDisabled = ($settings['enabled'] === false);
         if ($isDisabled) {
-            return new WP_Error('disabled', 'Auto-update is disabled');
+            return new WP_Error(WpErrorCodeType::Disabled->value, 'Auto-update is disabled');
         }
 
         $updateUrl = $this->resolveUpdateUrl($settings, $forceCheck);
@@ -96,7 +97,7 @@ trait UpdateResolverFetchTrait {
         }
 
         $this->saveSettings(array('last_error' => $errorMsg, 'last_check' => current_time('mysql', true)));
-        return new WP_Error('http_error', $errorMsg);
+        return new WP_Error(WpErrorCodeType::HttpError->value, $errorMsg);
     }
 
     private function parseUpdateResponseBody(array|WP_Error $response, string $updateUrl): array {

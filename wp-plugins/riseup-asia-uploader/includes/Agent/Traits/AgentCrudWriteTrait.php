@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use WP_Error;
 use RiseupAsia\Database\TypedQuery;
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudWriteTrait {
@@ -35,7 +36,7 @@ trait AgentCrudWriteTrait {
 
         $pdo = $this->db->getPdo();
         if ($pdo === null) {
-            return new WP_Error('db_error', 'Database not available');
+            return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Database not available');
         }
 
         $query = new TypedQuery($pdo);
@@ -50,7 +51,7 @@ trait AgentCrudWriteTrait {
 
         if ($result->hasError()) {
             $this->fileLogger->logException($result->error(), 'Failed to add agent site');
-            return new WP_Error('db_error', 'Failed to add agent site');
+            return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to add agent site');
         }
 
         $agentId = $result->lastInsertId();
@@ -64,12 +65,12 @@ trait AgentCrudWriteTrait {
 
         $pdo = $this->db->getPdo();
         if ($pdo === null) {
-            return new WP_Error('db_error', 'Database not available');
+            return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Database not available');
         }
 
         $update = $this->buildUpdateSets($data);
         if (empty($update['sets'])) {
-            return new WP_Error('no_data', 'No fields to update');
+            return new WP_Error(WpErrorCodeType::NoData->value, 'No fields to update');
         }
 
         $update['sets'][] = 'updated_at = ?';
@@ -83,7 +84,7 @@ trait AgentCrudWriteTrait {
 
         if ($result->hasError()) {
             $this->fileLogger->logException($result->error(), 'Failed to update agent site');
-            return new WP_Error('db_error', 'Failed to update agent site');
+            return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to update agent site');
         }
 
         $this->fileLogger->info('Agent site updated', ['id' => $id]);
@@ -96,7 +97,7 @@ trait AgentCrudWriteTrait {
 
         $pdo = $this->db->getPdo();
         if ($pdo === null) {
-            return new WP_Error('db_error', 'Database not available');
+            return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Database not available');
         }
 
         $query = new TypedQuery($pdo);
@@ -104,7 +105,7 @@ trait AgentCrudWriteTrait {
 
         if ($result->hasError()) {
             $this->fileLogger->logException($result->error(), 'Failed to remove agent site');
-            return new WP_Error('db_error', 'Failed to remove agent site');
+            return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to remove agent site');
         }
 
         $this->fileLogger->info('Agent site removed', ['id' => $id]);
@@ -122,7 +123,7 @@ trait AgentCrudWriteTrait {
             return null;
         }
 
-        return new WP_Error('missing_fields', 'Name, URL, username, and application password are required');
+        return new WP_Error(WpErrorCodeType::MissingFields->value, 'Name, URL, username, and application password are required');
     }
 
     private function buildUpdateSets(array $data): array {

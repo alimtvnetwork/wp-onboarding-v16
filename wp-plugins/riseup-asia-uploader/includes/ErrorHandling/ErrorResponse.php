@@ -13,6 +13,7 @@ use WP_Error;
 use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Logging\FileLogger;
 
 class ErrorResponse {
@@ -75,7 +76,7 @@ class ErrorResponse {
         FileLogger $logger,
         Throwable $e,
         string $context = '',
-        string $code = 'internal_error',
+        string $code = 'internal_error', // Matches WpErrorCodeType::InternalError->value; literal required for default
         int $status = HttpStatusType::ServerError->value,
     ): WP_Error {
         $logger->logException($e, $context);

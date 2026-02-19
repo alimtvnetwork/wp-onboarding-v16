@@ -1,0 +1,41 @@
+<?php
+/**
+ * WpErrorCodeType — Standardized WP_Error code values.
+ *
+ * Backed enum replacing hardcoded error code strings in WP_Error constructors.
+ *
+ * @package RiseupAsia\Enums
+ * @since   2.2.0
+ */
+
+namespace RiseupAsia\Enums;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * WordPress error code identifiers.
+ */
+enum WpErrorCodeType: string
+{
+    case RestForbidden = 'rest_forbidden';
+    case RestDisabled  = 'rest_disabled';
+    case DatabaseError = 'db_error';
+    case NoData        = 'no_data';
+    case MissingFields = 'missing_fields';
+    case NotFound      = 'not_found';
+    case ApiError      = 'api_error';
+    case MaxRedirects  = 'max_redirects';
+    case NoLocation    = 'no_location';
+    case NoMasterUrl   = 'no_master_url';
+    case Disabled      = 'disabled';
+    case HttpError     = 'http_error';
+    case InternalError = 'internal_error';
+
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+}
