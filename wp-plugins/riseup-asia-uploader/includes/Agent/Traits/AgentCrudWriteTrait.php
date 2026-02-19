@@ -19,6 +19,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudWriteTrait {
 
+    // Literal 'pending' required in SQL heredoc; matches agent status domain value
     private const AGENT_INSERT_QUERY = <<<'SQL'
         INSERT INTO agent_sites (name, url, username, app_password_encrypted, redirect_url, status, created_at)
         VALUES (?, ?, ?, ?, ?, 'pending', ?)

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -33,7 +34,7 @@ trait UpdateResolverFetchTrait {
         }
 
         $statusCode = wp_remote_retrieve_response_code($response);
-        if ($statusCode !== 200) {
+        if ($statusCode !== HttpStatusType::Ok->value) {
             return $this->handleNon200Response($settings, $forceCheck, $statusCode);
         }
 
