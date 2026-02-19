@@ -40,3 +40,15 @@ func (r ResultSet[T]) Error() error { return r.err }
 
 // StackTrace returns the captured stack trace if an error occurred.
 func (r ResultSet[T]) StackTrace() string { return r.stackTrace }
+
+// First returns a Result[T] for the first item, or an empty Result if no items exist.
+// Propagates any error from the original query.
+func (r ResultSet[T]) First() Result[T] {
+	if r.err != nil {
+		return NewResultError[T](r.err, r.stackTrace)
+	}
+	if len(r.items) == 0 {
+		return Result[T]{}
+	}
+	return NewResult(r.items[0])
+}
