@@ -18,6 +18,7 @@ use WP_Error;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -87,7 +88,7 @@ trait AuthCredentialTrait
         $this->fileLogger->warn($reason, $context);
         $this->logger->logAuthFailure($reason, $context);
 
-        return new WP_Error('rest_forbidden', ResponseMessageType::Unauthorized->value, array('status' => HttpStatusType::Unauthorized->value));
+        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, array('status' => HttpStatusType::Unauthorized->value));
     }
 
     private function buildMissingAuthError(WP_REST_Request $request): WP_Error {
@@ -96,7 +97,7 @@ trait AuthCredentialTrait
         ));
         $this->logger->logAuthFailure('Missing Authorization header');
 
-        return new WP_Error('rest_forbidden', ResponseMessageType::Unauthorized->value, array(
+        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, array(
             'status' => HttpStatusType::Unauthorized->value,
             'headers' => array('WWW-Authenticate' => 'Basic realm="WordPress Application Password"'),
         ));
@@ -144,6 +145,6 @@ trait AuthCredentialTrait
             'username' => $user->user_login, 'required_cap' => $capability,
         ));
 
-        return new WP_Error('rest_forbidden', ResponseMessageType::Forbidden->value, array('status' => HttpStatusType::Forbidden->value));
+        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Forbidden->value, array('status' => HttpStatusType::Forbidden->value));
     }
 }

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_Error;
 use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentRemoteCoreTrait {
@@ -49,7 +50,7 @@ trait AgentRemoteCoreTrait {
     ): array|WP_Error {
         $agent = $this->getAgentModel($agentId, true);
         if ($agent === null) {
-            return new WP_Error('not_found', 'Agent site not found');
+            return new WP_Error(WpErrorCodeType::NotFound->value, 'Agent site not found');
         }
 
         $url = $this->resolveAgentBaseUrl($agent, $endpoint);
@@ -113,7 +114,7 @@ trait AgentRemoteCoreTrait {
         if ($statusCode >= 400) {
             $errorMsg = isset($bodyJson['error']['message']) ? $bodyJson['error']['message'] : "HTTP {$statusCode}";
 
-            return new WP_Error('api_error', $errorMsg, array('status' => $statusCode, 'response' => $bodyJson));
+            return new WP_Error(WpErrorCodeType::ApiError->value, $errorMsg, array('status' => $statusCode, 'response' => $bodyJson));
         }
 
         return $bodyJson;

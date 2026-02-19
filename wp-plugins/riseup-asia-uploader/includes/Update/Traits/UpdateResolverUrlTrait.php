@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UpdateResolverUrlTrait {
@@ -34,7 +35,7 @@ trait UpdateResolverUrlTrait {
         }
 
         $this->fileLogger->error('Max redirects exceeded', array('url' => $url, 'redirects' => $maxRedirects));
-        return new WP_Error('max_redirects', 'Maximum redirect limit exceeded');
+        return new WP_Error(WpErrorCodeType::MaxRedirects->value, 'Maximum redirect limit exceeded');
     }
 
     private function followSingleRedirect(string $url): string|WP_Error|null {
@@ -55,7 +56,7 @@ trait UpdateResolverUrlTrait {
         $location = wp_remote_retrieve_header($response, 'location');
         if (empty($location)) {
             $this->fileLogger->error('Redirect without Location header', array('url' => $url));
-            return new WP_Error('no_location', 'Redirect response missing Location header');
+            return new WP_Error(WpErrorCodeType::NoLocation->value, 'Redirect response missing Location header');
         }
 
         if (strpos($location, 'http') !== 0) {
@@ -80,7 +81,7 @@ trait UpdateResolverUrlTrait {
         $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {
-            return new WP_Error('no_master_url', 'No master update URL configured');
+            return new WP_Error(WpErrorCodeType::NoMasterUrl->value, 'No master update URL configured');
         }
 
         $isCacheUsable = ($forceResolve === false && $this->isCacheValid($settings));
