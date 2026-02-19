@@ -19,6 +19,7 @@ enum SnapshotStatusType: string
     case Failed    = 'failed';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isPending(): bool   { return $this->isEqual(self::Pending); }
     public function isScheduled(): bool { return $this->isEqual(self::Scheduled); }

@@ -34,7 +34,9 @@ trait UpdateResolverFetchTrait {
         }
 
         $statusCode = wp_remote_retrieve_response_code($response);
-        if ($statusCode !== HttpStatusType::Ok->value) {
+        $httpStatus = HttpStatusType::tryFrom($statusCode);
+        $isStatusNotOk = ($httpStatus === null || $httpStatus->isOtherThan(HttpStatusType::Ok));
+        if ($isStatusNotOk) {
             return $this->handleNon200Response($settings, $forceCheck, $statusCode);
         }
 

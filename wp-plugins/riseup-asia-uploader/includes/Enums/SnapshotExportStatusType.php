@@ -17,6 +17,7 @@ enum SnapshotExportStatusType: string
     case Building = 'building';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
 
     public function isValid(): bool    { return $this->isEqual(self::Valid); }
     public function isExpired(): bool  { return $this->isEqual(self::Expired); }
