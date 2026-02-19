@@ -1,6 +1,8 @@
 package dbutil
 
 import (
+	"context"
+
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -28,8 +30,8 @@ func (r ExecResult) StackTrace() string { return r.stackTrace }
 func (r ExecResult) IsEmpty() bool { return r.AffectedRows == 0 }
 
 // Exec runs a non-query statement (INSERT, UPDATE, DELETE) and returns ExecResult.
-func Exec(db *DB, query string, args ...any) ExecResult {
-	result, err := db.conn.Exec(query, args...)
+func Exec(ctx context.Context, db *DB, query string, args ...any) ExecResult {
+	result, err := db.conn.ExecContext(ctx, query, args...)
 	if err != nil {
 		wrapped := apperror.Wrap(err, "E5014", "Exec failed")
 		return ExecResult{err: wrapped, stackTrace: wrapped.StackTrace}

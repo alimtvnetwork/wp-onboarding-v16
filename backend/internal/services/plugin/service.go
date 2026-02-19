@@ -7,6 +7,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/pkg/dbutil"
 )
 
 // Config holds service configuration
@@ -18,6 +19,7 @@ type Config struct {
 // Service provides plugin management operations
 type Service struct {
 	db  *database.DB
+	dbu *dbutil.DB
 	log *logger.Logger
 }
 
@@ -25,6 +27,7 @@ type Service struct {
 func New(cfg Config) *Service {
 	return &Service{
 		db:  cfg.DB,
+		dbu: dbutil.New(cfg.DB.DB),
 		log: cfg.Logger,
 	}
 }
