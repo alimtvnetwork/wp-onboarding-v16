@@ -107,9 +107,10 @@
 2. ✅ Added `PluginInfo` to PHP `EndpointType` + route registration + `handlePluginInfo` handler
 3. ✅ Fixed snapshot settings to accept both POST and PUT methods
 
-### Phase 4: Endpoint Map Completeness (Low Priority)
-1. Add snapshot entries to Go `GoEndpointMap` and `WPEndpointMap`
-2. Audit Go snapshot proxy param translation (URL path → JSON body)
+### Phase 4: Endpoint Map Completeness (Low Priority) ✅ COMPLETED
+1. ✅ Added all snapshot entries (15 operations) to both `GoEndpointMap` and `WPEndpointMap`
+2. ✅ Added `UploadActive`, `PluginInfo`, `ErrorLogs`, `ErrorSessions` to both maps
+3. ✅ Audited Go snapshot proxy param translation — confirmed correct: Go router extracts `{snapshotId}` from URL path, service passes it as `int64` to WP client, which sends it in JSON body to PHP fixed endpoints. No translation bug found.
 
 ### Phase 5: HTTP Status Code Enum Migration (Low Risk)
 1. Replace hardcoded status codes in ErrorResponse, EnvelopeFactoryTrait, SnapshotBackupExecTrait
