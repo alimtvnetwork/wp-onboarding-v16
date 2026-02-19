@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\ErrorHandling\BootErrorCollector;
 use RiseupAsia\Logging\FileLogger;
 
 trait InitStartupTrait {
@@ -26,6 +27,7 @@ trait InitStartupTrait {
             $result = $initFn();
         } catch (Throwable $e) {
             $error = $e->getMessage();
+            BootErrorCollector::getInstance()->addError('component_init:' . $name, $error);
         }
 
         $elapsed_ms = round((microtime(true) - $start) * 1000, 2);
