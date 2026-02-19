@@ -1,4 +1,3 @@
-
 # Plan: Doc Updates + Three New Code Style Rules + PHP Enforcement
 
 ## ✅ COMPLETED — Part A: Spec/Doc Files — Rename PathUtils to PathHelper
@@ -94,3 +93,337 @@ All 6 phases completed:
   - `LoggerPathTrait.php`: `!InitHelpers::makeDirectoryNative()` → `$isBaseDirFailed`, `$isLogsDirFailed`
 - **Phase 5** ✅ Added boot-time `error_log()` breadcrumbs to `Admin::__construct()` and `ActivationHandler::activate()` (4 breadcrumbs across load → dirs → complete).
 - **Phase 6** ✅ Verified: PHP `use` is file-scoped, so template `use` statements work correctly regardless of include context. No changes needed.
+
+---
+
+# 🆕 Comprehensive Improvement Plan (2026-02-19)
+
+## Table of Contents
+
+1. [Phase 1: Autoloader Diagnostics & Fallback Loading](#phase-1-autoloader-diagnostics--fallback-loading)
+2. [Phase 2: Snapshot Subsystem Audit & Fixes](#phase-2-snapshot-subsystem-audit--fixes)
+3. [Phase 3: Boot-Time Error Email Notification](#phase-3-boot-time-error-email-notification)
+4. [Phase 4: Self-Update Mechanism Hardening](#phase-4-self-update-mechanism-hardening)
+5. [Phase 5: Licensing System Architecture](#phase-5-licensing-system-architecture)
+6. [Appendix A: Remaining Magic Strings](#appendix-a-remaining-magic-strings)
+
+---
+
+## Phase 1: Autoloader Diagnostics & Fallback Loading
+
+### Current State
+
+The `RiseupAsiaAutoloader` (includes/Autoloader.php) uses `spl_autoload_register` with a single `load()` method. If `require_once` fails (syntax error, missing dependency inside the file), PHP throws a fatal error with no structured diagnostics.
+
+### Problems Identified
+
+| # | Issue | Severity |
+|---|-------|----------|
+| 1.1 | A **syntax error** inside any class file causes an unhandled fatal error — no structured report of *which* file failed | Critical |
+| 1.2 | No **manifest validation** — if a new class is added but the file isn't deployed, the error log message doesn't distinguish "file missing" from "file exists but has a parse error" | Medium |
+| 1.3 | No **boot health report** — on first activation there's no summary of "X classes loaded successfully, Y failed" | Low |
+
+### Proposed Solution
+
+#### 1A — Diagnostic Require Mode
+
+Add a static method `RiseupAsiaAutoloader::runDiagnostics(): array` that:
+
+1. Scans `includes/` recursively for all `.php` files.
+2. For each file, runs `php_check_syntax()` / `token_get_all()` to detect parse errors **without** executing the file.
+3. Attempts `require_once` in a `try/catch` with a shutdown handler for fatal errors.
+4. Returns a structured result: `['loaded' => [...], 'failed' => ['file' => '...', 'error' => '...']]`.
+
+> **Constraint**: This method must remain self-contained (no Enums, no PathHelper) since it runs before those classes are available.
+
+#### 1B — Activation Health Check
+
+In `ActivationHandler::activate()`, call `RiseupAsiaAutoloader::runDiagnostics()` and:
+
+- Store the result in a transient (`riseup_boot_diagnostics`).
+- If any file failed, display an admin notice on the plugins page.
+- Log failures via native `error_log()` (since FileLogger may not be available).
+
+#### 1C — Runtime Fallback with Error Capture
+
+Enhance the existing `load()` method:
+
+```php
+private static array $failedClasses = [];
+
+private static function load(string $class): void {
+    // ... existing namespace check ...
+    
+    if (file_exists($file)) {
+        try {
+            require_once $file;
+        } catch (Throwable $e) {
+            error_log('[Riseup Asia] Autoloader: failed to load "' . $class . '" — ' . $e->getMessage());
+            self::$failedClasses[] = ['class' => $class, 'file' => $file, 'error' => $e->getMessage()];
+        }
+    } else {
+        error_log('[Riseup Asia] Autoloader: class file not found for "' . $class . '"');
+        self::$failedClasses[] = ['class' => $class, 'file' => $file, 'error' => 'File not found'];
+    }
+}
+
+public static function getFailedClasses(): array { return self::$failedClasses; }
+```
+
+#### Implementation Files
+
+| File | Action |
+|------|--------|
+| `includes/Autoloader.php` | Add `$failedClasses`, `getFailedClasses()`, `runDiagnostics()` |
+| `includes/Activation/ActivationHandler.php` | Call diagnostics on activation |
+| `includes/Admin/Traits/AdminNoticesTrait.php` | Show boot failure notices |
+
+#### Estimated Effort: 2–3 tasks
+
+---
+
+## Phase 2: Snapshot Subsystem Audit & Fixes
+
+### Current State
+
+The snapshot subsystem uses `SnapshotOrchestrator` → `SnapshotWorker` → per-table SQLite exports with WP-Cron for async batch processing. A `DependencyAnalyzer` does topological sorting of tables by FK relationships.
+
+### Problems Identified
+
+| # | Issue | Severity | File(s) |
+|---|-------|----------|---------|
+| 2.1 | **Magic strings in scope filtering** — `AnalyzerQueryTrait::getTables()` uses raw `'wordpress'`, `'content'`, `'all'` instead of `SnapshotScopeType` enum | High | `AnalyzerQueryTrait.php:31-35` |
+| 2.2 | **Magic string `'full'`** in `WorkerSetupTrait::prepareSnapshotDir()` — `$config['type'] ?? 'full'` and `$config['scope'] ?? 'wordpress'` should use `SnapshotModeType::Full->value` and `SnapshotScopeType::WordPress->value` | High | `WorkerSetupTrait.php:24-25` |
+| 2.3 | **Magic string `'full'`** in `OrchestratorBackupTrait::runWorkerExport()` — hardcoded `'type' => 'full'` | High | `OrchestratorBackupTrait.php:112` |
+| 2.4 | **Magic string `'full'`** in `CleanerRetentionTrait::isMasterSnapshot()` — raw `=== 'full'` comparisons | High | `CleanerRetentionTrait.php:97-99` |
+| 2.5 | **Magic string `'per_table'`** in `SnapshotCrudCreateTrait` — `$manager->getSettings()['mode'] ?? 'per_table'` should use `SnapshotWorkerModeType::PerTable->value` | High | `SnapshotCrudCreateTrait.php:45` |
+| 2.6 | **Magic strings** in `RootDbSchemaTrait::populateMetadata()` — `'Untitled Snapshot'`, `'full'` fallbacks | Medium | `RootDbSchemaTrait.php:84` |
+| 2.7 | **Magic strings** in `DatabaseMigrationsV6V8Trait` — `'per_table'`, `'incremental'` defaults | Medium | `DatabaseMigrationsV6V8Trait.php:74-75` |
+| 2.8 | **Magic string `'Snapshot'`** in `WorkerSetupTrait::initRootDb()` — `$config['title'] ?? 'Snapshot'` | Low | `WorkerSetupTrait.php:51` |
+| 2.9 | **No transaction safety** — `WorkerExecuteTrait::execute()` doesn't wrap the root DB + job creation in a transaction; if `createJob()` fails after `initRootDb()`, an orphaned snapshot directory remains | Medium | `WorkerExecuteTrait.php:30-41` |
+| 2.10 | **No size validation before snapshot** — `SnapshotConfigType::MaxSizeMb` exists but is never checked; a snapshot could exceed 500MB without warning | Medium | Various |
+| 2.11 | **Stale lock files** — `SnapshotProviderLockTrait` acquires file locks but if the PHP process crashes, the lock file persists indefinitely; no stale-lock detection | Medium | `SnapshotProviderLockTrait.php` |
+| 2.12 | **`isMasterSnapshot()` uses string matching on filename** — `strpos($snap['filename'], '_full_')` is brittle; should rely on the `type` column from the DB | Low | `CleanerRetentionTrait.php:99` |
+| 2.13 | **Missing error propagation** — `executeZipPhase()` logs ZIP failure as non-fatal but the caller has no way to know the ZIP is missing from the result | Low | `OrchestratorBackupTrait.php:117-125` |
+
+### Proposed Fix Order
+
+1. **Task 2A** — Replace all snapshot magic strings (2.1–2.8) with enum values.
+2. **Task 2B** — Add transaction wrapping in `WorkerExecuteTrait::execute()` (2.9).
+3. **Task 2C** — Add pre-snapshot size estimation check using `SnapshotConfigType::MaxSizeMb` (2.10).
+4. **Task 2D** — Add stale lock detection with configurable timeout in `SnapshotProviderLockTrait` (2.11).
+5. **Task 2E** — Refactor `isMasterSnapshot()` to use enum comparison only (2.12).
+6. **Task 2F** — Add `zip_failed` flag to sync backup result (2.13).
+
+#### Estimated Effort: 6 tasks
+
+---
+
+## Phase 3: Boot-Time Error Email Notification
+
+### Concept
+
+When the plugin encounters errors during loading (autoloader failures, missing dependencies, DB connection issues), send an email notification to the WordPress admin.
+
+### Design
+
+#### 3A — Error Collector
+
+Create `RiseupAsia\ErrorHandling\BootErrorCollector` (singleton):
+
+- Collects errors during boot via `addError(string $context, string $message)`.
+- Registers a `shutdown` hook to process collected errors.
+- On shutdown, if errors exist, triggers email notification.
+
+#### 3B — Email Dispatcher
+
+Create `RiseupAsia\Notification\AdminMailer`:
+
+- `sendBootErrorReport(array $errors): bool` — uses `wp_mail()` to send to `get_option('admin_email')`.
+- Throttled: stores a transient (`riseup_last_error_email`) to prevent email flooding (max 1 per hour).
+- Email contains: site URL, plugin version, PHP version, error list with file/line/message.
+- Subject: `[Riseup Asia] Plugin Boot Errors on {site_name}`.
+
+#### 3C — Integration Points
+
+| Hook | Action |
+|------|--------|
+| Autoloader `load()` failure | `BootErrorCollector::addError('autoloader', ...)` |
+| `Plugin::getInstance()` catch block | `BootErrorCollector::addError('plugin_init', ...)` |
+| `Admin::getInstance()` catch block | `BootErrorCollector::addError('admin_init', ...)` |
+| `shutdown` hook | `BootErrorCollector::flush()` → `AdminMailer::sendBootErrorReport()` |
+
+#### 3D — Configuration
+
+Add to `OptionNameType`:
+```php
+case ErrorNotification = 'riseup_error_notification_settings';
+```
+
+Settings: `['enabled' => true, 'email' => '', 'throttle_minutes' => 60]`  
+Default email falls back to `get_option('admin_email')`.
+
+#### Estimated Effort: 3–4 tasks
+
+---
+
+## Phase 4: Self-Update Mechanism Hardening
+
+### Current State
+
+`UpdateResolver` already has:
+- `checkForPluginUpdate()` — hooks into WP transient to inject update info.
+- `fetchUpdateInfo()` — fetches JSON from a configurable master URL with 301 redirect resolution.
+- `pluginInfo()` — provides plugin details to the WP updates UI.
+
+### Problems Identified
+
+| # | Issue | Severity |
+|---|-------|----------|
+| 4.1 | **Magic strings** — `UpdateResolver` uses `const OPTION_NAME = 'riseup_update_settings'` instead of `OptionNameType::UpdateSettings->value` | High |
+| 4.2 | **Magic string** — `const DEFAULT_CACHE_DAYS = 7` should be `UpdateConfigType::CacheDaysDefault->value` | High |
+| 4.3 | **No integrity verification** — downloaded ZIP is not checksum-verified before installation | Critical |
+| 4.4 | **No rollback** — if update fails mid-install, there's no automatic rollback to the previous version | High |
+| 4.5 | **No license validation** — update endpoint doesn't verify the site's license before serving the package (see Phase 5) | Medium |
+| 4.6 | **Update URL not yet provided** — the master URL configuration is empty; needs to be set by the user | Blocker |
+
+### Proposed Enhancements
+
+1. **Task 4A** — Replace magic strings (4.1, 4.2) with enum values.
+2. **Task 4B** — Add SHA-256 checksum verification: the update JSON should include a `sha256` field; after download, verify before installing.
+3. **Task 4C** — Add pre-update backup: before applying an update, create a snapshot of the current plugin files.
+4. **Task 4D** — Add rollback mechanism: if `activate_plugin()` fails after update, restore from the pre-update backup.
+5. **Task 4E** — Add license header to update requests (depends on Phase 5).
+
+#### Estimated Effort: 4–5 tasks
+
+---
+
+## Phase 5: Licensing System Architecture
+
+### How Major WordPress Products Handle Licensing
+
+#### Elementor Pro Model
+- **License Key**: A unique string (e.g., `ELEM-XXXX-XXXX-XXXX`) issued per purchase.
+- **Activation**: User enters the key in WP admin → plugin sends `POST` to Elementor's licensing server with `license_key + site_url`.
+- **Server Response**: `{ "valid": true, "expires": "2027-01-01", "sites_limit": 3, "sites_used": 1 }`.
+- **Site Limit**: Each activation registers the `site_url`; deactivating on one site frees a slot.
+- **Update Gate**: The update server checks `license_key` before returning the download URL. Expired/invalid licenses get no updates.
+- **Uses**: EDD (Easy Digital Downloads) Software Licensing add-on as the backend.
+
+#### Starter Templates / Starter Sites Model
+- Similar to Elementor but uses the Starter Templates API.
+- License key tied to a purchase; validated via API.
+- Site count tracked server-side.
+
+#### WooCommerce Extensions Model
+- License keys generated on `woocommerce.com`.
+- Uses a `wc-am` (WooCommerce API Manager) protocol.
+- Each key has a `max_activations` count.
+- Updates served only to active, licensed sites.
+
+### Proposed Licensing Architecture for Riseup Asia
+
+#### Two-Part System
+
+##### Part A: License Server (Separate Service)
+
+This is a standalone API (could be Go, Node, PHP, or SaaS) that:
+
+1. **Generates Licenses**: Creates keys in format `RASIA-XXXX-XXXX-XXXX-XXXX`.
+2. **Stores License Records**:
+   ```
+   licenses table:
+   - id, license_key, customer_email, plan (starter|pro|agency)
+   - max_sites, created_at, expires_at, is_active
+   
+   activations table:
+   - id, license_id, site_url, activated_at, deactivated_at, is_active
+   ```
+3. **API Endpoints**:
+   - `POST /api/v1/license/activate` — `{key, site_url}` → validates key, checks site count, registers activation.
+   - `POST /api/v1/license/deactivate` — `{key, site_url}` → frees a site slot.
+   - `POST /api/v1/license/validate` — `{key, site_url}` → checks if still valid.
+   - `GET /api/v1/update/check` — `{key, site_url, current_version}` → returns latest version + download URL if licensed.
+
+4. **Plans**:
+   | Plan | Sites | Price Model |
+   |------|-------|-------------|
+   | Starter | 1 site | One-time or annual |
+   | Pro | 5 sites | Annual |
+   | Agency | Unlimited | Annual |
+
+##### Part B: WordPress Plugin Client
+
+1. **License Settings Page** — New admin tab with key input, activate/deactivate, status display.
+2. **License Manager Class** — `RiseupAsia\License\LicenseManager`:
+   - `activate(string $key): array`
+   - `deactivate(): array`
+   - `validate(): array` (daily cron)
+   - `isLicensed(): bool` (cached)
+3. **Update Integration** — `UpdateResolver` includes license key in headers:
+   ```php
+   'headers' => ['X-License-Key' => $licenseKey, 'X-Site-Url' => site_url()]
+   ```
+4. **Feature Gating** — Restrict features (snapshots, agents, exports) to licensed users.
+5. **New Enums**: `LicensePlanType`, `LicenseStatusType`.
+
+#### Build vs. Buy Decision
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **Build custom** (Go backend) | Full control, integrates with existing Go backend | Maintenance, security responsibility |
+| **Keygen.sh** | Purpose-built, handles edge cases | Monthly cost ($49+/mo) |
+| **LemonSqueezy** | Payment + licensing in one | Less control |
+| **EDD + Software Licensing** | WordPress-native, proven | Requires separate WP site |
+| **WooCommerce + WC-AM** | Familiar ecosystem | Complex setup |
+
+#### Recommendation
+
+Build a custom license module in the existing Go backend for zero external dependencies, full control, and direct integration with the update server.
+
+#### Estimated Effort: 8–10 tasks (split across server and plugin)
+
+---
+
+## Appendix A: Remaining Magic Strings
+
+| File | Line(s) | Magic String | Replace With |
+|------|---------|--------------|-------------|
+| `AgentRemoteActionTrait.php` | 93, 103, 124 | `'error'`, `'connected'` | `AgentStatusType::Error->value`, `AgentStatusType::Connected->value` |
+| `AgentHandlerActionTrait.php` | 59 | `array('enable', 'disable', 'delete')` | `[ActionType::Enable->value, ...]` |
+| `PostQueryTrait.php` | 38 | `array('publish', 'draft', 'pending')` | `PostStatusType::validValues()` |
+| `AnalyzerQueryTrait.php` | 31, 35 | `'wordpress'`, `'content'` | `SnapshotScopeType` enum values |
+| `WorkerSetupTrait.php` | 24-25, 51 | `'wordpress'`, `'full'`, `'Snapshot'` | Enum values |
+| `OrchestratorBackupTrait.php` | 112 | `'type' => 'full'` | `SnapshotModeType::Full->value` |
+| `CleanerRetentionTrait.php` | 97-99 | `'full'` | `SnapshotModeType::Full->value` |
+| `SnapshotCrudCreateTrait.php` | 45 | `'per_table'` | `SnapshotWorkerModeType::PerTable->value` |
+| `UpdateResolver.php` | 29-30 | `OPTION_NAME`, `DEFAULT_CACHE_DAYS` | Enum values |
+| `IncrementalRegistrationTrait.php` | 72 | `'type' => 'incremental'` | `SnapshotModeType::Incremental->value` |
+| `SyncPushTrait.php` | 228, 234 | `'ignored'`, `'success'` | Needs enum or `StatusType` |
+
+---
+
+## Implementation Priority
+
+| Priority | Phase | Description | Depends On |
+|----------|-------|-------------|------------|
+| 🔴 P0 | 2A | Fix all snapshot magic strings | None |
+| 🔴 P0 | Appendix A | Fix all remaining magic strings | None |
+| 🟡 P1 | 1A–1C | Autoloader diagnostics | None |
+| 🟡 P1 | 3A–3D | Boot error email notification | Phase 1 |
+| 🟡 P1 | 4A–4B | Update mechanism magic strings + checksum | None |
+| 🟢 P2 | 2B–2F | Snapshot robustness (transactions, locks, size) | Phase 2A |
+| 🟢 P2 | 4C–4D | Update rollback mechanism | Phase 4A |
+| 🔵 P3 | 5 | Licensing system | Phase 4 |
+
+---
+
+## Next Steps
+
+Please review and confirm:
+
+1. **Which phase(s) to start with?**
+2. **Phase 5**: Build license server in Go (existing backend) or use a third-party service?
+3. **Phase 4**: Update URL ready, or build infrastructure first?
+4. **Any phases to skip or defer?**
