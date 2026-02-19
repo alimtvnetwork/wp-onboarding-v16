@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -22,17 +23,17 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentRemoteActionTrait {
 
-    private function resolveRedirectUrl(array $agent): string|WP_Error {
+    private function resolveRedirectUrl(AgentSite $agent): string|WP_Error {
         if ($this->isRedirectCacheValid($agent)) {
-            return $agent['redirect_resolved'];
+            return $agent->redirectResolved;
         }
 
-        $resolved = $this->followRedirectChain($agent['redirect_url']);
+        $resolved = $this->followRedirectChain($agent->redirectUrl);
         if (is_wp_error($resolved)) {
             return $resolved;
         }
 
-        $this->updateAgent($agent['id'], array(
+        $this->updateAgent($agent->id, array(
             'redirect_resolved'    => $resolved,
             'redirect_resolved_at' => gmdate('Y-m-d\TH:i:s\Z'),
         ));
@@ -40,12 +41,12 @@ trait AgentRemoteActionTrait {
         return $resolved;
     }
 
-    private function isRedirectCacheValid(array $agent): bool {
-        if (empty($agent['redirect_resolved']) || empty($agent['redirect_resolved_at'])) {
+    private function isRedirectCacheValid(AgentSite $agent): bool {
+        if (empty($agent->redirectResolved) || empty($agent->redirectResolvedAt)) {
             return false;
         }
 
-        $resolvedAt = strtotime($agent['redirect_resolved_at']);
+        $resolvedAt = strtotime($agent->redirectResolvedAt);
         $cacheDays = UpdateConfigType::CacheDaysDefault->value;
 
         return (time() < $resolvedAt + ($cacheDays * DAY_IN_SECONDS));

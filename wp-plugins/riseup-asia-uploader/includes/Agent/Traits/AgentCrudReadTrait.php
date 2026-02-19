@@ -31,6 +31,10 @@ trait AgentCrudReadTrait {
     SQL;
 
     public function getAgent(int $id, bool $includePassword = false): ?array {
+        return $this->getAgentModel($id, $includePassword)?->toArray();
+    }
+
+    public function getAgentModel(int $id, bool $includePassword = false): ?AgentSite {
         $pdo = $this->db->getPdo();
         if ($pdo === null) {
             return null;
@@ -48,7 +52,7 @@ trait AgentCrudReadTrait {
             return null;
         }
 
-        return $result->value()?->toArray();
+        return $result->value();
     }
 
     public function listAgents(
