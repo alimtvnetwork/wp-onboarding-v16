@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PathLogFileType;
+use RiseupAsia\Enums\PluginConfigType;
 
 /**
  * Detects fatal PHP errors during REST requests and emits structured JSON responses.
@@ -17,7 +18,6 @@ use RiseupAsia\Enums\PathLogFileType;
 class FatalErrorHandler
 {
     private const FATAL_TYPES = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
-    private const PLUGIN_SLUG = 'riseup-asia-uploader';
     private const WP_JSON_PATH = 'wp-json';
     private const ERROR_CODE_FATAL = 'FATAL_ERROR';
     private const ERROR_CODE_ENCODING_FAILED = 'FATAL_ERROR_ENCODING_FAILED';
@@ -64,7 +64,7 @@ class FatalErrorHandler
         }
 
         $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-        $isPluginRequest = str_contains($requestUri, self::PLUGIN_SLUG) || str_contains($requestUri, self::WP_JSON_PATH);
+        $isPluginRequest = str_contains($requestUri, PluginConfigType::Slug->value) || str_contains($requestUri, self::WP_JSON_PATH);
 
         return $isPluginRequest;
     }
@@ -98,7 +98,7 @@ class FatalErrorHandler
             self::errorTypeToString($error['type'])
         );
         $uploads = wp_upload_dir();
-        $logFile = $uploads['basedir'] . '/' . self::PLUGIN_SLUG . PathLogFileType::FatalError->value;
+        $logFile = $uploads['basedir'] . '/' . PluginConfigType::Slug->value . PathLogFileType::FatalError->value;
         @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     }
 
