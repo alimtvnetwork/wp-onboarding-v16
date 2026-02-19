@@ -24,7 +24,7 @@ trait AdminNoticesTrait {
      * Register the admin_notices hook for boot diagnostics.
      */
     private function registerBootNotices(): void {
-        add_action('admin_notices', [$this, 'renderBootDiagnosticsNotice']);
+        add_action(HookType::AdminNotices->value, [$this, 'renderBootDiagnosticsNotice']);
     }
 
     /**
