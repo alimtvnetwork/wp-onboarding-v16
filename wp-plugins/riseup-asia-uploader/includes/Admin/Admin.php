@@ -21,6 +21,7 @@ use RiseupAsia\Admin\Traits\AdminErrorPageTrait;
 use RiseupAsia\Admin\Traits\AdminErrorAjaxTrait;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\PaginationConfigType;
 
 /**
  * Class Admin
@@ -63,7 +64,7 @@ class Admin {
             'include_error_log'  => true,
             'include_full_log'   => false,
             'include_stacktrace' => true,
-            'max_lines'          => 500,
+            'max_lines'          => PaginationConfigType::LogRetrievalMaxLines->value,
         ),
     );
 

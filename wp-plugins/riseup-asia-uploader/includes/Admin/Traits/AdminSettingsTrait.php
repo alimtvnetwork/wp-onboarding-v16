@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Enums\PaginationConfigType;
 
 trait AdminSettingsTrait {
 
@@ -52,7 +53,7 @@ trait AdminSettingsTrait {
             $sanitized['log_retrieval']['include_stacktrace'] = BooleanHelpers::hasValue($input['log_retrieval']['include_stacktrace'] ?? null);
             $sanitized['log_retrieval']['max_lines'] = isset($input['log_retrieval']['max_lines'])
                 ? max(50, min(5000, (int) $input['log_retrieval']['max_lines']))
-                : 500;
+                : PaginationConfigType::LogRetrievalMaxLines->value;
         }
 
         return $sanitized;

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Admin\Admin;
@@ -50,7 +51,7 @@ trait ErrorLogHandlerTrait {
             'include_error_log'  => isset($logSettings['include_error_log']) ? (bool) $logSettings['include_error_log'] : true,
             'include_full_log'   => isset($logSettings['include_full_log']) ? (bool) $logSettings['include_full_log'] : false,
             'include_stacktrace' => isset($logSettings['include_stacktrace']) ? (bool) $logSettings['include_stacktrace'] : true,
-            'max_lines'          => isset($logSettings['max_lines']) ? (int) $logSettings['max_lines'] : 500,
+            'max_lines'          => isset($logSettings['max_lines']) ? (int) $logSettings['max_lines'] : PaginationConfigType::LogRetrievalMaxLines->value,
         );
 
         foreach (array('include_error_log', 'include_full_log', 'include_stacktrace') as $key) {
