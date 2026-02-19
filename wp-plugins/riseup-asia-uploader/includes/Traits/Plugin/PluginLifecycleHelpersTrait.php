@@ -104,7 +104,12 @@ trait PluginLifecycleHelpersTrait
      * @param string       $status  The result status (success, failed).
      * @param array<string, mixed> $context Optional extra context.
      */
-    private function logPluginLifecycle(string $action, string $slug, string $status, array $context = []): void
+    private function logPluginLifecycle(
+        string $action,
+        string $slug,
+        string $status,
+        array $context = [],
+    ): void
     {
         $entry = array_merge(
             [

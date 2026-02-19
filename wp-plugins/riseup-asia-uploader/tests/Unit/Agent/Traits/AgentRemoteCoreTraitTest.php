@@ -22,7 +22,11 @@ final class RemoteCoreStub {
         return $this->buildAuthHeader($agent);
     }
 
-    public function exposeBuildAgentRequestArgs(AgentSite $agent, string $method, array $body): array {
+    public function exposeBuildAgentRequestArgs(
+        AgentSite $agent,
+        string $method,
+        array $body,
+    ): array {
         return $this->buildAgentRequestArgs($agent, $method, $body);
     }
 

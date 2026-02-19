@@ -36,7 +36,11 @@ final class TypedQuery {
      * @param \Closure(array<string,mixed>): T $mapper
      * @return DbResult<T>
      */
-    public function queryOne(string $sql, array $params, \Closure $mapper): DbResult {
+    public function queryOne(
+        string $sql,
+        array $params,
+        \Closure $mapper,
+    ): DbResult {
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
@@ -61,7 +65,11 @@ final class TypedQuery {
      * @param \Closure(array<string,mixed>): T $mapper
      * @return DbResultSet<T>
      */
-    public function queryMany(string $sql, array $params, \Closure $mapper): DbResultSet {
+    public function queryMany(
+        string $sql,
+        array $params,
+        \Closure $mapper,
+    ): DbResultSet {
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);

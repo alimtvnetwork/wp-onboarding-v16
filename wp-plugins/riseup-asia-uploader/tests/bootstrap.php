@@ -20,7 +20,11 @@ if (!class_exists('WP_Error')) {
         private string $message;
         private mixed $data;
 
-        public function __construct(string $code = '', string $message = '', mixed $data = '') {
+        public function __construct(
+            string $code = '',
+            string $message = '',
+            mixed $data = '',
+        ) {
             $this->code    = $code;
             $this->message = $message;
             $this->data    = $data;
