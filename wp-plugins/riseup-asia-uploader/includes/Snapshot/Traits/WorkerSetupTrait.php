@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -21,8 +23,8 @@ trait WorkerSetupTrait {
 
     private function prepareSnapshotDir(array $config): array {
         $title = $config['title'] ?? ('Snapshot ' . date('Y-m-d H:i'));
-        $scope = $config['scope'] ?? 'wordpress';
-        $type  = $config['type'] ?? 'full';
+        $scope = $config['scope'] ?? SnapshotScopeType::WordPress->value;
+        $type  = $config['type'] ?? SnapshotModeType::Full->value;
 
         $hasPoolSize = BooleanHelpers::hasValue($config['settings']['worker_pool_size'] ?? null);
         if ($hasPoolSize) {
@@ -48,14 +50,14 @@ trait WorkerSetupTrait {
     private function initRootDb(string $snapshotDir, array $config): PDO {
         $rootPdo = $this->rootDb->create($snapshotDir . '/a-root.db');
         $this->rootDb->populateMetadata($rootPdo, array(
-            'title' => $config['title'] ?? 'Snapshot', 'type' => $config['type'] ?? 'full', 'settings' => $config['settings'] ?? null,
+            'title' => $config['title'] ?? 'Snapshot', 'type' => $config['type'] ?? SnapshotModeType::Full->value, 'settings' => $config['settings'] ?? null,
         ));
 
         return $rootPdo;
     }
 
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
-        $analysis = $this->rootDb->populateDependencies($rootPdo, $config['scope'] ?? 'wordpress');
+        $analysis = $this->rootDb->populateDependencies($rootPdo, $config['scope'] ?? SnapshotScopeType::WordPress->value);
         $this->log(LogLevelType::Info->value, 'Export order determined', array('tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
 
         return $analysis['seed_order'];

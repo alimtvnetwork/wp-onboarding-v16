@@ -16,6 +16,8 @@ use RiseupAsia\Update\Traits\UpdateResolverUrlTrait;
 use RiseupAsia\Update\Traits\UpdateResolverFetchTrait;
 use RiseupAsia\Update\Traits\UpdateResolverWpHooksTrait;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\UpdateConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Database\Database;
@@ -26,8 +28,10 @@ class UpdateResolver {
     use UpdateResolverFetchTrait;
     use UpdateResolverWpHooksTrait;
 
-    const OPTION_NAME = 'riseup_update_settings';
-    const DEFAULT_CACHE_DAYS = 7;
+    /** @deprecated Use OptionNameType::UpdateSettings->value */
+    const OPTION_NAME = 'riseup_update_settings'; // Kept for backward compat; internal code uses OptionNameType
+    /** @deprecated Use UpdateConfigType::CacheDaysDefault->value */
+    const DEFAULT_CACHE_DAYS = 7; // Kept for backward compat; internal code uses UpdateConfigType
 
     private FileLogger $fileLogger;
     private Database $db;
@@ -56,16 +60,16 @@ class UpdateResolver {
     public function getSettings(): array {
         $defaults = array(
             'enabled' => false, 'master_url' => '', 'resolved_url' => '', 'resolved_at' => '',
-            'cache_days' => self::DEFAULT_CACHE_DAYS, 'last_check' => '', 'last_error' => '',
+            'cache_days' => UpdateConfigType::CacheDaysDefault->value, 'last_check' => '', 'last_error' => '',
             'package_url' => '', 'new_version' => '', 'update_info' => array(),
         );
-        $settings = get_option(self::OPTION_NAME, array());
+        $settings = get_option(OptionNameType::UpdateSettings->value, array());
         return wp_parse_args($settings, $defaults);
     }
 
     public function saveSettings(array $settings): bool {
         $current = $this->getSettings();
         $merged = wp_parse_args($settings, $current);
-        return update_option(self::OPTION_NAME, $merged);
+        return update_option(OptionNameType::UpdateSettings->value, $merged);
     }
 }

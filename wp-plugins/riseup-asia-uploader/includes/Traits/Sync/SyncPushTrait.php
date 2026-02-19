@@ -225,17 +225,18 @@ trait SyncPushTrait
         array &$counters,
         array &$ignored,
     ): void {
-        if ($entry['status'] === 'ignored') {
+        $isIgnored = ($entry['status'] === 'ignored'); // Sync-specific status; no enum yet — candidate for SyncEntryStatusType
+        if ($isIgnored) {
             $counters['files_ignored']++;
             $ignored[] = $entry['path'];
 
             return;
         }
-        if ($entry['status'] !== 'success') {
-            return;
+        $isStatusSuccess = ($entry['status'] === StatusType::Success->value);
+        if ($isStatusSuccess) {
+            if ($entry['action'] === SyncActionType::Replace->value) { $counters['files_updated']++; }
+            if ($entry['action'] === SyncActionType::Delete->value)  { $counters['files_deleted']++; }
         }
-        if ($entry['action'] === SyncActionType::Replace->value) { $counters['files_updated']++; }
-        if ($entry['action'] === SyncActionType::Delete->value)  { $counters['files_deleted']++; }
     }
 
     /** Log the completion of a sync push operation. */

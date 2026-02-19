@@ -18,6 +18,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\SnapshotOrchestrator;
 
@@ -42,13 +43,13 @@ trait SnapshotCrudCreateTrait {
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
-            $isPerTable = (($manager->getSettings()['mode'] ?? 'per_table') === 'per_table');
+            $isPerTable = (($manager->getSettings()['mode'] ?? SnapshotWorkerModeType::PerTable->value) === SnapshotWorkerModeType::PerTable->value);
 
             $result = $isPerTable
                 ? $this->executePerTableSnapshot($body, $scope, $manager)
                 : $this->executeLegacySnapshot($body, $scope, $manager);
 
-            $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? 'per_table' : 'legacy', $result);
+            $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? SnapshotWorkerModeType::PerTable->value : 'legacy', $result);
 
             return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
         }, 'create_snapshot');

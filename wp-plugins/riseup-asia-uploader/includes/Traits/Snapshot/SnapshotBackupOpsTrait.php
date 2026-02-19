@@ -16,6 +16,8 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
 use RiseupAsia\Database\RootDb;
@@ -32,8 +34,8 @@ trait SnapshotBackupOpsTrait {
             $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
 
             $result = $worker->execute(array(
-                'title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? 'wordpress',
-                'type' => $body['type'] ?? 'full', 'settings' => $body['settings'] ?? null,
+                'title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? SnapshotScopeType::WordPress->value,
+                'type' => $body['type'] ?? SnapshotModeType::Full->value, 'settings' => $body['settings'] ?? null,
             ));
 
             return $this->buildExportResponse($result);

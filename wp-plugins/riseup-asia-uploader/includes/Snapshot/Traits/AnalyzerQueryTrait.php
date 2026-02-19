@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AnalyzerQueryTrait {
@@ -20,7 +21,7 @@ trait AnalyzerQueryTrait {
     /**
      * Get all tables in the current database.
      *
-     * @param string $scope Filter: 'all', 'wordpress', 'content'.
+     * @param string $scope Filter scope matching SnapshotScopeType values.
      * @return array Table names.
      */
     public function getTables($scope = 'all') {
@@ -28,11 +29,16 @@ trait AnalyzerQueryTrait {
 
         $tables = $this->wpdb->get_col("SHOW TABLES");
 
-        if ($scope === 'wordpress') {
+        $resolvedScope = SnapshotScopeType::tryFrom($scope);
+        $isWordPress = ($resolvedScope !== null && $resolvedScope->isWordPress());
+        if ($isWordPress) {
             $tables = array_filter($tables, function($t) use ($prefix) {
                 return strpos($t, $prefix) === 0;
             });
-        } elseif ($scope === 'content') {
+        }
+
+        $isContent = ($resolvedScope !== null && $resolvedScope->isContent());
+        if ($isContent) {
             $content_suffixes = array('posts', 'postmeta', 'terms', 'term_taxonomy', 'term_relationships', 'comments', 'commentmeta', 'options', 'users', 'usermeta');
             $content_tables = array_map(function($s) use ($prefix) {
                 return $prefix . $s;
