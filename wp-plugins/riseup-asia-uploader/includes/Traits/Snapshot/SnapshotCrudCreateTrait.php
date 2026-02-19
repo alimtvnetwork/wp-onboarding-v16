@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
@@ -38,7 +39,7 @@ trait SnapshotCrudCreateTrait {
     public function handleCreateSnapshot($request) {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $scope = isset($body['scope']) ? sanitize_key($body['scope']) : 'all';
+            $scope = isset($body['scope']) ? sanitize_key($body['scope']) : SnapshotScopeType::All->value;
 
             $this->logger->logPluginAction(ActionType::SnapshotCreate->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));

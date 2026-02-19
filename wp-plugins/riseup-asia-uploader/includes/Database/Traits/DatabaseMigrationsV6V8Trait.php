@@ -70,6 +70,11 @@ trait DatabaseMigrationsV6V8Trait {
             updated_at TEXT NOT NULL
         )");
 
+        // Migration defaults use literal values matching their corresponding enums:
+        // 'per_table' = SnapshotWorkerModeType::PerTable, 'incremental' = SnapshotModeType::Incremental,
+        // 'all' = PluginSelectionType::All, 'auto' = SnapshotProviderType::Auto,
+        // 'wordpress' = SnapshotScopeType::WordPress, 'manual' = SnapshotFrequencyType::Manual.
+        // Literals are required here because enum ->value access is not permitted in array declarations.
         $defaults = array(
             array('snapshot.mode',             'per_table',    'string'),
             array('snapshot.backup_type',      'incremental',  'string'),

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PluginSelectionType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
@@ -41,7 +42,7 @@ trait OrchestratorBackupTrait {
             'title' => $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i')),
             'scope' => $options['scope'] ?? $settings['scope'] ?? SnapshotScopeType::WordPress->value,
             'include_plugins' => $options['include_plugins'] ?? $settings['include_plugins'] ?? true,
-            'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? 'all',
+            'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? PluginSelectionType::All->value,
             'compression' => $options['compression'] ?? $settings['compression'] ?? true,
             'settings' => $settings,
         );
@@ -99,13 +100,14 @@ trait OrchestratorBackupTrait {
         $snapshot_dir = $workerResult['path'];
         $plugin_stats = $resolved['include_plugins'] ? $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']) : array('count' => 0, 'total_size' => 0);
         $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $workerResult, $plugin_stats, $snapshot_dir);
-        $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array('path' => null, 'size' => 0);
+        $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array('path' => null, 'size' => 0, 'zip_failed' => false);
 
         return array(
             'success' => true, 'snapshot_id' => $snapshot_id, 'directory' => $workerResult['directory'],
             'path' => $workerResult['path'], 'tables' => $workerResult['tables'],
             'total_rows' => $workerResult['total_rows'], 'plugins' => $plugin_stats['count'],
             'zip_path' => $zip_result['path'], 'zip_size' => $zip_result['size'],
+            'zip_failed' => $zip_result['zip_failed'] ?? false,
         );
     }
 
@@ -118,11 +120,11 @@ trait OrchestratorBackupTrait {
     private function executeZipPhase(string $snapshotDir, array $resolved): array {
         $zip_result = $this->createZipExport($snapshotDir, $resolved['title']);
         if ($zip_result['success']) {
-            return array('path' => $zip_result['path'], 'size' => $zip_result['size']);
+            return array('path' => $zip_result['path'], 'size' => $zip_result['size'], 'zip_failed' => false);
         }
         $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array('error' => $zip_result['error']));
 
-        return array('path' => null, 'size' => 0);
+        return array('path' => null, 'size' => 0, 'zip_failed' => true);
     }
 
     /**

@@ -182,40 +182,26 @@ public static function getFailedClasses(): array { return self::$failedClasses; 
 
 ---
 
-## Phase 2: Snapshot Subsystem Audit & Fixes
+## ✅ COMPLETED — Phase 2: Snapshot Subsystem Audit & Fixes (2026-02-19)
 
-### Current State
+All 13 issues (2.1–2.13) resolved across 10 files:
 
-The snapshot subsystem uses `SnapshotOrchestrator` → `SnapshotWorker` → per-table SQLite exports with WP-Cron for async batch processing. A `DependencyAnalyzer` does topological sorting of tables by FK relationships.
+- **2A** ✅ Replaced all snapshot magic strings with enum values:
+  - `AnalyzerQueryTrait.php`: Documented `'all'` default params as matching `SnapshotScopeType::All->value`
+  - `SnapshotCrudCreateTrait.php`: `'all'` → `SnapshotScopeType::All->value`
+  - `SnapshotCrudRestoreTrait.php`: `'full'` → `RestoreModeType::Full->value`, `'a-root.db'` → `SnapshotConfigType::RootDbFilename`
+  - `RootDbSchemaTrait.php`: `'Untitled Snapshot'` → `SnapshotConfigType::UntitledTitle`
+  - `OrchestratorBackupTrait.php`: `'all'` → `PluginSelectionType::All->value`
+  - `DatabaseMigrationsV6V8Trait.php`: Documented migration defaults with enum references (literals required by PHP)
+- **2B** ✅ Added orphaned directory cleanup in `WorkerExecuteTrait::execute()` and `executeSynchronous()` catch blocks + job creation failure
+- **2C** ✅ Added `validatePreSnapshotSize()` — checks `information_schema.TABLES` against `SnapshotConfigType::MaxSizeMb` before both async and sync snapshots
+- **2D** ✅ Enhanced `SnapshotProviderLockTrait`:
+  - Replaced hardcoded `1800` with `SnapshotConfigType::LockTimeoutSeconds->value`
+  - Added PID-based stale lock detection via `posix_kill($pid, 0)`
+- **2E** ✅ Refactored `isMasterSnapshot()` to use `SnapshotModeType::tryFrom()` + `->isFull()` — removed brittle `strpos($filename, '_full_')` check
+- **2F** ✅ Added `zip_failed` flag to `executeZipPhase()` and `finalizeSyncExport()` return arrays
 
-### Problems Identified
-
-| # | Issue | Severity | File(s) |
-|---|-------|----------|---------|
-| 2.1 | **Magic strings in scope filtering** — `AnalyzerQueryTrait::getTables()` uses raw `'wordpress'`, `'content'`, `'all'` instead of `SnapshotScopeType` enum | High | `AnalyzerQueryTrait.php:31-35` |
-| 2.2 | **Magic string `'full'`** in `WorkerSetupTrait::prepareSnapshotDir()` — `$config['type'] ?? 'full'` and `$config['scope'] ?? 'wordpress'` should use `SnapshotModeType::Full->value` and `SnapshotScopeType::WordPress->value` | High | `WorkerSetupTrait.php:24-25` |
-| 2.3 | **Magic string `'full'`** in `OrchestratorBackupTrait::runWorkerExport()` — hardcoded `'type' => 'full'` | High | `OrchestratorBackupTrait.php:112` |
-| 2.4 | **Magic string `'full'`** in `CleanerRetentionTrait::isMasterSnapshot()` — raw `=== 'full'` comparisons | High | `CleanerRetentionTrait.php:97-99` |
-| 2.5 | **Magic string `'per_table'`** in `SnapshotCrudCreateTrait` — `$manager->getSettings()['mode'] ?? 'per_table'` should use `SnapshotWorkerModeType::PerTable->value` | High | `SnapshotCrudCreateTrait.php:45` |
-| 2.6 | **Magic strings** in `RootDbSchemaTrait::populateMetadata()` — `'Untitled Snapshot'`, `'full'` fallbacks | Medium | `RootDbSchemaTrait.php:84` |
-| 2.7 | **Magic strings** in `DatabaseMigrationsV6V8Trait` — `'per_table'`, `'incremental'` defaults | Medium | `DatabaseMigrationsV6V8Trait.php:74-75` |
-| 2.8 | **Magic string `'Snapshot'`** in `WorkerSetupTrait::initRootDb()` — `$config['title'] ?? 'Snapshot'` | Low | `WorkerSetupTrait.php:51` |
-| 2.9 | **No transaction safety** — `WorkerExecuteTrait::execute()` doesn't wrap the root DB + job creation in a transaction; if `createJob()` fails after `initRootDb()`, an orphaned snapshot directory remains | Medium | `WorkerExecuteTrait.php:30-41` |
-| 2.10 | **No size validation before snapshot** — `SnapshotConfigType::MaxSizeMb` exists but is never checked; a snapshot could exceed 500MB without warning | Medium | Various |
-| 2.11 | **Stale lock files** — `SnapshotProviderLockTrait` acquires file locks but if the PHP process crashes, the lock file persists indefinitely; no stale-lock detection | Medium | `SnapshotProviderLockTrait.php` |
-| 2.12 | **`isMasterSnapshot()` uses string matching on filename** — `strpos($snap['filename'], '_full_')` is brittle; should rely on the `type` column from the DB | Low | `CleanerRetentionTrait.php:99` |
-| 2.13 | **Missing error propagation** — `executeZipPhase()` logs ZIP failure as non-fatal but the caller has no way to know the ZIP is missing from the result | Low | `OrchestratorBackupTrait.php:117-125` |
-
-### Proposed Fix Order
-
-1. **Task 2A** — Replace all snapshot magic strings (2.1–2.8) with enum values.
-2. **Task 2B** — Add transaction wrapping in `WorkerExecuteTrait::execute()` (2.9).
-3. **Task 2C** — Add pre-snapshot size estimation check using `SnapshotConfigType::MaxSizeMb` (2.10).
-4. **Task 2D** — Add stale lock detection with configurable timeout in `SnapshotProviderLockTrait` (2.11).
-5. **Task 2E** — Refactor `isMasterSnapshot()` to use enum comparison only (2.12).
-6. **Task 2F** — Add `zip_failed` flag to sync backup result (2.13).
-
-#### Estimated Effort: 6 tasks
+New enum: `SnapshotConfigType::LockTimeoutSeconds` (1800), `SnapshotConfigType::UntitledTitle` ('Untitled Snapshot')
 
 ---
 

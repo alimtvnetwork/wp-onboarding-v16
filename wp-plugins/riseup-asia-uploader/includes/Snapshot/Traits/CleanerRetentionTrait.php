@@ -95,14 +95,19 @@ trait CleanerRetentionTrait {
     }
 
     private function isMasterSnapshot(array $snap): bool {
-        $isScopeFull = (isset($snap['scope']) && $snap['scope'] === SnapshotModeType::Full->value);
-        if ($isScopeFull) return true;
+        $resolvedScope = isset($snap['scope']) ? SnapshotModeType::tryFrom($snap['scope']) : null;
+        $isScopeFull = ($resolvedScope !== null && $resolvedScope->isFull());
+        if ($isScopeFull) {
 
-        $isTypeFull = (isset($snap['type']) && $snap['type'] === SnapshotModeType::Full->value);
-        if ($isTypeFull) return true;
+            return true;
+        }
 
-        $isFilenameFull = (isset($snap['filename']) && strpos($snap['filename'], '_full_') !== false);
-        if ($isFilenameFull) return true;
+        $resolvedType = isset($snap['type']) ? SnapshotModeType::tryFrom($snap['type']) : null;
+        $isTypeFull = ($resolvedType !== null && $resolvedType->isFull());
+        if ($isTypeFull) {
+
+            return true;
+        }
 
         return false;
     }
