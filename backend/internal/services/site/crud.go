@@ -36,6 +36,17 @@ const siteUpdateConnectionStatusQuery = `
 	SET ConnectionStatus = ?, LastTestedAt = datetime('now'), UpdatedAt = datetime('now')
 	WHERE Id = ?`
 
+const cacheSelectQuery = `
+	SELECT PluginsJSON, ExpiresAt
+	FROM RemotePluginsCache
+	WHERE SiteId = ? AND datetime(ExpiresAt) > datetime('now')`
+
+const cacheUpsertQuery = `
+	INSERT OR REPLACE INTO RemotePluginsCache (SiteId, PluginsJSON, CachedAt, ExpiresAt)
+	VALUES (?, ?, datetime('now'), ?)`
+
+const cacheDeleteQuery = `DELETE FROM RemotePluginsCache WHERE SiteId = ?`
+
 // CreateInput holds the data needed to create a site.
 type CreateInput struct {
 	Name     string

@@ -676,33 +676,33 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 	return nil, apperror.Wrap(uploaderErr, apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site. Please deploy or update the companion plugin.")
 }
 
-// getRemotePluginsFromCache retrieves cached plugins if not expired
+// getRemotePluginsFromCache retrieves cached plugins if not expired.
 func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
-	query := `
-		SELECT PluginsJSON, ExpiresAt 
-		FROM RemotePluginsCache 
-		WHERE SiteId = ? AND datetime(ExpiresAt) > datetime('now')
-	`
-	
-	var pluginsJSON string
-	var expiresAt string
-	err := s.db.QueryRowContext(ctx, query, siteID).Scan(&pluginsJSON, &expiresAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // No cache or expired
-		}
-		return nil, err
+	type cacheRow struct {
+		PluginsJSON string
+		ExpiresAt   string
+	}
+	result := dbutil.QueryOne[cacheRow](ctx, s.dbu, cacheSelectQuery, func(row *sql.Row) (cacheRow, error) {
+		var r cacheRow
+		err := row.Scan(&r.PluginsJSON, &r.ExpiresAt)
+		return r, err
+	}, siteID)
+
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	if result.IsEmpty() {
+		return nil, nil // No cache or expired
 	}
 
 	var plugins []RemotePlugin
-	if err := json.Unmarshal([]byte(pluginsJSON), &plugins); err != nil {
+	if err := json.Unmarshal([]byte(result.Value().PluginsJSON), &plugins); err != nil {
 		return nil, err
 	}
-
 	return plugins, nil
 }
 
-// cacheRemotePlugins stores plugins in the cache
+// cacheRemotePlugins stores plugins in the cache.
 func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins []RemotePlugin) error {
 	pluginsJSON, err := json.Marshal(plugins)
 	if err != nil {
@@ -710,34 +710,26 @@ func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins 
 	}
 
 	expiresAt := time.Now().Add(time.Duration(s.cacheTTLMinutes) * time.Minute)
-	
-	// Use INSERT OR REPLACE to handle both insert and update
-	query := `
-		INSERT OR REPLACE INTO RemotePluginsCache (SiteId, PluginsJSON, CachedAt, ExpiresAt)
-		VALUES (?, ?, datetime('now'), ?)
-	`
-	
-	_, err = s.db.ExecContext(ctx, query, siteID, string(pluginsJSON), expiresAt.Format("2006-01-02 15:04:05"))
-	return err
+	res := dbutil.Exec(ctx, s.dbu, cacheUpsertQuery, siteID, string(pluginsJSON), expiresAt.Format("2006-01-02 15:04:05"))
+	if res.HasError() {
+		return res.Error()
+	}
+	return nil
 }
 
-// ForceSyncRemotePlugins clears cache and fetches fresh data
+// ForceSyncRemotePlugins clears cache and fetches fresh data.
 func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
-	// Invalidate cache first
 	if err := s.InvalidateRemotePluginsCache(ctx, siteID); err != nil {
 		s.log.Warn("Failed to invalidate cache before force sync", "siteId", siteID, "error", err)
 	}
-
-	// Fetch fresh data
 	return s.GetRemotePluginsWithCache(ctx, siteID, true)
 }
 
-// InvalidateRemotePluginsCache removes cached plugins for a site
+// InvalidateRemotePluginsCache removes cached plugins for a site.
 func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error {
-	query := `DELETE FROM RemotePluginsCache WHERE SiteId = ?`
-	_, err := s.db.ExecContext(ctx, query, siteID)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to invalidate remote plugins cache")
+	res := dbutil.Exec(ctx, s.dbu, cacheDeleteQuery, siteID)
+	if res.HasError() {
+		return res.Error()
 	}
 	s.log.Debug("Remote plugins cache invalidated", "siteId", siteID)
 	return nil
