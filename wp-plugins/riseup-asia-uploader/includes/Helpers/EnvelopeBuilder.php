@@ -24,7 +24,7 @@ class EnvelopeBuilder {
     use EnvelopeBuildTrait;
 
     private $is_success = true;
-    private $code = 200;
+    private $code = 200; // Matches HttpStatusType::Ok->value; literal required for PHP property default
     private $message = 'OK';
     private $results = array();
     private $requested_at = '';
