@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 trait RootDbSchemaTrait {
@@ -83,7 +84,7 @@ trait RootDbSchemaTrait {
             VALUES (1, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
 
         $stmt->execute(array(
-            $config['title'] ?? 'Untitled Snapshot', $config['type'] ?? SnapshotModeType::Full->value,
+            $config['title'] ?? SnapshotConfigType::UntitledTitle, $config['type'] ?? SnapshotModeType::Full->value,
             gmdate('c'), gethostname() ?: php_uname('n'),
             $mysqlVersion, $wpVersion, PluginConfigType::Version->value,
             isset($config['settings']) ? json_encode($config['settings']) : null,
@@ -94,7 +95,7 @@ trait RootDbSchemaTrait {
         ));
     }
 
-    public function populateDependencies(PDO $pdo, string $scope = 'all'): array { // Default matches SnapshotScopeType::All->value
+    public function populateDependencies(PDO $pdo, string $scope = 'all'): array { // Default 'all' matches SnapshotScopeType::All->value
         $analysis = $this->analyzer->analyze($scope);
 
         $stmt = $pdo->prepare("INSERT OR IGNORE INTO table_dependencies

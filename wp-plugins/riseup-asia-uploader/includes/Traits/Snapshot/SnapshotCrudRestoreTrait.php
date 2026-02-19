@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\StatusType;
@@ -83,7 +84,7 @@ trait SnapshotCrudRestoreTrait {
             'confirm'            => $hasConfirm,
             'create_backup'      => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
             'require_backup'     => $hasRequireBackup,
-            'mode'               => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
+            'mode'               => isset($body['mode']) ? sanitize_key($body['mode']) : RestoreModeType::Full->value,
             'tables'             => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
             'strict'             => $hasStrict,
             'apply_incrementals' => isset($body['applyIncrementals']) ? (bool) $body['applyIncrementals'] : true,
@@ -118,13 +119,14 @@ trait SnapshotCrudRestoreTrait {
     private function isPerTableSnapshot(array $snapshot): bool {
         $filepath = $snapshot['filepath'] ?? '';
         if (is_dir($filepath)) {
-            return file_exists($filepath . '/a-root.db');
+            return file_exists($filepath . '/' . SnapshotConfigType::RootDbFilename);
         }
         $dir = $snapshot['directory'] ?? '';
         $hasDirWithRootDb = BooleanHelpers::hasValue($dir) && is_dir($dir);
         if ($hasDirWithRootDb) {
-            return file_exists($dir . '/a-root.db');
+            return file_exists($dir . '/' . SnapshotConfigType::RootDbFilename);
         }
+
         return false;
     }
 
@@ -138,10 +140,11 @@ trait SnapshotCrudRestoreTrait {
         if ($hasValidDir) {
             return $dir;
         }
-        $hasFilepathWithRootDb = BooleanHelpers::hasValue($filepath) && file_exists(dirname($filepath) . '/a-root.db');
+        $hasFilepathWithRootDb = BooleanHelpers::hasValue($filepath) && file_exists(dirname($filepath) . '/' . SnapshotConfigType::RootDbFilename);
         if ($hasFilepathWithRootDb) {
             return dirname($filepath);
         }
+
         return null;
     }
 }

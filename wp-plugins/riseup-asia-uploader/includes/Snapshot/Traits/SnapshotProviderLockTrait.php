@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait SnapshotProviderLockTrait {
@@ -31,13 +32,49 @@ trait SnapshotProviderLockTrait {
         $lock_time = filemtime($lock_file);
         $age = time() - $lock_time;
 
-        if ($age > 1800) {
+        $isStaleByAge = ($age > SnapshotConfigType::LockTimeoutSeconds->value);
+        if ($isStaleByAge) {
             PathHelper::deleteFile($lock_file);
-            $this->log(LogLevelType::Warn->value, 'Removed stale lock file', array('age_minutes' => round($age / 60)));
+            $this->log(LogLevelType::Warn->value, 'Removed stale lock file (age exceeded)', array('age_minutes' => round($age / 60)));
+
+            return false;
+        }
+
+        $isStaleByPid = $this->isLockPidDead($lock_file);
+        if ($isStaleByPid) {
+            PathHelper::deleteFile($lock_file);
+            $this->log(LogLevelType::Warn->value, 'Removed stale lock file (PID dead)', array('age_minutes' => round($age / 60)));
+
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Check whether the process that created the lock file is still alive.
+     */
+    private function isLockPidDead(string $lock_file): bool {
+        $contents = @file_get_contents($lock_file);
+        if ($contents === false) {
+            return false;
+        }
+
+        $data = json_decode($contents, true);
+        $pid = $data['pid'] ?? null;
+        $isPidMissing = ($pid === null);
+        if ($isPidMissing) {
+            return false;
+        }
+
+        // posix_kill with signal 0 checks process existence without sending a signal
+        if (function_exists('posix_kill')) {
+            $isProcessAlive = posix_kill((int) $pid, 0);
+
+            return ($isProcessAlive === false);
+        }
+
+        return false;
     }
 
     protected function acquireLock(): bool {

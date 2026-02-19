@@ -24,7 +24,7 @@ trait AnalyzerQueryTrait {
      * @param string $scope Filter scope matching SnapshotScopeType values.
      * @return array Table names.
      */
-    public function getTables($scope = 'all') {
+    public function getTables($scope = 'all') { // Default matches SnapshotScopeType::All->value
         $prefix = $this->wpdb->prefix;
 
         $tables = $this->wpdb->get_col("SHOW TABLES");
@@ -94,7 +94,7 @@ trait AnalyzerQueryTrait {
      * @param string $scope Table scope.
      * @return array Analysis result.
      */
-    public function analyze($scope = 'all') {
+    public function analyze($scope = 'all') { // Default matches SnapshotScopeType::All->value
         $tables = $this->getTables($scope);
         $dependencies = $this->detectDependencies();
 
