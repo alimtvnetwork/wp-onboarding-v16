@@ -1,6 +1,7 @@
 package dbutil
 
 import (
+	"context"
 	"database/sql"
 
 	"wp-plugin-publish/pkg/apperror"
@@ -14,8 +15,8 @@ type RowsScanner[T any] func(*sql.Rows) (T, error)
 
 // QueryOne executes a query expected to return a single row.
 // Returns Result[T] with IsDefined()=false for sql.ErrNoRows (not an error).
-func QueryOne[T any](db *DB, query string, scan RowScanner[T], args ...any) Result[T] {
-	row := db.conn.QueryRow(query, args...)
+func QueryOne[T any](ctx context.Context, db *DB, query string, scan RowScanner[T], args ...any) Result[T] {
+	row := db.conn.QueryRowContext(ctx, query, args...)
 	value, err := scan(row)
 
 	if err == sql.ErrNoRows {
@@ -29,8 +30,8 @@ func QueryOne[T any](db *DB, query string, scan RowScanner[T], args ...any) Resu
 }
 
 // QueryMany executes a query expected to return multiple rows.
-func QueryMany[T any](db *DB, query string, scan RowsScanner[T], args ...any) ResultSet[T] {
-	rows, err := db.conn.Query(query, args...)
+func QueryMany[T any](ctx context.Context, db *DB, query string, scan RowsScanner[T], args ...any) ResultSet[T] {
+	rows, err := db.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		wrapped := apperror.Wrap(err, "E5011", "QueryMany failed")
 		return NewResultSetError[T](wrapped, wrapped.StackTrace)
