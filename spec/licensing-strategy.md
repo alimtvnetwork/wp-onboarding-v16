@@ -22,39 +22,99 @@ Both tiers share the **same version number** (e.g., `1.53.0`).
 
 Instead of hashing ZIP files, the system uses a **file manifest approach**:
 
+#### Algorithm (Pseudocode)
+
 ```
-1. Scan plugin directory → build sorted file list (JSON manifest)
-2. Hash each file's contents → SHA-256
-3. Combine file hashes in deterministic order → final manifest hash
-4. Compare manifest hash against server-provided expected hash
+function generateManifestHash(pluginDir):
+    files = recursiveScan(pluginDir)
+    files = excludeIgnored(files)          // remove .git/, cache/, logs, etc.
+    files = sortAlphabetically(files)      // by relative path, case-sensitive
+
+    fileHashes = []
+    for file in files:
+        relativePath = removePrefix(file, pluginDir)
+        contentHash  = SHA-256(readBinary(file))
+        fileHashes.append(relativePath + ":" + contentHash)
+
+    // Concatenate all "path:hash" strings with newline separator
+    combined = join(fileHashes, "\n")
+
+    return SHA-256(combined)
 ```
 
-**Manifest JSON structure (conceptual):**
+#### Detailed Steps
+
+1. **Recursive directory scan** — Traverse the plugin directory depth-first
+2. **Exclude ignored paths** — Skip files/dirs matching exclusion rules (see below)
+3. **Sort alphabetically** — All remaining file paths sorted case-sensitively (`A` < `a`) by their relative path from plugin root
+4. **Hash each file** — Read raw binary contents, compute `SHA-256(contents)` → hex string
+5. **Build hash string** — For each file: `"relative/path.php:a1b2c3d4..."`, join all with `\n`
+6. **Final hash** — `SHA-256(concatenated_string)` → this is the **manifest hash**
+
+#### Exclusion Rules
+
+| Pattern | Reason |
+|---------|--------|
+| `.git/` | Version control metadata |
+| `node_modules/` | JS dependencies (not shipped) |
+| `vendor/` | Composer dependencies (if autoloaded separately) |
+| `*.log` | Runtime logs |
+| `.DS_Store`, `Thumbs.db` | OS artifacts |
+| `cache/`, `tmp/` | Transient runtime files |
+| `.uploadignore` | Plugin-specific ignore file |
+
+> **Note:** The exclusion list is defined as a constant in the plugin config enum, making it auditable and deterministic.
+
+#### Manifest JSON Structure
+
+The manifest is stored locally for debugging/audit purposes, **not** used as input to the hash (the hash is computed from raw files):
+
 ```json
 {
   "version": "1.53.0",
   "tier": "pro",
+  "generated_at": "2026-02-19T10:30:00Z",
+  "file_count": 87,
   "files": [
     { "path": "includes/Admin/AdminPage.php", "hash": "a1b2c3..." },
-    { "path": "includes/Core/Bootstrap.php", "hash": "d4e5f6..." }
+    { "path": "includes/Core/Bootstrap.php", "hash": "d4e5f6..." },
+    { "path": "riseup-asia-uploader.php", "hash": "f7g8h9..." }
   ],
-  "manifest_hash": "final_combined_hash"
+  "manifest_hash": "final_sha256_of_all_path_hash_pairs"
 }
 ```
 
-**Ordering rules:**
-- Files sorted alphabetically by relative path
-- Deterministic traversal (depth-first, sorted)
-- Excludes: `.git/`, `node_modules/`, transient/cache files
+#### Computation Trigger
 
-**Computation trigger:** First activation or post-update initialization.
+- **On plugin activation** (first install)
+- **After every update** (post-update hook)
+- **Never recomputed at runtime** — cached until next activation/update
 
-**Per-tier hashes:**
+#### Per-Tier Hash Combination (Build Fingerprint)
+
 ```
-Base files  →  manifest_hash_base
-Pro files   →  manifest_hash_pro
-Combined    →  SHA-256(manifest_hash_base + manifest_hash_pro) = build_fingerprint
+Base plugin dir  →  generateManifestHash()  →  manifest_hash_base   (64 hex chars)
+Pro plugin dir   →  generateManifestHash()  →  manifest_hash_pro    (64 hex chars)
+
+build_fingerprint = SHA-256(manifest_hash_base + ":" + manifest_hash_pro)
 ```
+
+**Example:**
+```
+manifest_hash_base = "3a7f2c...e91d"  (SHA-256, 64 chars)
+manifest_hash_pro  = "b4d8f1...a03c"  (SHA-256, 64 chars)
+input              = "3a7f2c...e91d:b4d8f1...a03c"
+build_fingerprint  = SHA-256(input) = "c9e2a7...f150"
+```
+
+The server stores the expected `build_fingerprint` for each version. The plugin computes it locally and compares.
+
+#### Why This Works
+
+- **Deterministic** — same files always produce the same hash regardless of OS, timezone, or build tool
+- **Tamper-evident** — modifying, adding, or removing any file changes the manifest hash
+- **Version-locked** — base and pro must both be from the same build to produce the expected fingerprint
+- **No ZIP dependency** — avoids non-deterministic ZIP metadata issues
 
 ### Step 2 — Remote License Validation
 
