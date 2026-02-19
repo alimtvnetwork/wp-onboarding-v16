@@ -227,35 +227,23 @@ All 4 sub-tasks (3A–3D) implemented across 6 files:
 
 ---
 
-## Phase 4: Self-Update Mechanism Hardening
+## ✅ COMPLETED — Phase 4: Self-Update Mechanism Hardening (2026-02-19)
 
-### Current State
+All 4 sub-tasks (4A–4D) implemented across 7 files:
 
-`UpdateResolver` already has:
-- `checkForPluginUpdate()` — hooks into WP transient to inject update info.
-- `fetchUpdateInfo()` — fetches JSON from a configurable master URL with 301 redirect resolution.
-- `pluginInfo()` — provides plugin details to the WP updates UI.
-
-### Problems Identified
-
-| # | Issue | Severity |
-|---|-------|----------|
-| 4.1 | **Magic strings** — `UpdateResolver` uses `const OPTION_NAME = 'riseup_update_settings'` instead of `OptionNameType::UpdateSettings->value` | High |
-| 4.2 | **Magic string** — `const DEFAULT_CACHE_DAYS = 7` should be `UpdateConfigType::CacheDaysDefault->value` | High |
-| 4.3 | **No integrity verification** — downloaded ZIP is not checksum-verified before installation | Critical |
-| 4.4 | **No rollback** — if update fails mid-install, there's no automatic rollback to the previous version | High |
-| 4.5 | **No license validation** — update endpoint doesn't verify the site's license before serving the package (see Phase 5) | Medium |
-| 4.6 | **Update URL not yet provided** — the master URL configuration is empty; needs to be set by the user | Blocker |
-
-### Proposed Enhancements
-
-1. **Task 4A** — Replace magic strings (4.1, 4.2) with enum values.
-2. **Task 4B** — Add SHA-256 checksum verification: the update JSON should include a `sha256` field; after download, verify before installing.
-3. **Task 4C** — Add pre-update backup: before applying an update, create a snapshot of the current plugin files.
-4. **Task 4D** — Add rollback mechanism: if `activate_plugin()` fails after update, restore from the pre-update backup.
-5. **Task 4E** — Add license header to update requests (depends on Phase 5).
-
-#### Estimated Effort: 4–5 tasks
+- **4A** ✅ Removed deprecated `OPTION_NAME` and `DEFAULT_CACHE_DAYS` constants from `UpdateResolver.php`
+  - Replaced hardcoded `$maxRedirects = 5` with `?int $maxRedirects = null` + `UpdateConfigType::MaxRedirects->value` in `UpdateResolverUrlTrait`
+- **4B** ✅ Created `UpdateResolverIntegrityTrait`:
+  - `verifyChecksum($filePath, $expectedHash)` — SHA-256 verification via `hash_file()` + `hash_equals()`
+  - `downloadAndVerify($packageUrl, $expectedHash)` — `download_url()` + checksum gate; auto-deletes on mismatch
+  - `parseUpdateResponseBody()` now extracts `sha256` field from update JSON
+- **4C** ✅ Created `UpdateResolverBackupTrait`:
+  - `createPreUpdateBackup()` — copies plugin dir to `wp-content/upgrade/{slug}-backup-{timestamp}/`
+  - `rollbackFromBackup($backupDir)` — deletes failed update, restores from backup, cleans up
+  - `cleanupBackup($backupDir)` — removes backup after successful update
+  - Uses `recursiveCopy()` and `recursiveDelete()` private helpers
+- **4D** ✅ Added new `WpErrorCodeType` cases: `FileNotFound`, `ChecksumMismatch`, `BackupFailed`, `RollbackFailed`
+- **4E** — License header deferred to Phase 5
 
 ---
 
