@@ -12,10 +12,12 @@ namespace RiseupAsia\Enums;
  */
 enum ResponseKeyType: string
 {
-    case Total  = 'total';
-    case Agents = 'agents';
-    case Sql    = 'sql';
-    case Params = 'params';
+    case Total   = 'total';
+    case Agents  = 'agents';
+    case Actions = 'actions';
+    case Sql     = 'sql';
+    case Params  = 'params';
+    case Sets    = 'sets';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

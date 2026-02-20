@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
 
 use WP_Error;
 use RiseupAsia\Database\TypedQuery;
+use RiseupAsia\Enums\AgentFieldType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -28,7 +30,10 @@ trait AgentCrudWriteTrait {
     private const AGENT_DELETE_QUERY = 'DELETE FROM agent_sites WHERE id = ?';
 
     public function addAgent(array $data): int|WP_Error {
-        $this->fileLogger->info('Adding agent site', ['name' => $data['name'], 'url' => $data['url']]);
+        $nameKey = AgentFieldType::Name->value;
+        $urlKey = AgentFieldType::Url->value;
+
+        $this->fileLogger->info('Adding agent site', [$nameKey => $data[$nameKey], $urlKey => $data[$urlKey]]);
 
         $validationError = $this->validateAgentData($data);
         if ($validationError) {
@@ -42,11 +47,11 @@ trait AgentCrudWriteTrait {
 
         $query = new TypedQuery($pdo);
         $result = $query->exec(self::AGENT_INSERT_QUERY, [
-            sanitize_text_field($data['name']),
-            esc_url_raw($this->normalizeUrl($data['url'])),
-            sanitize_user($data['username']),
-            $this->encrypt($data['app_password']),
-            isset($data['redirect_url']) ? esc_url_raw($data['redirect_url']) : null,
+            sanitize_text_field($data[$nameKey]),
+            esc_url_raw($this->normalizeUrl($data[$urlKey])),
+            sanitize_user($data[AgentFieldType::Username->value]),
+            $this->encrypt($data[AgentFieldType::AppPassword->value]),
+            isset($data[AgentFieldType::RedirectUrl->value]) ? esc_url_raw($data[AgentFieldType::RedirectUrl->value]) : null,
             gmdate('Y-m-d\TH:i:s\Z'),
         ]);
 
@@ -70,18 +75,21 @@ trait AgentCrudWriteTrait {
         }
 
         $update = $this->buildUpdateSets($data);
-        if (empty($update['sets'])) {
+        $setsKey = ResponseKeyType::Sets->value;
+        $paramsKey = ResponseKeyType::Params->value;
+
+        if (empty($update[$setsKey])) {
             return new WP_Error(WpErrorCodeType::NoData->value, 'No fields to update');
         }
 
-        $update['sets'][] = 'updated_at = ?';
-        $update['params'][] = gmdate('Y-m-d\TH:i:s\Z');
-        $update['params'][] = $id;
+        $update[$setsKey][] = 'updated_at = ?';
+        $update[$paramsKey][] = gmdate('Y-m-d\TH:i:s\Z');
+        $update[$paramsKey][] = $id;
 
-        $sql = 'UPDATE agent_sites SET ' . implode(', ', $update['sets']) . ' WHERE id = ?';
+        $sql = 'UPDATE agent_sites SET ' . implode(', ', $update[$setsKey]) . ' WHERE id = ?';
 
         $query = new TypedQuery($pdo);
-        $result = $query->exec($sql, $update['params']);
+        $result = $query->exec($sql, $update[$paramsKey]);
 
         if ($result->hasError()) {
             $this->fileLogger->logException($result->error(), 'Failed to update agent site');
@@ -115,10 +123,10 @@ trait AgentCrudWriteTrait {
     }
 
     private function validateAgentData(array $data): ?WP_Error {
-        $hasAllFields = BooleanHelpers::hasValue($data['name'] ?? null)
-            && BooleanHelpers::hasValue($data['url'] ?? null)
-            && BooleanHelpers::hasValue($data['username'] ?? null)
-            && BooleanHelpers::hasValue($data['app_password'] ?? null);
+        $hasAllFields = BooleanHelpers::hasFilterValue($data, AgentFieldType::Name->value)
+            && BooleanHelpers::hasFilterValue($data, AgentFieldType::Url->value)
+            && BooleanHelpers::hasFilterValue($data, AgentFieldType::Username->value)
+            && BooleanHelpers::hasFilterValue($data, AgentFieldType::AppPassword->value);
 
         if ($hasAllFields) {
             return null;
@@ -134,7 +142,7 @@ trait AgentCrudWriteTrait {
         $this->applyFieldMap($data, $sets, $params);
         $this->applyPasswordField($data, $sets, $params);
 
-        return ['sets' => $sets, 'params' => $params];
+        return [ResponseKeyType::Sets->value => $sets, ResponseKeyType::Params->value => $params];
     }
 
     private function applyFieldMap(
@@ -143,13 +151,13 @@ trait AgentCrudWriteTrait {
         array &$params,
     ): void {
         $fieldMap = [
-            'name'         => fn($v) => ['name = ?', sanitize_text_field($v)],
-            'url'          => fn($v) => ['url = ?', esc_url_raw($this->normalizeUrl($v))],
-            'username'     => fn($v) => ['username = ?', sanitize_user($v)],
-            'redirect_url' => fn($v) => ['redirect_url = ?', esc_url_raw($v)],
-            'status'       => fn($v) => ['status = ?', sanitize_key($v)],
-            'last_sync'    => fn($v) => ['last_sync = ?', $v],
-            'last_error'   => fn($v) => ['last_error = ?', $v],
+            AgentFieldType::Name->value        => fn($v) => ['name = ?', sanitize_text_field($v)],
+            AgentFieldType::Url->value         => fn($v) => ['url = ?', esc_url_raw($this->normalizeUrl($v))],
+            AgentFieldType::Username->value    => fn($v) => ['username = ?', sanitize_user($v)],
+            AgentFieldType::RedirectUrl->value => fn($v) => ['redirect_url = ?', esc_url_raw($v)],
+            AgentFieldType::Status->value      => fn($v) => ['status = ?', sanitize_key($v)],
+            AgentFieldType::LastSync->value    => fn($v) => ['last_sync = ?', $v],
+            AgentFieldType::LastError->value   => fn($v) => ['last_error = ?', $v],
         ];
 
         foreach ($fieldMap as $field => $transform) {
@@ -168,12 +176,13 @@ trait AgentCrudWriteTrait {
         array &$sets,
         array &$params,
     ): void {
-        $hasPassword = isset($data['app_password']) && BooleanHelpers::hasValue($data['app_password']);
+        $passwordKey = AgentFieldType::AppPassword->value;
+        $hasPassword = BooleanHelpers::hasFilterValue($data, $passwordKey);
         if (!$hasPassword) {
             return;
         }
 
         $sets[] = 'app_password_encrypted = ?';
-        $params[] = $this->encrypt($data['app_password']);
+        $params[] = $this->encrypt($data[$passwordKey]);
     }
 }

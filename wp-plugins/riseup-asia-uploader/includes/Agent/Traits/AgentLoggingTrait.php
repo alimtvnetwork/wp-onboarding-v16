@@ -14,10 +14,26 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use PDOException;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentLoggingTrait {
+
+    private const ACTION_INSERT_QUERY = <<<'SQL'
+        INSERT INTO agent_actions
+            (agent_site_id, action, target_plugin, status, details, error_msg, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    SQL;
+
+    private const ACTION_COUNT_QUERY = 'SELECT COUNT(*) as total FROM agent_actions WHERE agent_site_id = ?';
+
+    private const ACTION_LIST_QUERY = <<<'SQL'
+        SELECT * FROM agent_actions
+        WHERE agent_site_id = ?
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+    SQL;
 
     public function logAction(
         int $agentId,
@@ -34,7 +50,15 @@ trait AgentLoggingTrait {
                 return false;
             }
 
-            return $this->insertActionRecord($pdo, $agentId, $action, $plugin, $status, $details, $errorMsg);
+            return $this->insertActionRecord(
+                $pdo,
+                $agentId,
+                sanitize_key($action),
+                $plugin !== null ? sanitize_text_field($plugin) : null,
+                sanitize_key($status),
+                $details,
+                $errorMsg !== null ? sanitize_text_field($errorMsg) : null,
+            );
         } catch (PDOException $e) {
             return ErrorResponse::logAndReturnFalse($this->fileLogger, $e, 'Failed to log agent action');
         }
@@ -49,9 +73,7 @@ trait AgentLoggingTrait {
         ?array $details,
         ?string $errorMsg,
     ): int {
-        $stmt = $pdo->prepare("INSERT INTO agent_actions 
-            (agent_site_id, action, target_plugin, status, details, error_msg, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare(self::ACTION_INSERT_QUERY);
 
         $stmt->execute(array(
             $agentId, $action, $plugin, $status,
@@ -67,30 +89,33 @@ trait AgentLoggingTrait {
         int $limit = 50, // PaginationConfigType::DefaultLimit (PHP constraint: no enum in defaults)
         int $offset = 0,
     ): array {
+        $totalKey = ResponseKeyType::Total->value;
+        $actionsKey = ResponseKeyType::Actions->value;
+
         try {
             $pdo = $this->db->getPdo();
             $isPdoMissing = ($pdo === null);
             if ($isPdoMissing) {
-                return array('total' => 0, 'actions' => array());
+                return array($totalKey => 0, $actionsKey => array());
             }
 
             $total = $this->countAgentActions($pdo, $agentId);
             $actions = $this->fetchAgentActions($pdo, $agentId, $limit, $offset);
             $this->decodeActionDetails($actions);
 
-            return array('total' => $total, 'actions' => $actions);
+            return array($totalKey => $total, $actionsKey => $actions);
         } catch (PDOException $e) {
             $this->fileLogger->logException($e, 'Failed to get action history');
 
-            return array('total' => 0, 'actions' => array());
+            return array($totalKey => 0, $actionsKey => array());
         }
     }
 
     private function countAgentActions(PDO $pdo, int $agentId): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM agent_actions WHERE agent_site_id = ?");
+        $stmt = $pdo->prepare(self::ACTION_COUNT_QUERY);
         $stmt->execute(array($agentId));
 
-        return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        return (int) $stmt->fetch(PDO::FETCH_ASSOC)[ResponseKeyType::Total->value];
     }
 
     private function fetchAgentActions(
@@ -99,10 +124,7 @@ trait AgentLoggingTrait {
         int $limit,
         int $offset,
     ): array {
-        $stmt = $pdo->prepare("SELECT * FROM agent_actions 
-            WHERE agent_site_id = ? 
-            ORDER BY created_at DESC 
-            LIMIT ? OFFSET ?");
+        $stmt = $pdo->prepare(self::ACTION_LIST_QUERY);
         $stmt->execute(array($agentId, $limit, $offset));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

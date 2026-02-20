@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
+use RiseupAsia\Enums\AgentFieldType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Agent\AgentManager;
 
@@ -24,11 +25,11 @@ trait AgentHandlerCrudTrait {
     public function handleListAgents(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Listing agent sites');
-            $status = $request->get_param('status');
+            $status = $request->get_param(AgentFieldType::Status->value);
             $limit = $request->get_param('limit') ?: 100;
             $offset = $request->get_param('offset') ?: 0;
             $filters = array();
-            if ($status) { $filters['status'] = sanitize_key($status); }
+            if ($status) { $filters[AgentFieldType::Status->value] = sanitize_key($status); }
             $manager = AgentManager::getInstance();
             $result = $manager->listAgents($filters, $limit, $offset);
 
@@ -54,9 +55,11 @@ trait AgentHandlerCrudTrait {
     /** Extract agent data from a REST request. */
     private function extractAgentData(WP_REST_Request $request): array {
         return array(
-            'name' => $request->get_param('name'), 'url' => $request->get_param('url'),
-            'username' => $request->get_param('username'), 'app_password' => $request->get_param('app_password'),
-            'redirect_url' => $request->get_param('redirect_url'),
+            AgentFieldType::Name->value        => $request->get_param(AgentFieldType::Name->value),
+            AgentFieldType::Url->value         => $request->get_param(AgentFieldType::Url->value),
+            AgentFieldType::Username->value    => $request->get_param(AgentFieldType::Username->value),
+            AgentFieldType::AppPassword->value => $request->get_param(AgentFieldType::AppPassword->value),
+            AgentFieldType::RedirectUrl->value => $request->get_param(AgentFieldType::RedirectUrl->value),
         );
     }
 
