@@ -29,6 +29,7 @@ const (
 // NOTE: Upload Source Values have been migrated to upload_source_type.go (UploadSourceType).
 
 // NOTE: Error Messages have been migrated to response_message_type.go (ResponseMessageType).
+// NOTE: Response Keys have been migrated to response_key_type.go (ResponseKeyType).
 
 // =============================================================================
 // DEFAULT VALUES
