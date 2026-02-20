@@ -31,21 +31,21 @@ func New(path string) (*DB, error) {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create database directory").
-			WithContext("path", dir)
+			WithPath(dir)
 	}
 
 	// Resolve absolute path for database file
 	absPath, err := pathutil.ToAbsolute(path)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to resolve database path").
-			WithContext("path", path)
+			WithPath(path)
 	}
 
 	// Open database connection with WAL mode (modernc/sqlite uses different driver name)
 	sqlDB, err := sql.Open("sqlite", absPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open database").
-			WithContext("path", absPath)
+			WithPath(absPath)
 	}
 
 	// Configure for concurrent access
@@ -57,7 +57,7 @@ func New(path string) (*DB, error) {
 	// Test connection
 	if err := sqlDB.Ping(); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to ping database").
-			WithContext("path", absPath)
+			WithPath(absPath)
 	}
 
 	return &DB{
@@ -79,7 +79,7 @@ func configureConnection(db *sql.DB) error {
 	for _, pragma := range pragmas {
 		if _, err := db.Exec(pragma); err != nil {
 			return apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to execute pragma").
-				WithContext("pragma", pragma)
+				WithDetails(pragma)
 		}
 	}
 
@@ -120,7 +120,7 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 		}
 		if err := os.MkdirAll(childDir, 0755); err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create child db directory").
-				WithContext("path", childDir)
+				WithPath(childDir)
 		}
 		p, err := pathutil.Join(childDir, entityID+".db")
 		if err != nil {
@@ -133,7 +133,7 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 	child, err := sql.Open("sqlite", childPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open child database").
-			WithContext("path", childPath)
+			WithPath(childPath)
 	}
 
 	if err := configureConnection(child); err != nil {
@@ -282,10 +282,10 @@ func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string, log *
 	ctx := dbops.Context{
 		Table:  "PluginMappings",
 		Logger: log,
-		Fields: dbops.ContextFields{
-			"pluginId":   pluginID,
-			"siteId":     siteID,
-			"remoteSlug": remoteSlug,
+		Fields: dbops.OperationFields{
+			PluginID:   pluginID,
+			SiteID:     siteID,
+			RemoteSlug: remoteSlug,
 		},
 	}
 

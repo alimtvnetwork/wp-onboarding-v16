@@ -533,10 +533,11 @@ func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, 
 	// Read error.log for stack traces
 	if errPath, err := s.getErrorLogPath(sessionID); err == nil {
 		if data, err := os.ReadFile(errPath); err == nil {
-		var errorData ErrorLogData
-		if json.Unmarshal(data, &errorData) == nil {
-			if errorData.StackTrace != nil {
-				diag.StackTrace = errorData.StackTrace
+			var errorData ErrorLogData
+			if json.Unmarshal(data, &errorData) == nil {
+				if errorData.StackTrace != nil {
+					diag.StackTrace = errorData.StackTrace
+				}
 			}
 		}
 	}

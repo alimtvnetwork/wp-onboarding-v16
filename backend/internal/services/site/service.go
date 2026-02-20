@@ -1464,8 +1464,8 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, plugin
 	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").
-			WithContext("siteId", siteID).
-			WithContext("pluginSlug", pluginSlug)
+			WithSiteID(siteID).
+			WithPluginSlug(pluginSlug)
 	}
 
 	// Convert wordpress.RemoteFile to our local type
@@ -1504,9 +1504,9 @@ func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, 
 	content, err := client.GetPluginFileContent(ctx, pluginSlug, filePath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").
-			WithContext("siteId", siteID).
-			WithContext("pluginSlug", pluginSlug).
-			WithContext("filePath", filePath)
+			WithSiteID(siteID).
+			WithPluginSlug(pluginSlug).
+			WithFilePath(filePath)
 	}
 
 	s.log.Debug("Remote file content fetched", "siteId", siteID, "pluginSlug", pluginSlug, "filePath", filePath, "contentLen", len(content))

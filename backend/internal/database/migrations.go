@@ -358,15 +358,14 @@ func Migrate(db *DB, log *logger.Logger) error {
 		if err != nil {
 			log.Error("Failed to begin transaction", "version", m.Version, "error", err)
 			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to begin transaction").
-				WithContext("version", m.Version)
+				WithDetails(fmt.Sprintf("version=%d", m.Version))
 		}
 
 		if _, err := tx.Exec(m.SQL); err != nil {
 			tx.Rollback()
 			log.Error("Migration SQL failed", "version", m.Version, "description", m.Description, "error", err)
 			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to apply migration SQL").
-				WithContext("version", m.Version).
-				WithContext("description", m.Description)
+				WithDetails(fmt.Sprintf("version=%d, description=%s", m.Version, m.Description))
 		}
 
 		if _, err := tx.Exec(
@@ -376,13 +375,13 @@ func Migrate(db *DB, log *logger.Logger) error {
 			tx.Rollback()
 			log.Error("Failed to record migration", "version", m.Version, "error", err)
 			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to record migration").
-				WithContext("version", m.Version)
+				WithDetails(fmt.Sprintf("version=%d", m.Version))
 		}
 
 		if err := tx.Commit(); err != nil {
 			log.Error("Failed to commit migration", "version", m.Version, "error", err)
 			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to commit migration").
-				WithContext("version", m.Version)
+				WithDetails(fmt.Sprintf("version=%d", m.Version))
 		}
 
 		log.Info("Migration completed", "version", m.Version)

@@ -75,7 +75,7 @@ func (e *APIError) FullError() string {
 }
 
 // ProgressDetails holds structured metadata for progress callback reporting.
-type ProgressDetails = json.RawMessage
+type ProgressDetails map[string]any
 
 // ClientConfig holds WordPress client configuration
 type ClientConfig struct {
@@ -147,8 +147,8 @@ func (c *Client) request(method, endpoint string, body any) (*http.Response, err
 	req, err := http.NewRequest(method, url, bodyReader)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
-			WithContext("url", url).
-			WithContext("method", method)
+			WithURL(url).
+			WithMethod(method)
 	}
 
 	c.setStandardHeaders(req, ContentTypeJSON.String())
@@ -161,8 +161,8 @@ func (c *Client) requestMultipart(method, endpoint string, body io.Reader, conte
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
-			WithContext("url", url).
-			WithContext("method", method)
+			WithURL(url).
+			WithMethod(method)
 	}
 
 	c.setStandardHeaders(req, contentType)
@@ -178,7 +178,7 @@ func (c *Client) rawGet(fullURL string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
-			WithContext("url", fullURL)
+			WithURL(fullURL)
 	}
 	c.setStandardHeaders(req, ContentTypeJSON.String())
 	return c.httpClient.Do(req)
@@ -225,7 +225,7 @@ func (c *Client) ResolvePluginIdentifier(slug string) (string, error) {
 	}
 
 	return slug, apperror.New(apperror.ErrNotFound, "plugin not found").
-		WithContext("slug", slug)
+		WithSlug(slug)
 }
 
 // TestConnection verifies the API is accessible and credentials are valid
@@ -244,7 +244,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	if err != nil {
 		c.progress("dns_check", "error", fmt.Sprintf("Cannot reach site: %v", err), ProgressDetails{"error": err.Error(), "url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "cannot reach WordPress site").
-			WithContext("url", c.baseURL)
+			WithURL(c.baseURL)
 	}
 	resp.Body.Close()
 	c.progress("dns_check", "success", "Site is reachable", ProgressDetails{"status": resp.StatusCode, "url": c.baseURL})
@@ -257,14 +257,14 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	if err != nil {
 		c.progress("rest_api_check", "error", fmt.Sprintf("REST API not accessible: %v", err), ProgressDetails{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPAPIDisabled, "REST API not accessible").
-			WithContext("url", c.baseURL)
+			WithURL(c.baseURL)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == HttpStatusNotFound.Int() {
 		c.progress("rest_api_check", "error", "REST API not found - is permalink structure set?", ProgressDetails{"url": c.baseURL})
 		return nil, apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").
-			WithContext("url", c.baseURL)
+			WithURL(c.baseURL)
 	}
 
 	// Parse root response to get WordPress version
@@ -287,8 +287,8 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	if err != nil {
 		c.progress("auth_check", "error", fmt.Sprintf("Authentication request failed: %v", err), ProgressDetails{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPAuth, "authentication request failed").
-			WithContext("url", c.baseURL).
-			WithContext("username", c.username)
+			WithURL(c.baseURL).
+			WithUsername(c.username)
 	}
 	defer resp.Body.Close()
 
@@ -298,14 +298,14 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			"url":  c.baseURL,
 		})
 		return nil, apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").
-			WithContext("url", c.baseURL).
-			WithContext("username", c.username)
+			WithURL(c.baseURL).
+			WithUsername(c.username)
 	}
 	if resp.StatusCode == HttpStatusForbidden.Int() {
 		c.progress("auth_check", "error", "Access forbidden - user lacks permissions", ProgressDetails{"url": c.baseURL})
 		return nil, apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").
-			WithContext("url", c.baseURL).
-			WithContext("statusCode", resp.StatusCode)
+			WithURL(c.baseURL).
+			WithStatusCode(resp.StatusCode)
 	}
 	if resp.StatusCode != HttpStatusOk.Int() {
 		body, _ := io.ReadAll(resp.Body)
@@ -314,8 +314,8 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			"url":  c.baseURL,
 		})
 		return nil, apperror.New(apperror.ErrWPConnection, "unexpected authentication response").
-			WithContext("url", c.baseURL).
-			WithContext("statusCode", resp.StatusCode).
+			WithURL(c.baseURL).
+			WithStatusCode(resp.StatusCode).
 			WithDetails(string(body))
 	}
 
@@ -349,7 +349,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	if err != nil {
 		c.progress("plugin_access_check", "error", fmt.Sprintf("Plugin endpoint request failed: %v", err), ProgressDetails{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPPluginList, "plugin endpoint not accessible").
-			WithContext("url", c.baseURL)
+			WithURL(c.baseURL)
 	}
 	defer resp.Body.Close()
 
@@ -359,8 +359,8 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			"url":       c.baseURL,
 		})
 		return nil, apperror.New(apperror.ErrWPAuth, "insufficient permissions: user cannot manage plugins (requires administrator role)").
-			WithContext("url", c.baseURL).
-			WithContext("statusCode", resp.StatusCode)
+			WithURL(c.baseURL).
+			WithStatusCode(resp.StatusCode)
 	}
 	if resp.StatusCode == HttpStatusOk.Int() {
 		result.CanManagePlugins = true
@@ -440,7 +440,7 @@ func (c *Client) GetPlugins() ([]PluginInfo, error) {
 	var plugins []PluginInfo
 	if err := json.NewDecoder(resp.Body).Decode(&plugins); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugins response").
-			WithContext("endpoint", endpoint)
+			WithEndpoint(endpoint)
 	}
 
 	return plugins, nil
@@ -483,7 +483,7 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 	var plugin PluginInfo
 	if err := json.NewDecoder(resp.Body).Decode(&plugin); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugin response").
-			WithContext("slug", slug)
+			WithSlug(slug)
 	}
 
 	return &plugin, nil
