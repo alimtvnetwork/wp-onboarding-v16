@@ -63,7 +63,7 @@ trait SyncManifestTrait
             ResponseKeyType::Data->value => array(
                 'plugin' => $slug, 'fileCount' => count($result[ResponseKeyType::Files->value]),
                 'generatedAt' => DateHelper::nowIso(), ResponseKeyType::Cached->value => $result[ResponseKeyType::Cached->value] > 0,
-                'cacheStats' => array('fromCache' => $result[ResponseKeyType::Cached->value], 'computed' => $result['computed'], 'removed' => $result['removed']),
+                'cacheStats' => array('fromCache' => $result[ResponseKeyType::Cached->value], ResponseKeyType::Computed->value => $result[ResponseKeyType::Computed->value], ResponseKeyType::Removed->value => $result[ResponseKeyType::Removed->value]),
                 ResponseKeyType::Files->value => $result[ResponseKeyType::Files->value],
             ),
         ), HttpStatusType::Ok->value);
