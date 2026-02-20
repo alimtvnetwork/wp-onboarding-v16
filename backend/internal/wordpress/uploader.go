@@ -161,8 +161,8 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, apperror.New(apperror.ErrWPConnection, "status request failed").
-			WithContext("statusCode", resp.StatusCode).
-			WithContext("endpoint", endpoint)
+			WithStatusCode(resp.StatusCode).
+			WithEndpoint(endpoint)
 	}
 
 	respBody, _ := io.ReadAll(resp.Body)
@@ -199,7 +199,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "resolve zip path").
-			WithContext("path", zipPath)
+			WithPath(zipPath)
 	}
 
 	// Validate slug - must be provided and not include .zip extension
@@ -212,7 +212,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	zipFile, err := os.Open(absZipPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip file").
-			WithContext("path", pathutil.ForDisplay(absZipPath))
+			WithPath(pathutil.ForDisplay(absZipPath))
 	}
 	defer zipFile.Close()
 
@@ -220,7 +220,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	fileInfo, err := zipFile.Stat()
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stat zip file").
-			WithContext("path", pathutil.ForDisplay(absZipPath))
+			WithPath(pathutil.ForDisplay(absZipPath))
 	}
 	zipSize := fileInfo.Size()
 
@@ -273,7 +273,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	req, err := http.NewRequest("POST", uploadURL, &requestBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "create upload HTTP request").
-			WithContext("url", uploadURL)
+			WithURL(uploadURL)
 	}
 
 	c.setStandardHeaders(req, writer.FormDataContentType())
@@ -281,7 +281,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").
-			WithContext("url", uploadURL)
+			WithURL(uploadURL)
 	}
 	defer resp.Body.Close()
 
@@ -366,7 +366,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, input.ErrorCode, input.OperationName+" request failed").
-			WithContext("slug", normalizedSlug)
+			WithSlug(normalizedSlug)
 	}
 	defer resp.Body.Close()
 
@@ -398,7 +398,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return false, "", "", apperror.Wrap(err, apperror.ErrWPConnection, "check plugin exists request failed").
-			WithContext("slug", normalizedSlug)
+			WithSlug(normalizedSlug)
 	}
 	defer resp.Body.Close()
 
@@ -482,7 +482,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, apperror.New(apperror.ErrWPPluginList, "list plugins failed").
-			WithContext("statusCode", resp.StatusCode)
+			WithStatusCode(resp.StatusCode)
 	}
 
 	var response struct {
@@ -521,8 +521,8 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, apperror.New(apperror.ErrWPPluginGet, "list plugin files failed").
-			WithContext("statusCode", resp.StatusCode).
-			WithContext("slug", slug)
+			WithStatusCode(resp.StatusCode).
+			WithSlug(slug)
 	}
 
 	var response struct {
@@ -563,7 +563,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "create replace file request").
-			WithContext("url", url)
+			WithURL(url)
 	}
 
 	c.setStandardHeaders(req, ContentTypeJSON.String())
@@ -571,7 +571,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "replace file request failed").
-			WithContext("path", relPath)
+			WithPath(relPath)
 	}
 	defer resp.Body.Close()
 
@@ -605,7 +605,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "create delete file request").
-			WithContext("url", url)
+			WithURL(url)
 	}
 
 	c.setStandardHeaders(req, ContentTypeJSON.String())
@@ -613,7 +613,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "delete file request failed").
-			WithContext("path", relPath)
+			WithPath(relPath)
 	}
 	defer resp.Body.Close()
 
@@ -689,7 +689,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "create sync request").
-			WithContext("url", url)
+			WithURL(url)
 	}
 
 	c.setStandardHeaders(req, ContentTypeJSON.String())
@@ -697,7 +697,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "sync request failed").
-			WithContext("slug", slug)
+			WithSlug(slug)
 	}
 	defer resp.Body.Close()
 
@@ -755,7 +755,7 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "export-plugin request failed").
-			WithContext("slug", slug)
+			WithSlug(slug)
 	}
 	defer resp.Body.Close()
 

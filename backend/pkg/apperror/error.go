@@ -26,6 +26,10 @@ type ErrorDiagnostic struct {
 	VersionID  int64  `json:"versionId,omitempty"`
 	SessionID  string `json:"sessionId,omitempty"`
 	RunID      string `json:"runId,omitempty"`
+	StatusCode int    `json:"statusCode,omitempty"`
+	Method     string `json:"method,omitempty"`
+	Endpoint   string `json:"endpoint,omitempty"`
+	Username   string `json:"username,omitempty"`
 }
 
 // HasFields returns true if any diagnostic field is populated.
@@ -189,6 +193,30 @@ func (e *AppError) WithRunID(id string) *AppError {
 	return e
 }
 
+// WithStatusCode sets the statusCode diagnostic field.
+func (e *AppError) WithStatusCode(code int) *AppError {
+	e.Diagnostic.StatusCode = code
+	return e
+}
+
+// WithMethod sets the method diagnostic field.
+func (e *AppError) WithMethod(m string) *AppError {
+	e.Diagnostic.Method = m
+	return e
+}
+
+// WithEndpoint sets the endpoint diagnostic field.
+func (e *AppError) WithEndpoint(ep string) *AppError {
+	e.Diagnostic.Endpoint = ep
+	return e
+}
+
+// WithUsername sets the username diagnostic field.
+func (e *AppError) WithUsername(u string) *AppError {
+	e.Diagnostic.Username = u
+	return e
+}
+
 // WithDiagnostic sets the full diagnostic struct.
 func (e *AppError) WithDiagnostic(d ErrorDiagnostic) *AppError {
 	e.Diagnostic = d
@@ -318,6 +346,18 @@ func (e *AppError) ToClipboard() string {
 		}
 		if d.RunID != "" {
 			builder.WriteString(fmt.Sprintf("  runId: %s\n", d.RunID))
+		}
+		if d.StatusCode != 0 {
+			builder.WriteString(fmt.Sprintf("  statusCode: %d\n", d.StatusCode))
+		}
+		if d.Method != "" {
+			builder.WriteString(fmt.Sprintf("  method: %s\n", d.Method))
+		}
+		if d.Endpoint != "" {
+			builder.WriteString(fmt.Sprintf("  endpoint: %s\n", d.Endpoint))
+		}
+		if d.Username != "" {
+			builder.WriteString(fmt.Sprintf("  username: %s\n", d.Username))
 		}
 		builder.WriteString("```\n")
 	}

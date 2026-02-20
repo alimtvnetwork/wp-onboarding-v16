@@ -42,20 +42,20 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	}
 	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
 		return nil, apperror.New(apperror.ErrNotFound, "project not found").
-			WithContext("project", projectSlug)
+			WithDetails(projectSlug)
 	}
 
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
-			WithContext("path", outputPath)
+			WithPath(outputPath)
 	}
 
 	// Create zip file
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file").
-			WithContext("path", outputPath)
+			WithPath(outputPath)
 	}
 	defer zipFile.Close()
 
@@ -91,21 +91,21 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 		writer, err := zipWriter.CreateHeader(header)
 		if err != nil {
 			return apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip entry").
-				WithContext("file", relPath)
+				WithFile(relPath)
 		}
 
 		// Copy file content
 		file, err := os.Open(path)
 		if err != nil {
 			return apperror.Wrap(err, apperror.ErrFSRead, "failed to open file").
-				WithContext("path", path)
+				WithPath(path)
 		}
 		defer file.Close()
 
 		written, err := io.Copy(writer, file)
 		if err != nil {
 			return apperror.Wrap(err, apperror.ErrFSZip, "failed to write to zip").
-				WithContext("file", relPath)
+				WithFile(relPath)
 		}
 
 		filesCount++
@@ -116,7 +116,7 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "export failed").
-			WithContext("project", projectSlug)
+			WithDetails(projectSlug)
 	}
 
 	duration := time.Since(startTime)
@@ -146,7 +146,7 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 	if err != nil {
 		m.log.Error("Failed to open zip", "error", err, "zip", zipPath)
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip").
-			WithContext("path", zipPath)
+			WithPath(zipPath)
 	}
 	defer reader.Close()
 
@@ -158,7 +158,7 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 	// Check if project exists
 	if _, err := os.Stat(projectDir); err == nil && !overwrite {
 		return nil, apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace").
-			WithContext("project", projectSlug)
+			WithDetails(projectSlug)
 	}
 
 	// Close any open databases for this project
@@ -176,7 +176,7 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 	// Create project directory
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create project directory").
-			WithContext("path", projectDir)
+			WithPath(projectDir)
 	}
 
 	var filesCount int
@@ -198,15 +198,15 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 		// Create directory structure
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create directory").
-				WithContext("path", destPath)
+				WithPath(destPath)
 		}
 
 		// Extract file
 		written, err := m.extractZipFile(file, destPath)
 		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to extract file").
-				WithContext("file", file.Name).
-				WithContext("destPath", destPath)
+				WithFile(file.Name).
+				WithDestPath(destPath)
 		}
 
 		filesCount++
@@ -317,14 +317,14 @@ func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPat
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
-			WithContext("path", outputPath)
+			WithPath(outputPath)
 	}
 
 	// Create zip with only matching types
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file").
-			WithContext("path", outputPath)
+			WithPath(outputPath)
 	}
 	defer zipFile.Close()
 

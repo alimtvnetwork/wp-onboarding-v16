@@ -91,7 +91,7 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 
 	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create data dir").
-			WithContext("path", cfg.DataDir)
+			WithPath(cfg.DataDir)
 	}
 
 	rootPath, err := pathutil.Join(cfg.DataDir, "root.db")
@@ -101,13 +101,13 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 	rootDB, err := sql.Open("sqlite3", rootPath+"?_foreign_keys=on&_journal_mode=WAL")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open root db").
-			WithContext("path", rootPath)
+			WithPath(rootPath)
 	}
 
 	// Configure root DB
 	if err := configureDB(rootDB); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to configure root db").
-			WithContext("path", rootPath)
+			WithPath(rootPath)
 	}
 
 	manager := &DBManager{
@@ -139,7 +139,7 @@ func configureDB(db *sql.DB) error {
 	for _, pragma := range pragmas {
 		if _, err := db.Exec(pragma); err != nil {
 			return apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to execute pragma").
-				WithContext("pragma", pragma)
+				WithDetails(pragma)
 		}
 	}
 
@@ -244,7 +244,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 	dir := filepath.Dir(fullPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create db dir").
-			WithContext("path", dir)
+			WithPath(dir)
 	}
 
 	// Open the database
@@ -252,7 +252,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 	if err != nil {
 		m.log.Error("Failed to open database", "error", err, "path", fullPath)
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open db").
-			WithContext("path", fullPath)
+			WithPath(fullPath)
 	}
 
 	if err := configureDB(db); err != nil {
@@ -307,7 +307,7 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 
 		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create project").
-				WithContext("slug", slug)
+				WithSlug(slug)
 		}
 
 		m.log.Info("Created project", "slug", slug, "id", project.ID)
@@ -350,8 +350,7 @@ func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string
 
 		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create database record").
-				WithContext("type", dbType).
-				WithContext("entityId", entityID)
+				WithDetails(fmt.Sprintf("type=%s, entityId=%s", dbType, entityID))
 		}
 	} else if err != nil {
 		return nil, err

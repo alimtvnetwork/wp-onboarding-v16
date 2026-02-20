@@ -243,7 +243,7 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	if s.activeRun != nil && s.activeRun.Status == "running" {
 		s.mu.Unlock()
 		return nil, apperror.New(apperror.ErrE2ERunning, "test run already in progress").
-			WithContext("runId", s.activeRun.ID)
+			WithRunID(s.activeRun.ID)
 	}
 	s.mu.Unlock()
 

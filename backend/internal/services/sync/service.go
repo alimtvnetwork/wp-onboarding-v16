@@ -435,7 +435,7 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path").
-			WithContext("path", pluginPath)
+			WithPath(pluginPath)
 	}
 
 	err = filepath.Walk(absPluginPath, func(path string, info os.FileInfo, err error) error {

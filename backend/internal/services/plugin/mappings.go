@@ -115,8 +115,8 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (
 	).Scan(&exists)
 	if err != sql.ErrNoRows {
 		return nil, apperror.New(apperror.ErrDuplicate, "mapping already exists").
-			WithContext("pluginId", input.PluginID).
-			WithContext("siteId", input.SiteID)
+			WithPluginID(input.PluginID).
+			WithSiteID(input.SiteID)
 	}
 
 	result, err := s.db.ExecContext(ctx, `
