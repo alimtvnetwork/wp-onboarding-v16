@@ -11,7 +11,7 @@ import (
 )
 
 // GetMappings returns all site mappings for a plugin
-func (s *Service) GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error) {
+func (s *Service) GetMappings(ctx context.Context, pluginID int64) apperror.ResultSlice[models.PluginMapping] {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
 		       pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
@@ -22,42 +22,47 @@ func (s *Service) GetMappings(ctx context.Context, pluginID int64) ([]models.Plu
 		ORDER BY s.Name ASC
 	`, pluginID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get mappings")
+		return apperror.FailSliceWrap[models.PluginMapping](err, apperror.ErrDatabaseQuery, "failed to get mappings")
 	}
 	defer rows.Close()
 
-	var mappings []models.PluginMapping
+	mappings := make([]models.PluginMapping, 0)
 	for rows.Next() {
-		var m models.PluginMapping
-		var lastSyncAt, lastBackupAt sql.NullString
-		var createdAtStr, updatedAtStr sql.NullString
-
-		err := rows.Scan(
-			&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-			&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
-			&m.SiteName, &m.SiteURL,
-		)
+		m, err := scanMappingWithSite(rows)
 		if err != nil {
 			continue
 		}
-
-		m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
-		m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
-		m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
-		m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
-
 		mappings = append(mappings, m)
 	}
 
-	if mappings == nil {
-		mappings = []models.PluginMapping{}
+	return apperror.OkSlice(mappings)
+}
+
+// scanMappingWithSite scans a mapping row that includes site name and URL.
+func scanMappingWithSite(rows *sql.Rows) (models.PluginMapping, error) {
+	var m models.PluginMapping
+	var lastSyncAt, lastBackupAt sql.NullString
+	var createdAtStr, updatedAtStr sql.NullString
+
+	err := rows.Scan(
+		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
+		&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
+		&m.SiteName, &m.SiteURL,
+	)
+	if err != nil {
+		return m, err
 	}
 
-	return mappings, nil
+	m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
+	m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
+	m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
+	m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
+
+	return m, nil
 }
 
 // GetMappingsBySite returns all mappings for a site
-func (s *Service) GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, error) {
+func (s *Service) GetMappingsBySite(ctx context.Context, siteID int64) apperror.ResultSlice[models.PluginMapping] {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
 		       pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
@@ -68,43 +73,48 @@ func (s *Service) GetMappingsBySite(ctx context.Context, siteID int64) ([]models
 		ORDER BY p.Name ASC
 	`, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get mappings by site")
+		return apperror.FailSliceWrap[models.PluginMapping](err, apperror.ErrDatabaseQuery, "failed to get mappings by site")
 	}
 	defer rows.Close()
 
-	var mappings []models.PluginMapping
+	mappings := make([]models.PluginMapping, 0)
 	for rows.Next() {
-		var m models.PluginMapping
-		var lastSyncAt, lastBackupAt sql.NullString
-		var pluginName string
-		var createdAtStr, updatedAtStr sql.NullString
-
-		err := rows.Scan(
-			&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-			&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
-			&pluginName,
-		)
+		m, err := scanMappingBySite(rows)
 		if err != nil {
 			continue
 		}
-
-		m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
-		m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
-		m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
-		m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
-
 		mappings = append(mappings, m)
 	}
 
-	if mappings == nil {
-		mappings = []models.PluginMapping{}
+	return apperror.OkSlice(mappings)
+}
+
+// scanMappingBySite scans a mapping row that includes plugin name.
+func scanMappingBySite(rows *sql.Rows) (models.PluginMapping, error) {
+	var m models.PluginMapping
+	var lastSyncAt, lastBackupAt sql.NullString
+	var pluginName string
+	var createdAtStr, updatedAtStr sql.NullString
+
+	err := rows.Scan(
+		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
+		&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
+		&pluginName,
+	)
+	if err != nil {
+		return m, err
 	}
 
-	return mappings, nil
+	m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
+	m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
+	m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
+	m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
+
+	return m, nil
 }
 
 // CreateMapping creates a new plugin-site mapping
-func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (*models.PluginMapping, error) {
+func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) apperror.Result[models.PluginMapping] {
 	s.log.Info("Creating plugin mapping", "pluginId", input.PluginID, "siteId", input.SiteID)
 
 	// Check for duplicate mapping
@@ -114,9 +124,7 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (
 		input.PluginID, input.SiteID,
 	).Scan(&exists)
 	if err != sql.ErrNoRows {
-		return nil, apperror.New(apperror.ErrDuplicate, "mapping already exists").
-			WithPluginID(input.PluginID).
-			WithSiteID(input.SiteID)
+		return apperror.FailNew[models.PluginMapping](apperror.ErrDuplicate, "mapping already exists")
 	}
 
 	result, err := s.db.ExecContext(ctx, `
@@ -125,7 +133,7 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (
 	`, input.PluginID, input.SiteID, input.RemoteSlug)
 
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create mapping")
+		return apperror.FailWrap[models.PluginMapping](err, apperror.ErrDatabaseExec, "failed to create mapping")
 	}
 
 	id, _ := result.LastInsertId()
@@ -146,7 +154,7 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (
 	m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
 
 	s.log.Info("Plugin mapping created", "mappingId", id)
-	return &m, nil
+	return apperror.Ok(m)
 }
 
 // DeleteMapping removes a plugin-site mapping
@@ -197,9 +205,9 @@ func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, plugi
 	s.log.Info("Updating site mappings", "siteId", siteID, "plugins", len(pluginIDs))
 
 	// Get existing mappings for this site to preserve remoteSlug values
-	existingMappings, err := s.GetMappingsBySite(ctx, siteID)
-	if err != nil {
-		s.log.Warn("Could not fetch existing mappings", "siteId", siteID, "error", err)
+	existingResult := s.GetMappingsBySite(ctx, siteID)
+	existingMappings := existingResult.Items()
+	if existingMappings == nil {
 		existingMappings = []models.PluginMapping{}
 	}
 
@@ -210,25 +218,14 @@ func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, plugi
 	}
 
 	// Delete all existing mappings for this site
-	_, err = s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE SiteId = ?", siteID)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE SiteId = ?", siteID)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to clear existing site mappings")
 	}
 
 	// Create new mappings for each selected plugin
 	for _, pluginID := range pluginIDs {
-		// Use existing slug if available, otherwise generate from plugin name
-		remoteSlug := slugByPluginID[pluginID]
-		if remoteSlug == "" {
-			// Fetch plugin name to generate slug
-			var pluginName string
-			err := s.db.QueryRowContext(ctx, "SELECT Name FROM Plugins WHERE Id = ?", pluginID).Scan(&pluginName)
-			if err == nil {
-				remoteSlug = strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
-			} else {
-				remoteSlug = "plugin"
-			}
-		}
+		remoteSlug := s.resolveRemoteSlug(ctx, pluginID, slugByPluginID)
 
 		_, err := s.db.ExecContext(ctx, `
 			INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
@@ -241,4 +238,19 @@ func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, plugi
 
 	s.log.Info("Site mappings updated", "siteId", siteID, "pluginsLinked", len(pluginIDs))
 	return nil
+}
+
+// resolveRemoteSlug returns the existing slug or generates one from plugin name.
+func (s *Service) resolveRemoteSlug(ctx context.Context, pluginID int64, slugByPluginID map[int64]string) string {
+	if slug, ok := slugByPluginID[pluginID]; ok && slug != "" {
+		return slug
+	}
+
+	var pluginName string
+	err := s.db.QueryRowContext(ctx, "SELECT Name FROM Plugins WHERE Id = ?", pluginID).Scan(&pluginName)
+	if err == nil {
+		return strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
+	}
+
+	return "plugin"
 }

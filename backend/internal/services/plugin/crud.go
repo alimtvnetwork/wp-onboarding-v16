@@ -99,45 +99,55 @@ func scanPluginRows(rows *sql.Rows) (models.Plugin, error) {
 }
 
 // List returns all registered plugins.
-func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
+func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Plugin] {
 	s.log.Debug("Listing all plugins")
 	query := pluginSelectQuery + ` ORDER BY p.Name ASC`
 	set := dbutil.QueryMany[models.Plugin](ctx, s.dbu, query, scanPluginRows)
 
 	if set.HasError() {
-		return nil, set.Error()
+		return apperror.FailSlice[models.Plugin](set.Error())
 	}
 
 	plugins := set.Items()
 	if plugins == nil {
 		plugins = []models.Plugin{}
 	}
-	return s.loadMappingsForAll(ctx, plugins)
+
+	plugins = s.loadMappingsForAll(ctx, plugins)
+
+	return apperror.OkSlice(plugins)
 }
 
 // loadMappingsForAll attaches mappings to each plugin in the slice.
-func (s *Service) loadMappingsForAll(ctx context.Context, plugins []models.Plugin) ([]models.Plugin, error) {
+func (s *Service) loadMappingsForAll(ctx context.Context, plugins []models.Plugin) []models.Plugin {
 	for i := range plugins {
-		plugins[i].Mappings, _ = s.GetMappings(ctx, plugins[i].ID)
+		result := s.GetMappings(ctx, plugins[i].ID)
+		if result.IsSafe() {
+			plugins[i].Mappings = result.Items()
+		}
 	}
-	return plugins, nil
+	return plugins
 }
 
 // GetByID returns a plugin by its ID.
-func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
+func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Plugin] {
 	s.log.Debug("Getting plugin by ID", "pluginId", id)
 
 	result := dbutil.QueryOne[models.Plugin](ctx, s.dbu, pluginSelectByIDQuery, scanPluginRow, id)
 	if result.HasError() {
-		return nil, result.Error()
+		return apperror.FailWrap[models.Plugin](result.Error(), apperror.ErrDatabaseQuery, "get plugin by ID")
 	}
 	if result.IsEmpty() {
-		return nil, apperror.New(apperror.ErrNotFound, "plugin not found").WithPluginID(id)
+		return apperror.FailNew[models.Plugin](apperror.ErrNotFound, "plugin not found")
 	}
 
 	p := result.Value()
-	p.Mappings, _ = s.GetMappings(ctx, p.ID)
-	return &p, nil
+	mappings := s.GetMappings(ctx, p.ID)
+	if mappings.IsSafe() {
+		p.Mappings = mappings.Items()
+	}
+
+	return apperror.Ok(p)
 }
 
 // parseDateTime parses SQLite datetime strings into time.Time.
@@ -155,16 +165,16 @@ func parseDateTime(s string) time.Time {
 }
 
 // Create registers a new local plugin directory.
-func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Plugin, error) {
+func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result[models.Plugin] {
 	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path, "forceCreate", input.ForceCreate)
 
 	if err := s.validateCreatePath(ctx, input); err != nil {
-		return nil, err
+		return apperror.Fail[models.Plugin](apperror.Extract(err))
 	}
 
-	existing, err := s.checkDuplicatePath(ctx, input)
-	if existing != nil || err != nil {
-		return existing, err
+	existing, done := s.checkDuplicatePath(ctx, input)
+	if done {
+		return existing
 	}
 
 	return s.insertPlugin(ctx, input)
@@ -179,20 +189,22 @@ func (s *Service) validateCreatePath(ctx context.Context, input CreateInput) err
 }
 
 // checkDuplicatePath returns the existing plugin if the path is already registered.
-func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (*models.Plugin, error) {
+// The bool indicates whether the caller should return the result (true = handled).
+func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (apperror.Result[models.Plugin], bool) {
 	result := dbutil.QueryOne[int64](ctx, s.dbu, pluginSelectByPathQuery, scanID, input.Path)
 	if result.HasError() {
-		return nil, result.Error()
+		return apperror.Fail[models.Plugin](result.Error()), true
 	}
 	if result.IsEmpty() {
-		return nil, nil
+		return apperror.Result[models.Plugin]{}, false
 	}
 
 	if input.ForceCreate {
 		s.log.Info("Plugin path already registered; returning existing", "pluginId", result.Value(), "path", input.Path)
-		return s.GetByID(ctx, result.Value())
+		return s.GetByID(ctx, result.Value()), true
 	}
-	return nil, apperror.New(apperror.ErrDuplicate, "plugin path already registered").WithPath(input.Path)
+
+	return apperror.FailNew[models.Plugin](apperror.ErrDuplicate, "plugin path already registered"), true
 }
 
 // scanID scans a single int64 from a row.
@@ -203,11 +215,11 @@ func scanID(row *sql.Row) (int64, error) {
 }
 
 // insertPlugin inserts a new plugin and optional git config.
-func (s *Service) insertPlugin(ctx context.Context, input CreateInput) (*models.Plugin, error) {
-	scan, _ := s.ScanDirectory(ctx, input.Path)
+func (s *Service) insertPlugin(ctx context.Context, input CreateInput) apperror.Result[models.Plugin] {
+	scanResult := s.ScanDirectory(ctx, input.Path)
 	fileCount := 0
-	if scan != nil {
-		fileCount = scan.FileCount
+	if scanResult.IsSafe() {
+		fileCount = scanResult.Value().FileCount
 	}
 
 	excludeJSON := s.encodeExcludePatterns(input.ExcludePatterns)
@@ -217,7 +229,7 @@ func (s *Service) insertPlugin(ctx context.Context, input CreateInput) (*models.
 		input.AutoPublish, excludeJSON, fileCount,
 	)
 	if res.HasError() {
-		return nil, res.Error()
+		return apperror.Fail[models.Plugin](res.Error())
 	}
 
 	s.log.Info("Plugin created", "pluginId", res.LastInsertID, "name", input.Name)
@@ -244,17 +256,17 @@ func (s *Service) insertGitConfig(ctx context.Context, pluginID int64, input Cre
 }
 
 // Update modifies an existing plugin.
-func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*models.Plugin, error) {
+func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apperror.Result[models.Plugin] {
 	s.log.Info("Updating plugin", "pluginId", id)
 
-	existing, err := s.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
+	existing := s.GetByID(ctx, id)
+	if existing.HasError() {
+		return existing
 	}
 
 	updates, args := s.buildUpdateFields(ctx, input)
 	if len(updates) == 0 {
-		return existing, nil
+		return existing
 	}
 
 	updates = append(updates, "UpdatedAt = datetime('now')")
@@ -263,7 +275,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*mod
 	query := "UPDATE Plugins SET " + strings.Join(updates, ", ") + " WHERE Id = ?"
 	res := dbutil.Exec(ctx, s.dbu, query, args...)
 	if res.HasError() {
-		return nil, res.Error()
+		return apperror.Fail[models.Plugin](res.Error())
 	}
 
 	return s.GetByID(ctx, id)
@@ -313,8 +325,9 @@ func appendOptionalFields(updates *[]string, args *[]any, input UpdateInput) {
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	s.log.Info("Deleting plugin", "pluginId", id)
 
-	if _, err := s.GetByID(ctx, id); err != nil {
-		return err
+	result := s.GetByID(ctx, id)
+	if result.HasError() {
+		return result.Error()
 	}
 
 	return s.deletePluginCascade(ctx, id)
@@ -341,17 +354,18 @@ func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
 
 // RefreshFileCount updates the file count for a plugin.
 func (s *Service) RefreshFileCount(ctx context.Context, id int64) error {
-	plugin, err := s.GetByID(ctx, id)
-	if err != nil {
-		return err
+	result := s.GetByID(ctx, id)
+	if result.HasError() {
+		return result.Error()
 	}
 
-	scan, err := s.ScanDirectory(ctx, plugin.Path)
-	if err != nil {
-		return err
+	plugin := result.Value()
+	scan := s.ScanDirectory(ctx, plugin.Path)
+	if scan.HasError() {
+		return scan.Error()
 	}
 
-	res := dbutil.Exec(ctx, s.dbu, pluginUpdateFileCountQuery, scan.FileCount, id)
+	res := dbutil.Exec(ctx, s.dbu, pluginUpdateFileCountQuery, scan.Value().FileCount, id)
 	if res.HasError() {
 		return res.Error()
 	}

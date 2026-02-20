@@ -198,10 +198,12 @@ func main() {
 
 	// Initialize file caches for registered plugins
 	ctx := context.Background()
-	plugins, _ := services.Plugin.List(ctx)
-	for _, p := range plugins {
-		if err := services.Watcher.InitializeCache(ctx, p.ID); err != nil {
-			log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", err)
+	pluginResult := services.Plugin.List(ctx)
+	if pluginResult.IsSafe() {
+		for _, p := range pluginResult.Items() {
+			if err := services.Watcher.InitializeCache(ctx, p.ID); err != nil {
+				log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", err)
+			}
 		}
 	}
 

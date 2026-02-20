@@ -7,6 +7,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/dbutil"
 )
 
@@ -39,22 +40,22 @@ func New(cfg Config) *Service {
 
 // ServiceInterface defines the plugin service contract
 type ServiceInterface interface {
-	// CRUD operations
-	List(ctx context.Context) ([]models.Plugin, error)
-	GetByID(ctx context.Context, id int64) (*models.Plugin, error)
-	Create(ctx context.Context, input CreateInput) (*models.Plugin, error)
-	Update(ctx context.Context, id int64, input UpdateInput) (*models.Plugin, error)
+	// CRUD operations — Result-wrapped returns
+	List(ctx context.Context) apperror.ResultSlice[models.Plugin]
+	GetByID(ctx context.Context, id int64) apperror.Result[models.Plugin]
+	Create(ctx context.Context, input CreateInput) apperror.Result[models.Plugin]
+	Update(ctx context.Context, id int64, input UpdateInput) apperror.Result[models.Plugin]
 	Delete(ctx context.Context, id int64) error
 	RefreshFileCount(ctx context.Context, id int64) error
 
 	// Directory scanning
-	ScanDirectory(ctx context.Context, path string) (*ScanResult, error)
+	ScanDirectory(ctx context.Context, path string) apperror.Result[ScanResult]
 	ValidatePath(ctx context.Context, path string) error
 
-	// Mappings
-	GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error)
-	GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, error)
-	CreateMapping(ctx context.Context, input CreateMappingInput) (*models.PluginMapping, error)
+	// Mappings — Result-wrapped returns
+	GetMappings(ctx context.Context, pluginID int64) apperror.ResultSlice[models.PluginMapping]
+	GetMappingsBySite(ctx context.Context, siteID int64) apperror.ResultSlice[models.PluginMapping]
+	CreateMapping(ctx context.Context, input CreateMappingInput) apperror.Result[models.PluginMapping]
 	DeleteMapping(ctx context.Context, mappingID int64) error
 	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
 	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
