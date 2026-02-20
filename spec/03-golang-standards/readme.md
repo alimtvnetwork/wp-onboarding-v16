@@ -1,208 +1,21 @@
 # Golang Coding Standards
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-13  
+> **Version:** 3.0.0  
+> **Updated:** 2026-02-20  
 > **Applies to:** All Go backend code
 
 ---
 
-## Type Safety — No `interface{}` or `any`
+## File Size — Max 300 Lines
 
-### Rule: Never use `interface{}` or `any` in exported APIs
+Every `.go` file must be **300 lines or fewer**. Split large files using these suffixes:
 
-Go 1.18+ provides **generics**. There is no excuse for `interface{}` (aliased as `any` in Go 1.18+) in function signatures, struct fields, or return types.
-
-```go
-// ❌ FORBIDDEN
-func ProcessData(data interface{}) interface{} { ... }
-func FetchResults() (any, error) { ... }
-type Config struct {
-    Settings map[string]interface{}
-}
-
-// ✅ REQUIRED: Use concrete types or generics
-func ProcessData(data PluginDetails) (PluginSummary, error) { ... }
-func FetchResults[T any]() (T, error) { ... }
-type Config struct {
-    Settings PluginSettings
-}
-```
-
-### When to Use Generics
-
-Use generics when a function operates on **multiple concrete types** with the same logic:
-
-```go
-// ✅ Generic helper for slice operations
-func Filter[T any](items []T, predicate func(T) bool) []T {
-    result := make([]T, 0)
-    for _, item := range items {
-        if predicate(item) {
-            result = append(result, item)
-        }
-    }
-    return result
-}
-
-// ✅ Generic envelope builder
-func BuildEnvelope[T any](results []T, attrs Attributes) EnvelopeResponse[T] {
-    return EnvelopeResponse[T]{
-        Status:     SuccessStatus(),
-        Attributes: attrs,
-        Results:    results,
-    }
-}
-```
-
-### Acceptable `any` Usage
-
-Only in these specific contexts:
-
-1. **JSON unmarshaling** — When parsing unknown JSON structures (narrow immediately)
-2. **Logging context** — `map[string]any` for structured log fields (internal only)
-3. **Third-party library interfaces** — When a library requires `interface{}`
-
-```go
-// ✅ Acceptable: JSON parsing with immediate narrowing
-var raw map[string]any
-json.Unmarshal(data, &raw)
-version, ok := raw["Version"].(string)
-if !ok {
-    return apperror.New("E4001", "missing Version field")
-}
-```
-
----
-
-## Error Handling — `apperror` Package
-
-### Rule: Never use `fmt.Errorf` for errors leaving a service
-
-All errors that cross service boundaries must use the `apperror` package:
-
-```go
-// ❌ FORBIDDEN: loses stack trace
-return fmt.Errorf("failed to upload: %w", err)
-
-// ✅ REQUIRED: full stack trace captured
-return apperror.Wrap(err, "E5001", "failed to upload plugin")
-```
-
-### Context Enrichment
-
-Always attach contextual data for the error modal:
-
-```go
-// ✅ Enriched error with diagnostic context
-return apperror.Wrap(err, "E5002", "remote site request failed").
-    WithContext("url", requestURL).
-    WithContext("slug", pluginSlug).
-    WithContext("statusCode", resp.StatusCode).
-    WithContext("siteId", siteID)
-```
-
-### Error Code Convention
-
-| Range | Category |
-|-------|----------|
-| E4000–E4999 | Client/validation errors |
-| E5000–E5999 | Server/infrastructure errors |
-| E6000–E6999 | Remote site (WordPress) errors |
-| E7000–E7999 | Scheduler/background job errors |
-
----
-
-## Struct Design
-
-### JSON Tags
-
-All structs used in API responses must have explicit JSON tags:
-
-```go
-// ✅ Explicit JSON tags with omitempty for optional fields
-type PluginDetails struct {
-    ID        int    `json:"Id"`
-    Name      string `json:"Name"`
-    Slug      string `json:"Slug"`
-    Version   string `json:"Version"`
-    IsActive  bool   `json:"IsActive"`
-    UpdatedAt string `json:"UpdatedAt,omitempty"`
-}
-```
-
-### PascalCase JSON Convention
-
-All API response JSON uses **PascalCase** keys (matching the Universal Response Envelope convention):
-
-```go
-// ✅ PascalCase JSON keys (project convention)
-`json:"IsSuccess"`
-`json:"TotalRecords"`
-`json:"HasAnyErrors"`
-
-// ❌ camelCase (not used in this project)
-`json:"isSuccess"`
-```
-
----
-
-## Naming Conventions
-
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Package names | Lowercase, single word | `wordpress`, `publish`, `apperror` |
-| Exported functions | PascalCase, verb-led | `EnablePlugin`, `FetchStatus` |
-| Unexported functions | camelCase, verb-led | `resolveNamespace`, `parseStackTrace` |
-| Interfaces | PascalCase, `-er` suffix for single-method | `Publisher`, `PluginStore` |
-| Constants | PascalCase | `MaxRetryAttempts`, `DefaultTimeout` |
-| Error variables | `Err` prefix | `ErrPluginNotFound`, `ErrUploadFailed` |
-
----
-
-## Concurrency Patterns
-
-### `sync.Once` for Lazy Initialization
-
-```go
-// ✅ Lazy-load expensive resources
-var (
-    openAPISpec     []byte
-    openAPISpecOnce sync.Once
-)
-
-func GetOpenAPISpec() []byte {
-    openAPISpecOnce.Do(func() {
-        openAPISpec, _ = os.ReadFile("api/openapi.json")
-    })
-    return openAPISpec
-}
-```
-
-### Context Propagation
-
-All long-running operations must accept `context.Context`:
-
-```go
-// ✅ Context-aware operations
-func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { ... }
-```
-
----
-
-## Forbidden Patterns
-
-| Pattern | Why | Alternative |
-|---------|-----|-------------|
-| `interface{}` / `any` in exported APIs | Untyped | Concrete types or generics |
-| `fmt.Errorf` for service errors | No stack trace | `apperror.Wrap` |
-| Panic in handlers | Crashes server | Return error |
-| `init()` functions | Hidden side effects | Explicit initialization |
-| Global mutable state | Race conditions | Dependency injection |
-| `map[string]interface{}` in APIs | Untyped | Defined structs |
-| `!fileExists(path)` raw negation | Easy to miss `!` | `IsFileMissing(path)` guard |
-| `!strings.Contains(s, x)` raw negation | Same | `IsMissingSubstring(s, x)` |
-| Nested `if` (any depth) | **Zero tolerance** | Flatten with early returns or combined |
-| Functions > 15 lines | Hard to read | Extract small helpers |
+| Suffix | Purpose |
+|--------|---------|
+| `entity.go` | Struct + constructors |
+| `entity_crud.go` | Database operations |
+| `entity_helpers.go` | Private utilities |
+| `entity_validation.go` | Validation logic |
 
 ---
 
@@ -257,11 +70,309 @@ if err != nil && resp != nil {
 
 ---
 
+## Type Safety — No `interface{}` or `any`
+
+### Rule: Never use `interface{}` or `any` in exported APIs
+
+```go
+// ❌ FORBIDDEN
+func ProcessData(data interface{}) interface{} { ... }
+func FetchResults() (any, error) { ... }
+
+// ✅ REQUIRED: Use concrete types or generics
+func ProcessData(data PluginDetails) (PluginSummary, error) { ... }
+func FetchResults[T any]() (T, error) { ... }
+```
+
+### Acceptable `any` Usage
+
+1. **SQL query arguments** — `args ...any` in `dbutil` (framework boundary)
+2. **Logger variadic parameters** — `map[string]any` for structured log fields (internal only)
+3. **Third-party library interfaces** — When a library requires `interface{}`
+
+---
+
+## Error Handling — `apperror` Package
+
+### Rule: Every error carries a mandatory stack trace
+
+All errors created via `apperror.New()` or `apperror.Wrap()` automatically capture a full `StackTrace` at creation — no opt-in needed.
+
+```go
+// ❌ FORBIDDEN: loses stack trace
+return fmt.Errorf("failed to upload: %w", err)
+
+// ✅ REQUIRED: full stack trace captured automatically
+return apperror.Wrap(err, "E5001", "failed to upload plugin")
+```
+
+### StackTrace Type
+
+```go
+// Captured automatically — structured frames, not raw strings
+type StackFrame struct {
+    Function string
+    File     string
+    Line     int
+}
+type StackTrace []StackFrame
+
+// Display methods
+trace.String()      // full formatted multi-line trace
+trace.CallerLine()  // "file.go:42" — compact single line
+trace.IsEmpty()     // no frames captured
+trace.Depth()       // number of frames
+```
+
+### AppError Display Methods
+
+```go
+err.Error()       // "[E5001] upload failed" — implements error interface
+err.FullString()  // code + message + diagnostics + stack + cause chain
+err.ToClipboard() // markdown-formatted error report for AI paste
+```
+
+### Context Enrichment — Typed Diagnostic Setters
+
+```go
+// ✅ Enriched error with diagnostic context
+return apperror.Wrap(err, "E5002", "remote site request failed").
+    WithURL(requestURL).
+    WithSlug(pluginSlug).
+    WithStatusCode(resp.StatusCode).
+    WithSiteID(siteID)
+```
+
+### Error Code Convention
+
+| Range | Category |
+|-------|----------|
+| E1xxx | Configuration errors |
+| E2xxx | Database errors |
+| E3xxx | WordPress API errors |
+| E4xxx | File system errors |
+| E5xxx | Sync errors |
+| E6xxx | Backup errors |
+| E7xxx | Git errors |
+| E8xxx | Build errors |
+| E9xxx | General errors |
+| E10xxx | E2E test errors |
+| E11xxx | Publish errors |
+| E12xxx | Version errors |
+
+---
+
+## Generic Result Types — `apperror` Package
+
+Three generic result types for all service returns. Replaces raw `(T, error)` tuples.
+
+### `Result[T]` — Single Value
+
+For operations that return one item or nothing.
+
+```go
+// Construction
+result := apperror.Ok(plugin)             // success
+result := apperror.Fail[Plugin](appErr)   // from AppError
+result := apperror.FailWrap[Plugin](err, "E5001", "load failed")  // wrap raw error
+result := apperror.FailNew[Plugin]("E4004", "not found")          // new error
+
+// Query methods
+result.HasError()    // true if operation failed
+result.IsSafe()      // true if value exists AND no error
+result.IsDefined()   // true if value was set
+result.IsEmpty()     // true if no value was set
+
+// Access methods
+result.Value()             // returns T; panics if HasError
+result.ValueOr(fallback)   // returns T or fallback if empty
+result.Error()             // returns *AppError or nil
+result.Unwrap()            // bridges to (T, error) pattern
+```
+
+### `ResultSlice[T]` — Collection (Array)
+
+For operations that return lists of items.
+
+```go
+// Construction
+set := apperror.OkSlice(plugins)
+set := apperror.FailSlice[Plugin](appErr)
+set := apperror.FailSliceWrap[Plugin](err, "E5011", "query failed")
+
+// Query methods
+set.HasError()     // true if operation failed
+set.IsSafe()       // true if no error (items may be empty)
+set.HasItems()     // true if at least one item
+set.IsEmpty()      // true if zero items
+set.Count()        // number of items
+
+// Access methods
+set.Items()        // returns []T (nil if error)
+set.First()        // Result[T] for first item
+set.Last()         // Result[T] for last item
+set.GetAt(index)   // Result[T] at index; empty if out of bounds
+set.Error()        // returns *AppError or nil
+
+// Mutation methods
+set.Append(items...)  // adds items; no-op if in error state
+```
+
+### `ResultMap[K, V]` — Associative Map
+
+For operations that return key-value data.
+
+```go
+// Construction
+m := apperror.OkMap(pluginsBySlug)
+m := apperror.FailMap[string, Plugin](appErr)
+m := apperror.FailMapWrap[string, Plugin](err, "E5012", "index failed")
+
+// Query methods
+m.HasError()     // true if operation failed
+m.IsSafe()       // true if no error (map may be empty)
+m.HasItems()     // true if at least one entry
+m.IsEmpty()      // true if zero entries
+m.Count()        // number of entries
+m.Has(key)       // true if key exists
+
+// Access methods
+m.Items()        // returns map[K]V (nil if error)
+m.Get(key)       // Result[V] for key; empty if not found
+m.Keys()         // returns []K
+m.Values()       // returns []V
+m.Error()        // returns *AppError or nil
+
+// Mutation methods
+m.Set(key, value)   // adds/updates; no-op if error state
+m.Remove(key)       // deletes key; no-op if error state
+```
+
+### Service Usage Pattern
+
+```go
+// ✅ Service method returning Result[T]
+func (s *PluginService) GetByID(ctx context.Context, id int64) apperror.Result[Plugin] {
+    dbResult := dbutil.QueryOne[Plugin](ctx, s.db, query, scanPlugin, id)
+    if dbResult.HasError() {
+        return apperror.FailWrap[Plugin](dbResult.Error(), ErrPluginGet, "get plugin by ID")
+    }
+    if dbResult.IsEmpty() {
+        return apperror.FailNew[Plugin](ErrNotFound, "plugin not found")
+    }
+
+    return apperror.Ok(dbResult.Value())
+}
+
+// ✅ Service method returning ResultSlice[T]
+func (s *SiteService) ListAll(ctx context.Context) apperror.ResultSlice[Site] {
+    dbResult := dbutil.QueryMany[Site](ctx, s.db, query, scanSite)
+    if dbResult.HasError() {
+        return apperror.FailSliceWrap[Site](dbResult.Error(), ErrSiteList, "list sites")
+    }
+
+    return apperror.OkSlice(dbResult.Items())
+}
+
+// ✅ Handler consuming Result[T]
+func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
+    result := h.plugins.GetByID(r.Context(), pluginID)
+    if result.HasError() {
+        writeError(w, result.Error())
+        return
+    }
+
+    writeJSON(w, result.Value())
+}
+```
+
+---
+
+## Database Wrapper — `pkg/dbutil`
+
+All database queries MUST use the generic `dbutil` package. Returns typed result envelopes with automatic `apperror` stack traces.
+
+### Result Types
+
+| Type | Purpose | Key Methods |
+|------|---------|-------------|
+| `Result[T]` | Single-row query | `IsDefined()`, `IsEmpty()`, `HasError()`, `IsSafe()`, `Value()`, `Error()`, `StackTrace()` |
+| `ResultSet[T]` | Multi-row query | `HasAny()`, `IsEmpty()`, `Count()`, `HasError()`, `IsSafe()`, `Items()`, `First()`, `Error()`, `StackTrace()` |
+| `ExecResult` | INSERT/UPDATE/DELETE | `IsEmpty()`, `HasError()`, `IsSafe()`, `AffectedRows`, `LastInsertID`, `Error()`, `StackTrace()` |
+
+### Generic Query Functions
+
+```go
+// Single row — returns Result[T]
+result := dbutil.QueryOne[Plugin](ctx, db, query, scanPlugin, pluginID)
+
+// Multiple rows — returns ResultSet[T]
+set := dbutil.QueryMany[Site](ctx, db, query, scanSite)
+
+// Exec — returns ExecResult
+res := dbutil.Exec(ctx, db, query, args...)
+```
+
+---
+
+## Struct Design
+
+### JSON Tags — PascalCase Convention
+
+All structs used in API responses must have explicit JSON tags with PascalCase keys:
+
+```go
+type PluginDetails struct {
+    ID        int    `json:"Id"`
+    Name      string `json:"Name"`
+    Slug      string `json:"Slug"`
+    Version   string `json:"Version"`
+    IsActive  bool   `json:"IsActive"`
+    UpdatedAt string `json:"UpdatedAt,omitempty"`
+}
+```
+
+### Function Parameters — Max 2-3
+
+Functions should have **2-3 parameters maximum**. Use config/options structs for more:
+
+```go
+// ❌ Bad: Too many parameters
+func StartSession(sessionType SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
+
+// ✅ Good: Use a struct
+type StartSessionInput struct {
+    Type       SessionType
+    PluginID   int64
+    SiteID     int64
+    PluginName string
+    SiteName   string
+}
+func StartSession(input StartSessionInput) (string, error)
+
+// ✅ Acceptable: 2-3 essential parameters (context doesn't count)
+func GetByID(ctx context.Context, id int64) (*Model, error)
+```
+
+---
+
+## Naming Conventions
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Package names | Lowercase, single word | `wordpress`, `publish`, `apperror` |
+| Exported functions | PascalCase, verb-led | `EnablePlugin`, `FetchStatus` |
+| Unexported functions | camelCase, verb-led | `resolveNamespace`, `parseStackTrace` |
+| Interfaces | PascalCase, `-er` suffix for single-method | `Publisher`, `PluginStore` |
+| Constants | PascalCase | `MaxRetryAttempts`, `DefaultTimeout` |
+| Error variables | `Err` prefix | `ErrPluginNotFound`, `ErrUploadFailed` |
+| Boolean functions | Positive naming only | `IsValid()`, `HasPermission()` |
+
+---
+
 ## No Raw Negations — Use Positive Guard Functions
 
 > **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
-
-**Never use `!` on a function call in a condition.** Wrap every negative check in a positively named guard.
 
 ```go
 // ❌ FORBIDDEN
@@ -273,77 +384,127 @@ if IsFileMissing(path) { ... }
 if IsMissingSubstring(s, substr) { ... }
 ```
 
-**Utility package:** `pkg/guards/` — see canonical spec for full guard function table.
+---
+
+## Typed Constants & Enums
+
+### String-Backed Types
+
+```go
+type StatusType string
+
+const (
+    StatusActive   StatusType = "active"
+    StatusInactive StatusType = "inactive"
+    StatusPending  StatusType = "pending"
+)
+
+func (s StatusType) String() string { return string(s) }
+func (s StatusType) IsValid() bool  { /* lookup map */ }
+func (s StatusType) IsOtherThan(other StatusType) bool { return s != other }
+```
+
+### Iota Enums
+
+```go
+type LogLevel int
+
+const (
+    LogDebug LogLevel = iota
+    LogInfo
+    LogWarn
+    LogError
+)
+
+func (l LogLevel) String() string {
+    return [...]string{"debug", "info", "warn", "error"}[l]
+}
+```
+
+### Zero Magic Strings/Numbers
+
+- All HTTP status codes → typed constants
+- All error codes → `apperror` code constants
+- All config keys → typed const block
+- All status/event strings → typed `StringType` constants
 
 ---
 
-## Database Wrapper — `pkg/dbutil`
+## DRY Enforcement
 
-All database queries MUST use the generic `dbutil` package. It wraps `*sql.DB` in a `DB` struct and returns typed result envelopes with automatic `apperror` stack traces.
+| Pattern | Solution |
+|---------|----------|
+| Repeated error handling | `apperror.Result[T]` or helper functions |
+| Repeated JSON key access | Typed response structs |
+| Repeated validation | `Validate()` method on input structs |
+| Repeated DB patterns | `dbutil` generic wrappers |
+| Repeated string constants | Typed const blocks with `Type` suffix |
 
-### DB Struct
+---
+
+## Concurrency Patterns
+
+### `sync.Once` for Lazy Initialization
 
 ```go
-// Create once, inject everywhere — no more passing *sql.DB on every call
-db := dbutil.New(sqlDB)
+var (
+    openAPISpec     []byte
+    openAPISpecOnce sync.Once
+)
+
+func GetOpenAPISpec() []byte {
+    openAPISpecOnce.Do(func() {
+        openAPISpec, _ = os.ReadFile("api/openapi.json")
+    })
+    return openAPISpec
+}
 ```
 
-### Result Types
+### Context Propagation
 
-| Type | Purpose | Key Methods |
-|------|---------|-------------|
-| `Result[T]` | Single-row query | `IsDefined()`, `IsEmpty()`, `HasError()`, `IsSafe()`, `Value()`, `Error()`, `StackTrace()` |
-| `ResultSet[T]` | Multi-row query | `HasAny()`, `IsEmpty()`, `Count()`, `HasError()`, `IsSafe()`, `Items()`, `Error()`, `StackTrace()` |
-| `ExecResult` | INSERT/UPDATE/DELETE | `IsEmpty()`, `HasError()`, `IsSafe()`, `AffectedRows`, `LastInsertID`, `Error()`, `StackTrace()` |
-
-### Generic Query Functions
-
-Go doesn't allow generic methods on structs, so these are package-level functions:
+All long-running operations must accept `context.Context`:
 
 ```go
-// Single row — returns Result[T] (IsEmpty for sql.ErrNoRows, not an error)
-result := dbutil.QueryOne[Plugin](db, query, scanPlugin, pluginID)
-if result.HasError() {
-    return result.Error() // stack trace already captured
-}
-if result.IsEmpty() {
-    return apperror.New("E4004", "plugin not found")
-}
-plugin := result.Value()
-
-// Multiple rows — returns ResultSet[T]
-set := dbutil.QueryMany[Site](db, query, scanSite)
-if set.HasError() {
-    return set.Error()
-}
-for _, site := range set.Items() { ... }
-
-// Exec — returns ExecResult
-res := dbutil.Exec(db, query, args...)
-if res.HasError() {
-    return res.Error()
-}
-fmt.Println(res.AffectedRows)
+func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { ... }
 ```
 
-### Scanner Functions
+---
 
-Callers provide a scanner function for type-safe row mapping:
+## Forbidden Patterns
+
+| Pattern | Why | Alternative |
+|---------|-----|-------------|
+| `interface{}` / `any` in exported APIs | Untyped | Concrete types or generics |
+| `fmt.Errorf` for service errors | No stack trace | `apperror.Wrap` |
+| Panic in handlers | Crashes server | Return error |
+| `init()` functions | Hidden side effects | Explicit initialization |
+| Global mutable state | Race conditions | Dependency injection |
+| `map[string]interface{}` in APIs | Untyped | Defined structs |
+| Raw `(T, error)` from services | No semantic methods | `apperror.Result[T]` |
+| `!fn()` raw negation | Easy to miss `!` | Positive guard function |
+| Nested `if` (any depth) | **Zero tolerance** | Flatten with early returns |
+| Functions > 15 lines | Hard to read | Extract small helpers |
+| Files > 300 lines | Hard to navigate | Split with suffix convention |
+| Magic strings/numbers | Brittle | Typed constants |
+| Boolean flag parameters | Unclear intent | Separate named methods |
+
+---
+
+## Import Organization — 3 Groups
 
 ```go
-// RowScanner[T] for QueryOne (scans *sql.Row)
-func scanPlugin(row *sql.Row) (Plugin, error) {
-    var p Plugin
-    err := row.Scan(&p.ID, &p.Name, &p.Slug)
-    return p, err
-}
+import (
+    // stdlib
+    "context"
+    "fmt"
 
-// RowsScanner[T] for QueryMany (scans *sql.Rows)
-func scanSite(rows *sql.Rows) (Site, error) {
-    var s Site
-    err := rows.Scan(&s.ID, &s.Name, &s.URL)
-    return s, err
-}
+    // internal packages
+    "project/pkg/apperror"
+    "project/internal/domain"
+
+    // third-party
+    "github.com/lib/pq"
+)
 ```
 
 ---
@@ -351,12 +512,12 @@ func scanSite(rows *sql.Rows) (Site, error) {
 ## Cross-References
 
 - [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
-- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
-- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
+- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules
+- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters
+- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
-- [TypeScript Standards](../02-typescript-standards/readme.md)
+- [Go Function Parameters](.lovable/memory/architecture/coding-standards/go-function-parameters.md)
 
 ---
 
-*Golang standards specification v2.1.0 — 2026-02-14*
+*Golang standards specification v3.0.0 — 2026-02-20*
