@@ -37,7 +37,7 @@ trait ManagerCoreTrait {
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot', array(
             'provider' => $provider->getProviderId(),
-            'scope' => $options['scope'] ?? 'default',
+            ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? 'default',
         ));
 
         return $provider->createSnapshot($options);
@@ -58,6 +58,7 @@ trait ManagerCoreTrait {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
+
             return null;
         }
 
@@ -65,6 +66,7 @@ trait ManagerCoreTrait {
     }
 
     public function getSnapshotById(int $snapshotId): ?array {
+
         return $this->getSnapshot($snapshotId);
     }
 
@@ -77,12 +79,13 @@ trait ManagerCoreTrait {
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value);
 
         return array(
-            'snapshots' => $snapshots ?: array(),
-            'total' => $total ? (int)$total['count'] : 0,
+            ResponseKeyType::Snapshots->value => $snapshots ?: array(),
+            ResponseKeyType::Total->value => $total ? (int)$total[ResponseKeyType::Count->value] : 0,
         );
     }
 
     public function getProviders(): array {
+
         return $this->detector->getAvailableProviders();
     }
 
@@ -90,6 +93,7 @@ trait ManagerCoreTrait {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
+
             return array();
         }
 
@@ -109,6 +113,7 @@ trait ManagerCoreTrait {
 
         $isLoggerMissing = ($this->logger === null);
         if ($isLoggerMissing) {
+
             return;
         }
 

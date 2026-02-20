@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Helpers\PathHelper;
 
@@ -53,7 +54,7 @@ trait WorkerBatchProcessTrait {
             $this->processJobBatch($pdo, $job_id, $job);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Worker batch failed', array(
-                'job_id' => $job_id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
+                'job_id' => $job_id, ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
             $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Failed->value, $e->getMessage());
         }
@@ -83,7 +84,7 @@ trait WorkerBatchProcessTrait {
         $result = $this->exportBatchTables($batches[$batch_index], $job['snapshot_dir'], $rootPdo);
         $rootPdo = null;
 
-        $this->updateJobBatchProgress($pdo, $jobId, $batch_index + 1, $result['exported'], $result['rows'], $result['errors']);
+        $this->updateJobBatchProgress($pdo, $jobId, $batch_index + 1, $result[ResponseKeyType::Exported->value], $result[ResponseKeyType::Rows->value], $result[ResponseKeyType::Errors->value]);
 
         $next_batch = $batch_index + 1;
         if ($next_batch < count($batches)) {
@@ -97,6 +98,7 @@ trait WorkerBatchProcessTrait {
     private function openRootDbForBatch(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
         if (PathHelper::isFileMissing($root_path)) {
+
             return null;
         }
 

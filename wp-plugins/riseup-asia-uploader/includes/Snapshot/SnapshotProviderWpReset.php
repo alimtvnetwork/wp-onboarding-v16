@@ -33,13 +33,15 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function createSnapshot(array $options): array {
         $isProviderUnavailable = ($this->isAvailable() === false);
         if ($isProviderUnavailable) {
+
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset is not available', ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
         }
         $this->log(LogLevelType::Info->value, 'Creating snapshot via WP Reset', $options);
         try {
+
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset integration not yet implemented');
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'WP Reset snapshot failed', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'WP Reset snapshot failed', array(ResponseKeyType::Error->value => $e->getMessage()));
 
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
@@ -51,6 +53,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function importSnapshot(string $filepath): array { return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset import not yet implemented'); }
 
     public function getSnapshot(int $snapshotId): ?array {
+
         return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ? AND provider = ?', array($snapshotId, $this->provider_id));
     }
 
@@ -58,7 +61,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
         $snapshots = $this->db->queryAll('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', array($this->provider_id, $limit, $offset));
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
 
-        return array('snapshots' => $snapshots ?: array(), 'total' => $total ? (int)$total['count'] : 0);
+        return array(ResponseKeyType::Snapshots->value => $snapshots ?: array(), ResponseKeyType::Total->value => $total ? (int)$total[ResponseKeyType::Count->value] : 0);
     }
 
     public function getAvailableTables(): array {
@@ -66,7 +69,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
         $tables = array();
         $all_tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
         foreach ($all_tables as $table_info) {
-            $tables[] = array('name' => $table_info['Name'], 'rows' => (int)$table_info['Rows'], 'size' => (int)$table_info['Data_length'] + (int)$table_info['Index_length'], 'is_core' => strpos($table_info['Name'], $wpdb->prefix) === 0);
+            $tables[] = array('name' => $table_info['Name'], ResponseKeyType::Rows->value => (int)$table_info['Rows'], ResponseKeyType::Size->value => (int)$table_info['Data_length'] + (int)$table_info['Index_length'], 'is_core' => strpos($table_info['Name'], $wpdb->prefix) === 0);
         }
 
         return $tables;

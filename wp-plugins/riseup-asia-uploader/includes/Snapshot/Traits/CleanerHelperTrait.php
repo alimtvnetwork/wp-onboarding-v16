@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\StatusType;
@@ -89,10 +90,10 @@ trait CleanerHelperTrait {
                     'orphans_removed'   => $results['orphans']['removed'],
                     'stuck_cleaned'     => $results['stuck']['cleaned'],
                     'space_freed'       => PathHelper::formatBytes($results['space_freed_bytes']),
-                    'errors'            => count($results['errors']),
-                    'duration'          => $results['duration'],
+                    ResponseKeyType::Errors->value => count($results[ResponseKeyType::Errors->value]),
+                    ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
                 )),
-                empty($results['errors']) ? StatusType::Success->value : StatusType::Failed->value,
+                empty($results[ResponseKeyType::Errors->value]) ? StatusType::Success->value : StatusType::Failed->value,
                 TriggerSourceType::Api->value
             );
         } catch (Throwable $e) {

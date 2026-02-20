@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
@@ -44,10 +45,10 @@ trait ManagerImportRecordTrait {
         string $filepath,
     ): array {
         return array(
-            'sequence' => $sequence, 'filename' => $filename, 'filepath' => $filepath,
-            'provider' => SnapshotProviderType::Native->value, 'scope' => $snapshotData['scope'],
+            ResponseKeyType::Sequence->value => $sequence, ResponseKeyType::Filename->value => $filename, 'filepath' => $filepath,
+            'provider' => SnapshotProviderType::Native->value, ResponseKeyType::Scope->value => $snapshotData['scope'],
             'tables_json' => json_encode($snapshotData['tables']),
-            'total_rows' => $snapshotData['total_rows'] ?? 0, 'file_size' => filesize($filepath),
+            ResponseKeyType::TotalRows->value => $snapshotData['total_rows'] ?? 0, ResponseKeyType::FileSize->value => filesize($filepath),
             'trigger_source' => 'import', 'status' => SnapshotStatusType::Complete->value,
             'created_at' => date('c'), 'completed_at' => date('c'),
             'import_source' => json_encode(array(

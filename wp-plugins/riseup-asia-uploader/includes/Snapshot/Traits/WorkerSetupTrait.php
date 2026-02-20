@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
@@ -24,7 +25,7 @@ trait WorkerSetupTrait {
 
     private function prepareSnapshotDir(array $config): array {
         $title = $config['title'] ?? (SnapshotConfigType::DefaultTitle . ' ' . date('Y-m-d H:i'));
-        $scope = $config['scope'] ?? SnapshotScopeType::WordPress->value;
+        $scope = $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value;
         $type  = $config['type'] ?? SnapshotModeType::Full->value;
 
         $hasPoolSize = BooleanHelpers::hasValue($config['settings']['worker_pool_size'] ?? null);
@@ -33,7 +34,7 @@ trait WorkerSetupTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
-            'title' => $title, 'scope' => $scope, 'type' => $type, 'pool_size' => $this->poolSize,
+            'title' => $title, ResponseKeyType::Scope->value => $scope, 'type' => $type, 'pool_size' => $this->poolSize,
         ));
 
         $base_dir = $this->getSnapshotsBaseDir();
@@ -42,10 +43,11 @@ trait WorkerSetupTrait {
 
         $isDirCreateFailed = (PathHelper::makeDirectory($snapshot_dir, true) === false);
         if ($isDirCreateFailed) {
-            return array('success' => false, 'error' => 'Failed to create snapshot directory');
+
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create snapshot directory');
         }
 
-        return array('success' => true, 'snapshot_dir' => $snapshot_dir, 'dir_name' => $dir_name, 'title' => $title, 'scope' => $scope, 'type' => $type);
+        return array(ResponseKeyType::Success->value => true, 'snapshot_dir' => $snapshot_dir, 'dir_name' => $dir_name, 'title' => $title, ResponseKeyType::Scope->value => $scope, 'type' => $type);
     }
 
     private function initRootDb(string $snapshotDir, array $config): PDO {
@@ -58,8 +60,8 @@ trait WorkerSetupTrait {
     }
 
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
-        $analysis = $this->rootDb->populateDependencies($rootPdo, $config['scope'] ?? SnapshotScopeType::WordPress->value);
-        $this->log(LogLevelType::Info->value, 'Export order determined', array('tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
+        $analysis = $this->rootDb->populateDependencies($rootPdo, $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value);
+        $this->log(LogLevelType::Info->value, 'Export order determined', array(ResponseKeyType::Tables->value => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
 
         return $analysis['seed_order'];
     }
@@ -84,6 +86,7 @@ trait WorkerSetupTrait {
 
         $isLoggerMissing = ($this->logger === null);
         if ($isLoggerMissing) {
+
             return;
         }
 

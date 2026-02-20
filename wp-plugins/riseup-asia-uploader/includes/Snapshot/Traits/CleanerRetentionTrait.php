@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\TableType;
@@ -66,7 +67,7 @@ trait CleanerRetentionTrait {
             }
 
             $result['details'][] = array(
-                'id' => $snapshot['id'], 'filename' => $snapshot['filename'] ?? '', 'reason' => $reason,
+                'id' => $snapshot['id'], ResponseKeyType::Filename->value => $snapshot['filename'] ?? '', ResponseKeyType::Reason->value => $reason,
             );
 
             $this->applyRetentionDelete($snapshot, $dryRun, $result);
@@ -82,13 +83,13 @@ trait CleanerRetentionTrait {
     ): void {
         if ($dryRun) {
             $result['deleted']++;
-            $result['bytes_freed'] += $snapshot['size'] ?? 0;
+            $result['bytes_freed'] += $snapshot[ResponseKeyType::Size->value] ?? 0;
 
             return;
         }
 
         $delete_result = $this->deleteSnapshot($snapshot);
-        if ($delete_result['success']) {
+        if ($delete_result[ResponseKeyType::Success->value]) {
             $result['deleted']++;
             $result['bytes_freed'] += $delete_result['bytes_freed'];
         }

@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
@@ -37,7 +39,7 @@ trait SchedulerCronTrait {
             $this->logCronResult($label, $result);
         } catch (Throwable $e) {
             $this->logger->error("[SCHEDULER] Exception during {$label}", array(
-                'error' => $e->getMessage(),
+                ResponseKeyType::Error->value => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ));
         }
@@ -50,23 +52,24 @@ trait SchedulerCronTrait {
      * @param array  $result Standardized cron result.
      */
     private function logCronResult(string $label, array $result) {
-        $isSuccess = $result['success'] ?? false;
+        $isSuccess = $result[ResponseKeyType::Success->value] ?? false;
         $level = $isSuccess ? 'info' : 'error';
         $suffix = $isSuccess ? 'completed' : 'failed';
 
         $this->logger->{$level}("[SCHEDULER] {$label} {$suffix}", $result['log_data'] ?? array());
 
-        if ($result['skip_audit'] ?? false) {
+        if ($result[ResponseKeyType::SkipAudit->value] ?? false) {
+
             return;
         }
 
         $this->db->logTransaction(
             $result['action'],
-            \RiseupAsia\Enums\LogCategoryType::Snapshot->value, null, '', null, '',
+            LogCategoryType::Snapshot->value, null, '', null, '',
             $result['audit_data'] ?? array(),
-            $isSuccess ? \RiseupAsia\Enums\StatusType::Success->value : \RiseupAsia\Enums\StatusType::Failed->value,
-            $isSuccess ? null : ($result['error'] ?? 'Unknown'),
-            array('triggered_by' => $result['triggered_by'] ?? \RiseupAsia\Enums\TriggerSourceType::Cron->value)
+            $isSuccess ? StatusType::Success->value : StatusType::Failed->value,
+            $isSuccess ? null : ($result[ResponseKeyType::Error->value] ?? 'Unknown'),
+            array('triggered_by' => $result['triggered_by'] ?? TriggerSourceType::Cron->value)
         );
     }
 
@@ -85,14 +88,15 @@ trait SchedulerCronTrait {
         string $triggeredBy,
         array $auditData = array(),
     ): array {
+
         return array(
-            'success'      => $result['success'] ?? false,
-            'error'        => $result['error'] ?? null,
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value] ?? false,
+            ResponseKeyType::Error->value   => $result[ResponseKeyType::Error->value] ?? null,
             'action'       => $action,
             'triggered_by' => $triggeredBy,
             'audit_data'   => $auditData,
             'log_data'     => $result,
-            'skip_audit'   => false,
+            ResponseKeyType::SkipAudit->value => false,
         );
     }
 
@@ -104,6 +108,7 @@ trait SchedulerCronTrait {
     private function createOrchestrator(): array {
         $manager = SnapshotFactory::manager($this->logger, $this->db);
         $orchestrator = SnapshotFactory::orchestrator($this->logger, $this->db, $manager);
+
         return array($manager, $orchestrator);
     }
 
@@ -118,6 +123,7 @@ trait SchedulerCronTrait {
         $snapshotType = $args['snapshot_type'] ?? SnapshotModeType::Full->value;
 
         if ($snapshotType === SnapshotModeType::Incremental->value) {
+
             return $orchestrator->executeIncrementalBackup(array(
                 'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
                 'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
@@ -126,7 +132,7 @@ trait SchedulerCronTrait {
 
         return $orchestrator->executeFullBackup(array(
             'title'   => $args['title'] ?? 'Manual Backup ' . date('Y-m-d H:i'),
-            'scope'   => $args['scope'] ?? SnapshotScopeType::WordPress->value,
+            ResponseKeyType::Scope->value => $args[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             'trigger' => SnapshotTriggerType::Manual->value,
             'async'   => true,
         ));
