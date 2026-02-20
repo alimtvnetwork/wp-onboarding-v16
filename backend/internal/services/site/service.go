@@ -713,7 +713,7 @@ func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteID int64) (
 func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins []RemotePlugin) error {
 	pluginsJSON, err := json.Marshal(plugins)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to marshal remote plugins for cache")
 	}
 
 	expiresAt := time.Now().Add(time.Duration(s.cacheTTLMinutes) * time.Minute)

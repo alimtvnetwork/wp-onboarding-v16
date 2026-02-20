@@ -234,12 +234,13 @@ func (s *Service) GetByErrorID(errorID string) apperror.Result[models.ErrorHisto
 func (s *Service) Delete(id int64) error {
 	result, err := s.db.Exec("DELETE FROM ErrorHistory WHERE Id = ?", id)
 	if err != nil {
-		return fmt.Errorf("delete error history: %w", err)
+		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete error history")
 	}
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return fmt.Errorf("error not found: %d", id)
+		return apperror.New(apperror.ErrNotFound, "error history entry not found").
+			WithValue("id", fmt.Sprintf("%d", id))
 	}
 
 	if s.log != nil {
