@@ -35,19 +35,39 @@ type PublishHistoryServiceAdapter struct {
 }
 
 func (a *PublishHistoryServiceAdapter) Record(entry models.PublishHistory) (*models.PublishHistory, error) {
-	return a.Service.Record(entry)
+	result := a.Service.Record(entry)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error) {
-	return a.Service.List(limit, offset, filters)
+	result := a.Service.List(limit, offset, filters)
+	if result.HasError() {
+		return nil, 0, result.Error()
+	}
+	v := result.Value()
+	return v.Items, v.Total, nil
 }
 
 func (a *PublishHistoryServiceAdapter) GetByID(id int64) (*models.PublishHistory, error) {
-	return a.Service.GetByID(id)
+	result := a.Service.GetByID(id)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *PublishHistoryServiceAdapter) GetStats() (*models.PublishHistoryStats, error) {
-	return a.Service.GetStats()
+	result := a.Service.GetStats()
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *PublishHistoryServiceAdapter) Delete(id int64) error {
@@ -55,7 +75,11 @@ func (a *PublishHistoryServiceAdapter) Delete(id int64) error {
 }
 
 func (a *PublishHistoryServiceAdapter) Clear() (int64, error) {
-	return a.Service.Clear()
+	result := a.Service.Clear()
+	if result.HasError() {
+		return 0, result.Error()
+	}
+	return result.Value(), nil
 }
 
 // SiteHealthServiceAdapter wraps *sitehealth.Service
