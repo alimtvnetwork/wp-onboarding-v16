@@ -59,11 +59,20 @@ type SiteServiceAdapter struct {
 }
 
 func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, error) {
-	return a.Service.List(ctx)
+	result := a.Service.List(ctx)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Site, error) {
-	return a.Service.GetByID(ctx, id)
+	result := a.Service.GetByID(ctx, id)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SiteServiceAdapter) Create(ctx context.Context, input SiteCreateInput) (*models.Site, error) {
@@ -73,7 +82,12 @@ func (a *SiteServiceAdapter) Create(ctx context.Context, input SiteCreateInput) 
 		Username: input.Username,
 		Password: input.Password,
 	}
-	return a.Service.Create(ctx, siteInput)
+	result := a.Service.Create(ctx, siteInput)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input SiteUpdateInput) (*models.Site, error) {
@@ -83,7 +97,12 @@ func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input SiteUpd
 		Username: input.Username,
 		Password: input.Password,
 	}
-	return a.Service.Update(ctx, id, updateInput)
+	result := a.Service.Update(ctx, id, updateInput)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SiteServiceAdapter) Delete(ctx context.Context, id int64) error {

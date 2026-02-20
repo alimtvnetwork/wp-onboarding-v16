@@ -122,74 +122,73 @@ func scanSiteRows(rows *sql.Rows) (models.Site, error) {
 }
 
 // List returns all registered sites.
-func (s *Service) List(ctx context.Context) ([]models.Site, error) {
+func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 	set := dbutil.QueryMany[models.Site](ctx, s.dbu, siteListQuery, scanSiteRows)
 	if set.HasError() {
-		return nil, set.Error()
+		return apperror.FailSlice[models.Site](set.Error())
 	}
 
-	sites := set.Items()
-	if sites == nil {
-		sites = []models.Site{}
+	items := set.Items()
+	if items == nil {
+		items = []models.Site{}
 	}
-	return sites, nil
+	return apperror.OkSlice(items)
 }
 
 // GetByID returns a site by its ID.
-func (s *Service) GetByID(ctx context.Context, id int64) (*models.Site, error) {
+func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Site] {
 	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByIDQuery, scanSiteRow, id)
 	if result.HasError() {
-		return nil, result.Error()
+		return apperror.FailWrap[models.Site](result.Error(), apperror.ErrDBRead, "failed to query site")
 	}
 	if result.IsEmpty() {
-		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteID(id)
+		return apperror.FailNew[models.Site](apperror.ErrNotFound, "site not found")
 	}
 
-	site := result.Value()
-	return &site, nil
+	return apperror.Ok(result.Value())
 }
 
 // GetByURL returns a site by its URL.
-func (s *Service) GetByURL(ctx context.Context, siteURL string) (*models.Site, error) {
+func (s *Service) GetByURL(ctx context.Context, siteURL string) apperror.Result[models.Site] {
 	normalizedURL := normalizeURL(siteURL)
 
 	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByURLQuery, scanSiteRow, normalizedURL)
 	if result.HasError() {
-		return nil, result.Error()
-	}
-	if result.IsEmpty() {
-		return nil, nil // Not found is not an error for this method
+		return apperror.FailWrap[models.Site](result.Error(), apperror.ErrDBRead, "failed to query site by URL")
 	}
 
-	site := result.Value()
-	return &site, nil
+	// Not found is not an error for this method — return empty Result
+	if result.IsEmpty() {
+		return apperror.Result[models.Site]{}
+	}
+
+	return apperror.Ok(result.Value())
 }
 
 // Create adds a new WordPress site.
-func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Site, error) {
+func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result[models.Site] {
 	if err := s.validateInput(input); err != nil {
-		return nil, err
+		return apperror.FailWrap[models.Site](err, apperror.ErrValidation, "invalid site input")
 	}
 
 	normalizedURL := normalizeURL(input.URL)
 
-	existing, err := s.GetByURL(ctx, normalizedURL)
-	if err != nil {
-		return nil, err
+	existing := s.GetByURL(ctx, normalizedURL)
+	if existing.HasError() {
+		return apperror.Fail[models.Site](existing.Error())
 	}
-	if existing != nil {
-		return nil, apperror.New(apperror.ErrValidation, "site with this URL already exists").
-			WithURL(normalizedURL)
+	if existing.IsDefined() {
+		return apperror.FailNew[models.Site](apperror.ErrValidation, "site with this URL already exists")
 	}
 
 	encryptedPassword, err := encrypt([]byte(input.Password), s.encryptionKey)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to encrypt password")
+		return apperror.FailWrap[models.Site](err, apperror.ErrInternal, "failed to encrypt password")
 	}
 
 	res := dbutil.Exec(ctx, s.dbu, siteInsertQuery, input.Name, normalizedURL, input.Username, encryptedPassword)
 	if res.HasError() {
-		return nil, res.Error()
+		return apperror.Fail[models.Site](res.Error())
 	}
 
 	s.log.Info("Site created", "id", res.LastInsertID, "name", input.Name, "url", normalizedURL)
@@ -197,15 +196,16 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Site, 
 }
 
 // Update modifies an existing site.
-func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*models.Site, error) {
-	existing, err := s.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
+func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apperror.Result[models.Site] {
+	existingResult := s.GetByID(ctx, id)
+	if existingResult.HasError() {
+		return apperror.Fail[models.Site](existingResult.Error())
 	}
 
-	updates, args := s.buildUpdateFields(ctx, id, input, existing)
+	existing := existingResult.Value()
+	updates, args := s.buildUpdateFields(ctx, id, input, &existing)
 	if len(updates) == 0 {
-		return existing, nil
+		return existingResult
 	}
 
 	updates = append(updates, "UpdatedAt = datetime('now')")
@@ -214,7 +214,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*mod
 	query := fmt.Sprintf("UPDATE Sites SET %s WHERE Id = ?", strings.Join(updates, ", "))
 	res := dbutil.Exec(ctx, s.dbu, query, args...)
 	if res.HasError() {
-		return nil, res.Error()
+		return apperror.Fail[models.Site](res.Error())
 	}
 
 	s.log.Info("Site updated", "id", id)
@@ -259,8 +259,9 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 
 // Delete removes a site and its mappings (cascaded by FK).
 func (s *Service) Delete(ctx context.Context, id int64) error {
-	if _, err := s.GetByID(ctx, id); err != nil {
-		return err
+	result := s.GetByID(ctx, id)
+	if result.HasError() {
+		return result.Error()
 	}
 
 	res := dbutil.Exec(ctx, s.dbu, siteDeleteQuery, id)

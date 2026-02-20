@@ -221,10 +221,11 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 
 // createWPClient is a helper that creates a WordPress client for a site.
 func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.Client, error) {
-	site, err := s.GetByID(ctx, siteID)
-	if err != nil {
-		return nil, err
+	result := s.GetByID(ctx, siteID)
+	if result.HasError() {
+		return nil, result.Error()
 	}
+	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
