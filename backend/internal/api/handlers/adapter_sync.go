@@ -17,21 +17,9 @@ type SyncServiceInterface interface {
 	CheckAllPlugins(ctx context.Context) ([]sync.SyncResult, error)
 	GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error)
 	PushSync(ctx context.Context, pluginID, siteID int64) (*sync.PushSyncResult, error)
-}
-
-// GitServiceInterface defines git service methods
-type GitServiceInterface interface {
-	Pull(ctx context.Context, pluginID int64) (*git.PullResult, error)
-	PullAll(ctx context.Context) (*git.BatchPullResult, error)
-	Status(ctx context.Context, pluginID int64) (*git.StatusResult, error)
-	Commit(ctx context.Context, pluginID int64, message string) (*git.CommitResult, error)
-	Push(ctx context.Context, pluginID int64) (*git.PushResult, error)
-}
-
-// WatcherServiceInterface defines watcher service methods
-type WatcherServiceInterface interface {
-	TriggerScan(ctx context.Context, pluginID int64) (*watcher.ScanResult, error)
-	ScanAll(ctx context.Context) ([]watcher.ScanResult, error)
+	RecordFileChange(ctx context.Context, change *models.FileChange) error
+	MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) error
+	ClearChanges(ctx context.Context, pluginID int64) error
 }
 
 // SyncServiceAdapter wraps sync.Service to implement SyncServiceInterface
@@ -40,23 +28,46 @@ type SyncServiceAdapter struct {
 }
 
 func (a *SyncServiceAdapter) CheckSync(ctx context.Context, pluginID, siteID int64) (*sync.SyncResult, error) {
-	return a.Service.CheckSync(ctx, pluginID, siteID)
+	result := a.Service.CheckSync(ctx, pluginID, siteID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SyncServiceAdapter) CheckAllSites(ctx context.Context, pluginID int64) (*sync.BatchSyncResult, error) {
-	return a.Service.CheckAllSites(ctx, pluginID)
+	result := a.Service.CheckAllSites(ctx, pluginID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SyncServiceAdapter) CheckAllPlugins(ctx context.Context) ([]sync.SyncResult, error) {
-	return a.Service.CheckAllPlugins(ctx)
+	result := a.Service.CheckAllPlugins(ctx)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *SyncServiceAdapter) GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error) {
-	return a.Service.GetFileChanges(ctx, pluginID, siteID)
+	result := a.Service.GetFileChanges(ctx, pluginID, siteID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *SyncServiceAdapter) PushSync(ctx context.Context, pluginID, siteID int64) (*sync.PushSyncResult, error) {
-	return a.Service.PushSync(ctx, pluginID, siteID)
+	result := a.Service.PushSync(ctx, pluginID, siteID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 // WatcherServiceAdapter wraps *watcher.Service to implement WatcherServiceInterface

@@ -105,17 +105,17 @@ func scanSiteInfoRow(row *sql.Row) (siteInfo, error) {
 }
 
 // GetFileChanges returns pending file changes for a plugin.
-func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error) {
+func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64) apperror.ResultSlice[models.FileChange] {
 	set := dbutil.QueryMany[models.FileChange](ctx, s.dbu, fileChangesSelectQuery, scanFileChangeRows, pluginID)
 	if set.HasError() {
-		return nil, set.Error()
+		return apperror.FailSlice[models.FileChange](set.Error())
 	}
 
 	changes := set.Items()
 	if changes == nil {
 		changes = []models.FileChange{}
 	}
-	return changes, nil
+	return apperror.OkSlice(changes)
 }
 
 // RecordFileChange records a file change in the database.
