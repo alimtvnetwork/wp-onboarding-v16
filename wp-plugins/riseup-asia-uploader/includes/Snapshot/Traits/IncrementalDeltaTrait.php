@@ -9,6 +9,7 @@
 namespace RiseupAsia\Snapshot\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use PDO;
 use Throwable;
@@ -35,19 +36,76 @@ trait IncrementalDeltaTrait {
         );
 
         if ($newCount === 0) {
+
             return null;
         }
 
         $result = $this->exportDeltaRows($incDir, $tableName, $info['pk_column'], $lastMaxId, $newCount);
 
-        if ($result['success']) {
-            $this->log(LogLevelType::Info->value, sprintf('Incremental export: %s (+%d rows, %s)', $tableName, $result['rows'], $this->formatBytes($result['file_size'])));
-            $result['entry'] = array('table' => $tableName, 'new_rows' => $result['rows'], 'size' => $result['file_size']);
+        if ($result[ResponseKeyType::Success->value]) {
+            $this->log(LogLevelType::Info->value, sprintf('Incremental export: %s (+%d rows, %s)', $tableName, $result[ResponseKeyType::Rows->value], $this->formatBytes($result[ResponseKeyType::FileSize->value])));
+            $result[ResponseKeyType::Entry->value] = array('table' => $tableName, 'new_rows' => $result[ResponseKeyType::Rows->value], ResponseKeyType::Size->value => $result[ResponseKeyType::FileSize->value]);
         } else {
-            $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array('error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
         }
 
         return $result;
+    }
+
+    private function exportDeltaRows(
+        string $incDir,
+        string $table,
+        string $pkColumn,
+        int $lastMaxId,
+        int $newCount,
+    ): array {
+        $filename = $table . '.sqlite';
+        $filepath = $incDir . '/' . $filename;
+
+        try {
+            $sqlite = new PDO('sqlite:' . $filepath);
+            $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $sqlite->exec('PRAGMA journal_mode = WAL');
+            $sqlite->exec('PRAGMA synchronous = OFF');
+
+            $create_sql = $this->getCreateTableSql($table);
+            $sqlite->exec($create_sql);
+
+            $offset = 0;
+            $exported = 0;
+            $batchSize = 250;
+
+            while ($offset < $newCount) {
+                $rows = $this->wpdb->get_results(
+                    $this->wpdb->prepare("SELECT * FROM `{$table}` WHERE `{$pkColumn}` > %d ORDER BY `{$pkColumn}` ASC LIMIT %d OFFSET %d", $lastMaxId, $batchSize, $offset),
+                    ARRAY_A
+                );
+                foreach ($rows as $row) {
+                    $columns = array_keys($row);
+                    $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+                    $columnList = implode(', ', array_map(function($c) { return "`{$c}`"; }, $columns));
+                    $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
+                    $stmt->execute(array_values($row));
+                    $exported++;
+                }
+                $offset += $batchSize;
+            }
+            $sqlite = null;
+
+            return array(
+                ResponseKeyType::Success->value => true,
+                ResponseKeyType::Rows->value => $exported,
+                ResponseKeyType::Filename->value => $filename,
+                ResponseKeyType::FileSize->value => filesize($filepath),
+                ResponseKeyType::Checksum->value => md5_file($filepath),
+            );
+        } catch (Throwable $e) {
+
+            return array(
+                ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(),
+                ResponseKeyType::Rows->value => 0, ResponseKeyType::Filename->value => $filename, ResponseKeyType::FileSize->value => 0, ResponseKeyType::Checksum->value => '',
+            );
+        }
     }
 
     private function getLastMaxId(
@@ -57,6 +115,7 @@ trait IncrementalDeltaTrait {
         int $sequence,
     ): ?int {
         if ($info['pk_column'] === null) {
+
             return null;
         }
 
@@ -89,7 +148,7 @@ trait IncrementalDeltaTrait {
 
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : 0;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array('table' => $tableName, 'error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array('table' => $tableName, ResponseKeyType::Error->value => $e->getMessage()));
 
             return (int) $info['row_count'];
         }
@@ -124,6 +183,7 @@ trait IncrementalDeltaTrait {
         string $pk,
     ): ?int {
         if (PathHelper::isFileMissing($sqlitePath)) {
+
             return null;
         }
 
@@ -135,6 +195,7 @@ trait IncrementalDeltaTrait {
 
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
         } catch (Throwable $e) {
+
             return null;
         }
     }
@@ -146,6 +207,7 @@ trait IncrementalDeltaTrait {
 
         $isFilenameAbsent = ($filename === false || $filename === null);
         if ($isFilenameAbsent) {
+
             return null;
         }
 

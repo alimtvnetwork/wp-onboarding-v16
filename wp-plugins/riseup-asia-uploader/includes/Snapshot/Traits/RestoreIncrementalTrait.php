@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
@@ -36,7 +37,7 @@ trait RestoreIncrementalTrait {
 
         if ($isSkipped) {
 
-            return array('applied' => 0, 'total_rows' => 0, 'errors' => array());
+            return array('applied' => 0, ResponseKeyType::TotalRows->value => 0, ResponseKeyType::Errors->value => array());
         }
 
         return $this->applyIncrementals($rootPdo, $snapshotDir, $restoreOrder);
@@ -53,10 +54,10 @@ trait RestoreIncrementalTrait {
 
         if (empty($incrementals)) {
 
-            return array('applied' => 0, 'total_rows' => 0, 'errors' => array());
+            return array('applied' => 0, ResponseKeyType::TotalRows->value => 0, ResponseKeyType::Errors->value => array());
         }
 
-        $this->log(LogLevelType::Info->value, 'Applying incrementals', array('count' => count($incrementals)));
+        $this->log(LogLevelType::Info->value, 'Applying incrementals', array(ResponseKeyType::Count->value => count($incrementals)));
 
         $applied = 0;
         $total_rows = 0;
@@ -64,16 +65,16 @@ trait RestoreIncrementalTrait {
 
         foreach ($incrementals as $inc) {
             $result = $this->applySingleIncremental($inc, $snapshotDir, $restoreOrder);
-            $total_rows += $result['rows'];
+            $total_rows += $result[ResponseKeyType::Rows->value];
             $applied++;
-            $hasErrors = BooleanHelpers::hasValue($result['errors']);
+            $hasErrors = BooleanHelpers::hasValue($result[ResponseKeyType::Errors->value]);
 
             if ($hasErrors) {
-                $errors = array_merge($errors, $result['errors']);
+                $errors = array_merge($errors, $result[ResponseKeyType::Errors->value]);
             }
         }
 
-        return array('applied' => $applied, 'total_rows' => $total_rows, 'errors' => $errors);
+        return array('applied' => $applied, ResponseKeyType::TotalRows->value => $total_rows, ResponseKeyType::Errors->value => $errors);
     }
 
     private function applySingleIncremental(
@@ -85,7 +86,7 @@ trait RestoreIncrementalTrait {
         if (PathHelper::isDirMissing($inc_dir)) {
             $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
 
-            return array('rows' => 0, 'errors' => array('Incremental directory missing: ' . $inc['folder_name']));
+            return array(ResponseKeyType::Rows->value => 0, ResponseKeyType::Errors->value => array('Incremental directory missing: ' . $inc['folder_name']));
         }
 
         $this->log(LogLevelType::Info->value, 'Applying incremental: ' . $inc['folder_name']);
@@ -101,14 +102,14 @@ trait RestoreIncrementalTrait {
             }
 
             $result = $this->restoreTableFromFile($sqlite_file, $table, 'merge');
-            if ($result['success']) {
-                $inc_rows += $result['rows'];
-                $this->log(LogLevelType::Info->value, sprintf('Incremental %s: %s (+%d rows)', $inc['folder_name'], $table, $result['rows']));
+            if ($result[ResponseKeyType::Success->value]) {
+                $inc_rows += $result[ResponseKeyType::Rows->value];
+                $this->log(LogLevelType::Info->value, sprintf('Incremental %s: %s (+%d rows)', $inc['folder_name'], $table, $result[ResponseKeyType::Rows->value]));
             } else {
-                $errors[] = sprintf('Incremental %s/%s: %s', $inc['folder_name'], $table, $result['error']);
+                $errors[] = sprintf('Incremental %s/%s: %s', $inc['folder_name'], $table, $result[ResponseKeyType::Error->value]);
             }
         }
 
-        return array('rows' => $inc_rows, 'errors' => $errors);
+        return array(ResponseKeyType::Rows->value => $inc_rows, ResponseKeyType::Errors->value => $errors);
     }
 }

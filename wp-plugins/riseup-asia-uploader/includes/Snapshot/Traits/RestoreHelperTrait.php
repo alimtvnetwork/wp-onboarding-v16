@@ -18,6 +18,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\ActionType;
@@ -36,23 +37,23 @@ trait RestoreHelperTrait {
         int $totalRows,
     ): array {
         $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
-            'tables_restored'      => $masterResult['tables_restored'],
-            'total_rows'           => $totalRows,
-            'incrementals_applied' => $incResult['applied'],
-            'errors'               => count($errors),
-            'backup_id'            => $backupId,
-            'duration'             => round($duration, 2) . 's',
+            ResponseKeyType::TablesRestored->value => $masterResult[ResponseKeyType::TablesRestored->value],
+            ResponseKeyType::TotalRows->value      => $totalRows,
+            'incrementals_applied'                  => $incResult['applied'],
+            ResponseKeyType::Errors->value          => count($errors),
+            ResponseKeyType::BackupId->value        => $backupId,
+            ResponseKeyType::Duration->value        => round($duration, 2) . 's',
         ));
 
         return array(
-            'success'              => true,
-            'tables_restored'      => $masterResult['tables_restored'],
-            'total_rows'           => $totalRows,
-            'incrementals_applied' => $incResult['applied'],
-            'backup_id'            => $backupId,
-            'errors'               => $errors,
-            'duration'             => $duration,
-            'meta'                 => $meta,
+            ResponseKeyType::Success->value         => true,
+            ResponseKeyType::TablesRestored->value   => $masterResult[ResponseKeyType::TablesRestored->value],
+            ResponseKeyType::TotalRows->value        => $totalRows,
+            'incrementals_applied'                   => $incResult['applied'],
+            ResponseKeyType::BackupId->value         => $backupId,
+            ResponseKeyType::Errors->value           => $errors,
+            ResponseKeyType::Duration->value         => $duration,
+            'meta'                                   => $meta,
         );
     }
 
@@ -65,6 +66,7 @@ trait RestoreHelperTrait {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
         if ($isPdoMissing) {
+
             return;
         }
 
@@ -72,7 +74,7 @@ trait RestoreHelperTrait {
             $details = $this->buildAuditDetails($snapshotDir, $tablesRestored, $totalRows, $duration);
             $this->insertAuditRecord($pdo, $details);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to log audit for restore', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Failed to log audit for restore', array(ResponseKeyType::Error->value => $e->getMessage()));
         }
     }
 
@@ -84,8 +86,8 @@ trait RestoreHelperTrait {
     ): string {
 
         return json_encode(array(
-            'directory' => basename($snapshotDir), 'tables_restored' => $tablesRestored,
-            'total_rows' => $totalRows, 'duration' => round($duration, 2), 'type' => SnapshotWorkerModeType::PerTable->value,
+            ResponseKeyType::Directory->value => basename($snapshotDir), ResponseKeyType::TablesRestored->value => $tablesRestored,
+            ResponseKeyType::TotalRows->value => $totalRows, ResponseKeyType::Duration->value => round($duration, 2), 'type' => SnapshotWorkerModeType::PerTable->value,
         ));
     }
 
@@ -107,6 +109,7 @@ trait RestoreHelperTrait {
     ): void {
         $isLoggerMissing = ($this->logger === null);
         if ($isLoggerMissing) {
+
             return;
         }
 

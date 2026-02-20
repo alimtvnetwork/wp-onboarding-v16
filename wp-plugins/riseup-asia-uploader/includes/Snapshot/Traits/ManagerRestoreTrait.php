@@ -29,6 +29,7 @@ trait ManagerRestoreTrait {
     public function restoreSnapshot(int $snapshotId, array $options = array()): array {
         $guard = $this->guardRestorePreConditions($snapshotId, $options);
         if ($guard !== null) {
+
             return $guard;
         }
 
@@ -36,11 +37,12 @@ trait ManagerRestoreTrait {
 
         $hasBackupOption = BooleanHelpers::hasValue($options['create_backup']);
         $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
-            'snapshot_id' => $snapshotId, 'filename' => $snapshot['filename'], 'create_backup' => $hasBackupOption,
+            ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot[ResponseKeyType::Filename->value], 'create_backup' => $hasBackupOption,
         ));
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
         if ($backupId instanceof array) {
+
             return $backupId;
         }
 
@@ -78,12 +80,12 @@ trait ManagerRestoreTrait {
         int|null $backupId,
     ): array {
         if ($result[ResponseKeyType::Success->value]) {
-            $result['backup_id'] = $backupId;
+            $result[ResponseKeyType::BackupId->value] = $backupId;
             $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
-                'snapshot_id' => $snapshotId, 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
+                ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0, ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value] ?? 0,
             ));
         } else {
-            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array('snapshot_id' => $snapshotId, 'error' => $result[ResponseKeyType::Error->value]));
+            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
         }
 
         return $result;
@@ -111,9 +113,9 @@ trait ManagerRestoreTrait {
             $counts = $this->restoreAllTables($sqlite, $tables, $options);
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $startTime);
+            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Tables->value => $counts[ResponseKeyType::Tables->value], ResponseKeyType::Rows->value => $counts[ResponseKeyType::Rows->value], ResponseKeyType::Duration->value => microtime(true) - $startTime);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Restore exception', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
@@ -130,19 +132,19 @@ trait ManagerRestoreTrait {
         foreach ($tables as $table) {
             $result = $this->restoreTable($sqlite, $table);
             if ($result[ResponseKeyType::Success->value]) {
-                $totalRows += $result['rows'];
+                $totalRows += $result[ResponseKeyType::Rows->value];
                 $restoredTables++;
-                $this->log(LogLevelType::Info->value, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
+                $this->log(LogLevelType::Info->value, sprintf('Table %s restored (%d rows)', $table, $result[ResponseKeyType::Rows->value]));
                 continue;
             }
 
-            $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array('error' => $result[ResponseKeyType::Error->value]));
+            $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
             if (BooleanHelpers::hasValue($options['strict'])) {
 
                 throw new Exception('Table restore failed: ' . $table);
             }
         }
 
-        return array('tables' => $restoredTables, 'rows' => $totalRows);
+        return array(ResponseKeyType::Tables->value => $restoredTables, ResponseKeyType::Rows->value => $totalRows);
     }
 }

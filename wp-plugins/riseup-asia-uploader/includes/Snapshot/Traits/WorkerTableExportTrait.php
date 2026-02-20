@@ -16,6 +16,7 @@ use PDO;
 use PDOStatement;
 use Throwable;
 use Exception;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait WorkerTableExportTrait {
@@ -41,8 +42,8 @@ trait WorkerTableExportTrait {
         } catch (Throwable $e) {
 
             return array(
-                'success' => false, 'error' => $e->getMessage(),
-                'rows' => 0, 'filename' => $filename, 'file_size' => 0, 'checksum' => '',
+                ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(),
+                ResponseKeyType::Rows->value => 0, ResponseKeyType::Filename->value => $filename, ResponseKeyType::FileSize->value => 0, ResponseKeyType::Checksum->value => '',
             );
         }
     }
@@ -122,11 +123,11 @@ trait WorkerTableExportTrait {
     ): array {
 
         return array(
-            'success'   => true,
-            'rows'      => $rows,
-            'filename'  => $filename,
-            'file_size' => filesize($filepath),
-            'checksum'  => md5_file($filepath),
+            ResponseKeyType::Success->value  => true,
+            ResponseKeyType::Rows->value     => $rows,
+            ResponseKeyType::Filename->value => $filename,
+            ResponseKeyType::FileSize->value => filesize($filepath),
+            ResponseKeyType::Checksum->value => md5_file($filepath),
         );
     }
 
