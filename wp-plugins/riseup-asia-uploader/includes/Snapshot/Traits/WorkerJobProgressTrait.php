@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use Throwable;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 
 trait WorkerJobProgressTrait {
@@ -43,9 +44,9 @@ trait WorkerJobProgressTrait {
         return array(
             'job_id' => (int) $job['id'], 'status' => $job['status'],
             'total_tables' => $total_tables, 'tables_exported' => (int) $job['tables_exported'],
-            'total_rows' => (int) $job['total_rows'], 'pool_size' => $pool_size,
+            ResponseKeyType::TotalRows->value => (int) $job['total_rows'], 'pool_size' => $pool_size,
             'total_batches' => $total_batches, 'current_batch' => (int) $job['current_batch'],
-            'errors' => json_decode($job['errors_json'] ?? '[]', true),
+            ResponseKeyType::Errors->value => json_decode($job['errors_json'] ?? '[]', true),
             'created_at' => $job['created_at'], 'updated_at' => $job['updated_at'],
             'completed_at' => $job['completed_at'], 'table_progress' => $table_progress,
             'percent' => $total_tables > 0 ? round(((int) $job['tables_exported'] / $total_tables) * 100, 1) : 0,

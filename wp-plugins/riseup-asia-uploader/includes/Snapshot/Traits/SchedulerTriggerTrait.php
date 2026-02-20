@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Snapshot\SnapshotFactory;
@@ -24,18 +25,21 @@ trait SchedulerTriggerTrait {
 
     public function getStorageStats(): array {
         $cleaner = SnapshotFactory::cleaner($this->logger, $this->db);
+
         return $cleaner->getStorageStats();
     }
 
     public function estimateCleanup(): array {
         $settings = $this->detector->getSettings();
         $cleaner = SnapshotFactory::cleaner($this->logger, $this->db);
+
         return $cleaner->estimateCleanup($settings);
     }
 
     public function runManualCleanup(): array {
         $settings = $this->detector->getSettings();
         $cleaner = SnapshotFactory::cleaner($this->logger, $this->db);
+
         return $cleaner->runCleanup($settings);
     }
 
@@ -72,7 +76,7 @@ trait SchedulerTriggerTrait {
             $cron_args = array(
                 'snapshot_type'      => $snapshot_type,
                 'title'              => $title,
-                'scope'              => $options['scope'] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
+                ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
                 'master_snapshot_id' => $options['master_snapshot_id'] ?? null,
             );
 
@@ -84,7 +88,8 @@ trait SchedulerTriggerTrait {
 
             if ($scheduled === false) {
                 $this->logger->error('[SCHEDULER] Failed to schedule Snapshot Now cron event');
-                return array('success' => false, 'error' => 'Failed to schedule background snapshot job');
+
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to schedule background snapshot job');
             }
 
             $this->logger->info('[SCHEDULER] Snapshot Now scheduled as background cron job', array(
@@ -92,37 +97,39 @@ trait SchedulerTriggerTrait {
             ));
 
             return array(
-                'success'       => true,
+                ResponseKeyType::Success->value => true,
                 'scheduled'     => true,
                 'snapshot_type' => $snapshot_type,
                 'title'         => $title,
-                'message'       => 'Snapshot has been scheduled and will run in the background.',
+                ResponseKeyType::Message->value => 'Snapshot has been scheduled and will run in the background.',
             );
 
         } catch (Throwable $e) {
             $this->logger->error('[SCHEDULER] Snapshot Now scheduling failed', array(
-                'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
+                ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
-            return array('success' => false, 'error' => $e->getMessage());
+
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
     }
 
     public function scheduleRestore(int $snapshotId, array $options = array()): array {
-        $this->logger->info('[SCHEDULER] Scheduling background restore', array('snapshot_id' => $snapshotId));
+        $this->logger->info('[SCHEDULER] Scheduling background restore', array(ResponseKeyType::SnapshotId->value => $snapshotId));
 
-        $cron_args = array('snapshot_id' => $snapshotId, 'options' => $options);
+        $cron_args = array(ResponseKeyType::SnapshotId->value => $snapshotId, 'options' => $options);
 
         $scheduled = wp_schedule_single_event(time() + 5, HookType::CronSnapshotRestore->value, array($cron_args));
 
         if ($scheduled === false) {
-            return array('success' => false, 'error' => 'Failed to schedule background restore');
+
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to schedule background restore');
         }
 
         return array(
-            'success'     => true,
+            ResponseKeyType::Success->value => true,
             'scheduled'   => true,
-            'snapshot_id' => $snapshotId,
-            'message'     => 'Restore has been scheduled and will run in the background.',
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            ResponseKeyType::Message->value => 'Restore has been scheduled and will run in the background.',
         );
     }
 

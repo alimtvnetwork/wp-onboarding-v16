@@ -37,7 +37,7 @@ trait ManagerImportTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
-            'path' => $uploadedPath, 'size' => PathHelper::formatBytes(filesize($uploadedPath)),
+            ResponseKeyType::Path->value => $uploadedPath, ResponseKeyType::Size->value => PathHelper::formatBytes(filesize($uploadedPath)),
         ));
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
@@ -59,7 +59,7 @@ trait ManagerImportTrait {
                 $this->deleteDirectory($tempDir);
             }
 
-            $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Snapshot import failed', array(ResponseKeyType::Error->value => $e->getMessage()));
 
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
@@ -99,7 +99,7 @@ trait ManagerImportTrait {
         $isValidationFailed = ($validation['valid'] === false);
 
         if ($isValidationFailed) {
-            throw new Exception('Manifest validation failed: ' . $validation['error']);
+            throw new Exception('Manifest validation failed: ' . $validation[ResponseKeyType::Error->value]);
         }
 
         return $manifest;
@@ -109,7 +109,7 @@ trait ManagerImportTrait {
         array $manifest,
         string $tempDir,
     ): string {
-        $sqliteFilename = $manifest['snapshot']['filename'];
+        $sqliteFilename = $manifest['snapshot'][ResponseKeyType::Filename->value];
         $sqlitePath = PathHelper::join($tempDir, $sqliteFilename);
 
         if (PathHelper::isFileMissing($sqlitePath)) {
@@ -120,7 +120,7 @@ trait ManagerImportTrait {
         $isIntegrityFailed = ($integrity['valid'] === false);
 
         if ($isIntegrityFailed) {
-            throw new Exception('SQLite integrity check failed: ' . $integrity['error']);
+            throw new Exception('SQLite integrity check failed: ' . $integrity[ResponseKeyType::Error->value]);
         }
 
         return $sqlitePath;
@@ -156,13 +156,13 @@ trait ManagerImportTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Snapshot imported successfully', array(
-            'snapshot_id' => $snapshotId, 'filename' => $newFilename,
+            ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $newFilename,
         ));
 
         return array(
-            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshotId, 'filename' => $newFilename,
-            'tables' => count($manifest['snapshot']['tables']),
-            'rows' => $manifest['snapshot']['total_rows'],
+            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $newFilename,
+            ResponseKeyType::Tables->value => count($manifest['snapshot'][ResponseKeyType::Tables->value]),
+            ResponseKeyType::Rows->value => $manifest['snapshot'][ResponseKeyType::TotalRows->value],
         );
     }
 }

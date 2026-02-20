@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotExporter;
@@ -32,7 +33,8 @@ trait CleanerDeletionTrait {
         } else {
             $bytes_freed += $this->deleteSingleFileSnapshot($filepath);
             if ($bytes_freed === -1) {
-                return array('success' => false, 'bytes_freed' => 0);
+
+                return array(ResponseKeyType::Success->value => false, 'bytes_freed' => 0);
             }
         }
 
@@ -41,11 +43,11 @@ trait CleanerDeletionTrait {
 
         $this->log(LogLevelType::Debug->value, 'Deleted snapshot', array(
             'id' => $snapshot['id'],
-            'filename' => $snapshot['filename'] ?? '',
+            ResponseKeyType::Filename->value => $snapshot['filename'] ?? '',
             'bytes_freed' => PathHelper::formatBytes($bytes_freed),
         ));
 
-        return array('success' => true, 'bytes_freed' => $bytes_freed);
+        return array(ResponseKeyType::Success->value => true, 'bytes_freed' => $bytes_freed);
     }
 
     private function cascadeDeleteIncrementalDir(string $filepath, int $parentId): int {
@@ -75,6 +77,7 @@ trait CleanerDeletionTrait {
             $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
             if ($isDeleteFailed) {
                 $this->log(LogLevelType::Warn->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
+
                 return -1;
             }
         }
@@ -104,8 +107,8 @@ trait CleanerDeletionTrait {
             }
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to remove cached ZIP exports during delete', array(
-                'snapshot_id' => $snapshotId,
-                'error'       => $e->getMessage(),
+                ResponseKeyType::SnapshotId->value => $snapshotId,
+                ResponseKeyType::Error->value      => $e->getMessage(),
             ));
         }
     }
@@ -123,11 +126,11 @@ trait CleanerDeletionTrait {
             }
 
             $this->log(LogLevelType::Debug->value, 'Deleted incremental DB records', array(
-                'count' => count($incrementals),
+                ResponseKeyType::Count->value => count($incrementals),
             ));
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to cascade-delete incremental records', array(
-                'error' => $e->getMessage(),
+                ResponseKeyType::Error->value => $e->getMessage(),
             ));
         }
     }

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\PathHelper;
 
@@ -27,24 +28,24 @@ trait NativeSnapshotExecTrait {
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
 
-            return array('success' => false, 'error' => 'Snapshot record not found');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Snapshot record not found');
         }
 
         $isLockFailed = ($this->acquireLock() === false);
         if ($isLockFailed) {
             $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, 'Failed to acquire lock');
 
-            return array('success' => false, 'error' => 'Failed to acquire lock');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to acquire lock');
         }
 
         try {
 
             return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $start_time);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Snapshot failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, $e->getMessage());
 
-            return array('success' => false, 'error' => $e->getMessage());
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         } finally {
             $this->releaseLock();
         }
@@ -91,16 +92,16 @@ trait NativeSnapshotExecTrait {
     }
 
     private function logTableExportResult(string $table, array $result): void {
-        if ($result['success']) {
+        if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Debug->value, 'Exported table', array(
                 'table' => $table,
-                'rows' => $result['rows'],
-                'bytes' => PathHelper::formatBytes($result['bytes']),
+                ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value],
+                ResponseKeyType::Bytes->value => PathHelper::formatBytes($result[ResponseKeyType::Bytes->value]),
             ));
         } else {
             $this->log(LogLevelType::Error->value, 'Failed to export table', array(
                 'table' => $table,
-                'error' => $result['error'],
+                ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
             ));
         }
     }
@@ -115,17 +116,17 @@ trait NativeSnapshotExecTrait {
         $total_rows = 0;
         $total_bytes = 0;
         foreach ($tableCounts as $table => $result) {
-            $total_rows += $result['rows'];
-            $total_bytes += $result['bytes'];
+            $total_rows += $result[ResponseKeyType::Rows->value];
+            $total_bytes += $result[ResponseKeyType::Bytes->value];
         }
 
         $duration = microtime(true) - $startTime;
         $this->log(LogLevelType::Info->value, 'Snapshot complete', array(
             'id' => $snapshotId,
-            'tables' => count($tables),
-            'rows' => $total_rows,
-            'bytes' => PathHelper::formatBytes($total_bytes),
-            'duration' => round($duration, 2) . 's',
+            ResponseKeyType::Tables->value => count($tables),
+            ResponseKeyType::Rows->value => $total_rows,
+            ResponseKeyType::Bytes->value => PathHelper::formatBytes($total_bytes),
+            ResponseKeyType::Duration->value => round($duration, 2) . 's',
         ));
 
         $this->updateSnapshotStatus(
@@ -135,10 +136,10 @@ trait NativeSnapshotExecTrait {
         );
 
         return array(
-            'success' => true,
-            'tables' => count($tables),
-            'rows' => $total_rows,
-            'bytes' => $total_bytes,
+            ResponseKeyType::Success->value => true,
+            ResponseKeyType::Tables->value => count($tables),
+            ResponseKeyType::Rows->value => $total_rows,
+            ResponseKeyType::Bytes->value => $total_bytes,
             'filepath' => $filepath,
         );
     }
