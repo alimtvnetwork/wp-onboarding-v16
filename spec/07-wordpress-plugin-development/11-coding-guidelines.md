@@ -21,6 +21,17 @@ This document codifies the mandatory development standards for the WordPress com
 ### Methods
 - **camelCase** for all methods: `makeDirectory()`, `isSafePath()`, `formatBytes()`.
 
+### Properties & Variables
+- **camelCase** for all properties and variables — no underscores.
+- Boolean properties must use `$is` or `$has` prefix: `$isInitialized`, `$hasErrors`.
+
+| ❌ Prohibited | ✅ Required |
+|---------------|-------------|
+| `$provider_id` | `$providerId` |
+| `$total_records` | `$totalRecords` |
+| `$methods_stack` | `$methodsStack` |
+| `$is_success` | `$isSuccess` |
+
 ### Constants
 - **PascalCase** enum members: `case Success`, `case ActionUpload`.
 - Configuration values live in typed enums under `RiseupAsia\Enums\`.
@@ -113,6 +124,7 @@ Use `InitHelpers` for idempotent resource setup:
 - **Directory creation**: `makeDirectory($path, $secure)` — cached per-request to avoid redundant filesystem checks.
 - **SQLite connections**: `initSqliteConnection($path, $logger)` — checks PDO/driver availability, enables WAL mode and auto-vacuum.
 - **Component startup**: `initComponent($name, $callable)` — wraps init in try/catch with timing, records results for diagnostics.
+- **Early-boot logging**: `errorLogWithPrefix($message)` — prepends `PluginConfigType::LogPrefix` to all `error_log()` calls.
 
 ```php
 use RiseupAsia\Helpers\InitHelpers;
@@ -126,6 +138,20 @@ $db = InitHelpers::initComponent('Database', function () {
 
 InitHelpers::logStartupSummary($this->fileLogger);
 ```
+
+### Early-Boot Logging
+
+All pre-logger `error_log()` calls **must** use `InitHelpers::errorLogWithPrefix()`:
+
+```php
+// ❌ FORBIDDEN — raw error_log with manual prefix
+error_log('[RiseupAsia] Something happened');
+
+// ✅ REQUIRED — centralized prefix via PluginConfigType::LogPrefix
+InitHelpers::errorLogWithPrefix('Something happened');
+```
+
+**Exception:** `Autoloader.php` is the only file permitted to use raw `error_log()`, because it executes before the autoloader and helper classes are available.
 
 ---
 
@@ -186,7 +212,34 @@ Fail gracefully with structured error messages, never with uncaught fatals.
 
 ---
 
-## 9. API Design
+## 9. HTTP Request Configuration
+
+All `wp_remote_get`, `wp_remote_post`, `wp_remote_head`, and `wp_remote_request` option arrays **must** use `HttpConfigType` static factory methods. Inline magic arrays are prohibited.
+
+### Available Factories
+
+| Method | Options |
+|--------|---------|
+| `HttpConfigType::headRedirectOptions()` | `timeout=15`, `redirection=0`, `sslverify=true` |
+| `HttpConfigType::defaultGetOptions()` | `timeout=30`, `sslverify=true` |
+| `HttpConfigType::authenticatedOptions($method, $authHeader)` | `method`, `Authorization` header, `timeout=30`, `sslverify=true` |
+
+```php
+use RiseupAsia\Enums\HttpConfigType;
+
+// ❌ FORBIDDEN — inline magic array
+$response = wp_remote_head($url, array('timeout' => 15, 'redirection' => 0, 'sslverify' => true));
+
+// ✅ REQUIRED — factory method
+$response = wp_remote_head($url, HttpConfigType::headRedirectOptions());
+
+// ✅ Authenticated request
+$response = wp_remote_request($url, HttpConfigType::authenticatedOptions('POST', $authHeader));
+```
+
+---
+
+## 10. API Design
 
 - **POST only** for all write/lifecycle operations.
 - **Fixed, lowercase paths** — no dynamic URL parameters.
@@ -196,7 +249,7 @@ Fail gracefully with structured error messages, never with uncaught fatals.
 
 ---
 
-## 10. Versioning
+## 11. Versioning
 
 Every modification to the plugin must bump the version number in both:
 - `VersionType` enum (`VersionType::Current->value`)
@@ -204,7 +257,7 @@ Every modification to the plugin must bump the version number in both:
 
 ---
 
-## 11. Storage Layout
+## 12. Storage Layout
 
 All persistent data lives under `wp-content/uploads/riseup-asia-uploader/`:
 
