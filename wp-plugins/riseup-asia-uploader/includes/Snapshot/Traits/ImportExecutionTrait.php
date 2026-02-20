@@ -39,7 +39,7 @@ trait ImportExecutionTrait {
         $inventories = $this->validateAllImportFiles($rootDbPath, $snapshotRoot);
 
         $destDir = $this->moveSnapshotToFinalLocation($snapshotRoot, $metadata);
-        $snapshotId = $this->registerImportedSnapshot($metadata, $inventories['tables'], $inventories['incrementals'], $inventories['plugins'], $destDir);
+        $snapshotId = $this->registerImportedSnapshot($metadata, $inventories[ResponseKeyType::Tables->value], $inventories['incrementals'], $inventories['plugins'], $destDir);
 
         return $this->buildImportResult($snapshotId, $destDir, $metadata, $inventories);
     }
@@ -60,7 +60,7 @@ trait ImportExecutionTrait {
     /** Validate all import file inventories (tables, incrementals, plugins). */
     private function validateAllImportFiles(string $rootDbPath, string $snapshotRoot): array {
         $tables = $this->readRootDbTables($rootDbPath);
-        $this->log(LogLevelType::Info->value, 'Validating table files', array('count' => count($tables)));
+        $this->log(LogLevelType::Info->value, 'Validating table files', array(ResponseKeyType::Count->value => count($tables)));
         $this->validateTableFiles($snapshotRoot, $tables);
 
         $incrementals = $this->readRootDbIncrementals($rootDbPath);
@@ -69,7 +69,7 @@ trait ImportExecutionTrait {
         $plugins = $this->readRootDbPlugins($rootDbPath);
         $this->validatePluginFiles($snapshotRoot, $plugins);
 
-        return array('tables' => $tables, 'incrementals' => $incrementals, 'plugins' => $plugins);
+        return array(ResponseKeyType::Tables->value => $tables, 'incrementals' => $incrementals, 'plugins' => $plugins);
     }
 
     /** Build the final import result array. */
@@ -80,14 +80,14 @@ trait ImportExecutionTrait {
         array $inventories,
     ): array {
         $this->log(LogLevelType::Info->value, 'Per-table snapshot imported successfully', array(
-            'snapshotId' => $snapshotId, 'tables' => count($inventories['tables']),
+            ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Tables->value => count($inventories[ResponseKeyType::Tables->value]),
             'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
         ));
 
         return array(
-            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshotId, 'folder' => basename($destDir),
-            'type' => $metadata['type'] ?? SnapshotModeType::Full->value, 'tables' => count($inventories['tables']),
-            'total_rows' => $metadata['total_rows'] ?? 0,
+            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshotId, 'folder' => basename($destDir),
+            'type' => $metadata['type'] ?? SnapshotModeType::Full->value, ResponseKeyType::Tables->value => count($inventories[ResponseKeyType::Tables->value]),
+            ResponseKeyType::TotalRows->value => $metadata['total_rows'] ?? 0,
             'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
         );
     }

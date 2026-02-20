@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Snapshot\Traits\CleanerRetentionTrait;
 use RiseupAsia\Snapshot\Traits\CleanerDeletionTrait;
@@ -46,11 +47,11 @@ class SnapshotCleaner {
         $isDryRun = BooleanHelpers::hasValue($options['dry_run'] ?? null);
 
         $results = array(
-            'success'           => true,
+            ResponseKeyType::Success->value => true,
             'retention'         => array('deleted' => 0, 'skipped_master' => 0, 'details' => array()),
-            'orphans'           => array('removed' => 0, 'files' => array()),
+            'orphans'           => array('removed' => 0, ResponseKeyType::Files->value => array()),
             'stuck'             => array('cleaned' => 0, 'ids' => array()),
-            'errors'            => array(),
+            ResponseKeyType::Errors->value => array(),
             'dry_run'           => $isDryRun,
             'space_freed_bytes' => 0,
         );
@@ -61,8 +62,8 @@ class SnapshotCleaner {
         $results = $this->executeOrphanPhase($isDryRun, $results);
         $results = $this->executeStuckPhase($isDryRun, $results);
 
-        $results['success']  = empty($results['errors']);
-        $results['duration'] = round(microtime(true) - $start, 3);
+        $results[ResponseKeyType::Success->value]  = empty($results[ResponseKeyType::Errors->value]);
+        $results[ResponseKeyType::Duration->value] = round(microtime(true) - $start, 3);
 
         $totalDeleted = $results['retention']['deleted']
             + $results['orphans']['removed']
@@ -71,7 +72,7 @@ class SnapshotCleaner {
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
             'deleted_total' => $totalDeleted,
             'space_freed'   => PathHelper::formatBytes($results['space_freed_bytes']),
-            'duration'      => $results['duration'],
+            ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
             'dry_run'       => $isDryRun,
         ));
 
@@ -91,7 +92,7 @@ class SnapshotCleaner {
             'deleted_orphans'   => $result['orphans']['removed'] ?? 0,
             'deleted_failed'    => $result['stuck']['cleaned'] ?? 0,
             'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
-            'errors'            => $result['errors'] ?? array(),
+            ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value] ?? array(),
         );
     }
 
@@ -109,8 +110,8 @@ class SnapshotCleaner {
                 $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
             }
         } catch (Throwable $e) {
-            $results['errors'][] = 'Retention cleanup: ' . $e->getMessage();
-            $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array('error' => $e->getMessage()));
+            $results[ResponseKeyType::Errors->value][] = 'Retention cleanup: ' . $e->getMessage();
+            $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));
         }
 
         return $results;
@@ -122,8 +123,8 @@ class SnapshotCleaner {
             $results['orphans'] = $orphans;
             $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
         } catch (Throwable $e) {
-            $results['errors'][] = 'Orphan cleanup: ' . $e->getMessage();
-            $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array('error' => $e->getMessage()));
+            $results[ResponseKeyType::Errors->value][] = 'Orphan cleanup: ' . $e->getMessage();
+            $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));
         }
 
         return $results;
@@ -134,8 +135,8 @@ class SnapshotCleaner {
             $stuck = $this->cleanupStuckSnapshots($isDryRun);
             $results['stuck'] = $stuck;
         } catch (Throwable $e) {
-            $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();
-            $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array('error' => $e->getMessage()));
+            $results[ResponseKeyType::Errors->value][] = 'Stuck cleanup: ' . $e->getMessage();
+            $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));
         }
 
         return $results;

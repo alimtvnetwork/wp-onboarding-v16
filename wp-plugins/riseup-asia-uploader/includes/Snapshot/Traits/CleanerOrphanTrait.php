@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\PathHelper;
@@ -20,13 +21,14 @@ use RiseupAsia\Helpers\PathHelper;
 trait CleanerOrphanTrait {
 
     private function cleanupOrphanFiles(bool $dryRun = false): array {
-        $result = array('removed' => 0, 'errors' => array());
+        $result = array('removed' => 0, ResponseKeyType::Errors->value => array());
 
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_paths = array_map(function ($f) { return $f['filepath']; }, $files);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (PathHelper::isDirMissing($scan_dir)) {
+
             return $result;
         }
 
@@ -47,12 +49,12 @@ trait CleanerOrphanTrait {
                     if (@unlink($path)) {
                         $result['removed']++;
                     } else {
-                        $result['errors'][] = "Failed to delete orphan file: {$path}";
-                        $this->log(LogLevelType::Error->value, 'Failed to delete orphan file', array('path' => $path));
+                        $result[ResponseKeyType::Errors->value][] = "Failed to delete orphan file: {$path}";
+                        $this->log(LogLevelType::Error->value, 'Failed to delete orphan file', array(ResponseKeyType::Path->value => $path));
                     }
                 } catch (Throwable $e) {
-                    $result['errors'][] = "Exception deleting orphan file: {$path} - " . $e->getMessage();
-                    $this->log(LogLevelType::Error->value, 'Exception deleting orphan file', array('path' => $path, 'error' => $e->getMessage()));
+                    $result[ResponseKeyType::Errors->value][] = "Exception deleting orphan file: {$path} - " . $e->getMessage();
+                    $this->log(LogLevelType::Error->value, 'Exception deleting orphan file', array(ResponseKeyType::Path->value => $path, ResponseKeyType::Error->value => $e->getMessage()));
                 }
             } else {
                 $result['removed']++;
@@ -63,13 +65,14 @@ trait CleanerOrphanTrait {
     }
 
     private function cleanupOrphanSqliteFiles(bool $dryRun = false): array {
-        $result = array('removed' => 0, 'errors' => array());
+        $result = array('removed' => 0, ResponseKeyType::Errors->value => array());
 
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_files = array_map(function ($f) { return $f['filename']; }, $files);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (PathHelper::isDirMissing($scan_dir)) {
+
             return $result;
         }
 
@@ -92,12 +95,12 @@ trait CleanerOrphanTrait {
                     if (@unlink($path)) {
                         $result['removed']++;
                     } else {
-                        $result['errors'][] = "Failed to delete orphan SQLite file: {$path}";
-                        $this->log(LogLevelType::Error->value, 'Failed to delete orphan SQLite file', array('path' => $path));
+                        $result[ResponseKeyType::Errors->value][] = "Failed to delete orphan SQLite file: {$path}";
+                        $this->log(LogLevelType::Error->value, 'Failed to delete orphan SQLite file', array(ResponseKeyType::Path->value => $path));
                     }
                 } catch (Throwable $e) {
-                    $result['errors'][] = "Exception deleting orphan SQLite file: {$path} - " . $e->getMessage();
-                    $this->log(LogLevelType::Error->value, 'Exception deleting orphan SQLite file', array('path' => $path, 'error' => $e->getMessage()));
+                    $result[ResponseKeyType::Errors->value][] = "Exception deleting orphan SQLite file: {$path} - " . $e->getMessage();
+                    $this->log(LogLevelType::Error->value, 'Exception deleting orphan SQLite file', array(ResponseKeyType::Path->value => $path, ResponseKeyType::Error->value => $e->getMessage()));
                 }
             } else {
                 $result['removed']++;
@@ -108,7 +111,7 @@ trait CleanerOrphanTrait {
     }
 
     private function cleanupOrphanDirectories(bool $dryRun = false): array {
-        $result = array('removed' => 0, 'errors' => array());
+        $result = array('removed' => 0, ResponseKeyType::Errors->value => array());
 
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_paths = array_map(function ($f) { return dirname($f['filepath']); }, $files);
@@ -116,6 +119,7 @@ trait CleanerOrphanTrait {
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (PathHelper::isDirMissing($scan_dir)) {
+
             return $result;
         }
 
@@ -142,12 +146,12 @@ trait CleanerOrphanTrait {
                         if (@rmdir($dir)) {
                             $result['removed']++;
                         } else {
-                            $result['errors'][] = "Failed to delete orphan directory: {$dir}";
-                            $this->log(LogLevelType::Error->value, 'Failed to delete orphan directory', array('path' => $dir));
+                            $result[ResponseKeyType::Errors->value][] = "Failed to delete orphan directory: {$dir}";
+                            $this->log(LogLevelType::Error->value, 'Failed to delete orphan directory', array(ResponseKeyType::Path->value => $dir));
                         }
                     } catch (Throwable $e) {
-                        $result['errors'][] = "Exception deleting orphan directory: {$dir} - " . $e->getMessage();
-                        $this->log(LogLevelType::Error->value, 'Exception deleting orphan directory', array('path' => $dir, 'error' => $e->getMessage()));
+                        $result[ResponseKeyType::Errors->value][] = "Exception deleting orphan directory: {$dir} - " . $e->getMessage();
+                        $this->log(LogLevelType::Error->value, 'Exception deleting orphan directory', array(ResponseKeyType::Path->value => $dir, ResponseKeyType::Error->value => $e->getMessage()));
                     }
                 } else {
                     $result['removed']++;

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
@@ -44,7 +45,7 @@ trait CleanerStorageTrait {
             );
 
             if ($db_stats) {
-                $stats['total_snapshots']      = intval($db_stats['count']);
+                $stats['total_snapshots']      = intval($db_stats[ResponseKeyType::Count->value]);
                 $stats['total_size_bytes']     = intval($db_stats['total_size']);
                 $stats['total_size_formatted'] = PathHelper::formatBytes($stats['total_size_bytes']);
 
@@ -66,7 +67,7 @@ trait CleanerStorageTrait {
             }
 
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to get storage stats', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to get storage stats', array(ResponseKeyType::Error->value => $e->getMessage()));
         }
 
         return $stats;
@@ -94,11 +95,11 @@ trait CleanerStorageTrait {
             });
 
             $estimate['snapshots_count'] = count($snapshots);
-            $estimate['bytes']           = array_sum(array_column($snapshots, 'size'));
-            $estimate['bytes_formatted'] = PathHelper::formatBytes($estimate['bytes']);
+            $estimate[ResponseKeyType::Bytes->value] = array_sum(array_column($snapshots, 'size'));
+            $estimate['bytes_formatted'] = PathHelper::formatBytes($estimate[ResponseKeyType::Bytes->value]);
 
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array(ResponseKeyType::Error->value => $e->getMessage()));
         }
 
         return $estimate;

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotModeType;
@@ -44,13 +45,13 @@ trait ManagerRestoreValidationTrait {
         }
 
         $this->log(LogLevelType::Error->value, 'Incremental restore blocked: parent full snapshot missing', array(
-            'snapshot_id' => $snapshotId, 'master_dir' => $masterDirname, 'expected_path' => $masterDir,
+            ResponseKeyType::SnapshotId->value => $snapshotId, 'master_dir' => $masterDirname, 'expected_path' => $masterDir,
         ));
 
         return array(
-            'success' => false,
-            'error'   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
-            'code'    => SnapshotErrorType::IncrementalNoParent->value,
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
+            ResponseKeyType::Code->value    => SnapshotErrorType::IncrementalNoParent->value,
         );
     }
 
@@ -67,15 +68,17 @@ trait ManagerRestoreValidationTrait {
 
         $backupResult = $this->createPreRestoreBackup($snapshotId);
 
-        if ($backupResult['success']) {
-            $this->log(LogLevelType::Info->value, 'Pre-restore backup created', array('backup_id' => $backupResult['snapshot_id']));
-            return $backupResult['snapshot_id'];
+        if ($backupResult[ResponseKeyType::Success->value]) {
+            $this->log(LogLevelType::Info->value, 'Pre-restore backup created', array(ResponseKeyType::BackupId->value => $backupResult[ResponseKeyType::SnapshotId->value]));
+
+            return $backupResult[ResponseKeyType::SnapshotId->value];
         }
 
-        $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', array('error' => $backupResult['error']));
+        $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', array(ResponseKeyType::Error->value => $backupResult[ResponseKeyType::Error->value]));
 
         if (BooleanHelpers::hasValue($options['require_backup'])) {
-            return array('success' => false, 'error' => 'Pre-restore backup failed: ' . $backupResult['error']);
+
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Pre-restore backup failed: ' . $backupResult[ResponseKeyType::Error->value]);
         }
 
         return null;

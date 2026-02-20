@@ -17,6 +17,7 @@ use Throwable;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Snapshot\SnapshotExporter;
@@ -72,7 +73,7 @@ trait IncrementalRegistrationTrait {
 
         return json_encode(array(
             'type' => SnapshotModeType::Incremental->value, 'master' => basename($masterDir), 'sequence' => $sequence,
-            'folder' => $folderName, 'tables_changed' => $tablesChanged, 'total_new_rows' => $totalNewRows,
+            'folder' => $folderName, ResponseKeyType::TablesChanged->value => $tablesChanged, ResponseKeyType::TotalNewRows->value => $totalNewRows,
         ));
     }
 
