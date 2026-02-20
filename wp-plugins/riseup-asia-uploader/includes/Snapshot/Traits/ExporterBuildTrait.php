@@ -21,6 +21,7 @@ use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\DateHelper;
 
 trait ExporterBuildTrait {
     use ExporterBuildCollectTrait;
@@ -217,7 +218,7 @@ trait ExporterBuildTrait {
         array $incrementals,
     ) {
         $manifest = array(
-            'version' => PluginConfigType::Version->value, 'created_at' => gmdate('c'), 'snapshot_id' => $snapshotId,
+            'version' => PluginConfigType::Version->value, 'created_at' => DateHelper::nowIso(), 'snapshot_id' => $snapshotId,
             'filename' => $snapshot['filename'], 'scope' => $snapshot['scope'],
             'tables' => json_decode($snapshot['tables_json'] ?? '[]', true),
             'total_rows' => (int) ($snapshot['total_rows'] ?? 0), 'included_ids' => $includedIds,

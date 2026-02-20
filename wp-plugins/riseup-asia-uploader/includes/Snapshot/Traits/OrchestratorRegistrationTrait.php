@@ -19,6 +19,7 @@ use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait OrchestratorRegistrationTrait {
 
@@ -72,7 +73,7 @@ trait OrchestratorRegistrationTrait {
         array $workerResult,
         int $dirSize,
     ): int {
-        $now = gmdate('c');
+        $now = DateHelper::nowIso();
         $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "
             (sequence, filename, filepath, provider, scope, tables_json, total_rows,
              file_size, trigger_source, status, created_at, completed_at)

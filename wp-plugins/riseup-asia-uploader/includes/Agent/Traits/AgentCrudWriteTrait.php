@@ -18,6 +18,7 @@ use RiseupAsia\Enums\AgentFieldType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait AgentCrudWriteTrait {
 
@@ -52,7 +53,7 @@ trait AgentCrudWriteTrait {
             sanitize_user($data[AgentFieldType::Username->value]),
             $this->encrypt($data[AgentFieldType::AppPassword->value]),
             isset($data[AgentFieldType::RedirectUrl->value]) ? esc_url_raw($data[AgentFieldType::RedirectUrl->value]) : null,
-            gmdate('Y-m-d\TH:i:s\Z'),
+            DateHelper::nowUtc(),
         ]);
 
         if ($result->hasError()) {
@@ -83,7 +84,7 @@ trait AgentCrudWriteTrait {
         }
 
         $update[$setsKey][] = 'updated_at = ?';
-        $update[$paramsKey][] = gmdate('Y-m-d\TH:i:s\Z');
+        $update[$paramsKey][] = DateHelper::nowUtc();
         $update[$paramsKey][] = $id;
 
         $sql = 'UPDATE agent_sites SET ' . implode(', ', $update[$setsKey]) . ' WHERE id = ?';

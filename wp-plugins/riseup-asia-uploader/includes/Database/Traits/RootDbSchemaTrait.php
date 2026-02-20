@@ -17,6 +17,8 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Helpers\DateHelper;
+
 trait RootDbSchemaTrait {
 
     private function createSchema(PDO $pdo): void {
@@ -85,7 +87,7 @@ trait RootDbSchemaTrait {
 
         $stmt->execute(array(
             $config['title'] ?? SnapshotConfigType::UntitledTitle, $config['type'] ?? SnapshotModeType::Full->value,
-            gmdate('c'), gethostname() ?: php_uname('n'),
+            DateHelper::nowIso(), gethostname() ?: php_uname('n'),
             $mysqlVersion, $wpVersion, PluginConfigType::Version->value,
             isset($config['settings']) ? json_encode($config['settings']) : null,
         ));

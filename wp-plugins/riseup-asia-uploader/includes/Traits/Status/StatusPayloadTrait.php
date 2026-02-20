@@ -20,6 +20,7 @@ use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Helpers\DateHelper;
 
 trait StatusPayloadTrait {
 
@@ -151,7 +152,7 @@ trait StatusPayloadTrait {
             'Php'         => PHP_VERSION,
             'IsActive'    => in_array(plugin_basename(__FILE__), get_option(OptionNameType::ActivePlugins->value, array()), true),
             'DbAvailable' => $dbAvailable,
-            'ServerTime'  => gmdate('c'),
+            'ServerTime'  => DateHelper::nowIso(),
             'Timezone'    => wp_timezone_string(),
         );
     }

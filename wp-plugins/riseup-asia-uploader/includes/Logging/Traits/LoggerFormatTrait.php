@@ -9,6 +9,7 @@
 namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait LoggerFormatTrait {
 
@@ -20,7 +21,7 @@ trait LoggerFormatTrait {
         int $line,
         array $context = array(),
     ): string {
-        $timestamp = gmdate(self::TIMESTAMP_FORMAT);
+        $timestamp = DateHelper::nowUtc();
         $basename  = basename($file);
 
         $entry = sprintf("[%s] [%s] %s (%s:%d)", $timestamp, $level, $message, $basename, $line);

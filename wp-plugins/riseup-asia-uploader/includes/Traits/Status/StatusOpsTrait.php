@@ -20,6 +20,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Helpers\DateHelper;
 
 trait StatusOpsTrait {
 
@@ -101,7 +102,7 @@ trait StatusOpsTrait {
             'opcache_available' => function_exists('opcache_reset'),
             'opcache_reset'     => false,
             'files_invalidated' => 0,
-            'timestamp'         => gmdate('c'),
+            'timestamp'         => DateHelper::nowIso(),
         );
 
         if (function_exists('opcache_reset')) {

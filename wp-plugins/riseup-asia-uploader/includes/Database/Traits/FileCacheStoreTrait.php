@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
+use RiseupAsia\Helpers\DateHelper;
 
 trait FileCacheStoreTrait {
 
@@ -81,7 +82,7 @@ trait FileCacheStoreTrait {
                 return;
             }
 
-            $now = gmdate('Y-m-d\TH:i:s\Z');
+            $now = DateHelper::nowUtc();
 
             $stmt = $pdo->prepare(
                 "INSERT OR REPLACE INTO " . TableType::FileCache->value .

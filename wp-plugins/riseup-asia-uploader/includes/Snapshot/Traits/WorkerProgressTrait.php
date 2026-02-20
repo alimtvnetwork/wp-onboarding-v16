@@ -17,6 +17,7 @@ use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait WorkerProgressTrait {
 
@@ -33,7 +34,7 @@ trait WorkerProgressTrait {
                 (snapshot_id, table_name, status, rows_total, rows_exported, started_at)
                 VALUES (0, ?, '" . SnapshotStatusType::Pending->value . "', 0, 0, ?)");
 
-            $now = gmdate('c');
+            $now = DateHelper::nowIso();
             foreach ($tables as $table) {
                 $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
                 $stmt->execute(array($table, $now));
@@ -60,7 +61,7 @@ trait WorkerProgressTrait {
         }
 
         try {
-            $now = gmdate('c');
+            $now = DateHelper::nowIso();
             $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotProgress->value . "
                 SET status = ?, rows_exported = ?, completed_at = ?, error_message = ?
                 WHERE snapshot_id = 0 AND table_name = ?");

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait DatabaseMigrationsV9V11Trait {
 
@@ -43,7 +44,7 @@ trait DatabaseMigrationsV9V11Trait {
             updated_at TEXT NOT NULL
         )");
 
-        $now = gmdate('Y-m-d\TH:i:s\Z');
+        $now = DateHelper::nowUtc();
         $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '0', '{$now}')");
         $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
 

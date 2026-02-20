@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Database\ORM;
+use RiseupAsia\Helpers\DateHelper;
 
 trait DatabaseConnectionTrait {
 
@@ -150,7 +151,7 @@ trait DatabaseConnectionTrait {
      * Record a schema version.
      */
     private function recordMigration($version) {
-        $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES ({$version}, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+        $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES ({$version}, '" . DateHelper::nowUtc() . "')");
         $this->fileLogger->info("Migration v{$version} applied successfully");
     }
 

@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\DateHelper;
 
 class AdminMailer {
 
@@ -126,7 +127,7 @@ class AdminMailer {
         $lines[] = 'Plugin Version: ' . PluginConfigType::Version->value;
         $lines[] = 'PHP Version:    ' . phpversion();
         $lines[] = 'WordPress:      ' . get_bloginfo('version');
-        $lines[] = 'Timestamp:      ' . gmdate('Y-m-d\TH:i:s\Z');
+        $lines[] = 'Timestamp:      ' . DateHelper::nowUtc();
         $lines[] = '';
         $lines[] = 'Errors (' . count($errors) . '):';
         $lines[] = str_repeat('-', 50);
