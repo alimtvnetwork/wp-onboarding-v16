@@ -10,9 +10,9 @@ namespace RiseupAsia\Logging\Traits;
 
 use PDO;
 use Throwable;
-use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Database\Database;
 
 trait LoggerWriteTrait {
@@ -23,7 +23,7 @@ trait LoggerWriteTrait {
         $isInitFailed = $isUninitialized && ($this->initializePaths() === false);
 
         if ($isInitFailed) {
-            error_log(PluginConfigType::LogPrefix->value . ' ' . trim($entry));
+            InitHelpers::bootLog(trim($entry));
 
             return false;
         }

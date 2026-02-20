@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
-use RiseupAsia\Enums\PluginConfigType;
 use Throwable;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
@@ -28,10 +27,10 @@ class ActivationHandler
     private const DIAGNOSTICS_EXPIRY = DAY_IN_SECONDS;
 
     public static function activate(): void {
-        error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — starting activation');
+        InitHelpers::bootLog('ActivationHandler::activate() — starting activation');
         try {
             self::loadDependencies();
-            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — dependencies loaded');
+            InitHelpers::bootLog('ActivationHandler::activate() — dependencies loaded');
             $dirs = self::resolveDirs();
 
             if ($dirs === null) {
@@ -39,13 +38,13 @@ class ActivationHandler
             }
 
             self::ensureDirs($dirs['base'], $dirs['logs']);
-            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — directories ensured');
+            InitHelpers::bootLog('ActivationHandler::activate() — directories ensured');
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
             self::runBootDiagnostics();
-            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — activation complete');
+            InitHelpers::bootLog('ActivationHandler::activate() — activation complete');
         } catch (Throwable $e) {
-            error_log(PluginConfigType::LogPrefix->value . ' Activation hook failed: ' . $e->getMessage());
+            InitHelpers::bootLog('Activation hook failed: ' . $e->getMessage());
         }
     }
 
@@ -56,7 +55,7 @@ class ActivationHandler
     private static function runBootDiagnostics(): void {
         $isAutoloaderMissing = !class_exists('RiseupAsiaAutoloader', false);
         if ($isAutoloaderMissing) {
-            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler: autoloader class not available for diagnostics');
+            InitHelpers::bootLog('ActivationHandler: autoloader class not available for diagnostics');
 
             return;
         }
@@ -75,7 +74,7 @@ class ActivationHandler
         set_transient(self::DIAGNOSTICS_TRANSIENT, $diagnosticData, self::DIAGNOSTICS_EXPIRY);
 
         if ($hasFailures) {
-            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler: boot diagnostics found ' . count($result['failed']) . ' file(s) with errors');
+            InitHelpers::bootLog('ActivationHandler: boot diagnostics found ' . count($result['failed']) . ' file(s) with errors');
         }
     }
 
