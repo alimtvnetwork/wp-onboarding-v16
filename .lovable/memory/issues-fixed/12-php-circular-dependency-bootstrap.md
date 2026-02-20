@@ -37,7 +37,7 @@ Riseup_File_Logger::write()
 
 ## Prevention Pattern
 
-**Rule:** During class initialization, never call methods on classes that depend on the class being initialized. Use native PHP functions (`error_log()`, `mkdir()`, string concatenation) as fallbacks during bootstrap.
+**Rule:** During class initialization, never call methods on classes that depend on the class being initialized. Use `InitHelpers::errorLogWithPrefix()` for all early-boot logging (it prepends `PluginConfigType::LogPrefix`). The sole exception is `Autoloader.php`, which must use raw `error_log()` since it runs before the autoloader loads helper classes. For other bootstrap operations, use native PHP functions (`mkdir()`, string concatenation) as fallbacks.
 
 ---
 
