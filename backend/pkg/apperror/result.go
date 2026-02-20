@@ -21,7 +21,7 @@ func Fail[T any](err *AppError) Result[T] {
 // FailWrap creates a failed Result by wrapping a raw error.
 // Uses skip=3 to attribute the stack trace to the actual caller.
 func FailWrap[T any](cause error, code, message string) Result[T] {
-	wrapped := WrapWithSkip(cause, code, message, 1)
+	wrapped := WrapWithSkip(cause, code, message, 0)
 
 	return Result[T]{err: wrapped}
 }
