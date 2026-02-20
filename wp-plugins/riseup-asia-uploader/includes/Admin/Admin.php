@@ -23,7 +23,7 @@ use RiseupAsia\Admin\Traits\AdminErrorAjaxTrait;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PaginationConfigType;
-use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\InitHelpers;
 
 /**
  * Class Admin
@@ -81,7 +81,7 @@ class Admin {
 
     /** Constructor. */
     private function __construct() {
-        error_log(PluginConfigType::LogPrefix->value . ' Admin::__construct() — registering admin hooks');
+        InitHelpers::bootLog('Admin::__construct() — registering admin hooks');
         $this->registerBootNotices();
         add_action(HookType::AdminMenu->value, array($this, 'addAdminMenu'));
         add_action(HookType::AdminInit->value, array($this, 'registerSettings'));

@@ -16,8 +16,8 @@ use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathDatabaseType;
-use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Logging\FileLogger;
 
 trait PathHelperCoreTrait {
@@ -38,7 +38,7 @@ trait PathHelperCoreTrait {
         try {
             self::$logger = FileLogger::getInstance();
         } catch (Throwable $e) {
-            error_log(PluginConfigType::LogPrefix->value . ' [ERROR] Logger init failed: ' . $e->getMessage());
+            InitHelpers::bootLog('[ERROR] Logger init failed: ' . $e->getMessage());
             self::$logger = null;
         }
         self::$isBootstrapping = false;
@@ -55,7 +55,7 @@ trait PathHelperCoreTrait {
         $method = strtolower($level);
 
         if (self::$isBootstrapping) {
-            error_log(PluginConfigType::LogPrefix->value . ' [' . $upper . '] ' . $message);
+            InitHelpers::bootLog('[' . $upper . '] ' . $message);
 
             return;
         }
@@ -64,7 +64,7 @@ trait PathHelperCoreTrait {
         if ($logger !== null) {
             $logger->$method($message, $context);
         } else {
-            error_log(PluginConfigType::LogPrefix->value . ' [' . $upper . '] ' . $message);
+            InitHelpers::bootLog('[' . $upper . '] ' . $message);
         }
     }
 

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use PDOException;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\Traits\InitDirTrait;
 use RiseupAsia\Helpers\Traits\InitStartupTrait;
 use RiseupAsia\Logging\FileLogger;
@@ -80,6 +81,15 @@ class InitHelpers {
             $pdo->exec('PRAGMA journal_mode = WAL');
         }
         $pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');
+    }
+
+    /**
+     * Write a prefixed message to PHP's native error_log.
+     *
+     * Use this for early-boot logging where FileLogger is not yet available.
+     */
+    public static function bootLog(string $message): void {
+        error_log(PluginConfigType::LogPrefix->value . ' ' . $message);
     }
 
     public static function reset(): void {
