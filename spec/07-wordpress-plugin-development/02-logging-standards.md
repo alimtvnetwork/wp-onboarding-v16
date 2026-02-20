@@ -260,6 +260,22 @@ public function log(
 }
 ```
 
+## Early-Boot Logging — `InitHelpers::errorLogWithPrefix()`
+
+Before the `FileLogger` is available, all `error_log()` calls **must** use `InitHelpers::errorLogWithPrefix()`. This method prepends `PluginConfigType::LogPrefix` to ensure consistent log formatting.
+
+```php
+use RiseupAsia\Helpers\InitHelpers;
+
+// ❌ FORBIDDEN — raw error_log with manual prefix
+error_log('[RiseupAsia] PDO extension missing');
+
+// ✅ REQUIRED
+InitHelpers::errorLogWithPrefix('PDO extension missing');
+```
+
+**Exception:** `Autoloader.php` is the only file permitted to use raw `error_log()`, because it executes before the autoloader and helper classes are available.
+
 ## Debugging Tips
 
 ### 1. Enable Verbose Logging During Development
