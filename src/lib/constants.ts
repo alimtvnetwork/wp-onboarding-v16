@@ -368,6 +368,69 @@ export const ResponseMessageType = {
 export type ResponseMessageType = (typeof ResponseMessageType)[keyof typeof ResponseMessageType];
 
 // ---------------------------------------------------------------------------
+// Response Key Type (mirrors Go/PHP ResponseKeyType enum)
+// ---------------------------------------------------------------------------
+
+export const ResponseKeyType = {
+  // Envelope keys
+  Success: "success",
+  Error: "error",
+  Message: "message",
+  Data: "data",
+  Code: "code",
+  Valid: "valid",
+  Errors: "errors",
+  Cached: "cached",
+  Phase: "phase",
+  Reason: "reason",
+
+  // Domain collection keys
+  Total: "total",
+  Agents: "agents",
+  Actions: "actions",
+  Logs: "logs",
+  Snapshots: "snapshots",
+  Sql: "sql",
+  Params: "params",
+  Sets: "sets",
+  Plugins: "plugins",
+  Tables: "tables",
+
+  // File and size keys
+  Rows: "rows",
+  Bytes: "bytes",
+  Size: "size",
+  FileSize: "file_size",
+  Path: "path",
+  Filename: "filename",
+  Checksum: "checksum",
+  Duration: "duration",
+  Count: "count",
+  Files: "files",
+  Directory: "directory",
+  Scope: "scope",
+  Exported: "exported",
+  Entry: "entry",
+  Computed: "computed",
+  Removed: "removed",
+
+  // Snapshot-domain keys
+  SnapshotId: "snapshot_id",
+  Sequence: "sequence",
+  FolderName: "folder_name",
+  TablesChanged: "tables_changed",
+  TotalRows: "total_rows",
+  TotalNewRows: "total_new_rows",
+  ZipSize: "zip_size",
+  BackupId: "backup_id",
+  ZipFailed: "zip_failed",
+  SkipAudit: "skip_audit",
+  TablesRestored: "tables_restored",
+} as const;
+
+export type ResponseKeyType = (typeof ResponseKeyType)[keyof typeof ResponseKeyType];
+
+// ---------------------------------------------------------------------------
 // HTTP Status Type (mirrors Go/PHP HttpStatusType enum)
 // ---------------------------------------------------------------------------
 
