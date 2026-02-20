@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // QueueConfig holds publish queue settings
@@ -83,7 +84,9 @@ func (q *PublishQueue) Enqueue(item QueueItem) (string, error) {
 	defer q.mu.Unlock()
 
 	if len(q.items) >= q.config.MaxQueueSize {
-		return "", fmt.Errorf("publish queue is full (%d/%d)", len(q.items), q.config.MaxQueueSize)
+		return "", apperror.New(apperror.ErrInternal, "publish queue is full").
+			WithValue("current", fmt.Sprintf("%d", len(q.items))).
+			WithValue("max", fmt.Sprintf("%d", q.config.MaxQueueSize))
 	}
 
 	// Generate ID
