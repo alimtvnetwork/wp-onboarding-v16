@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/services/publish"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
 )
@@ -43,7 +44,13 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 		input.Mode = "full"
 	}
 
-	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, input)
+	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, publish.PublishOptions{
+		Mode:              input.Mode,
+		Files:             input.Files,
+		CreateBackup:      input.CreateBackup,
+		KeepZipFiles:      input.KeepZipFiles,
+		RollbackOnFailure: true,
+	})
 	if err != nil {
 		respondError(w, wordpress.HttpStatusServerError, "E5006", err.Error())
 		return
