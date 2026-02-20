@@ -3,6 +3,8 @@ package session
 
 import (
 	"encoding/json"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // ToJSON marshals a typed struct into json.RawMessage for use as log/error details.
@@ -33,16 +35,16 @@ type ServiceInterface interface {
 	EndSession(sessionID, status, errorMsg string)
 
 	// GetSession returns session info
-	GetSession(sessionID string) (*Session, error)
+	GetSession(sessionID string) apperror.Result[*Session]
 
 	// GetSessionLogs returns the full log content for a session
-	GetSessionLogs(sessionID string) (string, error)
+	GetSessionLogs(sessionID string) apperror.Result[string]
 
 	// GetSessionDiagnostics returns structured request/response/stackTrace for a session
-	GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, error)
+	GetSessionDiagnostics(sessionID string) apperror.Result[SessionDiagnostics]
 
 	// ListSessions returns recent sessions
-	ListSessions(limit int) ([]*SessionSummary, error)
+	ListSessions(limit int) apperror.ResultSlice[*SessionSummary]
 
 	// DeleteSession removes a session's log file
 	DeleteSession(sessionID string) error

@@ -34,19 +34,36 @@ type SessionServiceAdapter struct {
 }
 
 func (a *SessionServiceAdapter) ListSessions(limit int) ([]*session.SessionSummary, error) {
-	return a.Service.ListSessions(limit)
+	result := a.Service.ListSessions(limit)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *SessionServiceAdapter) GetSession(sessionID string) (*session.Session, error) {
-	return a.Service.GetSession(sessionID)
+	result := a.Service.GetSession(sessionID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Value(), nil
 }
 
 func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, error) {
-	return a.Service.GetSessionLogs(sessionID)
+	result := a.Service.GetSessionLogs(sessionID)
+	if result.HasError() {
+		return "", result.Error()
+	}
+	return result.Value(), nil
 }
 
 func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, error) {
-	return a.Service.GetSessionDiagnostics(sessionID)
+	result := a.Service.GetSessionDiagnostics(sessionID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SessionServiceAdapter) DeleteSession(sessionID string) error {
