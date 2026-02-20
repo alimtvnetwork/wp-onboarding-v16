@@ -38,6 +38,7 @@ trait SnapshotBackupExecTrait {
             $result = $orchestrator->executeFullBackup($this->extractFullBackupOptions($body));
 
             $this->logBackupComplete(ActionType::SnapshotFullBackup->value, $result);
+
             return $this->buildFullBackupResponse($result);
         }, 'full_backup');
     }
@@ -50,6 +51,7 @@ trait SnapshotBackupExecTrait {
 
             $master_dir = $this->resolveIncrementalMasterDir($body);
             if ($master_dir instanceof WP_REST_Response) {
+
                 return $master_dir;
             }
 
@@ -57,6 +59,7 @@ trait SnapshotBackupExecTrait {
             $result = $incremental->execute($master_dir, array('title' => $body['title'] ?? null));
 
             $this->logIncrementalComplete($result);
+
             return $this->buildIncrementalResponse($result);
         }, 'incremental_backup');
     }
@@ -64,19 +67,21 @@ trait SnapshotBackupExecTrait {
     /** Log a backup initiation event. */
     private function logBackupInitiated(string $action, array $body) {
         $this->logger->logPluginAction($action, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array('title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? null, 'phase' => 'initiated'));
+            array('title' => $body['title'] ?? null, ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null, ResponseKeyType::Phase->value => 'initiated'));
     }
 
     /** Create the orchestrator for full backup. */
     private function createFullBackupOrchestrator(): SnapshotOrchestrator {
         $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
+
         return SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
     }
 
     /** Extract full backup options from request body. */
     private function extractFullBackupOptions(array $body): array {
+
         return array(
-            'title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? null,
+            'title' => $body['title'] ?? null, ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null,
             'include_plugins' => $body['include_plugins'] ?? null,
             'plugin_selection' => $body['plugin_selection'] ?? null,
             'compression' => $body['compression'] ?? null,
@@ -87,19 +92,20 @@ trait SnapshotBackupExecTrait {
     private function logBackupComplete(string $action, array $result) {
         $this->logger->logPluginAction($action, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables' => $result['tables'] ?? 0,
-                'total_rows' => $result['total_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),
+            array(ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null, ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0,
+                ResponseKeyType::TotalRows->value => $result[ResponseKeyType::TotalRows->value] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0, ResponseKeyType::Phase->value => 'complete'),
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Backup failed'));
     }
 
     /** Build full backup response. */
     private function buildFullBackupResponse(array $result): WP_REST_Response {
+
         return new WP_REST_Response(array(
-            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], 'snapshot_id' => $result['snapshot_id'] ?? null,
-            'directory' => $result['directory'] ?? null, 'tables' => $result['tables'] ?? 0,
-            'total_rows' => $result['total_rows'] ?? 0, 'plugins' => $result['plugins'] ?? 0,
-            'zip_size' => $result['zip_size'] ?? 0, 'duration' => $result['duration'] ?? 0,
-            'errors' => $result['errors'] ?? array(), ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? null, 'phase' => $result['phase'] ?? null,
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
+            ResponseKeyType::Directory->value => $result[ResponseKeyType::Directory->value] ?? null, ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0,
+            ResponseKeyType::TotalRows->value => $result[ResponseKeyType::TotalRows->value] ?? 0, ResponseKeyType::Plugins->value => $result[ResponseKeyType::Plugins->value] ?? 0,
+            ResponseKeyType::ZipSize->value => $result[ResponseKeyType::ZipSize->value] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0,
+            ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value] ?? array(), ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? null, ResponseKeyType::Phase->value => $result[ResponseKeyType::Phase->value] ?? null,
         ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 
@@ -115,6 +121,7 @@ trait SnapshotBackupExecTrait {
 
         $isMasterDirInvalid = ($master_dir === null || $master_dir === '' || PathHelper::isDirMissing($master_dir));
         if ($isMasterDirInvalid) {
+
             return new WP_REST_Response(array(
                 ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No master (full) snapshot found. Create a full backup first.',
             ), HttpStatusType::BadRequest->value);
@@ -126,6 +133,7 @@ trait SnapshotBackupExecTrait {
     /** Create an IncrementalBackup instance. */
     private function createIncrementalBackup(): IncrementalBackup {
         $rootDb = RootDb::getInstance($this->fileLogger, DependencyAnalyzer::getInstance($this->fileLogger));
+
         return IncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
     }
 
@@ -133,19 +141,20 @@ trait SnapshotBackupExecTrait {
     private function logIncrementalComplete(array $result) {
         $this->logger->logPluginAction(ActionType::SnapshotIncremental->value, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables_changed' => $result['tables_changed'] ?? 0,
-                'total_new_rows' => $result['total_new_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),
+            array(ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null, ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0,
+                ResponseKeyType::TotalNewRows->value => $result[ResponseKeyType::TotalNewRows->value] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0, ResponseKeyType::Phase->value => 'complete'),
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Incremental backup failed'));
     }
 
     /** Build incremental backup response. */
     private function buildIncrementalResponse(array $result): WP_REST_Response {
+
         return new WP_REST_Response(array(
-            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], 'snapshot_id' => $result['snapshot_id'] ?? null,
-            'sequence' => $result['sequence'] ?? null, 'folder_name' => $result['folder_name'] ?? null,
-            'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
-            'tables' => $result['tables'] ?? array(), 'duration' => $result['duration'] ?? 0,
-            'errors' => $result['errors'] ?? array(), ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? null,
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
+            ResponseKeyType::Sequence->value => $result[ResponseKeyType::Sequence->value] ?? null, ResponseKeyType::FolderName->value => $result[ResponseKeyType::FolderName->value] ?? null,
+            ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0, ResponseKeyType::TotalNewRows->value => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
+            ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? array(), ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0,
+            ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value] ?? array(), ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? null,
         ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 }

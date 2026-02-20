@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotExporter;
@@ -28,6 +29,7 @@ trait SnapshotImportStreamTrait {
     public function handleSnapshotDownloadFile(WP_REST_Request $request): ?WP_REST_Response {
         $validated = $this->validateAndResolveExport($request);
         if ($validated instanceof WP_REST_Response) {
+
             return $validated;
         }
 
@@ -39,8 +41,9 @@ trait SnapshotImportStreamTrait {
         $token    = sanitize_text_field($request->get_param('token'));
 
         if ($exportId <= 0 || empty($token)) {
+
             return new WP_REST_Response(array(
-                'success' => false, 'error' => 'Missing id or token parameter', 'code' => SnapshotErrorType::ExportTokenInvalid->value,
+                ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Missing id or token parameter', ResponseKeyType::Code->value => SnapshotErrorType::ExportTokenInvalid->value,
             ), HttpStatusType::BadRequest->value);
         }
 
@@ -48,8 +51,9 @@ trait SnapshotImportStreamTrait {
         $isExportMissing = ($export === null || $export === false);
 
         if ($isExportMissing) {
+
             return new WP_REST_Response(array(
-                'success' => false, 'error' => 'Invalid or expired download token', 'code' => SnapshotErrorType::ExportTokenInvalid->value,
+                ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Invalid or expired download token', ResponseKeyType::Code->value => SnapshotErrorType::ExportTokenInvalid->value,
             ), HttpStatusType::Forbidden->value);
         }
 
@@ -70,7 +74,7 @@ trait SnapshotImportStreamTrait {
         $filesize = filesize($filepath);
 
         $this->logger->logPluginAction(ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming'));
+            array('export_id' => $exportId, ResponseKeyType::Filename->value => $filename, ResponseKeyType::Size->value => $filesize, ResponseKeyType::Phase->value => 'streaming'));
 
         $this->sendZipHeaders($filename, $filesize);
 
@@ -97,6 +101,7 @@ trait SnapshotImportStreamTrait {
             $files = $request->get_file_params();
 
             if (empty($files['file']['tmp_name'])) {
+
                 return $this->errorResponse('No file uploaded', HttpStatusType::BadRequest->value);
             }
 
@@ -104,12 +109,12 @@ trait SnapshotImportStreamTrait {
             $original_name = $files['file']['name'] ?? 'unknown';
             $this->fileLogger->info('Importing snapshot from uploaded ZIP', array(
                 'originalName' => $original_name,
-                'size'         => $files['file']['size'],
+                ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value],
             ));
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
+                array(ResponseKeyType::Filename->value => $original_name, ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value], ResponseKeyType::Phase->value => 'initiated')
             );
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -118,12 +123,12 @@ trait SnapshotImportStreamTrait {
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value,
-                $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
-                array('filename' => $original_name, 'phase' => 'complete'),
-                $result['success'] ? null : ($result['error'] ?? 'Import failed')
+                $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
+                array(ResponseKeyType::Filename->value => $original_name, ResponseKeyType::Phase->value => 'complete'),
+                $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Import failed')
             );
 
-            $status_code = $result['success'] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value;
+            $status_code = $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value;
 
             return new WP_REST_Response($result, $status_code);
         }, 'import_snapshot');

@@ -17,6 +17,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Helpers\EnvelopeBuilder;
@@ -29,7 +30,7 @@ trait InvalidRouteTrait
         $invalidPath = $request->get_param('invalid_path');
         $method = $request->get_method();
 
-        $this->fileLogger->warn('Invalid route requested', array('path' => $invalidPath, 'method' => $method));
+        $this->fileLogger->warn('Invalid route requested', array(ResponseKeyType::Path->value => $invalidPath, 'method' => $method));
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
         $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
@@ -64,15 +65,18 @@ trait InvalidRouteTrait
             $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
             $lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
         }
+
         return $lines;
     }
 
     private function formatFramesSummary(array $frames): array {
+
         return array_map(function($f) {
             $file = isset($f['fileBase']) ? $f['fileBase'] : '';
             $line = isset($f['line']) ? $f['line'] : 0;
             $fn   = isset($f['function']) ? $f['function'] : '';
             $cls  = isset($f['class']) ? $f['class'] . '::' : '';
+
             return "{$file}:{$line} {$cls}{$fn}";
         }, $frames);
     }
@@ -84,17 +88,20 @@ trait InvalidRouteTrait
     ): WP_REST_Response {
         $route = $request->get_route();
         if (strpos($route, '/' . PluginConfigType::apiFullNamespace()) === false) {
+
             return $response;
         }
 
         $status = $response->get_status();
         if ($status < 400) {
+
             return $response;
         }
 
         $data = $response->get_data();
         $isDataInvalid = (is_array($data) === false);
         if ($isDataInvalid) {
+
             return $response;
         }
 
@@ -108,8 +115,9 @@ trait InvalidRouteTrait
     }
 
     private function resolveErrorCode(array $data): ?WpErrorCodeType {
-        $code = $data['code'] ?? null;
+        $code = $data[ResponseKeyType::Code->value] ?? null;
         if ($code === null) {
+
             return null;
         }
 
@@ -118,6 +126,7 @@ trait InvalidRouteTrait
 
     private function injectErrorCategory(array $data, ?WpErrorCodeType $errorCode): array {
         if ($errorCode === null) {
+
             return $data;
         }
 
@@ -128,15 +137,19 @@ trait InvalidRouteTrait
 
     private function classifyErrorCode(WpErrorCodeType $errorCode): string {
         if ($errorCode->isAuthError()) {
+
             return 'authentication';
         }
         if ($errorCode->isDatabaseError()) {
+
             return 'database';
         }
         if ($errorCode->isValidationError()) {
+
             return 'validation';
         }
         if ($errorCode->isNetworkError()) {
+
             return 'network';
         }
 
@@ -167,13 +180,14 @@ trait InvalidRouteTrait
             'route'          => $route,
             'status'         => $status,
             'error_category' => $data['error_category'] ?? 'unknown',
-            'message'        => $data['message'] ?? $data['Status']['Message'] ?? 'Unknown',
+            ResponseKeyType::Message->value => $data[ResponseKeyType::Message->value] ?? $data['Status']['Message'] ?? 'Unknown',
             'plugin_version' => PluginConfigType::Version->value,
         );
 
         $isWarnLevel = ($errorCode !== null && ($errorCode->isAuthError() || $errorCode->isValidationError()));
         if ($isWarnLevel) {
             $this->fileLogger->warn('REST API error response', $context);
+
             return;
         }
 

@@ -17,6 +17,7 @@ use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -41,6 +42,7 @@ trait AgentRemoteCoreTrait {
     }
 
     private function buildAuthHeader(AgentSite $agent): string {
+
         return 'Basic ' . base64_encode($agent->username . ':' . $agent->appPassword);
     }
 
@@ -53,6 +55,7 @@ trait AgentRemoteCoreTrait {
     ): array|WP_Error {
         $agent = $this->getAgentModel($agentId, true);
         if ($agent === null) {
+
             return new WP_Error(WpErrorCodeType::NotFound->value, 'Agent site not found');
         }
 
@@ -107,7 +110,9 @@ trait AgentRemoteCoreTrait {
         $bodyJson = json_decode(wp_remote_retrieve_body($response), true);
 
         if ($statusCode >= 400) {
-            $errorMsg = isset($bodyJson['error']['message']) ? $bodyJson['error']['message'] : "HTTP {$statusCode}";
+            $errorMsg = isset($bodyJson[ResponseKeyType::Error->value][ResponseKeyType::Message->value])
+                ? $bodyJson[ResponseKeyType::Error->value][ResponseKeyType::Message->value]
+                : "HTTP {$statusCode}";
 
             return new WP_Error(WpErrorCodeType::ApiError->value, $errorMsg, array('status' => $statusCode, 'response' => $bodyJson));
         }

@@ -30,11 +30,13 @@ trait AgentRemoteActionTrait {
 
     private function resolveRedirectUrl(AgentSite $agent): string|WP_Error {
         if ($this->isRedirectCacheValid($agent)) {
+
             return $agent->redirectResolved;
         }
 
         $resolved = $this->followRedirectChain($agent->redirectUrl);
         if (is_wp_error($resolved)) {
+
             return $resolved;
         }
 
@@ -48,6 +50,7 @@ trait AgentRemoteActionTrait {
 
     private function isRedirectCacheValid(AgentSite $agent): bool {
         if (empty($agent->redirectResolved) || empty($agent->redirectResolvedAt)) {
+
             return false;
         }
 
@@ -62,6 +65,7 @@ trait AgentRemoteActionTrait {
             $response = wp_remote_head($url, HttpConfigType::headRedirectOptions());
 
             if (is_wp_error($response)) {
+
                 return $response;
             }
 
@@ -85,6 +89,7 @@ trait AgentRemoteActionTrait {
         $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/status');
 
         if (is_wp_error($result)) {
+
             return $this->handleTestConnectionFailure($agentId, $result);
         }
 
@@ -128,8 +133,8 @@ trait AgentRemoteActionTrait {
             'last_sync' => DateHelper::nowUtc(),
         ));
 
-        $plugins = isset($result['plugins']) ? $result['plugins'] : $result;
-        $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Success->value, array('count' => count($plugins)));
+        $plugins = isset($result[ResponseKeyType::Plugins->value]) ? $result[ResponseKeyType::Plugins->value] : $result;
+        $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Success->value, array(ResponseKeyType::Count->value => count($plugins)));
 
         return $plugins;
     }
