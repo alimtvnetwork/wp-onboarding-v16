@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
@@ -36,7 +37,7 @@ trait ExporterBuildTrait {
         $isExportsDirMissing = ($exportsDir === null);
         if ($isExportsDirMissing) {
 
-            return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => SnapshotErrorType::ExportBuildFailed->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create exports directory', ResponseKeyType::Code->value => SnapshotErrorType::ExportBuildFailed->value);
         }
 
         $zipMeta = $this->prepareZipPaths($exportsDir, $snapshot);
@@ -44,7 +45,7 @@ trait ExporterBuildTrait {
         $isPdoMissing = ($pdo === null);
         if ($isPdoMissing) {
 
-            return array('success' => false, 'error' => 'Database unavailable', 'code' => SnapshotErrorType::ExportBuildFailed->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Database unavailable', ResponseKeyType::Code->value => SnapshotErrorType::ExportBuildFailed->value);
         }
 
         $this->insertBuildingRecord($pdo, $snapshotId, $zipMeta['filename'], $zipMeta['path']);
@@ -90,7 +91,7 @@ trait ExporterBuildTrait {
             $this->log(LogLevelType::Error->value, 'ZIP export build failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             $this->cleanupFailedExport($pdo, $snapshotId, $zipMeta['path']);
 
-            return array('success' => false, 'error' => 'ZIP build failed: ' . $e->getMessage(), 'code' => SnapshotErrorType::ExportBuildFailed->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'ZIP build failed: ' . $e->getMessage(), ResponseKeyType::Code->value => SnapshotErrorType::ExportBuildFailed->value);
         }
     }
 
@@ -133,7 +134,7 @@ trait ExporterBuildTrait {
         if (empty($files)) {
             $this->deleteExportRecord($pdo->lastInsertId() ?: $snapshotId);
 
-            return array('success' => false, 'error' => 'No snapshot files found to export', 'code' => SnapshotErrorType::ExportBuildFailed->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No snapshot files found to export', ResponseKeyType::Code->value => SnapshotErrorType::ExportBuildFailed->value);
         }
 
         $incrementalData = $this->gatherIncrementalData($snapshotId, $snapshot, $snapshotDir);
@@ -145,7 +146,7 @@ trait ExporterBuildTrait {
         $this->finalizeExportRecord($pdo, $snapshotId, $incrementalData['included_ids'], $incrementalData['incrementals'], $zipPath, $zipFilename);
         $export = $this->getValidExport($snapshotId);
 
-        return array('success' => true, 'cached' => false, 'export' => $export);
+        return array(ResponseKeyType::Success->value => true, 'cached' => false, 'export' => $export);
     }
 
     private function gatherIncrementalData(

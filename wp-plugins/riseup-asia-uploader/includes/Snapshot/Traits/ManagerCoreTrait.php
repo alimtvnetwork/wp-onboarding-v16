@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -30,7 +32,7 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
 
-            return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotProviderMissing->value, ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot', array(
@@ -46,7 +48,7 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
 
-            return array('success' => false, 'error' => 'No provider available');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ProviderMissing->value);
         }
 
         return $provider->deleteSnapshot($snapshotId);

@@ -18,6 +18,8 @@ use RiseupAsia\Enums\AgentStatusType;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\UpdateConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -97,7 +99,7 @@ trait AgentRemoteActionTrait {
         ));
         $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Failed->value, null, $error->get_error_message());
 
-        return array('success' => false, 'message' => $error->get_error_message());
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Message->value => $error->get_error_message());
     }
 
     private function handleTestConnectionSuccess(int $agentId, array $result): array {
@@ -108,7 +110,7 @@ trait AgentRemoteActionTrait {
         ));
         $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Success->value);
 
-        return array('success' => true, 'message' => 'Connection successful', 'data' => $result);
+        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value, ResponseKeyType::Data->value => $result);
     }
 
     public function syncPlugins(int $agentId): array|WP_Error {
@@ -153,6 +155,6 @@ trait AgentRemoteActionTrait {
 
         $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Success->value);
 
-        return array('success' => true, 'message' => ucfirst($action) . ' executed successfully', 'data' => $result);
+        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => ucfirst($action) . ' executed successfully', ResponseKeyType::Data->value => $result);
     }
 }

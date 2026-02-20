@@ -9,6 +9,7 @@
 namespace RiseupAsia\Snapshot\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use PDO;
 use Throwable;
@@ -23,7 +24,7 @@ trait IncrementalCoreTrait {
         if (empty($master_tables)) {
             $rootPdo = null;
 
-            return array('success' => false, 'error' => 'No tables found in master snapshot');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No tables found in master snapshot');
         }
 
         $sequence = $this->getNextSequence($rootPdo);
@@ -35,12 +36,12 @@ trait IncrementalCoreTrait {
         if ($isDirCreationFailed) {
             $rootPdo = null;
 
-            return array('success' => false, 'error' => 'Failed to create incremental directory: ' . $folder_name);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create incremental directory: ' . $folder_name);
         }
 
         $this->log(LogLevelType::Info->value, 'Incremental directory created', array('sequence' => $sequence, 'folder_name' => $folder_name));
 
-        return array('success' => true, 'rootPdo' => $rootPdo, 'master_tables' => $master_tables, 'sequence' => $sequence, 'folder_name' => $folder_name, 'incremental_dir' => $incremental_dir);
+        return array(ResponseKeyType::Success->value => true, 'rootPdo' => $rootPdo, 'master_tables' => $master_tables, 'sequence' => $sequence, 'folder_name' => $folder_name, 'incremental_dir' => $incremental_dir);
     }
 
     private function exportChangedTables(
@@ -58,12 +59,12 @@ trait IncrementalCoreTrait {
             $result = $this->exportTableDelta($table_name, $info, $incDir, $rootPdo, $sequence);
             if ($result === null) continue;
 
-            if ($result['success']) {
+            if ($result[ResponseKeyType::Success->value]) {
                 $tables_changed++;
                 $total_new_rows += $result['rows'];
                 $exported_tables[] = $result['entry'];
             } else {
-                $errors[] = $table_name . ': ' . $result['error'];
+                $errors[] = $table_name . ': ' . $result[ResponseKeyType::Error->value];
             }
         }
 
@@ -92,7 +93,7 @@ trait IncrementalCoreTrait {
         $this->invalidateParentZipExport($masterDir);
 
         return array(
-            'success' => true, 'snapshot_id' => $snapshot_id, 'sequence' => $sequence,
+            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshot_id, 'sequence' => $sequence,
             'folder_name' => $folderName, 'path' => $incrementalDir,
             'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
             'tables' => $export['exported_tables'], 'errors' => $export['errors'], 'duration' => $duration,

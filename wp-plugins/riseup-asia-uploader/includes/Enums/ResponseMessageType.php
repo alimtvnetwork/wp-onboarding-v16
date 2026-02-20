@@ -33,8 +33,19 @@ enum ResponseMessageType: string
     case DbError            = 'Database error';
     case FileIgnored        = 'File ignored by .uploadignore';
     case InvalidRequestBody = 'Invalid request body';
-    case ServiceNotAvailable = 'Service not available';
-    case InvalidId          = 'Invalid ID';
+    case ServiceNotAvailable      = 'Service not available';
+    case InvalidId                = 'Invalid ID';
+
+    /** Repeated cross-file messages. */
+    case ConnectionSuccessful     = 'Connection successful';
+    case SnapshotNotFound         = 'Snapshot not found';
+    case SnapshotProviderMissing  = 'No snapshot provider available';
+    case ProviderMissing          = 'No provider available';
+    case SnapshotFileMissing      = 'Snapshot file not found';
+    case UploadedFileMissing      = 'Uploaded file not found';
+    case ZipCreateFailed          = 'Failed to create ZIP file';
+    case TempDirCreateFailed      = 'Failed to create temp directory';
+    case InvalidFileTypeZip       = 'Invalid file type. Expected ZIP file.';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool

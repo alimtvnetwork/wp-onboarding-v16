@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
@@ -84,7 +85,7 @@ trait ImportExecutionTrait {
         ));
 
         return array(
-            'success' => true, 'snapshot_id' => $snapshotId, 'folder' => basename($destDir),
+            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshotId, 'folder' => basename($destDir),
             'type' => $metadata['type'] ?? SnapshotModeType::Full->value, 'tables' => count($inventories['tables']),
             'total_rows' => $metadata['total_rows'] ?? 0,
             'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),

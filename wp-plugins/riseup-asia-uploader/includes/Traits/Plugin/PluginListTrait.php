@@ -18,6 +18,7 @@ use Throwable;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Upload\UploadIgnore;
 use RiseupAsia\Database\FileCache;
 use RiseupAsia\Enums\ResponseMessageType;
@@ -171,7 +172,7 @@ trait PluginListTrait
         $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
 
         return new WP_REST_Response(array(
-            'success'    => true,
+            ResponseKeyType::Success->value => true,
             'plugin'     => $slug,
             'totalFiles' => count($result['files']),
             'files'      => $result['files'],
@@ -255,7 +256,7 @@ trait PluginListTrait
         }
 
         return new WP_REST_Response(array(
-            'success' => true,
+            ResponseKeyType::Success->value => true,
             'path'    => $rel_path,
             'content' => $content,
         ), HttpStatusType::Ok->value);

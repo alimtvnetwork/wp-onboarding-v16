@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
 use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
@@ -25,7 +27,7 @@ trait NativeSnapshotCrudTrait {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
-            return array('success' => false, 'error' => 'Snapshot not found');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['filepath'];
@@ -34,7 +36,7 @@ trait NativeSnapshotCrudTrait {
             if ($isDeleteFailed) {
                 $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
 
-                return array('success' => false, 'error' => 'Failed to delete snapshot file');
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to delete snapshot file');
             }
         }
 
@@ -46,19 +48,19 @@ trait NativeSnapshotCrudTrait {
         $this->db->delete(TableType::Snapshots->value, array('id' => $snapshotId));
         $this->log(LogLevelType::Info->value, 'Snapshot deleted', array('snapshot_id' => $snapshotId, 'filename' => $snapshot['filename']));
 
-        return array('success' => true);
+        return array(ResponseKeyType::Success->value => true);
     }
 
     public function exportSnapshot(int $snapshotId): array {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
-            return array('success' => false, 'error' => 'Snapshot not found');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['filepath'];
         if (PathHelper::isFileMissing($filepath)) {
-            return array('success' => false, 'error' => 'Snapshot file not found');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotFileMissing->value);
         }
 
         return $this->createExportZip($snapshotId, $filepath, $snapshot);
@@ -73,14 +75,14 @@ trait NativeSnapshotCrudTrait {
 
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            return array('success' => false, 'error' => 'Failed to create ZIP file');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ZipCreateFailed->value);
         }
 
         $zip->addFile($filepath, basename($filepath));
         $zip->addFromString('manifest.json', json_encode($this->buildExportManifest($snapshotId, $snapshot), JSON_PRETTY_PRINT));
         $zip->close();
 
-        return array('success' => true, 'filepath' => $zip_path, 'filename' => basename($zip_path), 'size' => filesize($zip_path));
+        return array(ResponseKeyType::Success->value => true, 'filepath' => $zip_path, 'filename' => basename($zip_path), 'size' => filesize($zip_path));
     }
 
     private function buildExportManifest(int $snapshotId, array $snapshot): array {

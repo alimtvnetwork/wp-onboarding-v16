@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) { exit; }
 
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\TableType;
@@ -32,22 +33,22 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function createSnapshot(array $options): array {
         $isProviderUnavailable = ($this->isAvailable() === false);
         if ($isProviderUnavailable) {
-            return array('success' => false, 'error' => 'WP Reset is not available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset is not available', ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
         }
         $this->log(LogLevelType::Info->value, 'Creating snapshot via WP Reset', $options);
         try {
-            return array('success' => false, 'error' => 'WP Reset integration not yet implemented');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset integration not yet implemented');
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'WP Reset snapshot failed', array('error' => $e->getMessage()));
 
-            return array('success' => false, 'error' => $e->getMessage());
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
     }
 
-    public function restoreSnapshot(int $snapshotId, array $options): array { return array('success' => false, 'error' => 'WP Reset restore not yet implemented'); }
-    public function deleteSnapshot(int $snapshotId): array { return array('success' => false, 'error' => 'WP Reset delete not yet implemented'); }
-    public function exportSnapshot(int $snapshotId): array { return array('success' => false, 'error' => 'WP Reset export not yet implemented'); }
-    public function importSnapshot(string $filepath): array { return array('success' => false, 'error' => 'WP Reset import not yet implemented'); }
+    public function restoreSnapshot(int $snapshotId, array $options): array { return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset restore not yet implemented'); }
+    public function deleteSnapshot(int $snapshotId): array { return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset delete not yet implemented'); }
+    public function exportSnapshot(int $snapshotId): array { return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset export not yet implemented'); }
+    public function importSnapshot(string $filepath): array { return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'WP Reset import not yet implemented'); }
 
     public function getSnapshot(int $snapshotId): ?array {
         return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ? AND provider = ?', array($snapshotId, $this->provider_id));

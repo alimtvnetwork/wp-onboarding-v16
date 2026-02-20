@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use Exception;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
@@ -27,7 +29,7 @@ trait ManagerTableRestoreTrait {
             $isTableAbsent = ($check->fetch() === false);
             if ($isTableAbsent) {
 
-                return array('success' => false, 'error' => 'Table not found in snapshot', 'rows' => 0);
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table not found in snapshot', 'rows' => 0);
             }
 
             $columnsResult = $sqlite->query("PRAGMA table_info('{$table}')");
@@ -37,7 +39,7 @@ trait ManagerTableRestoreTrait {
             return $this->truncateAndInsert($sqlite, $table, $columnNames);
         } catch (Throwable $e) {
 
-            return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), 'rows' => 0);
         }
     }
 
@@ -60,7 +62,7 @@ trait ManagerTableRestoreTrait {
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
             $this->wpdb->query("COMMIT");
 
-            return array('success' => true, 'rows' => $totalRows);
+            return array(ResponseKeyType::Success->value => true, 'rows' => $totalRows);
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
@@ -106,7 +108,7 @@ trait ManagerTableRestoreTrait {
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
 
-            return array('success' => false, 'error' => 'No provider available');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ProviderMissing->value);
         }
 
         return $provider->createSnapshot(array(

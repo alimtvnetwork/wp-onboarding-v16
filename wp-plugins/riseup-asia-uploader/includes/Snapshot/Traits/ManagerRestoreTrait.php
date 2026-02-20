@@ -16,6 +16,8 @@ use PDO;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -50,21 +52,21 @@ trait ManagerRestoreTrait {
     private function guardRestorePreConditions(int $snapshotId, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
 
-            return array('success' => false, 'error' => 'Restore requires explicit confirmation (confirm=true)', 'code' => SnapshotErrorType::RestoreNoConfirm->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Restore requires explicit confirmation (confirm=true)', ResponseKeyType::Code->value => SnapshotErrorType::RestoreNoConfirm->value);
         }
 
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null || $provider === false);
         if ($isProviderMissing) {
 
-            return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotProviderMissing->value, ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $snapshot = $provider->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
         if ($isSnapshotMissing) {
 
-            return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value, ResponseKeyType::Code->value => SnapshotErrorType::NotFound->value);
         }
 
         return $this->validateIncrementalParent($snapshot, $snapshotId);
@@ -75,13 +77,13 @@ trait ManagerRestoreTrait {
         int $snapshotId,
         int|null $backupId,
     ): array {
-        if ($result['success']) {
+        if ($result[ResponseKeyType::Success->value]) {
             $result['backup_id'] = $backupId;
             $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
                 'snapshot_id' => $snapshotId, 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
             ));
         } else {
-            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array('snapshot_id' => $snapshotId, 'error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array('snapshot_id' => $snapshotId, 'error' => $result[ResponseKeyType::Error->value]));
         }
 
         return $result;
@@ -93,7 +95,7 @@ trait ManagerRestoreTrait {
 
         if (PathHelper::isFileMissing($filepath)) {
 
-            return array('success' => false, 'error' => 'Snapshot file not found: ' . basename($filepath));
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Snapshot file not found: ' . basename($filepath));
         }
 
         try {
@@ -103,17 +105,17 @@ trait ManagerRestoreTrait {
             $tables = $this->getRestoreTables($snapshot, $options);
             if (empty($tables)) {
 
-                return array('success' => false, 'error' => 'No tables to restore');
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No tables to restore');
             }
 
             $counts = $this->restoreAllTables($sqlite, $tables, $options);
             $sqlite = null;
 
-            return array('success' => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $startTime);
+            return array(ResponseKeyType::Success->value => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $startTime);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
-            return array('success' => false, 'error' => $e->getMessage());
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
     }
 
@@ -127,14 +129,14 @@ trait ManagerRestoreTrait {
 
         foreach ($tables as $table) {
             $result = $this->restoreTable($sqlite, $table);
-            if ($result['success']) {
+            if ($result[ResponseKeyType::Success->value]) {
                 $totalRows += $result['rows'];
                 $restoredTables++;
                 $this->log(LogLevelType::Info->value, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
                 continue;
             }
 
-            $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array('error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array('error' => $result[ResponseKeyType::Error->value]));
             if (BooleanHelpers::hasValue($options['strict'])) {
 
                 throw new Exception('Table restore failed: ' . $table);
