@@ -379,18 +379,22 @@ Error codes are defined as string constants in `codes.go`. **No magic strings.**
 
 Understanding skip values is critical for accurate error attribution.
 
-| Constructor | Skip Value | Reason |
-|-------------|-----------|--------|
-| `New()` | 2 | Skips `runtime.Callers` + `New` |
-| `Wrap()` | 2 | Skips `runtime.Callers` + `Wrap` |
-| `NewWithSkip()` | `2 + skip` | Caller-provided additional skip |
-| `WrapWithSkip()` | `2 + skip` | Caller-provided additional skip |
-| `FailWrap()` | 3 | Skips `runtime.Callers` + `Wrap` + `FailWrap` |
-| `FailSliceWrap()` | 3 | Skips `runtime.Callers` + `Wrap` + `FailSliceWrap` |
-| `FailMapWrap()` | 3 | Skips `runtime.Callers` + `Wrap` + `FailMapWrap` |
-| `FailNew()` | 3 | Skips `runtime.Callers` + `New` + `FailNew` |
-| `FailSliceNew()` | 3 | Skips `runtime.Callers` + `New` + `FailSliceNew` |
-| `FailMapNew()` | 3 | Skips `runtime.Callers` + `New` + `FailMapNew` |
+The table below shows what each constructor passes to its underlying `CaptureStack` call. `WrapWithSkip` has a base of `3` and `NewWithSkip` has a base of `2` because `Wrap` delegates through one extra internal frame.
+
+| Constructor | Delegates To | `skip` Passed | Effective `CaptureStack` | Reason |
+|-------------|-------------|---------------|--------------------------|--------|
+| `New()` | `CaptureStack(2)` | — | 2 | Skips `CaptureStackN` + `CaptureStack` + `New` |
+| `Wrap()` | `WrapWithSkip(…, 0)` | 0 | 3 | Skips through `Wrap` → `WrapWithSkip` → `CaptureStack` chain |
+| `NewWithSkip()` | `CaptureStack(2+skip)` | caller-provided | 2 + skip | Additional skip on top of `New` base |
+| `WrapWithSkip()` | `CaptureStack(3+skip)` | caller-provided | 3 + skip | Additional skip on top of `Wrap` base |
+| `FailWrap()` | `WrapWithSkip(…, 0)` | 0 | 3 | Same depth as `Wrap` — replaces it, doesn't nest |
+| `FailSliceWrap()` | `WrapWithSkip(…, 0)` | 0 | 3 | Same depth as `Wrap` — replaces it, doesn't nest |
+| `FailMapWrap()` | `WrapWithSkip(…, 0)` | 0 | 3 | Same depth as `Wrap` — replaces it, doesn't nest |
+| `FailNew()` | `NewWithSkip(…, 1)` | 1 | 3 | One frame deeper than `New` (FailNew → NewWithSkip) |
+| `FailSliceNew()` | `NewWithSkip(…, 1)` | 1 | 3 | One frame deeper than `New` (FailSliceNew → NewWithSkip) |
+| `FailMapNew()` | `NewWithSkip(…, 1)` | 1 | 3 | One frame deeper than `New` (FailMapNew → NewWithSkip) |
+
+> **Key insight:** `FailWrap` calls `WrapWithSkip` directly (same as `Wrap` does), so it sits at the **same depth** and passes `skip=0`. `FailNew` calls `NewWithSkip` directly (one frame deeper than `New`), so it passes `skip=1`.
 
 ---
 
