@@ -42,7 +42,7 @@ type Config struct {
 }
 
 // WPClientFactory creates WordPress clients with optional progress callback
-type WPClientFactory func(url, user, pass string, onProgress func(step, status, message string, details json.RawMessage)) *wordpress.Client
+type WPClientFactory func(url, user, pass string, onProgress func(step, status, message string, details wordpress.ProgressDetails)) *wordpress.Client
 
 // WSHub interface for broadcasting messages
 type WSHub interface {
@@ -138,8 +138,9 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 
 	// Create WordPress client with progress callback
 	s.broadcastProgress(id, "connect", "running", fmt.Sprintf("Connecting to %s...", site.URL), nil)
-	progressCallback := func(step, status, message string, details json.RawMessage) {
-		s.broadcastProgress(id, step, status, message, details) // pass-through from WP client
+	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
+		raw, _ := json.Marshal(details)
+		s.broadcastProgress(id, step, status, message, raw) // pass-through from WP client
 	}
 	client := s.wpClientFactory(site.URL, site.Username, string(password), progressCallback)
 
@@ -191,8 +192,9 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	}))
 	
 	// Create WordPress client with progress callback
-	progressCallback := func(step, status, message string, details json.RawMessage) {
-		s.broadcastProgress(0, step, status, message, details) // pass-through from WP client
+	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
+		raw, _ := json.Marshal(details)
+		s.broadcastProgress(0, step, status, message, raw) // pass-through from WP client
 	}
 	client := s.wpClientFactory(normalizedURL, username, password, progressCallback)
 
@@ -330,14 +332,15 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	// Create WordPress client with progress callback
-	progressCallback := func(step, status, message string, details json.RawMessage) {
+	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
 		if s.wsHub != nil {
+			raw, _ := json.Marshal(details)
 			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), toJSON(BootstrapLogDetails{
 				SiteID:   id,
 				SiteName: site.Name,
 				Step:     step,
 				Status:   status,
-				Details:  details,
+				Details:  raw,
 			}))
 		}
 	}
