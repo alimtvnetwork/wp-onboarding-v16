@@ -131,9 +131,9 @@ trait SnapshotExportHandlerTrait {
         return EnvelopeBuilder::success()
             ->setResults(array(array(
                 'url'               => $downloadUrl,
-                'filename'          => $export['zip_filename'],
-                'size'              => (int) $export['zip_size'],
-                'cached'            => $result['cached'] ?? false,
+                ResponseKeyType::Filename->value => $export['zip_filename'],
+                ResponseKeyType::Size->value     => (int) $export['zip_size'],
+                ResponseKeyType::Cached->value   => $result[ResponseKeyType::Cached->value] ?? false,
                 'included_ids'      => json_decode($export['included_ids'] ?? '[]', true),
                 'incremental_count' => (int) ($export['incremental_count'] ?? 0),
                 'created_at'        => $export['created_at'] ?? '',

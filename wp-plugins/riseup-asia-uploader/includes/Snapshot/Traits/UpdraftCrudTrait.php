@@ -71,8 +71,8 @@ trait UpdraftCrudTrait {
         );
 
         return array(
-            'snapshots' => $snapshots ?: array(),
-            'total' => $total ? (int)$total['count'] : 0,
+            ResponseKeyType::Snapshots->value => $snapshots ?: array(),
+            ResponseKeyType::Total->value => $total ? (int)$total['count'] : 0,
         );
     }
 
@@ -82,8 +82,8 @@ trait UpdraftCrudTrait {
 
         return array_map(function($info) use ($wpdb) {
             return array(
-                'name' => $info['Name'], 'rows' => (int)$info['Rows'],
-                'size' => (int)$info['Data_length'] + (int)$info['Index_length'],
+                'name' => $info['Name'], ResponseKeyType::Rows->value => (int)$info['Rows'],
+                ResponseKeyType::Size->value => (int)$info['Data_length'] + (int)$info['Index_length'],
                 'is_core' => strpos($info['Name'], $wpdb->prefix) === 0,
             );
         }, $all_tables);
