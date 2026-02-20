@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use LogicException;
 use wpdb;
 use RiseupAsia\Snapshot\Traits\AnalyzerQueryTrait;
 use RiseupAsia\Snapshot\Traits\AnalyzerGraphTrait;
@@ -37,7 +38,7 @@ class DependencyAnalyzer {
             self::$instance = new self($logger);
         }
         if (self::$instance === null) {
-            throw new \LogicException('DependencyAnalyzer::getInstance() called before initialization.');
+            throw new LogicException('DependencyAnalyzer::getInstance() called before initialization.');
         }
         return self::$instance;
     }
