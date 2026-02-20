@@ -145,7 +145,7 @@ trait DatabaseQuerySearchTrait {
                 'by_action'          => $this->countByColumn('action'),
                 'by_status'          => $this->countByColumn('status'),
                 'last_24h'           => Orm::forTable(TableType::Transactions->value)
-                    ->whereGte('created_at', DateHelper::formatUtc(time() - 86400))
+                    ->whereGte('created_at', DateHelper::formatUtc(time() - DAY_IN_SECONDS))
                     ->count(),
             );
         } catch (Throwable $e) {
@@ -174,7 +174,7 @@ trait DatabaseQuerySearchTrait {
         }
 
         try {
-            $cutoff = DateHelper::formatUtc(time() - ($daysToKeep * 86400));
+            $cutoff = DateHelper::formatUtc(time() - ($daysToKeep * DAY_IN_SECONDS));
 
             $deleted = Orm::forTable(TableType::Transactions->value)
                 ->whereLt('created_at', $cutoff)

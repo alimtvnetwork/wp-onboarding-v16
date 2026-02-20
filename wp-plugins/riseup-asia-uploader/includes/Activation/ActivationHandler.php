@@ -25,13 +25,13 @@ class ActivationHandler
     
     private const VERSION_UNKNOWN = 'unknown';
     private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
-    private const DIAGNOSTICS_EXPIRY = 86400; // 24 hours
+    private const DIAGNOSTICS_EXPIRY = DAY_IN_SECONDS;
 
     public static function activate(): void {
-        error_log('[Riseup Asia] ActivationHandler::activate() — starting activation');
+        error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — starting activation');
         try {
             self::loadDependencies();
-            error_log('[Riseup Asia] ActivationHandler::activate() — dependencies loaded');
+            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — dependencies loaded');
             $dirs = self::resolveDirs();
 
             if ($dirs === null) {
@@ -39,13 +39,13 @@ class ActivationHandler
             }
 
             self::ensureDirs($dirs['base'], $dirs['logs']);
-            error_log('[Riseup Asia] ActivationHandler::activate() — directories ensured');
+            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — directories ensured');
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
             self::runBootDiagnostics();
-            error_log('[Riseup Asia] ActivationHandler::activate() — activation complete');
+            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler::activate() — activation complete');
         } catch (Throwable $e) {
-            error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
+            error_log(PluginConfigType::LogPrefix->value . ' Activation hook failed: ' . $e->getMessage());
         }
     }
 
@@ -56,7 +56,7 @@ class ActivationHandler
     private static function runBootDiagnostics(): void {
         $isAutoloaderMissing = !class_exists('RiseupAsiaAutoloader', false);
         if ($isAutoloaderMissing) {
-            error_log('[Riseup Asia] ActivationHandler: autoloader class not available for diagnostics');
+            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler: autoloader class not available for diagnostics');
 
             return;
         }
@@ -75,7 +75,7 @@ class ActivationHandler
         set_transient(self::DIAGNOSTICS_TRANSIENT, $diagnosticData, self::DIAGNOSTICS_EXPIRY);
 
         if ($hasFailures) {
-            error_log('[Riseup Asia] ActivationHandler: boot diagnostics found ' . count($result['failed']) . ' file(s) with errors');
+            error_log(PluginConfigType::LogPrefix->value . ' ActivationHandler: boot diagnostics found ' . count($result['failed']) . ' file(s) with errors');
         }
     }
 

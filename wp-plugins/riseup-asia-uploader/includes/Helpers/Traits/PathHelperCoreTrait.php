@@ -38,7 +38,7 @@ trait PathHelperCoreTrait {
         try {
             self::$logger = FileLogger::getInstance();
         } catch (Throwable $e) {
-            error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
+            error_log(PluginConfigType::LogPrefix->value . ' [ERROR] Logger init failed: ' . $e->getMessage());
             self::$logger = null;
         }
         self::$isBootstrapping = false;
@@ -55,7 +55,7 @@ trait PathHelperCoreTrait {
         $method = strtolower($level);
 
         if (self::$isBootstrapping) {
-            error_log('[Riseup Asia] [' . $upper . '] ' . $message);
+            error_log(PluginConfigType::LogPrefix->value . ' [' . $upper . '] ' . $message);
 
             return;
         }
@@ -64,7 +64,7 @@ trait PathHelperCoreTrait {
         if ($logger !== null) {
             $logger->$method($message, $context);
         } else {
-            error_log('[Riseup Asia] [' . $upper . '] ' . $message);
+            error_log(PluginConfigType::LogPrefix->value . ' [' . $upper . '] ' . $message);
         }
     }
 
