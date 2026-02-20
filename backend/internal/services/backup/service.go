@@ -78,7 +78,7 @@ func marshalBackupDetails(m map[string]any) json.RawMessage {
 }
 
 // Create downloads the current remote plugin and saves as a backup
-func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, error) {
+func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[models.Backup] {
 	s.log.Info("Creating backup", "mappingId", mappingID)
 	s.broadcastLog(mappingID, "info", "init", "Starting backup creation", marshalBackupDetails(map[string]any{
 		"mappingId": mappingID,
@@ -89,7 +89,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	filename := fmt.Sprintf("backup-%d-%s.zip", mappingID, timestamp)
 	backupPath, err := pathutil.Join(s.backupDir, filename)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve backup path").WithPath(filename)
+		return apperror.FailWrap[models.Backup](err, apperror.ErrInternal, "failed to resolve backup path")
 	}
 
 	s.broadcastLog(mappingID, "info", "prepare", fmt.Sprintf("Preparing backup file: %s", filename), nil)
@@ -99,8 +99,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	file, err := os.Create(backupPath)
 	if err != nil {
 		s.broadcastLog(mappingID, "error", "create", fmt.Sprintf("Failed to create backup file: %v", err), nil)
-		return nil, apperror.Wrap(err, apperror.ErrBackupCreate, "failed to create backup file").
-			WithPath(backupPath)
+		return apperror.FailWrap[models.Backup](err, apperror.ErrBackupCreate, "failed to create backup file")
 	}
 	file.Close()
 
@@ -115,7 +114,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 		size = info.Size()
 	}
 
-	backup := &models.Backup{
+	backup := models.Backup{
 		PluginMappingID: mappingID,
 		FilePath:        backupPath,
 		FileSize:        size,
@@ -140,23 +139,23 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 		"fileSize": size,
 	}))
 
-	return backup, nil
+	return apperror.Ok(backup)
 }
 
 // List returns all backups for a plugin mapping
-func (s *Service) List(ctx context.Context, mappingID int64) ([]models.Backup, error) {
+func (s *Service) List(ctx context.Context, mappingID int64) apperror.ResultSlice[models.Backup] {
 	// TODO: Query database for backups
-	return []models.Backup{}, nil
+	return apperror.OkSlice([]models.Backup{})
 }
 
 // GetByID returns a specific backup
-func (s *Service) GetByID(ctx context.Context, id int64) (*models.Backup, error) {
+func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Backup] {
 	// TODO: Query database
-	return nil, nil
+	return apperror.Ok(models.Backup{})
 }
 
 // Restore uploads a backup to WordPress
-func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, error) {
+func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[RestoreResult] {
 	s.log.Info("Restoring backup", "backupId", backupID)
 	s.broadcastLog(backupID, "info", "init", "Starting backup restore", marshalBackupDetails(map[string]any{
 		"backupId": backupID,
@@ -174,7 +173,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, 
 
 	s.broadcastLog(backupID, "info", "complete", "Backup restored successfully", nil)
 
-	return &RestoreResult{Success: true}, nil
+	return apperror.Ok(RestoreResult{Success: true})
 }
 
 // Delete removes a backup file and database record
@@ -244,7 +243,7 @@ func (s *Service) enforceRetention(ctx context.Context, mappingID int64) error {
 }
 
 // ExportToZip creates a zip archive of specified files/directories
-func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) (*ExportResult, error) {
+func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) apperror.Result[ExportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
 	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), marshalBackupDetails(map[string]any{
@@ -254,16 +253,14 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create output directory: %v", err), nil)
-		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
-			WithPath(outputPath)
+		return apperror.FailWrap[ExportResult](err, apperror.ErrFSWrite, "failed to create output directory")
 	}
 
 	// Create zip file
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
 		s.broadcastLog(0, "error", "create", fmt.Sprintf("Failed to create zip file: %v", err), nil)
-		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file").
-			WithPath(outputPath)
+		return apperror.FailWrap[ExportResult](err, apperror.ErrFSZip, "failed to create zip file")
 	}
 	defer zipFile.Close()
 
@@ -335,12 +332,12 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		"durationMs": duration.Milliseconds(),
 	}))
 
-	return &ExportResult{
+	return apperror.Ok(ExportResult{
 		OutputPath: outputPath,
 		FilesCount: filesCount,
 		TotalBytes: totalBytes,
 		Duration:   duration,
-	}, nil
+	})
 }
 
 // addFileToZip adds a single file to a zip archive
@@ -371,7 +368,7 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 }
 
 // ImportFromZip extracts a zip archive to the specified directory
-func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, overwrite bool) (*ImportResult, error) {
+func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, overwrite bool) apperror.Result[ImportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", overwrite)
 	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), marshalBackupDetails(map[string]any{
@@ -383,23 +380,20 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
 		s.broadcastLog(0, "error", "open", fmt.Sprintf("Failed to open zip: %v", err), nil)
-		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip").
-			WithPath(zipPath)
+		return apperror.FailWrap[ImportResult](err, apperror.ErrFSZip, "failed to open zip")
 	}
 	defer reader.Close()
 
 	// Check if destination exists
 	if _, err := os.Stat(destDir); err == nil && !overwrite {
 		s.broadcastLog(0, "error", "check", "Destination exists, overwrite not enabled", nil)
-		return nil, apperror.New(apperror.ErrFSWrite, "destination exists, use overwrite=true to replace").
-			WithPath(destDir)
+		return apperror.FailNew[ImportResult](apperror.ErrFSWrite, "destination exists, use overwrite=true to replace")
 	}
 
 	// Create destination directory
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create destination: %v", err), nil)
-		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create destination").
-			WithPath(destDir)
+		return apperror.FailWrap[ImportResult](err, apperror.ErrFSWrite, "failed to create destination")
 	}
 
 	var filesCount int
@@ -430,17 +424,14 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		// Create directory structure
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			s.broadcastLog(0, "error", "mkdir", fmt.Sprintf("Failed to create directory: %v", err), nil)
-			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create directory").
-				WithPath(destPath)
+			return apperror.FailWrap[ImportResult](err, apperror.ErrFSWrite, "failed to create directory")
 		}
 
 		// Extract file
 		written, err := s.extractFile(file, destPath)
 		if err != nil {
 			s.broadcastLog(0, "error", "extract", fmt.Sprintf("Failed to extract %s: %v", file.Name, err), nil)
-			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to extract file").
-				WithFile(file.Name).
-				WithDestPath(destPath)
+			return apperror.FailWrap[ImportResult](err, apperror.ErrFSWrite, "failed to extract file")
 		}
 
 		filesCount++
@@ -460,12 +451,12 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		"durationMs": duration.Milliseconds(),
 	}))
 
-	return &ImportResult{
+	return apperror.Ok(ImportResult{
 		DestPath:   destDir,
 		FilesCount: filesCount,
 		TotalBytes: totalBytes,
 		Duration:   duration,
-	}, nil
+	})
 }
 
 // extractFile extracts a single file from a zip archive

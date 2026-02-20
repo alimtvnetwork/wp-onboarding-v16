@@ -536,6 +536,7 @@ plug := plugResult.Value()
 | Publish | `Publish`, `PublishFiles`, `PreviewPublish`, `GetFileDiff` | `adapter_publish.go` |
 | Git | `Pull`, `PullAll`, `Build`, `PullAndBuild`, `GetConfig`, `Status`, `Commit`, `Push` | `adapter_git.go` |
 | Watcher | `TriggerScan`, `ScanAfterGitPull`, `ScanAll` | `adapter_sync.go` |
+| Backup | `Create`, `List`, `GetByID`, `Restore`, `ExportToZip`, `ImportFromZip` | `adapter_publish.go` |
 
 ---
 
