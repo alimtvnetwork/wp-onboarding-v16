@@ -534,6 +534,7 @@ plug := plugResult.Value()
 | Site | `List`, `GetByID`, `GetByURL`, `Create`, `Update` | `adapter_site.go` |
 | Sync | `CheckSync`, `CheckAllSites`, `CheckAllPlugins`, `PushSync`, `GetFileChanges` | `adapter_sync.go` |
 | Publish | `Publish`, `PublishFiles`, `PreviewPublish`, `GetFileDiff` | `adapter_publish.go` |
+| Git | `Pull`, `PullAll`, `Build`, `PullAndBuild`, `GetConfig`, `Status`, `Commit`, `Push` | `adapter_git.go` |
 
 ---
 

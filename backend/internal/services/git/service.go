@@ -58,6 +58,12 @@ type BatchPullResult struct {
 	Duration  int64        `json:"duration"`
 }
 
+// PullAndBuildResult holds the combined outcome of a pull followed by an optional build
+type PullAndBuildResult struct {
+	Pull  PullResult   `json:"pull"`
+	Build *BuildResult `json:"build,omitempty"`
+}
+
 // PluginGitConfig holds git configuration for a plugin
 type PluginGitConfig struct {
 	PluginID     int64  `json:"pluginId"`
@@ -109,19 +115,19 @@ func New(cfg Config) *Service {
 }
 
 // Pull performs a git pull for a single plugin
-func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error) {
+func (s *Service) Pull(ctx context.Context, pluginID int64) apperror.Result[PullResult] {
 	startTime := time.Now()
 
-	s.log.Info("Starting git pull", "pluginId", pluginID) // name resolved after GetByID below
+	s.log.Info("Starting git pull", "pluginId", pluginID)
 
 	// Get plugin details
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return nil, pResult.Error()
+		return apperror.Fail[PullResult](pResult.Error())
 	}
 	p := pResult.Value()
 
-	result := &PullResult{
+	result := PullResult{
 		PluginID:   pluginID,
 		PluginName: p.Name,
 		PulledAt:   time.Now(),
@@ -136,13 +142,13 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	// Check if directory is a git repo
 	gitDir, err := pathutil.Join(p.Path, ".git")
 	if err != nil {
-		return result, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+		return apperror.FailWrap[PullResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
 	if !pathutil.IsDir(gitDir) {
 		result.Success = false
 		result.Error = "not a git repository"
 		result.Duration = time.Since(startTime).Milliseconds()
-		return result, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+		return apperror.FailNew[PullResult](apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
 	// Get current branch
@@ -151,7 +157,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 		result.Success = false
 		result.Error = err.Error()
 		result.Duration = time.Since(startTime).Milliseconds()
-		return result, err
+		return apperror.FailWrap[PullResult](err, apperror.ErrGitCommand, "failed to get current branch")
 	}
 	result.Branch = strings.TrimSpace(branch)
 
@@ -168,12 +174,12 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 			PluginID: pluginID,
 			Error:    result.Error,
 		})
-		return result, err
+		return apperror.FailWrap[PullResult](err, apperror.ErrGitCommand, "git pull failed")
 	}
 
 	// Parse output for stats
 	result.Success = true
-	s.parseGitOutput(output, result)
+	s.parseGitOutput(output, &result)
 
 	// Get latest commit info
 	commitHash, _ := s.runGitCommand(p.Path, "rev-parse", "--short", "HEAD")
@@ -197,22 +203,22 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 		"duration", result.Duration,
 	)
 
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // PullAll performs git pull for all plugins with git enabled
-func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
+func (s *Service) PullAll(ctx context.Context) apperror.Result[BatchPullResult] {
 	startTime := time.Now()
 
 	s.log.Info("Starting git pull for all plugins")
 
 	pluginsResult := s.pluginService.List(ctx)
 	if pluginsResult.HasError() {
-		return nil, pluginsResult.Error()
+		return apperror.Fail[BatchPullResult](pluginsResult.Error())
 	}
 	plugins := pluginsResult.Items()
 
-	batch := &BatchPullResult{
+	batch := BatchPullResult{
 		Results: make([]PullResult, 0),
 	}
 
@@ -223,10 +229,11 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 			continue
 		}
 
-		result, _ := s.Pull(ctx, p.ID)
-		if result != nil {
-			batch.Results = append(batch.Results, *result)
-			if result.Success {
+		pullResult := s.Pull(ctx, p.ID)
+		if pullResult.IsSafe() {
+			v := pullResult.Value()
+			batch.Results = append(batch.Results, v)
+			if v.Success {
 				batch.Succeeded++
 			} else {
 				batch.Failed++
@@ -242,29 +249,33 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 		Duration:  batch.Duration,
 	})
 
-	return batch, nil
+	return apperror.Ok(batch)
 }
 
 // Build executes the build command for a plugin
-func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, error) {
+func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[BuildResult] {
 	startTime := time.Now()
 
-	s.log.Info("Starting build", "pluginId", pluginID) // name resolved after GetByID below
+	s.log.Info("Starting build", "pluginId", pluginID)
 
 	// Get plugin
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return nil, pResult.Error()
+		return apperror.Fail[BuildResult](pResult.Error())
 	}
 	p := pResult.Value()
 
 	// Get git config
-	config, err := s.GetConfig(ctx, pluginID)
-	if err != nil || !config.BuildEnabled || config.BuildCommand == "" {
-		return nil, apperror.New(apperror.ErrBuildNotConfigured, "build not configured for this plugin")
+	configResult := s.GetConfig(ctx, pluginID)
+	if configResult.HasError() {
+		return apperror.Fail[BuildResult](configResult.Error())
+	}
+	config := configResult.Value()
+	if !config.BuildEnabled || config.BuildCommand == "" {
+		return apperror.FailNew[BuildResult](apperror.ErrBuildNotConfigured, "build not configured for this plugin")
 	}
 
-	result := &BuildResult{
+	result := BuildResult{
 		PluginID:   pluginID,
 		PluginName: p.Name,
 		Command:    config.BuildCommand,
@@ -292,7 +303,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err = cmd.Run()
+	err := cmd.Run()
 	result.Duration = time.Since(startTime).Milliseconds()
 	result.Output = stdout.String()
 
@@ -309,7 +320,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 			ExitCode: result.ExitCode,
 		})
 
-		return result, apperror.Wrap(err, apperror.ErrBuildFailed, result.Error)
+		return apperror.FailWrap[BuildResult](err, apperror.ErrBuildFailed, result.Error)
 	}
 
 	result.Success = true
@@ -322,30 +333,37 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 	})
 
 	s.log.Info("Build complete", "plugin", p.Name, "pluginId", pluginID, "duration", result.Duration)
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // PullAndBuild performs git pull followed by build
-func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) (*PullResult, *BuildResult, error) {
-	s.log.Info("Starting pull and build", "pluginId", pluginID) // name resolved in sub-calls
+func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) apperror.Result[PullAndBuildResult] {
+	s.log.Info("Starting pull and build", "pluginId", pluginID)
 
 	// First pull
-	pullResult, err := s.Pull(ctx, pluginID)
-	if err != nil {
-		return pullResult, nil, err
+	pullResult := s.Pull(ctx, pluginID)
+	if pullResult.HasError() {
+		return apperror.Fail[PullAndBuildResult](pullResult.Error())
 	}
+	pull := pullResult.Value()
+
+	combined := PullAndBuildResult{Pull: pull}
 
 	// Only build if pull was successful and there were changes
-	if pullResult.Success && pullResult.FilesChanged > 0 {
-		buildResult, err := s.Build(ctx, pluginID)
-		return pullResult, buildResult, err
+	if pull.Success && pull.FilesChanged > 0 {
+		buildResult := s.Build(ctx, pluginID)
+		if buildResult.HasError() {
+			return apperror.Fail[PullAndBuildResult](buildResult.Error())
+		}
+		v := buildResult.Value()
+		combined.Build = &v
 	}
 
-	return pullResult, nil, nil
+	return apperror.Ok(combined)
 }
 
 // GetConfig returns git configuration for a plugin
-func (s *Service) GetConfig(ctx context.Context, pluginID int64) (*PluginGitConfig, error) {
+func (s *Service) GetConfig(ctx context.Context, pluginID int64) apperror.Result[PluginGitConfig] {
 	var config PluginGitConfig
 	config.PluginID = pluginID
 
@@ -356,14 +374,14 @@ func (s *Service) GetConfig(ctx context.Context, pluginID int64) (*PluginGitConf
 	`, pluginID).Scan(&config.GitEnabled, &config.Branch, &config.GitRemoteURL, &config.BuildEnabled, &config.BuildCommand)
 
 	if err != nil {
-		// Return default config
+		// Return default config (not an error — just absent row)
 		config.GitEnabled = true
 		config.Branch = s.defaultBranch
 		config.BuildEnabled = false
-		return &config, nil
+		return apperror.Ok(config)
 	}
 
-	return &config, nil
+	return apperror.Ok(config)
 }
 
 // UpdateConfig saves git configuration for a plugin
@@ -390,22 +408,22 @@ type StatusResult struct {
 }
 
 // Status returns git status for a plugin
-func (s *Service) Status(ctx context.Context, pluginID int64) (*StatusResult, error) {
+func (s *Service) Status(ctx context.Context, pluginID int64) apperror.Result[StatusResult] {
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return nil, pResult.Error()
+		return apperror.Fail[StatusResult](pResult.Error())
 	}
 	p := pResult.Value()
 
-	result := &StatusResult{PluginID: pluginID}
+	result := StatusResult{PluginID: pluginID}
 
 	// Check if git repo
 	gitDir, err := pathutil.Join(p.Path, ".git")
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+		return apperror.FailWrap[StatusResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
 	if !pathutil.IsDir(gitDir) {
-		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+		return apperror.FailNew[StatusResult](apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
 	// Get branch
@@ -445,7 +463,7 @@ func (s *Service) Status(ctx context.Context, pluginID int64) (*StatusResult, er
 	lastCommit, _ := s.runGitCommand(p.Path, "log", "-1", "--format=%s")
 	result.LastCommit = strings.TrimSpace(lastCommit)
 
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // CommitResult represents git commit result
@@ -457,29 +475,29 @@ type CommitResult struct {
 }
 
 // Commit stages all changes and commits with the given message
-func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*CommitResult, error) {
+func (s *Service) Commit(ctx context.Context, pluginID int64, message string) apperror.Result[CommitResult] {
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return nil, pResult.Error()
+		return apperror.Fail[CommitResult](pResult.Error())
 	}
 	p := pResult.Value()
 
-	result := &CommitResult{PluginID: pluginID}
+	result := CommitResult{PluginID: pluginID}
 
 	// Check if git repo
 	gitDir, err := pathutil.Join(p.Path, ".git")
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+		return apperror.FailWrap[CommitResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
 	if !pathutil.IsDir(gitDir) {
-		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+		return apperror.FailNew[CommitResult](apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
 	// Stage all changes
 	if _, err := s.runGitCommand(p.Path, "add", "-A"); err != nil {
 		result.Success = false
 		result.Message = "Failed to stage changes"
-		return result, err
+		return apperror.FailWrap[CommitResult](err, apperror.ErrGitCommand, "failed to stage changes")
 	}
 
 	// Commit
@@ -487,7 +505,7 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*
 	if err != nil {
 		result.Success = false
 		result.Message = "Failed to commit: " + output
-		return result, err
+		return apperror.FailWrap[CommitResult](err, apperror.ErrGitCommand, "failed to commit")
 	}
 
 	// Get commit hash
@@ -502,7 +520,7 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*
 	})
 
 	s.log.Info("Git commit complete", "plugin", p.Name, "pluginId", pluginID, "hash", result.CommitHash)
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // PushResult represents git push result
@@ -514,21 +532,22 @@ type PushResult struct {
 }
 
 // Push pushes commits to remote
-func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error) {
-	p, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, err
+func (s *Service) Push(ctx context.Context, pluginID int64) apperror.Result[PushResult] {
+	pResult := s.pluginService.GetByID(ctx, pluginID)
+	if pResult.HasError() {
+		return apperror.Fail[PushResult](pResult.Error())
 	}
+	p := pResult.Value()
 
-	result := &PushResult{PluginID: pluginID}
+	result := PushResult{PluginID: pluginID}
 
 	// Check if git repo
 	gitDir, err := pathutil.Join(p.Path, ".git")
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve git directory path")
+		return apperror.FailWrap[PushResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
 	if !pathutil.IsDir(gitDir) {
-		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+		return apperror.FailNew[PushResult](apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
 	// Get current branch
@@ -544,7 +563,7 @@ func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error)
 	if err != nil {
 		result.Success = false
 		result.Message = "Failed to push: " + output
-		return result, err
+		return apperror.FailWrap[PushResult](err, apperror.ErrGitCommand, "git push failed")
 	}
 
 	result.Success = true
@@ -556,7 +575,7 @@ func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error)
 	})
 
 	s.log.Info("Git push complete", "plugin", p.Name, "pluginId", pluginID, "pushed", result.Pushed)
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // runGitCommand executes a git command in the specified directory
@@ -593,4 +612,3 @@ func (s *Service) parseGitOutput(output string, result *PullResult) {
 		}
 	}
 }
-
