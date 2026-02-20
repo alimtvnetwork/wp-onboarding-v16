@@ -85,15 +85,7 @@ trait AgentRemoteCoreTrait {
         string $method,
         array $body,
     ): array {
-        $args = array(
-            'method'    => strtoupper($method),
-            'timeout'   => HttpConfigType::TimeoutDefault->value,
-            'headers'   => array(
-                'Authorization' => $this->buildAuthHeader($agent),
-                'Content-Type'  => 'application/json',
-            ),
-            'sslverify' => true,
-        );
+        $args = HttpConfigType::authenticatedOptions($method, $this->buildAuthHeader($agent));
 
         $hasBody = BooleanHelpers::hasValue($body);
         $isBodyMethod = in_array($method, array(HttpMethodType::Post->value, HttpMethodType::Put->value, HttpMethodType::Patch->value));

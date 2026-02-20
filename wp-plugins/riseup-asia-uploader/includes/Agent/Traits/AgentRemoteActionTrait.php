@@ -59,9 +59,7 @@ trait AgentRemoteActionTrait {
 
     private function followRedirectChain(string $url, int $maxRedirects = 5): string|WP_Error {
         for ($i = 0; $i < $maxRedirects; $i++) {
-            $response = wp_remote_head($url, array(
-                'timeout' => HttpConfigType::TimeoutShort->value, 'redirection' => 0, 'sslverify' => true,
-            ));
+            $response = wp_remote_head($url, HttpConfigType::headRedirectOptions());
 
             if (is_wp_error($response)) {
                 return $response;
