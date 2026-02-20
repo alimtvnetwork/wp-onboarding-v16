@@ -31,19 +31,39 @@ type PublishServiceAdapter struct {
 }
 
 func (a *PublishServiceAdapter) Publish(ctx context.Context, pluginID, siteID int64, opts any) (*publish.PublishResult, error) {
-	return a.Service.Publish(ctx, pluginID, siteID, opts)
+	result := a.Service.Publish(ctx, pluginID, siteID, opts)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *PublishServiceAdapter) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (*publish.PublishResult, error) {
-	return a.Service.PublishFiles(ctx, pluginID, siteID, files)
+	result := a.Service.PublishFiles(ctx, pluginID, siteID, files)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *PublishServiceAdapter) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*publish.PublishPreviewResult, error) {
-	return a.Service.PreviewPublish(ctx, pluginID, siteID)
+	result := a.Service.PreviewPublish(ctx, pluginID, siteID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *PublishServiceAdapter) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*publish.FileDiffResult, error) {
-	return a.Service.GetFileDiff(ctx, pluginID, siteID, filePath)
+	result := a.Service.GetFileDiff(ctx, pluginID, siteID, filePath)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 // BackupServiceAdapter wraps *backup.Service to implement BackupServiceInterface

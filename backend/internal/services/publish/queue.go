@@ -207,11 +207,11 @@ func (q *PublishQueue) processNext() {
 		q.broadcastStatus()
 
 		// Execute the publish
-		result, err := q.service.Publish(ctx, item.PluginID, item.SiteID, item.Options)
+		publishResult := q.service.Publish(ctx, item.PluginID, item.SiteID, item.Options)
 
 		q.mu.Lock()
 		delete(q.active, item.ID)
-		if err != nil || (result != nil && !result.Success) {
+		if publishResult.HasError() || (publishResult.IsSafe() && !publishResult.Value().Success) {
 			item.Status = "failed"
 		} else {
 			item.Status = "completed"

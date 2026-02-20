@@ -128,7 +128,7 @@ type Stage struct {
 }
 
 // Publish publishes plugin changes to a WordPress site
-func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any) (*PublishResult, error) {
+func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any) apperror.Result[PublishResult] {
 	startTime := time.Now()
 	
 	// Parse options
@@ -170,7 +170,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 	if pluginResult.HasError() {
 		result.ErrorMessage = pluginResult.Error().Error()
 		s.broadcastProgress(pluginID, siteID, "failed", 0, pluginResult.Error().Error())
-		return result, nil
+		return apperror.Ok(*result)
 	}
 	pluginInfo := pluginResult.Value()
 
@@ -179,7 +179,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 	if err != nil {
 		result.ErrorMessage = err.Error()
 		s.broadcastProgress(pluginID, siteID, "failed", 0, err.Error())
-		return result, nil
+		return apperror.Ok(*result)
 	}
 
 	// Start session for this publish operation
@@ -206,7 +206,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 		s.sessionLog(sessionID, "error", "init", fmt.Sprintf("Failed to get mapping: %s", err.Error()), nil)
 		s.endSession(sessionID, "error", err.Error())
 		s.broadcastProgressWithSession(pluginID, siteID, sessionID, "failed", 0, err.Error())
-		return result, nil
+		return apperror.Ok(*result)
 	}
 
 	// Create WordPress client
@@ -231,8 +231,8 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 		result.Stages = append(result.Stages, stage)
 		if stage.Status == "failed" {
 			result.ErrorMessage = stage.Message
-			s.broadcastProgress(pluginID, siteID, "failed", 10, stage.Message)
-			return result, nil
+		s.broadcastProgress(pluginID, siteID, "failed", 10, stage.Message)
+		return apperror.Ok(*result)
 		}
 	}
 
@@ -295,7 +295,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 		result.ErrorMessage = stage.Message
 		s.broadcastDetailedLog(pluginID, siteID, "error", "package", fmt.Sprintf("Package failed: %s", stage.Message), nil)
 		s.broadcastProgress(pluginID, siteID, "failed", 30, stage.Message)
-		return result, nil
+		return apperror.Ok(*result)
 	}
 
 	// Track whether publish succeeded or failed for cleanup decisions
@@ -463,7 +463,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 		result.ErrorMessage = stage.Message
 		s.broadcastProgress(pluginID, siteID, "failed", 60, stage.Message)
 		publishFailed = true
-		return result, nil
+		return apperror.Ok(*result)
 	}
 
 	// Stage 4: Activate plugin
@@ -710,11 +710,11 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 		}
 	}
 
-	return result, nil
+	return apperror.Ok(*result)
 }
 
 // PublishFiles publishes specific files to a WordPress site
-func (s *Service) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (*PublishResult, error) {
+func (s *Service) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) apperror.Result[PublishResult] {
 	return s.Publish(ctx, pluginID, siteID, PublishOptions{
 		Mode:         "selected",
 		Files:        files,
@@ -1580,7 +1580,7 @@ type PublishPreviewResult struct {
 }
 
 // PreviewPublish returns a preview of what files will change during publish
-func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*PublishPreviewResult, error) {
+func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) apperror.Result[PublishPreviewResult] {
 	result := &PublishPreviewResult{
 		PluginID: pluginID,
 		SiteID:   siteID,
@@ -1590,7 +1590,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	// Get plugin info
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
-		return nil, apperror.Wrap(pluginResult.Error(), apperror.ErrNotFound, "plugin not found")
+		return apperror.Fail[PublishPreviewResult](apperror.Wrap(pluginResult.Error(), apperror.ErrNotFound, "plugin not found"))
 	}
 	pluginInfo := pluginResult.Value()
 	result.PluginName = pluginInfo.Name
@@ -1601,7 +1601,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	// Get site info and password
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
+		return apperror.FailWrap[PublishPreviewResult](err, apperror.ErrNotFound, "site not found")
 	}
 	result.SiteName = siteInfo.Name
 	result.SiteURL = siteInfo.URL
@@ -1609,14 +1609,14 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	// Get mapping
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrNotFound, "plugin-site mapping not found")
+		return apperror.FailWrap[PublishPreviewResult](err, apperror.ErrNotFound, "plugin-site mapping not found")
 	}
 	result.RemoteSlug = mapping.RemoteSlug
 
 	// Scan local files
 	pluginPath, err := pathutil.ToAbsolute(pluginInfo.Path)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "invalid plugin path")
+		return apperror.FailWrap[PublishPreviewResult](err, apperror.ErrFSRead, "invalid plugin path")
 	}
 
 	excludePatterns := pluginInfo.ExcludePatterns
@@ -1671,7 +1671,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	})
 
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to scan plugin files")
+		return apperror.FailWrap[PublishPreviewResult](err, apperror.ErrFSRead, "failed to scan plugin files")
 	}
 
 	// Attempt to fetch remote files for true diff comparison
@@ -1765,7 +1765,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	result.Modified = modified
 	result.Deleted = deleted
 
-	return result, nil
+	return apperror.Ok(*result)
 }
 
 // calculateFileHash computes MD5 hash of a file
@@ -1792,24 +1792,24 @@ type FileDiffResult struct {
 }
 
 // GetFileDiff retrieves both local and remote content for a file to show differences
-func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*FileDiffResult, error) {
+func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) apperror.Result[FileDiffResult] {
 	// Get plugin info
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
-		return nil, apperror.Wrap(pluginResult.Error(), apperror.ErrDatabaseQuery, "plugin not found")
+		return apperror.Fail[FileDiffResult](apperror.Wrap(pluginResult.Error(), apperror.ErrDatabaseQuery, "plugin not found"))
 	}
 	pluginInfo := pluginResult.Value()
 
 	// Get site credentials
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "site not found")
+		return apperror.FailWrap[FileDiffResult](err, apperror.ErrDatabaseQuery, "site not found")
 	}
 
 	// Get mapping to find remote slug
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "mapping not found")
+		return apperror.FailWrap[FileDiffResult](err, apperror.ErrDatabaseQuery, "mapping not found")
 	}
 
 	result := &FileDiffResult{
@@ -1819,12 +1819,12 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 	// Read local file content
 	localPath, err := pathutil.Join(pluginInfo.Path, filePath)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve local file path").WithFilePath(filePath)
+		return apperror.Fail[FileDiffResult](apperror.Wrap(err, apperror.ErrInternal, "failed to resolve local file path").WithFilePath(filePath))
 	}
 	localFile, err := os.Open(localPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to read local file")
+			return apperror.FailWrap[FileDiffResult](err, apperror.ErrFSRead, "failed to read local file")
 		}
 		// File doesn't exist locally (deleted case)
 		result.LocalContent = ""
@@ -1832,7 +1832,7 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 		defer localFile.Close()
 		content, err := io.ReadAll(localFile)
 		if err != nil {
-			return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to read local file content")
+			return apperror.FailWrap[FileDiffResult](err, apperror.ErrFSRead, "failed to read local file content")
 		}
 		result.LocalContent = string(content)
 	}
@@ -1848,7 +1848,7 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 		result.RemoteContent = remoteContent
 	}
 
-	return result, nil
+	return apperror.Ok(*result)
 }
 
 // getLocalPluginVersion extracts the version from a WordPress plugin's main PHP file header
