@@ -61,10 +61,10 @@ trait SyncManifestTrait
         return new WP_REST_Response(array(
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Data->value => array(
-                'plugin' => $slug, 'fileCount' => count($result['files']),
-                'generatedAt' => DateHelper::nowIso(), 'cached' => $result['cached'] > 0,
-                'cacheStats' => array('fromCache' => $result['cached'], 'computed' => $result['computed'], 'removed' => $result['removed']),
-                'files' => $result['files'],
+                'plugin' => $slug, 'fileCount' => count($result[ResponseKeyType::Files->value]),
+                'generatedAt' => DateHelper::nowIso(), ResponseKeyType::Cached->value => $result[ResponseKeyType::Cached->value] > 0,
+                'cacheStats' => array('fromCache' => $result[ResponseKeyType::Cached->value], 'computed' => $result['computed'], 'removed' => $result['removed']),
+                ResponseKeyType::Files->value => $result[ResponseKeyType::Files->value],
             ),
         ), HttpStatusType::Ok->value);
     }

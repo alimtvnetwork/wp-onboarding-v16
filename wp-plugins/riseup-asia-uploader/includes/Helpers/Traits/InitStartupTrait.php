@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\ErrorHandling\BootErrorCollector;
 use RiseupAsia\Logging\FileLogger;
 
@@ -33,8 +34,8 @@ trait InitStartupTrait {
         $elapsed_ms = round((microtime(true) - $start) * 1000, 2);
 
         self::$startup_results[] = array(
-            'name' => $name, 'success' => $error === null,
-            'error' => $error, 'time_ms' => $elapsed_ms,
+            'name' => $name, ResponseKeyType::Success->value => $error === null,
+            ResponseKeyType::Error->value => $error, 'time_ms' => $elapsed_ms,
         );
 
         return $result;
@@ -43,7 +44,7 @@ trait InitStartupTrait {
     public static function getStartupResults(): array { return self::$startup_results; }
 
     public static function getFailedStartups(): array {
-        return array_filter(self::$startup_results, function (array $r): bool { $isStartupFailed = ($r['success'] === false); return $isStartupFailed; });
+        return array_filter(self::$startup_results, function (array $r): bool { $isStartupFailed = ($r[ResponseKeyType::Success->value] === false); return $isStartupFailed; });
     }
 
     public static function allStartupsSucceeded(): bool { return empty(self::getFailedStartups()); }
@@ -62,7 +63,7 @@ trait InitStartupTrait {
         if ($failed > 0) {
             $logger->warn('[INIT] Startup complete with failures', array(
                 'total' => $total, 'failed' => $failed, 'time_ms' => $time,
-                'failures' => array_map(function (array $r): string { return $r['name'] . ': ' . $r['error']; }, self::getFailedStartups()),
+                'failures' => array_map(function (array $r): string { return $r['name'] . ': ' . $r[ResponseKeyType::Error->value]; }, self::getFailedStartups()),
             ));
             return;
         }
