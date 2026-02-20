@@ -540,6 +540,7 @@ plug := plugResult.Value()
 | Session | `GetSession`, `GetSessionLogs`, `GetSessionDiagnostics`, `ListSessions` | `adapter_session.go` |
 | ErrorHistory | `Save`, `List`, `GetByID`, `GetByErrorID`, `Clear`, `BulkExport`, `GetStats` | `adapter_session.go` |
 | SiteHealth | `CheckSite`, `CheckAllSites`, `GetHistory`, `GetSummaries`, `GetStats`, `ClearHistory` | `adapter_history.go` |
+| PublishHistory | `Record`, `List`, `GetByID`, `GetStats`, `Clear` | `adapter_history.go` |
 
 ---
 
