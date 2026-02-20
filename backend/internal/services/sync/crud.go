@@ -10,6 +10,12 @@ import (
 	"wp-plugin-publish/pkg/dbutil"
 )
 
+// siteInfo holds minimal site connection details for creating a WP client.
+type siteInfo struct {
+	URL      string
+	Username string
+}
+
 // SQL query constants (centralized per coding standard).
 const fileChangesSelectQuery = `
 	SELECT Id, PluginId, FilePath, ChangeType, LocalHash, RemoteHash,
