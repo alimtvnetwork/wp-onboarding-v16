@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use LogicException;
 use RiseupAsia\Snapshot\Traits\ExporterPublicApiTrait;
 use RiseupAsia\Snapshot\Traits\ExporterBuildTrait;
 use RiseupAsia\Snapshot\Traits\ExporterHelpersTrait;
@@ -24,7 +25,7 @@ class SnapshotExporter {
             self::$instance = new self($logger, $db);
         }
         if (self::$instance === null) {
-            throw new \LogicException('SnapshotExporter::getInstance() called before initialization.');
+            throw new LogicException('SnapshotExporter::getInstance() called before initialization.');
         }
         return self::$instance;
     }
