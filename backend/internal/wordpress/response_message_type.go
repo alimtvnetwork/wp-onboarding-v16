@@ -57,6 +57,33 @@ const (
 
 	// ResponseMessageInvalidId indicates an invalid or malformed identifier.
 	ResponseMessageInvalidId ResponseMessageType = "Invalid ID"
+
+	// ResponseMessageConnectionSuccessful indicates a successful connection test.
+	ResponseMessageConnectionSuccessful ResponseMessageType = "Connection successful"
+
+	// ResponseMessageSnapshotNotFound indicates the snapshot was not found.
+	ResponseMessageSnapshotNotFound ResponseMessageType = "Snapshot not found"
+
+	// ResponseMessageSnapshotProviderMissing indicates no snapshot provider is available.
+	ResponseMessageSnapshotProviderMissing ResponseMessageType = "No snapshot provider available"
+
+	// ResponseMessageProviderMissing indicates no provider is available.
+	ResponseMessageProviderMissing ResponseMessageType = "No provider available"
+
+	// ResponseMessageSnapshotFileMissing indicates the snapshot file was not found on disk.
+	ResponseMessageSnapshotFileMissing ResponseMessageType = "Snapshot file not found"
+
+	// ResponseMessageUploadedFileMissing indicates the uploaded file was not found.
+	ResponseMessageUploadedFileMissing ResponseMessageType = "Uploaded file not found"
+
+	// ResponseMessageZipCreateFailed indicates ZIP archive creation failed.
+	ResponseMessageZipCreateFailed ResponseMessageType = "Failed to create ZIP file"
+
+	// ResponseMessageTempDirCreateFailed indicates temporary directory creation failed.
+	ResponseMessageTempDirCreateFailed ResponseMessageType = "Failed to create temp directory"
+
+	// ResponseMessageInvalidFileTypeZip indicates an invalid file type when ZIP was expected.
+	ResponseMessageInvalidFileTypeZip ResponseMessageType = "Invalid file type. Expected ZIP file."
 )
 
 // IsEqual checks type-safe equality against another ResponseMessageType.
