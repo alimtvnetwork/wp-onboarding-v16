@@ -874,14 +874,14 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	pluginName := ""
 	siteName := ""
 	siteURL := ""
-	if details != nil {
-		if v, ok := details["pluginName"].(string); ok && v != "" {
+	if detailsMap != nil {
+		if v, ok := detailsMap["pluginName"].(string); ok && v != "" {
 			pluginName = v
 		}
-		if v, ok := details["siteName"].(string); ok && v != "" {
+		if v, ok := detailsMap["siteName"].(string); ok && v != "" {
 			siteName = v
 		}
-		if v, ok := details["siteUrl"].(string); ok && v != "" {
+		if v, ok := detailsMap["siteUrl"].(string); ok && v != "" {
 			siteURL = v
 		}
 	}
