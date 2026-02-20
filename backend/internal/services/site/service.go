@@ -120,11 +120,12 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	// Broadcast start
 	s.broadcastProgress(id, "start", "running", "Starting connection test...", nil)
 
-	site, err := s.GetByID(ctx, id)
-	if err != nil {
-		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", toJSON(ErrorDetail{Error: err.Error()}))
-		return nil, err
+	siteResult := s.GetByID(ctx, id)
+	if siteResult.HasError() {
+		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", toJSON(ErrorDetail{Error: siteResult.Error().Error()}))
+		return nil, siteResult.Error()
 	}
+	site := siteResult.Value()
 	s.broadcastProgress(id, "fetch_site", "success", fmt.Sprintf("Retrieved site: %s", site.Name), nil)
 
 	// Decrypt password
@@ -235,10 +236,11 @@ func (s *Service) broadcastProgress(siteID int64, step, status, message string, 
 
 // GetDecryptedPassword returns the decrypted password for a site
 func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, error) {
-	site, err := s.GetByID(ctx, id)
-	if err != nil {
-		return "", err
+	result := s.GetByID(ctx, id)
+	if result.HasError() {
+		return "", result.Error()
 	}
+	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
@@ -311,10 +313,11 @@ func normalizeURL(rawURL string) string {
 // BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
 func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*BootstrapResult, error) {
 	// Get site details
-	site, err := s.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
+	result := s.GetByID(ctx, id)
+	if result.HasError() {
+		return nil, result.Error()
 	}
+	site := result.Value()
 
 	// Broadcast start
 	if s.wsHub != nil {
@@ -617,10 +620,11 @@ func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteID int64, f
 // fetchRemotePlugins fetches plugins directly from the remote WordPress site.
 // Prefers the Riseup Asia Uploader API for reliability; falls back to WP Core API.
 func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
-	site, err := s.GetByID(ctx, siteID)
-	if err != nil {
-		return nil, err
+	result := s.GetByID(ctx, siteID)
+	if result.HasError() {
+		return nil, result.Error()
 	}
+	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
@@ -776,10 +780,11 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 // CheckRemotePluginExists performs a lightweight pre-flight check to verify
 // a plugin slug is installed on the remote WordPress site before lifecycle actions.
 func (s *Service) CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error) {
-	site, err := s.GetByID(ctx, siteID)
-	if err != nil {
-		return false, "", "", apperror.Wrap(err, apperror.ErrNotFound, "site not found")
+	result := s.GetByID(ctx, siteID)
+	if result.HasError() {
+		return false, "", "", apperror.Wrap(result.Error(), apperror.ErrNotFound, "site not found")
 	}
+	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
@@ -828,10 +833,11 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	startTime := time.Now()
 
 	// Get site info
-	site, err := s.GetByID(ctx, siteID)
-	if err != nil {
-		return err
+	siteResult := s.GetByID(ctx, siteID)
+	if siteResult.HasError() {
+		return siteResult.Error()
 	}
+	site := siteResult.Value()
 
 	// Start session if service available
 	var sessionID string
@@ -1116,7 +1122,8 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 	pluginSlug := logCtx.PluginSlug
 	// DB fallback for site info
 	if (siteName == "" || siteURL == "") && siteID > 0 {
-		if site, err := s.GetByID(context.Background(), siteID); err == nil {
+		if siteResult := s.GetByID(context.Background(), siteID); siteResult.IsSafe() {
+			site := siteResult.Value()
 			if siteName == "" {
 				siteName = site.Name
 			}
@@ -1411,10 +1418,11 @@ type SiteCredentials struct {
 
 // GetCredentials returns the decrypted credentials for a site (for API Explorer)
 func (s *Service) GetCredentials(ctx context.Context, siteID int64) (*SiteCredentials, error) {
-	site, err := s.GetByID(ctx, siteID)
-	if err != nil {
-		return nil, err
+	result := s.GetByID(ctx, siteID)
+	if result.HasError() {
+		return nil, result.Error()
 	}
+	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
@@ -1451,10 +1459,11 @@ type RemotePluginFilesResult struct {
 
 // GetRemotePluginFiles fetches the file list for a remote plugin via Riseup Asia Uploader
 func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (*RemotePluginFilesResult, error) {
-	site, err := s.GetByID(ctx, siteID)
-	if err != nil {
-		return nil, err
+	result := s.GetByID(ctx, siteID)
+	if result.HasError() {
+		return nil, result.Error()
 	}
+	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
@@ -1492,10 +1501,11 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, plugin
 
 // GetRemotePluginFileContent fetches the content of a specific file from a remote plugin
 func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error) {
-	site, err := s.GetByID(ctx, siteID)
-	if err != nil {
-		return "", err
+	result := s.GetByID(ctx, siteID)
+	if result.HasError() {
+		return "", result.Error()
 	}
+	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
