@@ -17,7 +17,8 @@ type PublishServiceInterface interface {
 	GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*publish.FileDiffResult, error)
 }
 
-// BackupServiceInterface defines backup service methods
+// BackupServiceInterface defines backup service methods for HTTP handlers.
+// Returns (T, error) tuples — the adapter unwraps Result types from the service layer.
 type BackupServiceInterface interface {
 	List(ctx context.Context, pluginID int64) ([]models.Backup, error)
 	Create(ctx context.Context, pluginID, siteID int64) (*models.Backup, error)
@@ -72,16 +73,28 @@ type BackupServiceAdapter struct {
 }
 
 func (a *BackupServiceAdapter) List(ctx context.Context, pluginID int64) ([]models.Backup, error) {
-	return a.Service.List(ctx, pluginID)
+	result := a.Service.List(ctx, pluginID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *BackupServiceAdapter) Create(ctx context.Context, pluginID, siteID int64) (*models.Backup, error) {
-	return a.Service.Create(ctx, pluginID)
+	result := a.Service.Create(ctx, pluginID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *BackupServiceAdapter) Restore(ctx context.Context, backupID int64) error {
-	_, err := a.Service.Restore(ctx, backupID)
-	return err
+	result := a.Service.Restore(ctx, backupID)
+	if result.HasError() {
+		return result.Error()
+	}
+	return nil
 }
 
 func (a *BackupServiceAdapter) Delete(ctx context.Context, backupID int64) error {
