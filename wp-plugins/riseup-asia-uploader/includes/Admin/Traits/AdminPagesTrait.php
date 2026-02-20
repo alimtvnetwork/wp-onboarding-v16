@@ -16,7 +16,9 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\FilterKeyType;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
@@ -31,8 +33,8 @@ trait AdminPagesTrait {
 
         $db = Database::getInstance();
         $result = $db->queryTransactions($filters, $perPage, $offset);
-        $logs = $result['logs'];
-        $total = $result['total'];
+        $logs = $result[ResponseKeyType::Logs->value];
+        $total = $result[ResponseKeyType::Total->value];
         $totalPages = ceil($total / $perPage);
 
         $actionLabels = $this->getActionLabels();
@@ -43,10 +45,15 @@ trait AdminPagesTrait {
     /** Build log filters from query parameters. */
     private function buildLogFilters(): array {
         $keys = array(
-            'action' => 'filter_action', 'user' => 'filter_user', 'status' => 'filter_status',
-            'plugin' => 'filter_plugin', 'from' => 'filter_from', 'to' => 'filter_to',
-            'triggered_by' => 'filter_triggered_by', 'source_machine' => 'filter_source_machine',
-            'upload_source' => 'filter_upload_source',
+            FilterKeyType::Action->value        => 'filter_action',
+            FilterKeyType::User->value          => 'filter_user',
+            FilterKeyType::Status->value        => 'filter_status',
+            FilterKeyType::Plugin->value        => 'filter_plugin',
+            FilterKeyType::From->value          => 'filter_from',
+            FilterKeyType::To->value            => 'filter_to',
+            FilterKeyType::TriggeredBy->value   => 'filter_triggered_by',
+            FilterKeyType::SourceMachine->value => 'filter_source_machine',
+            FilterKeyType::UploadSource->value  => 'filter_upload_source',
         );
 
         $filters = array();

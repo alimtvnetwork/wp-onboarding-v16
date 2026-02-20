@@ -17,6 +17,7 @@ use WP_REST_Response;
 use WP_Error;
 use RiseupAsia\Enums\AgentFieldType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Agent\AgentManager;
 
 trait AgentHandlerCrudTrait {
@@ -33,7 +34,7 @@ trait AgentHandlerCrudTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->listAgents($filters, $limit, $offset);
 
-            return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'agents' => $result['agents']), HttpStatusType::Ok->value);
+            return new WP_REST_Response(array('success' => true, ResponseKeyType::Total->value => $result[ResponseKeyType::Total->value], ResponseKeyType::Agents->value => $result[ResponseKeyType::Agents->value]), HttpStatusType::Ok->value);
         }, 'list_agents');
     }
 

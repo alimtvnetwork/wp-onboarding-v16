@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Snapshot\SnapshotManager;
 
 trait SnapshotCrudListTrait {
@@ -31,9 +32,9 @@ trait SnapshotCrudListTrait {
             $snapshots = $manager->listSnapshots($limit, $offset);
 
             return new WP_REST_Response(array(
-                'success'   => true,
-                'snapshots' => $snapshots['snapshots'],
-                'total'     => $snapshots['total'],
+                'success'                          => true,
+                ResponseKeyType::Snapshots->value  => $snapshots[ResponseKeyType::Snapshots->value],
+                ResponseKeyType::Total->value      => $snapshots[ResponseKeyType::Total->value],
             ), HttpStatusType::Ok->value);
         }, 'list_snapshots');
     }
