@@ -539,6 +539,7 @@ plug := plugResult.Value()
 | Backup | `Create`, `List`, `GetByID`, `Restore`, `ExportToZip`, `ImportFromZip` | `adapter_publish.go` |
 | Session | `GetSession`, `GetSessionLogs`, `GetSessionDiagnostics`, `ListSessions` | `adapter_session.go` |
 | ErrorHistory | `Save`, `List`, `GetByID`, `GetByErrorID`, `Clear`, `BulkExport`, `GetStats` | `adapter_session.go` |
+| SiteHealth | `CheckSite`, `CheckAllSites`, `GetHistory`, `GetSummaries`, `GetStats`, `ClearHistory` | `adapter_history.go` |
 
 ---
 

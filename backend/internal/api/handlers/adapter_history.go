@@ -64,25 +64,51 @@ type SiteHealthServiceAdapter struct {
 }
 
 func (a *SiteHealthServiceAdapter) CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, error) {
-	return a.Service.CheckSite(ctx, siteID)
+	result := a.Service.CheckSite(ctx, siteID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SiteHealthServiceAdapter) CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, error) {
-	return a.Service.CheckAllSites(ctx)
+	result := a.Service.CheckAllSites(ctx)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *SiteHealthServiceAdapter) GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, error) {
-	return a.Service.GetHistory(siteID, limit)
+	result := a.Service.GetHistory(siteID, limit)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *SiteHealthServiceAdapter) GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, error) {
-	return a.Service.GetSummaries(ctx)
+	result := a.Service.GetSummaries(ctx)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }
 
 func (a *SiteHealthServiceAdapter) GetStats(ctx context.Context) (*models.SiteHealthStats, error) {
-	return a.Service.GetStats(ctx)
+	result := a.Service.GetStats(ctx)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *SiteHealthServiceAdapter) ClearHistory(olderThanDays int) (int64, error) {
-	return a.Service.ClearHistory(olderThanDays)
+	result := a.Service.ClearHistory(olderThanDays)
+	if result.HasError() {
+		return 0, result.Error()
+	}
+	return result.Value(), nil
 }
