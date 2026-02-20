@@ -62,7 +62,7 @@ trait UpdateResolverFetchTrait {
     }
 
     private function fetchUpdateResponse(string $url) {
-        $response = wp_remote_get($url, array('timeout' => HttpConfigType::TimeoutDefault->value, 'sslverify' => true));
+        $response = wp_remote_get($url, HttpConfigType::defaultGetOptions());
         if (is_wp_error($response)) {
             $this->fileLogger->error('Failed to fetch update info', array('error' => $response->get_error_message()));
         }
