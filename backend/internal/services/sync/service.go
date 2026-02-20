@@ -425,9 +425,6 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*Pu
 
 // GetFileChanges, RecordFileChange, MarkSynced, ClearChanges moved to crud.go.
 
-	return nil
-}
-
 // scanLocalFiles scans the plugin directory and returns file entries with hashes and timestamps
 func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string) (map[string]FileEntry, error) {
 	files := make(map[string]FileEntry)

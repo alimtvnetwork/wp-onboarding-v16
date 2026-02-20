@@ -20,7 +20,7 @@ import (
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
-	"wp-plugin-publish/internal/models"
+	
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -1174,7 +1174,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 				Level:     entry.Level,
 				Message:   entry.Message,
 				File:      entry.File,
-				Line:      entry.Line,
+				Line:      derefInt(entry.Line),
 				CreatedAt: entry.CreatedAt,
 			}
 			if len(entry.StackTraceFrames) > 0 {
@@ -1200,7 +1200,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 			for _, entry := range result.Entries {
 				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, session.ToJSON(PHPErrorDetail{
 					PHPFile:    entry.File,
-					PHPLine:    entry.Line,
+					PHPLine:    derefInt(entry.Line),
 					PHPLevel:   entry.Level,
 					PHPCreated: entry.CreatedAt,
 				}))
@@ -1228,7 +1228,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 			fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", logsResult.StackTraceLog.Lines, logsResult.StackTraceLog.TotalSize),
 			session.ToJSON(StackTraceLogDetails{
 				Lines:     logsResult.StackTraceLog.Lines,
-				TotalSize: logsResult.StackTraceLog.TotalSize,
+				TotalSize: int(logsResult.StackTraceLog.TotalSize),
 				Truncated: logsResult.StackTraceLog.Truncated,
 			}))
 
@@ -1511,4 +1511,12 @@ func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, 
 
 	s.log.Debug("Remote file content fetched", "siteId", siteID, "pluginSlug", pluginSlug, "filePath", filePath, "contentLen", len(content))
 	return content, nil
+}
+
+// derefInt safely dereferences an *int pointer, returning 0 if nil.
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
