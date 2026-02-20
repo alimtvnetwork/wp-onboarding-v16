@@ -533,6 +533,7 @@ plug := plugResult.Value()
 | Plugin | `List`, `GetByID`, `Create`, `Update`, `ScanDirectory`, `GetMappings`, `GetMappingsBySite`, `CreateMapping` | `adapter_plugin.go` |
 | Site | `List`, `GetByID`, `GetByURL`, `Create`, `Update` | `adapter_site.go` |
 | Sync | `CheckSync`, `CheckAllSites`, `CheckAllPlugins`, `PushSync`, `GetFileChanges` | `adapter_sync.go` |
+| Publish | `Publish`, `PublishFiles`, `PreviewPublish`, `GetFileDiff` | `adapter_publish.go` |
 
 ---
 
