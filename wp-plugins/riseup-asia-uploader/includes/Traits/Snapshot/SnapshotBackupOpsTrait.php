@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StatusType;
@@ -35,7 +36,7 @@ trait SnapshotBackupOpsTrait {
             $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
 
             $result = $worker->execute(array(
-                'title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? SnapshotScopeType::WordPress->value,
+                'title' => $body['title'] ?? null, ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
                 'type' => $body['type'] ?? SnapshotModeType::Full->value, 'settings' => $body['settings'] ?? null,
             ));
 
@@ -61,6 +62,7 @@ trait SnapshotBackupOpsTrait {
             $job_id = $body['job_id'] ?? null;
 
             if (empty($job_id)) {
+
                 return $this->buildProgressError('Missing required field: job_id', HttpStatusType::BadRequest->value);
             }
 
@@ -68,6 +70,7 @@ trait SnapshotBackupOpsTrait {
             $isProgressMissing = ($progress === null || $progress === false);
 
             if ($isProgressMissing) {
+
                 return $this->buildProgressError('Job not found', HttpStatusType::NotFound->value, 'JOB_NOT_FOUND');
             }
 
@@ -77,16 +80,18 @@ trait SnapshotBackupOpsTrait {
 
     /** Build export response. */
     private function buildExportResponse(array $result): WP_REST_Response {
+
         return new WP_REST_Response(array(
-            'success' => $result['success'], 'directory' => $result['directory'] ?? null,
-            'tables' => $result['tables'] ?? 0, 'total_rows' => $result['total_rows'] ?? 0,
-            'errors' => $result['errors'] ?? array(), 'duration' => $result['duration'] ?? 0,
-            'error' => $result['error'] ?? null,
-        ), $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], ResponseKeyType::Directory->value => $result[ResponseKeyType::Directory->value] ?? null,
+            ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0, ResponseKeyType::TotalRows->value => $result[ResponseKeyType::TotalRows->value] ?? 0,
+            ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value] ?? array(), ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0,
+            ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? null,
+        ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
 
     /** Extract cleanup options from body. */
     private function extractCleanupOptions(array $body): array {
+
         return array(
             'retention_type' => $body['retention_type'] ?? null, 'retention_days' => $body['retention_days'] ?? null,
             'retention_count' => $body['retention_count'] ?? null, 'dry_run' => $body['dry_run'] ?? false,
@@ -98,21 +103,23 @@ trait SnapshotBackupOpsTrait {
         $isDryRun = ($body['dry_run'] ?? false);
 
         if ($isDryRun) {
+
             return;
         }
 
         $this->logger->logPluginAction(ActionType::SnapshotCleanup->value, LogCategoryType::Snapshot->value,
-            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
+            $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
             array('retention_removed' => $result['retention']['deleted'] ?? 0, 'orphans_removed' => $result['orphans']['removed'] ?? 0,
-                'stuck_marked' => $result['stuck']['cleaned'] ?? 0, 'duration' => $result['duration'] ?? 0),
-            $result['success'] ? null : 'Cleanup encountered errors');
+                'stuck_marked' => $result['stuck']['cleaned'] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0),
+            $result[ResponseKeyType::Success->value] ? null : 'Cleanup encountered errors');
     }
 
     /** Build cleanup response. */
     private function buildCleanupResponse(array $result): WP_REST_Response {
+
         return new WP_REST_Response(array(
-            'success' => $result['success'], 'retention' => $result['retention'], 'orphans' => $result['orphans'],
-            'stuck' => $result['stuck'], 'duration' => $result['duration'], 'dry_run' => $result['dry_run'], 'errors' => $result['errors'],
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], 'retention' => $result['retention'], 'orphans' => $result['orphans'],
+            'stuck' => $result['stuck'], ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value], 'dry_run' => $result['dry_run'], ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value],
         ), HttpStatusType::Ok->value);
     }
 
@@ -122,9 +129,9 @@ trait SnapshotBackupOpsTrait {
         int $code,
         string $errorCode = '',
     ): WP_REST_Response {
-        $data = array('IsSuccess' => false, 'HasAnyErrors' => true, 'error' => $message);
+        $data = array('IsSuccess' => false, 'HasAnyErrors' => true, ResponseKeyType::Error->value => $message);
         if ($errorCode) {
-            $data['code'] = $errorCode;
+            $data[ResponseKeyType::Code->value] = $errorCode;
         }
 
         return new WP_REST_Response($data, $code);
@@ -140,13 +147,14 @@ trait SnapshotBackupOpsTrait {
 
     /** Build progress response. */
     private function buildProgressResponse(array $p): WP_REST_Response {
+
         return new WP_REST_Response(array(
             'IsSuccess' => true, 'HasAnyErrors' => false,
             'job_id' => $p['job_id'], 'status' => $p['status'],
             'total_tables' => $p['total_tables'], 'tables_exported' => $p['tables_exported'],
-            'total_rows' => $p['total_rows'], 'pool_size' => $p['pool_size'],
+            ResponseKeyType::TotalRows->value => $p[ResponseKeyType::TotalRows->value], 'pool_size' => $p['pool_size'],
             'total_batches' => $p['total_batches'], 'current_batch' => $p['current_batch'],
-            'percent' => $p['percent'], 'errors' => $p['errors'],
+            'percent' => $p['percent'], ResponseKeyType::Errors->value => $p[ResponseKeyType::Errors->value],
             'table_progress' => $p['table_progress'], 'created_at' => $p['created_at'],
             'updated_at' => $p['updated_at'], 'completed_at' => $p['completed_at'],
         ), HttpStatusType::Ok->value);

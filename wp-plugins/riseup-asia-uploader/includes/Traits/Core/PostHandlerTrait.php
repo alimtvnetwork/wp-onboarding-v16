@@ -36,7 +36,7 @@ trait PostHandlerTrait
             'search' => $request->get_param('search'),
         ));
 
-        return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
+        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
 
     public function handleCreatePost(WP_REST_Request $request): WP_REST_Response {
@@ -45,7 +45,7 @@ trait PostHandlerTrait
         $data   = $request->get_json_params();
         $result = $this->postManager->createPost($data);
 
-        return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
+        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
     }
 
     public function handleListCategories(WP_REST_Request $request): WP_REST_Response {
@@ -57,7 +57,7 @@ trait PostHandlerTrait
             'search' => $request->get_param('search'),
         ));
 
-        return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
+        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
 
     public function handleCreateCategory(WP_REST_Request $request): WP_REST_Response {
@@ -66,7 +66,7 @@ trait PostHandlerTrait
         $data   = $request->get_json_params();
         $result = $this->postManager->createCategory($data);
 
-        return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
+        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
     }
 
     public function handleQueryLogs(WP_REST_Request $request): WP_REST_Response {
@@ -88,11 +88,13 @@ trait PostHandlerTrait
                 ->setPagination($total, $perPage, $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1)
                 ->toResponse();
         } catch (Throwable $e) {
+
             return ErrorResponse::logAndReturnEnvelope($this->fileLogger, $e, 'Failed to query logs');
         }
     }
 
     private function buildLogQueryFilters(WP_REST_Request $request): array {
+
         return array(
             FilterKeyType::Plugin->value => $request->get_param(FilterKeyType::Plugin->value),
             FilterKeyType::Action->value => $request->get_param(FilterKeyType::Action->value),
@@ -115,6 +117,7 @@ trait PostHandlerTrait
                 ->setSingleResult($stats)
                 ->toResponse();
         } catch (Throwable $e) {
+
             return ErrorResponse::logAndReturnEnvelope($this->fileLogger, $e, 'Failed to get stats');
         }
     }

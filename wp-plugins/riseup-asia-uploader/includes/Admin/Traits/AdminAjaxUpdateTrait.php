@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -24,13 +25,13 @@ trait AdminAjaxUpdateTrait {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $resolver = UpdateResolver::getInstance();
         $result = $resolver->testConnection();
 
-        if ($result['success']) {
+        if ($result[ResponseKeyType::Success->value]) {
             wp_send_json_success($result);
         } else {
             wp_send_json_error($result);
@@ -42,13 +43,13 @@ trait AdminAjaxUpdateTrait {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $resolver = UpdateResolver::getInstance();
         $resolver->clearCache();
 
-        wp_send_json_success(array('message' => 'Cache cleared successfully'));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'Cache cleared successfully'));
     }
 
     /** AJAX handler: Check for updates now. */
@@ -56,17 +57,17 @@ trait AdminAjaxUpdateTrait {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $resolver = UpdateResolver::getInstance();
         $result = $resolver->fetchUpdateInfo(true);
 
         if (is_wp_error($result)) {
-            wp_send_json_error(array('message' => $result->get_error_message()));
+            wp_send_json_error(array(ResponseKeyType::Message->value => $result->get_error_message()));
         } else {
             wp_send_json_success(array(
-                'message'     => 'Update check complete',
+                ResponseKeyType::Message->value => 'Update check complete',
                 'update_info' => $result,
             ));
         }
