@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
@@ -42,7 +43,7 @@ trait SnapshotCrudCreateTrait {
             $scope = isset($body['scope']) ? sanitize_key($body['scope']) : SnapshotScopeType::All->value;
 
             $this->logger->logPluginAction(ActionType::SnapshotCreate->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
+                array(ResponseKeyType::Scope->value => $scope, 'trigger' => 'api', ResponseKeyType::Phase->value => 'initiated'));
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $isPerTable = (($manager->getSettings()['mode'] ?? SnapshotWorkerModeType::PerTable->value) === SnapshotWorkerModeType::PerTable->value);
@@ -53,7 +54,7 @@ trait SnapshotCrudCreateTrait {
 
             $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? SnapshotWorkerModeType::PerTable->value : SnapshotWorkerModeType::Legacy->value, $result);
 
-            return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
         }, 'create_snapshot');
     }
 
@@ -104,9 +105,9 @@ trait SnapshotCrudCreateTrait {
     ) {
         $this->logger->logPluginAction(
             $action, LogCategoryType::Snapshot->value,
-            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
-            array('scope' => $scope, 'mode' => $mode, 'phase' => 'complete'),
-            $result['success'] ? null : ($result['error'] ?? 'Unknown error')
+            $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
+            array(ResponseKeyType::Scope->value => $scope, 'mode' => $mode, ResponseKeyType::Phase->value => 'complete'),
+            $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Unknown error')
         );
     }
 }

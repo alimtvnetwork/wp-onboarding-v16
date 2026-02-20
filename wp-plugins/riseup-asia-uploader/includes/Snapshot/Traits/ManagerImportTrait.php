@@ -96,7 +96,7 @@ trait ManagerImportTrait {
         }
 
         $validation = $this->validateManifest($manifest);
-        $isValidationFailed = ($validation['valid'] === false);
+        $isValidationFailed = ($validation[ResponseKeyType::Valid->value] === false);
 
         if ($isValidationFailed) {
             throw new Exception('Manifest validation failed: ' . $validation[ResponseKeyType::Error->value]);
@@ -117,7 +117,7 @@ trait ManagerImportTrait {
         }
 
         $integrity = $this->validateSqliteIntegrity($sqlitePath);
-        $isIntegrityFailed = ($integrity['valid'] === false);
+        $isIntegrityFailed = ($integrity[ResponseKeyType::Valid->value] === false);
 
         if ($isIntegrityFailed) {
             throw new Exception('SQLite integrity check failed: ' . $integrity[ResponseKeyType::Error->value]);

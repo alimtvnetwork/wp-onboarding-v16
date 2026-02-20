@@ -16,6 +16,7 @@ use Exception;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -23,13 +24,13 @@ trait OrchestratorHelpersTrait {
 
     private function buildPhaseError(string $phase, array $result): array {
 
-        return array('success' => false, 'error' => 'Table export failed: ' . ($result['error'] ?? 'Unknown error'), 'phase' => $phase);
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table export failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown error'), ResponseKeyType::Phase->value => $phase);
     }
 
     private function buildExceptionResult(Exception $e, string $phase): array {
-        $this->log(LogLevelType::Error->value, ucfirst(str_replace('_', ' ', $phase)) . ' failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+        $this->log(LogLevelType::Error->value, ucfirst(str_replace('_', ' ', $phase)) . ' failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
-        return array('success' => false, 'error' => $e->getMessage(), 'phase' => $phase);
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Phase->value => $phase);
     }
 
     private function getDirectorySize(string $dir): int {

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Enums\FilterKeyType;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -31,7 +32,7 @@ trait DatabaseQuerySearchTrait {
         if ($isDbUnready) {
             $this->fileLogger->warn('Database not ready for query');
 
-            return array('total' => 0, 'logs' => array());
+            return array(ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array());
         }
 
         $limit = min(max(1, $limit), PaginationConfigType::MaxLimit->value);
@@ -42,7 +43,7 @@ trait DatabaseQuerySearchTrait {
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to query transactions');
 
-            return array('total' => 0, 'logs' => array());
+            return array(ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array());
         }
     }
 
@@ -65,7 +66,7 @@ trait DatabaseQuerySearchTrait {
         $this->decodeLogDetails($logs);
         $this->fileLogger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
 
-        return array('total' => $total, 'logs' => $logs);
+        return array(ResponseKeyType::Total->value => $total, ResponseKeyType::Logs->value => $logs);
     }
 
     private function decodeLogDetails(array &$logs): void {

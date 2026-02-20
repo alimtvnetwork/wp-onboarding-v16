@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
@@ -36,7 +37,7 @@ trait SnapshotCrudRestoreTrait {
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotDelete->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
+                array(ResponseKeyType::SnapshotId->value => $id, 'trigger' => 'api', ResponseKeyType::Phase->value => 'initiated')
             );
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -44,12 +45,12 @@ trait SnapshotCrudRestoreTrait {
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotDelete->value, LogCategoryType::Snapshot->value,
-                $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
-                array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'complete'),
-                $result['success'] ? null : ($result['error'] ?? 'Delete failed')
+                $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
+                array(ResponseKeyType::SnapshotId->value => $id, 'trigger' => 'api', ResponseKeyType::Phase->value => 'complete'),
+                $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Delete failed')
             );
 
-            $statusCode = $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value;
+            $statusCode = $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value;
             return new WP_REST_Response($result, $statusCode);
         }, 'delete_snapshot');
     }
@@ -61,7 +62,7 @@ trait SnapshotCrudRestoreTrait {
             $options = $this->parseRestoreOptions($body);
 
             $this->logger->logPluginAction(ActionType::SnapshotRestore->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated'));
+                array(ResponseKeyType::SnapshotId->value => $id, 'mode' => $options['mode'], ResponseKeyType::Phase->value => 'initiated'));
             $this->fileLogger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -71,7 +72,7 @@ trait SnapshotCrudRestoreTrait {
             unset($result['_mode']);
             $this->logSnapshotResult(ActionType::SnapshotRestore->value, '', $mode, $result);
 
-            return new WP_REST_Response($result, $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value);
+            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value);
         }, 'restore_snapshot');
     }
 
