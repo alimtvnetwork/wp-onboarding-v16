@@ -46,7 +46,7 @@ func New(cfg Config) *Service {
 }
 
 // CheckSite performs a health check on a single site
-func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, error) {
+func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[models.SiteHealthCheck] {
 	// Get site info
 	var siteName, siteURL, username string
 	var passwordEncrypted []byte
@@ -54,10 +54,11 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 		"SELECT Name, Url, Username, PasswordEncrypted FROM Sites WHERE Id = ?", siteID,
 	).Scan(&siteName, &siteURL, &username, &passwordEncrypted)
 	if err != nil {
-		return nil, apperror.Wrap(err, "E4001", "site not found").WithSiteID(siteID)
+		return apperror.FailWrap[models.SiteHealthCheck](err, "E4001", "site not found").
+			WithSiteID(siteID)
 	}
 
-	check := &models.SiteHealthCheck{
+	check := models.SiteHealthCheck{
 		SiteID:   siteID,
 		SiteName: siteName,
 		SiteURL:  siteURL,
@@ -70,8 +71,8 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 	if err != nil {
 		check.Status = "down"
 		check.ErrorMessage = err.Error()
-		s.saveCheck(check)
-		return check, nil
+		s.saveCheck(&check)
+		return apperror.Ok(check)
 	}
 
 	resp, err := s.client.Do(req)
@@ -81,8 +82,8 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 	if err != nil {
 		check.Status = "down"
 		check.ErrorMessage = err.Error()
-		s.saveCheck(check)
-		return check, nil
+		s.saveCheck(&check)
+		return apperror.Ok(check)
 	}
 	defer resp.Body.Close()
 
@@ -94,7 +95,6 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 		check.Status = "healthy"
 		check.UploaderOk = true
 	case resp.StatusCode == wordpress.HttpStatusUnauthorized.Int() || resp.StatusCode == wordpress.HttpStatusForbidden.Int():
-		// Auth required but site is up
 		check.Status = "healthy"
 		check.UploaderOk = false
 	case httpStatus.IsServerError():
@@ -110,15 +110,15 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 		check.Status = "degraded"
 	}
 
-	s.saveCheck(check)
-	return check, nil
+	s.saveCheck(&check)
+	return apperror.Ok(check)
 }
 
 // CheckAllSites performs health checks on all registered sites
-func (s *Service) CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, error) {
+func (s *Service) CheckAllSites(ctx context.Context) apperror.ResultSlice[models.SiteHealthCheck] {
 	rows, err := s.db.QueryContext(ctx, "SELECT Id FROM Sites")
 	if err != nil {
-		return nil, apperror.Wrap(err, "E4002", "failed to list sites")
+		return apperror.FailSliceWrap[models.SiteHealthCheck](err, "E4002", "failed to list sites")
 	}
 	defer rows.Close()
 
@@ -133,19 +133,19 @@ func (s *Service) CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, 
 
 	results := make([]models.SiteHealthCheck, 0, len(siteIDs))
 	for _, id := range siteIDs {
-		check, err := s.CheckSite(ctx, id)
-		if err != nil {
-			s.log.Warn("Health check failed", "siteId", id, "error", err)
+		result := s.CheckSite(ctx, id)
+		if result.HasError() {
+			s.log.Warn("Health check failed", "siteId", id, "error", result.Error())
 			continue
 		}
-		results = append(results, *check)
+		results = append(results, result.Value())
 	}
 
-	return results, nil
+	return apperror.OkSlice(results)
 }
 
 // GetHistory returns health check history
-func (s *Service) GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, error) {
+func (s *Service) GetHistory(siteID int64, limit int) apperror.ResultSlice[models.SiteHealthCheck] {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -159,7 +159,7 @@ func (s *Service) GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck,
 		LIMIT ?
 	`, siteID, siteID, limit)
 	if err != nil {
-		return nil, apperror.Wrap(err, "E4003", "failed to query health history")
+		return apperror.FailSliceWrap[models.SiteHealthCheck](err, "E4003", "failed to query health history")
 	}
 	defer rows.Close()
 
@@ -177,11 +177,11 @@ func (s *Service) GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck,
 		c.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
 		checks = append(checks, c)
 	}
-	return checks, nil
+	return apperror.OkSlice(checks)
 }
 
 // GetSummaries returns health summaries for all sites
-func (s *Service) GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, error) {
+func (s *Service) GetSummaries(ctx context.Context) apperror.ResultSlice[models.SiteHealthSummary] {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT 
 			s.Id, s.Name, s.Url,
@@ -197,7 +197,7 @@ func (s *Service) GetSummaries(ctx context.Context) ([]models.SiteHealthSummary,
 		ORDER BY s.Name
 	`)
 	if err != nil {
-		return nil, apperror.Wrap(err, "E4004", "failed to query health summaries")
+		return apperror.FailSliceWrap[models.SiteHealthSummary](err, "E4004", "failed to query health summaries")
 	}
 	defer rows.Close()
 
@@ -213,17 +213,18 @@ func (s *Service) GetSummaries(ctx context.Context) ([]models.SiteHealthSummary,
 		}
 		summaries = append(summaries, sm)
 	}
-	return summaries, nil
+	return apperror.OkSlice(summaries)
 }
 
 // GetStats returns overall health statistics
-func (s *Service) GetStats(ctx context.Context) (*models.SiteHealthStats, error) {
-	summaries, err := s.GetSummaries(ctx)
-	if err != nil {
-		return nil, err
+func (s *Service) GetStats(ctx context.Context) apperror.Result[models.SiteHealthStats] {
+	summariesResult := s.GetSummaries(ctx)
+	if summariesResult.HasError() {
+		return apperror.Fail[models.SiteHealthStats](summariesResult.Error())
 	}
+	summaries := summariesResult.Items()
 
-	stats := &models.SiteHealthStats{TotalSites: len(summaries)}
+	stats := models.SiteHealthStats{TotalSites: len(summaries)}
 	var totalResponse float64
 	var totalUptime float64
 
@@ -247,20 +248,21 @@ func (s *Service) GetStats(ctx context.Context) (*models.SiteHealthStats, error)
 		stats.AvgUptime = totalUptime / float64(stats.TotalSites)
 	}
 
-	return stats, nil
+	return apperror.Ok(stats)
 }
 
 // ClearHistory removes old health check records
-func (s *Service) ClearHistory(olderThanDays int) (int64, error) {
+func (s *Service) ClearHistory(olderThanDays int) apperror.Result[int64] {
 	if olderThanDays <= 0 {
 		olderThanDays = 30
 	}
 	cutoff := time.Now().AddDate(0, 0, -olderThanDays).Format("2006-01-02 15:04:05")
 	result, err := s.db.Exec("DELETE FROM SiteHealthChecks WHERE CreatedAt < ?", cutoff)
 	if err != nil {
-		return 0, apperror.Wrap(err, "E4005", "failed to clear health history")
+		return apperror.FailWrap[int64](err, "E4005", "failed to clear health history")
 	}
-	return result.RowsAffected()
+	deleted, _ := result.RowsAffected()
+	return apperror.Ok(deleted)
 }
 
 func (s *Service) saveCheck(check *models.SiteHealthCheck) {
