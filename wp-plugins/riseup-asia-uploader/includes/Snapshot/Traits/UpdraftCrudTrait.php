@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
 
@@ -22,33 +23,33 @@ trait UpdraftCrudTrait {
     public function createSnapshot(array $options): array {
         $isUnavailable = ($this->isAvailable() === false);
         if ($isUnavailable) {
-            return array('success' => false, 'error' => 'UpdraftPlus is not available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus is not available', ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot via UpdraftPlus', $options);
 
         try {
-            return array('success' => false, 'error' => 'UpdraftPlus integration not yet implemented');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus integration not yet implemented');
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'UpdraftPlus snapshot failed', array('error' => $e->getMessage()));
-            return array('success' => false, 'error' => $e->getMessage());
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
     }
 
     public function restoreSnapshot(int $snapshotId, array $options): array {
-        return array('success' => false, 'error' => 'UpdraftPlus restore not yet implemented');
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus restore not yet implemented');
     }
 
     public function deleteSnapshot(int $snapshotId): array {
-        return array('success' => false, 'error' => 'UpdraftPlus delete not yet implemented');
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus delete not yet implemented');
     }
 
     public function exportSnapshot(int $snapshotId): array {
-        return array('success' => false, 'error' => 'UpdraftPlus export not yet implemented');
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus export not yet implemented');
     }
 
     public function importSnapshot(string $filepath): array {
-        return array('success' => false, 'error' => 'UpdraftPlus import not yet implemented');
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus import not yet implemented');
     }
 
     public function getSnapshot(int $snapshotId): ?array {

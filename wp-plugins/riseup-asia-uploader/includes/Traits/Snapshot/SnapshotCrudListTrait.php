@@ -16,6 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Snapshot\SnapshotManager;
 
 trait SnapshotCrudListTrait {
@@ -32,9 +33,9 @@ trait SnapshotCrudListTrait {
             $snapshots = $manager->listSnapshots($limit, $offset);
 
             return new WP_REST_Response(array(
-                'success'                          => true,
-                ResponseKeyType::Snapshots->value  => $snapshots[ResponseKeyType::Snapshots->value],
-                ResponseKeyType::Total->value      => $snapshots[ResponseKeyType::Total->value],
+                ResponseKeyType::Success->value            => true,
+                ResponseKeyType::Snapshots->value          => $snapshots[ResponseKeyType::Snapshots->value],
+                ResponseKeyType::Total->value              => $snapshots[ResponseKeyType::Total->value],
             ), HttpStatusType::Ok->value);
         }, 'list_snapshots');
     }
@@ -51,17 +52,17 @@ trait SnapshotCrudListTrait {
             $provider = $manager->getProvider();
             $isProviderMissing = ($provider === null);
             if ($isProviderMissing) {
-                return $this->errorResponse('No snapshot provider available', HttpStatusType::ServerError->value);
+                return $this->errorResponse(ResponseMessageType::SnapshotProviderMissing->value, HttpStatusType::ServerError->value);
             }
 
             $snapshot = $provider->getSnapshot($id);
             $isSnapshotMissing = ($snapshot === null);
             if ($isSnapshotMissing) {
-                return $this->errorResponse('Snapshot not found', HttpStatusType::NotFound->value);
+                return $this->errorResponse(ResponseMessageType::SnapshotNotFound->value, HttpStatusType::NotFound->value);
             }
 
             return new WP_REST_Response(array(
-                'success'  => true,
+                ResponseKeyType::Success->value => true,
                 'snapshot' => $snapshot,
             ), HttpStatusType::Ok->value);
         }, 'get_snapshot');

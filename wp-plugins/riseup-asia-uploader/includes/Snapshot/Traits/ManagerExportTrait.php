@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
 use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\PathHelper;
 
@@ -25,19 +27,19 @@ trait ManagerExportTrait {
         $isProviderMissing = ($provider === null);
 
         if ($isProviderMissing) {
-            return array('success' => false, 'error' => 'No snapshot provider available');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotProviderMissing->value);
         }
 
         $snapshot = $provider->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
 
         if ($isSnapshotMissing) {
-            return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value, ResponseKeyType::Code->value => SnapshotErrorType::NotFound->value);
         }
 
         $filepath = $snapshot['filepath'];
         if (PathHelper::isFileMissing($filepath)) {
-            return array('success' => false, 'error' => 'Snapshot file not found');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotFileMissing->value);
         }
 
         return $this->createSnapshotZip($snapshotId, $filepath, $snapshot);
@@ -53,7 +55,7 @@ trait ManagerExportTrait {
         $zip = new ZipArchive();
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', array('path' => $zipPath));
-            return array('success' => false, 'error' => 'Failed to create ZIP file');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ZipCreateFailed->value);
         }
 
         $zip->addFile($filepath, basename($filepath));
@@ -66,7 +68,7 @@ trait ManagerExportTrait {
             'snapshot_id' => $snapshotId, 'zip_path' => $zipPath, 'size' => PathHelper::formatBytes($size),
         ));
 
-        return array('success' => true, 'filepath' => $zipPath, 'filename' => basename($zipPath), 'size' => $size);
+        return array(ResponseKeyType::Success->value => true, 'filepath' => $zipPath, 'filename' => basename($zipPath), 'size' => $size);
     }
 
     private function createExportManifest(array $snapshot): array {

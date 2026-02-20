@@ -16,6 +16,7 @@ use PDO;
 use PDOStatement;
 use Throwable;
 use Exception;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait IncrementalExportTrait {
@@ -36,12 +37,12 @@ trait IncrementalExportTrait {
             $sqlite = null;
 
             return array(
-                'success' => true, 'rows' => $exported,
+                ResponseKeyType::Success->value => true, 'rows' => $exported,
                 'file_size' => filesize($filepath), 'checksum' => md5_file($filepath),
             );
         } catch (Throwable $e) {
 
-            return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0, 'file_size' => 0, 'checksum' => '');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), 'rows' => 0, 'file_size' => 0, 'checksum' => '');
         }
     }
 

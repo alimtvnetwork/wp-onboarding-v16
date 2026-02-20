@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
@@ -85,21 +86,21 @@ trait SnapshotBackupExecTrait {
     /** Log full backup completion. */
     private function logBackupComplete(string $action, array $result) {
         $this->logger->logPluginAction($action, LogCategoryType::Snapshot->value,
-            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
+            $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
             array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables' => $result['tables'] ?? 0,
                 'total_rows' => $result['total_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),
-            $result['success'] ? null : ($result['error'] ?? 'Backup failed'));
+            $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Backup failed'));
     }
 
     /** Build full backup response. */
     private function buildFullBackupResponse(array $result): WP_REST_Response {
         return new WP_REST_Response(array(
-            'success' => $result['success'], 'snapshot_id' => $result['snapshot_id'] ?? null,
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], 'snapshot_id' => $result['snapshot_id'] ?? null,
             'directory' => $result['directory'] ?? null, 'tables' => $result['tables'] ?? 0,
             'total_rows' => $result['total_rows'] ?? 0, 'plugins' => $result['plugins'] ?? 0,
             'zip_size' => $result['zip_size'] ?? 0, 'duration' => $result['duration'] ?? 0,
-            'errors' => $result['errors'] ?? array(), 'error' => $result['error'] ?? null, 'phase' => $result['phase'] ?? null,
-        ), $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+            'errors' => $result['errors'] ?? array(), ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? null, 'phase' => $result['phase'] ?? null,
+        ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 
     /** Resolve the master directory for an incremental backup. */
@@ -115,7 +116,7 @@ trait SnapshotBackupExecTrait {
         $isMasterDirInvalid = ($master_dir === null || $master_dir === '' || PathHelper::isDirMissing($master_dir));
         if ($isMasterDirInvalid) {
             return new WP_REST_Response(array(
-                'success' => false, 'error' => 'No master (full) snapshot found. Create a full backup first.',
+                ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No master (full) snapshot found. Create a full backup first.',
             ), HttpStatusType::BadRequest->value);
         }
 
@@ -131,20 +132,20 @@ trait SnapshotBackupExecTrait {
     /** Log incremental backup completion. */
     private function logIncrementalComplete(array $result) {
         $this->logger->logPluginAction(ActionType::SnapshotIncremental->value, LogCategoryType::Snapshot->value,
-            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
+            $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
             array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables_changed' => $result['tables_changed'] ?? 0,
                 'total_new_rows' => $result['total_new_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),
-            $result['success'] ? null : ($result['error'] ?? 'Incremental backup failed'));
+            $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Incremental backup failed'));
     }
 
     /** Build incremental backup response. */
     private function buildIncrementalResponse(array $result): WP_REST_Response {
         return new WP_REST_Response(array(
-            'success' => $result['success'], 'snapshot_id' => $result['snapshot_id'] ?? null,
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], 'snapshot_id' => $result['snapshot_id'] ?? null,
             'sequence' => $result['sequence'] ?? null, 'folder_name' => $result['folder_name'] ?? null,
             'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
             'tables' => $result['tables'] ?? array(), 'duration' => $result['duration'] ?? 0,
-            'errors' => $result['errors'] ?? array(), 'error' => $result['error'] ?? null,
-        ), $result['success'] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+            'errors' => $result['errors'] ?? array(), ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? null,
+        ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 }

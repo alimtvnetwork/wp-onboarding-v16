@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginSelectionType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
@@ -65,7 +66,7 @@ trait OrchestratorBackupTrait {
             $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $worker_result, array('count' => 0, 'total_size' => 0), $worker_result['path']);
 
             return array(
-                'success' => true, 'async' => true, 'job_id' => $worker_result['job_id'] ?? null,
+                ResponseKeyType::Success->value => true, 'async' => true, 'job_id' => $worker_result['job_id'] ?? null,
                 'snapshot_id' => $snapshot_id, 'directory' => $worker_result['directory'] ?? null,
                 'path' => $worker_result['path'], 'total_tables' => $worker_result['total_tables'] ?? null,
                 'pool_size' => $worker_result['pool_size'] ?? null, 'status' => $worker_result['status'] ?? null,
@@ -103,7 +104,7 @@ trait OrchestratorBackupTrait {
         $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array('path' => null, 'size' => 0, 'zip_failed' => false);
 
         return array(
-            'success' => true, 'snapshot_id' => $snapshot_id, 'directory' => $workerResult['directory'],
+            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshot_id, 'directory' => $workerResult['directory'],
             'path' => $workerResult['path'], 'tables' => $workerResult['tables'],
             'total_rows' => $workerResult['total_rows'], 'plugins' => $plugin_stats['count'],
             'zip_path' => $zip_result['path'], 'zip_size' => $zip_result['size'],
@@ -138,11 +139,11 @@ trait OrchestratorBackupTrait {
             $isMasterDirMissing = ($master_dir === null);
 
             if ($isMasterDirMissing) {
-                return array('success' => false, 'error' => 'No full snapshot found. A full backup is required before creating an incremental.', 'phase' => 'incremental_lookup');
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No full snapshot found. A full backup is required before creating an incremental.', 'phase' => 'incremental_lookup');
             }
 
             $result = $incremental->execute($master_dir, $options);
-            $this->log(LogLevelType::Info->value, 'Incremental backup orchestration ' . ($result['success'] ? 'complete' : 'failed'), array(
+            $this->log(LogLevelType::Info->value, 'Incremental backup orchestration ' . ($result[ResponseKeyType::Success->value] ? 'complete' : 'failed'), array(
                 'master' => basename($master_dir), 'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
             ));
 

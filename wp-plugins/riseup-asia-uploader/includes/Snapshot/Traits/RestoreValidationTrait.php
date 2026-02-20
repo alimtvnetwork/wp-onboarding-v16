@@ -18,6 +18,7 @@ use PDO;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\PathHelper;
@@ -28,17 +29,17 @@ trait RestoreValidationTrait {
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
             return array(
-                'success' => false,
-                'error'   => 'Restore requires explicit confirmation (confirm=true)',
-                'code'    => SnapshotErrorType::RestoreNoConfirm->value,
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => 'Restore requires explicit confirmation (confirm=true)',
+                ResponseKeyType::Code->value    => SnapshotErrorType::RestoreNoConfirm->value,
             );
         }
 
         $root_path = $snapshotDir . '/a-root.db';
         if (PathHelper::isFileMissing($root_path)) {
             return array(
-                'success' => false,
-                'error'   => 'Snapshot a-root.db not found at: ' . basename($snapshotDir),
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => 'Snapshot a-root.db not found at: ' . basename($snapshotDir),
             );
         }
 
@@ -59,7 +60,7 @@ trait RestoreValidationTrait {
             }));
 
             if (empty($restore_order)) {
-                return array('success' => false, 'error' => 'None of the selected tables exist in the snapshot');
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'None of the selected tables exist in the snapshot');
             }
         }
 
@@ -67,7 +68,7 @@ trait RestoreValidationTrait {
             'tables' => count($restore_order), 'order' => array_slice($restore_order, 0, 10),
         ));
 
-        return array('success' => true, 'tables' => $restore_order, 'inventory' => $table_inventory);
+        return array(ResponseKeyType::Success->value => true, 'tables' => $restore_order, 'inventory' => $table_inventory);
     }
 
     private function createSafetyBackup(array $options): ?int {
@@ -85,16 +86,16 @@ trait RestoreValidationTrait {
             'include_plugins' => false,
         ));
 
-        if ($result['success']) {
+        if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', array('backup_id' => $result['snapshot_id'] ?? null));
             return $result['snapshot_id'] ?? null;
         }
 
-        $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array('error' => $result['error'] ?? 'Unknown'));
+        $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array('error' => $result[ResponseKeyType::Error->value] ?? 'Unknown'));
 
         $isBackupRequired = BooleanHelpers::hasValue($options['require_backup'] ?? null);
         if ($isBackupRequired) {
-            throw new Exception('Pre-restore backup failed: ' . ($result['error'] ?? 'Unknown'));
+            throw new Exception('Pre-restore backup failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown'));
         }
 
         return null;

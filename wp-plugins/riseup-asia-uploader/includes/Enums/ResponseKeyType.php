@@ -12,6 +12,15 @@ namespace RiseupAsia\Enums;
  */
 enum ResponseKeyType: string
 {
+    /** Envelope keys — present in most response arrays. */
+    case Success  = 'success';
+    case Error    = 'error';
+    case Message  = 'message';
+    case Data     = 'data';
+    case Code     = 'code';
+    case Valid    = 'valid';
+
+    /** Domain collection keys. */
     case Total     = 'total';
     case Agents    = 'agents';
     case Actions   = 'actions';

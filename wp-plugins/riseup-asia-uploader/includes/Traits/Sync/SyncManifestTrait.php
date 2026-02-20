@@ -18,6 +18,7 @@ use RiseupAsia\Database\FileCache;
 use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
@@ -58,8 +59,8 @@ trait SyncManifestTrait
         $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
 
         return new WP_REST_Response(array(
-            'success' => true,
-            'data' => array(
+            ResponseKeyType::Success->value => true,
+            ResponseKeyType::Data->value => array(
                 'plugin' => $slug, 'fileCount' => count($result['files']),
                 'generatedAt' => DateHelper::nowIso(), 'cached' => $result['cached'] > 0,
                 'cacheStats' => array('fromCache' => $result['cached'], 'computed' => $result['computed'], 'removed' => $result['removed']),

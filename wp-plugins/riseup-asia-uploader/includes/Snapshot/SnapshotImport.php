@@ -7,6 +7,8 @@ use Exception;
 use Throwable;
 use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Snapshot\Traits\ImportValidationTrait;
 use RiseupAsia\Snapshot\Traits\ImportExecutionTrait;
@@ -47,7 +49,7 @@ class SnapshotImport {
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
         $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
         if ($isDirCreationFailed) {
-            return $this->fail('Failed to create temp directory');
+            return $this->fail(ResponseMessageType::TempDirCreateFailed->value);
         }
 
         return $this->extractAndImport($uploadedPath, $tempDir);
@@ -55,10 +57,10 @@ class SnapshotImport {
 
     private function guardImportFile(string $path): ?array {
         if (PathHelper::isFileMissing($path)) {
-            return $this->fail('Uploaded file not found');
+            return $this->fail(ResponseMessageType::UploadedFileMissing->value);
         }
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        if ($ext !== 'zip') { return $this->fail('Invalid file type. Expected ZIP file.'); }
+        if ($ext !== 'zip') { return $this->fail(ResponseMessageType::InvalidFileTypeZip->value); }
 
         return null;
     }
@@ -102,6 +104,6 @@ class SnapshotImport {
     }
 
     private function fail(string $message): array {
-        return array('success' => false, 'error' => $message);
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $message);
     }
 }

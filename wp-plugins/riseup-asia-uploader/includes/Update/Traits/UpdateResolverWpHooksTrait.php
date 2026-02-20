@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UpdateResolverWpHooksTrait {
@@ -109,14 +111,14 @@ trait UpdateResolverWpHooksTrait {
         $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {
-            return array('success' => false, 'message' => 'No master URL configured');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Message->value => 'No master URL configured');
         }
 
         $this->fileLogger->info('Testing update server connection');
         $resolved = $this->resolveUrl($settings['master_url']);
 
         if (is_wp_error($resolved)) {
-            return array('success' => false, 'message' => $resolved->get_error_message());
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Message->value => $resolved->get_error_message());
         }
 
         $this->saveSettings(array(
@@ -124,6 +126,6 @@ trait UpdateResolverWpHooksTrait {
             'last_check' => current_time('mysql', true), 'last_error' => '',
         ));
 
-        return array('success' => true, 'message' => 'Connection successful', 'resolved_url' => $resolved);
+        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value, 'resolved_url' => $resolved);
     }
 }

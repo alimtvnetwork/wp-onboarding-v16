@@ -16,6 +16,8 @@ use ZipArchive;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
@@ -26,12 +28,12 @@ trait ManagerImportTrait {
 
     public function importSnapshot(string $uploadedPath): array {
         if (PathHelper::isFileMissing($uploadedPath)) {
-            return array('success' => false, 'error' => 'Uploaded file not found');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::UploadedFileMissing->value);
         }
 
         $ext = strtolower(pathinfo($uploadedPath, PATHINFO_EXTENSION));
         if ($ext !== 'zip') {
-            return array('success' => false, 'error' => 'Invalid file type. Expected ZIP file.');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::InvalidFileTypeZip->value);
         }
 
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
@@ -42,7 +44,7 @@ trait ManagerImportTrait {
         $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
 
         if ($isDirCreationFailed) {
-            return array('success' => false, 'error' => 'Failed to create temp directory');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::TempDirCreateFailed->value);
         }
 
         try {
@@ -59,7 +61,7 @@ trait ManagerImportTrait {
 
             $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
 
-            return array('success' => false, 'error' => $e->getMessage());
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
     }
 
@@ -158,7 +160,7 @@ trait ManagerImportTrait {
         ));
 
         return array(
-            'success' => true, 'snapshot_id' => $snapshotId, 'filename' => $newFilename,
+            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshotId, 'filename' => $newFilename,
             'tables' => count($manifest['snapshot']['tables']),
             'rows' => $manifest['snapshot']['total_rows'],
         );
