@@ -128,36 +128,10 @@ type Stage struct {
 }
 
 // Publish publishes plugin changes to a WordPress site
-func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any) apperror.Result[PublishResult] {
+func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts PublishOptions) apperror.Result[PublishResult] {
 	startTime := time.Now()
-	
-	// Parse options
-	options, ok := opts.(PublishOptions)
-	if !ok {
-		// Try to convert from map
-		if m, ok := opts.(map[string]any); ok {
-			options = PublishOptions{
-				Mode:              getString(m, "mode", "full"),
-				CreateBackup:      getBool(m, "createBackup", true),
-				KeepZipFiles:      getBool(m, "keepZipFiles", false),
-				RollbackOnFailure: getBool(m, "rollbackOnFailure", true),
-			}
-			if files, ok := m["files"].([]any); ok {
-				for _, f := range files {
-					if s, ok := f.(string); ok {
-						options.Files = append(options.Files, s)
-					}
-				}
-			}
-		} else {
-			// Default options
-			options = PublishOptions{
-				Mode:              "full",
-				CreateBackup:      true,
-				RollbackOnFailure: true,
-			}
-		}
-	}
+
+	options := opts
 
 	result := &PublishResult{
 		Success:          false,
@@ -1432,21 +1406,6 @@ func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) (*models
 	}
 	
 	return &site, password, nil
-}
-
-// Helper functions for parsing options
-func getString(m map[string]any, key, defaultVal string) string {
-	if v, ok := m[key].(string); ok {
-		return v
-	}
-	return defaultVal
-}
-
-func getBool(m map[string]any, key string, defaultVal bool) bool {
-	if v, ok := m[key].(bool); ok {
-		return v
-	}
-	return defaultVal
 }
 
 // marshalDetails converts a map to json.RawMessage for WS broadcast boundaries.

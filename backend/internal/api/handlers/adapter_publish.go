@@ -11,7 +11,7 @@ import (
 
 // PublishServiceInterface defines publish service methods
 type PublishServiceInterface interface {
-	Publish(ctx context.Context, pluginID, siteID int64, opts any) (*publish.PublishResult, error)
+	Publish(ctx context.Context, pluginID, siteID int64, opts publish.PublishOptions) (*publish.PublishResult, error)
 	PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (*publish.PublishResult, error)
 	PreviewPublish(ctx context.Context, pluginID, siteID int64) (*publish.PublishPreviewResult, error)
 	GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*publish.FileDiffResult, error)
@@ -31,7 +31,7 @@ type PublishServiceAdapter struct {
 	*publish.Service
 }
 
-func (a *PublishServiceAdapter) Publish(ctx context.Context, pluginID, siteID int64, opts any) (*publish.PublishResult, error) {
+func (a *PublishServiceAdapter) Publish(ctx context.Context, pluginID, siteID int64, opts publish.PublishOptions) (*publish.PublishResult, error) {
 	result := a.Service.Publish(ctx, pluginID, siteID, opts)
 	if result.HasError() {
 		return nil, result.Error()
