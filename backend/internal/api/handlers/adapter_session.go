@@ -76,19 +76,39 @@ type ErrorHistoryServiceAdapter struct {
 }
 
 func (a *ErrorHistoryServiceAdapter) Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error) {
-	return a.Service.Save(input)
+	result := a.Service.Save(input)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *ErrorHistoryServiceAdapter) List(limit, offset int, filters models.ErrorHistoryFilters) ([]models.ErrorHistory, int, error) {
-	return a.Service.List(limit, offset, filters)
+	result := a.Service.List(limit, offset, filters)
+	if result.HasError() {
+		return nil, 0, result.Error()
+	}
+	v := result.Value()
+	return v.Items, v.Total, nil
 }
 
 func (a *ErrorHistoryServiceAdapter) GetByID(id int64) (*models.ErrorHistory, error) {
-	return a.Service.GetByID(id)
+	result := a.Service.GetByID(id)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *ErrorHistoryServiceAdapter) GetByErrorID(errorID string) (*models.ErrorHistory, error) {
-	return a.Service.GetByErrorID(errorID)
+	result := a.Service.GetByErrorID(errorID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *ErrorHistoryServiceAdapter) Delete(id int64) error {
@@ -96,13 +116,26 @@ func (a *ErrorHistoryServiceAdapter) Delete(id int64) error {
 }
 
 func (a *ErrorHistoryServiceAdapter) Clear() (int64, error) {
-	return a.Service.Clear()
+	result := a.Service.Clear()
+	if result.HasError() {
+		return 0, result.Error()
+	}
+	return result.Value(), nil
 }
 
 func (a *ErrorHistoryServiceAdapter) BulkExport(ids []int64) (string, error) {
-	return a.Service.BulkExport(ids)
+	result := a.Service.BulkExport(ids)
+	if result.HasError() {
+		return "", result.Error()
+	}
+	return result.Value(), nil
 }
 
 func (a *ErrorHistoryServiceAdapter) GetStats() (*models.ErrorHistoryStats, error) {
-	return a.Service.GetStats()
+	result := a.Service.GetStats()
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
