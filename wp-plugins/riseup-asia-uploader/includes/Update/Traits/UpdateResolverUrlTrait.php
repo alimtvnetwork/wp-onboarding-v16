@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\UpdateConfigType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -41,7 +42,7 @@ trait UpdateResolverUrlTrait {
     }
 
     private function followSingleRedirect(string $url): string|WP_Error|null {
-        $response = wp_remote_head($url, array('timeout' => 15, 'redirection' => 0, 'sslverify' => true));
+        $response = wp_remote_head($url, array('timeout' => HttpConfigType::TimeoutShort->value, 'redirection' => 0, 'sslverify' => true));
 
         if (is_wp_error($response)) {
             $this->fileLogger->error('URL resolution failed', array('url' => $url, 'error' => $response->get_error_message()));

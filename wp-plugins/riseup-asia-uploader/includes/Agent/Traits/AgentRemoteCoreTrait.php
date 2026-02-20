@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_Error;
 use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
@@ -86,7 +87,7 @@ trait AgentRemoteCoreTrait {
     ): array {
         $args = array(
             'method'    => strtoupper($method),
-            'timeout'   => 30,
+            'timeout'   => HttpConfigType::TimeoutDefault->value,
             'headers'   => array(
                 'Authorization' => $this->buildAuthHeader($agent),
                 'Content-Type'  => 'application/json',

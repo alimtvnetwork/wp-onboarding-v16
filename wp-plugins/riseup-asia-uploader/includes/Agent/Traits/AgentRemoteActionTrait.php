@@ -17,6 +17,7 @@ use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\AgentStatusType;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
@@ -59,7 +60,7 @@ trait AgentRemoteActionTrait {
     private function followRedirectChain(string $url, int $maxRedirects = 5): string|WP_Error {
         for ($i = 0; $i < $maxRedirects; $i++) {
             $response = wp_remote_head($url, array(
-                'timeout' => 15, 'redirection' => 0, 'sslverify' => true,
+                'timeout' => HttpConfigType::TimeoutShort->value, 'redirection' => 0, 'sslverify' => true,
             ));
 
             if (is_wp_error($response)) {
