@@ -21,6 +21,7 @@ use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait InvalidRouteTrait
 {
@@ -147,7 +148,7 @@ trait InvalidRouteTrait
             $data['plugin_version'] = PluginConfigType::Version->value;
         }
         if (BooleanHelpers::isKeyMissing($data, 'timestamp')) {
-            $data['timestamp'] = gmdate('c');
+            $data['timestamp'] = DateHelper::nowIso();
         }
         if (BooleanHelpers::isKeyMissing($data, 'log_hint')) {
             $data['log_hint'] = 'Check the plugin error logs or the Activity Logs page for details.';

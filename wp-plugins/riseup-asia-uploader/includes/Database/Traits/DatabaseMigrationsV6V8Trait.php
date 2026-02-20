@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait DatabaseMigrationsV6V8Trait {
 
@@ -93,7 +94,7 @@ trait DatabaseMigrationsV6V8Trait {
             array('snapshot.pre_restore_backup', '1',          'bool'),
         );
 
-        $now  = gmdate('Y-m-d\TH:i:s\Z');
+        $now  = DateHelper::nowUtc();
         $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO " . TableType::SnapshotSettings->value . " (key, value, type, updated_at) VALUES (?, ?, ?, ?)");
 
         foreach ($defaults as $row) {

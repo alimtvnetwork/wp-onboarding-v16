@@ -18,10 +18,11 @@ use RiseupAsia\Enums\PluginConfigType;
 use Throwable;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 class ActivationHandler
 {
-    private const TIMESTAMP_FORMAT = 'Y-m-d\TH:i:s';
+    
     private const VERSION_UNKNOWN = 'unknown';
     private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
     private const DIAGNOSTICS_EXPIRY = 86400; // 24 hours
@@ -64,7 +65,7 @@ class ActivationHandler
         $hasFailures = (count($result['failed']) > 0);
 
         $diagnosticData = [
-            'timestamp'    => gmdate(self::TIMESTAMP_FORMAT) . 'Z',
+            'timestamp'    => DateHelper::nowUtc(),
             'loaded_count' => count($result['loaded']),
             'failed_count' => count($result['failed']),
             'failures'     => $result['failed'],
@@ -109,7 +110,7 @@ class ActivationHandler
     }
 
     private static function writeLogFiles(string $logsDir): void {
-        $timestamp = gmdate(self::TIMESTAMP_FORMAT) . 'Z';
+        $timestamp = DateHelper::nowUtc();
         $version = PluginConfigType::Version->value;
 
         self::writeMainLog($logsDir, $timestamp, $version);

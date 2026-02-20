@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 use WP_REST_Response;
+use RiseupAsia\Helpers\DateHelper;
 
 trait EnvelopeBuildTrait {
 
@@ -32,7 +33,7 @@ trait EnvelopeBuildTrait {
             'IsFailed'  => !$this->is_success,
             'Code'      => $this->code,
             'Message'   => $this->message,
-            'Timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+            'Timestamp' => DateHelper::nowUtc(),
         );
     }
 

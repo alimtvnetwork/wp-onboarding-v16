@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_Error;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\WpErrorCodeType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait UpdateResolverBackupTrait {
 
@@ -44,7 +45,7 @@ trait UpdateResolverBackupTrait {
             wp_mkdir_p($upgradeDir);
         }
 
-        $backupName = PluginConfigType::Slug->value . '-backup-' . gmdate('Ymd-His');
+        $backupName = PluginConfigType::Slug->value . '-backup-' . DateHelper::nowCompact();
         $backupDir = $upgradeDir . '/' . $backupName;
 
         $this->fileLogger->info('Creating pre-update backup', array('source' => $pluginDir, 'backup' => $backupDir));

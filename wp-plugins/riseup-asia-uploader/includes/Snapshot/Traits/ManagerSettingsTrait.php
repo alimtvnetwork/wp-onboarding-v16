@@ -20,6 +20,7 @@ use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Snapshot\SnapshotFactory;
 use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
@@ -77,7 +78,7 @@ trait ManagerSettingsTrait {
 
         if ($pdo) {
             try {
-                $now = gmdate('Y-m-d\TH:i:s\Z');
+                $now = DateHelper::nowUtc();
                 $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_settings (key, value, type, updated_at) VALUES (?, ?, ?, ?)");
 
                 foreach ($settings as $key => $value) {

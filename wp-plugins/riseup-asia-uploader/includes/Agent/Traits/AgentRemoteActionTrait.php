@@ -21,6 +21,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\UpdateConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait AgentRemoteActionTrait {
 
@@ -36,7 +37,7 @@ trait AgentRemoteActionTrait {
 
         $this->updateAgent($agent->id, array(
             'redirect_resolved'    => $resolved,
-            'redirect_resolved_at' => gmdate('Y-m-d\TH:i:s\Z'),
+            'redirect_resolved_at' => DateHelper::nowUtc(),
         ));
 
         return $resolved;
@@ -102,7 +103,7 @@ trait AgentRemoteActionTrait {
     private function handleTestConnectionSuccess(int $agentId, array $result): array {
         $this->updateAgent($agentId, array(
             'status'     => AgentStatusType::Connected->value,
-            'last_sync'  => gmdate('Y-m-d\TH:i:s\Z'),
+            'last_sync'  => DateHelper::nowUtc(),
             'last_error' => null,
         ));
         $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Success->value);
@@ -123,7 +124,7 @@ trait AgentRemoteActionTrait {
 
         $this->updateAgent($agentId, array(
             'status'    => AgentStatusType::Connected->value,
-            'last_sync' => gmdate('Y-m-d\TH:i:s\Z'),
+            'last_sync' => DateHelper::nowUtc(),
         ));
 
         $plugins = isset($result['plugins']) ? $result['plugins'] : $result;

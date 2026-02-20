@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\DateHelper;
 
 trait RootDbRegistrationTrait {
 
@@ -28,7 +29,7 @@ trait RootDbRegistrationTrait {
     ): void {
         $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_tables
             (table_name, row_count, sqlite_file, file_size_bytes, checksum_md5, exported_at) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(array($tableName, $rowCount, $sqliteFile, $fileSize, $checksum, gmdate('c')));
+        $stmt->execute(array($tableName, $rowCount, $sqliteFile, $fileSize, $checksum, DateHelper::nowIso()));
     }
 
     /** Update final stats in snapshot_meta. */
@@ -46,7 +47,7 @@ trait RootDbRegistrationTrait {
         $stmt = $pdo->prepare("INSERT INTO incremental_backups
             (sequence_num, folder_name, created_at, tables_changed, total_new_rows, relative_path) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
-            $info['sequence_num'], $info['folder_name'], gmdate('c'),
+            $info['sequence_num'], $info['folder_name'], DateHelper::nowIso(),
             $info['tables_changed'] ?? 0, $info['total_new_rows'] ?? 0, $info['relative_path'],
         ));
     }

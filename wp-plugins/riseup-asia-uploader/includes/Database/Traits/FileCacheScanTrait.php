@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait FileCacheScanTrait {
 
@@ -77,7 +78,7 @@ trait FileCacheScanTrait {
         array $cachedEntries,
     ): array {
         $path = $fileInfo['path'];
-        $mtimeStr = gmdate('c', $fileInfo['mtime']);
+        $mtimeStr = DateHelper::formatIso($fileInfo['mtime']);
 
         if (isset($cachedEntries[$path])) {
             $cached = $cachedEntries[$path];
@@ -170,7 +171,7 @@ trait FileCacheScanTrait {
             $files[] = array(
                 'path'       => $fileInfo['path'],
                 'hash'       => $hash ?: '',
-                'modifiedAt' => $fileInfo['mtime'] ? gmdate('c', $fileInfo['mtime']) : null,
+                'modifiedAt' => $fileInfo['mtime'] ? DateHelper::formatIso($fileInfo['mtime']) : null,
                 'size'       => $fileInfo['size'],
             );
         }

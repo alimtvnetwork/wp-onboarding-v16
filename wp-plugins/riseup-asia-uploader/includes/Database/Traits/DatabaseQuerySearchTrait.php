@@ -18,6 +18,7 @@ use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait DatabaseQuerySearchTrait {
 
@@ -144,7 +145,7 @@ trait DatabaseQuerySearchTrait {
                 'by_action'          => $this->countByColumn('action'),
                 'by_status'          => $this->countByColumn('status'),
                 'last_24h'           => Orm::forTable(TableType::Transactions->value)
-                    ->whereGte('created_at', gmdate('Y-m-d\TH:i:s\Z', time() - 86400))
+                    ->whereGte('created_at', DateHelper::formatUtc(time() - 86400))
                     ->count(),
             );
         } catch (Throwable $e) {
@@ -173,7 +174,7 @@ trait DatabaseQuerySearchTrait {
         }
 
         try {
-            $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($daysToKeep * 86400));
+            $cutoff = DateHelper::formatUtc(time() - ($daysToKeep * 86400));
 
             $deleted = Orm::forTable(TableType::Transactions->value)
                 ->whereLt('created_at', $cutoff)

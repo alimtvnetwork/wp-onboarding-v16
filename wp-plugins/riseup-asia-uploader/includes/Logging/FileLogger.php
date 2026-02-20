@@ -16,6 +16,7 @@ use RiseupAsia\Logging\Traits\LoggerFormatTrait;
 use RiseupAsia\Logging\Traits\LoggerWriteTrait;
 use RiseupAsia\Logging\Traits\LoggerDedupTrait;
 use RiseupAsia\Logging\Traits\LoggerLevelMethodsTrait;
+use RiseupAsia\Helpers\DateHelper;
 
 /**
  * Class FileLogger
@@ -30,7 +31,6 @@ class FileLogger {
     use LoggerDedupTrait;
     use LoggerLevelMethodsTrait;
 
-    private const TIMESTAMP_FORMAT = 'Y-m-d\TH:i:s\Z';
     private const SEPARATOR_WIDTH = 80;
     private const TRACE_LABEL_INTERNAL = '<internal>';
     private const TRACE_LABEL_UNKNOWN = '<unknown>';

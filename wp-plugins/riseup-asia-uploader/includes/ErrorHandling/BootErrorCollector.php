@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Notification\AdminMailer;
+use RiseupAsia\Helpers\DateHelper;
 
 class BootErrorCollector {
 
@@ -48,7 +49,7 @@ class BootErrorCollector {
         $this->errors[] = [
             'context'   => $context,
             'message'   => $message,
-            'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+            'timestamp' => DateHelper::nowUtc(),
         ];
 
         error_log(self::LOG_PREFIX . '[' . $context . '] ' . $message);

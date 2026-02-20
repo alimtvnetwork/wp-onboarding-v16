@@ -21,6 +21,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\DateHelper;
 
 trait SyncManifestTrait
 {
@@ -60,7 +61,7 @@ trait SyncManifestTrait
             'success' => true,
             'data' => array(
                 'plugin' => $slug, 'fileCount' => count($result['files']),
-                'generatedAt' => gmdate('c'), 'cached' => $result['cached'] > 0,
+                'generatedAt' => DateHelper::nowIso(), 'cached' => $result['cached'] > 0,
                 'cacheStats' => array('fromCache' => $result['cached'], 'computed' => $result['computed'], 'removed' => $result['removed']),
                 'files' => $result['files'],
             ),
@@ -105,7 +106,7 @@ trait SyncManifestTrait
             'path' => str_replace('\\', '/', $rel_path),
             'hash' => @md5_file($full_path) ?: '',
             'size' => @filesize($full_path) ?: 0,
-            'modifiedAt' => ($mtime = @filemtime($full_path)) ? gmdate('c', $mtime) : null,
+            'modifiedAt' => ($mtime = @filemtime($full_path)) ? DateHelper::formatIso($mtime) : null,
         );
     }
 }

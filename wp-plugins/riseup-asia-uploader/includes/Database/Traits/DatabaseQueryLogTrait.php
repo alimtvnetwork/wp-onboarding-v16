@@ -19,6 +19,7 @@ use RiseupAsia\Database\Orm;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait DatabaseQueryLogTrait {
 
@@ -98,7 +99,7 @@ trait DatabaseQueryLogTrait {
             ->set('details', $detailsJson)
             ->set('status', $status)
             ->set('error_msg', $errorMsg)
-            ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'));
+            ->set('created_at', DateHelper::nowUtc());
     }
 
     private function applyEnhancedFields($record, array $enhanced): void {

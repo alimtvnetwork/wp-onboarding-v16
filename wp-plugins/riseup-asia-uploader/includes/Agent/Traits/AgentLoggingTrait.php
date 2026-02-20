@@ -17,6 +17,7 @@ use PDOException;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 trait AgentLoggingTrait {
 
@@ -78,7 +79,7 @@ trait AgentLoggingTrait {
         $stmt->execute(array(
             $agentId, $action, $plugin, $status,
             $details ? json_encode($details) : null,
-            $errorMsg, gmdate('Y-m-d\TH:i:s\Z'),
+            $errorMsg, DateHelper::nowUtc(),
         ));
 
         return (int) $pdo->lastInsertId();

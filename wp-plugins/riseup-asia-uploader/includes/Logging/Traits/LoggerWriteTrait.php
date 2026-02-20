@@ -12,6 +12,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Database\Database;
 
 trait LoggerWriteTrait {
@@ -54,7 +55,7 @@ trait LoggerWriteTrait {
             return;
         }
 
-        $timestamp = gmdate(self::TIMESTAMP_FORMAT);
+        $timestamp = DateHelper::nowUtc();
         $separator = str_repeat('=', self::SEPARATOR_WIDTH);
         $divider   = str_repeat('-', self::SEPARATOR_WIDTH);
 
@@ -120,7 +121,7 @@ trait LoggerWriteTrait {
         array $context,
         string $stackTrace,
     ): void {
-        $now = gmdate(self::TIMESTAMP_FORMAT);
+        $now = DateHelper::nowUtc();
         $hasContext = BooleanHelpers::hasValue($context);
         $contextJson = $hasContext ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 

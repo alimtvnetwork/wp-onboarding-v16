@@ -18,6 +18,7 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait WorkerJobLifecycleTrait {
 
@@ -47,7 +48,7 @@ trait WorkerJobLifecycleTrait {
                 completed_at TEXT
             )");
 
-            $now = gmdate('c');
+            $now = DateHelper::nowIso();
             $stmt = $pdo->prepare("INSERT INTO " . TableType::SnapshotJobs->value . "
                 (snapshot_dir, tables_json, pool_size, status, config_json, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -79,7 +80,7 @@ trait WorkerJobLifecycleTrait {
         string $status,
         ?string $error = null,
     ): void {
-        $now = gmdate('c');
+        $now = DateHelper::nowIso();
         $completed = ($status === SnapshotJobStatusType::Complete->value || $status === SnapshotJobStatusType::Failed->value) ? $now : null;
 
         $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
@@ -103,7 +104,7 @@ trait WorkerJobLifecycleTrait {
         int $batchRows,
         array $batchErrors,
     ): void {
-        $now = gmdate('c');
+        $now = DateHelper::nowIso();
         $job = $this->getJob($pdo, $jobId);
         $all_errors = array_merge(json_decode($job['errors_json'] ?? '[]', true), $batchErrors);
 

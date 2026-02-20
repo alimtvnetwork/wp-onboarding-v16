@@ -22,6 +22,7 @@ use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait RestoreHelperTrait {
 
@@ -95,7 +96,7 @@ trait RestoreHelperTrait {
         );
         $stmt->execute(array(
             PluginConfigType::Slug->value, ActionType::SnapshotRestore->value, StatusType::Success->value,
-            $details, gethostname() ?: php_uname('n'), gmdate('Y-m-d H:i:s'),
+            $details, gethostname() ?: php_uname('n'), DateHelper::nowUtc(),
         ));
     }
 
