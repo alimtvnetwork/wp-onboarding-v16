@@ -27,6 +27,7 @@ trait NativeSnapshotCrudTrait {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
+
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value);
         }
 
@@ -46,7 +47,7 @@ trait NativeSnapshotCrudTrait {
         }
 
         $this->db->delete(TableType::Snapshots->value, array('id' => $snapshotId));
-        $this->log(LogLevelType::Info->value, 'Snapshot deleted', array('snapshot_id' => $snapshotId, 'filename' => $snapshot['filename']));
+        $this->log(LogLevelType::Info->value, 'Snapshot deleted', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot['filename']));
 
         return array(ResponseKeyType::Success->value => true);
     }
@@ -55,11 +56,13 @@ trait NativeSnapshotCrudTrait {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
+
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['filepath'];
         if (PathHelper::isFileMissing($filepath)) {
+
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotFileMissing->value);
         }
 
@@ -75,6 +78,7 @@ trait NativeSnapshotCrudTrait {
 
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ZipCreateFailed->value);
         }
 
@@ -82,15 +86,16 @@ trait NativeSnapshotCrudTrait {
         $zip->addFromString('manifest.json', json_encode($this->buildExportManifest($snapshotId, $snapshot), JSON_PRETTY_PRINT));
         $zip->close();
 
-        return array(ResponseKeyType::Success->value => true, 'filepath' => $zip_path, 'filename' => basename($zip_path), 'size' => filesize($zip_path));
+        return array(ResponseKeyType::Success->value => true, 'filepath' => $zip_path, ResponseKeyType::Filename->value => basename($zip_path), ResponseKeyType::Size->value => filesize($zip_path));
     }
 
     private function buildExportManifest(int $snapshotId, array $snapshot): array {
+
         return array(
-            'version' => PluginConfigType::Version->value, 'created_at' => date('c'), 'snapshot_id' => $snapshotId,
-            'filename' => $snapshot['filename'], 'scope' => $snapshot['scope'],
-            'tables' => json_decode($snapshot['tables_json'], true),
-            'total_rows' => $snapshot['total_rows'], 'file_size' => $snapshot['file_size'],
+            'version' => PluginConfigType::Version->value, 'created_at' => date('c'), ResponseKeyType::SnapshotId->value => $snapshotId,
+            ResponseKeyType::Filename->value => $snapshot['filename'], ResponseKeyType::Scope->value => $snapshot['scope'],
+            ResponseKeyType::Tables->value => json_decode($snapshot['tables_json'], true),
+            ResponseKeyType::TotalRows->value => $snapshot['total_rows'], ResponseKeyType::FileSize->value => $snapshot['file_size'],
         );
     }
 
@@ -107,6 +112,7 @@ trait NativeSnapshotCrudTrait {
     }
 
     public function getSnapshot(int $snapshotId): ?array {
+
         return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ?', array($snapshotId));
     }
 
@@ -117,7 +123,7 @@ trait NativeSnapshotCrudTrait {
         );
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
 
-        return array('snapshots' => $snapshots ?: array(), 'total' => $total ? (int)$total['count'] : 0);
+        return array(ResponseKeyType::Snapshots->value => $snapshots ?: array(), ResponseKeyType::Total->value => $total ? (int)$total[ResponseKeyType::Count->value] : 0);
     }
 
     public function getAvailableTables(): array {
@@ -125,8 +131,8 @@ trait NativeSnapshotCrudTrait {
         $all_tables = $this->wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
         foreach ($all_tables as $table_info) {
             $tables[] = array(
-                'name' => $table_info['Name'], 'rows' => (int)$table_info['Rows'],
-                'size' => (int)$table_info['Data_length'] + (int)$table_info['Index_length'],
+                'name' => $table_info['Name'], ResponseKeyType::Rows->value => (int)$table_info['Rows'],
+                ResponseKeyType::Size->value => (int)$table_info['Data_length'] + (int)$table_info['Index_length'],
                 'is_core' => strpos($table_info['Name'], $this->wpdb->prefix) === 0,
             );
         }

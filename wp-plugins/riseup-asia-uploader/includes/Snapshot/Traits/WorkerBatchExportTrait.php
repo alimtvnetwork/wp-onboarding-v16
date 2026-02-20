@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Enums\SnapshotStatusType;
 
@@ -35,12 +36,12 @@ trait WorkerBatchExportTrait {
             ));
 
             $result = $this->exportBatchTables($batch_tables, $snapshotDir, $rootPdo);
-            $total_rows += $result['rows'];
-            $exported_tables += $result['exported'];
-            $errors = array_merge($errors, $result['errors']);
+            $total_rows += $result[ResponseKeyType::Rows->value];
+            $exported_tables += $result[ResponseKeyType::Exported->value];
+            $errors = array_merge($errors, $result[ResponseKeyType::Errors->value]);
         }
 
-        return array('total_rows' => $total_rows, 'exported_tables' => $exported_tables, 'errors' => $errors);
+        return array(ResponseKeyType::TotalRows->value => $total_rows, 'exported_tables' => $exported_tables, ResponseKeyType::Errors->value => $errors);
     }
 
     private function exportBatchTables(
@@ -56,23 +57,23 @@ trait WorkerBatchExportTrait {
             $this->updateProgress($table, SnapshotStatusType::Running->value);
             $result = $this->exportTableToFile($snapshotDir, $table);
 
-            if ($result['success']) {
-                $rows += $result['rows'];
+            if ($result[ResponseKeyType::Success->value]) {
+                $rows += $result[ResponseKeyType::Rows->value];
                 $exported++;
                 if ($rootPdo) {
                     $this->rootDb->registerTable(
-                        $rootPdo, $table, $result['rows'],
-                        $result['filename'], $result['file_size'], $result['checksum']
+                        $rootPdo, $table, $result[ResponseKeyType::Rows->value],
+                        $result[ResponseKeyType::Filename->value], $result[ResponseKeyType::FileSize->value], $result[ResponseKeyType::Checksum->value]
                     );
                 }
-                $this->updateProgress($table, SnapshotStatusType::Complete->value, $result['rows']);
+                $this->updateProgress($table, SnapshotStatusType::Complete->value, $result[ResponseKeyType::Rows->value]);
             } else {
-                $errors[] = $table . ': ' . $result['error'];
-                $this->updateProgress($table, SnapshotStatusType::Failed->value, 0, $result['error']);
+                $errors[] = $table . ': ' . $result[ResponseKeyType::Error->value];
+                $this->updateProgress($table, SnapshotStatusType::Failed->value, 0, $result[ResponseKeyType::Error->value]);
             }
         }
 
-        return array('rows' => $rows, 'exported' => $exported, 'errors' => $errors);
+        return array(ResponseKeyType::Rows->value => $rows, ResponseKeyType::Exported->value => $exported, ResponseKeyType::Errors->value => $errors);
     }
 
     private function buildAsyncSnapshotResult(
@@ -84,16 +85,16 @@ trait WorkerBatchExportTrait {
         $duration = microtime(true) - $startTime;
 
         $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
-            'job_id' => $jobId, 'directory' => $prepared['dir_name'],
+            'job_id' => $jobId, ResponseKeyType::Directory->value => $prepared['dir_name'],
             'total_tables' => count($seedOrder), 'pool_size' => $this->poolSize,
             'setup_time' => round($duration, 2) . 's',
         ));
 
         return array(
-            'success' => true, 'directory' => $prepared['dir_name'], 'path' => $prepared['snapshot_dir'],
+            ResponseKeyType::Success->value => true, ResponseKeyType::Directory->value => $prepared['dir_name'], ResponseKeyType::Path->value => $prepared['snapshot_dir'],
             'job_id' => $jobId, 'total_tables' => count($seedOrder), 'pool_size' => $this->poolSize,
-            'tables' => 0, 'total_rows' => 0, 'errors' => array(),
-            'duration' => $duration, 'status' => SnapshotJobStatusType::Queued->value,
+            ResponseKeyType::Tables->value => 0, ResponseKeyType::TotalRows->value => 0, ResponseKeyType::Errors->value => array(),
+            ResponseKeyType::Duration->value => $duration, 'status' => SnapshotJobStatusType::Queued->value,
         );
     }
 
@@ -104,9 +105,9 @@ trait WorkerBatchExportTrait {
     ): array {
 
         return array(
-            'success' => true, 'directory' => $prepared['dir_name'], 'path' => $prepared['snapshot_dir'],
-            'tables' => $export['exported_tables'], 'total_rows' => $export['total_rows'],
-            'errors' => $export['errors'], 'duration' => microtime(true) - $startTime,
+            ResponseKeyType::Success->value => true, ResponseKeyType::Directory->value => $prepared['dir_name'], ResponseKeyType::Path->value => $prepared['snapshot_dir'],
+            ResponseKeyType::Tables->value => $export['exported_tables'], ResponseKeyType::TotalRows->value => $export[ResponseKeyType::TotalRows->value],
+            ResponseKeyType::Errors->value => $export[ResponseKeyType::Errors->value], ResponseKeyType::Duration->value => microtime(true) - $startTime,
         );
     }
 }

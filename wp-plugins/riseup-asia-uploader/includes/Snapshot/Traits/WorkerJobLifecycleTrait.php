@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
@@ -140,7 +141,7 @@ trait WorkerJobLifecycleTrait {
         $errors = json_decode($job['errors_json'] ?? '[]', true);
         $this->log(LogLevelType::Info->value, 'Snapshot job complete', array(
             'job_id' => $jobId, 'tables_exported' => $job['tables_exported'],
-            'total_rows' => $job['total_rows'], 'errors' => count($errors),
+            ResponseKeyType::TotalRows->value => $job['total_rows'], ResponseKeyType::Errors->value => count($errors),
         ));
     }
 

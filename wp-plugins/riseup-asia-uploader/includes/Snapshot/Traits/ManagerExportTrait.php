@@ -54,7 +54,8 @@ trait ManagerExportTrait {
 
         $zip = new ZipArchive();
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', array('path' => $zipPath));
+            $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', array(ResponseKeyType::Path->value => $zipPath));
+
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ZipCreateFailed->value);
         }
 
@@ -65,10 +66,10 @@ trait ManagerExportTrait {
 
         $size = filesize($zipPath);
         $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', array(
-            'snapshot_id' => $snapshotId, 'zip_path' => $zipPath, 'size' => PathHelper::formatBytes($size),
+            ResponseKeyType::SnapshotId->value => $snapshotId, 'zip_path' => $zipPath, ResponseKeyType::Size->value => PathHelper::formatBytes($size),
         ));
 
-        return array(ResponseKeyType::Success->value => true, 'filepath' => $zipPath, 'filename' => basename($zipPath), 'size' => $size);
+        return array(ResponseKeyType::Success->value => true, 'filepath' => $zipPath, ResponseKeyType::Filename->value => basename($zipPath), ResponseKeyType::Size->value => $size);
     }
 
     private function createExportManifest(array $snapshot): array {

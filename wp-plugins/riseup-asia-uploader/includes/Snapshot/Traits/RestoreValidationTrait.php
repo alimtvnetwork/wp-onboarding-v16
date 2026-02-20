@@ -68,7 +68,7 @@ trait RestoreValidationTrait {
             'tables' => count($restore_order), 'order' => array_slice($restore_order, 0, 10),
         ));
 
-        return array(ResponseKeyType::Success->value => true, 'tables' => $restore_order, 'inventory' => $table_inventory);
+        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Tables->value => $restore_order, 'inventory' => $table_inventory);
     }
 
     private function createSafetyBackup(array $options): ?int {
@@ -87,8 +87,9 @@ trait RestoreValidationTrait {
         ));
 
         if ($result[ResponseKeyType::Success->value]) {
-            $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', array('backup_id' => $result['snapshot_id'] ?? null));
-            return $result['snapshot_id'] ?? null;
+            $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', array(ResponseKeyType::BackupId->value => $result[ResponseKeyType::SnapshotId->value] ?? null));
+
+            return $result[ResponseKeyType::SnapshotId->value] ?? null;
         }
 
         $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array('error' => $result[ResponseKeyType::Error->value] ?? 'Unknown'));

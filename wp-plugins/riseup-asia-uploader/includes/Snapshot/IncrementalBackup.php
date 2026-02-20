@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use wpdb;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -76,7 +77,8 @@ class IncrementalBackup {
 
         $rootPath = $masterDir . '/a-root.db';
         if (PathHelper::isFileMissing($rootPath)) {
-            return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $rootPath);
+
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Master snapshot a-root.db not found at: ' . $rootPath);
         }
 
         $this->log(LogLevelType::Info->value, 'Starting incremental backup', array('master_dir' => basename($masterDir), 'title' => $title));
@@ -94,6 +96,7 @@ class IncrementalBackup {
             $prepared = $this->prepareIncrementalDir($rootPath);
             $isPrepFailed = BooleanHelpers::isResultFailed($prepared);
             if ($isPrepFailed) {
+
                 return $prepared;
             }
 
@@ -104,21 +107,22 @@ class IncrementalBackup {
 
             return $this->finalizeIncremental($title, $masterDir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $startTime);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Incremental backup failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Incremental backup failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
-            return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Phase->value => 'incremental');
         }
     }
 
     private function registerIncrementalInRoot(array $prepared, array $export): void {
         $this->rootDb->registerIncremental($prepared['rootPdo'], array(
             'sequence_num' => $prepared['sequence'], 'folder_name' => $prepared['folder_name'],
-            'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
+            ResponseKeyType::TablesChanged->value => $export[ResponseKeyType::TablesChanged->value], ResponseKeyType::TotalNewRows->value => $export[ResponseKeyType::TotalNewRows->value],
             'relative_path' => 'incremental/' . $prepared['folder_name'] . '/',
         ));
     }
 
     private function getSnapshotsBaseDir(): string {
+
         return PathHelper::getSnapshotsDir();
     }
 
@@ -142,6 +146,7 @@ class IncrementalBackup {
         }
         $isLoggerMissing = ($this->logger === null);
         if ($isLoggerMissing) {
+
             return;
         }
         switch ($level) {
