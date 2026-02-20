@@ -439,6 +439,16 @@ func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionI
 	})
 }
 
+// BroadcastWithSession is a method wrapper for the package-level generic BroadcastWithSession function,
+// satisfying interfaces that require a method on *Hub.
+func (h *Hub) BroadcastWithSession(eventType string, data any, sessionID string) {
+	h.broadcast <- &Message{
+		Type:      eventType,
+		Data:      data,
+		SessionID: sessionID,
+	}
+}
+
 // HandleWebSocket handles WebSocket upgrade requests
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)

@@ -4,7 +4,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	
 	"fmt"
 	"io"
 	"os"
@@ -225,7 +225,7 @@ func main() {
 	if cfg.E2E.Enabled {
 		e2eSvc := e2e.New(e2e.Config{
 			DB:               db.DB,
-			Broadcast:        func(event string, data any) { wsHub.Broadcast(event, data) },
+			Broadcast:        func(event string, data any) { ws.Broadcast(wsHub, event, data) },
 			BaseURL:          fmt.Sprintf("http://localhost:%d", cfg.Server.Port),
 			TestPluginPath:   cfg.E2E.TestPluginPath,
 			TestSiteURL:      cfg.E2E.TestSiteURL,
@@ -344,7 +344,7 @@ func parseLogLevel(level string) logger.Level {
 // initServices creates and wires all application services
 func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logger.Logger) *Services {
 	// WordPress REST API client factory with progress callback support
-	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details json.RawMessage)) *wordpress.Client {
+	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details wordpress.ProgressDetails)) *wordpress.Client {
 		return wordpress.NewClient(wordpress.ClientConfig{
 			BaseURL:         siteURL,
 			Username:        username,
