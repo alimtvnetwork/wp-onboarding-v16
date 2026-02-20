@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -61,7 +62,7 @@ trait UpdateResolverFetchTrait {
     }
 
     private function fetchUpdateResponse(string $url) {
-        $response = wp_remote_get($url, array('timeout' => 30, 'sslverify' => true));
+        $response = wp_remote_get($url, array('timeout' => HttpConfigType::TimeoutDefault->value, 'sslverify' => true));
         if (is_wp_error($response)) {
             $this->fileLogger->error('Failed to fetch update info', array('error' => $response->get_error_message()));
         }
