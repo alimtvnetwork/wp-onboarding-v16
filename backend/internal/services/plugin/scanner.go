@@ -20,73 +20,103 @@ import (
 const pluginDetectedFile = "wp-plugin-detected.json"
 
 // ScanDirectory scans a plugin directory and returns file information
-func (s *Service) ScanDirectory(ctx context.Context, path string) (*ScanResult, error) {
+func (s *Service) ScanDirectory(ctx context.Context, path string) apperror.Result[ScanResult] {
 	s.log.Debug("Scanning directory", "path", path)
 
-	scan := &ScanResult{
+	scan := ScanResult{
 		Path:    path,
 		IsValid: false,
 		Files:   []FileInfo{},
 	}
 
 	// Check if .plugin-detected.json exists first
-	detectedPath, err := pathutil.Join(path, pluginDetectedFile)
-	if err == nil {
-		if _, err := os.Stat(detectedPath); err == nil {
-			detected, err := s.readPluginDetected(detectedPath)
-			if err == nil {
-				scan.IsValid = true
-				scan.PluginName = detected.PluginName
-				scan.Version = detected.Version
-				scan.MainFile = detected.MainFile
-				scan.Description = detected.Description
-				scan.Author = detected.Author
-				scan.AuthorURI = detected.AuthorURI
-				scan.PluginURI = detected.PluginURI
-				scan.TextDomain = detected.TextDomain
-				scan.RequiresPHP = detected.RequiresPHP
-				scan.RequiresWP = detected.RequiresWP
-				s.log.Info("Found .plugin-detected.json", "path", path, "pluginName", detected.PluginName)
-				return scan, nil
-			}
-		}
+	if result, ok := s.tryLoadDetected(path, &scan); ok {
+		return result
 	}
 
 	// Check if directory exists
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		scan.Error = "directory does not exist"
-		return scan, nil
+		return apperror.Ok(scan)
 	}
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDirRead, "failed to stat directory")
+		return apperror.FailWrap[ScanResult](err, apperror.ErrDirRead, "failed to stat directory")
 	}
 	if !info.IsDir() {
 		scan.Error = "path is not a directory"
-		return scan, nil
+		return apperror.Ok(scan)
 	}
 
 	// Find main plugin file
 	pluginInfo, err := s.findMainPluginFile(path)
 	if err != nil {
 		scan.Error = err.Error()
-		return scan, nil
+		return apperror.Ok(scan)
+	}
+
+	applyPluginInfo(&scan, pluginInfo)
+
+	// Walk directory and collect files
+	if err := s.walkDirectory(path, &scan); err != nil {
+		return apperror.FailWrap[ScanResult](err, apperror.ErrDirRead, "failed to scan directory")
+	}
+
+	s.log.Info("Directory scanned", "path", path, "pluginName", scan.PluginName, "files", scan.FileCount)
+
+	return apperror.Ok(scan)
+}
+
+// tryLoadDetected attempts to load plugin info from .plugin-detected.json.
+func (s *Service) tryLoadDetected(path string, scan *ScanResult) (apperror.Result[ScanResult], bool) {
+	detectedPath, err := pathutil.Join(path, pluginDetectedFile)
+	if err != nil {
+		return apperror.Result[ScanResult]{}, false
+	}
+
+	if _, err := os.Stat(detectedPath); err != nil {
+		return apperror.Result[ScanResult]{}, false
+	}
+
+	detected, err := s.readPluginDetected(detectedPath)
+	if err != nil {
+		return apperror.Result[ScanResult]{}, false
 	}
 
 	scan.IsValid = true
-	scan.MainFile = pluginInfo.MainFile
-	scan.PluginName = pluginInfo.PluginName
-	scan.Version = pluginInfo.Version
-	scan.Description = pluginInfo.Description
-	scan.Author = pluginInfo.Author
-	scan.AuthorURI = pluginInfo.AuthorURI
-	scan.PluginURI = pluginInfo.PluginURI
-	scan.TextDomain = pluginInfo.TextDomain
-	scan.RequiresPHP = pluginInfo.RequiresPHP
-	scan.RequiresWP = pluginInfo.RequiresWP
+	scan.PluginName = detected.PluginName
+	scan.Version = detected.Version
+	scan.MainFile = detected.MainFile
+	scan.Description = detected.Description
+	scan.Author = detected.Author
+	scan.AuthorURI = detected.AuthorURI
+	scan.PluginURI = detected.PluginURI
+	scan.TextDomain = detected.TextDomain
+	scan.RequiresPHP = detected.RequiresPHP
+	scan.RequiresWP = detected.RequiresWP
+	s.log.Info("Found .plugin-detected.json", "path", path, "pluginName", detected.PluginName)
 
-	// Walk directory and collect files
-	err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+	return apperror.Ok(*scan), true
+}
+
+// applyPluginInfo copies header info into the scan result.
+func applyPluginInfo(scan *ScanResult, info *pluginHeaderInfo) {
+	scan.IsValid = true
+	scan.MainFile = info.MainFile
+	scan.PluginName = info.PluginName
+	scan.Version = info.Version
+	scan.Description = info.Description
+	scan.Author = info.Author
+	scan.AuthorURI = info.AuthorURI
+	scan.PluginURI = info.PluginURI
+	scan.TextDomain = info.TextDomain
+	scan.RequiresPHP = info.RequiresPHP
+	scan.RequiresWP = info.RequiresWP
+}
+
+// walkDirectory walks the directory tree and populates the scan result.
+func (s *Service) walkDirectory(path string, scan *ScanResult) error {
+	return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -120,38 +150,32 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) (*ScanResult, 
 		scan.Files = append(scan.Files, fileInfo)
 		return nil
 	})
-
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDirRead, "failed to scan directory")
-	}
-
-	s.log.Info("Directory scanned", "path", path, "pluginName", scan.PluginName, "files", scan.FileCount)
-
-	return scan, nil
 }
 
 // WritePluginDetected creates .plugin-detected.json for a valid WordPress plugin
 func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
-	scan, err := s.ScanDirectory(ctx, path)
-	if err != nil {
-		return err
+	scan := s.ScanDirectory(ctx, path)
+	if scan.HasError() {
+		return scan.Error()
 	}
-	if !scan.IsValid {
-		return apperror.New(apperror.ErrPathInvalid, scan.Error)
+
+	scanVal := scan.Value()
+	if !scanVal.IsValid {
+		return apperror.New(apperror.ErrPathInvalid, scanVal.Error)
 	}
 
 	detected := PluginDetected{
-		PluginName:  scan.PluginName,
-		Version:     scan.Version,
+		PluginName:  scanVal.PluginName,
+		Version:     scanVal.Version,
 		Slug:        filepath.Base(path),
-		MainFile:    scan.MainFile,
-		Description: scan.Description,
-		Author:      scan.Author,
-		AuthorURI:   scan.AuthorURI,
-		PluginURI:   scan.PluginURI,
-		TextDomain:  scan.TextDomain,
-		RequiresPHP: scan.RequiresPHP,
-		RequiresWP:  scan.RequiresWP,
+		MainFile:    scanVal.MainFile,
+		Description: scanVal.Description,
+		Author:      scanVal.Author,
+		AuthorURI:   scanVal.AuthorURI,
+		PluginURI:   scanVal.PluginURI,
+		TextDomain:  scanVal.TextDomain,
+		RequiresPHP: scanVal.RequiresPHP,
+		RequiresWP:  scanVal.RequiresWP,
 		DetectedAt:  time.Now().UTC().Format(time.RFC3339),
 	}
 
@@ -186,12 +210,14 @@ func (s *Service) readPluginDetected(path string) (*PluginDetected, error) {
 
 // ValidatePath checks if a path is a valid WordPress plugin directory
 func (s *Service) ValidatePath(ctx context.Context, path string) error {
-	scan, err := s.ScanDirectory(ctx, path)
-	if err != nil {
-		return err
+	scan := s.ScanDirectory(ctx, path)
+	if scan.HasError() {
+		return scan.Error()
 	}
-	if !scan.IsValid {
-		return apperror.New(apperror.ErrPathInvalid, scan.Error).WithPath(path)
+
+	scanVal := scan.Value()
+	if !scanVal.IsValid {
+		return apperror.New(apperror.ErrPathInvalid, scanVal.Error).WithPath(path)
 	}
 	return nil
 }
@@ -232,57 +258,71 @@ func (s *Service) findMainPluginFile(path string) (*pluginHeaderInfo, error) {
 			continue
 		}
 
-		filePath, err := pathutil.Join(path, entry.Name())
-		if err != nil {
-			continue
-		}
-		file, err := os.Open(filePath)
-		if err != nil {
-			continue
-		}
-
-		scanner := bufio.NewScanner(file)
-		lineCount := 0
-		info := &pluginHeaderInfo{MainFile: entry.Name()}
-
-		for scanner.Scan() && lineCount < 50 {
-			line := scanner.Text()
-			lineCount++
-
-			for key, pattern := range patterns {
-				if matches := pattern.FindStringSubmatch(line); len(matches) > 1 {
-					val := strings.TrimSpace(matches[1])
-					switch key {
-					case "PluginName":
-						info.PluginName = val
-					case "Version":
-						info.Version = val
-					case "Description":
-						info.Description = val
-					case "Author":
-						info.Author = val
-					case "AuthorURI":
-						info.AuthorURI = val
-					case "PluginURI":
-						info.PluginURI = val
-					case "TextDomain":
-						info.TextDomain = val
-					case "RequiresPHP":
-						info.RequiresPHP = val
-					case "RequiresWP":
-						info.RequiresWP = val
-					}
-				}
-			}
-		}
-		file.Close()
-
-		if info.PluginName != "" {
+		info := s.parsePluginHeader(path, entry.Name(), patterns)
+		if info != nil {
 			return info, nil
 		}
 	}
 
 	return nil, apperror.New(apperror.ErrPathInvalid, "no valid WordPress plugin file found (missing Plugin Name header)")
+}
+
+// parsePluginHeader reads a PHP file header and extracts plugin metadata.
+func (s *Service) parsePluginHeader(dir, filename string, patterns map[string]*regexp.Regexp) *pluginHeaderInfo {
+	filePath, err := pathutil.Join(dir, filename)
+	if err != nil {
+		return nil
+	}
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineCount := 0
+	info := &pluginHeaderInfo{MainFile: filename}
+
+	for scanner.Scan() && lineCount < 50 {
+		line := scanner.Text()
+		lineCount++
+
+		for key, pattern := range patterns {
+			if matches := pattern.FindStringSubmatch(line); len(matches) > 1 {
+				val := strings.TrimSpace(matches[1])
+				setHeaderField(info, key, val)
+			}
+		}
+	}
+
+	if info.PluginName != "" {
+		return info
+	}
+	return nil
+}
+
+// setHeaderField sets a pluginHeaderInfo field by key name.
+func setHeaderField(info *pluginHeaderInfo, key, val string) {
+	switch key {
+	case "PluginName":
+		info.PluginName = val
+	case "Version":
+		info.Version = val
+	case "Description":
+		info.Description = val
+	case "Author":
+		info.Author = val
+	case "AuthorURI":
+		info.AuthorURI = val
+	case "PluginURI":
+		info.PluginURI = val
+	case "TextDomain":
+		info.TextDomain = val
+	case "RequiresPHP":
+		info.RequiresPHP = val
+	case "RequiresWP":
+		info.RequiresWP = val
+	}
 }
 
 func (s *Service) calculateFileHash(path string) (string, error) {
