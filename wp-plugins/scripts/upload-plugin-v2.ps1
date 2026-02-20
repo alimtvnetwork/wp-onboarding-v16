@@ -413,7 +413,7 @@ $constantsFile = Join-Path $PluginFolderPath "includes/constants.php"
 if (-not (Test-Path $constantsFile)) {
     # Try main plugin file header
     $mainFile = Get-ChildItem $PluginFolderPath -Filter "*.php" | Where-Object {
-        (Get-Content $_.FullName -Head 5 -Raw) -match 'Plugin Name:'
+        (Get-Content $_.FullName -Head 5) -match 'Plugin Name:'
     } | Select-Object -First 1
     if ($mainFile) {
         $content = Get-Content $mainFile.FullName -Raw
