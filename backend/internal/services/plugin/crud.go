@@ -169,7 +169,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path, "forceCreate", input.ForceCreate)
 
 	if err := s.validateCreatePath(ctx, input); err != nil {
-		return apperror.Fail[models.Plugin](apperror.Extract(err))
+		return apperror.FailWrap[models.Plugin](err, apperror.ErrValidation, "plugin path validation failed")
 	}
 
 	existing, done := s.checkDuplicatePath(ctx, input)
