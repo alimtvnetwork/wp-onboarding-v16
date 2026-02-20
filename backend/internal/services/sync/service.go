@@ -38,16 +38,16 @@ type PushSyncResult struct {
 
 // Service interface for sync operations
 type Service interface {
-	// Sync checking
-	CheckSync(ctx context.Context, pluginID, siteID int64) (*SyncResult, error)
-	CheckAllSites(ctx context.Context, pluginID int64) (*BatchSyncResult, error)
-	CheckAllPlugins(ctx context.Context) ([]SyncResult, error)
+	// Sync checking — Result-wrapped returns
+	CheckSync(ctx context.Context, pluginID, siteID int64) apperror.Result[SyncResult]
+	CheckAllSites(ctx context.Context, pluginID int64) apperror.Result[BatchSyncResult]
+	CheckAllPlugins(ctx context.Context) apperror.ResultSlice[SyncResult]
 
-	// Sync push (applies changes including deletions to remote)
-	PushSync(ctx context.Context, pluginID, siteID int64) (*PushSyncResult, error)
+	// Sync push — Result-wrapped return
+	PushSync(ctx context.Context, pluginID, siteID int64) apperror.Result[PushSyncResult]
 
-	// File change management
-	GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error)
+	// File change management — Result-wrapped or plain error
+	GetFileChanges(ctx context.Context, pluginID, siteID int64) apperror.ResultSlice[models.FileChange]
 	RecordFileChange(ctx context.Context, change *models.FileChange) error
 	MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) error
 	ClearChanges(ctx context.Context, pluginID int64) error
@@ -127,8 +127,8 @@ func New(cfg Config) Service {
 }
 
 // CheckSync compares local vs remote files for a specific plugin-site mapping
-func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*SyncResult, error) {
-	result := &SyncResult{
+func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) apperror.Result[SyncResult] {
+	result := SyncResult{
 		PluginID:  pluginID,
 		SiteID:    siteID,
 		CheckedAt: time.Now(),
@@ -141,7 +141,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
 	if plugResult.HasError() {
 		result.ErrorMessage = plugResult.Error().Error()
-		return result, nil
+		return apperror.Ok(result)
 	}
 	plug := plugResult.Value()
 
@@ -150,7 +150,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	localFiles, err := s.scanLocalFiles(plug.Path, plug.ExcludePatterns)
 	if err != nil {
 		result.ErrorMessage = err.Error()
-		return result, nil
+		return apperror.Ok(result)
 	}
 	result.LocalFiles = len(localFiles)
 
@@ -159,7 +159,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	if err != nil {
 		result.ErrorMessage = "No site mapping found: " + err.Error()
 		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
-		return result, nil
+		return apperror.Ok(result)
 	}
 
 	// Get site info and decrypt credentials
@@ -168,14 +168,14 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	if err != nil {
 		result.ErrorMessage = "Failed to get site info: " + err.Error()
 		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
-		return result, nil
+		return apperror.Ok(result)
 	}
 
 	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = "Failed to decrypt credentials: " + err.Error()
 		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
-		return result, nil
+		return apperror.Ok(result)
 	}
 
 	// Fetch remote file manifest via WordPress sync-manifest endpoint
@@ -222,12 +222,12 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 		"inSync", result.InSync,
 		"changes", len(changes))
 
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // CheckAllSites checks sync status for all sites mapped to a plugin
-func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*BatchSyncResult, error) {
-	result := &BatchSyncResult{
+func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperror.Result[BatchSyncResult] {
+	result := BatchSyncResult{
 		PluginID: pluginID,
 		Results:  []SyncResult{},
 	}
@@ -235,7 +235,7 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*Batch
 	// Get plugin info
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
 	if plugResult.HasError() {
-		return nil, plugResult.Error()
+		return apperror.Fail[BatchSyncResult](plugResult.Error())
 	}
 	plug := plugResult.Value()
 	result.PluginName = plug.Name
@@ -243,20 +243,21 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*Batch
 	// Get all mappings for this plugin
 	mappings, err := s.getMappings(ctx, pluginID)
 	if err != nil {
-		return nil, err
+		return apperror.FailWrap[BatchSyncResult](err, apperror.ErrDBRead, "failed to get mappings")
 	}
 	result.TotalSites = len(mappings)
 
 	// Check each site
 	for _, mapping := range mappings {
-		syncResult, _ := s.CheckSync(ctx, pluginID, mapping.SiteID)
-		if syncResult != nil {
-			syncResult.SiteName = mapping.SiteName
-			result.Results = append(result.Results, *syncResult)
+		syncResult := s.CheckSync(ctx, pluginID, mapping.SiteID)
+		if syncResult.IsSafe() {
+			sr := syncResult.Value()
+			sr.SiteName = mapping.SiteName
+			result.Results = append(result.Results, sr)
 
-			if syncResult.ErrorMessage != "" {
+			if sr.ErrorMessage != "" {
 				result.Errors++
-			} else if syncResult.InSync {
+			} else if sr.InSync {
 				result.InSync++
 			} else {
 				result.OutOfSync++
@@ -264,75 +265,79 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*Batch
 		}
 	}
 
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // CheckAllPlugins checks sync status for all registered plugins
-func (s *serviceImpl) CheckAllPlugins(ctx context.Context) ([]SyncResult, error) {
+func (s *serviceImpl) CheckAllPlugins(ctx context.Context) apperror.ResultSlice[SyncResult] {
 	var results []SyncResult
 
 	// Get all plugins
 	pluginListResult := s.pluginService.List(ctx)
 	if pluginListResult.HasError() {
-		return nil, pluginListResult.Error()
+		return apperror.FailSlice[SyncResult](pluginListResult.Error())
 	}
 	pluginList := pluginListResult.Items()
 
 	for _, plug := range pluginList {
-		batchResult, _ := s.CheckAllSites(ctx, plug.ID)
-		if batchResult != nil {
-			results = append(results, batchResult.Results...)
+		batchResult := s.CheckAllSites(ctx, plug.ID)
+		if batchResult.IsSafe() {
+			results = append(results, batchResult.Value().Results...)
 		}
 	}
 
-	return results, nil
+	if results == nil {
+		results = []SyncResult{}
+	}
+	return apperror.OkSlice(results)
 }
 
 // PushSync performs a full comparison and pushes all changes (including deletions) to the remote site
-func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*PushSyncResult, error) {
-	result := &PushSyncResult{
+func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) apperror.Result[PushSyncResult] {
+	result := PushSyncResult{
 		PluginID: pluginID,
 		SiteID:   siteID,
 	}
 
 	// 1. Run comparison to get changes
 	s.broadcastProgress(pluginID, siteID, "checking", 0, "Running sync comparison...")
-	syncResult, err := s.CheckSync(ctx, pluginID, siteID)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "sync comparison failed")
+	syncResult := s.CheckSync(ctx, pluginID, siteID)
+	if syncResult.HasError() {
+		return apperror.FailWrap[PushSyncResult](syncResult.Error(), apperror.ErrInternal, "sync comparison failed")
 	}
-	if syncResult.ErrorMessage != "" {
-		result.ErrorMessage = syncResult.ErrorMessage
-		return result, nil
+	sr := syncResult.Value()
+	if sr.ErrorMessage != "" {
+		result.ErrorMessage = sr.ErrorMessage
+		return apperror.Ok(result)
 	}
 
-	if syncResult.InSync {
+	if sr.InSync {
 		result.Success = true
 		s.broadcastProgress(pluginID, siteID, "complete", 100, "Already in sync, nothing to push")
-		return result, nil
+		return apperror.Ok(result)
 	}
 
 	// 2. Get plugin info for reading local files
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
 	if plugResult.HasError() {
-		return nil, apperror.Wrap(plugResult.Error(), apperror.ErrDatabaseQuery, "failed to get plugin")
+		return apperror.FailWrap[PushSyncResult](plugResult.Error(), apperror.ErrDatabaseQuery, "failed to get plugin")
 	}
 	plug := plugResult.Value()
 
 	// 3. Get mapping for remote slug
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get mapping")
+		return apperror.FailWrap[PushSyncResult](err, apperror.ErrDatabaseQuery, "failed to get mapping")
 	}
 
 	// 4. Get site info and credentials
 	siteInfo, err := s.getSiteInfo(ctx, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site info")
+		return apperror.FailWrap[PushSyncResult](err, apperror.ErrDatabaseQuery, "failed to get site info")
 	}
 	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt credentials")
+		return apperror.FailWrap[PushSyncResult](err, apperror.ErrInternal, "failed to decrypt credentials")
 	}
 
 	// 5. Build SyncFile array from changes
@@ -341,10 +346,10 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*Pu
 
 	absPluginPath, err := pathutil.ToAbsolute(plug.Path)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
+		return apperror.FailWrap[PushSyncResult](err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
-	for _, change := range syncResult.Changes {
+	for _, change := range sr.Changes {
 		switch change.ChangeType {
 		case "added", "modified":
 			// Only push local-newer or local-only files
@@ -376,7 +381,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*Pu
 	if len(syncFiles) == 0 {
 		result.Success = true
 		s.broadcastProgress(pluginID, siteID, "complete", 100, "No pushable changes found")
-		return result, nil
+		return apperror.Ok(result)
 	}
 
 	result.TotalChanges = len(syncFiles)
@@ -397,7 +402,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*Pu
 	if err != nil {
 		result.ErrorMessage = err.Error()
 		s.broadcastProgress(pluginID, siteID, "error", 100, "Sync push failed: "+err.Error())
-		return result, nil
+		return apperror.Ok(result)
 	}
 
 	result.FilesUpdated = syncPushResult.FilesUpdated
@@ -424,7 +429,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*Pu
 		"ignored", result.FilesIgnored,
 	)
 
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // GetFileChanges, RecordFileChange, MarkSynced, ClearChanges moved to crud.go.
