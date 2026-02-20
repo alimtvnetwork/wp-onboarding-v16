@@ -9,3 +9,28 @@ func Is(err error, code string) bool {
 
 	return appErr.Code == code
 }
+
+// Extract returns the *AppError from an error, or nil if not an AppError.
+func Extract(err error) *AppError {
+	appErr, ok := err.(*AppError)
+	if !ok {
+		return nil
+	}
+
+	return appErr
+}
+
+// Recover extracts an *AppError from a panic value (used with recover()).
+// Returns nil if the panic value is not an *AppError.
+func Recover(panicValue any) *AppError {
+	if panicValue == nil {
+		return nil
+	}
+
+	appErr, ok := panicValue.(*AppError)
+	if !ok {
+		return nil
+	}
+
+	return appErr
+}

@@ -18,8 +18,14 @@ func FailSlice[T any](err *AppError) ResultSlice[T] {
 }
 
 // FailSliceWrap creates a failed ResultSlice by wrapping a raw error.
+// Uses skip=3 to attribute the stack trace to the actual caller.
 func FailSliceWrap[T any](cause error, code, message string) ResultSlice[T] {
-	return ResultSlice[T]{err: Wrap(cause, code, message)}
+	return ResultSlice[T]{err: WrapWithSkip(cause, code, message, 1)}
+}
+
+// FailSliceNew creates a failed ResultSlice from a new error (no cause).
+func FailSliceNew[T any](code, message string) ResultSlice[T] {
+	return ResultSlice[T]{err: NewWithSkip(code, message, 1)}
 }
 
 // HasError returns true when the operation failed.
@@ -70,6 +76,7 @@ func (r ResultSlice[T]) GetAt(index int) Result[T] {
 	if r.err != nil {
 		return Fail[T](r.err)
 	}
+
 	isOutOfBounds := index < 0 || index >= len(r.items)
 	if isOutOfBounds {
 		return Result[T]{}
