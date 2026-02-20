@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Traits\Snapshot\SnapshotRouteRegistrationTrait;
+
 trait PluginRoutesTrait
 {
     use PluginRouteRegistrationTrait;
