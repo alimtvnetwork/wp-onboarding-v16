@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Database\TypedQuery;
+use RiseupAsia\Enums\FilterKeyType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudReadTrait {
@@ -62,7 +64,7 @@ trait AgentCrudReadTrait {
     ): array {
         $pdo = $this->db->getPdo();
         if ($pdo === null) {
-            return ['total' => 0, 'agents' => []];
+            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Agents->value => []];
         }
 
         $query = new TypedQuery($pdo);
@@ -76,7 +78,7 @@ trait AgentCrudReadTrait {
 
         if ($countResult->hasError()) {
             $this->fileLogger->logException($countResult->error(), 'Failed to list agent sites');
-            return ['total' => 0, 'agents' => []];
+            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Agents->value => []];
         }
 
         $listParams = array_merge($where['params'], [$limit, $offset]);
@@ -90,7 +92,7 @@ trait AgentCrudReadTrait {
 
         if ($listResult->hasError()) {
             $this->fileLogger->logException($listResult->error(), 'Failed to list agent sites');
-            return ['total' => 0, 'agents' => []];
+            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Agents->value => []];
         }
 
         $agents = array_map(
@@ -99,8 +101,8 @@ trait AgentCrudReadTrait {
         );
 
         return [
-            'total'  => $countResult->value() ?? 0,
-            'agents' => $agents,
+            ResponseKeyType::Total->value  => $countResult->value() ?? 0,
+            ResponseKeyType::Agents->value => $agents,
         ];
     }
 
@@ -116,17 +118,17 @@ trait AgentCrudReadTrait {
         $conditions = [];
         $params = [];
 
-        $hasStatusFilter = BooleanHelpers::hasValue($filters['status'] ?? null);
+        $hasStatusFilter = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Status->value);
         if ($hasStatusFilter) {
             $conditions[] = 'status = ?';
-            $params[] = $filters['status'];
+            $params[] = $filters[FilterKeyType::Status->value];
         }
 
         $hasConditions = BooleanHelpers::hasValue($conditions);
 
         return [
-            'sql'    => $hasConditions ? 'WHERE ' . implode(' AND ', $conditions) : '',
-            'params' => $params,
+            ResponseKeyType::Sql->value    => $hasConditions ? 'WHERE ' . implode(' AND ', $conditions) : '',
+            ResponseKeyType::Params->value => $params,
         ];
     }
 }

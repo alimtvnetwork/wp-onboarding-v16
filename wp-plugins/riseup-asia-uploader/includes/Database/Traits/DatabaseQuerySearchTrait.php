@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Enums\FilterKeyType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
@@ -82,52 +83,52 @@ trait DatabaseQuerySearchTrait {
     }
 
     private function applyEqualityFilters(RiseupORM $query, array $filters): void {
-        $hasPlugin = BooleanHelpers::hasValue($filters['plugin'] ?? null);
+        $hasPlugin = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Plugin->value);
         if ($hasPlugin) {
-            $query->where('plugin_slug', $filters['plugin']);
+            $query->where('plugin_slug', $filters[FilterKeyType::Plugin->value]);
         }
-        $hasAction = BooleanHelpers::hasValue($filters['action'] ?? null);
+        $hasAction = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Action->value);
         if ($hasAction) {
-            $actions = array_map('trim', explode(',', $filters['action']));
+            $actions = array_map('trim', explode(',', $filters[FilterKeyType::Action->value]));
             if (count($actions) === 1) {
                 $query->where('action', $actions[0]);
             } else {
                 $query->whereIn('action', $actions);
             }
         }
-        $hasUser = BooleanHelpers::hasValue($filters['user'] ?? null);
+        $hasUser = BooleanHelpers::hasFilterValue($filters, FilterKeyType::User->value);
         if ($hasUser) {
-            $query->where('user_login', $filters['user']);
+            $query->where('user_login', $filters[FilterKeyType::User->value]);
         }
-        $hasStatus = BooleanHelpers::hasValue($filters['status'] ?? null);
+        $hasStatus = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Status->value);
         if ($hasStatus) {
-            $query->where('status', $filters['status']);
+            $query->where('status', $filters[FilterKeyType::Status->value]);
         }
-        $hasTriggeredBy = BooleanHelpers::hasValue($filters['triggered_by'] ?? null);
+        $hasTriggeredBy = BooleanHelpers::hasFilterValue($filters, FilterKeyType::TriggeredBy->value);
         if ($hasTriggeredBy) {
-            $query->where('triggered_by', $filters['triggered_by']);
+            $query->where('triggered_by', $filters[FilterKeyType::TriggeredBy->value]);
         }
-        $hasUploadSource = BooleanHelpers::hasValue($filters['upload_source'] ?? null);
+        $hasUploadSource = BooleanHelpers::hasFilterValue($filters, FilterKeyType::UploadSource->value);
         if ($hasUploadSource) {
-            $query->where('upload_source', $filters['upload_source']);
+            $query->where('upload_source', $filters[FilterKeyType::UploadSource->value]);
         }
     }
 
     private function applyDateRangeFilters(RiseupORM $query, array $filters): void {
-        $hasFrom = BooleanHelpers::hasValue($filters['from'] ?? null);
+        $hasFrom = BooleanHelpers::hasFilterValue($filters, FilterKeyType::From->value);
         if ($hasFrom) {
-            $query->whereGte('created_at', $filters['from'] . 'T00:00:00Z');
+            $query->whereGte('created_at', $filters[FilterKeyType::From->value] . 'T00:00:00Z');
         }
-        $hasTo = BooleanHelpers::hasValue($filters['to'] ?? null);
+        $hasTo = BooleanHelpers::hasFilterValue($filters, FilterKeyType::To->value);
         if ($hasTo) {
-            $query->whereLte('created_at', $filters['to'] . 'T23:59:59Z');
+            $query->whereLte('created_at', $filters[FilterKeyType::To->value] . 'T23:59:59Z');
         }
     }
 
     private function applyTextFilters(RiseupORM $query, array $filters): void {
-        $hasSourceMachine = BooleanHelpers::hasValue($filters['source_machine'] ?? null);
+        $hasSourceMachine = BooleanHelpers::hasFilterValue($filters, FilterKeyType::SourceMachine->value);
         if ($hasSourceMachine) {
-            $query->whereLike('source_machine', '%' . $filters['source_machine'] . '%');
+            $query->whereLike('source_machine', '%' . $filters[FilterKeyType::SourceMachine->value] . '%');
         }
     }
 
