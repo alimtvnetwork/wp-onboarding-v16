@@ -537,6 +537,7 @@ plug := plugResult.Value()
 | Git | `Pull`, `PullAll`, `Build`, `PullAndBuild`, `GetConfig`, `Status`, `Commit`, `Push` | `adapter_git.go` |
 | Watcher | `TriggerScan`, `ScanAfterGitPull`, `ScanAll` | `adapter_sync.go` |
 | Backup | `Create`, `List`, `GetByID`, `Restore`, `ExportToZip`, `ImportFromZip` | `adapter_publish.go` |
+| Session | `GetSession`, `GetSessionLogs`, `GetSessionDiagnostics`, `ListSessions` | `adapter_session.go` |
 
 ---
 

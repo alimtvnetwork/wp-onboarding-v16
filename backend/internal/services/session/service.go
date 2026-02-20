@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -468,24 +469,30 @@ func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, err
 }
 
 // GetSession returns session info
-func (s *Service) GetSession(sessionID string) (*Session, error) {
+func (s *Service) GetSession(sessionID string) apperror.Result[*Session] {
 	s.mu.RLock()
 	session, exists := s.sessions[sessionID]
 	s.mu.RUnlock()
 
 	if exists {
-		return session, nil
+		return apperror.Ok(session)
 	}
 
 	// Try to load from disk
-	return s.loadSessionFromDisk(sessionID)
+	loaded, err := s.loadSessionFromDisk(sessionID)
+	if err != nil {
+		return apperror.FailWrap[*Session](err, apperror.ErrNotFound, "session not found").
+			WithValue("sessionId", sessionID)
+	}
+	return apperror.Ok(loaded)
 }
 
 // GetSessionLogs returns the full log content for a session
-func (s *Service) GetSessionLogs(sessionID string) (string, error) {
+func (s *Service) GetSessionLogs(sessionID string) apperror.Result[string] {
 	logPath, err := s.getLogPath(sessionID)
 	if err != nil {
-		return "", fmt.Errorf("resolve session log path: %w", err)
+		return apperror.FailWrap[string](err, apperror.ErrFSRead, "resolve session log path").
+			WithValue("sessionId", sessionID)
 	}
 	data, err := os.ReadFile(logPath)
 	if err != nil {
@@ -493,22 +500,25 @@ func (s *Service) GetSessionLogs(sessionID string) (string, error) {
 			// Fallback: check for legacy flat file
 			legacyPath, legacyErr := pathutil.Join(s.sessionsDir, sessionID+".log")
 			if legacyErr != nil {
-				return "", fmt.Errorf("session not found: %s", sessionID)
+				return apperror.FailNew[string](apperror.ErrNotFound, "session not found").
+					WithValue("sessionId", sessionID)
 			}
 			data, err = os.ReadFile(legacyPath)
 			if err != nil {
-				return "", fmt.Errorf("session not found: %s", sessionID)
+				return apperror.FailNew[string](apperror.ErrNotFound, "session not found").
+					WithValue("sessionId", sessionID)
 			}
-			return string(data), nil
+			return apperror.Ok(string(data))
 		}
-		return "", fmt.Errorf("read session log: %w", err)
+		return apperror.FailWrap[string](err, apperror.ErrFSRead, "read session log").
+			WithValue("sessionId", sessionID)
 	}
-	return string(data), nil
+	return apperror.Ok(string(data))
 }
 
 // GetSessionDiagnostics returns the structured diagnostics for a session (request, response, stackTrace)
-func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, error) {
-	diag := &SessionDiagnostics{}
+func (s *Service) GetSessionDiagnostics(sessionID string) apperror.Result[SessionDiagnostics] {
+	diag := SessionDiagnostics{}
 
 	// Read request.json
 	if reqPath, err := s.getRequestPath(sessionID); err == nil {
@@ -543,11 +553,12 @@ func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, 
 	}
 
 	// Extract PHP stacktrace.txt content from session logs
-	if logsContent, err := s.GetSessionLogs(sessionID); err == nil {
-		diag.PHPStackTraceLog = extractPHPStackTraceFromLogs(logsContent)
+	logsResult := s.GetSessionLogs(sessionID)
+	if logsResult.IsSafe() {
+		diag.PHPStackTraceLog = extractPHPStackTraceFromLogs(logsResult.Value())
 	}
 
-	return diag, nil
+	return apperror.Ok(diag)
 }
 
 // extractPHPStackTraceFromLogs scans session log lines for the remote_php_stacktrace
@@ -580,7 +591,7 @@ func extractPHPStackTraceFromLogs(logs string) string {
 }
 
 // ListSessions returns recent sessions
-func (s *Service) ListSessions(limit int) ([]*SessionSummary, error) {
+func (s *Service) ListSessions(limit int) apperror.ResultSlice[*SessionSummary] {
 	if limit <= 0 {
 		limit = 100
 	}
@@ -588,7 +599,7 @@ func (s *Service) ListSessions(limit int) ([]*SessionSummary, error) {
 	// Get all entries in sessions dir (now directories, not files)
 	entries, err := os.ReadDir(s.sessionsDir)
 	if err != nil {
-		return nil, fmt.Errorf("read sessions directory: %w", err)
+		return apperror.FailSliceWrap[*SessionSummary](err, apperror.ErrFSRead, "read sessions directory")
 	}
 
 	type dirInfo struct {
@@ -662,7 +673,7 @@ func (s *Service) ListSessions(limit int) ([]*SessionSummary, error) {
 		}
 	}
 
-	return summaries, nil
+	return apperror.OkSlice(summaries)
 }
 
 // SessionSummary provides a brief overview of a session
