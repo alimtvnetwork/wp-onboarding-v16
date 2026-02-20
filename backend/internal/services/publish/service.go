@@ -166,12 +166,13 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 	}
 
 	// Get plugin info early to have name for session
-	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		result.ErrorMessage = err.Error()
-		s.broadcastProgress(pluginID, siteID, "failed", 0, err.Error())
+	pluginResult := s.pluginService.GetByID(ctx, pluginID)
+	if pluginResult.HasError() {
+		result.ErrorMessage = pluginResult.Error().Error()
+		s.broadcastProgress(pluginID, siteID, "failed", 0, pluginResult.Error().Error())
 		return result, nil
 	}
+	pluginInfo := pluginResult.Value()
 
 	// Get site info early to have name for session
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
@@ -888,8 +889,8 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 
 	// DB lookup fallback for plugin name
 	if pluginName == "" && pluginID > 0 {
-		if p, err := s.pluginService.GetByID(context.Background(), pluginID); err == nil {
-			pluginName = p.Name
+		if pResult := s.pluginService.GetByID(context.Background(), pluginID); pResult.IsSafe() {
+			pluginName = pResult.Value().Name
 		}
 	}
 	if pluginName == "" {
@@ -1587,10 +1588,11 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	}
 
 	// Get plugin info
-	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrNotFound, "plugin not found")
+	pluginResult := s.pluginService.GetByID(ctx, pluginID)
+	if pluginResult.HasError() {
+		return nil, apperror.Wrap(pluginResult.Error(), apperror.ErrNotFound, "plugin not found")
 	}
+	pluginInfo := pluginResult.Value()
 	result.PluginName = pluginInfo.Name
 	
 	// Get local version from plugin header file
@@ -1792,10 +1794,11 @@ type FileDiffResult struct {
 // GetFileDiff retrieves both local and remote content for a file to show differences
 func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*FileDiffResult, error) {
 	// Get plugin info
-	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "plugin not found")
+	pluginResult := s.pluginService.GetByID(ctx, pluginID)
+	if pluginResult.HasError() {
+		return nil, apperror.Wrap(pluginResult.Error(), apperror.ErrDatabaseQuery, "plugin not found")
 	}
+	pluginInfo := pluginResult.Value()
 
 	// Get site credentials
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)

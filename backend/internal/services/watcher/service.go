@@ -99,10 +99,11 @@ func (s *Service) SetPublishService(ps PublishService) {
 
 // InitializeCache loads the current file state for a plugin
 func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
-	p, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return err
+	pResult := s.pluginService.GetByID(ctx, pluginID)
+	if pResult.HasError() {
+		return pResult.Error()
 	}
+	p := pResult.Value()
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -227,10 +228,11 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 // triggerAutoPublish checks if plugin has autoPublish enabled and publishes to all mapped sites
 func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, changes []FileChange) {
 	// Get plugin to check autoPublish flag
-	p, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
+	pResult := s.pluginService.GetByID(ctx, pluginID)
+	if pResult.HasError() {
 		return
 	}
+	p := pResult.Value()
 
 	if !p.AutoPublish {
 		return
