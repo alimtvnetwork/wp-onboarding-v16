@@ -369,11 +369,344 @@ New enum: `SyncEntryStatusType` at `includes/Enums/SyncEntryStatusType.php`
 
 ---
 
+---
+
+# 🆕 Go Backend Strict Guidelines — Phased Improvement Plan (2026-02-20)
+
+## Current State (Already Implemented)
+
+- 15-line function body limit (enforced via spec)
+- `dbutil` generic wrappers: `Result[T]`, `ResultSet[T]`, `ExecResult` with `HasError()`, `IsEmpty()`, `IsSafe()`
+- `AppError` with typed diagnostic setters (`WithStatusCode`, `WithMethod`, etc.)
+- Domain typed constants (`StageStatusType`, `ActivationStatusType`, etc.)
+- Zero `any` / type erasure policy
+- `apperror.Wrap()` for stack traces
+
+---
+
+## Go Phase 1: Enhanced Error Architecture (`pkg/apperror`)
+
+### 1.1 — `AppError` Stack Trace Guarantee
+
+Every `AppError` must capture a stack trace at creation time — not optionally.
+
+```go
+// pkg/apperror/app_error.go
+type AppError struct {
+    Code       ErrorCode
+    Message    string
+    Cause      error
+    Stack      StackTrace   // always populated at creation
+    Diagnostic ErrorDiagnostic
+}
+
+// Constructor — stack trace captured automatically
+func New(code ErrorCode, message string) *AppError
+
+// Wrapping — preserves original stack if AppError, adds new context
+func Wrap(err error, message string) *AppError
+
+// WrapWithCode — wrap with explicit error code
+func WrapWithCode(err error, code ErrorCode, message string) *AppError
+```
+
+### 1.2 — `StackTrace` Type
+
+```go
+// pkg/apperror/stack_trace.go
+type StackFrame struct {
+    Function string
+    File     string
+    Line     int
+}
+
+type StackTrace []StackFrame
+
+func CaptureStack(skip int) StackTrace
+func (s StackTrace) String() string       // full formatted trace
+func (s StackTrace) CallerLine() string   // "file.go:42"
+```
+
+### 1.3 — `AppError` Display Methods
+
+```go
+func (e *AppError) Error() string          // message only (implements error)
+func (e *AppError) FullString() string     // code + message + stack trace + cause chain
+func (e *AppError) Unwrap() error          // standard unwrap for errors.Is/As
+func (e *AppError) Is(target error) bool   // match by ErrorCode
+```
+
+### 1.4 — Generic `Result[T]` (Service-Level)
+
+Extend beyond `dbutil` for all service returns:
+
+```go
+// pkg/apperror/result.go
+type Result[T any] struct {
+    value T
+    err   *AppError
+}
+
+func Ok[T any](value T) Result[T]
+func Fail[T any](err *AppError) Result[T]
+func FailWrap[T any](err error, msg string) Result[T]
+
+func (r Result[T]) HasError() bool
+func (r Result[T]) IsSafe() bool           // !HasError
+func (r Result[T]) Value() T               // panics if HasError
+func (r Result[T]) ValueOr(fallback T) T
+func (r Result[T]) Error() *AppError
+func (r Result[T]) Unwrap() (T, error)     // bridge to (T, error) pattern
+```
+
+### Implementation Files
+
+| File | Action |
+|------|--------|
+| `pkg/apperror/app_error.go` | Rewrite with mandatory StackTrace field |
+| `pkg/apperror/stack_trace.go` | New — StackFrame, CaptureStack, String |
+| `pkg/apperror/result.go` | New — generic Result[T] for services |
+| `pkg/apperror/error_code.go` | Audit — ensure all codes are typed constants |
+
+### Estimated Effort: 4 tasks
+
+---
+
+## Go Phase 2: File & Function Size Enforcement
+
+### 2.1 — File Size Limit: 300 Lines Max
+
+- Add lint script: `scripts/lint-file-size.sh`
+- Scans all `.go` files excluding generated/vendor
+- Fails CI if any file exceeds 300 lines
+- Splitting pattern:
+  - `entity.go` — struct + constructors
+  - `entity_crud.go` — DB operations
+  - `entity_validation.go` — validation logic
+  - `entity_helpers.go` — private utilities
+
+### 2.2 — Function Body Limit: 15 Lines Max
+
+- Add lint script: `scripts/lint-func-size.sh`
+- Counts lines between `func` opening `{` and closing `}`
+- Excludes blank lines and comments from count
+- Extraction patterns:
+  - Multi-step → orchestrator + helpers
+  - Complex conditions → named boolean variables
+  - Switch/case → lookup maps or strategy pattern
+
+### 2.3 — Cyclomatic Complexity: Max 1
+
+- No nested `if` statements — early return mandatory
+- Complex boolean expressions → named variables
+- `if err != nil { return }` does not count as nesting
+
+### Lint Scripts
+
+| Script | Rule |
+|--------|------|
+| `scripts/lint-file-size.sh` | No `.go` file > 300 lines |
+| `scripts/lint-func-size.sh` | No function body > 15 lines |
+
+### Estimated Effort: 3 tasks (scripts + file splitting)
+
+---
+
+## Go Phase 3: Constants, Enums & DRY Enforcement
+
+### 3.1 — Typed Constants Standard
+
+All string literals in business logic must use typed constants:
+
+```go
+// domain/types/status_type.go
+type StatusType string
+
+const (
+    StatusActive   StatusType = "active"
+    StatusInactive StatusType = "inactive"
+    StatusPending  StatusType = "pending"
+)
+
+func (s StatusType) String() string { return string(s) }
+func (s StatusType) IsValid() bool  { /* lookup map */ }
+func (s StatusType) IsOtherThan(other StatusType) bool { return s != other }
+```
+
+### 3.2 — Enum Pattern (iota + String)
+
+For non-string enums, use iota with `String()` method:
+
+```go
+type LogLevel int
+
+const (
+    LogDebug LogLevel = iota
+    LogInfo
+    LogWarn
+    LogError
+)
+
+func (l LogLevel) String() string {
+    return [...]string{"debug", "info", "warn", "error"}[l]
+}
+```
+
+### 3.3 — Zero Magic Strings/Numbers
+
+- Lint rule: no raw string literals in function bodies (except struct tags, test assertions)
+- All HTTP status codes → `HttpStatusType` constants
+- All error codes → `ErrorCode` constants
+- All config keys → typed const block
+
+### 3.4 — DRY Enforcement Patterns
+
+- Repeated error handling → `apperror.Result[T]` or helper functions
+- Repeated JSON key access → typed response structs
+- Repeated validation → `Validate()` method on input structs
+- Repeated DB patterns → `dbutil` generic wrappers (already done)
+
+### Estimated Effort: 4 tasks (audit + migration)
+
+---
+
+## Go Phase 4: Positive Logic & Boolean Standards
+
+### 4.1 — Positive Boolean Naming
+
+```go
+// ❌ Negative naming
+func IsNotValid() bool
+func HasNoPermission() bool
+if !user.IsDisabled() { ... }
+
+// ✅ Positive naming
+func IsValid() bool
+func HasPermission() bool
+if user.IsActive() { ... }
+```
+
+### 4.2 — Negation Elimination
+
+- Replace `!isX` with positive counterpart method
+- `IsOtherThan(val)` instead of `!= val` (mirrors PHP enum pattern)
+- Named boolean variables for compound conditions:
+
+```go
+// ❌ Inline negation
+if !user.IsAdmin() && !request.IsInternal() { ... }
+
+// ✅ Named positive logic
+isExternalNonAdmin := user.IsRegular() && request.IsExternal()
+if isExternalNonAdmin { ... }
+```
+
+### 4.3 — Lint Rule
+
+- `scripts/lint-negative.sh` — flag `IsNot*`, `HasNo*` function names
+- Manual review for `!` negation in boolean expressions
+
+### Estimated Effort: 2 tasks
+
+---
+
+## Go Phase 5: Code Organization Standards
+
+### 5.1 — Package Structure
+
+```
+pkg/
+  apperror/          # Error types, Result[T], stack traces
+    app_error.go     # AppError struct + constructors (<300 lines)
+    result.go        # Result[T] generic
+    stack_trace.go   # StackTrace capture + formatting
+    error_code.go    # ErrorCode typed constants
+    diagnostic.go    # ErrorDiagnostic struct + setters
+  dbutil/            # Database wrappers (existing)
+  httputil/          # HTTP helpers, response writers
+  validate/          # Validation helpers
+
+internal/
+  domain/            # Domain models + typed constants
+    types/           # Shared type definitions
+  handler/           # HTTP handlers (thin, delegate to services)
+    response_types.go
+  service/           # Business logic
+    {entity}/
+      service.go           # Public interface + constructor
+      {entity}_crud.go     # DB operations
+      {entity}_helpers.go  # Private helpers
+      broadcast_details.go # Event payload structs
+```
+
+### 5.2 — File Naming Conventions
+
+- One primary type per file
+- File name matches primary type: `app_error.go` → `AppError`
+- Helpers suffixed: `_helpers.go`, `_crud.go`, `_validation.go`
+- Test files: `_test.go` suffix (standard Go)
+
+### 5.3 — Import Organization (3 groups, blank-line separated)
+
+```go
+import (
+    // stdlib
+    "context"
+    "fmt"
+
+    // internal packages
+    "project/pkg/apperror"
+    "project/internal/domain"
+
+    // third-party
+    "github.com/lib/pq"
+)
+```
+
+### Estimated Effort: 3 tasks (restructure + rename)
+
+---
+
+## Go Phase 6: CI Lint Scripts & Integration
+
+### 6.1 — Complete Lint Script Suite
+
+| Script | Rule |
+|--------|------|
+| `scripts/lint-file-size.sh` | No `.go` file > 300 lines |
+| `scripts/lint-func-size.sh` | No function body > 15 lines |
+| `scripts/lint-ge.sh` | No `any`, `interface{}`, `map[string]any` in business logic |
+| `scripts/lint-magic.sh` | No magic strings/numbers in function bodies |
+| `scripts/lint-negative.sh` | No `IsNot*`, `HasNo*` function names |
+
+### 6.2 — CI Pipeline Order
+
+1. `go vet ./...`
+2. `golangci-lint run`
+3. Custom lint scripts (above)
+4. `go test ./...`
+
+### Estimated Effort: 2 tasks
+
+---
+
+## Execution Order & Dependencies
+
+| Phase | Scope | Dependencies | Effort |
+|-------|-------|-------------|--------|
+| **Go Phase 1** | `pkg/apperror` rewrite — StackTrace, Result[T] | None — foundational | 4 tasks |
+| **Go Phase 2** | Lint scripts + file splitting to ≤300 lines | Phase 1 (new error patterns) | 3 tasks |
+| **Go Phase 3** | Constants audit + magic string migration | Phase 1 (error codes) | 4 tasks |
+| **Go Phase 4** | Boolean logic cleanup, positive naming | Phase 3 (named types) | 2 tasks |
+| **Go Phase 5** | Package restructuring | Phases 1–4 | 3 tasks |
+| **Go Phase 6** | CI integration | All phases | 2 tasks |
+
+**Total: ~18 tasks across 6 phases**
+
+Each phase is independently deployable. **Go Phase 1 is the critical foundation** — all other phases reference `Result[T]` and `AppError`.
+
+---
+
 ## Next Steps
 
-Please review and confirm:
-
-1. **Which phase(s) to start with?**
-2. **Phase 5**: Build license server in Go (existing backend) or use a third-party service?
-3. **Phase 4**: Update URL ready, or build infrastructure first?
-4. **Any phases to skip or defer?**
+Confirm which Go Phase to start with (recommended: **Go Phase 1** — error architecture).
