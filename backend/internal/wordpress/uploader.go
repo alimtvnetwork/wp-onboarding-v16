@@ -394,7 +394,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string, error) {
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(slug)
-	endpoint := "/" + namespace + EndpointPluginExists
+	endpoint := "/" + namespace + EndpointPluginExists.String()
 	reqBody := map[string]string{"plugin": normalizedSlug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -512,7 +512,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
 	namespace := c.resolveNamespace()
 
-	endpoint := "/" + namespace + EndpointFiles
+	endpoint := "/" + namespace + EndpointFiles.String()
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -544,7 +544,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
 	namespace := c.resolveNamespace()
 
-	endpoint := "/" + namespace + EndpointFiles
+	endpoint := "/" + namespace + EndpointFiles.String()
 
 	// Always use base64 encoding for RiseupAsia Uploader
 	contentStr := base64.StdEncoding.EncodeToString(content)
@@ -597,7 +597,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	namespace := c.resolveNamespace()
 
-	endpoint := "/" + namespace + EndpointFiles
+	endpoint := "/" + namespace + EndpointFiles.String()
 
 	body := map[string]string{"plugin": slug, "path": relPath, "action": "delete"}
 	jsonBody, _ := json.Marshal(body)
@@ -674,7 +674,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 		"namespace": namespace,
 	})
 
-	endpoint := "/" + namespace + EndpointSync
+	endpoint := "/" + namespace + EndpointSync.String()
 
 	body := ProgressDetails{
 		"plugin": slug,
@@ -751,7 +751,7 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
-	endpoint := "/" + namespace + EndpointExportPlugin
+	endpoint := "/" + namespace + EndpointExportPlugin.String()
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {

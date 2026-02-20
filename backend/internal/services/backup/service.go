@@ -138,7 +138,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	s.broadcastLog(mappingID, "info", "complete", "Backup created successfully", marshalBackupDetails(map[string]any{
 		"path":     backupPath,
 		"fileSize": size,
-	})
+	}))
 
 	return backup, nil
 }
@@ -160,7 +160,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, 
 	s.log.Info("Restoring backup", "backupId", backupID)
 	s.broadcastLog(backupID, "info", "init", "Starting backup restore", marshalBackupDetails(map[string]any{
 		"backupId": backupID,
-	})
+	}))
 
 	// TODO: Implement restore:
 	// 1. Get backup file path
@@ -212,7 +212,7 @@ func (s *Service) Cleanup(ctx context.Context) error {
 			s.log.Debug("Removing expired backup", "path", path, "modified", info.ModTime())
 			s.broadcastLog(0, "debug", "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), marshalBackupDetails(map[string]any{
 				"modifiedAt": info.ModTime().Format(time.RFC3339),
-			})
+			}))
 			if err := os.Remove(path); err == nil {
 				removedCount++
 			}
