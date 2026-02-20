@@ -390,8 +390,11 @@ func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) erro
 		INSERT OR REPLACE INTO PluginGitConfig (PluginId, GitEnabled, GitBranch, GitRemoteUrl, BuildEnabled, BuildCommand, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
 	`, config.PluginID, config.GitEnabled, config.Branch, config.GitRemoteURL, config.BuildEnabled, config.BuildCommand)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update git config")
+	}
 
-	return err
+	return nil
 }
 
 // StatusResult represents git status information

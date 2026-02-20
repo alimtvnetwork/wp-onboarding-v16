@@ -288,7 +288,11 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 			}
 		}
 		
-		return err
+		if err != nil {
+			return apperror.Wrap(err, apperror.ErrInternal, "failed to create plugin ZIP package")
+		}
+
+		return nil
 	})
 	result.Stages = append(result.Stages, stage)
 	if stage.Status == "failed" {
@@ -418,7 +422,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 				}
 			}
 			s.broadcastStageLog(pluginID, siteID, sessionID, "error", "upload", errorCtx)
-			return err
+			return apperror.Wrap(err, apperror.ErrWPConnection, "plugin upload failed")
 		}
 
 		if performed {
@@ -524,7 +528,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 					}
 				}
 			s.broadcastStageLog(pluginID, siteID, sessionID, "error", "activate", errorCtx)
-				return err
+				return apperror.Wrap(err, apperror.ErrWPConnection, "plugin activation failed")
 			}
 
 			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{

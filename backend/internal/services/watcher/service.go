@@ -485,5 +485,9 @@ func (s *Service) RecordFileChange(ctx context.Context, change *models.FileChang
 		INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, DetectedAt)
 		VALUES (?, ?, ?, ?, datetime('now'))
 	`, change.PluginID, change.FilePath, change.ChangeType, change.LocalHash)
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to record file change")
+	}
+
+	return nil
 }

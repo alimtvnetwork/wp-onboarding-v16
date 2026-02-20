@@ -526,7 +526,32 @@ plug := plugResult.Value()
 2. All `main.go` initialization code that calls service methods
 3. All adapter methods are updated to unwrap the new return types
 
-### 10.5 Migrated Services
+### 10.5 Zero Raw Error Rule
+
+**No service method may return a bare `error` from the standard library.** Every error returned from a service function must be an `*apperror.AppError` (created via `apperror.New`, `apperror.Wrap`, or contained within a `Result[T]`). This guarantees every error carries a stack trace for diagnostics.
+
+**Forbidden patterns:**
+```go
+// ❌ NEVER — no stack trace captured
+return err
+return fmt.Errorf("something failed: %w", err)
+return errors.New("something failed")
+```
+
+**Required patterns:**
+```go
+// ✅ Wraps with stack trace + error code
+return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update config")
+
+// ✅ New error with stack trace + error code
+return apperror.New(apperror.ErrNotFound, "entry not found")
+```
+
+**Exemptions:**
+- `filepath.Walk` callbacks (framework requires `error` interface)
+- E2E test harness (`e2e/` package) — test assertion errors, not production
+
+### 10.6 Migrated Services
 
 | Service | Result Types | Adapter File |
 |---------|-------------|--------------|
