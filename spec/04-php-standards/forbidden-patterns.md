@@ -1,7 +1,7 @@
 # PHP Forbidden Patterns — Quick Reference Checklist
 
-> **Version:** 3.0.0  
-> **Updated:** 2026-02-14  
+> **Version:** 4.0.0  
+> **Updated:** 2026-02-20  
 > **Consolidates:** [readme.md](./readme.md), [enums.md](./enums.md), [WP Error Handling](../07-wordpress-plugin-development/07-error-handling.md)
 
 ---
@@ -168,6 +168,108 @@ In v1.58.0, two missing `use` import statements caused a **full site crash** ("c
 
 ---
 
+## 8. Magic Strings — Structured Array Keys (`ResponseKeyType`)
+
+> **Added:** 2026-02-20 — Eliminates magic string fragmentation across API responses, log context arrays, and inter-service data transfer.
+
+### Why This Matters
+
+Structured response arrays (`['success' => true, 'error' => '...']`) appear in **every** REST handler, logger call, and service return value. When these keys are raw strings, typos silently break consumers and grep-based audits miss variants (`'errors'` vs `'error'`).
+
+`ResponseKeyType` centralizes all envelope and domain keys so that:
+- A single rename propagates everywhere.
+- IDE autocompletion prevents typos.
+- The Go proxy and TypeScript frontend can mirror the same enum for end-to-end type safety.
+
+### Forbidden Patterns
+
+| # | ❌ Forbidden | ✅ Required | Enum Case |
+|---|-------------|------------|-----------|
+| 8.1  | `['success']` or `=> 'success'` | `[ResponseKeyType::Success->value]` | `Success` |
+| 8.2  | `['error']` | `[ResponseKeyType::Error->value]` | `Error` |
+| 8.3  | `['message']` | `[ResponseKeyType::Message->value]` | `Message` |
+| 8.4  | `['data']` | `[ResponseKeyType::Data->value]` | `Data` |
+| 8.5  | `['code']` | `[ResponseKeyType::Code->value]` | `Code` |
+| 8.6  | `['valid']` | `[ResponseKeyType::Valid->value]` | `Valid` |
+| 8.7  | `['errors']` | `[ResponseKeyType::Errors->value]` | `Errors` |
+| 8.8  | `['cached']` | `[ResponseKeyType::Cached->value]` | `Cached` |
+| 8.9  | `['phase']` | `[ResponseKeyType::Phase->value]` | `Phase` |
+| 8.10 | `['reason']` | `[ResponseKeyType::Reason->value]` | `Reason` |
+| 8.11 | `['total']` | `[ResponseKeyType::Total->value]` | `Total` |
+| 8.12 | `['agents']` | `[ResponseKeyType::Agents->value]` | `Agents` |
+| 8.13 | `['actions']` | `[ResponseKeyType::Actions->value]` | `Actions` |
+| 8.14 | `['logs']` | `[ResponseKeyType::Logs->value]` | `Logs` |
+| 8.15 | `['snapshots']` | `[ResponseKeyType::Snapshots->value]` | `Snapshots` |
+| 8.16 | `['sql']` | `[ResponseKeyType::Sql->value]` | `Sql` |
+| 8.17 | `['params']` | `[ResponseKeyType::Params->value]` | `Params` |
+| 8.18 | `['sets']` | `[ResponseKeyType::Sets->value]` | `Sets` |
+| 8.19 | `['plugins']` | `[ResponseKeyType::Plugins->value]` | `Plugins` |
+| 8.20 | `['tables']` | `[ResponseKeyType::Tables->value]` | `Tables` |
+| 8.21 | `['rows']` | `[ResponseKeyType::Rows->value]` | `Rows` |
+| 8.22 | `['bytes']` | `[ResponseKeyType::Bytes->value]` | `Bytes` |
+| 8.23 | `['size']` | `[ResponseKeyType::Size->value]` | `Size` |
+| 8.24 | `['file_size']` | `[ResponseKeyType::FileSize->value]` | `FileSize` |
+| 8.25 | `['path']` | `[ResponseKeyType::Path->value]` | `Path` |
+| 8.26 | `['filename']` | `[ResponseKeyType::Filename->value]` | `Filename` |
+| 8.27 | `['checksum']` | `[ResponseKeyType::Checksum->value]` | `Checksum` |
+| 8.28 | `['duration']` | `[ResponseKeyType::Duration->value]` | `Duration` |
+| 8.29 | `['count']` | `[ResponseKeyType::Count->value]` | `Count` |
+| 8.30 | `['files']` | `[ResponseKeyType::Files->value]` | `Files` |
+| 8.31 | `['directory']` | `[ResponseKeyType::Directory->value]` | `Directory` |
+| 8.32 | `['scope']` | `[ResponseKeyType::Scope->value]` | `Scope` |
+| 8.33 | `['exported']` | `[ResponseKeyType::Exported->value]` | `Exported` |
+| 8.34 | `['entry']` | `[ResponseKeyType::Entry->value]` | `Entry` |
+| 8.35 | `['snapshot_id']` | `[ResponseKeyType::SnapshotId->value]` | `SnapshotId` |
+| 8.36 | `['sequence']` | `[ResponseKeyType::Sequence->value]` | `Sequence` |
+| 8.37 | `['folder_name']` | `[ResponseKeyType::FolderName->value]` | `FolderName` |
+| 8.38 | `['tables_changed']` | `[ResponseKeyType::TablesChanged->value]` | `TablesChanged` |
+| 8.39 | `['total_rows']` | `[ResponseKeyType::TotalRows->value]` | `TotalRows` |
+| 8.40 | `['total_new_rows']` | `[ResponseKeyType::TotalNewRows->value]` | `TotalNewRows` |
+| 8.41 | `['zip_size']` | `[ResponseKeyType::ZipSize->value]` | `ZipSize` |
+| 8.42 | `['backup_id']` | `[ResponseKeyType::BackupId->value]` | `BackupId` |
+| 8.43 | `['zip_failed']` | `[ResponseKeyType::ZipFailed->value]` | `ZipFailed` |
+| 8.44 | `['skip_audit']` | `[ResponseKeyType::SkipAudit->value]` | `SkipAudit` |
+| 8.45 | `['tables_restored']` | `[ResponseKeyType::TablesRestored->value]` | `TablesRestored` |
+
+### Scope
+
+This rule applies to **all** array key access where the key matches a `ResponseKeyType` case value:
+
+- REST handler response arrays (`new WP_REST_Response(array(...))`)
+- Service return arrays (`return array(ResponseKeyType::Success->value => true, ...)`)
+- Log context arrays (`$this->fileLogger->info('...', array(ResponseKeyType::Phase->value => '...'))`)
+- Internal data transfer between traits/classes
+
+### Exceptions
+
+Keys that are **not** in `ResponseKeyType` remain as literal strings (e.g., domain-specific keys like `'retention'`, `'orphans'`, `'stuck'`, `'settings'`, `'providers'`, `'content'`). If a key appears in 3+ files, consider adding it to the enum.
+
+Keys inside `$_FILES` superglobal access (e.g., `$files['file']['size']`) and WordPress hook/filter names are exempt — these are PHP/WordPress API contracts.
+
+### Example
+
+```php
+// ❌ FORBIDDEN — magic string keys
+return array(
+    'success' => true,
+    'snapshot_id' => $id,
+    'total_rows' => $rows,
+    'duration' => $elapsed,
+    'errors' => $errors,
+);
+
+// ✅ REQUIRED — ResponseKeyType enum
+return array(
+    ResponseKeyType::Success->value => true,
+    ResponseKeyType::SnapshotId->value => $id,
+    ResponseKeyType::TotalRows->value => $rows,
+    ResponseKeyType::Duration->value => $elapsed,
+    ResponseKeyType::Errors->value => $errors,
+);
+```
+
+---
+
 ## Checklist Summary (Copy for PRs)
 
 ```
@@ -202,6 +304,8 @@ In v1.58.0, two missing `use` import statements caused a **full site crash** ("c
 [ ] Every cross-namespace enum/class/interface has file-level `use` import
 [ ] No file relies on ambient loading — each file is self-sufficient
 [ ] Cold activation tested after adding new trait compositions
+[ ] No magic string array keys matching ResponseKeyType cases — use enum->value
+[ ] Every new repeated key (3+ files) added to ResponseKeyType enum
 ```
 
 ---
@@ -217,4 +321,4 @@ In v1.58.0, two missing `use` import statements caused a **full site crash** ("c
 
 ---
 
-*Forbidden patterns checklist v3.0.0 — 2026-02-14*
+*Forbidden patterns checklist v4.0.0 — 2026-02-20*
