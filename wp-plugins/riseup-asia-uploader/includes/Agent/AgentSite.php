@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\AgentFieldType;
 use RiseupAsia\Enums\AgentStatusType;
 
 final readonly class AgentSite {
@@ -67,20 +68,20 @@ final readonly class AgentSite {
      */
     public function toArray(): array {
         $data = [
-            'id'           => $this->id,
-            'name'         => $this->name,
-            'url'          => $this->url,
-            'username'     => $this->username,
-            'redirect_url' => $this->redirectUrl,
-            'status'       => $this->status,
-            'last_sync'    => $this->lastSync,
-            'last_error'   => $this->lastError,
-            'created_at'   => $this->createdAt,
-            'updated_at'   => $this->updatedAt,
+            'id'                              => $this->id,
+            AgentFieldType::Name->value        => $this->name,
+            AgentFieldType::Url->value         => $this->url,
+            AgentFieldType::Username->value    => $this->username,
+            AgentFieldType::RedirectUrl->value => $this->redirectUrl,
+            AgentFieldType::Status->value      => $this->status,
+            AgentFieldType::LastSync->value     => $this->lastSync,
+            AgentFieldType::LastError->value    => $this->lastError,
+            'created_at'                       => $this->createdAt,
+            'updated_at'                       => $this->updatedAt,
         ];
 
         if ($this->appPassword !== null) {
-            $data['app_password'] = $this->appPassword;
+            $data[AgentFieldType::AppPassword->value] = $this->appPassword;
         }
 
         return $data;

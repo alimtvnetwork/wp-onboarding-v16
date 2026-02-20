@@ -16,9 +16,11 @@ use WP_REST_Request;
 use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\FilterKeyType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 
@@ -77,12 +79,12 @@ trait PostHandlerTrait
             $offset = $request->get_param('offset') ?? 0;
 
             $result = $this->db->queryTransactions($filters, $limit, $offset);
-            $total = $result['total'];
+            $total = $result[ResponseKeyType::Total->value];
             $perPage = (int) $limit;
 
             return EnvelopeBuilder::success()
                 ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Logs->value)
-                ->setResults($result['logs'])
+                ->setResults($result[ResponseKeyType::Logs->value])
                 ->setPagination($total, $perPage, $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1)
                 ->toResponse();
         } catch (Throwable $e) {
@@ -92,12 +94,12 @@ trait PostHandlerTrait
 
     private function buildLogQueryFilters(WP_REST_Request $request): array {
         return array(
-            'plugin' => $request->get_param('plugin'),
-            'action' => $request->get_param('action'),
-            'user'   => $request->get_param('user'),
-            'status' => $request->get_param('status'),
-            'from'   => $request->get_param('from'),
-            'to'     => $request->get_param('to'),
+            FilterKeyType::Plugin->value => $request->get_param(FilterKeyType::Plugin->value),
+            FilterKeyType::Action->value => $request->get_param(FilterKeyType::Action->value),
+            FilterKeyType::User->value   => $request->get_param(FilterKeyType::User->value),
+            FilterKeyType::Status->value => $request->get_param(FilterKeyType::Status->value),
+            FilterKeyType::From->value   => $request->get_param(FilterKeyType::From->value),
+            FilterKeyType::To->value     => $request->get_param(FilterKeyType::To->value),
         );
     }
 

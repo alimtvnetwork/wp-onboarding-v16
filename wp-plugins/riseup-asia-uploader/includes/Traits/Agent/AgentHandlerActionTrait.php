@@ -17,6 +17,7 @@ use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Agent\AgentManager;
 
@@ -84,7 +85,7 @@ trait AgentHandlerActionTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->getActionHistory($id, $limit, $offset);
 
-            return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'actions' => $result['actions']), HttpStatusType::Ok->value);
+            return new WP_REST_Response(array('success' => true, ResponseKeyType::Total->value => $result[ResponseKeyType::Total->value], ResponseKeyType::Actions->value => $result[ResponseKeyType::Actions->value]), HttpStatusType::Ok->value);
         }, 'agent_history');
     }
 }
