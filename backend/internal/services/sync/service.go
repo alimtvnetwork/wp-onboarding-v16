@@ -138,11 +138,12 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	s.broadcastProgress(pluginID, siteID, "checking", 0, "Starting sync check...")
 
 	// Get plugin info
-	plug, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		result.ErrorMessage = err.Error()
+	plugResult := s.pluginService.GetByID(ctx, pluginID)
+	if plugResult.HasError() {
+		result.ErrorMessage = plugResult.Error().Error()
 		return result, nil
 	}
+	plug := plugResult.Value()
 
 	// Scan local files
 	s.broadcastProgress(pluginID, siteID, "scanning", 20, "Scanning local files...")
@@ -232,10 +233,11 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*Batch
 	}
 
 	// Get plugin info
-	plug, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, err
+	plugResult := s.pluginService.GetByID(ctx, pluginID)
+	if plugResult.HasError() {
+		return nil, plugResult.Error()
 	}
+	plug := plugResult.Value()
 	result.PluginName = plug.Name
 
 	// Get all mappings for this plugin
@@ -270,10 +272,11 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) ([]SyncResult, error)
 	var results []SyncResult
 
 	// Get all plugins
-	pluginList, err := s.pluginService.List(ctx)
-	if err != nil {
-		return nil, err
+	pluginListResult := s.pluginService.List(ctx)
+	if pluginListResult.HasError() {
+		return nil, pluginListResult.Error()
 	}
+	pluginList := pluginListResult.Items()
 
 	for _, plug := range pluginList {
 		batchResult, _ := s.CheckAllSites(ctx, plug.ID)
@@ -310,10 +313,11 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*Pu
 	}
 
 	// 2. Get plugin info for reading local files
-	plug, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
+	plugResult := s.pluginService.GetByID(ctx, pluginID)
+	if plugResult.HasError() {
+		return nil, apperror.Wrap(plugResult.Error(), apperror.ErrDatabaseQuery, "failed to get plugin")
 	}
+	plug := plugResult.Value()
 
 	// 3. Get mapping for remote slug
 	mapping, err := s.getMapping(ctx, pluginID, siteID)

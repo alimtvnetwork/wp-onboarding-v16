@@ -115,10 +115,11 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	s.log.Info("Starting git pull", "pluginId", pluginID) // name resolved after GetByID below
 
 	// Get plugin details
-	p, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, err
+	pResult := s.pluginService.GetByID(ctx, pluginID)
+	if pResult.HasError() {
+		return nil, pResult.Error()
 	}
+	p := pResult.Value()
 
 	result := &PullResult{
 		PluginID:   pluginID,
@@ -205,10 +206,11 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 
 	s.log.Info("Starting git pull for all plugins")
 
-	plugins, err := s.pluginService.List(ctx)
-	if err != nil {
-		return nil, err
+	pluginsResult := s.pluginService.List(ctx)
+	if pluginsResult.HasError() {
+		return nil, pluginsResult.Error()
 	}
+	plugins := pluginsResult.Items()
 
 	batch := &BatchPullResult{
 		Results: make([]PullResult, 0),
@@ -250,10 +252,11 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 	s.log.Info("Starting build", "pluginId", pluginID) // name resolved after GetByID below
 
 	// Get plugin
-	p, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, err
+	pResult := s.pluginService.GetByID(ctx, pluginID)
+	if pResult.HasError() {
+		return nil, pResult.Error()
 	}
+	p := pResult.Value()
 
 	// Get git config
 	config, err := s.GetConfig(ctx, pluginID)
@@ -388,10 +391,11 @@ type StatusResult struct {
 
 // Status returns git status for a plugin
 func (s *Service) Status(ctx context.Context, pluginID int64) (*StatusResult, error) {
-	p, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, err
+	pResult := s.pluginService.GetByID(ctx, pluginID)
+	if pResult.HasError() {
+		return nil, pResult.Error()
 	}
+	p := pResult.Value()
 
 	result := &StatusResult{PluginID: pluginID}
 
@@ -454,10 +458,11 @@ type CommitResult struct {
 
 // Commit stages all changes and commits with the given message
 func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*CommitResult, error) {
-	p, err := s.pluginService.GetByID(ctx, pluginID)
-	if err != nil {
-		return nil, err
+	pResult := s.pluginService.GetByID(ctx, pluginID)
+	if pResult.HasError() {
+		return nil, pResult.Error()
 	}
+	p := pResult.Value()
 
 	result := &CommitResult{PluginID: pluginID}
 
