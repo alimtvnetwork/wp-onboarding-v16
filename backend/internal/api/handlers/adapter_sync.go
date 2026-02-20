@@ -70,15 +70,31 @@ func (a *SyncServiceAdapter) PushSync(ctx context.Context, pluginID, siteID int6
 	return &v, nil
 }
 
+// WatcherServiceInterface defines watcher service methods for HTTP handlers.
+// Returns (T, error) tuples — the adapter unwraps Result types from the service layer.
+type WatcherServiceInterface interface {
+	TriggerScan(ctx context.Context, pluginID int64) (*watcher.ScanResult, error)
+	ScanAll(ctx context.Context) ([]watcher.ScanResult, error)
+}
+
 // WatcherServiceAdapter wraps *watcher.Service to implement WatcherServiceInterface
 type WatcherServiceAdapter struct {
 	*watcher.Service
 }
 
 func (a *WatcherServiceAdapter) TriggerScan(ctx context.Context, pluginID int64) (*watcher.ScanResult, error) {
-	return a.Service.TriggerScan(ctx, pluginID)
+	result := a.Service.TriggerScan(ctx, pluginID)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	v := result.Value()
+	return &v, nil
 }
 
 func (a *WatcherServiceAdapter) ScanAll(ctx context.Context) ([]watcher.ScanResult, error) {
-	return a.Service.ScanAll(ctx)
+	result := a.Service.ScanAll(ctx)
+	if result.HasError() {
+		return nil, result.Error()
+	}
+	return result.Items(), nil
 }

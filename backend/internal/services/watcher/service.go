@@ -17,6 +17,7 @@ import (
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -124,17 +125,17 @@ func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
 }
 
 // TriggerScan performs a manual scan (user clicked refresh)
-func (s *Service) TriggerScan(ctx context.Context, pluginID int64) (*ScanResult, error) {
+func (s *Service) TriggerScan(ctx context.Context, pluginID int64) apperror.Result[ScanResult] {
 	return s.performScan(ctx, pluginID, "manual")
 }
 
 // ScanAfterGitPull performs a scan after git pull (automatic)
-func (s *Service) ScanAfterGitPull(ctx context.Context, pluginID int64) (*ScanResult, error) {
+func (s *Service) ScanAfterGitPull(ctx context.Context, pluginID int64) apperror.Result[ScanResult] {
 	return s.performScan(ctx, pluginID, "git_pull")
 }
 
 // ScanAll scans all cached plugins
-func (s *Service) ScanAll(ctx context.Context) ([]ScanResult, error) {
+func (s *Service) ScanAll(ctx context.Context) apperror.ResultSlice[ScanResult] {
 	s.mu.RLock()
 	pluginIDs := make([]int64, 0, len(s.cache))
 	for id := range s.cache {
@@ -144,12 +145,12 @@ func (s *Service) ScanAll(ctx context.Context) ([]ScanResult, error) {
 
 	var results []ScanResult
 	for _, id := range pluginIDs {
-		result, err := s.TriggerScan(ctx, id)
-		if err == nil && result != nil {
-			results = append(results, *result)
+		result := s.TriggerScan(ctx, id)
+		if result.IsSafe() {
+			results = append(results, result.Value())
 		}
 	}
-	return results, nil
+	return apperror.OkSlice(results)
 }
 
 // ClearCache removes a plugin from the cache
@@ -173,7 +174,7 @@ func (s *Service) GetCachedPlugins() []int64 {
 }
 
 // performScan executes the actual directory scan
-func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType string) (*ScanResult, error) {
+func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType string) apperror.Result[ScanResult] {
 	startTime := time.Now()
 
 	s.log.Debug("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
@@ -185,7 +186,7 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 		// Initialize cache first
 		s.mu.Unlock()
 		if err := s.InitializeCache(ctx, pluginID); err != nil {
-			return nil, err
+			return apperror.FailWrap[ScanResult](err, apperror.ErrInternal, "failed to initialize watcher cache")
 		}
 		s.mu.Lock()
 		cache = s.cache[pluginID]
@@ -195,7 +196,7 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 	// Perform scan and detect changes
 	changes := s.scanAndCompare(cache)
 
-	result := &ScanResult{
+	result := ScanResult{
 		PluginID:     pluginID,
 		Path:         cache.path,
 		ScanTime:     startTime,
@@ -221,8 +222,8 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 		go s.triggerAutoPublish(ctx, pluginID, changes)
 	}
 
-	s.log.Info("Scan complete", "pluginId", pluginID, "changes", len(changes), "duration", result.DurationMs) // name available via cache but not critical for INFO
-	return result, nil
+	s.log.Info("Scan complete", "pluginId", pluginID, "changes", len(changes), "duration", result.DurationMs)
+	return apperror.Ok(result)
 }
 
 // triggerAutoPublish checks if plugin has autoPublish enabled and publishes to all mapped sites
