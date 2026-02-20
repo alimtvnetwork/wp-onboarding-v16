@@ -206,9 +206,15 @@ func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, plugi
 
 	// Get existing mappings for this site to preserve remoteSlug values
 	existingResult := s.GetMappingsBySite(ctx, siteID)
-	existingMappings := existingResult.Items()
-	if existingMappings == nil {
+	var existingMappings []models.PluginMapping
+	if existingResult.HasError() {
+		s.log.Warn("Failed to fetch existing site mappings", "siteId", siteID, "error", existingResult.Error())
 		existingMappings = []models.PluginMapping{}
+	} else {
+		existingMappings = existingResult.Items()
+		if existingMappings == nil {
+			existingMappings = []models.PluginMapping{}
+		}
 	}
 
 	// Build a map of pluginId → remoteSlug for existing mappings
