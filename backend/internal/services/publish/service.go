@@ -525,7 +525,8 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 			Where:  siteInfo.URL,
 			Result: "FAILED: Install the Riseup Asia Uploader companion plugin to enable activation",
 		})
-		return fmt.Errorf("Riseup Asia Uploader not available on %s — cannot activate plugin", siteInfo.URL)
+		return apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available — cannot activate plugin").
+			WithURL(siteInfo.URL)
 	})
 	result.Stages = append(result.Stages, stage)
 	
@@ -567,7 +568,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 					})
 					_, _, _, uploadErr := s.uploadPlugin(ctx, wpClient, preUploadBackupZip, mapping.RemoteSlug)
 					if uploadErr != nil {
-						return fmt.Errorf("rollback upload failed: %w", uploadErr)
+						return apperror.Wrap(uploadErr, apperror.ErrWPConnection, "rollback upload failed")
 					}
 					s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
 						What:   "Rollback upload complete",

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // ScheduleConfig holds scheduling settings
@@ -84,7 +85,7 @@ func (s *PublishScheduler) AddJob(job ScheduledJob) (string, error) {
 	// Calculate next run
 	nextRun, err := s.calculateNextRun(job.Schedule)
 	if err != nil {
-		return "", fmt.Errorf("invalid schedule: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrValidation, "invalid schedule configuration")
 	}
 	job.NextRunAt = &nextRun
 
@@ -283,7 +284,8 @@ func (s *PublishScheduler) calculateNextRun(cfg ScheduleConfig) (time.Time, erro
 	case len(cfg.CronExpr) > 6 && cfg.CronExpr[:6] == "daily:":
 		_, err := fmt.Sscanf(cfg.CronExpr, "daily:%d:%d", &hour, &minute)
 		if err != nil {
-			return time.Time{}, fmt.Errorf("invalid daily schedule: %s", cfg.CronExpr)
+			return time.Time{}, apperror.New(apperror.ErrValidation, "invalid daily schedule").
+				WithValue("cronExpr", cfg.CronExpr)
 		}
 		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
 		if next.Before(now) {
@@ -295,7 +297,8 @@ func (s *PublishScheduler) calculateNextRun(cfg ScheduleConfig) (time.Time, erro
 		var dayName string
 		_, err := fmt.Sscanf(cfg.CronExpr, "weekly:%3s:%d:%d", &dayName, &hour, &minute)
 		if err != nil {
-			return time.Time{}, fmt.Errorf("invalid weekly schedule: %s", cfg.CronExpr)
+			return time.Time{}, apperror.New(apperror.ErrValidation, "invalid weekly schedule").
+				WithValue("cronExpr", cfg.CronExpr)
 		}
 		targetDay := parseDayOfWeek(dayName)
 		daysUntil := (int(targetDay) - int(now.Weekday()) + 7) % 7
@@ -314,12 +317,14 @@ func (s *PublishScheduler) calculateNextRun(cfg ScheduleConfig) (time.Time, erro
 		var minutes int
 		_, err := fmt.Sscanf(cfg.CronExpr, "interval:%d", &minutes)
 		if err != nil || minutes < 1 {
-			return time.Time{}, fmt.Errorf("invalid interval schedule: %s", cfg.CronExpr)
+			return time.Time{}, apperror.New(apperror.ErrValidation, "invalid interval schedule").
+				WithValue("cronExpr", cfg.CronExpr)
 		}
 		return now.Add(time.Duration(minutes) * time.Minute), nil
 
 	default:
-		return time.Time{}, fmt.Errorf("unknown schedule format: %s", cfg.CronExpr)
+		return time.Time{}, apperror.New(apperror.ErrValidation, "unknown schedule format").
+			WithValue("cronExpr", cfg.CronExpr)
 	}
 }
 

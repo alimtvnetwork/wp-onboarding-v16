@@ -68,7 +68,8 @@ func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts w
 func (s *Service) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) error {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrWPConnection, "failed to create WordPress client for snapshot deletion").
+			WithSiteID(siteID)
 	}
 
 	if err := client.DeleteSnapshot(snapshotID); err != nil {
