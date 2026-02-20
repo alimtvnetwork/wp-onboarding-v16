@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 
@@ -39,10 +40,10 @@ trait FileCacheScanTrait {
 
         $this->logger->info('FileCache: Manifest built', array(
             'slug'     => $pluginSlug,
-            'total'    => count($result['files']),
-            'cached'   => $result['cached'],
-            'computed' => $result['computed'],
-            'removed'  => $result['removed'],
+            ResponseKeyType::Total->value    => count($result[ResponseKeyType::Files->value]),
+            ResponseKeyType::Cached->value   => $result[ResponseKeyType::Cached->value],
+            ResponseKeyType::Computed->value => $result[ResponseKeyType::Computed->value],
+            ResponseKeyType::Removed->value  => $result[ResponseKeyType::Removed->value],
         ));
 
         return $result;
@@ -68,7 +69,7 @@ trait FileCacheScanTrait {
 
         $removedCount = $this->pruneStaleEntries($pluginSlug, $cachedEntries, $activePaths);
 
-        return array('files' => $files, 'cached' => $cachedCount, 'computed' => $computedCount, 'removed' => $removedCount);
+        return array(ResponseKeyType::Files->value => $files, ResponseKeyType::Cached->value => $cachedCount, ResponseKeyType::Computed->value => $computedCount, ResponseKeyType::Removed->value => $removedCount);
     }
 
     private function resolveFileEntry(
@@ -177,10 +178,10 @@ trait FileCacheScanTrait {
         }
 
         return array(
-            'files'    => $files,
-            'cached'   => 0,
-            'computed' => count($files),
-            'removed'  => 0,
+            ResponseKeyType::Files->value    => $files,
+            ResponseKeyType::Cached->value   => 0,
+            ResponseKeyType::Computed->value => count($files),
+            ResponseKeyType::Removed->value  => 0,
         );
     }
 }

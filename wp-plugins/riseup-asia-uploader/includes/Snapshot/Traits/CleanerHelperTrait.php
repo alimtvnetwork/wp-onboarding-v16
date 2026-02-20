@@ -87,7 +87,7 @@ trait CleanerHelperTrait {
                 json_encode(array(
                     'retention_deleted' => $results['retention']['deleted'],
                     'retention_skipped' => $results['retention']['skipped_master'],
-                    'orphans_removed'   => $results['orphans']['removed'],
+                    'orphans_removed'   => $results['orphans'][ResponseKeyType::Removed->value],
                     'stuck_cleaned'     => $results['stuck']['cleaned'],
                     'space_freed'       => PathHelper::formatBytes($results['space_freed_bytes']),
                     ResponseKeyType::Errors->value => count($results[ResponseKeyType::Errors->value]),

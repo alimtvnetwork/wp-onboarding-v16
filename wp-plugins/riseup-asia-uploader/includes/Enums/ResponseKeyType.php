@@ -51,6 +51,8 @@ enum ResponseKeyType: string
     case Scope     = 'scope';
     case Exported  = 'exported';
     case Entry     = 'entry';
+    case Computed  = 'computed';
+    case Removed   = 'removed';
 
     /** Snapshot-domain keys. */
     case SnapshotId    = 'snapshot_id';

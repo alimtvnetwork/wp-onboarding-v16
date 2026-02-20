@@ -49,7 +49,7 @@ class SnapshotCleaner {
         $results = array(
             ResponseKeyType::Success->value => true,
             'retention'         => array('deleted' => 0, 'skipped_master' => 0, 'details' => array()),
-            'orphans'           => array('removed' => 0, ResponseKeyType::Files->value => array()),
+            'orphans'           => array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Files->value => array()),
             'stuck'             => array('cleaned' => 0, 'ids' => array()),
             ResponseKeyType::Errors->value => array(),
             'dry_run'           => $isDryRun,
@@ -66,7 +66,7 @@ class SnapshotCleaner {
         $results[ResponseKeyType::Duration->value] = round(microtime(true) - $start, 3);
 
         $totalDeleted = $results['retention']['deleted']
-            + $results['orphans']['removed']
+            + $results['orphans'][ResponseKeyType::Removed->value]
             + $results['stuck']['cleaned'];
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
@@ -89,7 +89,7 @@ class SnapshotCleaner {
 
         return array(
             'deleted_by_policy' => $result['retention']['deleted'] ?? 0,
-            'deleted_orphans'   => $result['orphans']['removed'] ?? 0,
+            'deleted_orphans'   => $result['orphans'][ResponseKeyType::Removed->value] ?? 0,
             'deleted_failed'    => $result['stuck']['cleaned'] ?? 0,
             'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
             ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value] ?? array(),
