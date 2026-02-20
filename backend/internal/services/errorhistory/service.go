@@ -11,7 +11,14 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/pkg/apperror"
 )
+
+// ErrorHistoryListResult wraps paginated results with total count
+type ErrorHistoryListResult struct {
+	Items []models.ErrorHistory `json:"items"`
+	Total int                   `json:"total"`
+}
 
 // Config holds error history service configuration
 type Config struct {
@@ -34,7 +41,7 @@ func New(cfg Config) *Service {
 }
 
 // Save persists an error to the database
-func (s *Service) Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error) {
+func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.ErrorHistory] {
 	// Generate error ID if not provided
 	if input.ErrorID == "" {
 		input.ErrorID = fmt.Sprintf("%d-%s", time.Now().UnixMilli(), randomString(8))
@@ -65,7 +72,8 @@ func (s *Service) Save(input models.ErrorHistoryInput) (*models.ErrorHistory, er
 		string(invocationChainJSON), input.UIClickPath, input.MarkdownReport,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("insert error history: %w", err)
+		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "insert error history").
+			WithValue("errorId", input.ErrorID)
 	}
 
 	id, _ := result.LastInsertId()
@@ -74,17 +82,17 @@ func (s *Service) Save(input models.ErrorHistoryInput) (*models.ErrorHistory, er
 		s.log.Debug("Error history saved", "errorId", input.ErrorID, "code", input.Code)
 	}
 
-	return &models.ErrorHistory{
+	return apperror.Ok(models.ErrorHistory{
 		ID:      id,
 		ErrorID: input.ErrorID,
 		Code:    input.Code,
 		Level:   input.Level,
 		Message: input.Message,
-	}, nil
+	})
 }
 
 // List returns error history with pagination and filters
-func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ([]models.ErrorHistory, int, error) {
+func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) apperror.Result[ErrorHistoryListResult] {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -127,7 +135,7 @@ func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ([
 	var total int
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM ErrorHistory %s", whereClause)
 	if err := s.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("count error history: %w", err)
+		return apperror.FailWrap[ErrorHistoryListResult](err, apperror.ErrDatabaseQuery, "count error history")
 	}
 
 	// Get paginated results
@@ -145,61 +153,27 @@ func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ([
 	args = append(args, limit, offset)
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return nil, 0, fmt.Errorf("query error history: %w", err)
+		return apperror.FailWrap[ErrorHistoryListResult](err, apperror.ErrDatabaseQuery, "query error history")
 	}
 	defer rows.Close()
 
 	var errors []models.ErrorHistory
 	for rows.Next() {
-		var e models.ErrorHistory
-		var createdAt string
-		var details, contextJSON, stackTrace, endpoint, method, requestBodyJSON sql.NullString
-		var sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace sql.NullString
-		var siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString
-		var responseStatus sql.NullInt64
-
-		err := rows.Scan(
-			&e.ID, &e.ErrorID, &e.Code, &e.Level, &e.Message, &details, &contextJSON,
-			&stackTrace, &endpoint, &method, &requestBodyJSON, &responseStatus,
-			&sessionID, &sessionType, &phpStackFramesJSON, &backendLogsJSON,
-			&backendStackTrace, &siteURL, &triggerComponent, &triggerAction,
-			&invocationChainJSON, &uiClickPath, &markdownReport, &createdAt,
-		)
+		e, err := scanErrorHistoryRow(rows)
 		if err != nil {
-			return nil, 0, fmt.Errorf("scan error history: %w", err)
+			return apperror.FailWrap[ErrorHistoryListResult](err, apperror.ErrDatabaseQuery, "scan error history")
 		}
-
-		e.Details = details.String
-		e.ContextJSON = contextJSON.String
-		e.StackTrace = stackTrace.String
-		e.Endpoint = endpoint.String
-		e.Method = method.String
-		e.RequestBodyJSON = requestBodyJSON.String
-		e.ResponseStatus = int(responseStatus.Int64)
-		e.SessionID = sessionID.String
-		e.SessionType = sessionType.String
-		e.PHPStackFramesJSON = phpStackFramesJSON.String
-		e.BackendLogsJSON = backendLogsJSON.String
-		e.BackendStackTrace = backendStackTrace.String
-		e.SiteURL = siteURL.String
-		e.TriggerComponent = triggerComponent.String
-		e.TriggerAction = triggerAction.String
-		e.InvocationChainJSON = invocationChainJSON.String
-		e.UIClickPath = uiClickPath.String
-		e.MarkdownReport = markdownReport.String
-		e.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-
-		// Parse JSON fields
-		e.ParseJSONFields()
-
 		errors = append(errors, e)
 	}
 
-	return errors, total, nil
+	return apperror.Ok(ErrorHistoryListResult{
+		Items: errors,
+		Total: total,
+	})
 }
 
 // GetByID returns a single error by ID
-func (s *Service) GetByID(id int64) (*models.ErrorHistory, error) {
+func (s *Service) GetByID(id int64) apperror.Result[models.ErrorHistory] {
 	query := `
 		SELECT Id, ErrorId, Code, Level, Message, Details, ContextJson,
 			StackTrace, Endpoint, Method, RequestBodyJson, ResponseStatus,
@@ -224,46 +198,34 @@ func (s *Service) GetByID(id int64) (*models.ErrorHistory, error) {
 		&invocationChainJSON, &uiClickPath, &markdownReport, &createdAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("error not found: %d", id)
+		return apperror.FailNew[models.ErrorHistory](apperror.ErrNotFound, "error not found").
+			WithValue("id", fmt.Sprintf("%d", id))
 	}
 	if err != nil {
-		return nil, fmt.Errorf("query error history: %w", err)
+		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "query error history").
+			WithValue("id", fmt.Sprintf("%d", id))
 	}
 
-	e.Details = details.String
-	e.ContextJSON = contextJSON.String
-	e.StackTrace = stackTrace.String
-	e.Endpoint = endpoint.String
-	e.Method = method.String
-	e.RequestBodyJSON = requestBodyJSON.String
-	e.ResponseStatus = int(responseStatus.Int64)
-	e.SessionID = sessionID.String
-	e.SessionType = sessionType.String
-	e.PHPStackFramesJSON = phpStackFramesJSON.String
-	e.BackendLogsJSON = backendLogsJSON.String
-	e.BackendStackTrace = backendStackTrace.String
-	e.SiteURL = siteURL.String
-	e.TriggerComponent = triggerComponent.String
-	e.TriggerAction = triggerAction.String
-	e.InvocationChainJSON = invocationChainJSON.String
-	e.UIClickPath = uiClickPath.String
-	e.MarkdownReport = markdownReport.String
-	e.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+	populateErrorHistoryFields(&e, details, contextJSON, stackTrace, endpoint, method, requestBodyJSON,
+		responseStatus, sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace,
+		siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport, createdAt)
 
 	e.ParseJSONFields()
 
-	return &e, nil
+	return apperror.Ok(e)
 }
 
 // GetByErrorID returns a single error by its frontend-generated error ID
-func (s *Service) GetByErrorID(errorID string) (*models.ErrorHistory, error) {
+func (s *Service) GetByErrorID(errorID string) apperror.Result[models.ErrorHistory] {
 	query := `SELECT Id FROM ErrorHistory WHERE ErrorId = ?`
 	var id int64
 	if err := s.db.QueryRow(query, errorID).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("error not found: %s", errorID)
+			return apperror.FailNew[models.ErrorHistory](apperror.ErrNotFound, "error not found").
+				WithValue("errorId", errorID)
 		}
-		return nil, err
+		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "query error by error ID").
+			WithValue("errorId", errorID)
 	}
 	return s.GetByID(id)
 }
@@ -288,10 +250,10 @@ func (s *Service) Delete(id int64) error {
 }
 
 // Clear removes all error history
-func (s *Service) Clear() (int64, error) {
+func (s *Service) Clear() apperror.Result[int64] {
 	result, err := s.db.Exec("DELETE FROM ErrorHistory")
 	if err != nil {
-		return 0, fmt.Errorf("clear error history: %w", err)
+		return apperror.FailWrap[int64](err, apperror.ErrDatabaseQuery, "clear error history")
 	}
 
 	deleted, _ := result.RowsAffected()
@@ -300,21 +262,22 @@ func (s *Service) Clear() (int64, error) {
 		s.log.Info("Error history cleared", "deleted", deleted)
 	}
 
-	return deleted, nil
+	return apperror.Ok(deleted)
 }
 
 // BulkExport generates a combined markdown report for multiple errors
-func (s *Service) BulkExport(ids []int64) (string, error) {
+func (s *Service) BulkExport(ids []int64) apperror.Result[string] {
 	if len(ids) == 0 {
-		return "", fmt.Errorf("no error IDs provided")
+		return apperror.FailNew[string](apperror.ErrValidation, "no error IDs provided")
 	}
 
 	var reports []string
 	for _, id := range ids {
-		e, err := s.GetByID(id)
-		if err != nil {
+		result := s.GetByID(id)
+		if result.HasError() {
 			continue
 		}
+		e := result.Value()
 
 		if e.MarkdownReport != "" {
 			reports = append(reports, e.MarkdownReport)
@@ -332,25 +295,25 @@ func (s *Service) BulkExport(ids []int64) (string, error) {
 		}
 	}
 
-	return strings.Join(reports, "\n\n---\n\n"), nil
+	return apperror.Ok(strings.Join(reports, "\n\n---\n\n"))
 }
 
 // GetStats returns error history statistics
-func (s *Service) GetStats() (*models.ErrorHistoryStats, error) {
-	stats := &models.ErrorHistoryStats{
+func (s *Service) GetStats() apperror.Result[models.ErrorHistoryStats] {
+	stats := models.ErrorHistoryStats{
 		ByLevel: make(map[string]int),
 		ByCode:  make(map[string]int),
 	}
 
 	// Total count
 	if err := s.db.QueryRow("SELECT COUNT(*) FROM ErrorHistory").Scan(&stats.Total); err != nil {
-		return nil, err
+		return apperror.FailWrap[models.ErrorHistoryStats](err, apperror.ErrDatabaseQuery, "count error history total")
 	}
 
 	// Count by level
 	rows, err := s.db.Query("SELECT Level, COUNT(*) FROM ErrorHistory GROUP BY Level")
 	if err != nil {
-		return nil, err
+		return apperror.FailWrap[models.ErrorHistoryStats](err, apperror.ErrDatabaseQuery, "count error history by level")
 	}
 	defer rows.Close()
 
@@ -364,7 +327,7 @@ func (s *Service) GetStats() (*models.ErrorHistoryStats, error) {
 	// Count by code (top 10)
 	codeRows, err := s.db.Query("SELECT Code, COUNT(*) as cnt FROM ErrorHistory GROUP BY Code ORDER BY cnt DESC LIMIT 10")
 	if err != nil {
-		return nil, err
+		return apperror.FailWrap[models.ErrorHistoryStats](err, apperror.ErrDatabaseQuery, "count error history by code")
 	}
 	defer codeRows.Close()
 
@@ -375,7 +338,65 @@ func (s *Service) GetStats() (*models.ErrorHistoryStats, error) {
 		stats.ByCode[code] = count
 	}
 
-	return stats, nil
+	return apperror.Ok(stats)
+}
+
+// scanErrorHistoryRow scans a single row from a rows iterator into a models.ErrorHistory
+func scanErrorHistoryRow(rows *sql.Rows) (models.ErrorHistory, error) {
+	var e models.ErrorHistory
+	var createdAt string
+	var details, contextJSON, stackTrace, endpoint, method, requestBodyJSON sql.NullString
+	var sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace sql.NullString
+	var siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString
+	var responseStatus sql.NullInt64
+
+	err := rows.Scan(
+		&e.ID, &e.ErrorID, &e.Code, &e.Level, &e.Message, &details, &contextJSON,
+		&stackTrace, &endpoint, &method, &requestBodyJSON, &responseStatus,
+		&sessionID, &sessionType, &phpStackFramesJSON, &backendLogsJSON,
+		&backendStackTrace, &siteURL, &triggerComponent, &triggerAction,
+		&invocationChainJSON, &uiClickPath, &markdownReport, &createdAt,
+	)
+	if err != nil {
+		return e, err
+	}
+
+	populateErrorHistoryFields(&e, details, contextJSON, stackTrace, endpoint, method, requestBodyJSON,
+		responseStatus, sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace,
+		siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport, createdAt)
+
+	e.ParseJSONFields()
+
+	return e, nil
+}
+
+// populateErrorHistoryFields assigns nullable SQL fields to the ErrorHistory struct
+func populateErrorHistoryFields(e *models.ErrorHistory,
+	details, contextJSON, stackTrace, endpoint, method, requestBodyJSON sql.NullString,
+	responseStatus sql.NullInt64,
+	sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace sql.NullString,
+	siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString,
+	createdAt string,
+) {
+	e.Details = details.String
+	e.ContextJSON = contextJSON.String
+	e.StackTrace = stackTrace.String
+	e.Endpoint = endpoint.String
+	e.Method = method.String
+	e.RequestBodyJSON = requestBodyJSON.String
+	e.ResponseStatus = int(responseStatus.Int64)
+	e.SessionID = sessionID.String
+	e.SessionType = sessionType.String
+	e.PHPStackFramesJSON = phpStackFramesJSON.String
+	e.BackendLogsJSON = backendLogsJSON.String
+	e.BackendStackTrace = backendStackTrace.String
+	e.SiteURL = siteURL.String
+	e.TriggerComponent = triggerComponent.String
+	e.TriggerAction = triggerAction.String
+	e.InvocationChainJSON = invocationChainJSON.String
+	e.UIClickPath = uiClickPath.String
+	e.MarkdownReport = markdownReport.String
+	e.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
 }
 
 // randomString generates a random string for error IDs
