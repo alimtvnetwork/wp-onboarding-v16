@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
+use RiseupAsia\Enums\PluginConfigType;
 use Throwable;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
