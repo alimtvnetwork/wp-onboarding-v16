@@ -27,10 +27,10 @@ class ActivationHandler
     private const DIAGNOSTICS_EXPIRY = DAY_IN_SECONDS;
 
     public static function activate(): void {
-        InitHelpers::bootLog('ActivationHandler::activate() — starting activation');
+        InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — starting activation');
         try {
             self::loadDependencies();
-            InitHelpers::bootLog('ActivationHandler::activate() — dependencies loaded');
+            InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — dependencies loaded');
             $dirs = self::resolveDirs();
 
             if ($dirs === null) {
@@ -38,13 +38,13 @@ class ActivationHandler
             }
 
             self::ensureDirs($dirs['base'], $dirs['logs']);
-            InitHelpers::bootLog('ActivationHandler::activate() — directories ensured');
+            InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — directories ensured');
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
             self::runBootDiagnostics();
-            InitHelpers::bootLog('ActivationHandler::activate() — activation complete');
+            InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — activation complete');
         } catch (Throwable $e) {
-            InitHelpers::bootLog('Activation hook failed: ' . $e->getMessage());
+            InitHelpers::errorLogWithPrefix('Activation hook failed: ' . $e->getMessage());
         }
     }
 
@@ -55,7 +55,7 @@ class ActivationHandler
     private static function runBootDiagnostics(): void {
         $isAutoloaderMissing = !class_exists('RiseupAsiaAutoloader', false);
         if ($isAutoloaderMissing) {
-            InitHelpers::bootLog('ActivationHandler: autoloader class not available for diagnostics');
+            InitHelpers::errorLogWithPrefix('ActivationHandler: autoloader class not available for diagnostics');
 
             return;
         }
@@ -74,7 +74,7 @@ class ActivationHandler
         set_transient(self::DIAGNOSTICS_TRANSIENT, $diagnosticData, self::DIAGNOSTICS_EXPIRY);
 
         if ($hasFailures) {
-            InitHelpers::bootLog('ActivationHandler: boot diagnostics found ' . count($result['failed']) . ' file(s) with errors');
+            InitHelpers::errorLogWithPrefix('ActivationHandler: boot diagnostics found ' . count($result['failed']) . ' file(s) with errors');
         }
     }
 

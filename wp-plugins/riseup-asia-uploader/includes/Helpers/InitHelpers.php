@@ -88,7 +88,7 @@ class InitHelpers {
      *
      * Use this for early-boot logging where FileLogger is not yet available.
      */
-    public static function bootLog(string $message): void {
+    public static function errorLogWithPrefix(string $message): void {
         error_log(PluginConfigType::LogPrefix->value . ' ' . $message);
     }
 
