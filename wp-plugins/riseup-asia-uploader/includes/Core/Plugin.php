@@ -27,33 +27,55 @@ use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Snapshot\SnapshotScheduler;
 use RiseupAsia\Admin\Admin;
 
+// Trait imports
+use RiseupAsia\Traits\Core\LifecycleHooksTrait;
+use RiseupAsia\Traits\Route\RouteRegistrationTrait;
+use RiseupAsia\Traits\Plugin\PluginRoutesTrait;
+use RiseupAsia\Traits\Route\InvalidRouteTrait;
+use RiseupAsia\Traits\Auth\AuthTrait;
+use RiseupAsia\Traits\Status\StatusHandlerTrait;
+use RiseupAsia\Traits\Upload\UploadPipelineTrait;
+use RiseupAsia\Traits\Upload\UploadExtractionTrait;
+use RiseupAsia\Traits\Plugin\PluginListTrait;
+use RiseupAsia\Traits\Plugin\PluginExportTrait;
+use RiseupAsia\Traits\Core\PostHandlerTrait;
+use RiseupAsia\Traits\Plugin\PluginLifecycleTrait;
+use RiseupAsia\Traits\Sync\SyncHandlerTrait;
+use RiseupAsia\Traits\Core\ResponseTrait;
+use RiseupAsia\Traits\Error\ErrorLogTrait;
+use RiseupAsia\Traits\Agent\AgentHandlerTrait;
+use RiseupAsia\Traits\Snapshot\SnapshotCrudTrait;
+use RiseupAsia\Traits\Snapshot\SnapshotExportTrait;
+use RiseupAsia\Traits\Snapshot\SnapshotBackupTrait;
+use RiseupAsia\Traits\FileSystem\FileSystemTrait;
+
 class Plugin {
 
     // Wave 1 traits
-    use \RiseupAsia\Traits\Core\LifecycleHooksTrait;
-    use \RiseupAsia\Traits\Route\RouteRegistrationTrait;
-    use \RiseupAsia\Traits\Plugin\PluginRoutesTrait;
-    use \RiseupAsia\Traits\Route\InvalidRouteTrait;
-    use \RiseupAsia\Traits\Auth\AuthTrait;
-    use \RiseupAsia\Traits\Status\StatusHandlerTrait;
+    use LifecycleHooksTrait;
+    use RouteRegistrationTrait;
+    use PluginRoutesTrait;
+    use InvalidRouteTrait;
+    use AuthTrait;
+    use StatusHandlerTrait;
 
     // Wave 2 traits
-    use \RiseupAsia\Traits\Upload\UploadPipelineTrait;
-    use \RiseupAsia\Traits\Upload\UploadExtractionTrait;
-    use \RiseupAsia\Traits\Plugin\PluginListTrait;
-    use \RiseupAsia\Traits\Plugin\PluginExportTrait;
-    use \RiseupAsia\Traits\Core\PostHandlerTrait;
-    use \RiseupAsia\Traits\Plugin\PluginLifecycleTrait;
-    use \RiseupAsia\Traits\Sync\SyncHandlerTrait;
+    use UploadPipelineTrait;
+    use UploadExtractionTrait;
+    use PluginListTrait;
+    use PluginExportTrait;
+    use PostHandlerTrait;
+    use PluginLifecycleTrait;
+    use SyncHandlerTrait;
 
     // Wave 3 traits
-    use \RiseupAsia\Traits\Core\ResponseTrait;
-    use \RiseupAsia\Traits\Error\ErrorLogTrait;
-    use \RiseupAsia\Traits\Agent\AgentHandlerTrait;
-    use \RiseupAsia\Traits\Snapshot\SnapshotCrudTrait;
-    use \RiseupAsia\Traits\Snapshot\SnapshotExportTrait;
-    use \RiseupAsia\Traits\Snapshot\SnapshotBackupTrait;
-    use \RiseupAsia\Traits\FileSystem\FileSystemTrait;
+    use ResponseTrait;
+    use ErrorLogTrait;
+    use AgentHandlerTrait;
+    use SnapshotCrudTrait;
+    use SnapshotExportTrait;
+    use SnapshotBackupTrait;
+    use FileSystemTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
