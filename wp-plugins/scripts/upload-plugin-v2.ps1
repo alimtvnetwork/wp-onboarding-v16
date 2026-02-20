@@ -409,9 +409,19 @@ Write-Status ""
 Write-Status "[2/8] Reading local plugin version..." -Color Yellow
 
 $LocalVersion = "unknown"
-$constantsFile = Join-Path $PluginFolderPath "includes/constants.php"
-if (-not (Test-Path $constantsFile)) {
-    # Try main plugin file header
+
+# Priority 1: PluginConfigType enum (canonical version source)
+$enumFile = Join-Path $PluginFolderPath "includes/Enums/PluginConfigType.php"
+if (Test-Path $enumFile) {
+    $enumContent = Get-Content $enumFile -Raw
+    if ($enumContent -match "case\s+Version\s*=\s*'([0-9]+\.[0-9]+\.[0-9]+)'") {
+        $LocalVersion = $Matches[1]
+        Write-Debug-Log "Version from PluginConfigType enum: $LocalVersion"
+    }
+}
+
+# Priority 2: Main plugin file header (fallback)
+if ($LocalVersion -eq "unknown") {
     $mainFile = Get-ChildItem $PluginFolderPath -Filter "*.php" | Where-Object {
         (Get-Content $_.FullName -Head 5) -match 'Plugin Name:'
     } | Select-Object -First 1
@@ -419,12 +429,8 @@ if (-not (Test-Path $constantsFile)) {
         $content = Get-Content $mainFile.FullName -Raw
         if ($content -match "Version:\s*([0-9]+\.[0-9]+\.[0-9]+)") {
             $LocalVersion = $Matches[1]
+            Write-Debug-Log "Version from plugin header: $LocalVersion"
         }
-    }
-} else {
-    $content = Get-Content $constantsFile -Raw
-    if ($content -match "RISEUP_VERSION.*?'([0-9]+\.[0-9]+\.[0-9]+)'") {
-        $LocalVersion = $Matches[1]
     }
 }
 
@@ -466,10 +472,17 @@ foreach ($ns in $apiNamespaces) {
             continue
         }
 
+        Write-Debug-Log "Raw response keys: $($statusResponse.PSObject.Properties.Name -join ', ')"
+
         # Unwrap Universal Response Envelope: data is in Results[0]
         $statusData = $statusResponse
         if ($statusResponse.Results -and $statusResponse.Results.Count -gt 0) {
             $statusData = $statusResponse.Results[0]
+            Write-Debug-Log "Unwrapped Results[0], keys: $($statusData.PSObject.Properties.Name -join ', ')"
+        } elseif ($statusResponse.Results -is [PSCustomObject]) {
+            # PowerShell may unwrap single-element arrays from JSON
+            $statusData = $statusResponse.Results
+            Write-Debug-Log "Results was single object, keys: $($statusData.PSObject.Properties.Name -join ', ')"
         }
 
         # Support both PascalCase (envelope) and lowercase (legacy) field names
@@ -483,9 +496,22 @@ foreach ($ns in $apiNamespaces) {
             $activeNamespace = $ns.name
             Write-Status "      $($ns.display) is active!" -Color Green
             break
+        } else {
+            Write-Status "      ⚠ $($ns.display) responded but no version detected" -Color Yellow
         }
     } catch {
+        $errBody = Get-ErrorResponseBody $_
         Write-Debug-Log "Namespace $($ns.name) failed: $($_.Exception.Message)"
+        if ($errBody -ne "") {
+            Write-Debug-Log "Error body: $($errBody.Substring(0, [Math]::Min(500, $errBody.Length)))"
+            # Try to parse error body as JSON — server may return version in error envelope
+            try {
+                $errJson = $errBody | ConvertFrom-Json
+                if ($errJson.data -and $errJson.data.status) {
+                    Write-Status "      ⚠ $($ns.display) returned HTTP $($errJson.data.status): $($errJson.message)" -Color Yellow
+                }
+            } catch {}
+        }
         # Try next namespace
     }
 }
