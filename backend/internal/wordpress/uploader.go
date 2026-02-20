@@ -359,6 +359,7 @@ type pluginLifecycleInput struct {
 // structured APIError on failure.
 func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	namespace := c.resolveNamespace()
+	normalizedSlug := normalizePluginSlug(input.Slug)
 
 	endpoint := "/" + namespace + input.Endpoint.String()
 	reqBody := map[string]string{"plugin": normalizedSlug}

@@ -49,7 +49,7 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + EndpointSyncManifest
 	reqBody := map[string]string{"plugin": slug}
-	resp, err := c.request("POST", endpoint, reqBody)
+	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sync manifest: %w", err)
 	}
@@ -62,8 +62,8 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 		return nil, &APIError{
 			Operation:    "get sync manifest",
 			Method:       "POST",
-			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Endpoint:     string(endpoint),
+			URL:          c.fullURL(string(endpoint)),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(body, 2000),
 		}
@@ -96,7 +96,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + EndpointFiles
 	reqBody := map[string]string{"plugin": slug}
-	resp, err := c.request("POST", endpoint, reqBody)
+	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin files via Riseup: %w", err)
 	}
@@ -113,8 +113,8 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 		return nil, &APIError{
 			Operation:    "get plugin files",
 			Method:       "POST",
-			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Endpoint:     string(endpoint),
+			URL:          c.fullURL(string(endpoint)),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(body, 2000),
 		}
@@ -333,7 +333,7 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		return "", fmt.Errorf("marshal request body: %w", err)
 	}
 
-	resp, err := c.request("POST", endpoint, bytes.NewReader(jsonBody))
+	resp, err := c.request("POST", string(endpoint), bytes.NewReader(jsonBody))
 	if err != nil {
 		return "", fmt.Errorf("failed to get file content: %w", err)
 	}
@@ -349,8 +349,8 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		return "", &APIError{
 			Operation:    "get file content",
 			Method:       "POST",
-			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Endpoint:     string(endpoint),
+			URL:          c.fullURL(string(endpoint)),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 500),
 		}

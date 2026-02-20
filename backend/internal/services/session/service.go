@@ -816,14 +816,14 @@ func (s *Service) ClearAllSessions() error {
 		if err != nil {
 			continue
 		}
-		var err error
+		var removeErr error
 		if entry.IsDir() {
-			err = os.RemoveAll(fullPath)
+			removeErr = os.RemoveAll(fullPath)
 		} else {
-			err = os.Remove(fullPath)
+			removeErr = os.Remove(fullPath)
 		}
-		if err != nil && !os.IsNotExist(err) {
-			removeErrors = append(removeErrors, err)
+		if removeErr != nil && !os.IsNotExist(removeErr) {
+			removeErrors = append(removeErrors, removeErr)
 		}
 	}
 
