@@ -18,8 +18,14 @@ func FailMap[K comparable, V any](err *AppError) ResultMap[K, V] {
 }
 
 // FailMapWrap creates a failed ResultMap by wrapping a raw error.
+// Uses skip=3 to attribute the stack trace to the actual caller.
 func FailMapWrap[K comparable, V any](cause error, code, message string) ResultMap[K, V] {
-	return ResultMap[K, V]{err: Wrap(cause, code, message)}
+	return ResultMap[K, V]{err: WrapWithSkip(cause, code, message, 1)}
+}
+
+// FailMapNew creates a failed ResultMap from a new error (no cause).
+func FailMapNew[K comparable, V any](code, message string) ResultMap[K, V] {
+	return ResultMap[K, V]{err: NewWithSkip(code, message, 1)}
 }
 
 // HasError returns true when the operation failed.
@@ -45,6 +51,7 @@ func (r ResultMap[K, V]) Get(key K) Result[V] {
 	if r.err != nil {
 		return Fail[V](r.err)
 	}
+
 	val, exists := r.items[key]
 	if !exists {
 		return Result[V]{}
@@ -58,6 +65,7 @@ func (r ResultMap[K, V]) Has(key K) bool {
 	if r.err != nil {
 		return false
 	}
+
 	_, exists := r.items[key]
 
 	return exists
@@ -89,6 +97,7 @@ func (r ResultMap[K, V]) Keys() []K {
 	if r.err != nil {
 		return nil
 	}
+
 	keys := make([]K, 0, len(r.items))
 	for k := range r.items {
 		keys = append(keys, k)
@@ -102,6 +111,7 @@ func (r ResultMap[K, V]) Values() []V {
 	if r.err != nil {
 		return nil
 	}
+
 	vals := make([]V, 0, len(r.items))
 	for _, v := range r.items {
 		vals = append(vals, v)

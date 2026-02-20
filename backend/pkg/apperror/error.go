@@ -6,46 +6,18 @@ import (
 	"strings"
 )
 
-// ErrorDiagnostic holds typed diagnostic context for application errors.
-type ErrorDiagnostic struct {
-	Path       string `json:"path,omitempty"`
-	File       string `json:"file,omitempty"`
-	DestPath   string `json:"destPath,omitempty"`
-	BackupDir  string `json:"backupDir,omitempty"`
-	URL        string `json:"url,omitempty"`
-	Slug       string `json:"slug,omitempty"`
-	FilePath   string `json:"filePath,omitempty"`
-	PluginSlug string `json:"pluginSlug,omitempty"`
-	Plugin     string `json:"plugin,omitempty"`
-	SiteID     int64  `json:"siteId,omitempty"`
-	PluginID   int64  `json:"pluginId,omitempty"`
-	SnapshotID int64  `json:"snapshotId,omitempty"`
-	MappingID  int64  `json:"mappingId,omitempty"`
-	VersionID  int64  `json:"versionId,omitempty"`
-	SessionID  string `json:"sessionId,omitempty"`
-	RunID      string `json:"runId,omitempty"`
-	StatusCode int    `json:"statusCode,omitempty"`
-	Method     string `json:"method,omitempty"`
-	Endpoint   string `json:"endpoint,omitempty"`
-	Username   string `json:"username,omitempty"`
-}
-
-// HasFields returns true if any diagnostic field is populated.
-func (d ErrorDiagnostic) HasFields() bool {
-	return d != ErrorDiagnostic{}
-}
-
 // AppError represents a structured application error with mandatory stack trace.
 type AppError struct {
-	Code       string          `json:"code"`
-	Message    string          `json:"message"`
-	Details    string          `json:"details,omitempty"`
-	Diagnostic ErrorDiagnostic `json:"diagnostic,omitempty"`
-	Stack      StackTrace      `json:"stack"`
-	Cause      error           `json:"-"`
+	Code       string            `json:"code"`
+	Message    string            `json:"message"`
+	Details    string            `json:"details,omitempty"`
+	Values     map[string]string `json:"values,omitempty"`
+	Diagnostic ErrorDiagnostic   `json:"diagnostic,omitempty"`
+	Stack      StackTrace        `json:"stack"`
+	Cause      error             `json:"-"`
 }
 
-// Error implements the error interface (message only).
+// Error implements the error interface.
 func (e *AppError) Error() string {
 	if e.Details != "" {
 		return fmt.Sprintf("[%s] %s: %s", e.Code, e.Message, e.Details)
@@ -54,12 +26,18 @@ func (e *AppError) Error() string {
 	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
 }
 
-// FullString returns code + message + diagnostics + full stack trace + cause chain.
+// String returns the full error representation including stack trace.
+func (e *AppError) String() string {
+	return e.FullString()
+}
+
+// FullString returns code + message + details + values + diagnostics + stack + cause chain.
 func (e *AppError) FullString() string {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("[%s] %s", e.Code, e.Message))
 	appendDetails(&b, e)
+	appendValues(&b, e)
 	appendDiagnostics(&b, e)
 	appendStack(&b, e)
 	appendCauseChain(&b, e)
@@ -74,6 +52,18 @@ func appendDetails(b *strings.Builder, e *AppError) {
 	}
 
 	b.WriteString(fmt.Sprintf("\nDetails: %s", e.Details))
+}
+
+// appendValues writes the values section if present.
+func appendValues(b *strings.Builder, e *AppError) {
+	if !e.HasValues() {
+		return
+	}
+
+	b.WriteString("\nValues:")
+	for k, v := range e.Values {
+		b.WriteString(fmt.Sprintf("\n  %s: %s", k, v))
+	}
 }
 
 // appendDiagnostics writes diagnostic fields if present.
@@ -120,6 +110,23 @@ func (e *AppError) Is(target error) bool {
 	return e.Code == other.Code
 }
 
+// HasCause returns true if a wrapped cause exists.
+func (e *AppError) HasCause() bool {
+	return e.Cause != nil
+}
+
+// HasValues returns true if the Values map is populated.
+func (e *AppError) HasValues() bool {
+	return len(e.Values) > 0
+}
+
+// HasDiagnostic returns true if any diagnostic field is set.
+func (e *AppError) HasDiagnostic() bool {
+	return e.Diagnostic.HasFields()
+}
+
+// --- Constructors ---
+
 // New creates a new AppError with mandatory stack trace.
 func New(code, message string) *AppError {
 	return &AppError{
@@ -129,32 +136,94 @@ func New(code, message string) *AppError {
 	}
 }
 
+// NewWithSkip creates a new AppError with explicit additional skip for stack capture.
+func NewWithSkip(code, message string, skip int) *AppError {
+	return &AppError{
+		Code:    code,
+		Message: message,
+		Stack:   CaptureStack(2 + skip),
+	}
+}
+
 // Wrap wraps an existing error with context and mandatory stack trace.
+// If cause is an *AppError, its stack is preserved in PreviousTrace.
 func Wrap(cause error, code, message string) *AppError {
+	return WrapWithSkip(cause, code, message, 0)
+}
+
+// WrapWithSkip wraps with explicit additional skip for stack capture.
+func WrapWithSkip(cause error, code, message string, skip int) *AppError {
+	stack := CaptureStack(3 + skip)
+	stack = mergeIfAppError(stack, cause)
+
 	err := &AppError{
 		Code:    code,
 		Message: message,
 		Cause:   cause,
-		Stack:   CaptureStack(2),
+		Stack:   stack,
 	}
-	if cause != nil {
-		err.Details = cause.Error()
-	}
+
+	setCauseDetails(err, cause)
 
 	return err
 }
 
+// mergeIfAppError preserves the original stack trace when re-wrapping an AppError.
+func mergeIfAppError(stack StackTrace, cause error) StackTrace {
+	if cause == nil {
+		return stack
+	}
+
+	appErr, ok := cause.(*AppError)
+	isAppErrWithStack := ok && !appErr.Stack.IsEmpty()
+	if isAppErrWithStack {
+		stack.PreviousTrace = appErr.Stack.String()
+	}
+
+	return stack
+}
+
+// setCauseDetails sets Details from cause if present.
+func setCauseDetails(err *AppError, cause error) {
+	if cause == nil {
+		return
+	}
+
+	err.Details = cause.Error()
+}
+
 // WrapWithDetails wraps an error with explicit details override.
-func WrapWithDetails(
-	cause error,
-	code string,
-	message string,
-	details string,
-) *AppError {
-	err := Wrap(cause, code, message)
+func WrapWithDetails(cause error, code, message, details string) *AppError {
+	err := WrapWithSkip(cause, code, message, 1)
 	err.Details = details
 
 	return err
+}
+
+// --- Value setters (fluent) ---
+
+// WithValue adds a single key-value pair to the error context.
+func (e *AppError) WithValue(key, value string) *AppError {
+	if e.Values == nil {
+		e.Values = make(map[string]string)
+	}
+
+	e.Values[key] = value
+
+	return e
+}
+
+// WithValues merges multiple key-value pairs into the error context.
+func (e *AppError) WithValues(values map[string]string) *AppError {
+	if e.Values == nil {
+		e.Values = make(map[string]string)
+	}
+
+	for k, v := range values {
+		e.Values[k] = v
+	}
+
+	return e
 }
 
 // WithDetails adds details to the error.
@@ -164,151 +233,15 @@ func (e *AppError) WithDetails(details string) *AppError {
 	return e
 }
 
-// --- Typed diagnostic setters (fluent) ---
+// --- Flow control ---
 
-// WithPath sets the path diagnostic field.
-func (e *AppError) WithPath(p string) *AppError {
-	e.Diagnostic.Path = p
-
-	return e
+// Panic logs the full error and panics with the formatted message.
+// Use ONLY for unrecoverable initialization failures.
+func (e *AppError) Panic(message string) {
+	panic(fmt.Sprintf("%s\n%s", message, e.FullString()))
 }
 
-// WithFile sets the file diagnostic field.
-func (e *AppError) WithFile(f string) *AppError {
-	e.Diagnostic.File = f
-
-	return e
-}
-
-// WithFilePath sets the filePath diagnostic field.
-func (e *AppError) WithFilePath(p string) *AppError {
-	e.Diagnostic.FilePath = p
-
-	return e
-}
-
-// WithDestPath sets the destPath diagnostic field.
-func (e *AppError) WithDestPath(p string) *AppError {
-	e.Diagnostic.DestPath = p
-
-	return e
-}
-
-// WithBackupDir sets the backupDir diagnostic field.
-func (e *AppError) WithBackupDir(d string) *AppError {
-	e.Diagnostic.BackupDir = d
-
-	return e
-}
-
-// WithURL sets the url diagnostic field.
-func (e *AppError) WithURL(u string) *AppError {
-	e.Diagnostic.URL = u
-
-	return e
-}
-
-// WithSlug sets the slug diagnostic field.
-func (e *AppError) WithSlug(s string) *AppError {
-	e.Diagnostic.Slug = s
-
-	return e
-}
-
-// WithPlugin sets the plugin diagnostic field.
-func (e *AppError) WithPlugin(p string) *AppError {
-	e.Diagnostic.Plugin = p
-
-	return e
-}
-
-// WithPluginSlug sets the pluginSlug diagnostic field.
-func (e *AppError) WithPluginSlug(s string) *AppError {
-	e.Diagnostic.PluginSlug = s
-
-	return e
-}
-
-// WithSiteID sets the siteId diagnostic field.
-func (e *AppError) WithSiteID(id int64) *AppError {
-	e.Diagnostic.SiteID = id
-
-	return e
-}
-
-// WithPluginID sets the pluginId diagnostic field.
-func (e *AppError) WithPluginID(id int64) *AppError {
-	e.Diagnostic.PluginID = id
-
-	return e
-}
-
-// WithSnapshotID sets the snapshotId diagnostic field.
-func (e *AppError) WithSnapshotID(id int64) *AppError {
-	e.Diagnostic.SnapshotID = id
-
-	return e
-}
-
-// WithMappingID sets the mappingId diagnostic field.
-func (e *AppError) WithMappingID(id int64) *AppError {
-	e.Diagnostic.MappingID = id
-
-	return e
-}
-
-// WithVersionID sets the versionId diagnostic field.
-func (e *AppError) WithVersionID(id int64) *AppError {
-	e.Diagnostic.VersionID = id
-
-	return e
-}
-
-// WithSessionID sets the sessionId diagnostic field.
-func (e *AppError) WithSessionID(id string) *AppError {
-	e.Diagnostic.SessionID = id
-
-	return e
-}
-
-// WithRunID sets the runId diagnostic field.
-func (e *AppError) WithRunID(id string) *AppError {
-	e.Diagnostic.RunID = id
-
-	return e
-}
-
-// WithStatusCode sets the statusCode diagnostic field.
-func (e *AppError) WithStatusCode(code int) *AppError {
-	e.Diagnostic.StatusCode = code
-
-	return e
-}
-
-// WithMethod sets the method diagnostic field.
-func (e *AppError) WithMethod(m string) *AppError {
-	e.Diagnostic.Method = m
-
-	return e
-}
-
-// WithEndpoint sets the endpoint diagnostic field.
-func (e *AppError) WithEndpoint(ep string) *AppError {
-	e.Diagnostic.Endpoint = ep
-
-	return e
-}
-
-// WithUsername sets the username diagnostic field.
-func (e *AppError) WithUsername(u string) *AppError {
-	e.Diagnostic.Username = u
-
-	return e
-}
-
-// WithDiagnostic sets the full diagnostic struct.
-func (e *AppError) WithDiagnostic(d ErrorDiagnostic) *AppError {
-	e.Diagnostic = d
-
-	return e
+// Throw panics with the AppError itself (recoverable via recover).
+func (e *AppError) Throw() {
+	panic(e)
 }

@@ -12,6 +12,7 @@ func (e *AppError) ToClipboard() string {
 	b.WriteString("## Error Report\n\n")
 	writeCodeAndMessage(&b, e)
 	writeDetailsSection(&b, e)
+	writeValuesSection(&b, e)
 	writeLocationSection(&b, e)
 	writeDiagnosticSection(&b, e)
 	writeStackSection(&b, e)
@@ -34,13 +35,27 @@ func writeDetailsSection(b *strings.Builder, e *AppError) {
 	b.WriteString(fmt.Sprintf("**Details:** %s\n", e.Details))
 }
 
+// writeValuesSection writes injected variable values if present.
+func writeValuesSection(b *strings.Builder, e *AppError) {
+	if !e.HasValues() {
+		return
+	}
+
+	b.WriteString("\n**Values:**\n```\n")
+	for k, v := range e.Values {
+		b.WriteString(fmt.Sprintf("  %s: %s\n", k, v))
+	}
+
+	b.WriteString("```\n")
+}
+
 // writeLocationSection writes the caller location from the stack.
 func writeLocationSection(b *strings.Builder, e *AppError) {
 	if e.Stack.IsEmpty() {
 		return
 	}
 
-	top := e.Stack[0]
+	top := e.Stack.Frames[0]
 	b.WriteString(fmt.Sprintf("**Location:** %s:%d (%s)\n", top.File, top.Line, top.Function))
 }
 

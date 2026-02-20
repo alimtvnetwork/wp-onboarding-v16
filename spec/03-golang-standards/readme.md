@@ -6,9 +6,9 @@
 
 ---
 
-## File Size — Max 300 Lines
+## File Size — Target 300 Lines (Soft Limit 400)
 
-Every `.go` file must be **300 lines or fewer**. Split large files using these suffixes:
+Every `.go` file targets **300 lines**. Up to **400 lines is acceptable** but must include a top-of-file comment: `// NOTE: Needs refactor — exceeds 300-line target`. Split large files using these suffixes:
 
 | Suffix | Purpose |
 |--------|---------|
@@ -484,7 +484,7 @@ func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { 
 | `!fn()` raw negation | Easy to miss `!` | Positive guard function |
 | Nested `if` (any depth) | **Zero tolerance** | Flatten with early returns |
 | Functions > 15 lines | Hard to read | Extract small helpers |
-| Files > 300 lines | Hard to navigate | Split with suffix convention |
+| Files > 400 lines | Hard to navigate | Split with suffix convention (target 300) |
 | Magic strings/numbers | Brittle | Typed constants |
 | Boolean flag parameters | Unclear intent | Separate named methods |
 
@@ -516,8 +516,8 @@ import (
 - [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters
 - [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
-- [Go Function Parameters](.lovable/memory/architecture/coding-standards/go-function-parameters.md)
+- [apperror Package Spec](../05-error-manage/06-apperror-package/readme.md) — Full StackTrace, AppError, Result types specification
 
 ---
 
-*Golang standards specification v3.0.0 — 2026-02-20*
+*Golang standards specification v3.1.0 — 2026-02-20*
