@@ -4,6 +4,7 @@ package handlers
 import (
 	"wp-plugin-publish/internal/services/backup"
 	"wp-plugin-publish/internal/services/errorhistory"
+	"wp-plugin-publish/internal/services/git"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
 	"wp-plugin-publish/internal/services/publishhistory"
@@ -19,7 +20,7 @@ func NewServiceRegistry(
 	siteService *site.Service,
 	pluginService *plugin.Service,
 	syncService sync.Service,
-	gitService GitServiceInterface,
+	gitService *git.Service,
 	watcherService *watcher.Service,
 	publishService *publish.Service,
 	backupService *backup.Service,
@@ -48,11 +49,16 @@ func NewServiceRegistry(
 		siteHealthAdapter = &SiteHealthServiceAdapter{siteHealthService}
 	}
 
+	var gitAdapter GitServiceInterface
+	if gitService != nil {
+		gitAdapter = &GitServiceAdapter{gitService}
+	}
+
 	return &ServiceRegistry{
 		SiteService:           &SiteServiceAdapter{siteService},
 		PluginService:         &PluginServiceAdapter{pluginService},
 		SyncService:           &SyncServiceAdapter{syncService},
-		GitService:            gitService,
+		GitService:            gitAdapter,
 		WatcherService:        &WatcherServiceAdapter{watcherService},
 		PublishService:        &PublishServiceAdapter{publishService},
 		BackupService:         &BackupServiceAdapter{backupService},
