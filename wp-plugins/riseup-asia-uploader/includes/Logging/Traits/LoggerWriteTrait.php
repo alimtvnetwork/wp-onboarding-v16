@@ -23,7 +23,7 @@ trait LoggerWriteTrait {
         $isInitFailed = $isUninitialized && ($this->initializePaths() === false);
 
         if ($isInitFailed) {
-            InitHelpers::bootLog(trim($entry));
+            InitHelpers::errorLogWithPrefix(trim($entry));
 
             return false;
         }

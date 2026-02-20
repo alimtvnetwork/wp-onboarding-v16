@@ -81,7 +81,7 @@ class Admin {
 
     /** Constructor. */
     private function __construct() {
-        InitHelpers::bootLog('Admin::__construct() — registering admin hooks');
+        InitHelpers::errorLogWithPrefix('Admin::__construct() — registering admin hooks');
         $this->registerBootNotices();
         add_action(HookType::AdminMenu->value, array($this, 'addAdminMenu'));
         add_action(HookType::AdminInit->value, array($this, 'registerSettings'));

@@ -17,10 +17,11 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Notification\AdminMailer;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\InitHelpers;
 
 class BootErrorCollector {
 
-    private const LOG_PREFIX = '[Riseup Asia] BootErrorCollector: ';
+    private const COLLECTOR_PREFIX = 'BootErrorCollector: ';
 
     /** @var array<int, array{context: string, message: string, timestamp: string}> */
     private array $errors = [];
@@ -52,7 +53,7 @@ class BootErrorCollector {
             'timestamp' => DateHelper::nowUtc(),
         ];
 
-        error_log(self::LOG_PREFIX . '[' . $context . '] ' . $message);
+        InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . '[' . $context . '] ' . $message);
 
         $this->ensureShutdownHook();
     }
@@ -88,12 +89,12 @@ class BootErrorCollector {
             $wasSent = $mailer->sendBootErrorReport($this->errors);
 
             if ($wasSent) {
-                error_log(self::LOG_PREFIX . 'boot error report sent (' . count($this->errors) . ' error(s))');
+                InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'boot error report sent (' . count($this->errors) . ' error(s))');
             } else {
-                error_log(self::LOG_PREFIX . 'boot error report skipped (throttled or disabled)');
+                InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'boot error report skipped (throttled or disabled)');
             }
         } catch (\Throwable $e) {
-            error_log(self::LOG_PREFIX . 'failed to send boot error report — ' . $e->getMessage());
+            InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'failed to send boot error report — ' . $e->getMessage());
         }
 
         $this->errors = [];

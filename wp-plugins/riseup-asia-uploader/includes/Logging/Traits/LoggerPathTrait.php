@@ -33,14 +33,14 @@ trait LoggerPathTrait {
     private function ensureDirectories(): bool {
         $isBaseDirFailed = (InitHelpers::makeDirectoryNative($this->baseDir, true) === false);
         if ($isBaseDirFailed) {
-            InitHelpers::bootLog('Failed to create base directory: ' . $this->baseDir);
+            InitHelpers::errorLogWithPrefix('Failed to create base directory: ' . $this->baseDir);
 
             return false;
         }
 
         $isLogsDirFailed = (InitHelpers::makeDirectoryNative($this->logsDir, false) === false);
         if ($isLogsDirFailed) {
-            InitHelpers::bootLog('Failed to create logs directory: ' . $this->logsDir);
+            InitHelpers::errorLogWithPrefix('Failed to create logs directory: ' . $this->logsDir);
 
             return false;
         }
