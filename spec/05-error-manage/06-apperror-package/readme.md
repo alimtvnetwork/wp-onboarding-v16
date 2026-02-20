@@ -1,6 +1,6 @@
 # Go `apperror` Package Specification
 
-> **Version:** 1.0.0  
+> **Version:** 1.1.0  
 > **Updated:** 2026-02-20  
 > **Package:** `backend/pkg/apperror`
 
@@ -449,6 +449,93 @@ return apperror.Wrap(err, apperror.ErrFSRead, "failed to read config").
 
 ---
 
+## 10. Service Adapter Unwrap Pattern
+
+### 10.1 Architectural Boundary
+
+Services return `Result[T]`, `ResultSlice[T]`, and `ResultMap[K, V]` to preserve rich error context and type safety within the domain layer. HTTP handlers consume **adapter interfaces** that expose standard `(T, error)` tuples. A dedicated **Service Adapter** sits between them, acting as the single unwrap boundary.
+
+```
+┌─────────────┐    Result[T]    ┌──────────────────┐   (T, error)   ┌──────────┐
+│   Service    │ ─────────────► │  ServiceAdapter   │ ─────────────► │  Handler │
+│  (domain)    │                │  (unwrap layer)   │                │  (HTTP)  │
+└─────────────┘                └──────────────────┘                └──────────┘
+```
+
+**Rules:**
+- Services **never** return raw `(T, error)` for data-fetching operations — use `Result[T]` or `ResultSlice[T]`
+- Void operations (`Delete`, `MarkSynced`, etc.) may return plain `error`
+- Adapters are the **only** place that calls `.Value()`, `.Items()`, or `.Error()` to convert back to tuples
+- Handlers and other transport-layer code **never** import `apperror.Result` types directly
+
+### 10.2 Adapter Implementation
+
+Each service gets a dedicated adapter file (e.g., `adapter_plugin.go`, `adapter_site.go`, `adapter_sync.go`) in the `handlers` package:
+
+```go
+// SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
+type SiteServiceAdapter struct {
+    *site.Service
+}
+
+// Result[T] → (*T, error) unwrap for single-value returns
+func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Site, error) {
+    result := a.Service.GetByID(ctx, id)  // returns apperror.Result[models.Site]
+    if result.HasError() {
+        return nil, result.Error()
+    }
+    v := result.Value()
+    return &v, nil
+}
+
+// ResultSlice[T] → ([]T, error) unwrap for collection returns
+func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, error) {
+    result := a.Service.List(ctx)  // returns apperror.ResultSlice[models.Site]
+    if result.HasError() {
+        return nil, result.Error()
+    }
+    return result.Items(), nil
+}
+```
+
+### 10.3 Compile-Time Verification
+
+All adapters include compile-time interface checks in `adapters.go`:
+
+```go
+var _ SiteServiceInterface = (*SiteServiceAdapter)(nil)
+var _ PluginServiceInterface = (*PluginServiceAdapter)(nil)
+var _ SyncServiceInterface = (*SyncServiceAdapter)(nil)
+```
+
+### 10.4 Cross-Service Consumption
+
+When **Service A** holds a direct reference to **Service B** (not through the adapter), Service A must consume Result types directly using `.HasError()` / `.Value()` / `.IsSafe()`:
+
+```go
+// sync service calls plugin service directly (not through adapter)
+plugResult := s.pluginService.GetByID(ctx, pluginID)
+if plugResult.HasError() {
+    return apperror.FailWrap[PushSyncResult](plugResult.Error(), apperror.ErrDatabaseQuery, "failed to get plugin")
+}
+plug := plugResult.Value()
+```
+
+**Cross-service audit checklist** — when migrating a service to Result types, verify:
+1. All cross-service callers that hold a direct `*service.Service` reference
+2. All `main.go` initialization code that calls service methods
+3. All adapter methods are updated to unwrap the new return types
+
+### 10.5 Migrated Services
+
+| Service | Result Types | Adapter File |
+|---------|-------------|--------------|
+| Plugin | `List`, `GetByID`, `Create`, `Update`, `ScanDirectory`, `GetMappings`, `GetMappingsBySite`, `CreateMapping` | `adapter_plugin.go` |
+| Site | `List`, `GetByID`, `GetByURL`, `Create`, `Update` | `adapter_site.go` |
+| Sync | `CheckSync`, `CheckAllSites`, `CheckAllPlugins`, `PushSync`, `GetFileChanges` | `adapter_sync.go` |
+
+---
+
 ## Cross-References
 
 - [Golang Coding Standards](../../03-golang-standards/readme.md) — File size, function size, type safety
@@ -456,4 +543,4 @@ return apperror.Wrap(err, apperror.ErrFSRead, "failed to read config").
 
 ---
 
-*apperror package specification v1.0.0 — 2026-02-20*
+*apperror package specification v1.1.0 — 2026-02-20*
