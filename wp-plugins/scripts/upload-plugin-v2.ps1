@@ -474,6 +474,17 @@ foreach ($ns in $apiNamespaces) {
 
         Write-Debug-Log "Raw response keys: $($statusResponse.PSObject.Properties.Name -join ', ')"
 
+        # Detect Imunify360 / WAF blocks returned as valid JSON
+        $blockMessage = $null
+        if ($statusResponse.message -and $statusResponse.message -match "Access denied|Imunify360|bot-protection|blocked|forbidden") {
+            $blockMessage = $statusResponse.message
+        }
+        if ($blockMessage) {
+            Write-Status "      ⚠ $($ns.display): BLOCKED by server security" -Color Red
+            Write-Status "        $blockMessage" -Color Yellow
+            continue
+        }
+
         # Unwrap Universal Response Envelope: data is in Results[0]
         $statusData = $statusResponse
         if ($statusResponse.Results -and $statusResponse.Results.Count -gt 0) {
@@ -498,6 +509,7 @@ foreach ($ns in $apiNamespaces) {
             break
         } else {
             Write-Status "      ⚠ $($ns.display) responded but no version detected" -Color Yellow
+            Write-Debug-Log "statusData keys: $($statusData.PSObject.Properties.Name -join ', ')"
         }
     } catch {
         $errBody = Get-ErrorResponseBody $_
