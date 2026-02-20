@@ -17,6 +17,7 @@ use PDOStatement;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 
 trait NativeTableExportTrait {
@@ -42,7 +43,7 @@ trait NativeTableExportTrait {
             $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
             if ($count === 0) {
 
-                return array('success' => true, 'rows' => 0, 'bytes' => 0);
+                return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => 0, ResponseKeyType::Bytes->value => 0);
             }
 
             return $this->exportTableRows($sqlite, $table, $count);
@@ -51,7 +52,7 @@ trait NativeTableExportTrait {
                 $sqlite->rollBack();
             }
 
-            return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0, 'bytes' => 0);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Rows->value => 0, ResponseKeyType::Bytes->value => 0);
         }
     }
 
@@ -66,7 +67,7 @@ trait NativeTableExportTrait {
         $result = $this->executeBatchExport($insert['stmt'], $table, $count);
         $sqlite->commit();
 
-        return array('success' => true, 'rows' => $result['exported'], 'bytes' => $result['bytes']);
+        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $result[ResponseKeyType::Exported->value], ResponseKeyType::Bytes->value => $result[ResponseKeyType::Bytes->value]);
     }
 
     private function prepareInsertStatement(PDO $sqlite, string $table): array {
@@ -106,7 +107,7 @@ trait NativeTableExportTrait {
             $this->logExportProgress($table, $offset, $count, $batch_size);
         }
 
-        return array('exported' => $exported, 'bytes' => $bytes);
+        return array(ResponseKeyType::Exported->value => $exported, ResponseKeyType::Bytes->value => $bytes);
     }
 
     private function logExportProgress(
@@ -116,7 +117,7 @@ trait NativeTableExportTrait {
         int $batchSize,
     ): void {
         $progress = ($offset / $count) * 100;
-        $prev = (($offset - $batch_size) / $count) * 100;
+        $prev = (($offset - $batchSize) / $count) * 100;
 
         if ($progress >= 25 && $prev < 25) {
             $this->log(LogLevelType::Debug->value, "{$table}: 25% complete");

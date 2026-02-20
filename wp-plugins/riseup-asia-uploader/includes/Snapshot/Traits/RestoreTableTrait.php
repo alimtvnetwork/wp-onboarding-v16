@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreStrategyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
@@ -39,28 +40,29 @@ trait RestoreTableTrait {
             $result = $this->restoreSingleMasterTable($table, $tableInventory, $snapshotDir);
 
             if ($result === null) {
-                $errors[] = $result['error'] ?? $table . ': skipped';
+                $errors[] = $result[ResponseKeyType::Error->value] ?? $table . ': skipped';
                 continue;
             }
 
-            if ($result['success']) {
+            if ($result[ResponseKeyType::Success->value]) {
                 $tables_restored++;
-                $total_rows += $result['rows'];
-                $this->log(LogLevelType::Info->value, sprintf('Restored: %s (%d rows)', $table, $result['rows']));
+                $total_rows += $result[ResponseKeyType::Rows->value];
+                $this->log(LogLevelType::Info->value, sprintf('Restored: %s (%d rows)', $table, $result[ResponseKeyType::Rows->value]));
                 continue;
             }
 
-            $errors[] = $table . ': ' . $result['error'];
-            $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, array('error' => $result['error']));
+            $errors[] = $table . ': ' . $result[ResponseKeyType::Error->value];
+            $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
 
             $isStrictMode = BooleanHelpers::hasValue($options['strict'] ?? null);
 
             if ($isStrictMode) {
+
                 throw new Exception('Strict mode: table restore failed for ' . $table);
             }
         }
 
-        return array('tables_restored' => $tables_restored, 'total_rows' => $total_rows, 'errors' => $errors);
+        return array(ResponseKeyType::TablesRestored->value => $tables_restored, ResponseKeyType::TotalRows->value => $total_rows, ResponseKeyType::Errors->value => $errors);
     }
 
     private function restoreSingleMasterTable(
@@ -72,14 +74,15 @@ trait RestoreTableTrait {
         $isTableInfoMissing = ($table_info === null);
 
         if ($isTableInfoMissing) {
-            return array('success' => false, 'error' => $table . ': not found in inventory', 'rows' => 0);
+
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $table . ': not found in inventory', ResponseKeyType::Rows->value => 0);
         }
 
         $sqlite_path = $snapshotDir . '/' . $table_info['sqlite_file'];
         if (PathHelper::isFileMissing($sqlite_path)) {
             $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array('table' => $table, 'file' => $table_info['sqlite_file']));
 
-            return array('success' => false, 'error' => 'SQLite file missing (' . $table_info['sqlite_file'] . ')', 'rows' => 0);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'SQLite file missing (' . $table_info['sqlite_file'] . ')', ResponseKeyType::Rows->value => 0);
         }
 
         return $this->restoreTableFromFile($sqlite_path, $table, RestoreStrategyType::Truncate->value);
@@ -95,6 +98,7 @@ trait RestoreTableTrait {
             $isValidationFailed = BooleanHelpers::isResultFailed($validated);
 
             if ($isValidationFailed) {
+
                 return $validated;
             }
 
@@ -103,7 +107,8 @@ trait RestoreTableTrait {
                 $strategy, $validated['row_count']
             );
         } catch (Throwable $e) {
-            return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
+
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Rows->value => 0);
         }
     }
 }

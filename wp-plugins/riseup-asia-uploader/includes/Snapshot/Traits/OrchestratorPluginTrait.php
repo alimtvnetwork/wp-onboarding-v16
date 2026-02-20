@@ -21,6 +21,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\PluginSelectionType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -33,7 +34,7 @@ trait OrchestratorPluginTrait {
         if ($isDirCreationFailed) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
 
-            return array('count' => 0, 'total_size' => 0, 'plugins' => array());
+            return array(ResponseKeyType::Count->value => 0, 'total_size' => 0, ResponseKeyType::Plugins->value => array());
         }
 
         $plugins_to_snapshot = $this->collectPluginsToSnapshot($selection);
@@ -46,16 +47,16 @@ trait OrchestratorPluginTrait {
         foreach ($plugins_to_snapshot as $plugin_file => $info) {
             $result = $this->archiveSinglePlugin($info, $plugins_dir, $rootPdo);
             if ($result === null) continue;
-            if ($result['success']) {
-                $total_size += $result['size'];
+            if ($result[ResponseKeyType::Success->value]) {
+                $total_size += $result[ResponseKeyType::Size->value];
                 $count++;
-                $plugin_list[] = $result['entry'];
+                $plugin_list[] = $result[ResponseKeyType::Entry->value];
             }
         }
 
         $rootPdo = null;
 
-        return array('count' => $count, 'total_size' => $total_size, 'plugins' => $plugin_list);
+        return array(ResponseKeyType::Count->value => $count, 'total_size' => $total_size, ResponseKeyType::Plugins->value => $plugin_list);
     }
 
     private function collectPluginsToSnapshot(string $selection): array {
@@ -109,12 +110,12 @@ trait OrchestratorPluginTrait {
         $isZipFailed = BooleanHelpers::isResultFailed($zip_result);
 
         if ($isZipFailed) {
-            $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array('error' => $zip_result['error']));
+            $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array(ResponseKeyType::Error->value => $zip_result[ResponseKeyType::Error->value]));
 
-            return array('success' => false);
+            return array(ResponseKeyType::Success->value => false);
         }
 
-        $entry = array('slug' => $info['slug'], 'name' => $info['name'], 'version' => $info['version'], 'zip' => $zip_filename, 'size' => filesize($zip_path));
+        $entry = array('slug' => $info['slug'], 'name' => $info['name'], 'version' => $info['version'], 'zip' => $zip_filename, ResponseKeyType::Size->value => filesize($zip_path));
 
         if ($rootPdo) {
             $this->rootDb->registerPluginSnapshot($rootPdo, array(
@@ -123,9 +124,9 @@ trait OrchestratorPluginTrait {
             ));
         }
 
-        $this->log(LogLevelType::Info->value, sprintf('Plugin archived: %s (%s)', $info['name'], $this->formatBytes($entry['size'])));
+        $this->log(LogLevelType::Info->value, sprintf('Plugin archived: %s (%s)', $info['name'], $this->formatBytes($entry[ResponseKeyType::Size->value])));
 
-        return array('success' => true, 'size' => $entry['size'], 'entry' => $entry);
+        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Size->value => $entry[ResponseKeyType::Size->value], ResponseKeyType::Entry->value => $entry);
     }
 
     private function createPluginZip(
@@ -137,7 +138,7 @@ trait OrchestratorPluginTrait {
             $zip = new ZipArchive();
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
 
-                return array('success' => false, 'error' => 'Failed to create ZIP');
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create ZIP');
             }
 
             $sourceDir = rtrim($sourceDir, '/\\');
@@ -162,19 +163,20 @@ trait OrchestratorPluginTrait {
             if ($size === 0) {
                 @unlink($zipPath);
 
-                return array('success' => false, 'error' => 'ZIP file is empty');
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'ZIP file is empty');
             }
 
-            return array('success' => true);
+            return array(ResponseKeyType::Success->value => true);
         } catch (Throwable $e) {
 
-            return array('success' => false, 'error' => $e->getMessage());
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
         }
     }
 
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
         if (PathHelper::isFileMissing($root_path)) {
+
             return null;
         }
 
@@ -184,7 +186,7 @@ trait OrchestratorPluginTrait {
 
             return $pdo;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Could not open a-root.db for plugin registration', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Could not open a-root.db for plugin registration', array(ResponseKeyType::Error->value => $e->getMessage()));
 
             return null;
         }

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
@@ -33,6 +34,7 @@ trait OrchestratorRegistrationTrait {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
         if ($isPdoMissing) {
+
             return false;
         }
 
@@ -43,7 +45,7 @@ trait OrchestratorRegistrationTrait {
 
             return $this->insertSnapshotRecord($pdo, $sequence, $snapshotDir, $scope, $tables_json, $workerResult, $dir_size);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array(ResponseKeyType::Error->value => $e->getMessage()));
 
             return false;
         }
@@ -58,9 +60,9 @@ trait OrchestratorRegistrationTrait {
     private function buildSnapshotTablesJson(array $workerResult, array $pluginStats): string {
 
         return json_encode(array(
-            'exported' => $workerResult['tables'] ?? 0, 'total_rows' => $workerResult['total_rows'] ?? 0,
-            'errors' => $workerResult['errors'] ?? array(), 'plugins' => $pluginStats['count'] ?? 0,
-            'plugin_details' => $pluginStats['plugins'] ?? array(),
+            ResponseKeyType::Exported->value => $workerResult[ResponseKeyType::Tables->value] ?? 0, ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
+            ResponseKeyType::Errors->value => $workerResult[ResponseKeyType::Errors->value] ?? array(), ResponseKeyType::Plugins->value => $pluginStats[ResponseKeyType::Count->value] ?? 0,
+            'plugin_details' => $pluginStats[ResponseKeyType::Plugins->value] ?? array(),
         ));
     }
 
@@ -81,7 +83,7 @@ trait OrchestratorRegistrationTrait {
 
         $stmt->execute(array(
             $sequence, basename($snapshotDir), $snapshotDir, SnapshotProviderType::Native->value, $scope,
-            $tablesJson, $workerResult['total_rows'] ?? 0, $dirSize,
+            $tablesJson, $workerResult[ResponseKeyType::TotalRows->value] ?? 0, $dirSize,
             SnapshotTriggerType::Api->value, SnapshotStatusType::Complete->value, $now, $now,
         ));
 

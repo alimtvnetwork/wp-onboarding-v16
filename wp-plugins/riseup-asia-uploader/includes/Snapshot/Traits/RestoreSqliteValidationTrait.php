@@ -29,14 +29,14 @@ trait RestoreSqliteValidationTrait {
         if ($isTableMissing) {
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table not found in SQLite file', 'rows' => 0);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table not found in SQLite file', ResponseKeyType::Rows->value => 0);
         }
 
         $column_names = $this->getSqliteColumnNames($sqlite, $table);
         if (empty($column_names)) {
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No columns found in SQLite table', 'rows' => 0);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No columns found in SQLite table', ResponseKeyType::Rows->value => 0);
         }
 
         $row_count = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
@@ -78,7 +78,7 @@ trait RestoreSqliteValidationTrait {
             $this->wpdb->query("COMMIT");
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => true, 'rows' => $total_rows);
+            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $total_rows);
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
 

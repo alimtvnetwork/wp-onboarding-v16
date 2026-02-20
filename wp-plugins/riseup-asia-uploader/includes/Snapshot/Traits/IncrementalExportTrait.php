@@ -37,12 +37,12 @@ trait IncrementalExportTrait {
             $sqlite = null;
 
             return array(
-                ResponseKeyType::Success->value => true, 'rows' => $exported,
-                'file_size' => filesize($filepath), 'checksum' => md5_file($filepath),
+                ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $exported,
+                ResponseKeyType::FileSize->value => filesize($filepath), ResponseKeyType::Checksum->value => md5_file($filepath),
             );
         } catch (Throwable $e) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), 'rows' => 0, 'file_size' => 0, 'checksum' => '');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Rows->value => 0, ResponseKeyType::FileSize->value => 0, ResponseKeyType::Checksum->value => '');
         }
     }
 

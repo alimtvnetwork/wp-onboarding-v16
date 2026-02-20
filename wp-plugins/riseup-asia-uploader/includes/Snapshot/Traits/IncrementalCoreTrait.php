@@ -39,9 +39,9 @@ trait IncrementalCoreTrait {
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create incremental directory: ' . $folder_name);
         }
 
-        $this->log(LogLevelType::Info->value, 'Incremental directory created', array('sequence' => $sequence, 'folder_name' => $folder_name));
+        $this->log(LogLevelType::Info->value, 'Incremental directory created', array(ResponseKeyType::Sequence->value => $sequence, ResponseKeyType::FolderName->value => $folder_name));
 
-        return array(ResponseKeyType::Success->value => true, 'rootPdo' => $rootPdo, 'master_tables' => $master_tables, 'sequence' => $sequence, 'folder_name' => $folder_name, 'incremental_dir' => $incremental_dir);
+        return array(ResponseKeyType::Success->value => true, 'rootPdo' => $rootPdo, 'master_tables' => $master_tables, ResponseKeyType::Sequence->value => $sequence, ResponseKeyType::FolderName->value => $folder_name, 'incremental_dir' => $incremental_dir);
     }
 
     private function exportChangedTables(
@@ -61,14 +61,14 @@ trait IncrementalCoreTrait {
 
             if ($result[ResponseKeyType::Success->value]) {
                 $tables_changed++;
-                $total_new_rows += $result['rows'];
-                $exported_tables[] = $result['entry'];
+                $total_new_rows += $result[ResponseKeyType::Rows->value];
+                $exported_tables[] = $result[ResponseKeyType::Entry->value];
             } else {
                 $errors[] = $table_name . ': ' . $result[ResponseKeyType::Error->value];
             }
         }
 
-        return array('tables_changed' => $tables_changed, 'total_new_rows' => $total_new_rows, 'errors' => $errors, 'exported_tables' => $exported_tables);
+        return array(ResponseKeyType::TablesChanged->value => $tables_changed, ResponseKeyType::TotalNewRows->value => $total_new_rows, ResponseKeyType::Errors->value => $errors, 'exported_tables' => $exported_tables);
     }
 
     private function finalizeIncremental(
@@ -82,21 +82,21 @@ trait IncrementalCoreTrait {
     ): array {
         $duration = microtime(true) - $startTime;
 
-        $snapshot_id = $this->registerIncrementalSnapshot($title, $masterDir, $folderName, $sequence, $export['tables_changed'], $export['total_new_rows'], $incrementalDir);
+        $snapshot_id = $this->registerIncrementalSnapshot($title, $masterDir, $folderName, $sequence, $export[ResponseKeyType::TablesChanged->value], $export[ResponseKeyType::TotalNewRows->value], $incrementalDir);
 
         $this->log(LogLevelType::Info->value, 'Incremental backup complete', array(
-            'snapshot_id' => $snapshot_id, 'sequence' => $sequence,
-            'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
-            'errors' => count($export['errors']), 'duration' => round($duration, 2) . 's',
+            ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Sequence->value => $sequence,
+            ResponseKeyType::TablesChanged->value => $export[ResponseKeyType::TablesChanged->value], ResponseKeyType::TotalNewRows->value => $export[ResponseKeyType::TotalNewRows->value],
+            ResponseKeyType::Errors->value => count($export[ResponseKeyType::Errors->value]), ResponseKeyType::Duration->value => round($duration, 2) . 's',
         ));
 
         $this->invalidateParentZipExport($masterDir);
 
         return array(
-            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshot_id, 'sequence' => $sequence,
-            'folder_name' => $folderName, 'path' => $incrementalDir,
-            'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
-            'tables' => $export['exported_tables'], 'errors' => $export['errors'], 'duration' => $duration,
+            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Sequence->value => $sequence,
+            ResponseKeyType::FolderName->value => $folderName, ResponseKeyType::Path->value => $incrementalDir,
+            ResponseKeyType::TablesChanged->value => $export[ResponseKeyType::TablesChanged->value], ResponseKeyType::TotalNewRows->value => $export[ResponseKeyType::TotalNewRows->value],
+            ResponseKeyType::Tables->value => $export['exported_tables'], ResponseKeyType::Errors->value => $export[ResponseKeyType::Errors->value], ResponseKeyType::Duration->value => $duration,
         );
     }
 }

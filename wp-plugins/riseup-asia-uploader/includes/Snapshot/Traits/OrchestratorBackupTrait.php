@@ -41,7 +41,7 @@ trait OrchestratorBackupTrait {
 
         return array(
             'title' => $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i')),
-            'scope' => $options['scope'] ?? $settings['scope'] ?? SnapshotScopeType::WordPress->value,
+            ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? $settings[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             'include_plugins' => $options['include_plugins'] ?? $settings['include_plugins'] ?? true,
             'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? PluginSelectionType::All->value,
             'compression' => $options['compression'] ?? $settings['compression'] ?? true,
@@ -55,23 +55,25 @@ trait OrchestratorBackupTrait {
             $isExportFailed = BooleanHelpers::isResultFailed($worker_result);
 
             if ($isExportFailed) {
+
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
             $this->log(LogLevelType::Info->value, 'Async backup job created', array(
                 'job_id' => $worker_result['job_id'] ?? null, 'total_tables' => $worker_result['total_tables'] ?? null,
-                'pool_size' => $worker_result['pool_size'] ?? null, 'directory' => $worker_result['directory'] ?? null,
+                'pool_size' => $worker_result['pool_size'] ?? null, ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
             ));
 
-            $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $worker_result, array('count' => 0, 'total_size' => 0), $worker_result['path']);
+            $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved[ResponseKeyType::Scope->value], $worker_result, array(ResponseKeyType::Count->value => 0, 'total_size' => 0), $worker_result[ResponseKeyType::Path->value]);
 
             return array(
                 ResponseKeyType::Success->value => true, 'async' => true, 'job_id' => $worker_result['job_id'] ?? null,
-                'snapshot_id' => $snapshot_id, 'directory' => $worker_result['directory'] ?? null,
-                'path' => $worker_result['path'], 'total_tables' => $worker_result['total_tables'] ?? null,
+                ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
+                ResponseKeyType::Path->value => $worker_result[ResponseKeyType::Path->value], 'total_tables' => $worker_result['total_tables'] ?? null,
                 'pool_size' => $worker_result['pool_size'] ?? null, 'status' => $worker_result['status'] ?? null,
             );
         } catch (Throwable $e) {
+
             return $this->buildExceptionResult($e, 'async_orchestration');
         }
     }
@@ -83,49 +85,52 @@ trait OrchestratorBackupTrait {
             $isExportFailed = BooleanHelpers::isResultFailed($worker_result);
 
             if ($isExportFailed) {
+
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
             $context = $this->finalizeSyncExport($resolved, $worker_result);
-            $context['duration'] = microtime(true) - $start_time;
-            $context['errors'] = $worker_result['errors'] ?? array();
+            $context[ResponseKeyType::Duration->value] = microtime(true) - $start_time;
+            $context[ResponseKeyType::Errors->value] = $worker_result[ResponseKeyType::Errors->value] ?? array();
 
             return $context;
         } catch (Throwable $e) {
+
             return $this->buildExceptionResult($e, 'sync_orchestration');
         }
     }
 
     /** Register snapshot, snapshot plugins, and create ZIP for sync backup. */
     private function finalizeSyncExport(array $resolved, array $workerResult): array {
-        $snapshot_dir = $workerResult['path'];
-        $plugin_stats = $resolved['include_plugins'] ? $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']) : array('count' => 0, 'total_size' => 0);
-        $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $workerResult, $plugin_stats, $snapshot_dir);
-        $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array('path' => null, 'size' => 0, 'zip_failed' => false);
+        $snapshot_dir = $workerResult[ResponseKeyType::Path->value];
+        $plugin_stats = $resolved['include_plugins'] ? $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']) : array(ResponseKeyType::Count->value => 0, 'total_size' => 0);
+        $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved[ResponseKeyType::Scope->value], $workerResult, $plugin_stats, $snapshot_dir);
+        $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array(ResponseKeyType::Path->value => null, ResponseKeyType::Size->value => 0, ResponseKeyType::ZipFailed->value => false);
 
         return array(
-            ResponseKeyType::Success->value => true, 'snapshot_id' => $snapshot_id, 'directory' => $workerResult['directory'],
-            'path' => $workerResult['path'], 'tables' => $workerResult['tables'],
-            'total_rows' => $workerResult['total_rows'], 'plugins' => $plugin_stats['count'],
-            'zip_path' => $zip_result['path'], 'zip_size' => $zip_result['size'],
-            'zip_failed' => $zip_result['zip_failed'] ?? false,
+            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Directory->value => $workerResult[ResponseKeyType::Directory->value],
+            ResponseKeyType::Path->value => $workerResult[ResponseKeyType::Path->value], ResponseKeyType::Tables->value => $workerResult[ResponseKeyType::Tables->value],
+            ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value], ResponseKeyType::Plugins->value => $plugin_stats[ResponseKeyType::Count->value],
+            'zip_path' => $zip_result[ResponseKeyType::Path->value], ResponseKeyType::ZipSize->value => $zip_result[ResponseKeyType::Size->value],
+            ResponseKeyType::ZipFailed->value => $zip_result[ResponseKeyType::ZipFailed->value] ?? false,
         );
     }
 
     private function runWorkerExport(array $resolved, bool $async): array {
-        $config = array('title' => $resolved['title'], 'scope' => $resolved['scope'], 'type' => SnapshotModeType::Full->value, 'settings' => $resolved['settings']);
+        $config = array('title' => $resolved['title'], ResponseKeyType::Scope->value => $resolved[ResponseKeyType::Scope->value], 'type' => SnapshotModeType::Full->value, 'settings' => $resolved['settings']);
 
         return $async ? $this->worker->execute($config) : $this->worker->executeSynchronous($config);
     }
 
     private function executeZipPhase(string $snapshotDir, array $resolved): array {
         $zip_result = $this->createZipExport($snapshotDir, $resolved['title']);
-        if ($zip_result['success']) {
-            return array('path' => $zip_result['path'], 'size' => $zip_result['size'], 'zip_failed' => false);
-        }
-        $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array('error' => $zip_result['error']));
+        if ($zip_result[ResponseKeyType::Success->value]) {
 
-        return array('path' => null, 'size' => 0, 'zip_failed' => true);
+            return array(ResponseKeyType::Path->value => $zip_result[ResponseKeyType::Path->value], ResponseKeyType::Size->value => $zip_result[ResponseKeyType::Size->value], ResponseKeyType::ZipFailed->value => false);
+        }
+        $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array(ResponseKeyType::Error->value => $zip_result[ResponseKeyType::Error->value]));
+
+        return array(ResponseKeyType::Path->value => null, ResponseKeyType::Size->value => 0, ResponseKeyType::ZipFailed->value => true);
     }
 
     /**
@@ -139,16 +144,18 @@ trait OrchestratorBackupTrait {
             $isMasterDirMissing = ($master_dir === null);
 
             if ($isMasterDirMissing) {
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No full snapshot found. A full backup is required before creating an incremental.', 'phase' => 'incremental_lookup');
+
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No full snapshot found. A full backup is required before creating an incremental.', ResponseKeyType::Phase->value => 'incremental_lookup');
             }
 
             $result = $incremental->execute($master_dir, $options);
             $this->log(LogLevelType::Info->value, 'Incremental backup orchestration ' . ($result[ResponseKeyType::Success->value] ? 'complete' : 'failed'), array(
-                'master' => basename($master_dir), 'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
+                'master' => basename($master_dir), ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0, ResponseKeyType::TotalNewRows->value => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
             ));
 
             return $result;
         } catch (Throwable $e) {
+
             return $this->buildExceptionResult($e, 'incremental_orchestration');
         }
     }
@@ -163,6 +170,7 @@ trait OrchestratorBackupTrait {
                 $stmt->execute(array($options['master_snapshot_id']));
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 if ($row && is_dir($row['filepath'])) {
+
                     return $row['filepath'];
                 }
             }
