@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 
 /**
  * Detects fatal PHP errors during REST requests and emits structured JSON responses.
@@ -79,8 +80,8 @@ class FatalErrorHandler
         array $frames,
     ): array {
         return array(
-            'success' => false,
-            'error'   => array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => array(
                 'code'    => self::ERROR_CODE_FATAL,
                 'message' => 'A fatal error occurred in the plugin: ' . $error['message'],
                 'details' => FrameBuilder::buildFatalDetails($error, $traceLines, $frames),
@@ -130,8 +131,8 @@ class FatalErrorHandler
 
     private static function buildFallback(array $error): array {
         return array(
-            'success' => false,
-            'error'   => array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => array(
                 'code'    => self::ERROR_CODE_ENCODING_FAILED,
                 'message' => 'Fatal error occurred and JSON encoding also failed',
                 'details' => array(

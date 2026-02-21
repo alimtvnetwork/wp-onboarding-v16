@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
@@ -57,7 +58,7 @@ trait StatusOpsTrait {
     private function buildSpecError(string $message, string $path): WP_REST_Response {
         $this->fileLogger->error($message, array('path' => $path));
 
-        return new WP_REST_Response(array('success' => false, 'error' => $message), HttpStatusType::NotFound->value);
+        return new WP_REST_Response(array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $message), HttpStatusType::NotFound->value);
     }
 
     /** Read and parse the spec JSON file. */
@@ -66,14 +67,14 @@ trait StatusOpsTrait {
         if ($spec_content === false) {
             $this->fileLogger->error('Failed to read OpenAPI spec file');
 
-            return new WP_REST_Response(array('success' => false, 'error' => 'Failed to read OpenAPI specification'), HttpStatusType::ServerError->value);
+            return new WP_REST_Response(array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to read OpenAPI specification'), HttpStatusType::ServerError->value);
         }
 
         $spec = json_decode($spec_content, true);
         if ($spec === null) {
             $this->fileLogger->error('Invalid JSON in OpenAPI spec file');
 
-            return new WP_REST_Response(array('success' => false, 'error' => 'Invalid OpenAPI specification format'), HttpStatusType::ServerError->value);
+            return new WP_REST_Response(array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Invalid OpenAPI specification format'), HttpStatusType::ServerError->value);
         }
 
         return $spec;
@@ -98,7 +99,7 @@ trait StatusOpsTrait {
     /** Build the base OPcache result with reset execution. */
     private function buildOpcacheResult(): array {
         $result = array(
-            'success'           => true,
+            ResponseKeyType::Success->value => true,
             'opcache_available' => function_exists('opcache_reset'),
             'opcache_reset'     => false,
             'files_invalidated' => 0,

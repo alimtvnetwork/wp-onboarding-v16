@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PostStatusType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -27,13 +28,13 @@ trait PostCrudTrait {
         if (empty($data['title'])) {
             $this->fileLogger->warn('Post creation failed: title required');
 
-            return array('success' => false, 'error' => 'Title is required');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Title is required');
         }
 
         if (empty($data['content'])) {
             $this->fileLogger->warn('Post creation failed: content required');
 
-            return array('success' => false, 'error' => 'Content is required');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Content is required');
         }
 
         try {
@@ -52,7 +53,7 @@ trait PostCrudTrait {
                 'status' => $postData['post_status'], 'categories' => $data['categories'] ?? array(),
             ));
 
-            return array('success' => true, 'post' => $this->formatPost(get_post($postId)));
+            return array(ResponseKeyType::Success->value => true, 'post' => $this->formatPost(get_post($postId)));
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post creation exception');
         }
@@ -67,7 +68,7 @@ trait PostCrudTrait {
             if ($isPostMissing) {
                 $this->fileLogger->warn('Post not found', array('post_id' => $postId));
 
-                return array('success' => false, 'error' => 'Post not found');
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Post not found');
             }
 
             $postData = $this->buildUpdateData($postId, $data);
@@ -83,7 +84,7 @@ trait PostCrudTrait {
 
             $updatedPost = get_post($postId);
 
-            return array('success' => true, 'post' => $this->formatPost($updatedPost, true));
+            return array(ResponseKeyType::Success->value => true, 'post' => $this->formatPost($updatedPost, true));
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post update exception');
         }
@@ -132,7 +133,7 @@ trait PostCrudTrait {
         $details = $hasTitle ? array('title' => $title) : $data;
         $this->logger->logPostAction($action, $postId, StatusType::Failed->value, $details, $errorMsg);
 
-        return array('success' => false, 'error' => $errorMsg);
+        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $errorMsg);
     }
 
     private function assignCategories(int $postId, ?array $categories): void {
