@@ -1516,32 +1516,22 @@ All magic strings replaced across 740-line template:
 
 ---
 
-## Phase 7G: Settings Value Migration
+## ✅ COMPLETED — Phase 7G: Settings Value Migration (Full)
 
-A one-time migration to normalize stored `wp_options` values from legacy lowercase/snake_case to PascalCase enum values.
+All value migrations to PascalCase are now complete:
 
-### Values to Migrate
+### wp_options (SettingsMigrationHelper — previously completed)
+- preferred_provider, schedule_frequency, default_scope, retention_type, storage_mode
 
-| Option Key | Field | Old Value | New Value |
-|-----------|-------|-----------|-----------|
-| `riseup_snapshot_settings` | `preferred_provider` | `'auto'` | `'Auto'` |
-| | `schedule_frequency` | `'manual'`/`'daily'`/`'weekly'`/`'monthly'` | `'Manual'`/`'Daily'`/`'Weekly'`/`'Monthly'` |
-| | `default_scope` | `'all'`/`'wordpress'`/`'content'`/`'custom'` | `'All'`/`'WordPress'`/`'Content'`/`'Custom'` |
-| | `retention_type` | `'none'`/`'days'`/`'count'` | `'None'`/`'Days'`/`'Count'` |
-| | `storage_mode` | `'single'`/`'per-table'` | `'Single'`/`'PerTable'` |
-| DB: `Transactions.Status` | — | `'success'`/`'failed'` | `'Success'`/`'Failed'` |
-| DB: `Transactions.TriggeredBy` | — | `'api'`/`'dashboard'`/`'agent_push'`/`'cron'`/`'cli'` | `'Api'`/`'Dashboard'`/`'AgentPush'`/`'Cron'`/`'Cli'` |
-| DB: `Transactions.UploadSource` | — | `'upload_script'`/`'rest_api'`/`'admin_ui'`/`'wp_cli'` | `'Script'`/`'RestAPI'`/`'AdminUI'`/`'WPCLI'` |
-| DB: `ErrorSessions.Level` | — | `'ERROR'`/`'WARN'`/`'INFO'`/`'DEBUG'` | `'Error'`/`'Warn'`/`'Info'`/`'Debug'` |
+### SQLite V12 (previously completed)
+- Transactions.Status, Transactions.Action, AgentSites.Status, AgentActions.Status
+- Snapshots.Status, SnapshotProgress.Status, SnapshotSettings.Value, ErrorSessions.Level, SnapshotExports.Status
 
-### Implementation
-
-Add a new schema migration `V14` that:
-1. Updates `wp_options` snapshot settings in-place
-2. Runs `UPDATE` queries on `Transactions` columns for status, trigger, upload source
-3. Runs `UPDATE` on `ErrorSessions.Level`
-
-### Estimated Effort: 2 tasks
+### SQLite V14 (new)
+- Transactions.TriggeredBy: `'api'`→`'Api'`, `'agent_push'`→`'AgentPush'`, etc. (TriggerSourceType)
+- Transactions.UploadSource: `'upload_script'`→`'Script'`, `'rest_api'`→`'RestAPI'`, etc. (UploadSourceType)
+- Snapshots.TriggeredBy: `'manual'`→`'Manual'`, `'scheduled'`→`'Scheduled'`, etc. (SnapshotTriggerType)
+- Snapshots.TriggerSource: same mapping as Transactions.TriggeredBy (TriggerSourceType)
 
 ---
 
@@ -1549,7 +1539,7 @@ Add a new schema migration `V14` that:
 
 | Sub-Phase | Scope | Tasks | Priority |
 |-----------|-------|-------|----------|
-| **7G** | Settings/DB value migration to PascalCase | 2 | 🔴 First (unblocks all others) |
+| **7G** | Settings/DB value migration to PascalCase | 2 | ✅ Done |
 | **7A** | New enums (AdminPageType, AdminTabType, AjaxActionType) | 1 | 🔴 Second |
 | **7B** | `admin-settings.php` magic strings | 3 | 🟡 |
 | **7C** | `admin-logs.php` magic strings | 3 | 🟡 |
