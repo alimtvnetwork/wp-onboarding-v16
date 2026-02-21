@@ -71,9 +71,8 @@ grep -rn 'Provider.*=' --include="*.go" .
 
 | # | Check | Points | Pass |
 |---|-------|--------|------|
-| 4.1 | `variantStrings` array exists | 2 | ☐ |
-| 4.2 | `variantLabels` array exists | 2 | ☐ |
-| 4.3 | Arrays use array literals (not slices) | 2 | ☐ |
+| 4.1 | `variantLabels` array exists | 4 | ☐ |
+| 4.2 | Array uses array literal (not slice) | 2 | ☐ |
 
 ### 5. No Hardcoded Strings (10 points)
 

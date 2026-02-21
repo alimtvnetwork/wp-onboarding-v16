@@ -18,7 +18,7 @@ const (
 	UserAgentValue
 )
 
-var variantStrings = [...]string{
+var variantLabels = [...]string{
 	Invalid:        "invalid",
 	Authorization:  "Authorization",
 	ContentType:    "Content-Type",
@@ -27,31 +27,19 @@ var variantStrings = [...]string{
 	UserAgentValue: "WP-Plugin-Publish/1.0",
 }
 
-var variantLabels = [...]string{
-	Invalid:        "Invalid Header",
-	Authorization:  "Authorization",
-	ContentType:    "Content Type",
-	UserAgent:      "User Agent",
-	SourceMachine:  "Source Machine",
-	UserAgentValue: "User Agent Value",
-}
-
 func (v Variant) String() string {
-	if !v.IsValid() {
-		return variantStrings[Invalid]
-	}
-	return variantStrings[v]
-}
-
-func (v Variant) Label() string {
 	if !v.IsValid() {
 		return variantLabels[Invalid]
 	}
 	return variantLabels[v]
 }
 
+func (v Variant) Label() string {
+	return v.String()
+}
+
 func (v Variant) IsValid() bool {
-	return v > Invalid && v < Variant(len(variantStrings))
+	return v > Invalid && v < Variant(len(variantLabels))
 }
 
 func (v Variant) IsAuthorization() bool  { return v == Authorization }
@@ -66,7 +54,7 @@ func All() []Variant {
 }
 
 func ByIndex(i int) Variant {
-	if i < 0 || i >= len(variantStrings) {
+	if i < 0 || i >= len(variantLabels) {
 		return Invalid
 	}
 	return Variant(i)
@@ -74,7 +62,7 @@ func ByIndex(i int) Variant {
 
 func Parse(s string) (Variant, error) {
 	trimmed := strings.TrimSpace(s)
-	for i, str := range variantStrings {
+	for i, str := range variantLabels {
 		if strings.EqualFold(str, trimmed) {
 			return Variant(i), nil
 		}
@@ -83,8 +71,8 @@ func Parse(s string) (Variant, error) {
 }
 
 func Values() []string {
-	result := make([]string, 0, len(variantStrings)-1)
-	for _, s := range variantStrings[1:] {
+	result := make([]string, 0, len(variantLabels)-1)
+	for _, s := range variantLabels[1:] {
 		result = append(result, s)
 	}
 	return result

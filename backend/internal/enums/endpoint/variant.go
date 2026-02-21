@@ -51,7 +51,7 @@ const (
 	SnapshotsDownloadFile
 )
 
-var variantStrings = [...]string{
+var variantLabels = [...]string{
 	Invalid:               "invalid",
 	Status:                "/status",
 	Upload:                "/upload",
@@ -93,64 +93,19 @@ var variantStrings = [...]string{
 	SnapshotsDownloadFile: "/snapshots/download-file",
 }
 
-var variantLabels = [...]string{
-	Invalid:               "Invalid Endpoint",
-	Status:                "Status",
-	Upload:                "Upload",
-	UploadActive:          "Upload & Activate",
-	Plugins:               "Plugins",
-	PluginInfo:            "Plugin Info",
-	PluginExists:          "Plugin Exists",
-	Enable:                "Enable",
-	Disable:               "Disable",
-	Delete:                "Delete",
-	Files:                 "Files",
-	File:                  "File",
-	Sync:                  "Sync",
-	Logs:                  "Logs",
-	LogsStats:             "Logs Stats",
-	Posts:                 "Posts",
-	PostsById:             "Post By ID",
-	Categories:            "Categories",
-	Media:                 "Media",
-	ExportSelf:            "Export Self",
-	ExportPlugin:          "Export Plugin",
-	SyncManifest:          "Sync Manifest",
-	ErrorLogs:             "Error Logs",
-	ErrorSessions:         "Error Sessions",
-	SnapshotsList:         "Snapshots List",
-	SnapshotsSchedule:     "Snapshots Schedule",
-	SnapshotsInfo:         "Snapshots Info",
-	SnapshotsDelete:       "Snapshots Delete",
-	SnapshotsRestore:      "Snapshots Restore",
-	SnapshotsExport:       "Snapshots Export",
-	SnapshotsSettings:     "Snapshots Settings",
-	SnapshotsProviders:    "Snapshots Providers",
-	SnapshotsTables:       "Snapshots Tables",
-	SnapshotsFullBackup:   "Snapshots Full Backup",
-	SnapshotsIncremental:  "Snapshots Incremental",
-	SnapshotsImport:       "Snapshots Import",
-	SnapshotsCleanup:      "Snapshots Cleanup",
-	SnapshotsDownload:     "Snapshots Download",
-	SnapshotsDownloadFile: "Snapshots Download File",
-}
-
 func (v Variant) String() string {
-	if !v.IsValid() {
-		return variantStrings[Invalid]
-	}
-	return variantStrings[v]
-}
-
-func (v Variant) Label() string {
 	if !v.IsValid() {
 		return variantLabels[Invalid]
 	}
 	return variantLabels[v]
 }
 
+func (v Variant) Label() string {
+	return v.String()
+}
+
 func (v Variant) IsValid() bool {
-	return v > Invalid && v < Variant(len(variantStrings))
+	return v > Invalid && v < Variant(len(variantLabels))
 }
 
 func (v Variant) IsInvalid() bool { return v == Invalid }
@@ -166,15 +121,15 @@ func (v Variant) IsPlugin() bool {
 }
 
 func All() []Variant {
-	all := make([]Variant, 0, len(variantStrings)-1)
-	for i := 1; i < len(variantStrings); i++ {
+	all := make([]Variant, 0, len(variantLabels)-1)
+	for i := 1; i < len(variantLabels); i++ {
 		all = append(all, Variant(i))
 	}
 	return all
 }
 
 func ByIndex(i int) Variant {
-	if i < 0 || i >= len(variantStrings) {
+	if i < 0 || i >= len(variantLabels) {
 		return Invalid
 	}
 	return Variant(i)
@@ -182,7 +137,7 @@ func ByIndex(i int) Variant {
 
 func Parse(s string) (Variant, error) {
 	trimmed := strings.TrimSpace(s)
-	for i, str := range variantStrings {
+	for i, str := range variantLabels {
 		if str == trimmed {
 			return Variant(i), nil
 		}
@@ -191,8 +146,8 @@ func Parse(s string) (Variant, error) {
 }
 
 func Values() []string {
-	result := make([]string, 0, len(variantStrings)-1)
-	for _, s := range variantStrings[1:] {
+	result := make([]string, 0, len(variantLabels)-1)
+	for _, s := range variantLabels[1:] {
 		result = append(result, s)
 	}
 	return result

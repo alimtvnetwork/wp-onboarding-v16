@@ -110,27 +110,20 @@ const (
 
 ---
 
-## Internal Lookup Tables
+## Internal Lookup Table
 
-Use unexported slices for efficient lookups:
+Use a single unexported array for all lookups, serialization, and display:
 
 ```go
-// String representations (lowercase for parsing)
-var variantStrings = [...]string{
+var variantLabels = [...]string{
     Invalid:     "invalid",
     SerpAPI:     "serpapi",
     MapsScraper: "maps_scraper",
     Colly:       "colly",
 }
-
-// Human-readable labels
-var variantLabels = [...]string{
-    Invalid:     "Invalid Provider",
-    SerpAPI:     "SerpAPI",
-    MapsScraper: "Google Maps Scraper",
-    Colly:       "Colly Web Scraper",
-}
 ```
+
+> **Note:** A single `variantLabels` table replaces the previous dual-table pattern (`variantStrings` + `variantLabels`). `Label()` delegates to `String()`.
 
 ---
 
