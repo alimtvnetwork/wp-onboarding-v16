@@ -3,7 +3,6 @@ package requestsession
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,6 +11,7 @@ import (
 
 	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -35,15 +35,15 @@ type Config struct {
 func New(cfg Config) (*Store, error) {
 	retentionDays := cfg.RetentionDays
 	if retentionDays <= 0 {
-		retentionDays = 1 // Keep request sessions for 1 day by default (high volume)
+		retentionDays = 1
 	}
 
 	dataDir, err := pathutil.Join(cfg.DataDir, "request-sessions")
 	if err != nil {
-		return nil, fmt.Errorf("resolve request sessions directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "resolve request sessions directory")
 	}
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		return nil, fmt.Errorf("create request sessions directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "create request sessions directory")
 	}
 
 	s := &Store{
@@ -53,7 +53,6 @@ func New(cfg Config) (*Store, error) {
 		cache:         make(map[string]*middleware.RequestSession),
 	}
 
-	// Start cleanup goroutine
 	go s.cleanupLoop()
 
 	return s, nil
@@ -65,30 +64,28 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
 	s.cache[session.ID] = session
 	s.mu.Unlock()
 
-	// Create date-based directory structure for organization
 	dateDir := session.StartedAt.Format("2006-01-02")
 	hourDir := session.StartedAt.Format("15")
 	sessionDir, err := pathutil.Join(s.dataDir, dateDir, hourDir)
 	if err != nil {
-		return fmt.Errorf("resolve session directory: %w", err)
-	}
-	
-	if err := os.MkdirAll(sessionDir, 0755); err != nil {
-		return fmt.Errorf("create session directory: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionStore, "resolve session directory")
 	}
 
-	// Write session JSON
+	if err := os.MkdirAll(sessionDir, 0755); err != nil {
+		return apperror.Wrap(err, apperror.ErrSessionStore, "create session directory")
+	}
+
 	sessionPath, err := pathutil.Join(sessionDir, session.ID+".json")
 	if err != nil {
-		return fmt.Errorf("resolve session file path: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionStore, "resolve session file path")
 	}
 	data, err := json.MarshalIndent(session, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal session: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionStore, "marshal session")
 	}
 
 	if err := os.WriteFile(sessionPath, data, 0644); err != nil {
-		return fmt.Errorf("write session file: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionStore, "write session file")
 	}
 
 	return nil
@@ -96,7 +93,6 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
 
 // GetRequestSession retrieves a session by ID
 func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error) {
-	// Check cache first
 	s.mu.RLock()
 	if session, ok := s.cache[id]; ok {
 		s.mu.RUnlock()
@@ -104,11 +100,10 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error)
 	}
 	s.mu.RUnlock()
 
-	// Search on disk (scan date directories)
 	var found *middleware.RequestSession
 	err := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil // Skip errors
+			return nil
 		}
 		if d.IsDir() || filepath.Ext(d.Name()) != ".json" {
 			return nil
@@ -129,11 +124,11 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error)
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("search session: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionList, "search session")
 	}
 
 	if found == nil {
-		return nil, fmt.Errorf("session not found: %s", id)
+		return nil, apperror.New(apperror.ErrSessionNotFound, "session not found: "+id)
 	}
 
 	return found, nil
@@ -147,7 +142,6 @@ func (s *Store) ListRequestSessions(limit, offset int) ([]*middleware.RequestSes
 
 	var allSessions []*middleware.RequestSession
 
-	// Walk through all session files
 	err := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -171,17 +165,15 @@ func (s *Store) ListRequestSessions(limit, offset int) ([]*middleware.RequestSes
 	})
 
 	if err != nil {
-		return nil, 0, fmt.Errorf("list sessions: %w", err)
+		return nil, 0, apperror.Wrap(err, apperror.ErrSessionList, "list sessions")
 	}
 
-	// Sort by start time (newest first)
 	sort.Slice(allSessions, func(i, j int) bool {
 		return allSessions[i].StartedAt.After(allSessions[j].StartedAt)
 	})
 
 	total := len(allSessions)
 
-	// Apply pagination
 	if offset >= len(allSessions) {
 		return []*middleware.RequestSession{}, total, nil
 	}
@@ -200,7 +192,6 @@ func (s *Store) DeleteRequestSession(id string) error {
 	delete(s.cache, id)
 	s.mu.Unlock()
 
-	// Find and delete file
 	var deleted bool
 	err := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -216,11 +207,11 @@ func (s *Store) DeleteRequestSession(id string) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("delete session: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session")
 	}
 
 	if !deleted {
-		return fmt.Errorf("session not found: %s", id)
+		return apperror.New(apperror.ErrSessionNotFound, "session not found: "+id)
 	}
 
 	return nil
@@ -232,10 +223,9 @@ func (s *Store) ClearRequestSessions() error {
 	s.cache = make(map[string]*middleware.RequestSession)
 	s.mu.Unlock()
 
-	// Remove all contents but keep the directory
 	entries, err := os.ReadDir(s.dataDir)
 	if err != nil {
-		return fmt.Errorf("read sessions directory: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionClear, "read sessions directory")
 	}
 
 	for _, entry := range entries {
@@ -280,7 +270,6 @@ func (s *Store) cleanupOldSessions() {
 		if !entry.IsDir() {
 			continue
 		}
-		// Date directories are named YYYY-MM-DD
 		if entry.Name() < cutoffDate {
 			path, err := pathutil.Join(s.dataDir, entry.Name())
 			if err == nil {

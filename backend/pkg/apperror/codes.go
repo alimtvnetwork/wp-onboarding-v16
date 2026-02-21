@@ -121,3 +121,20 @@ const (
 	ErrVersionNotFound = "E12001" // Version not found
 	ErrVersionNoBackup = "E12002" // No backup available for version
 )
+
+// Session errors (E13xxx)
+const (
+	ErrSessionInit     = "E13001" // Failed to initialize session store
+	ErrSessionStore    = "E13002" // Failed to persist session
+	ErrSessionNotFound = "E13003" // Session not found
+	ErrSessionList     = "E13004" // Failed to list sessions
+	ErrSessionDelete   = "E13005" // Failed to delete session
+	ErrSessionClear    = "E13006" // Failed to clear sessions
+)
+
+// Crypto errors (E14xxx)
+const (
+	ErrCryptoEncrypt = "E14001" // Encryption failed
+	ErrCryptoDecrypt = "E14002" // Decryption failed
+	ErrCryptoInvalid = "E14003" // Invalid cryptographic input
+)

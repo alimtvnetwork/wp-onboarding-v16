@@ -7,6 +7,7 @@ import (
 	"wp-plugin-publish/internal/crypto"
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // SeedIfNeeded seeds the database from config if version is newer
@@ -16,7 +17,7 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 	currentVersion, err := db.GetSeedVersion()
 	if err != nil {
 		log.Error("Failed to get seed version from database", "error", err)
-		return err
+		return apperror.Wrap(err, apperror.ErrConfigSeed, "get seed version from database")
 	}
 	log.Debug("Current seed version", "version", currentVersion)
 
@@ -24,11 +25,11 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 		log.Info("Seeding database", "from", currentVersion, "to", cfg.Version)
 		if err := seedFromConfig(db, cfg, log); err != nil {
 			log.Error("Seeding failed", "error", err)
-			return err
+			return apperror.Wrap(err, apperror.ErrConfigSeed, "seed from config")
 		}
 		if err := db.SetSeedVersion(cfg.Version); err != nil {
 			log.Error("Failed to update seed version", "error", err)
-			return err
+			return apperror.Wrap(err, apperror.ErrConfigSeed, "update seed version")
 		}
 		log.Info("Seed version updated", "version", cfg.Version)
 	} else {
@@ -39,7 +40,7 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 		log.Info("Ensuring all plugin→site mappings exist")
 		if err := ensureMappingsExist(db, cfg, log); err != nil {
 			log.Error("Mapping verification failed", "error", err)
-			return err
+			return apperror.Wrap(err, apperror.ErrConfigSeed, "ensure mappings exist")
 		}
 	}
 
@@ -85,7 +86,7 @@ func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
 	if cfg.Seed.Enabled {
 		log.Info("Seeding sites and plugins", "siteCount", len(cfg.Seed.Sites), "pluginCount", len(cfg.Seed.Plugins))
 		if err := seedSitesAndPlugins(db, cfg, log); err != nil {
-			return err
+			return apperror.Wrap(err, apperror.ErrConfigSeed, "seed sites and plugins")
 		}
 	}
 
