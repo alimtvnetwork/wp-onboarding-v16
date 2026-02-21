@@ -25,17 +25,17 @@ trait DatabaseMigrationsV1V3Trait {
         $table = TableType::Transactions->value;
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS {$table} (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            action TEXT NOT NULL,
-            plugin_slug TEXT,
-            post_id INTEGER,
-            user_login TEXT NOT NULL,
-            user_id INTEGER,
-            ip_address TEXT NOT NULL,
-            details TEXT,
-            status TEXT NOT NULL,
-            error_msg TEXT,
-            created_at TEXT NOT NULL
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Action TEXT NOT NULL,
+            PluginSlug TEXT,
+            PostId INTEGER,
+            UserLogin TEXT NOT NULL,
+            UserId INTEGER,
+            IpAddress TEXT NOT NULL,
+            Details TEXT,
+            Status TEXT NOT NULL,
+            ErrorMsg TEXT,
+            CreatedAt TEXT NOT NULL
         )");
 
         $this->recordMigration(1);
@@ -44,11 +44,11 @@ trait DatabaseMigrationsV1V3Trait {
     private function createTransactionIndexes(): void {
         $table   = TableType::Transactions->value;
         $indexes = array(
-            'idx_action'      => 'action',
-            'idx_plugin_slug' => 'plugin_slug',
-            'idx_user_login'  => 'user_login',
-            'idx_status'      => 'status',
-            'idx_created_at'  => 'created_at',
+            'IdxTransactions_Action'    => 'Action',
+            'IdxTransactions_PluginSlug' => 'PluginSlug',
+            'IdxTransactions_UserLogin' => 'UserLogin',
+            'IdxTransactions_Status'    => 'Status',
+            'IdxTransactions_CreatedAt' => 'CreatedAt',
         );
 
         foreach ($indexes as $name => $column) {
@@ -66,37 +66,37 @@ trait DatabaseMigrationsV1V3Trait {
         $this->fileLogger->info('Applying migration v2: agent sites tables');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::AgentSites->value . " (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            url TEXT NOT NULL,
-            username TEXT NOT NULL,
-            app_password_encrypted TEXT NOT NULL,
-            redirect_url TEXT,
-            redirect_resolved TEXT,
-            redirect_resolved_at TEXT,
-            status TEXT DEFAULT 'pending',
-            last_sync TEXT,
-            last_error TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Name TEXT NOT NULL,
+            Url TEXT NOT NULL,
+            Username TEXT NOT NULL,
+            AppPasswordEncrypted TEXT NOT NULL,
+            RedirectUrl TEXT,
+            RedirectResolved TEXT,
+            RedirectResolvedAt TEXT,
+            Status TEXT DEFAULT 'pending',
+            LastSync TEXT,
+            LastError TEXT,
+            CreatedAt TEXT NOT NULL,
+            UpdatedAt TEXT
         )");
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::AgentActions->value . " (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            agent_site_id INTEGER NOT NULL,
-            action TEXT NOT NULL,
-            target_plugin TEXT,
-            status TEXT NOT NULL,
-            details TEXT,
-            error_msg TEXT,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (agent_site_id) REFERENCES " . TableType::AgentSites->value . "(id) ON DELETE CASCADE
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            AgentSiteId INTEGER NOT NULL,
+            Action TEXT NOT NULL,
+            TargetPlugin TEXT,
+            Status TEXT NOT NULL,
+            Details TEXT,
+            ErrorMsg TEXT,
+            CreatedAt TEXT NOT NULL,
+            FOREIGN KEY (AgentSiteId) REFERENCES " . TableType::AgentSites->value . "(Id) ON DELETE CASCADE
         )");
 
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_sites_status ON " . TableType::AgentSites->value . "(status)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_site_id ON " . TableType::AgentActions->value . "(agent_site_id)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_action ON " . TableType::AgentActions->value . "(action)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_created ON " . TableType::AgentActions->value . "(created_at)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS IdxAgentSites_Status ON " . TableType::AgentSites->value . "(Status)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS IdxAgentActions_AgentSiteId ON " . TableType::AgentActions->value . "(AgentSiteId)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS IdxAgentActions_Action ON " . TableType::AgentActions->value . "(Action)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS IdxAgentActions_CreatedAt ON " . TableType::AgentActions->value . "(CreatedAt)");
 
         $this->recordMigration(2);
     }
@@ -109,10 +109,10 @@ trait DatabaseMigrationsV1V3Trait {
         $this->fileLogger->info('Applying migration v3: enhanced transaction fields');
         $table   = TableType::Transactions->value;
         $columns = array(
-            'plugin_file'   => 'TEXT',
-            'was_active'    => 'INTEGER',
-            'triggered_by'  => 'TEXT',
-            'agent_site_id' => 'INTEGER',
+            'PluginFile'  => 'TEXT',
+            'WasActive'   => 'INTEGER',
+            'TriggeredBy' => 'TEXT',
+            'AgentSiteId' => 'INTEGER',
         );
 
         foreach ($columns as $column => $type) {
@@ -123,7 +123,7 @@ trait DatabaseMigrationsV1V3Trait {
             }
         }
 
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_triggered_by ON {$table}(triggered_by)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS IdxTransactions_TriggeredBy ON {$table}(TriggeredBy)");
 
         $this->recordMigration(3);
     }
