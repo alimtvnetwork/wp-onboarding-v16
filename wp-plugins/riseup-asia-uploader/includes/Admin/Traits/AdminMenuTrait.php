@@ -36,7 +36,7 @@ trait AdminMenuTrait {
             $slug,
             array($this, 'renderLogsPage'),
             'dashicons-upload',
-            80
+            80,
         );
     }
 
@@ -74,7 +74,7 @@ trait AdminMenuTrait {
                 __($item[1], 'riseup-asia-uploader'),
                 CapabilityType::ManageOptions->value,
                 $item[0],
-                array($this, $item[2])
+                array($this, $item[2]),
             );
         }
     }
@@ -90,7 +90,7 @@ trait AdminMenuTrait {
             __('Error Log', 'riseup-asia-uploader') . $errorBubble,
             CapabilityType::ManageOptions->value,
             AdminPageType::Errors->value,
-            array($this, 'renderErrorsPage')
+            array($this, 'renderErrorsPage'),
         );
     }
 
@@ -107,6 +107,7 @@ trait AdminMenuTrait {
     /** Enqueue admin assets. */
     public function enqueueAdminAssets($hook) {
         $isNonPluginPage = (strpos($hook, 'riseup-asia') === false);
+
         if ($isNonPluginPage) {
             return;
         }
@@ -115,7 +116,7 @@ trait AdminMenuTrait {
             'riseup-admin-styles',
             plugins_url('assets/admin.css', dirname(__FILE__)),
             array(),
-            PluginConfigType::Version->value
+            PluginConfigType::Version->value,
         );
     }
 }

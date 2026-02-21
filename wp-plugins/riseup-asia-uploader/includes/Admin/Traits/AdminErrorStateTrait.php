@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\TableType;
@@ -87,10 +88,10 @@ trait AdminErrorStateTrait {
             </div>',
             esc_html(sprintf(
                 _n('%d new error detected.', '%d new errors detected.', $unseen, 'riseup-asia-uploader'),
-                $unseen
+                $unseen,
             )),
             esc_url($url),
-            esc_html__('View Error Log', 'riseup-asia-uploader')
+            esc_html__('View Error Log', 'riseup-asia-uploader'),
         );
     }
 }
