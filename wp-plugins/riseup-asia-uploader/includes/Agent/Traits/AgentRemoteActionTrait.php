@@ -32,13 +32,14 @@ use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait AgentRemoteActionTrait {
-
     private function resolveRedirectUrl(AgentSite $agent): string|WP_Error {
         if ($this->isRedirectCacheValid($agent)) {
             return $agent->redirectResolved;
         }
 
         $resolved = $this->followRedirectChain($agent->redirectUrl);
+
+
         if (is_wp_error($resolved)) {
             return $resolved;
         }

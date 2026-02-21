@@ -20,7 +20,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 
 trait AgentLoggingTrait {
-
     private const ACTION_INSERT_QUERY = <<<'SQL'
         INSERT INTO AgentActions
             (AgentSiteId, Action, TargetPlugin, Status, Details, ErrorMsg, CreatedAt)
@@ -47,6 +46,7 @@ trait AgentLoggingTrait {
         try {
             $pdo = $this->db->getPdo();
             $isPdoMissing = ($pdo === null);
+
             if ($isPdoMissing) {
                 return false;
             }
@@ -100,6 +100,7 @@ trait AgentLoggingTrait {
         try {
             $pdo = $this->db->getPdo();
             $isPdoMissing = ($pdo === null);
+
             if ($isPdoMissing) {
                 return array($totalKey => 0, $actionsKey => array());
             }

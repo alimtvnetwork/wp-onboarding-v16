@@ -21,7 +21,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 
 trait AgentCrudWriteTrait {
-
     // Literal 'Pending' required in SQL heredoc; matches agent status domain value
     private const AGENT_INSERT_QUERY = <<<'SQL'
         INSERT INTO AgentSites (Name, Url, Username, AppPasswordEncrypted, RedirectUrl, Status, CreatedAt)
@@ -37,11 +36,13 @@ trait AgentCrudWriteTrait {
         $this->fileLogger->info('Adding agent site', [$nameKey => $data[$nameKey], $urlKey => $data[$urlKey]]);
 
         $validationError = $this->validateAgentData($data);
+
         if ($validationError) {
             return $validationError;
         }
 
         $pdo = $this->db->getPdo();
+
         if ($pdo === null) {
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Database not available');
         }
@@ -72,6 +73,7 @@ trait AgentCrudWriteTrait {
         $this->fileLogger->info('Updating agent site', ['id' => $id]);
 
         $pdo = $this->db->getPdo();
+
         if ($pdo === null) {
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Database not available');
         }
@@ -108,6 +110,7 @@ trait AgentCrudWriteTrait {
         $this->fileLogger->info('Removing agent site', ['id' => $id]);
 
         $pdo = $this->db->getPdo();
+
         if ($pdo === null) {
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Database not available');
         }
@@ -182,6 +185,7 @@ trait AgentCrudWriteTrait {
     ): void {
         $passwordKey = AgentFieldType::AppPassword->value;
         $hasPassword = BooleanHelpers::hasFilterValue($data, $passwordKey);
+
         if (!$hasPassword) {
             return;
         }

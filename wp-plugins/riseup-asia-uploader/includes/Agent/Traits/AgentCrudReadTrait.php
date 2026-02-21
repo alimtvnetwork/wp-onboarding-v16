@@ -20,7 +20,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudReadTrait {
-
     private const AGENT_SELECT_QUERY = 'SELECT * FROM AgentSites WHERE Id = ?';
 
     private const AGENT_COUNT_QUERY = 'SELECT COUNT(*) as total FROM AgentSites';
