@@ -569,11 +569,114 @@ return apperror.New(apperror.ErrNotFound, "entry not found")
 
 ---
 
-## Cross-References
+## 11. JSON Serialization
 
-- [Golang Coding Standards](../../03-golang-standards/readme.md) — File size, function size, type safety
-- [Cross-Language Code Style](../../01-coding-guidelines/code-style.md) — Braces, nesting, spacing
+### 11.1 Existing JSON Tags
+
+All core structs already have JSON tags for standard `json.Marshal`:
+
+- `AppError` — `code`, `message`, `details`, `values`, `diagnostic`, `stack` ✅
+- `StackTrace` — `frames`, `previousTrace` ✅
+- `StackFrame` — `function`, `file`, `line` ✅
+- `ErrorDiagnostic` — all 15+ fields tagged ✅
+- `Cause` — uses `json:"-"` (excluded from default marshaling) ⚠️
+
+### 11.2 Custom MarshalJSON
+
+The `Cause` field is excluded from default JSON marshaling (`json:"-"`) because it's a Go `error` interface. A custom `MarshalJSON` must serialize the cause message as a string:
+
+**File:** `backend/pkg/apperror/error_json.go`
+
+```go
+func (e *AppError) MarshalJSON() ([]byte, error) {
+    type alias AppError
+
+    return json.Marshal(&struct {
+        *alias
+        CauseMessage string `json:"cause,omitempty"`
+    }{
+        alias:        (*alias)(e),
+        CauseMessage: causeMessage(e),
+    })
+}
+
+func causeMessage(e *AppError) string {
+    if e.Cause == nil {
+        return ""
+    }
+
+    return e.Cause.Error()
+}
+```
+
+**Rules:**
+- Uses type alias to prevent infinite recursion
+- `Cause` serialized as `"cause"` string field (not nested error object)
+- Empty cause omitted via `omitempty`
+
+### 11.3 Custom UnmarshalJSON
+
+Reconstructs `Cause` from the serialized string:
+
+```go
+func (e *AppError) UnmarshalJSON(data []byte) error {
+    type alias AppError
+    aux := &struct {
+        *alias
+        CauseMessage string `json:"cause,omitempty"`
+    }{alias: (*alias)(e)}
+
+    if err := json.Unmarshal(data, aux); err != nil {
+        return err
+    }
+
+    if aux.CauseMessage != "" {
+        e.Cause = errors.New(aux.CauseMessage)
+    }
+
+    return nil
+}
+```
+
+**Rules:**
+- Reconstructed `Cause` is a plain `errors.New` — the original type is lost (acceptable for deserialization)
+- Stack trace, values, and diagnostics are fully preserved
+
+### 11.4 Serialization Output Example
+
+```json
+{
+    "code": "E3001",
+    "message": "failed to connect to WordPress",
+    "details": "dial tcp 192.168.1.100:443: connect: connection refused",
+    "values": {
+        "url": "https://example.com",
+        "plugin": "my-plugin"
+    },
+    "diagnostic": {
+        "url": "https://example.com/wp-json/wp/v2/plugins",
+        "statusCode": 0,
+        "method": "GET"
+    },
+    "stack": {
+        "frames": [
+            {"function": "wordpress.(*Client).ListPlugins", "file": "client.go", "line": 42},
+            {"function": "sync.(*Service).CheckSync", "file": "service.go", "line": 128}
+        ],
+        "previousTrace": ""
+    },
+    "cause": "dial tcp 192.168.1.100:443: connect: connection refused"
+}
+```
 
 ---
 
-*apperror package specification v1.1.0 — 2026-02-20*
+## Cross-References
+
+- [Golang Coding Standards](../../03-golang-standards/readme.md) — File size, function size, type safety, file naming
+- [Cross-Language Code Style](../../01-coding-guidelines/code-style.md) — Braces, nesting, spacing
+- [Enum Specification](../../03-golang-standards/01-enum-specification/00-overview.md) — Byte-based enum pattern with mandatory JSON marshal
+
+---
+
+*apperror package specification v1.2.0 — 2026-02-21*

@@ -167,32 +167,45 @@ if !p.IsValid() {
 
 ---
 
-## Optional Methods
+### 8. MarshalJSON() ([]byte, error)
 
-These methods are recommended for specific use cases:
-
-### MarshalJSON / UnmarshalJSON
-
-For JSON serialization:
+**Mandatory.** Serializes the enum as its string representation for JSON output.
 
 ```go
 func (v Variant) MarshalJSON() ([]byte, error) {
     return json.Marshal(v.String())
 }
+```
 
+---
+
+### 9. UnmarshalJSON(data []byte) error
+
+**Mandatory.** Deserializes from a JSON string back to the byte-based enum.
+
+```go
 func (v *Variant) UnmarshalJSON(data []byte) error {
     var s string
     if err := json.Unmarshal(data, &s); err != nil {
         return err
     }
+
     parsed, err := Parse(s)
     if err != nil {
         return err
     }
+
     *v = parsed
+
     return nil
 }
 ```
+
+---
+
+## Optional Methods
+
+These methods are recommended for specific use cases:
 
 ### Values() []string
 

@@ -356,11 +356,66 @@ func GetByID(ctx context.Context, id int64) (*Model, error)
 
 ---
 
+## File Naming & Organization
+
+### File Naming Rules
+
+| Rule | Convention | Example |
+|------|-----------|---------|
+| File name | `snake_case.go` | `server_config.go`, `status_type.go` |
+| Maps to primary type | File name derived from its exported type | `ServerConfig` → `server_config.go` |
+| One exported type per file | Each struct/interface/enum gets its own file | Don't combine `Config` + `ServerConfig` |
+| Related methods stay together | All methods on a type live in its file | `StatusType.IsValid()` stays in `status_type.go` |
+| Suffix convention | Split large types using suffixes | `_crud.go`, `_helpers.go`, `_validation.go` |
+| Package directory | `snake_case` for multi-word | `site_health/`, `search_mode/` |
+
+### Splitting Convention (When Files Exceed 300 Lines)
+
+| Suffix | Purpose | Example |
+|--------|---------|---------|
+| `{type}.go` | Struct + constructors | `config.go` |
+| `{type}_crud.go` | Database CRUD operations | `plugin_crud.go` |
+| `{type}_helpers.go` | Private utility functions | `config_helpers.go` |
+| `{type}_validation.go` | Input/business rule validation | `upload_validation.go` |
+| `{type}_json.go` | JSON marshal/unmarshal methods | `error_json.go` |
+
+### Package Directory Naming
+
+```
+// ✅ Correct
+internal/enums/log_level/
+internal/enums/snapshot_mode/
+internal/services/site_health/
+
+// ❌ Wrong
+internal/enums/logLevel/
+internal/enums/SnapshotMode/
+internal/services/SiteHealth/
+```
+
+### File-to-Type Mapping Examples
+
+```
+// ✅ One type per file, name matches
+config.go           → type Config struct
+server_config.go    → type ServerConfig struct
+watcher_config.go   → type WatcherConfig struct
+status_type.go      → type StatusType byte + methods
+error_json.go       → MarshalJSON/UnmarshalJSON on AppError
+
+// ❌ Wrong: multiple unrelated types in one file
+config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
+```
+
+---
+
 ## Naming Conventions
 
 | Element | Convention | Example |
 |---------|-----------|---------|
 | Package names | Lowercase, single word | `wordpress`, `publish`, `apperror` |
+| Package directories | `snake_case` for multi-word | `site_health`, `log_level` |
+| File names | `snake_case.go`, maps to primary type | `server_config.go`, `status_type.go` |
 | Exported functions | PascalCase, verb-led | `EnablePlugin`, `FetchStatus` |
 | Unexported functions | camelCase, verb-led | `resolveNamespace`, `parseStackTrace` |
 | Interfaces | PascalCase, `-er` suffix for single-method | `Publisher`, `PluginStore` |
@@ -388,45 +443,36 @@ if IsMissingSubstring(s, substr) { ... }
 
 ## Typed Constants & Enums
 
-### String-Backed Types
+> **Canonical source:** [Enum Specification](01-enum-specification/00-overview.md)
+
+All enums MUST use `byte` as the underlying type with `iota`. String-backed types are **deprecated** and must be migrated.
+
+### Byte-Based Enums (Required)
 
 ```go
-type StatusType string
+type StatusType byte
 
 const (
-    StatusActive   StatusType = "active"
-    StatusInactive StatusType = "inactive"
-    StatusPending  StatusType = "pending"
+    Invalid   StatusType = iota
+    Active
+    Inactive
+    Pending
 )
 
-func (s StatusType) String() string { return string(s) }
-func (s StatusType) IsValid() bool  { /* lookup map */ }
-func (s StatusType) IsOtherThan(other StatusType) bool { return s != other }
+// Required methods: String, Label, IsValid, Is{Value}, All, ByIndex, Parse
+// Required: MarshalJSON, UnmarshalJSON
 ```
 
-### Iota Enums
+### Exception: Int-Based Enums
 
-```go
-type LogLevel int
-
-const (
-    LogDebug LogLevel = iota
-    LogInfo
-    LogWarn
-    LogError
-)
-
-func (l LogLevel) String() string {
-    return [...]string{"debug", "info", "warn", "error"}[l]
-}
-```
+`HttpStatusType` is exempt from byte conversion — HTTP codes are inherently numeric. Must still implement all required methods.
 
 ### Zero Magic Strings/Numbers
 
 - All HTTP status codes → typed constants
 - All error codes → `apperror` code constants
 - All config keys → typed const block
-- All status/event strings → typed `StringType` constants
+- All status/event strings → typed byte-based enum constants
 
 ---
 
@@ -518,6 +564,8 @@ import (
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
 - [apperror Package Spec](../05-error-manage/06-apperror-package/readme.md) — Full StackTrace, AppError, Result types specification
 
+- [Enum Specification](01-enum-specification/00-overview.md) — Byte-based enum pattern, required methods, folder structure
+
 ---
 
-*Golang standards specification v3.1.0 — 2026-02-20*
+*Golang standards specification v3.2.0 — 2026-02-21*
