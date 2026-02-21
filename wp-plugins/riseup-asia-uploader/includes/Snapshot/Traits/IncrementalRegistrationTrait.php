@@ -174,7 +174,8 @@ trait IncrementalRegistrationTrait {
 
         $invalidated = $exporter->invalidateZip((int) $parent['id']);
         $this->log(LogLevelType::Info->value, 'Parent ZIP export invalidated after incremental backup', array(
-            'parent_id' => $parent['id'], 'invalidated' => $invalidated,
+            'parent_id'   => $parent['id'],
+            'invalidated' => $invalidated,
         ));
     }
 }

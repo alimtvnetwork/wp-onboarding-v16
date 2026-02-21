@@ -72,14 +72,21 @@ trait IncrementalDeltaTrait {
         $result = $this->exportDeltaRows($incDir, $tableName, $info['pk_column'], $lastMaxId, $newCount);
 
         if ($result[ResponseKeyType::Success->value]) {
-            $this->log(LogLevelType::Info->value, sprintf('Incremental export: %s (+%d rows, %s)', $tableName, $result[ResponseKeyType::Rows->value], $this->formatBytes($result[ResponseKeyType::FileSize->value])));
+            $this->log(LogLevelType::Info->value, sprintf(
+                'Incremental export: %s (+%d rows, %s)',
+                $tableName,
+                $result[ResponseKeyType::Rows->value],
+                $this->formatBytes($result[ResponseKeyType::FileSize->value]),
+            ));
             $result[ResponseKeyType::Entry->value] = array(
                 'table'    => $tableName,
                 ResponseKeyType::NewRows->value => $result[ResponseKeyType::Rows->value],
                 ResponseKeyType::Size->value => $result[ResponseKeyType::FileSize->value],
             );
         } else {
-            $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
+            $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array(
+                ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
+            ));
         }
 
         return $result;
@@ -182,7 +189,10 @@ trait IncrementalDeltaTrait {
 
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : 0;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array('table' => $tableName, ResponseKeyType::Error->value => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array(
+                'table'                       => $tableName,
+                ResponseKeyType::Error->value => $e->getMessage(),
+            ));
 
             return (int) $info['row_count'];
         }

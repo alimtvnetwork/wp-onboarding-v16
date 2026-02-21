@@ -47,7 +47,10 @@ trait NativeSnapshotCrudTrait {
             PathHelper::deleteFile($zip_path);
         }
 
-        $this->db->delete(TableType::Snapshots->value, array('Id' => $snapshotId));
+        $this->db->delete(
+            TableType::Snapshots->value,
+            array('Id' => $snapshotId),
+        );
         $this->log(LogLevelType::Info->value, 'Snapshot deleted', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot['Filename']));
 
         return ResultHelper::ok();
@@ -84,7 +87,10 @@ trait NativeSnapshotCrudTrait {
         }
 
         $zip->addFile($filepath, basename($filepath));
-        $zip->addFromString('manifest.json', json_encode($this->buildExportManifest($snapshotId, $snapshot), JSON_PRETTY_PRINT));
+        $zip->addFromString(
+            'manifest.json',
+            json_encode($this->buildExportManifest($snapshotId, $snapshot), JSON_PRETTY_PRINT),
+        );
         $zip->close();
 
         return ResultHelper::ok(array(
@@ -128,9 +134,16 @@ trait NativeSnapshotCrudTrait {
     public function listSnapshots(int $limit = 50, int $offset = 0): array { // PaginationConfigType::DefaultLimit
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
-            array($this->provider_id, $limit, $offset)
+            array(
+                $this->provider_id,
+                $limit,
+                $offset,
+            )
         );
-        $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?', array($this->provider_id));
+        $total = $this->db->querySingle(
+            'SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?',
+            array($this->provider_id),
+        );
 
         return array(
             ResponseKeyType::Snapshots->value => $snapshots ?: array(),

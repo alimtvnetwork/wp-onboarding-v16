@@ -28,24 +28,44 @@ trait NativeSnapshotExecTrait {
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Snapshot record not found');
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => 'Snapshot record not found',
+            );
         }
 
         $isLockFailed = ($this->acquireLock() === false);
         if ($isLockFailed) {
-            $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, 'Failed to acquire lock');
+            $this->updateSnapshotStatus(
+                $snapshotId,
+                SnapshotStatusType::Failed->value,
+                'Failed to acquire lock',
+            );
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to acquire lock');
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => 'Failed to acquire lock',
+            );
         }
 
         try {
 
             return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $start_time);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Snapshot failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
-            $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, $e->getMessage());
+            $this->log(LogLevelType::Error->value, 'Snapshot failed', array(
+                ResponseKeyType::Error->value => $e->getMessage(),
+                'trace'                       => $e->getTraceAsString(),
+            ));
+            $this->updateSnapshotStatus(
+                $snapshotId,
+                SnapshotStatusType::Failed->value,
+                $e->getMessage(),
+            );
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => $e->getMessage(),
+            );
         } finally {
             $this->releaseLock();
         }

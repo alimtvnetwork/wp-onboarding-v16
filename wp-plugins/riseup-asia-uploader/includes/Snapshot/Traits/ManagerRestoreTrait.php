@@ -99,7 +99,10 @@ trait ManagerRestoreTrait {
                 ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value] ?? 0,
             ));
         } else {
-            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
+            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array(
+                ResponseKeyType::SnapshotId->value => $snapshotId,
+                ResponseKeyType::Error->value      => $result[ResponseKeyType::Error->value],
+            ));
         }
 
         return $result;
@@ -133,7 +136,10 @@ trait ManagerRestoreTrait {
                 ResponseKeyType::Duration->value => microtime(true) - $startTime,
             ));
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Restore exception', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Restore exception', array(
+                ResponseKeyType::Error->value => $e->getMessage(),
+                'trace'                       => $e->getTraceAsString(),
+            ));
 
             return ResultHelper::errorFromException($e);
         }

@@ -168,13 +168,24 @@ trait ImportExecutionTrait {
         array $tableNames,
     ): array {
         return array(
-            'sequence' => $this->manager->getNextSequence(), 'filename' => basename($destDir),
-            'filepath' => $destDir, 'provider' => SnapshotProviderType::Native->value,
-            'scope' => SnapshotScopeType::All->value, 'tablesJson' => json_encode($tableNames),
-            'totalRows' => $metadata['total_rows'] ?? 0, 'fileSize' => $this->getDirectorySize($destDir),
-            'triggerSource' => SnapshotTriggerType::Api->value, 'status' => SnapshotStatusType::Complete->value,
-            ResponseKeyType::CreatedAt->value => date('c'), ResponseKeyType::CompletedAt->value => date('c'),
-            'importSource' => json_encode($this->buildImportSourceMeta($metadata, $tables, $incrementals, $plugins)),
+            'sequence'                          => $this->manager->getNextSequence(),
+            'filename'                          => basename($destDir),
+            'filepath'                          => $destDir,
+            'provider'                          => SnapshotProviderType::Native->value,
+            'scope'                             => SnapshotScopeType::All->value,
+            'tablesJson'                        => json_encode($tableNames),
+            'totalRows'                         => $metadata['total_rows'] ?? 0,
+            'fileSize'                          => $this->getDirectorySize($destDir),
+            'triggerSource'                     => SnapshotTriggerType::Api->value,
+            'status'                            => SnapshotStatusType::Complete->value,
+            ResponseKeyType::CreatedAt->value   => date('c'),
+            ResponseKeyType::CompletedAt->value => date('c'),
+            'importSource'                      => json_encode($this->buildImportSourceMeta(
+                $metadata,
+                $tables,
+                $incrementals,
+                $plugins,
+            )),
         );
     }
 

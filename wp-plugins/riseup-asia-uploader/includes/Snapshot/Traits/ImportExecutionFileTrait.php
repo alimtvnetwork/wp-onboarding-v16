@@ -75,8 +75,12 @@ trait ImportExecutionFileTrait {
         }
 
         $entries = scandir($src);
+
         foreach ($entries as $entry) {
-            if ($entry === '.' || $entry === '..') continue;
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
             $srcPath = PathHelper::join($src, $entry);
             $destPath = PathHelper::join($dest, $entry);
 
@@ -91,10 +95,17 @@ trait ImportExecutionFileTrait {
     }
 
     private function deleteDirectory(string $dir): void {
-        if (PathHelper::isDirMissing($dir)) return;
+        if (PathHelper::isDirMissing($dir)) {
+            return;
+        }
+
         $entries = scandir($dir);
+
         foreach ($entries as $entry) {
-            if ($entry === '.' || $entry === '..') continue;
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
             $path = PathHelper::join($dir, $entry);
 
             if (is_dir($path)) {
@@ -103,6 +114,7 @@ trait ImportExecutionFileTrait {
                 unlink($path);
             }
         }
+
         rmdir($dir);
     }
 
