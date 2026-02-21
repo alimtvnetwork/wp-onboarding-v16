@@ -125,9 +125,9 @@ Parses a string to variant. Case-insensitive.
 
 ```go
 func Parse(s string) (Variant, error) {
-    lower := strings.ToLower(strings.TrimSpace(s))
+    trimmed := strings.TrimSpace(s)
     for i, str := range variantLabels {
-        if str == lower {
+        if strings.EqualFold(str, trimmed) {
             return Variant(i), nil
         }
     }
@@ -137,7 +137,7 @@ func Parse(s string) (Variant, error) {
 
 **Usage:**
 ```go
-p, err := provider.Parse("serpapi")
+p, err := provider.Parse("SerpAPI")
 if err != nil {
     return err
 }
@@ -357,10 +357,10 @@ const (
 )
 
 var variantLabels = [...]string{
-    Invalid:     "invalid",
-    SerpAPI:     "serpapi",
-    MapsScraper: "maps_scraper",
-    Colly:       "colly",
+    Invalid:     "Invalid",
+    SerpAPI:     "SerpAPI",
+    MapsScraper: "MapsScraper",
+    Colly:       "Colly",
 }
 
 func (v Variant) String() string {
@@ -406,9 +406,9 @@ func ByIndex(i int) Variant {
 }
 
 func Parse(s string) (Variant, error) {
-    lower := strings.ToLower(strings.TrimSpace(s))
+    trimmed := strings.TrimSpace(s)
     for i, str := range variantLabels {
-        if str == lower {
+        if strings.EqualFold(str, trimmed) {
             return Variant(i), nil
         }
     }
