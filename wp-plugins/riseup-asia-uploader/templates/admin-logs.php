@@ -8,7 +8,11 @@
  */
 
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\TriggerSourceType;
+use RiseupAsia\Enums\UploadSourceType;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -16,36 +20,36 @@ if (!defined('ABSPATH')) {
 
 // Trigger source labels for display
 $trigger_labels = array(
-    'api'        => __('API', 'riseup-asia-uploader'),
-    'dashboard'  => __('Dashboard', 'riseup-asia-uploader'),
-    'agent_push' => __('Agent Push', 'riseup-asia-uploader'),
-    'cron'       => __('Cron', 'riseup-asia-uploader'),
-    'cli'        => __('WP-CLI', 'riseup-asia-uploader'),
+    TriggerSourceType::Api->value       => __('API', 'riseup-asia-uploader'),
+    TriggerSourceType::Dashboard->value => __('Dashboard', 'riseup-asia-uploader'),
+    TriggerSourceType::Agent->value     => __('Agent Push', 'riseup-asia-uploader'),
+    TriggerSourceType::Cron->value      => __('Cron', 'riseup-asia-uploader'),
+    TriggerSourceType::Cli->value       => __('WP-CLI', 'riseup-asia-uploader'),
 );
 
 // Trigger source CSS classes for color coding
 $trigger_classes = array(
-    'api'        => 'trigger-api',
-    'dashboard'  => 'trigger-dashboard',
-    'agent_push' => 'trigger-agent',
-    'cron'       => 'trigger-cron',
-    'cli'        => 'trigger-cli',
+    TriggerSourceType::Api->value       => 'trigger-api',
+    TriggerSourceType::Dashboard->value => 'trigger-dashboard',
+    TriggerSourceType::Agent->value     => 'trigger-agent',
+    TriggerSourceType::Cron->value      => 'trigger-cron',
+    TriggerSourceType::Cli->value       => 'trigger-cli',
 );
 
 // Upload source labels for display
 $upload_source_labels = array(
-    'upload_script' => __('Upload Script', 'riseup-asia-uploader'),
-    'rest_api'      => __('REST API', 'riseup-asia-uploader'),
-    'admin_ui'      => __('Admin UI', 'riseup-asia-uploader'),
-    'wp_cli'        => __('WP-CLI', 'riseup-asia-uploader'),
+    UploadSourceType::Script->value  => __('Upload Script', 'riseup-asia-uploader'),
+    UploadSourceType::RestApi->value => __('REST API', 'riseup-asia-uploader'),
+    UploadSourceType::AdminUi->value => __('Admin UI', 'riseup-asia-uploader'),
+    UploadSourceType::WpCli->value   => __('WP-CLI', 'riseup-asia-uploader'),
 );
 
 // Upload source CSS classes for color coding
 $upload_source_classes = array(
-    'upload_script' => 'source-script',
-    'rest_api'      => 'source-api',
-    'admin_ui'      => 'source-admin',
-    'wp_cli'        => 'source-cli',
+    UploadSourceType::Script->value  => 'source-script',
+    UploadSourceType::RestApi->value => 'source-api',
+    UploadSourceType::AdminUi->value => 'source-admin',
+    UploadSourceType::WpCli->value   => 'source-cli',
 );
 ?>
 <div class="wrap riseup-admin" style="padding: 10px 20px 20px 10px;">
@@ -62,7 +66,7 @@ $upload_source_classes = array(
     <!-- Filters -->
     <div class="riseup-filters">
         <form method="get" action="">
-            <input type="hidden" name="page" value="riseup-asia-uploader">
+            <input type="hidden" name="page" value="<?php echo esc_attr(AdminPageType::Logs->value); ?>">
             
             <div class="filter-row">
                 <label>
@@ -81,8 +85,8 @@ $upload_source_classes = array(
                     <span><?php esc_html_e('Status:', 'riseup-asia-uploader'); ?></span>
                     <select name="filter_status">
                         <option value=""><?php esc_html_e('All Statuses', 'riseup-asia-uploader'); ?></option>
-                        <option value="success" <?php selected($filters['status'], 'success'); ?>><?php esc_html_e('Success', 'riseup-asia-uploader'); ?></option>
-                        <option value="failed" <?php selected($filters['status'], 'failed'); ?>><?php esc_html_e('Failed', 'riseup-asia-uploader'); ?></option>
+                        <option value="<?php echo esc_attr(StatusType::Success->value); ?>" <?php selected($filters['status'], StatusType::Success->value); ?>><?php esc_html_e('Success', 'riseup-asia-uploader'); ?></option>
+                        <option value="<?php echo esc_attr(StatusType::Failed->value); ?>" <?php selected($filters['status'], StatusType::Failed->value); ?>><?php esc_html_e('Failed', 'riseup-asia-uploader'); ?></option>
                     </select>
                 </label>
 
@@ -138,7 +142,7 @@ $upload_source_classes = array(
                 </label>
 
                 <button type="submit" class="button button-primary"><?php esc_html_e('Filter', 'riseup-asia-uploader'); ?></button>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-uploader')); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
+                <a href="<?php echo esc_url(AdminPageType::Logs->adminUrl()); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
             </div>
         </form>
     </div>
@@ -183,31 +187,31 @@ $upload_source_classes = array(
                 <?php 
                 $current_date_group = '';
                 foreach ($logs as $log): 
-                    $triggered_by = isset($log['triggered_by']) ? $log['triggered_by'] : '';
-                    $source_machine = isset($log['source_machine']) ? $log['source_machine'] : '';
-                    $plugin_version = isset($log['plugin_version']) ? $log['plugin_version'] : '';
-                    $upload_source = isset($log['upload_source']) ? $log['upload_source'] : '';
+                    $triggered_by = isset($log['TriggeredBy']) ? $log['TriggeredBy'] : '';
+                    $source_machine = isset($log['SourceMachine']) ? $log['SourceMachine'] : '';
+                    $plugin_version = isset($log['PluginVersion']) ? $log['PluginVersion'] : '';
+                    $upload_source = isset($log['UploadSource']) ? $log['UploadSource'] : '';
                     $trigger_class = isset($trigger_classes[$triggered_by]) ? $trigger_classes[$triggered_by] : 'trigger-unknown';
                     $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
                     $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';
                     $upload_source_label = isset($upload_source_labels[$upload_source]) ? $upload_source_labels[$upload_source] : ($upload_source ?: '—');
 
                     // Extract named booleans for P3 compliance
-                    $hasLogDetails = BooleanHelpers::hasValue($log['details'] ?? null);
-                    $hasErrorMsg = BooleanHelpers::hasValue($log['error_msg'] ?? null);
+                    $hasLogDetails = BooleanHelpers::hasValue($log['Details'] ?? null);
+                    $hasErrorMsg = BooleanHelpers::hasValue($log['ErrorMsg'] ?? null);
                     $hasDetailsOrError = $hasLogDetails || $hasErrorMsg;
-                    $hasPluginSlug = BooleanHelpers::hasValue($log['plugin_slug'] ?? null);
-                    $hasPluginFile = BooleanHelpers::hasValue($log['plugin_file'] ?? null) && ($log['plugin_file'] ?? '') !== ($log['plugin_slug'] ?? '');
-                    $hasPostId = BooleanHelpers::hasValue($log['post_id'] ?? null);
+                    $hasPluginSlug = BooleanHelpers::hasValue($log['PluginSlug'] ?? null);
+                    $hasPluginFile = BooleanHelpers::hasValue($log['PluginFile'] ?? null) && ($log['PluginFile'] ?? '') !== ($log['PluginSlug'] ?? '');
+                    $hasPostId = BooleanHelpers::hasValue($log['PostId'] ?? null);
                     $hasPluginVersion = BooleanHelpers::hasValue($plugin_version);
                     $hasTriggeredBy = BooleanHelpers::hasValue($triggered_by);
                     $hasUploadSource = BooleanHelpers::hasValue($upload_source);
                     $hasSourceMachine = BooleanHelpers::hasValue($source_machine);
-                    $hasIpAddress = BooleanHelpers::hasValue($log['ip_address'] ?? null) && ($log['ip_address'] ?? '') !== '0.0.0.0';
-                    $hasUserId = BooleanHelpers::hasValue($log['user_id'] ?? null);
+                    $hasIpAddress = BooleanHelpers::hasValue($log['IpAddress'] ?? null) && ($log['IpAddress'] ?? '') !== '0.0.0.0';
+                    $hasUserId = BooleanHelpers::hasValue($log['UserId'] ?? null);
                     
                     // Date grouping
-                    $log_timestamp = strtotime($log['created_at']);
+                    $log_timestamp = strtotime($log['CreatedAt']);
                     $log_date = date('Y-m-d', $log_timestamp);
                     $log_date_display = date('F j, Y', $log_timestamp); // e.g., "February 10, 2026"
                     $log_time_display = date('g:i A', $log_timestamp);  // e.g., "2:30 PM"
@@ -234,29 +238,29 @@ $upload_source_classes = array(
                 <?php endif; ?>
                     <tr class="riseup-log-row <?php echo $hasDetailsOrError ? 'has-details' : ''; ?>" 
                         <?php if ($hasLogDetails): ?>
-                            data-details="<?php echo esc_attr(json_encode($log['details'])); ?>"
+                            data-details="<?php echo esc_attr(json_encode($log['Details'])); ?>"
                         <?php elseif ($hasErrorMsg): ?>
-                            data-details="<?php echo esc_attr(json_encode(array('error' => $log['error_msg']))); ?>"
+                            data-details="<?php echo esc_attr(json_encode(array('error' => $log['ErrorMsg']))); ?>"
                         <?php endif; ?>>
-                        <td class="column-id"><?php echo esc_html($log['id']); ?></td>
+                        <td class="column-id"><?php echo esc_html($log['Id']); ?></td>
                         <td class="column-timestamp">
-                            <span class="timestamp" title="<?php echo esc_attr($log['created_at']); ?>">
+                            <span class="timestamp" title="<?php echo esc_attr($log['CreatedAt']); ?>">
                                 <?php echo esc_html($log_time_display); ?>
                             </span>
                         </td>
                         <td class="column-action">
-                            <span class="action-badge action-<?php echo esc_attr($log['action']); ?>">
-                                <?php echo esc_html($action_labels[$log['action']] ?? $log['action']); ?>
+                            <span class="action-badge action-<?php echo esc_attr($log['Action']); ?>">
+                                <?php echo esc_html($action_labels[$log['Action']] ?? $log['Action']); ?>
                             </span>
                         </td>
                         <td class="column-plugin">
                             <?php if ($hasPluginSlug): ?>
-                                <span class="plugin-target-badge"><?php echo esc_html($log['plugin_slug']); ?></span>
+                                <span class="plugin-target-badge"><?php echo esc_html($log['PluginSlug']); ?></span>
                                 <?php if ($hasPluginFile): ?>
-                                    <br><small class="plugin-file" title="<?php echo esc_attr($log['plugin_file']); ?>"><?php echo esc_html($log['plugin_file']); ?></small>
+                                    <br><small class="plugin-file" title="<?php echo esc_attr($log['PluginFile']); ?>"><?php echo esc_html($log['PluginFile']); ?></small>
                                 <?php endif; ?>
                             <?php elseif ($hasPostId): ?>
-                                <span class="plugin-target-badge target-post"><?php esc_html_e('Post', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log['post_id']); ?></span>
+                                <span class="plugin-target-badge target-post"><?php esc_html_e('Post', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log['PostId']); ?></span>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
@@ -300,29 +304,29 @@ $upload_source_classes = array(
                                 <span class="na">—</span>
                             <?php endif; ?>
                             <?php if ($hasIpAddress): ?>
-                                <br><small class="ip-address"><?php echo esc_html($log['ip_address']); ?></small>
+                                <br><small class="ip-address"><?php echo esc_html($log['IpAddress']); ?></small>
                             <?php endif; ?>
                         </td>
                         <td class="column-user">
                             <span class="user-info">
-                                <?php echo esc_html($log['user_login']); ?>
+                                <?php echo esc_html($log['UserLogin']); ?>
                                 <?php if ($hasUserId): ?>
-                                    <small>(#<?php echo esc_html($log['user_id']); ?>)</small>
+                                    <small>(#<?php echo esc_html($log['UserId']); ?>)</small>
                                 <?php endif; ?>
                             </span>
                         </td>
                         <td class="column-status">
-                            <span class="status-badge status-<?php echo esc_attr($log['status']); ?>">
-                                <?php echo esc_html(ucfirst($log['status'])); ?>
+                            <span class="status-badge status-<?php echo esc_attr($log['Status']); ?>">
+                                <?php echo esc_html($log['Status']); ?>
                             </span>
                         </td>
                         <td class="column-details">
                             <?php if ($hasErrorMsg): ?>
-                                <span class="error-msg" title="<?php echo esc_attr($log['error_msg']); ?>">
-                                    <?php echo esc_html(wp_trim_words($log['error_msg'], 10)); ?>
+                                <span class="error-msg" title="<?php echo esc_attr($log['ErrorMsg']); ?>">
+                                    <?php echo esc_html(wp_trim_words($log['ErrorMsg'], 10)); ?>
                                 </span>
                             <?php elseif ($hasLogDetails): ?>
-                                <button type="button" class="button button-small toggle-details" data-details="<?php echo esc_attr(json_encode($log['details'])); ?>">
+                                <button type="button" class="button button-small toggle-details" data-details="<?php echo esc_attr(json_encode($log['Details'])); ?>">
                                     <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
                                 </button>
                             <?php else: ?>
@@ -553,93 +557,93 @@ $upload_source_classes = array(
         box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
         border-radius: 4px;
     }
-    .action-upload_initiated {
+    .action-UploadInitiated {
         background: #e0f7fa;
         color: #00695c;
         border: 1px solid #80cbc4;
     }
-    .action-upload,
-    .action-upload_active {
+    .action-Upload,
+    .action-UploadActive {
         border: 1px solid #6dd297;
     }
-    .action-enable {
+    .action-Enable {
         border: 1px solid #6dd297;
     }
-    .action-disable {
+    .action-Disable {
         border: 1px solid #f0c36d;
     }
-    .action-delete,
-    .action-file_delete {
+    .action-Delete,
+    .action-FileDelete {
         border: 1px solid #f5a5a5;
     }
-    .action-auth_failed {
+    .action-AuthFailed {
         border: 1px solid #f5a5a5;
     }
-    .action-post_create,
-    .action-post_update,
-    .action-category_create {
+    .action-PostCreate,
+    .action-PostUpdate,
+    .action-CategoryCreate {
         border: 1px solid #a1c4fd;
     }
-    .action-sync,
-    .action-file_replace {
+    .action-Sync,
+    .action-FileReplace {
         border: 1px solid #c0c4c9;
     }
-    .action-export_self {
+    .action-ExportSelf {
         border: 1px solid #c9a7e4;
     }
 
     /* Snapshot action badges */
-    .action-snapshot_create {
+    .action-SnapshotCreate {
         background: rgba(20, 184, 166, 0.15);
         color: #0f766e;
         border: 1px solid rgba(20, 184, 166, 0.3);
     }
-    .action-snapshot_restore {
+    .action-SnapshotRestore {
         background: rgba(245, 158, 11, 0.15);
         color: #b45309;
         border: 1px solid rgba(245, 158, 11, 0.3);
     }
-    .action-snapshot_delete {
+    .action-SnapshotDelete {
         background: rgba(244, 63, 94, 0.15);
         color: #be123c;
         border: 1px solid rgba(244, 63, 94, 0.3);
     }
-    .action-snapshot_export {
+    .action-SnapshotExport {
         background: rgba(6, 182, 212, 0.15);
         color: #0e7490;
         border: 1px solid rgba(6, 182, 212, 0.3);
     }
-    .action-snapshot_import {
+    .action-SnapshotImport {
         background: rgba(99, 102, 241, 0.15);
         color: #4338ca;
         border: 1px solid rgba(99, 102, 241, 0.3);
     }
-    .action-snapshot_cleanup {
+    .action-SnapshotCleanup {
         background: rgba(100, 116, 139, 0.15);
         color: #475569;
         border: 1px solid rgba(100, 116, 139, 0.3);
     }
-    .action-snapshot_full_backup {
+    .action-SnapshotFullBackup {
         background: rgba(16, 185, 129, 0.15);
         color: #047857;
         border: 1px solid rgba(16, 185, 129, 0.3);
     }
-    .action-snapshot_incremental {
+    .action-SnapshotIncremental {
         background: rgba(132, 204, 22, 0.15);
         color: #4d7c0f;
         border: 1px solid rgba(132, 204, 22, 0.3);
     }
-    .action-snapshot_restore_pertable {
+    .action-SnapshotRestorePerTable {
         background: rgba(217, 119, 6, 0.15);
         color: #92400e;
         border: 1px solid rgba(217, 119, 6, 0.3);
     }
-    .action-snapshot_import_pertable {
+    .action-SnapshotImportPerTable {
         background: rgba(79, 70, 229, 0.15);
         color: #3730a3;
         border: 1px solid rgba(79, 70, 229, 0.3);
     }
-    .action-snapshot_settings_update {
+    .action-SnapshotSettingsUpdate {
         background: rgba(168, 85, 247, 0.15);
         color: #7e22ce;
         border: 1px solid rgba(168, 85, 247, 0.3);
@@ -650,10 +654,10 @@ $upload_source_classes = array(
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         border-radius: 4px;
     }
-    .status-success {
+    .status-Success {
         border: 1px solid #6dd297;
     }
-    .status-failed {
+    .status-Failed {
         border: 1px solid #f5a5a5;
     }
 

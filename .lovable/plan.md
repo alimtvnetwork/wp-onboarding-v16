@@ -1491,27 +1491,25 @@ Also fixed variable name mismatch in `AdminPagesTrait::renderSettingsPage()` —
 
 ---
 
-## Phase 7C: Template `admin-logs.php` — Replace Magic Strings with Enums
+## ✅ COMPLETED — Phase 7C: Template `admin-logs.php` — Replace Magic Strings with Enums (2026-02-21)
 
-### Violations Found (740 lines)
+All magic strings replaced across 740-line template:
 
-| Line(s) | Magic String | Replacement |
-|---------|-------------|-------------|
-| 18–24 | `'api'`, `'dashboard'`, `'agent_push'`, `'cron'`, `'cli'` | `TriggerSourceType::*->value` (⚠️ casing: stored as `'api'`, enum is `'Api'`) |
-| 27–33 | `'trigger-api'`, `'trigger-dashboard'`, etc. | CSS class map keyed by `TriggerSourceType` cases |
-| 36–41 | `'upload_script'`, `'rest_api'`, `'admin_ui'`, `'wp_cli'` | `UploadSourceType::*->value` (⚠️ casing: stored as `'upload_script'`, enum is `'Script'`) |
-| 44–49 | `'source-script'`, `'source-api'`, etc. | CSS class map keyed by `UploadSourceType` cases |
-| 65 | `'riseup-asia-uploader'` (page slug) | `AdminPageType::Logs->value` |
-| 84–85 | `'success'`, `'failed'` | `StatusType::Success->value`, `StatusType::Failed->value` (⚠️ casing) |
-| 186–189, 196–207 | `$log['triggered_by']`, `$log['details']`, etc. | These are DB column names — already PascalCase in DB (`TriggeredBy`) but template uses legacy snake_case keys from `$log` array |
+| Category | Old | New |
+|----------|-----|-----|
+| Imports | `BooleanHelpers`, `PluginConfigType` only | Added `AdminPageType`, `StatusType`, `TriggerSourceType`, `UploadSourceType` |
+| Trigger labels/classes | `'api'`, `'dashboard'`, `'agent_push'`, `'cron'`, `'cli'` | `TriggerSourceType::*->value` |
+| Upload source labels/classes | `'upload_script'`, `'rest_api'`, `'admin_ui'`, `'wp_cli'` | `UploadSourceType::*->value` |
+| Page slug | `'riseup-asia-uploader'` | `AdminPageType::Logs->value` |
+| Reset link | `admin_url('admin.php?page=riseup-asia-uploader')` | `AdminPageType::Logs->adminUrl()` |
+| Status filter | `'success'`/`'failed'` | `StatusType::Success->value`/`StatusType::Failed->value` |
+| DB column keys | `$log['triggered_by']`, `$log['source_machine']`, etc. | `$log['TriggeredBy']`, `$log['SourceMachine']`, etc. (PascalCase) |
+| CSS classes | `.action-upload_active`, `.status-success`, etc. | `.action-UploadActive`, `.status-Success`, etc. (PascalCase) |
+| Status display | `ucfirst($log['status'])` | Direct `$log['Status']` (already PascalCase) |
 
-### Key Issue: DB Column vs Template Key Mismatch
+**22 DB column key references** updated to PascalCase: `Id`, `CreatedAt`, `Action`, `PluginSlug`, `PluginFile`, `PostId`, `PluginVersion`, `TriggeredBy`, `UploadSource`, `SourceMachine`, `IpAddress`, `UserLogin`, `UserId`, `Status`, `ErrorMsg`, `Details`.
 
-The DB columns are now PascalCase (`TriggeredBy`, `UploadSource`, `PluginVersion`), but the template accesses `$log['triggered_by']`, `$log['source_machine']`, etc. This requires either:
-- Updating the template to use PascalCase keys (`$log['TriggeredBy']`)
-- OR ensuring the query results return snake_case aliases
-
-### Estimated Effort: 2–3 tasks
+**22 CSS class names** updated from snake_case to PascalCase to match ActionType/StatusType enum values.
 
 ---
 
