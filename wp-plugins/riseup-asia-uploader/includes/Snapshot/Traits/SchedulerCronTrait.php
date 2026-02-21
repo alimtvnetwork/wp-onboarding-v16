@@ -58,7 +58,7 @@ trait SchedulerCronTrait {
         $level = $isSuccess ? 'info' : 'error';
         $suffix = $isSuccess ? 'completed' : 'failed';
 
-        $this->logger->{$level}("[SCHEDULER] {$label} {$suffix}", $result['log_data'] ?? array());
+        $this->logger->{$level}("[SCHEDULER] {$label} {$suffix}", $result[ResponseKeyType::LogDataKey->value] ?? array());
 
         if ($result[ResponseKeyType::SkipAudit->value] ?? false) {
 
@@ -72,10 +72,10 @@ trait SchedulerCronTrait {
             '',
             null,
             '',
-            $result['audit_data'] ?? array(),
+            $result[ResponseKeyType::AuditData->value] ?? array(),
             $isSuccess ? StatusType::Success->value : StatusType::Failed->value,
             $isSuccess ? null : ($result[ResponseKeyType::Error->value] ?? 'Unknown'),
-            array('triggered_by' => $result['triggered_by'] ?? TriggerSourceType::Cron->value),
+            array(ResponseKeyType::TriggeredBy->value => $result[ResponseKeyType::TriggeredBy->value] ?? TriggerSourceType::Cron->value),
         );
     }
 
@@ -99,9 +99,9 @@ trait SchedulerCronTrait {
             ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value] ?? false,
             ResponseKeyType::Error->value   => $result[ResponseKeyType::Error->value] ?? null,
             'action'       => $action,
-            'triggered_by' => $triggeredBy,
-            'audit_data'   => $auditData,
-            'log_data'     => $result,
+            ResponseKeyType::TriggeredBy->value => $triggeredBy,
+            ResponseKeyType::AuditData->value   => $auditData,
+            ResponseKeyType::LogDataKey->value   => $result,
             ResponseKeyType::SkipAudit->value => false,
         );
     }

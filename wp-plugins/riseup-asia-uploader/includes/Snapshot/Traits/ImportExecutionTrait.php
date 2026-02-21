@@ -170,11 +170,11 @@ trait ImportExecutionTrait {
         return array(
             'sequence' => $this->manager->getNextSequence(), 'filename' => basename($destDir),
             'filepath' => $destDir, 'provider' => SnapshotProviderType::Native->value,
-            'scope' => SnapshotScopeType::All->value, 'tables_json' => json_encode($tableNames),
-            'total_rows' => $metadata['total_rows'] ?? 0, 'file_size' => $this->getDirectorySize($destDir),
-            'trigger_source' => SnapshotTriggerType::Api->value, 'status' => SnapshotStatusType::Complete->value,
-            'created_at' => date('c'), 'completed_at' => date('c'),
-            'import_source' => json_encode($this->buildImportSourceMeta($metadata, $tables, $incrementals, $plugins)),
+            'scope' => SnapshotScopeType::All->value, 'tablesJson' => json_encode($tableNames),
+            'totalRows' => $metadata['total_rows'] ?? 0, 'fileSize' => $this->getDirectorySize($destDir),
+            'triggerSource' => SnapshotTriggerType::Api->value, 'status' => SnapshotStatusType::Complete->value,
+            ResponseKeyType::CreatedAt->value => date('c'), ResponseKeyType::CompletedAt->value => date('c'),
+            'importSource' => json_encode($this->buildImportSourceMeta($metadata, $tables, $incrementals, $plugins)),
         );
     }
 
@@ -186,14 +186,14 @@ trait ImportExecutionTrait {
         array $plugins,
     ): array {
         return array(
-            'original_title' => $metadata['title'] ?? null,
-            'original_type' => $metadata['type'] ?? null,
-            'original_created_at' => $metadata['created_at'] ?? null,
-            'wp_version' => $metadata['wp_version'] ?? null,
-            'mysql_version' => $metadata['mysql_version'] ?? null,
-            'table_count' => count($tables),
-            'incremental_count' => count($incrementals),
-            'plugin_count' => count($plugins),
+            ResponseKeyType::OriginalTitle->value => $metadata['title'] ?? null,
+            ResponseKeyType::OriginalType->value => $metadata['type'] ?? null,
+            ResponseKeyType::OriginalCreatedAt->value => $metadata['created_at'] ?? null,
+            ResponseKeyType::WpVersion->value => $metadata['wp_version'] ?? null,
+            ResponseKeyType::MysqlVersion->value => $metadata['mysql_version'] ?? null,
+            ResponseKeyType::TableCount->value => count($tables),
+            ResponseKeyType::IncrementalCount->value => count($incrementals),
+            ResponseKeyType::PluginCount->value => count($plugins),
             'format' => SnapshotWorkerModeType::PerTable->value,
         );
     }

@@ -82,7 +82,7 @@ trait IncrementalCoreTrait {
             ResponseKeyType::TablesChanged->value => $tables_changed,
             ResponseKeyType::TotalNewRows->value  => $total_new_rows,
             ResponseKeyType::Errors->value        => $errors,
-            'exported_tables'                     => $exported_tables,
+            ResponseKeyType::ExportedTables->value => $exported_tables,
         );
     }
 
@@ -117,7 +117,7 @@ trait IncrementalCoreTrait {
             ResponseKeyType::Path->value           => $incrementalDir,
             ResponseKeyType::TablesChanged->value  => $export[ResponseKeyType::TablesChanged->value],
             ResponseKeyType::TotalNewRows->value   => $export[ResponseKeyType::TotalNewRows->value],
-            ResponseKeyType::Tables->value         => $export['exported_tables'],
+            ResponseKeyType::Tables->value         => $export[ResponseKeyType::ExportedTables->value],
             ResponseKeyType::Errors->value         => $export[ResponseKeyType::Errors->value],
             ResponseKeyType::Duration->value       => $duration,
         ));

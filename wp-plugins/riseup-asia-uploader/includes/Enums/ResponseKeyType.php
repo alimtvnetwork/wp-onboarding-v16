@@ -167,6 +167,44 @@ enum ResponseKeyType: string
     case ResolvedUrl = 'resolvedUrl';
     case TraceLines  = 'traceLines';
 
+    /** Snapshot progress and worker keys. */
+    case CompletedAt         = 'completedAt';
+    case ExportedAt          = 'exportedAt';
+    case FormatVersion       = 'formatVersion';
+    case JobId               = 'jobId';
+    case TotalTables         = 'totalTables';
+    case TablesExported      = 'tablesExported';
+    case PoolSize            = 'poolSize';
+    case TotalBatches        = 'totalBatches';
+    case CurrentBatch        = 'currentBatch';
+    case TableProgress       = 'tableProgress';
+    case IncrementalsApplied = 'incrementalsApplied';
+    case SkippedMaster       = 'skippedMaster';
+    case ExportedTables      = 'exportedTables';
+    case SnapshotDir         = 'snapshotDir';
+    case DirName             = 'dirName';
+    case RowCount            = 'rowCount';
+
+    /** Cron and audit keys. */
+    case TriggeredBy = 'triggeredBy';
+    case AuditData   = 'auditData';
+    case LogDataKey  = 'logData';
+
+    /** Manifest and import metadata keys. */
+    case OriginalId        = 'originalId';
+    case OriginalCreatedAt = 'originalCreatedAt';
+    case SourceSite        = 'sourceSite';
+    case OriginalTitle     = 'originalTitle';
+    case OriginalType      = 'originalType';
+    case WpVersion         = 'wpVersion';
+    case PhpVersion        = 'phpVersion';
+    case MysqlVersion      = 'mysqlVersion';
+    case SiteUrl           = 'siteUrl';
+    case DbPrefix          = 'dbPrefix';
+    case PluginCount       = 'pluginCount';
+    case DurationMs        = 'durationMs';
+    case TableCounts       = 'tableCounts';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
 

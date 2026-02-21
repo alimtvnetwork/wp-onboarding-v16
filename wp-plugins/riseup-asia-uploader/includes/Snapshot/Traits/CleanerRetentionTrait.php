@@ -25,7 +25,7 @@ trait CleanerRetentionTrait {
         $resolved = $this->resolveRetentionSnapshots($settings);
         if (empty($resolved['snapshots'])) {
 
-            return array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
+            return array(ResponseKeyType::Deleted->value => 0, ResponseKeyType::SkippedMaster->value => 0, ResponseKeyType::BytesFreed->value => 0, 'details' => array());
         }
 
         return $this->processRetentionDeletions($resolved['snapshots'], $resolved['reason'], $dryRun);
@@ -58,11 +58,11 @@ trait CleanerRetentionTrait {
         string $reason,
         bool $dryRun,
     ): array {
-        $result = array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
+        $result = array(ResponseKeyType::Deleted->value => 0, ResponseKeyType::SkippedMaster->value => 0, ResponseKeyType::BytesFreed->value => 0, 'details' => array());
 
         foreach ($snapshots as $snapshot) {
             if ($this->isMasterSnapshot($snapshot)) {
-                $result['skipped_master']++;
+                $result[ResponseKeyType::SkippedMaster->value]++;
                 continue;
             }
 
@@ -84,16 +84,16 @@ trait CleanerRetentionTrait {
         array &$result,
     ): void {
         if ($dryRun) {
-            $result['deleted']++;
-            $result['bytes_freed'] += $snapshot['FileSize'] ?? 0;
+            $result[ResponseKeyType::Deleted->value]++;
+            $result[ResponseKeyType::BytesFreed->value] += $snapshot['FileSize'] ?? 0;
 
             return;
         }
 
         $delete_result = $this->deleteSnapshot($snapshot);
         if ($delete_result[ResponseKeyType::Success->value]) {
-            $result['deleted']++;
-            $result['bytes_freed'] += $delete_result['bytes_freed'];
+            $result[ResponseKeyType::Deleted->value]++;
+            $result[ResponseKeyType::BytesFreed->value] += $delete_result[ResponseKeyType::BytesFreed->value];
         }
     }
 

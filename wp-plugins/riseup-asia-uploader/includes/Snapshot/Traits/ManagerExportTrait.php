@@ -83,9 +83,9 @@ trait ManagerExportTrait {
     private function createExportManifest(array $snapshot): array {
         return array(
             'version' => PluginConfigType::Version->value,
-            'format_version' => '1.0',
-            'created_at' => date('c'),
-            'exported_at' => date('c'),
+            ResponseKeyType::FormatVersion->value => '1.0',
+            ResponseKeyType::CreatedAt->value => date('c'),
+            ResponseKeyType::ExportedAt->value => date('c'),
             'snapshot' => array(
                 'id' => $snapshot['Id'],
                 ResponseKeyType::Sequence->value => $snapshot['Sequence'],
@@ -95,13 +95,13 @@ trait ManagerExportTrait {
                 ResponseKeyType::Tables->value => json_decode($snapshot['TablesJson'], true),
                 ResponseKeyType::TotalRows->value => $snapshot['TotalRows'],
                 ResponseKeyType::FileSize->value => $snapshot['FileSize'],
-                'created_at' => $snapshot['CreatedAt'],
+                ResponseKeyType::CreatedAt->value => $snapshot['CreatedAt'],
             ),
             'source' => array(
-                'wp_version' => get_bloginfo('version'),
-                'php_version' => PHP_VERSION,
-                'site_url' => get_site_url(),
-                'db_prefix' => $this->wpdb->prefix,
+                ResponseKeyType::WpVersion->value => get_bloginfo('version'),
+                ResponseKeyType::PhpVersion->value => PHP_VERSION,
+                ResponseKeyType::SiteUrl->value => get_site_url(),
+                ResponseKeyType::DbPrefix->value => $this->wpdb->prefix,
             ),
         );
     }

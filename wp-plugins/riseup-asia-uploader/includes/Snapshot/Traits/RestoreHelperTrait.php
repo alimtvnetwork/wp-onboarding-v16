@@ -40,7 +40,7 @@ trait RestoreHelperTrait {
         $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
             ResponseKeyType::TablesRestored->value => $masterResult[ResponseKeyType::TablesRestored->value],
             ResponseKeyType::TotalRows->value      => $totalRows,
-            'incrementals_applied'                  => $incResult['applied'],
+            ResponseKeyType::IncrementalsApplied->value => $incResult['applied'],
             ResponseKeyType::Errors->value          => count($errors),
             ResponseKeyType::BackupId->value        => $backupId,
             ResponseKeyType::Duration->value        => round($duration, 2) . 's',
@@ -49,7 +49,7 @@ trait RestoreHelperTrait {
         return ResultHelper::ok(array(
             ResponseKeyType::TablesRestored->value => $masterResult[ResponseKeyType::TablesRestored->value],
             ResponseKeyType::TotalRows->value      => $totalRows,
-            'incrementals_applied'                 => $incResult['applied'],
+            ResponseKeyType::IncrementalsApplied->value => $incResult['applied'],
             ResponseKeyType::BackupId->value       => $backupId,
             ResponseKeyType::Errors->value         => $errors,
             ResponseKeyType::Duration->value       => $duration,

@@ -58,9 +58,9 @@ trait ManagerImportRecordTrait {
             'CreatedAt' => date('c'),
             'CompletedAt' => date('c'),
             'ImportSource' => json_encode(array(
-                'original_id' => $snapshotData['id'] ?? null,
-                'original_created_at' => $snapshotData['created_at'] ?? null,
-                'source_site' => $manifest['source']['site_url'] ?? null,
+                ResponseKeyType::OriginalId->value => $snapshotData['id'] ?? null,
+                ResponseKeyType::OriginalCreatedAt->value => $snapshotData['created_at'] ?? null,
+                ResponseKeyType::SourceSite->value => $manifest['source']['site_url'] ?? null,
             )),
         );
     }

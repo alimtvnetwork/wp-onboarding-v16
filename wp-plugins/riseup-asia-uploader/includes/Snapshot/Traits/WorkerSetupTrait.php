@@ -52,8 +52,8 @@ trait WorkerSetupTrait {
         }
 
         return ResultHelper::ok(array(
-            'snapshot_dir'               => $snapshot_dir,
-            'dir_name'                   => $dir_name,
+            ResponseKeyType::SnapshotDir->value  => $snapshot_dir,
+            ResponseKeyType::DirName->value      => $dir_name,
             'title'                      => $title,
             ResponseKeyType::Scope->value => $scope,
             'type'                       => $type,

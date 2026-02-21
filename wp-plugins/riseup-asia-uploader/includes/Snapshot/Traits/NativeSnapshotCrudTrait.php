@@ -98,7 +98,7 @@ trait NativeSnapshotCrudTrait {
 
         return array(
             'version'                           => PluginConfigType::Version->value,
-            'created_at'                        => date('c'),
+            ResponseKeyType::CreatedAt->value   => date('c'),
             ResponseKeyType::SnapshotId->value  => $snapshotId,
             ResponseKeyType::Filename->value    => $snapshot['Filename'],
             ResponseKeyType::Scope->value       => $snapshot['Scope'],

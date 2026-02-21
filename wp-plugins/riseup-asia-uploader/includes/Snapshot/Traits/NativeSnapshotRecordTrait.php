@@ -113,9 +113,9 @@ trait NativeSnapshotRecordTrait {
 
     private function finalizeSnapshot(int $snapshotId, array $details): void {
         $this->db->update(TableType::Snapshots->value, array(
-            'Status' => $details['status'], 'FileSize' => $details['file_size'],
-            'TotalRows' => $details['total_rows'], 'TableCountsJson' => json_encode($details['table_counts']),
-            'DurationMs' => $details['duration_ms'], 'CompletedAt' => date('c'), 'UpdatedAt' => date('c'),
+            'Status' => $details['status'], 'FileSize' => $details[ResponseKeyType::FileSize->value],
+            'TotalRows' => $details[ResponseKeyType::TotalRows->value], 'TableCountsJson' => json_encode($details[ResponseKeyType::TableCounts->value]),
+            'DurationMs' => $details[ResponseKeyType::DurationMs->value], 'CompletedAt' => date('c'), 'UpdatedAt' => date('c'),
         ), array('Id' => $snapshotId));
     }
 }
