@@ -66,7 +66,13 @@ trait AgentRemoteActionTrait {
             }
 
             $status = wp_remote_retrieve_response_code($response);
-            if (BooleanHelpers::isAbsentFromList($status, array(301, 302, 303, 307, 308))) {
+            if (BooleanHelpers::isAbsentFromList($status, array(
+                301,
+                302,
+                303,
+                307,
+                308,
+            ))) {
                 break;
             }
 
@@ -81,7 +87,11 @@ trait AgentRemoteActionTrait {
 
     public function testConnection(int $agentId): array {
         $this->fileLogger->info('Testing agent connection', array('id' => $agentId));
-        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/status');
+        $result = $this->apiRequest(
+            $agentId,
+            HttpMethodType::Get->value,
+            PluginConfigType::apiFullNamespace() . '/status',
+        );
 
         if (is_wp_error($result)) {
             return $this->handleTestConnectionFailure($agentId, $result);
@@ -95,7 +105,14 @@ trait AgentRemoteActionTrait {
             'status'     => AgentStatusType::Error->value,
             'last_error' => $error->get_error_message(),
         ));
-        $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Failed->value, null, $error->get_error_message());
+        $this->logAction(
+            $agentId,
+            ActionType::AgentTest->value,
+            null,
+            StatusType::Failed->value,
+            null,
+            $error->get_error_message(),
+        );
 
         return ResultHelper::failed(array(
             ResponseKeyType::Message->value => $error->get_error_message(),
@@ -108,7 +125,12 @@ trait AgentRemoteActionTrait {
             'last_sync'  => DateHelper::nowUtc(),
             'last_error' => null,
         ));
-        $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Success->value);
+        $this->logAction(
+            $agentId,
+            ActionType::AgentTest->value,
+            null,
+            StatusType::Success->value,
+        );
 
         return ResultHelper::ok(array(
             ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value,
@@ -118,10 +140,21 @@ trait AgentRemoteActionTrait {
 
     public function syncPlugins(int $agentId): array|WP_Error {
         $this->fileLogger->info('Syncing plugins from agent', array('id' => $agentId));
-        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/plugins');
+        $result = $this->apiRequest(
+            $agentId,
+            HttpMethodType::Get->value,
+            PluginConfigType::apiFullNamespace() . '/plugins',
+        );
 
         if (is_wp_error($result)) {
-            $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Failed->value, null, $result->get_error_message());
+            $this->logAction(
+                $agentId,
+                ActionType::AgentSync->value,
+                null,
+                StatusType::Failed->value,
+                null,
+                $result->get_error_message(),
+            );
 
             return $result;
         }
@@ -131,7 +164,13 @@ trait AgentRemoteActionTrait {
             'last_sync' => DateHelper::nowUtc(),
         ));
         $plugins = isset($result[ResponseKeyType::Plugins->value]) ? $result[ResponseKeyType::Plugins->value] : $result;
-        $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Success->value, array(ResponseKeyType::Count->value => count($plugins)));
+        $this->logAction(
+            $agentId,
+            ActionType::AgentSync->value,
+            null,
+            StatusType::Success->value,
+            array(ResponseKeyType::Count->value => count($plugins)),
+        );
 
         return $plugins;
     }
@@ -142,18 +181,36 @@ trait AgentRemoteActionTrait {
         string $slug,
     ): array|WP_Error {
         $this->fileLogger->info('Executing plugin action on agent', array(
-            'agent_id' => $agentId, 'action' => $action, 'slug' => $slug,
+            'agent_id' => $agentId,
+            'action'   => $action,
+            'slug'     => $slug,
         ));
         $endpoint = PluginConfigType::apiFullNamespace() . '/plugins/' . urlencode($slug) . '/' . $action;
-        $result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
+        $result = $this->apiRequest(
+            $agentId,
+            HttpMethodType::Post->value,
+            $endpoint,
+        );
 
         if (is_wp_error($result)) {
-            $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Failed->value, null, $result->get_error_message());
+            $this->logAction(
+                $agentId,
+                'plugin_' . $action,
+                $slug,
+                StatusType::Failed->value,
+                null,
+                $result->get_error_message(),
+            );
 
             return $result;
         }
 
-        $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Success->value);
+        $this->logAction(
+            $agentId,
+            'plugin_' . $action,
+            $slug,
+            StatusType::Success->value,
+        );
 
         return ResultHelper::ok(array(
             ResponseKeyType::Message->value => ucfirst($action) . ' executed successfully',
