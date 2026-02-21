@@ -28,7 +28,13 @@ trait AgentRemoteCoreTrait {
     private function normalizeUrl(string $url): string {
         $url = rtrim($url, '/');
 
-        $suffixes = array('/wp-admin', '/wp-login.php', '/wp-json', '/xmlrpc.php');
+        $suffixes = array(
+            '/wp-admin',
+            '/wp-login.php',
+            '/wp-json',
+            '/xmlrpc.php',
+        );
+
         foreach ($suffixes as $suffix) {
             if (substr($url, -strlen($suffix)) === $suffix) {
                 $url = substr($url, 0, -strlen($suffix));
@@ -54,6 +60,7 @@ trait AgentRemoteCoreTrait {
         array $body = array(),
     ): array|WP_Error {
         $agent = $this->getAgentModel($agentId, true);
+
         if ($agent === null) {
             return new WP_Error(WpErrorCodeType::NotFound->value, 'Agent site not found');
         }
@@ -74,6 +81,7 @@ trait AgentRemoteCoreTrait {
 
     private function resolveAgentBaseUrl(AgentSite $agent, string $endpoint): string {
         $baseUrl = $agent->url;
+
         if (BooleanHelpers::hasValue($agent->redirectUrl)) {
             $resolved = $this->resolveRedirectUrl($agent);
             $isResolved = is_wp_error($resolved) === false;
@@ -109,7 +117,14 @@ trait AgentRemoteCoreTrait {
 
     private function parseAgentResponse(array|WP_Error $response, int $agentId): array|WP_Error {
         if (is_wp_error($response)) {
-            $this->logAction($agentId, ActionType::AgentApiError->value, null, StatusType::Failed->value, null, $response->get_error_message());
+            $this->logAction(
+                $agentId,
+                ActionType::AgentApiError->value,
+                null,
+                StatusType::Failed->value,
+                null,
+                $response->get_error_message(),
+            );
 
             return $response;
         }
@@ -122,7 +137,11 @@ trait AgentRemoteCoreTrait {
                 ? $bodyJson[ResponseKeyType::Error->value][ResponseKeyType::Message->value]
                 : "HTTP {$statusCode}";
 
-            return new WP_Error(WpErrorCodeType::ApiError->value, $errorMsg, array('status' => $statusCode, 'response' => $bodyJson));
+            return new WP_Error(
+                WpErrorCodeType::ApiError->value,
+                $errorMsg,
+                array('status' => $statusCode, 'response' => $bodyJson),
+            );
         }
 
         return $bodyJson;
