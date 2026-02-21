@@ -17,6 +17,7 @@ import (
 	"wp-plugin-publish/internal/enums/action"
 	contenttype "wp-plugin-publish/internal/enums/content_type"
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	stagestatus "wp-plugin-publish/internal/enums/stage_status"
 	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
@@ -232,7 +233,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, ep.Upload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	c.progress(action.Upload.String(), "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), ProgressDetails{
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), ProgressDetails{
 		"zipSize":   zipSize,
 		"zipPath":   absZipPath,
 		"namespace": namespace,
@@ -267,7 +268,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
 	}
 
-	c.progress(action.Upload.String(), "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), ProgressDetails{
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), ProgressDetails{
 		"slug":     slug,
 		"activate": activate,
 		"zipSize":  zipSize,
@@ -292,7 +293,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(action.Upload.String(), "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), ProgressDetails{
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 2000),
 		"url":    uploadURL,
@@ -672,7 +673,7 @@ type SyncResult struct {
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
 	namespace := c.resolveNamespace()
 
-	c.progress(action.Sync.String(), "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), ProgressDetails{
+	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Syncing %d files to %s...", len(files), slug), ProgressDetails{
 		"slug":      slug,
 		"fileCount": len(files),
 		"namespace": namespace,
@@ -709,7 +710,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(action.Sync.String(), "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), ProgressDetails{
+	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Sync response: %d", resp.StatusCode), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 500),
 	})
@@ -805,7 +806,7 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
-	c.progress(action.ExportSelf.String(), "running", "Exporting Riseup Asia Uploader plugin...", nil)
+	c.progress(action.ExportSelf.String(), stagestatus.Running.String(), "Exporting Riseup Asia Uploader plugin...", nil)
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ExportSelf)
 
@@ -834,7 +835,7 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode export-self result")
 	}
 
-	c.progress(action.ExportSelf.String(), "completed", fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
+	c.progress(action.ExportSelf.String(), stagestatus.Completed.String(), fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
 
 	return &result, nil
 }

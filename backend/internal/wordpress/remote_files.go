@@ -16,6 +16,7 @@ import (
 	"time"
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	stagestatus "wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -196,14 +197,14 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 // Deprecated: Use UploadPluginViaUploader instead (Riseup Asia Uploader).
 // Kept for backward compatibility; will be removed in a future version.
 func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
-	c.progress("upload", "running", fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug), nil)
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug), nil)
 
 	mutationToken, err := c.RequestMutationToken("upload")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPPluginUpload, "failed to get upload mutation token")
 	}
 
-	c.progress("upload", "running", fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), ProgressDetails{
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), ProgressDetails{
 		"tokenLength": len(mutationToken),
 	})
 
@@ -253,7 +254,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 
-	c.progress("upload", "running", fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), ProgressDetails{
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), ProgressDetails{
 		"zipSize":  stat.Size(),
 		"zipFile":  filepath.Base(zipPath),
 		"endpoint": endpoint,
@@ -278,7 +279,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress("upload", "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), ProgressDetails{
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Upload response: %d", resp.StatusCode), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 500),
 	})

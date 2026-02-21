@@ -197,7 +197,7 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 		SiteID:     siteID,
 		PluginName: pluginName,
 		SiteName:   siteName,
-		Status:     "running",
+		Status:     stagestatus.Running.String(),
 		StartedAt:  time.Now().UTC(),
 		Metadata:   json.RawMessage(`{}`),
 	}
@@ -332,7 +332,7 @@ func (s *Service) LogStageEnd(sessionID, stageName, status string, durationMs in
 
 	statusIcon := "✓"
 	parsedStatus, _ := stagestatus.Parse(status)
-	if parsedStatus.IsFailed() || status == "error" {
+	if parsedStatus.IsFailed() {
 		statusIcon = "✗"
 	} else if parsedStatus.IsSkipped() {
 		statusIcon = "○"
@@ -669,7 +669,7 @@ func (s *Service) ListSessions(limit int) apperror.ResultSlice[*SessionSummary] 
 		} else {
 			summaries = append(summaries, &SessionSummary{
 				ID:        sessionID,
-				Status:    "completed",
+				Status:    stagestatus.Completed.String(),
 				StartedAt: d.modTime,
 			})
 		}
@@ -739,7 +739,7 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
 		return &Session{
 			ID:        sessionID,
-			Status:    "completed",
+			Status:    stagestatus.Completed.String(),
 			StartedAt: info.ModTime(),
 		}, nil
 	}
@@ -759,7 +759,7 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 
 	return &Session{
 		ID:        sessionID,
-		Status:    "completed",
+		Status:    stagestatus.Completed.String(),
 		StartedAt: info.ModTime(),
 	}, nil
 }

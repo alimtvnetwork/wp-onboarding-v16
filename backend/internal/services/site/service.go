@@ -21,6 +21,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	action_enum "wp-plugin-publish/internal/enums/action"
 	loglevel "wp-plugin-publish/internal/enums/log_level"
+	stagestatus "wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/logger"
 	
 	"wp-plugin-publish/internal/services/session"
@@ -120,27 +121,27 @@ func New(cfg Config) *Service {
 // TestConnection verifies the WordPress REST API is accessible
 func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResult, error) {
 	// Broadcast start
-	s.broadcastProgress(id, "start", "running", "Starting connection test...", nil)
+	s.broadcastProgress(id, "start", stagestatus.Running.String(), "Starting connection test...", nil)
 
 	siteResult := s.GetByID(ctx, id)
 	if siteResult.HasError() {
-		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", toJSON(ErrorDetail{Error: siteResult.Error().Error()}))
+		s.broadcastProgress(id, "fetch_site", stagestatus.Failed.String(), "Failed to retrieve site info", toJSON(ErrorDetail{Error: siteResult.Error().Error()}))
 		return nil, siteResult.Error()
 	}
 	site := siteResult.Value()
-	s.broadcastProgress(id, "fetch_site", "success", fmt.Sprintf("Retrieved site: %s", site.Name), nil)
+	s.broadcastProgress(id, "fetch_site", stagestatus.Completed.String(), fmt.Sprintf("Retrieved site: %s", site.Name), nil)
 
 	// Decrypt password
-	s.broadcastProgress(id, "decrypt", "running", "Decrypting credentials...", nil)
+	s.broadcastProgress(id, "decrypt", stagestatus.Running.String(), "Decrypting credentials...", nil)
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", toJSON(ErrorDetail{Error: err.Error()}))
+		s.broadcastProgress(id, "decrypt", stagestatus.Failed.String(), "Failed to decrypt credentials", toJSON(ErrorDetail{Error: err.Error()}))
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
-	s.broadcastProgress(id, "decrypt", "success", "Credentials decrypted", nil)
+	s.broadcastProgress(id, "decrypt", stagestatus.Completed.String(), "Credentials decrypted", nil)
 
 	// Create WordPress client with progress callback
-	s.broadcastProgress(id, "connect", "running", fmt.Sprintf("Connecting to %s...", site.URL), nil)
+	s.broadcastProgress(id, "connect", stagestatus.Running.String(), fmt.Sprintf("Connecting to %s...", site.URL), nil)
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
 		raw, _ := json.Marshal(details)
 		s.broadcastProgress(id, step, status, message, raw) // pass-through from WP client
@@ -153,14 +154,14 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
+		s.broadcastProgress(id, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
 			URL:      site.URL,
 			Username: site.Username,
 		}))
 		
 		// Update connection status
 		s.updateConnectionStatus(ctx, id, "disconnected")
-		s.broadcastProgress(id, "complete", "error", "Connection test failed", nil)
+		s.broadcastProgress(id, "complete", stagestatus.Failed.String(), "Connection test failed", nil)
 		
 		return result, nil
 	}
@@ -170,13 +171,13 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
+	s.broadcastProgress(id, "api_test", stagestatus.Completed.String(), fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
 		WPVersion: connInfo.WPVersion,
 	}))
 
 	// Update connection status and last tested time
 	s.updateConnectionStatus(ctx, id, "connected")
-	s.broadcastProgress(id, "complete", "success", "Connection test completed successfully", nil)
+	s.broadcastProgress(id, "complete", stagestatus.Completed.String(), "Connection test completed successfully", nil)
 
 	s.log.Info("Site connection tested", "id", id, "success", result.Success)
 
@@ -188,8 +189,8 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	normalizedURL := normalizeURL(siteURL)
 	
 	// Broadcast progress (use 0 as siteId for pre-create tests)
-	s.broadcastProgress(0, "start", "running", "Testing connection with provided credentials...", nil)
-	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), toJSON(URLNormalizeDetails{
+	s.broadcastProgress(0, "start", stagestatus.Running.String(), "Testing connection with provided credentials...", nil)
+	s.broadcastProgress(0, "normalize", stagestatus.Completed.String(), fmt.Sprintf("Normalized URL: %s", normalizedURL), toJSON(URLNormalizeDetails{
 		OriginalURL:   siteURL,
 		NormalizedURL: normalizedURL,
 	}))
@@ -206,11 +207,11 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
+		s.broadcastProgress(0, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
 			URL:      normalizedURL,
 			Username: username,
 		}))
-		s.broadcastProgress(0, "complete", "error", "Connection test failed", nil)
+		s.broadcastProgress(0, "complete", stagestatus.Failed.String(), "Connection test failed", nil)
 		return result, nil
 	}
 
@@ -219,10 +220,10 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
+	s.broadcastProgress(0, "api_test", stagestatus.Completed.String(), fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
 		WPVersion: connInfo.WPVersion,
 	}))
-	s.broadcastProgress(0, "complete", "success", "Connection test completed successfully", nil)
+	s.broadcastProgress(0, "complete", stagestatus.Completed.String(), "Connection test completed successfully", nil)
 
 	return result, nil
 }
