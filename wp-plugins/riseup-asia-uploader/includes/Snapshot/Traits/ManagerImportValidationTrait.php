@@ -22,24 +22,41 @@ trait ManagerImportValidationTrait {
 
     private function validateManifest(array $manifest): array {
         $required = array('version', 'snapshot');
+
         foreach ($required as $field) {
             $isFieldMissing = BooleanHelpers::isKeyMissing($manifest, $field);
+
             if ($isFieldMissing) {
-                return array(ResponseKeyType::Valid->value => false, ResponseKeyType::Error->value => "Missing required field: {$field}");
+
+                return array(
+                    ResponseKeyType::Valid->value => false,
+                    ResponseKeyType::Error->value => "Missing required field: {$field}",
+                );
             }
         }
 
         $snapshotRequired = array('filename', 'tables', 'scope');
+
         foreach ($snapshotRequired as $field) {
             $isSnapshotFieldMissing = BooleanHelpers::isKeyMissing($manifest['snapshot'], $field);
+
             if ($isSnapshotFieldMissing) {
-                return array(ResponseKeyType::Valid->value => false, ResponseKeyType::Error->value => "Missing snapshot field: {$field}");
+
+                return array(
+                    ResponseKeyType::Valid->value => false,
+                    ResponseKeyType::Error->value => "Missing snapshot field: {$field}",
+                );
             }
         }
 
         $formatVersion = $manifest['format_version'] ?? '1.0';
+
         if (version_compare($formatVersion, '2.0', '>=')) {
-            return array(ResponseKeyType::Valid->value => false, ResponseKeyType::Error->value => 'Unsupported format version: ' . $formatVersion);
+
+            return array(
+                ResponseKeyType::Valid->value => false,
+                ResponseKeyType::Error->value => 'Unsupported format version: ' . $formatVersion,
+            );
         }
 
         return array(ResponseKeyType::Valid->value => true);
@@ -54,19 +71,33 @@ trait ManagerImportValidationTrait {
             $integrity = $result->fetchColumn();
 
             if ($integrity !== 'ok') {
-                return array(ResponseKeyType::Valid->value => false, ResponseKeyType::Error->value => 'Database integrity check failed: ' . $integrity);
+
+                return array(
+                    ResponseKeyType::Valid->value => false,
+                    ResponseKeyType::Error->value => 'Database integrity check failed: ' . $integrity,
+                );
             }
 
             $metaCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='_snapshot_meta'");
             $isMetaTableAbsent = ($metaCheck->fetch() === false);
+
             if ($isMetaTableAbsent) {
-                return array(ResponseKeyType::Valid->value => false, ResponseKeyType::Error->value => 'Missing _snapshot_meta table');
+
+                return array(
+                    ResponseKeyType::Valid->value => false,
+                    ResponseKeyType::Error->value => 'Missing _snapshot_meta table',
+                );
             }
 
             $pdo = null;
+
             return array(ResponseKeyType::Valid->value => true);
         } catch (Throwable $e) {
-            return array(ResponseKeyType::Valid->value => false, ResponseKeyType::Error->value => 'SQLite error: ' . $e->getMessage());
+
+            return array(
+                ResponseKeyType::Valid->value => false,
+                ResponseKeyType::Error->value => 'SQLite error: ' . $e->getMessage(),
+            );
         }
     }
 
@@ -76,8 +107,10 @@ trait ManagerImportValidationTrait {
         }
 
         $files = array_diff(scandir($dir), array('.', '..'));
+
         foreach ($files as $file) {
             $path = PathHelper::join($dir, $file);
+
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             } else {

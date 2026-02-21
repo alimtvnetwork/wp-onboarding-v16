@@ -56,6 +56,7 @@ trait ManagerSettingsTrait {
     private function readSettingsFromDb(): array {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
             return array();
         }
@@ -63,6 +64,7 @@ trait ManagerSettingsTrait {
         try {
             $rows = $pdo->query("SELECT Key, Value, Type FROM " . TableType::SnapshotSettings->value)->fetchAll(PDO::FETCH_ASSOC);
             $settings = array();
+
             foreach ($rows as $row) {
                 $key = str_replace('snapshot.', '', $row['Key']);
                 $settings[$key] = $this->castSettingValue($row['Value'], $row['Type']);
@@ -70,7 +72,9 @@ trait ManagerSettingsTrait {
 
             return $settings;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to read SnapshotSettings from SQLite', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Failed to read SnapshotSettings from SQLite', array(
+                'error' => $e->getMessage(),
+            ));
 
             return array();
         }
@@ -88,10 +92,17 @@ trait ManagerSettingsTrait {
                     $dbKey = 'snapshot.' . $key;
                     $type = is_bool($value) ? 'bool' : (is_int($value) ? 'int' : 'string');
                     $dbValue = is_bool($value) ? ($value ? '1' : '0') : (string)$value;
-                    $stmt->execute(array($dbKey, $dbValue, $type, $now));
+                    $stmt->execute(array(
+                        $dbKey,
+                        $dbValue,
+                        $type,
+                        $now,
+                    ));
                 }
             } catch (Throwable $e) {
-                $this->log(LogLevelType::Error->value, 'Failed to update SnapshotSettings', array('error' => $e->getMessage()));
+                $this->log(LogLevelType::Error->value, 'Failed to update SnapshotSettings', array(
+                    'error' => $e->getMessage(),
+                ));
             }
         }
 
@@ -102,7 +113,9 @@ trait ManagerSettingsTrait {
         }
 
         $result = $this->getSettings();
-        $this->log(LogLevelType::Info->value, 'Snapshot settings updated', array('keys' => array_keys($settings)));
+        $this->log(LogLevelType::Info->value, 'Snapshot settings updated', array(
+            'keys' => array_keys($settings),
+        ));
 
         return $result;
     }

@@ -31,8 +31,12 @@ trait DetectorProviderTrait {
 
     private function detectWPReset(): array {
         $result = array(
-            'id' => SnapshotProviderType::WpReset->value, 'name' => 'WP Reset', 'available' => false,
-            'capabilities' => array(), 'version' => null, ResponseKeyType::DetectionMethod->value => null,
+            'id'                                  => SnapshotProviderType::WpReset->value,
+            'name'                                => 'WP Reset',
+            'available'                           => false,
+            'capabilities'                        => array(),
+            'version'                             => null,
+            ResponseKeyType::DetectionMethod->value => null,
         );
 
         if (class_exists('WP_Reset')) {
@@ -44,6 +48,7 @@ trait DetectorProviderTrait {
 
         if ($isStillUnavailable) {
             $plugin_file = 'wp-reset/wp-reset.php';
+
             if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
                 $result['available'] = true;
                 $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
@@ -62,14 +67,15 @@ trait DetectorProviderTrait {
             if (defined('WP_RESET_VERSION')) {
                 $result['version'] = WP_RESET_VERSION;
             }
+
             $result['capabilities'] = array(
-                'fullSite' => true,
+                'fullSite'     => true,
                 'databaseOnly' => true,
-                'selective' => true,
-                'scheduled' => false,
-                'restore' => true,
-                'export' => true,
-                'import' => true,
+                'selective'    => true,
+                'scheduled'    => false,
+                'restore'      => true,
+                'export'       => true,
+                'import'       => true,
             );
         }
 
@@ -78,8 +84,12 @@ trait DetectorProviderTrait {
 
     private function detectUpdraft(): array {
         $result = array(
-            'id' => SnapshotProviderType::Updraft->value, 'name' => 'UpdraftPlus', 'available' => false,
-            'capabilities' => array(), 'version' => null, ResponseKeyType::DetectionMethod->value => null,
+            'id'                                  => SnapshotProviderType::Updraft->value,
+            'name'                                => 'UpdraftPlus',
+            'available'                           => false,
+            'capabilities'                        => array(),
+            'version'                             => null,
+            ResponseKeyType::DetectionMethod->value => null,
         );
 
         if (class_exists('UpdraftPlus')) {
@@ -98,13 +108,16 @@ trait DetectorProviderTrait {
 
         if ($isStillUnavailable) {
             $plugin_files = array('updraftplus/updraftplus.php', 'updraftplus-premium/updraftplus.php');
+
             foreach ($plugin_files as $plugin_file) {
                 if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
                     $result['available'] = true;
                     $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
+
                     if (strpos($plugin_file, 'premium') !== false) {
                         $result['name'] = 'UpdraftPlus Premium';
                     }
+
                     break;
                 }
             }
@@ -114,15 +127,17 @@ trait DetectorProviderTrait {
             if (defined('UPDRAFTPLUS_VERSION')) {
                 $result['version'] = UPDRAFTPLUS_VERSION;
             }
+
             $is_premium = strpos($result['name'], 'Premium') !== false;
+
             $result['capabilities'] = array(
-                'fullSite' => true,
+                'fullSite'     => true,
                 'databaseOnly' => true,
-                'selective' => $is_premium,
-                'scheduled' => true,
-                'restore' => true,
-                'export' => true,
-                'import' => true,
+                'selective'    => $is_premium,
+                'scheduled'    => true,
+                'restore'      => true,
+                'export'       => true,
+                'import'       => true,
             );
         }
 
@@ -133,19 +148,21 @@ trait DetectorProviderTrait {
         $has_sqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
 
         return array(
-            'id' => SnapshotProviderType::Native->value, 'name' => 'Native SQLite', 'available' => $has_sqlite,
-            'capabilities' => array(
-                'fullSite' => false,
+            'id'                                    => SnapshotProviderType::Native->value,
+            'name'                                  => 'Native SQLite',
+            'available'                             => $has_sqlite,
+            'capabilities'                          => array(
+                'fullSite'     => false,
                 'databaseOnly' => true,
-                'selective' => true,
-                'scheduled' => true,
-                'restore' => true,
-                'export' => true,
-                'import' => true,
+                'selective'    => true,
+                'scheduled'    => true,
+                'restore'      => true,
+                'export'       => true,
+                'import'       => true,
             ),
-            'version' => PluginConfigType::Version->value,
+            'version'                               => PluginConfigType::Version->value,
             ResponseKeyType::DetectionMethod->value => $has_sqlite ? 'extension_loaded' : 'extension_missing',
-            ResponseKeyType::SqliteVersion->value => $has_sqlite ? $this->getSqliteVersion() : null,
+            ResponseKeyType::SqliteVersion->value   => $has_sqlite ? $this->getSqliteVersion() : null,
         );
     }
 
@@ -155,6 +172,7 @@ trait DetectorProviderTrait {
 
             return $version['versionString'];
         }
+
         if (extension_loaded('pdo_sqlite')) {
             try {
                 $pdo = new PDO('sqlite::memory:');
@@ -170,10 +188,16 @@ trait DetectorProviderTrait {
 
     private function logDetectionResults(array $providers): void {
         $available = array_filter($providers, function($p) { return $p['available']; });
+
         $this->logger->info('[SNAPSHOT] Provider detection complete', array(
-            'total' => count($providers), 'available' => count($available),
+            'total'     => count($providers),
+            'available' => count($available),
             'providers' => array_map(function($p) {
-                return array('id' => $p['id'], 'available' => $p['available'], 'version' => $p['version']);
+                return array(
+                    'id'        => $p['id'],
+                    'available' => $p['available'],
+                    'version'   => $p['version'],
+                );
             }, $providers),
         ));
     }

@@ -42,13 +42,19 @@ trait ExporterHelpersTrait {
 
         if ($snapshot['scope'] === SnapshotModeType::Incremental->value) {
             $this->log(LogLevelType::Warn->value, 'Cannot export incremental snapshot directly', array('id' => $snapshotId));
+
             return null;
         }
 
         $snapshotStatus = SnapshotStatusType::tryFrom($snapshot['status'] ?? '');
         $isSnapshotIncomplete = ($snapshotStatus === null || $snapshotStatus->isOtherThan(SnapshotStatusType::Complete));
+
         if ($isSnapshotIncomplete) {
-            $this->log(LogLevelType::Warn->value, 'Snapshot not complete', array('id' => $snapshotId, 'status' => $snapshot['status']));
+            $this->log(LogLevelType::Warn->value, 'Snapshot not complete', array(
+                'id'     => $snapshotId,
+                'status' => $snapshot['status'],
+            ));
+
             return null;
         }
 
@@ -105,6 +111,7 @@ trait ExporterHelpersTrait {
         array $context = array(),
     ): void {
         $context['class'] = 'RiseupSnapshotExporter';
+
         switch ($level) {
             case LogLevelType::Error->value:
                 $this->logger->error('[SnapshotExporter] ' . $message, $context);

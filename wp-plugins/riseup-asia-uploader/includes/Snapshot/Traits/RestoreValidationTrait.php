@@ -28,6 +28,7 @@ trait RestoreValidationTrait {
 
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
+
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => 'Restore requires explicit confirmation (confirm=true)',
@@ -36,7 +37,9 @@ trait RestoreValidationTrait {
         }
 
         $root_path = $snapshotDir . '/a-root.db';
+
         if (PathHelper::isFileMissing($root_path)) {
+
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => 'Snapshot a-root.db not found at: ' . basename($snapshotDir),
@@ -54,32 +57,44 @@ trait RestoreValidationTrait {
         $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
 
         $isSelectiveWithTables = $mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($selected_tables);
+
         if ($isSelectiveWithTables) {
             $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
                 return in_array($t, $selected_tables);
             }));
 
             if (empty($restore_order)) {
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'None of the selected tables exist in the snapshot');
+
+                return array(
+                    ResponseKeyType::Success->value => false,
+                    ResponseKeyType::Error->value   => 'None of the selected tables exist in the snapshot',
+                );
             }
         }
 
         $this->log(LogLevelType::Info->value, 'Restore order determined', array(
-            'tables' => count($restore_order), 'order' => array_slice($restore_order, 0, 10),
+            'tables' => count($restore_order),
+            'order'  => array_slice($restore_order, 0, 10),
         ));
 
-        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Tables->value => $restore_order, 'inventory' => $table_inventory);
+        return array(
+            ResponseKeyType::Success->value => true,
+            ResponseKeyType::Tables->value  => $restore_order,
+            'inventory'                     => $table_inventory,
+        );
     }
 
     private function createSafetyBackup(array $options): ?int {
         $create_backup = $options['create_backup'] ?? true;
 
         $isBackupSkipped = ($create_backup === false) || ($this->orchestrator === null);
+
         if ($isBackupSkipped) {
             return null;
         }
 
         $this->log(LogLevelType::Info->value, 'Creating pre-restore safety backup');
+
         $result = $this->orchestrator->executeFullBackup(array(
             'title'           => 'Pre-Restore Safety Backup ' . date('Y-m-d H:i'),
             'compression'     => false,
@@ -87,15 +102,21 @@ trait RestoreValidationTrait {
         ));
 
         if ($result[ResponseKeyType::Success->value]) {
-            $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', array(ResponseKeyType::BackupId->value => $result[ResponseKeyType::SnapshotId->value] ?? null));
+            $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', array(
+                ResponseKeyType::BackupId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
+            ));
 
             return $result[ResponseKeyType::SnapshotId->value] ?? null;
         }
 
-        $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array('error' => $result[ResponseKeyType::Error->value] ?? 'Unknown'));
+        $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array(
+            'error' => $result[ResponseKeyType::Error->value] ?? 'Unknown',
+        ));
 
         $isBackupRequired = BooleanHelpers::hasValue($options['require_backup'] ?? null);
+
         if ($isBackupRequired) {
+
             throw new Exception('Pre-restore backup failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown'));
         }
 
