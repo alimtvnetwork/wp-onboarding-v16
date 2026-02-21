@@ -12,7 +12,6 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 
 trait LoggerActionsTrait {
-
     /** Log a plugin operation. */
     public function logPluginAction(
         string $action,

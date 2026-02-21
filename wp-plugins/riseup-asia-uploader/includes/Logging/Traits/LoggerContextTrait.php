@@ -13,7 +13,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Database\Database;
 
 trait LoggerContextTrait {
-
     /** Get database instance (lazy loading). */
     private function getDb(): Database {
         if ($this->db === null) {
@@ -31,11 +30,14 @@ trait LoggerContextTrait {
             if (empty($_SERVER[$key])) {
                 continue;
             }
+
             $ip = $_SERVER[$key];
+
             if (strpos($ip, ',') !== false) {
                 $parts = explode(',', $ip);
                 $ip = trim($parts[0]);
             }
+
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 return $ip;
             }
@@ -47,6 +49,7 @@ trait LoggerContextTrait {
     /** Get source machine hostname from request header. */
     private function getSourceMachine(): ?string {
         $hasSourceHeader = BooleanHelpers::hasValue($_SERVER[self::SOURCE_MACHINE_HEADER] ?? null);
+
         if ($hasSourceHeader) {
             $machine = preg_replace('/[^a-zA-Z0-9.\\\\-_]/', '', $_SERVER[self::SOURCE_MACHINE_HEADER]);
             $hasMachine = BooleanHelpers::hasValue($machine);
@@ -79,6 +82,7 @@ trait LoggerContextTrait {
         if ($sourceMachine) {
             $enhanced['source_machine'] = $sourceMachine;
         }
+
         if (empty($enhanced['plugin_version'])) {
             $enhanced['plugin_version'] = PluginConfigType::Version->value;
         }

@@ -13,7 +13,6 @@ use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Helpers\InitHelpers;
 
 trait LoggerPathTrait {
-
     /** Initialize log file paths (lazy initialization). */
     private function initializePaths(): bool {
         if ($this->isInitialized) {
@@ -32,6 +31,7 @@ trait LoggerPathTrait {
     /** Ensure log directories exist. */
     private function ensureDirectories(): bool {
         $isBaseDirFailed = (InitHelpers::makeDirectoryNative($this->baseDir, true) === false);
+
         if ($isBaseDirFailed) {
             InitHelpers::errorLogWithPrefix('Failed to create base directory: ' . $this->baseDir);
 
@@ -39,6 +39,7 @@ trait LoggerPathTrait {
         }
 
         $isLogsDirFailed = (InitHelpers::makeDirectoryNative($this->logsDir, false) === false);
+
         if ($isLogsDirFailed) {
             InitHelpers::errorLogWithPrefix('Failed to create logs directory: ' . $this->logsDir);
 

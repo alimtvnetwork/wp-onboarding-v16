@@ -12,7 +12,6 @@ use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 
 trait LoggerLevelMethodsTrait {
-
     /** Resolve caller file and line from a backtrace. */
     private function resolveCaller(array $trace): array {
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
