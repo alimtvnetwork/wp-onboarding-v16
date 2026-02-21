@@ -927,7 +927,7 @@ func (s *Service) runStageWithSession(sessionID, name string, fn func() error) S
 	start := time.Now()
 	stage := Stage{
 		Name:   name,
-		Status: "running",
+		Status: stagestatus.Running,
 	}
 
 	// Log stage start to session
@@ -939,10 +939,10 @@ func (s *Service) runStageWithSession(sessionID, name string, fn func() error) S
 	stage.Duration = time.Since(start).Milliseconds()
 
 	if err != nil {
-		stage.Status = "failed"
+		stage.Status = stagestatus.Failed
 		stage.Message = err.Error()
 	} else {
-		stage.Status = "completed"
+		stage.Status = stagestatus.Completed
 	}
 
 	// Log stage end to session

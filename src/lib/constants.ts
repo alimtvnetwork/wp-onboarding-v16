@@ -128,8 +128,9 @@ export type ConnectionTestStepName = (typeof ConnectionTestStep)[keyof typeof Co
 
 export const ConnectionTestStatus = {
   Running: "Running",
-  Success: "Success",
-  Error: "Error",
+  Completed: "Completed",
+  Failed: "Failed",
+  Warning: "Warning",
 } as const;
 
 export type ConnectionTestStatus = (typeof ConnectionTestStatus)[keyof typeof ConnectionTestStatus];
