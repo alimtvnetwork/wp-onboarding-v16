@@ -30,6 +30,7 @@ trait ManagerCoreTrait {
     public function createSnapshot(array $options = array()): array {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
+
         if ($isProviderMissing) {
 
             return ResultHelper::errorWithCode(
@@ -49,6 +50,7 @@ trait ManagerCoreTrait {
     public function deleteSnapshot(int $snapshotId): array {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
+
         if ($isProviderMissing) {
 
             return ResultHelper::error(ResponseMessageType::ProviderMissing->value);
@@ -60,6 +62,7 @@ trait ManagerCoreTrait {
     public function getSnapshot(int $snapshotId): ?array {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
+
         if ($isProviderMissing) {
 
             return null;
@@ -95,6 +98,7 @@ trait ManagerCoreTrait {
     public function getAvailableTables(): array {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
+
         if ($isProviderMissing) {
 
             return array();
@@ -110,11 +114,13 @@ trait ManagerCoreTrait {
     ): void {
         $full = '[SNAPSHOT] [MANAGER] ' . $message;
         $hasContext = BooleanHelpers::hasValue($context);
+
         if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
 
         $isLoggerMissing = ($this->logger === null);
+
         if ($isLoggerMissing) {
 
             return;

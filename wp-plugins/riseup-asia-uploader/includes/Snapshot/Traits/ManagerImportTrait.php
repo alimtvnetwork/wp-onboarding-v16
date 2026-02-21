@@ -32,6 +32,7 @@ trait ManagerImportTrait {
         }
 
         $ext = strtolower(pathinfo($uploadedPath, PATHINFO_EXTENSION));
+
         if ($ext !== 'zip') {
             return ResultHelper::error(ResponseMessageType::InvalidFileTypeZip->value);
         }
@@ -76,6 +77,7 @@ trait ManagerImportTrait {
 
     private function extractZipToDir(string $uploadedPath, string $tempDir): void {
         $zip = new ZipArchive();
+
         if ($zip->open($uploadedPath) !== true) {
             throw new Exception('Failed to open ZIP file');
         }
@@ -85,6 +87,7 @@ trait ManagerImportTrait {
 
     private function loadAndValidateManifest(string $tempDir): array {
         $manifestPath = PathHelper::join($tempDir, 'manifest.json');
+
         if (PathHelper::isFileMissing($manifestPath)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }

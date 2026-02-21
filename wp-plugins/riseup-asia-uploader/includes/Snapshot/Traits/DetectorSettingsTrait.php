@@ -106,6 +106,7 @@ trait DetectorSettingsTrait {
         $providers = $this->detectAvailableProviders();
         foreach ($providers as $provider) {
             $isMatch = ($provider['id'] === $providerId && $provider['available']);
+
             if ($isMatch) {
                 return;
             }

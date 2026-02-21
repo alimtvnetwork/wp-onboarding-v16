@@ -31,6 +31,7 @@ trait AnalyzerQueryTrait {
 
         $resolvedScope = SnapshotScopeType::tryFrom($scope);
         $isWordPress = ($resolvedScope !== null && $resolvedScope->isWordPress());
+
         if ($isWordPress) {
             $tables = array_filter($tables, function($t) use ($prefix) {
                 return strpos($t, $prefix) === 0;
@@ -38,6 +39,7 @@ trait AnalyzerQueryTrait {
         }
 
         $isContent = ($resolvedScope !== null && $resolvedScope->isContent());
+
         if ($isContent) {
             $content_suffixes = array(
                 'posts',

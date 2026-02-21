@@ -25,6 +25,7 @@ trait NativeSnapshotExecTrait {
 
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
+
         if ($isSnapshotMissing) {
 
             return array(
@@ -34,6 +35,7 @@ trait NativeSnapshotExecTrait {
         }
 
         $isLockFailed = ($this->acquireLock() === false);
+
         if ($isLockFailed) {
             $this->updateSnapshotStatus(
                 $snapshotId,
