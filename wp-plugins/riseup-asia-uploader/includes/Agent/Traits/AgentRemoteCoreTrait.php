@@ -42,7 +42,6 @@ trait AgentRemoteCoreTrait {
     }
 
     private function buildAuthHeader(AgentSite $agent): string {
-
         return 'Basic ' . base64_encode($agent->username . ':' . $agent->appPassword);
     }
 
@@ -55,7 +54,6 @@ trait AgentRemoteCoreTrait {
     ): array|WP_Error {
         $agent = $this->getAgentModel($agentId, true);
         if ($agent === null) {
-
             return new WP_Error(WpErrorCodeType::NotFound->value, 'Agent site not found');
         }
 
@@ -92,6 +90,7 @@ trait AgentRemoteCoreTrait {
 
         $hasBody = BooleanHelpers::hasValue($body);
         $isBodyMethod = in_array($method, array(HttpMethodType::Post->value, HttpMethodType::Put->value, HttpMethodType::Patch->value));
+
         if ($hasBody && $isBodyMethod) {
             $args['body'] = json_encode($body);
         }
