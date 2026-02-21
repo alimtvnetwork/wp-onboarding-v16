@@ -14,16 +14,19 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\AdminPageType;
+use RiseupAsia\Enums\AdminTabType;
+use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 $level_colors = array(
-    'ERROR' => '#dc3545',
-    'WARN'  => '#fd7e14',
-    'INFO'  => '#0d6efd',
-    'DEBUG' => '#6c757d',
+    strtoupper(LogLevelType::Error->value) => '#dc3545',
+    strtoupper(LogLevelType::Warn->value)  => '#fd7e14',
+    strtoupper(LogLevelType::Info->value)  => '#0d6efd',
+    strtoupper(LogLevelType::Debug->value) => '#6c757d',
 );
 
-$active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'sessions';
+$active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
 $nonce = wp_create_nonce('riseup_admin_nonce');
 ?>
 <div class="wrap riseup-admin riseup-error-log">
@@ -69,26 +72,26 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
 
     <!-- Tab Navigation -->
     <nav class="nav-tab-wrapper riseup-tabs">
-        <a href="<?php echo esc_url(add_query_arg('tab', 'sessions')); ?>"
-           class="nav-tab <?php echo $active_tab === 'sessions' ? 'nav-tab-active' : ''; ?>">
+        <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Sessions->value)); ?>"
+           class="nav-tab <?php echo $active_tab === AdminTabType::Sessions->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-database"></span>
             <?php esc_html_e('Error Sessions', 'riseup-asia-uploader'); ?>
             <?php if ($unseen_count > 0): ?>
                 <span class="tab-badge"><?php echo esc_html($unseen_count); ?></span>
             <?php endif; ?>
         </a>
-        <a href="<?php echo esc_url(add_query_arg('tab', 'log')); ?>"
-           class="nav-tab <?php echo $active_tab === 'log' ? 'nav-tab-active' : ''; ?>">
+        <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Log->value)); ?>"
+           class="nav-tab <?php echo $active_tab === AdminTabType::Log->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-text-page"></span>
             <?php esc_html_e('Log', 'riseup-asia-uploader'); ?>
         </a>
-        <a href="<?php echo esc_url(add_query_arg('tab', 'error')); ?>"
-           class="nav-tab <?php echo $active_tab === 'error' ? 'nav-tab-active' : ''; ?>">
+        <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Error->value)); ?>"
+           class="nav-tab <?php echo $active_tab === AdminTabType::Error->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-warning"></span>
             <?php esc_html_e('Error Log', 'riseup-asia-uploader'); ?>
         </a>
-        <a href="<?php echo esc_url(add_query_arg('tab', 'stacktrace')); ?>"
-           class="nav-tab <?php echo $active_tab === 'stacktrace' ? 'nav-tab-active' : ''; ?>">
+        <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Stacktrace->value)); ?>"
+           class="nav-tab <?php echo $active_tab === AdminTabType::Stacktrace->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-editor-code"></span>
             <?php esc_html_e('Stack Trace', 'riseup-asia-uploader'); ?>
         </a>
@@ -97,7 +100,7 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
     <!-- Tab Content -->
     <div class="riseup-tab-content">
 
-    <?php if ($active_tab === 'sessions'): ?>
+    <?php if ($active_tab === AdminTabType::Sessions->value): ?>
         <!-- ============================================================ -->
         <!-- ERROR SESSIONS TAB (original table view)                      -->
         <!-- ============================================================ -->
@@ -105,15 +108,15 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
         <!-- Filters -->
         <div class="riseup-filters">
             <form method="get" action="">
-                <input type="hidden" name="page" value="riseup-asia-errors">
-                <input type="hidden" name="tab" value="sessions">
+                <input type="hidden" name="page" value="<?php echo esc_attr(AdminPageType::Errors->value); ?>">
+                <input type="hidden" name="tab" value="<?php echo esc_attr(AdminTabType::Sessions->value); ?>">
                 <div class="filter-row">
                     <label>
                         <span><?php esc_html_e('Level:', 'riseup-asia-uploader'); ?></span>
                         <select name="filter_level">
                             <option value=""><?php esc_html_e('All Levels', 'riseup-asia-uploader'); ?></option>
-                            <option value="ERROR" <?php selected($filter_level, 'ERROR'); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
-                            <option value="WARN" <?php selected($filter_level, 'WARN'); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(strtoupper(LogLevelType::Error->value)); ?>" <?php selected($filter_level, strtoupper(LogLevelType::Error->value)); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(strtoupper(LogLevelType::Warn->value)); ?>" <?php selected($filter_level, strtoupper(LogLevelType::Warn->value)); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </label>
                     <label>
@@ -121,7 +124,7 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
                         <input type="text" name="filter_search" value="<?php echo esc_attr($filter_search); ?>" placeholder="<?php esc_attr_e('Search messages...', 'riseup-asia-uploader'); ?>">
                     </label>
                     <button type="submit" class="button button-primary"><?php esc_html_e('Filter', 'riseup-asia-uploader'); ?></button>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-errors&tab=sessions')); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=' . AdminPageType::Errors->value . '&tab=' . AdminTabType::Sessions->value)); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
                     <button type="button" id="riseup-clear-errors" class="button button-link-delete" style="margin-left: auto;">
                         <?php esc_html_e('Clear All Errors', 'riseup-asia-uploader'); ?>
                     </button>
@@ -224,7 +227,7 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
                 <div class="tablenav-pages">
                     <?php
                     echo paginate_links(array(
-                        'base'      => add_query_arg(array('paged' => '%#%', 'tab' => 'sessions')),
+                        'base'      => add_query_arg(array('paged' => '%#%', 'tab' => AdminTabType::Sessions->value)),
                         'format'    => '',
                         'prev_text' => '&laquo;',
                         'next_text' => '&raquo;',
@@ -243,9 +246,9 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
         <?php
         $file_type = $active_tab; // 'log', 'error', or 'stacktrace'
         $file_labels = array(
-            'log'        => __('General Log', 'riseup-asia-uploader') . ' (log.txt)',
-            'error'      => __('Error Log', 'riseup-asia-uploader') . ' (error.txt)',
-            'stacktrace' => __('Stack Trace', 'riseup-asia-uploader') . ' (stacktrace.txt)',
+            AdminTabType::Log->value        => __('General Log', 'riseup-asia-uploader') . ' (log.txt)',
+            AdminTabType::Error->value      => __('Error Log', 'riseup-asia-uploader') . ' (error.txt)',
+            AdminTabType::Stacktrace->value => __('Stack Trace', 'riseup-asia-uploader') . ' (stacktrace.txt)',
         );
         $file_label = isset($file_labels[$file_type]) ? $file_labels[$file_type] : $file_type;
         ?>
