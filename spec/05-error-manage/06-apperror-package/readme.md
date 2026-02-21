@@ -552,6 +552,7 @@ return apperror.New(apperror.ErrNotFound, "entry not found")
 **Exemptions:**
 - `filepath.Walk` callbacks (framework requires `error` interface)
 - E2E test harness (`e2e/` package) — test assertion errors, not production
+- Enum `UnmarshalJSON` / `MarshalJSON` methods (`internal/enums/*/variant.go`) — circular import risk with `apperror` package; these are standard library interface implementations
 
 ### 10.6 Migrated Services
 
