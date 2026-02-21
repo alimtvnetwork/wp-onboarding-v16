@@ -44,8 +44,8 @@ trait ExporterPublicApiTrait {
         }
 
         $existing = $this->getValidExport($fullSnapshotId);
-        if ($existing && file_exists($existing['zip_path'])) {
-            $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array('export_id' => $existing['id'], 'filename' => $existing['zip_filename']));
+        if ($existing && file_exists($existing['ZipPath'])) {
+            $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array('export_id' => $existing['Id'], 'filename' => $existing['ZipFilename']));
 
             return ResultHelper::ok(array(
                 ResponseKeyType::Cached->value => true,
@@ -102,19 +102,19 @@ trait ExporterPublicApiTrait {
             return;
         }
 
-        $stmt = $pdo->prepare('SELECT id, zip_path FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ?');
+        $stmt = $pdo->prepare('SELECT Id, ZipPath FROM ' . TableType::SnapshotExports->value . ' WHERE SnapshotId = ?');
         $stmt->execute(array($fullSnapshotId));
         $exports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($exports as $export) {
-            $hasZipPath = (BooleanHelpers::hasValue($export['zip_path']) && file_exists($export['zip_path']));
+            $hasZipPath = (BooleanHelpers::hasValue($export['ZipPath']) && file_exists($export['ZipPath']));
             if ($hasZipPath) {
-                @unlink($export['zip_path']);
-                $this->log(LogLevelType::Debug->value, 'Deleted export ZIP', array('path' => basename($export['zip_path'])));
+                @unlink($export['ZipPath']);
+                $this->log(LogLevelType::Debug->value, 'Deleted export ZIP', array('path' => basename($export['ZipPath'])));
             }
         }
 
-        $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ?');
+        $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE SnapshotId = ?');
         $stmt->execute(array($fullSnapshotId));
 
         $this->log(LogLevelType::Info->value, 'Removed all exports for snapshot', array('snapshot_id' => $fullSnapshotId, 'count' => count($exports)));
@@ -154,15 +154,15 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        $exportStatus = SnapshotExportStatusType::tryFrom($export['status'] ?? '');
+        $exportStatus = SnapshotExportStatusType::tryFrom($export['Status'] ?? '');
         $isExportNotValid = ($exportStatus === null || $exportStatus->isOtherThan(SnapshotExportStatusType::Valid));
         if ($isExportNotValid) {
-            $this->log(LogLevelType::Warn->value, 'Export is not valid', array('export_id' => $exportId, 'status' => $export['status']));
+            $this->log(LogLevelType::Warn->value, 'Export is not valid', array('export_id' => $exportId, 'status' => $export['Status']));
             return null;
         }
 
-        if (PathHelper::isFileMissing($export['zip_path'])) {
-            $this->log(LogLevelType::Warn->value, 'Export ZIP file missing', array('path' => $export['zip_path']));
+        if (PathHelper::isFileMissing($export['ZipPath'])) {
+            $this->log(LogLevelType::Warn->value, 'Export ZIP file missing', array('path' => $export['ZipPath']));
             return null;
         }
 
@@ -179,7 +179,7 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ? ORDER BY created_at DESC LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE SnapshotId = ? ORDER BY CreatedAt DESC LIMIT 1');
         $stmt->execute(array($fullSnapshotId));
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;

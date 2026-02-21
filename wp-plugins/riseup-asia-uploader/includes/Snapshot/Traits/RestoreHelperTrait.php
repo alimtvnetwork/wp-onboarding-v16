@@ -97,7 +97,7 @@ trait RestoreHelperTrait {
     private function insertAuditRecord(PDO $pdo, string $details): void {
         $stmt = $pdo->prepare(
             "INSERT INTO " . TableType::Transactions->value .
-            " (plugin, action, status, details, source, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+            " (PluginSlug, Action, Status, Details, SourceMachine, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)"
         );
         $stmt->execute(array(
             PluginConfigType::Slug->value, ActionType::SnapshotRestore->value, StatusType::Success->value,

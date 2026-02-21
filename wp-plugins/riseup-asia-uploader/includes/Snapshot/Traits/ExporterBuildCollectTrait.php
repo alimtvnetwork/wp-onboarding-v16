@@ -62,8 +62,8 @@ trait ExporterBuildCollectTrait {
         }
 
         $stmt = $pdo->prepare(
-            'SELECT id, filename, filepath, scope, status, created_at FROM ' . TableType::SnapshotExports->value .
-            ' WHERE scope = \'incremental\' AND filepath LIKE ? AND status = ? ORDER BY created_at ASC'
+            'SELECT Id, Filename, Filepath, Scope, Status, CreatedAt FROM ' . TableType::SnapshotExports->value .
+            ' WHERE Scope = \'incremental\' AND Filepath LIKE ? AND Status = ? ORDER BY CreatedAt ASC'
         );
         $parentDir = '%/' . $parentName . '/incremental/%';
         $stmt->execute(array($parentDir, SnapshotStatusType::Complete->value));

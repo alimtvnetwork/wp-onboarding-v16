@@ -68,7 +68,7 @@ trait SnapshotProviderHelpersTrait {
     }
 
     protected function getNextSequence(): int {
-        $result = $this->db->querySingle('SELECT MAX(sequence) as max_seq FROM ' . TableType::Snapshots->value);
+        $result = $this->db->querySingle('SELECT MAX(Sequence) as max_seq FROM ' . TableType::Snapshots->value);
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
 

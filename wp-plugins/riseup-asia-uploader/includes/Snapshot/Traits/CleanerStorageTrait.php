@@ -36,11 +36,11 @@ trait CleanerStorageTrait {
             $db_stats = $this->db->querySingle(
                 'SELECT 
                     COUNT(*) as count,
-                    COALESCE(SUM(size), 0) as total_size,
-                    MIN(created_at) as oldest,
-                    MAX(created_at) as newest
+                    COALESCE(SUM(FileSize), 0) as total_size,
+                    MIN(CreatedAt) as oldest,
+                    MAX(CreatedAt) as newest
                 FROM ' . TableType::Snapshots->value .
-                ' WHERE status = ?',
+                ' WHERE Status = ?',
                 array(SnapshotStatusType::Complete->value)
             );
 

@@ -58,7 +58,7 @@ trait IncrementalRegistrationTrait {
     }
 
     private function getNextTrackingSequence(PDO $pdo): int {
-        $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
+        $row = $pdo->query("SELECT MAX(Sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
 
         return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
     }
@@ -137,7 +137,7 @@ trait IncrementalRegistrationTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT id FROM ' . TableType::Snapshots->value . ' WHERE filepath = ? AND status = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT Id FROM ' . TableType::Snapshots->value . ' WHERE Filepath = ? AND Status = ? LIMIT 1');
         $stmt->execute(array($masterDir, SnapshotStatusType::Complete->value));
         $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 

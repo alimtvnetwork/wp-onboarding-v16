@@ -117,7 +117,7 @@ trait ExporterBuildTrait {
             @unlink($zipPath);
         }
 
-        $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ?');
+        $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE SnapshotId = ?');
         $stmt->execute(array($snapshotId));
     }
 
@@ -129,7 +129,7 @@ trait ExporterBuildTrait {
     ) {
         $stmt = $pdo->prepare(
             'INSERT OR REPLACE INTO ' . TableType::SnapshotExports->value .
-            ' (snapshot_id, zip_filename, zip_path, zip_size, included_ids, incremental_count, status, created_at)' .
+            ' (SnapshotId, ZipFilename, ZipPath, ZipSize, IncludedIds, IncrementalCount, Status, CreatedAt)' .
             ' VALUES (?, ?, ?, 0, ?, 0, ?, datetime(\'now\'))'
         );
         $stmt->execute(array($snapshotId, $zipFilename, $zipPath, json_encode(array($snapshotId)), SnapshotExportStatusType::Building->value));
@@ -261,7 +261,7 @@ trait ExporterBuildTrait {
     ) {
         $zipSize = filesize($zipPath);
         $stmt = $pdo->prepare(
-            'UPDATE ' . TableType::SnapshotExports->value . ' SET status = ?, zip_size = ?, included_ids = ?, incremental_count = ? WHERE snapshot_id = ?'
+            'UPDATE ' . TableType::SnapshotExports->value . ' SET Status = ?, ZipSize = ?, IncludedIds = ?, IncrementalCount = ? WHERE SnapshotId = ?'
         );
         $stmt->execute(array(SnapshotExportStatusType::Valid->value, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
 

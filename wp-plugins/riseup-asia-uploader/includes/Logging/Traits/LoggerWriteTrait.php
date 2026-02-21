@@ -126,10 +126,10 @@ trait LoggerWriteTrait {
         $contextJson = $hasContext ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 
         $stmt = $pdo->prepare(
-            'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (Level, Message, File, Line, ContextJson, StackTrace, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute(array($level, $message, $file, $line, $contextJson, $stackTrace ?: null, $now));
 
-        $pdo->exec("INSERT OR REPLACE INTO " . self::TABLE_FLASH_STATE . " (key, value, updated_at) VALUES ('" . self::KEY_HAS_UNSEEN_ERRORS . "', '1', '{$now}')");
+        $pdo->exec("INSERT OR REPLACE INTO " . self::TABLE_FLASH_STATE . " (Key, Value, UpdatedAt) VALUES ('" . self::KEY_HAS_UNSEEN_ERRORS . "', '1', '{$now}')");
     }
 }
