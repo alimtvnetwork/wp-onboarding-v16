@@ -63,33 +63,55 @@ trait AgentRemoteActionTrait {
 
     private function followRedirectChain(string $url, int $maxRedirects = 5): string|WP_Error {
         for ($i = 0; $i < $maxRedirects; $i++) {
-            $response = wp_remote_head($url, HttpConfigType::headRedirectOptions());
-            if (is_wp_error($response)) {
-                return $response;
+            $next = $this->followSingleRedirect($url);
+
+            if (is_wp_error($next)) {
+                return $next;
             }
 
-            $status = wp_remote_retrieve_response_code($response);
-            $httpStatus = HttpStatusType::tryFrom($status);
-            $isRedirect = ($httpStatus !== null && $httpStatus->isRedirect());
-
-            if ($isRedirect) {
-                $this->fileLogger->debug('Redirect detected', array(
-                    'url'    => $url,
-                    'status' => $status,
-                ));
-
-                $location = wp_remote_retrieve_header($response, HttpHeaderType::Location->value);
-                if (BooleanHelpers::hasValue($location)) {
-                    $url = $location;
-                }
-
-                continue;
+            if ($next === null) {
+                return $url;
             }
 
-            break;
+            $url = $next;
         }
 
+        $this->fileLogger->warning('Max redirects reached', array(
+            'url'          => $url,
+            'maxRedirects' => $maxRedirects,
+        ));
+
         return $url;
+    }
+
+    private function followSingleRedirect(string $url): string|null|WP_Error {
+        $response = wp_remote_head($url, HttpConfigType::headRedirectOptions());
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $status = wp_remote_retrieve_response_code($response);
+        $httpStatus = HttpStatusType::tryFrom($status);
+        $isNotRedirect = ($httpStatus === null || !$httpStatus->isRedirect());
+
+        if ($isNotRedirect) {
+            return null;
+        }
+
+        $this->fileLogger->debug('Redirect detected', array(
+            'url'    => $url,
+            'status' => $status,
+        ));
+
+        $location = wp_remote_retrieve_header($response, HttpHeaderType::Location->value);
+        $hasNoLocation = !BooleanHelpers::hasValue($location);
+
+        if ($hasNoLocation) {
+            return null;
+        }
+
+        return $location;
     }
 
     public function testConnection(int $agentId): array {
