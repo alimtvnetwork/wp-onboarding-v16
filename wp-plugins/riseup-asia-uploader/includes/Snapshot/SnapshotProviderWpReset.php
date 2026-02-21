@@ -27,7 +27,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function getCapabilities(): array {
         $is_pro = class_exists('WP_Reset_Pro');
 
-        return array('full_site' => true, 'database_only' => true, 'selective' => true, 'scheduled' => $is_pro, 'restore' => true, 'export' => true, 'import' => true);
+        return array('fullSite' => true, 'databaseOnly' => true, 'selective' => true, 'scheduled' => $is_pro, 'restore' => true, 'export' => true, 'import' => true);
     }
 
     public function createSnapshot(array $options): array {
