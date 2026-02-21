@@ -3,6 +3,7 @@
  * Restore Incremental Trait
  *
  * Incremental backup application during restore.
+ * Supports both old snake_case and new PascalCase root DB schemas.
  *
  * @package RiseupAsia\Snapshot\Traits
  * @since   1.15.0
@@ -22,6 +23,8 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
 trait RestoreIncrementalTrait {
+
+    use RootDbCompatTrait;
 
     private function applyIncrementalsPhase(
         PDO $rootPdo,
@@ -52,8 +55,13 @@ trait RestoreIncrementalTrait {
         string $snapshotDir,
         array $restoreOrder,
     ): array {
+        $table = $this->resolveRootTable($rootPdo, 'IncrementalBackups', 'incremental_backups');
+        $seqCol = $this->resolveRootCol($rootPdo, $table, 'SequenceNum', 'sequence_num');
+        $folderCol = $this->resolveRootCol($rootPdo, $table, 'FolderName', 'folder_name');
+        $pathCol = $this->resolveRootCol($rootPdo, $table, 'RelativePath', 'relative_path');
+
         $incrementals = $rootPdo->query(
-            "SELECT sequence_num, folder_name, relative_path FROM incremental_backups ORDER BY sequence_num ASC"
+            "SELECT {$seqCol} AS sequence_num, {$folderCol} AS folder_name, {$pathCol} AS relative_path FROM {$table} ORDER BY {$seqCol} ASC"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($incrementals)) {
