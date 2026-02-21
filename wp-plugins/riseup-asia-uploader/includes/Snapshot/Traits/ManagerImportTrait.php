@@ -20,6 +20,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerImportTrait {
 
@@ -28,12 +29,12 @@ trait ManagerImportTrait {
 
     public function importSnapshot(string $uploadedPath): array {
         if (PathHelper::isFileMissing($uploadedPath)) {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::UploadedFileMissing->value);
+            return ResultHelper::error(ResponseMessageType::UploadedFileMissing->value);
         }
 
         $ext = strtolower(pathinfo($uploadedPath, PATHINFO_EXTENSION));
         if ($ext !== 'zip') {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::InvalidFileTypeZip->value);
+            return ResultHelper::error(ResponseMessageType::InvalidFileTypeZip->value);
         }
 
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
@@ -44,7 +45,7 @@ trait ManagerImportTrait {
         $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
 
         if ($isDirCreationFailed) {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::TempDirCreateFailed->value);
+            return ResultHelper::error(ResponseMessageType::TempDirCreateFailed->value);
         }
 
         try {
@@ -61,7 +62,7 @@ trait ManagerImportTrait {
 
             $this->log(LogLevelType::Error->value, 'Snapshot import failed', array(ResponseKeyType::Error->value => $e->getMessage()));
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return ResultHelper::errorFromException($e);
         }
     }
 
@@ -159,10 +160,11 @@ trait ManagerImportTrait {
             ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $newFilename,
         ));
 
-        return array(
-            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $newFilename,
-            ResponseKeyType::Tables->value => count($manifest['snapshot'][ResponseKeyType::Tables->value]),
-            ResponseKeyType::Rows->value => $manifest['snapshot'][ResponseKeyType::TotalRows->value],
-        );
+        return ResultHelper::ok(array(
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            ResponseKeyType::Filename->value   => $newFilename,
+            ResponseKeyType::Tables->value     => count($manifest['snapshot'][ResponseKeyType::Tables->value]),
+            ResponseKeyType::Rows->value       => $manifest['snapshot'][ResponseKeyType::TotalRows->value],
+        ));
     }
 }

@@ -27,6 +27,7 @@ use RiseupAsia\Enums\SyncEntryStatusType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait SyncPushTrait
 {
@@ -37,31 +38,25 @@ trait SyncPushTrait
         $files = isset($body[ResponseKeyType::Files->value]) ? $body[ResponseKeyType::Files->value] : array();
 
         if (empty($slug)) {
-
             return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
         $isFilesInvalid = (BooleanHelpers::isValueEmpty($files) || is_array($files) === false);
         if ($isFilesInvalid) {
-
             return $this->errorResponse('Files array is required', HttpStatusType::BadRequest->value);
         }
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             if (PathHelper::isDirMissing($plugin_dir)) {
-
                 return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
-
             return new WP_REST_Response($result, HttpStatusType::Ok->value);
         } catch (Throwable $e) {
-
             return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
-    /** Execute the sync push operation across all files. */
     private function executeSyncPush(
         string $slug,
         array $files,
@@ -81,7 +76,10 @@ trait SyncPushTrait
         $this->logSyncCompletion($slug, $counters);
         FileCache::getInstance($this->fileLogger, $this->db)->invalidate($slug);
 
-        return array(ResponseKeyType::Success->value => true) + $counters + array('ignored_files' => $ignored_files, 'results' => $results);
+        return ResultHelper::ok($counters + array(
+            'ignored_files' => $ignored_files,
+            'results'       => $results,
+        ));
     }
 
     /** Process a single file in the sync push operation. */
@@ -96,12 +94,10 @@ trait SyncPushTrait
 
         $guardResult = $this->guardSyncFile($path, $action, $plugin_dir, $ignore);
         if ($guardResult !== null) {
-
             return $guardResult;
         }
 
         $full_path = $plugin_dir . '/' . $path;
-
         return $this->dispatchSyncAction($path, $action, $full_path, $plugin_dir, $slug, $file);
     }
 
@@ -113,20 +109,15 @@ trait SyncPushTrait
         UploadIgnore $ignore,
     ): ?array {
         if (empty($path) || empty($action)) {
-
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Skipped->value, ResponseKeyType::Reason->value => 'Missing path or action');
         }
         if ($ignore->shouldIgnore($path)) {
-
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Ignored->value, ResponseKeyType::Reason->value => ResponseMessageType::FileIgnored->value);
         }
-
         $full_path = $plugin_dir . '/' . $path;
         if ($this->isSyncPathTraversal($full_path, $plugin_dir, $action)) {
-
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Path traversal detected');
         }
-
         return null;
     }
 
@@ -140,88 +131,52 @@ trait SyncPushTrait
         array $file,
     ): array {
         if ($action === SyncActionType::Replace->value) {
-
             return $this->syncReplaceFile($path, $action, isset($file['content']) ? $file['content'] : '', $full_path);
         }
         if ($action === SyncActionType::Delete->value) {
-
             return $this->syncDeleteFile($path, $action, $full_path, $plugin_dir, $slug);
         }
-
         return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Unknown action: ' . $action);
     }
 
     /** Check for path traversal in sync operations. */
-    private function isSyncPathTraversal(
-        string $full_path,
-        string $plugin_dir,
-        string $action,
-    ): bool {
+    private function isSyncPathTraversal(string $full_path, string $plugin_dir, string $action): bool {
         $real_plugin_dir = realpath($plugin_dir);
         $resolved = realpath(dirname($full_path));
-        if ($resolved === false) {
-            $resolved = $plugin_dir;
-        }
-
+        if ($resolved === false) { $resolved = $plugin_dir; }
         $syncAction = SyncActionType::tryFrom($action);
         $isActionOtherThanDelete = ($syncAction === null || $syncAction->isOtherThan(SyncActionType::Delete));
-
         return (strpos($resolved, $real_plugin_dir) !== 0 && $isActionOtherThanDelete);
     }
 
     /** Replace (create/update) a file during sync. */
-    private function syncReplaceFile(
-        string $path,
-        string $action,
-        string $content,
-        string $full_path,
-    ): array {
+    private function syncReplaceFile(string $path, string $action, string $content, string $full_path): array {
         $decoded = base64_decode($content, true);
         if ($decoded === false) {
-
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Invalid base64 content');
         }
-
         $dir = dirname($full_path);
-        if (PathHelper::isDirMissing($dir)) {
-            PathHelper::makeDirectory($dir);
-        }
-
+        if (PathHelper::isDirMissing($dir)) { PathHelper::makeDirectory($dir); }
         $written = file_put_contents($full_path, $decoded) !== false;
         $result = array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => $written ? SyncEntryStatusType::Success->value : SyncEntryStatusType::Error->value);
         $isWriteFailed = ($written === false);
-        if ($isWriteFailed) {
-            $result[ResponseKeyType::Reason->value] = 'Failed to write file';
-        }
-
+        if ($isWriteFailed) { $result[ResponseKeyType::Reason->value] = 'Failed to write file'; }
         return $result;
     }
 
     /** Delete a file during sync with audit trail. */
-    private function syncDeleteFile(
-        string $path,
-        string $action,
-        string $full_path,
-        string $plugin_dir,
-        string $slug,
-    ): array {
+    private function syncDeleteFile(string $path, string $action, string $full_path, string $plugin_dir, string $slug): array {
         if (PathHelper::isFileMissing($full_path)) {
-
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Success->value, ResponseKeyType::Reason->value => 'Already absent');
         }
-
         if ($this->db) {
             $this->db->logTransaction(ActionType::SyncDelete->value, $slug, StatusType::Success->value, 'Deleted via sync: ' . $path, null, null, TriggerSourceType::Api->value);
         }
-
         $isDeleteFailed = (unlink($full_path) === false);
         if ($isDeleteFailed) {
-
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Failed to delete file');
         }
-
         $this->cleanEmptyParentDirs($full_path, $plugin_dir);
-
         return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Success->value);
     }
 
@@ -235,18 +190,9 @@ trait SyncPushTrait
     }
 
     /** Update sync counters based on a file result entry. */
-    private function updateSyncCounters(
-        array $entry,
-        array &$counters,
-        array &$ignored,
-    ): void {
+    private function updateSyncCounters(array $entry, array &$counters, array &$ignored): void {
         $isIgnored = ($entry['status'] === SyncEntryStatusType::Ignored->value);
-        if ($isIgnored) {
-            $counters['files_ignored']++;
-            $ignored[] = $entry[ResponseKeyType::Path->value];
-
-            return;
-        }
+        if ($isIgnored) { $counters['files_ignored']++; $ignored[] = $entry[ResponseKeyType::Path->value]; return; }
         $isStatusSuccess = ($entry['status'] === SyncEntryStatusType::Success->value);
         if ($isStatusSuccess) {
             if ($entry['action'] === SyncActionType::Replace->value) { $counters['files_updated']++; }
@@ -257,10 +203,7 @@ trait SyncPushTrait
     /** Log the completion of a sync push operation. */
     private function logSyncCompletion(string $slug, array $counters): void {
         $isDbMissing = ($this->db === null);
-        if ($isDbMissing) {
-
-            return;
-        }
+        if ($isDbMissing) { return; }
         $this->db->logTransaction(
             ActionType::Sync->value, $slug, StatusType::Success->value,
             sprintf('Sync: %d updated, %d deleted, %d ignored', $counters['files_updated'], $counters['files_deleted'], $counters['files_ignored']),

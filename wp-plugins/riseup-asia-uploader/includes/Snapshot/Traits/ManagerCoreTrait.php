@@ -18,6 +18,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerCoreTrait {
 
@@ -32,7 +33,10 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotProviderMissing->value, ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
+            return ResultHelper::errorWithCode(
+                ResponseMessageType::SnapshotProviderMissing->value,
+                SnapshotErrorType::ProviderNotAvail->value,
+            );
         }
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot', array(
@@ -48,7 +52,7 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ProviderMissing->value);
+            return ResultHelper::error(ResponseMessageType::ProviderMissing->value);
         }
 
         return $provider->deleteSnapshot($snapshotId);
@@ -80,7 +84,7 @@ trait ManagerCoreTrait {
 
         return array(
             ResponseKeyType::Snapshots->value => $snapshots ?: array(),
-            ResponseKeyType::Total->value => $total ? (int)$total[ResponseKeyType::Count->value] : 0,
+            ResponseKeyType::Total->value     => $total ? (int)$total[ResponseKeyType::Count->value] : 0,
         );
     }
 

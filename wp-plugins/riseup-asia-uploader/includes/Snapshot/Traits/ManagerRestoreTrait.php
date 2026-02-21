@@ -21,6 +21,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreTrait {
 
@@ -54,21 +55,30 @@ trait ManagerRestoreTrait {
     private function guardRestorePreConditions(int $snapshotId, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Restore requires explicit confirmation (confirm=true)', ResponseKeyType::Code->value => SnapshotErrorType::RestoreNoConfirm->value);
+            return ResultHelper::errorWithCode(
+                'Restore requires explicit confirmation (confirm=true)',
+                SnapshotErrorType::RestoreNoConfirm->value,
+            );
         }
 
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null || $provider === false);
         if ($isProviderMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotProviderMissing->value, ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
+            return ResultHelper::errorWithCode(
+                ResponseMessageType::SnapshotProviderMissing->value,
+                SnapshotErrorType::ProviderNotAvail->value,
+            );
         }
 
         $snapshot = $provider->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
         if ($isSnapshotMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value, ResponseKeyType::Code->value => SnapshotErrorType::NotFound->value);
+            return ResultHelper::errorWithCode(
+                ResponseMessageType::SnapshotNotFound->value,
+                SnapshotErrorType::NotFound->value,
+            );
         }
 
         return $this->validateIncrementalParent($snapshot, $snapshotId);
@@ -97,7 +107,7 @@ trait ManagerRestoreTrait {
 
         if (PathHelper::isFileMissing($filepath)) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Snapshot file not found: ' . basename($filepath));
+            return ResultHelper::error('Snapshot file not found: ' . basename($filepath));
         }
 
         try {
@@ -107,17 +117,21 @@ trait ManagerRestoreTrait {
             $tables = $this->getRestoreTables($snapshot, $options);
             if (empty($tables)) {
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No tables to restore');
+                return ResultHelper::error('No tables to restore');
             }
 
             $counts = $this->restoreAllTables($sqlite, $tables, $options);
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Tables->value => $counts[ResponseKeyType::Tables->value], ResponseKeyType::Rows->value => $counts[ResponseKeyType::Rows->value], ResponseKeyType::Duration->value => microtime(true) - $startTime);
+            return ResultHelper::ok(array(
+                ResponseKeyType::Tables->value   => $counts[ResponseKeyType::Tables->value],
+                ResponseKeyType::Rows->value     => $counts[ResponseKeyType::Rows->value],
+                ResponseKeyType::Duration->value => microtime(true) - $startTime,
+            ));
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Restore exception', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return ResultHelper::errorFromException($e);
         }
     }
 
@@ -145,6 +159,9 @@ trait ManagerRestoreTrait {
             }
         }
 
-        return array(ResponseKeyType::Tables->value => $restoredTables, ResponseKeyType::Rows->value => $totalRows);
+        return array(
+            ResponseKeyType::Tables->value => $restoredTables,
+            ResponseKeyType::Rows->value   => $totalRows,
+        );
     }
 }

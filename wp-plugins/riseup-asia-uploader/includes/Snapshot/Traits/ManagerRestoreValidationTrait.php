@@ -19,6 +19,7 @@ use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreValidationTrait {
 
@@ -48,10 +49,9 @@ trait ManagerRestoreValidationTrait {
             ResponseKeyType::SnapshotId->value => $snapshotId, 'master_dir' => $masterDirname, 'expected_path' => $masterDir,
         ));
 
-        return array(
-            ResponseKeyType::Success->value => false,
-            ResponseKeyType::Error->value   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
-            ResponseKeyType::Code->value    => SnapshotErrorType::IncrementalNoParent->value,
+        return ResultHelper::errorWithCode(
+            'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
+            SnapshotErrorType::IncrementalNoParent->value,
         );
     }
 
@@ -78,7 +78,7 @@ trait ManagerRestoreValidationTrait {
 
         if (BooleanHelpers::hasValue($options['require_backup'])) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Pre-restore backup failed: ' . $backupResult[ResponseKeyType::Error->value]);
+            return ResultHelper::error('Pre-restore backup failed: ' . $backupResult[ResponseKeyType::Error->value]);
         }
 
         return null;

@@ -24,6 +24,7 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait RestoreHelperTrait {
 
@@ -45,16 +46,15 @@ trait RestoreHelperTrait {
             ResponseKeyType::Duration->value        => round($duration, 2) . 's',
         ));
 
-        return array(
-            ResponseKeyType::Success->value         => true,
-            ResponseKeyType::TablesRestored->value   => $masterResult[ResponseKeyType::TablesRestored->value],
-            ResponseKeyType::TotalRows->value        => $totalRows,
-            'incrementals_applied'                   => $incResult['applied'],
-            ResponseKeyType::BackupId->value         => $backupId,
-            ResponseKeyType::Errors->value           => $errors,
-            ResponseKeyType::Duration->value         => $duration,
-            'meta'                                   => $meta,
-        );
+        return ResultHelper::ok(array(
+            ResponseKeyType::TablesRestored->value => $masterResult[ResponseKeyType::TablesRestored->value],
+            ResponseKeyType::TotalRows->value      => $totalRows,
+            'incrementals_applied'                 => $incResult['applied'],
+            ResponseKeyType::BackupId->value       => $backupId,
+            ResponseKeyType::Errors->value         => $errors,
+            ResponseKeyType::Duration->value       => $duration,
+            'meta'                                 => $meta,
+        ));
     }
 
     private function logAuditRestore(
@@ -86,8 +86,11 @@ trait RestoreHelperTrait {
     ): string {
 
         return json_encode(array(
-            ResponseKeyType::Directory->value => basename($snapshotDir), ResponseKeyType::TablesRestored->value => $tablesRestored,
-            ResponseKeyType::TotalRows->value => $totalRows, ResponseKeyType::Duration->value => round($duration, 2), 'type' => SnapshotWorkerModeType::PerTable->value,
+            ResponseKeyType::Directory->value      => basename($snapshotDir),
+            ResponseKeyType::TablesRestored->value  => $tablesRestored,
+            ResponseKeyType::TotalRows->value       => $totalRows,
+            ResponseKeyType::Duration->value        => round($duration, 2),
+            'type'                                  => SnapshotWorkerModeType::PerTable->value,
         ));
     }
 

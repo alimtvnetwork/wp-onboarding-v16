@@ -19,6 +19,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
 
 trait NativeSnapshotCrudTrait {
@@ -28,7 +29,7 @@ trait NativeSnapshotCrudTrait {
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value);
+            return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['filepath'];
@@ -37,7 +38,7 @@ trait NativeSnapshotCrudTrait {
             if ($isDeleteFailed) {
                 $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to delete snapshot file');
+                return ResultHelper::error('Failed to delete snapshot file');
             }
         }
 
@@ -49,7 +50,7 @@ trait NativeSnapshotCrudTrait {
         $this->db->delete(TableType::Snapshots->value, array('id' => $snapshotId));
         $this->log(LogLevelType::Info->value, 'Snapshot deleted', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot['filename']));
 
-        return array(ResponseKeyType::Success->value => true);
+        return ResultHelper::ok();
     }
 
     public function exportSnapshot(int $snapshotId): array {
@@ -57,13 +58,13 @@ trait NativeSnapshotCrudTrait {
         $isSnapshotMissing = ($snapshot === null);
         if ($isSnapshotMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotNotFound->value);
+            return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['filepath'];
         if (PathHelper::isFileMissing($filepath)) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::SnapshotFileMissing->value);
+            return ResultHelper::error(ResponseMessageType::SnapshotFileMissing->value);
         }
 
         return $this->createExportZip($snapshotId, $filepath, $snapshot);
@@ -79,23 +80,31 @@ trait NativeSnapshotCrudTrait {
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ZipCreateFailed->value);
+            return ResultHelper::error(ResponseMessageType::ZipCreateFailed->value);
         }
 
         $zip->addFile($filepath, basename($filepath));
         $zip->addFromString('manifest.json', json_encode($this->buildExportManifest($snapshotId, $snapshot), JSON_PRETTY_PRINT));
         $zip->close();
 
-        return array(ResponseKeyType::Success->value => true, 'filepath' => $zip_path, ResponseKeyType::Filename->value => basename($zip_path), ResponseKeyType::Size->value => filesize($zip_path));
+        return ResultHelper::ok(array(
+            'filepath'                    => $zip_path,
+            ResponseKeyType::Filename->value => basename($zip_path),
+            ResponseKeyType::Size->value     => filesize($zip_path),
+        ));
     }
 
     private function buildExportManifest(int $snapshotId, array $snapshot): array {
 
         return array(
-            'version' => PluginConfigType::Version->value, 'created_at' => date('c'), ResponseKeyType::SnapshotId->value => $snapshotId,
-            ResponseKeyType::Filename->value => $snapshot['filename'], ResponseKeyType::Scope->value => $snapshot['scope'],
-            ResponseKeyType::Tables->value => json_decode($snapshot['tables_json'], true),
-            ResponseKeyType::TotalRows->value => $snapshot['total_rows'], ResponseKeyType::FileSize->value => $snapshot['file_size'],
+            'version'                           => PluginConfigType::Version->value,
+            'created_at'                        => date('c'),
+            ResponseKeyType::SnapshotId->value  => $snapshotId,
+            ResponseKeyType::Filename->value    => $snapshot['filename'],
+            ResponseKeyType::Scope->value       => $snapshot['scope'],
+            ResponseKeyType::Tables->value      => json_decode($snapshot['tables_json'], true),
+            ResponseKeyType::TotalRows->value   => $snapshot['total_rows'],
+            ResponseKeyType::FileSize->value    => $snapshot['file_size'],
         );
     }
 
@@ -123,7 +132,10 @@ trait NativeSnapshotCrudTrait {
         );
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
 
-        return array(ResponseKeyType::Snapshots->value => $snapshots ?: array(), ResponseKeyType::Total->value => $total ? (int)$total[ResponseKeyType::Count->value] : 0);
+        return array(
+            ResponseKeyType::Snapshots->value => $snapshots ?: array(),
+            ResponseKeyType::Total->value     => $total ? (int)$total[ResponseKeyType::Count->value] : 0,
+        );
     }
 
     public function getAvailableTables(): array {
@@ -131,9 +143,10 @@ trait NativeSnapshotCrudTrait {
         $all_tables = $this->wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
         foreach ($all_tables as $table_info) {
             $tables[] = array(
-                'name' => $table_info['Name'], ResponseKeyType::Rows->value => (int)$table_info['Rows'],
-                ResponseKeyType::Size->value => (int)$table_info['Data_length'] + (int)$table_info['Index_length'],
-                'is_core' => strpos($table_info['Name'], $this->wpdb->prefix) === 0,
+                'name'                        => $table_info['Name'],
+                ResponseKeyType::Rows->value  => (int)$table_info['Rows'],
+                ResponseKeyType::Size->value  => (int)$table_info['Data_length'] + (int)$table_info['Index_length'],
+                'is_core'                     => strpos($table_info['Name'], $this->wpdb->prefix) === 0,
             );
         }
 

@@ -21,6 +21,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreStrategyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait RestoreTableTrait {
 
@@ -62,7 +63,11 @@ trait RestoreTableTrait {
             }
         }
 
-        return array(ResponseKeyType::TablesRestored->value => $tables_restored, ResponseKeyType::TotalRows->value => $total_rows, ResponseKeyType::Errors->value => $errors);
+        return array(
+            ResponseKeyType::TablesRestored->value => $tables_restored,
+            ResponseKeyType::TotalRows->value      => $total_rows,
+            ResponseKeyType::Errors->value         => $errors,
+        );
     }
 
     private function restoreSingleMasterTable(
@@ -75,14 +80,20 @@ trait RestoreTableTrait {
 
         if ($isTableInfoMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $table . ': not found in inventory', ResponseKeyType::Rows->value => 0);
+            return ResultHelper::error(
+                $table . ': not found in inventory',
+                array(ResponseKeyType::Rows->value => 0),
+            );
         }
 
         $sqlite_path = $snapshotDir . '/' . $table_info['sqlite_file'];
         if (PathHelper::isFileMissing($sqlite_path)) {
             $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array('table' => $table, 'file' => $table_info['sqlite_file']));
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'SQLite file missing (' . $table_info['sqlite_file'] . ')', ResponseKeyType::Rows->value => 0);
+            return ResultHelper::error(
+                'SQLite file missing (' . $table_info['sqlite_file'] . ')',
+                array(ResponseKeyType::Rows->value => 0),
+            );
         }
 
         return $this->restoreTableFromFile($sqlite_path, $table, RestoreStrategyType::Truncate->value);
@@ -108,7 +119,10 @@ trait RestoreTableTrait {
             );
         } catch (Throwable $e) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Rows->value => 0);
+            return ResultHelper::errorFromException(
+                $e,
+                array(ResponseKeyType::Rows->value => 0),
+            );
         }
     }
 }

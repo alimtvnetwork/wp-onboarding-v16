@@ -22,6 +22,7 @@ use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SchedulerExecutorTrait {
@@ -58,7 +59,10 @@ trait SchedulerExecutorTrait {
         if (empty($args[ResponseKeyType::SnapshotId->value])) {
             $this->logger->error('[SCHEDULER] Missing snapshot_id for cron restore');
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Missing snapshot_id', ResponseKeyType::SkipAudit->value => true);
+            return ResultHelper::error(
+                'Missing snapshot_id',
+                array(ResponseKeyType::SkipAudit->value => true),
+            );
         }
 
         $manager = SnapshotFactory::manager($this->logger, $this->db);
@@ -97,7 +101,7 @@ trait SchedulerExecutorTrait {
         );
         $totalDeleted = array_sum(array_slice($auditData, 0, 3));
 
-        $cronResult = $this->buildCronResult(array(ResponseKeyType::Success->value => true), ActionType::SnapshotCleanup->value, TriggerSourceType::Cron->value, $auditData);
+        $cronResult = $this->buildCronResult(ResultHelper::ok(), ActionType::SnapshotCleanup->value, TriggerSourceType::Cron->value, $auditData);
         $cronResult[ResponseKeyType::SkipAudit->value] = ($totalDeleted === 0);
         $cronResult['log_data'] = $auditData + array(
             'space_freed'  => PathHelper::formatBytes($result['space_freed_bytes']),
