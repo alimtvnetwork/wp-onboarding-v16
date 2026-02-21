@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\AjaxActionType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\RetentionType;
@@ -546,7 +547,8 @@ if (!defined('ABSPATH')) {
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-    var ajaxNonce = '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>';
+    var ajaxNonce = '<?php echo wp_create_nonce(NonceType::Admin->value); ?>';
+    var restNonce = '<?php echo wp_create_nonce(NonceType::WpRest->value); ?>';
     var restBase = '<?php echo esc_url(rest_url(PluginConfigType::apiFullNamespace())); ?>';
     var $status = $('#snapshot_action_status');
     var currentPage = 1;
@@ -740,7 +742,7 @@ jQuery(document).ready(function($) {
             contentType: 'application/json',
             data: JSON.stringify({ job_id: activeJobId }),
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
                 var pct = Math.round(response.percent || 0);
@@ -817,7 +819,7 @@ jQuery(document).ready(function($) {
             url: restBase + '/snapshots/list?limit=' + limit + '&offset=' + offset,
             method: 'GET',
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
                 $('#snapshots_loading').hide();
@@ -967,7 +969,7 @@ jQuery(document).ready(function($) {
             url: restBase + '/snapshots/settings',
             method: 'GET',
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(settings) {
                 $('#settings_loading').hide();
@@ -1011,7 +1013,7 @@ jQuery(document).ready(function($) {
             url: restBase + '/snapshots/providers',
             method: 'GET',
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(providers) {
                 $('#providers_loading').hide();
@@ -1068,7 +1070,7 @@ jQuery(document).ready(function($) {
             url: restBase + '/snapshots/tables',
             method: 'GET',
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(tables) {
                 var html = '';
@@ -1102,7 +1104,7 @@ jQuery(document).ready(function($) {
             contentType: 'application/json',
             data: JSON.stringify(data),
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
                 showStatus($status, '✓ Snapshot job queued — running in background', false);
@@ -1145,7 +1147,7 @@ jQuery(document).ready(function($) {
             contentType: 'application/json',
             data: JSON.stringify({ parent_id: latestFull.id }),
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
                 showStatus($status, '✓ Incremental backup queued', false);
@@ -1197,7 +1199,7 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
                 showStatus($status, '✓ Snapshot imported successfully', false);
@@ -1265,7 +1267,7 @@ jQuery(document).ready(function($) {
                 create_backup: $('#restore_create_backup').is(':checked')
             }),
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
                 $('#restore_modal').hide();
@@ -1308,7 +1310,7 @@ jQuery(document).ready(function($) {
             contentType: 'application/json',
             data: JSON.stringify({ id: id }),
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
                 var downloadUrl = response.url || (response.data && response.data.url);
@@ -1439,7 +1441,7 @@ jQuery(document).ready(function($) {
             contentType: 'application/json',
             data: JSON.stringify({ id: currentDeleteId }),
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+                xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function() {
                 $('#delete_modal').hide();

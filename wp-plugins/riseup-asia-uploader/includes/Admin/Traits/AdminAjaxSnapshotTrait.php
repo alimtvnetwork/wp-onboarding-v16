@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotConfigType;
@@ -25,7 +26,7 @@ trait AdminAjaxSnapshotTrait {
 
     /** AJAX handler: Save snapshot settings. */
     public function ajaxSaveSnapshotSettings() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
@@ -124,7 +125,7 @@ trait AdminAjaxSnapshotTrait {
 
     /** AJAX handler: Run manual snapshot cleanup. */
     public function ajaxRunSnapshotCleanup() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
@@ -147,7 +148,7 @@ trait AdminAjaxSnapshotTrait {
 
     /** AJAX handler: Get snapshot storage stats. */
     public function ajaxGetSnapshotStorageStats() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));

@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\AdminTabType;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 $level_colors = array(
@@ -27,7 +28,7 @@ $level_colors = array(
 );
 
 $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
-$nonce = wp_create_nonce('riseup_admin_nonce');
+$nonce = wp_create_nonce(NonceType::Admin->value);
 ?>
 <div class="wrap riseup-admin riseup-error-log">
 

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotErrorType;
@@ -134,7 +135,7 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        $nonce = wp_create_nonce('riseup_snapshot_download_' . $exportId);
+        $nonce = wp_create_nonce(NonceType::SnapshotDownload->withSuffix($exportId));
 
         return rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::SnapshotDownloadFile->value . '?token=' . $nonce . '&id=' . $exportId);
     }
@@ -143,7 +144,7 @@ trait ExporterPublicApiTrait {
      * Validate a download token and return the export record.
      */
     public function validateDownloadToken(int $exportId, string $token): ?array {
-        $valid = wp_verify_nonce($token, 'riseup_snapshot_download_' . $exportId);
+        $valid = wp_verify_nonce($token, NonceType::SnapshotDownload->withSuffix($exportId));
         $isTokenInvalid = ($valid === false);
         if ($isTokenInvalid) {
             $this->log(LogLevelType::Warn->value, 'Invalid download token', array('export_id' => $exportId));

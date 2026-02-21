@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\AgentStatusType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 
 if (!defined('ABSPATH')) {
@@ -276,7 +277,7 @@ if (!defined('ABSPATH')) {
 <script type="text/javascript">
 jQuery(document).ready(function($) {
     var apiBase = '<?php echo esc_js(rest_url(PluginConfigType::apiFullNamespace())); ?>';
-    var nonce = '<?php echo wp_create_nonce('wp_rest'); ?>';
+    var nonce = '<?php echo wp_create_nonce(NonceType::WpRest->value); ?>';
     var currentAgentId = null;
 
     // Helper: AJAX request
