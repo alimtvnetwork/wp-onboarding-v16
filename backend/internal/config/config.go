@@ -10,142 +10,139 @@ import (
 
 	"wp-plugin-publish/internal/crypto"
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/enums/backup_type"
+	"wp-plugin-publish/internal/enums/log_level"
+	"wp-plugin-publish/internal/enums/plugin_selection"
+	"wp-plugin-publish/internal/enums/snapshot_mode"
 	"wp-plugin-publish/internal/logger"
 )
 
 // Config represents the application configuration
 type Config struct {
-	Version       string              `json:"version"`
-	DatabasePath  string              `json:"databasePath"`
-	TempDir       string              `json:"tempDir"`
-	Server        ServerConfig        `json:"server"`
-	Watcher       WatcherConfig       `json:"watcher"`
-	Backup        BackupConfig        `json:"backup"`
-	Logging       LoggingConfig       `json:"logging"`
-	Security      SecurityConfig      `json:"security"`
-	WordPress     WordPressConfig     `json:"wordpress"`
-	RemotePlugins RemotePluginsConfig `json:"remotePlugins"`
-	Snapshot      SnapshotConfig      `json:"snapshot"`
-	Seed          SeedConfig          `json:"seed"`
-	E2E           E2EConfig           `json:"e2e"`
-	ResponseDebug ResponseDebugConfig `json:"responseDebug"`
+	Version       string              `json:"Version"`
+	DatabasePath  string              `json:"DatabasePath"`
+	TempDir       string              `json:"TempDir"`
+	Server        ServerConfig        `json:"Server"`
+	Watcher       WatcherConfig       `json:"Watcher"`
+	Backup        BackupConfig        `json:"Backup"`
+	Logging       LoggingConfig       `json:"Logging"`
+	Security      SecurityConfig      `json:"Security"`
+	WordPress     WordPressConfig     `json:"WordPress"`
+	RemotePlugins RemotePluginsConfig `json:"RemotePlugins"`
+	Snapshot      SnapshotConfig      `json:"Snapshot"`
+	Seed          SeedConfig          `json:"Seed"`
+	E2E           E2EConfig           `json:"E2E"`
+	ResponseDebug ResponseDebugConfig `json:"ResponseDebug"`
 }
 
 // E2EConfig holds end-to-end test settings
 type E2EConfig struct {
-	Enabled          bool   `json:"enabled"`
-	TestPluginPath   string `json:"testPluginPath"`
-	TestSiteURL      string `json:"testSiteURL"`
-	TestSiteUsername  string `json:"testSiteUsername"`
-	TestSitePassword string `json:"testSitePassword"`
+	Enabled          bool   `json:"Enabled"`
+	TestPluginPath   string `json:"TestPluginPath"`
+	TestSiteURL      string `json:"TestSiteURL"`
+	TestSiteUsername  string `json:"TestSiteUsername"`
+	TestSitePassword string `json:"TestSitePassword"`
 }
 
 // ResponseDebugConfig controls error verbosity in API responses.
-// When disabled, stack traces and internal error details are stripped from responses.
 type ResponseDebugConfig struct {
-	IncludeStackTrace     bool `json:"includeStackTrace"`
-	IncludeInternalErrors bool `json:"includeInternalErrors"`
-	IncludeMethodsStack   bool `json:"includeMethodsStack"`
-	MaxStackFrames        int  `json:"maxStackFrames"`
+	IncludeStackTrace     bool `json:"IncludeStackTrace"`
+	IncludeInternalErrors bool `json:"IncludeInternalErrors"`
+	IncludeMethodsStack   bool `json:"IncludeMethodsStack"`
+	MaxStackFrames        int  `json:"MaxStackFrames"`
 }
 
 // SnapshotConfig holds snapshot backup system settings
 type SnapshotConfig struct {
-	Mode            string `json:"mode"`            // "per_table" | "single_db"
-	BackupType      string `json:"backupType"`      // "incremental" | "full"
-	WorkerCount     int    `json:"workerCount"`     // concurrent table exports
-	StoragePath     string `json:"storagePath"`     // relative to plugin data dir
-	IncludePlugins  bool   `json:"includePlugins"`  // include plugin ZIPs
-	PluginSelection string `json:"pluginSelection"` // "all" | "selective"
-	RetentionDays   int    `json:"retentionDays"`   // auto-cleanup after N days
-	RetentionCount  int    `json:"retentionCount"`  // max snapshots to keep
-	Compression     bool   `json:"compression"`     // ZIP compression on export
-	BatchSize       int    `json:"batchSize"`       // rows per batch during export
+	Mode            snapshotmode.Variant    `json:"Mode"`
+	BackupType      backuptype.Variant      `json:"BackupType"`
+	WorkerCount     int                     `json:"WorkerCount"`
+	StoragePath     string                  `json:"StoragePath"`
+	IncludePlugins  bool                    `json:"IncludePlugins"`
+	PluginSelection pluginselection.Variant `json:"PluginSelection"`
+	RetentionDays   int                     `json:"RetentionDays"`
+	RetentionCount  int                     `json:"RetentionCount"`
+	Compression     bool                    `json:"Compression"`
+	BatchSize       int                     `json:"BatchSize"`
 }
 
 // ServerConfig holds HTTP server settings
 type ServerConfig struct {
-	Port               int    `json:"port"`
-	WSReconnectDelayMs int    `json:"wsReconnectDelayMs"`
-	StaticDir          string `json:"staticDir"`
+	Port               int    `json:"Port"`
+	WSReconnectDelayMs int    `json:"WSReconnectDelayMs"`
+	StaticDir          string `json:"StaticDir"`
 }
 
 // WatcherConfig holds file watcher settings
 type WatcherConfig struct {
-	PollIntervalMs         int      `json:"pollIntervalMs"`
-	DebounceMs             int      `json:"debounceMs"`
-	DefaultExcludePatterns []string `json:"defaultExcludePatterns"`
+	PollIntervalMs         int      `json:"PollIntervalMs"`
+	DebounceMs             int      `json:"DebounceMs"`
+	DefaultExcludePatterns []string `json:"DefaultExcludePatterns"`
 }
 
 // BackupConfig holds backup settings
 type BackupConfig struct {
-	Location            string `json:"location"`
-	AutoBackupOnPublish bool   `json:"autoBackupOnPublish"`
-	RetentionDays       int    `json:"retentionDays"`
-	MaxBackupsPerPlugin int    `json:"maxBackupsPerPlugin"`
+	Location            string `json:"Location"`
+	AutoBackupOnPublish bool   `json:"AutoBackupOnPublish"`
+	RetentionDays       int    `json:"RetentionDays"`
+	MaxBackupsPerPlugin int    `json:"MaxBackupsPerPlugin"`
 }
 
 // LoggingConfig holds logging settings
 type LoggingConfig struct {
-	Level                  string `json:"level"`
-	RetentionDays          int    `json:"retentionDays"`
-	DebugMode              bool   `json:"debugMode"`
+	Level                  loglevel.Variant `json:"Level"`
+	RetentionDays          int              `json:"RetentionDays"`
+	DebugMode              bool             `json:"DebugMode"`
 	// TimeFormat uses Go time layout (e.g. "2006-01-02 03:04:05 PM" for 12-hour clock).
-	// This is the SINGLE SOURCE OF TRUTH for all backend log timestamps.
-	TimeFormat             string `json:"timeFormat"`
-	// ClearLogsOnStartup clears log.txt and error.log.txt on app startup
-	ClearLogsOnStartup     bool   `json:"clearLogsOnStartup"`
-	// ClearSessionsOnStartup clears all session folders on app startup
-	ClearSessionsOnStartup bool   `json:"clearSessionsOnStartup"`
-	// SessionLoggingEnabled enables per-request session logging for all API calls
-	SessionLoggingEnabled  bool   `json:"sessionLoggingEnabled"`
-	// StackTraceDepth controls the maximum number of Go stack frames captured (default 20)
-	StackTraceDepth        int    `json:"stackTraceDepth"`
-	// PhpStackTraceDepth controls the maximum PHP stack frames captured (0 = unlimited)
-	PhpStackTraceDepth     int    `json:"phpStackTraceDepth"`
+	TimeFormat             string           `json:"TimeFormat"`
+	ClearLogsOnStartup     bool             `json:"ClearLogsOnStartup"`
+	ClearSessionsOnStartup bool             `json:"ClearSessionsOnStartup"`
+	SessionLoggingEnabled  bool             `json:"SessionLoggingEnabled"`
+	StackTraceDepth        int              `json:"StackTraceDepth"`
+	PhpStackTraceDepth     int              `json:"PhpStackTraceDepth"`
 }
 
 // SecurityConfig holds security settings
 type SecurityConfig struct {
-	EncryptionKey string `json:"encryptionKey"`
+	EncryptionKey string `json:"EncryptionKey"`
 }
 
 // WordPressConfig holds WordPress API settings
 type WordPressConfig struct {
-	TimeoutSeconds int `json:"timeoutSeconds"`
-	MaxRetries     int `json:"maxRetries"`
+	TimeoutSeconds int `json:"TimeoutSeconds"`
+	MaxRetries     int `json:"MaxRetries"`
 }
 
 // RemotePluginsConfig holds caching settings for remote plugin lists
 type RemotePluginsConfig struct {
-	CacheEnabled   bool `json:"cacheEnabled"`
-	CacheTTLMinutes int  `json:"cacheTTLMinutes"`
+	CacheEnabled    bool `json:"CacheEnabled"`
+	CacheTTLMinutes int  `json:"CacheTTLMinutes"`
 }
 
 // SeedConfig holds seedable test data for quick setup
 type SeedConfig struct {
-	Enabled bool         `json:"enabled"`
-	Sites   []SeedSite   `json:"sites"`
-	Plugins []SeedPlugin `json:"plugins"`
+	Enabled bool         `json:"Enabled"`
+	Sites   []SeedSite   `json:"Sites"`
+	Plugins []SeedPlugin `json:"Plugins"`
 }
 
 // SeedSite represents a site to seed
 type SeedSite struct {
-	Name                string `json:"name"`
-	URL                 string `json:"url"`
-	Username            string `json:"username"`
-	ApplicationPassword string `json:"applicationPassword"` // Base64 encoded
-	Category            string `json:"category"`
+	Name                string `json:"Name"`
+	URL                 string `json:"URL"`
+	Username            string `json:"Username"`
+	ApplicationPassword string `json:"ApplicationPassword"`
+	Category            string `json:"Category"`
 }
 
 // SeedPlugin represents a plugin to seed
 type SeedPlugin struct {
-	Name        string   `json:"name"`
-	Path        string   `json:"path"`
-	Category    string   `json:"category"`
-	GitEnabled  bool     `json:"gitEnabled"`
-	AutoPublish bool     `json:"autoPublish"`
-	SiteNames   []string `json:"siteNames"` // Names of sites to link
+	Name        string   `json:"Name"`
+	Path        string   `json:"Path"`
+	Category    string   `json:"Category"`
+	GitEnabled  bool     `json:"GitEnabled"`
+	AutoPublish bool     `json:"AutoPublish"`
+	SiteNames   []string `json:"SiteNames"`
 }
 
 // DefaultConfig returns the default configuration
@@ -171,7 +168,7 @@ func DefaultConfig() *Config {
 			MaxBackupsPerPlugin: 10,
 		},
 		Logging: LoggingConfig{
-			Level:                  "info",
+			Level:                  loglevel.Info,
 			RetentionDays:          7,
 			DebugMode:              false,
 			TimeFormat:             "2006-01-02 03:04:05 PM",
@@ -179,7 +176,7 @@ func DefaultConfig() *Config {
 			ClearSessionsOnStartup: false,
 			SessionLoggingEnabled:  true,
 			StackTraceDepth:        20,
-			PhpStackTraceDepth:     0, // 0 = unlimited
+			PhpStackTraceDepth:     0,
 		},
 		Security: SecurityConfig{
 			EncryptionKey: "", // Must be set via environment or config
@@ -193,12 +190,12 @@ func DefaultConfig() *Config {
 			CacheTTLMinutes: 60,
 		},
 		Snapshot: SnapshotConfig{
-			Mode:            "per_table",
-			BackupType:      "incremental",
+			Mode:            snapshotmode.PerTable,
+			BackupType:      backuptype.Incremental,
 			WorkerCount:     10,
 			StoragePath:     "snapshots/",
 			IncludePlugins:  true,
-			PluginSelection: "all",
+			PluginSelection: pluginselection.All,
 			RetentionDays:   30,
 			RetentionCount:  10,
 			Compression:     true,
