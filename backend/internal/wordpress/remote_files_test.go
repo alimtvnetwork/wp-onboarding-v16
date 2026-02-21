@@ -103,8 +103,8 @@ func TestUploadPluginZip_PostsToOnboardUploadEndpoint(t *testing.T) {
 			if err := r.ParseMultipartForm(10 << 20); err != nil {
 				t.Fatalf("parse multipart: %v", err)
 			}
-			if r.FormValue("plugin_slug") != "category-generator" {
-				t.Fatalf("unexpected plugin_slug: %s", r.FormValue("plugin_slug"))
+			if r.FormValue("pluginSlug") != "category-generator" {
+				t.Fatalf("unexpected pluginSlug: %s", r.FormValue("pluginSlug"))
 			}
 			if r.FormValue("overwrite") != "true" {
 				t.Fatalf("unexpected overwrite: %s", r.FormValue("overwrite"))
