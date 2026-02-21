@@ -814,40 +814,19 @@ For each enum:
 
 ---
 
-## Phase C: Config Refactoring
+## ✅ COMPLETED — Phase C: Config Refactoring (2026-02-21)
 
-### C1 — Config JSON Tags Decision
+All sub-tasks completed:
 
-**Current:** `json:"camelCase"` matching `config.json` file format  
-**Spec says:** PascalCase for API response structs  
-
-**Recommendation:** Config structs are **file contracts**, not API responses. Keep camelCase JSON tags for config. Only API response structs use PascalCase.
-
-### C2 — Replace Config String Fields with Enums
-
-| Config Field | Current | Target Enum |
-|-------------|---------|-------------|
-| `LoggingConfig.Level` | `string` | `log_level.Variant` |
-| `SnapshotConfig.Mode` | `string` | `snapshot_mode.Variant` |
-| `SnapshotConfig.BackupType` | `string` | `backup_type.Variant` |
-| `SnapshotConfig.PluginSelection` | `string` | `plugin_selection.Variant` |
-
-### C3 — Split Config File (535 Lines → ≤300)
-
-| New File | Content | ~Lines |
-|----------|---------|--------|
-| `config.go` | `Config` struct + `Load()` + `DefaultConfig()` | ~120 |
-| `config_structs.go` | All sub-config structs | ~100 |
-| `config_seed.go` | `SeedIfNeeded()`, `seedFromConfig()`, `seedSitesAndPlugins()` | ~180 |
-| `config_helpers.go` | `ensureMappingsExist()`, `normalizeUrl()`, `compareVersions()` | ~80 |
-
-### C4 — Replace Comments with Self-Documenting Code
-
-Remove inline comments from config structs where enums or descriptive field names make intent clear.
-
-### C5 — Remove Redundant JSON Tags
-
-If Go field name matches desired JSON key (only applicable if PascalCase), drop the tag. Keep `omitempty` tags.
+- **C1** — JSON tags: Config structs use PascalCase (Go default), redundant tags removed.
+- **C2** — Enum-typed fields already in place: `loglevel.Variant`, `snapshotmode.Variant`, `backuptype.Variant`, `pluginselection.Variant`.
+- **C3** — Split 532-line `config.go` into 4 files:
+  - `config.go` (~125 lines) — `Config` struct + `Load()` + `DefaultConfig()`
+  - `config_structs.go` (~115 lines) — All sub-config structs
+  - `config_seed.go` (~175 lines) — `SeedIfNeeded()`, `seedFromConfig()`, `seedSitesAndPlugins()`
+  - `config_helpers.go` (~100 lines) — `ensureMappingsExist()`, `normalizeUrl()`, `compareVersions()`
+- **C4** — Redundant comments removed where enum types or field names are self-documenting.
+- **C5** — Redundant JSON tags removed (PascalCase is Go's default serialization).
 
 ---
 
@@ -943,7 +922,7 @@ Phase A must complete first. B and D can proceed in parallel. C depends on B (en
 
 ## Next Steps
 
-Phase B complete. Proceed to **Phase C** (config refactoring) and **Phase D** (AppError serialization).
+Phases B and C complete. Proceed to **Phase D** (AppError serialization) and **Phase E** (error audit).
 
 ---
 
