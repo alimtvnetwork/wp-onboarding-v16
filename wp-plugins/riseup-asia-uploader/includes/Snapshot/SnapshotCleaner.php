@@ -88,11 +88,11 @@ class SnapshotCleaner {
         $result = $this->execute($settings);
 
         return array(
-            'deleted_by_policy' => $result['retention']['deleted'] ?? 0,
-            'deleted_orphans'   => $result['orphans'][ResponseKeyType::Removed->value] ?? 0,
-            'deleted_failed'    => $result['stuck']['cleaned'] ?? 0,
-            'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
-            ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::DeletedByPolicy->value => $result['retention']['deleted'] ?? 0,
+            ResponseKeyType::DeletedOrphans->value   => $result['orphans'][ResponseKeyType::Removed->value] ?? 0,
+            ResponseKeyType::DeletedFailed->value    => $result['stuck']['cleaned'] ?? 0,
+            ResponseKeyType::SpaceFreedBytes->value  => $result['space_freed_bytes'] ?? 0,
+            ResponseKeyType::Errors->value           => $result[ResponseKeyType::Errors->value] ?? array(),
         );
     }
 
