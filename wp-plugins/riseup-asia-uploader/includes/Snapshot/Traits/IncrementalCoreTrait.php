@@ -16,7 +16,6 @@ use PDO;
 use Throwable;
 
 trait IncrementalCoreTrait {
-
     private function prepareIncrementalDir(string $rootPath): array {
         $rootPdo = new PDO('sqlite:' . $rootPath);
         $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

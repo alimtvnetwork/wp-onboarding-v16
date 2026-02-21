@@ -21,7 +21,6 @@ use PDOException;
 use Exception;
 
 trait ImportValidationTrait {
-
     use RootDbCompatTrait;
 
     private function validateSqliteFile(string $path, string $label): void {

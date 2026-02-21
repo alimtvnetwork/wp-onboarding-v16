@@ -27,7 +27,6 @@ use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
 
 trait ManagerSettingsTrait {
-
     public function getSettings(): array {
         $settings = $this->readSettingsFromDb();
 

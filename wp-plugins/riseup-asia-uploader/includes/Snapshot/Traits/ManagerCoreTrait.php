@@ -21,7 +21,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerCoreTrait {
-
     public function getProvider(): ?\RiseupSnapshotProviderInterface {
         $providerId = $this->detector->getActiveProvider();
 

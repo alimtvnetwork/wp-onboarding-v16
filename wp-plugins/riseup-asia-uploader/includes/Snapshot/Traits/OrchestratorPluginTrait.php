@@ -27,7 +27,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait OrchestratorPluginTrait {
-
     private function snapshotPlugins(string $snapshotDir, string $selection = 'all'): array {
         $plugins_dir = $snapshotDir . '/plugins';
         $isDirCreationFailed = (PathHelper::makeDirectory($plugins_dir, true) === false);

@@ -22,7 +22,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerExportTrait {
-
     public function exportSnapshot(int $snapshotId): array {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);

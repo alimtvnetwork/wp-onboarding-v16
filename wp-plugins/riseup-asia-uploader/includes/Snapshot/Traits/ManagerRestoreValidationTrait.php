@@ -22,7 +22,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreValidationTrait {
-
     private function validateIncrementalParent(array $snapshot, int $snapshotId): ?array {
         $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === SnapshotModeType::Incremental->value);
         $isFullSnapshot = ($isIncremental === false);

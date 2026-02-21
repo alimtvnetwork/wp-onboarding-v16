@@ -21,7 +21,6 @@ use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait NativeSnapshotCreateTrait {
-
     use NativeSnapshotExecTrait;
 
     /**

@@ -21,7 +21,6 @@ use RecursiveDirectoryIterator;
 use ZipArchive;
 
 trait ImportExecutionFileTrait {
-
     private function validateTableFiles(string $snapshotRoot, array $tables): void {
         foreach ($tables as $table) {
             $sqlitePath = PathHelper::join($snapshotRoot, $table['sqlite_file']);

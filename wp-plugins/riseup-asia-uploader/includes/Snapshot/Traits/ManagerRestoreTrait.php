@@ -24,7 +24,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreTrait {
-
     use ManagerRestoreValidationTrait;
 
     public function restoreSnapshot(int $snapshotId, array $options = array()): array {

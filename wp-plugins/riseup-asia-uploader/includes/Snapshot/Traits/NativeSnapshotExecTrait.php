@@ -20,7 +20,6 @@ use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait NativeSnapshotExecTrait {
-
     public function executeSnapshot(int $snapshotId, array $tables): array {
         $start_time = microtime(true);
 

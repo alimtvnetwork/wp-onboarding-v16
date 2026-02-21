@@ -18,7 +18,6 @@ use PDO;
 use Throwable;
 
 trait IncrementalDeltaTrait {
-
     use RootDbCompatTrait;
 
     public function exportTableDelta(string $tableName, array $info, string $incDir, int $sequence): ?array {

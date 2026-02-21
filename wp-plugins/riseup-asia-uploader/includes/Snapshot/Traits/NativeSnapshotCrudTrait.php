@@ -23,7 +23,6 @@ use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
 
 trait NativeSnapshotCrudTrait {
-
     public function deleteSnapshot(int $snapshotId): array {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);

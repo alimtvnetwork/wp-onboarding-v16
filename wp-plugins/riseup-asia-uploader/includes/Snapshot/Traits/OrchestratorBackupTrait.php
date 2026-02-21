@@ -25,7 +25,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Snapshot\IncrementalBackup;
 
 trait OrchestratorBackupTrait {
-
     public function executeFullBackup(array $options = array()): array {
         $resolved = $this->resolveBackupOptions($options);
         $this->log(LogLevelType::Info->value, 'Starting full backup orchestration', $resolved);

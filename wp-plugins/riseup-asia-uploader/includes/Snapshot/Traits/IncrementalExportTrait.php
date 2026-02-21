@@ -20,7 +20,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait IncrementalExportTrait {
-
     private function exportDeltaRows(
         string $incrementalDir,
         string $table,

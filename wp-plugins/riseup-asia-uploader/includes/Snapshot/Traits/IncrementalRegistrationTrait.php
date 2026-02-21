@@ -28,7 +28,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\DateHelper;
 
 trait IncrementalRegistrationTrait {
-
     private function registerIncrementalSnapshot(
         string $title,
         string $masterDir,
