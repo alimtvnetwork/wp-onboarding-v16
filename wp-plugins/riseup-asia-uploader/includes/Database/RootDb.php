@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use LogicException;
 use RiseupAsia\Database\Traits\RootDbSchemaTrait;
 use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
 use PDO;
@@ -38,7 +39,7 @@ class RootDb {
             self::$instance = new self($logger, $analyzer);
         }
         if (self::$instance === null) {
-            throw new \LogicException('RootDb::getInstance() called before initialization.');
+            throw new LogicException('RootDb::getInstance() called before initialization.');
         }
         return self::$instance;
     }

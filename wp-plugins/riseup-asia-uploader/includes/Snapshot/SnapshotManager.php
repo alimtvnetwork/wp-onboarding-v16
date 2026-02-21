@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use LogicException;
 use wpdb;
 use RiseupAsia\Snapshot\Traits\ManagerCoreTrait;
 use RiseupAsia\Snapshot\Traits\ManagerRestoreTrait;
@@ -34,7 +35,7 @@ class SnapshotManager {
         }
 
         if (self::$instance === null) {
-            throw new \LogicException('SnapshotManager::getInstance() called before initialization.');
+            throw new LogicException('SnapshotManager::getInstance() called before initialization.');
         }
         return self::$instance;
     }
