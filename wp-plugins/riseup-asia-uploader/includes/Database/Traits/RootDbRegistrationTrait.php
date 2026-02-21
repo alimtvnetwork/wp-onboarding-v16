@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\DateHelper;

@@ -21,6 +21,7 @@ trait FileCacheStoreTrait {
 
     public function invalidate(string $pluginSlug): int {
         $isDbUnavailable = ($this->db->isReady() === false);
+
         if ($isDbUnavailable) {
             return 0;
         }
@@ -78,6 +79,7 @@ trait FileCacheStoreTrait {
         try {
             $pdo = $this->db->getPdo();
             $isPdoMissing = ($pdo === null);
+
             if ($isPdoMissing) {
                 return;
             }

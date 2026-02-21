@@ -84,6 +84,7 @@ trait OrmQueryTrait {
     /** Find a single record by ID. */
     public function findOne(int $id): ?array {
         $isPdoMissing = (self::$pdo === null);
+
         if ($isPdoMissing) {
             return null;
         }
@@ -104,6 +105,7 @@ trait OrmQueryTrait {
     /** Find multiple records. */
     public function findMany(): array {
         $isPdoMissing = (self::$pdo === null);
+
         if ($isPdoMissing) {
             return array();
         }
@@ -123,6 +125,7 @@ trait OrmQueryTrait {
     /** Count records. */
     public function count(): int {
         $isPdoMissing = (self::$pdo === null);
+
         if ($isPdoMissing) {
             return 0;
         }

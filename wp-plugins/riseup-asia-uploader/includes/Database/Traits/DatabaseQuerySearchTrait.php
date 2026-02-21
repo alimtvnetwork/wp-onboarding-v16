@@ -29,6 +29,7 @@ trait DatabaseQuerySearchTrait {
         int $offset = 0,
     ): array {
         $isDbUnready = ($this->isReady() === false);
+
         if ($isDbUnready) {
             $this->fileLogger->warn('Database not ready for query');
 
@@ -152,6 +153,7 @@ trait DatabaseQuerySearchTrait {
 
     public function getStats(): array {
         $isDbUnready = ($this->isReady() === false);
+
         if ($isDbUnready) {
             return array();
         }
@@ -187,6 +189,7 @@ trait DatabaseQuerySearchTrait {
 
     public function cleanupOldTransactions(int $daysToKeep = 365): int {
         $isDbUnready = ($this->isReady() === false);
+
         if ($isDbUnready) {
             return 0;
         }
