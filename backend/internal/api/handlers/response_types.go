@@ -77,7 +77,7 @@ type FileContentResponse struct {
 type PluginExistsResponse struct {
 	Exists     bool   `json:"exists"`
 	Status     string `json:"status"`
-	PluginFile string `json:"plugin_file"`
+	PluginFile string `json:"pluginFile"`
 	Plugin     string `json:"plugin"`
 }
 

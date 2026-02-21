@@ -28,15 +28,24 @@ func handleActionByID(
 		if !requireService(w, getService(), serviceName) {
 			return
 		}
+
 		id, ok := parseID(w, r, paramName, paramLabel)
 		if !ok {
 			return
 		}
+
 		result, err := fn(r.Context(), id)
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
+
 		respondSuccess(w, result)
 	}
 }
@@ -55,14 +64,23 @@ func handleDeleteByID(
 		if !requireService(w, getService(), serviceName) {
 			return
 		}
+
 		id, ok := parseID(w, r, paramName, paramLabel)
 		if !ok {
 			return
 		}
+
 		if err := fn(r.Context(), id); err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusBadRequest,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
+
 		respondDeleted(w)
 	}
 }
@@ -77,13 +95,22 @@ func handleListNilSafe(
 	return func(w http.ResponseWriter, r *http.Request) {
 		if getService() == nil {
 			respondSuccess(w, []any{})
+
 			return
 		}
+
 		result, err := fn(r.Context())
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
+
 		respondSuccess(w, result)
 	}
 }
@@ -97,19 +124,40 @@ func handleSiteActionByID(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if Services == nil || Services.SiteService == nil {
-			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
+			respondError(
+				w,
+				wordpress.HttpStatusServiceUnavailable,
+				"E9001",
+				responsemessage.ServiceNotAvailable.String(),
+			)
+
 			return
 		}
+
 		siteID, err := getIDParam(r, "id")
 		if err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidId.String())
+			respondError(
+				w,
+				wordpress.HttpStatusBadRequest,
+				"E1002",
+				responsemessage.InvalidId.String(),
+			)
+
 			return
 		}
+
 		result, err := fn(r.Context(), siteID)
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
+
 		respondSuccess(w, result)
 	}
 }
@@ -126,11 +174,19 @@ func handleNoArgs(
 		if !requireService(w, getService(), serviceName) {
 			return
 		}
+
 		result, err := fn(r.Context())
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
+
 		respondSuccess(w, result)
 	}
 }
@@ -140,8 +196,10 @@ func handleNoArgs(
 func handleTwoIDs(
 	getService func() any,
 	serviceName string,
-	param1Name, param1Label string,
-	param2Name, param2Label string,
+	param1Name string,
+	param1Label string,
+	param2Name string,
+	param2Label string,
 	errCode string,
 	fn func(ctx context.Context, id1, id2 int64) (any, error),
 ) http.HandlerFunc {
@@ -149,19 +207,29 @@ func handleTwoIDs(
 		if !requireService(w, getService(), serviceName) {
 			return
 		}
+
 		id1, ok := parseID(w, r, param1Name, param1Label)
 		if !ok {
 			return
 		}
+
 		id2, ok := parseID(w, r, param2Name, param2Label)
 		if !ok {
 			return
 		}
+
 		result, err := fn(r.Context(), id1, id2)
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
+
 		respondSuccess(w, result)
 	}
 }
@@ -170,32 +238,61 @@ func handleTwoIDs(
 // These return nil (not panic) when Services is nil.
 
 func siteService() any {
-	if Services == nil { return nil }
+	if Services == nil {
+		return nil
+	}
+
 	return Services.SiteService
 }
+
 func pluginService() any {
-	if Services == nil { return nil }
+	if Services == nil {
+		return nil
+	}
+
 	return Services.PluginService
 }
+
 func syncService() any {
-	if Services == nil { return nil }
+	if Services == nil {
+		return nil
+	}
+
 	return Services.SyncService
 }
+
 func gitService() any {
-	if Services == nil { return nil }
+	if Services == nil {
+		return nil
+	}
+
 	return Services.GitService
 }
+
 func watcherService() any {
-	if Services == nil { return nil }
+	if Services == nil {
+		return nil
+	}
+
 	return Services.WatcherService
 }
+
 func publishService() any {
-	if Services == nil { return nil }
+	if Services == nil {
+		return nil
+	}
+
 	return Services.PublishService
 }
+
 func backupService() any {
-	if Services == nil { return nil }
+	if Services == nil {
+		return nil
+	}
+
 	return Services.BackupService
 }
+
 func versionServiceGetter() any { return VersionService }
-func e2eServiceGetter() any     { return E2EService }
+
+func e2eServiceGetter() any { return E2EService }
