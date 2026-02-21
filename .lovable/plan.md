@@ -1129,7 +1129,7 @@ Columns: `table_name`, `row_count`, `sqlite_file`, `file_size_bytes`, `checksum_
 
 ## Phase 2: Go Backend Migration
 
-### Phase 2A: SplitDB Manager (3 tables)
+### ✅ COMPLETED — Phase 2A: SplitDB Manager (3 tables) (2026-02-21)
 
 | Old Table | New Table |
 |-----------|-----------|
@@ -1139,10 +1139,10 @@ Columns: `table_name`, `row_count`, `sqlite_file`, `file_size_bytes`, `checksum_
 
 **Column renames** (all 3 tables): `id` → `Id`, `project_id` → `ProjectId`, `slug` → `Slug`, `display_name` → `DisplayName`, `path` → `Path`, `created_at` → `CreatedAt`, `updated_at` → `UpdatedAt`, `status` → `Status`, `type` → `Type`, `entity_id` → `EntityId`, `size_bytes` → `SizeBytes`, `record_count` → `RecordCount`, `last_accessed_at` → `LastAccessedAt`, `database_id` → `DatabaseId`, `recorded_at` → `RecordedAt`, `query_count` → `QueryCount`, `avg_query_ms` → `AvgQueryMs`
 
-**Implementation:**
-1. Add migration v2 to `splitdb/manager.go` — `ALTER TABLE ... RENAME TO ...` + recreate with new column names
-2. Update all SQL queries in `splitdb/` package
-3. Update Go struct tags and model field references
+**Implementation:** ✅ All completed:
+1. ✅ Added `migrateToPascalCase()` to `splitdb/manager.go` — detects legacy `projects` table and renames all tables + columns
+2. ✅ Updated `initRootSchema()` to create tables with PascalCase names
+3. ✅ Updated all 12 SQL queries across `manager.go` and `export.go` to PascalCase
 
 ### Phase 2B: E2E Service (4 tables)
 
