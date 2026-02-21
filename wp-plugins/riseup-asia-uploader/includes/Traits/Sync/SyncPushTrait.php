@@ -53,6 +53,7 @@ trait SyncPushTrait
             }
 
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
+
             return new WP_REST_Response($result, HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
@@ -100,6 +101,7 @@ trait SyncPushTrait
         }
 
         $full_path = $plugin_dir . '/' . $path;
+
         return $this->dispatchSyncAction($path, $action, $full_path, $plugin_dir, $slug, $file);
     }
 
@@ -120,6 +122,7 @@ trait SyncPushTrait
         if ($this->isSyncPathTraversal($full_path, $plugin_dir, $action)) {
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Path traversal detected');
         }
+
         return null;
     }
 
@@ -138,6 +141,7 @@ trait SyncPushTrait
         if ($action === SyncActionType::Delete->value) {
             return $this->syncDeleteFile($path, $action, $full_path, $plugin_dir, $slug);
         }
+
         return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Unknown action: ' . $action);
     }
 
@@ -148,6 +152,7 @@ trait SyncPushTrait
         if ($resolved === false) { $resolved = $plugin_dir; }
         $syncAction = SyncActionType::tryFrom($action);
         $isActionOtherThanDelete = ($syncAction === null || $syncAction->isOtherThan(SyncActionType::Delete));
+
         return (strpos($resolved, $real_plugin_dir) !== 0 && $isActionOtherThanDelete);
     }
 
@@ -163,6 +168,7 @@ trait SyncPushTrait
         $result = array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => $written ? SyncEntryStatusType::Success->value : SyncEntryStatusType::Error->value);
         $isWriteFailed = ($written === false);
         if ($isWriteFailed) { $result[ResponseKeyType::Reason->value] = 'Failed to write file'; }
+
         return $result;
     }
 
@@ -179,6 +185,7 @@ trait SyncPushTrait
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Failed to delete file');
         }
         $this->cleanEmptyParentDirs($full_path, $plugin_dir);
+
         return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Success->value);
     }
 

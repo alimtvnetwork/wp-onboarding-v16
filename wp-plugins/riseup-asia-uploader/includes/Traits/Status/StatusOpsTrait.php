@@ -33,6 +33,7 @@ trait StatusOpsTrait {
             return $spec;
         }
         $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
+
         return new WP_REST_Response($spec, HttpStatusType::Ok->value);
     }
 
@@ -41,6 +42,7 @@ trait StatusOpsTrait {
         if (PathHelper::isFileMissing($spec_file)) {
             return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
         }
+
         return $this->parseSpecFile($spec_file);
     }
 
@@ -122,6 +124,7 @@ trait StatusOpsTrait {
                 $invalidated++;
             }
         }
+
         return $invalidated;
     }
 }

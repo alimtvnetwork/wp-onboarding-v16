@@ -31,6 +31,7 @@ trait FileSystemPluginTrait {
             $this->fileLogger->warn('findPluginFile: get_plugins() returned empty — trying filesystem fallback', array(
                 'requested_slug' => $slug,
             ));
+
             return $this->findPluginFileFromFilesystem($slug);
         }
 
@@ -66,6 +67,7 @@ trait FileSystemPluginTrait {
             return get_plugins();
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'findPluginFile: get_plugins() threw an exception');
+
             return null;
         }
     }

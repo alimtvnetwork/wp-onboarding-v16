@@ -75,6 +75,7 @@ trait AuthCredentialTrait
         }
 
         wp_set_current_user($user->ID);
+
         return $user;
     }
 

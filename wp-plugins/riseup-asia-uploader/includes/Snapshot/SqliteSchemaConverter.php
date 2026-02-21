@@ -40,6 +40,7 @@ class SqliteSchemaConverter {
         $sql = self::removeInlineAttributes($sql);
         $sql = self::removeIndexDefinitions($sql);
         $sql = self::cleanTrailingCommas($sql);
+
         return $sql;
     }
 
@@ -49,6 +50,7 @@ class SqliteSchemaConverter {
         $sql = preg_replace('/\s+COLLATE\s*=?\s*\w+/i', '', $sql);
         $sql = preg_replace('/\s+AUTO_INCREMENT\s*=\s*\d+/i', '', $sql);
         $sql = preg_replace('/\s+ROW_FORMAT\s*=\s*\w+/i', '', $sql);
+
         return $sql;
     }
 

@@ -88,6 +88,7 @@ trait UploadPipelineTrait
 
     private function buildUploadResponse(array $result, array $input): WP_REST_Response {
         $this->logUploadResult($result, $input);
+
         return $this->buildUploadEnvelope($result, $input);
     }
 
