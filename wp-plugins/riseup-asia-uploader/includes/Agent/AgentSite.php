@@ -19,7 +19,6 @@ use RiseupAsia\Enums\AgentFieldType;
 use RiseupAsia\Enums\AgentStatusType;
 
 final readonly class AgentSite {
-
     public function __construct(
         public int $id,
         public string $name,

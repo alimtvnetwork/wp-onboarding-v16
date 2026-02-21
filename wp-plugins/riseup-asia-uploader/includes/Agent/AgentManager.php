@@ -22,7 +22,6 @@ use RiseupAsia\Database\Database;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
 class AgentManager {
-
     use AgentCrudTrait;
     use AgentRemoteTrait;
     use AgentLoggingTrait;

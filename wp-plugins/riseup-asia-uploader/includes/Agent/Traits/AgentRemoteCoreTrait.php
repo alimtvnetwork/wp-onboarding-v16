@@ -24,7 +24,6 @@ use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentRemoteCoreTrait {
-
     private function normalizeUrl(string $url): string {
         $url = rtrim($url, '/');
 
