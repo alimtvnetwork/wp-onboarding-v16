@@ -46,6 +46,7 @@ class PostManager {
 
     private function validatePostStatus(string $status): string {
         $validStatuses = PostStatusType::validValues();
+
         return in_array($status, $validStatuses, true) ? $status : PostStatusType::Draft->value;
     }
 }

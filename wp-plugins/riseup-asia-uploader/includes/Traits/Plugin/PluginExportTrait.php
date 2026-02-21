@@ -50,6 +50,7 @@ trait PluginExportTrait
             )), HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');
+
             return $this->errorResponse('Export failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }

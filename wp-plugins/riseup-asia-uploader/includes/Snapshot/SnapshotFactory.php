@@ -52,6 +52,7 @@ class SnapshotFactory {
         $d = $db ?: Database::getInstance();
         $analyzer = DependencyAnalyzer::getInstance($l);
         $rootDb   = RootDb::getInstance($l, $analyzer);
+
         return SnapshotWorker::getInstance($l, $d, $rootDb, $analyzer);
     }
 
