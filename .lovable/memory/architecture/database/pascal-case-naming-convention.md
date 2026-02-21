@@ -10,6 +10,7 @@ The single source of truth is `spec/01-coding-guidelines/database-naming.md`, wh
 - `Idx` prefix for index names (e.g., `IdxTransactions_CreatedAt`)
 - Abbreviation casing: only first letter capitalized (`Id`, `Url`, `Md5`, not `ID`, `URL`, `MD5`)
 - WordPress core tables are exempt (snake_case preserved)
+- `schema_version` internal tracking table is exempt (bootstrapping dependency — migration system must read it before migrations can rename it)
 
 ## Migration Phases
 
