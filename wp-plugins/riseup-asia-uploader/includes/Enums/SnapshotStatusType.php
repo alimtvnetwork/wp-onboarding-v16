@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * Snapshot lifecycle status values.
- */
 enum SnapshotStatusType: string
 {
     case Pending   = 'Pending';
@@ -20,12 +17,7 @@ enum SnapshotStatusType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
     public function isPending(): bool   { return $this->isEqual(self::Pending); }
     public function isScheduled(): bool { return $this->isEqual(self::Scheduled); }

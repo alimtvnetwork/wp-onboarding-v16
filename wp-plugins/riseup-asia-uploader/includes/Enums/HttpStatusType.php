@@ -1,6 +1,6 @@
 <?php
 /**
- * HttpStatusType — HTTP Status Code Constants
+ * HttpStatusType — HTTP status code constants.
  *
  * @package RiseupAsia\Enums
  * @since   1.58.0
@@ -12,9 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * HTTP status codes used in REST API responses.
- */
 enum HttpStatusType: int
 {
     case Ok          = 200;
@@ -44,64 +41,28 @@ enum HttpStatusType: int
     case ServiceUnavailable = 503;
     case GatewayTimeout = 504;
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
+    public function isSuccess(): bool     { return $this->value >= 200 && $this->value < 300; }
+    public function isClientError(): bool { return $this->value >= 400 && $this->value < 500; }
+    public function isServerError(): bool { return $this->value >= 500; }
 
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
-
-    /** Check if this status represents a successful response. */
-    public function isSuccess(): bool
-    {
-        return $this->value >= 200 && $this->value < 300;
-    }
-
-    /** Check if this status represents a client error. */
-    public function isClientError(): bool
-    {
-        return $this->value >= 400 && $this->value < 500;
-    }
-
-    /** Check if this status represents a server error. */
-    public function isServerError(): bool
-    {
-        return $this->value >= 500;
-    }
-
-    /** Check if this status code indicates a transient/retryable failure. */
     public function isRetryable(): bool
     {
         return $this->isAnyOf(
-            self::RequestTimeout,
-            self::TooManyRequests,
-            self::ServerError,
-            self::BadGateway,
-            self::ServiceUnavailable,
-            self::GatewayTimeout,
+            self::RequestTimeout, self::TooManyRequests,
+            self::ServerError, self::BadGateway,
+            self::ServiceUnavailable, self::GatewayTimeout,
         );
     }
 
-    /** Check if this status code indicates an HTTP redirect (3xx). */
     public function isRedirect(): bool
     {
         return $this->isAnyOf(
-            self::MovedPermanently,
-            self::Found,
-            self::SeeOther,
-            self::TemporaryRedirect,
-            self::PermanentRedirect,
+            self::MovedPermanently, self::Found, self::SeeOther,
+            self::TemporaryRedirect, self::PermanentRedirect,
         );
     }
 }

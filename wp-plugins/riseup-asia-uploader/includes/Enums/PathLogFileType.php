@@ -1,6 +1,6 @@
 <?php
 /**
- * PathLogFileType — Log File Path Fragments
+ * PathLogFileType — Log file path fragments.
  *
  * @package RiseupAsia\Enums
  * @since   1.58.0
@@ -12,9 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Log file path fragments.
- */
 enum PathLogFileType: string
 {
     case Log        = '/log.txt';
@@ -22,21 +19,7 @@ enum PathLogFileType: string
     case Stacktrace = '/stacktrace.txt';
     case Error      = '/error.txt';
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
-
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

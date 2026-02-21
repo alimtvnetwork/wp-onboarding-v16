@@ -1,6 +1,6 @@
 <?php
 /**
- * EndpointType — REST API Endpoint Path Fragments
+ * EndpointType — REST API endpoint path fragments.
  *
  * @package RiseupAsia\Enums
  * @since   1.58.0
@@ -12,11 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * REST API endpoint path fragments.
- *
- * Organized by domain: Core, Plugin, Agent, Snapshot, Sync.
- */
 enum EndpointType: string
 {
     // ── Core ─────────────────────────────────────────────────────────
@@ -82,48 +77,17 @@ enum EndpointType: string
     case ErrorLogs     = 'error-logs';
     case ErrorSessions = 'error-sessions';
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
-
-    /**
-     * Return the route path ready for register_rest_route().
-     * Encapsulates the '/' prefix so callers never touch ->value for routing.
-     */
+    /** Prefixes value with '/' for register_rest_route(). */
     public function route(): string
     {
         return '/' . $this->value;
     }
 
-    /** Check if this endpoint belongs to the snapshot domain. */
-    public function isSnapshot(): bool
-    {
-        return str_starts_with($this->value, 'snapshots/');
-    }
-
-    /** Check if this endpoint belongs to the agent domain. */
-    public function isAgent(): bool
-    {
-        return str_starts_with($this->value, 'agents');
-    }
-
-    /** Check if this endpoint belongs to the plugin domain. */
-    public function isPlugin(): bool
-    {
-        return str_starts_with($this->value, 'plugins/');
-    }
+    public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshots/'); }
+    public function isAgent(): bool    { return str_starts_with($this->value, 'agents'); }
+    public function isPlugin(): bool   { return str_starts_with($this->value, 'plugins/'); }
 }

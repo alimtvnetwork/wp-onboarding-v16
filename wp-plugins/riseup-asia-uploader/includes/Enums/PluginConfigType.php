@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * Plugin identity and configuration constants.
- */
 enum PluginConfigType: string
 {
     case Slug            = 'riseup-asia-uploader';
@@ -27,14 +24,8 @@ enum PluginConfigType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
-
-    /** Get the full REST API namespace (e.g., 'riseup-asia-uploader/v1'). */
     public static function apiFullNamespace(): string
     {
         return self::ApiNamespace->value . '/' . self::ApiVersion->value;

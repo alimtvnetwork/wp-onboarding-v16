@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * Transaction trigger source identifiers.
- */
 enum TriggerSourceType: string
 {
     case Api       = 'Api';
@@ -20,12 +17,7 @@ enum TriggerSourceType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
     public function isApi(): bool       { return $this->isEqual(self::Api); }
     public function isDashboard(): bool { return $this->isEqual(self::Dashboard); }

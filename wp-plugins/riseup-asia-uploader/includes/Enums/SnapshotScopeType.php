@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * Snapshot scope values.
- */
 enum SnapshotScopeType: string
 {
     case All       = 'All';
@@ -19,12 +16,7 @@ enum SnapshotScopeType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
     public function isAll(): bool       { return $this->isEqual(self::All); }
     public function isWordPress(): bool { return $this->isEqual(self::WordPress); }
