@@ -98,7 +98,12 @@ trait DatabaseMigrationsV6V8Trait {
         $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO " . TableType::SnapshotSettings->value . " (Key, Value, Type, UpdatedAt) VALUES (?, ?, ?, ?)");
 
         foreach ($defaults as $row) {
-            $stmt->execute(array($row[0], $row[1], $row[2], $now));
+            $stmt->execute(array(
+                $row[0],
+                $row[1],
+                $row[2],
+                $now,
+            ));
         }
 
         $this->recordMigration(8);
