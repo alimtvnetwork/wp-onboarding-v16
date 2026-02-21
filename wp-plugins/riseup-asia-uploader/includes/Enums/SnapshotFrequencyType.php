@@ -12,13 +12,19 @@ namespace RiseupAsia\Enums;
  */
 enum SnapshotFrequencyType: string
 {
-    case Manual  = 'manual';
-    case Daily   = 'daily';
-    case Weekly  = 'weekly';
-    case Monthly = 'monthly';
+    case Manual  = 'Manual';
+    case Daily   = 'Daily';
+    case Weekly  = 'Weekly';
+    case Monthly = 'Monthly';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 
     public function isManual(): bool  { return $this->isEqual(self::Manual); }
     public function isDaily(): bool   { return $this->isEqual(self::Daily); }

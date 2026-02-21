@@ -38,6 +38,12 @@ enum HttpMethodType: string
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /**
      * Editable methods string for WordPress route registration.
      * WordPress accepts comma-separated methods.

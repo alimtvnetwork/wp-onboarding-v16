@@ -17,11 +17,17 @@ if (!defined('ABSPATH')) {
  */
 enum StorageModeType: string
 {
-    case PerTable = 'per-table';
-    case Single   = 'single';
+    case PerTable = 'PerTable';
+    case Single   = 'Single';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 
     public function isPerTable(): bool { return $this->isEqual(self::PerTable); }
     public function isSingle(): bool   { return $this->isEqual(self::Single); }

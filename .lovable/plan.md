@@ -984,27 +984,64 @@ All Go identifier-style enum `variantLabels` updated from snake_case/lowercase t
 - [ ] Search for `== "upload_active"`, `== "per_table"`, etc.
 - [ ] Replace with enum constant checks (e.g., `action.IsUploadActive()`)
 
-## 🔄 Phase 2: PHP Plugin Updates
+## ✅ COMPLETED — Phase 2: PHP Plugin Updates (2026-02-21)
 
-### 2.1 Enum Case Values
-Update PHP backed enum `->value` properties to match PascalCase:
+### 2.1 Enum Case Values ✅
+Updated 24 internal-domain PHP enum `->value` properties to PascalCase:
 
 | PHP Enum | Old Values | New Values |
 |----------|-----------|------------|
 | `ActionType` | `upload`, `upload_active`, `enable`, ... | `Upload`, `UploadActive`, `Enable`, ... |
-| `PluginStatusType` | `active`, `inactive` | `Active`, `Inactive` |
-| `PostStatusType` | `publish`, `draft`, `pending` | `Publish`, `Draft`, `Pending` |
 | `UploadSourceType` | `upload_script`, `rest_api`, `admin_ui`, `wp_cli` | `Script`, `RestAPI`, `AdminUI`, `WPCLI` |
 | `StatusType` | `success`, `failed` | `Success`, `Failed` |
 | `SnapshotErrorType` | `SNAPSHOT_LOCK_EXISTS`, ... | `LockExists`, ... |
-| `SnapshotModeType` | `per_table`, `single_db` | `PerTable`, `SingleDb` |
-| `BackupTypeType` | `incremental`, `full` | `Incremental`, `Full` |
-| `LogLevelType` | `debug`, `info`, `warn`, `error` | `Debug`, `Info`, `Warn`, `Error` |
-| `PluginSelectionType` | `all`, `selective` | `All`, `Selective` |
+| `SnapshotModeType` | `full`, `incremental` | `Full`, `Incremental` |
+| `LogLevelType` | `DEBUG`, `INFO`, `WARN`, `ERROR` | `Debug`, `Info`, `Warn`, `Error` |
+| `PluginSelectionType` | `all`, `active`, `none` | `All`, `Active`, `None` |
+| `SnapshotWorkerModeType` | `per_table`, `single`, `legacy` | `PerTable`, `Single`, `Legacy` |
+| `StorageModeType` | `per-table`, `single` | `PerTable`, `Single` |
+| `RestoreModeType` | `full`, `selective`, `incremental` | `Full`, `Selective`, `Incremental` |
+| `RestoreStrategyType` | `truncate`, `merge` | `Truncate`, `Merge` |
+| `SyncActionType` | `replace`, `delete` | `Replace`, `Delete` |
+| `SyncEntryStatusType` | `success`, `error`, `ignored`, `skipped` | `Success`, `Error`, `Ignored`, `Skipped` |
+| `LogCategoryType` | `snapshot`, `agent`, ... | `Snapshot`, `Agent`, ... |
+| `SnapshotStatusType` | `pending`, `running`, ... | `Pending`, `Running`, ... |
+| `SnapshotJobStatusType` | `queued`, `processing`, ... | `Queued`, `Processing`, ... |
+| `SnapshotTriggerType` | `manual`, `scheduled`, ... | `Manual`, `Scheduled`, ... |
+| `SnapshotFrequencyType` | `manual`, `daily`, ... | `Manual`, `Daily`, ... |
+| `SnapshotProviderType` | `wp_reset`, `updraft`, `native`, `auto` | `WpReset`, `Updraft`, `Native`, `Auto` |
+| `SnapshotScopeType` | `all`, `wordpress`, ... | `All`, `WordPress`, ... |
+| `SnapshotExportStatusType` | `valid`, `expired`, `building` | `Valid`, `Expired`, `Building` |
+| `TriggerSourceType` | `api`, `dashboard`, `agent_push`, ... | `Api`, `Dashboard`, `AgentPush`, ... |
+| `AgentStatusType` | `pending`, `connected`, `error` | `Pending`, `Connected`, `Error` |
+| `RetentionType` | `days`, `count`, `none` | `Days`, `Count`, `None` |
 
-### 2.2 New PHP Enum Methods
-- [ ] Add `isOther(self $other): bool` — returns `$this !== $other`
-- [ ] Add `isAnyOf(self ...$others): bool` — returns true if receiver matches any
+**Exempted** (WP API contracts / protocol values — values unchanged):
+- `PostStatusType` — WP post status strings (`publish`, `draft`, `pending`)
+- `CapabilityType` — WP capability strings (`manage_options`, etc.)
+- `WpErrorCodeType` — WP REST error codes (`rest_forbidden`, etc.)
+- `FilterKeyType` — query parameter keys (`status`, `action`, etc.)
+- `EndpointType` — REST route paths (`status`, `upload`, etc.)
+- `HookType` — WP hook names (`init`, `rest_api_init`, etc.)
+- `ResponseKeyType` — JSON envelope keys (`success`, `data`, etc.)
+- `ResponseMessageType` — human-readable strings
+- `OptionNameType` — WP option names (`riseup_snapshot_settings`, etc.)
+- `AgentFieldType` — array keys (`name`, `url`, etc.)
+- `PathConfigType`, `PathDatabaseType`, `PathLogFileType`, `PathSubdirType` — file paths
+- `PluginConfigType` — plugin identity strings
+- `TableType` — SQLite table names
+- `HttpMethodType` — HTTP method strings (`GET`, `POST`, etc.)
+- `HttpStatusType` — HTTP status codes (int-backed)
+- `HttpConfigType` — HTTP config values (int-backed)
+- `PaginationConfigType`, `UpdateConfigType`, `SnapshotConfigType` — numeric config (int-backed)
+
+### 2.2 New PHP Enum Methods ✅
+- Added `isAnyOf(self ...$others): bool` to **all 46 backed enums** (string and int)
+- Refactored multi-case comparisons to use `isAnyOf`:
+  - `ActionType::isLifecycle()`, `LogLevelType::isErrorOrWarn()`
+  - `SnapshotStatusType::isActive()`, `SnapshotErrorType::isExport()/isRestore()`
+  - `HttpStatusType::isRetryable()`, `WpErrorCodeType::isAuthError()/isValidationError()/isNetworkError()`
+  - `ResponseMessageType::isFailure()`
 
 ### 2.3 PHP Hardcoded Comparisons
 - [ ] Search PHP codebase for hardcoded string comparisons against old values

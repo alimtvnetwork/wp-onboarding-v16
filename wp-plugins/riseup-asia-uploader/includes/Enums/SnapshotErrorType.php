@@ -17,17 +17,17 @@ if (!defined('ABSPATH')) {
  */
 enum SnapshotErrorType: string
 {
-    case LockExists         = 'SNAPSHOT_LOCK_EXISTS';
-    case NotFound           = 'SNAPSHOT_NOT_FOUND';
-    case Corrupt            = 'SNAPSHOT_CORRUPT';
-    case TooLarge           = 'SNAPSHOT_TOO_LARGE';
-    case RestoreFailed      = 'RESTORE_FAILED';
-    case RestoreNoConfirm   = 'RESTORE_NO_CONFIRM';
-    case ProviderNotAvail   = 'PROVIDER_NOT_AVAILABLE';
-    case IncrementalNoParent = 'INCREMENTAL_NO_PARENT';
-    case ExportNotFound     = 'EXPORT_NOT_FOUND';
-    case ExportBuildFailed  = 'EXPORT_BUILD_FAILED';
-    case ExportTokenInvalid = 'EXPORT_TOKEN_INVALID';
+    case LockExists          = 'LockExists';
+    case NotFound            = 'NotFound';
+    case Corrupt             = 'Corrupt';
+    case TooLarge            = 'TooLarge';
+    case RestoreFailed       = 'RestoreFailed';
+    case RestoreNoConfirm    = 'RestoreNoConfirm';
+    case ProviderNotAvail    = 'ProviderNotAvail';
+    case IncrementalNoParent = 'IncrementalNoParent';
+    case ExportNotFound      = 'ExportNotFound';
+    case ExportBuildFailed   = 'ExportBuildFailed';
+    case ExportTokenInvalid  = 'ExportTokenInvalid';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
@@ -35,15 +35,27 @@ enum SnapshotErrorType: string
         return $this === $other;
     }
 
+    /** Check if this enum case differs from the given case. */
+    public function isOtherThan(self $other): bool
+    {
+        return $this !== $other;
+    }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Check if this is an export-related error. */
     public function isExport(): bool
     {
-        return str_starts_with($this->value, 'EXPORT_');
+        return $this->isAnyOf(self::ExportNotFound, self::ExportBuildFailed, self::ExportTokenInvalid);
     }
 
     /** Check if this is a restore-related error. */
     public function isRestore(): bool
     {
-        return str_starts_with($this->value, 'RESTORE_');
+        return $this->isAnyOf(self::RestoreFailed, self::RestoreNoConfirm);
     }
 }

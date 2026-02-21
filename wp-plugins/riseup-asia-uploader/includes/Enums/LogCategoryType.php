@@ -17,16 +17,22 @@ if (!defined('ABSPATH')) {
  */
 enum LogCategoryType: string
 {
-    case Snapshot = 'snapshot';
-    case Agent    = 'agent';
-    case Sync     = 'sync';
-    case Plugin   = 'plugin';
-    case Update   = 'update';
-    case Post     = 'post';
-    case Media    = 'media';
-    case Auth     = 'auth';
-    case Export   = 'export';
+    case Snapshot = 'Snapshot';
+    case Agent    = 'Agent';
+    case Sync     = 'Sync';
+    case Plugin   = 'Plugin';
+    case Update   = 'Update';
+    case Post     = 'Post';
+    case Media    = 'Media';
+    case Auth     = 'Auth';
+    case Export   = 'Export';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 }

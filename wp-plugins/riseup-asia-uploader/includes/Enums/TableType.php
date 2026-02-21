@@ -48,6 +48,12 @@ enum TableType: string
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Check if this table belongs to the snapshot domain. */
     public function isSnapshot(): bool
     {

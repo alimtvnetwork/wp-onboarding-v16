@@ -12,12 +12,18 @@ namespace RiseupAsia\Enums;
  */
 enum RestoreModeType: string
 {
-    case Full        = 'full';
-    case Selective   = 'selective';
-    case Incremental = 'incremental';
+    case Full        = 'Full';
+    case Selective   = 'Selective';
+    case Incremental = 'Incremental';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 
     public function isFull(): bool        { return $this->isEqual(self::Full); }
     public function isSelective(): bool   { return $this->isEqual(self::Selective); }

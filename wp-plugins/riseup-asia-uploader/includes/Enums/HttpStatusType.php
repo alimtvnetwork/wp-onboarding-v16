@@ -45,6 +45,12 @@ enum HttpStatusType: int
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Check if this status represents a successful response. */
     public function isSuccess(): bool
     {
@@ -66,11 +72,13 @@ enum HttpStatusType: int
     /** Check if this status code indicates a transient/retryable failure. */
     public function isRetryable(): bool
     {
-        return $this->isEqual(self::RequestTimeout)
-            || $this->isEqual(self::TooManyRequests)
-            || $this->isEqual(self::ServerError)
-            || $this->isEqual(self::BadGateway)
-            || $this->isEqual(self::ServiceUnavailable)
-            || $this->isEqual(self::GatewayTimeout);
+        return $this->isAnyOf(
+            self::RequestTimeout,
+            self::TooManyRequests,
+            self::ServerError,
+            self::BadGateway,
+            self::ServiceUnavailable,
+            self::GatewayTimeout,
+        );
     }
 }

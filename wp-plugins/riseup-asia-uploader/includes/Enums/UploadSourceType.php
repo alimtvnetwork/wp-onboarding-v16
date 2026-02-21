@@ -20,10 +20,10 @@ if (!defined('ABSPATH')) {
  */
 enum UploadSourceType: string
 {
-    case Script  = 'upload_script';
-    case RestApi = 'rest_api';
-    case AdminUi = 'admin_ui';
-    case WpCli   = 'wp_cli';
+    case Script  = 'Script';
+    case RestApi = 'RestAPI';
+    case AdminUi = 'AdminUI';
+    case WpCli   = 'WPCLI';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
@@ -35,6 +35,12 @@ enum UploadSourceType: string
     public function isOtherThan(self $other): bool
     {
         return $this !== $other;
+    }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
     }
 
     /** @return string[] */

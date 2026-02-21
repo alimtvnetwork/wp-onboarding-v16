@@ -35,6 +35,12 @@ enum PostStatusType: string
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Check if this status is publicly visible. */
     public function isPublic(): bool
     {

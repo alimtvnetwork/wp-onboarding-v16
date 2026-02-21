@@ -28,6 +28,12 @@ enum PluginConfigType: string
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Get the full REST API namespace (e.g., 'riseup-asia-uploader/v1'). */
     public static function apiFullNamespace(): string
     {

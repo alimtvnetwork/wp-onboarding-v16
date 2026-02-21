@@ -12,13 +12,19 @@ namespace RiseupAsia\Enums;
  */
 enum SnapshotJobStatusType: string
 {
-    case Queued     = 'queued';
-    case Processing = 'processing';
-    case Complete   = 'complete';
-    case Failed     = 'failed';
+    case Queued     = 'Queued';
+    case Processing = 'Processing';
+    case Complete   = 'Complete';
+    case Failed     = 'Failed';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 
     public function isQueued(): bool     { return $this->isEqual(self::Queued); }
     public function isProcessing(): bool { return $this->isEqual(self::Processing); }
