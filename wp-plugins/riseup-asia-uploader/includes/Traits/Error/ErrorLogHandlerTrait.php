@@ -32,9 +32,11 @@ trait ErrorLogHandlerTrait {
             if ($settings['include_error_log']) {
                 $result[ResponseKeyType::ErrorLog->value] = $this->readLogTail($this->fileLogger->getErrorFile(), $settings['max_lines']);
             }
+
             if ($settings['include_full_log']) {
                 $result[ResponseKeyType::FullLog->value] = $this->readLogTail($this->fileLogger->getLogFile(), $settings['max_lines']);
             }
+
             if ($settings['include_stacktrace']) {
                 $result[ResponseKeyType::StacktraceLog->value] = $this->readLogTail($this->fileLogger->getStacktraceFile(), $settings['max_lines']);
             }
@@ -60,6 +62,7 @@ trait ErrorLogHandlerTrait {
                 $resolved[$key] = (bool) $request->get_param($key);
             }
         }
+
         if ($request->get_param('max_lines') !== null) {
             $resolved['max_lines'] = max(10, min(5000, (int) $request->get_param('max_lines')));
         }
