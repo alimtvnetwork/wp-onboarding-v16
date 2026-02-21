@@ -123,12 +123,13 @@ func New(cfg Config) (*Service, error) {
 
 	sessionsDir, err := pathutil.Join(cfg.DataDir, "sessions")
 	if err != nil {
-		return nil, fmt.Errorf("resolve sessions directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "resolve sessions directory")
 	}
 
 	// Ensure sessions directory exists
 	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
-		return nil, fmt.Errorf("create sessions directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "create sessions directory").
+			WithPath(sessionsDir)
 	}
 
 	s := &Service{
@@ -205,20 +206,22 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 	// Create session directory
 	sessionDir, err := s.getSessionDir(sessionID)
 	if err != nil {
-		return "", fmt.Errorf("resolve session directory: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrSessionInit, "resolve session directory")
 	}
 	if err := os.MkdirAll(sessionDir, 0755); err != nil {
-		return "", fmt.Errorf("create session directory: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrSessionInit, "create session directory").
+			WithPath(sessionDir)
 	}
 
 	// Create session.log file
 	logPath, err := s.getLogPath(sessionID)
 	if err != nil {
-		return "", fmt.Errorf("resolve session log path: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrSessionInit, "resolve session log path")
 	}
 	file, err := os.Create(logPath)
 	if err != nil {
-		return "", fmt.Errorf("create session log file: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrSessionStore, "create session log file").
+			WithPath(logPath)
 	}
 	session.logFile = file
 
@@ -709,11 +712,12 @@ func (s *Service) DeleteSession(sessionID string) error {
 	// Try removing directory first (new format)
 	sessionDir, err := s.getSessionDir(sessionID)
 	if err != nil {
-		return fmt.Errorf("resolve session directory: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve session directory")
 	}
 	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
 		if err := os.RemoveAll(sessionDir); err != nil {
-			return fmt.Errorf("delete session directory: %w", err)
+			return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session directory").
+				WithPath(sessionDir)
 		}
 		return nil
 	}
@@ -721,10 +725,11 @@ func (s *Service) DeleteSession(sessionID string) error {
 	// Fallback: try removing legacy flat file
 	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
 	if err != nil {
-		return fmt.Errorf("resolve legacy session path: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve legacy session path")
 	}
 	if err := os.Remove(legacyPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("delete session log: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session log").
+			WithPath(legacyPath)
 	}
 	return nil
 }
@@ -734,7 +739,7 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	// Check for folder-based session
 	sessionDir, err := s.getSessionDir(sessionID)
 	if err != nil {
-		return nil, fmt.Errorf("resolve session directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve session directory")
 	}
 	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
 		return &Session{
@@ -747,14 +752,16 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	// Fallback: check for legacy flat file
 	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
 	if err != nil {
-		return nil, fmt.Errorf("resolve legacy session path: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve legacy session path")
 	}
 	info, err := os.Stat(legacyPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("session not found: %s", sessionID)
+			return nil, apperror.New(apperror.ErrSessionNotFound, "session not found").
+				WithDetails(sessionID)
 		}
-		return nil, fmt.Errorf("stat session: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "stat session file").
+			WithPath(legacyPath)
 	}
 
 	return &Session{
@@ -820,7 +827,8 @@ func (s *Service) ClearAllSessions() error {
 	// Remove all entries in sessions directory
 	entries, err := os.ReadDir(s.sessionsDir)
 	if err != nil {
-		return fmt.Errorf("read sessions directory: %w", err)
+		return apperror.Wrap(err, apperror.ErrSessionClear, "read sessions directory").
+			WithPath(s.sessionsDir)
 	}
 
 	var removeErrors []error
@@ -841,7 +849,8 @@ func (s *Service) ClearAllSessions() error {
 	}
 
 	if len(removeErrors) > 0 {
-		return fmt.Errorf("failed to remove %d session entries", len(removeErrors))
+		return apperror.New(apperror.ErrSessionClear, "failed to remove session entries").
+			WithDetails(fmt.Sprintf("count=%d", len(removeErrors)))
 	}
 
 	if s.log != nil {
