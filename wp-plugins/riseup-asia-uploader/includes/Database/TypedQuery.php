@@ -18,6 +18,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use PDOException;
+use Throwable;
 
 final class TypedQuery {
 
@@ -111,7 +112,7 @@ final class TypedQuery {
     private function mapSingle(array $row, \Closure $mapper): DbResult {
         try {
             return DbResult::of($mapper($row));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return DbResult::error($e);
         }
     }
@@ -128,7 +129,7 @@ final class TypedQuery {
         try {
             $items = array_map($mapper, $rows);
             return DbResultSet::of($items);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return DbResultSet::error($e);
         }
     }

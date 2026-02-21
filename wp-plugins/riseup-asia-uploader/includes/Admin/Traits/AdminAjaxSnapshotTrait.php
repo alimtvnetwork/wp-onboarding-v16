@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -83,8 +84,8 @@ trait AdminAjaxSnapshotTrait {
         }
 
         $settings['worker_pool_size'] = max(
-            \RiseupAsia\Enums\SnapshotConfigType::WorkerPoolMin->value,
-            min(\RiseupAsia\Enums\SnapshotConfigType::WorkerPoolMax->value, intval($_POST['worker_pool_size']))
+            SnapshotConfigType::WorkerPoolMin->value,
+            min(SnapshotConfigType::WorkerPoolMax->value, intval($_POST['worker_pool_size']))
         );
     }
 

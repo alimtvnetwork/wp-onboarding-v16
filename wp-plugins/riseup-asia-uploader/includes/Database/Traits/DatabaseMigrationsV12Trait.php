@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV12Trait {
@@ -225,7 +226,7 @@ trait DatabaseMigrationsV12Trait {
             $this->pdo->exec(sprintf(self::V12_SNAPSHOT_EXPORTS_STATUS_QUERY, $snapshotExports));
 
             $this->pdo->commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->pdo->rollBack();
             $this->fileLogger->logException($e, 'Migration v12 failed — rolled back');
 

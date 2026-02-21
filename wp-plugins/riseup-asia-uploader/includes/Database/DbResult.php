@@ -17,6 +17,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
+
 /**
  * @template T
  */
@@ -24,13 +26,13 @@ final class DbResult {
 
     /**
      * @param T|null     $value
-     * @param \Throwable|null $error
+     * @param Throwable|null $error
      * @param string     $stackTrace
      * @param bool       $defined
      */
     private function __construct(
         private readonly mixed $value = null,
-        private readonly ?\Throwable $error = null,
+        private readonly ?Throwable $error = null,
         private readonly string $stackTrace = '',
         private readonly bool $defined = false,
     ) {
@@ -63,7 +65,7 @@ final class DbResult {
      * @template U
      * @return self<U>
      */
-    public static function error(\Throwable $error): self {
+    public static function error(Throwable $error): self {
         return new self(
             error: $error,
             stackTrace: $error->getTraceAsString(),
@@ -100,7 +102,7 @@ final class DbResult {
     }
 
     /** Return the underlying error, or null. */
-    public function error(): ?\Throwable {
+    public function error(): ?Throwable {
         return $this->error;
     }
 

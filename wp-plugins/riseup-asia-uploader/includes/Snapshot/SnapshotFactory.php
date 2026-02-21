@@ -4,6 +4,7 @@ namespace RiseupAsia\Snapshot;
 if (!defined('ABSPATH')) { exit; }
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Database\RootDb;
 use RiseupAsia\Logging\FileLogger;
 
 class SnapshotFactory {
@@ -50,7 +51,7 @@ class SnapshotFactory {
         $l = $logger ?: FileLogger::getInstance();
         $d = $db ?: Database::getInstance();
         $analyzer = DependencyAnalyzer::getInstance($l);
-        $rootDb   = \RiseupAsia\Database\RootDb::getInstance($l, $analyzer);
+        $rootDb   = RootDb::getInstance($l, $analyzer);
         return SnapshotWorker::getInstance($l, $d, $rootDb, $analyzer);
     }
 

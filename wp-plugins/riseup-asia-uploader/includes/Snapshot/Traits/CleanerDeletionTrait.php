@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
@@ -122,7 +123,7 @@ trait CleanerDeletionTrait {
         try {
             $incrementals = $this->db->query_all(
                 'SELECT Id FROM ' . TableType::Snapshots->value .
-                " WHERE Scope = '" . \RiseupAsia\Enums\SnapshotModeType::Incremental->value . "' AND Filepath LIKE ?",
+                " WHERE Scope = '" . SnapshotModeType::Incremental->value . "' AND Filepath LIKE ?",
                 array($parentDir . '/incremental/%')
             ) ?: array();
 

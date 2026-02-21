@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Notification\AdminMailer;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
@@ -93,7 +94,7 @@ class BootErrorCollector {
             } else {
                 InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'boot error report skipped (throttled or disabled)');
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'failed to send boot error report — ' . $e->getMessage());
         }
 
