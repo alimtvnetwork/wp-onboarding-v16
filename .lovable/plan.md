@@ -839,23 +839,32 @@ Already implemented in `backend/pkg/apperror/error_json.go`:
 
 ---
 
-## Phase E: Remaining Raw Error Audit
+## Phase E: Remaining Raw Error Audit (In Progress)
 
-### E1 — `requestsession/store.go`
+### ✅ E1 — `requestsession/store.go` (2026-02-21)
 
-Convert `fmt.Errorf` → `apperror.Wrap`/`apperror.New`.
+Converted 12 `fmt.Errorf` calls → `apperror.Wrap`/`apperror.New` using new session error codes (E13xxx).
 
-### E2 — `session/service.go`
+### ❌ E2 — `session/service.go`
 
-Convert `fmt.Errorf` → `apperror.Wrap`/`apperror.New`.
+Convert ~15 `fmt.Errorf` → `apperror.Wrap`/`apperror.New`. Large file (~800 lines), needs dedicated pass.
 
-### E3 — Config Load/Seed Errors
+### ✅ E3 — Config Seed Errors (2026-02-21)
 
-`config.go` has bare `return err` in `Load()`, `SeedIfNeeded()`, and all seed functions. Wrap with `apperror.Wrap(err, apperror.ErrConfigLoad/ErrConfigSeed, ...)`.
+Converted 6 bare `return err` in `config_seed.go` → `apperror.Wrap(err, ErrConfigSeed, ...)`.
 
-### E4 — Full Backend Sweep
+### ✅ E3b — `crypto/crypto.go` (2026-02-21)
 
-Run: `grep -rn "fmt.Errorf\|errors.New\|return err$" backend/internal/ backend/pkg/`
+Converted 2 `errors.New` → `apperror.New(ErrCryptoInvalid, ...)` and 4 bare `return err` → `apperror.Wrap` using new crypto error codes (E14xxx).
+
+### ❌ E4 — Full Backend Sweep
+
+Remaining files with violations (exempt: enums, e2e, filepath.Walk callbacks):
+- `session/service.go` (~15 `fmt.Errorf`)
+- `database/database.go` (~5 bare `return err`)
+- `database/splitdb/manager.go` (~4 bare `return err`)
+- `database/splitdb/export.go` (~3 bare `return err`)
+- `api/handlers/error_settings_handlers.go` (~3 bare `return err` in zip helper)
 
 ---
 
