@@ -100,9 +100,11 @@ final class DbResultSet {
         if ($this->error !== null) {
             return DbResult::error($this->error);
         }
+
         if (count($this->items) === 0) {
             return DbResult::empty();
         }
+
         return DbResult::of($this->items[0]);
     }
 
