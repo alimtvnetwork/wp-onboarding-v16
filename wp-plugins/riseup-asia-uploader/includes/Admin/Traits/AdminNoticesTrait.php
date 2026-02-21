@@ -33,17 +33,20 @@ trait AdminNoticesTrait {
     public function renderBootDiagnosticsNotice(): void {
         $diagnostics = get_transient(self::DIAGNOSTICS_TRANSIENT);
         $hasDiagnostics = BooleanHelpers::hasValue($diagnostics);
+
         if (!$hasDiagnostics) {
             return;
         }
 
         $hasNoFailures = ((int) ($diagnostics['failed_count'] ?? 0) === 0);
         $hasNoRuntimeFailures = (count($diagnostics['runtime_failures'] ?? []) === 0);
+
         if ($hasNoFailures && $hasNoRuntimeFailures) {
             return;
         }
 
         $isDismissed = (get_option(self::DISMISS_OPTION) === ($diagnostics['timestamp'] ?? ''));
+
         if ($isDismissed) {
             return;
         }
@@ -70,11 +73,13 @@ trait AdminNoticesTrait {
         echo '<ul style="list-style: disc; padding-left: 20px;">';
 
         $failures = $diagnostics['failures'] ?? [];
+
         foreach ($failures as $failure) {
             echo '<li><code>' . esc_html(basename($failure['file'])) . '</code>: ' . esc_html($failure['error']) . '</li>';
         }
 
         $runtimeFailures = $diagnostics['runtime_failures'] ?? [];
+
         foreach ($runtimeFailures as $failure) {
             echo '<li><code>' . esc_html($failure['class']) . '</code>: ' . esc_html($failure['error']) . '</li>';
         }

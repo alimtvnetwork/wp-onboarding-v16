@@ -57,6 +57,7 @@ trait AdminPagesTrait {
         );
 
         $filters = array();
+
         foreach ($keys as $key => $param) {
             $filters[$key] = isset($_GET[$param]) ? sanitize_text_field($_GET[$param]) : '';
         }
@@ -152,6 +153,7 @@ trait AdminPagesTrait {
     /** Flatten endpoint groups for backward compatibility. */
     private function flattenEndpointGroups(array $groups): array {
         $endpointsMeta = array();
+
         foreach ($groups as $group) {
             foreach ($group['endpoints'] as $key => $meta) {
                 $endpointsMeta[$key] = $meta;
