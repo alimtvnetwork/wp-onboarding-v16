@@ -18,6 +18,7 @@ use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -35,12 +36,13 @@ trait AdminErrorAjaxTrait {
         $db = Database::getInstance();
         $pdo = $db->getPdo();
 
-        $stmt = $pdo->query('SELECT MAX(id) FROM error_sessions');
+        $stmt = $pdo->query('SELECT MAX(Id) FROM ' . TableType::ErrorSessions->value);
         $maxId = (int) $stmt->fetchColumn();
         $now = DateHelper::nowUtc();
 
-        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '{$maxId}', '{$now}')");
-        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
+        $flashTable = TableType::FlashState->value;
+        $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('last_seen_error_id', '{$maxId}', '{$now}')");
+        $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('has_unseen_errors', '0', '{$now}')");
 
         wp_send_json_success(array(ResponseKeyType::Message->value => 'All errors marked as seen', 'last_seen_id' => $maxId));
     }
@@ -55,10 +57,11 @@ trait AdminErrorAjaxTrait {
         $db = Database::getInstance();
         $pdo = $db->getPdo();
 
-        $pdo->exec('DELETE FROM error_sessions');
+        $pdo->exec('DELETE FROM ' . TableType::ErrorSessions->value);
         $now = DateHelper::nowUtc();
-        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '0', '{$now}')");
-        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
+        $flashTable = TableType::FlashState->value;
+        $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('last_seen_error_id', '0', '{$now}')");
+        $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('has_unseen_errors', '0', '{$now}')");
 
         wp_send_json_success(array(ResponseKeyType::Message->value => 'All error sessions cleared'));
     }

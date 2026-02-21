@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AdminErrorRenderTrait {
@@ -66,12 +67,13 @@ trait AdminErrorRenderTrait {
             return $defaults;
         }
 
-        $tableCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
+        $tableName = TableType::ErrorSessions->value;
+        $tableCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='" . $tableName . "'");
         $tableExists = $tableCheck && $tableCheck->fetchColumn();
         $isTableMissing = ($tableExists === false || $tableExists === null);
 
         if ($isTableMissing) {
-            $defaults['db_error_message'] = __('The error_sessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
+            $defaults['db_error_message'] = __('The ErrorSessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
 
             return $defaults;
         }
@@ -101,14 +103,14 @@ trait AdminErrorRenderTrait {
         $hasLevelFilter = BooleanHelpers::hasValue($defaults['filter_level']);
 
         if ($hasLevelFilter) {
-            $where[] = 'level = ?';
+            $where[] = 'Level = ?';
             $params[] = $defaults['filter_level'];
         }
 
         $hasSearchFilter = BooleanHelpers::hasValue($defaults['filter_search']);
 
         if ($hasSearchFilter) {
-            $where[] = 'message LIKE ?';
+            $where[] = 'Message LIKE ?';
             $params[] = '%' . $defaults['filter_search'] . '%';
         }
 
@@ -120,7 +122,7 @@ trait AdminErrorRenderTrait {
 
     /** Count total filtered error sessions. */
     private function countFilteredErrors(PDO $pdo, array $filter): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$filter['where_sql']}");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$filter['where_sql']}");
         $stmt->execute($filter['params']);
 
         return (int) $stmt->fetchColumn();
@@ -133,7 +135,7 @@ trait AdminErrorRenderTrait {
         int $perPage,
         int $offset,
     ): array {
-        $stmt = $pdo->prepare("SELECT * FROM error_sessions {$filter['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?");
+        $stmt = $pdo->prepare("SELECT * FROM " . TableType::ErrorSessions->value . " {$filter['where_sql']} ORDER BY Id DESC LIMIT ? OFFSET ?");
         $stmt->execute(array_merge($filter['params'], array($perPage, $offset)));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -169,6 +171,6 @@ trait AdminErrorRenderTrait {
             return '';
         }
 
-        return date('Y-m-d H:i:s', strtotime($errors[0]['created_at']));
+        return date('Y-m-d H:i:s', strtotime($errors[0]['CreatedAt']));
     }
 }
