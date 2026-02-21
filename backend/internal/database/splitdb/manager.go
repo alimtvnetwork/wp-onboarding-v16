@@ -146,58 +146,124 @@ func configureDB(db *sql.DB) error {
 	return nil
 }
 
-// initRootSchema creates the root database schema
+// initRootSchema creates the root database schema and runs migrations
 func (m *DBManager) initRootSchema() error {
 	schema := `
-		CREATE TABLE IF NOT EXISTS projects (
-			id TEXT PRIMARY KEY,
-			slug TEXT UNIQUE NOT NULL,
-			display_name TEXT NOT NULL,
-			path TEXT NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			status TEXT DEFAULT 'active'
+		CREATE TABLE IF NOT EXISTS Projects (
+			Id TEXT PRIMARY KEY,
+			Slug TEXT UNIQUE NOT NULL,
+			DisplayName TEXT NOT NULL,
+			Path TEXT NOT NULL,
+			CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+			Status TEXT DEFAULT 'active'
 		);
 
-		CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);
-		CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+		CREATE INDEX IF NOT EXISTS IdxProjects_Slug ON Projects(Slug);
+		CREATE INDEX IF NOT EXISTS IdxProjects_Status ON Projects(Status);
 
-		CREATE TABLE IF NOT EXISTS databases (
-			id TEXT PRIMARY KEY,
-			project_id TEXT NOT NULL,
-			type TEXT NOT NULL,
-			entity_id TEXT,
-			path TEXT NOT NULL,
-			size_bytes INTEGER DEFAULT 0,
-			record_count INTEGER DEFAULT 0,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			last_accessed_at DATETIME,
-			status TEXT DEFAULT 'active',
-			FOREIGN KEY (project_id) REFERENCES projects(id)
+		CREATE TABLE IF NOT EXISTS Databases (
+			Id TEXT PRIMARY KEY,
+			ProjectId TEXT NOT NULL,
+			Type TEXT NOT NULL,
+			EntityId TEXT,
+			Path TEXT NOT NULL,
+			SizeBytes INTEGER DEFAULT 0,
+			RecordCount INTEGER DEFAULT 0,
+			CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+			LastAccessedAt DATETIME,
+			Status TEXT DEFAULT 'active',
+			FOREIGN KEY (ProjectId) REFERENCES Projects(Id)
 		);
 
-		CREATE INDEX IF NOT EXISTS idx_databases_project ON databases(project_id);
-		CREATE INDEX IF NOT EXISTS idx_databases_type ON databases(type);
-		CREATE INDEX IF NOT EXISTS idx_databases_entity ON databases(entity_id);
+		CREATE INDEX IF NOT EXISTS IdxDatabases_ProjectId ON Databases(ProjectId);
+		CREATE INDEX IF NOT EXISTS IdxDatabases_Type ON Databases(Type);
+		CREATE INDEX IF NOT EXISTS IdxDatabases_EntityId ON Databases(EntityId);
 
-		CREATE TABLE IF NOT EXISTS database_stats (
-			id TEXT PRIMARY KEY,
-			database_id TEXT NOT NULL,
-			recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			size_bytes INTEGER,
-			record_count INTEGER,
-			query_count INTEGER DEFAULT 0,
-			avg_query_ms REAL,
-			FOREIGN KEY (database_id) REFERENCES databases(id)
+		CREATE TABLE IF NOT EXISTS DatabaseStats (
+			Id TEXT PRIMARY KEY,
+			DatabaseId TEXT NOT NULL,
+			RecordedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+			SizeBytes INTEGER,
+			RecordCount INTEGER,
+			QueryCount INTEGER DEFAULT 0,
+			AvgQueryMs REAL,
+			FOREIGN KEY (DatabaseId) REFERENCES Databases(Id)
 		);
 
-		CREATE INDEX IF NOT EXISTS idx_stats_database ON database_stats(database_id);
-		CREATE INDEX IF NOT EXISTS idx_stats_recorded ON database_stats(recorded_at);
+		CREATE INDEX IF NOT EXISTS IdxDatabaseStats_DatabaseId ON DatabaseStats(DatabaseId);
+		CREATE INDEX IF NOT EXISTS IdxDatabaseStats_RecordedAt ON DatabaseStats(RecordedAt);
 	`
 
 	_, err := m.rootDB.Exec(schema)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return m.migrateToPascalCase()
+}
+
+// migrateToPascalCase renames legacy snake_case tables and columns to PascalCase
+func (m *DBManager) migrateToPascalCase() error {
+	// Check if legacy tables exist
+	var exists int
+	err := m.rootDB.QueryRow(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='projects'`).Scan(&exists)
+	if err != nil {
+		// No legacy tables — nothing to migrate
+		return nil
+	}
+
+	m.log.Info("Migrating SplitDB to PascalCase naming")
+
+	migrations := []string{
+		// ── Table renames ──
+		`ALTER TABLE projects RENAME TO Projects`,
+		`ALTER TABLE databases RENAME TO Databases`,
+		`ALTER TABLE database_stats RENAME TO DatabaseStats`,
+
+		// ── Projects column renames ──
+		`ALTER TABLE Projects RENAME COLUMN id TO Id`,
+		`ALTER TABLE Projects RENAME COLUMN slug TO Slug`,
+		`ALTER TABLE Projects RENAME COLUMN display_name TO DisplayName`,
+		`ALTER TABLE Projects RENAME COLUMN path TO Path`,
+		`ALTER TABLE Projects RENAME COLUMN created_at TO CreatedAt`,
+		`ALTER TABLE Projects RENAME COLUMN updated_at TO UpdatedAt`,
+		`ALTER TABLE Projects RENAME COLUMN status TO Status`,
+
+		// ── Databases column renames ──
+		`ALTER TABLE Databases RENAME COLUMN id TO Id`,
+		`ALTER TABLE Databases RENAME COLUMN project_id TO ProjectId`,
+		`ALTER TABLE Databases RENAME COLUMN type TO Type`,
+		`ALTER TABLE Databases RENAME COLUMN entity_id TO EntityId`,
+		`ALTER TABLE Databases RENAME COLUMN path TO Path`,
+		`ALTER TABLE Databases RENAME COLUMN size_bytes TO SizeBytes`,
+		`ALTER TABLE Databases RENAME COLUMN record_count TO RecordCount`,
+		`ALTER TABLE Databases RENAME COLUMN created_at TO CreatedAt`,
+		`ALTER TABLE Databases RENAME COLUMN updated_at TO UpdatedAt`,
+		`ALTER TABLE Databases RENAME COLUMN last_accessed_at TO LastAccessedAt`,
+		`ALTER TABLE Databases RENAME COLUMN status TO Status`,
+
+		// ── DatabaseStats column renames ──
+		`ALTER TABLE DatabaseStats RENAME COLUMN id TO Id`,
+		`ALTER TABLE DatabaseStats RENAME COLUMN database_id TO DatabaseId`,
+		`ALTER TABLE DatabaseStats RENAME COLUMN recorded_at TO RecordedAt`,
+		`ALTER TABLE DatabaseStats RENAME COLUMN size_bytes TO SizeBytes`,
+		`ALTER TABLE DatabaseStats RENAME COLUMN record_count TO RecordCount`,
+		`ALTER TABLE DatabaseStats RENAME COLUMN query_count TO QueryCount`,
+		`ALTER TABLE DatabaseStats RENAME COLUMN avg_query_ms TO AvgQueryMs`,
+	}
+
+	for _, stmt := range migrations {
+		if _, err := m.rootDB.Exec(stmt); err != nil {
+			// Column/table may already be renamed — log and continue
+			m.log.Debug("Migration step skipped (may already be applied)", "stmt", stmt, "error", err)
+		}
+	}
+
+	m.log.Info("SplitDB PascalCase migration complete")
+
+	return nil
 }
 
 // GetOrCreateDB returns a database, creating it if it doesn't exist
@@ -280,8 +346,8 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 	var project Project
 
 	err := m.rootDB.QueryRow(`
-		SELECT id, slug, display_name, path, status, created_at, updated_at
-		FROM projects WHERE slug = ?
+		SELECT Id, Slug, DisplayName, Path, Status, CreatedAt, UpdatedAt
+		FROM Projects WHERE Slug = ?
 	`, slug).Scan(
 		&project.ID, &project.Slug, &project.DisplayName,
 		&project.Path, &project.Status, &project.CreatedAt, &project.UpdatedAt,
@@ -300,7 +366,7 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 		}
 
 		_, err = m.rootDB.Exec(`
-			INSERT INTO projects (id, slug, display_name, path, status, created_at, updated_at)
+			INSERT INTO Projects (Id, Slug, DisplayName, Path, Status, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
 		`, project.ID, project.Slug, project.DisplayName, project.Path,
 			project.Status, project.CreatedAt, project.UpdatedAt)
@@ -322,9 +388,9 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string) (*Database, error) {
 	var db Database
 
-	query := `SELECT id, project_id, type, entity_id, path, size_bytes, record_count, 
-	          status, created_at, updated_at FROM databases 
-	          WHERE project_id = ? AND type = ? AND entity_id = ?`
+	query := `SELECT Id, ProjectId, Type, EntityId, Path, SizeBytes, RecordCount, 
+	          Status, CreatedAt, UpdatedAt FROM Databases 
+	          WHERE ProjectId = ? AND Type = ? AND EntityId = ?`
 
 	err := m.rootDB.QueryRow(query, projectID, dbType, entityID).Scan(
 		&db.ID, &db.ProjectID, &db.Type, &db.EntityID, &db.Path,
@@ -344,7 +410,7 @@ func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string
 		}
 
 		_, err = m.rootDB.Exec(`
-			INSERT INTO databases (id, project_id, type, entity_id, path, status, created_at, updated_at)
+			INSERT INTO Databases (Id, ProjectId, Type, EntityId, Path, Status, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		`, db.ID, db.ProjectID, db.Type, db.EntityID, db.Path, db.Status, db.CreatedAt, db.UpdatedAt)
 
@@ -370,20 +436,20 @@ func (m *DBManager) buildDBPath(projectSlug, dbType, entityID string) string {
 // updateLastAccessed updates the last accessed timestamp
 func (m *DBManager) updateLastAccessed(dbID string) {
 	_, err := m.rootDB.Exec(`
-		UPDATE databases SET last_accessed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-		WHERE id = ?
+		UPDATE Databases SET LastAccessedAt = CURRENT_TIMESTAMP, UpdatedAt = CURRENT_TIMESTAMP
+		WHERE Id = ?
 	`, dbID)
 	if err != nil {
-		m.log.Warn("Failed to update last_accessed_at", "error", err, "db_id", dbID)
+		m.log.Warn("Failed to update LastAccessedAt", "error", err, "db_id", dbID)
 	}
 }
 
 // ListProjects returns all active projects
 func (m *DBManager) ListProjects() ([]Project, error) {
 	rows, err := m.rootDB.Query(`
-		SELECT id, slug, display_name, path, status, created_at, updated_at
-		FROM projects WHERE status = 'active'
-		ORDER BY display_name
+		SELECT Id, Slug, DisplayName, Path, Status, CreatedAt, UpdatedAt
+		FROM Projects WHERE Status = 'active'
+		ORDER BY DisplayName
 	`)
 	if err != nil {
 		return nil, err
@@ -405,11 +471,11 @@ func (m *DBManager) ListProjects() ([]Project, error) {
 // ListDatabases returns all databases for a project
 func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
 	query := `
-		SELECT d.id, d.project_id, d.type, d.entity_id, d.path, 
-		       d.size_bytes, d.record_count, d.status, d.created_at, d.updated_at
-		FROM databases d
-		JOIN projects p ON d.project_id = p.id
-		WHERE p.slug = ? AND d.status = 'active'
+		SELECT d.Id, d.ProjectId, d.Type, d.EntityId, d.Path, 
+		       d.SizeBytes, d.RecordCount, d.Status, d.CreatedAt, d.UpdatedAt
+		FROM Databases d
+		JOIN Projects p ON d.ProjectId = p.Id
+		WHERE p.Slug = ? AND d.Status = 'active'
 	`
 
 	rows, err := m.rootDB.Query(query, projectSlug)
@@ -438,9 +504,9 @@ func (m *DBManager) ArchiveStale(maxAge time.Duration) error {
 	cutoff := time.Now().Add(-maxAge)
 
 	result, err := m.rootDB.Exec(`
-		UPDATE databases 
-		SET status = 'archived', updated_at = CURRENT_TIMESTAMP
-		WHERE last_accessed_at < ? AND status = 'active'
+		UPDATE Databases 
+		SET Status = 'archived', UpdatedAt = CURRENT_TIMESTAMP
+		WHERE LastAccessedAt < ? AND Status = 'active'
 	`, cutoff)
 	if err != nil {
 		return err
@@ -460,8 +526,8 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 
 	// Get databases to delete
 	rows, err := m.rootDB.Query(`
-		SELECT path FROM databases 
-		WHERE status = 'archived' AND updated_at < ?
+		SELECT Path FROM Databases 
+		WHERE Status = 'archived' AND UpdatedAt < ?
 	`, cutoff)
 	if err != nil {
 		return err
@@ -486,8 +552,8 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 
 	// Remove records
 	_, err = m.rootDB.Exec(`
-		DELETE FROM databases 
-		WHERE status = 'archived' AND updated_at < ?
+		DELETE FROM Databases 
+		WHERE Status = 'archived' AND UpdatedAt < ?
 	`, cutoff)
 
 	if deleted > 0 {

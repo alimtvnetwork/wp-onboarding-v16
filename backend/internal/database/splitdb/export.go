@@ -281,16 +281,16 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 			entityID = strings.TrimSuffix(parts[2], ".db")
 		}
 
-		// Check if already registered
+	// Check if already registered
 		var exists int
-		m.rootDB.QueryRow(`SELECT 1 FROM databases WHERE path = ?`, relPath).Scan(&exists)
+		m.rootDB.QueryRow(`SELECT 1 FROM Databases WHERE Path = ?`, relPath).Scan(&exists)
 		if exists == 1 {
 			return nil
 		}
 
 		// Register database
 		_, err = m.rootDB.Exec(`
-			INSERT INTO databases (id, project_id, type, entity_id, path, size_bytes, status, created_at, updated_at)
+			INSERT INTO Databases (Id, ProjectId, Type, EntityId, Path, SizeBytes, Status, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		`, generateID(), project.ID, dbType, entityID, relPath, info.Size())
 
