@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
 enum EndpointType: string
 {
     // ── Core ─────────────────────────────────────────────────────────
+    case WpJson        = 'wp-json/';
     case Status        = 'status';
     case Upload        = 'upload';
     case UploadActive  = 'upload-active';
