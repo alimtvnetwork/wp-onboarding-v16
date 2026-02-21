@@ -830,51 +830,12 @@ All sub-tasks completed:
 
 ---
 
-## Phase D: AppError JSON Serialization
+## ✅ COMPLETED — Phase D: AppError JSON Serialization (2026-02-21)
 
-### D1 — Add MarshalJSON to AppError
-
-```go
-// error_json.go
-func (e *AppError) MarshalJSON() ([]byte, error) {
-    type alias AppError
-    return json.Marshal(&struct {
-        *alias
-        CauseMessage string `json:"cause,omitempty"`
-    }{
-        alias:        (*alias)(e),
-        CauseMessage: causeMessage(e),
-    })
-}
-
-func causeMessage(e *AppError) string {
-    if e.Cause == nil {
-        return ""
-    }
-    return e.Cause.Error()
-}
-```
-
-### D2 — Add UnmarshalJSON to AppError
-
-```go
-func (e *AppError) UnmarshalJSON(data []byte) error {
-    type alias AppError
-    aux := &struct {
-        *alias
-        CauseMessage string `json:"cause,omitempty"`
-    }{alias: (*alias)(e)}
-    if err := json.Unmarshal(data, aux); err != nil {
-        return err
-    }
-    if aux.CauseMessage != "" {
-        e.Cause = errors.New(aux.CauseMessage)
-    }
-    return nil
-}
-```
-
-### D3 — New File: `backend/pkg/apperror/error_json.go`
+Already implemented in `backend/pkg/apperror/error_json.go`:
+- **D1** — `MarshalJSON()` using `appErrorJSON` alias struct, converts `Cause` to string via `.Error()`
+- **D2** — `UnmarshalJSON()` restores `Cause` as `plainError` struct, includes `truncateData()` for debug on decode failures
+- **D3** — File `error_json.go` already exists with all serialization logic
 
 ---
 
@@ -922,7 +883,7 @@ Phase A must complete first. B and D can proceed in parallel. C depends on B (en
 
 ## Next Steps
 
-Phases B and C complete. Proceed to **Phase D** (AppError serialization) and **Phase E** (error audit).
+Phases B, C, and D complete. Proceed to **Phase E** (remaining raw error audit).
 
 ---
 
