@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use LogicException;
 use wpdb;
 use RiseupAsia\Snapshot\Traits\WorkerExecuteTrait;
 use RiseupAsia\Snapshot\Traits\WorkerSetupTrait;
@@ -44,7 +45,7 @@ class SnapshotWorker {
         }
 
         if (self::$instance === null) {
-            throw new \LogicException('SnapshotWorker::getInstance() called before initialization.');
+            throw new LogicException('SnapshotWorker::getInstance() called before initialization.');
         }
         return self::$instance;
     }
