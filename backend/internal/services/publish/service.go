@@ -17,6 +17,8 @@ import (
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/database/dbops"
+	"wp-plugin-publish/internal/enums/endpoint"
+	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/backup"
@@ -466,7 +468,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 
 		// Try Riseup Asia Uploader first (preferred - fixed endpoints)
 		if available, _, _ := wpClient.CheckRiseupAsiaAvailable(); available {
-			endpointURL := fmt.Sprintf("%s/wp-json/%s%s", siteInfo.URL, wordpress.RiseupAsiaNamespace, wordpress.EndpointEnable)
+			endpointURL := fmt.Sprintf("%s/wp-json/%s%s", siteInfo.URL, wordpress.RiseupAsiaNamespace, endpoint.Enable)
 			
 			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
 				What:  "Activate plugin via Riseup Asia Uploader",
@@ -1285,7 +1287,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 	if uploaderAvailable {
 		s.log.Info("Using Riseup Asia Uploader for upload", "slug", slug)
 
-		result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true, wordpress.UploadSourceRestAPI) // pass slug, activate=true, source=rest_api
+		result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true, uploadsource.RestAPI) // pass slug, activate=true, source=rest_api
 		if err != nil {
 			return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
 		}
