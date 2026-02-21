@@ -18,7 +18,6 @@ use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Logging\FileLogger;
 
 class ErrorResponse {
-
     /** Log exception and return standardized error array. */
     public static function logAndReturn(
         FileLogger $logger,

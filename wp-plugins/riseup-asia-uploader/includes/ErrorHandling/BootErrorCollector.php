@@ -21,7 +21,6 @@ use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
 
 class BootErrorCollector {
-
     private const COLLECTOR_PREFIX = 'BootErrorCollector: ';
 
     /** @var array<int, array{context: string, message: string, timestamp: string}> */
@@ -54,7 +53,11 @@ class BootErrorCollector {
             'timestamp' => DateHelper::nowUtc(),
         ];
 
-        InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . '[' . $context . '] ' . $message);
+        InitHelpers::errorLogWithPrefix(
+            self::COLLECTOR_PREFIX
+            . '[' . $context . '] '
+            . $message
+        );
 
         $this->ensureShutdownHook();
     }
@@ -81,6 +84,7 @@ class BootErrorCollector {
      */
     public function flush(): void {
         $hasNoErrors = (count($this->errors) === 0);
+
         if ($hasNoErrors) {
             return;
         }
@@ -90,12 +94,24 @@ class BootErrorCollector {
             $wasSent = $mailer->sendBootErrorReport($this->errors);
 
             if ($wasSent) {
-                InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'boot error report sent (' . count($this->errors) . ' error(s))');
+                InitHelpers::errorLogWithPrefix(
+                    self::COLLECTOR_PREFIX
+                    . 'boot error report sent ('
+                    . count($this->errors)
+                    . ' error(s))'
+                );
             } else {
-                InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'boot error report skipped (throttled or disabled)');
+                InitHelpers::errorLogWithPrefix(
+                    self::COLLECTOR_PREFIX
+                    . 'boot error report skipped (throttled or disabled)'
+                );
             }
         } catch (Throwable $e) {
-            InitHelpers::errorLogWithPrefix(self::COLLECTOR_PREFIX . 'failed to send boot error report — ' . $e->getMessage());
+            InitHelpers::errorLogWithPrefix(
+                self::COLLECTOR_PREFIX
+                . 'failed to send boot error report — '
+                . $e->getMessage()
+            );
         }
 
         $this->errors = [];
