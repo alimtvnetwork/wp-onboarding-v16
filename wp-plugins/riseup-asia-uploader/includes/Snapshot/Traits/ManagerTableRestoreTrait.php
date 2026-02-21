@@ -20,6 +20,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerTableRestoreTrait {
 
@@ -29,7 +30,10 @@ trait ManagerTableRestoreTrait {
             $isTableAbsent = ($check->fetch() === false);
             if ($isTableAbsent) {
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table not found in snapshot', ResponseKeyType::Rows->value => 0);
+                return ResultHelper::error(
+                    'Table not found in snapshot',
+                    array(ResponseKeyType::Rows->value => 0),
+                );
             }
 
             $columnsResult = $sqlite->query("PRAGMA table_info('{$table}')");
@@ -39,7 +43,10 @@ trait ManagerTableRestoreTrait {
             return $this->truncateAndInsert($sqlite, $table, $columnNames);
         } catch (Throwable $e) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Rows->value => 0);
+            return ResultHelper::errorFromException(
+                $e,
+                array(ResponseKeyType::Rows->value => 0),
+            );
         }
     }
 
@@ -62,7 +69,9 @@ trait ManagerTableRestoreTrait {
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
             $this->wpdb->query("COMMIT");
 
-            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $totalRows);
+            return ResultHelper::ok(array(
+                ResponseKeyType::Rows->value => $totalRows,
+            ));
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
@@ -108,7 +117,7 @@ trait ManagerTableRestoreTrait {
         $isProviderMissing = ($provider === null);
         if ($isProviderMissing) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => ResponseMessageType::ProviderMissing->value);
+            return ResultHelper::error(ResponseMessageType::ProviderMissing->value);
         }
 
         return $provider->createSnapshot(array(

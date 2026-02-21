@@ -25,6 +25,7 @@ use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 use Exception;
 
 trait ImportExecutionTrait {
@@ -39,7 +40,13 @@ trait ImportExecutionTrait {
         $inventories = $this->validateAllImportFiles($rootDbPath, $snapshotRoot);
 
         $destDir = $this->moveSnapshotToFinalLocation($snapshotRoot, $metadata);
-        $snapshotId = $this->registerImportedSnapshot($metadata, $inventories[ResponseKeyType::Tables->value], $inventories['incrementals'], $inventories['plugins'], $destDir);
+        $snapshotId = $this->registerImportedSnapshot(
+            $metadata,
+            $inventories[ResponseKeyType::Tables->value],
+            $inventories[ResponseKeyType::Incrementals->value],
+            $inventories[ResponseKeyType::Plugins->value],
+            $destDir,
+        );
 
         return $this->buildImportResult($snapshotId, $destDir, $metadata, $inventories);
     }
@@ -69,7 +76,11 @@ trait ImportExecutionTrait {
         $plugins = $this->readRootDbPlugins($rootDbPath);
         $this->validatePluginFiles($snapshotRoot, $plugins);
 
-        return array(ResponseKeyType::Tables->value => $tables, 'incrementals' => $incrementals, 'plugins' => $plugins);
+        return array(
+            ResponseKeyType::Tables->value       => $tables,
+            ResponseKeyType::Incrementals->value  => $incrementals,
+            ResponseKeyType::Plugins->value       => $plugins,
+        );
     }
 
     /** Build the final import result array. */
@@ -80,16 +91,20 @@ trait ImportExecutionTrait {
         array $inventories,
     ): array {
         $this->log(LogLevelType::Info->value, 'Per-table snapshot imported successfully', array(
-            ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Tables->value => count($inventories[ResponseKeyType::Tables->value]),
-            'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
+            ResponseKeyType::SnapshotId->value    => $snapshotId,
+            ResponseKeyType::Tables->value        => count($inventories[ResponseKeyType::Tables->value]),
+            ResponseKeyType::Incrementals->value  => count($inventories[ResponseKeyType::Incrementals->value]),
+            ResponseKeyType::Plugins->value       => count($inventories[ResponseKeyType::Plugins->value]),
         ));
 
-        return array(
-            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshotId, 'folder' => basename($destDir),
-            'type' => $metadata['type'] ?? SnapshotModeType::Full->value, ResponseKeyType::Tables->value => count($inventories[ResponseKeyType::Tables->value]),
-            ResponseKeyType::TotalRows->value => $metadata['total_rows'] ?? 0,
-            'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
-        );
+        return ResultHelper::ok(array(
+            ResponseKeyType::SnapshotId->value   => $snapshotId,
+            ResponseKeyType::Folder->value       => basename($destDir),
+            ResponseKeyType::Tables->value       => count($inventories[ResponseKeyType::Tables->value]),
+            ResponseKeyType::TotalRows->value    => $metadata['total_rows'] ?? 0,
+            ResponseKeyType::Incrementals->value => count($inventories[ResponseKeyType::Incrementals->value]),
+            ResponseKeyType::Plugins->value      => count($inventories[ResponseKeyType::Plugins->value]),
+        ));
     }
 
     /** Move snapshot to final location in snapshots directory. */
