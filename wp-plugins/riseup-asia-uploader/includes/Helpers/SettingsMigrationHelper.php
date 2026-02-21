@@ -1,0 +1,118 @@
+<?php
+/**
+ * SettingsMigrationHelper — One-time wp_options value normalization.
+ *
+ * Migrates stored snapshot/plugin settings from legacy lowercase/snake_case
+ * values to PascalCase enum values. Idempotent — safe to run multiple times.
+ *
+ * @package RiseupAsia\Helpers
+ * @since   2.6.0
+ */
+
+namespace RiseupAsia\Helpers;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use RiseupAsia\Enums\OptionNameType;
+
+class SettingsMigrationHelper {
+
+    /** Option key tracking whether migration has run. */
+    private const MIGRATION_FLAG = 'riseup_settings_migrated_v1';
+
+    /**
+     * Value mappings: old lowercase/snake_case → new PascalCase.
+     *
+     * @var array<string,string>
+     */
+    private const VALUE_MAP = array(
+        // SnapshotProviderType
+        'auto'    => 'Auto',
+        'native'  => 'Native',
+        'wp_reset' => 'WpReset',
+        'updraft' => 'Updraft',
+        // SnapshotFrequencyType
+        'manual'  => 'Manual',
+        'daily'   => 'Daily',
+        'weekly'  => 'Weekly',
+        'monthly' => 'Monthly',
+        // SnapshotScopeType
+        'all'       => 'All',
+        'wordpress' => 'WordPress',
+        'content'   => 'Content',
+        'custom'    => 'Custom',
+        // RetentionType
+        'none'  => 'None',
+        'days'  => 'Days',
+        'count' => 'Count',
+        // StorageModeType
+        'single'    => 'Single',
+        'per-table' => 'PerTable',
+    );
+
+    /**
+     * Fields within snapshot settings that hold enum values.
+     *
+     * @var array<string>
+     */
+    private const SNAPSHOT_FIELDS = array(
+        'preferred_provider',
+        'schedule_frequency',
+        'default_scope',
+        'retention_type',
+        'storage_mode',
+    );
+
+    /** Run the migration if not already completed. */
+    public static function migrateIfNeeded(): void {
+        if (get_option(self::MIGRATION_FLAG)) {
+            return;
+        }
+
+        self::migrateSnapshotSettings();
+        update_option(self::MIGRATION_FLAG, true);
+    }
+
+    /** Normalize snapshot settings values to PascalCase. */
+    private static function migrateSnapshotSettings(): void {
+        $settings = get_option(
+            OptionNameType::SnapshotSettings->value,
+            array(),
+        );
+
+        $isSettingsEmpty = empty($settings) || !is_array($settings);
+
+        if ($isSettingsEmpty) {
+            return;
+        }
+
+        $hasChanges = false;
+
+        foreach (self::SNAPSHOT_FIELDS as $field) {
+            $hasField = isset($settings[$field]) && is_string($settings[$field]);
+
+            if (!$hasField) {
+                continue;
+            }
+
+            $oldValue = $settings[$field];
+            $hasMapping = isset(self::VALUE_MAP[$oldValue]);
+
+            if (!$hasMapping) {
+                continue;
+            }
+
+            $settings[$field] = self::VALUE_MAP[$oldValue];
+            $hasChanges = true;
+        }
+
+        if ($hasChanges) {
+            update_option(
+                OptionNameType::SnapshotSettings->value,
+                $settings,
+            );
+        }
+    }
+}

@@ -10,8 +10,17 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\AdminPageType;
+use RiseupAsia\Enums\AjaxActionType;
+use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SnapshotConfigType;
+use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Admin\Admin;
 use RiseupAsia\Helpers\BooleanHelpers;
 ?>
@@ -228,7 +237,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                                 <td class="column-enabled">
                                     <label class="toggle-switch">
                                         <input type="checkbox" 
-                                               name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][enabled]" 
+                                               name="<?php echo esc_attr(OptionNameType::PluginSettings->value); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][enabled]" 
                                                value="1" 
                                                <?php $isEpEnabled = BooleanHelpers::hasValue($settings['endpoints'][$endpoint]['enabled'] ?? null); checked($isEpEnabled); ?>>
                                         <span class="toggle-slider"></span>
@@ -237,7 +246,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                                 <td class="column-auth">
                                     <label class="toggle-switch">
                                         <input type="checkbox" 
-                                               name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][auth_required]" 
+                                               name="<?php echo esc_attr(OptionNameType::PluginSettings->value); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][auth_required]" 
                                                value="1" 
                                                <?php $isAuthReq = BooleanHelpers::hasValue($settings['endpoints'][$endpoint]['auth_required'] ?? null); checked($isAuthReq); ?>>
                                         <span class="toggle-slider"></span>
@@ -263,7 +272,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
             </h2>
             <p class="description">
                 <?php esc_html_e('Configure automated database snapshots, retention policies, and provider preferences. Manage snapshots from the', 'riseup-asia-uploader'); ?>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-snapshots')); ?>"><?php esc_html_e('Snapshots Dashboard', 'riseup-asia-uploader'); ?></a>.
+                <a href="<?php echo esc_url(AdminPageType::Snapshots->adminUrl()); ?>"><?php esc_html_e('Snapshots Dashboard', 'riseup-asia-uploader'); ?></a>.
             </p>
 
             <!-- Provider Selection -->
@@ -275,7 +284,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     </th>
                     <td>
                         <select id="snap_preferred_provider">
-                            <option value="auto" <?php selected($snapshot_settings['preferred_provider'], 'auto'); ?>>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Auto->value); ?>" <?php selected($snapshot_settings['preferred_provider'], SnapshotProviderType::Auto->value); ?>>
                                 <?php esc_html_e('Auto-detect (recommended)', 'riseup-asia-uploader'); ?>
                             </option>
                             <?php foreach ($snapshot_providers as $provider): ?>
@@ -313,10 +322,10 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     </th>
                     <td>
                         <select id="snap_schedule_frequency">
-                            <option value="manual" <?php selected($snapshot_settings['schedule_frequency'], 'manual'); ?>><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="daily" <?php selected($snapshot_settings['schedule_frequency'], 'daily'); ?>><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
-                            <option value="weekly" <?php selected($snapshot_settings['schedule_frequency'], 'weekly'); ?>><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
-                            <option value="monthly" <?php selected($snapshot_settings['schedule_frequency'], 'monthly'); ?>><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Manual->value); ?>" <?php selected($snapshot_settings['schedule_frequency'], SnapshotFrequencyType::Manual->value); ?>><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Daily->value); ?>" <?php selected($snapshot_settings['schedule_frequency'], SnapshotFrequencyType::Daily->value); ?>><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Weekly->value); ?>" <?php selected($snapshot_settings['schedule_frequency'], SnapshotFrequencyType::Weekly->value); ?>><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Monthly->value); ?>" <?php selected($snapshot_settings['schedule_frequency'], SnapshotFrequencyType::Monthly->value); ?>><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -328,7 +337,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <input type="time" id="snap_schedule_time" value="<?php echo esc_attr($snapshot_settings['schedule_time']); ?>">
                     </td>
                 </tr>
-                <tr id="snap_day_row" style="<?php echo ($snapshot_settings['schedule_frequency'] === 'daily' || $snapshot_settings['schedule_frequency'] === 'manual') ? 'display:none;' : ''; ?>">
+                <tr id="snap_day_row" style="<?php $isHiddenFreq = SnapshotFrequencyType::tryFrom($snapshot_settings['schedule_frequency'] ?? ''); echo ($isHiddenFreq !== null && $isHiddenFreq->isAnyOf(SnapshotFrequencyType::Daily, SnapshotFrequencyType::Manual)) ? 'display:none;' : ''; ?>">
                     <th scope="row">
                         <label for="snap_schedule_day"><?php esc_html_e('Day', 'riseup-asia-uploader'); ?></label>
                     </th>
@@ -348,10 +357,10 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     </th>
                     <td>
                         <select id="snap_default_scope">
-                            <option value="all" <?php selected($snapshot_settings['default_scope'], 'all'); ?>><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="wordpress" <?php selected($snapshot_settings['default_scope'], 'wordpress'); ?>><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="content" <?php selected($snapshot_settings['default_scope'], 'content'); ?>><?php esc_html_e('Content Only (posts, terms, comments)', 'riseup-asia-uploader'); ?></option>
-                            <option value="custom" <?php selected($snapshot_settings['default_scope'], 'custom'); ?>><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::All->value); ?>" <?php selected($snapshot_settings['default_scope'], SnapshotScopeType::All->value); ?>><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::WordPress->value); ?>" <?php selected($snapshot_settings['default_scope'], SnapshotScopeType::WordPress->value); ?>><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Content->value); ?>" <?php selected($snapshot_settings['default_scope'], SnapshotScopeType::Content->value); ?>><?php esc_html_e('Content Only (posts, terms, comments)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Custom->value); ?>" <?php selected($snapshot_settings['default_scope'], SnapshotScopeType::Custom->value); ?>><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -366,13 +375,13 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     </th>
                     <td>
                         <select id="snap_retention_type">
-                            <option value="none" <?php selected($snapshot_settings['retention_type'], 'none'); ?>><?php esc_html_e('None (manual only)', 'riseup-asia-uploader'); ?></option>
-                            <option value="days" <?php selected($snapshot_settings['retention_type'], 'days'); ?>><?php esc_html_e('Keep for N days', 'riseup-asia-uploader'); ?></option>
-                            <option value="count" <?php selected($snapshot_settings['retention_type'], 'count'); ?>><?php esc_html_e('Keep last N snapshots', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::None->value); ?>" <?php selected($snapshot_settings['retention_type'], RetentionType::None->value); ?>><?php esc_html_e('None (manual only)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::Days->value); ?>" <?php selected($snapshot_settings['retention_type'], RetentionType::Days->value); ?>><?php esc_html_e('Keep for N days', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::Count->value); ?>" <?php selected($snapshot_settings['retention_type'], RetentionType::Count->value); ?>><?php esc_html_e('Keep last N snapshots', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
-                <tr id="snap_retention_days_row" style="<?php echo $snapshot_settings['retention_type'] !== 'days' ? 'display:none;' : ''; ?>">
+                <tr id="snap_retention_days_row" style="<?php echo $snapshot_settings['retention_type'] !== RetentionType::Days->value ? 'display:none;' : ''; ?>">
                     <th scope="row">
                         <label for="snap_retention_days"><?php esc_html_e('Retention Days', 'riseup-asia-uploader'); ?></label>
                     </th>
@@ -381,7 +390,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <p class="description"><?php esc_html_e('Snapshots older than this will be deleted during cleanup.', 'riseup-asia-uploader'); ?></p>
                     </td>
                 </tr>
-                <tr id="snap_retention_count_row" style="<?php echo $snapshot_settings['retention_type'] !== 'count' ? 'display:none;' : ''; ?>">
+                <tr id="snap_retention_count_row" style="<?php echo $snapshot_settings['retention_type'] !== RetentionType::Count->value ? 'display:none;' : ''; ?>">
                     <th scope="row">
                         <label for="snap_retention_count"><?php esc_html_e('Maximum Count', 'riseup-asia-uploader'); ?></label>
                     </th>
@@ -404,14 +413,14 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     </th>
                     <td>
                         <div class="riseup-storage-mode-cards" style="display: flex; gap: 12px; max-width: 520px;">
-                            <label class="riseup-mode-card" id="mode_card_single" style="flex: 1; cursor: pointer; padding: 12px; border: 2px solid <?php echo $snapshot_settings['storage_mode'] === 'single' ? '#2271b1' : '#dcdcde'; ?>; border-radius: 8px; background: <?php echo $snapshot_settings['storage_mode'] === 'single' ? '#f0f6fc' : '#fff'; ?>; transition: all 0.2s;">
-                                <input type="radio" name="snap_storage_mode" value="single" <?php checked($snapshot_settings['storage_mode'], 'single'); ?> style="display: none;">
+                            <label class="riseup-mode-card" id="mode_card_single" style="flex: 1; cursor: pointer; padding: 12px; border: 2px solid <?php echo $snapshot_settings['storage_mode'] === StorageModeType::Single->value ? '#2271b1' : '#dcdcde'; ?>; border-radius: 8px; background: <?php echo $snapshot_settings['storage_mode'] === StorageModeType::Single->value ? '#f0f6fc' : '#fff'; ?>; transition: all 0.2s;">
+                                <input type="radio" name="snap_storage_mode" value="<?php echo esc_attr(StorageModeType::Single->value); ?>" <?php checked($snapshot_settings['storage_mode'], StorageModeType::Single->value); ?> style="display: none;">
                                 <span class="dashicons dashicons-database" style="color: #2271b1; font-size: 20px;"></span>
                                 <strong style="display: block; margin: 4px 0 2px;"><?php esc_html_e('Single File', 'riseup-asia-uploader'); ?></strong>
                                 <span style="font-size: 12px; color: #646970;"><?php esc_html_e('All tables in one SQLite database. Simpler management.', 'riseup-asia-uploader'); ?></span>
                             </label>
-                            <label class="riseup-mode-card" id="mode_card_pertable" style="flex: 1; cursor: pointer; padding: 12px; border: 2px solid <?php echo $snapshot_settings['storage_mode'] === 'per-table' ? '#2271b1' : '#dcdcde'; ?>; border-radius: 8px; background: <?php echo $snapshot_settings['storage_mode'] === 'per-table' ? '#f0f6fc' : '#fff'; ?>; transition: all 0.2s;">
-                                <input type="radio" name="snap_storage_mode" value="per-table" <?php checked($snapshot_settings['storage_mode'], 'per-table'); ?> style="display: none;">
+                            <label class="riseup-mode-card" id="mode_card_pertable" style="flex: 1; cursor: pointer; padding: 12px; border: 2px solid <?php echo $snapshot_settings['storage_mode'] === StorageModeType::PerTable->value ? '#2271b1' : '#dcdcde'; ?>; border-radius: 8px; background: <?php echo $snapshot_settings['storage_mode'] === StorageModeType::PerTable->value ? '#f0f6fc' : '#fff'; ?>; transition: all 0.2s;">
+                                <input type="radio" name="snap_storage_mode" value="<?php echo esc_attr(StorageModeType::PerTable->value); ?>" <?php checked($snapshot_settings['storage_mode'], StorageModeType::PerTable->value); ?> style="display: none;">
                                 <span class="dashicons dashicons-grid-view" style="color: #2271b1; font-size: 20px;"></span>
                                 <strong style="display: block; margin: 4px 0 2px;"><?php esc_html_e('Per-Table Files', 'riseup-asia-uploader'); ?></strong>
                                 <span style="font-size: 12px; color: #646970;"><?php esc_html_e('Separate SQLite file per table. Parallel backup via worker pool.', 'riseup-asia-uploader'); ?></span>
@@ -426,13 +435,13 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     <td>
                         <div style="display: flex; align-items: center; gap: 12px; max-width: 340px;">
                             <input type="range" id="snap_worker_pool_size" 
-                                   min="<?php echo esc_attr(SNAPSHOT_WORKER_POOL_MIN); ?>" 
-                                   max="<?php echo esc_attr(SNAPSHOT_WORKER_POOL_MAX); ?>" 
+                                   min="<?php echo esc_attr(SnapshotConfigType::WorkerPoolMin->value); ?>" 
+                                   max="<?php echo esc_attr(SnapshotConfigType::WorkerPoolMax->value); ?>" 
                                    value="<?php echo esc_attr($snapshot_settings['worker_pool_size']); ?>" 
                                    style="flex: 1; accent-color: #2271b1;">
                             <span id="snap_worker_pool_value" style="font-family: monospace; font-size: 14px; min-width: 24px; text-align: center; font-weight: 600; color: #2271b1;"><?php echo esc_html($snapshot_settings['worker_pool_size']); ?></span>
                         </div>
-                        <p class="description"><?php printf(esc_html__('Number of concurrent backup workers (%d–%d). Higher values export faster but use more resources.', 'riseup-asia-uploader'), SNAPSHOT_WORKER_POOL_MIN, SNAPSHOT_WORKER_POOL_MAX); ?></p>
+                        <p class="description"><?php printf(esc_html__('Number of concurrent backup workers (%d–%d). Higher values export faster but use more resources.', 'riseup-asia-uploader'), SnapshotConfigType::WorkerPoolMin->value, SnapshotConfigType::WorkerPoolMax->value); ?></p>
                     </td>
                 </tr>
             </table>
@@ -516,7 +525,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="log_include_error"
-                                   name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[log_retrieval][include_error_log]" 
+                                   name="<?php echo esc_attr(OptionNameType::PluginSettings->value); ?>[log_retrieval][include_error_log]" 
                                    value="1" 
                                    <?php $isIncludeErrorLog = BooleanHelpers::hasValue($settings['log_retrieval']['include_error_log'] ?? null); checked($isIncludeErrorLog); ?>>
                             <span class="toggle-slider"></span>
@@ -534,7 +543,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="log_include_full"
-                                   name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[log_retrieval][include_full_log]" 
+                                   name="<?php echo esc_attr(OptionNameType::PluginSettings->value); ?>[log_retrieval][include_full_log]" 
                                    value="1" 
                                    <?php $isIncludeFullLog = BooleanHelpers::hasValue($settings['log_retrieval']['include_full_log'] ?? null); checked($isIncludeFullLog); ?>>
                             <span class="toggle-slider"></span>
@@ -552,7 +561,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="log_include_stacktrace"
-                                   name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[log_retrieval][include_stacktrace]" 
+                                   name="<?php echo esc_attr(OptionNameType::PluginSettings->value); ?>[log_retrieval][include_stacktrace]" 
                                    value="1" 
                                    <?php $isIncludeStacktrace = BooleanHelpers::hasValue($settings['log_retrieval']['include_stacktrace'] ?? null); checked($isIncludeStacktrace); ?>>
                             <span class="toggle-slider"></span>
@@ -569,7 +578,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     <td>
                         <input type="number" 
                                id="log_max_lines"
-                               name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[log_retrieval][max_lines]" 
+                               name="<?php echo esc_attr(OptionNameType::PluginSettings->value); ?>[log_retrieval][max_lines]" 
                                value="<?php echo esc_attr($settings['log_retrieval']['max_lines']); ?>" 
                                min="50" max="5000" step="50"
                                class="small-text">
@@ -581,7 +590,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                 <tr>
                     <th scope="row"><?php esc_html_e('Endpoint', 'riseup-asia-uploader'); ?></th>
                     <td>
-                        <code><?php echo esc_html(rest_url(API_FULL_NAMESPACE . '/' . \RiseupAsia\Enums\EndpointType::ErrorLogs->value)); ?></code>
+                        <code><?php echo esc_html(rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::ErrorLogs->value)); ?></code>
                         <p class="description"><?php esc_html_e('GET request with Basic Auth. Returns JSON with error_log, full_log, and/or stacktrace_log fields.', 'riseup-asia-uploader'); ?></p>
                     </td>
                 </tr>
@@ -608,7 +617,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true).find('.dashicons').removeClass('dashicons-yes-alt').addClass('dashicons-update spin');
         
         $.post(ajaxurl, {
-            action: 'riseup_test_update_connection',
+            action: '<?php echo esc_js(AjaxActionType::TestUpdateConnection->value); ?>',
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -631,7 +640,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true);
         
         $.post(ajaxurl, {
-            action: 'riseup_clear_update_cache',
+            action: '<?php echo esc_js(AjaxActionType::ClearUpdateCache->value); ?>',
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -652,7 +661,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true).find('.dashicons').addClass('spin');
         
         $.post(ajaxurl, {
-            action: 'riseup_check_for_updates',
+            action: '<?php echo esc_js(AjaxActionType::CheckForUpdates->value); ?>',
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -698,26 +707,26 @@ jQuery(document).ready(function($) {
     // Toggle day row visibility based on frequency
     $('#snap_schedule_frequency').on('change', function() {
         var freq = $(this).val();
-        $('#snap_day_row').toggle(freq === 'weekly' || freq === 'monthly');
+        $('#snap_day_row').toggle(freq === '<?php echo esc_js(SnapshotFrequencyType::Weekly->value); ?>' || freq === '<?php echo esc_js(SnapshotFrequencyType::Monthly->value); ?>');
     });
 
     // Toggle retention rows based on type
     $('#snap_retention_type').on('change', function() {
         var type = $(this).val();
-        $('#snap_retention_days_row').toggle(type === 'days');
-        $('#snap_retention_count_row').toggle(type === 'count');
+        $('#snap_retention_days_row').toggle(type === '<?php echo esc_js(RetentionType::Days->value); ?>');
+        $('#snap_retention_count_row').toggle(type === '<?php echo esc_js(RetentionType::Count->value); ?>');
     });
 
     // Storage mode card selection
     $('input[name="snap_storage_mode"]').on('change', function() {
         var val = $(this).val();
         $('#mode_card_single').css({
-            'border-color': val === 'single' ? '#2271b1' : '#dcdcde',
-            'background': val === 'single' ? '#f0f6fc' : '#fff'
+            'border-color': val === '<?php echo esc_js(StorageModeType::Single->value); ?>' ? '#2271b1' : '#dcdcde',
+            'background': val === '<?php echo esc_js(StorageModeType::Single->value); ?>' ? '#f0f6fc' : '#fff'
         });
         $('#mode_card_pertable').css({
-            'border-color': val === 'per-table' ? '#2271b1' : '#dcdcde',
-            'background': val === 'per-table' ? '#f0f6fc' : '#fff'
+            'border-color': val === '<?php echo esc_js(StorageModeType::PerTable->value); ?>' ? '#2271b1' : '#dcdcde',
+            'background': val === '<?php echo esc_js(StorageModeType::PerTable->value); ?>' ? '#f0f6fc' : '#fff'
         });
     });
 
@@ -729,7 +738,7 @@ jQuery(document).ready(function($) {
     // Load storage stats on page load
     function loadStorageStats() {
         $.post(ajaxurl, {
-            action: 'riseup_get_snapshot_storage_stats',
+            action: '<?php echo esc_js(AjaxActionType::GetSnapshotStorageStats->value); ?>',
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -754,7 +763,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true);
 
         $.post(ajaxurl, {
-            action: 'riseup_save_snapshot_settings',
+            action: '<?php echo esc_js(AjaxActionType::SaveSnapshotSettings->value); ?>',
             nonce: ajaxNonce,
             preferred_provider: $('#snap_preferred_provider').val(),
             schedule_enabled: $('#snap_schedule_enabled').is(':checked') ? '1' : '0',
@@ -785,7 +794,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true).find('.dashicons').addClass('spin');
 
         $.post(ajaxurl, {
-            action: 'riseup_run_snapshot_cleanup',
+            action: '<?php echo esc_js(AjaxActionType::RunSnapshotCleanup->value); ?>',
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
