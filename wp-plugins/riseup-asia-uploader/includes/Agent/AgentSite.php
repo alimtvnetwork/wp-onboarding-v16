@@ -68,16 +68,16 @@ final readonly class AgentSite {
      */
     public function toArray(): array {
         $data = [
-            'id'                              => $this->id,
-            AgentFieldType::Name->value        => $this->name,
-            AgentFieldType::Url->value         => $this->url,
-            AgentFieldType::Username->value    => $this->username,
-            AgentFieldType::RedirectUrl->value => $this->redirectUrl,
-            AgentFieldType::Status->value      => $this->status,
-            AgentFieldType::LastSync->value     => $this->lastSync,
-            AgentFieldType::LastError->value    => $this->lastError,
-            'created_at'                       => $this->createdAt,
-            'updated_at'                       => $this->updatedAt,
+            'id'                                 => $this->id,
+            AgentFieldType::Name->value           => $this->name,
+            AgentFieldType::Url->value            => $this->url,
+            AgentFieldType::Username->value       => $this->username,
+            AgentFieldType::RedirectUrl->value    => $this->redirectUrl,
+            AgentFieldType::Status->value         => $this->status,
+            AgentFieldType::LastSync->value       => $this->lastSync,
+            AgentFieldType::LastError->value      => $this->lastError,
+            AgentFieldType::CreatedAt->value      => $this->createdAt,
+            AgentFieldType::UpdatedAt->value      => $this->updatedAt,
         ];
 
         if ($this->appPassword !== null) {

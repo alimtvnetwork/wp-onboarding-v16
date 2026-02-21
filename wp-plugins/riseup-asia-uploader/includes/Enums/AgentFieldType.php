@@ -19,11 +19,13 @@ enum AgentFieldType: string
     case Name        = 'name';
     case Url         = 'url';
     case Username    = 'username';
-    case AppPassword = 'app_password';
-    case RedirectUrl = 'redirect_url';
+    case AppPassword = 'appPassword';
+    case RedirectUrl = 'redirectUrl';
     case Status      = 'status';
-    case LastSync    = 'last_sync';
-    case LastError   = 'last_error';
+    case LastSync    = 'lastSync';
+    case LastError   = 'lastError';
+    case CreatedAt   = 'createdAt';
+    case UpdatedAt   = 'updatedAt';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

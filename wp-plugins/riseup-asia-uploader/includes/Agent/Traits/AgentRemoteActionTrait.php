@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use WP_Error;
 use RiseupAsia\Agent\AgentSite;
+use RiseupAsia\Enums\AgentFieldType;
 use RiseupAsia\Enums\AgentStatusType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpConfigType;
@@ -132,8 +133,8 @@ trait AgentRemoteActionTrait {
 
     private function handleTestConnectionFailure(int $agentId, WP_Error $error): array {
         $this->updateAgent($agentId, array(
-            'status'     => AgentStatusType::Error->value,
-            'last_error' => $error->get_error_message(),
+            AgentFieldType::Status->value    => AgentStatusType::Error->value,
+            AgentFieldType::LastError->value  => $error->get_error_message(),
         ));
 
         $this->logAction(
@@ -152,9 +153,9 @@ trait AgentRemoteActionTrait {
 
     private function handleTestConnectionSuccess(int $agentId, array $result): array {
         $this->updateAgent($agentId, array(
-            'status'     => AgentStatusType::Connected->value,
-            'last_sync'  => DateHelper::nowUtc(),
-            'last_error' => null,
+            AgentFieldType::Status->value    => AgentStatusType::Connected->value,
+            AgentFieldType::LastSync->value   => DateHelper::nowUtc(),
+            AgentFieldType::LastError->value  => null,
         ));
 
         $this->logAction(
@@ -193,8 +194,8 @@ trait AgentRemoteActionTrait {
         }
 
         $this->updateAgent($agentId, array(
-            'status'    => AgentStatusType::Connected->value,
-            'last_sync' => DateHelper::nowUtc(),
+            AgentFieldType::Status->value   => AgentStatusType::Connected->value,
+            AgentFieldType::LastSync->value  => DateHelper::nowUtc(),
         ));
 
         $plugins = isset($result[ResponseKeyType::Plugins->value])

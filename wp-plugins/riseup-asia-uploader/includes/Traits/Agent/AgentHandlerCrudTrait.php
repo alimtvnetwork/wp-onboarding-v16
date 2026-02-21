@@ -49,7 +49,7 @@ trait AgentHandlerCrudTrait {
                 return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
             }
 
-            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, 'agent_id' => $result, ResponseKeyType::Message->value => 'Agent site added successfully'), HttpStatusType::Created->value);
+            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, 'agentId' => $result, ResponseKeyType::Message->value => 'Agent site added successfully'), HttpStatusType::Created->value);
         }, 'add_agent');
     }
 
