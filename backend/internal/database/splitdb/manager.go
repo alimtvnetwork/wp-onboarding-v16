@@ -198,7 +198,7 @@ func (m *DBManager) initRootSchema() error {
 
 	_, err := m.rootDB.Exec(schema)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to create root schema")
 	}
 
 	return m.migrateToPascalCase()
@@ -378,7 +378,8 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 
 		m.log.Info("Created project", "slug", slug, "id", project.ID)
 	} else if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query project").
+			WithSlug(slug)
 	}
 
 	return &project, nil
@@ -419,7 +420,8 @@ func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string
 				WithDetails(fmt.Sprintf("type=%s, entityId=%s", dbType, entityID))
 		}
 	} else if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query database record").
+			WithDetails(fmt.Sprintf("type=%s, entityId=%s", dbType, entityID))
 	}
 
 	return &db, nil
@@ -452,7 +454,7 @@ func (m *DBManager) ListProjects() ([]Project, error) {
 		ORDER BY DisplayName
 	`)
 	if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list projects")
 	}
 	defer rows.Close()
 
@@ -460,7 +462,7 @@ func (m *DBManager) ListProjects() ([]Project, error) {
 	for rows.Next() {
 		var p Project
 		if err := rows.Scan(&p.ID, &p.Slug, &p.DisplayName, &p.Path, &p.Status, &p.CreatedAt, &p.UpdatedAt); err != nil {
-			return nil, err
+			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan project row")
 		}
 		projects = append(projects, p)
 	}
@@ -480,7 +482,8 @@ func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
 
 	rows, err := m.rootDB.Query(query, projectSlug)
 	if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list databases").
+			WithSlug(projectSlug)
 	}
 	defer rows.Close()
 
@@ -491,7 +494,7 @@ func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
 			&db.ID, &db.ProjectID, &db.Type, &db.EntityID, &db.Path,
 			&db.SizeBytes, &db.RecordCount, &db.Status, &db.CreatedAt, &db.UpdatedAt,
 		); err != nil {
-			return nil, err
+			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan database row")
 		}
 		dbs = append(dbs, db)
 	}
@@ -509,7 +512,7 @@ func (m *DBManager) ArchiveStale(maxAge time.Duration) error {
 		WHERE LastAccessedAt < ? AND Status = 'active'
 	`, cutoff)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to archive stale databases")
 	}
 
 	affected, _ := result.RowsAffected()
@@ -530,7 +533,7 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 		WHERE Status = 'archived' AND UpdatedAt < ?
 	`, cutoff)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query archived databases for purge")
 	}
 	defer rows.Close()
 
@@ -555,12 +558,15 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 		DELETE FROM Databases 
 		WHERE Status = 'archived' AND UpdatedAt < ?
 	`, cutoff)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to purge archived database records")
+	}
 
 	if deleted > 0 {
 		m.log.Info("Purged archived databases", "count", deleted)
 	}
 
-	return err
+	return nil
 }
 
 // closeProjectDBs closes all open databases for a project

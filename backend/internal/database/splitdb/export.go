@@ -238,13 +238,15 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 func (m *DBManager) extractZipFile(file *zip.File, destPath string) (int64, error) {
 	src, err := file.Open()
 	if err != nil {
-		return 0, err
+		return 0, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip entry").
+			WithFile(file.Name)
 	}
 	defer src.Close()
 
 	dst, err := os.Create(destPath)
 	if err != nil {
-		return 0, err
+		return 0, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create destination file").
+			WithPath(destPath)
 	}
 	defer dst.Close()
 
@@ -256,12 +258,14 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 	// Ensure project exists in root.db
 	project, err := m.getOrCreateProject(projectSlug)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to ensure project for import").
+			WithSlug(projectSlug)
 	}
 
 	projectDir, err := pathutil.Join(m.dataDir, projectSlug)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to resolve project directory for import").
+			WithSlug(projectSlug)
 	}
 
 	return filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
@@ -281,7 +285,7 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 			entityID = strings.TrimSuffix(parts[2], ".db")
 		}
 
-	// Check if already registered
+		// Check if already registered
 		var exists int
 		m.rootDB.QueryRow(`SELECT 1 FROM Databases WHERE Path = ?`, relPath).Scan(&exists)
 		if exists == 1 {
@@ -293,8 +297,12 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 			INSERT INTO Databases (Id, ProjectId, Type, EntityId, Path, SizeBytes, Status, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		`, generateID(), project.ID, dbType, entityID, relPath, info.Size())
+		if err != nil {
+			return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to register imported database").
+				WithDetails(fmt.Sprintf("path=%s, type=%s", relPath, dbType))
+		}
 
-		return err
+		return nil
 	})
 }
 
@@ -306,7 +314,8 @@ func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPat
 	// Filter databases by type
 	dbs, err := m.ListDatabases(projectSlug)
 	if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list databases for export").
+			WithSlug(projectSlug)
 	}
 
 	typeSet := make(map[string]bool)
