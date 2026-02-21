@@ -27,9 +27,13 @@ trait OrchestratorZipTrait {
             $zip_path = dirname($snapshotDir) . '/' . $zip_filename;
 
             $zip = new ZipArchive();
+
             if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create ZIP');
+                return array(
+                    ResponseKeyType::Success->value => false,
+                    ResponseKeyType::Error->value   => 'Failed to create ZIP',
+                );
             }
 
             $file_count = $this->addDirectoryToZip($zip, $snapshotDir);
@@ -38,7 +42,10 @@ trait OrchestratorZipTrait {
             return $this->validateZipExport($zip_path, $zip_filename, $file_count);
         } catch (Throwable $e) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => $e->getMessage(),
+            );
         }
     }
 
@@ -49,8 +56,10 @@ trait OrchestratorZipTrait {
         );
 
         $count = 0;
+
         foreach ($iterator as $item) {
             $relative = str_replace('\\', '/', substr($item->getPathname(), strlen($dir) + 1));
+
             if ($item->isDir()) {
                 $zip->addEmptyDir($relative);
             } else {
@@ -68,14 +77,28 @@ trait OrchestratorZipTrait {
         int $files,
     ): array {
         $size = filesize($path);
+
         if ($size === 0) {
             @unlink($path);
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'ZIP export is empty');
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => 'ZIP export is empty',
+            );
         }
 
-        $this->log(LogLevelType::Info->value, 'ZIP export created', array(ResponseKeyType::Filename->value => $filename, ResponseKeyType::Files->value => $files, ResponseKeyType::Size->value => $this->formatBytes($size)));
+        $this->log(LogLevelType::Info->value, 'ZIP export created', array(
+            ResponseKeyType::Filename->value => $filename,
+            ResponseKeyType::Files->value    => $files,
+            ResponseKeyType::Size->value     => $this->formatBytes($size),
+        ));
 
-        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Path->value => $path, ResponseKeyType::Filename->value => $filename, ResponseKeyType::Size->value => $size, ResponseKeyType::Files->value => $files);
+        return array(
+            ResponseKeyType::Success->value  => true,
+            ResponseKeyType::Path->value     => $path,
+            ResponseKeyType::Filename->value => $filename,
+            ResponseKeyType::Size->value     => $size,
+            ResponseKeyType::Files->value    => $files,
+        );
     }
 }

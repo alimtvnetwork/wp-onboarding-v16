@@ -24,6 +24,7 @@ trait IncrementalDiscoveryTrait {
 
     public function findLatestMasterSnapshot(): ?string {
         $masterFromDb = $this->findMasterFromDb();
+
         if ($masterFromDb) {
             return $masterFromDb;
         }
@@ -34,6 +35,7 @@ trait IncrementalDiscoveryTrait {
     private function findMasterFromDb(): ?string {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
             return null;
         }
@@ -46,13 +48,16 @@ trait IncrementalDiscoveryTrait {
 
             $hasFilepath = $row && isset($row['Filepath']) && $row['Filepath'] !== '';
             $isValidSnapshotDir = $hasFilepath && is_dir($row['Filepath']) && file_exists($row['Filepath'] . '/a-root.db');
+
             if ($isValidSnapshotDir) {
                 return $row['Filepath'];
             }
 
             return null;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to find master snapshot from DB', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to find master snapshot from DB', array(
+                'error' => $e->getMessage(),
+            ));
 
             return null;
         }
@@ -60,16 +65,19 @@ trait IncrementalDiscoveryTrait {
 
     private function findMasterFromFilesystem(): ?string {
         $baseDir = $this->getSnapshotsBaseDir();
+
         if (PathHelper::isDirMissing($baseDir)) {
             return null;
         }
 
         $dirs = glob($baseDir . '/*_full_*', GLOB_ONLYDIR);
+
         if (empty($dirs)) {
             return null;
         }
 
         rsort($dirs);
+
         foreach ($dirs as $dir) {
             if (file_exists($dir . '/a-root.db')) {
                 return $dir;
@@ -87,9 +95,13 @@ trait IncrementalDiscoveryTrait {
         $rows = $rootPdo->query("SELECT {$tableNameCol} AS table_name, {$rowCountCol} AS row_count FROM {$table} ORDER BY {$tableNameCol}")->fetchAll(PDO::FETCH_ASSOC);
 
         $inventory = array();
+
         foreach ($rows as $row) {
             $pk = $this->detectPrimaryKey($row['table_name']);
-            $inventory[$row['table_name']] = array('row_count' => (int) $row['row_count'], 'pk_column' => $pk);
+            $inventory[$row['table_name']] = array(
+                'row_count' => (int) $row['row_count'],
+                'pk_column' => $pk,
+            );
         }
 
         return $inventory;
@@ -97,14 +109,25 @@ trait IncrementalDiscoveryTrait {
 
     private function detectPrimaryKey(string $table): ?string {
         $columns = $this->wpdb->get_results("SHOW COLUMNS FROM `{$table}`", ARRAY_A);
+
         foreach ($columns as $col) {
             if ($col['Key'] === 'PRI' && str_contains($col['Extra'], 'auto_increment')) {
                 return $col['Field'];
             }
         }
+
         foreach ($columns as $col) {
-            if ($col['Key'] === 'PRI' && in_array(strtolower($col['Type']), array('bigint', 'int', 'mediumint', 'smallint', 'tinyint'))
-                || (str_contains(strtolower($col['Type']), 'int') && $col['Key'] === 'PRI')) {
+            $isIntPrimaryKey = $col['Key'] === 'PRI' && in_array(strtolower($col['Type']), array(
+                'bigint',
+                'int',
+                'mediumint',
+                'smallint',
+                'tinyint',
+            ));
+
+            $isIntTypePrimary = str_contains(strtolower($col['Type']), 'int') && $col['Key'] === 'PRI';
+
+            if ($isIntPrimaryKey || $isIntTypePrimary) {
                 return $col['Field'];
             }
         }

@@ -32,6 +32,7 @@ trait NativeTableExportTrait {
         try {
             $create_sql = $this->getCreateTableSql($table);
             $isCreateSqlMissing = ($create_sql === null || $create_sql === false);
+
             if ($isCreateSqlMissing) {
 
                 throw new Exception('Failed to get table structure');
@@ -41,9 +42,14 @@ trait NativeTableExportTrait {
             $sqlite->exec($sqlite_create);
 
             $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
+
             if ($count === 0) {
 
-                return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => 0, ResponseKeyType::Bytes->value => 0);
+                return array(
+                    ResponseKeyType::Success->value => true,
+                    ResponseKeyType::Rows->value    => 0,
+                    ResponseKeyType::Bytes->value   => 0,
+                );
             }
 
             return $this->exportTableRows($sqlite, $table, $count);
@@ -52,7 +58,12 @@ trait NativeTableExportTrait {
                 $sqlite->rollBack();
             }
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Rows->value => 0, ResponseKeyType::Bytes->value => 0);
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value   => $e->getMessage(),
+                ResponseKeyType::Rows->value    => 0,
+                ResponseKeyType::Bytes->value   => 0,
+            );
         }
     }
 
@@ -67,7 +78,11 @@ trait NativeTableExportTrait {
         $result = $this->executeBatchExport($insert[ResponseKeyType::Stmt->value], $table, $count);
         $sqlite->commit();
 
-        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $result[ResponseKeyType::Exported->value], ResponseKeyType::Bytes->value => $result[ResponseKeyType::Bytes->value]);
+        return array(
+            ResponseKeyType::Success->value => true,
+            ResponseKeyType::Rows->value    => $result[ResponseKeyType::Exported->value],
+            ResponseKeyType::Bytes->value   => $result[ResponseKeyType::Bytes->value],
+        );
     }
 
     private function prepareInsertStatement(PDO $sqlite, string $table): array {
@@ -107,7 +122,10 @@ trait NativeTableExportTrait {
             $this->logExportProgress($table, $offset, $count, $batch_size);
         }
 
-        return array(ResponseKeyType::Exported->value => $exported, ResponseKeyType::Bytes->value => $bytes);
+        return array(
+            ResponseKeyType::Exported->value => $exported,
+            ResponseKeyType::Bytes->value    => $bytes,
+        );
     }
 
     private function logExportProgress(

@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
@@ -26,16 +27,23 @@ trait NativeSnapshotRecordTrait {
 
     private function createSqliteDatabase(string $filepath): ?PDO {
         $snapshotsDir = $this->getSnapshotsDir();
+
         if (PathHelper::isPathMissing($filepath, $snapshotsDir)) {
-            $this->log(LogLevelType::Error->value, 'Unsafe path detected for SQLite database', array('filepath' => $filepath, 'base' => $snapshotsDir));
+            $this->log(LogLevelType::Error->value, 'Unsafe path detected for SQLite database', array(
+                'filepath' => $filepath,
+                'base'     => $snapshotsDir,
+            ));
 
             return null;
         }
 
         $parentDir = dirname($filepath);
         $isDirCreationFailed = (PathHelper::makeDirectory($parentDir, true) === false);
+
         if ($isDirCreationFailed) {
-            $this->log(LogLevelType::Error->value, 'Failed to create parent directory for SQLite', array('parent' => $parentDir));
+            $this->log(LogLevelType::Error->value, 'Failed to create parent directory for SQLite', array(
+                'parent' => $parentDir,
+            ));
 
             return null;
         }
@@ -52,7 +60,10 @@ trait NativeSnapshotRecordTrait {
 
             return $pdo;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to create SQLite database', array('filepath' => $filepath, 'error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to create SQLite database', array(
+                'filepath' => $filepath,
+                'error'    => $e->getMessage(),
+            ));
 
             return null;
         }
@@ -60,14 +71,16 @@ trait NativeSnapshotRecordTrait {
 
     private function insertSnapshotMeta(PDO $pdo): void {
         $meta = array(
-            'created_at' => date('c'),
-            'wp_version' => get_bloginfo('version'),
-            'site_url' => get_site_url(),
-            'php_version' => PHP_VERSION,
-            'provider' => $this->provider_id,
+            'created_at'     => date('c'),
+            'wp_version'     => get_bloginfo('version'),
+            'site_url'       => get_site_url(),
+            'php_version'    => PHP_VERSION,
+            'provider'       => $this->provider_id,
             'plugin_version' => PluginConfigType::Version->value,
         );
+
         $stmt = $pdo->prepare('INSERT INTO _snapshot_meta (key, value) VALUES (?, ?)');
+
         foreach ($meta as $key => $value) {
             $stmt->execute(array($key, $value));
         }
@@ -82,15 +95,15 @@ trait NativeSnapshotRecordTrait {
         string $trigger,
     ): int|false {
         $result = $this->db->insert(TableType::Snapshots->value, array(
-            'Sequence' => $sequence,
-            'Filename' => $filename . '.sqlite',
-            'Filepath' => $filepath,
-            'Provider' => $this->provider_id,
-            'Scope' => $scope,
-            'TablesJson' => json_encode($tables),
+            'Sequence'      => $sequence,
+            'Filename'      => $filename . '.sqlite',
+            'Filepath'      => $filepath,
+            'Provider'      => $this->provider_id,
+            'Scope'         => $scope,
+            'TablesJson'    => json_encode($tables),
             'TriggerSource' => $trigger,
-            'Status' => SnapshotStatusType::Pending->value,
-            'CreatedAt' => date('c'),
+            'Status'        => SnapshotStatusType::Pending->value,
+            'CreatedAt'     => date('c'),
         ));
 
         return $result ? $this->db->lastInsertId() : false;
@@ -101,21 +114,35 @@ trait NativeSnapshotRecordTrait {
         string $status,
         ?string $error = null,
     ): void {
-        $data = array('Status' => $status, 'UpdatedAt' => date('c'));
+        $data = array(
+            'Status'    => $status,
+            'UpdatedAt' => date('c'),
+        );
+
         if ($error) {
             $data['ErrorMessage'] = $error;
         }
+
         if ($status === SnapshotStatusType::Running->value) {
             $data['StartedAt'] = date('c');
         }
-        $this->db->update(TableType::Snapshots->value, $data, array('Id' => $snapshotId));
+
+        $this->db->update(
+            TableType::Snapshots->value,
+            $data,
+            array('Id' => $snapshotId),
+        );
     }
 
     private function finalizeSnapshot(int $snapshotId, array $details): void {
         $this->db->update(TableType::Snapshots->value, array(
-            'Status' => $details['status'], 'FileSize' => $details[ResponseKeyType::FileSize->value],
-            'TotalRows' => $details[ResponseKeyType::TotalRows->value], 'TableCountsJson' => json_encode($details[ResponseKeyType::TableCounts->value]),
-            'DurationMs' => $details[ResponseKeyType::DurationMs->value], 'CompletedAt' => date('c'), 'UpdatedAt' => date('c'),
+            'Status'          => $details['status'],
+            'FileSize'        => $details[ResponseKeyType::FileSize->value],
+            'TotalRows'       => $details[ResponseKeyType::TotalRows->value],
+            'TableCountsJson' => json_encode($details[ResponseKeyType::TableCounts->value]),
+            'DurationMs'      => $details[ResponseKeyType::DurationMs->value],
+            'CompletedAt'     => date('c'),
+            'UpdatedAt'       => date('c'),
         ), array('Id' => $snapshotId));
     }
 }
