@@ -20,7 +20,6 @@ use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait WorkerBatchProcessTrait {
-
     public function processWorkerBatch(array $args): void {
         $job_id = $args['job_id'] ?? 0;
         $isJobIdMissing = ($job_id === 0);

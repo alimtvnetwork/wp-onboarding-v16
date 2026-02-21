@@ -19,7 +19,6 @@ use PDO;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreGraphTrait {
-
     use RootDbCompatTrait;
 
     private function getSnapshotMeta(PDO $rootPdo): array {

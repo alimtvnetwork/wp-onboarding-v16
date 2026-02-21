@@ -21,7 +21,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerExecuteTrait {
-
     public function execute(array $config): array {
         $start_time = microtime(true);
 

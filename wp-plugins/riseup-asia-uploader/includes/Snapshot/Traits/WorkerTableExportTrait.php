@@ -20,7 +20,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait WorkerTableExportTrait {
-
     private function exportTableToFile(string $snapshotDir, string $table): array {
         $filename = $table . '.sqlite';
         $filepath = $snapshotDir . '/' . $filename;
@@ -128,7 +127,6 @@ trait WorkerTableExportTrait {
         string $filepath,
         int $rows,
     ): array {
-
         return array(
             ResponseKeyType::Success->value  => true,
             ResponseKeyType::Rows->value     => $rows,

@@ -29,7 +29,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait CleanerHelperTrait {
-
     private function loadSettings(array $overrides): array {
         $defaults = array(
             'retention_type'  => RetentionType::Days->value,
@@ -50,7 +49,6 @@ trait CleanerHelperTrait {
     }
 
     private function getZipPath(string $sqlitePath): string {
-
         return preg_replace('/\.sqlite$/', '.zip', $sqlitePath);
     }
 

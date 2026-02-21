@@ -20,7 +20,6 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
 
 trait WorkerProgressTrait {
-
     private function initProgressRecords(array $tables): void {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);

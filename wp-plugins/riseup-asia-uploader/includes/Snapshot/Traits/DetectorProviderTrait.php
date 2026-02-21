@@ -19,7 +19,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 
 trait DetectorProviderTrait {
-
     public function detectAvailableProviders(): array {
         $providers = array(
             $this->detectWPReset(),

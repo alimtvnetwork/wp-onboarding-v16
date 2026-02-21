@@ -111,7 +111,6 @@ trait ExporterBuildTrait {
         array $zipMeta,
     ): array {
         try {
-
             return $this->assembleZipArchive(
                 $pdo,
                 $snapshot,

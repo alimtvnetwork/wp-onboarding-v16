@@ -17,7 +17,6 @@ use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait SnapshotProviderLockTrait {
-
     protected function isLocked(): bool {
         $lock_file = PathHelper::join($this->getSnapshotsDir(), '.lock');
 

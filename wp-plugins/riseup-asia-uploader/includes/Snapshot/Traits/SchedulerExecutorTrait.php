@@ -26,7 +26,6 @@ use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SchedulerExecutorTrait {
-
     private function runScheduledSnapshot(): array {
         $settings = $this->detector->getSettings();
         list(, $orchestrator) = $this->createOrchestrator();

@@ -23,7 +23,6 @@ use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait CleanerOrphanTrait {
-
     private function cleanupOrphanFiles(bool $dryRun = false): array {
         $result = array(
             ResponseKeyType::Removed->value => 0,

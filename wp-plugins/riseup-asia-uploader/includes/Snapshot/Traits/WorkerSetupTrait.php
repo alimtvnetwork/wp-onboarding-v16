@@ -23,7 +23,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerSetupTrait {
-
     private function prepareSnapshotDir(array $config): array {
         $title = $config['title'] ?? (SnapshotConfigType::DefaultTitle . ' ' . date('Y-m-d H:i'));
         $scope = $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value;

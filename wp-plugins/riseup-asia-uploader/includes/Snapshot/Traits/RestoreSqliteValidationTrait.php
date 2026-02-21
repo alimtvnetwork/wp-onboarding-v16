@@ -19,7 +19,6 @@ use RiseupAsia\Enums\RestoreStrategyType;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait RestoreSqliteValidationTrait {
-
     private function openAndValidateSqliteTable(string $sqlitePath, string $table): array {
         $sqlite = new PDO('sqlite:' . $sqlitePath);
         $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

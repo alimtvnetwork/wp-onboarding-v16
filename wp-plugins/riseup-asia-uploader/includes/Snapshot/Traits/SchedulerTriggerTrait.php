@@ -23,7 +23,6 @@ use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SchedulerTriggerTrait {
-
     public function getStorageStats(): array {
         $cleaner = SnapshotFactory::cleaner($this->logger, $this->db);
 

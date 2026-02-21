@@ -26,7 +26,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ExporterPublicApiTrait {
-
     /**
      * Get an existing valid ZIP or build a new one for the given full snapshot.
      *

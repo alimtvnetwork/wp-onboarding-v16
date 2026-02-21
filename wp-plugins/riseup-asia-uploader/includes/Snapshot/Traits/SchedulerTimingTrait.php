@@ -17,7 +17,6 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\SnapshotFrequencyType;
 
 trait SchedulerTimingTrait {
-
     private function calculateNextRunTime(
         string $frequency,
         string $time,

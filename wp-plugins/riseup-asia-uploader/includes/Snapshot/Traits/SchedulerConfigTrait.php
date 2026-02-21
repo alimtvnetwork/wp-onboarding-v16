@@ -17,7 +17,6 @@ use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SchedulerConfigTrait {
-
     public function registerCronSchedules(array $schedules): array {
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Weekly->value)) {
             $schedules[SnapshotFrequencyType::Weekly->value] = array(

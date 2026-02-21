@@ -21,7 +21,6 @@ use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait DetectorValidationTrait {
-
     private function validateSettings(array $settings): array {
         $this->validateEnumFields($settings);
         $this->clampNumericFields($settings);

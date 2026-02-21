@@ -23,7 +23,6 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
 
 trait WorkerJobLifecycleTrait {
-
     private function createJob(
         string $snapshotDir,
         array $tables,

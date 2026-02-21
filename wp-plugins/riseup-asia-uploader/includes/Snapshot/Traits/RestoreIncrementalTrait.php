@@ -23,7 +23,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
 trait RestoreIncrementalTrait {
-
     use RootDbCompatTrait;
 
     private function applyIncrementalsPhase(

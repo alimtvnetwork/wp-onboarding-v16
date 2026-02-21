@@ -24,7 +24,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait RestoreTableTrait {
-
     use RestoreSqliteValidationTrait;
 
     private function restoreMasterTables(
