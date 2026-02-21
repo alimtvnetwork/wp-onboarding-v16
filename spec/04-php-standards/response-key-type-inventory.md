@@ -2,9 +2,11 @@
 
 > **Enum**: `RiseupAsia\Enums\ResponseKeyType`  
 > **File**: `includes/Enums/ResponseKeyType.php`  
-> **As of**: v1.64.0  
-> **Total cases**: 71  
-> **Total usages**: ~2,300+ across 80+ files
+> **Go Mirror**: `backend/internal/enums/response_key/variant.go`  
+> **TS Mirror**: `src/lib/constants.ts` → `ResponseKeyType`  
+> **As of**: v1.65.0  
+> **Total cases**: 148  
+> **Total usages**: ~3,200+ across 96+ files
 
 ---
 
@@ -51,7 +53,7 @@ Used in nearly every REST response and internal result array.
 | `Rows` | `rows` | ~12 files | Table info, restore results, batch progress, worker exports |
 | `Bytes` | `bytes` | ~4 files | Storage calculations, sync payloads |
 | `Size` | `size` | ~15 files | ZIP sizes, file entries, plugin archiving, export results |
-| `FileSize` | `file_size` | ~8 files | Snapshot records, incremental exports, manifest entries |
+| `FileSize` | `fileSize` | ~8 files | Snapshot records, incremental exports, manifest entries |
 | `Path` | `path` | ~12 files | Log contexts, file manifests, REST responses |
 | `Filename` | `filename` | ~15 files | Snapshot CRUD, export/import, cleaner, manifest |
 | `Checksum` | `checksum` | ~4 files | Incremental exports, file integrity, sync |
@@ -67,21 +69,45 @@ Used in nearly every REST response and internal result array.
 
 ---
 
+## Pagination Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `Limit` | `limit` | ~4 files | Paginated list endpoints, query builders |
+| `Offset` | `offset` | ~4 files | Paginated list endpoints, query builders |
+
+---
+
+## Domain Entity Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `Posts` | `posts` | ~3 files | Post list responses, content sync |
+| `Categories` | `categories` | ~2 files | Category list responses |
+| `Category` | `category` | ~2 files | Single category payloads |
+| `Export` | `export` | ~3 files | Export operation results |
+| `Incrementals` | `incrementals` | ~3 files | Incremental snapshot list results |
+| `TotalSize` | `totalSize` | ~3 files | Storage summary responses |
+| `Applied` | `applied` | ~2 files | Incremental apply results |
+| `Folder` | `folder` | ~3 files | Snapshot directory references |
+
+---
+
 ## Snapshot-Domain Keys
 
 | Case | Value | Usages | Primary Locations |
 |------|-------|--------|-------------------|
-| `SnapshotId` | `snapshot_id` | ~12 files | All snapshot operations, export, import, restore, audit |
+| `SnapshotId` | `snapshotId` | ~12 files | All snapshot operations, export, import, restore, audit |
 | `Sequence` | `sequence` | ~6 files | Incremental backups, export manifests, registration |
-| `FolderName` | `folder_name` | ~5 files | Incremental backup directories, registration |
-| `TablesChanged` | `tables_changed` | ~4 files | Incremental registration, export results |
-| `TotalRows` | `total_rows` | ~15 files | Snapshot records, worker progress, restore, import |
-| `TotalNewRows` | `total_new_rows` | ~4 files | Incremental registration, export results |
-| `ZipSize` | `zip_size` | ~4 files | Backup exec responses, export results |
-| `BackupId` | `backup_id` | ~3 files | Pre-restore backup references |
-| `ZipFailed` | `zip_failed` | ~3 files | Snapshot creation error flags |
-| `SkipAudit` | `skip_audit` | ~4 files | Scheduler cron results, no-op cleanup |
-| `TablesRestored` | `tables_restored` | ~4 files | Restore engine results, audit logging |
+| `FolderName` | `folderName` | ~5 files | Incremental backup directories, registration |
+| `TablesChanged` | `tablesChanged` | ~4 files | Incremental registration, export results |
+| `TotalRows` | `totalRows` | ~15 files | Snapshot records, worker progress, restore, import |
+| `TotalNewRows` | `totalNewRows` | ~4 files | Incremental registration, export results |
+| `ZipSize` | `zipSize` | ~4 files | Backup exec responses, export results |
+| `BackupId` | `backupId` | ~3 files | Pre-restore backup references |
+| `ZipFailed` | `zipFailed` | ~3 files | Snapshot creation error flags |
+| `SkipAudit` | `skipAudit` | ~4 files | Scheduler cron results, no-op cleanup |
+| `TablesRestored` | `tablesRestored` | ~4 files | Restore engine results, audit logging |
 
 ---
 
@@ -89,15 +115,15 @@ Used in nearly every REST response and internal result array.
 
 | Case | Value | Usages | Primary Locations |
 |------|-------|--------|-------------------|
-| `DeletedByPolicy` | `deleted_by_policy` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
-| `DeletedOrphans` | `deleted_orphans` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
-| `DeletedFailed` | `deleted_failed` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
-| `SpaceFreedBytes` | `space_freed_bytes` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit + log_data |
+| `DeletedByPolicy` | `deletedByPolicy` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
+| `DeletedOrphans` | `deletedOrphans` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
+| `DeletedFailed` | `deletedFailed` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
+| `SpaceFreedBytes` | `spaceFreedBytes` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit + log_data |
 | `Retention` | `retention` | ~3 files | SnapshotCleaner, SnapshotBackupOpsTrait, cleanup settings |
 | `Orphans` | `orphans` | ~3 files | CleanerOrphanTrait, SnapshotCleaner |
 | `Stuck` | `stuck` | ~2 files | SnapshotCleaner stuck-snapshot detection |
-| `DryRun` | `dry_run` | ~2 files | SnapshotCleaner dry-run mode flag |
-| `BytesFreed` | `bytes_freed` | ~2 files | CleanerStorageTrait, cleanup audit |
+| `DryRun` | `dryRun` | ~2 files | SnapshotCleaner dry-run mode flag |
+| `BytesFreed` | `bytesFreed` | ~2 files | CleanerStorageTrait, cleanup audit |
 | `Deleted` | `deleted` | ~3 files | PluginLifecycleDeleteTrait, cleanup results |
 | `Cleaned` | `cleaned` | ~2 files | CleanerOrphanTrait orphan cleanup results |
 
@@ -108,11 +134,11 @@ Used in nearly every REST response and internal result array.
 | Case | Value | Usages | Primary Locations |
 |------|-------|--------|-------------------|
 | `Activated` | `activated` | ~3 files | UploadInstallActivateTrait, plugin lifecycle responses |
-| `PluginSlug` | `plugin_slug` | ~4 files | UploadInstallActivateTrait, PluginLifecycleDeleteTrait |
-| `IsUpdate` | `is_update` | ~3 files | UploadInstallActivateTrait, upload responses |
-| `IsSelfUpdate` | `is_self_update` | ~2 files | UploadInstallActivateTrait self-update detection |
-| `PluginVersion` | `plugin_version` | ~3 files | UploadInstallActivateTrait, version detection |
-| `ActivationError` | `activation_error` | ~2 files | UploadInstallActivateTrait error capture |
+| `PluginSlug` | `pluginSlug` | ~4 files | UploadInstallActivateTrait, PluginLifecycleDeleteTrait |
+| `IsUpdate` | `isUpdate` | ~3 files | UploadInstallActivateTrait, upload responses |
+| `IsSelfUpdate` | `isSelfUpdate` | ~2 files | UploadInstallActivateTrait self-update detection |
+| `PluginVersion` | `pluginVersion` | ~3 files | UploadInstallActivateTrait, version detection |
+| `ActivationError` | `activationError` | ~2 files | UploadInstallActivateTrait error capture |
 | `Inventory` | `inventory` | ~2 files | RestoreValidationTrait, import inventory |
 
 ---
@@ -121,14 +147,14 @@ Used in nearly every REST response and internal result array.
 
 | Case | Value | Usages | Primary Locations |
 |------|-------|--------|-------------------|
-| `ErrorLog` | `error_log` | ~2 files | ErrorLogHandlerTrait log reading |
-| `FullLog` | `full_log` | ~2 files | ErrorLogHandlerTrait full content |
-| `StacktraceLog` | `stacktrace_log` | ~2 files | ErrorLogHandlerTrait stacktrace extraction |
+| `ErrorLog` | `errorLog` | ~2 files | ErrorLogHandlerTrait log reading |
+| `FullLog` | `fullLog` | ~2 files | ErrorLogHandlerTrait full content |
+| `StacktraceLog` | `stacktraceLog` | ~2 files | ErrorLogHandlerTrait stacktrace extraction |
 | `Exists` | `exists` | ~2 files | ErrorLogHandlerTrait file existence check |
 | `Content` | `content` | ~3 files | ErrorLogHandlerTrait, log content payloads |
 | `Truncated` | `truncated` | ~2 files | ErrorLogHandlerTrait large-file truncation flag |
 | `Lines` | `lines` | ~2 files | ErrorLogHandlerTrait line-based reading |
-| `TotalLines` | `total_lines` | ~2 files | ErrorLogHandlerTrait line count |
+| `TotalLines` | `totalLines` | ~2 files | ErrorLogHandlerTrait line count |
 
 ---
 
@@ -137,11 +163,145 @@ Used in nearly every REST response and internal result array.
 | Case | Value | Usages | Primary Locations |
 |------|-------|--------|-------------------|
 | `Ids` | `ids` | ~2 files | CleanerOrphanTrait batch ID arrays |
-| `TotalSnapshots` | `total_snapshots` | ~2 files | CleanerStorageTrait storage summary |
-| `TotalSizeBytes` | `total_size_bytes` | ~2 files | CleanerStorageTrait storage metrics |
-| `TempFile` | `temp_file` | ~2 files | UploadInstallExtractTrait temp path tracking |
+| `TotalSnapshots` | `totalSnapshots` | ~2 files | CleanerStorageTrait storage summary |
+| `TotalSizeBytes` | `totalSizeBytes` | ~2 files | CleanerStorageTrait storage metrics |
+| `TempFile` | `tempFile` | ~2 files | UploadInstallExtractTrait temp path tracking |
 | `Stmt` | `stmt` | ~2 files | IncrementalExportTrait prepared statement key |
 | `Columns` | `columns` | ~3 files | IncrementalExportTrait column metadata |
+
+---
+
+## Temporal Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `CreatedAt` | `createdAt` | ~6 files | Snapshot records, audit logs, manifest metadata |
+| `UpdatedAt` | `updatedAt` | ~4 files | Record update timestamps, sync metadata |
+
+---
+
+## Analysis & Dependency Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `ParentTable` | `parentTable` | ~2 files | Table dependency analysis, seed ordering |
+| `ChildTable` | `childTable` | ~2 files | Table dependency analysis |
+| `FkColumn` | `fkColumn` | ~2 files | Foreign key column references |
+| `RefColumn` | `refColumn` | ~2 files | Referenced column in FK relationships |
+| `SeedOrder` | `seedOrder` | ~2 files | Table insertion order for seeding |
+| `TableCount` | `tableCount` | ~3 files | Snapshot table counts |
+| `DepCount` | `depCount` | ~2 files | Dependency count per table |
+| `NewRows` | `newRows` | ~3 files | Incremental export new row counts |
+| `PluginDetails` | `pluginDetails` | ~3 files | Orchestrator plugin metadata |
+| `IncludedIds` | `includedIds` | ~2 files | Selective export ID lists |
+| `IncrementalCount` | `incrementalCount` | ~3 files | Child incremental count per full snapshot |
+
+---
+
+## Detection & Provider Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `DetectionMethod` | `detectionMethod` | ~2 files | Snapshot provider auto-detection |
+| `SqliteVersion` | `sqliteVersion` | ~2 files | SQLite runtime version reporting |
+| `IsCore` | `isCore` | ~3 files | WordPress core table flag in table lists |
+
+---
+
+## Scheduler Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `ScheduleEnabled` | `scheduleEnabled` | ~3 files | SchedulerCronTrait, settings responses |
+| `NextScheduledSnapshot` | `nextScheduledSnapshot` | ~2 files | Scheduler status responses |
+| `NextCleanup` | `nextCleanup` | ~2 files | Cleanup schedule responses |
+| `RetentionType` | `retentionType` | ~3 files | Retention policy settings (days/count/none) |
+| `RetentionDays` | `retentionDays` | ~2 files | Days-based retention value |
+| `RetentionCount` | `retentionCount` | ~2 files | Count-based retention value |
+| `SnapshotType` | `snapshotType` | ~4 files | Full/incremental type indicator |
+
+---
+
+## Error Enrichment Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `ErrorCategory` | `errorCategory` | ~2 files | Categorized error reporting |
+| `LogHint` | `logHint` | ~2 files | Contextual hint for log analysis |
+
+---
+
+## Sync Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `FilesUpdated` | `filesUpdated` | ~3 files | SyncManifestTrait, sync results |
+| `FilesDeleted` | `filesDeleted` | ~3 files | SyncManifestTrait, sync results |
+| `FilesIgnored` | `filesIgnored` | ~2 files | Sync filter results |
+| `IgnoredFiles` | `ignoredFiles` | ~2 files | Sync ignored file list |
+
+---
+
+## Export & Plugin Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `PluginZip` | `pluginZip` | ~2 files | Plugin ZIP export responses |
+| `ResolvedUrl` | `resolvedUrl` | ~2 files | URL resolution for remote resources |
+| `TraceLines` | `traceLines` | ~2 files | Error trace line extraction |
+
+---
+
+## Snapshot Progress & Worker Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `CompletedAt` | `completedAt` | ~3 files | Snapshot completion timestamps |
+| `ExportedAt` | `exportedAt` | ~2 files | Export completion timestamps |
+| `FormatVersion` | `formatVersion` | ~2 files | Snapshot format version metadata |
+| `JobId` | `jobId` | ~3 files | Worker job identifiers |
+| `TotalTables` | `totalTables` | ~4 files | Export total table counts |
+| `TablesExported` | `tablesExported` | ~3 files | Export progress tracking |
+| `PoolSize` | `poolSize` | ~2 files | Worker pool configuration |
+| `TotalBatches` | `totalBatches` | ~2 files | Batch processing totals |
+| `CurrentBatch` | `currentBatch` | ~2 files | Batch processing progress |
+| `TableProgress` | `tableProgress` | ~3 files | Per-table export progress |
+| `IncrementalsApplied` | `incrementalsApplied` | ~2 files | Incremental restore applied count |
+| `SkippedMaster` | `skippedMaster` | ~2 files | Skipped master snapshot flag |
+| `ExportedTables` | `exportedTables` | ~3 files | List of exported table names |
+| `SnapshotDir` | `snapshotDir` | ~3 files | Snapshot directory path |
+| `DirName` | `dirName` | ~2 files | Directory name references |
+| `RowCount` | `rowCount` | ~3 files | Per-table row counts |
+
+---
+
+## Cron & Audit Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `TriggeredBy` | `triggeredBy` | ~3 files | SchedulerCronTrait, audit logging |
+| `AuditData` | `auditData` | ~2 files | Audit data payloads |
+| `LogDataKey` | `logData` | ~3 files | Log data payloads |
+
+---
+
+## Manifest & Import Metadata Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `OriginalId` | `originalId` | ~2 files | Import source record ID |
+| `OriginalCreatedAt` | `originalCreatedAt` | ~2 files | Import source timestamp |
+| `SourceSite` | `sourceSite` | ~2 files | Import source site identifier |
+| `OriginalTitle` | `originalTitle` | ~2 files | Import source title |
+| `OriginalType` | `originalType` | ~2 files | Import source snapshot type |
+| `WpVersion` | `wpVersion` | ~2 files | WordPress version in manifest |
+| `PhpVersion` | `phpVersion` | ~2 files | PHP version in manifest |
+| `MysqlVersion` | `mysqlVersion` | ~2 files | MySQL version in manifest |
+| `SiteUrl` | `siteUrl` | ~3 files | Site URL in manifest |
+| `DbPrefix` | `dbPrefix` | ~2 files | Database table prefix |
+| `PluginCount` | `pluginCount` | ~2 files | Plugin count in manifest |
+| `DurationMs` | `durationMs` | ~3 files | Duration in milliseconds |
+| `TableCounts` | `tableCounts` | ~2 files | Per-table row count map |
 
 ---
 
@@ -174,6 +334,9 @@ $key->isEqual(ResponseKeyType::Success);
 
 // Positive boolean logic (P3 — eliminates raw negation)
 $key->isOtherThan(ResponseKeyType::Success);
+
+// Multi-match check
+$key->isAnyOf(ResponseKeyType::Success, ResponseKeyType::Data);
 ```
 
 ---
@@ -182,6 +345,9 @@ $key->isOtherThan(ResponseKeyType::Success);
 
 | Language | Location | Sync Status |
 |----------|----------|-------------|
-| PHP | `includes/Enums/ResponseKeyType.php` | **Source of truth** |
-| Go | `backend/internal/wordpress/response_key_type.go` | Must mirror PHP cases |
-| TypeScript | `src/lib/constants.ts` | Must mirror PHP values |
+| PHP | `includes/Enums/ResponseKeyType.php` | **Source of truth** (148 cases) |
+| Go | `backend/internal/enums/response_key/variant.go` | Mirrors all PHP cases, camelCase labels |
+| TypeScript | `src/lib/constants.ts` → `ResponseKeyType` | Mirrors PHP values as string constants |
+
+All values use **camelCase** for multi-word keys (e.g., `fileSize`, `snapshotId`, `deletedByPolicy`).
+Single-word keys remain lowercase (e.g., `success`, `error`, `rows`, `scope`).
