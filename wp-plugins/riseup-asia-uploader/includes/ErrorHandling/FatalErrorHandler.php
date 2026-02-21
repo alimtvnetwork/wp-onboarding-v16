@@ -1,5 +1,4 @@
 <?php
-
 namespace RiseupAsia\ErrorHandling;
 
 if (!defined('ABSPATH')) {
@@ -18,7 +17,13 @@ use RiseupAsia\Enums\ResponseKeyType;
  */
 class FatalErrorHandler
 {
-    private const FATAL_TYPES = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    private const FATAL_TYPES = [
+        E_ERROR,
+        E_PARSE,
+        E_CORE_ERROR,
+        E_COMPILE_ERROR,
+        E_USER_ERROR,
+    ];
     private const WP_JSON_PATH = 'wp-json';
     private const ERROR_CODE_FATAL = 'FATAL_ERROR';
     private const ERROR_CODE_ENCODING_FAILED = 'FATAL_ERROR_ENCODING_FAILED';
@@ -96,7 +101,7 @@ class FatalErrorHandler
             $error['file'],
             $error['line'],
             $error['message'],
-            self::errorTypeToString($error['type'])
+            self::errorTypeToString($error['type']),
         );
         $uploads = wp_upload_dir();
         $logFile = $uploads['basedir'] . '/' . PluginConfigType::Slug->value . PathLogFileType::FatalError->value;
@@ -120,6 +125,7 @@ class FatalErrorHandler
         $response = self::buildResponse($error, $frameData['trace_lines'], $frameData['frames']);
 
         $json = @json_encode($response, JSON_UNESCAPED_SLASHES);
+
         if ($json === false) {
             echo json_encode(self::buildFallback($error));
         } else {

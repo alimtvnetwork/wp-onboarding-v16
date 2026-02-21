@@ -76,7 +76,7 @@ class ErrorResponse {
         return new WP_Error(
             $code,
             $e->getMessage(),
-            array('status' => $status)
+            array('status' => $status),
         );
     }
 

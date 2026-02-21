@@ -100,10 +100,30 @@ class Plugin {
 
         // Register REST routes and lifecycle hooks BEFORE component init
         add_action(HookType::RestApiInit->value, array($this, 'registerRoutes'));
-        add_action(HookType::ActivatedPlugin->value, array($this, 'onPluginActivated'), 10, 2);
-        add_action(HookType::DeactivatedPlugin->value, array($this, 'onPluginDeactivated'), 10, 2);
-        add_action(HookType::DeletedPlugin->value, array($this, 'onPluginDeleted'), 10, 2);
-        add_filter(HookType::RestPostDispatch->value, array($this, 'enrichErrorResponse'), 10, 3);
+        add_action(
+            HookType::ActivatedPlugin->value,
+            array($this, 'onPluginActivated'),
+            10,
+            2,
+        );
+        add_action(
+            HookType::DeactivatedPlugin->value,
+            array($this, 'onPluginDeactivated'),
+            10,
+            2,
+        );
+        add_action(
+            HookType::DeletedPlugin->value,
+            array($this, 'onPluginDeleted'),
+            10,
+            2,
+        );
+        add_filter(
+            HookType::RestPostDispatch->value,
+            array($this, 'enrichErrorResponse'),
+            10,
+            3,
+        );
 
         $this->fileLogger->info('REST routes and lifecycle hooks registered (pre-init)');
 
