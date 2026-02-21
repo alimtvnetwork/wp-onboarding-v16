@@ -24,6 +24,7 @@ class SnapshotExporter {
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db);
         }
+
         if (self::$instance === null) {
             throw new LogicException('SnapshotExporter::getInstance() called before initialization.');
         }

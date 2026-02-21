@@ -17,6 +17,7 @@ class SnapshotFactory {
                 $db ?: Database::getInstance()
             );
         }
+
         return self::$detector;
     }
 
@@ -27,6 +28,7 @@ class SnapshotFactory {
                 $db ?: Database::getInstance()
             );
         }
+
         return self::$cleaner;
     }
 

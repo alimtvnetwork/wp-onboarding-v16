@@ -30,6 +30,7 @@ class SnapshotScheduler {
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db);
         }
+
         return self::$instance;
     }
 
