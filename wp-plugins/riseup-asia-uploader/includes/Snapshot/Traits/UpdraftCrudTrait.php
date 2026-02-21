@@ -22,7 +22,11 @@ trait UpdraftCrudTrait {
     public function createSnapshot(array $options): array {
         $isUnavailable = ($this->isAvailable() === false);
         if ($isUnavailable) {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus is not available', ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value);
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value => 'UpdraftPlus is not available',
+                ResponseKeyType::Code->value => SnapshotErrorType::ProviderNotAvail->value,
+            );
         }
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot via UpdraftPlus', $options);
@@ -31,7 +35,11 @@ trait UpdraftCrudTrait {
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus integration not yet implemented');
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'UpdraftPlus snapshot failed', array('error' => $e->getMessage()));
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+
+            return array(
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value => $e->getMessage(),
+            );
         }
     }
 
@@ -61,7 +69,11 @@ trait UpdraftCrudTrait {
     public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
-            array($this->provider_id, $limit, $offset)
+            array(
+                $this->provider_id,
+                $limit,
+                $offset,
+            )
         );
 
         $total = $this->db->querySingle(
@@ -81,7 +93,8 @@ trait UpdraftCrudTrait {
 
         return array_map(function($info) use ($wpdb) {
             return array(
-                'name' => $info['Name'], ResponseKeyType::Rows->value => (int)$info['Rows'],
+                'name' => $info['Name'],
+                ResponseKeyType::Rows->value => (int)$info['Rows'],
                 ResponseKeyType::Size->value => (int)$info['Data_length'] + (int)$info['Index_length'],
                 ResponseKeyType::IsCore->value => strpos($info['Name'], $wpdb->prefix) === 0,
             );
