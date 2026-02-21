@@ -35,8 +35,8 @@ class FileLogger {
     private const TRACE_LABEL_INTERNAL = '<internal>';
     private const TRACE_LABEL_UNKNOWN = '<unknown>';
     private const DEFAULT_LINE_NUMBER = 0;
-    private const TABLE_ERROR_SESSIONS = 'error_sessions';
-    private const TABLE_FLASH_STATE = 'flash_state';
+    private const TABLE_ERROR_SESSIONS = 'ErrorSessions'; // TableType::ErrorSessions
+    private const TABLE_FLASH_STATE = 'FlashState'; // TableType::FlashState
     private const KEY_HAS_UNSEEN_ERRORS = 'has_unseen_errors';
     private const USER_AGENT_MAX_LENGTH = 200;
 
