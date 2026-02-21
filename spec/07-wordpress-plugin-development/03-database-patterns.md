@@ -518,7 +518,29 @@ $localTime = get_date_from_gmt($createdAt, 'Y-m-d H:i:s');
 
 ```php
 $this->pdo->exec("
-    CREATE INDEX IF NOT EXISTS idx_transactions_type
-    ON transactions(type)
+    CREATE INDEX IF NOT EXISTS IdxTransactions_Type
+    ON Transactions(Type)
 ");
 ```
+
+---
+
+## Database Naming Convention — PascalCase
+
+> **Canonical source:** [Database Naming Convention](../01-coding-guidelines/database-naming.md)
+
+All custom SQLite table names, column names, and index names MUST use **PascalCase**. WordPress core tables remain `snake_case`.
+
+```sql
+-- ✅ Custom tables — PascalCase
+CREATE TABLE Transactions (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    PluginSlug TEXT NOT NULL,
+    Status TEXT NOT NULL DEFAULT 'Pending',
+    CreatedAt TEXT NOT NULL
+);
+
+CREATE INDEX IdxTransactions_CreatedAt ON Transactions(CreatedAt);
+```
+
+See the canonical spec for full rules, abbreviation casing, and migration details.
