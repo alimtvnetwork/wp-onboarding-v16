@@ -1404,3 +1404,183 @@ Re-sweep all PHP files for any new Rule 4 violations introduced since Part E aud
 | 6B | Rule 5 blank line after `}` | 2 | 1 session |
 | 6C | Rule 4 blank line before `return` re-sweep | 1 | 0.5 session |
 | **Total** | | **8** | **3.5 sessions** |
+
+---
+
+# Phase 7: Template Magic String Elimination (2026-02-21)
+
+## Problem Statement
+
+All 5 admin template files (`templates/admin-*.php`) contain pervasive magic strings for domain values, array keys, admin page slugs, CSS hex colors, AJAX action names, and legacy constants. These violate the zero-magic-string policy and create drift between template values and their canonical enum definitions.
+
+## Critical Finding: Casing Mismatch
+
+Templates use **lowercase/snake_case** values (e.g., `'auto'`, `'manual'`, `'success'`, `'per-table'`) while the canonical enums use **PascalCase** (e.g., `SnapshotProviderType::Auto` = `'Auto'`, `StorageModeType::PerTable` = `'PerTable'`). The stored `wp_options` data uses the old lowercase format.
+
+This means Phase 7 also requires a **settings value migration** or the introduction of **display-value helpers** on the enums.
+
+---
+
+## Phase 7A: New Enums — Admin Page Slugs, Tab Identifiers, AJAX Actions
+
+### New Enums to Create
+
+| Enum | Cases | Purpose |
+|------|-------|---------|
+| `AdminPageType` | `Logs`, `Settings`, `Errors`, `Snapshots`, `Agents` | Admin menu page slug values (`'riseup-asia-uploader'`, `'riseup-asia-errors'`, etc.) |
+| `AdminTabType` | `Sessions`, `Log`, `Error`, `Stacktrace` | Error page tab identifiers |
+| `AjaxActionType` | `TestUpdateConnection`, `ClearUpdateCache`, `CheckForUpdates`, `GetSnapshotStorageStats`, `SaveSnapshotSettings`, `RunSnapshotCleanup`, `DismissErrorFlash`, `ClearAllErrors` | AJAX action name values (e.g., `'riseup_test_update_connection'`) |
+
+### Estimated Effort: 1 task
+
+---
+
+## Phase 7B: Template `admin-settings.php` — Replace Magic Strings with Enums
+
+### Violations Found (804 lines)
+
+| Line(s) | Magic String | Replacement |
+|---------|-------------|-------------|
+| 278 | `'auto'` | `SnapshotProviderType::Auto->value` (⚠️ casing mismatch) |
+| 316–319 | `'manual'`, `'daily'`, `'weekly'`, `'monthly'` | `SnapshotFrequencyType::*->value` (⚠️ casing) |
+| 331 | `'daily'`, `'manual'` (comparisons) | Same enum values |
+| 351–354 | `'all'`, `'wordpress'`, `'content'`, `'custom'` | `SnapshotScopeType::*->value` (⚠️ casing) |
+| 369–371 | `'none'`, `'days'`, `'count'` | `RetentionType::*->value` (⚠️ casing) |
+| 375, 384 | `'days'`, `'count'` (comparisons) | Same enum values |
+| 407–413 | `'single'`, `'per-table'` | `StorageModeType::*->value` (⚠️ casing) |
+| 429–435 | `SNAPSHOT_WORKER_POOL_MIN`, `SNAPSHOT_WORKER_POOL_MAX` | `SnapshotConfigType::WorkerPoolMin->value`, `WorkerPoolMax->value` |
+| 584 | `API_FULL_NAMESPACE` | `PluginConfigType::apiFullNamespace()` |
+| 611, 635, 655 | `'riseup_test_update_connection'`, etc. | `AjaxActionType::*->value` |
+| 701, 707–708 | `'weekly'`, `'monthly'`, `'days'`, `'count'` (JS comparisons) | Emit enum values via PHP into JS constants |
+| 715–720 | `'single'`, `'per-table'` (JS comparisons) | Same approach |
+
+### Casing Decision Required
+
+**Option A — Migrate stored settings to PascalCase**: Add a one-time migration in `Plugin::init()` that transforms stored `wp_options` values from lowercase to PascalCase. Templates then use enum values directly.
+
+**Option B — Add `->displayValue()` or `->formValue()` to enums**: Keep stored values as-is, add a lower-case form helper. Templates use `->formValue()` for `<option>` values and `selected()`.
+
+**Recommendation**: Option A (migrate settings) — aligns the data layer with the code layer permanently.
+
+### Estimated Effort: 2–3 tasks
+
+---
+
+## Phase 7C: Template `admin-logs.php` — Replace Magic Strings with Enums
+
+### Violations Found (740 lines)
+
+| Line(s) | Magic String | Replacement |
+|---------|-------------|-------------|
+| 18–24 | `'api'`, `'dashboard'`, `'agent_push'`, `'cron'`, `'cli'` | `TriggerSourceType::*->value` (⚠️ casing: stored as `'api'`, enum is `'Api'`) |
+| 27–33 | `'trigger-api'`, `'trigger-dashboard'`, etc. | CSS class map keyed by `TriggerSourceType` cases |
+| 36–41 | `'upload_script'`, `'rest_api'`, `'admin_ui'`, `'wp_cli'` | `UploadSourceType::*->value` (⚠️ casing: stored as `'upload_script'`, enum is `'Script'`) |
+| 44–49 | `'source-script'`, `'source-api'`, etc. | CSS class map keyed by `UploadSourceType` cases |
+| 65 | `'riseup-asia-uploader'` (page slug) | `AdminPageType::Logs->value` |
+| 84–85 | `'success'`, `'failed'` | `StatusType::Success->value`, `StatusType::Failed->value` (⚠️ casing) |
+| 186–189, 196–207 | `$log['triggered_by']`, `$log['details']`, etc. | These are DB column names — already PascalCase in DB (`TriggeredBy`) but template uses legacy snake_case keys from `$log` array |
+
+### Key Issue: DB Column vs Template Key Mismatch
+
+The DB columns are now PascalCase (`TriggeredBy`, `UploadSource`, `PluginVersion`), but the template accesses `$log['triggered_by']`, `$log['source_machine']`, etc. This requires either:
+- Updating the template to use PascalCase keys (`$log['TriggeredBy']`)
+- OR ensuring the query results return snake_case aliases
+
+### Estimated Effort: 2–3 tasks
+
+---
+
+## Phase 7D: Template `admin-errors.php` — Replace Magic Strings with Enums
+
+### Violations Found (374 lines)
+
+| Line(s) | Magic String | Replacement |
+|---------|-------------|-------------|
+| 19–24 | `'ERROR'` → `'#dc3545'`, etc. | Map keyed by `LogLevelType::*->value` (⚠️ stored as uppercase `'ERROR'`, enum is `'Error'`) |
+| 26 | `'sessions'` | `AdminTabType::Sessions->value` |
+| 60 | FQCN `\RiseupAsia\Enums\PluginConfigType::Version->value` | Add `use` import at top |
+| 73, 100, 108 | `'sessions'`, `'riseup-asia-errors'` | `AdminTabType::Sessions->value`, `AdminPageType::Errors->value` |
+| 115–116 | `'ERROR'`, `'WARN'` | `LogLevelType::Error->value`, `LogLevelType::Warn->value` (⚠️ casing) |
+
+### Estimated Effort: 1 task
+
+---
+
+## Phase 7E: Template `admin-agents.php` — Replace Magic Strings with Enums
+
+### Violations Found (550 lines)
+
+| Line(s) | Magic String | Replacement |
+|---------|-------------|-------------|
+| 17 | FQCN `\RiseupAsia\Enums\PluginConfigType::Version->value` | Add `use` import |
+| 275 | FQCN `\RiseupAsia\Enums\PluginConfigType::apiFullNamespace()` | Add `use` import |
+| JS: 313–314 | `'status-' + agent.status` | Agent status CSS class (JS-side, must match `AgentStatusType` values) |
+| JS: 381 | `'Connection successful!'` | Consider i18n via `wp_localize_script()` |
+
+**Note**: This file is mostly clean — JS-side strings are harder to enum-ify but can use `wp_localize_script()` to pass enum values.
+
+### Estimated Effort: 1 task
+
+---
+
+## Phase 7F: Template `admin-snapshots.php` — Replace Magic Strings with Enums
+
+### Violations Found (2197 lines — largest file)
+
+| Line(s) | Magic String | Replacement |
+|---------|-------------|-------------|
+| 62–65 | `'All'`, `'WordPress'`, `'Content'`, `'Custom'` | `SnapshotScopeType::*->value` ✅ (already PascalCase match!) |
+| 85–86 | `'Auto'`, `'Native'` | `SnapshotProviderType::*->value` ✅ |
+| 281–284 | `'Manual'`, `'Daily'`, `'Weekly'`, `'Monthly'` | `SnapshotFrequencyType::*->value` ✅ |
+| 294–296 | `'none'`, `'days'`, `'count'` | `RetentionType::*->value` (⚠️ casing: enum has `'None'`, `'Days'`, `'Count'`) |
+| 315–317 | `'All'`, `'WordPress'`, `'Content'` | `SnapshotScopeType::*->value` ✅ |
+| 327–328 | `'Auto'`, `'Native'` | `SnapshotProviderType::*->value` ✅ |
+| JS: various | Status/scope/provider string comparisons | Emit via `wp_localize_script()` |
+
+**Note**: This file already uses PascalCase for most values and is the closest to compliance. Only retention type values need casing fix.
+
+### Estimated Effort: 2 tasks
+
+---
+
+## Phase 7G: Settings Value Migration
+
+A one-time migration to normalize stored `wp_options` values from legacy lowercase/snake_case to PascalCase enum values.
+
+### Values to Migrate
+
+| Option Key | Field | Old Value | New Value |
+|-----------|-------|-----------|-----------|
+| `riseup_snapshot_settings` | `preferred_provider` | `'auto'` | `'Auto'` |
+| | `schedule_frequency` | `'manual'`/`'daily'`/`'weekly'`/`'monthly'` | `'Manual'`/`'Daily'`/`'Weekly'`/`'Monthly'` |
+| | `default_scope` | `'all'`/`'wordpress'`/`'content'`/`'custom'` | `'All'`/`'WordPress'`/`'Content'`/`'Custom'` |
+| | `retention_type` | `'none'`/`'days'`/`'count'` | `'None'`/`'Days'`/`'Count'` |
+| | `storage_mode` | `'single'`/`'per-table'` | `'Single'`/`'PerTable'` |
+| DB: `Transactions.Status` | — | `'success'`/`'failed'` | `'Success'`/`'Failed'` |
+| DB: `Transactions.TriggeredBy` | — | `'api'`/`'dashboard'`/`'agent_push'`/`'cron'`/`'cli'` | `'Api'`/`'Dashboard'`/`'AgentPush'`/`'Cron'`/`'Cli'` |
+| DB: `Transactions.UploadSource` | — | `'upload_script'`/`'rest_api'`/`'admin_ui'`/`'wp_cli'` | `'Script'`/`'RestAPI'`/`'AdminUI'`/`'WPCLI'` |
+| DB: `ErrorSessions.Level` | — | `'ERROR'`/`'WARN'`/`'INFO'`/`'DEBUG'` | `'Error'`/`'Warn'`/`'Info'`/`'Debug'` |
+
+### Implementation
+
+Add a new schema migration `V14` that:
+1. Updates `wp_options` snapshot settings in-place
+2. Runs `UPDATE` queries on `Transactions` columns for status, trigger, upload source
+3. Runs `UPDATE` on `ErrorSessions.Level`
+
+### Estimated Effort: 2 tasks
+
+---
+
+## Phase 7 Summary
+
+| Sub-Phase | Scope | Tasks | Priority |
+|-----------|-------|-------|----------|
+| **7G** | Settings/DB value migration to PascalCase | 2 | 🔴 First (unblocks all others) |
+| **7A** | New enums (AdminPageType, AdminTabType, AjaxActionType) | 1 | 🔴 Second |
+| **7B** | `admin-settings.php` magic strings | 3 | 🟡 |
+| **7C** | `admin-logs.php` magic strings | 3 | 🟡 |
+| **7D** | `admin-errors.php` magic strings | 1 | 🟢 |
+| **7E** | `admin-agents.php` magic strings | 1 | 🟢 |
+| **7F** | `admin-snapshots.php` magic strings | 2 | 🟢 |
+| **Total** | | **13** | **~5 sessions** |
