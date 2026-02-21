@@ -58,70 +58,144 @@ func New(cfg Config) Service {
 }
 
 func (s *serviceImpl) initSchema() error {
+	s.migrateToPascalCase()
+
 	schema := `
-		CREATE TABLE IF NOT EXISTS test_suites (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
-			category TEXT NOT NULL,
-			enabled INTEGER DEFAULT 1,
-			timeout_seconds INTEGER DEFAULT 30,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		CREATE TABLE IF NOT EXISTS TestSuites (
+			Id TEXT PRIMARY KEY,
+			Name TEXT NOT NULL,
+			Category TEXT NOT NULL,
+			Enabled INTEGER DEFAULT 1,
+			TimeoutSeconds INTEGER DEFAULT 30,
+			CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 		
-		CREATE TABLE IF NOT EXISTS test_cases (
-			id TEXT PRIMARY KEY,
-			suite_id TEXT NOT NULL,
-			name TEXT NOT NULL,
-			description TEXT,
-			preconditions TEXT,
-			steps TEXT NOT NULL,
-			expected_result TEXT NOT NULL,
-			timeout_seconds INTEGER DEFAULT 10,
-			order_index INTEGER DEFAULT 0,
-			enabled INTEGER DEFAULT 1,
-			FOREIGN KEY (suite_id) REFERENCES test_suites(id)
+		CREATE TABLE IF NOT EXISTS TestCases (
+			Id TEXT PRIMARY KEY,
+			SuiteId TEXT NOT NULL,
+			Name TEXT NOT NULL,
+			Description TEXT,
+			Preconditions TEXT,
+			Steps TEXT NOT NULL,
+			ExpectedResult TEXT NOT NULL,
+			TimeoutSeconds INTEGER DEFAULT 10,
+			OrderIndex INTEGER DEFAULT 0,
+			Enabled INTEGER DEFAULT 1,
+			FOREIGN KEY (SuiteId) REFERENCES TestSuites(Id)
 		);
 		
-		CREATE TABLE IF NOT EXISTS test_runs (
-			id TEXT PRIMARY KEY,
-			started_at DATETIME NOT NULL,
-			completed_at DATETIME,
-			status TEXT DEFAULT 'running',
-			total_tests INTEGER DEFAULT 0,
-			passed_tests INTEGER DEFAULT 0,
-			failed_tests INTEGER DEFAULT 0,
-			skipped_tests INTEGER DEFAULT 0,
-			duration_ms INTEGER DEFAULT 0
+		CREATE TABLE IF NOT EXISTS TestRuns (
+			Id TEXT PRIMARY KEY,
+			StartedAt DATETIME NOT NULL,
+			CompletedAt DATETIME,
+			Status TEXT DEFAULT 'Running',
+			TotalTests INTEGER DEFAULT 0,
+			PassedTests INTEGER DEFAULT 0,
+			FailedTests INTEGER DEFAULT 0,
+			SkippedTests INTEGER DEFAULT 0,
+			DurationMs INTEGER DEFAULT 0
 		);
 		
-		CREATE TABLE IF NOT EXISTS test_results (
-			id TEXT PRIMARY KEY,
-			run_id TEXT NOT NULL,
-			suite_id TEXT NOT NULL,
-			case_id TEXT NOT NULL,
-			case_name TEXT NOT NULL,
-			status TEXT NOT NULL,
-			started_at DATETIME NOT NULL,
-			completed_at DATETIME,
-			duration_ms INTEGER DEFAULT 0,
-			error_message TEXT,
-			error_details TEXT,
-			request_data TEXT,
-			response_data TEXT,
-			logs TEXT,
-			FOREIGN KEY (run_id) REFERENCES test_runs(id)
+		CREATE TABLE IF NOT EXISTS TestResults (
+			Id TEXT PRIMARY KEY,
+			RunId TEXT NOT NULL,
+			SuiteId TEXT NOT NULL,
+			CaseId TEXT NOT NULL,
+			CaseName TEXT NOT NULL,
+			Status TEXT NOT NULL,
+			StartedAt DATETIME NOT NULL,
+			CompletedAt DATETIME,
+			DurationMs INTEGER DEFAULT 0,
+			ErrorMessage TEXT,
+			ErrorDetails TEXT,
+			RequestData TEXT,
+			ResponseData TEXT,
+			Logs TEXT,
+			FOREIGN KEY (RunId) REFERENCES TestRuns(Id)
 		);
 		
-		CREATE INDEX IF NOT EXISTS idx_results_run ON test_results(run_id);
-		CREATE INDEX IF NOT EXISTS idx_cases_suite ON test_cases(suite_id);
+		CREATE INDEX IF NOT EXISTS IdxTestResults_RunId ON TestResults(RunId);
+		CREATE INDEX IF NOT EXISTS IdxTestCases_SuiteId ON TestCases(SuiteId);
 	`
 	_, err := s.db.Exec(schema)
 	return err
 }
 
+// migrateToPascalCase detects legacy snake_case tables and renames them.
+func (s *serviceImpl) migrateToPascalCase() {
+	var exists int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='test_suites'").Scan(&exists)
+	if err != nil || exists == 0 {
+		return
+	}
+
+	renames := []struct{ old, new string }{
+		{"test_suites", "TestSuites"},
+		{"test_cases", "TestCases"},
+		{"test_runs", "TestRuns"},
+		{"test_results", "TestResults"},
+	}
+	for _, r := range renames {
+		s.db.Exec(fmt.Sprintf("ALTER TABLE %s RENAME TO %s", r.old, r.new))
+	}
+
+	columnRenames := []struct{ table, old, new string }{
+		// TestSuites
+		{"TestSuites", "id", "Id"},
+		{"TestSuites", "name", "Name"},
+		{"TestSuites", "category", "Category"},
+		{"TestSuites", "enabled", "Enabled"},
+		{"TestSuites", "timeout_seconds", "TimeoutSeconds"},
+		{"TestSuites", "created_at", "CreatedAt"},
+		// TestCases
+		{"TestCases", "id", "Id"},
+		{"TestCases", "suite_id", "SuiteId"},
+		{"TestCases", "name", "Name"},
+		{"TestCases", "description", "Description"},
+		{"TestCases", "preconditions", "Preconditions"},
+		{"TestCases", "steps", "Steps"},
+		{"TestCases", "expected_result", "ExpectedResult"},
+		{"TestCases", "timeout_seconds", "TimeoutSeconds"},
+		{"TestCases", "order_index", "OrderIndex"},
+		{"TestCases", "enabled", "Enabled"},
+		// TestRuns
+		{"TestRuns", "id", "Id"},
+		{"TestRuns", "started_at", "StartedAt"},
+		{"TestRuns", "completed_at", "CompletedAt"},
+		{"TestRuns", "status", "Status"},
+		{"TestRuns", "total_tests", "TotalTests"},
+		{"TestRuns", "passed_tests", "PassedTests"},
+		{"TestRuns", "failed_tests", "FailedTests"},
+		{"TestRuns", "skipped_tests", "SkippedTests"},
+		{"TestRuns", "duration_ms", "DurationMs"},
+		// TestResults
+		{"TestResults", "id", "Id"},
+		{"TestResults", "run_id", "RunId"},
+		{"TestResults", "suite_id", "SuiteId"},
+		{"TestResults", "case_id", "CaseId"},
+		{"TestResults", "case_name", "CaseName"},
+		{"TestResults", "status", "Status"},
+		{"TestResults", "started_at", "StartedAt"},
+		{"TestResults", "completed_at", "CompletedAt"},
+		{"TestResults", "duration_ms", "DurationMs"},
+		{"TestResults", "error_message", "ErrorMessage"},
+		{"TestResults", "error_details", "ErrorDetails"},
+		{"TestResults", "request_data", "RequestData"},
+		{"TestResults", "response_data", "ResponseData"},
+		{"TestResults", "logs", "Logs"},
+	}
+	for _, c := range columnRenames {
+		s.db.Exec(fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", c.table, c.old, c.new))
+	}
+
+	// Drop old indexes and recreate with PascalCase names
+	s.db.Exec("DROP INDEX IF EXISTS idx_results_run")
+	s.db.Exec("DROP INDEX IF EXISTS idx_cases_suite")
+}
+
 func (s *serviceImpl) seedTestSuites() {
 	var count int
-	s.db.QueryRow("SELECT COUNT(*) FROM test_suites").Scan(&count)
+	s.db.QueryRow("SELECT COUNT(*) FROM TestSuites").Scan(&count)
 	if count > 0 {
 		return
 	}
@@ -134,7 +208,7 @@ func (s *serviceImpl) seedTestSuites() {
 	}
 
 	for _, suite := range suites {
-		s.db.Exec(`INSERT INTO test_suites (id, name, category, enabled, timeout_seconds) VALUES (?, ?, ?, ?, ?)`,
+		s.db.Exec(`INSERT INTO TestSuites (Id, Name, Category, Enabled, TimeoutSeconds) VALUES (?, ?, ?, ?, ?)`,
 			suite.ID, suite.Name, suite.Category, suite.Enabled, suite.TimeoutSeconds)
 	}
 
@@ -164,7 +238,7 @@ func (s *serviceImpl) seedTestSuites() {
 	for _, tc := range cases {
 		stepsJSON, _ := json.Marshal(tc.Steps)
 		preJSON, _ := json.Marshal(tc.Preconditions)
-		s.db.Exec(`INSERT INTO test_cases (id, suite_id, name, description, preconditions, steps, expected_result, order_index, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.db.Exec(`INSERT INTO TestCases (Id, SuiteId, Name, Description, Preconditions, Steps, ExpectedResult, OrderIndex, Enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			tc.ID, tc.SuiteID, tc.Name, tc.Description, string(preJSON), string(stepsJSON), tc.ExpectedResult, tc.OrderIndex, true)
 	}
 }
@@ -172,10 +246,10 @@ func (s *serviceImpl) seedTestSuites() {
 // ListSuites returns all test suites with case counts
 func (s *serviceImpl) ListSuites(ctx context.Context) ([]TestSuite, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT s.id, s.name, s.category, s.enabled, s.timeout_seconds, s.created_at,
-		       (SELECT COUNT(*) FROM test_cases WHERE suite_id = s.id) as case_count
-		FROM test_suites s
-		ORDER BY s.category
+		SELECT s.Id, s.Name, s.Category, s.Enabled, s.TimeoutSeconds, s.CreatedAt,
+		       (SELECT COUNT(*) FROM TestCases WHERE SuiteId = s.Id) as CaseCount
+		FROM TestSuites s
+		ORDER BY s.Category
 	`)
 	if err != nil {
 		return nil, err
@@ -199,9 +273,9 @@ func (s *serviceImpl) ListSuites(ctx context.Context) ([]TestSuite, error) {
 func (s *serviceImpl) GetSuite(ctx context.Context, id string) (*TestSuite, error) {
 	var suite TestSuite
 	err := s.db.QueryRowContext(ctx, `
-		SELECT s.id, s.name, s.category, s.enabled, s.timeout_seconds, s.created_at,
-		       (SELECT COUNT(*) FROM test_cases WHERE suite_id = s.id) as case_count
-		FROM test_suites s WHERE s.id = ?
+		SELECT s.Id, s.Name, s.Category, s.Enabled, s.TimeoutSeconds, s.CreatedAt,
+		       (SELECT COUNT(*) FROM TestCases WHERE SuiteId = s.Id) as CaseCount
+		FROM TestSuites s WHERE s.Id = ?
 	`, id).Scan(&suite.ID, &suite.Name, &suite.Category, &suite.Enabled,
 		&suite.TimeoutSeconds, &suite.CreatedAt, &suite.CaseCount)
 	if err != nil {
@@ -213,9 +287,9 @@ func (s *serviceImpl) GetSuite(ctx context.Context, id string) (*TestSuite, erro
 // GetCases returns all test cases for a suite
 func (s *serviceImpl) GetCases(ctx context.Context, suiteID string) ([]TestCase, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, suite_id, name, description, preconditions, steps, expected_result, 
-		       timeout_seconds, order_index, enabled
-		FROM test_cases WHERE suite_id = ? ORDER BY order_index
+		SELECT Id, SuiteId, Name, Description, Preconditions, Steps, ExpectedResult, 
+		       TimeoutSeconds, OrderIndex, Enabled
+		FROM TestCases WHERE SuiteId = ? ORDER BY OrderIndex
 	`, suiteID)
 	if err != nil {
 		return nil, err
@@ -285,7 +359,7 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	}
 
 	_, err = s.db.ExecContext(ctx, `
-		INSERT INTO test_runs (id, started_at, status, total_tests)
+		INSERT INTO TestRuns (Id, StartedAt, Status, TotalTests)
 		VALUES (?, ?, ?, ?)
 	`, run.ID, run.StartedAt, run.Status, run.TotalTests)
 	if err != nil {
@@ -334,8 +408,8 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 
 			result := s.executeTest(ctx, run, suite, tc)
 
-			s.db.Exec(`
-				INSERT INTO test_results (id, run_id, suite_id, case_id, case_name, status, started_at, completed_at, duration_ms, error_message, error_details, request_data, response_data, logs)
+		s.db.Exec(`
+				INSERT INTO TestResults (Id, RunId, SuiteId, CaseId, CaseName, Status, StartedAt, CompletedAt, DurationMs, ErrorMessage, ErrorDetails, RequestData, ResponseData, Logs)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`, result.ID, result.RunID, result.SuiteID, result.CaseID, result.CaseName, result.Status,
 				result.StartedAt, result.CompletedAt, result.DurationMs, result.ErrorMessage, result.ErrorDetails,
@@ -376,8 +450,8 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 	}
 
 	s.db.Exec(`
-		UPDATE test_runs SET completed_at = ?, status = ?, passed_tests = ?, failed_tests = ?, skipped_tests = ?, duration_ms = ?
-		WHERE id = ?
+		UPDATE TestRuns SET CompletedAt = ?, Status = ?, PassedTests = ?, FailedTests = ?, SkippedTests = ?, DurationMs = ?
+		WHERE Id = ?
 	`, run.CompletedAt, run.Status, run.PassedTests, run.FailedTests, run.SkippedTests, run.DurationMs, run.ID)
 
 	if s.broadcast != nil {
@@ -482,7 +556,7 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 		s.activeRun.Status = teststatus.Aborted.String()
 		s.activeRun.CompletedAt = &now
 
-		s.db.ExecContext(ctx, `UPDATE test_runs SET status = 'aborted', completed_at = ? WHERE id = ?`,
+		s.db.ExecContext(ctx, `UPDATE TestRuns SET Status = 'Aborted', CompletedAt = ? WHERE Id = ?`,
 			now, runID)
 
 		if s.broadcast != nil {
@@ -507,8 +581,8 @@ func (s *serviceImpl) ListRuns(ctx context.Context, limit int) ([]TestRun, error
 	}
 
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, started_at, completed_at, status, total_tests, passed_tests, failed_tests, skipped_tests, duration_ms
-		FROM test_runs ORDER BY started_at DESC LIMIT ?
+		SELECT Id, StartedAt, CompletedAt, Status, TotalTests, PassedTests, FailedTests, SkippedTests, DurationMs
+		FROM TestRuns ORDER BY StartedAt DESC LIMIT ?
 	`, limit)
 	if err != nil {
 		return nil, err
@@ -532,8 +606,8 @@ func (s *serviceImpl) ListRuns(ctx context.Context, limit int) ([]TestRun, error
 func (s *serviceImpl) GetRun(ctx context.Context, runID string) (*RunSummary, error) {
 	var run TestRun
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, started_at, completed_at, status, total_tests, passed_tests, failed_tests, skipped_tests, duration_ms
-		FROM test_runs WHERE id = ?
+		SELECT Id, StartedAt, CompletedAt, Status, TotalTests, PassedTests, FailedTests, SkippedTests, DurationMs
+		FROM TestRuns WHERE Id = ?
 	`, runID).Scan(&run.ID, &run.StartedAt, &run.CompletedAt, &run.Status,
 		&run.TotalTests, &run.PassedTests, &run.FailedTests, &run.SkippedTests, &run.DurationMs)
 	if err != nil {
@@ -541,9 +615,9 @@ func (s *serviceImpl) GetRun(ctx context.Context, runID string) (*RunSummary, er
 	}
 
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, run_id, suite_id, case_id, case_name, status, started_at, completed_at, duration_ms,
-		       error_message, error_details, request_data, response_data, logs
-		FROM test_results WHERE run_id = ? ORDER BY started_at
+		SELECT Id, RunId, SuiteId, CaseId, CaseName, Status, StartedAt, CompletedAt, DurationMs,
+		       ErrorMessage, ErrorDetails, RequestData, ResponseData, Logs
+		FROM TestResults WHERE RunId = ? ORDER BY StartedAt
 	`, runID)
 	if err != nil {
 		return nil, err
@@ -567,7 +641,7 @@ func (s *serviceImpl) GetRun(ctx context.Context, runID string) (*RunSummary, er
 
 // DeleteRun removes a test run and its results
 func (s *serviceImpl) DeleteRun(ctx context.Context, runID string) error {
-	s.db.ExecContext(ctx, "DELETE FROM test_results WHERE run_id = ?", runID)
-	_, err := s.db.ExecContext(ctx, "DELETE FROM test_runs WHERE id = ?", runID)
+	s.db.ExecContext(ctx, "DELETE FROM TestResults WHERE RunId = ?", runID)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM TestRuns WHERE Id = ?", runID)
 	return err
 }
