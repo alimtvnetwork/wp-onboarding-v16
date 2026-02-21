@@ -40,6 +40,17 @@ func (v Variant) IsActive() bool   { return v == Active }
 func (v Variant) IsInactive() bool { return v == Inactive }
 func (v Variant) IsInvalid() bool  { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 func All() []Variant {
 	return []Variant{Active, Inactive}
 }

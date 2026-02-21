@@ -79,6 +79,19 @@ func (v Variant) IsExportSelf() bool     { return v == ExportSelf }
 func (v Variant) IsExportPlugin() bool   { return v == ExportPlugin }
 func (v Variant) IsInvalid() bool        { return v == Invalid }
 
+// IsOther returns true if the receiver is NOT the given variant.
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+// IsAnyOf returns true if the receiver matches any of the given variants.
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 // IsSnapshot checks if this is a snapshot-related action.
 func (v Variant) IsSnapshot() bool {
 	return strings.HasPrefix(v.String(), "snapshot_")

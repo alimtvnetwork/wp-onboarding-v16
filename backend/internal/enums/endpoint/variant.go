@@ -110,6 +110,17 @@ func (v Variant) IsValid() bool {
 
 func (v Variant) IsInvalid() bool { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 // IsSnapshot checks if this endpoint belongs to the snapshot domain.
 func (v Variant) IsSnapshot() bool {
 	return strings.HasPrefix(v.String(), "/snapshots/")

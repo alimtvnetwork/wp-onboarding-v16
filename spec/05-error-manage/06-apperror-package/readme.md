@@ -571,14 +571,26 @@ return apperror.New(apperror.ErrNotFound, "entry not found")
 
 ## 11. JSON Serialization
 
-### 11.1 Existing JSON Tags
+### 11.1 JSON Tag Convention
 
-All core structs already have JSON tags for standard `json.Marshal`:
+**Rule:** Only add `json:"..."` tags when the JSON key **differs** from the Go field name OR when `omitempty` is needed. PascalCase field names serialize as PascalCase by default — redundant tags must be removed.
 
-- `AppError` — `code`, `message`, `details`, `values`, `diagnostic`, `stack` ✅
-- `StackTrace` — `frames`, `previousTrace` ✅
-- `StackFrame` — `function`, `file`, `line` ✅
-- `ErrorDiagnostic` — all 15+ fields tagged ✅
+| Scenario | Tag Required? | Example |
+|----------|--------------|---------|
+| Field name matches JSON key | ❌ No | `Version string` (serializes as `"Version"`) |
+| JSON key differs (camelCase) | ✅ Yes | `SiteID int64 \`json:"siteId"\`` |
+| Field needs omitempty | ✅ Yes | `Details string \`json:"details,omitempty"\`` |
+| Both differ + omitempty | ✅ Yes | `PluginSlug string \`json:"pluginSlug,omitempty"\`` |
+| Excluded from JSON | ✅ Yes | `Cause error \`json:"-"\`` |
+
+### 11.2 Existing JSON Tags
+
+All core structs have JSON tags where needed:
+
+- `AppError` — `code`, `message`, `details`, `values`, `diagnostic`, `stack` (camelCase, required) ✅
+- `StackTrace` — `frames`, `previousTrace` (camelCase, required) ✅
+- `StackFrame` — `function`, `file`, `line` (lowercase, required) ✅
+- `ErrorDiagnostic` — all 15+ fields tagged with camelCase + omitempty ✅
 - `Cause` — uses `json:"-"` (excluded from default marshaling) ⚠️
 
 ### 11.2 Custom MarshalJSON
@@ -620,27 +632,39 @@ Reconstructs `Cause` from the serialized string:
 
 ```go
 func (e *AppError) UnmarshalJSON(data []byte) error {
-    type alias AppError
-    aux := &struct {
-        *alias
-        CauseMessage string `json:"cause,omitempty"`
-    }{alias: (*alias)(e)}
-
-    if err := json.Unmarshal(data, aux); err != nil {
-        return err
+    var alias appErrorJSON
+    if err := json.Unmarshal(data, &alias); err != nil {
+        return fmt.Errorf("apperror.UnmarshalJSON: failed to decode AppError (received %d bytes: %s): %w",
+            len(data), truncateData(data, 200), err)
     }
 
-    if aux.CauseMessage != "" {
-        e.Cause = errors.New(aux.CauseMessage)
+    e.Code = alias.Code
+    e.Message = alias.Message
+    e.Details = alias.Details
+    e.Values = alias.Values
+    e.Diagnostic = alias.Diagnostic
+    e.Stack = alias.Stack
+
+    if alias.CauseMessage != "" {
+        e.Cause = &plainError{msg: alias.CauseMessage}
     }
 
     return nil
 }
+
+// truncateData returns a string preview of raw JSON data, capped at maxLen bytes.
+func truncateData(data []byte, maxLen int) string {
+    if len(data) <= maxLen {
+        return string(data)
+    }
+    return string(data[:maxLen]) + "..."
+}
 ```
 
 **Rules:**
-- Reconstructed `Cause` is a plain `errors.New` — the original type is lost (acceptable for deserialization)
+- Reconstructed `Cause` is a `plainError` struct — the original type is lost (acceptable for deserialization)
 - Stack trace, values, and diagnostics are fully preserved
+- **Error messages include the raw received data** (truncated to 200 bytes) for debugging malformed payloads
 
 ### 11.4 Serialization Output Example
 
@@ -679,4 +703,4 @@ func (e *AppError) UnmarshalJSON(data []byte) error {
 
 ---
 
-*apperror package specification v1.2.0 — 2026-02-21*
+*apperror package specification v1.3.0 — 2026-02-21*

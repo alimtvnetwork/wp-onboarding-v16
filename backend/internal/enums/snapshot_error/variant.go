@@ -67,6 +67,17 @@ func (v Variant) IsExportBuildFailed() bool   { return v == ExportBuildFailed }
 func (v Variant) IsExportTokenInvalid() bool  { return v == ExportTokenInvalid }
 func (v Variant) IsInvalid() bool             { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 // IsExport returns true if this is an export-related error.
 func (v Variant) IsExport() bool {
 	return v == ExportNotFound || v == ExportBuildFailed || v == ExportTokenInvalid

@@ -49,6 +49,17 @@ func (v Variant) IsSourceMachine() bool  { return v == SourceMachine }
 func (v Variant) IsUserAgentValue() bool { return v == UserAgentValue }
 func (v Variant) IsInvalid() bool        { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 func All() []Variant {
 	return []Variant{Authorization, ContentType, UserAgent, SourceMachine, UserAgentValue}
 }
