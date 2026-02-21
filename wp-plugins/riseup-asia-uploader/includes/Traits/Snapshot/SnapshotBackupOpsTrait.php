@@ -150,13 +150,13 @@ trait SnapshotBackupOpsTrait {
 
         return new WP_REST_Response(array(
             'IsSuccess' => true, 'HasAnyErrors' => false,
-            'job_id' => $p['job_id'], 'status' => $p['status'],
-            'total_tables' => $p['total_tables'], 'tables_exported' => $p['tables_exported'],
-            ResponseKeyType::TotalRows->value => $p[ResponseKeyType::TotalRows->value], 'pool_size' => $p['pool_size'],
-            'total_batches' => $p['total_batches'], 'current_batch' => $p['current_batch'],
+            ResponseKeyType::JobId->value => $p[ResponseKeyType::JobId->value], 'status' => $p['status'],
+            ResponseKeyType::TotalTables->value => $p[ResponseKeyType::TotalTables->value], ResponseKeyType::TablesExported->value => $p[ResponseKeyType::TablesExported->value],
+            ResponseKeyType::TotalRows->value => $p[ResponseKeyType::TotalRows->value], ResponseKeyType::PoolSize->value => $p[ResponseKeyType::PoolSize->value],
+            ResponseKeyType::TotalBatches->value => $p[ResponseKeyType::TotalBatches->value], ResponseKeyType::CurrentBatch->value => $p[ResponseKeyType::CurrentBatch->value],
             'percent' => $p['percent'], ResponseKeyType::Errors->value => $p[ResponseKeyType::Errors->value],
-            'table_progress' => $p['table_progress'], 'created_at' => $p['created_at'],
-            'updated_at' => $p['updated_at'], 'completed_at' => $p['completed_at'],
+            ResponseKeyType::TableProgress->value => $p[ResponseKeyType::TableProgress->value], ResponseKeyType::CreatedAt->value => $p[ResponseKeyType::CreatedAt->value],
+            ResponseKeyType::UpdatedAt->value => $p[ResponseKeyType::UpdatedAt->value], ResponseKeyType::CompletedAt->value => $p[ResponseKeyType::CompletedAt->value],
         ), HttpStatusType::Ok->value);
     }
 }

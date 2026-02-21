@@ -32,7 +32,7 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
 
     public function getCapabilities(): array {
         return array(
-            'full_site' => false, 'database_only' => true, 'selective' => true,
+            'fullSite' => false, 'databaseOnly' => true, 'selective' => true,
             'scheduled' => true, 'restore' => true, 'export' => true, 'import' => true,
         );
     }
