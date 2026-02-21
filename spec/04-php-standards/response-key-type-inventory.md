@@ -2,9 +2,9 @@
 
 > **Enum**: `RiseupAsia\Enums\ResponseKeyType`  
 > **File**: `includes/Enums/ResponseKeyType.php`  
-> **As of**: v1.62.0  
-> **Total cases**: 39  
-> **Total usages**: ~2,100+ across 75 files
+> **As of**: v1.63.0  
+> **Total cases**: 43  
+> **Total usages**: ~2,150+ across 77 files
 
 ---
 
@@ -82,6 +82,17 @@ Used in nearly every REST response and internal result array.
 | `ZipFailed` | `zip_failed` | ~3 files | Snapshot creation error flags |
 | `SkipAudit` | `skip_audit` | ~4 files | Scheduler cron results, no-op cleanup |
 | `TablesRestored` | `tables_restored` | ~4 files | Restore engine results, audit logging |
+
+---
+
+## Cleanup-Pipeline Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `DeletedByPolicy` | `deleted_by_policy` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
+| `DeletedOrphans` | `deleted_orphans` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
+| `DeletedFailed` | `deleted_failed` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
+| `SpaceFreedBytes` | `space_freed_bytes` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit + log_data |
 
 ---
 
