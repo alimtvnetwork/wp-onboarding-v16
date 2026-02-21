@@ -19,12 +19,12 @@ func FailMap[K comparable, V any](err *AppError) ResultMap[K, V] {
 
 // FailMapWrap creates a failed ResultMap by wrapping a raw error.
 // Uses skip=3 to attribute the stack trace to the actual caller.
-func FailMapWrap[K comparable, V any](cause error, code, message string) ResultMap[K, V] {
+func FailMapWrap[K comparable, V any](cause error, code ErrorCode, message string) ResultMap[K, V] {
 	return ResultMap[K, V]{err: WrapWithSkip(cause, code, message, 0)}
 }
 
 // FailMapNew creates a failed ResultMap from a new error (no cause).
-func FailMapNew[K comparable, V any](code, message string) ResultMap[K, V] {
+func FailMapNew[K comparable, V any](code ErrorCode, message string) ResultMap[K, V] {
 	return ResultMap[K, V]{err: NewWithSkip(code, message, 1)}
 }
 

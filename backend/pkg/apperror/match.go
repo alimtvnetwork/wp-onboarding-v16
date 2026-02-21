@@ -1,7 +1,7 @@
 package apperror
 
 // Is checks if the error matches a specific code.
-func Is(err error, code string) bool {
+func Is(err error, code ErrorCode) bool {
 	appErr, ok := err.(*AppError)
 	if !ok {
 		return false

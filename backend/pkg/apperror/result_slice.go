@@ -19,12 +19,12 @@ func FailSlice[T any](err *AppError) ResultSlice[T] {
 
 // FailSliceWrap creates a failed ResultSlice by wrapping a raw error.
 // Uses skip=3 to attribute the stack trace to the actual caller.
-func FailSliceWrap[T any](cause error, code, message string) ResultSlice[T] {
+func FailSliceWrap[T any](cause error, code ErrorCode, message string) ResultSlice[T] {
 	return ResultSlice[T]{err: WrapWithSkip(cause, code, message, 0)}
 }
 
 // FailSliceNew creates a failed ResultSlice from a new error (no cause).
-func FailSliceNew[T any](code, message string) ResultSlice[T] {
+func FailSliceNew[T any](code ErrorCode, message string) ResultSlice[T] {
 	return ResultSlice[T]{err: NewWithSkip(code, message, 1)}
 }
 
