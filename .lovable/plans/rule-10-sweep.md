@@ -20,10 +20,7 @@
   - Restore*, Worker*, NativeSnapshotCreate*, OrchestratorPlugin*, OrchestratorRegistration* (Phase 4b)
   - Worker*, Cleaner*, Scheduler*, Restore* (Worker/Cleaner/Scheduler sweep)
   - Analyzer*, Detector*, ExporterBuild*, ExporterPublicApi*, Import*, IncrementalCore*, IncrementalDelta*, IncrementalExport*, IncrementalRegistration*, Manager*, NativeSnapshotCrud*, NativeSnapshotExec* (final sweep)
-
-## Remaining
-
-- [ ] **REST/Route/Traits/** — PHP REST traits (Phase 5) — `respondError` calls, inline arrays, blank-line spacing
+- [x] **Traits/Route/** — 2 files — already clean, no violations found
 - [ ] **Admin/Traits/** — ~9 files — likely `$result = ...; if(is_wp_error(...))` patterns
 - [ ] **Logging/Traits/** — ~7 files
 - [ ] **Helpers/Traits/** — ~3 files
