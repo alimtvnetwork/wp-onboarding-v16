@@ -448,61 +448,34 @@ Created `type ErrorCode string` with `String()`, `IsValid()`, `IsOtherThan()` me
 
 ---
 
-## Go Phase 3: Constants, Enums & DRY Enforcement
+## ✅ COMPLETED — Go Phase 3: Constants, Enums & DRY Enforcement (2026-02-21)
 
-### 3.1 — Typed Constants Standard
+### 3.1 — Typed ErrorCode Alias ✅ (completed in Phase 1.5)
 
-All string literals in business logic must use typed constants:
+### 3.2 — New Domain Enums Created ✅
 
-```go
-// domain/types/status_type.go
-type StatusType string
+| Enum | Package | Variants | Migrated Files |
+|------|---------|----------|----------------|
+| `HealthStatusType` | `internal/enums/health_status` | Healthy, Degraded, Down, Unknown | sitehealth/service.go, publish/service.go |
+| `ConnectionStatusType` | `internal/enums/connection_status` | Connected, Disconnected | site/service.go, site/crud.go, ws/hub.go |
+| `ConnectionStepType` | `internal/enums/connection_step` | DnsCheck, RestApiCheck, AuthCheck, PluginAccessCheck, WriteTest, Complete | wordpress/client.go, site/service.go |
 
-const (
-    StatusActive   StatusType = "active"
-    StatusInactive StatusType = "inactive"
-    StatusPending  StatusType = "pending"
-)
+All three enums follow the standard `byte`-based pattern with `Invalid` zero-value, `String()`, `Label()`, `DBValue()`, `IsValid()`, `Parse()`, `All()`, `ByIndex()`, `Values()`, `IsOther()`, `IsAnyOf()`, `MarshalJSON()`, `UnmarshalJSON()`.
 
-func (s StatusType) String() string { return string(s) }
-func (s StatusType) IsValid() bool  { /* lookup map */ }
-func (s StatusType) IsOtherThan(other StatusType) bool { return s != other }
-```
+### 3.3 — Magic String Migration ✅
 
-### 3.2 — Enum Pattern (iota + String)
+- **sitehealth/service.go**: All `"healthy"`, `"degraded"`, `"down"`, `"unknown"` → `healthstatus.Xxx.DBValue()`
+- **site/service.go**: `"connected"`, `"disconnected"` → `connectionstatus.Xxx.DBValue()`; `"complete"` → `connectionstep.Complete.String()`
+- **ws/hub.go**: `"connected"` → `connectionstatus.Connected.DBValue()`
+- **wordpress/client.go**: All 5 step names (`dns_check`, `rest_api_check`, `auth_check`, `plugin_access_check`, `write_test`) → `connectionstep.Xxx.String()`
+- **publish/service.go**: `"unknown"` → `healthstatus.Unknown.DBValue()`
+- **sitehealth/service.go**: Raw error codes (`"E4001"`–`"E4005"`) → `apperror.ErrXxx` typed constants
 
-For non-string enums, use iota with `String()` method:
+### 3.4 — Remaining Magic String Categories (future work)
 
-```go
-type LogLevel int
-
-const (
-    LogDebug LogLevel = iota
-    LogInfo
-    LogWarn
-    LogError
-)
-
-func (l LogLevel) String() string {
-    return [...]string{"debug", "info", "warn", "error"}[l]
-}
-```
-
-### 3.3 — Zero Magic Strings/Numbers
-
-- Lint rule: no raw string literals in function bodies (except struct tags, test assertions)
-- All HTTP status codes → `HttpStatusType` constants
-- All error codes → `ErrorCode` constants
-- All config keys → typed const block
-
-### 3.4 — DRY Enforcement Patterns
-
-- Repeated error handling → `apperror.Result[T]` or helper functions
-- Repeated JSON key access → typed response structs
-- Repeated validation → `Validate()` method on input structs
-- Repeated DB patterns → `dbutil` generic wrappers (already done)
-
-### Estimated Effort: 4 tasks (audit + migration)
+- Session log levels (`"info"`, `"warn"`, `"error"`, `"debug"`) — already covered by `log_level` enum, needs migration in backup/session services
+- `"warning"` status in progress callbacks — not a standard stage_status variant, needs design decision
+- `runtime.GOOS` comparisons (`"windows"`, `"darwin"`) — idiomatic Go, exempt from migration
 
 ---
 

@@ -20,6 +20,8 @@ import (
 
 	"wp-plugin-publish/internal/database"
 	action_enum "wp-plugin-publish/internal/enums/action"
+	connectionstatus "wp-plugin-publish/internal/enums/connection_status"
+	connectionstep "wp-plugin-publish/internal/enums/connection_step"
 	loglevel "wp-plugin-publish/internal/enums/log_level"
 	stagestatus "wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/logger"
@@ -160,8 +162,8 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 		}))
 		
 		// Update connection status
-		s.updateConnectionStatus(ctx, id, "disconnected")
-		s.broadcastProgress(id, "complete", stagestatus.Failed.String(), "Connection test failed", nil)
+		s.updateConnectionStatus(ctx, id, connectionstatus.Disconnected.DBValue())
+		s.broadcastProgress(id, connectionstep.Complete.String(), stagestatus.Failed.String(), "Connection test failed", nil)
 		
 		return result, nil
 	}
@@ -176,8 +178,8 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	}))
 
 	// Update connection status and last tested time
-	s.updateConnectionStatus(ctx, id, "connected")
-	s.broadcastProgress(id, "complete", stagestatus.Completed.String(), "Connection test completed successfully", nil)
+	s.updateConnectionStatus(ctx, id, connectionstatus.Connected.DBValue())
+	s.broadcastProgress(id, connectionstep.Complete.String(), stagestatus.Completed.String(), "Connection test completed successfully", nil)
 
 	s.log.Info("Site connection tested", "id", id, "success", result.Success)
 

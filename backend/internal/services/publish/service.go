@@ -18,6 +18,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/database/dbops"
 	"wp-plugin-publish/internal/enums/endpoint"
+	healthstatus "wp-plugin-publish/internal/enums/health_status"
 	loglevel "wp-plugin-publish/internal/enums/log_level"
 	pluginstatus "wp-plugin-publish/internal/enums/plugin_status"
 	stagestatus "wp-plugin-publish/internal/enums/stage_status"
@@ -141,7 +142,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 
 	result := &PublishResult{
 		Success:          false,
-		ActivationStatus: "unknown",
+		ActivationStatus: healthstatus.Unknown.DBValue(),
 		Stages:           []Stage{},
 	}
 
