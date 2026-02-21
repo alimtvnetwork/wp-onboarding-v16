@@ -92,10 +92,29 @@ internal/enums/
 | AI Transcribe CLI | ✅ Compliant | 50/50 | `.lovable/audits/ai-transcribe-cli-enum-compliance-audit-2026-02-06.md` |
 | WP Plugin Builder | ✅ Compliant | 50/50 | `.lovable/audits/wp-plugin-builder-cli-enum-compliance-audit-2026-02-06.md` |
 | Spec Management | ✅ Compliant | 50/50 | `.lovable/audits/spec-management-enum-compliance-audit-2026-02-06.md` |
-| **WP Plugin Publish** | 🔄 Migration In Progress | — | 12 string-based enums to migrate |
+| **WP Plugin Publish** | 🔄 Migration In Progress | — | 11/12 migrated, 1 int-based exempt |
 
 > **Note:** All 9 CLIs have been migrated to `Invalid` as zero value per spec v2.0.0 (completed 2026-02-11).  
-> **Note:** WP Plugin Publish backend has 12 string-based + 1 int-based enum types pending migration to byte-based pattern (added 2026-02-21).
+> **Note:** WP Plugin Publish backend — 11 of 12 string-based enums migrated to byte-based `internal/enums/` pattern (2026-02-21). `HttpStatusType` remains `int`-based (exempt).
+
+### WP Plugin Publish — Enum Migration Tracker
+
+| Old Type (`wordpress/`) | New Package (`enums/`) | Status |
+|---|---|---|
+| `StatusType` | `status.Variant` | ✅ Migrated |
+| `PluginStatusType` | `pluginstatus.Variant` | ✅ Migrated |
+| `PostStatusType` | `poststatus.Variant` | ✅ Migrated |
+| `ActionType` | `action.Variant` | ✅ Migrated |
+| `ContentTypeValue` | `contenttype.Variant` | ✅ Migrated |
+| `EndpointType` | `endpoint.Variant` | ✅ Migrated |
+| `HeaderType` | `header.Variant` | ✅ Migrated |
+| `ResponseKeyType` | `responsekey.Variant` | ✅ Migrated |
+| `ResponseMessageType` | `responsemessage.Variant` | ✅ Migrated |
+| `SnapshotErrorType` | `snapshoterrror.Variant` | ✅ Migrated |
+| `UploadSourceType` | `uploadsource.Variant` | ✅ Migrated |
+| `HttpStatusType` | — | ⏭️ Exempt (`int`) |
+
+> **Pending:** Consumer import updates across handlers and services.
 
 ---
 
