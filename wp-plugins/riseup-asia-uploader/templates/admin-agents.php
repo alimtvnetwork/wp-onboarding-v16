@@ -495,7 +495,7 @@ jQuery(document).ready(function($) {
                 $tbody.append('<tr><td colspan="4">No action history</td></tr>');
             } else {
                 response.actions.forEach(function(action) {
-                    var statusClass = action.status === 'success' ? 'status-connected' : 'status-error';
+                    var statusClass = action.status === 'Success' ? 'status-connected' : 'status-error';
                     var time = new Date(action.created_at).toLocaleString();
                     
                     var row = '<tr>' +

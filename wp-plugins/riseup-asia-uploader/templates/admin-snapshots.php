@@ -59,10 +59,10 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="snapshot_scope">
-                            <option value="all"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="wordpress"><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="content"><?php esc_html_e('Content Only (Posts, Terms, Comments)', 'riseup-asia-uploader'); ?></option>
-                            <option value="custom"><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
+                            <option value="All"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="WordPress"><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="Content"><?php esc_html_e('Content Only (Posts, Terms, Comments)', 'riseup-asia-uploader'); ?></option>
+                            <option value="Custom"><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -82,8 +82,8 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="snapshot_provider">
-                            <option value="auto"><?php esc_html_e('Auto-Detect (Recommended)', 'riseup-asia-uploader'); ?></option>
-                            <option value="native"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="Auto"><?php esc_html_e('Auto-Detect (Recommended)', 'riseup-asia-uploader'); ?></option>
+                            <option value="Native"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -278,10 +278,10 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_schedule">
-                            <option value="manual"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="daily"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
-                            <option value="weekly"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
-                            <option value="monthly"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
+                            <option value="Manual"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="Daily"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
+                            <option value="Weekly"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
+                            <option value="Monthly"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -312,9 +312,9 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_scope">
-                            <option value="all"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="wordpress"><?php esc_html_e('WordPress Core', 'riseup-asia-uploader'); ?></option>
-                            <option value="content"><?php esc_html_e('Content Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="All"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="WordPress"><?php esc_html_e('WordPress Core', 'riseup-asia-uploader'); ?></option>
+                            <option value="Content"><?php esc_html_e('Content Only', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -324,8 +324,8 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_provider">
-                            <option value="auto"><?php esc_html_e('Auto-Detect', 'riseup-asia-uploader'); ?></option>
-                            <option value="native"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="Auto"><?php esc_html_e('Auto-Detect', 'riseup-asia-uploader'); ?></option>
+                            <option value="Native"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -344,16 +344,16 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <div class="riseup-storage-cards">
-                            <label class="riseup-storage-card" data-mode="single">
-                                <input type="radio" name="setting_storage_mode" value="single">
+                            <label class="riseup-storage-card" data-mode="Single">
+                                <input type="radio" name="setting_storage_mode" value="Single">
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-media-archive" style="font-size: 24px; width: 24px; height: 24px;"></span>
                                     <strong><?php esc_html_e('Single File', 'riseup-asia-uploader'); ?></strong>
                                     <span class="description"><?php esc_html_e('One SQLite file per snapshot', 'riseup-asia-uploader'); ?></span>
                                 </div>
                             </label>
-                            <label class="riseup-storage-card active" data-mode="per-table">
-                                <input type="radio" name="setting_storage_mode" value="per-table" checked>
+                            <label class="riseup-storage-card active" data-mode="PerTable">
+                                <input type="radio" name="setting_storage_mode" value="PerTable" checked>
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-grid-view" style="font-size: 24px; width: 24px; height: 24px;"></span>
                                     <strong><?php esc_html_e('Per-Table', 'riseup-asia-uploader'); ?></strong>
@@ -583,27 +583,27 @@ jQuery(document).ready(function($) {
 
     function statusBadge(status) {
         var colors = {
-            complete: 'background:#d1e4dd;color:#0a7a4d;',
-            running: 'background:#fff3cd;color:#664d03;',
+            Complete: 'background:#d1e4dd;color:#0a7a4d;',
+            Running: 'background:#fff3cd;color:#664d03;',
             in_progress: 'background:#fff3cd;color:#664d03;',
-            failed: 'background:#f8d7da;color:#721c24;',
-            pending: 'background:#e3f2fd;color:#1565c0;',
-            scheduled: 'background:#e8eaf6;color:#283593;'
+            Failed: 'background:#f8d7da;color:#721c24;',
+            Pending: 'background:#e3f2fd;color:#1565c0;',
+            Scheduled: 'background:#e8eaf6;color:#283593;'
         };
         var style = colors[status] || 'background:#f5f5f5;color:#757575;';
         var icon = '';
-        if (status === 'running' || status === 'in_progress') {
+        if (status === 'Running' || status === 'in_progress') {
             icon = '<span class="dashicons dashicons-update riseup-spin" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
-        } else if (status === 'complete') {
+        } else if (status === 'Complete') {
             icon = '<span class="dashicons dashicons-yes-alt" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
-        } else if (status === 'failed') {
+        } else if (status === 'Failed') {
             icon = '<span class="dashicons dashicons-dismiss" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
         }
-        return '<span class="riseup-badge" style="' + style + 'text-transform:capitalize;">' + icon + status + '</span>';
+        return '<span class="riseup-badge" style="' + style + '">' + icon + status + '</span>';
     }
 
     function typeBadge(snapshotType) {
-        if (snapshotType === 'incremental') {
+        if (snapshotType === 'Incremental') {
             return '<span class="dashicons dashicons-randomize" style="color:#6c3483;font-size:16px;width:16px;height:16px;" title="Incremental"></span>';
         }
         return '<span class="dashicons dashicons-media-archive" style="color:#2271b1;font-size:16px;width:16px;height:16px;" title="Full"></span>';
@@ -611,13 +611,13 @@ jQuery(document).ready(function($) {
 
     function scopeBadge(scope) {
         var colors = {
-            all: 'background:#f3e5f5;color:#7b1fa2;',
-            wordpress: 'background:#e3f2fd;color:#1565c0;',
-            content: 'background:#e8f5e9;color:#2e7d32;',
-            custom: 'background:#fff3e0;color:#e65100;'
+            All: 'background:#f3e5f5;color:#7b1fa2;',
+            WordPress: 'background:#e3f2fd;color:#1565c0;',
+            Content: 'background:#e8f5e9;color:#2e7d32;',
+            Custom: 'background:#fff3e0;color:#e65100;'
         };
         var style = colors[scope] || 'background:#f5f5f5;color:#757575;';
-        return '<span class="riseup-badge" style="' + style + '">' + (scope || 'all') + '</span>';
+        return '<span class="riseup-badge" style="' + style + '">' + (scope || 'All') + '</span>';
     }
 
     // Status helper
@@ -754,8 +754,8 @@ jQuery(document).ready(function($) {
                 if (response.table_progress && response.table_progress.length > 0) {
                     var html = '';
                     response.table_progress.forEach(function(t) {
-                        var tColor = t.status === 'complete' ? '#0a7a4d' : (t.status === 'running' ? '#664d03' : '#757575');
-                        var tIcon = t.status === 'complete' ? '✓' : (t.status === 'running' ? '⟳' : '○');
+                        var tColor = t.status === 'Complete' ? '#0a7a4d' : (t.status === 'Running' ? '#664d03' : '#757575');
+                        var tIcon = t.status === 'Complete' ? '✓' : (t.status === 'Running' ? '⟳' : '○');
                         html += '<span class="riseup-table-status" style="color:' + tColor + ';">' + tIcon + ' ' + t.table + '</span> ';
                     });
                     $('#progress_tables_list').html(html);
@@ -763,9 +763,9 @@ jQuery(document).ready(function($) {
                 }
 
                 // Keep polling if still running
-                if (response.status === 'complete' || response.status === 'failed') {
+                if (response.status === 'Complete' || response.status === 'Failed') {
                     activeJobId = null;
-                    if (response.status === 'complete') {
+                    if (response.status === 'Complete') {
                         showStatus($status, '✓ Snapshot completed successfully', false);
                     } else {
                         showStatus($status, '✗ Snapshot job failed', true);
@@ -829,7 +829,7 @@ jQuery(document).ready(function($) {
                 var hasRunningJob = false;
 
                 snapshots.forEach(function(s) {
-                    var isIncr = (s.snapshot_type === 'incremental' || s.scope === 'incremental');
+                    var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
                     if (isIncr && s.parent_id) {
                         if (!incrementalsByParent[s.parent_id]) {
                             incrementalsByParent[s.parent_id] = [];
@@ -840,7 +840,7 @@ jQuery(document).ready(function($) {
                     }
 
                     // Check for running jobs
-                    if (s.status === 'running' || s.status === 'in_progress') {
+                    if (s.status === 'Running' || s.status === 'in_progress') {
                         hasRunningJob = true;
                         if (s.job_id && !activeJobId) {
                             startProgressPolling(s.job_id);
@@ -863,7 +863,7 @@ jQuery(document).ready(function($) {
 
                 // Render orphan incrementals (no parent in current page)
                 snapshots.forEach(function(s) {
-                    var isIncr = (s.snapshot_type === 'incremental' || s.scope === 'incremental');
+                    var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
                     var isParentMissing = s.parent_id && fullSnapshots.every(function(f) { return f.id !== s.parent_id; });
                     var isOrphanIncremental = isIncr && isParentMissing;
                     if (isOrphanIncremental) {
@@ -904,20 +904,20 @@ jQuery(document).ready(function($) {
     }
 
     function buildSnapshotRow(s, isNested, incrCount) {
-        var isIncr = (s.snapshot_type === 'incremental' || s.scope === 'incremental');
+        var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
         var rowClass = isNested ? 'riseup-nested-row' : '';
-        var isRunning = (s.status === 'running' || s.status === 'in_progress');
+        var isRunning = (s.status === 'Running' || s.status === 'in_progress');
 
-        var html = '<tr class="' + rowClass + '" data-id="' + s.id + '" data-type="' + (s.snapshot_type || 'full') + '" data-incr-count="' + incrCount + '">';
+        var html = '<tr class="' + rowClass + '" data-id="' + s.id + '" data-type="' + (s.snapshot_type || 'Full') + '" data-incr-count="' + incrCount + '">';
         html += '<td>' + (s.sequence || s.id) + '</td>';
-        html += '<td>' + typeBadge(s.snapshot_type || 'full') + '</td>';
+        html += '<td>' + typeBadge(s.snapshot_type || 'Full') + '</td>';
         html += '<td>';
         if (isNested) {
             html += '<span class="riseup-indent">↳</span> ';
         }
         html += '<code>' + (s.filename || '-') + '</code>';
         if (isIncr) {
-            html += ' <span class="riseup-badge" style="background:#f3e5f5;color:#7b1fa2;font-size:10px;padding:1px 5px;">incremental</span>';
+            html += ' <span class="riseup-badge" style="background:#f3e5f5;color:#7b1fa2;font-size:10px;padding:1px 5px;">Incremental</span>';
         }
         if (incrCount > 0) {
             html += ' <span class="riseup-badge" style="background:#e3f2fd;color:#1565c0;font-size:10px;padding:1px 5px;">' + incrCount + ' incremental' + (incrCount > 1 ? 's' : '') + '</span>';
@@ -928,11 +928,11 @@ jQuery(document).ready(function($) {
         html += '<td>' + (s.table_count || '-') + '</td>';
         html += '<td>' + (s.total_rows ? s.total_rows.toLocaleString() : '-') + '</td>';
         html += '<td>' + formatBytes(s.file_size) + '</td>';
-        html += '<td>' + statusBadge(s.status || 'complete') + '</td>';
+        html += '<td>' + statusBadge(s.status || 'Complete') + '</td>';
         html += '<td title="' + (s.created_at || '') + '">' + relativeTime(s.created_at) + '</td>';
         html += '<td class="riseup-snapshot-actions">';
-        if (s.status === 'complete' || !s.status) {
-            html += '<button class="button button-small btn-restore" data-id="' + s.id + '" data-name="' + (s.filename || '#' + s.id) + '" data-type="' + (s.snapshot_type || 'full') + '" title="Restore">';
+        if (s.status === 'Complete' || !s.status) {
+            html += '<button class="button button-small btn-restore" data-id="' + s.id + '" data-name="' + (s.filename || '#' + s.id) + '" data-type="' + (s.snapshot_type || 'Full') + '" title="Restore">';
             html += '<span class="dashicons dashicons-database-import"></span></button> ';
 
             // Download ZIP button — only for full snapshots
@@ -943,7 +943,7 @@ jQuery(document).ready(function($) {
             }
         }
         if (!isRunning) {
-            html += '<button class="button button-small btn-delete-snapshot" data-id="' + s.id + '" data-type="' + (s.snapshot_type || 'full') + '" data-name="' + (s.filename || '#' + s.id) + '" data-incr-count="' + incrCount + '" title="Delete">';
+            html += '<button class="button button-small btn-delete-snapshot" data-id="' + s.id + '" data-type="' + (s.snapshot_type || 'Full') + '" data-name="' + (s.filename || '#' + s.id) + '" data-incr-count="' + incrCount + '" title="Delete">';
             html += '<span class="dashicons dashicons-trash" style="color:#d63638;"></span></button>';
         }
         html += '</td>';
@@ -1048,7 +1048,7 @@ jQuery(document).ready(function($) {
 
     // Scope change - show/hide custom tables
     $('#snapshot_scope').on('change', function() {
-        if ($(this).val() === 'custom') {
+        if ($(this).val() === 'Custom') {
             $('#custom_tables_row').show();
             loadTables();
         } else {
@@ -1082,7 +1082,7 @@ jQuery(document).ready(function($) {
             scope: $('#snapshot_scope').val(),
             provider: $('#snapshot_provider').val()
         };
-        if (data.scope === 'custom') {
+        if (data.scope === 'Custom') {
             data.tables = [];
             $('#snapshot_tables_list input:checked').each(function() {
                 data.tables.push($(this).val());
@@ -1124,7 +1124,7 @@ jQuery(document).ready(function($) {
         var $btn = $(this);
         // Find the latest full snapshot
         var latestFull = allSnapshots.find(function(s) {
-            return (s.snapshot_type === 'full' || (!s.snapshot_type && !s.parent_id)) && s.status === 'complete';
+            return (s.snapshot_type === 'Full' || (!s.snapshot_type && !s.parent_id)) && s.status === 'Complete';
         });
         if (!latestFull) {
             showStatus($status, '✗ No full snapshot found — create a full snapshot first', true);
@@ -1228,7 +1228,7 @@ jQuery(document).ready(function($) {
         currentRestoreType = $(this).data('type') || 'full';
         $('#restore_snapshot_name').text($(this).data('name'));
 
-        if (currentRestoreType === 'incremental') {
+        if (currentRestoreType === 'Incremental') {
             $('#restore_incremental_warning').show();
         } else {
             $('#restore_incremental_warning').hide();
@@ -1403,7 +1403,7 @@ jQuery(document).ready(function($) {
 
         $('#delete_message').text('Are you sure you want to delete snapshot "' + name + '"? This cannot be undone.');
 
-        if (type !== 'incremental' && incrCount > 0) {
+        if (type !== 'Incremental' && incrCount > 0) {
             $('#delete_cascade_text').text(
                 'This full snapshot has ' + incrCount + ' incremental backup' + (incrCount > 1 ? 's' : '') +
                 '. Deleting it will also permanently remove all ' + incrCount + ' incremental snapshot' + (incrCount > 1 ? 's' : '') + '.'
@@ -1548,7 +1548,7 @@ jQuery(document).ready(function($) {
             var day = s.created_at.substring(0, 10);
             if (!byDay[day]) byDay[day] = { full: 0, incr: 0 };
             var sz = parseInt(s.file_size) || 0;
-            var isIncr = (s.snapshot_type === 'incremental' || s.scope === 'incremental');
+            var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
             if (isIncr) { byDay[day].incr += sz; } else { byDay[day].full += sz; }
         });
 
@@ -1594,7 +1594,7 @@ jQuery(document).ready(function($) {
     // MONTHLY CALENDAR
     // =========================================================================
 
-    var calYear, calMonth, cachedSchedule = 'manual';
+    var calYear, calMonth, cachedSchedule = 'Manual';
     (function() {
         var now = new Date();
         calYear = now.getFullYear();
@@ -1608,12 +1608,12 @@ jQuery(document).ready(function($) {
 
     function getScheduledDates(year, month, frequency) {
         var dates = {};
-        if (!frequency || frequency === 'manual') return dates;
+        if (!frequency || frequency === 'Manual') return dates;
         var daysInMonth = new Date(year, month + 1, 0).getDate();
         var today = new Date();
         today.setHours(0,0,0,0);
 
-        if (frequency === 'daily') {
+        if (frequency === 'Daily') {
             for (var d = 1; d <= daysInMonth; d++) {
                 var dt = new Date(year, month, d);
                 if (dt >= today) {
@@ -1621,7 +1621,7 @@ jQuery(document).ready(function($) {
                     dates[key] = true;
                 }
             }
-        } else if (frequency === 'weekly') {
+        } else if (frequency === 'Weekly') {
             // Every Sunday (day 0) in the month, from today onward
             for (var d = 1; d <= daysInMonth; d++) {
                 var dt = new Date(year, month, d);
@@ -1630,14 +1630,14 @@ jQuery(document).ready(function($) {
                     dates[key] = true;
                 }
             }
-        } else if (frequency === 'monthly') {
+        } else if (frequency === 'Monthly') {
             // 1st of month, from today onward
             var dt = new Date(year, month, 1);
             if (dt >= today) {
                 var key = year + '-' + String(month + 1).padStart(2, '0') + '-01';
                 dates[key] = true;
             }
-        } else if (frequency === 'hourly') {
+        } else if (frequency === 'Hourly') {
             // Same as daily for calendar purposes
             for (var d = 1; d <= daysInMonth; d++) {
                 var dt = new Date(year, month, d);
@@ -1692,7 +1692,7 @@ jQuery(document).ready(function($) {
                     if (entries.length > 0 || isScheduled) {
                         var hasFull = false, hasIncr = false;
                         entries.forEach(function(e) {
-                            if (e.snapshot_type === 'incremental' || e.scope === 'incremental') hasIncr = true;
+                            if (e.snapshot_type === 'Incremental' || e.scope === 'Incremental') hasIncr = true;
                             else hasFull = true;
                         });
                         html += '<div class="riseup-cal-dots">';
