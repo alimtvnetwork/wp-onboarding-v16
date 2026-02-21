@@ -63,12 +63,14 @@ class UpdateResolver {
             'package_url' => '', 'new_version' => '', 'update_info' => array(),
         );
         $settings = get_option(OptionNameType::UpdateSettings->value, array());
+
         return wp_parse_args($settings, $defaults);
     }
 
     public function saveSettings(array $settings): bool {
         $current = $this->getSettings();
         $merged = wp_parse_args($settings, $current);
+
         return update_option(OptionNameType::UpdateSettings->value, $merged);
     }
 }

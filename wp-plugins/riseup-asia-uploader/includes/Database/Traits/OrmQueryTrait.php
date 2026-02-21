@@ -20,30 +20,35 @@ trait OrmQueryTrait {
 
     public function select($columns) {
         $this->selectColumns = is_array($columns) ? $columns : func_get_args();
+
         return $this;
     }
 
     /** Select a single column. */
     public function selectColumn(string $column) {
         $this->selectColumns = array($column);
+
         return $this;
     }
 
     /** Select with COUNT(*). */
     public function selectCount(string $alias = 'count') {
         $this->selectColumns = array("COUNT(*) as {$alias}");
+
         return $this;
     }
 
     /** Add ORDER BY ASC. */
     public function orderByAsc(string $column) {
         $this->orderBy[] = "{$column} ASC";
+
         return $this;
     }
 
     /** Add ORDER BY DESC. */
     public function orderByDesc(string $column) {
         $this->orderBy[] = "{$column} DESC";
+
         return $this;
     }
 
@@ -51,24 +56,28 @@ trait OrmQueryTrait {
     public function orderBy(string $column, string $direction = 'ASC') {
         $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
         $this->orderBy[] = "{$column} {$direction}";
+
         return $this;
     }
 
     /** Add GROUP BY clause. */
     public function groupBy(string $column) {
         $this->groupBy[] = $column;
+
         return $this;
     }
 
     /** Set LIMIT. */
     public function limit(int $limit) {
         $this->limitValue = $limit;
+
         return $this;
     }
 
     /** Set OFFSET. */
     public function offset(int $offset) {
         $this->offsetValue = $offset;
+
         return $this;
     }
 
@@ -85,6 +94,7 @@ trait OrmQueryTrait {
             $stmt = self::$pdo->prepare($sql);
             $stmt->execute(array(':id' => $id));
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
             return $result ?: null;
         } catch (PDOException $e) {
             return null;
@@ -103,6 +113,7 @@ trait OrmQueryTrait {
         try {
             $stmt = self::$pdo->prepare($sql);
             $stmt->execute($this->whereParams);
+
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return array();
@@ -127,6 +138,7 @@ trait OrmQueryTrait {
             $stmt = self::$pdo->prepare($sql);
             $stmt->execute($this->whereParams);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
             return (int) ($result['count'] ?? 0);
         } catch (PDOException $e) {
             return 0;
