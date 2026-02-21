@@ -169,7 +169,10 @@ func (db *DB) GetSeedVersion() (string, error) {
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
-	return version, err
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get seed version")
+	}
+	return version, nil
 }
 
 // SetSeedVersion sets the seed version in the database
@@ -179,7 +182,10 @@ func (db *DB) SetSeedVersion(version string) error {
 		VALUES ('seed_version', ?, datetime('now'))
 		ON CONFLICT(Key) DO UPDATE SET Value = ?, UpdatedAt = datetime('now')
 	`, version, version)
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set seed version")
+	}
+	return nil
 }
 
 // SetSettingIfNotExists creates a setting only if it doesn't already exist
@@ -188,7 +194,11 @@ func (db *DB) SetSettingIfNotExists(key string, value any) error {
 		INSERT OR IGNORE INTO AppConfig (Key, Value, UpdatedAt) 
 		VALUES (?, ?, datetime('now'))
 	`, key, fmt.Sprintf("%v", value))
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set setting if not exists").
+			WithDetails(fmt.Sprintf("key=%s", key))
+	}
+	return nil
 }
 
 // GetSetting retrieves a setting value by key
@@ -198,7 +208,11 @@ func (db *DB) GetSetting(key string) (string, error) {
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
-	return value, err
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get setting").
+			WithDetails(fmt.Sprintf("key=%s", key))
+	}
+	return value, nil
 }
 
 // SetSetting updates or creates a setting
@@ -208,7 +222,11 @@ func (db *DB) SetSetting(key, value string) error {
 		VALUES (?, ?, datetime('now'))
 		ON CONFLICT(Key) DO UPDATE SET Value = ?, UpdatedAt = datetime('now')
 	`, key, value, value)
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set setting").
+			WithDetails(fmt.Sprintf("key=%s", key))
+	}
+	return nil
 }
 
 // DataDir returns the data directory path
@@ -225,14 +243,22 @@ func (db *DB) Path() string {
 func (db *DB) GetSiteIdByUrl(url string) (int64, error) {
 	var id int64
 	err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", url).Scan(&id)
-	return id, err
+	if err != nil {
+		return 0, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site by URL").
+			WithURL(url)
+	}
+	return id, nil
 }
 
 // GetPluginIdByPath returns the plugin ID for a given path
 func (db *DB) GetPluginIdByPath(path string) (int64, error) {
 	var id int64
 	err := db.QueryRow("SELECT Id FROM Plugins WHERE Path = ?", path).Scan(&id)
-	return id, err
+	if err != nil {
+		return 0, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin by path").
+			WithPath(path)
+	}
+	return id, nil
 }
 
 // CreateSeedSite creates a site for seeding (password must be pre-encrypted by caller)
@@ -243,7 +269,8 @@ func (db *DB) CreateSeedSite(name, url, username string, passwordEncrypted []byt
 		VALUES (?, ?, ?, ?, ?, 'connected', datetime('now'), datetime('now'))
 	`, name, url, username, passwordEncrypted, category)
 	if err != nil {
-		return 0, err
+		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed site").
+			WithURL(url)
 	}
 	return result.LastInsertId()
 }
@@ -260,7 +287,8 @@ func (db *DB) CreateSeedPlugin(name, path, category string, gitEnabled, autoPubl
 		VALUES (?, ?, ?, 1, ?, datetime('now'), datetime('now'))
 	`, name, path, category, autoPublishInt)
 	if err != nil {
-		return 0, err
+		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed plugin").
+			WithPath(path)
 	}
 
 	pluginID, _ := result.LastInsertId()
@@ -302,7 +330,10 @@ func (db *DB) GetDbVersion() (string, error) {
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
-	return version, err
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get db version")
+	}
+	return version, nil
 }
 
 // SetDbVersion sets the database version
@@ -312,7 +343,10 @@ func (db *DB) SetDbVersion(version string) error {
 		VALUES ('db.version', ?, datetime('now'))
 		ON CONFLICT(Key) DO UPDATE SET Value = ?, UpdatedAt = datetime('now')
 	`, version, version)
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set db version")
+	}
+	return nil
 }
 
 // CreatePluginVersion records a new version entry after a publish operation
@@ -322,7 +356,8 @@ func (db *DB) CreatePluginVersion(pluginID, siteID int64, version, backupPath st
 		VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, datetime('now'))
 	`, pluginID, siteID, version, backupPath, filesUpdated, gitCommitHash, publishType, notes)
 	if err != nil {
-		return 0, err
+		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create plugin version").
+			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", pluginID, siteID))
 	}
 	return result.LastInsertId()
 }
@@ -364,7 +399,8 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]Plu
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query plugin versions").
+			WithDetails(fmt.Sprintf("pluginId=%d", pluginID))
 	}
 	defer rows.Close()
 
@@ -410,7 +446,8 @@ func (db *DB) GetPluginVersionByID(versionID int64) (*PluginVersionRow, error) {
 	`, versionID).Scan(&v.ID, &v.PluginID, &v.SiteID, &siteName, &version, &backupPath,
 		&v.FilesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
 	if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin version by ID").
+			WithDetails(fmt.Sprintf("versionId=%d", versionID))
 	}
 
 	v.SiteName = siteName.String
@@ -427,7 +464,11 @@ func (db *DB) GetPluginVersionByID(versionID int64) (*PluginVersionRow, error) {
 // DeletePluginVersion removes a version entry
 func (db *DB) DeletePluginVersion(versionID int64) error {
 	_, err := db.Exec("DELETE FROM PluginVersions WHERE Id = ?", versionID)
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete plugin version").
+			WithDetails(fmt.Sprintf("versionId=%d", versionID))
+	}
+	return nil
 }
 
 // GetNextVersionNumber generates the next version number for a plugin-site combination
