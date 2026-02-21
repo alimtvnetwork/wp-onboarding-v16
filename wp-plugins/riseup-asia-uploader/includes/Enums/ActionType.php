@@ -2,8 +2,6 @@
 /**
  * ActionType — Transaction logging action identifiers.
  *
- * Backed enum replacing all ACTION_* define() constants.
- *
  * @package RiseupAsia\Enums
  * @since   2.1.0
  */
@@ -14,9 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Transaction logging action types.
- */
 enum ActionType: string
 {
     // Core plugin actions
@@ -77,43 +72,14 @@ enum ActionType: string
     case SnapshotZipExpire       = 'SnapshotZipExpire';
     case SnapshotZipDownload     = 'SnapshotZipDownload';
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
+    public function isSnapshot(): bool { return str_starts_with($this->value, 'Snapshot'); }
+    public function isAgent(): bool    { return str_starts_with($this->value, 'Agent'); }
+    public function isUpdate(): bool   { return str_starts_with($this->value, 'Update'); }
 
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
-
-    /** Check if this is a snapshot-related action. */
-    public function isSnapshot(): bool
-    {
-        return str_starts_with($this->value, 'Snapshot');
-    }
-
-    /** Check if this is an agent-related action. */
-    public function isAgent(): bool
-    {
-        return str_starts_with($this->value, 'Agent');
-    }
-
-    /** Check if this is an update-related action. */
-    public function isUpdate(): bool
-    {
-        return str_starts_with($this->value, 'Update');
-    }
-
-    /** Check if this is a plugin lifecycle action (enable/disable/delete). */
     public function isLifecycle(): bool
     {
         return $this->isAnyOf(self::Enable, self::Disable, self::Delete);

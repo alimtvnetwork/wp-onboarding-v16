@@ -1,8 +1,6 @@
 <?php
 /**
- * CapabilityType — WordPress Capability Enum
- *
- * Every current_user_can() call MUST reference a case from this enum.
+ * CapabilityType — WordPress capability strings.
  *
  * @package RiseupAsia\Enums
  * @since   1.57.0
@@ -14,9 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * WordPress capability strings for permission checks.
- */
 enum CapabilityType: string
 {
     case ManageOptions   = 'manage_options';
@@ -31,21 +26,7 @@ enum CapabilityType: string
     case ManageUsers     = 'manage_users';
     case ManageNetwork   = 'manage_network';
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
-
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

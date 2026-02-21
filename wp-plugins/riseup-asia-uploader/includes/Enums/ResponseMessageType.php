@@ -1,6 +1,6 @@
 <?php
 /**
- * ResponseMessageType — Standardized API Response Messages
+ * ResponseMessageType — Human-readable API response messages.
  *
  * @package RiseupAsia\Enums
  * @since   1.58.0
@@ -12,9 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Human-readable response messages for REST API and AJAX responses.
- */
 enum ResponseMessageType: string
 {
     case Success            = 'Operation completed successfully';
@@ -35,8 +32,6 @@ enum ResponseMessageType: string
     case InvalidRequestBody = 'Invalid request body';
     case ServiceNotAvailable      = 'Service not available';
     case InvalidId                = 'Invalid ID';
-
-    /** Repeated cross-file messages. */
     case ConnectionSuccessful     = 'Connection successful';
     case SnapshotNotFound         = 'Snapshot not found';
     case SnapshotProviderMissing  = 'No snapshot provider available';
@@ -47,25 +42,10 @@ enum ResponseMessageType: string
     case TempDirCreateFailed      = 'Failed to create temp directory';
     case InvalidFileTypeZip       = 'Invalid file type. Expected ZIP file.';
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
-
-    /** Check if this is an error/failure message. */
     public function isFailure(): bool
     {
         return !$this->isAnyOf(self::Success, self::FileIgnored);

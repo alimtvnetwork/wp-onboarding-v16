@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * WordPress option name keys used by the plugin.
- */
 enum OptionNameType: string
 {
     case SnapshotSettings   = 'riseup_snapshot_settings';
@@ -21,10 +18,5 @@ enum OptionNameType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

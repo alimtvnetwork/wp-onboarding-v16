@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * Snapshot provider identifiers.
- */
 enum SnapshotProviderType: string
 {
     case WpReset = 'WpReset';
@@ -19,12 +16,7 @@ enum SnapshotProviderType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
     public function isWpReset(): bool { return $this->isEqual(self::WpReset); }
     public function isUpdraft(): bool { return $this->isEqual(self::Updraft); }

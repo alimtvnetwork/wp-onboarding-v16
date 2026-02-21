@@ -1,8 +1,6 @@
 <?php
 /**
- * WpErrorCodeType — Standardized WP_Error code values.
- *
- * Backed enum replacing hardcoded error code strings in WP_Error constructors.
+ * WpErrorCodeType — WordPress error code identifiers.
  *
  * @package RiseupAsia\Enums
  * @since   2.2.0
@@ -14,73 +12,47 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * WordPress error code identifiers.
- */
 enum WpErrorCodeType: string
 {
+    /** WordPress core error codes — values must match WP conventions. */
     case RestForbidden = 'rest_forbidden';
     case RestDisabled  = 'rest_disabled';
-    case DatabaseError = 'db_error';
-    case NoData        = 'no_data';
-    case MissingFields = 'missing_fields';
-    case NotFound      = 'not_found';
-    case ApiError      = 'api_error';
-    case MaxRedirects  = 'max_redirects';
-    case NoLocation    = 'no_location';
-    case NoMasterUrl   = 'no_master_url';
-    case Disabled      = 'disabled';
-    case HttpError     = 'http_error';
-    case InternalError    = 'internal_error';
-    case FileNotFound     = 'file_not_found';
-    case ChecksumMismatch = 'checksum_mismatch';
-    case BackupFailed     = 'backup_failed';
-    case RollbackFailed   = 'rollback_failed';
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
+    /** Custom plugin error codes. */
+    case DatabaseError     = 'db_error';
+    case NoData            = 'no_data';
+    case MissingFields     = 'missing_fields';
+    case NotFound          = 'not_found';
+    case ApiError          = 'api_error';
+    case MaxRedirects      = 'max_redirects';
+    case NoLocation        = 'no_location';
+    case NoMasterUrl       = 'no_master_url';
+    case Disabled          = 'disabled';
+    case HttpError         = 'http_error';
+    case InternalError     = 'internal_error';
+    case FileNotFound      = 'file_not_found';
+    case ChecksumMismatch  = 'checksum_mismatch';
+    case BackupFailed      = 'backup_failed';
+    case RollbackFailed    = 'rollback_failed';
 
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
-
-    /** Check if this code represents an authentication/authorization error. */
     public function isAuthError(): bool
     {
         return $this->isAnyOf(self::RestForbidden, self::RestDisabled);
     }
 
-    /** Check if this code represents a database error. */
-    public function isDatabaseError(): bool
-    {
-        return $this->isEqual(self::DatabaseError);
-    }
+    public function isDatabaseError(): bool { return $this->isEqual(self::DatabaseError); }
 
-    /** Check if this code represents a validation error. */
     public function isValidationError(): bool
     {
         return $this->isAnyOf(self::MissingFields, self::NoData);
     }
 
-    /** Check if this code represents a network/HTTP error. */
     public function isNetworkError(): bool
     {
-        return $this->isAnyOf(
-            self::ApiError,
-            self::HttpError,
-            self::MaxRedirects,
-            self::NoLocation,
-        );
+        return $this->isAnyOf(self::ApiError, self::HttpError, self::MaxRedirects, self::NoLocation);
     }
 }

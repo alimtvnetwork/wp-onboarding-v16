@@ -1,8 +1,6 @@
 <?php
 /**
- * StatusType — Transaction status values.
- *
- * Backed enum replacing STATUS_SUCCESS / STATUS_FAILED constants.
+ * StatusType — Transaction result status.
  *
  * @package RiseupAsia\Enums
  * @since   2.1.0
@@ -14,41 +12,15 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Transaction result status.
- */
 enum StatusType: string
 {
     case Success = 'Success';
     case Failed  = 'Failed';
 
-    /** Check if this enum case equals the given case. */
-    public function isEqual(self $other): bool
-    {
-        return $this === $other;
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    /** Check if this enum case differs from the given case. */
-    public function isOtherThan(self $other): bool
-    {
-        return $this !== $other;
-    }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
-
-    /** Check if this status indicates success. */
-    public function isSuccess(): bool
-    {
-        return $this->isEqual(self::Success);
-    }
-
-    /** Check if this status indicates failure. */
-    public function isFailed(): bool
-    {
-        return $this->isEqual(self::Failed);
-    }
+    public function isSuccess(): bool { return $this->isEqual(self::Success); }
+    public function isFailed(): bool  { return $this->isEqual(self::Failed); }
 }

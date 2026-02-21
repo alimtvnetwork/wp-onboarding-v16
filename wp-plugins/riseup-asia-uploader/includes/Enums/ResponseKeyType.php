@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * Keys used in structured response arrays returned by services.
- */
 enum ResponseKeyType: string
 {
     /** Envelope keys — present in most response arrays. */
@@ -125,26 +122,26 @@ enum ResponseKeyType: string
     case CreatedAt = 'createdAt';
     case UpdatedAt = 'updatedAt';
 
-    /** API response keys — analysis and dependency. */
-    case ParentTable    = 'parentTable';
-    case ChildTable     = 'childTable';
-    case FkColumn       = 'fkColumn';
-    case RefColumn      = 'refColumn';
-    case SeedOrder      = 'seedOrder';
-    case TableCount     = 'tableCount';
-    case DepCount       = 'depCount';
-    case NewRows        = 'newRows';
-    case PluginDetails  = 'pluginDetails';
-    case IncludedIds    = 'includedIds';
+    /** Analysis and dependency keys. */
+    case ParentTable      = 'parentTable';
+    case ChildTable       = 'childTable';
+    case FkColumn         = 'fkColumn';
+    case RefColumn        = 'refColumn';
+    case SeedOrder        = 'seedOrder';
+    case TableCount       = 'tableCount';
+    case DepCount         = 'depCount';
+    case NewRows          = 'newRows';
+    case PluginDetails    = 'pluginDetails';
+    case IncludedIds      = 'includedIds';
     case IncrementalCount = 'incrementalCount';
 
-    /** API response keys — detection and provider. */
+    /** Detection and provider keys. */
     case DetectionMethod = 'detectionMethod';
     case SqliteVersion   = 'sqliteVersion';
     case IsCore          = 'isCore';
 
-    /** API response keys — scheduler. */
-    case ScheduleEnabled      = 'scheduleEnabled';
+    /** Scheduler keys. */
+    case ScheduleEnabled       = 'scheduleEnabled';
     case NextScheduledSnapshot = 'nextScheduledSnapshot';
     case NextCleanup           = 'nextCleanup';
     case RetentionType         = 'retentionType';
@@ -152,17 +149,17 @@ enum ResponseKeyType: string
     case RetentionCount        = 'retentionCount';
     case SnapshotType          = 'snapshotType';
 
-    /** API response keys — error enrichment. */
+    /** Error enrichment keys. */
     case ErrorCategory = 'errorCategory';
     case LogHint       = 'logHint';
 
-    /** API response keys — sync. */
+    /** Sync keys. */
     case FilesUpdated = 'filesUpdated';
     case FilesDeleted = 'filesDeleted';
     case FilesIgnored = 'filesIgnored';
     case IgnoredFiles = 'ignoredFiles';
 
-    /** API response keys — export and plugin. */
+    /** Export and plugin keys. */
     case PluginZip   = 'pluginZip';
     case ResolvedUrl = 'resolvedUrl';
     case TraceLines  = 'traceLines';
@@ -207,10 +204,5 @@ enum ResponseKeyType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

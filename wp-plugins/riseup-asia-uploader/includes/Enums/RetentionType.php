@@ -7,9 +7,6 @@
 
 namespace RiseupAsia\Enums;
 
-/**
- * Snapshot retention policy types.
- */
 enum RetentionType: string
 {
     case Days  = 'Days';
@@ -18,12 +15,7 @@ enum RetentionType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
     public function isDays(): bool  { return $this->isEqual(self::Days); }
     public function isCount(): bool { return $this->isEqual(self::Count); }

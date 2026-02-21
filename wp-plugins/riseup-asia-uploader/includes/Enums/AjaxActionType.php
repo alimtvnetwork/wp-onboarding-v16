@@ -2,9 +2,6 @@
 /**
  * AjaxActionType — WordPress AJAX action slugs.
  *
- * Every AJAX action registered via HookType::ajax() MUST reference
- * a case from this enum instead of using hardcoded strings.
- *
  * @package RiseupAsia\Enums
  * @since   2.5.0
  */
@@ -15,9 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * AJAX action slug identifiers.
- */
 enum AjaxActionType: string
 {
     // ── Update Actions ──────────────────────────────────────────
@@ -40,10 +34,5 @@ enum AjaxActionType: string
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
-
-    /** Check if the receiver matches any of the given cases. */
-    public function isAnyOf(self ...$others): bool
-    {
-        return in_array($this, $others, true);
-    }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }
