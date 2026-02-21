@@ -763,9 +763,11 @@ Comprehensive plan to bring the Go backend into full compliance: byte-based enum
 
 ---
 
-## Phase B: Enum Migration (String → Byte-Based)
+## ✅ COMPLETED — Phase B: Enum Migration (String → Byte-Based) (2026-02-21)
 
-### Current State — 13 String-Based Types
+All 18 enum packages already fully migrated to byte-based with iota, mandatory methods (`String`, `Label`, `IsValid`, `Parse`, `All`, `ByIndex`, `Values`, `IsOther`, `IsAnyOf`, `MarshalJSON`, `UnmarshalJSON`), plus individual `IsX()` checkers.
+
+### Original Inventory — 13 String-Based Types (all converted)
 
 All in `backend/internal/wordpress/` and `backend/internal/services/session/`:
 
@@ -941,7 +943,7 @@ Phase A must complete first. B and D can proceed in parallel. C depends on B (en
 
 ## Next Steps
 
-Start with **Phase A** (spec updates), then proceed to **Phase B** (enum migration) and **Phase D** (AppError serialization) in parallel.
+Phase B complete. Proceed to **Phase C** (config refactoring) and **Phase D** (AppError serialization).
 
 ---
 
@@ -969,20 +971,22 @@ All Go identifier-style enum `variantLabels` updated from snake_case/lowercase t
 | `response_key` | JSON envelope keys (`success`, `message`, `data`) — API contract |
 | `response_message` | Human-readable strings (`Operation completed successfully`) |
 
-## 🔄 Phase 1: Go Backend Consumers
+## ✅ COMPLETED — Phase 1: Go Backend Consumers (2026-02-21)
 
 ### 1.1 Database Stored Values
-- [ ] Audit all database columns storing enum string values (action logs, status fields)
-- [ ] Create migration to UPDATE stored values from snake_case → PascalCase
-- [ ] `Parse()` already handles legacy values (case-insensitive via `EqualFold`)
+- [x] Audit all database columns storing enum string values (action logs, status fields)
+- [x] Create migration to UPDATE stored values from snake_case → PascalCase
+- [x] `Parse()` already handles legacy values (case-insensitive via `EqualFold`)
 
 ### 1.2 WebSocket Broadcasts
-- [ ] Verify enum values in broadcast payloads now emit PascalCase
-- [ ] Update any hardcoded string comparisons in ws handlers
+- [x] Verify enum values in broadcast payloads now emit PascalCase
+- [x] Update any hardcoded string comparisons in ws handlers
 
 ### 1.3 Go Hardcoded Strings
-- [ ] Search for `== "upload_active"`, `== "per_table"`, etc.
-- [ ] Replace with enum constant checks (e.g., `action.IsUploadActive()`)
+- [x] Search for `== "upload_active"`, `== "per_table"`, etc.
+- [x] Replace with enum constant checks (e.g., `action.IsUploadActive()`)
+- [x] ~60 string literals replaced with `stagestatus` enum constants across publish, session, wordpress, and site services
+- [x] Frontend `ConnectionTestStatus` and `LogStatus` aligned to PascalCase (`Completed`/`Failed`)
 
 ## ✅ COMPLETED — Phase 2: PHP Plugin Updates (2026-02-21)
 
@@ -1100,9 +1104,9 @@ Columns: `Id`, `Name`, `Url`, `PluginId`, `SiteId`, `CreatedAt`, `UpdatedAt`, et
 Tables: `projects`, `databases`, `database_stats`
 Columns: `id`, `project_id`, `slug`, `display_name`, `size_bytes`, `record_count`, `created_at`, etc.
 
-### Go E2E Service (`e2e/service.go`) — ❌ snake_case
-Tables: `test_suites`, `test_cases`, `test_runs`, `test_results`
-Columns: `suite_id`, `case_id`, `run_id`, `started_at`, `duration_ms`, etc.
+### Go E2E Service (`e2e/service.go`) — ✅ PascalCase
+Tables: `TestSuites`, `TestCases`, `TestRuns`, `TestResults`
+Columns: `SuiteId`, `CaseId`, `RunId`, `StartedAt`, `DurationMs`, etc.
 
 ### PHP Plugin SQLite — ❌ snake_case
 Tables (via `TableType` enum): `transactions`, `agent_sites`, `agent_actions`, `snapshots`, `snapshot_progress`, `snapshot_jobs`, `snapshot_settings`, `snapshot_exports`, `file_cache`, `remote_plugins_cache`, `error_sessions`, `flash_state`
@@ -1144,21 +1148,7 @@ Columns: `table_name`, `row_count`, `sqlite_file`, `file_size_bytes`, `checksum_
 2. ✅ Updated `initRootSchema()` to create tables with PascalCase names
 3. ✅ Updated all 12 SQL queries across `manager.go` and `export.go` to PascalCase
 
-### Phase 2B: E2E Service (4 tables)
-
-| Old Table | New Table |
-|-----------|-----------|
-| `test_suites` | `TestSuites` |
-| `test_cases` | `TestCases` |
-| `test_runs` | `TestRuns` |
-| `test_results` | `TestResults` |
-
-**Column renames:** `suite_id` → `SuiteId`, `case_id` → `CaseId`, `run_id` → `RunId`, `case_name` → `CaseName`, `started_at` → `StartedAt`, `completed_at` → `CompletedAt`, `duration_ms` → `DurationMs`, `error_message` → `ErrorMessage`, `error_details` → `ErrorDetails`, `request_data` → `RequestData`, `response_data` → `ResponseData`, `timeout_seconds` → `TimeoutSeconds`, `order_index` → `OrderIndex`, `total_tests` → `TotalTests`, `passed_tests` → `PassedTests`, `failed_tests` → `FailedTests`, `skipped_tests` → `SkippedTests`, `preconditions` → `Preconditions`, `expected_result` → `ExpectedResult`
-
-**Implementation:**
-1. Add migration function to `e2e/service.go`
-2. Recreate schema with PascalCase names (SQLite doesn't support column rename before v3.25)
-3. Update all SQL queries and model references in `e2e/` package
+### ✅ COMPLETED — Phase 2B: E2E Service (4 tables) (2026-02-21)
 
 ---
 
