@@ -48,7 +48,7 @@ trait AgentRemoteActionTrait {
     }
 
     private function isRedirectCacheValid(AgentSite $agent): bool {
-        if (empty($agent->redirectResolved) || empty($agent->redirectResolvedAt)) {
+        if ($agent->isInvalidRedirect()) {
             return false;
         }
 
@@ -82,6 +82,7 @@ trait AgentRemoteActionTrait {
     public function testConnection(int $agentId): array {
         $this->fileLogger->info('Testing agent connection', array('id' => $agentId));
         $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/status');
+
         if (is_wp_error($result)) {
             return $this->handleTestConnectionFailure($agentId, $result);
         }
@@ -118,6 +119,7 @@ trait AgentRemoteActionTrait {
     public function syncPlugins(int $agentId): array|WP_Error {
         $this->fileLogger->info('Syncing plugins from agent', array('id' => $agentId));
         $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/plugins');
+
         if (is_wp_error($result)) {
             $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Failed->value, null, $result->get_error_message());
 
@@ -144,6 +146,7 @@ trait AgentRemoteActionTrait {
         ));
         $endpoint = PluginConfigType::apiFullNamespace() . '/plugins/' . urlencode($slug) . '/' . $action;
         $result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
+
         if (is_wp_error($result)) {
             $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Failed->value, null, $result->get_error_message());
 

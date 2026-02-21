@@ -86,4 +86,11 @@ final readonly class AgentSite {
 
         return $data;
     }
+
+    /**
+     * Check if the redirect cache is missing or unresolved.
+     */
+    public function isInvalidRedirect(): bool {
+        return empty($this->redirectResolved) || empty($this->redirectResolvedAt);
+    }
 }
