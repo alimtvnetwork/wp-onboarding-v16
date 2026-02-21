@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	responsemessage "wp-plugin-publish/internal/enums/response_message"
 	"wp-plugin-publish/internal/envelope"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -78,7 +79,7 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 // Returns true if the service is available.
 func requireService(w http.ResponseWriter, service any, name string) bool {
 	if service == nil {
-		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
 		return false
 	}
 	return true
@@ -88,7 +89,7 @@ func requireService(w http.ResponseWriter, service any, name string) bool {
 // a 400 error response if decoding fails.
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", wordpress.ResponseMessageInvalidRequestBody.String())
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", responsemessage.InvalidRequestBody.String())
 		return false
 	}
 	return true
@@ -98,7 +99,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (int64, bool) {
 	id, err := getIDParam(r, paramName)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidId.String())
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidId.String())
 		return 0, false
 	}
 	return id, true

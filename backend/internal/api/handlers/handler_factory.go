@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 
+	responsemessage "wp-plugin-publish/internal/enums/response_message"
 	"wp-plugin-publish/internal/wordpress"
 )
 
@@ -96,12 +97,12 @@ func handleSiteActionByID(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if Services == nil || Services.SiteService == nil {
-			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
+			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
 			return
 		}
 		siteID, err := getIDParam(r, "id")
 		if err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidId.String())
+			respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidId.String())
 			return
 		}
 		result, err := fn(r.Context(), siteID)
