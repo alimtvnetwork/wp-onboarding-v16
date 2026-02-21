@@ -40,6 +40,7 @@ class SnapshotWorker {
         ?DependencyAnalyzer $analyzer = null,
     ): self {
         $isReadyToInit = self::$instance === null && $logger && $db && $rootDb && $analyzer;
+
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
@@ -68,7 +69,10 @@ class SnapshotWorker {
     }
 
     public function setPoolSize(int $size): void {
-        $this->poolSize = max(SnapshotConfigType::WorkerPoolMin->value, min(SnapshotConfigType::WorkerPoolMax->value, $size));
+        $this->poolSize = max(
+            SnapshotConfigType::WorkerPoolMin->value,
+            min(SnapshotConfigType::WorkerPoolMax->value, $size),
+        );
     }
 
     public function getPoolSize(): int { return $this->poolSize; }

@@ -32,7 +32,6 @@ use RiseupAsia\Database\RootDb;
 use RiseupAsia\Logging\FileLogger;
 
 class IncrementalBackup {
-
     use IncrementalDeltaTrait;
     use IncrementalExportTrait;
     use IncrementalRegistrationTrait;
@@ -52,6 +51,7 @@ class IncrementalBackup {
         ?RootDb $rootDb = null,
     ): ?self {
         $isReadyToInit = self::$instance === null && $logger && $db && $rootDb;
+
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $rootDb);
         }
@@ -77,12 +77,16 @@ class IncrementalBackup {
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
 
         $rootPath = $masterDir . '/a-root.db';
-        if (PathHelper::isFileMissing($rootPath)) {
 
+        if (PathHelper::isFileMissing($rootPath)) {
             return ResultHelper::error('Master snapshot a-root.db not found at: ' . $rootPath);
         }
 
-        $this->log(LogLevelType::Info->value, 'Starting incremental backup', array('master_dir' => basename($masterDir), 'title' => $title));
+        $this->log(
+            LogLevelType::Info->value,
+            'Starting incremental backup',
+            array('master_dir' => basename($masterDir), 'title' => $title),
+        );
 
         return $this->executeIncrementalPipeline($rootPath, $title, $masterDir, $startTime);
     }
@@ -96,19 +100,39 @@ class IncrementalBackup {
         try {
             $prepared = $this->prepareIncrementalDir($rootPath);
             $isPrepFailed = BooleanHelpers::isResultFailed($prepared);
-            if ($isPrepFailed) {
 
+            if ($isPrepFailed) {
                 return $prepared;
             }
 
-            $export = $this->exportChangedTables($prepared['master_tables'], $prepared['incremental_dir'], $prepared['rootPdo'], $prepared['sequence']);
+            $export = $this->exportChangedTables(
+                $prepared['master_tables'],
+                $prepared['incremental_dir'],
+                $prepared['rootPdo'],
+                $prepared['sequence'],
+            );
 
             $this->registerIncrementalInRoot($prepared, $export);
             $prepared['rootPdo'] = null;
 
-            return $this->finalizeIncremental($title, $masterDir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $startTime);
+            return $this->finalizeIncremental(
+                $title,
+                $masterDir,
+                $prepared['folder_name'],
+                $prepared['sequence'],
+                $export,
+                $prepared['incremental_dir'],
+                $startTime,
+            );
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Incremental backup failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(
+                LogLevelType::Error->value,
+                'Incremental backup failed',
+                array(
+                    ResponseKeyType::Error->value => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ),
+            );
 
             return ResultHelper::errorFromException(
                 $e,
@@ -128,7 +152,6 @@ class IncrementalBackup {
     }
 
     private function getSnapshotsBaseDir(): string {
-
         return PathHelper::getSnapshotsDir();
     }
 
@@ -147,13 +170,14 @@ class IncrementalBackup {
     ): void {
         $full = '[SNAPSHOT] [INCREMENTAL] ' . $message;
         $hasContext = BooleanHelpers::hasValue($context);
+
         if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
 
         $isLoggerMissing = ($this->logger === null);
-        if ($isLoggerMissing) {
 
+        if ($isLoggerMissing) {
             return;
         }
 

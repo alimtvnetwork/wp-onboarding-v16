@@ -142,6 +142,7 @@ trait AnalyzerQueryTrait {
         }
 
         $isLoggerMissing = ($this->logger === null);
+
         if ($isLoggerMissing) {
             return;
         }

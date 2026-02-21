@@ -110,7 +110,7 @@ trait CleanerHelperTrait {
                     ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
                 )),
                 empty($results[ResponseKeyType::Errors->value]) ? StatusType::Success->value : StatusType::Failed->value,
-                TriggerSourceType::Api->value
+                TriggerSourceType::Api->value,
             );
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to log cleanup action', array('error' => $e->getMessage()));

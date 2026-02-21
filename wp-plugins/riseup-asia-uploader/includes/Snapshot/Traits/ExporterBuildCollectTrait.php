@@ -14,6 +14,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
@@ -57,6 +60,7 @@ trait ExporterBuildCollectTrait {
     private function getIncrementalSnapshots(int $parentId, string $parentName): array {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
             return array();
         }

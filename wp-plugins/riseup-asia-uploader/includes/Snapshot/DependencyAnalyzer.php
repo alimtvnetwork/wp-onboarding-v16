@@ -24,7 +24,6 @@ use RiseupAsia\Logging\FileLogger;
  * Dependency Analyzer class.
  */
 class DependencyAnalyzer {
-
     use AnalyzerQueryTrait;
     use AnalyzerGraphTrait;
 
@@ -34,6 +33,7 @@ class DependencyAnalyzer {
 
     public static function getInstance(?FileLogger $logger = null): self {
         $isReadyToInit = self::$instance === null && $logger;
+
         if ($isReadyToInit) {
             self::$instance = new self($logger);
         }

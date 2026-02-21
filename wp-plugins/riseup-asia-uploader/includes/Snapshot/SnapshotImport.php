@@ -1,7 +1,16 @@
 <?php
+/**
+ * Riseup Asia Uploader - Snapshot Import
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.12.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use Exception;
 use Throwable;
@@ -39,7 +48,10 @@ class SnapshotImport {
 
     public function import(string $uploadedPath): array {
         $guardError = $this->guardImportFile($uploadedPath);
-        if ($guardError) { return $guardError; }
+
+        if ($guardError) {
+            return $guardError;
+        }
 
         $this->log(LogLevelType::Info->value, 'Starting snapshot import', array(
             'path' => basename($uploadedPath),
@@ -48,6 +60,7 @@ class SnapshotImport {
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
         $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
+
         if ($isDirCreationFailed) {
             return $this->fail(ResponseMessageType::TempDirCreateFailed->value);
         }
@@ -59,8 +72,12 @@ class SnapshotImport {
         if (PathHelper::isFileMissing($path)) {
             return $this->fail(ResponseMessageType::UploadedFileMissing->value);
         }
+
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        if ($ext !== 'zip') { return $this->fail(ResponseMessageType::InvalidFileTypeZip->value); }
+
+        if ($ext !== 'zip') {
+            return $this->fail(ResponseMessageType::InvalidFileTypeZip->value);
+        }
 
         return null;
     }
@@ -84,14 +101,25 @@ class SnapshotImport {
 
     private function extractZipTo(string $zipPath, string $destDir): void {
         $zip = new ZipArchive();
-        if ($zip->open($zipPath) !== true) { throw new Exception('Failed to open ZIP file'); }
+
+        if ($zip->open($zipPath) !== true) {
+            throw new Exception('Failed to open ZIP file');
+        }
+
         $zip->extractTo($destDir);
         $zip->close();
     }
 
     private function cleanupOnFailure(string $tempDir, Throwable $e): void {
-        if (PathHelper::dirExists($tempDir)) { $this->deleteDirectory($tempDir); }
-        $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
+        if (PathHelper::dirExists($tempDir)) {
+            $this->deleteDirectory($tempDir);
+        }
+
+        $this->log(
+            LogLevelType::Error->value,
+            'Snapshot import failed',
+            array('error' => $e->getMessage()),
+        );
     }
 
     private function log(
@@ -100,10 +128,16 @@ class SnapshotImport {
         array $context = array(),
     ): void {
         $method = strtolower($level);
-        if (method_exists($this->logger, $method)) { $this->logger->$method('[SnapshotImport] ' . $message, $context); }
+
+        if (method_exists($this->logger, $method)) {
+            $this->logger->$method('[SnapshotImport] ' . $message, $context);
+        }
     }
 
     private function fail(string $message): array {
-        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $message);
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value => $message,
+        );
     }
 }
