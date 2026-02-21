@@ -4,7 +4,7 @@ package wordpress
 import (
 	"bytes"
 	"context"
-	
+
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // Note: OnboardNamespace is defined in constants.go
@@ -51,7 +53,8 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get sync manifest: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to get sync manifest").
+			WithURL(c.fullURL(string(endpoint)))
 	}
 	defer resp.Body.Close()
 
@@ -81,11 +84,13 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, fmt.Errorf("failed to decode sync manifest: %w (body: %s)", err, truncateBody(body, 500))
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode sync manifest").
+			WithValue("body", truncateBody(body, 500))
 	}
 
 	if !result.Success {
-		return nil, fmt.Errorf("remote API returned failure for sync manifest: %s", slug)
+		return nil, apperror.New(apperror.ErrWPConnection, "remote API returned failure for sync manifest").
+			WithValue("slug", slug)
 	}
 
 	return result.Data.Files, nil
@@ -98,7 +103,8 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get plugin files via Riseup: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to get plugin files via Riseup").
+			WithURL(c.fullURL(string(endpoint)))
 	}
 	defer resp.Body.Close()
 
@@ -106,7 +112,8 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 	body := string(bodyBytes)
 
 	if resp.StatusCode == HttpStatusNotFound.Int() {
-		return nil, fmt.Errorf("plugin not found on remote: %s", slug)
+		return nil, apperror.New(apperror.ErrNotFound, "plugin not found on remote").
+			WithValue("slug", slug)
 	}
 
 	if resp.StatusCode != HttpStatusOk.Int() {
@@ -128,11 +135,13 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 		Files      []RemoteFile `json:"files"`
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, fmt.Errorf("failed to decode plugin files: %w (body: %s)", err, truncateBody(body, 500))
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugin files").
+			WithValue("body", truncateBody(body, 500))
 	}
 
 	if !result.Success {
-		return nil, fmt.Errorf("remote API returned failure for plugin files: %s", slug)
+		return nil, apperror.New(apperror.ErrWPConnection, "remote API returned failure for plugin files").
+			WithValue("slug", slug)
 	}
 
 	return result.Files, nil
@@ -145,7 +154,8 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 	endpoint := fmt.Sprintf("/%s/request-mutation?action=%s", OnboardNamespace, action)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
-		return "", fmt.Errorf("request mutation token: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrWPConnection, "request mutation token failed").
+			WithURL(c.fullURL(endpoint))
 	}
 	defer resp.Body.Close()
 
@@ -169,11 +179,13 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 		ExpiresIn     int    `json:"expires_in"`
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return "", fmt.Errorf("parse mutation token response: %w (body: %s)", err, truncateBody(body, 500))
+		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to parse mutation token response").
+			WithValue("body", truncateBody(body, 500))
 	}
 
 	if result.MutationToken == "" {
-		return "", fmt.Errorf("empty mutation token in response: %s", truncateBody(body, 500))
+		return "", apperror.New(apperror.ErrWPConnection, "empty mutation token in response").
+			WithValue("body", truncateBody(body, 500))
 	}
 
 	return result.MutationToken, nil
@@ -187,7 +199,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 
 	mutationToken, err := c.RequestMutationToken("upload")
 	if err != nil {
-		return nil, fmt.Errorf("get upload mutation token: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrWPPluginUpload, "failed to get upload mutation token")
 	}
 
 	c.progress("upload", "running", fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), ProgressDetails{
@@ -197,13 +209,15 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	// Open the ZIP file
 	file, err := os.Open(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("open zip file: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to open zip file for upload").
+			WithValue("zipPath", zipPath)
 	}
 	defer file.Close()
 
 	stat, err := file.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("stat zip file: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to stat zip file").
+			WithValue("zipPath", zipPath)
 	}
 
 	// Create multipart form
@@ -213,25 +227,25 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	// Add the ZIP file part
 	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(zipPath))
 	if err != nil {
-		return nil, fmt.Errorf("create form file: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create form file for upload")
 	}
 
 	if _, err := io.Copy(part, file); err != nil {
-		return nil, fmt.Errorf("copy file to form: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to copy file to multipart form")
 	}
 
 	// Add plugin slug field
 	if err := writer.WriteField("plugin_slug", pluginSlug); err != nil {
-		return nil, fmt.Errorf("write plugin_slug field: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write plugin_slug field")
 	}
 
 	// Add overwrite=true to replace existing
 	if err := writer.WriteField("overwrite", "true"); err != nil {
-		return nil, fmt.Errorf("write overwrite field: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write overwrite field")
 	}
 
 	if err := writer.Close(); err != nil {
-		return nil, fmt.Errorf("close multipart writer: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to close multipart writer")
 	}
 
 	// Build the upload URL
@@ -246,7 +260,8 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 
 	req, err := http.NewRequest("POST", url, &reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("create upload request: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").
+			WithURL(url)
 	}
 
 	// Set standard headers with multipart content type
@@ -254,7 +269,8 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("upload request failed: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").
+			WithURL(url)
 	}
 	defer resp.Body.Close()
 
@@ -326,23 +342,25 @@ func truncateBody(body string, maxLen int) string {
 func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
 	// Use the Riseup Asia Uploader fixed endpoint
 	endpoint := "/" + RiseupAsiaNamespace + EndpointFile
-	
+
 	body := map[string]string{"plugin": pluginSlug, "path": filePath}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return "", fmt.Errorf("marshal request body: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body for file content")
 	}
 
 	resp, err := c.request("POST", string(endpoint), bytes.NewReader(jsonBody))
 	if err != nil {
-		return "", fmt.Errorf("failed to get file content: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to get file content").
+			WithURL(c.fullURL(string(endpoint)))
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode == HttpStatusNotFound.Int() {
-		return "", fmt.Errorf("file not found on remote: %s", filePath)
+		return "", apperror.New(apperror.ErrNotFound, "file not found on remote").
+			WithValue("filePath", filePath)
 	}
 
 	if resp.StatusCode != HttpStatusOk.Int() {
@@ -363,11 +381,12 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		Content string `json:"content"`
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return "", fmt.Errorf("failed to decode file content response: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decode file content response")
 	}
 
 	if !result.Success {
-		return "", fmt.Errorf("remote API returned failure for file content: %s", filePath)
+		return "", apperror.New(apperror.ErrWPConnection, "remote API returned failure for file content").
+			WithValue("filePath", filePath)
 	}
 
 	return result.Content, nil
