@@ -91,6 +91,7 @@ class Orm {
     public static function forTable(string $tableName): self {
         $orm = new self();
         $orm->tableName = $tableName;
+
         return $orm;
     }
 
@@ -105,6 +106,7 @@ class Orm {
         try {
             $stmt = self::$pdo->prepare($sql);
             $stmt->execute($params);
+
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return array();

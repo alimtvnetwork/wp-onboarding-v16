@@ -128,6 +128,7 @@ final class TypedQuery {
     private function mapMany(array $rows, \Closure $mapper): DbResultSet {
         try {
             $items = array_map($mapper, $rows);
+
             return DbResultSet::of($items);
         } catch (Throwable $e) {
             return DbResultSet::error($e);

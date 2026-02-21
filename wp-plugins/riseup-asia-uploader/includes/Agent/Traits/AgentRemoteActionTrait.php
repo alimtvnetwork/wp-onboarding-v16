@@ -43,6 +43,7 @@ trait AgentRemoteActionTrait {
             'redirect_resolved'    => $resolved,
             'redirect_resolved_at' => DateHelper::nowUtc(),
         ));
+
         return $resolved;
     }
 
@@ -119,6 +120,7 @@ trait AgentRemoteActionTrait {
         $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/plugins');
         if (is_wp_error($result)) {
             $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Failed->value, null, $result->get_error_message());
+
             return $result;
         }
 
@@ -128,6 +130,7 @@ trait AgentRemoteActionTrait {
         ));
         $plugins = isset($result[ResponseKeyType::Plugins->value]) ? $result[ResponseKeyType::Plugins->value] : $result;
         $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Success->value, array(ResponseKeyType::Count->value => count($plugins)));
+
         return $plugins;
     }
 
@@ -143,6 +146,7 @@ trait AgentRemoteActionTrait {
         $result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
         if (is_wp_error($result)) {
             $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Failed->value, null, $result->get_error_message());
+
             return $result;
         }
 

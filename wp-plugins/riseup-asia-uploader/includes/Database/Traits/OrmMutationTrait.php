@@ -20,12 +20,14 @@ trait OrmMutationTrait {
     public function create(): static {
         $this->isNew = true;
         $this->data = array();
+
         return $this;
     }
 
     /** Set a column value. */
     public function set(string $column, string|int|float|bool|null $value): static {
         $this->data[$column] = $value;
+
         return $this;
     }
 
@@ -115,6 +117,7 @@ trait OrmMutationTrait {
             $sql = "DELETE FROM {$this->tableName} WHERE " . implode(' AND ', $this->whereClauses);
             $stmt = self::$pdo->prepare($sql);
             $stmt->execute($this->whereParams);
+
             return $stmt->rowCount();
         } catch (PDOException $e) {
             return 0;
