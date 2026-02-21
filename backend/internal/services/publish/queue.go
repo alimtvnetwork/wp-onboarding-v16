@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	queuestatus "wp-plugin-publish/internal/enums/queue_status"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -37,7 +38,7 @@ type QueueItem struct {
 	Options    PublishOptions
 	Priority   int // Higher = processed first
 	QueuedAt   time.Time
-	Status     string // "queued", "running", "completed", "failed", "cancelled"
+	Status     queuestatus.Variant
 }
 
 // QueueStatus provides queue state overview
@@ -92,7 +93,7 @@ func (q *PublishQueue) Enqueue(item QueueItem) (string, error) {
 	// Generate ID
 	item.ID = fmt.Sprintf("pq-%d-%d-%d", item.PluginID, item.SiteID, time.Now().UnixMilli())
 	item.QueuedAt = time.Now()
-	item.Status = "queued"
+	item.Status = queuestatus.Queued
 
 	q.items = append(q.items, &item)
 
@@ -124,8 +125,8 @@ func (q *PublishQueue) Cancel(itemID string) bool {
 	defer q.mu.Unlock()
 
 	for i, item := range q.items {
-		if item.ID == itemID && item.Status == "queued" {
-			item.Status = "cancelled"
+		if item.ID == itemID && item.Status.IsQueued() {
+			item.Status = queuestatus.Cancelled
 			q.completed = append(q.completed, item)
 			q.items = append(q.items[:i], q.items[i+1:]...)
 			q.broadcastStatus()
@@ -148,10 +149,10 @@ func (q *PublishQueue) GetStatus() QueueStatus {
 
 	// Count completed/failed
 	for _, item := range q.completed {
-		switch item.Status {
-		case "completed":
+		switch {
+		case item.Status.IsCompleted():
 			status.Completed++
-		case "failed":
+		case item.Status.IsFailed():
 			status.Failed++
 		}
 	}
@@ -178,7 +179,7 @@ func (q *PublishQueue) processNext() {
 	// Find highest priority queued item
 	bestIdx := -1
 	for i, item := range q.items {
-		if item.Status == "queued" {
+		if item.Status.IsQueued() {
 			if bestIdx == -1 || item.Priority > q.items[bestIdx].Priority {
 				bestIdx = i
 			}
@@ -192,7 +193,7 @@ func (q *PublishQueue) processNext() {
 
 	item := q.items[bestIdx]
 	q.items = append(q.items[:bestIdx], q.items[bestIdx+1:]...)
-	item.Status = "running"
+	item.Status = queuestatus.Running
 	q.active[item.ID] = item
 	q.mu.Unlock()
 
@@ -215,9 +216,9 @@ func (q *PublishQueue) processNext() {
 		q.mu.Lock()
 		delete(q.active, item.ID)
 		if publishResult.HasError() || (publishResult.IsSafe() && !publishResult.Value().Success) {
-			item.Status = "failed"
+			item.Status = queuestatus.Failed
 		} else {
-			item.Status = "completed"
+			item.Status = queuestatus.Completed
 		}
 		q.completed = append(q.completed, item)
 		
@@ -244,9 +245,10 @@ func (q *PublishQueue) broadcastStatus() {
 		Queued: len(q.items),
 	}
 	for _, item := range q.completed {
-		if item.Status == "completed" {
+		switch {
+		case item.Status.IsCompleted():
 			status.Completed++
-		} else if item.Status == "failed" {
+		case item.Status.IsFailed():
 			status.Failed++
 		}
 	}

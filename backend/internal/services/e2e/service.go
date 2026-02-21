@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	teststatus "wp-plugin-publish/internal/enums/test_status"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -240,7 +241,7 @@ func (s *serviceImpl) GetCases(ctx context.Context, suiteID string) ([]TestCase,
 // StartRun begins a new test run
 func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, error) {
 	s.mu.Lock()
-	if s.activeRun != nil && s.activeRun.Status == "running" {
+	if s.activeRun != nil && s.activeRun.Status == teststatus.Running.String() {
 		s.mu.Unlock()
 		return nil, apperror.New(apperror.ErrE2ERunning, "test run already in progress").
 			WithRunID(s.activeRun.ID)
@@ -279,7 +280,7 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	run := &TestRun{
 		ID:         fmt.Sprintf("run-%s", uuid.New().String()[:8]),
 		StartedAt:  time.Now(),
-		Status:     "running",
+		Status:     teststatus.Running.String(),
 		TotalTests: totalTests,
 	}
 
@@ -325,7 +326,7 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 
 			// Check if aborted
 			s.mu.RLock()
-			aborted := s.activeRun == nil || s.activeRun.Status == "aborted"
+			aborted := s.activeRun == nil || s.activeRun.Status == teststatus.Aborted.String()
 			s.mu.RUnlock()
 			if aborted {
 				return
@@ -341,11 +342,11 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 				result.RequestData, result.ResponseData, result.Logs)
 
 			switch result.Status {
-			case "passed":
+			case teststatus.Passed.String():
 				run.PassedTests++
-			case "failed":
+			case teststatus.Failed.String():
 				run.FailedTests++
-			case "skipped":
+			case teststatus.Skipped.String():
 				run.SkippedTests++
 			}
 
@@ -358,7 +359,7 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 				})
 			}
 
-			if opts.StopOnFailure && result.Status == "failed" {
+			if opts.StopOnFailure && result.Status == teststatus.Failed.String() {
 				break
 			}
 		}
@@ -369,9 +370,9 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 	run.DurationMs = now.Sub(run.StartedAt).Milliseconds()
 
 	if run.FailedTests > 0 {
-		run.Status = "failed"
+		run.Status = teststatus.Failed.String()
 	} else {
-		run.Status = "passed"
+		run.Status = teststatus.Passed.String()
 	}
 
 	s.db.Exec(`
@@ -449,7 +450,7 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 		testErr = s.testBackupList(ctx, result)
 
 	default:
-		result.Status = "skipped"
+		result.Status = teststatus.Skipped.String()
 		result.Logs = "No test implementation for " + tc.ID
 		now := time.Now()
 		result.CompletedAt = &now
@@ -462,10 +463,10 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 	result.DurationMs = now.Sub(result.StartedAt).Milliseconds()
 
 	if testErr != nil {
-		result.Status = "failed"
+		result.Status = teststatus.Failed.String()
 		result.ErrorMessage = testErr.Error()
 	} else {
-		result.Status = "passed"
+		result.Status = teststatus.Passed.String()
 	}
 
 	return result
@@ -478,7 +479,7 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 
 	if s.activeRun != nil && s.activeRun.ID == runID {
 		now := time.Now()
-		s.activeRun.Status = "aborted"
+		s.activeRun.Status = teststatus.Aborted.String()
 		s.activeRun.CompletedAt = &now
 
 		s.db.ExecContext(ctx, `UPDATE test_runs SET status = 'aborted', completed_at = ? WHERE id = ?`,
@@ -487,7 +488,7 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 		if s.broadcast != nil {
 			s.broadcast("e2e:run:completed", ws.E2ERunCompletedData{
 				RunID:  runID,
-				Status: "aborted",
+				Status: teststatus.Aborted.String(),
 			})
 		}
 

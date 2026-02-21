@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
+	action_enum "wp-plugin-publish/internal/enums/action"
+	loglevel "wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/logger"
 	
 	"wp-plugin-publish/internal/services/session"
@@ -974,7 +976,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		}
 
 		errCode := apperror.ErrWPPluginActivate
-		if action == "delete" {
+		if action == action_enum.Delete.String() {
 			errCode = apperror.ErrWPPluginDelete
 		}
 		return apperror.Wrap(err, errCode, fmt.Sprintf("failed to %s plugin", action)).
@@ -1148,7 +1150,7 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 		logFields = append(logFields, "pluginSlug", pluginSlug)
 	}
 
-	if level == "error" {
+	if level == loglevel.Error.String() {
 		s.log.Error(message, logFields...)
 	} else {
 		s.log.Debug(message, logFields...)

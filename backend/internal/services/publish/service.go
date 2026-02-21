@@ -18,6 +18,10 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/database/dbops"
 	"wp-plugin-publish/internal/enums/endpoint"
+	loglevel "wp-plugin-publish/internal/enums/log_level"
+	pluginstatus "wp-plugin-publish/internal/enums/plugin_status"
+	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	enumstatus "wp-plugin-publish/internal/enums/status"
 	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
@@ -123,10 +127,10 @@ type PublishResult struct {
 
 // Stage represents a publish pipeline stage
 type Stage struct {
-	Name      string `json:"name"`
-	Status    string `json:"status"` // pending, running, completed, failed, skipped
-	Duration  int64  `json:"duration"`
-	Message   string `json:"message,omitempty"`
+	Name      string                `json:"name"`
+	Status    stagestatus.Variant   `json:"status"`
+	Duration  int64                 `json:"duration"`
+	Message   string                `json:"message,omitempty"`
 }
 
 // Publish publishes plugin changes to a WordPress site
@@ -145,7 +149,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
 		result.ErrorMessage = pluginResult.Error().Error()
-		s.broadcastProgress(pluginID, siteID, "failed", 0, pluginResult.Error().Error())
+		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 0, pluginResult.Error().Error())
 		return apperror.Ok(*result)
 	}
 	pluginInfo := pluginResult.Value()
@@ -154,7 +158,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
-		s.broadcastProgress(pluginID, siteID, "failed", 0, err.Error())
+		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 0, err.Error())
 		return apperror.Ok(*result)
 	}
 
@@ -170,24 +174,24 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	}
 
 	// Broadcast start event with session ID
-	s.broadcastProgressWithSession(pluginID, siteID, sessionID, "started", 0, "Starting publish...")
+	s.broadcastProgressWithSession(pluginID, siteID, sessionID, stagestatus.Started.String(), 0, "Starting publish...")
 
 	// Log session start
-	s.sessionLog(sessionID, "info", "init", fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name), nil)
+	s.sessionLog(sessionID, loglevel.Info.String(), "init", fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name), nil)
 
 	// Get mapping to find remote slug and site info
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
-		s.sessionLog(sessionID, "error", "init", fmt.Sprintf("Failed to get mapping: %s", err.Error()), nil)
-		s.endSession(sessionID, "error", err.Error())
-		s.broadcastProgressWithSession(pluginID, siteID, sessionID, "failed", 0, err.Error())
+		s.sessionLog(sessionID, loglevel.Error.String(), "init", fmt.Sprintf("Failed to get mapping: %s", err.Error()), nil)
+		s.endSession(sessionID, loglevel.Error.String(), err.Error())
+		s.broadcastProgressWithSession(pluginID, siteID, sessionID, stagestatus.Failed.String(), 0, err.Error())
 		return apperror.Ok(*result)
 	}
 
 	// Create WordPress client
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
-	s.broadcastDetailedLog(pluginID, siteID, "info", "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), marshalDetails(map[string]any{
+	s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), marshalDetails(map[string]any{
 		"siteUrl":  siteInfo.URL,
 		"username": siteInfo.Username,
 	}))
@@ -197,7 +201,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	if options.CreateBackup {
 		stage := s.runStage("backup", func() error {
 			s.broadcastProgress(pluginID, siteID, "backup", 10, "Creating backup...")
-			s.broadcastDetailedLog(pluginID, siteID, "info", "backup", "Initiating remote plugin backup", marshalDetails(map[string]any{
+			s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "backup", "Initiating remote plugin backup", marshalDetails(map[string]any{
 				"mappingId":  mapping.ID,
 				"remoteSlug": mapping.RemoteSlug,
 			}))
@@ -205,9 +209,9 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 			return nil
 		})
 		result.Stages = append(result.Stages, stage)
-		if stage.Status == "failed" {
+		if stage.Status.IsFailed() {
 			result.ErrorMessage = stage.Message
-		s.broadcastProgress(pluginID, siteID, "failed", 10, stage.Message)
+		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 10, stage.Message)
 		return apperror.Ok(*result)
 		}
 	}
@@ -221,7 +225,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		plug := pluginInfo
 		var err error
 		
-		s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Packaging plugin from: %s", plug.Path), marshalDetails(map[string]any{
+		s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "package", fmt.Sprintf("Packaging plugin from: %s", plug.Path), marshalDetails(map[string]any{
 			"pluginPath":      plug.Path,
 			"pluginName":      plug.Name,
 			"mode":            options.Mode,
@@ -271,9 +275,9 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		return nil
 	})
 	result.Stages = append(result.Stages, stage)
-	if stage.Status == "failed" {
+	if stage.Status.IsFailed() {
 		result.ErrorMessage = stage.Message
-		s.broadcastDetailedLog(pluginID, siteID, "error", "package", fmt.Sprintf("Package failed: %s", stage.Message), nil)
+		s.broadcastDetailedLog(pluginID, siteID, loglevel.Error.String(), "package", fmt.Sprintf("Package failed: %s", stage.Message), nil)
 		s.broadcastProgress(pluginID, siteID, "failed", 30, stage.Message)
 		return apperror.Ok(*result)
 	}
@@ -434,14 +438,14 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	result.Stages = append(result.Stages, stage)
 	
 	// Broadcast stage complete event for frontend tracking
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status, stage.Duration, marshalDetails(map[string]any{
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status.String(), stage.Duration, marshalDetails(map[string]any{
 		"remoteSlug": mapping.RemoteSlug,
 		"activated":  alreadyActivated,
 	}))
 	
-	if stage.Status == "failed" {
+	if stage.Status.IsFailed() {
 		result.ErrorMessage = stage.Message
-		s.broadcastProgress(pluginID, siteID, "failed", 60, stage.Message)
+		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 60, stage.Message)
 		publishFailed = true
 		return apperror.Ok(*result)
 	}
@@ -533,12 +537,12 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	result.Stages = append(result.Stages, stage)
 	
 	// Broadcast stage complete event
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status, stage.Duration, marshalDetails(map[string]any{
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status.String(), stage.Duration, marshalDetails(map[string]any{
 		"remoteSlug": mapping.RemoteSlug,
 		"skipped":    alreadyActivated,
 	}))
-	if stage.Status == "failed" {
-		result.ActivationStatus = "error"
+	if stage.Status.IsFailed() {
+		result.ActivationStatus = loglevel.Error.String()
 		result.ErrorMessage = stage.Message
 
 		// Stage 4b: Rollback on activation failure
@@ -585,28 +589,28 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 				return nil
 			})
 			result.Stages = append(result.Stages, rollbackStage)
-			if rollbackStage.Status == "failed" {
-				result.RollbackStatus = "failed"
+			if rollbackStage.Status.IsFailed() {
+				result.RollbackStatus = enumstatus.Failed.String()
 				result.RollbackMessage = rollbackStage.Message
-				s.broadcastStageLog(pluginID, siteID, sessionID, "error", "rollback", StageContext{
+				s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Error.String(), "rollback", StageContext{
 					What:   "Rollback failed",
 					Result: rollbackStage.Message,
 				})
 			} else {
-				result.RollbackStatus = "success"
+				result.RollbackStatus = enumstatus.Success.String()
 				result.RollbackMessage = "Previous version restored"
-				s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+				s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Info.String(), "rollback", StageContext{
 					What:   "Rollback completed successfully",
 					Result: "Site should be stable with previous plugin version",
 				})
 			}
 		} else {
-			result.RollbackStatus = "skipped"
+			result.RollbackStatus = stagestatus.Skipped.String()
 			result.RollbackMessage = "Rollback disabled by user"
 		}
 		// Continue to cleanup
 	} else {
-		result.ActivationStatus = "active"
+		result.ActivationStatus = pluginstatus.Active.String()
 	}
 
 	// Stage 5: Mark files as synced
@@ -621,7 +625,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	result.Stages = append(result.Stages, stage)
 
 	// Calculate totals
-	result.Success = result.ActivationStatus == "active" || result.ActivationStatus == "inactive"
+	result.Success = result.ActivationStatus == pluginstatus.Active.String() || result.ActivationStatus == pluginstatus.Inactive.String()
 	publishFailed = !result.Success // Ensure cleanup knows the final status
 	result.Duration = time.Since(startTime).Milliseconds()
 	
@@ -634,10 +638,10 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	}
 
 	// Broadcast complete
-	status := "completed"
+	completionStep := stagestatus.Completed.String()
 	completionMessage := fmt.Sprintf("Published %d files in %dms", result.FilesUpdated, result.Duration)
 	if !result.Success {
-		status = "failed"
+		completionStep = stagestatus.Failed.String()
 		completionMessage = result.ErrorMessage
 		if completionMessage == "" {
 			completionMessage = "Publish failed - check logs for details"
@@ -646,15 +650,15 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	
 	s.broadcastDetailedLog(pluginID, siteID, func() string {
 		if result.Success {
-			return "info"
+			return loglevel.Info.String()
 		}
-		return "error"
+		return loglevel.Error.String()
 	}(), "complete", completionMessage, marshalDetails(map[string]any{
 		"success":      result.Success,
 		"filesUpdated": result.FilesUpdated,
 		"durationMs":   result.Duration,
 	}))
-	s.broadcastProgress(pluginID, siteID, status, 100, completionMessage)
+	s.broadcastProgress(pluginID, siteID, completionStep, 100, completionMessage)
 
 	s.log.Info("Plugin published", 
 		"pluginId", pluginID, 
@@ -666,9 +670,9 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 
 	// Record publish history
 	if s.historyService != nil {
-		historyStatus := "success"
+		historyStatus := enumstatus.Success.String()
 		if !result.Success {
-			historyStatus = "failed"
+			historyStatus = enumstatus.Failed.String()
 		}
 		_, err := s.historyService.Record(models.PublishHistory{
 			PluginID:         pluginID,
@@ -708,17 +712,17 @@ func (s *Service) runStage(name string, fn func() error) Stage {
 	start := time.Now()
 	stage := Stage{
 		Name:   name,
-		Status: "running",
+		Status: stagestatus.Running,
 	}
 
 	err := fn()
 	stage.Duration = time.Since(start).Milliseconds()
 
 	if err != nil {
-		stage.Status = "failed"
+		stage.Status = stagestatus.Failed
 		stage.Message = err.Error()
 	} else {
-		stage.Status = "completed"
+		stage.Status = stagestatus.Completed
 	}
 
 	return stage
@@ -733,16 +737,16 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 
 	// Determine event type based on step
 	eventType := ws.EventPublishProgress
-	if step == "started" {
+	if step == stagestatus.Started.String() {
 		eventType = ws.EventPublishStarted
-	} else if step == "completed" || step == "failed" {
+	} else if step == stagestatus.Completed.String() || step == stagestatus.Failed.String() {
 		eventType = ws.EventPublishComplete
 	}
 
 	// Map step names to stage names for frontend compatibility
 	stage := step
 	switch step {
-	case "started":
+	case stagestatus.Started.String():
 		stage = "backup"
 	case "packaging":
 		stage = "package"
@@ -755,11 +759,11 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 	}
 
 	// Determine status for the current stage
-	status := "running"
-	if step == "completed" {
-		status = "success"
-	} else if step == "failed" {
-		status = "error"
+	status := stagestatus.Running.String()
+	if step == stagestatus.Completed.String() {
+		status = enumstatus.Success.String()
+	} else if step == stagestatus.Failed.String() {
+		status = loglevel.Error.String()
 	}
 
 	// Broadcast progress event
@@ -775,9 +779,9 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 	})
 	
 	// Also broadcast detailed log entry for frontend live log display
-	logLevel := "info"
-	if step == "failed" {
-		logLevel = "error"
+	logLevel := loglevel.Info.String()
+	if step == stagestatus.Failed.String() {
+		logLevel = loglevel.Error.String()
 	}
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, logLevel, stage, message, nil)
 	
@@ -804,9 +808,9 @@ func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, sta
 		Details:  details,
 	})
 
-	level := "info"
-	if status == "error" {
-		level = "error"
+	level := loglevel.Info.String()
+	if status == loglevel.Error.String() {
+		level = loglevel.Error.String()
 	}
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, stage, message, details)
 }
@@ -1465,16 +1469,16 @@ func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID
 
 	// Determine event type based on step
 	eventType := ws.EventPublishProgress
-	if step == "started" {
+	if step == stagestatus.Started.String() {
 		eventType = ws.EventPublishStarted
-	} else if step == "completed" || step == "failed" {
+	} else if step == stagestatus.Completed.String() || step == stagestatus.Failed.String() {
 		eventType = ws.EventPublishComplete
 	}
 
 	// Map step names to stage names for frontend compatibility
 	stage := step
 	switch step {
-	case "started":
+	case stagestatus.Started.String():
 		stage = "backup"
 	case "packaging":
 		stage = "package"
@@ -1487,11 +1491,11 @@ func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID
 	}
 
 	// Determine status for the current stage
-	status := "running"
-	if step == "completed" {
-		status = "success"
-	} else if step == "failed" {
-		status = "error"
+	status := stagestatus.Running.String()
+	if step == stagestatus.Completed.String() {
+		status = enumstatus.Success.String()
+	} else if step == stagestatus.Failed.String() {
+		status = loglevel.Error.String()
 	}
 
 	// Broadcast progress event with session ID
@@ -1507,9 +1511,9 @@ func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID
 	}, sessionID)
 
 	// Also broadcast detailed log entry for frontend live log display
-	logLevel := "info"
-	if step == "failed" {
-		logLevel = "error"
+	logLevel := loglevel.Info.String()
+	if step == stagestatus.Failed.String() {
+		logLevel = loglevel.Error.String()
 	}
 	s.wsHub.BroadcastPublishLogWithSession(pluginID, siteID, sessionID, logLevel, stage, message, nil)
 
