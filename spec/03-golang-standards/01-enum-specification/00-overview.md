@@ -48,6 +48,8 @@ const (
 | `String` | `(v Variant) String() string` | String representation |
 | `Label` | `(v Variant) Label() string` | Human-readable label |
 | `Is{Value}` | `(v Variant) IsSerpAPI() bool` | Type check for each variant |
+| `IsOther` | `(v Variant) IsOther(other Variant) bool` | Inverse check — true if NOT the given variant |
+| `IsAnyOf` | `(v Variant) IsAnyOf(others ...Variant) bool` | True if receiver matches any in the list |
 | `All` | `All() []Variant` | Returns all valid variants |
 | `ByIndex` | `ByIndex(i int) Variant` | Get variant by index |
 | `Parse` | `Parse(s string) (Variant, error)` | Parse string to variant |

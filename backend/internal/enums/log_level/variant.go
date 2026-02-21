@@ -44,6 +44,17 @@ func (v Variant) IsWarn() bool    { return v == Warn }
 func (v Variant) IsError() bool   { return v == Error }
 func (v Variant) IsInvalid() bool { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 func All() []Variant {
 	return []Variant{Debug, Info, Warn, Error}
 }

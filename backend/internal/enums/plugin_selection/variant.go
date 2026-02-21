@@ -38,6 +38,17 @@ func (v Variant) IsAll() bool       { return v == All }
 func (v Variant) IsSelective() bool  { return v == Selective }
 func (v Variant) IsInvalid() bool    { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 func AllVariants() []Variant {
 	return []Variant{All, Selective}
 }

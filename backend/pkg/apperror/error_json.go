@@ -1,6 +1,9 @@
 package apperror
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // appErrorJSON is an alias used to prevent infinite recursion during JSON marshaling.
 type appErrorJSON struct {
@@ -35,7 +38,7 @@ func (e *AppError) MarshalJSON() ([]byte, error) {
 func (e *AppError) UnmarshalJSON(data []byte) error {
 	var alias appErrorJSON
 	if err := json.Unmarshal(data, &alias); err != nil {
-		return err
+		return fmt.Errorf("apperror.UnmarshalJSON: failed to decode AppError (received %d bytes: %s): %w", len(data), truncateData(data, 200), err)
 	}
 
 	e.Code = alias.Code
@@ -50,6 +53,14 @@ func (e *AppError) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+// truncateData returns a string preview of raw JSON data, capped at maxLen bytes.
+func truncateData(data []byte, maxLen int) string {
+	if len(data) <= maxLen {
+		return string(data)
+	}
+	return string(data[:maxLen]) + "..."
 }
 
 // plainError is a minimal error implementation for deserialized cause strings.

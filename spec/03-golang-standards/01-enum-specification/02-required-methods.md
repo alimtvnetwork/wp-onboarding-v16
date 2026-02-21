@@ -1,6 +1,6 @@
 # Required Methods
 
-**Version:** 3.0.0  
+**Version:** 4.0.0  
 **Status:** Complete  
 **Updated:** 2026-02-21
 
@@ -164,7 +164,57 @@ if !p.IsValid() {
 
 ---
 
-### 8. MarshalJSON() ([]byte, error)
+### 8. IsOther(other Variant) bool
+
+Returns true if the receiver is NOT the given variant. The inverse of `Is{Value}()` but generic — works against any variant without needing a dedicated method.
+
+```go
+func (v Variant) IsOther(other Variant) bool {
+    return v != other
+}
+```
+
+**Usage:**
+```go
+// ✅ Positive boolean logic — no negation
+if level.IsOther(loglevel.Debug) {
+    // skip debug-only logic
+}
+```
+
+---
+
+### 9. IsAnyOf(others ...Variant) bool
+
+Returns true if the receiver matches ANY of the given variants. Eliminates multi-condition OR chains.
+
+```go
+func (v Variant) IsAnyOf(others ...Variant) bool {
+    for _, o := range others {
+        if v == o {
+            return true
+        }
+    }
+    return false
+}
+```
+
+**Usage:**
+```go
+// ✅ Clean multi-match
+if action.IsAnyOf(action.Upload, action.UploadActive, action.FileReplace) {
+    // handle upload-related actions
+}
+
+// ❌ Verbose
+if action == action.Upload || action == action.UploadActive || action == action.FileReplace {
+    // ...
+}
+```
+
+---
+
+### 10. MarshalJSON() ([]byte, error)
 
 **Mandatory.** Serializes the enum as its string representation for JSON output.
 
@@ -176,7 +226,7 @@ func (v Variant) MarshalJSON() ([]byte, error) {
 
 ---
 
-### 9. UnmarshalJSON(data []byte) error
+### 11. UnmarshalJSON(data []byte) error
 
 **Mandatory.** Deserializes from a JSON string back to the byte-based enum.
 
@@ -332,6 +382,17 @@ func (v Variant) IsSerpAPI() bool     { return v == SerpAPI }
 func (v Variant) IsMapsScraper() bool { return v == MapsScraper }
 func (v Variant) IsColly() bool       { return v == Colly }
 func (v Variant) IsInvalid() bool     { return v == Invalid }
+
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+    for _, o := range others {
+        if v == o {
+            return true
+        }
+    }
+    return false
+}
 
 func All() []Variant {
     return []Variant{SerpAPI, MapsScraper, Colly}

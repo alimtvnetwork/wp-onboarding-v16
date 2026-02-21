@@ -38,6 +38,17 @@ func (v Variant) IsPerTable() bool { return v == PerTable }
 func (v Variant) IsSingleDb() bool { return v == SingleDb }
 func (v Variant) IsInvalid() bool  { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 func All() []Variant {
 	return []Variant{PerTable, SingleDb}
 }

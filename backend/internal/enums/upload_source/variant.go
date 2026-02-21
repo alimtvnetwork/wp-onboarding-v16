@@ -46,6 +46,17 @@ func (v Variant) IsAdminUI() bool { return v == AdminUI }
 func (v Variant) IsWPCLI() bool   { return v == WPCLI }
 func (v Variant) IsInvalid() bool { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 func All() []Variant {
 	return []Variant{Script, RestAPI, AdminUI, WPCLI}
 }

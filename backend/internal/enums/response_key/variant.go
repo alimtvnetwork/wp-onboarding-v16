@@ -128,9 +128,17 @@ func (v Variant) IsValid() bool {
 
 func (v Variant) IsInvalid() bool { return v == Invalid }
 
-// IsOtherThan returns true if this key differs from the given key.
-func (v Variant) IsOtherThan(other Variant) bool {
-	return v != other
+// IsOther returns true if the receiver is NOT the given variant.
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+// IsAnyOf returns true if the receiver matches any of the given variants.
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
 }
 
 func All() []Variant {

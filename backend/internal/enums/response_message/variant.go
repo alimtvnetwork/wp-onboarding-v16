@@ -88,6 +88,17 @@ func (v Variant) IsValid() bool {
 
 func (v Variant) IsInvalid() bool { return v == Invalid }
 
+func (v Variant) IsOther(other Variant) bool { return v != other }
+
+func (v Variant) IsAnyOf(others ...Variant) bool {
+	for _, o := range others {
+		if v == o {
+			return true
+		}
+	}
+	return false
+}
+
 // IsFailure returns true if this is an error/failure message.
 func (v Variant) IsFailure() bool {
 	return v != Success && v != FileIgnored && v.IsValid()
