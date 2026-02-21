@@ -28,6 +28,7 @@ trait CategoryTrait {
 
         if (empty($data['name'])) {
             $this->fileLogger->warn('Category creation failed: name required');
+
             return ResultHelper::error('Category name is required');
         }
 
@@ -47,6 +48,7 @@ trait CategoryTrait {
                 $errorMsg = $result->get_error_message();
                 $this->fileLogger->error('Category creation failed', array('error' => $errorMsg));
                 $this->logger->logPostAction(ActionType::CategoryCreate->value, 0, StatusType::Failed->value, $data, $errorMsg);
+
                 return ResultHelper::error($errorMsg);
             }
 
@@ -84,6 +86,7 @@ trait CategoryTrait {
             $terms = get_terms($args);
             if (is_wp_error($terms)) {
                 $this->fileLogger->error('List categories failed', array('error' => $terms->get_error_message()));
+
                 return ResultHelper::error($terms->get_error_message());
             }
 

@@ -49,6 +49,7 @@ trait UpdateResolverFetchTrait {
         ));
 
         $this->fileLogger->info('Update info fetched', $updateInfo);
+
         return $updateInfo;
     }
 
@@ -56,8 +57,10 @@ trait UpdateResolverFetchTrait {
         $updateUrl = $this->getUpdateUrl($forceCheck);
         if (is_wp_error($updateUrl)) {
             $this->fileLogger->warn('Falling back to master URL', array('error' => $updateUrl->get_error_message()));
+
             return $settings['master_url'];
         }
+
         return $updateUrl;
     }
 
@@ -66,6 +69,7 @@ trait UpdateResolverFetchTrait {
         if (is_wp_error($response)) {
             $this->fileLogger->error('Failed to fetch update info', array('error' => $response->get_error_message()));
         }
+
         return $response;
     }
 
@@ -78,10 +82,12 @@ trait UpdateResolverFetchTrait {
         if ($isRetryable) {
             $this->fileLogger->info('Cached URL failed, resolving fresh');
             $this->clearCache();
+
             return $this->fetchUpdateInfo(true);
         }
 
         $this->saveSettings(array('last_error' => $error->get_error_message(), 'last_check' => current_time('mysql', true)));
+
         return $error;
     }
 
@@ -97,10 +103,12 @@ trait UpdateResolverFetchTrait {
         if ($isRetryable) {
             $this->fileLogger->info('Cached URL returned error, resolving fresh');
             $this->clearCache();
+
             return $this->fetchUpdateInfo(true);
         }
 
         $this->saveSettings(array('last_error' => $errorMsg, 'last_check' => current_time('mysql', true)));
+
         return new WP_Error(WpErrorCodeType::HttpError->value, $errorMsg);
     }
 
@@ -115,6 +123,7 @@ trait UpdateResolverFetchTrait {
         $data = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->fileLogger->error('Invalid JSON from update server');
+
             return array('version' => '', 'package' => $updateUrl);
         }
 
