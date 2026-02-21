@@ -25,7 +25,13 @@ type FileContentRequest struct {
 // GetLocalFileContent returns the content of a local file in a plugin
 func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PluginService == nil {
-		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
+		respondError(
+			w,
+			wordpress.HttpStatusServiceUnavailable,
+			"E9001",
+			responsemessage.ServiceNotAvailable.String(),
+		)
+
 		return
 	}
 
@@ -33,39 +39,75 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	idStr := vars["id"]
 	pluginID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", responsemessage.InvalidId.String())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1001",
+			responsemessage.InvalidId.String(),
+		)
+
 		return
 	}
 
 	// Parse request body
 	var req FileContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidRequestBody.String())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			responsemessage.InvalidRequestBody.String(),
+		)
+
 		return
 	}
 
 	if req.Path == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "File path is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"File path is required",
+		)
+
 		return
 	}
 
 	// Get plugin to find its path — returns *models.Plugin with Path field
 	pluginData, err := Services.PluginService.GetByID(r.Context(), pluginID)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusNotFound, "E2001", responsemessage.PluginNotFound.String())
+		respondError(
+			w,
+			wordpress.HttpStatusNotFound,
+			"E2001",
+			responsemessage.PluginNotFound.String(),
+		)
+
 		return
 	}
 
 	pluginPath := pluginData.Path
 	filePath, err := pathutil.Join(pluginPath, req.Path)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrInternal, "failed to resolve file path: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			apperror.ErrInternal,
+			"failed to resolve file path: "+err.Error(),
+		)
+
 		return
 	}
 
 	content, err := readFileContent(filePath)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusNotFound, "E2002", "File not found: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusNotFound,
+			"E2002",
+			"File not found: "+err.Error(),
+		)
+
 		return
 	}
 
@@ -78,42 +120,83 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 // GetFileDiff returns both local and remote content for a file
 func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PluginService == nil || Services.PublishService == nil {
-		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
+		respondError(
+			w,
+			wordpress.HttpStatusServiceUnavailable,
+			"E9001",
+			responsemessage.ServiceNotAvailable.String(),
+		)
+
 		return
 	}
 
 	vars := mux.Vars(r)
 	pluginIDStr := vars["id"]
 	siteIDStr := vars["siteId"]
-	
+
 	pluginID, err := strconv.ParseInt(pluginIDStr, 10, 64)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", responsemessage.InvalidId.String())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1001",
+			responsemessage.InvalidId.String(),
+		)
+
 		return
 	}
-	
+
 	siteID, err := strconv.ParseInt(siteIDStr, 10, 64)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", responsemessage.InvalidId.String())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1001",
+			responsemessage.InvalidId.String(),
+		)
+
 		return
 	}
 
 	// Parse request body
 	var req FileContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidRequestBody.String())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			responsemessage.InvalidRequestBody.String(),
+		)
+
 		return
 	}
 
 	if req.Path == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "File path is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"File path is required",
+		)
+
 		return
 	}
 
 	// Get file diff via publish service
-	result, err := Services.PublishService.GetFileDiff(r.Context(), pluginID, siteID, req.Path)
+	result, err := Services.PublishService.GetFileDiff(
+		r.Context(),
+		pluginID,
+		siteID,
+		req.Path,
+	)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E5001", "Failed to get file diff: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E5001",
+			"Failed to get file diff: "+err.Error(),
+		)
+
 		return
 	}
 
@@ -143,6 +226,7 @@ func calculateMD5(filePath string) (string, error) {
 	defer file.Close()
 
 	hash := md5.New()
+
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}

@@ -42,6 +42,7 @@ trait RestoreGraphTrait {
         )->fetchAll(PDO::FETCH_ASSOC);
 
         $inventory = array();
+
         foreach ($rows as $row) {
             $name = $row[$tableNameCol];
             $inventory[$name] = array(
@@ -90,6 +91,7 @@ trait RestoreGraphTrait {
             $child = $dep['child_table'];
 
             $isParentOrChildMissing = (BooleanHelpers::isKeyMissing($graph, $parent) || BooleanHelpers::isKeyMissing($graph, $child));
+
             if ($isParentOrChildMissing) {
                 continue;
             }
@@ -98,7 +100,10 @@ trait RestoreGraphTrait {
             $in_degree[$child]++;
         }
 
-        return array('adjacency' => $graph, 'in_degree' => $in_degree);
+        return array(
+            'adjacency' => $graph,
+            'in_degree' => $in_degree,
+        );
     }
 
     private function topologicalSort(
@@ -107,6 +112,7 @@ trait RestoreGraphTrait {
         array $allTables,
     ): array {
         $queue = array();
+
         foreach ($inDegree as $table => $degree) {
             if ($degree === 0) {
                 $queue[] = $table;
@@ -114,6 +120,7 @@ trait RestoreGraphTrait {
         }
 
         $sorted = array();
+
         while (BooleanHelpers::hasValue($queue)) {
             sort($queue);
             $table = array_shift($queue);
@@ -121,6 +128,7 @@ trait RestoreGraphTrait {
 
             foreach ($graph[$table] as $child) {
                 $inDegree[$child]--;
+
                 if ($inDegree[$child] === 0) {
                     $queue[] = $child;
                 }

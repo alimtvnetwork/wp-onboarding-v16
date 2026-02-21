@@ -51,7 +51,11 @@ trait OrchestratorPluginTrait {
 
         foreach ($plugins_to_snapshot as $plugin_file => $info) {
             $result = $this->archiveSinglePlugin($info, $plugins_dir, $rootPdo);
-            if ($result === null) continue;
+
+            if ($result === null) {
+                continue;
+            }
+
             if ($result[ResponseKeyType::Success->value]) {
                 $total_size += $result[ResponseKeyType::Size->value];
                 $count++;
@@ -79,24 +83,34 @@ trait OrchestratorPluginTrait {
 
         foreach ($all_plugins as $plugin_file => $plugin_data) {
             $slug = dirname($plugin_file);
+
             if ($slug === '.') {
                 $slug = basename($plugin_file, '.php');
             }
-            if ($slug === PluginConfigType::Slug->value) continue;
+
+            if ($slug === PluginConfigType::Slug->value) {
+                continue;
+            }
 
             $isEligible = ($selection === PluginSelectionType::All->value || in_array($plugin_file, $active_plugins));
             $isIneligible = ($isEligible === false);
 
-            if ($isIneligible) continue;
+            if ($isIneligible) {
+                continue;
+            }
 
             $plugins_to_snapshot[$plugin_file] = array(
-                'slug' => $slug,
-                'name' => $plugin_data['Name'] ?? $slug,
+                'slug'    => $slug,
+                'name'    => $plugin_data['Name'] ?? $slug,
                 'version' => $plugin_data['Version'] ?? '0.0.0',
             );
         }
 
-        $this->log(LogLevelType::Info->value, 'Snapshotting plugins', array('total' => count($all_plugins), 'selected' => count($plugins_to_snapshot), 'selection' => $selection));
+        $this->log(LogLevelType::Info->value, 'Snapshotting plugins', array(
+            'total'     => count($all_plugins),
+            'selected'  => count($plugins_to_snapshot),
+            'selection' => $selection,
+        ));
 
         return $plugins_to_snapshot;
     }
@@ -136,16 +150,20 @@ trait OrchestratorPluginTrait {
 
         if ($rootPdo) {
             $this->rootDb->registerPluginSnapshot($rootPdo, array(
-                'plugin_slug' => $info['slug'],
-                'plugin_name' => $info['name'],
+                'plugin_slug'    => $info['slug'],
+                'plugin_name'    => $info['name'],
                 'plugin_version' => $info['version'],
-                'zip_file' => 'plugins/' . $zip_filename,
+                'zip_file'       => 'plugins/' . $zip_filename,
                 'file_size_bytes' => filesize($zip_path),
-                'checksum_md5' => md5_file($zip_path),
+                'checksum_md5'   => md5_file($zip_path),
             ));
         }
 
-        $this->log(LogLevelType::Info->value, sprintf('Plugin archived: %s (%s)', $info['name'], $this->formatBytes($entry[ResponseKeyType::Size->value])));
+        $this->log(LogLevelType::Info->value, sprintf(
+            'Plugin archived: %s (%s)',
+            $info['name'],
+            $this->formatBytes($entry[ResponseKeyType::Size->value]),
+        ));
 
         return ResultHelper::ok(array(
             ResponseKeyType::Size->value  => $entry[ResponseKeyType::Size->value],
@@ -160,6 +178,7 @@ trait OrchestratorPluginTrait {
     ): array {
         try {
             $zip = new ZipArchive();
+
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
 
                 return ResultHelper::error('Failed to create ZIP');
@@ -174,6 +193,7 @@ trait OrchestratorPluginTrait {
             foreach ($iterator as $item) {
                 $relative = $slug . '/' . substr($item->getPathname(), strlen($sourceDir) + 1);
                 $relative = str_replace('\\', '/', $relative);
+
                 if ($item->isDir()) {
                     $zip->addEmptyDir($relative);
                 } else {
@@ -184,6 +204,7 @@ trait OrchestratorPluginTrait {
             $zip->close();
 
             $size = filesize($zipPath);
+
             if ($size === 0) {
                 @unlink($zipPath);
 
@@ -199,6 +220,7 @@ trait OrchestratorPluginTrait {
 
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
+
         if (PathHelper::isFileMissing($root_path)) {
 
             return null;

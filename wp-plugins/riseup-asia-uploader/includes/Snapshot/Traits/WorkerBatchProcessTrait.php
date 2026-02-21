@@ -54,7 +54,9 @@ trait WorkerBatchProcessTrait {
             $this->processJobBatch($pdo, $job_id, $job);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Worker batch failed', array(
-                'job_id' => $job_id, ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString(),
+                'job_id'                        => $job_id,
+                ResponseKeyType::Error->value   => $e->getMessage(),
+                'trace'                         => $e->getTraceAsString(),
             ));
             $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Failed->value, $e->getMessage());
         }
@@ -76,7 +78,8 @@ trait WorkerBatchProcessTrait {
             return;
         }
 
-        $this->log(LogLevelType::Info->value, sprintf('Batch %d/%d: exporting %d tables',
+        $this->log(LogLevelType::Info->value, sprintf(
+            'Batch %d/%d: exporting %d tables',
             $batch_index + 1,
             count($batches),
             count($batches[$batch_index]),
@@ -96,6 +99,7 @@ trait WorkerBatchProcessTrait {
         );
 
         $next_batch = $batch_index + 1;
+
         if ($next_batch < count($batches)) {
             $this->scheduleNextBatch($jobId);
             $this->log(LogLevelType::Info->value, sprintf('Next batch scheduled (%d/%d)', $next_batch + 1, count($batches)));
@@ -106,6 +110,7 @@ trait WorkerBatchProcessTrait {
 
     private function openRootDbForBatch(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
+
         if (PathHelper::isFileMissing($root_path)) {
 
             return null;

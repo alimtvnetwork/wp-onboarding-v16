@@ -26,7 +26,9 @@ trait WorkerExecuteTrait {
         $start_time = microtime(true);
 
         $sizeCheck = $this->validatePreSnapshotSize();
+
         if ($sizeCheck !== null) {
+
             return $sizeCheck;
         }
 
@@ -34,6 +36,7 @@ trait WorkerExecuteTrait {
         $isPreparationFailed = BooleanHelpers::isResultFailed($prepared);
 
         if ($isPreparationFailed) {
+
             return $prepared;
         }
 
@@ -57,7 +60,10 @@ trait WorkerExecuteTrait {
             return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
         } catch (Throwable $e) {
             $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
-            $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array(
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ));
 
             return ResultHelper::errorFromException($e);
         }
@@ -67,7 +73,9 @@ trait WorkerExecuteTrait {
         $start_time = microtime(true);
 
         $sizeCheck = $this->validatePreSnapshotSize();
+
         if ($sizeCheck !== null) {
+
             return $sizeCheck;
         }
 
@@ -75,6 +83,7 @@ trait WorkerExecuteTrait {
         $isPreparationFailed = BooleanHelpers::isResultFailed($prepared);
 
         if ($isPreparationFailed) {
+
             return $prepared;
         }
 
@@ -90,7 +99,10 @@ trait WorkerExecuteTrait {
             return $this->buildSyncSnapshotResult($prepared, $export, $start_time);
         } catch (Throwable $e) {
             $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
-            $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array(
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ));
 
             return ResultHelper::errorFromException($e);
         }
@@ -114,7 +126,8 @@ trait WorkerExecuteTrait {
         if ($isOverLimit) {
             $sizeMb = round($estimatedBytes / 1024 / 1024, 1);
             $this->log(LogLevelType::Error->value, 'Pre-snapshot size validation failed', array(
-                'estimated_mb' => $sizeMb, 'max_mb' => SnapshotConfigType::MaxSizeMb->value,
+                'estimated_mb' => $sizeMb,
+                'max_mb'       => SnapshotConfigType::MaxSizeMb->value,
             ));
 
             return ResultHelper::error(
@@ -130,6 +143,7 @@ trait WorkerExecuteTrait {
      */
     private function cleanupOrphanedDir(string $dir): void {
         $isDirExisting = PathHelper::dirExists($dir);
+
         if ($isDirExisting) {
             PathHelper::deleteDirectory($dir);
             $this->log(LogLevelType::Warn->value, 'Cleaned up orphaned snapshot directory', array('path' => $dir));

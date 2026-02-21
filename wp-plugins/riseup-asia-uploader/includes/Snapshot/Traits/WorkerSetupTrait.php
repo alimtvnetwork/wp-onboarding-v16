@@ -30,15 +30,16 @@ trait WorkerSetupTrait {
         $type  = $config['type'] ?? SnapshotModeType::Full->value;
 
         $hasPoolSize = BooleanHelpers::hasValue($config['settings']['worker_pool_size'] ?? null);
+
         if ($hasPoolSize) {
             $this->setPoolSize($config['settings']['worker_pool_size']);
         }
 
         $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
-            'title' => $title,
-            ResponseKeyType::Scope->value => $scope,
-            'type' => $type,
-            'pool_size' => $this->poolSize,
+            'title'                           => $title,
+            ResponseKeyType::Scope->value     => $scope,
+            'type'                            => $type,
+            'pool_size'                       => $this->poolSize,
         ));
 
         $base_dir = $this->getSnapshotsBaseDir();
@@ -46,25 +47,26 @@ trait WorkerSetupTrait {
         $snapshot_dir = $base_dir . '/' . $dir_name;
 
         $isDirCreateFailed = (PathHelper::makeDirectory($snapshot_dir, true) === false);
+
         if ($isDirCreateFailed) {
 
             return ResultHelper::error('Failed to create snapshot directory');
         }
 
         return ResultHelper::ok(array(
-            ResponseKeyType::SnapshotDir->value  => $snapshot_dir,
-            ResponseKeyType::DirName->value      => $dir_name,
-            'title'                      => $title,
-            ResponseKeyType::Scope->value => $scope,
-            'type'                       => $type,
+            ResponseKeyType::SnapshotDir->value => $snapshot_dir,
+            ResponseKeyType::DirName->value     => $dir_name,
+            'title'                             => $title,
+            ResponseKeyType::Scope->value       => $scope,
+            'type'                              => $type,
         ));
     }
 
     private function initRootDb(string $snapshotDir, array $config): PDO {
         $rootPdo = $this->rootDb->create($snapshotDir . '/' . SnapshotConfigType::RootDbFilename);
         $this->rootDb->populateMetadata($rootPdo, array(
-            'title' => $config['title'] ?? SnapshotConfigType::DefaultTitle,
-            'type' => $config['type'] ?? SnapshotModeType::Full->value,
+            'title'    => $config['title'] ?? SnapshotConfigType::DefaultTitle,
+            'type'     => $config['type'] ?? SnapshotModeType::Full->value,
             'settings' => $config['settings'] ?? null,
         ));
 
@@ -75,7 +77,7 @@ trait WorkerSetupTrait {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value);
         $this->log(LogLevelType::Info->value, 'Export order determined', array(
             ResponseKeyType::Tables->value => count($analysis['seed_order']),
-            'pool_size' => $this->poolSize,
+            'pool_size'                    => $this->poolSize,
         ));
 
         return $analysis['seed_order'];
@@ -95,11 +97,13 @@ trait WorkerSetupTrait {
     ): void {
         $full = '[SNAPSHOT] [WORKER] ' . $message;
         $hasContext = BooleanHelpers::hasValue($context);
+
         if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
 
         $isLoggerMissing = ($this->logger === null);
+
         if ($isLoggerMissing) {
 
             return;

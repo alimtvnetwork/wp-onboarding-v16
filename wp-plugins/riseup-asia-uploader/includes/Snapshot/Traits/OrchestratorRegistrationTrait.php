@@ -33,6 +33,7 @@ trait OrchestratorRegistrationTrait {
     ): int|false {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
 
             return false;
@@ -43,7 +44,15 @@ trait OrchestratorRegistrationTrait {
             $tables_json = $this->buildSnapshotTablesJson($workerResult, $pluginStats);
             $dir_size = $this->getDirectorySize($snapshotDir);
 
-            return $this->insertSnapshotRecord($pdo, $sequence, $snapshotDir, $scope, $tables_json, $workerResult, $dir_size);
+            return $this->insertSnapshotRecord(
+                $pdo,
+                $sequence,
+                $snapshotDir,
+                $scope,
+                $tables_json,
+                $workerResult,
+                $dir_size,
+            );
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array(ResponseKeyType::Error->value => $e->getMessage()));
 
@@ -60,10 +69,10 @@ trait OrchestratorRegistrationTrait {
     private function buildSnapshotTablesJson(array $workerResult, array $pluginStats): string {
 
         return json_encode(array(
-            ResponseKeyType::Exported->value => $workerResult[ResponseKeyType::Tables->value] ?? 0,
-            ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
-            ResponseKeyType::Errors->value => $workerResult[ResponseKeyType::Errors->value] ?? array(),
-            ResponseKeyType::Plugins->value => $pluginStats[ResponseKeyType::Count->value] ?? 0,
+            ResponseKeyType::Exported->value      => $workerResult[ResponseKeyType::Tables->value] ?? 0,
+            ResponseKeyType::TotalRows->value     => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
+            ResponseKeyType::Errors->value        => $workerResult[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::Plugins->value       => $pluginStats[ResponseKeyType::Count->value] ?? 0,
             ResponseKeyType::PluginDetails->value => $pluginStats[ResponseKeyType::Plugins->value] ?? array(),
         ));
     }
