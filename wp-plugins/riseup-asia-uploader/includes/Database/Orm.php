@@ -69,7 +69,7 @@ class Orm {
     private $id = null;
 
     /** @var string */
-    private $idColumn = 'id';
+    private $idColumn = 'Id';
 
     /** @var int */
     private static $paramCounter = 0;

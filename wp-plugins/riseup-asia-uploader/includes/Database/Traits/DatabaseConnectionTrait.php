@@ -146,6 +146,7 @@ trait DatabaseConnectionTrait {
         $this->migrateV10VersionTracking($current);
         $this->migrateV11SnapshotExports($current);
         $this->migrateV12PascalCaseEnumValues($current);
+        $this->migrateV13PascalCaseTableAndColumnNames($current);
     }
 
     /**
