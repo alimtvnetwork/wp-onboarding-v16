@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\PathHelper;
@@ -165,7 +166,7 @@ trait CleanerOrphanTrait {
     private function cleanupStuckSnapshots(bool $dryRun = false): array {
         $result = array(ResponseKeyType::Cleaned->value => 0, ResponseKeyType::Ids->value => array());
 
-        $stuck_hours = \RiseupAsia\Enums\SnapshotConfigType::StuckHours->value;
+        $stuck_hours = SnapshotConfigType::StuckHours->value;
         $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
 
         $stuck = $this->db->queryAll(

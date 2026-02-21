@@ -15,6 +15,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
+use PDO;
+
 trait DatabaseMigrationsV13Trait {
 
     // ── Table Renames ────────────────────────────────────────────────
@@ -132,7 +135,7 @@ trait DatabaseMigrationsV13Trait {
             $this->renameAllColumns();
 
             $this->pdo->commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->pdo->rollBack();
             $this->fileLogger->logException($e, 'Migration v13 failed — rolled back');
 
@@ -187,7 +190,7 @@ trait DatabaseMigrationsV13Trait {
         $columns = [];
         $result = $this->pdo->query("PRAGMA table_info({$table})");
 
-        while ($row = $result->fetch(\PDO::FETCH_ASSOC)) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             $columns[] = $row['name'];
         }
 

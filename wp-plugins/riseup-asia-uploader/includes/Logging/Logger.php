@@ -10,6 +10,7 @@
 
 namespace RiseupAsia\Logging;
 
+use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\Traits\LoggerContextTrait;
 use RiseupAsia\Logging\Traits\LoggerActionsTrait;
 
@@ -29,7 +30,7 @@ class Logger {
     private const SOURCE_MACHINE_HEADER = 'HTTP_X_RISEUP_SOURCE_MACHINE';
     private const USER_AGENT_MAX_LENGTH = 200;
 
-    private ?\RiseupAsia\Database\Database $db = null;
+    private ?Database $db = null;
     private FileLogger $fileLogger;
     private static ?self $instance = null;
 

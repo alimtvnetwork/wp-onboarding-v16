@@ -17,6 +17,7 @@ use Throwable;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
@@ -37,7 +38,7 @@ trait WorkerJobLifecycleTrait {
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 SnapshotDir TEXT NOT NULL,
                 TablesJson TEXT NOT NULL,
-                PoolSize INTEGER NOT NULL DEFAULT " . \RiseupAsia\Enums\SnapshotConfigType::WorkerPoolDefault->value . ",
+                PoolSize INTEGER NOT NULL DEFAULT " . SnapshotConfigType::WorkerPoolDefault->value . ",
                 CurrentBatch INTEGER NOT NULL DEFAULT 0,
                 TablesExported INTEGER NOT NULL DEFAULT 0,
                 TotalRows INTEGER NOT NULL DEFAULT 0,

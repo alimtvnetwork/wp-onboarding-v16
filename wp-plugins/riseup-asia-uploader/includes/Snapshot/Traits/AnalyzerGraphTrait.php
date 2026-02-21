@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AnalyzerGraphTrait {
 
@@ -59,7 +60,7 @@ trait AnalyzerGraphTrait {
         sort($queue);
 
         $sorted = array();
-        while (\RiseupAsia\Helpers\BooleanHelpers::hasValue($queue)) {
+        while (BooleanHelpers::hasValue($queue)) {
             $current = array_shift($queue);
             $sorted[] = $current;
 
