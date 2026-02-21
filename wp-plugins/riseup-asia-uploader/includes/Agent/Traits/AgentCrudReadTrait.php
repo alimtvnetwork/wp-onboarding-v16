@@ -37,6 +37,7 @@ trait AgentCrudReadTrait {
 
     public function getAgentModel(int $id, bool $includePassword = false): ?AgentSite {
         $pdo = $this->db->getPdo();
+
         if ($pdo === null) {
             return null;
         }
@@ -63,6 +64,7 @@ trait AgentCrudReadTrait {
         int $offset = 0,
     ): array {
         $pdo = $this->db->getPdo();
+
         if ($pdo === null) {
             return [ResponseKeyType::Total->value => 0, ResponseKeyType::Agents->value => []];
         }
