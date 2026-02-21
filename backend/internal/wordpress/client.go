@@ -13,6 +13,9 @@ import (
 	"strings"
 	"time"
 
+	contenttype "wp-plugin-publish/internal/enums/content_type"
+	"wp-plugin-publish/internal/enums/header"
+	poststatus "wp-plugin-publish/internal/enums/post_status"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -126,10 +129,10 @@ func (c *Client) progress(step, status, message string, details ProgressDetails)
 // authentication, content type, user agent, and source machine identification.
 func (c *Client) setStandardHeaders(req *http.Request, contentType string) {
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization.String(), "Basic "+auth)
-	req.Header.Set(HeaderContentType.String(), contentType)
-	req.Header.Set(HeaderUserAgent.String(), HeaderUserAgentValue.String())
-	req.Header.Set(HeaderSourceMachine.String(), sourceMachineHostname)
+	req.Header.Set(header.Authorization.String(), "Basic "+auth)
+	req.Header.Set(header.ContentType.String(), contentType)
+	req.Header.Set(header.UserAgent.String(), header.UserAgentValue.String())
+	req.Header.Set(header.SourceMachine.String(), sourceMachineHostname)
 }
 
 // request makes an authenticated HTTP request to the WordPress API
@@ -151,7 +154,7 @@ func (c *Client) request(method, endpoint string, body any) (*http.Response, err
 			WithMethod(method)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON.String())
+	c.setStandardHeaders(req, contenttype.JSON.String())
 	return c.httpClient.Do(req)
 }
 
@@ -180,7 +183,7 @@ func (c *Client) rawGet(fullURL string) (*http.Response, error) {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
 			WithURL(fullURL)
 	}
-	c.setStandardHeaders(req, ContentTypeJSON.String())
+	c.setStandardHeaders(req, contenttype.JSON.String())
 	return c.httpClient.Do(req)
 }
 
@@ -380,7 +383,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}{
 		Title:   "WP Plugin Publish Connection Test",
 		Content: "This draft was created to test API write permissions. You can safely delete it.",
-		Status:  PostStatusDraft.String(),
+		Status:  poststatus.Draft.String(),
 	}
 	resp, err = c.request("POST", WPCorePosts, testPost)
 	if err != nil {

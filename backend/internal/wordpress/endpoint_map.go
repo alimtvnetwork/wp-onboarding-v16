@@ -12,6 +12,8 @@ package wordpress
 import (
 	"strconv"
 	"strings"
+
+	ep "wp-plugin-publish/internal/enums/endpoint"
 )
 
 // WPEndpointName identifies a WordPress-delegated operation.
@@ -67,7 +69,7 @@ type GoEndpointRoute struct {
 // WPEndpointRoute describes the WordPress REST API endpoint that receives the delegated request.
 type WPEndpointRoute struct {
 	Method   string
-	Endpoint EndpointType // typed endpoint path
+	Endpoint ep.Variant // typed endpoint path
 }
 
 // GoEndpointMap maps each operation enum to the Go backend API route.
@@ -115,42 +117,42 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 // Endpoints are relative to the plugin namespace (riseup-asia-uploader/v1).
 var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	// Plugin operations
-	EPListPlugins:       {Method: "GET", Endpoint: EndpointPlugins},
-	EPPluginExists:      {Method: "POST", Endpoint: EndpointPluginExists},
-	EPPluginInfo:        {Method: "POST", Endpoint: EndpointPluginInfo},
-	EPEnablePlugin:      {Method: "POST", Endpoint: EndpointEnable},
-	EPDisablePlugin:     {Method: "POST", Endpoint: EndpointDisable},
-	EPDeletePlugin:      {Method: "POST", Endpoint: EndpointDelete},
-	EPUploadPlugin:      {Method: "POST", Endpoint: EndpointUpload},
-	EPUploadActive:      {Method: "POST", Endpoint: EndpointUploadActive},
-	EPPluginFiles:       {Method: "POST", Endpoint: EndpointFiles},
-	EPPluginFileContent: {Method: "POST", Endpoint: EndpointFile},
-	EPPluginExport:      {Method: "POST", Endpoint: EndpointExportPlugin},
-	EPSyncManifest:      {Method: "POST", Endpoint: EndpointSyncManifest},
-	EPSyncPush:          {Method: "POST", Endpoint: EndpointSync},
-	EPStatus:            {Method: "GET", Endpoint: EndpointStatus},
-	EPExportSelf:        {Method: "GET", Endpoint: EndpointExportSelf},
+	EPListPlugins:       {Method: "GET", Endpoint: ep.Plugins},
+	EPPluginExists:      {Method: "POST", Endpoint: ep.PluginExists},
+	EPPluginInfo:        {Method: "POST", Endpoint: ep.PluginInfo},
+	EPEnablePlugin:      {Method: "POST", Endpoint: ep.Enable},
+	EPDisablePlugin:     {Method: "POST", Endpoint: ep.Disable},
+	EPDeletePlugin:      {Method: "POST", Endpoint: ep.Delete},
+	EPUploadPlugin:      {Method: "POST", Endpoint: ep.Upload},
+	EPUploadActive:      {Method: "POST", Endpoint: ep.UploadActive},
+	EPPluginFiles:       {Method: "POST", Endpoint: ep.Files},
+	EPPluginFileContent: {Method: "POST", Endpoint: ep.File},
+	EPPluginExport:      {Method: "POST", Endpoint: ep.ExportPlugin},
+	EPSyncManifest:      {Method: "POST", Endpoint: ep.SyncManifest},
+	EPSyncPush:          {Method: "POST", Endpoint: ep.Sync},
+	EPStatus:            {Method: "GET", Endpoint: ep.Status},
+	EPExportSelf:        {Method: "GET", Endpoint: ep.ExportSelf},
 
 	// Error log operations
-	EPErrorLogs:     {Method: "GET", Endpoint: EndpointErrorLogs},
-	EPErrorSessions: {Method: "GET", Endpoint: EndpointErrorSessions},
+	EPErrorLogs:     {Method: "GET", Endpoint: ep.ErrorLogs},
+	EPErrorSessions: {Method: "GET", Endpoint: ep.ErrorSessions},
 
 	// Snapshot operations
-	EPSnapshotList:         {Method: "GET", Endpoint: EndpointSnapshotsList},
-	EPSnapshotSchedule:     {Method: "POST", Endpoint: EndpointSnapshotsSchedule},
-	EPSnapshotInfo:         {Method: "POST", Endpoint: EndpointSnapshotsInfo},
-	EPSnapshotDelete:       {Method: "POST", Endpoint: EndpointSnapshotsDelete},
-	EPSnapshotRestore:      {Method: "POST", Endpoint: EndpointSnapshotsRestore},
-	EPSnapshotExport:       {Method: "POST", Endpoint: EndpointSnapshotsExport},
-	EPSnapshotSettings:     {Method: "GET", Endpoint: EndpointSnapshotsSettings},
-	EPSnapshotProviders:    {Method: "GET", Endpoint: EndpointSnapshotsProviders},
-	EPSnapshotTables:       {Method: "GET", Endpoint: EndpointSnapshotsTables},
-	EPSnapshotFullBackup:   {Method: "POST", Endpoint: EndpointSnapshotsFullBackup},
-	EPSnapshotIncremental:  {Method: "POST", Endpoint: EndpointSnapshotsIncremental},
-	EPSnapshotImport:       {Method: "POST", Endpoint: EndpointSnapshotsImport},
-	EPSnapshotCleanup:      {Method: "POST", Endpoint: EndpointSnapshotsCleanup},
-	EPSnapshotDownload:     {Method: "POST", Endpoint: EndpointSnapshotsDownload},
-	EPSnapshotDownloadFile: {Method: "GET", Endpoint: EndpointSnapshotsDownloadFile},
+	EPSnapshotList:         {Method: "GET", Endpoint: ep.SnapshotsList},
+	EPSnapshotSchedule:     {Method: "POST", Endpoint: ep.SnapshotsSchedule},
+	EPSnapshotInfo:         {Method: "POST", Endpoint: ep.SnapshotsInfo},
+	EPSnapshotDelete:       {Method: "POST", Endpoint: ep.SnapshotsDelete},
+	EPSnapshotRestore:      {Method: "POST", Endpoint: ep.SnapshotsRestore},
+	EPSnapshotExport:       {Method: "POST", Endpoint: ep.SnapshotsExport},
+	EPSnapshotSettings:     {Method: "GET", Endpoint: ep.SnapshotsSettings},
+	EPSnapshotProviders:    {Method: "GET", Endpoint: ep.SnapshotsProviders},
+	EPSnapshotTables:       {Method: "GET", Endpoint: ep.SnapshotsTables},
+	EPSnapshotFullBackup:   {Method: "POST", Endpoint: ep.SnapshotsFullBackup},
+	EPSnapshotIncremental:  {Method: "POST", Endpoint: ep.SnapshotsIncremental},
+	EPSnapshotImport:       {Method: "POST", Endpoint: ep.SnapshotsImport},
+	EPSnapshotCleanup:      {Method: "POST", Endpoint: ep.SnapshotsCleanup},
+	EPSnapshotDownload:     {Method: "POST", Endpoint: ep.SnapshotsDownload},
+	EPSnapshotDownloadFile: {Method: "GET", Endpoint: ep.SnapshotsDownloadFile},
 }
 
 // ResolveGoEndpoint returns the Go backend route for a given operation,
