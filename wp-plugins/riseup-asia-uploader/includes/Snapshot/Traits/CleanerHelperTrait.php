@@ -14,6 +14,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ActionType;
@@ -38,6 +41,7 @@ trait CleanerHelperTrait {
             OptionNameType::SnapshotSettings->value,
             array()
         );
+
         if (is_array($saved)) {
             $defaults = array_merge($defaults, $saved);
         }
@@ -46,31 +50,43 @@ trait CleanerHelperTrait {
     }
 
     private function getZipPath(string $sqlitePath): string {
+
         return preg_replace('/\.sqlite$/', '.zip', $sqlitePath);
     }
 
     private function deleteDirectoryRecursive(string $dir): void {
-        if (PathHelper::isDirMissing($dir)) return;
+        if (PathHelper::isDirMissing($dir)) {
+
+            return;
+        }
 
         $items = array_diff(scandir($dir), array('.', '..'));
+
         foreach ($items as $item) {
             $path = $dir . '/' . $item;
+
             if (is_dir($path)) {
                 $this->deleteDirectoryRecursive($path);
             } else {
                 @unlink($path);
             }
         }
+
         @rmdir($dir);
     }
 
     private function getDirectorySize(string $dir): int {
         $size = 0;
-        if (PathHelper::isDirMissing($dir)) return 0;
+
+        if (PathHelper::isDirMissing($dir)) {
+
+            return 0;
+        }
 
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
         );
+
         foreach ($iterator as $file) {
             if ($file->isFile()) {
                 $size += $file->getSize();
@@ -85,12 +101,12 @@ trait CleanerHelperTrait {
             $this->db->logTransaction(
                 ActionType::SnapshotCleanup->value,
                 json_encode(array(
-                    'retention_deleted' => $results['retention']['deleted'],
-                    'retention_skipped' => $results['retention']['skipped_master'],
-                    'orphans_removed'   => $results['orphans'][ResponseKeyType::Removed->value],
-                    'stuck_cleaned'     => $results['stuck']['cleaned'],
-                    'space_freed'       => PathHelper::formatBytes($results['space_freed_bytes']),
-                    ResponseKeyType::Errors->value => count($results[ResponseKeyType::Errors->value]),
+                    'retention_deleted'              => $results['retention']['deleted'],
+                    'retention_skipped'              => $results['retention']['skipped_master'],
+                    'orphans_removed'                => $results['orphans'][ResponseKeyType::Removed->value],
+                    'stuck_cleaned'                  => $results['stuck']['cleaned'],
+                    'space_freed'                    => PathHelper::formatBytes($results['space_freed_bytes']),
+                    ResponseKeyType::Errors->value   => count($results[ResponseKeyType::Errors->value]),
                     ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
                 )),
                 empty($results[ResponseKeyType::Errors->value]) ? StatusType::Success->value : StatusType::Failed->value,
@@ -108,14 +124,16 @@ trait CleanerHelperTrait {
     ): void {
         $prefix = '[SNAPSHOT] [CLEANER]';
         $fullMessage = $prefix . ' ' . $message;
-
         $hasContext = BooleanHelpers::hasValue($context);
+
         if ($hasContext) {
             $fullMessage .= ' ' . json_encode($context);
         }
 
         $isLoggerMissing = ($this->logger === null);
+
         if ($isLoggerMissing) {
+
             return;
         }
 
@@ -123,7 +141,7 @@ trait CleanerHelperTrait {
             case LogLevelType::Debug->value: $this->logger->debug($fullMessage); break;
             case LogLevelType::Info->value:  $this->logger->info($fullMessage);  break;
             case LogLevelType::Warn->value:  $this->logger->warn($fullMessage);  break;
-            case LogLevelType::Error->value: $this->logger->error($fullMessage);  break;
+            case LogLevelType::Error->value: $this->logger->error($fullMessage); break;
             default:      $this->logger->info($fullMessage);
         }
     }

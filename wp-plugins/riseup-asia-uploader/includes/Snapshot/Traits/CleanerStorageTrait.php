@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RetentionType;
@@ -25,16 +26,16 @@ trait CleanerStorageTrait {
         $stats = array(
             ResponseKeyType::TotalSnapshots->value => 0,
             ResponseKeyType::TotalSizeBytes->value => 0,
-            'total_size_formatted' => '0 B',
-            'oldest_timestamp'     => null,
-            'newest_timestamp'     => null,
-            'disk_free_bytes'      => 0,
-            'disk_free_formatted'  => '0 B',
+            'total_size_formatted'                 => '0 B',
+            'oldest_timestamp'                     => null,
+            'newest_timestamp'                     => null,
+            'disk_free_bytes'                      => 0,
+            'disk_free_formatted'                  => '0 B',
         );
 
         try {
             $db_stats = $this->db->querySingle(
-                'SELECT 
+                'SELECT
                     COUNT(*) as count,
                     COALESCE(SUM(FileSize), 0) as total_size,
                     MIN(CreatedAt) as oldest,
@@ -45,8 +46,8 @@ trait CleanerStorageTrait {
             );
 
             if ($db_stats) {
-                $stats[ResponseKeyType::TotalSnapshots->value]  = intval($db_stats[ResponseKeyType::Count->value]);
-                $stats[ResponseKeyType::TotalSizeBytes->value]  = intval($db_stats['total_size']);
+                $stats[ResponseKeyType::TotalSnapshots->value] = intval($db_stats[ResponseKeyType::Count->value]);
+                $stats[ResponseKeyType::TotalSizeBytes->value] = intval($db_stats['total_size']);
                 $stats['total_size_formatted'] = PathHelper::formatBytes($stats[ResponseKeyType::TotalSizeBytes->value]);
 
                 if ($db_stats['oldest']) {
@@ -59,14 +60,15 @@ trait CleanerStorageTrait {
             }
 
             $snapshots_dir = PathHelper::getSnapshotsDir();
+
             if (PathHelper::dirExists($snapshots_dir)) {
                 $free = PathHelper::getFreeSpace($snapshots_dir);
+
                 if ($free !== false) {
                     $stats['disk_free_bytes']     = $free;
                     $stats['disk_free_formatted'] = PathHelper::formatBytes($free);
                 }
             }
-
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to get storage stats', array(ResponseKeyType::Error->value => $e->getMessage()));
         }
@@ -92,13 +94,13 @@ trait CleanerStorageTrait {
 
             $snapshots = array_filter($snapshots, function($s) {
                 $isOrdinarySnapshot = ($this->isMasterSnapshot($s) === false);
+
                 return $isOrdinarySnapshot;
             });
 
             $estimate['snapshots_count'] = count($snapshots);
             $estimate[ResponseKeyType::Bytes->value] = array_sum(array_column($snapshots, 'size'));
             $estimate['bytes_formatted'] = PathHelper::formatBytes($estimate[ResponseKeyType::Bytes->value]);
-
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array(ResponseKeyType::Error->value => $e->getMessage()));
         }

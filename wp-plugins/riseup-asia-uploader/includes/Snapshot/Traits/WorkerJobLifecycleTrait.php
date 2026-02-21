@@ -31,7 +31,11 @@ trait WorkerJobLifecycleTrait {
     ): int|false {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
-        if ($isPdoMissing) return false;
+
+        if ($isPdoMissing) {
+
+            return false;
+        }
 
         try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::SnapshotJobs->value . " (
@@ -92,7 +96,13 @@ trait WorkerJobLifecycleTrait {
 
         $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET Status = ?, UpdatedAt = ?, CompletedAt = COALESCE(?, CompletedAt) WHERE Id = ?");
-        $stmt->execute(array($status, $now, $completed, $jobId));
+
+        $stmt->execute(array(
+            $status,
+            $now,
+            $completed,
+            $jobId,
+        ));
 
         if ($error) {
             $job = $this->getJob($pdo, $jobId);
@@ -136,8 +146,8 @@ trait WorkerJobLifecycleTrait {
         string $snapshotDir,
     ): void {
         $job = $this->getJob($pdo, $jobId);
-
         $root_path = $snapshotDir . '/a-root.db';
+
         if (file_exists($root_path)) {
             try {
                 $rootPdo = new PDO('sqlite:' . $root_path);
@@ -152,13 +162,20 @@ trait WorkerJobLifecycleTrait {
         $this->updateJobStatus($pdo, $jobId, SnapshotJobStatusType::Complete->value);
 
         $errors = json_decode($job['ErrorsJson'] ?? '[]', true);
+
         $this->log(LogLevelType::Info->value, 'Snapshot job complete', array(
-            'job_id' => $jobId, 'tables_exported' => $job['TablesExported'],
-            ResponseKeyType::TotalRows->value => $job['TotalRows'], ResponseKeyType::Errors->value => count($errors),
+            'job_id'                              => $jobId,
+            'tables_exported'                     => $job['TablesExported'],
+            ResponseKeyType::TotalRows->value     => $job['TotalRows'],
+            ResponseKeyType::Errors->value        => count($errors),
         ));
     }
 
     private function scheduleNextBatch(int $jobId): void {
-        wp_schedule_single_event(time() + 5, HookType::CronSnapshotWorkerBatch->value, array(array('job_id' => $jobId)));
+        wp_schedule_single_event(
+            time() + 5,
+            HookType::CronSnapshotWorkerBatch->value,
+            array(array('job_id' => $jobId)),
+        );
     }
 }

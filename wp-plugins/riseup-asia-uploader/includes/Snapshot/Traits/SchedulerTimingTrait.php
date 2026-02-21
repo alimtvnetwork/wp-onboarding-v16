@@ -31,7 +31,7 @@ trait SchedulerTimingTrait {
             case SnapshotFrequencyType::Daily->value:   return $this->nextDailyRun($hour, $minute);
             case SnapshotFrequencyType::Weekly->value:  return $this->nextWeeklyRun($hour, $minute, $day);
             case SnapshotFrequencyType::Monthly->value: return $this->nextMonthlyRun($hour, $minute, $day);
-            default:                    return strtotime("tomorrow {$hour}:{$minute}:00");
+            default:                                    return strtotime("tomorrow {$hour}:{$minute}:00");
         }
     }
 
@@ -55,6 +55,7 @@ trait SchedulerTimingTrait {
             $today = strtotime("today {$hour}:{$minute}:00");
 
             if ($today > $now) {
+
                 return $today;
             }
         }
@@ -70,8 +71,8 @@ trait SchedulerTimingTrait {
         $now = current_time('timestamp');
         $day = min(28, max(1, $day));
         $current_month = date('Y-m');
-
         $next = strtotime("{$current_month}-{$day} {$hour}:{$minute}:00");
+
         if ($next <= $now) {
             $next_month = date('Y-m', strtotime('+1 month'));
             $next = strtotime("{$next_month}-{$day} {$hour}:{$minute}:00");
@@ -82,8 +83,13 @@ trait SchedulerTimingTrait {
 
     private function getDayName(int $day): string {
         $days = array(
-            1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday',
-            5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday',
+            1 => 'Monday',
+            2 => 'Tuesday',
+            3 => 'Wednesday',
+            4 => 'Thursday',
+            5 => 'Friday',
+            6 => 'Saturday',
+            7 => 'Sunday',
         );
 
         return isset($days[$day]) ? $days[$day] : 'Monday';
@@ -94,7 +100,7 @@ trait SchedulerTimingTrait {
             case SnapshotFrequencyType::Daily->value:   return 'daily';
             case SnapshotFrequencyType::Weekly->value:  return SnapshotFrequencyType::Weekly->value;
             case SnapshotFrequencyType::Monthly->value: return SnapshotFrequencyType::Monthly->value;
-            default:                    return 'daily';
+            default:                                    return 'daily';
         }
     }
 }

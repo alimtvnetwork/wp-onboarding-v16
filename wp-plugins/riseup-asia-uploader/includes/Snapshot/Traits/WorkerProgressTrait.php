@@ -26,6 +26,7 @@ trait WorkerProgressTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
+
             return;
         }
 
@@ -35,6 +36,7 @@ trait WorkerProgressTrait {
                 VALUES (0, ?, '" . SnapshotStatusType::Pending->value . "', 0, 0, ?)");
 
             $now = DateHelper::nowIso();
+
             foreach ($tables as $table) {
                 $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
                 $stmt->execute(array($table, $now));
@@ -57,6 +59,7 @@ trait WorkerProgressTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
+
             return;
         }
 
@@ -65,6 +68,7 @@ trait WorkerProgressTrait {
             $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotProgress->value . "
                 SET Status = ?, RowsExported = ?, CompletedAt = ?, ErrorMessage = ?
                 WHERE SnapshotId = 0 AND TableName = ?");
+
             $stmt->execute(array(
                 $status,
                 $rows,

@@ -103,6 +103,7 @@ trait RestoreIncrementalTrait {
         array $restoreOrder,
     ): array {
         $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
+
         if (PathHelper::isDirMissing($inc_dir)) {
             $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
 
@@ -120,16 +121,28 @@ trait RestoreIncrementalTrait {
 
         foreach ($sqlite_files as $sqlite_file) {
             $table = basename($sqlite_file, '.sqlite');
+
             if (BooleanHelpers::isAbsentFromList($table, $restoreOrder)) {
                 continue;
             }
 
             $result = $this->restoreTableFromFile($sqlite_file, $table, 'merge');
+
             if ($result[ResponseKeyType::Success->value]) {
                 $inc_rows += $result[ResponseKeyType::Rows->value];
-                $this->log(LogLevelType::Info->value, sprintf('Incremental %s: %s (+%d rows)', $inc['folder_name'], $table, $result[ResponseKeyType::Rows->value]));
+                $this->log(LogLevelType::Info->value, sprintf(
+                    'Incremental %s: %s (+%d rows)',
+                    $inc['folder_name'],
+                    $table,
+                    $result[ResponseKeyType::Rows->value],
+                ));
             } else {
-                $errors[] = sprintf('Incremental %s/%s: %s', $inc['folder_name'], $table, $result[ResponseKeyType::Error->value]);
+                $errors[] = sprintf(
+                    'Incremental %s/%s: %s',
+                    $inc['folder_name'],
+                    $table,
+                    $result[ResponseKeyType::Error->value],
+                );
             }
         }
 

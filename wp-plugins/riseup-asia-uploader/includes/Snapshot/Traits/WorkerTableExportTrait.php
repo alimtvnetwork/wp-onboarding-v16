@@ -42,9 +42,9 @@ trait WorkerTableExportTrait {
         } catch (Throwable $e) {
 
             return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value => $e->getMessage(),
-                ResponseKeyType::Rows->value => 0,
+                ResponseKeyType::Success->value  => false,
+                ResponseKeyType::Error->value    => $e->getMessage(),
+                ResponseKeyType::Rows->value     => 0,
                 ResponseKeyType::Filename->value => $filename,
                 ResponseKeyType::FileSize->value => 0,
                 ResponseKeyType::Checksum->value => '',
@@ -60,6 +60,7 @@ trait WorkerTableExportTrait {
 
         $create_sql = $this->getCreateTableSql($table);
         $isCreateSqlMissing = ($create_sql === null);
+
         if ($isCreateSqlMissing) {
 
             throw new Exception('Failed to get table structure for ' . $table);
@@ -110,10 +111,12 @@ trait WorkerTableExportTrait {
                 $this->wpdb->prepare("SELECT * FROM `{$table}` LIMIT %d OFFSET %d", $this->batchSize, $offset),
                 ARRAY_N
             );
+
             foreach ($rows as $row) {
                 $stmt->execute($row);
                 $exported++;
             }
+
             $offset += $this->batchSize;
         }
 

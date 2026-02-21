@@ -22,14 +22,14 @@ trait SchedulerConfigTrait {
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Weekly->value)) {
             $schedules[SnapshotFrequencyType::Weekly->value] = array(
                 'interval' => WEEK_IN_SECONDS,
-                'display' => __('Once Weekly', 'riseup-asia-uploader'),
+                'display'  => __('Once Weekly', 'riseup-asia-uploader'),
             );
         }
 
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Monthly->value)) {
             $schedules[SnapshotFrequencyType::Monthly->value] = array(
                 'interval' => 30 * DAY_IN_SECONDS,
-                'display' => __('Once Monthly', 'riseup-asia-uploader'),
+                'display'  => __('Once Monthly', 'riseup-asia-uploader'),
             );
         }
 
@@ -47,8 +47,8 @@ trait SchedulerConfigTrait {
     public function syncScheduleWithSettings(): void {
         $settings = $this->detector->getSettings();
         $this->clearScheduledSnapshot();
-
         $isScheduleDisabled = ($settings['schedule_enabled'] === false || empty($settings['schedule_enabled']));
+
         if ($isScheduleDisabled) {
             $this->logger->debug('[SCHEDULER] Scheduled snapshots disabled');
 
@@ -61,14 +61,22 @@ trait SchedulerConfigTrait {
             return;
         }
 
-        $next_run = $this->calculateNextRunTime($settings['schedule_frequency'], $settings['schedule_time'], $settings['schedule_day']);
+        $next_run = $this->calculateNextRunTime(
+            $settings['schedule_frequency'],
+            $settings['schedule_time'],
+            $settings['schedule_day'],
+        );
         $recurrence = $this->mapFrequencyToRecurrence($settings['schedule_frequency']);
-        $result = wp_schedule_event($next_run, $recurrence, HookType::CronSnapshotScheduled->value);
+        $result = wp_schedule_event(
+            $next_run,
+            $recurrence,
+            HookType::CronSnapshotScheduled->value,
+        );
 
         if ($result) {
             $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
-                'frequency' => $settings['schedule_frequency'],
-                'next_run' => date('c', $next_run),
+                'frequency'  => $settings['schedule_frequency'],
+                'next_run'   => date('c', $next_run),
                 'recurrence' => $recurrence,
             ));
         } else {
@@ -78,6 +86,7 @@ trait SchedulerConfigTrait {
 
     public function clearScheduledSnapshot(): void {
         $timestamp = wp_next_scheduled(HookType::CronSnapshotScheduled->value);
+
         if ($timestamp) {
             wp_unschedule_event($timestamp, HookType::CronSnapshotScheduled->value);
             $this->logger->debug('[SCHEDULER] Cleared scheduled snapshot cron');
