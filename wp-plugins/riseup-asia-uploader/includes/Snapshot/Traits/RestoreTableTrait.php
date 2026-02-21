@@ -114,8 +114,11 @@ trait RestoreTableTrait {
             }
 
             return $this->batchInsertToMysql(
-                $validated['sqlite'], $table, $validated[ResponseKeyType::Columns->value],
-                $strategy, $validated['row_count']
+                $validated['sqlite'],
+                $table,
+                $validated[ResponseKeyType::Columns->value],
+                $strategy,
+                $validated['row_count'],
             );
         } catch (Throwable $e) {
 

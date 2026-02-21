@@ -77,14 +77,23 @@ trait WorkerBatchProcessTrait {
         }
 
         $this->log(LogLevelType::Info->value, sprintf('Batch %d/%d: exporting %d tables',
-            $batch_index + 1, count($batches), count($batches[$batch_index])
+            $batch_index + 1,
+            count($batches),
+            count($batches[$batch_index]),
         ));
 
         $rootPdo = $this->openRootDbForBatch($job['SnapshotDir']);
         $result = $this->exportBatchTables($batches[$batch_index], $job['SnapshotDir'], $rootPdo);
         $rootPdo = null;
 
-        $this->updateJobBatchProgress($pdo, $jobId, $batch_index + 1, $result[ResponseKeyType::Exported->value], $result[ResponseKeyType::Rows->value], $result[ResponseKeyType::Errors->value]);
+        $this->updateJobBatchProgress(
+            $pdo,
+            $jobId,
+            $batch_index + 1,
+            $result[ResponseKeyType::Exported->value],
+            $result[ResponseKeyType::Rows->value],
+            $result[ResponseKeyType::Errors->value],
+        );
 
         $next_batch = $batch_index + 1;
         if ($next_batch < count($batches)) {

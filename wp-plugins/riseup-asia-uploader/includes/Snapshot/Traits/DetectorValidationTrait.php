@@ -33,12 +33,36 @@ trait DetectorValidationTrait {
 
     private function validateEnumFields(array &$settings): void {
         $rules = array(
-            'preferred_provider' => array(SnapshotProviderType::Auto->value, SnapshotProviderType::WpReset->value, SnapshotProviderType::Updraft->value, SnapshotProviderType::Native->value),
-            'schedule_frequency' => array(SnapshotFrequencyType::Manual->value, SnapshotFrequencyType::Daily->value, SnapshotFrequencyType::Weekly->value, SnapshotFrequencyType::Monthly->value),
-            'default_scope'      => array(SnapshotScopeType::All->value, SnapshotScopeType::WordPress->value, SnapshotScopeType::Content->value, SnapshotScopeType::Custom->value),
-            'retention_type'     => array(RetentionType::Days->value, RetentionType::Count->value, RetentionType::None->value),
+            'preferred_provider' => array(
+                SnapshotProviderType::Auto->value,
+                SnapshotProviderType::WpReset->value,
+                SnapshotProviderType::Updraft->value,
+                SnapshotProviderType::Native->value,
+            ),
+            'schedule_frequency' => array(
+                SnapshotFrequencyType::Manual->value,
+                SnapshotFrequencyType::Daily->value,
+                SnapshotFrequencyType::Weekly->value,
+                SnapshotFrequencyType::Monthly->value,
+            ),
+            'default_scope'      => array(
+                SnapshotScopeType::All->value,
+                SnapshotScopeType::WordPress->value,
+                SnapshotScopeType::Content->value,
+                SnapshotScopeType::Custom->value,
+            ),
+            'retention_type'     => array(
+                RetentionType::Days->value,
+                RetentionType::Count->value,
+                RetentionType::None->value,
+            ),
         );
-        $defaults = array('preferred_provider' => SnapshotProviderType::Auto->value, 'schedule_frequency' => SnapshotFrequencyType::Daily->value, 'default_scope' => SnapshotScopeType::WordPress->value, 'retention_type' => RetentionType::Days->value);
+        $defaults = array(
+            'preferred_provider' => SnapshotProviderType::Auto->value,
+            'schedule_frequency' => SnapshotFrequencyType::Daily->value,
+            'default_scope' => SnapshotScopeType::WordPress->value,
+            'retention_type' => RetentionType::Days->value,
+        );
 
         foreach ($rules as $key => $valid) {
             if (BooleanHelpers::isAbsentFromList($settings[$key], $valid)) {

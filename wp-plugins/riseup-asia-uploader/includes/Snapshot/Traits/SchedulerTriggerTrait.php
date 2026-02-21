@@ -94,7 +94,8 @@ trait SchedulerTriggerTrait {
             }
 
             $this->logger->info('[SCHEDULER] Snapshot Now scheduled as background cron job', array(
-                'type'  => $snapshot_type, 'title' => $title,
+                'type'  => $snapshot_type,
+                'title' => $title,
             ));
 
             return ResultHelper::ok(array(

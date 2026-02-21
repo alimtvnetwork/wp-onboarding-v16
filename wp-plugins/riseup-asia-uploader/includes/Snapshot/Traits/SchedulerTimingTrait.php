@@ -53,6 +53,7 @@ trait SchedulerTimingTrait {
 
         if (date('N') == $day) {
             $today = strtotime("today {$hour}:{$minute}:00");
+
             if ($today > $now) {
                 return $today;
             }

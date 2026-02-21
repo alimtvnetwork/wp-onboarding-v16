@@ -45,7 +45,10 @@ trait ExporterPublicApiTrait {
 
         $existing = $this->getValidExport($fullSnapshotId);
         if ($existing && file_exists($existing['ZipPath'])) {
-            $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array('export_id' => $existing['Id'], 'filename' => $existing['ZipFilename']));
+            $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array(
+                'export_id' => $existing['Id'],
+                'filename' => $existing['ZipFilename'],
+            ));
 
             return ResultHelper::ok(array(
                 ResponseKeyType::Cached->value => true,

@@ -87,6 +87,7 @@ trait CleanerOrphanTrait {
             $filename = basename($path);
 
             if (substr($filename, -7) !== '.sqlite3') { continue; }
+
             if (in_array($filename, $known_files)) { continue; }
 
             $isLiveRun = ($dryRun === false);
@@ -139,6 +140,7 @@ trait CleanerOrphanTrait {
 
         foreach ($dirs as $dir) {
             if (in_array($dir, $known_paths)) { continue; }
+
             if (PathHelper::isDirEmpty($dir)) {
                 $isLiveRun = ($dryRun === false);
 
@@ -176,7 +178,7 @@ trait CleanerOrphanTrait {
                 SnapshotStatusType::Pending->value,
                 SnapshotStatusType::Running->value,
                 SnapshotStatusType::Failed->value,
-                $cutoff
+                $cutoff,
             )
         ) ?: array();
 

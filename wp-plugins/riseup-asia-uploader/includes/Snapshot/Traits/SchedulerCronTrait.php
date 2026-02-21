@@ -67,11 +67,15 @@ trait SchedulerCronTrait {
 
         $this->db->logTransaction(
             $result['action'],
-            LogCategoryType::Snapshot->value, null, '', null, '',
+            LogCategoryType::Snapshot->value,
+            null,
+            '',
+            null,
+            '',
             $result['audit_data'] ?? array(),
             $isSuccess ? StatusType::Success->value : StatusType::Failed->value,
             $isSuccess ? null : ($result[ResponseKeyType::Error->value] ?? 'Unknown'),
-            array('triggered_by' => $result['triggered_by'] ?? TriggerSourceType::Cron->value)
+            array('triggered_by' => $result['triggered_by'] ?? TriggerSourceType::Cron->value),
         );
     }
 

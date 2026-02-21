@@ -56,8 +56,13 @@ trait WorkerJobLifecycleTrait {
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
 
             $stmt->execute(array(
-                $snapshotDir, json_encode($tables), $this->poolSize,
-                SnapshotJobStatusType::Queued->value, json_encode($config), $now, $now,
+                $snapshotDir,
+                json_encode($tables),
+                $this->poolSize,
+                SnapshotJobStatusType::Queued->value,
+                json_encode($config),
+                $now,
+                $now,
             ));
 
             return (int) $pdo->lastInsertId();
@@ -115,7 +120,14 @@ trait WorkerJobLifecycleTrait {
                 TotalRows = TotalRows + ?, ErrorsJson = ?, UpdatedAt = ?
             WHERE Id = ?");
 
-        $stmt->execute(array($nextBatch, $batchExported, $batchRows, json_encode($all_errors), $now, $jobId));
+        $stmt->execute(array(
+            $nextBatch,
+            $batchExported,
+            $batchRows,
+            json_encode($all_errors),
+            $now,
+            $jobId,
+        ));
     }
 
     private function finalizeJob(

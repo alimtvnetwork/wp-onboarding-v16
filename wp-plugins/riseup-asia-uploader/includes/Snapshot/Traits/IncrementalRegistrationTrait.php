@@ -72,8 +72,12 @@ trait IncrementalRegistrationTrait {
     ): string {
 
         return json_encode(array(
-            'type' => SnapshotModeType::Incremental->value, 'master' => basename($masterDir), 'sequence' => $sequence,
-            'folder' => $folderName, ResponseKeyType::TablesChanged->value => $tablesChanged, ResponseKeyType::TotalNewRows->value => $totalNewRows,
+            'type' => SnapshotModeType::Incremental->value,
+            'master' => basename($masterDir),
+            'sequence' => $sequence,
+            'folder' => $folderName,
+            ResponseKeyType::TablesChanged->value => $tablesChanged,
+            ResponseKeyType::TotalNewRows->value => $totalNewRows,
         ));
     }
 
@@ -109,8 +113,18 @@ trait IncrementalRegistrationTrait {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $stmt->execute(array(
-            $sequence, $filename, $filepath, SnapshotProviderType::Native->value, SnapshotModeType::Incremental->value,
-            $tablesJson, $totalRows, $dirSize, SnapshotTriggerType::Api->value, SnapshotStatusType::Complete->value, $now, $now,
+            $sequence,
+            $filename,
+            $filepath,
+            SnapshotProviderType::Native->value,
+            SnapshotModeType::Incremental->value,
+            $tablesJson,
+            $totalRows,
+            $dirSize,
+            SnapshotTriggerType::Api->value,
+            SnapshotStatusType::Complete->value,
+            $now,
+            $now,
         ));
 
         return (int)$pdo->lastInsertId();

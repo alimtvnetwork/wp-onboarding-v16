@@ -100,8 +100,12 @@ trait RestoreHelperTrait {
             " (PluginSlug, Action, Status, Details, SourceMachine, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)"
         );
         $stmt->execute(array(
-            PluginConfigType::Slug->value, ActionType::SnapshotRestore->value, StatusType::Success->value,
-            $details, gethostname() ?: php_uname('n'), DateHelper::nowUtc(),
+            PluginConfigType::Slug->value,
+            ActionType::SnapshotRestore->value,
+            StatusType::Success->value,
+            $details,
+            gethostname() ?: php_uname('n'),
+            DateHelper::nowUtc(),
         ));
     }
 

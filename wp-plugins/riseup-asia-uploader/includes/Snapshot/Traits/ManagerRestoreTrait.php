@@ -38,7 +38,9 @@ trait ManagerRestoreTrait {
 
         $hasBackupOption = BooleanHelpers::hasValue($options['create_backup']);
         $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
-            ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot[ResponseKeyType::Filename->value], 'create_backup' => $hasBackupOption,
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            ResponseKeyType::Filename->value => $snapshot[ResponseKeyType::Filename->value],
+            'create_backup' => $hasBackupOption,
         ));
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
@@ -92,7 +94,9 @@ trait ManagerRestoreTrait {
         if ($result[ResponseKeyType::Success->value]) {
             $result[ResponseKeyType::BackupId->value] = $backupId;
             $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
-                ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0, ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value] ?? 0,
+                ResponseKeyType::SnapshotId->value => $snapshotId,
+                ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0,
+                ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value] ?? 0,
             ));
         } else {
             $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));

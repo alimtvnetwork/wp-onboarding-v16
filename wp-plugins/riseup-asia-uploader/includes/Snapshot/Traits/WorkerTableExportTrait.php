@@ -42,8 +42,12 @@ trait WorkerTableExportTrait {
         } catch (Throwable $e) {
 
             return array(
-                ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(),
-                ResponseKeyType::Rows->value => 0, ResponseKeyType::Filename->value => $filename, ResponseKeyType::FileSize->value => 0, ResponseKeyType::Checksum->value => '',
+                ResponseKeyType::Success->value => false,
+                ResponseKeyType::Error->value => $e->getMessage(),
+                ResponseKeyType::Rows->value => 0,
+                ResponseKeyType::Filename->value => $filename,
+                ResponseKeyType::FileSize->value => 0,
+                ResponseKeyType::Checksum->value => '',
             );
         }
     }

@@ -52,6 +52,7 @@ trait CleanerStorageTrait {
                 if ($db_stats['oldest']) {
                     $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);
                 }
+
                 if ($db_stats['newest']) {
                     $stats['newest_timestamp'] = strtotime($db_stats['newest']);
                 }

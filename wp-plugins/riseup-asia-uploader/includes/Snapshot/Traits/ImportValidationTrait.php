@@ -110,6 +110,7 @@ trait ImportValidationTrait {
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;
             $subPath = PathHelper::join($dir, $entry, $filename);
+
             if (PathHelper::fileExists($subPath)) {
                 return $subPath;
             }

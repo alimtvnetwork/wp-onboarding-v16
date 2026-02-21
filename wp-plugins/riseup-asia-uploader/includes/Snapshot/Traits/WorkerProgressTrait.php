@@ -66,9 +66,11 @@ trait WorkerProgressTrait {
                 SET Status = ?, RowsExported = ?, CompletedAt = ?, ErrorMessage = ?
                 WHERE SnapshotId = 0 AND TableName = ?");
             $stmt->execute(array(
-                $status, $rows,
+                $status,
+                $rows,
                 ($status === SnapshotStatusType::Complete->value || $status === SnapshotStatusType::Failed->value) ? $now : null,
-                $error, $table,
+                $error,
+                $table,
             ));
         } catch (Throwable $e) {
             // Non-fatal

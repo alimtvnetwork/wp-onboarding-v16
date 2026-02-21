@@ -60,17 +60,24 @@ trait OrchestratorBackupTrait {
             }
 
             $this->log(LogLevelType::Info->value, 'Async backup job created', array(
-                'job_id' => $worker_result['job_id'] ?? null, 'total_tables' => $worker_result['total_tables'] ?? null,
-                'pool_size' => $worker_result['pool_size'] ?? null, ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
+                'job_id' => $worker_result['job_id'] ?? null,
+                'total_tables' => $worker_result['total_tables'] ?? null,
+                'pool_size' => $worker_result['pool_size'] ?? null,
+                ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
             ));
 
             $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved[ResponseKeyType::Scope->value], $worker_result, array(ResponseKeyType::Count->value => 0, 'total_size' => 0), $worker_result[ResponseKeyType::Path->value]);
 
             return array(
-                ResponseKeyType::Success->value => true, 'async' => true, 'job_id' => $worker_result['job_id'] ?? null,
-                ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
-                ResponseKeyType::Path->value => $worker_result[ResponseKeyType::Path->value], 'total_tables' => $worker_result['total_tables'] ?? null,
-                'pool_size' => $worker_result['pool_size'] ?? null, 'status' => $worker_result['status'] ?? null,
+                ResponseKeyType::Success->value => true,
+                'async' => true,
+                'job_id' => $worker_result['job_id'] ?? null,
+                ResponseKeyType::SnapshotId->value => $snapshot_id,
+                ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
+                ResponseKeyType::Path->value => $worker_result[ResponseKeyType::Path->value],
+                'total_tables' => $worker_result['total_tables'] ?? null,
+                'pool_size' => $worker_result['pool_size'] ?? null,
+                'status' => $worker_result['status'] ?? null,
             );
         } catch (Throwable $e) {
 
@@ -108,16 +115,26 @@ trait OrchestratorBackupTrait {
         $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array(ResponseKeyType::Path->value => null, ResponseKeyType::Size->value => 0, ResponseKeyType::ZipFailed->value => false);
 
         return array(
-            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Directory->value => $workerResult[ResponseKeyType::Directory->value],
-            ResponseKeyType::Path->value => $workerResult[ResponseKeyType::Path->value], ResponseKeyType::Tables->value => $workerResult[ResponseKeyType::Tables->value],
-            ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value], ResponseKeyType::Plugins->value => $plugin_stats[ResponseKeyType::Count->value],
-            'zip_path' => $zip_result[ResponseKeyType::Path->value], ResponseKeyType::ZipSize->value => $zip_result[ResponseKeyType::Size->value],
+            ResponseKeyType::Success->value => true,
+            ResponseKeyType::SnapshotId->value => $snapshot_id,
+            ResponseKeyType::Directory->value => $workerResult[ResponseKeyType::Directory->value],
+            ResponseKeyType::Path->value => $workerResult[ResponseKeyType::Path->value],
+            ResponseKeyType::Tables->value => $workerResult[ResponseKeyType::Tables->value],
+            ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value],
+            ResponseKeyType::Plugins->value => $plugin_stats[ResponseKeyType::Count->value],
+            'zip_path' => $zip_result[ResponseKeyType::Path->value],
+            ResponseKeyType::ZipSize->value => $zip_result[ResponseKeyType::Size->value],
             ResponseKeyType::ZipFailed->value => $zip_result[ResponseKeyType::ZipFailed->value] ?? false,
         );
     }
 
     private function runWorkerExport(array $resolved, bool $async): array {
-        $config = array('title' => $resolved['title'], ResponseKeyType::Scope->value => $resolved[ResponseKeyType::Scope->value], 'type' => SnapshotModeType::Full->value, 'settings' => $resolved['settings']);
+        $config = array(
+            'title' => $resolved['title'],
+            ResponseKeyType::Scope->value => $resolved[ResponseKeyType::Scope->value],
+            'type' => SnapshotModeType::Full->value,
+            'settings' => $resolved['settings'],
+        );
 
         return $async ? $this->worker->execute($config) : $this->worker->executeSynchronous($config);
     }

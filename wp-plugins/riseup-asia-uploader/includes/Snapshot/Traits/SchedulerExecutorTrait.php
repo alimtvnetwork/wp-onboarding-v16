@@ -39,7 +39,9 @@ trait SchedulerExecutorTrait {
         ));
 
         return $this->buildCronResult($result, ActionType::SnapshotCreate->value, TriggerSourceType::Cron->value, array(
-            'trigger' => 'cron', ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null, 'job_id' => $result['job_id'] ?? null,
+            'trigger' => 'cron',
+            ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
+            'job_id' => $result['job_id'] ?? null,
         ));
     }
 
@@ -51,7 +53,9 @@ trait SchedulerExecutorTrait {
         $action = ($snapshotType === SnapshotModeType::Incremental->value) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
 
         return $this->buildCronResult($result, $action, TriggerSourceType::Dashboard->value, array(
-            'trigger' => SnapshotTriggerType::Manual->value, ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null, 'type' => $snapshotType,
+            'trigger' => SnapshotTriggerType::Manual->value,
+            ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
+            'type' => $snapshotType,
         ));
     }
 
@@ -72,7 +76,9 @@ trait SchedulerExecutorTrait {
         $result = $manager->restoreSnapshot($args[ResponseKeyType::SnapshotId->value], $restoreOptions);
 
         return $this->buildCronResult($result, ActionType::SnapshotRestore->value, TriggerSourceType::Cron->value, array(
-            ResponseKeyType::SnapshotId->value => $args[ResponseKeyType::SnapshotId->value], ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0, ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value] ?? 0,
+            ResponseKeyType::SnapshotId->value => $args[ResponseKeyType::SnapshotId->value],
+            ResponseKeyType::Tables->value => $result[ResponseKeyType::Tables->value] ?? 0,
+            ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value] ?? 0,
         ));
     }
 
@@ -85,7 +91,8 @@ trait SchedulerExecutorTrait {
         ));
 
         return $this->buildCronResult($result, ActionType::SnapshotIncremental->value, TriggerSourceType::Cron->value, array(
-            ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0, ResponseKeyType::TotalNewRows->value => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
+            ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0,
+            ResponseKeyType::TotalNewRows->value => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
         ));
     }
 

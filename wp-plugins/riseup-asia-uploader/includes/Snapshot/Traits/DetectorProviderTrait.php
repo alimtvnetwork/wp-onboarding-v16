@@ -62,8 +62,13 @@ trait DetectorProviderTrait {
                 $result['version'] = WP_RESET_VERSION;
             }
             $result['capabilities'] = array(
-                'full_site' => true, 'database_only' => true, 'selective' => true,
-                'scheduled' => false, 'restore' => true, 'export' => true, 'import' => true,
+                'full_site' => true,
+                'database_only' => true,
+                'selective' => true,
+                'scheduled' => false,
+                'restore' => true,
+                'export' => true,
+                'import' => true,
             );
         }
 
@@ -110,8 +115,13 @@ trait DetectorProviderTrait {
             }
             $is_premium = strpos($result['name'], 'Premium') !== false;
             $result['capabilities'] = array(
-                'full_site' => true, 'database_only' => true, 'selective' => $is_premium,
-                'scheduled' => true, 'restore' => true, 'export' => true, 'import' => true,
+                'full_site' => true,
+                'database_only' => true,
+                'selective' => $is_premium,
+                'scheduled' => true,
+                'restore' => true,
+                'export' => true,
+                'import' => true,
             );
         }
 
@@ -124,8 +134,13 @@ trait DetectorProviderTrait {
         return array(
             'id' => SnapshotProviderType::Native->value, 'name' => 'Native SQLite', 'available' => $has_sqlite,
             'capabilities' => array(
-                'full_site' => false, 'database_only' => true, 'selective' => true,
-                'scheduled' => true, 'restore' => true, 'export' => true, 'import' => true,
+                'full_site' => false,
+                'database_only' => true,
+                'selective' => true,
+                'scheduled' => true,
+                'restore' => true,
+                'export' => true,
+                'import' => true,
             ),
             'version' => PluginConfigType::Version->value,
             'detection_method' => $has_sqlite ? 'extension_loaded' : 'extension_missing',

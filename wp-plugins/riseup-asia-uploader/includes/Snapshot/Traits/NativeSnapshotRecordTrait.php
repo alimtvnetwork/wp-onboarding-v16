@@ -60,9 +60,12 @@ trait NativeSnapshotRecordTrait {
 
     private function insertSnapshotMeta(PDO $pdo): void {
         $meta = array(
-            'created_at' => date('c'), 'wp_version' => get_bloginfo('version'),
-            'site_url' => get_site_url(), 'php_version' => PHP_VERSION,
-            'provider' => $this->provider_id, 'plugin_version' => PluginConfigType::Version->value,
+            'created_at' => date('c'),
+            'wp_version' => get_bloginfo('version'),
+            'site_url' => get_site_url(),
+            'php_version' => PHP_VERSION,
+            'provider' => $this->provider_id,
+            'plugin_version' => PluginConfigType::Version->value,
         );
         $stmt = $pdo->prepare('INSERT INTO _snapshot_meta (key, value) VALUES (?, ?)');
         foreach ($meta as $key => $value) {
@@ -79,9 +82,15 @@ trait NativeSnapshotRecordTrait {
         string $trigger,
     ): int|false {
         $result = $this->db->insert(TableType::Snapshots->value, array(
-            'Sequence' => $sequence, 'Filename' => $filename . '.sqlite', 'Filepath' => $filepath,
-            'Provider' => $this->provider_id, 'Scope' => $scope, 'TablesJson' => json_encode($tables),
-            'TriggerSource' => $trigger, 'Status' => SnapshotStatusType::Pending->value, 'CreatedAt' => date('c'),
+            'Sequence' => $sequence,
+            'Filename' => $filename . '.sqlite',
+            'Filepath' => $filepath,
+            'Provider' => $this->provider_id,
+            'Scope' => $scope,
+            'TablesJson' => json_encode($tables),
+            'TriggerSource' => $trigger,
+            'Status' => SnapshotStatusType::Pending->value,
+            'CreatedAt' => date('c'),
         ));
 
         return $result ? $this->db->lastInsertId() : false;
