@@ -17,7 +17,6 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\ResponseKeyType;
 
 trait BooleanDomainTrait {
-
     public static function isFuncExists(string $functionName): bool { return function_exists($functionName); }
     public static function isFuncMissing(string $functionName): bool { return !function_exists($functionName); }
     public static function isClassExists(string $className): bool { return class_exists($className); }

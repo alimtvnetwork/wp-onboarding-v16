@@ -16,7 +16,6 @@ if (!defined('ABSPATH')) {
 }
 
 class DateHelper {
-
     /** ISO 8601 UTC with explicit Z suffix: 2024-01-15T09:30:00Z */
     public const ISO_8601_UTC = 'Y-m-d\TH:i:s\Z';
 

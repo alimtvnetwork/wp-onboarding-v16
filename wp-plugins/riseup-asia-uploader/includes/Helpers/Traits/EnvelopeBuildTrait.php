@@ -16,7 +16,6 @@ use WP_REST_Response;
 use RiseupAsia\Helpers\DateHelper;
 
 trait EnvelopeBuildTrait {
-
     public function build() {
         $envelope = array(
             'Status'     => $this->buildStatusBlock(),

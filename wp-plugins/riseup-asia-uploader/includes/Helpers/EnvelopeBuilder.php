@@ -18,7 +18,6 @@ use RiseupAsia\Helpers\Traits\EnvelopeSettersTrait;
 use RiseupAsia\Helpers\Traits\EnvelopeBuildTrait;
 
 class EnvelopeBuilder {
-
     use EnvelopeFactoryTrait;
     use EnvelopeSettersTrait;
     use EnvelopeBuildTrait;

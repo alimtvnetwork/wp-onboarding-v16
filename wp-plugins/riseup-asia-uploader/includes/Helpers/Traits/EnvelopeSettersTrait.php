@@ -13,7 +13,6 @@ if (!defined('ABSPATH')) {
 }
 
 trait EnvelopeSettersTrait {
-
     public function setResults(array $results): static { $this->results = $results; return $this; }
     public function setSingleResult(array $item): static { $this->results = array($item); return $this; }
     public function setRequestedAt(string $path): static { $this->requested_at = $path; return $this; }

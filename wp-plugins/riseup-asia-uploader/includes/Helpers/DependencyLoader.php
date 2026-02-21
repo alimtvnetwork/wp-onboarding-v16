@@ -17,7 +17,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Logging\FileLogger;
 
 class DependencyLoader {
-
     private static array $results = array();
 
     public static function load(string $label, string $path): bool {
@@ -58,6 +57,7 @@ class DependencyLoader {
 
         foreach ($manifest as $entry) {
             $isLoadFailed = (self::load($entry[0], $entry[1]) === false);
+
             if ($isLoadFailed) {
                 $failures++;
             }
@@ -85,7 +85,9 @@ class DependencyLoader {
                 'total'    => $total,
                 'failed'   => $failed,
                 'failures' => array_map(function (array $r): string {
-                    return $r['label'] . ' (' . $r['file'] . '): ' . $r['error'];
+                    return $r['label']
+                        . ' (' . $r['file'] . '): '
+                        . $r['error'];
                 }, self::getFailures()),
             ));
         } else {

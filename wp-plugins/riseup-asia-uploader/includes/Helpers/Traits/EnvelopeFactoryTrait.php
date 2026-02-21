@@ -17,7 +17,6 @@ use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Enums\HttpStatusType;
 
 trait EnvelopeFactoryTrait {
-
     public static function success(string $message = 'OK', int $code = HttpStatusType::Ok->value): static {
         $builder = new self();
         $builder->is_success = true;

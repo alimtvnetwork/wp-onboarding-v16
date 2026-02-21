@@ -17,7 +17,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
 trait InitDirTrait {
-
     public static function makeDirectory(string $path, bool $secure = false): bool {
         $normalized = str_replace('\\', '/', $path);
 
@@ -41,9 +40,11 @@ trait InitDirTrait {
 
         if (PathHelper::isDirMissing($path)) {
             $isMkdirFailed = (@mkdir($path, 0755, true) === false);
+
             if ($isMkdirFailed) {
                 $isWpFallbackAvailable = BooleanHelpers::isFuncExists('wp_mkdir_p');
                 $isWpFallbackFailed = $isWpFallbackAvailable && (wp_mkdir_p($path) === false);
+
                 if ($isWpFallbackFailed) {
                     return false;
                 }

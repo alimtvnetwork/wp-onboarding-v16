@@ -15,7 +15,6 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 
 trait PathHelperDirTrait {
-
     // ── Directory Guards (moved from BooleanDomainTrait) ──
 
     public static function isDirExists(string $dirPath): bool { return !empty($dirPath) && is_dir($dirPath); }
@@ -125,6 +124,7 @@ trait PathHelperDirTrait {
         $isSecured = true;
 
         $htaccessPath = self::join($path, '.htaccess');
+
         if (self::isFileMissing($htaccessPath)) {
             $content = "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n";
             if (@file_put_contents($htaccessPath, $content) === false) {
@@ -134,6 +134,7 @@ trait PathHelperDirTrait {
         }
 
         $indexPath = self::join($path, 'index.php');
+
         if (self::isFileMissing($indexPath)) {
             if (@file_put_contents($indexPath, "<?php\n// Silence is golden.\n") === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create index.php', array('path' => $indexPath));
