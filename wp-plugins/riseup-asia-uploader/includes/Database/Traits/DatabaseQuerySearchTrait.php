@@ -86,13 +86,16 @@ trait DatabaseQuerySearchTrait {
 
     private function applyEqualityFilters(RiseupORM $query, array $filters): void {
         $hasPlugin = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Plugin->value);
+
         if ($hasPlugin) {
             $query->where('PluginSlug', $filters[FilterKeyType::Plugin->value]);
         }
 
         $hasAction = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Action->value);
+
         if ($hasAction) {
             $actions = array_map('trim', explode(',', $filters[FilterKeyType::Action->value]));
+
             if (count($actions) === 1) {
                 $query->where('Action', $actions[0]);
             } else {
@@ -101,21 +104,25 @@ trait DatabaseQuerySearchTrait {
         }
 
         $hasUser = BooleanHelpers::hasFilterValue($filters, FilterKeyType::User->value);
+
         if ($hasUser) {
             $query->where('UserLogin', $filters[FilterKeyType::User->value]);
         }
 
         $hasStatus = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Status->value);
+
         if ($hasStatus) {
             $query->where('Status', $filters[FilterKeyType::Status->value]);
         }
 
         $hasTriggeredBy = BooleanHelpers::hasFilterValue($filters, FilterKeyType::TriggeredBy->value);
+
         if ($hasTriggeredBy) {
             $query->where('TriggeredBy', $filters[FilterKeyType::TriggeredBy->value]);
         }
 
         $hasUploadSource = BooleanHelpers::hasFilterValue($filters, FilterKeyType::UploadSource->value);
+
         if ($hasUploadSource) {
             $query->where('UploadSource', $filters[FilterKeyType::UploadSource->value]);
         }
@@ -123,11 +130,13 @@ trait DatabaseQuerySearchTrait {
 
     private function applyDateRangeFilters(RiseupORM $query, array $filters): void {
         $hasFrom = BooleanHelpers::hasFilterValue($filters, FilterKeyType::From->value);
+
         if ($hasFrom) {
             $query->whereGte('CreatedAt', $filters[FilterKeyType::From->value] . 'T00:00:00Z');
         }
 
         $hasTo = BooleanHelpers::hasFilterValue($filters, FilterKeyType::To->value);
+
         if ($hasTo) {
             $query->whereLte('CreatedAt', $filters[FilterKeyType::To->value] . 'T23:59:59Z');
         }
@@ -135,6 +144,7 @@ trait DatabaseQuerySearchTrait {
 
     private function applyTextFilters(RiseupORM $query, array $filters): void {
         $hasSourceMachine = BooleanHelpers::hasFilterValue($filters, FilterKeyType::SourceMachine->value);
+
         if ($hasSourceMachine) {
             $query->whereLike('SourceMachine', '%' . $filters[FilterKeyType::SourceMachine->value] . '%');
         }
@@ -167,6 +177,7 @@ trait DatabaseQuerySearchTrait {
             "SELECT {$column}, COUNT(*) as count FROM " . TableType::Transactions->value . " GROUP BY {$column}"
         );
         $result = array();
+
         foreach ($rows as $row) {
             $result[$row[$column]] = (int) $row['count'];
         }

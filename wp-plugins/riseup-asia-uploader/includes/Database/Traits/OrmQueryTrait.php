@@ -130,6 +130,7 @@ trait OrmQueryTrait {
         $sql = "SELECT COUNT(*) as count FROM {$this->tableName}";
 
         $hasWhereClauses = BooleanHelpers::hasValue($this->whereClauses);
+
         if ($hasWhereClauses) {
             $sql .= ' WHERE ' . implode(' AND ', $this->whereClauses);
         }
@@ -151,16 +152,19 @@ trait OrmQueryTrait {
         $sql = "SELECT {$columns} FROM {$this->tableName}";
 
         $hasWhereClauses = BooleanHelpers::hasValue($this->whereClauses);
+
         if ($hasWhereClauses) {
             $sql .= ' WHERE ' . implode(' AND ', $this->whereClauses);
         }
 
         $hasGroupBy = BooleanHelpers::hasValue($this->groupBy);
+
         if ($hasGroupBy) {
             $sql .= ' GROUP BY ' . implode(', ', $this->groupBy);
         }
 
         $hasOrderBy = BooleanHelpers::hasValue($this->orderBy);
+
         if ($hasOrderBy) {
             $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }

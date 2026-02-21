@@ -116,6 +116,7 @@ trait DatabaseQueryLogTrait {
         }
 
         $hasAgentSiteId = BooleanHelpers::hasValue($enhanced['agent_site_id'] ?? null);
+
         if ($hasAgentSiteId) {
             $record->set('AgentSiteId', (int) $enhanced['agent_site_id']);
         }
