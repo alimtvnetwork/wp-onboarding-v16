@@ -43,6 +43,7 @@ class SnapshotOrchestrator {
         if (self::$instance === null) {
             throw new LogicException('SnapshotOrchestrator::getInstance() called before initialization.');
         }
+
         return self::$instance;
     }
 

@@ -41,6 +41,7 @@ class DependencyAnalyzer {
         if (self::$instance === null) {
             throw new LogicException('DependencyAnalyzer::getInstance() called before initialization.');
         }
+
         return self::$instance;
     }
 

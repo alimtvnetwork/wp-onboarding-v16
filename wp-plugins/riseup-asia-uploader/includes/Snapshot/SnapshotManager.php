@@ -37,6 +37,7 @@ class SnapshotManager {
         if (self::$instance === null) {
             throw new LogicException('SnapshotManager::getInstance() called before initialization.');
         }
+
         return self::$instance;
     }
 
