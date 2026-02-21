@@ -21,7 +21,6 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ExporterHelpersTrait {
-
     /** Get a full snapshot record by ID (validates it's not incremental). */
     private function getFullSnapshot(int $snapshotId): ?array {
         $pdo = $this->db->getPdo();

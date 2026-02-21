@@ -18,7 +18,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 
 trait WorkerJobProgressTrait {
-
     public function getJobProgress(int $jobId): ?array {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);

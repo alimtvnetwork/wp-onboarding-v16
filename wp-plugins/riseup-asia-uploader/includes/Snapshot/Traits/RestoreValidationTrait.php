@@ -25,7 +25,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreValidationTrait {
-
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
 

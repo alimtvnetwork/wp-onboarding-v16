@@ -18,7 +18,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SnapshotProviderHelpersTrait {
-
     protected function log(
         string $level,
         string $message,

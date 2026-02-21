@@ -22,7 +22,6 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait ExporterBuildCollectTrait {
-
     private function collectSnapshotFiles(string $dir): array {
         $files = array();
         $iterator = new RecursiveIteratorIterator(

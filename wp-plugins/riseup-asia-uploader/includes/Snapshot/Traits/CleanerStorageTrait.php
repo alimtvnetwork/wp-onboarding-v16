@@ -21,7 +21,6 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait CleanerStorageTrait {
-
     public function getStorageStats(): array {
         $stats = array(
             ResponseKeyType::TotalSnapshots->value => 0,

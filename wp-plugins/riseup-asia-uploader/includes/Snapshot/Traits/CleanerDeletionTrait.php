@@ -22,7 +22,6 @@ use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait CleanerDeletionTrait {
-
     private function deleteSnapshot(array $snapshot): array {
         $bytes_freed = 0;
         $filepath = $snapshot['Filepath'];

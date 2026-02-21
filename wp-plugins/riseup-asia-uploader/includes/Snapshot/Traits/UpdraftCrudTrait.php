@@ -19,7 +19,6 @@ use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
 
 trait UpdraftCrudTrait {
-
     public function createSnapshot(array $options): array {
         $isUnavailable = ($this->isAvailable() === false);
         if ($isUnavailable) {

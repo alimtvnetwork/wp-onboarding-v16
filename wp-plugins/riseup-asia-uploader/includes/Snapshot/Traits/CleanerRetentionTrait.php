@@ -20,7 +20,6 @@ use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait CleanerRetentionTrait {
-
     private function cleanByRetention(array $settings, bool $dryRun = false): array {
         $resolved = $this->resolveRetentionSnapshots($settings);
 

@@ -27,7 +27,6 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TriggerSourceType;
 
 trait SchedulerCronTrait {
-
     /**
      * Shared cron-job wrapper: try-catch + audit trail.
      *
@@ -97,7 +96,6 @@ trait SchedulerCronTrait {
         string $triggeredBy,
         array $auditData = array(),
     ): array {
-
         return array(
             ResponseKeyType::Success->value     => $result[ResponseKeyType::Success->value] ?? false,
             ResponseKeyType::Error->value       => $result[ResponseKeyType::Error->value] ?? null,

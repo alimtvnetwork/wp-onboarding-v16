@@ -20,7 +20,6 @@ use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerBatchExportTrait {
-
     private function exportBatchesSynchronously(
         array $seedOrder,
         string $snapshotDir,
@@ -138,7 +137,6 @@ trait WorkerBatchExportTrait {
         array $export,
         float $startTime,
     ): array {
-
         return ResultHelper::ok(array(
             ResponseKeyType::Directory->value  => $prepared[ResponseKeyType::DirName->value],
             ResponseKeyType::Path->value       => $prepared[ResponseKeyType::SnapshotDir->value],

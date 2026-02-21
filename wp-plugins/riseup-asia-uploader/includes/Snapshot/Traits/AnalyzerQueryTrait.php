@@ -18,7 +18,6 @@ use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AnalyzerQueryTrait {
-
     /**
      * Get all tables in the current database.
      *

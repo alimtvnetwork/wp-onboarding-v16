@@ -16,7 +16,6 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AnalyzerGraphTrait {
-
     /** Build adjacency list from dependency edges. */
     private function buildAdjacencyList(array $dependencies, array $allTables): array {
         $graph = array();

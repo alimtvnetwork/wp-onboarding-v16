@@ -27,7 +27,6 @@ use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait RestoreHelperTrait {
-
     private function buildRestoreResult(
         array $masterResult,
         array $incResult,
@@ -90,7 +89,6 @@ trait RestoreHelperTrait {
         int $totalRows,
         float $duration,
     ): string {
-
         return json_encode(array(
             ResponseKeyType::Directory->value      => basename($snapshotDir),
             ResponseKeyType::TablesRestored->value  => $tablesRestored,
