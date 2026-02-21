@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // EnsurePortFree checks if the given port is in use and attempts to kill
@@ -18,13 +20,20 @@ func EnsurePortFree(port int) error {
 		return nil
 	}
 
+	portStr := strconv.Itoa(port)
+
 	pid, err := findPIDOnPort(port)
 	if err != nil || pid == 0 {
-		return fmt.Errorf("port %d is in use but could not identify the process: %v", port, err)
+		return apperror.Wrap(err, apperror.ErrInternal, "port is in use but could not identify the process").
+			WithValue("port", portStr)
 	}
 
+	pidStr := strconv.Itoa(pid)
+
 	if err := killProcess(pid); err != nil {
-		return fmt.Errorf("port %d is in use by PID %d but could not kill it: %v", port, pid, err)
+		return apperror.Wrap(err, apperror.ErrInternal, "port is in use but could not kill occupying process").
+			WithValue("port", portStr).
+			WithValue("pid", pidStr)
 	}
 
 	// Wait briefly for the OS to release the port
@@ -35,7 +44,9 @@ func EnsurePortFree(port int) error {
 		}
 	}
 
-	return fmt.Errorf("port %d still in use after killing PID %d", port, pid)
+	return apperror.New(apperror.ErrInternal, "port still in use after killing process").
+		WithValue("port", portStr).
+		WithValue("pid", pidStr)
 }
 
 func isPortInUse(port int) bool {
@@ -52,13 +63,13 @@ func findPIDOnPort(port int) (int, error) {
 	case "windows":
 		out, err := exec.Command("cmd", "/c", fmt.Sprintf("netstat -ano | findstr :%d | findstr LISTENING", port)).CombinedOutput()
 		if err != nil {
-			return 0, err
+			return 0, apperror.Wrap(err, apperror.ErrInternal, "netstat command failed")
 		}
 		return parseNetstatWindows(string(out), port)
 	default:
 		out, err := exec.Command("lsof", "-ti", fmt.Sprintf("tcp:%d", port)).CombinedOutput()
 		if err != nil {
-			return 0, err
+			return 0, apperror.Wrap(err, apperror.ErrInternal, "lsof command failed")
 		}
 		return strconv.Atoi(strings.TrimSpace(string(out)))
 	}
@@ -76,14 +87,23 @@ func parseNetstatWindows(output string, port int) (int, error) {
 			return strconv.Atoi(fields[len(fields)-1])
 		}
 	}
-	return 0, fmt.Errorf("no PID found in netstat output")
+	return 0, apperror.New(apperror.ErrInternal, "no PID found in netstat output").
+		WithValue("port", strconv.Itoa(port))
 }
 
 func killProcess(pid int) error {
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run()
+		if err := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run(); err != nil {
+			return apperror.Wrap(err, apperror.ErrInternal, "taskkill failed").
+				WithValue("pid", strconv.Itoa(pid))
+		}
+		return nil
 	default:
-		return exec.Command("kill", "-9", strconv.Itoa(pid)).Run()
+		if err := exec.Command("kill", "-9", strconv.Itoa(pid)).Run(); err != nil {
+			return apperror.Wrap(err, apperror.ErrInternal, "kill command failed").
+				WithValue("pid", strconv.Itoa(pid))
+		}
+		return nil
 	}
 }
