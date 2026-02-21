@@ -22,58 +22,135 @@ use RiseupAsia\Helpers\DateHelper;
 trait RootDbSchemaTrait {
 
     private function createSchema(PDO $pdo): void {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_meta (
-            id              INTEGER PRIMARY KEY,
-            title           TEXT NOT NULL,
-            type            TEXT NOT NULL,
-            created_at      TEXT NOT NULL,
-            created_by      TEXT,
-            mysql_version   TEXT,
-            wp_version      TEXT,
-            plugin_version  TEXT,
-            table_count     INTEGER,
-            total_rows      INTEGER,
-            config_json     TEXT
+        $pdo->exec("CREATE TABLE IF NOT EXISTS SnapshotMeta (
+            Id              INTEGER PRIMARY KEY,
+            Title           TEXT NOT NULL,
+            Type            TEXT NOT NULL,
+            CreatedAt       TEXT NOT NULL,
+            CreatedBy       TEXT,
+            MysqlVersion    TEXT,
+            WpVersion       TEXT,
+            PluginVersion   TEXT,
+            TableCount      INTEGER,
+            TotalRows       INTEGER,
+            ConfigJson      TEXT
         )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_tables (
-            id              INTEGER PRIMARY KEY,
-            table_name      TEXT NOT NULL UNIQUE,
-            row_count       INTEGER NOT NULL,
-            sqlite_file     TEXT NOT NULL,
-            file_size_bytes INTEGER,
-            checksum_md5    TEXT,
-            exported_at     TEXT NOT NULL
+        $pdo->exec("CREATE TABLE IF NOT EXISTS SnapshotTables (
+            Id              INTEGER PRIMARY KEY,
+            TableName       TEXT NOT NULL UNIQUE,
+            RowCount        INTEGER NOT NULL,
+            SqliteFile      TEXT NOT NULL,
+            FileSizeBytes   INTEGER,
+            ChecksumMd5     TEXT,
+            ExportedAt      TEXT NOT NULL
         )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS table_dependencies (
-            id              INTEGER PRIMARY KEY,
-            parent_table    TEXT NOT NULL,
-            child_table     TEXT NOT NULL,
-            fk_column       TEXT NOT NULL,
-            ref_column      TEXT NOT NULL,
-            UNIQUE(child_table, fk_column)
+        $pdo->exec("CREATE TABLE IF NOT EXISTS TableDependencies (
+            Id              INTEGER PRIMARY KEY,
+            ParentTable     TEXT NOT NULL,
+            ChildTable      TEXT NOT NULL,
+            FkColumn        TEXT NOT NULL,
+            RefColumn       TEXT NOT NULL,
+            UNIQUE(ChildTable, FkColumn)
         )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS incremental_backups (
-            id              INTEGER PRIMARY KEY,
-            sequence_num    INTEGER NOT NULL,
-            folder_name     TEXT NOT NULL,
-            created_at      TEXT NOT NULL,
-            tables_changed  INTEGER,
-            total_new_rows  INTEGER,
-            relative_path   TEXT NOT NULL
+        $pdo->exec("CREATE TABLE IF NOT EXISTS IncrementalBackups (
+            Id              INTEGER PRIMARY KEY,
+            SequenceNum     INTEGER NOT NULL,
+            FolderName      TEXT NOT NULL,
+            CreatedAt       TEXT NOT NULL,
+            TablesChanged   INTEGER,
+            TotalNewRows    INTEGER,
+            RelativePath    TEXT NOT NULL
         )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS plugin_snapshots (
-            id              INTEGER PRIMARY KEY,
-            plugin_slug     TEXT NOT NULL,
-            plugin_name     TEXT,
-            plugin_version  TEXT,
-            zip_file        TEXT NOT NULL,
-            file_size_bytes INTEGER,
-            checksum_md5    TEXT
+        $pdo->exec("CREATE TABLE IF NOT EXISTS PluginSnapshots (
+            Id              INTEGER PRIMARY KEY,
+            PluginSlug      TEXT NOT NULL,
+            PluginName      TEXT,
+            PluginVersion   TEXT,
+            ZipFile         TEXT NOT NULL,
+            FileSizeBytes   INTEGER,
+            ChecksumMd5     TEXT
         )");
+    }
+
+    /**
+     * Resolve the actual table name in a root DB, handling backward compatibility.
+     *
+     * Old snapshots use snake_case (e.g. snapshot_meta), new ones use PascalCase (SnapshotMeta).
+     * Detects which naming convention exists and returns the correct table name.
+     */
+    public function resolveRootDbTableName(PDO $pdo, string $pascalName): string {
+        $legacyMap = array(
+            'SnapshotMeta'       => 'snapshot_meta',
+            'SnapshotTables'     => 'snapshot_tables',
+            'TableDependencies'  => 'table_dependencies',
+            'IncrementalBackups' => 'incremental_backups',
+            'PluginSnapshots'    => 'plugin_snapshots',
+        );
+
+        $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$pascalName}'");
+        if ($check->fetch() !== false) {
+
+            return $pascalName;
+        }
+
+        $legacy = $legacyMap[$pascalName] ?? null;
+        if ($legacy !== null) {
+            $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$legacy}'");
+            if ($check->fetch() !== false) {
+
+                return $legacy;
+            }
+        }
+
+        return $pascalName;
+    }
+
+    /**
+     * Resolve a column name for backward compatibility.
+     *
+     * Old snapshots use snake_case columns; new ones use PascalCase.
+     * Returns the legacy column name if the PascalCase column is absent.
+     */
+    public function resolveRootDbColumnName(PDO $pdo, string $table, string $pascalColumn): string {
+        $legacyColumnMap = array(
+            'Id' => 'id', 'Title' => 'title', 'Type' => 'type',
+            'CreatedAt' => 'created_at', 'CreatedBy' => 'created_by',
+            'MysqlVersion' => 'mysql_version', 'WpVersion' => 'wp_version',
+            'PluginVersion' => 'plugin_version', 'TableCount' => 'table_count',
+            'TotalRows' => 'total_rows', 'ConfigJson' => 'config_json',
+            'TableName' => 'table_name', 'RowCount' => 'row_count',
+            'SqliteFile' => 'sqlite_file', 'FileSizeBytes' => 'file_size_bytes',
+            'ChecksumMd5' => 'checksum_md5', 'ExportedAt' => 'exported_at',
+            'ParentTable' => 'parent_table', 'ChildTable' => 'child_table',
+            'FkColumn' => 'fk_column', 'RefColumn' => 'ref_column',
+            'SequenceNum' => 'sequence_num', 'FolderName' => 'folder_name',
+            'TablesChanged' => 'tables_changed', 'TotalNewRows' => 'total_new_rows',
+            'RelativePath' => 'relative_path', 'PluginSlug' => 'plugin_slug',
+            'PluginName' => 'plugin_name', 'ZipFile' => 'zip_file',
+        );
+
+        $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($columns as $col) {
+            if ($col['name'] === $pascalColumn) {
+
+                return $pascalColumn;
+            }
+        }
+
+        return $legacyColumnMap[$pascalColumn] ?? $pascalColumn;
+    }
+
+    /**
+     * Detect whether a root DB uses PascalCase naming (new format).
+     */
+    public function isRootDbPascalCase(PDO $pdo): bool {
+        $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='SnapshotMeta'");
+
+        return ($check->fetch() !== false);
     }
 
     public function populateMetadata(PDO $pdo, array $config): void {
@@ -81,8 +158,8 @@ trait RootDbSchemaTrait {
         $mysqlVersion = $wpdb->get_var("SELECT VERSION()");
         $wpVersion = get_bloginfo('version');
 
-        $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_meta
-            (id, title, type, created_at, created_by, mysql_version, wp_version, plugin_version, table_count, total_rows, config_json)
+        $stmt = $pdo->prepare("INSERT OR REPLACE INTO SnapshotMeta
+            (Id, Title, Type, CreatedAt, CreatedBy, MysqlVersion, WpVersion, PluginVersion, TableCount, TotalRows, ConfigJson)
             VALUES (1, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
 
         $stmt->execute(array(
@@ -100,8 +177,8 @@ trait RootDbSchemaTrait {
     public function populateDependencies(PDO $pdo, string $scope = 'all'): array { // Default 'all' matches SnapshotScopeType::All->value
         $analysis = $this->analyzer->analyze($scope);
 
-        $stmt = $pdo->prepare("INSERT OR IGNORE INTO table_dependencies
-            (parent_table, child_table, fk_column, ref_column) VALUES (?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT OR IGNORE INTO TableDependencies
+            (ParentTable, ChildTable, FkColumn, RefColumn) VALUES (?, ?, ?, ?)");
 
         $pdo->beginTransaction();
         foreach ($analysis['dependencies'] as $dep) {

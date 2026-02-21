@@ -2,6 +2,8 @@
 /**
  * ImportValidationTrait — SQLite validation and root DB reading.
  *
+ * Supports both old snake_case and new PascalCase root DB schemas.
+ *
  * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
@@ -19,6 +21,8 @@ use PDOException;
 use Exception;
 
 trait ImportValidationTrait {
+
+    use RootDbCompatTrait;
 
     private function validateSqliteFile(string $path, string $label): void {
         try {
@@ -39,11 +43,14 @@ trait ImportValidationTrait {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $row = $pdo->query('SELECT * FROM snapshot_meta LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+            $table = $this->resolveRootTable($pdo, 'SnapshotMeta', 'snapshot_meta');
+            $row = $pdo->query("SELECT * FROM {$table} LIMIT 1")->fetch(PDO::FETCH_ASSOC);
             $pdo = null;
+
             return $row ?: null;
         } catch (PDOException $e) {
             $this->log(LogLevelType::Error->value, 'Failed to read a-root.db metadata', array('error' => $e->getMessage()));
+
             return null;
         }
     }
@@ -52,10 +59,13 @@ trait ImportValidationTrait {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $rows = $pdo->query('SELECT * FROM snapshot_tables ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+            $table = $this->resolveRootTable($pdo, 'SnapshotTables', 'snapshot_tables');
+            $rows = $pdo->query("SELECT * FROM {$table} ORDER BY {$this->resolveRootCol($pdo, $table, 'Id', 'id')}")->fetchAll(PDO::FETCH_ASSOC);
             $pdo = null;
+
             return $rows ?: array();
         } catch (PDOException $e) {
+
             return array();
         }
     }
@@ -64,10 +74,13 @@ trait ImportValidationTrait {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $rows = $pdo->query('SELECT * FROM incremental_backups ORDER BY sequence_num')->fetchAll(PDO::FETCH_ASSOC);
+            $table = $this->resolveRootTable($pdo, 'IncrementalBackups', 'incremental_backups');
+            $rows = $pdo->query("SELECT * FROM {$table} ORDER BY {$this->resolveRootCol($pdo, $table, 'SequenceNum', 'sequence_num')}")->fetchAll(PDO::FETCH_ASSOC);
             $pdo = null;
+
             return $rows ?: array();
         } catch (PDOException $e) {
+
             return array();
         }
     }
@@ -76,10 +89,13 @@ trait ImportValidationTrait {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $rows = $pdo->query('SELECT * FROM plugin_snapshots ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+            $table = $this->resolveRootTable($pdo, 'PluginSnapshots', 'plugin_snapshots');
+            $rows = $pdo->query("SELECT * FROM {$table} ORDER BY {$this->resolveRootCol($pdo, $table, 'Id', 'id')}")->fetchAll(PDO::FETCH_ASSOC);
             $pdo = null;
+
             return $rows ?: array();
         } catch (PDOException $e) {
+
             return array();
         }
     }

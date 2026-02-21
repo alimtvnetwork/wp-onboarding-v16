@@ -1220,15 +1220,16 @@ SQLite doesn't support `ALTER TABLE ... RENAME COLUMN` before v3.25 (PHP typical
 
 ---
 
-## Phase 4: PHP Root DB Schema Migration
+## ✅ COMPLETED — Phase 4: PHP Root DB Schema Migration (2026-02-21)
 
 Root DB (`a-root.db`) tables created per-snapshot — can't ALTER existing files, so:
 
-1. Update `RootDbSchemaTrait::createSchema()` to use PascalCase for new snapshots
-2. Update `RootDbRegistrationTrait` SQL queries
-3. Update `populateMetadata()`, `populateDependencies()` column references
-4. Update restore traits that read from root DB
-5. Add compatibility layer: when reading old snapshots, detect schema version and map columns
+1. ✅ Updated `RootDbSchemaTrait::createSchema()` to use PascalCase for new snapshots
+2. ✅ Updated `RootDbRegistrationTrait` SQL queries to PascalCase
+3. ✅ Updated `populateMetadata()`, `populateDependencies()` column references
+4. ✅ Updated all restore/import traits that read from root DB with backward compat
+5. ✅ Created `RootDbCompatTrait` with `resolveRootTable()`/`resolveRootCol()` helpers
+6. ✅ Added `resolveRootDbTableName()`, `resolveRootDbColumnName()`, `isRootDbPascalCase()` to `RootDbSchemaTrait`
 
 | Old Table | New Table |
 |-----------|-----------|
@@ -1237,6 +1238,9 @@ Root DB (`a-root.db`) tables created per-snapshot — can't ALTER existing files
 | `table_dependencies` | `TableDependencies` |
 | `incremental_backups` | `IncrementalBackups` |
 | `plugin_snapshots` | `PluginSnapshots` |
+
+**Files created:** `RootDbCompatTrait.php`
+**Files updated:** `RootDbSchemaTrait.php`, `RootDbRegistrationTrait.php`, `ImportValidationTrait.php`, `RestoreGraphTrait.php`, `RestoreIncrementalTrait.php`, `IncrementalDiscoveryTrait.php`, `IncrementalDeltaTrait.php`
 
 ---
 

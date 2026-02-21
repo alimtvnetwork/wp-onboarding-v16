@@ -2,6 +2,8 @@
 /**
  * IncrementalDeltaTrait — Delta detection and max-ID resolution.
  *
+ * Supports both old snake_case and new PascalCase root DB schemas.
+ *
  * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
@@ -17,7 +19,33 @@ use Throwable;
 
 trait IncrementalDeltaTrait {
 
-    private function exportTableDelta(
+    use RootDbCompatTrait;
+
+    public function exportTableDelta(string $tableName, array $info, string $incDir, int $sequence): ?array {
+        $rootDbPath = $this->getMasterRootDbPath();
+        if (PathHelper::isFileMissing($rootDbPath)) {
+            $this->log(LogLevelType::Error->value, 'Master root DB missing, cannot compute delta.');
+
+            return null;
+        }
+
+        try {
+            $rootPdo = new PDO('sqlite:' . $rootDbPath);
+            $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            return $this->exportTableDeltaInner($tableName, $info, $incDir, $rootPdo, $sequence);
+        } catch (Throwable $e) {
+            $this->log(LogLevelType::Error->value, 'Failed to open master root DB', array('error' => $e->getMessage()));
+
+            return null;
+        } finally {
+            if (isset($rootPdo)) {
+                $rootPdo = null;
+            }
+        }
+    }
+
+    private function exportTableDeltaInner(
         string $tableName,
         array $info,
         string $incDir,
@@ -167,8 +195,12 @@ trait IncrementalDeltaTrait {
         int $sequence,
         array $info,
     ): int {
+        $table = $this->resolveRootTable($rootPdo, 'IncrementalBackups', 'incremental_backups');
+        $seqCol = $this->resolveRootCol($rootPdo, $table, 'SequenceNum', 'sequence_num');
+        $folderCol = $this->resolveRootCol($rootPdo, $table, 'FolderName', 'folder_name');
+
         $prevSeq = $sequence - 1;
-        $prevFolder = $rootPdo->query("SELECT folder_name FROM incremental_backups WHERE sequence_num = {$prevSeq}")->fetchColumn();
+        $prevFolder = $rootPdo->query("SELECT {$folderCol} FROM {$table} WHERE {$seqCol} = {$prevSeq}")->fetchColumn();
 
         if ($prevFolder) {
             $rootDir = $this->getRootDirFromPdo($rootPdo);
@@ -207,7 +239,11 @@ trait IncrementalDeltaTrait {
     }
 
     private function findMasterSqliteFile(PDO $rootPdo, string $tableName): ?string {
-        $stmt = $rootPdo->prepare("SELECT sqlite_file FROM snapshot_tables WHERE table_name = ?");
+        $table = $this->resolveRootTable($rootPdo, 'SnapshotTables', 'snapshot_tables');
+        $sqliteFileCol = $this->resolveRootCol($rootPdo, $table, 'SqliteFile', 'sqlite_file');
+        $tableNameCol = $this->resolveRootCol($rootPdo, $table, 'TableName', 'table_name');
+
+        $stmt = $rootPdo->prepare("SELECT {$sqliteFileCol} FROM {$table} WHERE {$tableNameCol} = ?");
         $stmt->execute(array($tableName));
         $filename = $stmt->fetchColumn();
 
@@ -234,7 +270,9 @@ trait IncrementalDeltaTrait {
     }
 
     private function getNextSequence(PDO $rootPdo): int {
-        $max = $rootPdo->query("SELECT MAX(sequence_num) FROM incremental_backups")->fetchColumn();
+        $table = $this->resolveRootTable($rootPdo, 'IncrementalBackups', 'incremental_backups');
+        $seqCol = $this->resolveRootCol($rootPdo, $table, 'SequenceNum', 'sequence_num');
+        $max = $rootPdo->query("SELECT MAX({$seqCol}) FROM {$table}")->fetchColumn();
 
         return ($max !== false && $max !== null) ? (int) $max + 1 : 1;
     }

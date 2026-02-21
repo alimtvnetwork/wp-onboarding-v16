@@ -27,25 +27,25 @@ trait RootDbRegistrationTrait {
         int $fileSize = 0,
         string $checksum = '',
     ): void {
-        $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_tables
-            (table_name, row_count, sqlite_file, file_size_bytes, checksum_md5, exported_at) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT OR REPLACE INTO SnapshotTables
+            (TableName, RowCount, SqliteFile, FileSizeBytes, ChecksumMd5, ExportedAt) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array($tableName, $rowCount, $sqliteFile, $fileSize, $checksum, DateHelper::nowIso()));
     }
 
-    /** Update final stats in snapshot_meta. */
+    /** Update final stats in SnapshotMeta. */
     public function updateStats(
         PDO $pdo,
         int $tableCount,
         int $totalRows,
     ): void {
-        $stmt = $pdo->prepare("UPDATE snapshot_meta SET table_count = ?, total_rows = ? WHERE id = 1");
+        $stmt = $pdo->prepare("UPDATE SnapshotMeta SET TableCount = ?, TotalRows = ? WHERE Id = 1");
         $stmt->execute(array($tableCount, $totalRows));
     }
 
     /** Register an incremental backup in a-root.db. */
     public function registerIncremental(PDO $pdo, array $info): void {
-        $stmt = $pdo->prepare("INSERT INTO incremental_backups
-            (sequence_num, folder_name, created_at, tables_changed, total_new_rows, relative_path) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO IncrementalBackups
+            (SequenceNum, FolderName, CreatedAt, TablesChanged, TotalNewRows, RelativePath) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
             $info['sequence_num'], $info['folder_name'], DateHelper::nowIso(),
             $info['tables_changed'] ?? 0, $info['total_new_rows'] ?? 0, $info['relative_path'],
@@ -54,15 +54,15 @@ trait RootDbRegistrationTrait {
 
     /** Register a plugin snapshot in a-root.db. */
     public function registerPluginSnapshot(PDO $pdo, array $info): void {
-        $stmt = $pdo->prepare("INSERT INTO plugin_snapshots
-            (plugin_slug, plugin_name, plugin_version, zip_file, file_size_bytes, checksum_md5) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO PluginSnapshots
+            (PluginSlug, PluginName, PluginVersion, ZipFile, FileSizeBytes, ChecksumMd5) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
             $info['plugin_slug'], $info['plugin_name'] ?? '', $info['plugin_version'] ?? '',
             $info['zip_file'], $info['file_size_bytes'] ?? 0, $info['checksum_md5'] ?? '',
         ));
     }
 
-    /** Read metadata from an existing a-root.db. */
+    /** Read metadata from an existing a-root.db (supports both old snake_case and new PascalCase schemas). */
     public function readMetadata(string $filepath): ?array {
         if (PathHelper::isFileMissing($filepath)) {
             return null;
@@ -72,11 +72,17 @@ trait RootDbRegistrationTrait {
             $pdo = new PDO('sqlite:' . $filepath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            $meta = $pdo->query("SELECT * FROM snapshot_meta WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
-            $tables = $pdo->query("SELECT * FROM snapshot_tables ORDER BY table_name")->fetchAll(PDO::FETCH_ASSOC);
-            $deps = $pdo->query("SELECT * FROM table_dependencies ORDER BY parent_table, child_table")->fetchAll(PDO::FETCH_ASSOC);
-            $incrementals = $pdo->query("SELECT * FROM incremental_backups ORDER BY sequence_num")->fetchAll(PDO::FETCH_ASSOC);
-            $plugins = $pdo->query("SELECT * FROM plugin_snapshots ORDER BY plugin_slug")->fetchAll(PDO::FETCH_ASSOC);
+            $metaTable = $this->resolveRootDbTableName($pdo, 'SnapshotMeta');
+            $tablesTable = $this->resolveRootDbTableName($pdo, 'SnapshotTables');
+            $depsTable = $this->resolveRootDbTableName($pdo, 'TableDependencies');
+            $incTable = $this->resolveRootDbTableName($pdo, 'IncrementalBackups');
+            $pluginsTable = $this->resolveRootDbTableName($pdo, 'PluginSnapshots');
+
+            $meta = $pdo->query("SELECT * FROM {$metaTable} WHERE {$this->resolveCol($pdo, $metaTable, 'Id')} = 1")->fetch(PDO::FETCH_ASSOC);
+            $tables = $pdo->query("SELECT * FROM {$tablesTable} ORDER BY {$this->resolveCol($pdo, $tablesTable, 'TableName')}")->fetchAll(PDO::FETCH_ASSOC);
+            $deps = $pdo->query("SELECT * FROM {$depsTable} ORDER BY {$this->resolveCol($pdo, $depsTable, 'ParentTable')}, {$this->resolveCol($pdo, $depsTable, 'ChildTable')}")->fetchAll(PDO::FETCH_ASSOC);
+            $incrementals = $pdo->query("SELECT * FROM {$incTable} ORDER BY {$this->resolveCol($pdo, $incTable, 'SequenceNum')}")->fetchAll(PDO::FETCH_ASSOC);
+            $plugins = $pdo->query("SELECT * FROM {$pluginsTable} ORDER BY {$this->resolveCol($pdo, $pluginsTable, 'PluginSlug')}")->fetchAll(PDO::FETCH_ASSOC);
             $pdo = null;
 
             return array(
@@ -87,5 +93,10 @@ trait RootDbRegistrationTrait {
             $this->log(LogLevelType::Error->value, 'Failed to read a-root.db', array('path' => $filepath, 'error' => $e->getMessage()));
             return null;
         }
+    }
+
+    /** Shorthand for resolveRootDbColumnName. */
+    private function resolveCol(PDO $pdo, string $table, string $pascalColumn): string {
+        return $this->resolveRootDbColumnName($pdo, $table, $pascalColumn);
     }
 }

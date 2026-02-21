@@ -3,6 +3,7 @@
  * Restore Graph Trait
  *
  * Dependency graph construction, topological sort, table inventory, and metadata.
+ * Supports both old snake_case and new PascalCase root DB schemas.
  *
  * @package RiseupAsia\Snapshot\Traits
  * @since   1.15.0
@@ -19,22 +20,34 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreGraphTrait {
 
+    use RootDbCompatTrait;
+
     private function getSnapshotMeta(PDO $rootPdo): array {
-        $row = $rootPdo->query("SELECT * FROM snapshot_meta WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+        $table = $this->resolveRootTable($rootPdo, 'SnapshotMeta', 'snapshot_meta');
+        $idCol = $this->resolveRootCol($rootPdo, $table, 'Id', 'id');
+        $row = $rootPdo->query("SELECT * FROM {$table} WHERE {$idCol} = 1")->fetch(PDO::FETCH_ASSOC);
+
         return $row ?: array();
     }
 
     private function getTableInventory(PDO $rootPdo): array {
+        $table = $this->resolveRootTable($rootPdo, 'SnapshotTables', 'snapshot_tables');
+        $tableNameCol = $this->resolveRootCol($rootPdo, $table, 'TableName', 'table_name');
+        $sqliteFileCol = $this->resolveRootCol($rootPdo, $table, 'SqliteFile', 'sqlite_file');
+        $rowCountCol = $this->resolveRootCol($rootPdo, $table, 'RowCount', 'row_count');
+        $checksumCol = $this->resolveRootCol($rootPdo, $table, 'ChecksumMd5', 'checksum_md5');
+
         $rows = $rootPdo->query(
-            "SELECT table_name, sqlite_file, row_count, checksum_md5 FROM snapshot_tables ORDER BY table_name"
+            "SELECT {$tableNameCol}, {$sqliteFileCol}, {$rowCountCol}, {$checksumCol} FROM {$table} ORDER BY {$tableNameCol}"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         $inventory = array();
         foreach ($rows as $row) {
-            $inventory[$row['table_name']] = array(
-                'sqlite_file'  => $row['sqlite_file'],
-                'row_count'    => (int) $row['row_count'],
-                'checksum_md5' => $row['checksum_md5'],
+            $name = $row[$tableNameCol];
+            $inventory[$name] = array(
+                'sqlite_file'  => $row[$sqliteFileCol],
+                'row_count'    => (int) $row[$rowCountCol],
+                'checksum_md5' => $row[$checksumCol],
             );
         }
 
@@ -44,12 +57,17 @@ trait RestoreGraphTrait {
     private function getRestoreOrder(PDO $rootPdo, array $tableInventory): array {
         $all_tables = array_keys($tableInventory);
 
+        $depsTable = $this->resolveRootTable($rootPdo, 'TableDependencies', 'table_dependencies');
+        $parentCol = $this->resolveRootCol($rootPdo, $depsTable, 'ParentTable', 'parent_table');
+        $childCol = $this->resolveRootCol($rootPdo, $depsTable, 'ChildTable', 'child_table');
+
         $deps = $rootPdo->query(
-            "SELECT parent_table, child_table FROM table_dependencies"
+            "SELECT {$parentCol} AS parent_table, {$childCol} AS child_table FROM {$depsTable}"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($deps)) {
             sort($all_tables);
+
             return $all_tables;
         }
 
