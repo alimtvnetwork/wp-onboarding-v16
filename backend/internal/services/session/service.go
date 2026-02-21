@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	loglevel "wp-plugin-publish/internal/enums/log_level"
 	stagestatus "wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
@@ -268,14 +269,10 @@ func (s *Service) Log(sessionID, level, step, message string, details json.RawMe
 	}
 
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
-	levelUpper := map[string]string{
-		"debug": "DEBUG",
-		"info":  "INFO",
-		"warn":  "WARN",
-		"error": "ERROR",
-	}[level]
-	if levelUpper == "" {
-		levelUpper = "INFO"
+	parsed, parseErr := loglevel.Parse(level)
+	levelUpper := loglevel.Info.String()
+	if parseErr == nil {
+		levelUpper = strings.ToUpper(parsed.String())
 	}
 
 	// Format: [YYYY-MM-DD HH:MM:SS] [LEVEL] [step] Message

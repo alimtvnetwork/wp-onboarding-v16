@@ -371,7 +371,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		result.CanManagePlugins = true
 		c.progress(connectionstep.PluginAccessCheck.String(), stagestatus.Completed.String(), "Plugin management access confirmed", ProgressDetails{"url": c.baseURL})
 	} else {
-		c.progress(connectionstep.PluginAccessCheck.String(), "warning", fmt.Sprintf("Plugin endpoint returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.PluginAccessCheck.String(), stagestatus.Warning.String(), fmt.Sprintf("Plugin endpoint returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
 	}
 
 	// Step 5: Test write permissions by creating a draft post (optional, non-destructive)
@@ -389,7 +389,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 	resp, err = c.request("POST", WPCorePosts, testPost)
 	if err != nil {
-		c.progress(connectionstep.WriteTest.String(), "warning", "Could not test write permissions", ProgressDetails{"error": err.Error(), "url": c.baseURL})
+		c.progress(connectionstep.WriteTest.String(), stagestatus.Warning.String(), "Could not test write permissions", ProgressDetails{"error": err.Error(), "url": c.baseURL})
 		// Non-fatal - just report
 	} else {
 		defer resp.Body.Close()
@@ -411,9 +411,9 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 				})
 			}
 		} else if resp.StatusCode == HttpStatusUnauthorized.Int() || resp.StatusCode == HttpStatusForbidden.Int() {
-			c.progress(connectionstep.WriteTest.String(), "warning", "User cannot create posts", ProgressDetails{"url": c.baseURL})
+			c.progress(connectionstep.WriteTest.String(), stagestatus.Warning.String(), "User cannot create posts", ProgressDetails{"url": c.baseURL})
 		} else {
-			c.progress(connectionstep.WriteTest.String(), "warning", fmt.Sprintf("Write test returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
+			c.progress(connectionstep.WriteTest.String(), stagestatus.Warning.String(), fmt.Sprintf("Write test returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
 		}
 	}
 
