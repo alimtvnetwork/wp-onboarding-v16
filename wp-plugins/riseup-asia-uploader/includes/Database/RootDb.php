@@ -35,6 +35,7 @@ class RootDb {
 
     public static function getInstance(?FileLogger $logger = null, ?DependencyAnalyzer $analyzer = null): self {
         $isReadyToInit = self::$instance === null && $logger && $analyzer;
+
         if ($isReadyToInit) {
             self::$instance = new self($logger, $analyzer);
         }
@@ -55,6 +56,7 @@ class RootDb {
         $this->log(LogLevelType::Info->value, 'Creating a-root.db', array('path' => $filepath));
 
         $dir = dirname($filepath);
+
         if (PathHelper::isDirMissing($dir)) {
             PathHelper::makeDirectory($dir);
         }
@@ -77,16 +79,19 @@ class RootDb {
         $prefix = '[SNAPSHOT] [ROOT-DB]';
         $full = $prefix . ' ' . $message;
         $hasContext = BooleanHelpers::hasValue($context);
+
         if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
 
         $isLoggerAbsent = BooleanHelpers::isValueEmpty($this->logger);
+
         if ($isLoggerAbsent) {
             return;
         }
 
         $method = strtolower($level);
+
         if (method_exists($this->logger, $method)) {
             $this->logger->$method($full);
         } else {

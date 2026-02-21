@@ -1,5 +1,4 @@
 <?php
-
 namespace RiseupAsia\ErrorHandling;
 
 use Throwable;
@@ -53,6 +52,7 @@ class FrameBuilder
      */
     public static function backtraceToFrames(array $backtrace): array {
         $frames = array();
+
         foreach ($backtrace as $frame) {
             $frames[] = self::buildSingleFrame($frame);
         }
@@ -65,6 +65,7 @@ class FrameBuilder
      */
     public static function buildFatalFrames(array $error): array {
         $backtrace = null;
+
         if (function_exists('debug_backtrace')) {
             $backtrace = @debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
         }
