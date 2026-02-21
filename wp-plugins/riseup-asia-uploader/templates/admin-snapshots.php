@@ -1678,15 +1678,6 @@ jQuery(document).ready(function($) {
                 var key = year + '-' + String(month + 1).padStart(2, '0') + '-01';
                 dates[key] = true;
             }
-        } else if (frequency === 'Hourly') {
-            // Same as daily for calendar purposes
-            for (var d = 1; d <= daysInMonth; d++) {
-                var dt = new Date(year, month, d);
-                if (dt >= today) {
-                    var key = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-                    dates[key] = true;
-                }
-            }
         }
         return dates;
     }
