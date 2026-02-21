@@ -6,7 +6,14 @@
  * @since   1.9.0
  */
 
+use RiseupAsia\Enums\AjaxActionType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\RestoreModeType;
+use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\StorageModeType;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -59,10 +66,10 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="snapshot_scope">
-                            <option value="All"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="WordPress"><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="Content"><?php esc_html_e('Content Only (Posts, Terms, Comments)', 'riseup-asia-uploader'); ?></option>
-                            <option value="Custom"><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotScopeType::All->value; ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotScopeType::WordPress->value; ?>"><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotScopeType::Content->value; ?>"><?php esc_html_e('Content Only (Posts, Terms, Comments)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotScopeType::Custom->value; ?>"><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -82,8 +89,8 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="snapshot_provider">
-                            <option value="Auto"><?php esc_html_e('Auto-Detect (Recommended)', 'riseup-asia-uploader'); ?></option>
-                            <option value="Native"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotProviderType::Auto->value; ?>"><?php esc_html_e('Auto-Detect (Recommended)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotProviderType::Native->value; ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -278,10 +285,10 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_schedule">
-                            <option value="Manual"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="Daily"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
-                            <option value="Weekly"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
-                            <option value="Monthly"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotFrequencyType::Manual->value; ?>"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotFrequencyType::Daily->value; ?>"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotFrequencyType::Weekly->value; ?>"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotFrequencyType::Monthly->value; ?>"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -291,9 +298,9 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_retention_type">
-                            <option value="none"><?php esc_html_e('None (Manual Cleanup)', 'riseup-asia-uploader'); ?></option>
-                            <option value="days"><?php esc_html_e('Keep for N Days', 'riseup-asia-uploader'); ?></option>
-                            <option value="count"><?php esc_html_e('Keep Last N Snapshots', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo RetentionType::None->value; ?>"><?php esc_html_e('None (Manual Cleanup)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo RetentionType::Days->value; ?>"><?php esc_html_e('Keep for N Days', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo RetentionType::Count->value; ?>"><?php esc_html_e('Keep Last N Snapshots', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -312,9 +319,9 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_scope">
-                            <option value="All"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="WordPress"><?php esc_html_e('WordPress Core', 'riseup-asia-uploader'); ?></option>
-                            <option value="Content"><?php esc_html_e('Content Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotScopeType::All->value; ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotScopeType::WordPress->value; ?>"><?php esc_html_e('WordPress Core', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotScopeType::Content->value; ?>"><?php esc_html_e('Content Only', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -324,8 +331,8 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_provider">
-                            <option value="Auto"><?php esc_html_e('Auto-Detect', 'riseup-asia-uploader'); ?></option>
-                            <option value="Native"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotProviderType::Auto->value; ?>"><?php esc_html_e('Auto-Detect', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo SnapshotProviderType::Native->value; ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -344,16 +351,16 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <div class="riseup-storage-cards">
-                            <label class="riseup-storage-card" data-mode="Single">
-                                <input type="radio" name="setting_storage_mode" value="Single">
+                            <label class="riseup-storage-card" data-mode="<?php echo StorageModeType::Single->value; ?>">
+                                <input type="radio" name="setting_storage_mode" value="<?php echo StorageModeType::Single->value; ?>">
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-media-archive" style="font-size: 24px; width: 24px; height: 24px;"></span>
                                     <strong><?php esc_html_e('Single File', 'riseup-asia-uploader'); ?></strong>
                                     <span class="description"><?php esc_html_e('One SQLite file per snapshot', 'riseup-asia-uploader'); ?></span>
                                 </div>
                             </label>
-                            <label class="riseup-storage-card active" data-mode="PerTable">
-                                <input type="radio" name="setting_storage_mode" value="PerTable" checked>
+                            <label class="riseup-storage-card active" data-mode="<?php echo StorageModeType::PerTable->value; ?>">
+                                <input type="radio" name="setting_storage_mode" value="<?php echo StorageModeType::PerTable->value; ?>" checked>
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-grid-view" style="font-size: 24px; width: 24px; height: 24px;"></span>
                                     <strong><?php esc_html_e('Per-Table', 'riseup-asia-uploader'); ?></strong>
@@ -429,8 +436,8 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="restore_mode">
-                            <option value="full"><?php esc_html_e('Full Restore (All Tables)', 'riseup-asia-uploader'); ?></option>
-                            <option value="selective"><?php esc_html_e('Selective (Choose Tables)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo RestoreModeType::Full->value; ?>"><?php esc_html_e('Full Restore (All Tables)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo RestoreModeType::Selective->value; ?>"><?php esc_html_e('Selective (Choose Tables)', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -540,7 +547,7 @@ if (!defined('ABSPATH')) {
 <script type="text/javascript">
 jQuery(document).ready(function($) {
     var ajaxNonce = '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>';
-    var restBase = '<?php echo esc_url(rest_url(API_FULL_NAMESPACE)); ?>';
+    var restBase = '<?php echo esc_url(rest_url(PluginConfigType::apiFullNamespace())); ?>';
     var $status = $('#snapshot_action_status');
     var currentPage = 1;
     var currentRestoreId = null;
@@ -1048,7 +1055,7 @@ jQuery(document).ready(function($) {
 
     // Scope change - show/hide custom tables
     $('#snapshot_scope').on('change', function() {
-        if ($(this).val() === 'Custom') {
+        if ($(this).val() === '<?php echo SnapshotScopeType::Custom->value; ?>') {
             $('#custom_tables_row').show();
             loadTables();
         } else {
@@ -1082,7 +1089,7 @@ jQuery(document).ready(function($) {
             scope: $('#snapshot_scope').val(),
             provider: $('#snapshot_provider').val()
         };
-        if (data.scope === 'Custom') {
+        if (data.scope === '<?php echo SnapshotScopeType::Custom->value; ?>') {
             data.tables = [];
             $('#snapshot_tables_list input:checked').each(function() {
                 data.tables.push($(this).val());
@@ -1468,9 +1475,9 @@ jQuery(document).ready(function($) {
     // Retention type change
     $('#setting_retention_type').on('change', function() {
         var val = $(this).val();
-        if (val === 'days' || val === 'count') {
+        if (val === '<?php echo RetentionType::Days->value; ?>' || val === '<?php echo RetentionType::Count->value; ?>') {
             $('#retention_value_row').show();
-            $('#retention_value_label').text(val === 'days' ? 'days' : 'snapshots');
+            $('#retention_value_label').text(val === '<?php echo RetentionType::Days->value; ?>' ? 'days' : 'snapshots');
         } else {
             $('#retention_value_row').hide();
         }
@@ -1482,7 +1489,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true);
 
         var data = {
-            action: 'riseup_save_snapshot_settings',
+            action: '<?php echo AjaxActionType::SaveSnapshotSettings->value; ?>',
             nonce: ajaxNonce,
             schedule_frequency: $('#setting_schedule').val(),
             retention_type: $('#setting_retention_type').val(),
@@ -1493,9 +1500,9 @@ jQuery(document).ready(function($) {
         };
 
         var retType = data.retention_type;
-        if (retType === 'days') {
+        if (retType === '<?php echo RetentionType::Days->value; ?>') {
             data.retention_days = parseInt($('#setting_retention_value').val()) || 30;
-        } else if (retType === 'count') {
+        } else if (retType === '<?php echo RetentionType::Count->value; ?>') {
             data.retention_count = parseInt($('#setting_retention_value').val()) || 10;
         }
 
