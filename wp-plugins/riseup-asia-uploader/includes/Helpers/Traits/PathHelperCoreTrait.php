@@ -16,6 +16,7 @@ use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathDatabaseType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Logging\FileLogger;

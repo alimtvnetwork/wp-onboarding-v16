@@ -42,7 +42,11 @@ trait EnvelopeSettersTrait {
         ?string $prevPage = null,
         array $closerLinks = array(),
     ): static {
-        $this->navigation = array('NextPage' => $nextPage, 'PrevPage' => $prevPage, 'CloserLinks' => $closerLinks);
+        $this->navigation = array(
+            'NextPage'    => $nextPage,
+            'PrevPage'    => $prevPage,
+            'CloserLinks' => $closerLinks,
+        );
         return $this;
     }
 
