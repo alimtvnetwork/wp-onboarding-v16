@@ -1301,7 +1301,7 @@ V12 enum-value normalization references PascalCase column names correctly. No ot
 
 ---
 
-## Phase 6B: Rule 5 — Blank Line After `}` Enforcement
+## ✅ COMPLETED — Phase 6B: Rule 5 — Blank Line After `}` Enforcement (No violations found)
 
 ### Scope
 
@@ -1351,7 +1351,7 @@ Re-sweep all PHP files for any new Rule 4 violations introduced since Part E aud
 | Sub-Phase | Scope | Tasks | Estimated |
 |-----------|-------|-------|-----------|
 | 6A | Migration DDL modernization (V1–V12) | 5 | 2 sessions |
-| 6B | Rule 5 blank line after `}` | 2 | 1 session |
+| 6B | Rule 5 blank line after `}` | 2 | ✅ Done (clean) |
 | 6C | Rule 4 blank line before `return` re-sweep | 1 | 0.5 session |
 | **Total** | | **8** | **3.5 sessions** |
 
