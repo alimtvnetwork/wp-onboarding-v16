@@ -372,6 +372,8 @@ Error codes are defined as string constants in `codes.go`. **No magic strings.**
 | E10xxx | E2E test errors |
 | E11xxx | Publish errors |
 | E12xxx | Version errors |
+| E13xxx | Session errors |
+| E14xxx | Crypto errors |
 
 ---
 

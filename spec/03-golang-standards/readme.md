@@ -159,6 +159,8 @@ return apperror.Wrap(err, "E5002", "remote site request failed").
 | E10xxx | E2E test errors |
 | E11xxx | Publish errors |
 | E12xxx | Version errors |
+| E13xxx | Session errors |
+| E14xxx | Crypto errors |
 
 ---
 

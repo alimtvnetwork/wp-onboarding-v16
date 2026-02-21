@@ -725,41 +725,29 @@ Comprehensive plan to bring the Go backend into full compliance: byte-based enum
 
 ---
 
-## Phase A: Spec Updates (Must Complete First)
+## ✅ COMPLETED — Phase A: Spec Updates (2026-02-21)
 
-### A1 — Add Go File Naming & Organization Convention to Spec
+All four sub-tasks verified as already implemented:
 
-**File:** `spec/03-golang-standards/readme.md`  
-**Action:** Add new section covering:
+### ✅ A1 — Go File Naming & Organization Convention
 
-| Rule | Convention | Example |
-|------|-----------|---------|
-| Package directory | `snake_case` | `site_health/` |
-| File name | `snake_case`, maps to primary type | `server_config.go` → `ServerConfig` |
-| One exported type per file | Each struct/interface gets its own file | Split `config.go` → `config.go`, `server_config.go`, etc. |
-| Suffix convention | `_crud.go`, `_helpers.go`, `_validation.go` | `plugin_crud.go` |
-| Max 300 lines target | Soft limit 400 | Split when exceeded |
-| Functions | Group related funcs with their type's file | `StatusType` methods stay in `status_type.go` |
+**File:** `spec/03-golang-standards/readme.md` — §File Naming & Organization (lines 379-428)
+Already covers: snake_case files, one exported type per file, suffix convention (_crud, _helpers, _validation, _json), package directory naming, file-to-type mapping examples.
 
-### A2 — Add AppError JSON Serialization to Spec
+### ✅ A2 — AppError JSON Serialization
 
-**File:** `spec/05-error-manage/06-apperror-package/readme.md`  
-**Action:** Add section "§11 — JSON Serialization":
+**File:** `spec/05-error-manage/06-apperror-package/readme.md` — §11 JSON Serialization (lines 572-694)
+Already covers: JSON tag convention, existing tags audit, MarshalJSON with Cause→string, UnmarshalJSON with plainError reconstruction, truncateData, serialization output example.
 
-- `AppError` already has JSON tags ✅
-- Add `MarshalJSON()` that includes `Cause` as string (currently `json:"-"`)
-- Add `UnmarshalJSON()` that reconstructs `Cause` from string
-- All sub-structs (`StackTrace`, `StackFrame`, `ErrorDiagnostic`) already have JSON tags ✅
+### ✅ A3 — MarshalJSON/UnmarshalJSON Mandatory for Enums
 
-### A3 — Make MarshalJSON/UnmarshalJSON Mandatory for Enums
+**File:** `spec/03-golang-standards/01-enum-specification/02-required-methods.md` — Methods 10 & 11 (lines 217-248)
+Already listed as **Mandatory** with full implementation examples.
 
-**File:** `spec/03-golang-standards/01-enum-specification/02-required-methods.md`  
-**Action:** Move from "Optional" to "Mandatory". All byte-based enums MUST implement JSON marshal/unmarshal.
+### ✅ A4 — WP Plugin Publish in Enum Spec Inventory
 
-### A4 — Add WP Plugin Publish to Enum Spec Inventory
-
-**File:** `spec/03-golang-standards/01-enum-specification/00-overview.md`  
-**Action:** Add to "Applies To" table with status "🔄 Migration In Progress".
+**File:** `spec/03-golang-standards/01-enum-specification/00-overview.md` — Applies To table (lines 96-117)
+Already listed as "🔄 Migration In Progress" with full migration tracker (11/12 migrated, HttpStatusType int-based exempt).
 
 ---
 
@@ -845,9 +833,9 @@ Already implemented in `backend/pkg/apperror/error_json.go`:
 
 Converted 12 `fmt.Errorf` calls → `apperror.Wrap`/`apperror.New` using new session error codes (E13xxx).
 
-### ❌ E2 — `session/service.go`
+### ✅ E2 — `session/service.go` (2026-02-21)
 
-Convert ~15 `fmt.Errorf` → `apperror.Wrap`/`apperror.New`. Large file (~800 lines), needs dedicated pass.
+Converted 15 `fmt.Errorf` calls → `apperror.Wrap`/`apperror.New` using session error codes (ErrSessionInit, ErrSessionStore, ErrSessionDelete, ErrSessionNotFound, ErrSessionClear).
 
 ### ✅ E3 — Config Seed Errors (2026-02-21)
 
@@ -857,13 +845,15 @@ Converted 6 bare `return err` in `config_seed.go` → `apperror.Wrap(err, ErrCon
 
 Converted 2 `errors.New` → `apperror.New(ErrCryptoInvalid, ...)` and 4 bare `return err` → `apperror.Wrap` using new crypto error codes (E14xxx).
 
-### ❌ E4 — Full Backend Sweep
+### ✅ E4 — Database Layer Sweep (2026-02-21)
 
-Remaining files with violations (exempt: enums, e2e, filepath.Walk callbacks):
-- `session/service.go` (~15 `fmt.Errorf`)
-- `database/database.go` (~5 bare `return err`)
-- `database/splitdb/manager.go` (~4 bare `return err`)
-- `database/splitdb/export.go` (~3 bare `return err`)
+Converted all bare `return err` across 3 files:
+- `database/database.go` — 15 violations fixed (settings, seed, version, plugin version CRUD)
+- `database/splitdb/manager.go` — 8 violations fixed (schema, project/db CRUD, list, archive, purge)
+- `database/splitdb/export.go` — 5 violations fixed (zip extract, register imports, export by type)
+
+### ❌ E5 — Remaining Files
+
 - `api/handlers/error_settings_handlers.go` (~3 bare `return err` in zip helper)
 
 ---
