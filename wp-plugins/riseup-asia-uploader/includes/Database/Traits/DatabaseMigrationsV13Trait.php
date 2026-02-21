@@ -168,6 +168,7 @@ trait DatabaseMigrationsV13Trait {
 
             foreach ($columns as $oldCol => $newCol) {
                 $isColumnPresent = in_array($oldCol, $existingColumns, true);
+
                 if ($isColumnPresent) {
                     $this->pdo->exec("ALTER TABLE {$table} RENAME COLUMN {$oldCol} TO {$newCol}");
                 }

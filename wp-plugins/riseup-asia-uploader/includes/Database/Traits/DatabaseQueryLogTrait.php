@@ -112,6 +112,7 @@ trait DatabaseQueryLogTrait {
             'plugin_version' => 'PluginVersion',
             'upload_source' => 'UploadSource',
         );
+
         foreach ($fieldMap as $paramKey => $dbColumn) {
             $hasField = BooleanHelpers::hasValue($enhanced[$paramKey] ?? null);
             if ($hasField) {

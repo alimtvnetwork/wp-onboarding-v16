@@ -114,6 +114,7 @@ trait OrmWhereTrait {
         }
 
         $placeholders = array();
+
         foreach ($values as $value) {
             $paramName = $this->generateParamName($column);
             $placeholders[] = $paramName;
@@ -136,6 +137,7 @@ trait OrmWhereTrait {
         }
 
         $placeholders = array();
+
         foreach ($values as $value) {
             $paramName = $this->generateParamName($column);
             $placeholders[] = $paramName;

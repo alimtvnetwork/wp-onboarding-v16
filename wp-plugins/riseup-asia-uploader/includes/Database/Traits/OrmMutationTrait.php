@@ -61,6 +61,7 @@ trait OrmMutationTrait {
         );
 
         $params = array();
+
         foreach ($this->data as $col => $val) {
             $params[':' . $col] = $val;
         }
