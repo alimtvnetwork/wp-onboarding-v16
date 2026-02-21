@@ -15,7 +15,6 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 
 trait PathHelperFileTrait {
-
     // ── File Guards (moved from BooleanDomainTrait) ──
 
     public static function isFileExists(string $filePath): bool { return !empty($filePath) && file_exists($filePath); }
@@ -87,6 +86,10 @@ trait PathHelperFileTrait {
         $units = array('B', 'KB', 'MB', 'GB', 'TB');
         $factor = floor(log($bytes, 1024));
         $factor = min($factor, count($units) - 1);
-        return sprintf("%.{$decimals}f %s", $bytes / pow(1024, $factor), $units[$factor]);
+        return sprintf(
+            "%.{$decimals}f %s",
+            $bytes / pow(1024, $factor),
+            $units[$factor],
+        );
     }
 }

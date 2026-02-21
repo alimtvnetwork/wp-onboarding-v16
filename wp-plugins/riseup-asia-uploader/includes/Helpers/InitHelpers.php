@@ -20,7 +20,6 @@ use RiseupAsia\Helpers\Traits\InitStartupTrait;
 use RiseupAsia\Logging\FileLogger;
 
 class InitHelpers {
-
     use InitDirTrait;
     use InitStartupTrait;
 
@@ -81,6 +80,7 @@ class InitHelpers {
         if (self::DB_WAL_MODE) {
             $pdo->exec('PRAGMA journal_mode = WAL');
         }
+
         $pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');
     }
 

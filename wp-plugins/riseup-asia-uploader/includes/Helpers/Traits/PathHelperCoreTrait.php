@@ -22,7 +22,6 @@ use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Logging\FileLogger;
 
 trait PathHelperCoreTrait {
-
     private static ?FileLogger $logger = null;
     private static bool $isBootstrapping = false;
 
@@ -62,6 +61,7 @@ trait PathHelperCoreTrait {
         }
 
         $logger = self::getLogger();
+
         if ($logger !== null) {
             $logger->$method($message, $context);
         } else {

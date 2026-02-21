@@ -18,7 +18,6 @@ use RiseupAsia\ErrorHandling\BootErrorCollector;
 use RiseupAsia\Logging\FileLogger;
 
 trait InitStartupTrait {
-
     public static function initComponent(string $name, callable $initFn): mixed {
         $start = microtime(true);
         $result = null;

@@ -18,7 +18,6 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\OptionNameType;
 
 class SettingsMigrationHelper {
-
     /** Option key tracking whether migration has run. */
     private const MIGRATION_FLAG = 'riseup_settings_migrated_v1';
 

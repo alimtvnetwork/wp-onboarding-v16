@@ -17,7 +17,6 @@ use RiseupAsia\Helpers\Traits\PathHelperDirTrait;
 use RiseupAsia\Helpers\Traits\PathHelperFileTrait;
 
 class PathHelper {
-
     use PathHelperCoreTrait;
     use PathHelperDirTrait;
     use PathHelperFileTrait;
