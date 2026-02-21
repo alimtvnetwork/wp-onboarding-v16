@@ -13,6 +13,7 @@ import (
 
 	loglevel "wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/ziputil"
 )
 
@@ -266,17 +267,20 @@ func fileExists(path string) bool {
 func addFileToZip(zipWriter *zip.Writer, srcPath, destName string) error {
 	file, err := os.Open(srcPath)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrFileOpen, "failed to open file for zip").WithPath(srcPath)
 	}
 	defer file.Close()
 
 	writer, err := zipWriter.Create(destName)
 	if err != nil {
-		return err
+		return apperror.Wrap(err, apperror.ErrZipCreate, "failed to create zip entry").WithPath(destName)
 	}
 
 	_, err = io.Copy(writer, file)
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrZipWrite, "failed to copy file into zip").WithPath(srcPath)
+	}
+	return nil
 }
 
 // --- Settings Handlers ---
