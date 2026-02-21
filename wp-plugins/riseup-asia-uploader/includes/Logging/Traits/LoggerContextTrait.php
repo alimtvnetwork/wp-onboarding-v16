@@ -26,6 +26,7 @@ trait LoggerContextTrait {
     /** Get client IP address. */
     private function getClientIp(): string {
         $ipKeys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');
+
         foreach ($ipKeys as $key) {
             if (empty($_SERVER[$key])) {
                 continue;
@@ -74,6 +75,7 @@ trait LoggerContextTrait {
     private function buildEnhancedFields(array $extraEnhanced = array()): array {
         $enhanced = array();
         $sourceMachine = $this->getSourceMachine();
+
         if ($sourceMachine) {
             $enhanced['source_machine'] = $sourceMachine;
         }
@@ -81,6 +83,7 @@ trait LoggerContextTrait {
             $enhanced['plugin_version'] = PluginConfigType::Version->value;
         }
         $hasExtraEnhanced = BooleanHelpers::hasValue($extraEnhanced);
+
         if ($hasExtraEnhanced) {
             $enhanced = array_merge($enhanced, $extraEnhanced);
         }

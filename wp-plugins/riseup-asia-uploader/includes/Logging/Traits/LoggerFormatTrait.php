@@ -41,7 +41,14 @@ trait LoggerFormatTrait {
             $line  = isset($frame['line']) ? $frame['line'] : self::DEFAULT_LINE_NUMBER;
             $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
             $func  = isset($frame['function']) ? $frame['function'] : self::TRACE_LABEL_UNKNOWN;
-            $lines[] = sprintf('#%d %s(%d): %s%s()', $i, $file, $line, $class, $func);
+            $lines[] = sprintf(
+                '#%d %s(%d): %s%s()',
+                $i,
+                $file,
+                $line,
+                $class,
+                $func,
+            );
         }
 
         return implode(PHP_EOL, $lines);
@@ -106,6 +113,7 @@ trait LoggerFormatTrait {
         $context = $this->enrichContextWithRequest($context);
 
         $shouldSkipChain = ($includeChain === false || $trace === null || isset($context['_invocation_chain']));
+
         if ($shouldSkipChain) {
             return $context;
         }
