@@ -60,11 +60,13 @@ trait AdminErrorStateTrait {
     /** Render global admin notice when there are unseen errors. */
     public function renderGlobalErrorNotice(): void {
         $unseen = $this->getUnseenErrorCount();
+
         if ($unseen <= 0) {
             return;
         }
 
         $currentPage = isset($_GET['page']) ? $_GET['page'] : '';
+
         if ($currentPage === AdminPageType::Errors->value) {
             return;
         }

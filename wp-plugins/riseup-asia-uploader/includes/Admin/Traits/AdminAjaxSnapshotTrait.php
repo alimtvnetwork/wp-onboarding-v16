@@ -50,6 +50,7 @@ trait AdminAjaxSnapshotTrait {
     /** Parse text fields from $_POST into settings. */
     private function parsePostTextFields(array &$settings) {
         $fields = array('preferred_provider', 'schedule_frequency', 'schedule_time', 'default_scope', 'retention_type');
+
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 $settings[$field] = sanitize_text_field($_POST[$field]);
@@ -60,6 +61,7 @@ trait AdminAjaxSnapshotTrait {
     /** Parse integer fields from $_POST into settings. */
     private function parsePostIntFields(array &$settings) {
         $fields = array('schedule_day', 'retention_days', 'retention_count', 'max_snapshot_size_mb', 'batch_size');
+
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 $settings[$field] = intval($_POST[$field]);
@@ -70,6 +72,7 @@ trait AdminAjaxSnapshotTrait {
     /** Parse boolean fields from $_POST into settings. */
     private function parsePostBoolFields(array &$settings) {
         $fields = array('schedule_enabled', 'pre_restore_backup');
+
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 $settings[$field] = ($_POST[$field] === '1');
@@ -96,6 +99,7 @@ trait AdminAjaxSnapshotTrait {
         }
 
         $mode = sanitize_text_field($_POST['storage_mode']);
+
         if (in_array($mode, StorageModeType::validValues())) {
             $settings['storage_mode'] = $mode;
         }
