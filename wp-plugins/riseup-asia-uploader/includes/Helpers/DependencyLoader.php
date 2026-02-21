@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Logging\FileLogger;
 
 class DependencyLoader {
@@ -47,8 +48,8 @@ class DependencyLoader {
         self::$results[] = array(
             'label'   => $label,
             'file'    => basename($path),
-            'success' => $success,
-            'error'   => $error,
+            ResponseKeyType::Success->value => $success,
+            ResponseKeyType::Error->value   => $error,
         );
     }
 

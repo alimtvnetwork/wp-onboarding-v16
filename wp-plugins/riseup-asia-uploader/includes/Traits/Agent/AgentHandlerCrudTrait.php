@@ -34,7 +34,7 @@ trait AgentHandlerCrudTrait {
             $manager = AgentManager::getInstance();
             $result = $manager->listAgents($filters, $limit, $offset);
 
-            return new WP_REST_Response(array('success' => true, ResponseKeyType::Total->value => $result[ResponseKeyType::Total->value], ResponseKeyType::Agents->value => $result[ResponseKeyType::Agents->value]), HttpStatusType::Ok->value);
+            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, ResponseKeyType::Total->value => $result[ResponseKeyType::Total->value], ResponseKeyType::Agents->value => $result[ResponseKeyType::Agents->value]), HttpStatusType::Ok->value);
         }, 'list_agents');
     }
 
@@ -49,7 +49,7 @@ trait AgentHandlerCrudTrait {
                 return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
             }
 
-            return new WP_REST_Response(array('success' => true, 'agent_id' => $result, 'message' => 'Agent site added successfully'), HttpStatusType::Created->value);
+            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, 'agent_id' => $result, ResponseKeyType::Message->value => 'Agent site added successfully'), HttpStatusType::Created->value);
         }, 'add_agent');
     }
 
@@ -76,7 +76,7 @@ trait AgentHandlerCrudTrait {
                 return $this->errorResponse('Agent site not found', HttpStatusType::NotFound->value);
             }
 
-            return new WP_REST_Response(array('success' => true, 'agent' => $agent), HttpStatusType::Ok->value);
+            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, 'agent' => $agent), HttpStatusType::Ok->value);
         }, 'get_agent');
     }
 
@@ -91,7 +91,7 @@ trait AgentHandlerCrudTrait {
                 return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
             }
 
-            return new WP_REST_Response(array('success' => true, 'message' => 'Agent site removed successfully'), HttpStatusType::Ok->value);
+            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => 'Agent site removed successfully'), HttpStatusType::Ok->value);
         }, 'remove_agent');
     }
 }

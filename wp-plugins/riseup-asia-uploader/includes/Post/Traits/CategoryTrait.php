@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
@@ -26,7 +27,7 @@ trait CategoryTrait {
 
         if (empty($data['name'])) {
             $this->fileLogger->warn('Category creation failed: name required');
-            return array('success' => false, 'error' => 'Category name is required');
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Category name is required');
         }
 
         try {
@@ -45,7 +46,7 @@ trait CategoryTrait {
                 $errorMsg = $result->get_error_message();
                 $this->fileLogger->error('Category creation failed', array('error' => $errorMsg));
                 $this->logger->logPostAction(ActionType::CategoryCreate->value, 0, StatusType::Failed->value, $data, $errorMsg);
-                return array('success' => false, 'error' => $errorMsg);
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $errorMsg);
             }
 
             $this->logger->logCategoryCreate($result['term_id'], array(
@@ -53,7 +54,7 @@ trait CategoryTrait {
             ));
 
             $this->fileLogger->info('Category created', array('term_id' => $result['term_id']));
-            return array('success' => true, 'category' => $this->formatCategory(get_term($result['term_id'], 'category')));
+            return array(ResponseKeyType::Success->value => true, 'category' => $this->formatCategory(get_term($result['term_id'], 'category')));
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Category creation exception');
         }
@@ -79,14 +80,14 @@ trait CategoryTrait {
             $terms = get_terms($args);
             if (is_wp_error($terms)) {
                 $this->fileLogger->error('List categories failed', array('error' => $terms->get_error_message()));
-                return array('success' => false, 'error' => $terms->get_error_message());
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $terms->get_error_message());
             }
 
             $categories = array_map(array($this, 'formatCategory'), $terms);
             $total = wp_count_terms(array('taxonomy' => 'category', 'hide_empty' => false));
 
             return array(
-                'success' => true, 'total' => (int) $total,
+                ResponseKeyType::Success->value => true, 'total' => (int) $total,
                 'limit' => $args['number'], 'offset' => $args['offset'],
                 'categories' => $categories,
             );

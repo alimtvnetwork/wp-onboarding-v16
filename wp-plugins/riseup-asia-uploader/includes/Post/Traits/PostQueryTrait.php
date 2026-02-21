@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PostStatusType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
@@ -60,7 +61,7 @@ trait PostQueryTrait {
             }
 
             return array(
-                'success' => true, 'total' => $query->found_posts,
+                ResponseKeyType::Success->value => true, 'total' => $query->found_posts,
                 'limit' => $args['posts_per_page'], 'offset' => $args['offset'],
                 'posts' => $posts,
             );
