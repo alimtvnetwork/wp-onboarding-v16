@@ -19,6 +19,7 @@ use RiseupAsia\Enums\StatusType;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait CategoryTrait {
 
@@ -27,7 +28,7 @@ trait CategoryTrait {
 
         if (empty($data['name'])) {
             $this->fileLogger->warn('Category creation failed: name required');
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Category name is required');
+            return ResultHelper::error('Category name is required');
         }
 
         try {
@@ -46,15 +47,18 @@ trait CategoryTrait {
                 $errorMsg = $result->get_error_message();
                 $this->fileLogger->error('Category creation failed', array('error' => $errorMsg));
                 $this->logger->logPostAction(ActionType::CategoryCreate->value, 0, StatusType::Failed->value, $data, $errorMsg);
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $errorMsg);
+                return ResultHelper::error($errorMsg);
             }
 
             $this->logger->logCategoryCreate($result['term_id'], array(
-                'name' => $data['name'], 'slug' => $args['slug'] ?? '',
+                'name' => $data['name'],
+                'slug' => $args['slug'] ?? '',
             ));
 
             $this->fileLogger->info('Category created', array('term_id' => $result['term_id']));
-            return array(ResponseKeyType::Success->value => true, 'category' => $this->formatCategory(get_term($result['term_id'], 'category')));
+            return ResultHelper::ok(array(
+                ResponseKeyType::Category->value => $this->formatCategory(get_term($result['term_id'], 'category')),
+            ));
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Category creation exception');
         }
@@ -80,17 +84,18 @@ trait CategoryTrait {
             $terms = get_terms($args);
             if (is_wp_error($terms)) {
                 $this->fileLogger->error('List categories failed', array('error' => $terms->get_error_message()));
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $terms->get_error_message());
+                return ResultHelper::error($terms->get_error_message());
             }
 
             $categories = array_map(array($this, 'formatCategory'), $terms);
             $total = wp_count_terms(array('taxonomy' => 'category', 'hide_empty' => false));
 
-            return array(
-                ResponseKeyType::Success->value => true, ResponseKeyType::Total->value => (int) $total,
-                'limit' => $args['number'], 'offset' => $args['offset'],
-                'categories' => $categories,
-            );
+            return ResultHelper::ok(array(
+                ResponseKeyType::Total->value      => (int) $total,
+                ResponseKeyType::Limit->value      => $args['number'],
+                ResponseKeyType::Offset->value     => $args['offset'],
+                ResponseKeyType::Categories->value => $categories,
+            ));
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List categories exception');
         }
@@ -98,8 +103,12 @@ trait CategoryTrait {
 
     private function formatCategory(object $term): array {
         return array(
-            'id' => $term->term_id, 'name' => $term->name, 'slug' => $term->slug,
-            'description' => $term->description, 'parent' => $term->parent, 'count' => $term->count,
+            'id'          => $term->term_id,
+            'name'        => $term->name,
+            'slug'        => $term->slug,
+            'description' => $term->description,
+            'parent'      => $term->parent,
+            'count'       => $term->count,
         );
     }
 }

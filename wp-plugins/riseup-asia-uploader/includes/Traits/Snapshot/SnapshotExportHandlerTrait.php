@@ -115,7 +115,7 @@ trait SnapshotExportHandlerTrait {
             return $this->errorResponse($result[ResponseKeyType::Error->value] ?? 'Export failed', HttpStatusType::BadRequest->value);
         }
 
-        $export = $result['export'];
+        $export = $result[ResponseKeyType::Export->value];
         $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
 
         $this->logger->logPluginAction(

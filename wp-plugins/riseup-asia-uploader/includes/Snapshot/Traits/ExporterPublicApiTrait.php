@@ -21,6 +21,7 @@ use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait ExporterPublicApiTrait {
 
@@ -36,14 +37,20 @@ trait ExporterPublicApiTrait {
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
         if ($isSnapshotMissing) {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Full snapshot not found', ResponseKeyType::Code->value => SnapshotErrorType::NotFound->value);
+            return ResultHelper::errorWithCode(
+                'Full snapshot not found',
+                SnapshotErrorType::NotFound->value,
+            );
         }
 
         $existing = $this->getValidExport($fullSnapshotId);
         if ($existing && file_exists($existing['zip_path'])) {
             $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array('export_id' => $existing['id'], 'filename' => $existing['zip_filename']));
 
-            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Cached->value => true, 'export' => $existing);
+            return ResultHelper::ok(array(
+                ResponseKeyType::Cached->value => true,
+                ResponseKeyType::Export->value => $existing,
+            ));
         }
 
         if ($existing) {

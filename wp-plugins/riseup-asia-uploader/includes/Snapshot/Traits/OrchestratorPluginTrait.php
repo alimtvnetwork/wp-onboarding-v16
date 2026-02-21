@@ -24,6 +24,7 @@ use RiseupAsia\Enums\PluginSelectionType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait OrchestratorPluginTrait {
 
@@ -34,7 +35,11 @@ trait OrchestratorPluginTrait {
         if ($isDirCreationFailed) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
 
-            return array(ResponseKeyType::Count->value => 0, 'total_size' => 0, ResponseKeyType::Plugins->value => array());
+            return array(
+                ResponseKeyType::Count->value     => 0,
+                ResponseKeyType::TotalSize->value  => 0,
+                ResponseKeyType::Plugins->value    => array(),
+            );
         }
 
         $plugins_to_snapshot = $this->collectPluginsToSnapshot($selection);
@@ -56,7 +61,11 @@ trait OrchestratorPluginTrait {
 
         $rootPdo = null;
 
-        return array(ResponseKeyType::Count->value => $count, 'total_size' => $total_size, ResponseKeyType::Plugins->value => $plugin_list);
+        return array(
+            ResponseKeyType::Count->value    => $count,
+            ResponseKeyType::TotalSize->value => $total_size,
+            ResponseKeyType::Plugins->value  => $plugin_list,
+        );
     }
 
     private function collectPluginsToSnapshot(string $selection): array {
@@ -112,21 +121,34 @@ trait OrchestratorPluginTrait {
         if ($isZipFailed) {
             $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array(ResponseKeyType::Error->value => $zip_result[ResponseKeyType::Error->value]));
 
-            return array(ResponseKeyType::Success->value => false);
+            return ResultHelper::failed();
         }
 
-        $entry = array('slug' => $info['slug'], 'name' => $info['name'], 'version' => $info['version'], 'zip' => $zip_filename, ResponseKeyType::Size->value => filesize($zip_path));
+        $entry = array(
+            'slug'                        => $info['slug'],
+            'name'                        => $info['name'],
+            'version'                     => $info['version'],
+            'zip'                         => $zip_filename,
+            ResponseKeyType::Size->value  => filesize($zip_path),
+        );
 
         if ($rootPdo) {
             $this->rootDb->registerPluginSnapshot($rootPdo, array(
-                'plugin_slug' => $info['slug'], 'plugin_name' => $info['name'], 'plugin_version' => $info['version'],
-                'zip_file' => 'plugins/' . $zip_filename, 'file_size_bytes' => filesize($zip_path), 'checksum_md5' => md5_file($zip_path),
+                'plugin_slug' => $info['slug'],
+                'plugin_name' => $info['name'],
+                'plugin_version' => $info['version'],
+                'zip_file' => 'plugins/' . $zip_filename,
+                'file_size_bytes' => filesize($zip_path),
+                'checksum_md5' => md5_file($zip_path),
             ));
         }
 
         $this->log(LogLevelType::Info->value, sprintf('Plugin archived: %s (%s)', $info['name'], $this->formatBytes($entry[ResponseKeyType::Size->value])));
 
-        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Size->value => $entry[ResponseKeyType::Size->value], ResponseKeyType::Entry->value => $entry);
+        return ResultHelper::ok(array(
+            ResponseKeyType::Size->value  => $entry[ResponseKeyType::Size->value],
+            ResponseKeyType::Entry->value => $entry,
+        ));
     }
 
     private function createPluginZip(
@@ -138,7 +160,7 @@ trait OrchestratorPluginTrait {
             $zip = new ZipArchive();
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create ZIP');
+                return ResultHelper::error('Failed to create ZIP');
             }
 
             $sourceDir = rtrim($sourceDir, '/\\');
@@ -163,13 +185,13 @@ trait OrchestratorPluginTrait {
             if ($size === 0) {
                 @unlink($zipPath);
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'ZIP file is empty');
+                return ResultHelper::error('ZIP file is empty');
             }
 
-            return array(ResponseKeyType::Success->value => true);
+            return ResultHelper::ok();
         } catch (Throwable $e) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return ResultHelper::errorFromException($e);
         }
     }
 

@@ -37,7 +37,11 @@ trait RestoreIncrementalTrait {
 
         if ($isSkipped) {
 
-            return array('applied' => 0, ResponseKeyType::TotalRows->value => 0, ResponseKeyType::Errors->value => array());
+            return array(
+                ResponseKeyType::Applied->value   => 0,
+                ResponseKeyType::TotalRows->value  => 0,
+                ResponseKeyType::Errors->value     => array(),
+            );
         }
 
         return $this->applyIncrementals($rootPdo, $snapshotDir, $restoreOrder);
@@ -54,7 +58,11 @@ trait RestoreIncrementalTrait {
 
         if (empty($incrementals)) {
 
-            return array('applied' => 0, ResponseKeyType::TotalRows->value => 0, ResponseKeyType::Errors->value => array());
+            return array(
+                ResponseKeyType::Applied->value   => 0,
+                ResponseKeyType::TotalRows->value  => 0,
+                ResponseKeyType::Errors->value     => array(),
+            );
         }
 
         $this->log(LogLevelType::Info->value, 'Applying incrementals', array(ResponseKeyType::Count->value => count($incrementals)));
@@ -74,7 +82,11 @@ trait RestoreIncrementalTrait {
             }
         }
 
-        return array('applied' => $applied, ResponseKeyType::TotalRows->value => $total_rows, ResponseKeyType::Errors->value => $errors);
+        return array(
+            ResponseKeyType::Applied->value   => $applied,
+            ResponseKeyType::TotalRows->value  => $total_rows,
+            ResponseKeyType::Errors->value     => $errors,
+        );
     }
 
     private function applySingleIncremental(
@@ -86,7 +98,10 @@ trait RestoreIncrementalTrait {
         if (PathHelper::isDirMissing($inc_dir)) {
             $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
 
-            return array(ResponseKeyType::Rows->value => 0, ResponseKeyType::Errors->value => array('Incremental directory missing: ' . $inc['folder_name']));
+            return array(
+                ResponseKeyType::Rows->value   => 0,
+                ResponseKeyType::Errors->value => array('Incremental directory missing: ' . $inc['folder_name']),
+            );
         }
 
         $this->log(LogLevelType::Info->value, 'Applying incremental: ' . $inc['folder_name']);
@@ -110,6 +125,9 @@ trait RestoreIncrementalTrait {
             }
         }
 
-        return array(ResponseKeyType::Rows->value => $inc_rows, ResponseKeyType::Errors->value => $errors);
+        return array(
+            ResponseKeyType::Rows->value   => $inc_rows,
+            ResponseKeyType::Errors->value => $errors,
+        );
     }
 }

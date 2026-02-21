@@ -54,6 +54,20 @@ enum ResponseKeyType: string
     case Computed  = 'computed';
     case Removed   = 'removed';
 
+    /** Pagination keys. */
+    case Limit  = 'limit';
+    case Offset = 'offset';
+
+    /** Domain entity keys. */
+    case Posts        = 'posts';
+    case Categories   = 'categories';
+    case Category     = 'category';
+    case Export       = 'export';
+    case Incrementals = 'incrementals';
+    case TotalSize    = 'total_size';
+    case Applied      = 'applied';
+    case Folder       = 'folder';
+
     /** Snapshot-domain keys. */
     case SnapshotId    = 'snapshot_id';
     case Sequence      = 'sequence';

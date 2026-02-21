@@ -16,6 +16,7 @@ use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
@@ -60,11 +61,12 @@ trait PostQueryTrait {
                 );
             }
 
-            return array(
-                ResponseKeyType::Success->value => true, ResponseKeyType::Total->value => $query->found_posts,
-                'limit' => $args['posts_per_page'], 'offset' => $args['offset'],
-                'posts' => $posts,
-            );
+            return ResultHelper::ok(array(
+                ResponseKeyType::Total->value  => $query->found_posts,
+                ResponseKeyType::Limit->value  => $args['posts_per_page'],
+                ResponseKeyType::Offset->value => $args['offset'],
+                ResponseKeyType::Posts->value   => $posts,
+            ));
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List posts exception');
         }
