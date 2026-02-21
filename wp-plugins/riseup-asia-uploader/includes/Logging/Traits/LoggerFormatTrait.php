@@ -12,7 +12,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 
 trait LoggerFormatTrait {
-
     /** Format a log entry. */
     private function formatEntry(
         string $level,
@@ -36,6 +35,7 @@ trait LoggerFormatTrait {
     /** Format a debug_backtrace array into a readable string. */
     private function formatBacktrace(array $trace): string {
         $lines = array();
+
         foreach ($trace as $i => $frame) {
             $file  = isset($frame['file']) ? basename($frame['file']) : self::TRACE_LABEL_INTERNAL;
             $line  = isset($frame['line']) ? $frame['line'] : self::DEFAULT_LINE_NUMBER;
@@ -129,6 +129,7 @@ trait LoggerFormatTrait {
     /** Build an invocation chain from a backtrace (skipping frame 0). */
     private function buildInvocationChain(array $trace): array {
         $chain = array();
+
         foreach ($trace as $i => $frame) {
             if ($i === 0) {
                 continue;
@@ -146,6 +147,7 @@ trait LoggerFormatTrait {
     /** Extract a single chain entry from a backtrace frame. */
     private function extractChainEntry(array $frame): array {
         $entry = array();
+
         if (isset($frame['class'])) {
             $entry['class'] = $frame['class'];
         }

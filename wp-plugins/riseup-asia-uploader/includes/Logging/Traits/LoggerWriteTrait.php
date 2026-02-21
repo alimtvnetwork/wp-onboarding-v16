@@ -16,7 +16,6 @@ use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Database\Database;
 
 trait LoggerWriteTrait {
-
     /** Write to log file. */
     private function write(string $entry, bool $isError = false): bool {
         $isUninitialized = ($this->isInitialized === false);

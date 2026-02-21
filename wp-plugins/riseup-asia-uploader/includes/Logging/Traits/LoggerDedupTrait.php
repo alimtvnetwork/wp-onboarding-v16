@@ -9,7 +9,6 @@
 namespace RiseupAsia\Logging\Traits;
 
 trait LoggerDedupTrait {
-
     /** Check if a log entry is a duplicate using MD5 hashing. */
     private function isDuplicate(
         string $level,
