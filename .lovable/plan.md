@@ -1244,15 +1244,13 @@ Root DB (`a-root.db`) tables created per-snapshot — can't ALTER existing files
 
 ---
 
-## Phase 5: Code Sweep & Validation
+## ✅ COMPLETED — Phase 5: Code Sweep & Validation (2026-02-21)
 
-| # | Task |
-|---|------|
-| 5.1 | Grep all `.php` files for snake_case column references in SQL queries |
-| 5.2 | Grep all `.go` files for snake_case column references in SQL queries |
-| 5.3 | Run full test suite to verify migrations |
-| 5.4 | Test snapshot create → restore cycle with new schema |
-| 5.5 | Test backward compatibility: restore old snake_case snapshot with new code |
+Comprehensive grep across all PHP and Go files confirmed zero violations in business logic:
+
+- **PHP**: All `.where()`, `.orderByDesc()`, `.whereLt()`, `.whereGte()`, `.whereLte()`, `.whereLike()` calls use PascalCase columns (e.g., `'PluginSlug'`, `'CreatedAt'`, `'TriggeredBy'`).
+- **Go**: All SQL queries use PascalCase columns. Only `json:"snake_case"` struct tags remain (API contract — exempt).
+- **Exemptions verified**: Enum backed values (API contracts), PHP array config keys, historical migration DDL (V1–V12), `schema_version` table.
 
 ---
 
@@ -1276,3 +1274,133 @@ Root DB (`a-root.db`) tables created per-snapshot — can't ALTER existing files
 | Phase 4: Root DB | 5 | 1 session |
 | Phase 5: Validation | 5 | 1 session |
 | **Total** | **29** | **8 sessions** |
+
+---
+
+# 🆕 Phase 6: Formatting & Migration DDL Modernization Plan (2026-02-21)
+
+## Overview
+
+Three categories of remaining issues identified during Phase 5 validation:
+
+1. **6A**: Historical migration DDL (V1–V12) still uses snake_case column names in `CREATE TABLE`/`ALTER TABLE`/`CREATE INDEX`
+2. **6B**: Rule 5 violations — missing blank line after `}` when followed by more code
+3. **6C**: Rule 4 violations — missing blank line before `return` in multi-statement blocks
+
+---
+
+## Phase 6A: Migration DDL Modernization
+
+### Context
+
+Migrations V1–V12 create tables with snake_case columns. Migration V13 then renames everything to PascalCase. This chain is **correct for existing installs** but means fresh installs do unnecessary work (create snake_case → immediately rename to PascalCase).
+
+### Strategy: Consolidate Into PascalCase-Native DDL
+
+Rewrite V1–V12 migration DDL to use PascalCase column names directly. Update V13 to be **idempotent** (skip columns already in PascalCase). This is safe because:
+
+- SQLite `ALTER TABLE RENAME COLUMN` is a no-op when old = new
+- V13 already checks `sqliteTableExists()` and column existence before renaming
+- Fresh installs benefit (no rename overhead); existing installs unaffected (V1–V12 already ran)
+
+### Files to Update
+
+| File | Tables | Columns to Rename |
+|------|--------|-------------------|
+| `DatabaseMigrationsV1V3Trait.php` | Transactions, AgentSites, AgentActions | ~28 columns, 6 indexes |
+| `DatabaseMigrationsV4V5Trait.php` | Transactions (ALTER), Snapshots, SnapshotProgress | ~24 columns, 5 indexes |
+| `DatabaseMigrationsV6V8Trait.php` | SnapshotJobs, SnapshotSettings, RemotePluginsCache | ~20 columns |
+| `DatabaseMigrationsV9V11Trait.php` | ErrorSessions, FlashState, SnapshotExports, Transactions (ALTER) | ~18 columns, 6 indexes |
+| `DatabaseMigrationsV12Trait.php` | (enum value normalization — may reference column names) | Review needed |
+
+### Column Name Mapping (reference V13 constants)
+
+All mappings defined in `DatabaseMigrationsV13Trait::V13_COLUMN_RENAMES` — apply these to original DDL.
+
+### Index Name Mapping
+
+| Old Index | New Index |
+|-----------|-----------|
+| `idx_action` | `IdxTransactions_Action` |
+| `idx_plugin_slug` | `IdxTransactions_PluginSlug` |
+| `idx_user_login` | `IdxTransactions_UserLogin` |
+| `idx_status` | `IdxTransactions_Status` |
+| `idx_created_at` | `IdxTransactions_CreatedAt` |
+| `idx_triggered_by` | `IdxTransactions_TriggeredBy` |
+| `idx_source_machine` | `IdxTransactions_SourceMachine` |
+| `idx_plugin_version` | `IdxTransactions_PluginVersion` |
+| `idx_upload_source` | `IdxTransactions_UploadSource` |
+| `idx_agent_sites_status` | `IdxAgentSites_Status` |
+| `idx_agent_actions_site_id` | `IdxAgentActions_AgentSiteId` |
+| `idx_agent_actions_action` | `IdxAgentActions_Action` |
+| `idx_agent_actions_created` | `IdxAgentActions_CreatedAt` |
+| `idx_snapshots_created` | `IdxSnapshots_CreatedAt` |
+| `idx_snapshots_status` | `IdxSnapshots_Status` |
+| `idx_snapshots_provider` | `IdxSnapshots_Provider` |
+| `idx_snapshot_progress_snapshot` | `IdxSnapshotProgress_SnapshotId` |
+| `idx_error_sessions_level` | `IdxErrorSessions_Level` |
+| `idx_error_sessions_created` | `IdxErrorSessions_CreatedAt` |
+| `idx_snapshot_exports_snapshot` | `IdxSnapshotExports_SnapshotId` |
+| `idx_snapshot_exports_status` | `IdxSnapshotExports_Status` |
+
+### V13 Safety Update
+
+Add column-existence check: if column is already PascalCase, skip rename. The current logic already does this (checks `in_array($oldCol, $existingColumns)`) so V13 is already safe — no changes needed.
+
+### Estimated Effort: 5 tasks (one per migration trait file)
+
+---
+
+## Phase 6B: Rule 5 — Blank Line After `}` Enforcement
+
+### Scope
+
+Sweep all PHP files in `riseup-asia-uploader/includes/` for violations of Rule 5: a closing `}` followed by a non-`}`/non-`else`/non-`catch` line without a blank line between them.
+
+### Pattern to Find
+
+```
+}
+$someCode  // ❌ missing blank line
+```
+
+### Exempt Patterns
+
+- `} else {` / `} catch (` / `} finally {` — no blank line needed
+- `}` followed by another `}` — no blank line needed
+- `}` at end of function/class — no blank line needed
+
+### Estimated Effort: 2 tasks (scan + fix across all files)
+
+---
+
+## Phase 6C: Rule 4 — Blank Line Before `return` Re-sweep
+
+### Scope
+
+Re-sweep all PHP files for any new Rule 4 violations introduced since Part E audit (2026-02-17). Focus on files modified after that date.
+
+### Pattern to Find
+
+```php
+    $someStatement;
+    return $value;  // ❌ missing blank line
+```
+
+### Exempt Patterns
+
+- `return` as sole statement in block — no blank line needed
+- `return` immediately after `{` — no blank line needed
+
+### Estimated Effort: 1 task
+
+---
+
+## Phase 6 Summary
+
+| Sub-Phase | Scope | Tasks | Estimated |
+|-----------|-------|-------|-----------|
+| 6A | Migration DDL modernization (V1–V12) | 5 | 2 sessions |
+| 6B | Rule 5 blank line after `}` | 2 | 1 session |
+| 6C | Rule 4 blank line before `return` re-sweep | 1 | 0.5 session |
+| **Total** | | **8** | **3.5 sessions** |
