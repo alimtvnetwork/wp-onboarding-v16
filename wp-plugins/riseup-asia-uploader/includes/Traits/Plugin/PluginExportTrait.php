@@ -44,7 +44,7 @@ trait PluginExportTrait
             ));
 
             return new WP_REST_Response(ResultHelper::ok(array(
-                'plugin_zip' => base64_encode($zip_content),
+                ResponseKeyType::PluginZip->value => base64_encode($zip_content),
                 'slug'       => PluginConfigType::Slug->value,
                 'version'    => PluginConfigType::Version->value,
             )), HttpStatusType::Ok->value);
@@ -113,7 +113,7 @@ trait PluginExportTrait
         ));
 
         return new WP_REST_Response(ResultHelper::ok(array(
-            'plugin_zip' => base64_encode($zip_content),
+            ResponseKeyType::PluginZip->value => base64_encode($zip_content),
             'slug'       => $slug,
             'size'       => strlen($zip_content),
         )), HttpStatusType::Ok->value);

@@ -66,7 +66,7 @@ trait SyncPushTrait
         string $plugin_dir,
     ): array {
         $ignore = UploadIgnore::fromDirectory($plugin_dir);
-        $counters = array('files_updated' => 0, 'files_deleted' => 0, 'files_ignored' => 0);
+        $counters = array(ResponseKeyType::FilesUpdated->value => 0, ResponseKeyType::FilesDeleted->value => 0, ResponseKeyType::FilesIgnored->value => 0);
         $results = array();
         $ignored_files = array();
 
@@ -80,7 +80,7 @@ trait SyncPushTrait
         FileCache::getInstance($this->fileLogger, $this->db)->invalidate($slug);
 
         return ResultHelper::ok($counters + array(
-            'ignored_files' => $ignored_files,
+            ResponseKeyType::IgnoredFiles->value => $ignored_files,
             'results'       => $results,
         ));
     }
@@ -201,11 +201,11 @@ trait SyncPushTrait
     /** Update sync counters based on a file result entry. */
     private function updateSyncCounters(array $entry, array &$counters, array &$ignored): void {
         $isIgnored = ($entry['status'] === SyncEntryStatusType::Ignored->value);
-        if ($isIgnored) { $counters['files_ignored']++; $ignored[] = $entry[ResponseKeyType::Path->value]; return; }
+        if ($isIgnored) { $counters[ResponseKeyType::FilesIgnored->value]++; $ignored[] = $entry[ResponseKeyType::Path->value]; return; }
         $isStatusSuccess = ($entry['status'] === SyncEntryStatusType::Success->value);
         if ($isStatusSuccess) {
-            if ($entry['action'] === SyncActionType::Replace->value) { $counters['files_updated']++; }
-            if ($entry['action'] === SyncActionType::Delete->value)  { $counters['files_deleted']++; }
+            if ($entry['action'] === SyncActionType::Replace->value) { $counters[ResponseKeyType::FilesUpdated->value]++; }
+            if ($entry['action'] === SyncActionType::Delete->value)  { $counters[ResponseKeyType::FilesDeleted->value]++; }
         }
     }
 
@@ -215,7 +215,7 @@ trait SyncPushTrait
         if ($isDbMissing) { return; }
         $this->db->logTransaction(
             ActionType::Sync->value, $slug, StatusType::Success->value,
-            sprintf('Sync: %d updated, %d deleted, %d ignored', $counters['files_updated'], $counters['files_deleted'], $counters['files_ignored']),
+            sprintf('Sync: %d updated, %d deleted, %d ignored', $counters[ResponseKeyType::FilesUpdated->value], $counters[ResponseKeyType::FilesDeleted->value], $counters[ResponseKeyType::FilesIgnored->value]),
             null, null, TriggerSourceType::Api->value
         );
     }

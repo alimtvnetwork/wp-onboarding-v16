@@ -3,6 +3,7 @@
 namespace RiseupAsia\ErrorHandling;
 
 use Throwable;
+use RiseupAsia\Enums\ResponseKeyType;
 
 /**
  * Stack trace frame construction utilities for error diagnostics.
@@ -69,7 +70,7 @@ class FrameBuilder
         }
 
         return array(
-            'trace_lines' => self::buildTraceLines($error, $backtrace),
+            ResponseKeyType::TraceLines->value => self::buildTraceLines($error, $backtrace),
             'frames'      => self::buildStructuredFrames($error, $backtrace),
         );
     }

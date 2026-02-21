@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -77,10 +78,10 @@ trait AnalyzerQueryTrait {
         $deps = array();
         foreach ($rows as $row) {
             $deps[] = array(
-                'parent_table' => $row['parent_table'],
-                'child_table'  => $row['child_table'],
-                'fk_column'    => $row['fk_column'],
-                'ref_column'   => $row['ref_column'],
+                ResponseKeyType::ParentTable->value => $row['parent_table'],
+                ResponseKeyType::ChildTable->value  => $row['child_table'],
+                ResponseKeyType::FkColumn->value    => $row['fk_column'],
+                ResponseKeyType::RefColumn->value   => $row['ref_column'],
             );
         }
 
@@ -101,7 +102,7 @@ trait AnalyzerQueryTrait {
 
         $table_set = array_flip($tables);
         $scoped_deps = array_filter($dependencies, function($dep) use ($table_set) {
-            return isset($table_set[$dep['parent_table']]) && isset($table_set[$dep['child_table']]);
+            return isset($table_set[$dep[ResponseKeyType::ParentTable->value]]) && isset($table_set[$dep[ResponseKeyType::ChildTable->value]]);
         });
         $scoped_deps = array_values($scoped_deps);
 
@@ -110,9 +111,9 @@ trait AnalyzerQueryTrait {
         return array(
             'tables'       => $tables,
             'dependencies' => $scoped_deps,
-            'seed_order'   => $sorted,
-            'table_count'  => count($tables),
-            'dep_count'    => count($scoped_deps),
+            ResponseKeyType::SeedOrder->value  => $sorted,
+            ResponseKeyType::TableCount->value => count($tables),
+            ResponseKeyType::DepCount->value   => count($scoped_deps),
         );
     }
 

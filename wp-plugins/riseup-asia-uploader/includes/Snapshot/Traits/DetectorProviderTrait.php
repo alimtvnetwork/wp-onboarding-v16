@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 
 trait DetectorProviderTrait {
@@ -31,12 +32,12 @@ trait DetectorProviderTrait {
     private function detectWPReset(): array {
         $result = array(
             'id' => SnapshotProviderType::WpReset->value, 'name' => 'WP Reset', 'available' => false,
-            'capabilities' => array(), 'version' => null, 'detection_method' => null,
+            'capabilities' => array(), 'version' => null, ResponseKeyType::DetectionMethod->value => null,
         );
 
         if (class_exists('WP_Reset')) {
             $result['available'] = true;
-            $result['detection_method'] = 'class_exists';
+            $result[ResponseKeyType::DetectionMethod->value] = 'class_exists';
         }
 
         $isStillUnavailable = ($result['available'] === false);
@@ -45,7 +46,7 @@ trait DetectorProviderTrait {
             $plugin_file = 'wp-reset/wp-reset.php';
             if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
                 $result['available'] = true;
-                $result['detection_method'] = 'plugin_active';
+                $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
             }
         }
 
@@ -54,7 +55,7 @@ trait DetectorProviderTrait {
         if ($isStillUnavailableForPro) {
             $result['available'] = true;
             $result['name'] = 'WP Reset Pro';
-            $result['detection_method'] = 'class_exists_pro';
+            $result[ResponseKeyType::DetectionMethod->value] = 'class_exists_pro';
         }
 
         if ($result['available']) {
@@ -62,8 +63,8 @@ trait DetectorProviderTrait {
                 $result['version'] = WP_RESET_VERSION;
             }
             $result['capabilities'] = array(
-                'full_site' => true,
-                'database_only' => true,
+                'fullSite' => true,
+                'databaseOnly' => true,
                 'selective' => true,
                 'scheduled' => false,
                 'restore' => true,
@@ -78,19 +79,19 @@ trait DetectorProviderTrait {
     private function detectUpdraft(): array {
         $result = array(
             'id' => SnapshotProviderType::Updraft->value, 'name' => 'UpdraftPlus', 'available' => false,
-            'capabilities' => array(), 'version' => null, 'detection_method' => null,
+            'capabilities' => array(), 'version' => null, ResponseKeyType::DetectionMethod->value => null,
         );
 
         if (class_exists('UpdraftPlus')) {
             $result['available'] = true;
-            $result['detection_method'] = 'class_exists';
+            $result[ResponseKeyType::DetectionMethod->value] = 'class_exists';
         }
 
         $isStillUnavailableWithGlobal = ($result['available'] === false) && isset($GLOBALS['updraftplus']);
 
         if ($isStillUnavailableWithGlobal) {
             $result['available'] = true;
-            $result['detection_method'] = 'global_instance';
+            $result[ResponseKeyType::DetectionMethod->value] = 'global_instance';
         }
 
         $isStillUnavailable = ($result['available'] === false);
@@ -100,7 +101,7 @@ trait DetectorProviderTrait {
             foreach ($plugin_files as $plugin_file) {
                 if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
                     $result['available'] = true;
-                    $result['detection_method'] = 'plugin_active';
+                    $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
                     if (strpos($plugin_file, 'premium') !== false) {
                         $result['name'] = 'UpdraftPlus Premium';
                     }
@@ -115,8 +116,8 @@ trait DetectorProviderTrait {
             }
             $is_premium = strpos($result['name'], 'Premium') !== false;
             $result['capabilities'] = array(
-                'full_site' => true,
-                'database_only' => true,
+                'fullSite' => true,
+                'databaseOnly' => true,
                 'selective' => $is_premium,
                 'scheduled' => true,
                 'restore' => true,
@@ -134,8 +135,8 @@ trait DetectorProviderTrait {
         return array(
             'id' => SnapshotProviderType::Native->value, 'name' => 'Native SQLite', 'available' => $has_sqlite,
             'capabilities' => array(
-                'full_site' => false,
-                'database_only' => true,
+                'fullSite' => false,
+                'databaseOnly' => true,
                 'selective' => true,
                 'scheduled' => true,
                 'restore' => true,
@@ -143,8 +144,8 @@ trait DetectorProviderTrait {
                 'import' => true,
             ),
             'version' => PluginConfigType::Version->value,
-            'detection_method' => $has_sqlite ? 'extension_loaded' : 'extension_missing',
-            'sqlite_version' => $has_sqlite ? $this->getSqliteVersion() : null,
+            ResponseKeyType::DetectionMethod->value => $has_sqlite ? 'extension_loaded' : 'extension_missing',
+            ResponseKeyType::SqliteVersion->value => $has_sqlite ? $this->getSqliteVersion() : null,
         );
     }
 

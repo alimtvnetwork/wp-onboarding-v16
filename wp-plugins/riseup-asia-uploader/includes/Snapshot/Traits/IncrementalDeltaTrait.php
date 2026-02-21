@@ -75,7 +75,7 @@ trait IncrementalDeltaTrait {
             $this->log(LogLevelType::Info->value, sprintf('Incremental export: %s (+%d rows, %s)', $tableName, $result[ResponseKeyType::Rows->value], $this->formatBytes($result[ResponseKeyType::FileSize->value])));
             $result[ResponseKeyType::Entry->value] = array(
                 'table'    => $tableName,
-                'new_rows' => $result[ResponseKeyType::Rows->value],
+                ResponseKeyType::NewRows->value => $result[ResponseKeyType::Rows->value],
                 ResponseKeyType::Size->value => $result[ResponseKeyType::FileSize->value],
             );
         } else {

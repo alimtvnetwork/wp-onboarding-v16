@@ -51,15 +51,15 @@ trait SchedulerTriggerTrait {
         $cleanup_next = wp_next_scheduled(HookType::CronSnapshotCleanup->value);
 
         return array(
-            'schedule_enabled'          => $settings['schedule_enabled'],
+            ResponseKeyType::ScheduleEnabled->value => $settings['schedule_enabled'],
             'frequency'                 => $settings['schedule_frequency'],
             'time'                      => $settings['schedule_time'],
             'day'                       => $settings['schedule_day'],
-            'next_scheduled_snapshot'   => $scheduled_next ? date('c', $scheduled_next) : null,
-            'next_cleanup'              => $cleanup_next ? date('c', $cleanup_next) : null,
-            'retention_type'            => $settings['retention_type'],
-            'retention_days'            => $settings['retention_days'],
-            'retention_count'           => $settings['retention_count'],
+            ResponseKeyType::NextScheduledSnapshot->value => $scheduled_next ? date('c', $scheduled_next) : null,
+            ResponseKeyType::NextCleanup->value           => $cleanup_next ? date('c', $cleanup_next) : null,
+            ResponseKeyType::RetentionType->value         => $settings['retention_type'],
+            ResponseKeyType::RetentionDays->value         => $settings['retention_days'],
+            ResponseKeyType::RetentionCount->value        => $settings['retention_count'],
         );
     }
 
@@ -100,7 +100,7 @@ trait SchedulerTriggerTrait {
 
             return ResultHelper::ok(array(
                 'scheduled'                        => true,
-                'snapshot_type'                    => $snapshot_type,
+                ResponseKeyType::SnapshotType->value => $snapshot_type,
                 'title'                            => $title,
                 ResponseKeyType::Message->value    => 'Snapshot has been scheduled and will run in the background.',
             ));

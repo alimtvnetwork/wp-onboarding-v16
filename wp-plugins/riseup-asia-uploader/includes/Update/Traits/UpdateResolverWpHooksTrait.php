@@ -126,6 +126,6 @@ trait UpdateResolverWpHooksTrait {
             'last_check' => current_time('mysql', true), 'last_error' => '',
         ));
 
-        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value, 'resolved_url' => $resolved);
+        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value, ResponseKeyType::ResolvedUrl->value => $resolved);
     }
 }
