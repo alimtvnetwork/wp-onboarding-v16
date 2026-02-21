@@ -24,17 +24,25 @@ func ServeOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 			"backend/api/openapi.json",
 			"../api/openapi.json",
 		}
+
 		for _, p := range paths {
 			data, err := os.ReadFile(p)
 			if err == nil {
 				openAPISpec = data
+
 				return
 			}
 		}
 	})
 
 	if openAPISpec == nil {
-		respondError(w, wordpress.HttpStatusNotFound, "E9001", "OpenAPI spec file not found")
+		respondError(
+			w,
+			wordpress.HttpStatusNotFound,
+			"E9001",
+			"OpenAPI spec file not found",
+		)
+
 		return
 	}
 

@@ -55,32 +55,71 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields
 	if input.Name == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E9002", "Name is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E9002",
+			"Name is required",
+		)
+
 		return
 	}
+
 	if input.URL == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E9002", "URL is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E9002",
+			"URL is required",
+		)
+
 		return
 	}
+
 	if input.Username == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E9002", "Username is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E9002",
+			"Username is required",
+		)
+
 		return
 	}
+
 	if input.Password == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E9002", "Application password is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E9002",
+			"Application password is required",
+		)
+
 		return
 	}
 
 	site, err := Services.SiteService.Create(r.Context(), input)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E2004", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E2004",
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondCreated(w, site)
 }
 
 // GetSite returns a specific site by ID
-var GetSite = handleActionByID(siteService, "Site service", "id", "site ID", "E9001",
+var GetSite = handleActionByID(
+	siteService,
+	"Site service",
+	"id",
+	"site ID",
+	"E9001",
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetByID(ctx, id)
 	},
@@ -109,21 +148,38 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 
 	site, err := Services.SiteService.Update(r.Context(), id, input)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E2005", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E2005",
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, site)
 }
 
 // DeleteSite removes a site
-var DeleteSite = handleDeleteByID(siteService, "Site service", "id", "site ID", "E2006",
+var DeleteSite = handleDeleteByID(
+	siteService,
+	"Site service",
+	"id",
+	"site ID",
+	"E2006",
 	func(ctx context.Context, id int64) error {
 		return Services.SiteService.Delete(ctx, id)
 	},
 )
 
 // TestSiteConnection tests the WordPress REST API connection
-var TestSiteConnection = handleActionByID(siteService, "Site service", "id", "site ID", "E3001",
+var TestSiteConnection = handleActionByID(
+	siteService,
+	"Site service",
+	"id",
+	"site ID",
+	"E3001",
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.TestConnection(ctx, id)
 	},
@@ -144,16 +200,33 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.URL, input.Username, input.Password)
+	result, err := Services.SiteService.TestConnectionWithCredentials(
+		r.Context(),
+		input.URL,
+		input.Username,
+		input.Password,
+	)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3001", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E3001",
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, result)
 }
 
 // GetSiteCredentials returns decrypted credentials for API Explorer
-var GetSiteCredentials = handleActionByID(siteService, "Site service", "id", "site ID", "E2002",
+var GetSiteCredentials = handleActionByID(
+	siteService,
+	"Site service",
+	"id",
+	"site ID",
+	"E2002",
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetCredentials(ctx, id)
 	},
@@ -178,9 +251,16 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.BootstrapUploader(r.Context(), id, input.UploaderPath)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E2010", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E2010",
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, result)
 }
 
@@ -199,7 +279,13 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(input.SiteIds) == 0 {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "At least one site ID is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"At least one site ID is required",
+		)
+
 		return
 	}
 
@@ -210,9 +296,11 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			siteInfo, _ := Services.SiteService.GetByID(r.Context(), siteId)
 			siteName := ""
+
 			if siteInfo != nil {
 				siteName = siteInfo.Name
 			}
+
 			results = append(results, BulkBootstrapSiteResult{
 				SiteID:   siteId,
 				SiteName: siteName,
@@ -248,10 +336,12 @@ func parseRemotePluginInput(r *http.Request) (int64, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
+
 	var input remotePluginInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		return id, "", err
 	}
+
 	return id, input.Plugin, nil
 }
 
@@ -281,9 +371,16 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id); err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3005", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E3005",
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, ActionResponse{Cleared: true, SiteID: id})
 }
 
@@ -295,20 +392,45 @@ func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
 
 	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request: "+err.Error())
-		return
-	}
-	if pluginSlug == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Plugin slug is required in JSON body")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Invalid request: "+err.Error(),
+		)
+
 		return
 	}
 
-	exists, status, pluginFile, err := Services.SiteService.CheckRemotePluginExists(r.Context(), id, pluginSlug)
-	if err != nil {
-		statusCode := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(w, statusCode, "E3010", err.Error(), err)
+	if pluginSlug == "" {
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Plugin slug is required in JSON body",
+		)
+
 		return
 	}
+
+	exists, status, pluginFile, err := Services.SiteService.CheckRemotePluginExists(
+		r.Context(),
+		id,
+		pluginSlug,
+	)
+	if err != nil {
+		statusCode := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
+		respondErrorWithSession(
+			w,
+			statusCode,
+			"E3010",
+			err.Error(),
+			err,
+		)
+
+		return
+	}
+
 	respondSuccess(w, PluginExistsResponse{
 		Exists:     exists,
 		Status:     status,
@@ -325,19 +447,40 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 
 	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Invalid request: "+err.Error(),
+		)
+
 		return
 	}
+
 	if pluginSlug == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Plugin slug is required in JSON body")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Plugin slug is required in JSON body",
+		)
+
 		return
 	}
 
 	if err := Services.SiteService.EnableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
 		status := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(w, status, "E3007", err.Error(), err)
+		respondErrorWithSession(
+			w,
+			status,
+			"E3007",
+			err.Error(),
+			err,
+		)
+
 		return
 	}
+
 	respondSuccess(w, ActionResponse{Enabled: true, Plugin: pluginSlug})
 }
 
@@ -349,19 +492,40 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 
 	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Invalid request: "+err.Error(),
+		)
+
 		return
 	}
+
 	if pluginSlug == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Plugin slug is required in JSON body")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Plugin slug is required in JSON body",
+		)
+
 		return
 	}
 
 	if err := Services.SiteService.DisableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
 		status := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(w, status, "E3007", err.Error(), err)
+		respondErrorWithSession(
+			w,
+			status,
+			"E3007",
+			err.Error(),
+			err,
+		)
+
 		return
 	}
+
 	respondSuccess(w, ActionResponse{Disabled: true, Plugin: pluginSlug})
 }
 
@@ -373,19 +537,40 @@ func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 
 	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Invalid request: "+err.Error(),
+		)
+
 		return
 	}
+
 	if pluginSlug == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Plugin slug is required in JSON body")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Plugin slug is required in JSON body",
+		)
+
 		return
 	}
 
 	if err := Services.SiteService.DeleteRemotePlugin(r.Context(), id, pluginSlug); err != nil {
 		status := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(w, status, "E3010", err.Error(), err)
+		respondErrorWithSession(
+			w,
+			status,
+			"E3010",
+			err.Error(),
+			err,
+		)
+
 		return
 	}
+
 	respondSuccess(w, ActionResponse{Deleted: true, Plugin: pluginSlug})
 }
 
@@ -397,19 +582,39 @@ func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
 
 	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Invalid request: "+err.Error(),
+		)
+
 		return
 	}
+
 	if pluginSlug == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Plugin slug is required in JSON body")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Plugin slug is required in JSON body",
+		)
+
 		return
 	}
 
 	files, err := Services.SiteService.GetRemotePluginFiles(r.Context(), id, pluginSlug)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3011", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E3011",
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, files)
 }
 
@@ -433,15 +638,33 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.Plugin == "" || input.Path == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Plugin and path are required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			"Plugin and path are required",
+		)
+
 		return
 	}
 
-	content, err := Services.SiteService.GetRemotePluginFileContent(r.Context(), id, input.Plugin, input.Path)
+	content, err := Services.SiteService.GetRemotePluginFileContent(
+		r.Context(),
+		id,
+		input.Plugin,
+		input.Path,
+	)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3012", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E3012",
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, FileContentResponse{
 		Content: content,
 		Plugin:  input.Plugin,
@@ -454,6 +677,7 @@ func ClearErrorLogHashes(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
+
 	count := Services.SiteService.ClearErrorLogHashes()
 	respondSuccess(w, ActionResponse{
 		Cleared: true,

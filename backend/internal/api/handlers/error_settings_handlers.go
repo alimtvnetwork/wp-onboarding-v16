@@ -36,14 +36,24 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 	info, err := os.Stat(logPath)
 	if os.IsNotExist(err) {
 		respondSuccess(w, LogFileResponse{
-			Content: "", Path: logPath, Exists: false, LogType: logType,
+			Content: "",
+			Path:    logPath,
+			Exists:  false,
+			LogType: logType,
 		})
+
 		return
 	}
 
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E4001", "Failed to read log file: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E4001",
+			"Failed to read log file: "+err.Error(),
+		)
+
 		return
 	}
 
@@ -59,7 +69,12 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 
 // GetError returns a specific error by ID
 func GetError(w http.ResponseWriter, r *http.Request) {
-	respondError(w, wordpress.HttpStatusNotImplemented, "E9004", "Not implemented")
+	respondError(
+		w,
+		wordpress.HttpStatusNotImplemented,
+		"E9004",
+		"Not implemented",
+	)
 }
 
 // ClearErrors removes all error logs
@@ -68,9 +83,11 @@ func ClearErrors(w http.ResponseWriter, r *http.Request) {
 	errorPath := "data/errors/error.log.txt"
 
 	cleared := []string{}
+
 	if err := os.Truncate(logPath, 0); err == nil {
 		cleared = append(cleared, "log.txt")
 	}
+
 	if err := os.Truncate(errorPath, 0); err == nil {
 		cleared = append(cleared, "error.log.txt")
 	}
@@ -89,6 +106,7 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tailLines := 100
+
 	if tailStr := r.URL.Query().Get("tail"); tailStr != "" {
 		if n, err := strconv.Atoi(tailStr); err == nil && n > 0 && n <= 10000 {
 			tailLines = n
@@ -104,19 +122,30 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
 		respondSuccess(w, LogLinesResponse{
-			Lines: []string{}, Path: logPath, Exists: false, LogType: logType,
+			Lines:   []string{},
+			Path:    logPath,
+			Exists:  false,
+			LogType: logType,
 		})
+
 		return
 	}
 
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E4001", "Failed to read log file: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E4001",
+			"Failed to read log file: "+err.Error(),
+		)
+
 		return
 	}
 
 	allLines := splitLines(string(content))
 	var lines []string
+
 	if len(allLines) > tailLines {
 		lines = allLines[len(allLines)-tailLines:]
 	} else {
@@ -151,16 +180,35 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			respondError(w, wordpress.HttpStatusNotFound, "E9001", "Log file not found: "+filename)
+			respondError(
+				w,
+				wordpress.HttpStatusNotFound,
+				"E9001",
+				"Log file not found: "+filename,
+			)
+
 			return
 		}
-		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to read log file: "+err.Error())
+
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E9002",
+			"Failed to read log file: "+err.Error(),
+		)
+
 		return
 	}
 
 	content, err := os.ReadFile(path)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to read log file: "+err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			"E9002",
+			"Failed to read log file: "+err.Error(),
+		)
+
 		return
 	}
 
@@ -182,6 +230,7 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 			Report string `json:"report"`
 		}
 		bodyBytes, _ := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
+
 		if len(bodyBytes) > 0 {
 			_ = json.Unmarshal(bodyBytes, &payload)
 			report = payload.Report
@@ -195,7 +244,13 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	errorExists := fileExists(errorFile)
 
 	if !logExists && !errorExists {
-		respondError(w, wordpress.HttpStatusNotFound, "E9001", "No error log files found")
+		respondError(
+			w,
+			wordpress.HttpStatusNotFound,
+			"E9001",
+			"No error log files found",
+		)
+
 		return
 	}
 
@@ -211,11 +266,13 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
 	if errorExists {
 		if err := addFileToZip(zipWriter, errorFile, "error.log.txt"); err != nil {
 			return
 		}
 	}
+
 	if report != "" {
 		reportWriter, err := zipWriter.Create("report.md")
 		if err == nil {
@@ -230,12 +287,15 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 		GeneratedAt: time.Now().Format(time.RFC3339),
 		Files:       []string{},
 	}
+
 	if logExists {
 		manifest.Files = append(manifest.Files, "log.txt")
 	}
+
 	if errorExists {
 		manifest.Files = append(manifest.Files, "error.log.txt")
 	}
+
 	if report != "" {
 		manifest.Files = append(manifest.Files, "report.md")
 	}
@@ -251,20 +311,27 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 func splitLines(content string) []string {
 	rawLines := strings.Split(content, "\n")
 	lines := make([]string, 0, len(rawLines))
+
 	for _, line := range rawLines {
 		if strings.TrimSpace(line) != "" {
 			lines = append(lines, line)
 		}
 	}
+
 	return lines
 }
 
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
+
 	return err == nil
 }
 
-func addFileToZip(zipWriter *zip.Writer, srcPath, destName string) error {
+func addFileToZip(
+	zipWriter *zip.Writer,
+	srcPath string,
+	destName string,
+) error {
 	file, err := os.Open(srcPath)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrFileOpen, "failed to open file for zip").WithPath(srcPath)
@@ -280,6 +347,7 @@ func addFileToZip(zipWriter *zip.Writer, srcPath, destName string) error {
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrZipWrite, "failed to copy file into zip").WithPath(srcPath)
 	}
+
 	return nil
 }
 
@@ -318,5 +386,10 @@ func GetSettings(w http.ResponseWriter, r *http.Request) {
 
 // UpdateSettings updates application settings
 func UpdateSettings(w http.ResponseWriter, r *http.Request) {
-	respondError(w, wordpress.HttpStatusNotImplemented, "E9004", "Not implemented")
+	respondError(
+		w,
+		wordpress.HttpStatusNotImplemented,
+		"E9004",
+		"Not implemented",
+	)
 }

@@ -33,19 +33,33 @@ trait NativeSnapshotCreateTrait {
      * @return array The result of the snapshot creation.
      */
     public function createSnapshot(string $scope, string $trigger): array {
-        $this->log(LogLevelType::Info->value, 'Snapshot creation requested', array('scope' => $scope, 'trigger' => $trigger));
+        $this->log(LogLevelType::Info->value, 'Snapshot creation requested', array(
+            'scope'   => $scope,
+            'trigger' => $trigger,
+        ));
 
-        $isScopeInvalid = BooleanHelpers::isAbsentFromList($scope, array(SnapshotScopeType::Full->value, SnapshotScopeType::Database->value, SnapshotScopeType::Plugins->value));
+        $isScopeInvalid = BooleanHelpers::isAbsentFromList($scope, array(
+            SnapshotScopeType::Full->value,
+            SnapshotScopeType::Database->value,
+            SnapshotScopeType::Plugins->value,
+        ));
+
         if ($isScopeInvalid) {
             return $this->error(SnapshotErrorType::InvalidScope, 'Invalid snapshot scope: ' . $scope);
         }
 
-        $isTriggerInvalid = BooleanHelpers::isAbsentFromList($trigger, array(SnapshotTriggerType::Manual->value, SnapshotTriggerType::Scheduled->value, SnapshotTriggerType::Api->value));
+        $isTriggerInvalid = BooleanHelpers::isAbsentFromList($trigger, array(
+            SnapshotTriggerType::Manual->value,
+            SnapshotTriggerType::Scheduled->value,
+            SnapshotTriggerType::Api->value,
+        ));
+
         if ($isTriggerInvalid) {
             return $this->error(SnapshotErrorType::InvalidTrigger, 'Invalid snapshot trigger: ' . $trigger);
         }
 
         $isProviderUnavailable = ($this->isAvailable() === false);
+
         if ($isProviderUnavailable) {
             return $this->error(SnapshotErrorType::ProviderMissing, 'Native SQLite provider is not available');
         }
@@ -67,6 +81,7 @@ trait NativeSnapshotCreateTrait {
      */
     private function scheduleOrExecute(string $scope, string $trigger): array {
         if ($scope === SnapshotScopeType::Full->value) {
+
             return $this->error(SnapshotErrorType::InvalidScope, 'Full snapshot scope is not supported for native provider');
         }
 

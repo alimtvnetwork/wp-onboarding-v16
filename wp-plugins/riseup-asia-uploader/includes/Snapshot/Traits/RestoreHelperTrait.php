@@ -38,22 +38,22 @@ trait RestoreHelperTrait {
         int $totalRows,
     ): array {
         $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
-            ResponseKeyType::TablesRestored->value => $masterResult[ResponseKeyType::TablesRestored->value],
-            ResponseKeyType::TotalRows->value      => $totalRows,
+            ResponseKeyType::TablesRestored->value     => $masterResult[ResponseKeyType::TablesRestored->value],
+            ResponseKeyType::TotalRows->value          => $totalRows,
             ResponseKeyType::IncrementalsApplied->value => $incResult['applied'],
-            ResponseKeyType::Errors->value          => count($errors),
-            ResponseKeyType::BackupId->value        => $backupId,
-            ResponseKeyType::Duration->value        => round($duration, 2) . 's',
+            ResponseKeyType::Errors->value             => count($errors),
+            ResponseKeyType::BackupId->value           => $backupId,
+            ResponseKeyType::Duration->value           => round($duration, 2) . 's',
         ));
 
         return ResultHelper::ok(array(
-            ResponseKeyType::TablesRestored->value => $masterResult[ResponseKeyType::TablesRestored->value],
-            ResponseKeyType::TotalRows->value      => $totalRows,
+            ResponseKeyType::TablesRestored->value     => $masterResult[ResponseKeyType::TablesRestored->value],
+            ResponseKeyType::TotalRows->value          => $totalRows,
             ResponseKeyType::IncrementalsApplied->value => $incResult['applied'],
-            ResponseKeyType::BackupId->value       => $backupId,
-            ResponseKeyType::Errors->value         => $errors,
-            ResponseKeyType::Duration->value       => $duration,
-            'meta'                                 => $meta,
+            ResponseKeyType::BackupId->value           => $backupId,
+            ResponseKeyType::Errors->value             => $errors,
+            ResponseKeyType::Duration->value           => $duration,
+            'meta'                                     => $meta,
         ));
     }
 
@@ -65,13 +65,19 @@ trait RestoreHelperTrait {
     ): void {
         $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
 
             return;
         }
 
         try {
-            $details = $this->buildAuditDetails($snapshotDir, $tablesRestored, $totalRows, $duration);
+            $details = $this->buildAuditDetails(
+                $snapshotDir,
+                $tablesRestored,
+                $totalRows,
+                $duration,
+            );
             $this->insertAuditRecord($pdo, $details);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to log audit for restore', array(ResponseKeyType::Error->value => $e->getMessage()));
@@ -115,6 +121,7 @@ trait RestoreHelperTrait {
         array $context = array(),
     ): void {
         $isLoggerMissing = ($this->logger === null);
+
         if ($isLoggerMissing) {
 
             return;

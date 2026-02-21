@@ -87,8 +87,12 @@ trait RestoreTableTrait {
         }
 
         $sqlite_path = $snapshotDir . '/' . $table_info['sqlite_file'];
+
         if (PathHelper::isFileMissing($sqlite_path)) {
-            $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array('table' => $table, 'file' => $table_info['sqlite_file']));
+            $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array(
+                'table' => $table,
+                'file'  => $table_info['sqlite_file'],
+            ));
 
             return ResultHelper::error(
                 'SQLite file missing (' . $table_info['sqlite_file'] . ')',
