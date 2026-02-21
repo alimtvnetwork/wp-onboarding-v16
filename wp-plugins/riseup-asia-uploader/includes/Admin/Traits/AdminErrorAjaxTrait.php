@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Database\Database;
@@ -26,7 +27,7 @@ trait AdminErrorAjaxTrait {
 
     /** AJAX handler: Dismiss error flash (mark all as seen). */
     public function ajaxDismissErrorFlash() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
@@ -46,7 +47,7 @@ trait AdminErrorAjaxTrait {
 
     /** AJAX handler: Clear all error sessions. */
     public function ajaxClearErrorSessions() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
@@ -79,7 +80,7 @@ trait AdminErrorAjaxTrait {
 
     /** AJAX handler: Read a log file's contents. */
     public function ajaxReadLogFile() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
@@ -125,7 +126,7 @@ trait AdminErrorAjaxTrait {
 
     /** AJAX handler: Clear (truncate) a log file. */
     public function ajaxClearLogFile() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }

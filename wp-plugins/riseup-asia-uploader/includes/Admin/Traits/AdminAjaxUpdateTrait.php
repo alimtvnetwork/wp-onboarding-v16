@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Update\UpdateResolver;
@@ -22,7 +23,7 @@ trait AdminAjaxUpdateTrait {
 
     /** AJAX handler: Test update server connection. */
     public function ajaxTestUpdateConnection() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
@@ -40,7 +41,7 @@ trait AdminAjaxUpdateTrait {
 
     /** AJAX handler: Clear update URL cache. */
     public function ajaxClearUpdateCache() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
@@ -54,7 +55,7 @@ trait AdminAjaxUpdateTrait {
 
     /** AJAX handler: Check for updates now. */
     public function ajaxCheckForUpdates() {
-        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));

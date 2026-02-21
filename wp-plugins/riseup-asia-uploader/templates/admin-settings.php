@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\AjaxActionType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\RetentionType;
@@ -603,7 +604,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-    var ajaxNonce = '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>';
+    var ajaxNonce = '<?php echo wp_create_nonce(NonceType::Admin->value); ?>';
     var $status = $('#update_action_status');
 
     function showStatus(message, isError) {
@@ -696,7 +697,7 @@ jQuery(document).ready(function($) {
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-    var ajaxNonce = '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>';
+    var ajaxNonce = '<?php echo wp_create_nonce(NonceType::Admin->value); ?>';
     var $snapStatus = $('#snap_action_status');
 
     function showSnapStatus(message, isError) {
