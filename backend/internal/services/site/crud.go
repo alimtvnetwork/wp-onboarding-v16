@@ -123,7 +123,12 @@ func scanSiteRows(rows *sql.Rows) (models.Site, error) {
 
 // List returns all registered sites.
 func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
-	set := dbutil.QueryMany[models.Site](ctx, s.dbu, siteListQuery, scanSiteRows)
+	set := dbutil.QueryMany[models.Site](
+		ctx,
+		s.dbu,
+		siteListQuery,
+		scanSiteRows,
+	)
 	if set.HasError() {
 		return apperror.FailSlice[models.Site](set.Error())
 	}
@@ -137,7 +142,13 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 
 // GetByID returns a site by its ID.
 func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Site] {
-	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByIDQuery, scanSiteRow, id)
+	result := dbutil.QueryOne[models.Site](
+		ctx,
+		s.dbu,
+		siteSelectByIDQuery,
+		scanSiteRow,
+		id,
+	)
 	if result.HasError() {
 		return apperror.FailWrap[models.Site](result.Error(), apperror.ErrDBRead, "failed to query site")
 	}
@@ -152,7 +163,13 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 func (s *Service) GetByURL(ctx context.Context, siteURL string) apperror.Result[models.Site] {
 	normalizedURL := normalizeURL(siteURL)
 
-	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByURLQuery, scanSiteRow, normalizedURL)
+	result := dbutil.QueryOne[models.Site](
+		ctx,
+		s.dbu,
+		siteSelectByURLQuery,
+		scanSiteRow,
+		normalizedURL,
+	)
 	if result.HasError() {
 		return apperror.FailWrap[models.Site](result.Error(), apperror.ErrDBRead, "failed to query site by URL")
 	}
@@ -186,7 +203,15 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		return apperror.FailWrap[models.Site](err, apperror.ErrInternal, "failed to encrypt password")
 	}
 
-	res := dbutil.Exec(ctx, s.dbu, siteInsertQuery, input.Name, normalizedURL, input.Username, encryptedPassword)
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		siteInsertQuery,
+		input.Name,
+		normalizedURL,
+		input.Username,
+		encryptedPassword,
+	)
 	if res.HasError() {
 		return apperror.Fail[models.Site](res.Error())
 	}
@@ -264,7 +289,12 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 		return result.Error()
 	}
 
-	res := dbutil.Exec(ctx, s.dbu, siteDeleteQuery, id)
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		siteDeleteQuery,
+		id,
+	)
 	if res.HasError() {
 		return res.Error()
 	}
@@ -278,7 +308,13 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 // updateConnectionStatus updates the connection status and last tested time.
 func (s *Service) updateConnectionStatus(ctx context.Context, id int64, status string) {
-	res := dbutil.Exec(ctx, s.dbu, siteUpdateConnectionStatusQuery, status, id)
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		siteUpdateConnectionStatusQuery,
+		status,
+		id,
+	)
 	if res.HasError() {
 		s.log.Error("Failed to update connection status", "id", id, "error", res.Error())
 	}
