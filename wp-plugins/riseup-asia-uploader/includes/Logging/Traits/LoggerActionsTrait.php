@@ -24,15 +24,25 @@ trait LoggerActionsTrait {
     ) {
         $status = $status ?: StatusType::Success->value;
         $this->fileLogger->info('Logging plugin action', array(
-            'action' => $action, 'plugin' => $pluginSlug, 'status' => $status,
+            'action' => $action,
+            'plugin' => $pluginSlug,
+            'status' => $status,
         ));
 
         $user = $this->getUserInfo();
         $enhanced = $this->buildEnhancedFields($extraEnhanced);
 
         return $this->getDb()->logTransaction(
-            $action, $pluginSlug, null, $user['login'], $user['id'],
-            $this->getClientIp(), $details, $status, $errorMsg, $enhanced
+            $action,
+            $pluginSlug,
+            null,
+            $user['login'],
+            $user['id'],
+            $this->getClientIp(),
+            $details,
+            $status,
+            $errorMsg,
+            $enhanced,
         );
     }
 
@@ -46,15 +56,25 @@ trait LoggerActionsTrait {
     ) {
         $status = $status ?: StatusType::Success->value;
         $this->fileLogger->info('Logging post action', array(
-            'action' => $action, 'post_id' => $postId, 'status' => $status,
+            'action' => $action,
+            'post_id' => $postId,
+            'status' => $status,
         ));
 
         $user = $this->getUserInfo();
         $enhanced = $this->buildEnhancedFields();
 
         return $this->getDb()->logTransaction(
-            $action, null, $postId, $user['login'], $user['id'],
-            $this->getClientIp(), $details, $status, $errorMsg, $enhanced
+            $action,
+            null,
+            $postId,
+            $user['login'],
+            $user['id'],
+            $this->getClientIp(),
+            $details,
+            $status,
+            $errorMsg,
+            $enhanced,
         );
     }
 
@@ -65,8 +85,16 @@ trait LoggerActionsTrait {
         $enhanced = $this->buildEnhancedFields();
 
         return $this->getDb()->logTransaction(
-            ActionType::AuthFailed->value, null, null, $providedUser, null,
-            $this->getClientIp(), $details, StatusType::Failed->value, $reason, $enhanced
+            ActionType::AuthFailed->value,
+            null,
+            null,
+            $providedUser,
+            null,
+            $this->getClientIp(),
+            $details,
+            StatusType::Failed->value,
+            $reason,
+            $enhanced,
         );
     }
 
@@ -76,7 +104,14 @@ trait LoggerActionsTrait {
         array $details = array(),
         array $extraEnhanced = array(),
     ) {
-        return $this->logPluginAction(ActionType::UploadInitiated->value, $pluginSlug, StatusType::Success->value, $details, null, $extraEnhanced);
+        return $this->logPluginAction(
+            ActionType::UploadInitiated->value,
+            $pluginSlug,
+            StatusType::Success->value,
+            $details,
+            null,
+            $extraEnhanced,
+        );
     }
 
     /** Log upload success. */
@@ -85,7 +120,14 @@ trait LoggerActionsTrait {
         array $details = array(),
         array $extraEnhanced = array(),
     ) {
-        return $this->logPluginAction(ActionType::Upload->value, $pluginSlug, StatusType::Success->value, $details, null, $extraEnhanced);
+        return $this->logPluginAction(
+            ActionType::Upload->value,
+            $pluginSlug,
+            StatusType::Success->value,
+            $details,
+            null,
+            $extraEnhanced,
+        );
     }
 
     /** Log upload failure. */
@@ -96,22 +138,43 @@ trait LoggerActionsTrait {
     ) {
         $this->fileLogger->error('Upload failed', array('plugin' => $pluginSlug, 'error' => $error));
 
-        return $this->logPluginAction(ActionType::Upload->value, $pluginSlug, StatusType::Failed->value, $details, $error);
+        return $this->logPluginAction(
+            ActionType::Upload->value,
+            $pluginSlug,
+            StatusType::Failed->value,
+            $details,
+            $error,
+        );
     }
 
     /** Log plugin enable. */
     public function logEnable(string $pluginSlug, array $details = array()) {
-        return $this->logPluginAction(ActionType::Enable->value, $pluginSlug, StatusType::Success->value, $details);
+        return $this->logPluginAction(
+            ActionType::Enable->value,
+            $pluginSlug,
+            StatusType::Success->value,
+            $details,
+        );
     }
 
     /** Log plugin disable. */
     public function logDisable(string $pluginSlug, array $details = array()) {
-        return $this->logPluginAction(ActionType::Disable->value, $pluginSlug, StatusType::Success->value, $details);
+        return $this->logPluginAction(
+            ActionType::Disable->value,
+            $pluginSlug,
+            StatusType::Success->value,
+            $details,
+        );
     }
 
     /** Log plugin delete. */
     public function logDelete(string $pluginSlug, array $details = array()) {
-        return $this->logPluginAction(ActionType::Delete->value, $pluginSlug, StatusType::Success->value, $details);
+        return $this->logPluginAction(
+            ActionType::Delete->value,
+            $pluginSlug,
+            StatusType::Success->value,
+            $details,
+        );
     }
 
     /** Log file replace. */
@@ -122,7 +185,12 @@ trait LoggerActionsTrait {
     ) {
         $details['file_path'] = $filePath;
 
-        return $this->logPluginAction(ActionType::FileReplace->value, $pluginSlug, StatusType::Success->value, $details);
+        return $this->logPluginAction(
+            ActionType::FileReplace->value,
+            $pluginSlug,
+            StatusType::Success->value,
+            $details,
+        );
     }
 
     /** Log file delete. */
@@ -133,21 +201,41 @@ trait LoggerActionsTrait {
     ) {
         $details['file_path'] = $filePath;
 
-        return $this->logPluginAction(ActionType::FileDelete->value, $pluginSlug, StatusType::Success->value, $details);
+        return $this->logPluginAction(
+            ActionType::FileDelete->value,
+            $pluginSlug,
+            StatusType::Success->value,
+            $details,
+        );
     }
 
     /** Log post creation. */
     public function logPostCreate(int $postId, array $details = array()) {
-        return $this->logPostAction(ActionType::PostCreate->value, $postId, StatusType::Success->value, $details);
+        return $this->logPostAction(
+            ActionType::PostCreate->value,
+            $postId,
+            StatusType::Success->value,
+            $details,
+        );
     }
 
     /** Log post update. */
     public function logPostUpdate(int $postId, array $details = array()) {
-        return $this->logPostAction(ActionType::PostUpdate->value, $postId, StatusType::Success->value, $details);
+        return $this->logPostAction(
+            ActionType::PostUpdate->value,
+            $postId,
+            StatusType::Success->value,
+            $details,
+        );
     }
 
     /** Log category creation. */
     public function logCategoryCreate(int $termId, array $details = array()) {
-        return $this->logPostAction(ActionType::CategoryCreate->value, $termId, StatusType::Success->value, $details);
+        return $this->logPostAction(
+            ActionType::CategoryCreate->value,
+            $termId,
+            StatusType::Success->value,
+            $details,
+        );
     }
 }

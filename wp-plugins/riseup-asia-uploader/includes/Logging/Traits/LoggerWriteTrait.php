@@ -60,7 +60,13 @@ trait LoggerWriteTrait {
         $divider   = str_repeat('-', self::SEPARATOR_WIDTH);
 
         $entry  = $separator . PHP_EOL;
-        $entry .= sprintf("[%s] %s (%s:%d)", $timestamp, $message, basename($file), $line) . PHP_EOL;
+        $entry .= sprintf(
+            "[%s] %s (%s:%d)",
+            $timestamp,
+            $message,
+            basename($file),
+            $line,
+        ) . PHP_EOL;
         $entry .= $divider . PHP_EOL;
         $entry .= $stackTrace . PHP_EOL;
         $entry .= $separator . PHP_EOL . PHP_EOL;
@@ -85,7 +91,15 @@ trait LoggerWriteTrait {
                 return;
             }
 
-            $this->insertErrorSession($pdo, $level, $message, $file, $line, $context, $stackTrace);
+            $this->insertErrorSession(
+                $pdo,
+                $level,
+                $message,
+                $file,
+                $line,
+                $context,
+                $stackTrace,
+            );
         } catch (Throwable $e) {
             // Silently ignore - we're in the logger, can't recurse
         }
@@ -128,7 +142,15 @@ trait LoggerWriteTrait {
         $stmt = $pdo->prepare(
             'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (Level, Message, File, Line, ContextJson, StackTrace, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute(array($level, $message, $file, $line, $contextJson, $stackTrace ?: null, $now));
+        $stmt->execute(array(
+            $level,
+            $message,
+            $file,
+            $line,
+            $contextJson,
+            $stackTrace ?: null,
+            $now,
+        ));
 
         $pdo->exec("INSERT OR REPLACE INTO " . self::TABLE_FLASH_STATE . " (Key, Value, UpdatedAt) VALUES ('" . self::KEY_HAS_UNSEEN_ERRORS . "', '1', '{$now}')");
     }
