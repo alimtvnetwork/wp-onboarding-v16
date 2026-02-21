@@ -163,7 +163,7 @@ trait CleanerOrphanTrait {
     }
 
     private function cleanupStuckSnapshots(bool $dryRun = false): array {
-        $result = array('cleaned' => 0, 'ids' => array());
+        $result = array(ResponseKeyType::Cleaned->value => 0, ResponseKeyType::Ids->value => array());
 
         $stuck_hours = \RiseupAsia\Enums\SnapshotConfigType::StuckHours->value;
         $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
@@ -180,7 +180,7 @@ trait CleanerOrphanTrait {
         ) ?: array();
 
         foreach ($stuck as $snapshot) {
-            $result['ids'][] = (int) $snapshot['id'];
+            $result[ResponseKeyType::Ids->value][] = (int) $snapshot['id'];
             $isLiveRun = ($dryRun === false);
 
             if ($isLiveRun) {
@@ -199,7 +199,7 @@ trait CleanerOrphanTrait {
                 ));
             }
 
-            $result['cleaned']++;
+            $result[ResponseKeyType::Cleaned->value]++;
         }
 
         return $result;

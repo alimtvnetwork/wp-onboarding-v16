@@ -23,8 +23,8 @@ trait CleanerStorageTrait {
 
     public function getStorageStats(): array {
         $stats = array(
-            'total_snapshots'      => 0,
-            'total_size_bytes'     => 0,
+            ResponseKeyType::TotalSnapshots->value => 0,
+            ResponseKeyType::TotalSizeBytes->value => 0,
             'total_size_formatted' => '0 B',
             'oldest_timestamp'     => null,
             'newest_timestamp'     => null,
@@ -45,9 +45,9 @@ trait CleanerStorageTrait {
             );
 
             if ($db_stats) {
-                $stats['total_snapshots']      = intval($db_stats[ResponseKeyType::Count->value]);
-                $stats['total_size_bytes']     = intval($db_stats['total_size']);
-                $stats['total_size_formatted'] = PathHelper::formatBytes($stats['total_size_bytes']);
+                $stats[ResponseKeyType::TotalSnapshots->value]  = intval($db_stats[ResponseKeyType::Count->value]);
+                $stats[ResponseKeyType::TotalSizeBytes->value]  = intval($db_stats['total_size']);
+                $stats['total_size_formatted'] = PathHelper::formatBytes($stats[ResponseKeyType::TotalSizeBytes->value]);
 
                 if ($db_stats['oldest']) {
                     $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);

@@ -45,15 +45,15 @@ class SnapshotCleaner {
 
     public function execute(array $options = array()): array {
         $start = microtime(true);
-        $isDryRun = BooleanHelpers::hasValue($options['dry_run'] ?? null);
+        $isDryRun = BooleanHelpers::hasValue($options[ResponseKeyType::DryRun->value] ?? null);
 
         $results = ResultHelper::ok(array(
-            'retention'         => array('deleted' => 0, 'skipped_master' => 0, 'details' => array()),
-            'orphans'           => array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Files->value => array()),
-            'stuck'             => array('cleaned' => 0, 'ids' => array()),
-            ResponseKeyType::Errors->value => array(),
-            'dry_run'           => $isDryRun,
-            'space_freed_bytes' => 0,
+            ResponseKeyType::Retention->value => array(ResponseKeyType::Deleted->value => 0, 'skipped_master' => 0, 'details' => array()),
+            ResponseKeyType::Orphans->value   => array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Files->value => array()),
+            ResponseKeyType::Stuck->value     => array(ResponseKeyType::Cleaned->value => 0, ResponseKeyType::Ids->value => array()),
+            ResponseKeyType::Errors->value    => array(),
+            ResponseKeyType::DryRun->value    => $isDryRun,
+            ResponseKeyType::SpaceFreedBytes->value => 0,
         ));
 
         $settings = $this->loadSettings($options);
@@ -65,15 +65,15 @@ class SnapshotCleaner {
         $results[ResponseKeyType::Success->value]  = empty($results[ResponseKeyType::Errors->value]);
         $results[ResponseKeyType::Duration->value] = round(microtime(true) - $start, 3);
 
-        $totalDeleted = $results['retention']['deleted']
-            + $results['orphans'][ResponseKeyType::Removed->value]
-            + $results['stuck']['cleaned'];
+        $totalDeleted = $results[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value]
+            + $results[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value]
+            + $results[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value];
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
             'deleted_total' => $totalDeleted,
-            'space_freed'   => PathHelper::formatBytes($results['space_freed_bytes']),
+            'space_freed'   => PathHelper::formatBytes($results[ResponseKeyType::SpaceFreedBytes->value]),
             ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
-            'dry_run'       => $isDryRun,
+            ResponseKeyType::DryRun->value   => $isDryRun,
         ));
 
         $isLiveRunWithDeletions = ($isDryRun === false) && $totalDeleted > 0;
@@ -88,10 +88,10 @@ class SnapshotCleaner {
         $result = $this->execute($settings);
 
         return array(
-            ResponseKeyType::DeletedByPolicy->value => $result['retention']['deleted'] ?? 0,
-            ResponseKeyType::DeletedOrphans->value   => $result['orphans'][ResponseKeyType::Removed->value] ?? 0,
-            ResponseKeyType::DeletedFailed->value    => $result['stuck']['cleaned'] ?? 0,
-            ResponseKeyType::SpaceFreedBytes->value  => $result['space_freed_bytes'] ?? 0,
+            ResponseKeyType::DeletedByPolicy->value => $result[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value] ?? 0,
+            ResponseKeyType::DeletedOrphans->value   => $result[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value] ?? 0,
+            ResponseKeyType::DeletedFailed->value    => $result[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value] ?? 0,
+            ResponseKeyType::SpaceFreedBytes->value  => $result[ResponseKeyType::SpaceFreedBytes->value] ?? 0,
             ResponseKeyType::Errors->value           => $result[ResponseKeyType::Errors->value] ?? array(),
         );
     }
@@ -106,8 +106,8 @@ class SnapshotCleaner {
                 $this->log(LogLevelType::Debug->value, 'Retention policy is "none" - skipping policy cleanup');
             } else {
                 $retention = $this->cleanByRetention($settings, $isDryRun);
-                $results['retention'] = $retention;
-                $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
+                $results[ResponseKeyType::Retention->value] = $retention;
+                $results[ResponseKeyType::SpaceFreedBytes->value] += $retention[ResponseKeyType::BytesFreed->value] ?? 0;
             }
         } catch (Throwable $e) {
             $results[ResponseKeyType::Errors->value][] = 'Retention cleanup: ' . $e->getMessage();
@@ -120,8 +120,8 @@ class SnapshotCleaner {
     private function executeOrphanPhase(bool $isDryRun, array $results): array {
         try {
             $orphans = $this->cleanupOrphanFiles($isDryRun);
-            $results['orphans'] = $orphans;
-            $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
+            $results[ResponseKeyType::Orphans->value] = $orphans;
+            $results[ResponseKeyType::SpaceFreedBytes->value] += $orphans[ResponseKeyType::BytesFreed->value] ?? 0;
         } catch (Throwable $e) {
             $results[ResponseKeyType::Errors->value][] = 'Orphan cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));
@@ -133,7 +133,7 @@ class SnapshotCleaner {
     private function executeStuckPhase(bool $isDryRun, array $results): array {
         try {
             $stuck = $this->cleanupStuckSnapshots($isDryRun);
-            $results['stuck'] = $stuck;
+            $results[ResponseKeyType::Stuck->value] = $stuck;
         } catch (Throwable $e) {
             $results[ResponseKeyType::Errors->value][] = 'Stuck cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));

@@ -19,6 +19,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
@@ -73,7 +74,7 @@ trait PluginLifecycleDeleteTrait {
         $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Success->value);
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDelete->route())
-            ->setSingleResult(array('plugin_slug' => $slug, 'deleted' => true))
+            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deleted->value => true))
             ->toResponse();
     }
 

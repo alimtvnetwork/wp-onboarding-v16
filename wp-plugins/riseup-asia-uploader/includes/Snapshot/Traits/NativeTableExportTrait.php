@@ -64,7 +64,7 @@ trait NativeTableExportTrait {
         $insert = $this->prepareInsertStatement($sqlite, $table);
 
         $sqlite->beginTransaction();
-        $result = $this->executeBatchExport($insert['stmt'], $table, $count);
+        $result = $this->executeBatchExport($insert[ResponseKeyType::Stmt->value], $table, $count);
         $sqlite->commit();
 
         return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $result[ResponseKeyType::Exported->value], ResponseKeyType::Bytes->value => $result[ResponseKeyType::Bytes->value]);
@@ -78,7 +78,7 @@ trait NativeTableExportTrait {
 
         $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$column_list}) VALUES ({$placeholders})");
 
-        return array('stmt' => $stmt);
+        return array(ResponseKeyType::Stmt->value => $stmt);
     }
 
     private function executeBatchExport(

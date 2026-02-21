@@ -273,7 +273,7 @@ trait PluginListTrait
         return new WP_REST_Response(array(
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Path->value    => $rel_path,
-            'content' => $content,
+            ResponseKeyType::Content->value => $content,
         ), HttpStatusType::Ok->value);
     }
 }

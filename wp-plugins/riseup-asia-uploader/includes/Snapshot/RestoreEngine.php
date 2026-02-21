@@ -134,7 +134,7 @@ class RestoreEngine {
         array $options,
     ): array {
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
-        $master = $this->restoreMasterTables($restoreOrder[ResponseKeyType::Tables->value], $restoreOrder['inventory'], $snapshotDir, $options);
+        $master = $this->restoreMasterTables($restoreOrder[ResponseKeyType::Tables->value], $restoreOrder[ResponseKeyType::Inventory->value], $snapshotDir, $options);
         $inc = $this->applyIncrementalsPhase($rootPdo, $snapshotDir, $restoreOrder[ResponseKeyType::Tables->value], $options['mode'] ?? RestoreModeType::Full->value, $options['apply_incrementals'] ?? true);
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
 

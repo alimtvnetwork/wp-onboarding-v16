@@ -94,13 +94,13 @@ trait SnapshotBackupOpsTrait {
 
         return array(
             'retention_type' => $body['retention_type'] ?? null, 'retention_days' => $body['retention_days'] ?? null,
-            'retention_count' => $body['retention_count'] ?? null, 'dry_run' => $body['dry_run'] ?? false,
+            'retention_count' => $body['retention_count'] ?? null, ResponseKeyType::DryRun->value => $body[ResponseKeyType::DryRun->value] ?? false,
         );
     }
 
     /** Log cleanup if not a dry run. */
     private function logCleanupIfNotDryRun(array $body, array $result): void {
-        $isDryRun = ($body['dry_run'] ?? false);
+        $isDryRun = ($body[ResponseKeyType::DryRun->value] ?? false);
 
         if ($isDryRun) {
 
@@ -109,8 +109,8 @@ trait SnapshotBackupOpsTrait {
 
         $this->logger->logPluginAction(ActionType::SnapshotCleanup->value, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array('retention_removed' => $result['retention']['deleted'] ?? 0, 'orphans_removed' => $result['orphans'][ResponseKeyType::Removed->value] ?? 0,
-                'stuck_marked' => $result['stuck']['cleaned'] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0),
+            array('retention_removed' => $result[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value] ?? 0, 'orphans_removed' => $result[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value] ?? 0,
+                'stuck_marked' => $result[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0),
             $result[ResponseKeyType::Success->value] ? null : 'Cleanup encountered errors');
     }
 
@@ -118,8 +118,8 @@ trait SnapshotBackupOpsTrait {
     private function buildCleanupResponse(array $result): WP_REST_Response {
 
         return new WP_REST_Response(array(
-            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], 'retention' => $result['retention'], 'orphans' => $result['orphans'],
-            'stuck' => $result['stuck'], ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value], 'dry_run' => $result['dry_run'], ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value],
+            ResponseKeyType::Success->value => $result[ResponseKeyType::Success->value], ResponseKeyType::Retention->value => $result[ResponseKeyType::Retention->value], ResponseKeyType::Orphans->value => $result[ResponseKeyType::Orphans->value],
+            ResponseKeyType::Stuck->value => $result[ResponseKeyType::Stuck->value], ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value], ResponseKeyType::DryRun->value => $result[ResponseKeyType::DryRun->value], ResponseKeyType::Errors->value => $result[ResponseKeyType::Errors->value],
         ), HttpStatusType::Ok->value);
     }
 

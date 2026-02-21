@@ -116,10 +116,10 @@ trait AdminErrorAjaxTrait {
         }
 
         return array(
-            'content'  => $content,
-            'exists'   => $exists,
-            'size'     => $size,
-            'filename' => basename($path),
+            ResponseKeyType::Content->value  => $content,
+            ResponseKeyType::Exists->value   => $exists,
+            ResponseKeyType::Size->value     => $size,
+            ResponseKeyType::Filename->value => basename($path),
         );
     }
 
