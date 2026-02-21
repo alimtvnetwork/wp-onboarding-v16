@@ -97,7 +97,15 @@ trait IncrementalCoreTrait {
     ): array {
         $duration = microtime(true) - $startTime;
 
-        $snapshot_id = $this->registerIncrementalSnapshot($title, $masterDir, $folderName, $sequence, $export[ResponseKeyType::TablesChanged->value], $export[ResponseKeyType::TotalNewRows->value], $incrementalDir);
+        $snapshot_id = $this->registerIncrementalSnapshot(
+            $title,
+            $masterDir,
+            $folderName,
+            $sequence,
+            $export[ResponseKeyType::TablesChanged->value],
+            $export[ResponseKeyType::TotalNewRows->value],
+            $incrementalDir,
+        );
 
         $this->log(LogLevelType::Info->value, 'Incremental backup complete', array(
             ResponseKeyType::SnapshotId->value     => $snapshot_id,

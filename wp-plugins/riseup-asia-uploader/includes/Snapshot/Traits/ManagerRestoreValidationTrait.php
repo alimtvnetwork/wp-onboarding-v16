@@ -46,7 +46,9 @@ trait ManagerRestoreValidationTrait {
         }
 
         $this->log(LogLevelType::Error->value, 'Incremental restore blocked: parent full snapshot missing', array(
-            ResponseKeyType::SnapshotId->value => $snapshotId, 'master_dir' => $masterDirname, 'expected_path' => $masterDir,
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            'master_dir'                       => $masterDirname,
+            'expected_path'                    => $masterDir,
         ));
 
         return ResultHelper::errorWithCode(

@@ -40,7 +40,18 @@ trait AnalyzerQueryTrait {
 
         $isContent = ($resolvedScope !== null && $resolvedScope->isContent());
         if ($isContent) {
-            $content_suffixes = array('posts', 'postmeta', 'terms', 'term_taxonomy', 'term_relationships', 'comments', 'commentmeta', 'options', 'users', 'usermeta');
+            $content_suffixes = array(
+                'posts',
+                'postmeta',
+                'terms',
+                'term_taxonomy',
+                'term_relationships',
+                'comments',
+                'commentmeta',
+                'options',
+                'users',
+                'usermeta',
+            );
             $content_tables = array_map(function($s) use ($prefix) {
                 return $prefix . $s;
             }, $content_suffixes);

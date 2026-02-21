@@ -70,7 +70,9 @@ trait ManagerExportTrait {
 
         $size = filesize($zipPath);
         $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', array(
-            ResponseKeyType::SnapshotId->value => $snapshotId, 'zip_path' => $zipPath, ResponseKeyType::Size->value => PathHelper::formatBytes($size),
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            'zip_path'                         => $zipPath,
+            ResponseKeyType::Size->value       => PathHelper::formatBytes($size),
         ));
 
         return ResultHelper::ok(array(

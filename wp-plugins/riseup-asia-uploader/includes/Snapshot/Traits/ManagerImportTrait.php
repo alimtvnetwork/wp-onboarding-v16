@@ -38,7 +38,8 @@ trait ManagerImportTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
-            ResponseKeyType::Path->value => $uploadedPath, ResponseKeyType::Size->value => PathHelper::formatBytes(filesize($uploadedPath)),
+            ResponseKeyType::Path->value => $uploadedPath,
+            ResponseKeyType::Size->value => PathHelper::formatBytes(filesize($uploadedPath)),
         ));
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
@@ -157,7 +158,8 @@ trait ManagerImportTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Snapshot imported successfully', array(
-            ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $newFilename,
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            ResponseKeyType::Filename->value   => $newFilename,
         ));
 
         return ResultHelper::ok(array(
