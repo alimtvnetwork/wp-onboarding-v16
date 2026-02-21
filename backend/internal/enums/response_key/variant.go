@@ -47,6 +47,16 @@ const (
 	Entry
 	Computed
 	Removed
+	Limit
+	Offset
+	Posts
+	Categories
+	Category
+	Export
+	Incrementals
+	TotalSize
+	Applied
+	Folder
 	SnapshotId
 	Sequence
 	FolderName
@@ -90,89 +100,227 @@ const (
 	TempFile
 	Stmt
 	Columns
+	CreatedAt
+	UpdatedAt
+	ParentTable
+	ChildTable
+	FkColumn
+	RefColumn
+	SeedOrder
+	TableCount
+	DepCount
+	NewRows
+	PluginDetails
+	IncludedIds
+	IncrementalCount
+	DetectionMethod
+	SqliteVersion
+	IsCore
+	ScheduleEnabled
+	NextScheduledSnapshot
+	NextCleanup
+	RetentionType
+	RetentionDays
+	RetentionCount
+	SnapshotType
+	ErrorCategory
+	LogHint
+	FilesUpdated
+	FilesDeleted
+	FilesIgnored
+	IgnoredFiles
+	PluginZip
+	ResolvedUrl
+	TraceLines
+	CompletedAt
+	ExportedAt
+	FormatVersion
+	JobId
+	TotalTables
+	TablesExported
+	PoolSize
+	TotalBatches
+	CurrentBatch
+	TableProgress
+	IncrementalsApplied
+	SkippedMaster
+	ExportedTables
+	SnapshotDir
+	DirName
+	RowCount
+	TriggeredBy
+	AuditData
+	LogDataKey
+	OriginalId
+	OriginalCreatedAt
+	SourceSite
+	OriginalTitle
+	OriginalType
+	WpVersion
+	PhpVersion
+	MysqlVersion
+	SiteUrl
+	DbPrefix
+	PluginCount
+	DurationMs
+	TableCounts
 )
 
 var variantLabels = [...]string{
-	Invalid:        "invalid",
-	Success:        "success",
-	Error:          "error",
-	Message:        "message",
-	Data:           "data",
-	Code:           "code",
-	Valid:          "valid",
-	Errors:         "errors",
-	Cached:         "cached",
-	Phase:          "phase",
-	Reason:         "reason",
-	Total:          "total",
-	Agents:         "agents",
-	Actions:        "actions",
-	Logs:           "logs",
-	Snapshots:      "snapshots",
-	Sql:            "sql",
-	Params:         "params",
-	Sets:           "sets",
-	Plugins:        "plugins",
-	Tables:         "tables",
-	Rows:           "rows",
-	Bytes:          "bytes",
-	Size:           "size",
-	FileSize:       "file_size",
-	Path:           "path",
-	Filename:       "filename",
-	Checksum:       "checksum",
-	Duration:       "duration",
-	Count:          "count",
-	Files:          "files",
-	Directory:      "directory",
-	Scope:          "scope",
-	Exported:       "exported",
-	Entry:          "entry",
-	Computed:       "computed",
-	Removed:        "removed",
-	SnapshotId:     "snapshot_id",
-	Sequence:       "sequence",
-	FolderName:     "folder_name",
-	TablesChanged:  "tables_changed",
-	TotalRows:      "total_rows",
-	TotalNewRows:   "total_new_rows",
-	ZipSize:        "zip_size",
-	BackupId:       "backup_id",
-	ZipFailed:      "zip_failed",
-	SkipAudit:      "skip_audit",
-	TablesRestored:  "tables_restored",
-	DeletedByPolicy: "deleted_by_policy",
-	DeletedOrphans:  "deleted_orphans",
-	DeletedFailed:   "deleted_failed",
-	SpaceFreedBytes: "space_freed_bytes",
-	Retention:       "retention",
-	Orphans:         "orphans",
-	Stuck:           "stuck",
-	DryRun:          "dry_run",
-	BytesFreed:      "bytes_freed",
-	Deleted:         "deleted",
-	Cleaned:         "cleaned",
-	Activated:       "activated",
-	PluginSlug:      "plugin_slug",
-	IsUpdate:        "is_update",
-	IsSelfUpdate:    "is_self_update",
-	PluginVersion:   "plugin_version",
-	ActivationError: "activation_error",
-	Inventory:       "inventory",
-	ErrorLog:        "error_log",
-	FullLog:         "full_log",
-	StacktraceLog:   "stacktrace_log",
-	Exists:          "exists",
-	Content:         "content",
-	Truncated:       "truncated",
-	Lines:           "lines",
-	TotalLines:      "total_lines",
-	Ids:             "ids",
-	TotalSnapshots:  "total_snapshots",
-	TotalSizeBytes:  "total_size_bytes",
-	TempFile:        "temp_file",
-	Stmt:            "stmt",
-	Columns:         "columns",
+	Invalid:               "invalid",
+	Success:               "success",
+	Error:                 "error",
+	Message:               "message",
+	Data:                  "data",
+	Code:                  "code",
+	Valid:                 "valid",
+	Errors:                "errors",
+	Cached:                "cached",
+	Phase:                 "phase",
+	Reason:                "reason",
+	Total:                 "total",
+	Agents:                "agents",
+	Actions:               "actions",
+	Logs:                  "logs",
+	Snapshots:             "snapshots",
+	Sql:                   "sql",
+	Params:                "params",
+	Sets:                  "sets",
+	Plugins:               "plugins",
+	Tables:                "tables",
+	Rows:                  "rows",
+	Bytes:                 "bytes",
+	Size:                  "size",
+	FileSize:              "fileSize",
+	Path:                  "path",
+	Filename:              "filename",
+	Checksum:              "checksum",
+	Duration:              "duration",
+	Count:                 "count",
+	Files:                 "files",
+	Directory:             "directory",
+	Scope:                 "scope",
+	Exported:              "exported",
+	Entry:                 "entry",
+	Computed:              "computed",
+	Removed:               "removed",
+	Limit:                 "limit",
+	Offset:                "offset",
+	Posts:                  "posts",
+	Categories:            "categories",
+	Category:              "category",
+	Export:                 "export",
+	Incrementals:          "incrementals",
+	TotalSize:             "totalSize",
+	Applied:               "applied",
+	Folder:                "folder",
+	SnapshotId:            "snapshotId",
+	Sequence:              "sequence",
+	FolderName:            "folderName",
+	TablesChanged:         "tablesChanged",
+	TotalRows:             "totalRows",
+	TotalNewRows:          "totalNewRows",
+	ZipSize:               "zipSize",
+	BackupId:              "backupId",
+	ZipFailed:             "zipFailed",
+	SkipAudit:             "skipAudit",
+	TablesRestored:        "tablesRestored",
+	DeletedByPolicy:       "deletedByPolicy",
+	DeletedOrphans:        "deletedOrphans",
+	DeletedFailed:         "deletedFailed",
+	SpaceFreedBytes:       "spaceFreedBytes",
+	Retention:             "retention",
+	Orphans:               "orphans",
+	Stuck:                 "stuck",
+	DryRun:                "dryRun",
+	BytesFreed:            "bytesFreed",
+	Deleted:               "deleted",
+	Cleaned:               "cleaned",
+	Activated:             "activated",
+	PluginSlug:            "pluginSlug",
+	IsUpdate:              "isUpdate",
+	IsSelfUpdate:          "isSelfUpdate",
+	PluginVersion:         "pluginVersion",
+	ActivationError:       "activationError",
+	Inventory:             "inventory",
+	ErrorLog:              "errorLog",
+	FullLog:               "fullLog",
+	StacktraceLog:         "stacktraceLog",
+	Exists:                "exists",
+	Content:               "content",
+	Truncated:             "truncated",
+	Lines:                 "lines",
+	TotalLines:            "totalLines",
+	Ids:                   "ids",
+	TotalSnapshots:        "totalSnapshots",
+	TotalSizeBytes:        "totalSizeBytes",
+	TempFile:              "tempFile",
+	Stmt:                  "stmt",
+	Columns:               "columns",
+	CreatedAt:             "createdAt",
+	UpdatedAt:             "updatedAt",
+	ParentTable:           "parentTable",
+	ChildTable:            "childTable",
+	FkColumn:              "fkColumn",
+	RefColumn:             "refColumn",
+	SeedOrder:             "seedOrder",
+	TableCount:            "tableCount",
+	DepCount:              "depCount",
+	NewRows:               "newRows",
+	PluginDetails:         "pluginDetails",
+	IncludedIds:           "includedIds",
+	IncrementalCount:      "incrementalCount",
+	DetectionMethod:       "detectionMethod",
+	SqliteVersion:         "sqliteVersion",
+	IsCore:                "isCore",
+	ScheduleEnabled:       "scheduleEnabled",
+	NextScheduledSnapshot: "nextScheduledSnapshot",
+	NextCleanup:           "nextCleanup",
+	RetentionType:         "retentionType",
+	RetentionDays:         "retentionDays",
+	RetentionCount:        "retentionCount",
+	SnapshotType:          "snapshotType",
+	ErrorCategory:         "errorCategory",
+	LogHint:               "logHint",
+	FilesUpdated:          "filesUpdated",
+	FilesDeleted:          "filesDeleted",
+	FilesIgnored:          "filesIgnored",
+	IgnoredFiles:          "ignoredFiles",
+	PluginZip:             "pluginZip",
+	ResolvedUrl:           "resolvedUrl",
+	TraceLines:            "traceLines",
+	CompletedAt:           "completedAt",
+	ExportedAt:            "exportedAt",
+	FormatVersion:         "formatVersion",
+	JobId:                 "jobId",
+	TotalTables:           "totalTables",
+	TablesExported:        "tablesExported",
+	PoolSize:              "poolSize",
+	TotalBatches:          "totalBatches",
+	CurrentBatch:          "currentBatch",
+	TableProgress:         "tableProgress",
+	IncrementalsApplied:   "incrementalsApplied",
+	SkippedMaster:         "skippedMaster",
+	ExportedTables:        "exportedTables",
+	SnapshotDir:           "snapshotDir",
+	DirName:               "dirName",
+	RowCount:              "rowCount",
+	TriggeredBy:           "triggeredBy",
+	AuditData:             "auditData",
+	LogDataKey:            "logData",
+	OriginalId:            "originalId",
+	OriginalCreatedAt:     "originalCreatedAt",
+	SourceSite:            "sourceSite",
+	OriginalTitle:         "originalTitle",
+	OriginalType:          "originalType",
+	WpVersion:             "wpVersion",
+	PhpVersion:            "phpVersion",
+	MysqlVersion:          "mysqlVersion",
+	SiteUrl:               "siteUrl",
+	DbPrefix:              "dbPrefix",
+	PluginCount:           "pluginCount",
+	DurationMs:            "durationMs",
+	TableCounts:           "tableCounts",
 }
 
 func (v Variant) String() string {
@@ -221,9 +369,9 @@ func ByIndex(i int) Variant {
 }
 
 func Parse(s string) (Variant, error) {
-	lower := strings.ToLower(strings.TrimSpace(s))
+	trimmed := strings.TrimSpace(s)
 	for i, str := range variantLabels {
-		if str == lower {
+		if strings.EqualFold(str, trimmed) {
 			return Variant(i), nil
 		}
 	}
