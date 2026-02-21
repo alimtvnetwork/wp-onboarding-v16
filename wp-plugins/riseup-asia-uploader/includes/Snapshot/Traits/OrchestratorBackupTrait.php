@@ -60,23 +60,23 @@ trait OrchestratorBackupTrait {
             }
 
             $this->log(LogLevelType::Info->value, 'Async backup job created', array(
-                'job_id' => $worker_result['job_id'] ?? null,
-                'total_tables' => $worker_result['total_tables'] ?? null,
-                'pool_size' => $worker_result['pool_size'] ?? null,
+                ResponseKeyType::JobId->value => $worker_result[ResponseKeyType::JobId->value] ?? null,
+                ResponseKeyType::TotalTables->value => $worker_result[ResponseKeyType::TotalTables->value] ?? null,
+                ResponseKeyType::PoolSize->value => $worker_result[ResponseKeyType::PoolSize->value] ?? null,
                 ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
             ));
 
-            $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved[ResponseKeyType::Scope->value], $worker_result, array(ResponseKeyType::Count->value => 0, 'total_size' => 0), $worker_result[ResponseKeyType::Path->value]);
+            $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved[ResponseKeyType::Scope->value], $worker_result, array(ResponseKeyType::Count->value => 0, ResponseKeyType::TotalSize->value => 0), $worker_result[ResponseKeyType::Path->value]);
 
             return array(
                 ResponseKeyType::Success->value => true,
                 'async' => true,
-                'job_id' => $worker_result['job_id'] ?? null,
+                ResponseKeyType::JobId->value => $worker_result[ResponseKeyType::JobId->value] ?? null,
                 ResponseKeyType::SnapshotId->value => $snapshot_id,
                 ResponseKeyType::Directory->value => $worker_result[ResponseKeyType::Directory->value] ?? null,
                 ResponseKeyType::Path->value => $worker_result[ResponseKeyType::Path->value],
-                'total_tables' => $worker_result['total_tables'] ?? null,
-                'pool_size' => $worker_result['pool_size'] ?? null,
+                ResponseKeyType::TotalTables->value => $worker_result[ResponseKeyType::TotalTables->value] ?? null,
+                ResponseKeyType::PoolSize->value => $worker_result[ResponseKeyType::PoolSize->value] ?? null,
                 'status' => $worker_result['status'] ?? null,
             );
         } catch (Throwable $e) {

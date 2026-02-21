@@ -41,7 +41,7 @@ trait SchedulerExecutorTrait {
         return $this->buildCronResult($result, ActionType::SnapshotCreate->value, TriggerSourceType::Cron->value, array(
             'trigger' => 'cron',
             ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
-            'job_id' => $result['job_id'] ?? null,
+            ResponseKeyType::JobId->value => $result[ResponseKeyType::JobId->value] ?? null,
         ));
     }
 
@@ -110,7 +110,7 @@ trait SchedulerExecutorTrait {
 
         $cronResult = $this->buildCronResult(ResultHelper::ok(), ActionType::SnapshotCleanup->value, TriggerSourceType::Cron->value, $auditData);
         $cronResult[ResponseKeyType::SkipAudit->value] = ($totalDeleted === 0);
-        $cronResult['log_data'] = $auditData + array(
+        $cronResult[ResponseKeyType::LogDataKey->value] = $auditData + array(
             'space_freed'  => PathHelper::formatBytes($result[ResponseKeyType::SpaceFreedBytes->value]),
             'errors_count' => count($result[ResponseKeyType::Errors->value]),
         );

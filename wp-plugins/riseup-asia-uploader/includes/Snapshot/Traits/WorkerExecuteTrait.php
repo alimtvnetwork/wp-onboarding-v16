@@ -38,16 +38,16 @@ trait WorkerExecuteTrait {
         }
 
         try {
-            $rootPdo = $this->initRootDb($prepared['snapshot_dir'], $config);
+            $rootPdo = $this->initRootDb($prepared[ResponseKeyType::SnapshotDir->value], $config);
             $seed_order = $this->populateAndGetSeedOrder($rootPdo, $config);
             $rootPdo = null;
 
             $this->initProgressRecords($seed_order);
-            $job_id = $this->createJob($prepared['snapshot_dir'], $seed_order, $config);
+            $job_id = $this->createJob($prepared[ResponseKeyType::SnapshotDir->value], $seed_order, $config);
             $isJobCreationFailed = ($job_id === null || $job_id === false || $job_id === 0);
 
             if ($isJobCreationFailed) {
-                $this->cleanupOrphanedDir($prepared['snapshot_dir']);
+                $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
 
                 return ResultHelper::error('Failed to create snapshot job');
             }
@@ -56,7 +56,7 @@ trait WorkerExecuteTrait {
 
             return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
         } catch (Throwable $e) {
-            $this->cleanupOrphanedDir($prepared['snapshot_dir']);
+            $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
             $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return ResultHelper::errorFromException($e);
@@ -79,17 +79,17 @@ trait WorkerExecuteTrait {
         }
 
         try {
-            $rootPdo = $this->initRootDb($prepared['snapshot_dir'], $config);
+            $rootPdo = $this->initRootDb($prepared[ResponseKeyType::SnapshotDir->value], $config);
             $seed_order = $this->populateAndGetSeedOrder($rootPdo, $config);
             $this->initProgressRecords($seed_order);
 
-            $export = $this->exportBatchesSynchronously($seed_order, $prepared['snapshot_dir'], $rootPdo);
-            $this->rootDb->updateStats($rootPdo, $export['exported_tables'], $export['total_rows']);
+            $export = $this->exportBatchesSynchronously($seed_order, $prepared[ResponseKeyType::SnapshotDir->value], $rootPdo);
+            $this->rootDb->updateStats($rootPdo, $export[ResponseKeyType::ExportedTables->value], $export[ResponseKeyType::TotalRows->value]);
             $rootPdo = null;
 
             return $this->buildSyncSnapshotResult($prepared, $export, $start_time);
         } catch (Throwable $e) {
-            $this->cleanupOrphanedDir($prepared['snapshot_dir']);
+            $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
             $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return ResultHelper::errorFromException($e);

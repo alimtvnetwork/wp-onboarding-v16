@@ -45,9 +45,9 @@ trait WorkerBatchExportTrait {
         }
 
         return array(
-            ResponseKeyType::TotalRows->value => $total_rows,
-            'exported_tables'                 => $exported_tables,
-            ResponseKeyType::Errors->value    => $errors,
+            ResponseKeyType::TotalRows->value     => $total_rows,
+            ResponseKeyType::ExportedTables->value => $exported_tables,
+            ResponseKeyType::Errors->value         => $errors,
         );
     }
 
@@ -100,19 +100,19 @@ trait WorkerBatchExportTrait {
         $duration = microtime(true) - $startTime;
 
         $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
-            'job_id' => $jobId,
-            ResponseKeyType::Directory->value => $prepared['dir_name'],
-            'total_tables' => count($seedOrder),
-            'pool_size' => $this->poolSize,
+            ResponseKeyType::JobId->value => $jobId,
+            ResponseKeyType::Directory->value => $prepared[ResponseKeyType::DirName->value],
+            ResponseKeyType::TotalTables->value => count($seedOrder),
+            ResponseKeyType::PoolSize->value => $this->poolSize,
             'setup_time' => round($duration, 2) . 's',
         ));
 
         return ResultHelper::ok(array(
-            ResponseKeyType::Directory->value  => $prepared['dir_name'],
-            ResponseKeyType::Path->value       => $prepared['snapshot_dir'],
-            'job_id'                           => $jobId,
-            'total_tables'                     => count($seedOrder),
-            'pool_size'                        => $this->poolSize,
+            ResponseKeyType::Directory->value  => $prepared[ResponseKeyType::DirName->value],
+            ResponseKeyType::Path->value       => $prepared[ResponseKeyType::SnapshotDir->value],
+            ResponseKeyType::JobId->value      => $jobId,
+            ResponseKeyType::TotalTables->value => count($seedOrder),
+            ResponseKeyType::PoolSize->value   => $this->poolSize,
             ResponseKeyType::Tables->value     => 0,
             ResponseKeyType::TotalRows->value  => 0,
             ResponseKeyType::Errors->value     => array(),
@@ -128,9 +128,9 @@ trait WorkerBatchExportTrait {
     ): array {
 
         return ResultHelper::ok(array(
-            ResponseKeyType::Directory->value  => $prepared['dir_name'],
-            ResponseKeyType::Path->value       => $prepared['snapshot_dir'],
-            ResponseKeyType::Tables->value     => $export['exported_tables'],
+            ResponseKeyType::Directory->value  => $prepared[ResponseKeyType::DirName->value],
+            ResponseKeyType::Path->value       => $prepared[ResponseKeyType::SnapshotDir->value],
+            ResponseKeyType::Tables->value     => $export[ResponseKeyType::ExportedTables->value],
             ResponseKeyType::TotalRows->value  => $export[ResponseKeyType::TotalRows->value],
             ResponseKeyType::Errors->value     => $export[ResponseKeyType::Errors->value],
             ResponseKeyType::Duration->value   => microtime(true) - $startTime,
