@@ -24,13 +24,13 @@ trait AdminSettingsTrait {
         register_setting(
             PluginConfigType::SettingsGroup->value,
             OptionNameType::PluginSettings->value,
-            array($this, 'sanitizeSettings')
+            array($this, 'sanitizeSettings'),
         );
 
         register_setting(
             PluginConfigType::SettingsGroup->value,
             OptionNameType::UpdateSettings->value,
-            array($this, 'sanitizeUpdateSettings')
+            array($this, 'sanitizeUpdateSettings'),
         );
     }
 
@@ -39,6 +39,7 @@ trait AdminSettingsTrait {
         $sanitized = self::$defaults;
 
         $hasEndpoints = BooleanHelpers::hasValue($input['endpoints'] ?? null) && is_array($input['endpoints']);
+
         if ($hasEndpoints) {
             foreach ($input['endpoints'] as $endpoint => $config) {
                 if (isset($sanitized['endpoints'][$endpoint])) {

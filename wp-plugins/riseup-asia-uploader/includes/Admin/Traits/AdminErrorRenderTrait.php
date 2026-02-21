@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use PDO;
+use Throwable;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\TableType;

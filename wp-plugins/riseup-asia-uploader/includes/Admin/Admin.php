@@ -32,7 +32,6 @@ use RiseupAsia\Helpers\InitHelpers;
  * Handles admin menu pages and settings.
  */
 class Admin {
-
     use AdminMenuSettingsTrait;
     use AdminNoticesTrait;
     use AdminPagesTrait;
