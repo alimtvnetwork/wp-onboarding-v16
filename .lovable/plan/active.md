@@ -1,44 +1,101 @@
 # Active & Future Phases
 
-**Updated: 2026-02-14**
+**Updated: 2026-02-21**
 
 ---
 
-## Current Status: Enum Foundation Complete ✅
+## Current Status: Formatting Sweep In Progress 🔄
 
-All 27 PHP enum types created. Bootstrap and constants.php updated. Caller migration remaining.
-
----
-
-## Completed Tracks
-
-### J2-J5: PHP Enum Types Created ✅ (2026-02-14)
-12 new enums: SnapshotStatusType, SnapshotJobStatusType, SnapshotScopeType, SnapshotFrequencyType, SnapshotProviderType, SnapshotTriggerType, SnapshotExportStatusType, SnapshotModeType, RetentionType, AgentStatusType, TriggerSourceType, SyncActionType. Bootstrap and constants.php updated.
-
-### Spec & Architecture Docs ✅ (2026-02-14)
-function-naming.md, strict-typing.md exist. All spec cross-references correct.
-
-### Phase 3: Class Names → PascalCase ✅ (2026-02-14)
-No underscore-style class names remain.
-
-### HTTP Method & Log Level Migration ✅ (2026-02-14)
-All route registrations use HttpMethodType. 987 usages of LogLevelType.
-
-### Golang Enum Migration (Feature G) ✅ (2026-02-14)
-### File Size Remediation ✅ (2026-02-13)
-### Long Function Fix (Phases 1–16) ✅ (2026-02-13)
-### RISEUP_ Constant Migration ✅ (2026-02-13)
-### camelCase Method Migration (Feature I) ✅ (2026-02-14)
-### Nested-If Flattening ✅ (2026-02-14)
-### PHP Coding Standards (Feature H) ✅ (2026-02-13)
-### K1-K5: Spec updates, PathType, route(), camelCase ✅ (2026-02-14)
-### All previous tracks ✅ (2026-02-05 to 2026-02-09)
+All major architectural work (enum migration, PascalCase DB schema, error architecture, boot diagnostics, settings migration) is complete. Current focus is formatting compliance sweep across PHP trait files.
 
 ---
 
-## Open Suggestions
+## In Progress
 
-None — all 18 suggestions are completed. 🎉
+### Formatting Sweep (Rules 1, 4, 5, 9, 10, 11, 12, 13)
+
+**Tracked in:** `.lovable/plans/rule-10-sweep.md`
+
+| Directory | Status | Violations Fixed |
+|-----------|--------|------------------|
+| Snapshot/Traits/ | ✅ Done | 67+ across 5 sweeps |
+| Database/Traits/ | ✅ Done | 15 |
+| Admin/Traits/ | ✅ Done | 6 files |
+| Logging/Traits/ | ✅ Done | 15 (R12 ×7, R10 ×5, R5 ×3) |
+| Agent/Traits/ | ✅ Done | 3 (R10 ×2, double blank ×1) |
+| Helpers/Traits/ | ✅ Done | 13 (R4 ×7, R5 ×3, R10 ×3) |
+| Traits/Route/ | ✅ Done | Clean |
+| Go Handlers | ✅ Done | 8 files |
+| Go Services | ✅ Done | 27 calls |
+| Database/*.php | 🔵 Pending | — |
+| ErrorHandling/*.php | 🔵 Pending | — |
+| Core/*.php | 🔵 Pending | — |
+| Templates/*.php | 🔵 Pending | — |
+| Root files | 🔵 Pending | — |
+
+---
+
+## Completed Tracks (Recent — 2026-02-21)
+
+### Formatting Sweep — All Traits Directories ✅
+All 6 PHP trait directories (`Snapshot/`, `Database/`, `Admin/`, `Logging/`, `Agent/`, `Helpers/`) fully swept for R4, R5, R9, R10, R12 violations.
+
+### PHP–Go Consistency Audit ✅
+All 5 phases complete. Route registration gaps fixed, endpoint parity achieved, HTTP status enum migration done.
+
+### PascalCase Enum Labels — Cross-System ✅
+24 PHP enums + 10 Go enums migrated to PascalCase values. Settings migration helper created. DB V12/V14 migrations handle stored value updates.
+
+### PascalCase Database Schema ✅
+All 5 phases complete. Go SplitDB + E2E tables migrated. PHP Plugin SQLite V13 migration created. Root DB schema updated with backward compat via `RootDbCompatTrait`.
+
+### Go Backend Strict Guidelines ✅
+Phases 1–3 complete (ErrorCode typed alias, lint scripts, 3 new domain enums, magic string migration). Phase E raw error audit complete across all Go files.
+
+### Backend Standards Compliance ✅
+Phases A–E complete (spec updates, byte-based enum migration, config refactoring, AppError JSON, raw error audit).
+
+### Template Magic String Elimination (Phase 7) ✅
+Phases 7A–7G complete. All 5 admin templates cleaned. `SettingsMigrationHelper` created. `LogColumnType` enum created for admin-logs.php.
+
+---
+
+## Pending (Not Yet Started)
+
+### PHP–Go Consistency Audit — Phase 1: Constant Deduplication
+- Remove `Database::DEFAULT_LIMIT` / `MAX_LIMIT`, replace with `PaginationConfigType`
+- Replace all hardcoded `$limit = 50` and `$perPage = 50`
+- **Note**: PHP default params can't use enum values — documented as PHP constraint
+
+### Phase 5: Licensing System Architecture
+- License server + WP plugin client
+- Full architecture documented in `plan.md`
+- Estimated: 8–10 tasks
+
+### Go Phase 4: Positive Logic & Boolean Standards
+- Positive boolean naming (`IsValid` not `IsNotValid`)
+- Negation elimination patterns
+- Estimated: 2 tasks
+
+### Go Phase 5: Code Organization Standards
+- Package restructuring
+- File naming conventions enforcement
+- Estimated: 3 tasks
+
+### Go Phase 6: CI Lint Scripts & Integration
+- Complete lint script suite
+- CI pipeline integration
+- Estimated: 2 tasks
+
+### PascalCase Cross-System Remaining
+- Phase 2.3: PHP hardcoded string comparisons audit
+- Phase 2.4: WordPress database stored values upgrade routine
+- Phase 3: TypeScript frontend enum value updates
+- Phase 4: Spec documentation updates
+
+### Template Phase 7D: admin-errors.php
+- LogLevelType casing mismatch (`'ERROR'` stored vs `'Error'` enum)
+- FQCN imports cleanup
 
 ---
 
@@ -47,7 +104,8 @@ None — all 18 suggestions are completed. 🎉
 1. **Remote Plugin Backups**: Store on WP site or download locally?
 2. **Bulk Quick Publish**: Add "Quick Publish Selected" for multiple plugins?
 3. **True Diff Comparison**: Compare with remote files for accurate modified/deleted counts?
+4. **Licensing Build vs Buy**: Custom Go backend vs Keygen.sh vs LemonSqueezy?
 
 ---
 
-*Next tasks from consolidated backlog in `plan.md`: caller migration, constants.php cleanup, Go type-safety.*
+*Master plan details in `plan.md`. Formatting sweep tracked in `.lovable/plans/rule-10-sweep.md`.*

@@ -2,13 +2,24 @@
 
 > **Location:** `.lovable/memory/suggestions/01-suggestions-tracker.md`  
 > **Purpose:** Track AI suggestions for improvements (consolidated single file)  
-> **Updated:** 2026-02-09
+> **Updated:** 2026-02-21
 
 ---
 
 ## Active Suggestions (Open)
 
-*None — all suggestions are completed.* 🎉
+| ID | Created | Priority | Source | Status | Description |
+|----|---------|----------|--------|--------|-------------|
+| S-019 | 2026-02-21 | Medium | Formatting sweep | open | Fix formatting violations in Database/*.php root classes (Orm, RootDb, Database) |
+| S-020 | 2026-02-21 | Medium | Formatting sweep | open | Fix formatting violations in ErrorHandling/*.php (4 files) |
+| S-021 | 2026-02-21 | Medium | Formatting sweep | open | Fix formatting violations in Core/*.php (Plugin.php, etc.) |
+| S-022 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in Templates/*.php (admin templates) |
+| S-023 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in root files (riseup-asia-uploader.php, Autoloader.php) |
+| S-024 | 2026-02-21 | Medium | PHP-Go audit | open | Deduplicate Database::DEFAULT_LIMIT/MAX_LIMIT with PaginationConfigType enum values |
+| S-025 | 2026-02-21 | Low | Plan review | open | Audit PHP hardcoded string comparisons against old lowercase enum values (Phase 2.3) |
+| S-026 | 2026-02-21 | Low | Plan review | open | Update TypeScript frontend enum string values to PascalCase (Phase 3) |
+| S-027 | 2026-02-21 | Low | Plan review | open | Fix admin-errors.php template magic strings (Phase 7D — LogLevelType casing) |
+| S-028 | 2026-02-21 | Low | Memory review | open | Update core-enum-inventory memory to include LogColumnType enum (16 column cases) |
 
 ---
 
@@ -49,10 +60,10 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 0 |
+| Open | 10 |
 | Completed | 18 |
 | Rejected | 0 |
-| **Total** | **18** |
+| **Total** | **28** |
 
 ---
 
@@ -69,8 +80,6 @@ Add to "Active Suggestions (Open)" section with:
 - **Priority:** low / medium / high
 - **Status:** open → inProgress → completed
 - **Description:** what to change
-- **Rationale:** why it matters
-- **Acceptance criteria:** how to verify it's done
 
 ### Completing a Suggestion
 1. Move from "Active" to "Completed" table
