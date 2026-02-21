@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
+	ep "wp-plugin-publish/internal/enums/endpoint"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -70,13 +71,13 @@ type AvailableTable struct {
 }
 
 // snapshotEndpoint builds the full endpoint path for snapshot operations using fixed paths.
-func snapshotEndpoint(path EndpointType) string {
+func snapshotEndpoint(path ep.Variant) string {
 	return "/" + RiseupAsiaNamespace + path.String()
 }
 
 // GetSnapshots lists all snapshots on the remote site.
 func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsList)
+	endpoint := snapshotEndpoint(ep.SnapshotsList)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshots")
@@ -121,7 +122,7 @@ type SnapshotIDRequest struct {
 
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).
 func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsInfo)
+	endpoint := snapshotEndpoint(ep.SnapshotsInfo)
 	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -166,7 +167,7 @@ type SnapshotCreateResult struct {
 
 // CreateSnapshot triggers a new snapshot on the remote site.
 func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResult, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsSchedule)
+	endpoint := snapshotEndpoint(ep.SnapshotsSchedule)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create snapshot")
@@ -195,7 +196,7 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResu
 
 // DeleteSnapshot removes a snapshot from the remote site (ID in JSON body).
 func (c *Client) DeleteSnapshot(snapshotID int64) error {
-	endpoint := snapshotEndpoint(EndpointSnapshotsDelete)
+	endpoint := snapshotEndpoint(ep.SnapshotsDelete)
 	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -233,7 +234,7 @@ type SnapshotRestoreResult struct {
 
 // RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
 func (c *Client) RestoreSnapshot(snapshotID int64) (*SnapshotRestoreResult, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsRestore)
+	endpoint := snapshotEndpoint(ep.SnapshotsRestore)
 	reqBody := SnapshotRestoreOptions{
 		ID:      snapshotID,
 		Confirm: true,
@@ -266,7 +267,7 @@ func (c *Client) RestoreSnapshot(snapshotID int64) (*SnapshotRestoreResult, erro
 
 // GetSnapshotSettings fetches snapshot settings from the remote site.
 func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsSettings)
+	endpoint := snapshotEndpoint(ep.SnapshotsSettings)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot settings")
@@ -295,7 +296,7 @@ func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
 
 // UpdateSnapshotSettings updates snapshot settings on the remote site.
 func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSettings, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsSettings)
+	endpoint := snapshotEndpoint(ep.SnapshotsSettings)
 	resp, err := c.request("POST", endpoint, settings)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to update snapshot settings")
@@ -325,7 +326,7 @@ func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSet
 // ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsExport)
+	endpoint := snapshotEndpoint(ep.SnapshotsExport)
 	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -361,7 +362,7 @@ type SnapshotDownloadResult struct {
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot via POST /snapshots/download.
 func (c *Client) DownloadSnapshotZip(snapshotID int64) (*SnapshotDownloadResult, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsDownload)
+	endpoint := snapshotEndpoint(ep.SnapshotsDownload)
 	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -412,7 +413,7 @@ func (c *Client) StreamSnapshotZip(downloadURL string) (*http.Response, error) {
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsProviders)
+	endpoint := snapshotEndpoint(ep.SnapshotsProviders)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot providers")
@@ -441,7 +442,7 @@ func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 
 // GetAvailableTables returns the list of database tables available for snapshotting.
 func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsTables)
+	endpoint := snapshotEndpoint(ep.SnapshotsTables)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch available tables")
@@ -494,7 +495,7 @@ type SnapshotBackupResult struct {
 
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
 func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsFullBackup)
+	endpoint := snapshotEndpoint(ep.SnapshotsFullBackup)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger full backup")
@@ -523,7 +524,7 @@ func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, 
 
 // IncrementalBackup triggers an incremental backup against the latest master snapshot.
 func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsIncremental)
+	endpoint := snapshotEndpoint(ep.SnapshotsIncremental)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger incremental backup")
@@ -560,7 +561,7 @@ type SnapshotImportResult struct {
 // ImportSnapshot uploads a ZIP file to import as a snapshot on the remote site.
 // The zipPath is the local file path to the ZIP archive.
 func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsImport)
+	endpoint := snapshotEndpoint(ep.SnapshotsImport)
 
 	// Open the file
 	file, err := os.Open(zipPath)
@@ -625,7 +626,7 @@ type SnapshotCleanupResult struct {
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
 func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanupResult, error) {
-	endpoint := snapshotEndpoint(EndpointSnapshotsCleanup)
+	endpoint := snapshotEndpoint(ep.SnapshotsCleanup)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger snapshot cleanup")

@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	ep "wp-plugin-publish/internal/enums/endpoint"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -49,7 +50,7 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 // GetPluginSyncManifest retrieves the cached file manifest for a remote plugin via Riseup Asia Uploader.
 // Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
-	endpoint := "/" + RiseupAsiaNamespace + EndpointSyncManifest
+	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
@@ -99,7 +100,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 // GetPluginFilesViaRiseup retrieves the list of files for a remote plugin via Riseup Asia Uploader.
 // Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
-	endpoint := "/" + RiseupAsiaNamespace + EndpointFiles
+	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
@@ -341,7 +342,7 @@ func truncateBody(body string, maxLen int) string {
 // Uses a fixed endpoint with slug and path in JSON body.
 func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
 	// Use the Riseup Asia Uploader fixed endpoint
-	endpoint := "/" + RiseupAsiaNamespace + EndpointFile
+	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
 
 	body := map[string]string{"plugin": pluginSlug, "path": filePath}
 	jsonBody, err := json.Marshal(body)

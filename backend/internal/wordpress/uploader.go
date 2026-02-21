@@ -14,6 +14,10 @@ import (
 	"runtime"
 	"strings"
 
+	"wp-plugin-publish/internal/enums/action"
+	contenttype "wp-plugin-publish/internal/enums/content_type"
+	ep "wp-plugin-publish/internal/enums/endpoint"
+	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
@@ -122,7 +126,7 @@ var uploaderNamespaces = []string{
 // It tries namespaces in priority order (newest first) and returns the first match.
 func (c *Client) CheckRiseupAsiaAvailable() (bool, string, error) {
 	for _, ns := range uploaderNamespaces {
-		endpoint := "/" + ns + EndpointStatus.String()
+		endpoint := "/" + ns + ep.Status.String()
 		resp, err := c.request("GET", endpoint, nil)
 		if err != nil {
 			return false, "", err
@@ -152,7 +156,7 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	// Detect which namespace is available
 	namespace := c.resolveNamespace()
 
-	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointStatus)
+	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Status)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -193,8 +197,8 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
-// uploadSource identifies how the upload was triggered (e.g., UploadSourceRestAPI).
-func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource UploadSourceType) (*UploaderUploadResult, error) {
+// uploadSource identifies how the upload was triggered (e.g., uploadsource.RestAPI).
+func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource uploadsource.Variant) (*UploaderUploadResult, error) {
 	// CRITICAL: Always resolve to absolute path before any file operations
 	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
@@ -225,10 +229,10 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	zipSize := fileInfo.Size()
 
 	namespace := c.resolveNamespace()
-	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointUpload)
+	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, ep.Upload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), ProgressDetails{
+	c.progress(action.Upload.String(), "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), ProgressDetails{
 		"zipSize":   zipSize,
 		"zipPath":   absZipPath,
 		"namespace": namespace,
@@ -263,7 +267,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
 	}
 
-	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), ProgressDetails{
+	c.progress(action.Upload.String(), "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), ProgressDetails{
 		"slug":     slug,
 		"activate": activate,
 		"zipSize":  zipSize,
@@ -288,7 +292,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), ProgressDetails{
+	c.progress(action.Upload.String(), "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 2000),
 		"url":    uploadURL,
@@ -349,7 +353,7 @@ func normalizePluginSlug(slug string) string {
 // pluginLifecycleInput holds the parameters for a plugin lifecycle action.
 type pluginLifecycleInput struct {
 	Slug          string
-	Endpoint      EndpointType
+	Endpoint      ep.Variant
 	OperationName string
 	ErrorCode     string
 }
@@ -394,7 +398,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string, error) {
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(slug)
-	endpoint := "/" + namespace + EndpointPluginExists.String()
+	endpoint := "/" + namespace + ep.PluginExists.String()
 	reqBody := map[string]string{"plugin": normalizedSlug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -444,7 +448,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 func (c *Client) EnablePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
 		Slug:          slug,
-		Endpoint:      EndpointEnable,
+		Endpoint:      ep.Enable,
 		OperationName: "enable plugin",
 		ErrorCode:     apperror.ErrWPPluginActivate,
 	})
@@ -454,7 +458,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 func (c *Client) DisablePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
 		Slug:          slug,
-		Endpoint:      EndpointDisable,
+		Endpoint:      ep.Disable,
 		OperationName: "disable plugin",
 		ErrorCode:     apperror.ErrWPPluginActivate,
 	})
@@ -464,7 +468,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 func (c *Client) DeletePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
 		Slug:          slug,
-		Endpoint:      EndpointDelete,
+		Endpoint:      ep.Delete,
 		OperationName: "delete plugin",
 		ErrorCode:     apperror.ErrWPConnection,
 	})
@@ -474,7 +478,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	namespace := c.resolveNamespace()
 
-	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointPlugins)
+	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Plugins)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -512,7 +516,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
 	namespace := c.resolveNamespace()
 
-	endpoint := "/" + namespace + EndpointFiles.String()
+	endpoint := "/" + namespace + ep.Files.String()
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -544,7 +548,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
 	namespace := c.resolveNamespace()
 
-	endpoint := "/" + namespace + EndpointFiles.String()
+	endpoint := "/" + namespace + ep.Files.String()
 
 	// Always use base64 encoding for RiseupAsia Uploader
 	contentStr := base64.StdEncoding.EncodeToString(content)
@@ -567,7 +571,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 			WithURL(url)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON.String())
+	c.setStandardHeaders(req, contenttype.JSON.String())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -597,7 +601,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	namespace := c.resolveNamespace()
 
-	endpoint := "/" + namespace + EndpointFiles.String()
+	endpoint := "/" + namespace + ep.Files.String()
 
 	body := map[string]string{"plugin": slug, "path": relPath, "action": "delete"}
 	jsonBody, _ := json.Marshal(body)
@@ -609,7 +613,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 			WithURL(url)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON.String())
+	c.setStandardHeaders(req, contenttype.JSON.String())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -668,13 +672,13 @@ type SyncResult struct {
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
 	namespace := c.resolveNamespace()
 
-	c.progress(ActionSync.String(), "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), ProgressDetails{
+	c.progress(action.Sync.String(), "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), ProgressDetails{
 		"slug":      slug,
 		"fileCount": len(files),
 		"namespace": namespace,
 	})
 
-	endpoint := "/" + namespace + EndpointSync.String()
+	endpoint := "/" + namespace + ep.Sync.String()
 
 	body := ProgressDetails{
 		"plugin": slug,
@@ -693,7 +697,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 			WithURL(url)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON.String())
+	c.setStandardHeaders(req, contenttype.JSON.String())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -705,7 +709,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(ActionSync.String(), "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), ProgressDetails{
+	c.progress(action.Sync.String(), "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 500),
 	})
@@ -751,7 +755,7 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
-	endpoint := "/" + namespace + EndpointExportPlugin.String()
+	endpoint := "/" + namespace + ep.ExportPlugin.String()
 	reqBody := map[string]string{"plugin": slug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -801,9 +805,9 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
-	c.progress(ActionExportSelf.String(), "running", "Exporting Riseup Asia Uploader plugin...", nil)
+	c.progress(action.ExportSelf.String(), "running", "Exporting Riseup Asia Uploader plugin...", nil)
 
-	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointExportSelf)
+	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ExportSelf)
 
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
@@ -830,7 +834,7 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode export-self result")
 	}
 
-	c.progress(ActionExportSelf.String(), "completed", fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
+	c.progress(action.ExportSelf.String(), "completed", fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
 
 	return &result, nil
 }
@@ -867,7 +871,7 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
-	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointErrorLogs)
+	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorLogs)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "fetch remote error logs")
@@ -938,7 +942,7 @@ func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID i
 	}
 
 	// Build query string
-	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointErrorSessions)
+	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorSessions)
 	params := []string{}
 	if level != "" {
 		params = append(params, fmt.Sprintf("level=%s", level))
