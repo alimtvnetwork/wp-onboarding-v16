@@ -52,6 +52,7 @@ trait InitStartupTrait {
     public static function getTotalStartupTime(): float {
         $total = 0;
         foreach (self::$startup_results as $r) { $total += $r['time_ms']; }
+
         return round($total, 2);
     }
 
@@ -65,6 +66,7 @@ trait InitStartupTrait {
                 'total' => $total, 'failed' => $failed, 'time_ms' => $time,
                 'failures' => array_map(function (array $r): string { return $r['name'] . ': ' . $r[ResponseKeyType::Error->value]; }, self::getFailedStartups()),
             ));
+
             return;
         }
 

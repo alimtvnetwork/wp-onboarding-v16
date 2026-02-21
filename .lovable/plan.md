@@ -1324,7 +1324,7 @@ $someCode  // ❌ missing blank line
 
 ---
 
-## Phase 6C: Rule 4 — Blank Line Before `return` Re-sweep
+## ✅ COMPLETED — Phase 6C: Rule 4 — Blank Line Before `return` Re-sweep
 
 ### Scope
 
@@ -1352,7 +1352,7 @@ Re-sweep all PHP files for any new Rule 4 violations introduced since Part E aud
 |-----------|-------|-------|-----------|
 | 6A | Migration DDL modernization (V1–V12) | 5 | 2 sessions |
 | 6B | Rule 5 blank line after `}` | 2 | ✅ Done (clean) |
-| 6C | Rule 4 blank line before `return` re-sweep | 1 | 0.5 session |
+| 6C | Rule 4 blank line before `return` re-sweep | 1 | ✅ Done |
 | **Total** | | **8** | **3.5 sessions** |
 
 ---

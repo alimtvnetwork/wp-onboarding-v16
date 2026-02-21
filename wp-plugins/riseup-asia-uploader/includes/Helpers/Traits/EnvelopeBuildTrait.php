@@ -24,6 +24,7 @@ trait EnvelopeBuildTrait {
         );
 
         $this->appendOptionalSections($envelope);
+
         return $envelope;
     }
 
@@ -39,6 +40,7 @@ trait EnvelopeBuildTrait {
 
     private function buildAttributesBlock(): array {
         $result_count = count($this->results);
+
         return array(
             'RequestedAt' => $this->requested_at,
             'RequestDelegatedAt' => $this->delegated_at,
