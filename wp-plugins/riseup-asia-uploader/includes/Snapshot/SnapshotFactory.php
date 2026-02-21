@@ -1,7 +1,16 @@
 <?php
+/**
+ * Riseup Asia Uploader - Snapshot Factory
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.9.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use RiseupAsia\Database\Database;
 use RiseupAsia\Database\RootDb;
@@ -15,7 +24,7 @@ class SnapshotFactory {
         if (self::$detector === null) {
             self::$detector = new SnapshotDetector(
                 $logger ?: FileLogger::getInstance(),
-                $db ?: Database::getInstance()
+                $db ?: Database::getInstance(),
             );
         }
 
@@ -26,7 +35,7 @@ class SnapshotFactory {
         if (self::$cleaner === null) {
             self::$cleaner = new SnapshotCleaner(
                 $logger ?: FileLogger::getInstance(),
-                $db ?: Database::getInstance()
+                $db ?: Database::getInstance(),
             );
         }
 
@@ -36,14 +45,14 @@ class SnapshotFactory {
     public static function scheduler(?FileLogger $logger = null, ?Database $db = null): SnapshotScheduler {
         return SnapshotScheduler::getInstance(
             $logger ?: FileLogger::getInstance(),
-            $db ?: Database::getInstance()
+            $db ?: Database::getInstance(),
         );
     }
 
     public static function manager(?FileLogger $logger = null, ?Database $db = null): SnapshotManager {
         return SnapshotManager::getInstance(
             $logger ?: FileLogger::getInstance(),
-            $db ?: Database::getInstance()
+            $db ?: Database::getInstance(),
         );
     }
 
@@ -53,19 +62,29 @@ class SnapshotFactory {
         $analyzer = DependencyAnalyzer::getInstance($l);
         $rootDb   = RootDb::getInstance($l, $analyzer);
 
-        return SnapshotWorker::getInstance($l, $d, $rootDb, $analyzer);
+        return SnapshotWorker::getInstance(
+            $l,
+            $d,
+            $rootDb,
+            $analyzer,
+        );
     }
 
     public static function orchestrator(?FileLogger $logger = null, ?Database $db = null): SnapshotOrchestrator {
         $l = $logger ?: FileLogger::getInstance();
         $d = $db ?: Database::getInstance();
-        return SnapshotOrchestrator::getInstance($l, $d, self::manager($l, $d));
+
+        return SnapshotOrchestrator::getInstance(
+            $l,
+            $d,
+            self::manager($l, $d),
+        );
     }
 
     public static function exporter(?FileLogger $logger = null, ?Database $db = null): SnapshotExporter {
         return SnapshotExporter::getInstance(
             $logger ?: FileLogger::getInstance(),
-            $db ?: Database::getInstance()
+            $db ?: Database::getInstance(),
         );
     }
 

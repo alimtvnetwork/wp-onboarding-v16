@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\NonceType;
@@ -37,6 +38,7 @@ trait ExporterPublicApiTrait {
 
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
+
         if ($isSnapshotMissing) {
             return ResultHelper::errorWithCode(
                 'Full snapshot not found',
@@ -72,12 +74,14 @@ trait ExporterPublicApiTrait {
 
         $pdo = $this->db->get_pdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
             return false;
         }
 
         $export = $this->getValidExport($fullSnapshotId);
         $isExportMissing = ($export === null || $export === false);
+
         if ($isExportMissing) {
             $this->log(LogLevelType::Debug->value, 'No valid export to invalidate');
             return false;
@@ -102,6 +106,7 @@ trait ExporterPublicApiTrait {
     public function removeExports(int $fullSnapshotId): void {
         $pdo = $this->db->get_pdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
             return;
         }
@@ -112,6 +117,7 @@ trait ExporterPublicApiTrait {
 
         foreach ($exports as $export) {
             $hasZipPath = (BooleanHelpers::hasValue($export['ZipPath']) && file_exists($export['ZipPath']));
+
             if ($hasZipPath) {
                 @unlink($export['ZipPath']);
                 $this->log(LogLevelType::Debug->value, 'Deleted export ZIP', array('path' => basename($export['ZipPath'])));
@@ -131,6 +137,7 @@ trait ExporterPublicApiTrait {
         $export = $this->getExportById($exportId);
         $exportStatus = SnapshotExportStatusType::tryFrom($export['status'] ?? '');
         $isExportInvalid = ($export === null || $export === false || $exportStatus === null || $exportStatus->isOtherThan(SnapshotExportStatusType::Valid));
+
         if ($isExportInvalid) {
             return null;
         }
@@ -146,6 +153,7 @@ trait ExporterPublicApiTrait {
     public function validateDownloadToken(int $exportId, string $token): ?array {
         $valid = wp_verify_nonce($token, NonceType::SnapshotDownload->withSuffix($exportId));
         $isTokenInvalid = ($valid === false);
+
         if ($isTokenInvalid) {
             $this->log(LogLevelType::Warn->value, 'Invalid download token', array('export_id' => $exportId));
             return null;
@@ -153,6 +161,7 @@ trait ExporterPublicApiTrait {
 
         $export = $this->getExportById($exportId);
         $isExportMissing = ($export === null || $export === false);
+
         if ($isExportMissing) {
             $this->log(LogLevelType::Warn->value, 'Export not found for download', array('export_id' => $exportId));
             return null;
@@ -160,6 +169,7 @@ trait ExporterPublicApiTrait {
 
         $exportStatus = SnapshotExportStatusType::tryFrom($export['Status'] ?? '');
         $isExportNotValid = ($exportStatus === null || $exportStatus->isOtherThan(SnapshotExportStatusType::Valid));
+
         if ($isExportNotValid) {
             $this->log(LogLevelType::Warn->value, 'Export is not valid', array('export_id' => $exportId, 'status' => $export['Status']));
             return null;
@@ -179,6 +189,7 @@ trait ExporterPublicApiTrait {
     public function getExportStatus(int $fullSnapshotId): ?array {
         $pdo = $this->db->get_pdo();
         $isPdoMissing = ($pdo === null);
+
         if ($isPdoMissing) {
             return null;
         }

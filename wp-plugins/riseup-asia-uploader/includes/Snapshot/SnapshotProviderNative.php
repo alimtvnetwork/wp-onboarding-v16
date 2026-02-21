@@ -1,7 +1,16 @@
 <?php
+/**
+ * Riseup Asia Uploader - Native Snapshot Provider
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.9.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use wpdb;
 use RiseupAsia\Enums\SnapshotProviderType;
@@ -32,8 +41,13 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
 
     public function getCapabilities(): array {
         return array(
-            'fullSite' => false, 'databaseOnly' => true, 'selective' => true,
-            'scheduled' => true, 'restore' => true, 'export' => true, 'import' => true,
+            'fullSite' => false,
+            'databaseOnly' => true,
+            'selective' => true,
+            'scheduled' => true,
+            'restore' => true,
+            'export' => true,
+            'import' => true,
         );
     }
 }

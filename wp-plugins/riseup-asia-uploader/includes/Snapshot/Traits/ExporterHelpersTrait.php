@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\SnapshotModeType;

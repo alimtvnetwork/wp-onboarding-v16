@@ -23,7 +23,6 @@ use RiseupAsia\Logging\FileLogger;
  * Snapshot Provider Detector class.
  */
 class SnapshotDetector {
-
     use DetectorProviderTrait;
     use DetectorSettingsTrait;
 

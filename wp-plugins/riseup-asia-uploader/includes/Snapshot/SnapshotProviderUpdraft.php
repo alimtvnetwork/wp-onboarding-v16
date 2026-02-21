@@ -1,7 +1,16 @@
 <?php
+/**
+ * Riseup Asia Uploader - UpdraftPlus Snapshot Provider
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.9.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Snapshot\Traits\UpdraftCrudTrait;
@@ -11,12 +20,13 @@ use RiseupAsia\Logging\FileLogger;
 class SnapshotProviderUpdraft extends SnapshotProviderInterface {
     use UpdraftCrudTrait;
 
-    protected string $provider_id = 'updraft';
+    protected string $provider_id = SnapshotProviderType::Updraft->value;
     protected string $provider_name = 'UpdraftPlus';
     private mixed $updraft = null;
 
     public function __construct(FileLogger $logger, Database $db) {
         parent::__construct($logger, $db);
+
         if (class_exists('UpdraftPlus')) {
             global $updraftplus;
             $this->updraft = $updraftplus;
@@ -29,10 +39,15 @@ class SnapshotProviderUpdraft extends SnapshotProviderInterface {
 
     public function getCapabilities(): array {
         $is_premium = defined('UPDRAFTPLUS_VERSION') && strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
+
         return array(
-            'fullSite' => true, 'databaseOnly' => true,
-            'selective' => $is_premium, 'scheduled' => true,
-            'restore' => true, 'export' => true, 'import' => true,
+            'fullSite' => true,
+            'databaseOnly' => true,
+            'selective' => $is_premium,
+            'scheduled' => true,
+            'restore' => true,
+            'export' => true,
+            'import' => true,
         );
     }
 }

@@ -28,7 +28,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 class SnapshotCleaner {
-
     use CleanerRetentionTrait;
     use CleanerDeletionTrait;
     use CleanerOrphanTrait;
@@ -77,6 +76,7 @@ class SnapshotCleaner {
         ));
 
         $isLiveRunWithDeletions = ($isDryRun === false) && $totalDeleted > 0;
+
         if ($isLiveRunWithDeletions) {
             $this->logCleanupAudit($results);
         }

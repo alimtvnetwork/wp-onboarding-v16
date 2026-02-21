@@ -88,16 +88,19 @@ trait DetectorValidationTrait {
 
     private function validateMiscFields(array &$settings): void {
         $valid_storage = StorageModeType::validValues();
+
         if (BooleanHelpers::isAbsentFromList($settings['storage_mode'] ?? StorageModeType::PerTable->value, $valid_storage)) {
             $settings['storage_mode'] = StorageModeType::PerTable->value;
         }
 
         $isInvalidTime = (preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $settings['schedule_time']) === 0);
+
         if ($isInvalidTime) {
             $settings['schedule_time'] = '03:00';
         }
 
         $isCustomTablesInvalid = (is_array($settings['custom_tables']) === false);
+
         if ($isCustomTablesInvalid) {
             $settings['custom_tables'] = array();
         }

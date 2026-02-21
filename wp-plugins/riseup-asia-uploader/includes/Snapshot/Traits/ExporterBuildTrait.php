@@ -14,6 +14,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Exception;
+use PDO;
+use Throwable;
+use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PluginConfigType;

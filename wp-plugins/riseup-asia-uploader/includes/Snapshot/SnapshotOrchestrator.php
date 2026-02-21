@@ -36,6 +36,7 @@ class SnapshotOrchestrator {
         ?SnapshotManager $manager = null,
     ): self {
         $isReadyToInit = self::$instance === null && $logger && $db && $manager;
+
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $manager);
         }
@@ -59,6 +60,11 @@ class SnapshotOrchestrator {
         $this->manager = $manager;
         $this->analyzer = DependencyAnalyzer::getInstance($logger);
         $this->rootDb = RootDb::getInstance($logger, $this->analyzer);
-        $this->worker = SnapshotWorker::getInstance($logger, $db, $this->rootDb, $this->analyzer);
+        $this->worker = SnapshotWorker::getInstance(
+            $logger,
+            $db,
+            $this->rootDb,
+            $this->analyzer,
+        );
     }
 }

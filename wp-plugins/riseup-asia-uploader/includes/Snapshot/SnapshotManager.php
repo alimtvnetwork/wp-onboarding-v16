@@ -30,6 +30,7 @@ class SnapshotManager {
 
     public static function getInstance(?FileLogger $logger = null, ?Database $db = null): self {
         $isReadyToInit = self::$instance === null && $logger && $db;
+
         if ($isReadyToInit) {
             self::$instance = new self($logger, $db);
         }
