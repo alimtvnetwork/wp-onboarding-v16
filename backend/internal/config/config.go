@@ -2,19 +2,14 @@
 package config
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"os"
 	"strconv"
-	"strings"
 
-	"wp-plugin-publish/internal/crypto"
-	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/enums/backup_type"
 	"wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/enums/plugin_selection"
 	"wp-plugin-publish/internal/enums/snapshot_mode"
-	"wp-plugin-publish/internal/logger"
 )
 
 // Config represents the application configuration
@@ -33,116 +28,6 @@ type Config struct {
 	Seed          SeedConfig
 	E2E           E2EConfig
 	ResponseDebug ResponseDebugConfig
-}
-
-// E2EConfig holds end-to-end test settings
-type E2EConfig struct {
-	Enabled          bool
-	TestPluginPath   string
-	TestSiteURL      string
-	TestSiteUsername  string
-	TestSitePassword string
-}
-
-// ResponseDebugConfig controls error verbosity in API responses.
-type ResponseDebugConfig struct {
-	IncludeStackTrace     bool
-	IncludeInternalErrors bool
-	IncludeMethodsStack   bool
-	MaxStackFrames        int
-}
-
-// SnapshotConfig holds snapshot backup system settings
-type SnapshotConfig struct {
-	Mode            snapshotmode.Variant
-	BackupType      backuptype.Variant
-	WorkerCount     int
-	StoragePath     string
-	IncludePlugins  bool
-	PluginSelection pluginselection.Variant
-	RetentionDays   int
-	RetentionCount  int
-	Compression     bool
-	BatchSize       int
-}
-
-// ServerConfig holds HTTP server settings
-type ServerConfig struct {
-	Port               int
-	WSReconnectDelayMs int
-	StaticDir          string
-}
-
-// WatcherConfig holds file watcher settings
-type WatcherConfig struct {
-	PollIntervalMs         int
-	DebounceMs             int
-	DefaultExcludePatterns []string
-}
-
-// BackupConfig holds backup settings
-type BackupConfig struct {
-	Location            string
-	AutoBackupOnPublish bool
-	RetentionDays       int
-	MaxBackupsPerPlugin int
-}
-
-// LoggingConfig holds logging settings
-type LoggingConfig struct {
-	Level                  loglevel.Variant
-	RetentionDays          int
-	DebugMode              bool
-	// TimeFormat uses Go time layout (e.g. "2006-01-02 03:04:05 PM" for 12-hour clock).
-	TimeFormat             string
-	ClearLogsOnStartup     bool
-	ClearSessionsOnStartup bool
-	SessionLoggingEnabled  bool
-	StackTraceDepth        int
-	PhpStackTraceDepth     int
-}
-
-// SecurityConfig holds security settings
-type SecurityConfig struct {
-	EncryptionKey string
-}
-
-// WordPressConfig holds WordPress API settings
-type WordPressConfig struct {
-	TimeoutSeconds int
-	MaxRetries     int
-}
-
-// RemotePluginsConfig holds caching settings for remote plugin lists
-type RemotePluginsConfig struct {
-	CacheEnabled    bool
-	CacheTTLMinutes int
-}
-
-// SeedConfig holds seedable test data for quick setup
-type SeedConfig struct {
-	Enabled bool
-	Sites   []SeedSite
-	Plugins []SeedPlugin
-}
-
-// SeedSite represents a site to seed
-type SeedSite struct {
-	Name                string
-	URL                 string
-	Username            string
-	ApplicationPassword string
-	Category            string
-}
-
-// SeedPlugin represents a plugin to seed
-type SeedPlugin struct {
-	Name        string
-	Path        string
-	Category    string
-	GitEnabled  bool
-	AutoPublish bool
-	SiteNames   []string
 }
 
 // DefaultConfig returns the default configuration
@@ -179,7 +64,7 @@ func DefaultConfig() *Config {
 			PhpStackTraceDepth:     0,
 		},
 		Security: SecurityConfig{
-			EncryptionKey: "", // Must be set via environment or config
+			EncryptionKey: "",
 		},
 		WordPress: WordPressConfig{
 			TimeoutSeconds: 30,
@@ -225,7 +110,6 @@ func Load(path string) (*Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Return defaults if config doesn't exist
 			return cfg, nil
 		}
 		return nil, err
@@ -237,296 +121,14 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
-	// Override with environment variables if set
 	if key := os.Getenv("WPP_ENCRYPTION_KEY"); key != "" {
 		cfg.Security.EncryptionKey = key
 	}
 	if port := os.Getenv("WPP_PORT"); port != "" {
-		// Parse and set port from env
+		if p, err := strconv.Atoi(port); err == nil {
+			cfg.Server.Port = p
+		}
 	}
 
 	return cfg, nil
-}
-
-// SeedIfNeeded seeds the database from config if version is newer
-func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
-	log.Info("Checking seed requirements", "configVersion", cfg.Version, "seedEnabled", cfg.Seed.Enabled)
-
-	// Get current seed version from database
-	currentVersion, err := db.GetSeedVersion()
-	if err != nil {
-		log.Error("Failed to get seed version from database", "error", err)
-		return err
-	}
-	log.Debug("Current seed version", "version", currentVersion)
-
-	// Compare versions and seed if config is newer
-	if compareVersions(cfg.Version, currentVersion) > 0 {
-		log.Info("Seeding database", "from", currentVersion, "to", cfg.Version)
-		if err := seedFromConfig(db, cfg, log); err != nil {
-			log.Error("Seeding failed", "error", err)
-			return err
-		}
-		if err := db.SetSeedVersion(cfg.Version); err != nil {
-			log.Error("Failed to update seed version", "error", err)
-			return err
-		}
-		log.Info("Seed version updated", "version", cfg.Version)
-	} else {
-		log.Debug("No seeding required", "configVersion", cfg.Version, "dbVersion", currentVersion)
-	}
-
-	// ALWAYS ensure mappings exist on every startup (idempotent)
-	// This catches cases where plugins/sites exist but mappings are missing
-	if cfg.Seed.Enabled {
-		log.Info("Ensuring all plugin→site mappings exist")
-		if err := ensureMappingsExist(db, cfg, log); err != nil {
-			log.Error("Mapping verification failed", "error", err)
-			return err
-		}
-	}
-
-	return nil
-}
-
-// seedFromConfig populates database with default values from config
-func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
-	log.Debug("Seeding default settings")
-
-	// Seed default settings
-	settings := map[string]any{
-		"watcher.pollIntervalMs":     cfg.Watcher.PollIntervalMs,
-		"watcher.debounceMs":         cfg.Watcher.DebounceMs,
-		"backup.retentionDays":       cfg.Backup.RetentionDays,
-		"backup.maxBackupsPerPlugin": cfg.Backup.MaxBackupsPerPlugin,
-		"backup.autoBackupOnPublish": cfg.Backup.AutoBackupOnPublish,
-		"logging.level":              cfg.Logging.Level,
-		"logging.retentionDays":      cfg.Logging.RetentionDays,
-		"logging.stackTraceDepth":    cfg.Logging.StackTraceDepth,
-		"logging.phpStackTraceDepth": cfg.Logging.PhpStackTraceDepth,
-		// Response debug settings (seedable)
-		"responseDebug.includeStackTrace":     cfg.ResponseDebug.IncludeStackTrace,
-		"responseDebug.includeInternalErrors": cfg.ResponseDebug.IncludeInternalErrors,
-		"responseDebug.includeMethodsStack":   cfg.ResponseDebug.IncludeMethodsStack,
-		"responseDebug.maxStackFrames":        cfg.ResponseDebug.MaxStackFrames,
-		// Snapshot settings
-		"snapshot.mode":            cfg.Snapshot.Mode,
-		"snapshot.backupType":      cfg.Snapshot.BackupType,
-		"snapshot.workerCount":     cfg.Snapshot.WorkerCount,
-		"snapshot.storagePath":     cfg.Snapshot.StoragePath,
-		"snapshot.includePlugins":  cfg.Snapshot.IncludePlugins,
-		"snapshot.pluginSelection": cfg.Snapshot.PluginSelection,
-		"snapshot.retentionDays":   cfg.Snapshot.RetentionDays,
-		"snapshot.retentionCount":  cfg.Snapshot.RetentionCount,
-		"snapshot.compression":     cfg.Snapshot.Compression,
-		"snapshot.batchSize":       cfg.Snapshot.BatchSize,
-	}
-
-	for key, value := range settings {
-		if err := db.SetSettingIfNotExists(key, value); err != nil {
-			log.Warn("Failed to set setting", "key", key, "error", err)
-		}
-	}
-
-	// Seed sites and plugins if enabled
-	if cfg.Seed.Enabled {
-		log.Info("Seeding sites and plugins", "siteCount", len(cfg.Seed.Sites), "pluginCount", len(cfg.Seed.Plugins))
-		if err := seedSitesAndPlugins(db, cfg, log); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// normalizeUrl strips common WordPress paths and enforces HTTPS
-func normalizeUrl(rawUrl string) string {
-	u := strings.TrimSpace(rawUrl)
-	// Remove trailing slashes
-	u = strings.TrimRight(u, "/")
-	// Strip common WP paths
-	for _, suffix := range []string{"/wp-admin", "/wp-login.php", "/wp-json"} {
-		u = strings.TrimSuffix(u, suffix)
-	}
-	// Enforce HTTPS
-	if strings.HasPrefix(u, "http://") {
-		u = "https://" + strings.TrimPrefix(u, "http://")
-	}
-	if !strings.HasPrefix(u, "https://") {
-		u = "https://" + u
-	}
-	return u
-}
-
-// seedSitesAndPlugins seeds test sites and plugins from config
-// This implementation maps ALL plugins to ALL sites (requested behaviour)
-func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error {
-	log.Info("=== SEEDING START ===", "sites", len(cfg.Seed.Sites), "plugins", len(cfg.Seed.Plugins))
-
-	// Collect all seeded site IDs (for all→all mapping)
-	var allSiteIds []int64
-
-	// Get encryption key from config
-	encryptionKey := []byte(cfg.Security.EncryptionKey)
-
-	// Seed sites
-	for i, site := range cfg.Seed.Sites {
-		// Normalize URL before checking/inserting
-		normalizedUrl := normalizeUrl(site.URL)
-		log.Info("Processing site", "index", i+1, "name", site.Name, "rawUrl", site.URL, "normalizedUrl", normalizedUrl)
-
-		// Decode base64 password to get plaintext
-		passwordPlaintext, err := base64.StdEncoding.DecodeString(site.ApplicationPassword)
-		if err != nil {
-			log.Warn("Base64 decode failed for site password, using raw", "site", site.Name)
-			passwordPlaintext = []byte(site.ApplicationPassword)
-		}
-
-		// Check if site already exists by URL
-		existingId, err := db.GetSiteIdByUrl(normalizedUrl)
-		if err == nil && existingId > 0 {
-			log.Info("Site exists in DB", "id", existingId, "name", site.Name)
-			allSiteIds = append(allSiteIds, existingId)
-			continue
-		}
-
-		// IMPORTANT: Encrypt password using AES-256-GCM before storing
-		encryptedPassword, err := crypto.Encrypt(passwordPlaintext, encryptionKey)
-		if err != nil {
-			log.Error("Failed to encrypt password for site", "site", site.Name, "error", err)
-			continue
-		}
-
-		// Insert site with properly encrypted password and normalized URL
-		id, err := db.CreateSeedSite(site.Name, normalizedUrl, site.Username, encryptedPassword, site.Category)
-		if err != nil {
-			log.Error("Failed to create seed site", "name", site.Name, "error", err)
-			continue
-		}
-		log.Info("Site CREATED", "name", site.Name, "id", id)
-		allSiteIds = append(allSiteIds, id)
-	}
-
-	log.Info("Site processing complete", "siteIds", allSiteIds)
-
-	// Seed plugins and map each to ALL sites
-	totalMappingsCreated := 0
-	for i, plugin := range cfg.Seed.Plugins {
-		log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", plugin.Path)
-
-		var pluginId int64
-
-		// Check if plugin already exists by path
-		existingId, err := db.GetPluginIdByPath(plugin.Path)
-		if err == nil && existingId > 0 {
-			log.Info("Plugin exists in DB", "id", existingId, "name", plugin.Name)
-			pluginId = existingId
-		} else {
-			// Insert new plugin
-			pluginId, err = db.CreateSeedPlugin(plugin.Name, plugin.Path, plugin.Category, plugin.GitEnabled, plugin.AutoPublish)
-			if err != nil {
-				log.Error("Failed to create seed plugin", "name", plugin.Name, "path", plugin.Path, "error", err)
-				continue
-			}
-			log.Info("Plugin CREATED", "name", plugin.Name, "id", pluginId)
-		}
-
-		// Create mappings to ALL seeded sites (all→all)
-		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
-		for _, siteId := range allSiteIds {
-			created, err := db.CreateSeedMapping(pluginId, siteId, remoteSlug, log)
-			if err != nil {
-				log.Warn("Failed to create mapping", "pluginId", pluginId, "siteId", siteId, "error", err)
-			} else if created {
-				totalMappingsCreated++
-			}
-		}
-	}
-
-	log.Info("=== SEEDING COMPLETE ===", "sitesTotal", len(allSiteIds), "pluginsTotal", len(cfg.Seed.Plugins), "mappingsCreated", totalMappingsCreated)
-	return nil
-}
-
-// ensureMappingsExist ensures all plugin→site mappings exist (idempotent, runs every startup)
-// This handles cases where plugins/sites exist but mappings were not created
-func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error {
-	log.Debug("Verifying mappings exist for all seeded plugins")
-
-	// Get all site IDs
-	var siteIds []int64
-	for _, site := range cfg.Seed.Sites {
-		normalizedUrl := normalizeUrl(site.URL)
-		if id, err := db.GetSiteIdByUrl(normalizedUrl); err == nil && id > 0 {
-			siteIds = append(siteIds, id)
-		} else {
-			log.Warn("Site not found in database", "name", site.Name, "url", normalizedUrl, "error", err)
-		}
-	}
-
-	if len(siteIds) == 0 {
-		log.Debug("No sites found for mapping verification")
-		return nil
-	}
-
-	log.Debug("Found sites for mapping", "count", len(siteIds))
-
-	// Ensure each plugin is mapped to all sites
-	mappingsCreated := 0
-	for _, plugin := range cfg.Seed.Plugins {
-		pluginId, err := db.GetPluginIdByPath(plugin.Path)
-		if err != nil || pluginId == 0 {
-			log.Warn("Plugin not found for mapping", "name", plugin.Name, "path", plugin.Path, "error", err)
-			continue
-		}
-
-		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
-		for _, siteId := range siteIds {
-			// CreateSeedMapping uses INSERT OR IGNORE and returns (created, error)
-			created, err := db.CreateSeedMapping(pluginId, siteId, remoteSlug, log)
-			if err != nil {
-				log.Warn("Mapping creation failed", "pluginId", pluginId, "siteId", siteId, "error", err)
-			} else if created {
-				mappingsCreated++
-			}
-		}
-	}
-
-	if mappingsCreated > 0 {
-		log.Info("Mapping verification complete", "mappingsCreated", mappingsCreated)
-	} else {
-		log.Debug("All mappings already exist")
-	}
-	return nil
-}
-
-// compareVersions compares two semantic versions
-// Returns: -1 if a < b, 0 if a == b, 1 if a > b
-func compareVersions(a, b string) int {
-	if a == b {
-		return 0
-	}
-	if b == "" {
-		return 1
-	}
-
-	partsA := strings.Split(a, ".")
-	partsB := strings.Split(b, ".")
-
-	for i := 0; i < 3; i++ {
-		var numA, numB int
-		if i < len(partsA) {
-			numA, _ = strconv.Atoi(partsA[i])
-		}
-		if i < len(partsB) {
-			numB, _ = strconv.Atoi(partsB[i])
-		}
-		if numA > numB {
-			return 1
-		}
-		if numA < numB {
-			return -1
-		}
-	}
-
-	return 0
 }
