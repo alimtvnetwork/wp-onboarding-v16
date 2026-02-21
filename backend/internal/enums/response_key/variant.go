@@ -58,6 +58,10 @@ const (
 	ZipFailed
 	SkipAudit
 	TablesRestored
+	DeletedByPolicy
+	DeletedOrphans
+	DeletedFailed
+	SpaceFreedBytes
 )
 
 var variantLabels = [...]string{
@@ -108,7 +112,11 @@ var variantLabels = [...]string{
 	BackupId:       "backup_id",
 	ZipFailed:      "zip_failed",
 	SkipAudit:      "skip_audit",
-	TablesRestored: "tables_restored",
+	TablesRestored:  "tables_restored",
+	DeletedByPolicy: "deleted_by_policy",
+	DeletedOrphans:  "deleted_orphans",
+	DeletedFailed:   "deleted_failed",
+	SpaceFreedBytes: "space_freed_bytes",
 }
 
 func (v Variant) String() string {
