@@ -92,16 +92,17 @@ trait RootDbSchemaTrait {
         );
 
         $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$pascalName}'");
-        if ($check->fetch() !== false) {
 
+        if ($check->fetch() !== false) {
             return $pascalName;
         }
 
         $legacy = $legacyMap[$pascalName] ?? null;
+
         if ($legacy !== null) {
             $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$legacy}'");
-            if ($check->fetch() !== false) {
 
+            if ($check->fetch() !== false) {
                 return $legacy;
             }
         }
@@ -134,9 +135,9 @@ trait RootDbSchemaTrait {
         );
 
         $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
+
         foreach ($columns as $col) {
             if ($col['name'] === $pascalColumn) {
-
                 return $pascalColumn;
             }
         }
