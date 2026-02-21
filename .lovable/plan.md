@@ -472,43 +472,37 @@ func (r Result[T]) Unwrap() (T, error)     // bridge to (T, error) pattern
 
 ---
 
-## Go Phase 2: File & Function Size Enforcement
+## ✅ COMPLETED — Go Phase 2: File & Function Size Enforcement (2026-02-21)
 
-### 2.1 — File Size Limit: 300 Lines Max
+### 2.1 — File Size Limit: 300 Lines Max ✅
 
-- Add lint script: `scripts/lint-file-size.sh`
-- Scans all `.go` files excluding generated/vendor
-- Fails CI if any file exceeds 300 lines
-- Splitting pattern:
-  - `entity.go` — struct + constructors
-  - `entity_crud.go` — DB operations
-  - `entity_validation.go` — validation logic
-  - `entity_helpers.go` — private utilities
+- Created `scripts/lint-file-size.sh`
+- Scans all `.go` files excluding vendor, generated, e2e, and `_test.go`
+- Supports `--dir`, `--max`, `--include-tests` flags
+- Reports oversized files with splitting pattern guidance
+- Fails with exit code 1 if violations found
 
-### 2.2 — Function Body Limit: 15 Lines Max
+### 2.2 — Function Body Limit: 15 Lines Max ✅
 
-- Add lint script: `scripts/lint-func-size.sh`
-- Counts lines between `func` opening `{` and closing `}`
-- Excludes blank lines and comments from count
-- Extraction patterns:
-  - Multi-step → orchestrator + helpers
-  - Complex conditions → named boolean variables
-  - Switch/case → lookup maps or strategy pattern
+- Created `scripts/lint-func-size.sh`
+- AWK-based parser counts non-blank, non-comment lines inside function bodies
+- Handles receiver methods, block comments, brace tracking
+- Supports `--dir`, `--max`, `--include-tests`, `--verbose` flags
+- Reports violating functions with file:line and refactoring guidance
 
 ### 2.3 — Cyclomatic Complexity: Max 1
 
 - No nested `if` statements — early return mandatory
 - Complex boolean expressions → named variables
 - `if err != nil { return }` does not count as nesting
+- *(No separate lint script yet — manual enforcement via code review)*
 
 ### Lint Scripts
 
-| Script | Rule |
-|--------|------|
-| `scripts/lint-file-size.sh` | No `.go` file > 300 lines |
-| `scripts/lint-func-size.sh` | No function body > 15 lines |
-
-### Estimated Effort: 3 tasks (scripts + file splitting)
+| Script | Rule | Status |
+|--------|------|--------|
+| `scripts/lint-file-size.sh` | No `.go` file > 300 lines | ✅ Created |
+| `scripts/lint-func-size.sh` | No function body > 15 lines | ✅ Created |
 
 ---
 
