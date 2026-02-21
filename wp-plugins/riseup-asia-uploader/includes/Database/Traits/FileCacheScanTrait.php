@@ -69,7 +69,12 @@ trait FileCacheScanTrait {
 
         $removedCount = $this->pruneStaleEntries($pluginSlug, $cachedEntries, $activePaths);
 
-        return array(ResponseKeyType::Files->value => $files, ResponseKeyType::Cached->value => $cachedCount, ResponseKeyType::Computed->value => $computedCount, ResponseKeyType::Removed->value => $removedCount);
+        return array(
+            ResponseKeyType::Files->value => $files,
+            ResponseKeyType::Cached->value => $cachedCount,
+            ResponseKeyType::Computed->value => $computedCount,
+            ResponseKeyType::Removed->value => $removedCount,
+        );
     }
 
     private function resolveFileEntry(
@@ -85,7 +90,12 @@ trait FileCacheScanTrait {
             $cached = $cachedEntries[$path];
             if ($cached['ModifiedAt'] === $mtimeStr && (int) $cached['FileSize'] === $fileInfo['size']) {
                 return array(
-                    'file'   => array('path' => $path, 'hash' => $cached['Md5Hash'], 'modifiedAt' => $mtimeStr, 'size' => (int) $cached['FileSize']),
+                    'file'   => array(
+                        'path' => $path,
+                        'hash' => $cached['Md5Hash'],
+                        'modifiedAt' => $mtimeStr,
+                        'size' => (int) $cached['FileSize'],
+                    ),
                     'cached' => true,
                 );
             }
@@ -97,7 +107,12 @@ trait FileCacheScanTrait {
         $this->upsertCacheEntry($pluginSlug, $path, $hash, $mtimeStr, $fileInfo['size']);
 
         return array(
-            'file'   => array('path' => $path, 'hash' => $hash, 'modifiedAt' => $mtimeStr, 'size' => $fileInfo['size']),
+            'file'   => array(
+                'path' => $path,
+                'hash' => $hash,
+                'modifiedAt' => $mtimeStr,
+                'size' => $fileInfo['size'],
+            ),
             'cached' => false,
         );
     }

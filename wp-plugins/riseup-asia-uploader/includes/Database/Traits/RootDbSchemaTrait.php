@@ -164,14 +164,20 @@ trait RootDbSchemaTrait {
             VALUES (1, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
 
         $stmt->execute(array(
-            $config['title'] ?? SnapshotConfigType::UntitledTitle, $config['type'] ?? SnapshotModeType::Full->value,
-            DateHelper::nowIso(), gethostname() ?: php_uname('n'),
-            $mysqlVersion, $wpVersion, PluginConfigType::Version->value,
+            $config['title'] ?? SnapshotConfigType::UntitledTitle,
+            $config['type'] ?? SnapshotModeType::Full->value,
+            DateHelper::nowIso(),
+            gethostname() ?: php_uname('n'),
+            $mysqlVersion,
+            $wpVersion,
+            PluginConfigType::Version->value,
             isset($config['settings']) ? json_encode($config['settings']) : null,
         ));
 
         $this->log(LogLevelType::Info->value, 'Metadata populated', array(
-            'title' => $config['title'] ?? 'Untitled', 'mysql_version' => $mysqlVersion, 'wp_version' => $wpVersion,
+            'title' => $config['title'] ?? 'Untitled',
+            'mysql_version' => $mysqlVersion,
+            'wp_version' => $wpVersion,
         ));
     }
 
@@ -182,13 +188,20 @@ trait RootDbSchemaTrait {
             (ParentTable, ChildTable, FkColumn, RefColumn) VALUES (?, ?, ?, ?)");
 
         $pdo->beginTransaction();
+
         foreach ($analysis['dependencies'] as $dep) {
-            $stmt->execute(array($dep['parent_table'], $dep['child_table'], $dep['fk_column'], $dep['ref_column']));
+            $stmt->execute(array(
+                $dep['parent_table'],
+                $dep['child_table'],
+                $dep['fk_column'],
+                $dep['ref_column'],
+            ));
         }
         $pdo->commit();
 
         $this->log(LogLevelType::Info->value, 'Dependencies populated', array(
-            'edges' => count($analysis['dependencies']), 'tables' => count($analysis['tables']),
+            'edges' => count($analysis['dependencies']),
+            'tables' => count($analysis['tables']),
         ));
 
         return $analysis;

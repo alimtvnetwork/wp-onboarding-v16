@@ -49,7 +49,9 @@ trait DatabaseQueryLogTrait {
 
         try {
             $this->fileLogger->debug('Logging transaction', array(
-                'action' => $action, 'status' => $status, 'enhanced' => $enhanced,
+                'action' => $action,
+                'status' => $status,
+                'enhanced' => $enhanced,
             ));
 
             $record = $this->buildTransactionRecord(
@@ -104,8 +106,10 @@ trait DatabaseQueryLogTrait {
 
     private function applyEnhancedFields($record, array $enhanced): void {
         $fieldMap = array(
-            'plugin_file' => 'PluginFile', 'triggered_by' => 'TriggeredBy',
-            'source_machine' => 'SourceMachine', 'plugin_version' => 'PluginVersion',
+            'plugin_file' => 'PluginFile',
+            'triggered_by' => 'TriggeredBy',
+            'source_machine' => 'SourceMachine',
+            'plugin_version' => 'PluginVersion',
             'upload_source' => 'UploadSource',
         );
         foreach ($fieldMap as $paramKey => $dbColumn) {

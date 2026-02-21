@@ -29,7 +29,14 @@ trait RootDbRegistrationTrait {
     ): void {
         $stmt = $pdo->prepare("INSERT OR REPLACE INTO SnapshotTables
             (TableName, RowCount, SqliteFile, FileSizeBytes, ChecksumMd5, ExportedAt) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(array($tableName, $rowCount, $sqliteFile, $fileSize, $checksum, DateHelper::nowIso()));
+        $stmt->execute(array(
+            $tableName,
+            $rowCount,
+            $sqliteFile,
+            $fileSize,
+            $checksum,
+            DateHelper::nowIso(),
+        ));
     }
 
     /** Update final stats in SnapshotMeta. */
@@ -47,8 +54,12 @@ trait RootDbRegistrationTrait {
         $stmt = $pdo->prepare("INSERT INTO IncrementalBackups
             (SequenceNum, FolderName, CreatedAt, TablesChanged, TotalNewRows, RelativePath) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
-            $info['sequence_num'], $info['folder_name'], DateHelper::nowIso(),
-            $info['tables_changed'] ?? 0, $info['total_new_rows'] ?? 0, $info['relative_path'],
+            $info['sequence_num'],
+            $info['folder_name'],
+            DateHelper::nowIso(),
+            $info['tables_changed'] ?? 0,
+            $info['total_new_rows'] ?? 0,
+            $info['relative_path'],
         ));
     }
 
@@ -57,8 +68,12 @@ trait RootDbRegistrationTrait {
         $stmt = $pdo->prepare("INSERT INTO PluginSnapshots
             (PluginSlug, PluginName, PluginVersion, ZipFile, FileSizeBytes, ChecksumMd5) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
-            $info['plugin_slug'], $info['plugin_name'] ?? '', $info['plugin_version'] ?? '',
-            $info['zip_file'], $info['file_size_bytes'] ?? 0, $info['checksum_md5'] ?? '',
+            $info['plugin_slug'],
+            $info['plugin_name'] ?? '',
+            $info['plugin_version'] ?? '',
+            $info['zip_file'],
+            $info['file_size_bytes'] ?? 0,
+            $info['checksum_md5'] ?? '',
         ));
     }
 
@@ -86,8 +101,11 @@ trait RootDbRegistrationTrait {
             $pdo = null;
 
             return array(
-                'meta' => $meta, 'tables' => $tables, 'dependencies' => $deps,
-                'incrementals' => $incrementals, 'plugins' => $plugins,
+                'meta' => $meta,
+                'tables' => $tables,
+                'dependencies' => $deps,
+                'incrementals' => $incrementals,
+                'plugins' => $plugins,
             );
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to read a-root.db', array('path' => $filepath, 'error' => $e->getMessage()));

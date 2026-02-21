@@ -89,7 +89,14 @@ trait FileCacheStoreTrait {
                 " (PluginSlug, RelativePath, Md5Hash, ModifiedAt, FileSize, CachedAt)" .
                 " VALUES (?, ?, ?, ?, ?, ?)"
             );
-            $stmt->execute(array($pluginSlug, $path, $hash, $modifiedAt, $size, $now));
+            $stmt->execute(array(
+                $pluginSlug,
+                $path,
+                $hash,
+                $modifiedAt,
+                $size,
+                $now,
+            ));
         } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to upsert', array(
                 'path'  => $path,
