@@ -10,6 +10,8 @@
 
 namespace RiseupAsia\Database;
 
+use Throwable;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -19,7 +21,7 @@ final class DbExecResult {
     private function __construct(
         private readonly int $affectedRows = 0,
         private readonly int $lastInsertId = 0,
-        private readonly ?\Throwable $error = null,
+        private readonly ?Throwable $error = null,
         private readonly string $stackTrace = '',
     ) {
     }
@@ -30,7 +32,7 @@ final class DbExecResult {
     }
 
     /** Create an error exec result with stack trace. */
-    public static function error(\Throwable $error): self {
+    public static function error(Throwable $error): self {
         return new self(
             error: $error,
             stackTrace: $error->getTraceAsString(),
@@ -60,7 +62,7 @@ final class DbExecResult {
         return $this->lastInsertId;
     }
 
-    public function error(): ?\Throwable {
+    public function error(): ?Throwable {
         return $this->error;
     }
 
