@@ -1,110 +1,110 @@
 {
-  "version": "1.19.2",
-  
-  "databasePath": "data/app.db",
-  "tempDir": ".temp",
-  "server": {
-    "port": 8080,
-    "wsReconnectDelayMs": 3000,
-    "staticDir": "frontend/dist"
+  "Version": "1.19.2",
+
+  "DatabasePath": "data/app.db",
+  "TempDir": ".temp",
+  "Server": {
+    "Port": 8080,
+    "WsReconnectDelayMs": 3000,
+    "StaticDir": "frontend/dist"
   },
-  "watcher": {
-    "mode": "hybrid",
-    "pollingEnabled": false,
-    "scanAfterGitPull": true,
-    "defaultExcludePatterns": [".git", "node_modules", ".DS_Store", "*.log", ".temp", "vendor", ".idea", ".vscode"]
+  "Watcher": {
+    "Mode": "hybrid",
+    "PollingEnabled": false,
+    "ScanAfterGitPull": true,
+    "DefaultExcludePatterns": [".git", "node_modules", ".DS_Store", "*.log", ".temp", "vendor", ".idea", ".vscode"]
   },
-  "backup": {
-    "location": "backups",
-    "autoBackupOnPublish": true,
-    "retentionDays": 30,
-    "maxBackupsPerPlugin": 10
+  "Backup": {
+    "Location": "backups",
+    "AutoBackupOnPublish": true,
+    "RetentionDays": 30,
+    "MaxBackupsPerPlugin": 10
   },
-  "logging": {
-    "level": "info",
-    "retentionDays": 7,
-    "debugMode": false,
-    "timeFormat": "2006-01-02 03:04:05 PM",
-    "clearLogsOnStartup": false,
-    "clearSessionsOnStartup": false,
-    "sessionLoggingEnabled": true,
-    "frontendDebugMode": false,
-    "retryMaxAttempts": 3,
-    "retryInitialDelayMs": 1000,
-    "circuitBreakerThreshold": 5,
-    "circuitBreakerCooldownMs": 60000,
-    "stackTraceDepth": 20,
-    "phpStackTraceDepth": 0
+  "Logging": {
+    "Level": "info",
+    "RetentionDays": 7,
+    "DebugMode": false,
+    "TimeFormat": "2006-01-02 03:04:05 PM",
+    "ClearLogsOnStartup": false,
+    "ClearSessionsOnStartup": false,
+    "SessionLoggingEnabled": true,
+    "FrontendDebugMode": false,
+    "RetryMaxAttempts": 3,
+    "RetryInitialDelayMs": 1000,
+    "CircuitBreakerThreshold": 5,
+    "CircuitBreakerCooldownMs": 60000,
+    "StackTraceDepth": 20,
+    "PhpStackTraceDepth": 0
   },
-  "responseDebug": {
-    "includeStackTrace": true,
-    "includeInternalErrors": true,
-    "includeMethodsStack": true,
-    "maxStackFrames": 20
+  "ResponseDebug": {
+    "IncludeStackTrace": true,
+    "IncludeInternalErrors": true,
+    "IncludeMethodsStack": true,
+    "MaxStackFrames": 20
   },
-  "wordpress": {
-    "timeoutSeconds": 30,
-    "maxRetries": 3
+  "WordPress": {
+    "TimeoutSeconds": 30,
+    "MaxRetries": 3
   },
-  "remotePlugins": {
-    "cacheEnabled": true,
-    "cacheTTLMinutes": 60
+  "RemotePlugins": {
+    "CacheEnabled": true,
+    "CacheTTLMinutes": 60
   },
-  "snapshot": {
-    "mode": "per_table",
-    "backupType": "incremental",
-    "workerCount": 10,
-    "storagePath": "snapshots/",
-    "includePlugins": true,
-    "pluginSelection": "all",
-    "retentionDays": 30,
-    "retentionCount": 10,
-    "compression": true,
-    "batchSize": 1000
+  "Snapshot": {
+    "Mode": "per_table",
+    "BackupType": "incremental",
+    "WorkerCount": 10,
+    "StoragePath": "snapshots/",
+    "IncludePlugins": true,
+    "PluginSelection": "all",
+    "RetentionDays": 30,
+    "RetentionCount": 10,
+    "Compression": true,
+    "BatchSize": 1000
   },
-  "seed": {
-    "enabled": true,
-    "sites": [
+  "Seed": {
+    "Enabled": true,
+    "Sites": [
       {
-        "name": "Atto Property Demo",
-        "url": "https://demoat.attoproperty.com.au",
-        "username": "admin",
-        "applicationPassword": "RUtSTSBwUENNIGF1ZzkgRTRqOCBvM3JQIHNsOUE=",
-        "category": "Development"
+        "Name": "Atto Property Demo",
+        "Url": "https://demoat.attoproperty.com.au",
+        "Username": "admin",
+        "ApplicationPassword": "RUtSTSBwUENNIGF1ZzkgRTRqOCBvM3JQIHNsOUE=",
+        "Category": "Development"
       }
     ],
-    "plugins": [
+    "Plugins": [
       {
-        "name": "Riseup Asia Uploader",
-        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\wp-plugins\\riseup-asia-uploader",
-        "category": "Core",
-        "gitEnabled": false,
-        "autoPublish": false,
-        "siteNames": ["Atto Property Demo"]
+        "Name": "Riseup Asia Uploader",
+        "Path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\wp-plugins\\riseup-asia-uploader",
+        "Category": "Core",
+        "GitEnabled": false,
+        "AutoPublish": false,
+        "SiteNames": ["Atto Property Demo"]
       },
       {
-        "name": "Plugins Onboard",
-        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\wp-plugins\\plugins-onboard",
-        "category": "Development",
-        "gitEnabled": true,
-        "autoPublish": false,
-        "siteNames": ["Atto Property Demo"]
+        "Name": "Plugins Onboard",
+        "Path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\wp-plugins\\plugins-onboard",
+        "Category": "Development",
+        "GitEnabled": true,
+        "AutoPublish": false,
+        "SiteNames": ["Atto Property Demo"]
       },
       {
-        "name": "Category Generator",
-        "path": "D:\\wp-work\\riseup-asia\\category-forge\\wordpress-plugin\\category-generator",
-        "category": "Development",
-        "gitEnabled": true,
-        "autoPublish": false,
-        "siteNames": ["Atto Property Demo"]
+        "Name": "Category Generator",
+        "Path": "D:\\wp-work\\riseup-asia\\category-forge\\wordpress-plugin\\category-generator",
+        "Category": "Development",
+        "GitEnabled": true,
+        "AutoPublish": false,
+        "SiteNames": ["Atto Property Demo"]
       },
       {
-        "name": "Link Manager",
-        "path": "D:\\wp-work\\riseup-asia\\wp-link-manager\\link-manager",
-        "category": "Development",
-        "gitEnabled": true,
-        "autoPublish": false,
-        "siteNames": ["Atto Property Demo"]
+        "Name": "Link Manager",
+        "Path": "D:\\wp-work\\riseup-asia\\wp-link-manager\\link-manager",
+        "Category": "Development",
+        "GitEnabled": true,
+        "AutoPublish": false,
+        "SiteNames": ["Atto Property Demo"]
       }
     ]
   }
