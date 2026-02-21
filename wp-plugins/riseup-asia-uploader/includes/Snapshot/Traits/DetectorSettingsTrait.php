@@ -49,6 +49,7 @@ trait DetectorSettingsTrait {
         }
 
         $this->logger->warn('[SNAPSHOT] Preferred provider not available, falling back', array('preferred' => $preferred));
+
         return $this->getBestAvailableProvider();
     }
 
@@ -68,6 +69,7 @@ trait DetectorSettingsTrait {
                 }
             }
         }
+
         return SnapshotProviderType::Native->value;
     }
 
@@ -144,6 +146,7 @@ trait DetectorSettingsTrait {
         );
 
         $saved = get_option(OptionNameType::SnapshotSettings->value, array());
+
         return array_merge($defaults, $saved);
     }
 
@@ -161,6 +164,7 @@ trait DetectorSettingsTrait {
         if ($result) {
             $this->logger->info('[SNAPSHOT] Settings updated', array('changed_keys' => array_keys(array_diff_assoc($settings, $current))));
         }
+
         return $result;
     }
 }

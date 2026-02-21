@@ -114,6 +114,7 @@ trait ImportValidationTrait {
                 return $subPath;
             }
         }
+
         return null;
     }
 }
