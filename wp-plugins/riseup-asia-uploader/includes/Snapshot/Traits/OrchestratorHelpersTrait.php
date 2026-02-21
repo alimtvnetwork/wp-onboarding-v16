@@ -62,10 +62,12 @@ trait OrchestratorHelpersTrait {
         if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
+
         $isLoggerMissing = ($this->logger === null);
         if ($isLoggerMissing) {
             return;
         }
+
         switch ($level) {
             case LogLevelType::Warn->value:  $this->logger->warn($full); break;
             case LogLevelType::Error->value: $this->logger->error($full); break;

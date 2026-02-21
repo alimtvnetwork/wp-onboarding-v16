@@ -85,6 +85,7 @@ trait SnapshotProviderLockTrait {
         $isDirEnsureFailed = ($this->ensureSnapshotsDir() === false);
         if ($isDirEnsureFailed) {
             $this->log(LogLevelType::Error->value, 'Cannot acquire lock - directory creation failed');
+
             return false;
         }
 
@@ -103,10 +104,12 @@ trait SnapshotProviderLockTrait {
             $this->log(LogLevelType::Error->value, 'Failed to acquire lock', array(
                 'path' => $lock_file, 'error' => $error ? $error['message'] : 'Unknown error',
             ));
+
             return false;
         }
 
         $this->log(LogLevelType::Debug->value, 'Lock acquired', array('path' => $lock_file));
+
         return true;
     }
 

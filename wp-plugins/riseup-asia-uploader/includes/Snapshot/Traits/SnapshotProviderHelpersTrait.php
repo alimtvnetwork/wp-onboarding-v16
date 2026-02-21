@@ -41,6 +41,7 @@ trait SnapshotProviderHelpersTrait {
         $method = strtolower($level);
         if (method_exists($this->logger, $method)) {
             $this->logger->$method($message);
+
             return;
         }
         $this->logger->info($message);
@@ -55,20 +56,24 @@ trait SnapshotProviderHelpersTrait {
 
         if ($dir === false) {
             $this->log(LogLevelType::Error->value, 'Failed to ensure snapshots directory');
+
             return false;
         }
 
         $this->log(LogLevelType::Debug->value, 'Snapshots directory ensured', array('path' => $dir));
+
         return true;
     }
 
     protected function generateSnapshotFilename(int $sequence): string {
         $sequence_padded = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+
         return sprintf('%s_%s', $sequence_padded, date('Y-m-d_His'));
     }
 
     protected function getNextSequence(): int {
         $result = $this->db->querySingle('SELECT MAX(Sequence) as max_seq FROM ' . TableType::Snapshots->value);
+
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
 

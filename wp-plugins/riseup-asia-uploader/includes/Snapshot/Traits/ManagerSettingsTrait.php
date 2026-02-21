@@ -67,9 +67,11 @@ trait ManagerSettingsTrait {
                 $key = str_replace('snapshot.', '', $row['Key']);
                 $settings[$key] = $this->castSettingValue($row['Value'], $row['Type']);
             }
+
             return $settings;
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to read SnapshotSettings from SQLite', array('error' => $e->getMessage()));
+
             return array();
         }
     }

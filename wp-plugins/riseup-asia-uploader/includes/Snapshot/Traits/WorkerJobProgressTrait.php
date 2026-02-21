@@ -61,6 +61,7 @@ trait WorkerJobProgressTrait {
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
+
             return array();
         }
     }

@@ -70,6 +70,7 @@ trait AnalyzerQueryTrait {
 
         if (empty($rows)) {
             $this->log(LogLevelType::Info->value, 'No foreign key dependencies detected', array('database' => $db_name));
+
             return array();
         }
 

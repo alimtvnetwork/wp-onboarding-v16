@@ -38,6 +38,7 @@ trait SchedulerTimingTrait {
     private function nextDailyRun(int $hour, int $minute): int {
         $now = current_time('timestamp');
         $next = strtotime("today {$hour}:{$minute}:00");
+
         return ($next <= $now) ? strtotime("tomorrow {$hour}:{$minute}:00") : $next;
     }
 
@@ -83,6 +84,7 @@ trait SchedulerTimingTrait {
             1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday',
             5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday',
         );
+
         return isset($days[$day]) ? $days[$day] : 'Monday';
     }
 
