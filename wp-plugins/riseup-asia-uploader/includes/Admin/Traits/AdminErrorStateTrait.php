@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Enums\AdminPageType;
 
 trait AdminErrorStateTrait {
 
@@ -64,7 +65,7 @@ trait AdminErrorStateTrait {
         }
 
         $currentPage = isset($_GET['page']) ? $_GET['page'] : '';
-        if ($currentPage === 'riseup-asia-errors') {
+        if ($currentPage === AdminPageType::Errors->value) {
             return;
         }
 
@@ -73,7 +74,8 @@ trait AdminErrorStateTrait {
 
     /** Build the HTML for the global error notice. */
     private function buildErrorNoticeHtml(int $unseen): string {
-        $url = admin_url('admin.php?page=riseup-asia-errors');
+        $url = AdminPageType::Errors->adminUrl();
+
         return sprintf(
             '<div class="notice notice-error is-dismissible" style="border-left-color: #dc3545;">
                 <p><strong>⚠️ Riseup Asia Uploader:</strong> %s <a href="%s" style="font-weight:600;">%s →</a></p>
