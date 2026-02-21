@@ -1081,3 +1081,193 @@ Updated 24 internal-domain PHP enum `->value` properties to PascalCase:
 - **PHP migration** should update `tryFrom()` to handle both formats during transition
 - **Database migration** should be idempotent (`UPDATE WHERE value = old_value`)
 - **Frontend** can be updated independently since it reads from API responses
+
+---
+
+# 🆕 PascalCase Database Schema Migration Plan (2026-02-21)
+
+> **Scope:** All custom SQLite tables and columns across PHP plugin and Go backend databases.
+> **Excluded:** WordPress core tables (`wp_posts`, `wp_options`, etc.) — managed by WP core.
+> **Timeline:** Synchronized — PHP and Go migrate in the same phase.
+
+## Current State Inventory
+
+### Go Main DB (`migrations.go`) — ✅ Already PascalCase
+Tables: `Sites`, `Plugins`, `PluginMappings`, `FileChanges`, `SyncRecords`, `Backups`, `ErrorLogs`, `AppConfig`, `PluginGitConfig`, `PluginVersions`, `RemotePluginsCache`, `ErrorHistory`, `PublishHistory`, `SiteHealthChecks`
+Columns: `Id`, `Name`, `Url`, `PluginId`, `SiteId`, `CreatedAt`, `UpdatedAt`, etc.
+
+### Go SplitDB (`splitdb/manager.go`) — ❌ snake_case
+Tables: `projects`, `databases`, `database_stats`
+Columns: `id`, `project_id`, `slug`, `display_name`, `size_bytes`, `record_count`, `created_at`, etc.
+
+### Go E2E Service (`e2e/service.go`) — ❌ snake_case
+Tables: `test_suites`, `test_cases`, `test_runs`, `test_results`
+Columns: `suite_id`, `case_id`, `run_id`, `started_at`, `duration_ms`, etc.
+
+### PHP Plugin SQLite — ❌ snake_case
+Tables (via `TableType` enum): `transactions`, `agent_sites`, `agent_actions`, `snapshots`, `snapshot_progress`, `snapshot_jobs`, `snapshot_settings`, `snapshot_exports`, `file_cache`, `remote_plugins_cache`, `error_sessions`, `flash_state`
+Columns: `id`, `plugin_slug`, `agent_site_id`, `created_at`, `status`, `error_msg`, etc.
+
+### PHP Root DB (`RootDbSchemaTrait`) — ❌ snake_case
+Tables: `snapshot_meta`, `snapshot_tables`, `table_dependencies`, `incremental_backups`, `plugin_snapshots`
+Columns: `table_name`, `row_count`, `sqlite_file`, `file_size_bytes`, `checksum_md5`, etc.
+
+---
+
+## Phase 1: Spec & Standard Updates
+
+| # | Task | File |
+|---|------|------|
+| 1.1 | Add "PascalCase table and column names" rule to `spec/01-coding-guidelines/code-style.md` | `spec/01-coding-guidelines/code-style.md` |
+| 1.2 | Update `spec/07-wordpress-plugin-development/` DB specs to reflect PascalCase naming | `spec/07-wordpress-plugin-development/03-database-design.md` |
+| 1.3 | Update `spec/03-golang-standards/` to document PascalCase DB naming requirement | `spec/03-golang-standards/` |
+| 1.4 | Update memory `architecture/database/enum-storage-format` to include table/column PascalCase rule | Memory |
+| 1.5 | Create `spec/01-coding-guidelines/database-naming.md` as single source of truth for DB naming | New file |
+
+---
+
+## Phase 2: Go Backend Migration
+
+### Phase 2A: SplitDB Manager (3 tables)
+
+| Old Table | New Table |
+|-----------|-----------|
+| `projects` | `Projects` |
+| `databases` | `Databases` |
+| `database_stats` | `DatabaseStats` |
+
+**Column renames** (all 3 tables): `id` → `Id`, `project_id` → `ProjectId`, `slug` → `Slug`, `display_name` → `DisplayName`, `path` → `Path`, `created_at` → `CreatedAt`, `updated_at` → `UpdatedAt`, `status` → `Status`, `type` → `Type`, `entity_id` → `EntityId`, `size_bytes` → `SizeBytes`, `record_count` → `RecordCount`, `last_accessed_at` → `LastAccessedAt`, `database_id` → `DatabaseId`, `recorded_at` → `RecordedAt`, `query_count` → `QueryCount`, `avg_query_ms` → `AvgQueryMs`
+
+**Implementation:**
+1. Add migration v2 to `splitdb/manager.go` — `ALTER TABLE ... RENAME TO ...` + recreate with new column names
+2. Update all SQL queries in `splitdb/` package
+3. Update Go struct tags and model field references
+
+### Phase 2B: E2E Service (4 tables)
+
+| Old Table | New Table |
+|-----------|-----------|
+| `test_suites` | `TestSuites` |
+| `test_cases` | `TestCases` |
+| `test_runs` | `TestRuns` |
+| `test_results` | `TestResults` |
+
+**Column renames:** `suite_id` → `SuiteId`, `case_id` → `CaseId`, `run_id` → `RunId`, `case_name` → `CaseName`, `started_at` → `StartedAt`, `completed_at` → `CompletedAt`, `duration_ms` → `DurationMs`, `error_message` → `ErrorMessage`, `error_details` → `ErrorDetails`, `request_data` → `RequestData`, `response_data` → `ResponseData`, `timeout_seconds` → `TimeoutSeconds`, `order_index` → `OrderIndex`, `total_tests` → `TotalTests`, `passed_tests` → `PassedTests`, `failed_tests` → `FailedTests`, `skipped_tests` → `SkippedTests`, `preconditions` → `Preconditions`, `expected_result` → `ExpectedResult`
+
+**Implementation:**
+1. Add migration function to `e2e/service.go`
+2. Recreate schema with PascalCase names (SQLite doesn't support column rename before v3.25)
+3. Update all SQL queries and model references in `e2e/` package
+
+---
+
+## Phase 3: PHP Plugin SQLite Migration (v13)
+
+### Phase 3A: Update `TableType` Enum Values
+
+| Old Value | New Value |
+|-----------|-----------|
+| `transactions` | `Transactions` |
+| `agent_sites` | `AgentSites` |
+| `agent_actions` | `AgentActions` |
+| `snapshots` | `Snapshots` |
+| `snapshot_progress` | `SnapshotProgress` |
+| `snapshot_jobs` | `SnapshotJobs` |
+| `snapshot_settings` | `SnapshotSettings` |
+| `snapshot_exports` | `SnapshotExports` |
+| `file_cache` | `FileCache` |
+
+### Phase 3B: Migration v13 — Table Renames
+
+For each table, use `ALTER TABLE old_name RENAME TO NewName` (supported in SQLite ≥ 3.2).
+
+### Phase 3C: Migration v13 — Column Renames
+
+SQLite doesn't support `ALTER TABLE ... RENAME COLUMN` before v3.25 (PHP typically bundles SQLite 3.35+, so this should be safe). For each table, rename all columns to PascalCase:
+
+**`Transactions` columns:** `id` → `Id`, `action` → `Action`, `plugin_slug` → `PluginSlug`, `post_id` → `PostId`, `user_login` → `UserLogin`, `user_id` → `UserId`, `ip_address` → `IpAddress`, `details` → `Details`, `status` → `Status`, `error_msg` → `ErrorMsg`, `created_at` → `CreatedAt`, `plugin_file` → `PluginFile`, `was_active` → `WasActive`, `triggered_by` → `TriggeredBy`, `agent_site_id` → `AgentSiteId`, `source_machine` → `SourceMachine`, `plugin_version` → `PluginVersion`, `upload_source` → `UploadSource`
+
+**`AgentSites` columns:** `id` → `Id`, `name` → `Name`, `url` → `Url`, `username` → `Username`, `app_password_encrypted` → `AppPasswordEncrypted`, `redirect_url` → `RedirectUrl`, `redirect_resolved` → `RedirectResolved`, `redirect_resolved_at` → `RedirectResolvedAt`, `status` → `Status`, `last_sync` → `LastSync`, `last_error` → `LastError`, `created_at` → `CreatedAt`, `updated_at` → `UpdatedAt`
+
+**`AgentActions` columns:** `id` → `Id`, `agent_site_id` → `AgentSiteId`, `action` → `Action`, `target_plugin` → `TargetPlugin`, `status` → `Status`, `details` → `Details`, `error_msg` → `ErrorMsg`, `created_at` → `CreatedAt`
+
+**`Snapshots` columns:** `id` → `Id`, `sequence` → `Sequence`, `filename` → `Filename`, `filepath` → `Filepath`, `created_at` → `CreatedAt`, `completed_at` → `CompletedAt`, `status` → `Status`, `provider` → `Provider`, `scope` → `Scope`, `tables_json` → `TablesJson`, `table_counts_json` → `TableCountsJson`, `total_rows` → `TotalRows`, `file_size` → `FileSize`, `duration_ms` → `DurationMs`, `triggered_by` → `TriggeredBy`, `error_message` → `ErrorMessage`, `metadata_json` → `MetadataJson`
+
+**`SnapshotProgress` columns:** `id` → `Id`, `snapshot_id` → `SnapshotId`, `table_name` → `TableName`, `status` → `Status`, `rows_total` → `RowsTotal`, `rows_exported` → `RowsExported`, `started_at` → `StartedAt`, `completed_at` → `CompletedAt`, `error_message` → `ErrorMessage`
+
+**`SnapshotSettings` columns:** `key` → `Key`, `value` → `Value`, `type` → `Type`, `updated_at` → `UpdatedAt`
+
+**`SnapshotExports` columns:** `id` → `Id`, `snapshot_id` → `SnapshotId`, `zip_filename` → `ZipFilename`, `zip_path` → `ZipPath`, `zip_size` → `ZipSize`, `included_ids` → `IncludedIds`, `incremental_count` → `IncrementalCount`, `created_at` → `CreatedAt`, `expires_at` → `ExpiresAt`, `status` → `Status`
+
+**`FileCache` columns:** `plugin_slug` → `PluginSlug`, `relative_path` → `RelativePath`, `md5_hash` → `Md5Hash`, `modified_at` → `ModifiedAt`, `file_size` → `FileSize`, `cached_at` → `CachedAt`
+
+**`remote_plugins_cache` → `RemotePluginsCache`** columns: `id` → `Id`, `site_id` → `SiteId`, `data_json` → `DataJson`, `fetched_at` → `FetchedAt`, `expires_at` → `ExpiresAt`
+
+**`error_sessions` → `ErrorSessions`** columns: `id` → `Id`, `level` → `Level`, `message` → `Message`, `file` → `File`, `line` → `Line`, `context_json` → `ContextJson`, `stack_trace` → `StackTrace`, `created_at` → `CreatedAt`
+
+**`flash_state` → `FlashState`** columns: `key` → `Key`, `value` → `Value`, `updated_at` → `UpdatedAt`
+
+### Phase 3D: Update All PHP Code References
+
+1. Update `TableType` enum values
+2. Update all SQL queries across traits, services, and helpers
+3. Update `Orm` class column references
+4. Update `FileCacheStoreTrait`, `FileCacheScanTrait` column references
+5. Update all `DatabaseQuery*Trait` column references
+6. Update `AdminErrorAjaxTrait` column references
+7. Update `RootDbRegistrationTrait` and `RootDbSchemaTrait`
+
+---
+
+## Phase 4: PHP Root DB Schema Migration
+
+Root DB (`a-root.db`) tables created per-snapshot — can't ALTER existing files, so:
+
+1. Update `RootDbSchemaTrait::createSchema()` to use PascalCase for new snapshots
+2. Update `RootDbRegistrationTrait` SQL queries
+3. Update `populateMetadata()`, `populateDependencies()` column references
+4. Update restore traits that read from root DB
+5. Add compatibility layer: when reading old snapshots, detect schema version and map columns
+
+| Old Table | New Table |
+|-----------|-----------|
+| `snapshot_meta` | `SnapshotMeta` |
+| `snapshot_tables` | `SnapshotTables` |
+| `table_dependencies` | `TableDependencies` |
+| `incremental_backups` | `IncrementalBackups` |
+| `plugin_snapshots` | `PluginSnapshots` |
+
+---
+
+## Phase 5: Code Sweep & Validation
+
+| # | Task |
+|---|------|
+| 5.1 | Grep all `.php` files for snake_case column references in SQL queries |
+| 5.2 | Grep all `.go` files for snake_case column references in SQL queries |
+| 5.3 | Run full test suite to verify migrations |
+| 5.4 | Test snapshot create → restore cycle with new schema |
+| 5.5 | Test backward compatibility: restore old snake_case snapshot with new code |
+
+---
+
+## Migration Safety Rules
+
+- All table renames use `ALTER TABLE ... RENAME TO ...` (idempotent with IF EXISTS)
+- All column renames use `ALTER TABLE ... RENAME COLUMN ... TO ...` (SQLite ≥ 3.25)
+- PHP v13 migration runs inside a transaction with rollback on failure
+- Go migrations are version-tracked and idempotent
+- Root DB backward compatibility: new code must detect and handle old snake_case snapshots
+- `TableType` enum values update simultaneously with migration execution
+- All index names should also be updated to match PascalCase tables
+
+## Estimated Effort
+
+| Phase | Tasks | Estimated |
+|-------|-------|-----------|
+| Phase 1: Specs | 5 | 1 session |
+| Phase 2: Go Backend | 6 | 2 sessions |
+| Phase 3: PHP Plugin | 8 | 3 sessions |
+| Phase 4: Root DB | 5 | 1 session |
+| Phase 5: Validation | 5 | 1 session |
+| **Total** | **29** | **8 sessions** |

@@ -89,6 +89,7 @@ trait DatabaseQuerySearchTrait {
         if ($hasPlugin) {
             $query->where('plugin_slug', $filters[FilterKeyType::Plugin->value]);
         }
+
         $hasAction = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Action->value);
         if ($hasAction) {
             $actions = array_map('trim', explode(',', $filters[FilterKeyType::Action->value]));
@@ -98,18 +99,22 @@ trait DatabaseQuerySearchTrait {
                 $query->whereIn('action', $actions);
             }
         }
+
         $hasUser = BooleanHelpers::hasFilterValue($filters, FilterKeyType::User->value);
         if ($hasUser) {
             $query->where('user_login', $filters[FilterKeyType::User->value]);
         }
+
         $hasStatus = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Status->value);
         if ($hasStatus) {
             $query->where('status', $filters[FilterKeyType::Status->value]);
         }
+
         $hasTriggeredBy = BooleanHelpers::hasFilterValue($filters, FilterKeyType::TriggeredBy->value);
         if ($hasTriggeredBy) {
             $query->where('triggered_by', $filters[FilterKeyType::TriggeredBy->value]);
         }
+
         $hasUploadSource = BooleanHelpers::hasFilterValue($filters, FilterKeyType::UploadSource->value);
         if ($hasUploadSource) {
             $query->where('upload_source', $filters[FilterKeyType::UploadSource->value]);
@@ -121,6 +126,7 @@ trait DatabaseQuerySearchTrait {
         if ($hasFrom) {
             $query->whereGte('created_at', $filters[FilterKeyType::From->value] . 'T00:00:00Z');
         }
+
         $hasTo = BooleanHelpers::hasFilterValue($filters, FilterKeyType::To->value);
         if ($hasTo) {
             $query->whereLte('created_at', $filters[FilterKeyType::To->value] . 'T23:59:59Z');
