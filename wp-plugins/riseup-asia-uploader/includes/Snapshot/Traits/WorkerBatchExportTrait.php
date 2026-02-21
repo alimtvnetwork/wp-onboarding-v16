@@ -32,7 +32,8 @@ trait WorkerBatchExportTrait {
         $batches = array_chunk($seedOrder, $this->poolSize);
 
         foreach ($batches as $batch_index => $batch_tables) {
-            $this->log(LogLevelType::Info->value, sprintf('Processing batch %d/%d (%d tables)',
+            $this->log(LogLevelType::Info->value, sprintf(
+                'Processing batch %d/%d (%d tables)',
                 $batch_index + 1,
                 count($batches),
                 count($batch_tables),
@@ -67,6 +68,7 @@ trait WorkerBatchExportTrait {
             if ($result[ResponseKeyType::Success->value]) {
                 $rows += $result[ResponseKeyType::Rows->value];
                 $exported++;
+
                 if ($rootPdo) {
                     $this->rootDb->registerTable(
                         $rootPdo,
@@ -77,10 +79,20 @@ trait WorkerBatchExportTrait {
                         $result[ResponseKeyType::Checksum->value],
                     );
                 }
-                $this->updateProgress($table, SnapshotStatusType::Complete->value, $result[ResponseKeyType::Rows->value]);
+
+                $this->updateProgress(
+                    $table,
+                    SnapshotStatusType::Complete->value,
+                    $result[ResponseKeyType::Rows->value],
+                );
             } else {
                 $errors[] = $table . ': ' . $result[ResponseKeyType::Error->value];
-                $this->updateProgress($table, SnapshotStatusType::Failed->value, 0, $result[ResponseKeyType::Error->value]);
+                $this->updateProgress(
+                    $table,
+                    SnapshotStatusType::Failed->value,
+                    0,
+                    $result[ResponseKeyType::Error->value],
+                );
             }
         }
 
@@ -100,24 +112,24 @@ trait WorkerBatchExportTrait {
         $duration = microtime(true) - $startTime;
 
         $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
-            ResponseKeyType::JobId->value => $jobId,
-            ResponseKeyType::Directory->value => $prepared[ResponseKeyType::DirName->value],
+            ResponseKeyType::JobId->value       => $jobId,
+            ResponseKeyType::Directory->value   => $prepared[ResponseKeyType::DirName->value],
             ResponseKeyType::TotalTables->value => count($seedOrder),
-            ResponseKeyType::PoolSize->value => $this->poolSize,
-            'setup_time' => round($duration, 2) . 's',
+            ResponseKeyType::PoolSize->value    => $this->poolSize,
+            'setup_time'                        => round($duration, 2) . 's',
         ));
 
         return ResultHelper::ok(array(
-            ResponseKeyType::Directory->value  => $prepared[ResponseKeyType::DirName->value],
-            ResponseKeyType::Path->value       => $prepared[ResponseKeyType::SnapshotDir->value],
-            ResponseKeyType::JobId->value      => $jobId,
+            ResponseKeyType::Directory->value   => $prepared[ResponseKeyType::DirName->value],
+            ResponseKeyType::Path->value        => $prepared[ResponseKeyType::SnapshotDir->value],
+            ResponseKeyType::JobId->value       => $jobId,
             ResponseKeyType::TotalTables->value => count($seedOrder),
-            ResponseKeyType::PoolSize->value   => $this->poolSize,
-            ResponseKeyType::Tables->value     => 0,
-            ResponseKeyType::TotalRows->value  => 0,
-            ResponseKeyType::Errors->value     => array(),
-            ResponseKeyType::Duration->value   => $duration,
-            'status'                           => SnapshotJobStatusType::Queued->value,
+            ResponseKeyType::PoolSize->value    => $this->poolSize,
+            ResponseKeyType::Tables->value      => 0,
+            ResponseKeyType::TotalRows->value   => 0,
+            ResponseKeyType::Errors->value      => array(),
+            ResponseKeyType::Duration->value    => $duration,
+            'status'                            => SnapshotJobStatusType::Queued->value,
         ));
     }
 

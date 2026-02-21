@@ -37,6 +37,7 @@ trait RestoreSqliteValidationTrait {
         }
 
         $column_names = $this->getSqliteColumnNames($sqlite, $table);
+
         if (empty($column_names)) {
             $sqlite = null;
 
@@ -49,8 +50,8 @@ trait RestoreSqliteValidationTrait {
         $row_count = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
 
         return ResultHelper::ok(array(
-            'sqlite'    => $sqlite,
-            ResponseKeyType::Columns->value => $column_names,
+            'sqlite'                         => $sqlite,
+            ResponseKeyType::Columns->value  => $column_names,
             ResponseKeyType::RowCount->value => $row_count,
         ));
     }
@@ -141,6 +142,7 @@ trait RestoreSqliteValidationTrait {
             $values = array_map(function($col) use ($row) {
                 return $row[$col] ?? null;
             }, $columns);
+
             $this->wpdb->query($this->wpdb->prepare($sqlTemplate, $values));
         }
 

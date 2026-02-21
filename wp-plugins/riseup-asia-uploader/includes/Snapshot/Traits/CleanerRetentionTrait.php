@@ -23,9 +23,15 @@ trait CleanerRetentionTrait {
 
     private function cleanByRetention(array $settings, bool $dryRun = false): array {
         $resolved = $this->resolveRetentionSnapshots($settings);
+
         if (empty($resolved['snapshots'])) {
 
-            return array(ResponseKeyType::Deleted->value => 0, ResponseKeyType::SkippedMaster->value => 0, ResponseKeyType::BytesFreed->value => 0, 'details' => array());
+            return array(
+                ResponseKeyType::Deleted->value       => 0,
+                ResponseKeyType::SkippedMaster->value  => 0,
+                ResponseKeyType::BytesFreed->value     => 0,
+                'details'                              => array(),
+            );
         }
 
         return $this->processRetentionDeletions($resolved['snapshots'], $resolved['reason'], $dryRun);
@@ -33,6 +39,7 @@ trait CleanerRetentionTrait {
 
     private function resolveRetentionSnapshots(array $settings): array {
         $isDaysRetention = ($settings['retention_type'] === RetentionType::Days->value && BooleanHelpers::hasValue($settings['retention_days']));
+
         if ($isDaysRetention) {
 
             return array(
@@ -42,6 +49,7 @@ trait CleanerRetentionTrait {
         }
 
         $isCountRetention = ($settings['retention_type'] === RetentionType::Count->value && BooleanHelpers::hasValue($settings['retention_count']));
+
         if ($isCountRetention) {
 
             return array(
@@ -58,7 +66,12 @@ trait CleanerRetentionTrait {
         string $reason,
         bool $dryRun,
     ): array {
-        $result = array(ResponseKeyType::Deleted->value => 0, ResponseKeyType::SkippedMaster->value => 0, ResponseKeyType::BytesFreed->value => 0, 'details' => array());
+        $result = array(
+            ResponseKeyType::Deleted->value       => 0,
+            ResponseKeyType::SkippedMaster->value  => 0,
+            ResponseKeyType::BytesFreed->value     => 0,
+            'details'                              => array(),
+        );
 
         foreach ($snapshots as $snapshot) {
             if ($this->isMasterSnapshot($snapshot)) {
@@ -67,9 +80,9 @@ trait CleanerRetentionTrait {
             }
 
             $result['details'][] = array(
-                'id' => $snapshot['Id'],
+                'id'                             => $snapshot['Id'],
                 ResponseKeyType::Filename->value => $snapshot['Filename'] ?? '',
-                ResponseKeyType::Reason->value => $reason,
+                ResponseKeyType::Reason->value   => $reason,
             );
 
             $this->applyRetentionDelete($snapshot, $dryRun, $result);
@@ -91,6 +104,7 @@ trait CleanerRetentionTrait {
         }
 
         $delete_result = $this->deleteSnapshot($snapshot);
+
         if ($delete_result[ResponseKeyType::Success->value]) {
             $result[ResponseKeyType::Deleted->value]++;
             $result[ResponseKeyType::BytesFreed->value] += $delete_result[ResponseKeyType::BytesFreed->value];
@@ -100,6 +114,7 @@ trait CleanerRetentionTrait {
     private function isMasterSnapshot(array $snap): bool {
         $resolvedScope = isset($snap['Scope']) ? SnapshotModeType::tryFrom($snap['Scope']) : null;
         $isScopeFull = ($resolvedScope !== null && $resolvedScope->isFull());
+
         if ($isScopeFull) {
 
             return true;
@@ -107,6 +122,7 @@ trait CleanerRetentionTrait {
 
         $resolvedType = isset($snap['type']) ? SnapshotModeType::tryFrom($snap['type']) : null;
         $isTypeFull = ($resolvedType !== null && $resolvedType->isFull());
+
         if ($isTypeFull) {
 
             return true;
@@ -133,7 +149,9 @@ trait CleanerRetentionTrait {
 
         $isResultMissing = ($total_result === null || $total_result === false);
         $isBelowThreshold = ($isResultMissing || $total_result['cnt'] <= $count);
+
         if ($isBelowThreshold) {
+
             return array();
         }
 

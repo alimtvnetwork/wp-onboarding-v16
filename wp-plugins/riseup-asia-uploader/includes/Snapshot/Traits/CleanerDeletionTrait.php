@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
@@ -34,6 +35,7 @@ trait CleanerDeletionTrait {
             $bytes_freed += $dir_size;
         } else {
             $bytes_freed += $this->deleteSingleFileSnapshot($filepath);
+
             if ($bytes_freed === -1) {
 
                 return ResultHelper::failed(array(
@@ -58,7 +60,9 @@ trait CleanerDeletionTrait {
 
     private function cascadeDeleteIncrementalDir(string $filepath, int $parentId): int {
         $incremental_dir = $filepath . '/incremental';
+
         if (PathHelper::isDirMissing($incremental_dir)) {
+
             return 0;
         }
 
@@ -81,6 +85,7 @@ trait CleanerDeletionTrait {
         if (PathHelper::fileExists($filepath)) {
             $bytes_freed = filesize($filepath);
             $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
+
             if ($isDeleteFailed) {
                 $this->log(LogLevelType::Warn->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
 
@@ -89,6 +94,7 @@ trait CleanerDeletionTrait {
         }
 
         $zip_path = $this->getZipPath($filepath);
+
         if (PathHelper::fileExists($zip_path)) {
             $bytes_freed += filesize($zip_path);
             PathHelper::deleteFile($zip_path);
@@ -108,6 +114,7 @@ trait CleanerDeletionTrait {
     private function removeExportCache(int $snapshotId): void {
         try {
             $exporter = SnapshotExporter::getInstance($this->logger, $this->db);
+
             if ($exporter) {
                 $exporter->removeExports($snapshotId);
             }
