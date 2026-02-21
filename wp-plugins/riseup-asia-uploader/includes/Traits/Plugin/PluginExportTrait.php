@@ -20,12 +20,13 @@ use ZipArchive;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait PluginExportTrait
 {
-    /** Handle export-self (export this plugin as ZIP). */
     public function handleExportSelf(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Export-self endpoint called');
 
@@ -42,19 +43,17 @@ trait PluginExportTrait
                 'size' => strlen($zip_content),
             ));
 
-            return new WP_REST_Response(array(
-                'success'    => true,
+            return new WP_REST_Response(ResultHelper::ok(array(
                 'plugin_zip' => base64_encode($zip_content),
                 'slug'       => PluginConfigType::Slug->value,
                 'version'    => PluginConfigType::Version->value,
-            ), HttpStatusType::Ok->value);
+            )), HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');
             return $this->errorResponse('Export failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
-    /** Export any installed plugin as a base64-encoded ZIP. */
     public function handleExportPlugin(WP_REST_Request $request): WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
@@ -67,7 +66,6 @@ trait PluginExportTrait
         });
     }
 
-    /** Create a ZIP archive of a plugin directory and return its binary content. */
     private function createPluginZip(
         string $plugin_dir,
         string $slug,
@@ -90,12 +88,6 @@ trait PluginExportTrait
         return ($zip_content !== false) ? $zip_content : null;
     }
 
-    /**
-     * Export a plugin by slug: validate, zip, and return response.
-     *
-     * @param string $slug Plugin slug.
-     * @return WP_REST_Response
-     */
     private function exportPluginBySlug(string $slug) {
         $plugins_dir = WP_PLUGIN_DIR;
         $plugin_dir  = PathHelper::join($plugins_dir, $slug);
@@ -119,11 +111,10 @@ trait PluginExportTrait
             'size' => strlen($zip_content),
         ));
 
-        return new WP_REST_Response(array(
-            'success'    => true,
+        return new WP_REST_Response(ResultHelper::ok(array(
             'plugin_zip' => base64_encode($zip_content),
             'slug'       => $slug,
             'size'       => strlen($zip_content),
-        ), HttpStatusType::Ok->value);
+        )), HttpStatusType::Ok->value);
     }
 }

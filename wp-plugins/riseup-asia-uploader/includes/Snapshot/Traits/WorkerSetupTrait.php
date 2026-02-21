@@ -20,6 +20,7 @@ use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerSetupTrait {
 
@@ -44,10 +45,16 @@ trait WorkerSetupTrait {
         $isDirCreateFailed = (PathHelper::makeDirectory($snapshot_dir, true) === false);
         if ($isDirCreateFailed) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create snapshot directory');
+            return ResultHelper::error('Failed to create snapshot directory');
         }
 
-        return array(ResponseKeyType::Success->value => true, 'snapshot_dir' => $snapshot_dir, 'dir_name' => $dir_name, 'title' => $title, ResponseKeyType::Scope->value => $scope, 'type' => $type);
+        return ResultHelper::ok(array(
+            'snapshot_dir'               => $snapshot_dir,
+            'dir_name'                   => $dir_name,
+            'title'                      => $title,
+            ResponseKeyType::Scope->value => $scope,
+            'type'                       => $type,
+        ));
     }
 
     private function initRootDb(string $snapshotDir, array $config): PDO {

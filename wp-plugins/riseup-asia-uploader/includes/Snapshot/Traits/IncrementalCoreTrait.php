@@ -11,6 +11,7 @@ namespace RiseupAsia\Snapshot\Traits;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 use PDO;
 use Throwable;
 
@@ -24,7 +25,7 @@ trait IncrementalCoreTrait {
         if (empty($master_tables)) {
             $rootPdo = null;
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No tables found in master snapshot');
+            return ResultHelper::error('No tables found in master snapshot');
         }
 
         $sequence = $this->getNextSequence($rootPdo);
@@ -36,12 +37,18 @@ trait IncrementalCoreTrait {
         if ($isDirCreationFailed) {
             $rootPdo = null;
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create incremental directory: ' . $folder_name);
+            return ResultHelper::error('Failed to create incremental directory: ' . $folder_name);
         }
 
         $this->log(LogLevelType::Info->value, 'Incremental directory created', array(ResponseKeyType::Sequence->value => $sequence, ResponseKeyType::FolderName->value => $folder_name));
 
-        return array(ResponseKeyType::Success->value => true, 'rootPdo' => $rootPdo, 'master_tables' => $master_tables, ResponseKeyType::Sequence->value => $sequence, ResponseKeyType::FolderName->value => $folder_name, 'incremental_dir' => $incremental_dir);
+        return ResultHelper::ok(array(
+            'rootPdo'                            => $rootPdo,
+            'master_tables'                      => $master_tables,
+            ResponseKeyType::Sequence->value     => $sequence,
+            ResponseKeyType::FolderName->value   => $folder_name,
+            'incremental_dir'                    => $incremental_dir,
+        ));
     }
 
     private function exportChangedTables(
@@ -68,7 +75,12 @@ trait IncrementalCoreTrait {
             }
         }
 
-        return array(ResponseKeyType::TablesChanged->value => $tables_changed, ResponseKeyType::TotalNewRows->value => $total_new_rows, ResponseKeyType::Errors->value => $errors, 'exported_tables' => $exported_tables);
+        return array(
+            ResponseKeyType::TablesChanged->value => $tables_changed,
+            ResponseKeyType::TotalNewRows->value  => $total_new_rows,
+            ResponseKeyType::Errors->value        => $errors,
+            'exported_tables'                     => $exported_tables,
+        );
     }
 
     private function finalizeIncremental(
@@ -85,18 +97,26 @@ trait IncrementalCoreTrait {
         $snapshot_id = $this->registerIncrementalSnapshot($title, $masterDir, $folderName, $sequence, $export[ResponseKeyType::TablesChanged->value], $export[ResponseKeyType::TotalNewRows->value], $incrementalDir);
 
         $this->log(LogLevelType::Info->value, 'Incremental backup complete', array(
-            ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Sequence->value => $sequence,
-            ResponseKeyType::TablesChanged->value => $export[ResponseKeyType::TablesChanged->value], ResponseKeyType::TotalNewRows->value => $export[ResponseKeyType::TotalNewRows->value],
-            ResponseKeyType::Errors->value => count($export[ResponseKeyType::Errors->value]), ResponseKeyType::Duration->value => round($duration, 2) . 's',
+            ResponseKeyType::SnapshotId->value     => $snapshot_id,
+            ResponseKeyType::Sequence->value       => $sequence,
+            ResponseKeyType::TablesChanged->value   => $export[ResponseKeyType::TablesChanged->value],
+            ResponseKeyType::TotalNewRows->value    => $export[ResponseKeyType::TotalNewRows->value],
+            ResponseKeyType::Errors->value          => count($export[ResponseKeyType::Errors->value]),
+            ResponseKeyType::Duration->value        => round($duration, 2) . 's',
         ));
 
         $this->invalidateParentZipExport($masterDir);
 
-        return array(
-            ResponseKeyType::Success->value => true, ResponseKeyType::SnapshotId->value => $snapshot_id, ResponseKeyType::Sequence->value => $sequence,
-            ResponseKeyType::FolderName->value => $folderName, ResponseKeyType::Path->value => $incrementalDir,
-            ResponseKeyType::TablesChanged->value => $export[ResponseKeyType::TablesChanged->value], ResponseKeyType::TotalNewRows->value => $export[ResponseKeyType::TotalNewRows->value],
-            ResponseKeyType::Tables->value => $export['exported_tables'], ResponseKeyType::Errors->value => $export[ResponseKeyType::Errors->value], ResponseKeyType::Duration->value => $duration,
-        );
+        return ResultHelper::ok(array(
+            ResponseKeyType::SnapshotId->value     => $snapshot_id,
+            ResponseKeyType::Sequence->value       => $sequence,
+            ResponseKeyType::FolderName->value     => $folderName,
+            ResponseKeyType::Path->value           => $incrementalDir,
+            ResponseKeyType::TablesChanged->value  => $export[ResponseKeyType::TablesChanged->value],
+            ResponseKeyType::TotalNewRows->value   => $export[ResponseKeyType::TotalNewRows->value],
+            ResponseKeyType::Tables->value         => $export['exported_tables'],
+            ResponseKeyType::Errors->value         => $export[ResponseKeyType::Errors->value],
+            ResponseKeyType::Duration->value       => $duration,
+        ));
     }
 }

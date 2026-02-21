@@ -13,8 +13,8 @@ use WP_Error;
 use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\WpErrorCodeType;
+use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Logging\FileLogger;
 
 class ErrorResponse {
@@ -27,10 +27,7 @@ class ErrorResponse {
     ): array {
         $logger->logException($e, $context);
 
-        return array(
-            ResponseKeyType::Success->value => false,
-            ResponseKeyType::Error->value   => $e->getMessage(),
-        );
+        return ResultHelper::errorFromException($e);
     }
 
     /** Log with manual backtrace (skipping wrapper frames) and return error array. */
@@ -48,10 +45,7 @@ class ErrorResponse {
 
         $logger->logAt(LogLevelType::Error->value, $message, $file, $line);
 
-        return array(
-            ResponseKeyType::Success->value => false,
-            ResponseKeyType::Error->value   => $e->getMessage(),
-        );
+        return ResultHelper::errorFromException($e);
     }
 
     /** Log exception and return a WP_REST_Response error envelope. */
@@ -64,10 +58,7 @@ class ErrorResponse {
         $logger->logException($e, $context);
 
         return new WP_REST_Response(
-            array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ),
+            ResultHelper::errorFromException($e),
             $status
         );
     }

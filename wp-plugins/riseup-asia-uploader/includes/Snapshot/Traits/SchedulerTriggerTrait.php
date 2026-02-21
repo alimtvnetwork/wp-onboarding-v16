@@ -19,6 +19,7 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SchedulerTriggerTrait {
@@ -50,15 +51,15 @@ trait SchedulerTriggerTrait {
         $cleanup_next = wp_next_scheduled(HookType::CronSnapshotCleanup->value);
 
         return array(
-            'schedule_enabled' => $settings['schedule_enabled'],
-            'frequency' => $settings['schedule_frequency'],
-            'time' => $settings['schedule_time'],
-            'day' => $settings['schedule_day'],
-            'next_scheduled_snapshot' => $scheduled_next ? date('c', $scheduled_next) : null,
-            'next_cleanup' => $cleanup_next ? date('c', $cleanup_next) : null,
-            'retention_type' => $settings['retention_type'],
-            'retention_days' => $settings['retention_days'],
-            'retention_count' => $settings['retention_count'],
+            'schedule_enabled'          => $settings['schedule_enabled'],
+            'frequency'                 => $settings['schedule_frequency'],
+            'time'                      => $settings['schedule_time'],
+            'day'                       => $settings['schedule_day'],
+            'next_scheduled_snapshot'   => $scheduled_next ? date('c', $scheduled_next) : null,
+            'next_cleanup'              => $cleanup_next ? date('c', $cleanup_next) : null,
+            'retention_type'            => $settings['retention_type'],
+            'retention_days'            => $settings['retention_days'],
+            'retention_count'           => $settings['retention_count'],
         );
     }
 
@@ -74,10 +75,10 @@ trait SchedulerTriggerTrait {
                 : 'Manual Backup ' . date('Y-m-d H:i'));
 
             $cron_args = array(
-                'snapshot_type'      => $snapshot_type,
-                'title'              => $title,
-                ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
-                'master_snapshot_id' => $options['master_snapshot_id'] ?? null,
+                'snapshot_type'                     => $snapshot_type,
+                'title'                             => $title,
+                ResponseKeyType::Scope->value       => $options[ResponseKeyType::Scope->value] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
+                'master_snapshot_id'                => $options['master_snapshot_id'] ?? null,
             );
 
             $scheduled = wp_schedule_single_event(
@@ -89,27 +90,26 @@ trait SchedulerTriggerTrait {
             if ($scheduled === false) {
                 $this->logger->error('[SCHEDULER] Failed to schedule Snapshot Now cron event');
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to schedule background snapshot job');
+                return ResultHelper::error('Failed to schedule background snapshot job');
             }
 
             $this->logger->info('[SCHEDULER] Snapshot Now scheduled as background cron job', array(
                 'type'  => $snapshot_type, 'title' => $title,
             ));
 
-            return array(
-                ResponseKeyType::Success->value => true,
-                'scheduled'     => true,
-                'snapshot_type' => $snapshot_type,
-                'title'         => $title,
-                ResponseKeyType::Message->value => 'Snapshot has been scheduled and will run in the background.',
-            );
+            return ResultHelper::ok(array(
+                'scheduled'                        => true,
+                'snapshot_type'                    => $snapshot_type,
+                'title'                            => $title,
+                ResponseKeyType::Message->value    => 'Snapshot has been scheduled and will run in the background.',
+            ));
 
         } catch (Throwable $e) {
             $this->logger->error('[SCHEDULER] Snapshot Now scheduling failed', array(
                 ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return ResultHelper::errorFromException($e);
         }
     }
 
@@ -122,15 +122,14 @@ trait SchedulerTriggerTrait {
 
         if ($scheduled === false) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to schedule background restore');
+            return ResultHelper::error('Failed to schedule background restore');
         }
 
-        return array(
-            ResponseKeyType::Success->value => true,
-            'scheduled'   => true,
-            ResponseKeyType::SnapshotId->value => $snapshotId,
-            ResponseKeyType::Message->value => 'Restore has been scheduled and will run in the background.',
-        );
+        return ResultHelper::ok(array(
+            'scheduled'                            => true,
+            ResponseKeyType::SnapshotId->value     => $snapshotId,
+            ResponseKeyType::Message->value        => 'Restore has been scheduled and will run in the background.',
+        ));
     }
 
     public function clearAllSchedules(): void {

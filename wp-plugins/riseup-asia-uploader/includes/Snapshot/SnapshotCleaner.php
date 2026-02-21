@@ -25,6 +25,7 @@ use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 
 class SnapshotCleaner {
 
@@ -46,15 +47,14 @@ class SnapshotCleaner {
         $start = microtime(true);
         $isDryRun = BooleanHelpers::hasValue($options['dry_run'] ?? null);
 
-        $results = array(
-            ResponseKeyType::Success->value => true,
+        $results = ResultHelper::ok(array(
             'retention'         => array('deleted' => 0, 'skipped_master' => 0, 'details' => array()),
             'orphans'           => array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Files->value => array()),
             'stuck'             => array('cleaned' => 0, 'ids' => array()),
             ResponseKeyType::Errors->value => array(),
             'dry_run'           => $isDryRun,
             'space_freed_bytes' => 0,
-        );
+        ));
 
         $settings = $this->loadSettings($options);
 

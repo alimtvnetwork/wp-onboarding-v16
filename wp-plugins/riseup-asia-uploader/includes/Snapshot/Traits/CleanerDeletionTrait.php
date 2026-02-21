@@ -16,6 +16,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait CleanerDeletionTrait {
@@ -34,7 +35,9 @@ trait CleanerDeletionTrait {
             $bytes_freed += $this->deleteSingleFileSnapshot($filepath);
             if ($bytes_freed === -1) {
 
-                return array(ResponseKeyType::Success->value => false, 'bytes_freed' => 0);
+                return ResultHelper::failed(array(
+                    'bytes_freed' => 0,
+                ));
             }
         }
 
@@ -42,12 +45,14 @@ trait CleanerDeletionTrait {
         $this->removeExportCache((int) $snapshot['id']);
 
         $this->log(LogLevelType::Debug->value, 'Deleted snapshot', array(
-            'id' => $snapshot['id'],
+            'id'                             => $snapshot['id'],
             ResponseKeyType::Filename->value => $snapshot['filename'] ?? '',
-            'bytes_freed' => PathHelper::formatBytes($bytes_freed),
+            'bytes_freed'                    => PathHelper::formatBytes($bytes_freed),
         ));
 
-        return array(ResponseKeyType::Success->value => true, 'bytes_freed' => $bytes_freed);
+        return ResultHelper::ok(array(
+            'bytes_freed' => $bytes_freed,
+        ));
     }
 
     private function cascadeDeleteIncrementalDir(string $filepath, int $parentId): int {

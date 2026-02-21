@@ -11,6 +11,7 @@ namespace RiseupAsia\Snapshot\Traits;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 use PDO;
 use Throwable;
 
@@ -44,7 +45,11 @@ trait IncrementalDeltaTrait {
 
         if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Info->value, sprintf('Incremental export: %s (+%d rows, %s)', $tableName, $result[ResponseKeyType::Rows->value], $this->formatBytes($result[ResponseKeyType::FileSize->value])));
-            $result[ResponseKeyType::Entry->value] = array('table' => $tableName, 'new_rows' => $result[ResponseKeyType::Rows->value], ResponseKeyType::Size->value => $result[ResponseKeyType::FileSize->value]);
+            $result[ResponseKeyType::Entry->value] = array(
+                'table'    => $tableName,
+                'new_rows' => $result[ResponseKeyType::Rows->value],
+                ResponseKeyType::Size->value => $result[ResponseKeyType::FileSize->value],
+            );
         } else {
             $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
         }
@@ -92,19 +97,20 @@ trait IncrementalDeltaTrait {
             }
             $sqlite = null;
 
-            return array(
-                ResponseKeyType::Success->value => true,
-                ResponseKeyType::Rows->value => $exported,
+            return ResultHelper::ok(array(
+                ResponseKeyType::Rows->value     => $exported,
                 ResponseKeyType::Filename->value => $filename,
                 ResponseKeyType::FileSize->value => filesize($filepath),
                 ResponseKeyType::Checksum->value => md5_file($filepath),
-            );
+            ));
         } catch (Throwable $e) {
 
-            return array(
-                ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(),
-                ResponseKeyType::Rows->value => 0, ResponseKeyType::Filename->value => $filename, ResponseKeyType::FileSize->value => 0, ResponseKeyType::Checksum->value => '',
-            );
+            return ResultHelper::errorFromException($e, array(
+                ResponseKeyType::Rows->value     => 0,
+                ResponseKeyType::Filename->value => $filename,
+                ResponseKeyType::FileSize->value => 0,
+                ResponseKeyType::Checksum->value => '',
+            ));
         }
     }
 

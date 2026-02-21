@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreStrategyType;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait RestoreSqliteValidationTrait {
 
@@ -29,19 +30,29 @@ trait RestoreSqliteValidationTrait {
         if ($isTableMissing) {
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table not found in SQLite file', ResponseKeyType::Rows->value => 0);
+            return ResultHelper::error(
+                'Table not found in SQLite file',
+                array(ResponseKeyType::Rows->value => 0),
+            );
         }
 
         $column_names = $this->getSqliteColumnNames($sqlite, $table);
         if (empty($column_names)) {
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'No columns found in SQLite table', ResponseKeyType::Rows->value => 0);
+            return ResultHelper::error(
+                'No columns found in SQLite table',
+                array(ResponseKeyType::Rows->value => 0),
+            );
         }
 
         $row_count = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
 
-        return array(ResponseKeyType::Success->value => true, 'sqlite' => $sqlite, 'columns' => $column_names, 'row_count' => $row_count);
+        return ResultHelper::ok(array(
+            'sqlite'    => $sqlite,
+            'columns'   => $column_names,
+            'row_count' => $row_count,
+        ));
     }
 
     private function sqliteTableExists(PDO $sqlite, string $table): bool {
@@ -78,7 +89,9 @@ trait RestoreSqliteValidationTrait {
             $this->wpdb->query("COMMIT");
             $sqlite = null;
 
-            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $total_rows);
+            return ResultHelper::ok(array(
+                ResponseKeyType::Rows->value => $total_rows,
+            ));
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
 

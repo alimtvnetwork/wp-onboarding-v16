@@ -21,6 +21,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalRegistrationTrait;
@@ -78,7 +79,7 @@ class IncrementalBackup {
         $rootPath = $masterDir . '/a-root.db';
         if (PathHelper::isFileMissing($rootPath)) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Master snapshot a-root.db not found at: ' . $rootPath);
+            return ResultHelper::error('Master snapshot a-root.db not found at: ' . $rootPath);
         }
 
         $this->log(LogLevelType::Info->value, 'Starting incremental backup', array('master_dir' => basename($masterDir), 'title' => $title));
@@ -109,15 +110,20 @@ class IncrementalBackup {
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Incremental backup failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Phase->value => 'incremental');
+            return ResultHelper::errorFromException(
+                $e,
+                array(ResponseKeyType::Phase->value => 'incremental'),
+            );
         }
     }
 
     private function registerIncrementalInRoot(array $prepared, array $export): void {
         $this->rootDb->registerIncremental($prepared['rootPdo'], array(
-            'sequence_num' => $prepared['sequence'], 'folder_name' => $prepared['folder_name'],
-            ResponseKeyType::TablesChanged->value => $export[ResponseKeyType::TablesChanged->value], ResponseKeyType::TotalNewRows->value => $export[ResponseKeyType::TotalNewRows->value],
-            'relative_path' => 'incremental/' . $prepared['folder_name'] . '/',
+            'sequence_num'                         => $prepared['sequence'],
+            'folder_name'                          => $prepared['folder_name'],
+            ResponseKeyType::TablesChanged->value  => $export[ResponseKeyType::TablesChanged->value],
+            ResponseKeyType::TotalNewRows->value   => $export[ResponseKeyType::TotalNewRows->value],
+            'relative_path'                        => 'incremental/' . $prepared['folder_name'] . '/',
         ));
     }
 

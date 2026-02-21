@@ -18,6 +18,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerExecuteTrait {
 
@@ -48,7 +49,7 @@ trait WorkerExecuteTrait {
             if ($isJobCreationFailed) {
                 $this->cleanupOrphanedDir($prepared['snapshot_dir']);
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Failed to create snapshot job');
+                return ResultHelper::error('Failed to create snapshot job');
             }
 
             $this->scheduleNextBatch($job_id);
@@ -58,7 +59,7 @@ trait WorkerExecuteTrait {
             $this->cleanupOrphanedDir($prepared['snapshot_dir']);
             $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return ResultHelper::errorFromException($e);
         }
     }
 
@@ -91,7 +92,7 @@ trait WorkerExecuteTrait {
             $this->cleanupOrphanedDir($prepared['snapshot_dir']);
             $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage());
+            return ResultHelper::errorFromException($e);
         }
     }
 
@@ -116,9 +117,8 @@ trait WorkerExecuteTrait {
                 'estimated_mb' => $sizeMb, 'max_mb' => SnapshotConfigType::MaxSizeMb->value,
             ));
 
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value => "Database size ({$sizeMb} MB) exceeds the maximum allowed snapshot size (" . SnapshotConfigType::MaxSizeMb->value . " MB)",
+            return ResultHelper::error(
+                "Database size ({$sizeMb} MB) exceeds the maximum allowed snapshot size (" . SnapshotConfigType::MaxSizeMb->value . " MB)",
             );
         }
 
