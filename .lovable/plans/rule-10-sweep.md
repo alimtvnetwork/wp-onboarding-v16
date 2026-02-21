@@ -30,7 +30,7 @@
 - [ ] **Core/*.php** — Plugin.php and others
 - [ ] **Templates/** — PHP templates (admin-*.php)
 - [ ] **Root files** — riseup-asia-uploader.php, Autoloader.php
-- [ ] **Go Services** — `dbutil.QueryOne`, `dbutil.Exec` with 4+ args across 14 service subdirectories
+- [x] **Go Services** — R9b expanded all dbutil.QueryOne/QueryMany/Exec + scan calls in site/crud.go, site/service.go, plugin/crud.go, sync/crud.go (27 calls fixed)
 - [ ] **TypeScript** files in `src/` (if any contain these patterns)
 
 ## Rule Patterns to Search

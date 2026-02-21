@@ -79,7 +79,15 @@ func scanFileChangeRows(rows *sql.Rows) (models.FileChange, error) {
 func scanMappingRow(row *sql.Row) (models.PluginMapping, error) {
 	var m models.PluginMapping
 	var syncStatus string
-	err := row.Scan(&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &syncStatus, &m.SiteName, &m.SiteURL)
+	err := row.Scan(
+		&m.ID,
+		&m.PluginID,
+		&m.SiteID,
+		&m.RemoteSlug,
+		&syncStatus,
+		&m.SiteName,
+		&m.SiteURL,
+	)
 	m.SyncStatus = syncStatus
 	return m, err
 }
@@ -90,9 +98,17 @@ func scanMappingRows(rows *sql.Rows) (models.PluginMapping, error) {
 	var lastSyncAt, lastBackupAt, createdAt, updatedAt string
 
 	err := rows.Scan(
-		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-		&lastSyncAt, &lastBackupAt, &createdAt, &updatedAt,
-		&m.SiteName, &m.SiteURL,
+		&m.ID,
+		&m.PluginID,
+		&m.SiteID,
+		&m.RemoteSlug,
+		&m.SyncStatus,
+		&lastSyncAt,
+		&lastBackupAt,
+		&createdAt,
+		&updatedAt,
+		&m.SiteName,
+		&m.SiteURL,
 	)
 	return m, err
 }
@@ -106,7 +122,13 @@ func scanSiteInfoRow(row *sql.Row) (siteInfo, error) {
 
 // GetFileChanges returns pending file changes for a plugin.
 func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64) apperror.ResultSlice[models.FileChange] {
-	set := dbutil.QueryMany[models.FileChange](ctx, s.dbu, fileChangesSelectQuery, scanFileChangeRows, pluginID)
+	set := dbutil.QueryMany[models.FileChange](
+		ctx,
+		s.dbu,
+		fileChangesSelectQuery,
+		scanFileChangeRows,
+		pluginID,
+	)
 	if set.HasError() {
 		return apperror.FailSlice[models.FileChange](set.Error())
 	}
@@ -120,8 +142,14 @@ func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64
 
 // RecordFileChange records a file change in the database.
 func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileChange) error {
-	res := dbutil.Exec(ctx, s.dbu, fileChangesInsertQuery,
-		change.PluginID, change.FilePath, change.ChangeType, change.LocalHash,
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		fileChangesInsertQuery,
+		change.PluginID,
+		change.FilePath,
+		change.ChangeType,
+		change.LocalHash,
 	)
 	if res.HasError() {
 		return res.Error()
@@ -159,7 +187,12 @@ func (s *serviceImpl) MarkSynced(ctx context.Context, pluginID, siteID int64, fi
 
 // ClearChanges removes all pending changes for a plugin.
 func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
-	res := dbutil.Exec(ctx, s.dbu, fileChangesClearQuery, pluginID)
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		fileChangesClearQuery,
+		pluginID,
+	)
 	if res.HasError() {
 		return res.Error()
 	}
@@ -168,7 +201,13 @@ func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
 
 // getMappings retrieves all mappings for a plugin.
 func (s *serviceImpl) getMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error) {
-	set := dbutil.QueryMany[models.PluginMapping](ctx, s.dbu, mappingsListQuery, scanMappingRows, pluginID)
+	set := dbutil.QueryMany[models.PluginMapping](
+		ctx,
+		s.dbu,
+		mappingsListQuery,
+		scanMappingRows,
+		pluginID,
+	)
 	if set.HasError() {
 		return nil, set.Error()
 	}
@@ -177,7 +216,14 @@ func (s *serviceImpl) getMappings(ctx context.Context, pluginID int64) ([]models
 
 // getMapping retrieves a specific plugin-site mapping.
 func (s *serviceImpl) getMapping(ctx context.Context, pluginID, siteID int64) (*models.PluginMapping, error) {
-	result := dbutil.QueryOne[models.PluginMapping](ctx, s.dbu, mappingSelectQuery, scanMappingRow, pluginID, siteID)
+	result := dbutil.QueryOne[models.PluginMapping](
+		ctx,
+		s.dbu,
+		mappingSelectQuery,
+		scanMappingRow,
+		pluginID,
+		siteID,
+	)
 	if result.HasError() {
 		return nil, result.Error()
 	}
@@ -191,7 +237,13 @@ func (s *serviceImpl) getMapping(ctx context.Context, pluginID, siteID int64) (*
 
 // getSiteInfo retrieves minimal site info for creating a WP client.
 func (s *serviceImpl) getSiteInfo(ctx context.Context, siteID int64) (*siteInfo, error) {
-	result := dbutil.QueryOne[siteInfo](ctx, s.dbu, siteInfoSelectQuery, scanSiteInfoRow, siteID)
+	result := dbutil.QueryOne[siteInfo](
+		ctx,
+		s.dbu,
+		siteInfoSelectQuery,
+		scanSiteInfoRow,
+		siteID,
+	)
 	if result.HasError() {
 		return nil, result.Error()
 	}
@@ -208,5 +260,12 @@ func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginID, sit
 	if inSync {
 		status = "synced"
 	}
-	dbutil.Exec(ctx, s.dbu, mappingSyncStatusUpdateQuery, status, pluginID, siteID)
+	dbutil.Exec(
+		ctx,
+		s.dbu,
+		mappingSyncStatusUpdateQuery,
+		status,
+		pluginID,
+		siteID,
+	)
 }

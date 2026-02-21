@@ -722,7 +722,14 @@ func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins 
 	}
 
 	expiresAt := time.Now().Add(time.Duration(s.cacheTTLMinutes) * time.Minute)
-	res := dbutil.Exec(ctx, s.dbu, cacheUpsertQuery, siteID, string(pluginsJSON), expiresAt.Format("2006-01-02 15:04:05"))
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		cacheUpsertQuery,
+		siteID,
+		string(pluginsJSON),
+		expiresAt.Format("2006-01-02 15:04:05"),
+	)
 	if res.HasError() {
 		return res.Error()
 	}
@@ -739,7 +746,12 @@ func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteID int64) ([]R
 
 // InvalidateRemotePluginsCache removes cached plugins for a site.
 func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error {
-	res := dbutil.Exec(ctx, s.dbu, cacheDeleteQuery, siteID)
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		cacheDeleteQuery,
+		siteID,
+	)
 	if res.HasError() {
 		return res.Error()
 	}

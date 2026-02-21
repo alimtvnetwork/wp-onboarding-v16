@@ -50,9 +50,17 @@ type pluginRaw struct {
 // scanPluginColumns scans columns into pluginRaw (shared by Row and Rows scanners).
 func scanPluginColumns(dest *pluginRaw, scan func(dest ...any) error) error {
 	return scan(
-		&dest.plugin.ID, &dest.plugin.Name, &dest.plugin.Path,
-		&dest.category, &dest.plugin.WatchEnabled, &dest.autoPublish, &dest.excludeJSON,
-		&dest.plugin.FileCount, &dest.lastScanned, &dest.createdAtStr, &dest.updatedAtStr,
+		&dest.plugin.ID,
+		&dest.plugin.Name,
+		&dest.plugin.Path,
+		&dest.category,
+		&dest.plugin.WatchEnabled,
+		&dest.autoPublish,
+		&dest.excludeJSON,
+		&dest.plugin.FileCount,
+		&dest.lastScanned,
+		&dest.createdAtStr,
+		&dest.updatedAtStr,
 		&dest.gitEnabled,
 	)
 }
@@ -102,7 +110,12 @@ func scanPluginRows(rows *sql.Rows) (models.Plugin, error) {
 func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Plugin] {
 	s.log.Debug("Listing all plugins")
 	query := pluginSelectQuery + ` ORDER BY p.Name ASC`
-	set := dbutil.QueryMany[models.Plugin](ctx, s.dbu, query, scanPluginRows)
+	set := dbutil.QueryMany[models.Plugin](
+		ctx,
+		s.dbu,
+		query,
+		scanPluginRows,
+	)
 
 	if set.HasError() {
 		return apperror.FailSlice[models.Plugin](set.Error())
@@ -133,7 +146,13 @@ func (s *Service) loadMappingsForAll(ctx context.Context, plugins []models.Plugi
 func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Plugin] {
 	s.log.Debug("Getting plugin by ID", "pluginId", id)
 
-	result := dbutil.QueryOne[models.Plugin](ctx, s.dbu, pluginSelectByIDQuery, scanPluginRow, id)
+	result := dbutil.QueryOne[models.Plugin](
+		ctx,
+		s.dbu,
+		pluginSelectByIDQuery,
+		scanPluginRow,
+		id,
+	)
 	if result.HasError() {
 		return apperror.FailWrap[models.Plugin](result.Error(), apperror.ErrDatabaseQuery, "get plugin by ID")
 	}
@@ -191,7 +210,13 @@ func (s *Service) validateCreatePath(ctx context.Context, input CreateInput) err
 // checkDuplicatePath returns the existing plugin if the path is already registered.
 // The bool indicates whether the caller should return the result (true = handled).
 func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (apperror.Result[models.Plugin], bool) {
-	result := dbutil.QueryOne[int64](ctx, s.dbu, pluginSelectByPathQuery, scanID, input.Path)
+	result := dbutil.QueryOne[int64](
+		ctx,
+		s.dbu,
+		pluginSelectByPathQuery,
+		scanID,
+		input.Path,
+	)
 	if result.HasError() {
 		return apperror.Fail[models.Plugin](result.Error()), true
 	}
@@ -224,9 +249,17 @@ func (s *Service) insertPlugin(ctx context.Context, input CreateInput) apperror.
 
 	excludeJSON := s.encodeExcludePatterns(input.ExcludePatterns)
 
-	res := dbutil.Exec(ctx, s.dbu, pluginInsertQuery,
-		input.Name, input.Path, input.Category, input.WatchEnabled,
-		input.AutoPublish, excludeJSON, fileCount,
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		pluginInsertQuery,
+		input.Name,
+		input.Path,
+		input.Category,
+		input.WatchEnabled,
+		input.AutoPublish,
+		excludeJSON,
+		fileCount,
 	)
 	if res.HasError() {
 		return apperror.Fail[models.Plugin](res.Error())
@@ -249,8 +282,14 @@ func (s *Service) encodeExcludePatterns(patterns []string) string {
 // insertGitConfig saves git config if git is enabled.
 func (s *Service) insertGitConfig(ctx context.Context, pluginID int64, input CreateInput) {
 	if input.GitEnabled {
-		dbutil.Exec(ctx, s.dbu, pluginGitInsertQuery,
-			pluginID, input.GitRemoteURL, input.BuildCommand != "", input.BuildCommand,
+		dbutil.Exec(
+			ctx,
+			s.dbu,
+			pluginGitInsertQuery,
+			pluginID,
+			input.GitRemoteURL,
+			input.BuildCommand != "",
+			input.BuildCommand,
 		)
 	}
 }
@@ -335,15 +374,35 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 // deletePluginCascade removes all related records then the plugin itself.
 func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
-	res := dbutil.Exec(ctx, s.dbu, "DELETE FROM PluginMappings WHERE PluginId = ?", id)
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		"DELETE FROM PluginMappings WHERE PluginId = ?",
+		id,
+	)
 	if res.HasError() {
 		return res.Error()
 	}
 
-	dbutil.Exec(ctx, s.dbu, "DELETE FROM PluginGitConfig WHERE PluginId = ?", id)
-	dbutil.Exec(ctx, s.dbu, "DELETE FROM FileChanges WHERE PluginId = ?", id)
+	dbutil.Exec(
+		ctx,
+		s.dbu,
+		"DELETE FROM PluginGitConfig WHERE PluginId = ?",
+		id,
+	)
+	dbutil.Exec(
+		ctx,
+		s.dbu,
+		"DELETE FROM FileChanges WHERE PluginId = ?",
+		id,
+	)
 
-	res = dbutil.Exec(ctx, s.dbu, "DELETE FROM Plugins WHERE Id = ?", id)
+	res = dbutil.Exec(
+		ctx,
+		s.dbu,
+		"DELETE FROM Plugins WHERE Id = ?",
+		id,
+	)
 	if res.HasError() {
 		return res.Error()
 	}
@@ -365,7 +424,13 @@ func (s *Service) RefreshFileCount(ctx context.Context, id int64) error {
 		return scan.Error()
 	}
 
-	res := dbutil.Exec(ctx, s.dbu, pluginUpdateFileCountQuery, scan.Value().FileCount, id)
+	res := dbutil.Exec(
+		ctx,
+		s.dbu,
+		pluginUpdateFileCountQuery,
+		scan.Value().FileCount,
+		id,
+	)
 	if res.HasError() {
 		return res.Error()
 	}
