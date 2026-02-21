@@ -9,6 +9,7 @@
 
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Enums\AdminPageType;
+use RiseupAsia\Enums\LogColumnType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
@@ -188,31 +189,31 @@ $upload_source_classes = array(
                 <?php 
                 $current_date_group = '';
                 foreach ($logs as $log): 
-                    $triggered_by = isset($log['TriggeredBy']) ? $log['TriggeredBy'] : '';
-                    $source_machine = isset($log['SourceMachine']) ? $log['SourceMachine'] : '';
-                    $plugin_version = isset($log['PluginVersion']) ? $log['PluginVersion'] : '';
-                    $upload_source = isset($log['UploadSource']) ? $log['UploadSource'] : '';
+                    $triggered_by = isset($log[LogColumnType::TriggeredBy->value]) ? $log[LogColumnType::TriggeredBy->value] : '';
+                    $source_machine = isset($log[LogColumnType::SourceMachine->value]) ? $log[LogColumnType::SourceMachine->value] : '';
+                    $plugin_version = isset($log[LogColumnType::PluginVersion->value]) ? $log[LogColumnType::PluginVersion->value] : '';
+                    $upload_source = isset($log[LogColumnType::UploadSource->value]) ? $log[LogColumnType::UploadSource->value] : '';
                     $trigger_class = isset($trigger_classes[$triggered_by]) ? $trigger_classes[$triggered_by] : 'trigger-unknown';
                     $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
                     $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';
                     $upload_source_label = isset($upload_source_labels[$upload_source]) ? $upload_source_labels[$upload_source] : ($upload_source ?: '—');
 
                     // Extract named booleans for P3 compliance
-                    $hasLogDetails = BooleanHelpers::hasValue($log['Details'] ?? null);
-                    $hasErrorMsg = BooleanHelpers::hasValue($log['ErrorMsg'] ?? null);
+                    $hasLogDetails = BooleanHelpers::hasValue($log[LogColumnType::Details->value] ?? null);
+                    $hasErrorMsg = BooleanHelpers::hasValue($log[LogColumnType::ErrorMsg->value] ?? null);
                     $hasDetailsOrError = $hasLogDetails || $hasErrorMsg;
-                    $hasPluginSlug = BooleanHelpers::hasValue($log['PluginSlug'] ?? null);
-                    $hasPluginFile = BooleanHelpers::hasValue($log['PluginFile'] ?? null) && ($log['PluginFile'] ?? '') !== ($log['PluginSlug'] ?? '');
-                    $hasPostId = BooleanHelpers::hasValue($log['PostId'] ?? null);
+                    $hasPluginSlug = BooleanHelpers::hasValue($log[LogColumnType::PluginSlug->value] ?? null);
+                    $hasPluginFile = BooleanHelpers::hasValue($log[LogColumnType::PluginFile->value] ?? null) && ($log[LogColumnType::PluginFile->value] ?? '') !== ($log[LogColumnType::PluginSlug->value] ?? '');
+                    $hasPostId = BooleanHelpers::hasValue($log[LogColumnType::PostId->value] ?? null);
                     $hasPluginVersion = BooleanHelpers::hasValue($plugin_version);
                     $hasTriggeredBy = BooleanHelpers::hasValue($triggered_by);
                     $hasUploadSource = BooleanHelpers::hasValue($upload_source);
                     $hasSourceMachine = BooleanHelpers::hasValue($source_machine);
-                    $hasIpAddress = BooleanHelpers::hasValue($log['IpAddress'] ?? null) && ($log['IpAddress'] ?? '') !== '0.0.0.0';
-                    $hasUserId = BooleanHelpers::hasValue($log['UserId'] ?? null);
+                    $hasIpAddress = BooleanHelpers::hasValue($log[LogColumnType::IpAddress->value] ?? null) && ($log[LogColumnType::IpAddress->value] ?? '') !== '0.0.0.0';
+                    $hasUserId = BooleanHelpers::hasValue($log[LogColumnType::UserId->value] ?? null);
                     
                     // Date grouping
-                    $log_timestamp = strtotime($log['CreatedAt']);
+                    $log_timestamp = strtotime($log[LogColumnType::CreatedAt->value]);
                     $log_date = date('Y-m-d', $log_timestamp);
                     $log_date_display = date('F j, Y', $log_timestamp); // e.g., "February 10, 2026"
                     $log_time_display = date('g:i A', $log_timestamp);  // e.g., "2:30 PM"
@@ -239,29 +240,29 @@ $upload_source_classes = array(
                 <?php endif; ?>
                     <tr class="riseup-log-row <?php echo $hasDetailsOrError ? 'has-details' : ''; ?>" 
                         <?php if ($hasLogDetails): ?>
-                            data-details="<?php echo esc_attr(json_encode($log['Details'])); ?>"
+                            data-details="<?php echo esc_attr(json_encode($log[LogColumnType::Details->value])); ?>"
                         <?php elseif ($hasErrorMsg): ?>
-                            data-details="<?php echo esc_attr(json_encode(array(ResponseKeyType::Error->value => $log['ErrorMsg']))); ?>"
+                            data-details="<?php echo esc_attr(json_encode(array(ResponseKeyType::Error->value => $log[LogColumnType::ErrorMsg->value]))); ?>"
                         <?php endif; ?>>
-                        <td class="column-id"><?php echo esc_html($log['Id']); ?></td>
+                        <td class="column-id"><?php echo esc_html($log[LogColumnType::Id->value]); ?></td>
                         <td class="column-timestamp">
-                            <span class="timestamp" title="<?php echo esc_attr($log['CreatedAt']); ?>">
+                            <span class="timestamp" title="<?php echo esc_attr($log[LogColumnType::CreatedAt->value]); ?>">
                                 <?php echo esc_html($log_time_display); ?>
                             </span>
                         </td>
                         <td class="column-action">
-                            <span class="action-badge action-<?php echo esc_attr($log['Action']); ?>">
-                                <?php echo esc_html($action_labels[$log['Action']] ?? $log['Action']); ?>
+                            <span class="action-badge action-<?php echo esc_attr($log[LogColumnType::Action->value]); ?>">
+                                <?php echo esc_html($action_labels[$log[LogColumnType::Action->value]] ?? $log[LogColumnType::Action->value]); ?>
                             </span>
                         </td>
                         <td class="column-plugin">
                             <?php if ($hasPluginSlug): ?>
-                                <span class="plugin-target-badge"><?php echo esc_html($log['PluginSlug']); ?></span>
+                                <span class="plugin-target-badge"><?php echo esc_html($log[LogColumnType::PluginSlug->value]); ?></span>
                                 <?php if ($hasPluginFile): ?>
-                                    <br><small class="plugin-file" title="<?php echo esc_attr($log['PluginFile']); ?>"><?php echo esc_html($log['PluginFile']); ?></small>
+                                    <br><small class="plugin-file" title="<?php echo esc_attr($log[LogColumnType::PluginFile->value]); ?>"><?php echo esc_html($log[LogColumnType::PluginFile->value]); ?></small>
                                 <?php endif; ?>
                             <?php elseif ($hasPostId): ?>
-                                <span class="plugin-target-badge target-post"><?php esc_html_e('Post', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log['PostId']); ?></span>
+                                <span class="plugin-target-badge target-post"><?php esc_html_e('Post', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log[LogColumnType::PostId->value]); ?></span>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
@@ -305,29 +306,29 @@ $upload_source_classes = array(
                                 <span class="na">—</span>
                             <?php endif; ?>
                             <?php if ($hasIpAddress): ?>
-                                <br><small class="ip-address"><?php echo esc_html($log['IpAddress']); ?></small>
+                                <br><small class="ip-address"><?php echo esc_html($log[LogColumnType::IpAddress->value]); ?></small>
                             <?php endif; ?>
                         </td>
                         <td class="column-user">
                             <span class="user-info">
-                                <?php echo esc_html($log['UserLogin']); ?>
+                                <?php echo esc_html($log[LogColumnType::UserLogin->value]); ?>
                                 <?php if ($hasUserId): ?>
-                                    <small>(#<?php echo esc_html($log['UserId']); ?>)</small>
+                                    <small>(#<?php echo esc_html($log[LogColumnType::UserId->value]); ?>)</small>
                                 <?php endif; ?>
                             </span>
                         </td>
                         <td class="column-status">
-                            <span class="status-badge status-<?php echo esc_attr($log['Status']); ?>">
-                                <?php echo esc_html($log['Status']); ?>
+                            <span class="status-badge status-<?php echo esc_attr($log[LogColumnType::Status->value]); ?>">
+                                <?php echo esc_html($log[LogColumnType::Status->value]); ?>
                             </span>
                         </td>
                         <td class="column-details">
                             <?php if ($hasErrorMsg): ?>
-                                <span class="error-msg" title="<?php echo esc_attr($log['ErrorMsg']); ?>">
-                                    <?php echo esc_html(wp_trim_words($log['ErrorMsg'], 10)); ?>
+                                <span class="error-msg" title="<?php echo esc_attr($log[LogColumnType::ErrorMsg->value]); ?>">
+                                    <?php echo esc_html(wp_trim_words($log[LogColumnType::ErrorMsg->value], 10)); ?>
                                 </span>
                             <?php elseif ($hasLogDetails): ?>
-                                <button type="button" class="button button-small toggle-details" data-details="<?php echo esc_attr(json_encode($log['Details'])); ?>">
+                                <button type="button" class="button button-small toggle-details" data-details="<?php echo esc_attr(json_encode($log[LogColumnType::Details->value])); ?>">
                                     <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
                                 </button>
                             <?php else: ?>
