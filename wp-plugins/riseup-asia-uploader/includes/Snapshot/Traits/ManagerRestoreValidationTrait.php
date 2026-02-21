@@ -25,6 +25,7 @@ trait ManagerRestoreValidationTrait {
     private function validateIncrementalParent(array $snapshot, int $snapshotId): ?array {
         $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === SnapshotModeType::Incremental->value);
         $isFullSnapshot = ($isIncremental === false);
+
         if ($isFullSnapshot) {
             return null;
         }
@@ -33,6 +34,7 @@ trait ManagerRestoreValidationTrait {
         $masterDirname = $tablesMeta['master'] ?? null;
 
         $isMasterDirnameMissing = ($masterDirname === null);
+
         if ($isMasterDirnameMissing) {
             return null;
         }
@@ -40,6 +42,7 @@ trait ManagerRestoreValidationTrait {
         $masterDir = dirname(dirname($snapshot['filepath']));
         $isMasterMissing = PathHelper::isDirMissing($masterDir) || PathHelper::isFileMissing($masterDir . '/a-root.db');
         $isMasterPresent = ($isMasterMissing === false);
+
         if ($isMasterPresent) {
             return null;
         }
@@ -63,6 +66,7 @@ trait ManagerRestoreValidationTrait {
      */
     private function handlePreRestoreBackup(array $options, int $snapshotId): int|array|null {
         $isBackupExplicitlyDisabled = (isset($options['create_backup']) && $options['create_backup'] === false);
+
         if ($isBackupExplicitlyDisabled) {
             return null;
         }

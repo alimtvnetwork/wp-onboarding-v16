@@ -57,6 +57,7 @@ trait ImportExecutionTrait {
         $metadata = $this->readRootDbMetadata($rootDbPath);
 
         $isMetadataMissing = ($metadata === null || $metadata === false);
+
         if ($isMetadataMissing) {
             throw new Exception('Failed to read metadata from ' . SnapshotConfigType::RootDbFilename);
         }
@@ -111,6 +112,7 @@ trait ImportExecutionTrait {
     private function moveSnapshotToFinalLocation(string $snapshotRoot, array $metadata): string {
         $snapshotsDir = PathHelper::getSnapshotsDir();
         $isDirCreationFailed = (PathHelper::makeDirectory($snapshotsDir, true) === false);
+
         if ($isDirCreationFailed) {
             throw new Exception('Failed to create snapshots directory');
         }
@@ -151,6 +153,7 @@ trait ImportExecutionTrait {
         $record = $this->buildSnapshotRecord($metadata, $tables, $incrementals, $plugins, $destDir, $tableNames);
 
         $result = $this->db->insert(TableType::Snapshots->value, $record);
+
         if ($result) {
             return $this->db->lastInsertId();
         }

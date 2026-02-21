@@ -27,6 +27,7 @@ trait ManagerTableRestoreTrait {
         try {
             $check = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");
             $isTableAbsent = ($check->fetch() === false);
+
             if ($isTableAbsent) {
 
                 return ResultHelper::error(
@@ -114,6 +115,7 @@ trait ManagerTableRestoreTrait {
     private function createPreRestoreBackup(int $originalSnapshotId): array {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
+
         if ($isProviderMissing) {
 
             return ResultHelper::error(ResponseMessageType::ProviderMissing->value);

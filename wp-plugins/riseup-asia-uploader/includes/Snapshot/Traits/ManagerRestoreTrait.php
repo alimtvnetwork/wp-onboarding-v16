@@ -28,6 +28,7 @@ trait ManagerRestoreTrait {
 
     public function restoreSnapshot(int $snapshotId, array $options = array()): array {
         $guard = $this->guardRestorePreConditions($snapshotId, $options);
+
         if ($guard !== null) {
 
             return $guard;
@@ -43,6 +44,7 @@ trait ManagerRestoreTrait {
         ));
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
+
         if ($backupId instanceof array) {
 
             return $backupId;

@@ -22,6 +22,7 @@ trait IncrementalDeltaTrait {
 
     public function exportTableDelta(string $tableName, array $info, string $incDir, int $sequence): ?array {
         $rootDbPath = $this->getMasterRootDbPath();
+
         if (PathHelper::isFileMissing($rootDbPath)) {
             $this->log(LogLevelType::Error->value, 'Master root DB missing, cannot compute delta.');
 
@@ -175,6 +176,7 @@ trait IncrementalDeltaTrait {
     ): int {
         $sqliteFile = $this->findMasterSqliteFile($rootPdo, $tableName);
         $isSqliteFileMissing = ($sqliteFile === null);
+
         if ($isSqliteFileMissing) {
 
             return (int) $info['row_count'];
@@ -215,6 +217,7 @@ trait IncrementalDeltaTrait {
             $rootDir = $this->getRootDirFromPdo($rootPdo);
             $prevSqlite = $rootDir . '/incremental/' . $prevFolder . '/' . $tableName . '.sqlite';
             $maxId = $this->readMaxIdFromSqlite($prevSqlite, $tableName, $pk);
+
             if ($maxId !== null) {
 
                 return $maxId;
@@ -257,6 +260,7 @@ trait IncrementalDeltaTrait {
         $filename = $stmt->fetchColumn();
 
         $isFilenameAbsent = ($filename === false || $filename === null);
+
         if ($isFilenameAbsent) {
 
             return null;

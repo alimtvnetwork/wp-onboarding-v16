@@ -39,6 +39,7 @@ trait ExporterBuildCollectTrait {
 
     private function collectIncrementalFiles(string $incrementalDir): array {
         $files = array();
+
         if (PathHelper::isDirMissing($incrementalDir)) {
             return $files;
         }

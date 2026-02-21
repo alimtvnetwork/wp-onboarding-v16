@@ -26,12 +26,14 @@ trait NativeSnapshotCrudTrait {
     public function deleteSnapshot(int $snapshotId): array {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
+
         if ($isSnapshotMissing) {
 
             return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['Filepath'];
+
         if (PathHelper::fileExists($filepath)) {
             $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
             if ($isDeleteFailed) {
@@ -42,6 +44,7 @@ trait NativeSnapshotCrudTrait {
         }
 
         $zip_path = str_replace('.sqlite', '.zip', $filepath);
+
         if (PathHelper::fileExists($zip_path)) {
             PathHelper::deleteFile($zip_path);
         }
@@ -58,12 +61,14 @@ trait NativeSnapshotCrudTrait {
     public function exportSnapshot(int $snapshotId): array {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
+
         if ($isSnapshotMissing) {
 
             return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['Filepath'];
+
         if (PathHelper::isFileMissing($filepath)) {
 
             return ResultHelper::error(ResponseMessageType::SnapshotFileMissing->value);

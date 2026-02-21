@@ -24,11 +24,13 @@ trait ImportExecutionFileTrait {
     private function validateTableFiles(string $snapshotRoot, array $tables): void {
         foreach ($tables as $table) {
             $sqlitePath = PathHelper::join($snapshotRoot, $table['sqlite_file']);
+
             if (PathHelper::isFileMissing($sqlitePath)) {
                 throw new Exception("Missing table file: {$table['sqlite_file']}");
             }
             if (BooleanHelpers::hasValue($table['checksum_md5'])) {
                 $actualMd5 = md5_file($sqlitePath);
+
                 if ($actualMd5 !== $table['checksum_md5']) {
                     throw new Exception("Checksum mismatch for {$table['sqlite_file']}: expected {$table['checksum_md5']}, got {$actualMd5}");
                 }
@@ -40,6 +42,7 @@ trait ImportExecutionFileTrait {
     private function validateIncrementalFiles(string $snapshotRoot, array $incrementals): void {
         foreach ($incrementals as $inc) {
             $incDir = PathHelper::join($snapshotRoot, $inc['relative_path']);
+
             if (PathHelper::isDirMissing($incDir)) {
                 $this->log(LogLevelType::Warn->value, 'Incremental directory missing, skipping', array('folder' => $inc['folder_name']));
                 continue;
@@ -54,12 +57,14 @@ trait ImportExecutionFileTrait {
     private function validatePluginFiles(string $snapshotRoot, array $plugins): void {
         foreach ($plugins as $plugin) {
             $zipPath = PathHelper::join($snapshotRoot, $plugin['zip_file']);
+
             if (PathHelper::isFileMissing($zipPath)) {
                 $this->log(LogLevelType::Warn->value, 'Plugin archive missing, skipping', array('plugin' => $plugin['plugin_slug']));
                 continue;
             }
             if (BooleanHelpers::hasValue($plugin['checksum_md5'])) {
                 $actualMd5 = md5_file($zipPath);
+
                 if ($actualMd5 !== $plugin['checksum_md5']) {
                     throw new Exception("Plugin checksum mismatch for {$plugin['plugin_slug']}");
                 }
@@ -69,6 +74,7 @@ trait ImportExecutionFileTrait {
 
     private function copyDirectory(string $src, string $dest): void {
         $isDirCreationFailed = (PathHelper::makeDirectory($dest, false) === false);
+
         if ($isDirCreationFailed) {
             throw new Exception("Failed to create directory: {$dest}");
         }

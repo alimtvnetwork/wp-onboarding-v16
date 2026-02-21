@@ -33,6 +33,7 @@ trait IncrementalCoreTrait {
         $incremental_dir = $master_dir . '/incremental/' . $folder_name;
 
         $isDirCreationFailed = (PathHelper::makeDirectory($incremental_dir, true) === false);
+
         if ($isDirCreationFailed) {
             $rootPdo = null;
 
@@ -66,7 +67,8 @@ trait IncrementalCoreTrait {
 
         foreach ($masterTables as $table_name => $info) {
             $result = $this->exportTableDelta($table_name, $info, $incDir, $rootPdo, $sequence);
-            if ($result === null) continue;
+
+            if ($result === null) {
 
             if ($result[ResponseKeyType::Success->value]) {
                 $tables_changed++;
