@@ -52,7 +52,7 @@ trait OrchestratorRegistrationTrait {
     }
 
     private function getNextSnapshotSequence(PDO $pdo): int {
-        $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
+        $row = $pdo->query("SELECT MAX(Sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
 
         return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
     }

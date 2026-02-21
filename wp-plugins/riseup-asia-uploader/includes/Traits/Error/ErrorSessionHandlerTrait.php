@@ -19,6 +19,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Database\Database;
+use RiseupAsia\Enums\TableType;
 
 trait ErrorSessionHandlerTrait {
 
@@ -68,9 +69,9 @@ trait ErrorSessionHandlerTrait {
 
         $where  = array();
         $params = array();
-        if (BooleanHelpers::hasValue($level))  { $where[] = 'level = ?';      $params[] = strtoupper($level); }
-        if (BooleanHelpers::hasValue($search)) { $where[] = 'message LIKE ?'; $params[] = '%' . $search . '%'; }
-        if ($since_id > 0)   { $where[] = 'id > ?';         $params[] = $since_id; }
+        if (BooleanHelpers::hasValue($level))  { $where[] = 'Level = ?';      $params[] = strtoupper($level); }
+        if (BooleanHelpers::hasValue($search)) { $where[] = 'Message LIKE ?'; $params[] = '%' . $search . '%'; }
+        if ($since_id > 0)   { $where[] = 'Id > ?';         $params[] = $since_id; }
 
         $hasWhereClause = BooleanHelpers::hasValue($where);
         return array(
@@ -81,7 +82,7 @@ trait ErrorSessionHandlerTrait {
 
     /** Count total error sessions matching the query. */
     private function countErrorSessions(PDO $pdo, array $query): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$query['where_sql']}");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$query['where_sql']}");
         $stmt->execute($query['params']);
 
         return (int) $stmt->fetchColumn();
@@ -89,7 +90,7 @@ trait ErrorSessionHandlerTrait {
 
     /** Fetch error sessions matching the query. */
     private function fetchErrorSessions(PDO $pdo, array $query): array {
-        $sql = "SELECT * FROM error_sessions {$query['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?";
+        $sql = "SELECT * FROM " . TableType::ErrorSessions->value . " {$query['where_sql']} ORDER BY Id DESC LIMIT ? OFFSET ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(array_merge($query['params'], array($query['limit'], $query['offset'])));
 
@@ -101,13 +102,13 @@ trait ErrorSessionHandlerTrait {
         $entries = array();
         foreach ($rows as $row) {
             $entry = array(
-                'id' => (int) $row['id'], 'level' => $row['level'], 'message' => $row['message'],
-                'file' => $row['file'], 'fileBase' => $row['file'] ? basename($row['file']) : null,
-                'line' => $row['line'] ? (int) $row['line'] : null, 'stackTrace' => $row['stack_trace'],
-                'context' => $this->parseContextJson($row['context_json'] ?? ''), 'created_at' => $row['created_at'],
+                'id' => (int) $row['Id'], 'level' => $row['Level'], 'message' => $row['Message'],
+                'file' => $row['File'], 'fileBase' => $row['File'] ? basename($row['File']) : null,
+                'line' => $row['Line'] ? (int) $row['Line'] : null, 'stackTrace' => $row['StackTrace'],
+                'context' => $this->parseContextJson($row['ContextJson'] ?? ''), 'created_at' => $row['CreatedAt'],
             );
-            if (BooleanHelpers::hasValue($row['stack_trace'])) {
-                $entry['stackTraceFrames'] = $this->parseStackTraceString($row['stack_trace']);
+            if (BooleanHelpers::hasValue($row['StackTrace'])) {
+                $entry['stackTraceFrames'] = $this->parseStackTraceString($row['StackTrace']);
             }
             $entries[] = $entry;
         }

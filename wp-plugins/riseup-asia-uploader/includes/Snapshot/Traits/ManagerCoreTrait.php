@@ -76,7 +76,7 @@ trait ManagerCoreTrait {
 
     public function listSnapshots(int $limit = 50, int $offset = 0): array { // PaginationConfigType::DefaultLimit
         $snapshots = $this->db->queryAll(
-            'SELECT * FROM ' . TableType::Snapshots->value . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TableType::Snapshots->value . ' ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
             array($limit, $offset)
         );
 

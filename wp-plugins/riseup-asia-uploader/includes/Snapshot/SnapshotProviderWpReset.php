@@ -54,12 +54,12 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
 
     public function getSnapshot(int $snapshotId): ?array {
 
-        return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ? AND provider = ?', array($snapshotId, $this->provider_id));
+        return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ? AND Provider = ?', array($snapshotId, $this->provider_id));
     }
 
     public function listSnapshots(int $limit = 50, int $offset = 0): array { // PaginationConfigType::DefaultLimit
-        $snapshots = $this->db->queryAll('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', array($this->provider_id, $limit, $offset));
-        $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
+        $snapshots = $this->db->queryAll('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?', array($this->provider_id, $limit, $offset));
+        $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?', array($this->provider_id));
 
         return array(ResponseKeyType::Snapshots->value => $snapshots ?: array(), ResponseKeyType::Total->value => $total ? (int)$total[ResponseKeyType::Count->value] : 0);
     }

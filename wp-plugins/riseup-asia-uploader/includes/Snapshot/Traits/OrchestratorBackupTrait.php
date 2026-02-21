@@ -167,12 +167,12 @@ trait OrchestratorBackupTrait {
         if ($hasMasterSnapshotId) {
             $pdo = $this->db->getPdo();
             if ($pdo) {
-                $stmt = $pdo->prepare("SELECT filepath FROM " . TableType::Snapshots->value . " WHERE id = ?");
+                $stmt = $pdo->prepare("SELECT Filepath FROM " . TableType::Snapshots->value . " WHERE Id = ?");
                 $stmt->execute(array($options['master_snapshot_id']));
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                if ($row && is_dir($row['filepath'])) {
+                if ($row && is_dir($row['Filepath'])) {
 
-                    return $row['filepath'];
+                    return $row['Filepath'];
                 }
             }
         }
