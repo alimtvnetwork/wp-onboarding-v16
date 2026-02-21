@@ -433,6 +433,40 @@ export const ResponseKeyType = {
   DeletedOrphans: "deleted_orphans",
   DeletedFailed: "deleted_failed",
   SpaceFreedBytes: "space_freed_bytes",
+  Retention: "retention",
+  Orphans: "orphans",
+  Stuck: "stuck",
+  DryRun: "dry_run",
+  BytesFreed: "bytes_freed",
+  Deleted: "deleted",
+  Cleaned: "cleaned",
+
+  // Plugin lifecycle keys
+  Activated: "activated",
+  PluginSlug: "plugin_slug",
+  IsUpdate: "is_update",
+  IsSelfUpdate: "is_self_update",
+  PluginVersion: "plugin_version",
+  ActivationError: "activation_error",
+  Inventory: "inventory",
+
+  // Log/diagnostic keys
+  ErrorLog: "error_log",
+  FullLog: "full_log",
+  StacktraceLog: "stacktrace_log",
+  Exists: "exists",
+  Content: "content",
+  Truncated: "truncated",
+  Lines: "lines",
+  TotalLines: "total_lines",
+
+  // Internal/domain-specific keys
+  Ids: "ids",
+  TotalSnapshots: "total_snapshots",
+  TotalSizeBytes: "total_size_bytes",
+  TempFile: "temp_file",
+  Stmt: "stmt",
+  Columns: "columns",
 } as const;
 
 export type ResponseKeyType = (typeof ResponseKeyType)[keyof typeof ResponseKeyType];

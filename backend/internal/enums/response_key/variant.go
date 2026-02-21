@@ -62,6 +62,34 @@ const (
 	DeletedOrphans
 	DeletedFailed
 	SpaceFreedBytes
+	Retention
+	Orphans
+	Stuck
+	DryRun
+	BytesFreed
+	Deleted
+	Cleaned
+	Activated
+	PluginSlug
+	IsUpdate
+	IsSelfUpdate
+	PluginVersion
+	ActivationError
+	Inventory
+	ErrorLog
+	FullLog
+	StacktraceLog
+	Exists
+	Content
+	Truncated
+	Lines
+	TotalLines
+	Ids
+	TotalSnapshots
+	TotalSizeBytes
+	TempFile
+	Stmt
+	Columns
 )
 
 var variantLabels = [...]string{
@@ -117,6 +145,34 @@ var variantLabels = [...]string{
 	DeletedOrphans:  "deleted_orphans",
 	DeletedFailed:   "deleted_failed",
 	SpaceFreedBytes: "space_freed_bytes",
+	Retention:       "retention",
+	Orphans:         "orphans",
+	Stuck:           "stuck",
+	DryRun:          "dry_run",
+	BytesFreed:      "bytes_freed",
+	Deleted:         "deleted",
+	Cleaned:         "cleaned",
+	Activated:       "activated",
+	PluginSlug:      "plugin_slug",
+	IsUpdate:        "is_update",
+	IsSelfUpdate:    "is_self_update",
+	PluginVersion:   "plugin_version",
+	ActivationError: "activation_error",
+	Inventory:       "inventory",
+	ErrorLog:        "error_log",
+	FullLog:         "full_log",
+	StacktraceLog:   "stacktrace_log",
+	Exists:          "exists",
+	Content:         "content",
+	Truncated:       "truncated",
+	Lines:           "lines",
+	TotalLines:      "total_lines",
+	Ids:             "ids",
+	TotalSnapshots:  "total_snapshots",
+	TotalSizeBytes:  "total_size_bytes",
+	TempFile:        "temp_file",
+	Stmt:            "stmt",
+	Columns:         "columns",
 }
 
 func (v Variant) String() string {
