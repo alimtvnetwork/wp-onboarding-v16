@@ -28,6 +28,7 @@ class SnapshotExporter {
         if (self::$instance === null) {
             throw new LogicException('SnapshotExporter::getInstance() called before initialization.');
         }
+
         return self::$instance;
     }
 

@@ -50,8 +50,10 @@ trait AgentRemoteActionTrait {
         if (empty($agent->redirectResolved) || empty($agent->redirectResolvedAt)) {
             return false;
         }
+
         $resolvedAt = strtotime($agent->redirectResolvedAt);
         $cacheDays = UpdateConfigType::CacheDaysDefault->value;
+
         return (time() < $resolvedAt + ($cacheDays * DAY_IN_SECONDS));
     }
 
@@ -61,6 +63,7 @@ trait AgentRemoteActionTrait {
             if (is_wp_error($response)) {
                 return $response;
             }
+
             $status = wp_remote_retrieve_response_code($response);
             if (BooleanHelpers::isAbsentFromList($status, array(301, 302, 303, 307, 308))) {
                 break;

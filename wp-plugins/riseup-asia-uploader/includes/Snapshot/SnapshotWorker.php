@@ -47,6 +47,7 @@ class SnapshotWorker {
         if (self::$instance === null) {
             throw new LogicException('SnapshotWorker::getInstance() called before initialization.');
         }
+
         return self::$instance;
     }
 
