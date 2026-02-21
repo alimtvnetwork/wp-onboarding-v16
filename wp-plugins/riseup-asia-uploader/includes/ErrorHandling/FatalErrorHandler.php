@@ -49,6 +49,7 @@ class FatalErrorHandler
         $error = error_get_last();
 
         $isNonFatalRestError = (self::isFatalRestError($error) === false);
+
         if ($isNonFatalRestError) {
             return;
         }
@@ -65,6 +66,7 @@ class FatalErrorHandler
 
         $isFatalType = in_array($error['type'], self::FATAL_TYPES, true);
         $isNonFatalType = ($isFatalType === false);
+
         if ($isNonFatalType) {
             return false;
         }
@@ -104,8 +106,15 @@ class FatalErrorHandler
             self::errorTypeToString($error['type']),
         );
         $uploads = wp_upload_dir();
-        $logFile = $uploads['basedir'] . '/' . PluginConfigType::Slug->value . PathLogFileType::FatalError->value;
-        @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+        $logFile = $uploads['basedir']
+            . '/' . PluginConfigType::Slug->value
+            . PathLogFileType::FatalError->value;
+
+        @file_put_contents(
+            $logFile,
+            $logEntry,
+            FILE_APPEND | LOCK_EX,
+        );
     }
 
     private static function cleanOutputBuffers(): void {
@@ -116,6 +125,7 @@ class FatalErrorHandler
 
     private static function emitJsonResponse(array $error): void {
         $isHeadersUnsent = (headers_sent() === false);
+
         if ($isHeadersUnsent) {
             header('Content-Type: application/json; charset=utf-8');
             http_response_code(HttpStatusType::ServerError->value);

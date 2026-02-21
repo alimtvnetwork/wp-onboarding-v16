@@ -81,7 +81,11 @@ class FrameBuilder
      */
     public static function buildTraceLines(array $error, ?array $backtrace): array {
         $traceLines = array();
-        $traceLines[] = sprintf("#0 %s(%d): Fatal error occurred", $error['file'], $error['line']);
+        $traceLines[] = sprintf(
+            "#0 %s(%d): Fatal error occurred",
+            $error['file'],
+            $error['line'],
+        );
 
         if (is_array($backtrace)) {
             foreach ($backtrace as $i => $frame) {
@@ -89,7 +93,14 @@ class FrameBuilder
                 $line  = $frame['line'] ?? 0;
                 $func  = $frame['function'] ?? '';
                 $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
-                $traceLines[] = sprintf("#%d %s(%d): %s%s()", $i + 1, $file, $line, $class, $func);
+                $traceLines[] = sprintf(
+                    "#%d %s(%d): %s%s()",
+                    $i + 1,
+                    $file,
+                    $line,
+                    $class,
+                    $func,
+                );
             }
         }
 
