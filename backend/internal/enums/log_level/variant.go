@@ -34,6 +34,9 @@ func (v Variant) String() string {
 
 func (v Variant) Label() string { return v.String() }
 
+// Lower returns the lowercase representation used in log files and broadcast payloads.
+func (v Variant) Lower() string { return strings.ToLower(v.String()) }
+
 func (v Variant) IsValid() bool {
 	return v > Invalid && v < Variant(len(variantLabels))
 }

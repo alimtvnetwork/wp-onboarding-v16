@@ -326,7 +326,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	// Broadcast start
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", toJSON(SiteContextDetails{
+		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Starting Riseup Asia Uploader deployment", toJSON(SiteContextDetails{
 			SiteID:   id,
 			SiteName: site.Name,
 			SiteURL:  site.URL,
@@ -343,7 +343,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
 		if s.wsHub != nil {
 			raw, _ := json.Marshal(details)
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), toJSON(BootstrapLogDetails{
+			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("[%s] %s", step, message), toJSON(BootstrapLogDetails{
 				SiteID:   id,
 				SiteName: site.Name,
 				Step:     step,
@@ -361,7 +361,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", toJSON(ZipCreationDetails{
+		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Creating plugin ZIP archive", toJSON(ZipCreationDetails{
 			SiteID: id,
 			Path:   uploaderPath,
 		}))
@@ -371,7 +371,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Error.Lower(), fmt.Sprintf("Failed to create ZIP: %v", err), toJSON(SiteIDDetail{SiteID: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
@@ -385,26 +385,26 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	if available && namespace != "" {
 		// Uploader is already on the site - use it to update itself
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJSON(SiteIDDetail{SiteID: id}))
 		}
 		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, wordpress.UploadSourceRestAPI)
 	} else {
 		// First-time installation - use Onboard plugin or standard upload
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Info.Lower(), "First-time installation - checking for Onboard plugin", toJSON(SiteIDDetail{SiteID: id}))
 		}
 		
 		// Try Onboard plugin first
 		onboardAvailable := s.checkOnboardAvailable(client)
 		if onboardAvailable {
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", toJSON(SiteIDDetail{SiteID: id}))
+				s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Using Onboard plugin for installation", toJSON(SiteIDDetail{SiteID: id}))
 			}
 			uploadResult, err = client.UploadPluginViaOnboard(zipPath, true)
 		} else {
 		// No helper plugin available - this is a limitation
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", toJSON(SiteIDDetail{SiteID: id}))
+				s.wsHub.BroadcastLog(loglevel.Error.Lower(), "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", toJSON(SiteIDDetail{SiteID: id}))
 			}
 			return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
 		}
@@ -412,13 +412,13 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Error.Lower(), fmt.Sprintf("Upload failed: %v", err), toJSON(SiteIDDetail{SiteID: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", toJSON(UploaderDeployDetails{
+		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Riseup Asia Uploader deployed successfully", toJSON(UploaderDeployDetails{
 			SiteID:    id,
 			SiteName:  site.Name,
 			Activated: uploadResult.Activated,

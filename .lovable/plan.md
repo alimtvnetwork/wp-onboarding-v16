@@ -471,11 +471,20 @@ All three enums follow the standard `byte`-based pattern with `Invalid` zero-val
 - **publish/service.go**: `"unknown"` → `healthstatus.Unknown.DBValue()`
 - **sitehealth/service.go**: Raw error codes (`"E4001"`–`"E4005"`) → `apperror.ErrXxx` typed constants
 
-### 3.4 — Remaining Magic String Categories (future work)
+### 3.5 — Remaining Phase 3 Migration (2026-02-21)
 
-- Session log levels (`"info"`, `"warn"`, `"error"`, `"debug"`) — already covered by `log_level` enum, needs migration in backup/session services
-- `"warning"` status in progress callbacks — not a standard stage_status variant, needs design decision
-- `runtime.GOOS` comparisons (`"windows"`, `"darwin"`) — idiomatic Go, exempt from migration
+- **backup/service.go**: All 20 `broadcastLog` level strings (`"info"`, `"error"`, `"warn"`, `"debug"`) → `loglevel.Xxx.Lower()`
+- **site/service.go**: All 10 `BroadcastLog` level strings → `loglevel.Xxx.Lower()`
+- **session/service.go**: Hardcoded level map replaced with `loglevel.Parse()` + `strings.ToUpper()`
+- **wordpress/client.go**: All 4 `"warning"` strings → `stagestatus.Warning.String()`
+- **stage_status enum**: Added `Warning` variant with `IsWarning()` helper
+- **log_level enum**: Added `Lower()` method returning lowercase representation
+
+### 3.6 — Exempt from Migration (by design)
+
+- `runtime.GOOS` comparisons (`"windows"`, `"darwin"`) — idiomatic Go, not domain logic
+- Empty string checks (`""`) — structural validation, not magic strings
+- Struct tag values, test assertions — exempt per convention
 
 ---
 

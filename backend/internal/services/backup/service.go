@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
+	loglevel "wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/ws"
@@ -80,7 +81,7 @@ func marshalBackupDetails(m map[string]any) json.RawMessage {
 // Create downloads the current remote plugin and saves as a backup
 func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[models.Backup] {
 	s.log.Info("Creating backup", "mappingId", mappingID)
-	s.broadcastLog(mappingID, "info", "init", "Starting backup creation", marshalBackupDetails(map[string]any{
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "init", "Starting backup creation", marshalBackupDetails(map[string]any{
 		"mappingId": mappingID,
 	}))
 
@@ -92,18 +93,18 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 		return apperror.FailWrap[models.Backup](err, apperror.ErrInternal, "failed to resolve backup path")
 	}
 
-	s.broadcastLog(mappingID, "info", "prepare", fmt.Sprintf("Preparing backup file: %s", filename), nil)
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "prepare", fmt.Sprintf("Preparing backup file: %s", filename), nil)
 
 	// TODO: Download remote plugin via WP REST
 	// For now, create an empty placeholder file
 	file, err := os.Create(backupPath)
 	if err != nil {
-		s.broadcastLog(mappingID, "error", "create", fmt.Sprintf("Failed to create backup file: %v", err), nil)
+		s.broadcastLog(mappingID, loglevel.Error.Lower(), "create", fmt.Sprintf("Failed to create backup file: %v", err), nil)
 		return apperror.FailWrap[models.Backup](err, apperror.ErrBackupCreate, "failed to create backup file")
 	}
 	file.Close()
 
-	s.broadcastLog(mappingID, "info", "write", "Backup file created successfully", marshalBackupDetails(map[string]any{
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "write", "Backup file created successfully", marshalBackupDetails(map[string]any{
 		"path": backupPath,
 	}))
 
@@ -124,17 +125,17 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	// TODO: Record in database
 
 	// Enforce retention
-	s.broadcastLog(mappingID, "info", "retention", "Enforcing retention policy", marshalBackupDetails(map[string]any{
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "retention", "Enforcing retention policy", marshalBackupDetails(map[string]any{
 		"maxPerPlugin":  s.maxPerPlugin,
 		"retentionDays": s.retentionDays,
 	}))
 	if err := s.enforceRetention(ctx, mappingID); err != nil {
 		s.log.Warn("Failed to enforce retention", "error", err)
-		s.broadcastLog(mappingID, "warn", "retention", fmt.Sprintf("Retention enforcement warning: %v", err), nil)
+		s.broadcastLog(mappingID, loglevel.Warn.Lower(), "retention", fmt.Sprintf("Retention enforcement warning: %v", err), nil)
 	}
 
 	s.log.Info("Backup created", "mappingId", mappingID, "path", backupPath)
-	s.broadcastLog(mappingID, "info", "complete", "Backup created successfully", marshalBackupDetails(map[string]any{
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "complete", "Backup created successfully", marshalBackupDetails(map[string]any{
 		"path":     backupPath,
 		"fileSize": size,
 	}))
@@ -157,21 +158,21 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 // Restore uploads a backup to WordPress
 func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[RestoreResult] {
 	s.log.Info("Restoring backup", "backupId", backupID)
-	s.broadcastLog(backupID, "info", "init", "Starting backup restore", marshalBackupDetails(map[string]any{
+	s.broadcastLog(backupID, loglevel.Info.Lower(), "init", "Starting backup restore", marshalBackupDetails(map[string]any{
 		"backupId": backupID,
 	}))
 
 	// TODO: Implement restore:
 	// 1. Get backup file path
-	s.broadcastLog(backupID, "info", "locate", "Locating backup file", nil)
+	s.broadcastLog(backupID, loglevel.Info.Lower(), "locate", "Locating backup file", nil)
 
 	// 2. Upload to WordPress
-	s.broadcastLog(backupID, "info", "upload", "Uploading backup to WordPress", nil)
+	s.broadcastLog(backupID, loglevel.Info.Lower(), "upload", "Uploading backup to WordPress", nil)
 
 	// 3. Activate plugin
-	s.broadcastLog(backupID, "info", "activate", "Activating restored plugin", nil)
+	s.broadcastLog(backupID, loglevel.Info.Lower(), "activate", "Activating restored plugin", nil)
 
-	s.broadcastLog(backupID, "info", "complete", "Backup restored successfully", nil)
+	s.broadcastLog(backupID, loglevel.Info.Lower(), "complete", "Backup restored successfully", nil)
 
 	return apperror.Ok(RestoreResult{Success: true})
 }
@@ -179,14 +180,14 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 // Delete removes a backup file and database record
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	s.log.Info("Deleting backup", "id", id)
-	s.broadcastLog(id, "info", "delete", "Deleting backup", marshalBackupDetails(map[string]any{
+	s.broadcastLog(id, loglevel.Info.Lower(), "delete", "Deleting backup", marshalBackupDetails(map[string]any{
 		"backupId": id,
 	}))
 
 	// TODO: Get backup path from database
 	// TODO: Delete file and database record
 
-	s.broadcastLog(id, "info", "complete", "Backup deleted successfully", nil)
+	s.broadcastLog(id, loglevel.Info.Lower(), "complete", "Backup deleted successfully", nil)
 
 	return nil
 }
@@ -194,7 +195,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 // Cleanup removes expired backups
 func (s *Service) Cleanup(ctx context.Context) error {
 	s.log.Info("Running backup cleanup")
-	s.broadcastLog(0, "info", "init", "Starting backup cleanup", marshalBackupDetails(map[string]any{
+	s.broadcastLog(0, loglevel.Info.Lower(), "init", "Starting backup cleanup", marshalBackupDetails(map[string]any{
 		"retentionDays": s.retentionDays,
 	}))
 
@@ -209,7 +210,7 @@ func (s *Service) Cleanup(ctx context.Context) error {
 
 		if info.ModTime().Before(cutoff) {
 			s.log.Debug("Removing expired backup", "path", path, "modified", info.ModTime())
-			s.broadcastLog(0, "debug", "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), marshalBackupDetails(map[string]any{
+			s.broadcastLog(0, loglevel.Debug.Lower(), "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), marshalBackupDetails(map[string]any{
 				"modifiedAt": info.ModTime().Format(time.RFC3339),
 			}))
 			if err := os.Remove(path); err == nil {
@@ -222,13 +223,13 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	})
 
 	if err != nil {
-		s.broadcastLog(0, "error", "cleanup", fmt.Sprintf("Cleanup failed: %v", err), nil)
+		s.broadcastLog(0, loglevel.Error.Lower(), "cleanup", fmt.Sprintf("Cleanup failed: %v", err), nil)
 		return apperror.Wrap(err, apperror.ErrFSRead, "cleanup failed").
 			WithBackupDir(s.backupDir)
 	}
 
 	s.log.Info("Backup cleanup complete")
-	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), marshalBackupDetails(map[string]any{
+	s.broadcastLog(0, loglevel.Info.Lower(), "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), marshalBackupDetails(map[string]any{
 		"removedCount": removedCount,
 	}))
 
@@ -246,20 +247,20 @@ func (s *Service) enforceRetention(ctx context.Context, mappingID int64) error {
 func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) apperror.Result[ExportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
-	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), marshalBackupDetails(map[string]any{
+	s.broadcastLog(0, loglevel.Info.Lower(), "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), marshalBackupDetails(map[string]any{
 		"sourceCount": len(sourcePaths),
 	}))
 
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create output directory: %v", err), nil)
+		s.broadcastLog(0, loglevel.Error.Lower(), "prepare", fmt.Sprintf("Failed to create output directory: %v", err), nil)
 		return apperror.FailWrap[ExportResult](err, apperror.ErrFSWrite, "failed to create output directory")
 	}
 
 	// Create zip file
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
-		s.broadcastLog(0, "error", "create", fmt.Sprintf("Failed to create zip file: %v", err), nil)
+		s.broadcastLog(0, loglevel.Error.Lower(), "create", fmt.Sprintf("Failed to create zip file: %v", err), nil)
 		return apperror.FailWrap[ExportResult](err, apperror.ErrFSZip, "failed to create zip file")
 	}
 	defer zipFile.Close()
@@ -275,7 +276,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		info, err := os.Stat(sourcePath)
 		if err != nil {
 			s.log.Warn("Skipping source", "path", sourcePath, "error", err)
-			s.broadcastLog(0, "warn", "skip", fmt.Sprintf("Skipping source: %s", sourcePath), marshalBackupDetails(map[string]any{
+			s.broadcastLog(0, loglevel.Warn.Lower(), "skip", fmt.Sprintf("Skipping source: %s", sourcePath), marshalBackupDetails(map[string]any{
 				"error": err.Error(),
 			}))
 			continue
@@ -284,7 +285,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		if info.IsDir() {
 			// Walk directory
 			baseDir := filepath.Base(sourcePath)
-			s.broadcastLog(0, "info", "scan", fmt.Sprintf("Scanning directory: %s", baseDir), nil)
+			s.broadcastLog(0, loglevel.Info.Lower(), "scan", fmt.Sprintf("Scanning directory: %s", baseDir), nil)
 
 			err = filepath.Walk(sourcePath, func(path string, fi os.FileInfo, err error) error {
 				if err != nil || fi.IsDir() {
@@ -326,7 +327,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		"total_bytes", totalBytes,
 		"duration_ms", duration.Milliseconds(),
 	)
-	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Export complete: %d files, %d bytes", filesCount, totalBytes), marshalBackupDetails(map[string]any{
+	s.broadcastLog(0, loglevel.Info.Lower(), "complete", fmt.Sprintf("Export complete: %d files, %d bytes", filesCount, totalBytes), marshalBackupDetails(map[string]any{
 		"filesCount": filesCount,
 		"totalBytes": totalBytes,
 		"durationMs": duration.Milliseconds(),

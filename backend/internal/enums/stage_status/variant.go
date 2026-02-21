@@ -17,6 +17,7 @@ const (
 	Completed
 	Failed
 	Skipped
+	Warning
 )
 
 var variantLabels = [...]string{
@@ -27,6 +28,7 @@ var variantLabels = [...]string{
 	Completed: "Completed",
 	Failed:    "Failed",
 	Skipped:   "Skipped",
+	Warning:   "Warning",
 }
 
 func (v Variant) String() string {
@@ -48,6 +50,7 @@ func (v Variant) IsRunning() bool   { return v == Running }
 func (v Variant) IsCompleted() bool { return v == Completed }
 func (v Variant) IsFailed() bool    { return v == Failed }
 func (v Variant) IsSkipped() bool   { return v == Skipped }
+func (v Variant) IsWarning() bool   { return v == Warning }
 func (v Variant) IsInvalid() bool   { return v == Invalid }
 
 // IsTerminal returns true if the stage has reached a final state.
@@ -65,7 +68,7 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 }
 
 func All() []Variant {
-	return []Variant{Pending, Started, Running, Completed, Failed, Skipped}
+	return []Variant{Pending, Started, Running, Completed, Failed, Skipped, Warning}
 }
 
 func ByIndex(i int) Variant {
