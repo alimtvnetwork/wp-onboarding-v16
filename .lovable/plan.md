@@ -1421,17 +1421,42 @@ This means Phase 7 also requires a **settings value migration** or the introduct
 
 ---
 
-## Phase 7A: New Enums — Admin Page Slugs, Tab Identifiers, AJAX Actions
+## ✅ COMPLETED — Phase 7A: New Enums — Admin Page Slugs, Tab Identifiers, AJAX Actions (2026-02-21)
 
-### New Enums to Create
+Created `AdminPageType`, `AdminTabType`, `AjaxActionType` enums and wired into `Admin.php`, `AdminMenuTrait.php`, `AdminErrorStateTrait.php`.
 
-| Enum | Cases | Purpose |
-|------|-------|---------|
-| `AdminPageType` | `Logs`, `Settings`, `Errors`, `Snapshots`, `Agents` | Admin menu page slug values (`'riseup-asia-uploader'`, `'riseup-asia-errors'`, etc.) |
-| `AdminTabType` | `Sessions`, `Log`, `Error`, `Stacktrace` | Error page tab identifiers |
-| `AjaxActionType` | `TestUpdateConnection`, `ClearUpdateCache`, `CheckForUpdates`, `GetSnapshotStorageStats`, `SaveSnapshotSettings`, `RunSnapshotCleanup`, `DismissErrorFlash`, `ClearAllErrors` | AJAX action name values (e.g., `'riseup_test_update_connection'`) |
+---
 
-### Estimated Effort: 1 task
+## ✅ COMPLETED — Phase 7G: Settings Value Migration (2026-02-21)
+
+Created `SettingsMigrationHelper` at `includes/Helpers/SettingsMigrationHelper.php`:
+- One-time idempotent migration of `wp_options` snapshot settings from lowercase/snake_case to PascalCase
+- Tracks completion via `riseup_settings_migrated_v1` option flag
+- Wired into `Plugin::__construct()` via `SettingsMigrationHelper::migrateIfNeeded()`
+- Covers: preferred_provider, schedule_frequency, default_scope, retention_type, storage_mode
+
+---
+
+## ✅ COMPLETED — Phase 7B: Template `admin-settings.php` — Replace Magic Strings with Enums (2026-02-21)
+
+All magic strings replaced across 804-line template:
+
+| Category | Old | New |
+|----------|-----|-----|
+| Provider | `'auto'` | `SnapshotProviderType::Auto->value` |
+| Frequency | `'manual'`/`'daily'`/`'weekly'`/`'monthly'` | `SnapshotFrequencyType::*->value` |
+| Scope | `'all'`/`'wordpress'`/`'content'`/`'custom'` | `SnapshotScopeType::*->value` |
+| Retention | `'none'`/`'days'`/`'count'` | `RetentionType::*->value` |
+| Storage | `'single'`/`'per-table'` | `StorageModeType::*->value` |
+| Worker pool | `SNAPSHOT_WORKER_POOL_MIN/MAX` | `SnapshotConfigType::WorkerPoolMin/Max->value` |
+| Option name | `Admin::OPTION_NAME` | `OptionNameType::PluginSettings->value` |
+| API namespace | `API_FULL_NAMESPACE` | `PluginConfigType::apiFullNamespace()` |
+| FQCN | `\RiseupAsia\Enums\EndpointType::ErrorLogs` | `EndpointType::ErrorLogs` (via `use`) |
+| Page slug | `'riseup-asia-snapshots'` | `AdminPageType::Snapshots->adminUrl()` |
+| AJAX actions | 6 hardcoded strings | `AjaxActionType::*->value` |
+| JS comparisons | All lowercase strings | PHP-echoed PascalCase enum values |
+
+Also fixed variable name mismatch in `AdminPagesTrait::renderSettingsPage()` — method now creates snake_case vars matching template expectations.
 
 ---
 

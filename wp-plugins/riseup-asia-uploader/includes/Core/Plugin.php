@@ -19,6 +19,7 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PluginConfigType;
 
 use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Helpers\SettingsMigrationHelper;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\Logger;
@@ -95,7 +96,7 @@ class Plugin {
         $this->fileLogger = FileLogger::getInstance();
         $this->fileLogger->info('Plugin constructor starting', array('version' => PluginConfigType::Version->value));
 
-        
+        SettingsMigrationHelper::migrateIfNeeded();
 
         // Register REST routes and lifecycle hooks BEFORE component init
         add_action(HookType::RestApiInit->value, array($this, 'registerRoutes'));
