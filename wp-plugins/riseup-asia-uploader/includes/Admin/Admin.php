@@ -20,6 +20,7 @@ use RiseupAsia\Admin\Traits\AdminPagesTrait;
 use RiseupAsia\Admin\Traits\AdminAjaxTrait;
 use RiseupAsia\Admin\Traits\AdminErrorPageTrait;
 use RiseupAsia\Admin\Traits\AdminErrorAjaxTrait;
+use RiseupAsia\Enums\AjaxActionType;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PaginationConfigType;
@@ -87,15 +88,15 @@ class Admin {
         add_action(HookType::AdminInit->value, array($this, 'registerSettings'));
         add_action(HookType::AdminEnqueue->value, array($this, 'enqueueAdminAssets'));
         add_action(HookType::AdminNotices->value, array($this, 'renderGlobalErrorNotice'));
-        add_action(HookType::ajax('riseup_test_update_connection'), array($this, 'ajaxTestUpdateConnection'));
-        add_action(HookType::ajax('riseup_clear_update_cache'), array($this, 'ajaxClearUpdateCache'));
-        add_action(HookType::ajax('riseup_check_for_updates'), array($this, 'ajaxCheckForUpdates'));
-        add_action(HookType::ajax('riseup_save_snapshot_settings'), array($this, 'ajaxSaveSnapshotSettings'));
-        add_action(HookType::ajax('riseup_run_snapshot_cleanup'), array($this, 'ajaxRunSnapshotCleanup'));
-        add_action(HookType::ajax('riseup_get_snapshot_storage_stats'), array($this, 'ajaxGetSnapshotStorageStats'));
-        add_action(HookType::ajax('riseup_dismiss_error_flash'), array($this, 'ajaxDismissErrorFlash'));
-        add_action(HookType::ajax('riseup_clear_error_sessions'), array($this, 'ajaxClearErrorSessions'));
-        add_action(HookType::ajax('riseup_read_log_file'), array($this, 'ajaxReadLogFile'));
-        add_action(HookType::ajax('riseup_clear_log_file'), array($this, 'ajaxClearLogFile'));
+        add_action(HookType::ajax(AjaxActionType::TestUpdateConnection->value), array($this, 'ajaxTestUpdateConnection'));
+        add_action(HookType::ajax(AjaxActionType::ClearUpdateCache->value), array($this, 'ajaxClearUpdateCache'));
+        add_action(HookType::ajax(AjaxActionType::CheckForUpdates->value), array($this, 'ajaxCheckForUpdates'));
+        add_action(HookType::ajax(AjaxActionType::SaveSnapshotSettings->value), array($this, 'ajaxSaveSnapshotSettings'));
+        add_action(HookType::ajax(AjaxActionType::RunSnapshotCleanup->value), array($this, 'ajaxRunSnapshotCleanup'));
+        add_action(HookType::ajax(AjaxActionType::GetSnapshotStorageStats->value), array($this, 'ajaxGetSnapshotStorageStats'));
+        add_action(HookType::ajax(AjaxActionType::DismissErrorFlash->value), array($this, 'ajaxDismissErrorFlash'));
+        add_action(HookType::ajax(AjaxActionType::ClearErrorSessions->value), array($this, 'ajaxClearErrorSessions'));
+        add_action(HookType::ajax(AjaxActionType::ReadLogFile->value), array($this, 'ajaxReadLogFile'));
+        add_action(HookType::ajax(AjaxActionType::ClearLogFile->value), array($this, 'ajaxClearLogFile'));
     }
 }

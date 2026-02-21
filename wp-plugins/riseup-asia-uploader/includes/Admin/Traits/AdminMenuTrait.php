@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\PluginConfigType;
 
@@ -45,9 +46,9 @@ trait AdminMenuTrait {
 
         $submenus = array(
             array($slug, 'Activity Logs', 'renderLogsPage'),
-            array('riseup-asia-settings', 'Settings', 'renderSettingsPage'),
-            array('riseup-asia-agents', 'Agent Sites', 'renderAgentsPage'),
-            array('riseup-asia-snapshots', 'Snapshots', 'renderSnapshotsPage'),
+            array(AdminPageType::Settings->value, 'Settings', 'renderSettingsPage'),
+            array(AdminPageType::Agents->value, 'Agent Sites', 'renderAgentsPage'),
+            array(AdminPageType::Snapshots->value, 'Snapshots', 'renderSnapshotsPage'),
         );
 
         foreach ($submenus as $item) {
@@ -72,7 +73,7 @@ trait AdminMenuTrait {
             __('Error Log', 'riseup-asia-uploader'),
             __('Error Log', 'riseup-asia-uploader') . $errorBubble,
             CapabilityType::ManageOptions->value,
-            'riseup-asia-errors',
+            AdminPageType::Errors->value,
             array($this, 'renderErrorsPage')
         );
     }
