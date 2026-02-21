@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\AdminPageType;
+use RiseupAsia\Enums\TableType;
 
 trait AdminErrorStateTrait {
 
@@ -28,7 +29,7 @@ trait AdminErrorStateTrait {
             }
 
             $lastSeen = $this->getFlashValue('last_seen_error_id', 0);
-            $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM ' . TableType::ErrorSessions->value . ' WHERE Id > ?');
             $stmt->execute(array($lastSeen));
 
             return (int) $stmt->fetchColumn();
@@ -47,7 +48,7 @@ trait AdminErrorStateTrait {
                 return $default;
             }
 
-            $stmt = $pdo->prepare('SELECT value FROM flash_state WHERE key = ?');
+            $stmt = $pdo->prepare('SELECT Value FROM ' . TableType::FlashState->value . ' WHERE Key = ?');
             $stmt->execute(array($key));
             $val = $stmt->fetchColumn();
 

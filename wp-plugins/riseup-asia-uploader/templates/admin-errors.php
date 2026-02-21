@@ -18,13 +18,14 @@ use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\AdminTabType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\NonceType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 $level_colors = array(
-    strtoupper(LogLevelType::Error->value) => '#dc3545',
-    strtoupper(LogLevelType::Warn->value)  => '#fd7e14',
-    strtoupper(LogLevelType::Info->value)  => '#0d6efd',
-    strtoupper(LogLevelType::Debug->value) => '#6c757d',
+    LogLevelType::Error->value => '#dc3545',
+    LogLevelType::Warn->value  => '#fd7e14',
+    LogLevelType::Info->value  => '#0d6efd',
+    LogLevelType::Debug->value => '#6c757d',
 );
 
 $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
@@ -61,7 +62,7 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
     <h1>
         <span class="dashicons dashicons-warning"></span>
         <?php esc_html_e('Error Log', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(\RiseupAsia\Enums\PluginConfigType::Version->value); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
         <?php if ($unseen_count > 0): ?>
             <span class="error-count-badge"><?php echo esc_html($unseen_count); ?></span>
         <?php endif; ?>
@@ -116,8 +117,8 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                         <span><?php esc_html_e('Level:', 'riseup-asia-uploader'); ?></span>
                         <select name="filter_level">
                             <option value=""><?php esc_html_e('All Levels', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(strtoupper(LogLevelType::Error->value)); ?>" <?php selected($filter_level, strtoupper(LogLevelType::Error->value)); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(strtoupper(LogLevelType::Warn->value)); ?>" <?php selected($filter_level, strtoupper(LogLevelType::Warn->value)); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(LogLevelType::Error->value); ?>" <?php selected($filter_level, LogLevelType::Error->value); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(LogLevelType::Warn->value); ?>" <?php selected($filter_level, LogLevelType::Warn->value); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </label>
                     <label>
@@ -167,24 +168,24 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                 <?php else: ?>
                     <?php foreach ($errors as $error): ?>
                         <?php
-                        $is_new = ($error['id'] > $last_seen_id);
-                        $level  = strtoupper($error['level']);
+                        $is_new = ($error['Id'] > $last_seen_id);
+                        $level  = $error['Level'];
                         $color  = isset($level_colors[$level]) ? $level_colors[$level] : '#6c757d';
-                        $hasFile = BooleanHelpers::hasValue($error['file'] ?? null);
-                        $hasContext = BooleanHelpers::hasValue($error['context_json'] ?? null);
-                        $hasStackTrace = BooleanHelpers::hasValue($error['stack_trace'] ?? null);
+                        $hasFile = BooleanHelpers::hasValue($error['File'] ?? null);
+                        $hasContext = BooleanHelpers::hasValue($error['ContextJson'] ?? null);
+                        $hasStackTrace = BooleanHelpers::hasValue($error['StackTrace'] ?? null);
                         $hasDetailsData = $hasContext || $hasStackTrace;
-                        $sourceDisplay = $hasFile ? basename($error['file']) . ':' . $error['line'] : '—';
+                        $sourceDisplay = $hasFile ? basename($error['File']) . ':' . $error['Line'] : '—';
                         ?>
                         <tr class="<?php echo $is_new ? 'error-row-new' : ''; ?>">
                             <td class="column-id">
-                                <?php echo esc_html($error['id']); ?>
+                                <?php echo esc_html($error['Id']); ?>
                                 <?php if ($is_new): ?>
                                     <span class="new-badge">NEW</span>
                                 <?php endif; ?>
                             </td>
                             <td class="column-timestamp">
-                                <span class="timestamp"><?php echo esc_html(date('Y-m-d H:i:s', strtotime($error['created_at']))); ?></span>
+                                <span class="timestamp"><?php echo esc_html(date('Y-m-d H:i:s', strtotime($error['CreatedAt']))); ?></span>
                             </td>
                             <td class="column-level">
                                 <span class="level-badge" style="background: <?php echo esc_attr($color); ?>;">
@@ -193,23 +194,23 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                             </td>
                             <td class="column-file">
                                 <?php if ($hasFile): ?>
-                                    <code class="source-file"><?php echo esc_html(basename($error['file'])); ?>:<?php echo esc_html($error['line']); ?></code>
+                                    <code class="source-file"><?php echo esc_html(basename($error['File'])); ?>:<?php echo esc_html($error['Line']); ?></code>
                                 <?php else: ?>
                                     <span class="na">—</span>
                                 <?php endif; ?>
                             </td>
                             <td class="column-message">
-                                <span class="error-message"><?php echo esc_html($error['message']); ?></span>
+                                <span class="error-message"><?php echo esc_html($error['Message']); ?></span>
                             </td>
                             <td class="column-actions">
                                 <?php if ($hasDetailsData): ?>
                                     <button type="button" class="button button-small toggle-error-details"
-                                        data-context="<?php echo esc_attr($error['context_json'] ?: '{}'); ?>"
-                                        data-stack="<?php echo esc_attr($error['stack_trace'] ?: ''); ?>"
+                                        data-context="<?php echo esc_attr($error['ContextJson'] ?: '{}'); ?>"
+                                        data-stack="<?php echo esc_attr($error['StackTrace'] ?: ''); ?>"
                                         data-level="<?php echo esc_attr($level); ?>"
-                                        data-message="<?php echo esc_attr($error['message']); ?>"
+                                        data-message="<?php echo esc_attr($error['Message']); ?>"
                                         data-source="<?php echo esc_attr($sourceDisplay); ?>"
-                                        data-timestamp="<?php echo esc_attr(date('Y-m-d H:i:s', strtotime($error['created_at']))); ?>">
+                                        data-timestamp="<?php echo esc_attr(date('Y-m-d H:i:s', strtotime($error['CreatedAt']))); ?>">
                                         <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
                                     </button>
                                 <?php else: ?>
