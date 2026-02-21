@@ -10,7 +10,7 @@ import (
 type Variant byte
 
 const (
-	Invalid         Variant = iota
+	Invalid        Variant = iota
 	Success
 	Error
 	Message
@@ -60,7 +60,7 @@ const (
 	TablesRestored
 )
 
-var variantStrings = [...]string{
+var variantLabels = [...]string{
 	Invalid:        "invalid",
 	Success:        "success",
 	Error:          "error",
@@ -111,73 +111,19 @@ var variantStrings = [...]string{
 	TablesRestored: "tables_restored",
 }
 
-var variantLabels = [...]string{
-	Invalid:        "Invalid Key",
-	Success:        "Success",
-	Error:          "Error",
-	Message:        "Message",
-	Data:           "Data",
-	Code:           "Code",
-	Valid:          "Valid",
-	Errors:         "Errors",
-	Cached:         "Cached",
-	Phase:          "Phase",
-	Reason:         "Reason",
-	Total:          "Total",
-	Agents:         "Agents",
-	Actions:        "Actions",
-	Logs:           "Logs",
-	Snapshots:      "Snapshots",
-	Sql:            "SQL",
-	Params:         "Params",
-	Sets:           "Sets",
-	Plugins:        "Plugins",
-	Tables:         "Tables",
-	Rows:           "Rows",
-	Bytes:          "Bytes",
-	Size:           "Size",
-	FileSize:       "File Size",
-	Path:           "Path",
-	Filename:       "Filename",
-	Checksum:       "Checksum",
-	Duration:       "Duration",
-	Count:          "Count",
-	Files:          "Files",
-	Directory:      "Directory",
-	Scope:          "Scope",
-	Exported:       "Exported",
-	Entry:          "Entry",
-	Computed:       "Computed",
-	Removed:        "Removed",
-	SnapshotId:     "Snapshot ID",
-	Sequence:       "Sequence",
-	FolderName:     "Folder Name",
-	TablesChanged:  "Tables Changed",
-	TotalRows:      "Total Rows",
-	TotalNewRows:   "Total New Rows",
-	ZipSize:        "ZIP Size",
-	BackupId:       "Backup ID",
-	ZipFailed:      "ZIP Failed",
-	SkipAudit:      "Skip Audit",
-	TablesRestored: "Tables Restored",
-}
-
 func (v Variant) String() string {
-	if !v.IsValid() {
-		return variantStrings[Invalid]
-	}
-	return variantStrings[v]
-}
-
-func (v Variant) Label() string {
 	if !v.IsValid() {
 		return variantLabels[Invalid]
 	}
 	return variantLabels[v]
 }
 
+func (v Variant) Label() string {
+	return v.String()
+}
+
 func (v Variant) IsValid() bool {
-	return v > Invalid && v < Variant(len(variantStrings))
+	return v > Invalid && v < Variant(len(variantLabels))
 }
 
 func (v Variant) IsInvalid() bool { return v == Invalid }
@@ -188,15 +134,15 @@ func (v Variant) IsOtherThan(other Variant) bool {
 }
 
 func All() []Variant {
-	all := make([]Variant, 0, len(variantStrings)-1)
-	for i := 1; i < len(variantStrings); i++ {
+	all := make([]Variant, 0, len(variantLabels)-1)
+	for i := 1; i < len(variantLabels); i++ {
 		all = append(all, Variant(i))
 	}
 	return all
 }
 
 func ByIndex(i int) Variant {
-	if i < 0 || i >= len(variantStrings) {
+	if i < 0 || i >= len(variantLabels) {
 		return Invalid
 	}
 	return Variant(i)
@@ -204,7 +150,7 @@ func ByIndex(i int) Variant {
 
 func Parse(s string) (Variant, error) {
 	lower := strings.ToLower(strings.TrimSpace(s))
-	for i, str := range variantStrings {
+	for i, str := range variantLabels {
 		if str == lower {
 			return Variant(i), nil
 		}
@@ -213,8 +159,8 @@ func Parse(s string) (Variant, error) {
 }
 
 func Values() []string {
-	result := make([]string, 0, len(variantStrings)-1)
-	for _, s := range variantStrings[1:] {
+	result := make([]string, 0, len(variantLabels)-1)
+	for _, s := range variantLabels[1:] {
 		result = append(result, s)
 	}
 	return result

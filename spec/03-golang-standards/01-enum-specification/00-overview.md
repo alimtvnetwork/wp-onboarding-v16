@@ -60,8 +60,7 @@ const (
 | Rule | Description |
 |------|-------------|
 | Zero value | Always `Invalid Variant = iota` (never `Unknown`) |
-| variantStrings | Always **lowercase** (e.g., `"invalid"`, `"serpapi"`) |
-| variantLabels | PascalCase / human-readable (e.g., `"Invalid"`, `"SerpAPI"`) |
+| variantLabels | Single lookup table for serialization, parsing, and display |
 
 ### Folder Structure
 

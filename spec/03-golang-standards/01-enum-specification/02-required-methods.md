@@ -1,8 +1,8 @@
 # Required Methods
 
-**Version:** 2.0.0  
+**Version:** 3.0.0  
 **Status:** Complete  
-**Updated:** 2026-02-11
+**Updated:** 2026-02-21
 
 ---
 
@@ -14,14 +14,14 @@ Every enum MUST implement these methods:
 
 ### 1. String() string
 
-Returns the lowercase string representation for serialization and logging.
+Returns the string representation for serialization and logging.
 
 ```go
 func (v Variant) String() string {
     if !v.IsValid() {
-        return "invalid"
+        return variantLabels[Invalid]
     }
-    return variantStrings[v]
+    return variantLabels[v]
 }
 ```
 
@@ -29,14 +29,11 @@ func (v Variant) String() string {
 
 ### 2. Label() string
 
-Returns a human-readable label for UI display.
+Delegates to `String()`. Single lookup table — no separate labels array.
 
 ```go
 func (v Variant) Label() string {
-    if !v.IsValid() {
-        return "Invalid"
-    }
-    return variantLabels[v]
+    return v.String()
 }
 ```
 
@@ -108,7 +105,7 @@ Returns variant by index. Returns Invalid for invalid indices.
 
 ```go
 func ByIndex(i int) Variant {
-    if i < 0 || i >= len(variantStrings) {
+    if i < 0 || i >= len(variantLabels) {
         return Invalid
     }
     return Variant(i)
@@ -129,7 +126,7 @@ Parses a string to variant. Case-insensitive.
 ```go
 func Parse(s string) (Variant, error) {
     lower := strings.ToLower(strings.TrimSpace(s))
-    for i, str := range variantStrings {
+    for i, str := range variantLabels {
         if str == lower {
             return Variant(i), nil
         }
@@ -154,7 +151,7 @@ Checks if the variant is a valid, non-Invalid value.
 
 ```go
 func (v Variant) IsValid() bool {
-    return v > Invalid && v < Variant(len(variantStrings))
+    return v > Invalid && v < Variant(len(variantLabels))
 }
 ```
 
@@ -213,8 +210,8 @@ Returns all string values for documentation or CLI help:
 
 ```go
 func Values() []string {
-    result := make([]string, 0, len(variantStrings)-1)
-    for _, s := range variantStrings[1:] { // Skip Invalid
+    result := make([]string, 0, len(variantLabels)-1)
+    for _, s := range variantLabels[1:] { // Skip Invalid
         result = append(result, s)
     }
     return result
@@ -309,36 +306,26 @@ const (
     Colly
 )
 
-var variantStrings = [...]string{
+var variantLabels = [...]string{
     Invalid:     "invalid",
     SerpAPI:     "serpapi",
     MapsScraper: "maps_scraper",
     Colly:       "colly",
 }
 
-var variantLabels = [...]string{
-    Invalid:     "Invalid Provider",
-    SerpAPI:     "SerpAPI",
-    MapsScraper: "Google Maps Scraper",
-    Colly:       "Colly Web Scraper",
-}
-
 func (v Variant) String() string {
-    if !v.IsValid() {
-        return variantStrings[Invalid]
-    }
-    return variantStrings[v]
-}
-
-func (v Variant) Label() string {
     if !v.IsValid() {
         return variantLabels[Invalid]
     }
     return variantLabels[v]
 }
 
+func (v Variant) Label() string {
+    return v.String()
+}
+
 func (v Variant) IsValid() bool {
-    return v > Invalid && v < Variant(len(variantStrings))
+    return v > Invalid && v < Variant(len(variantLabels))
 }
 
 func (v Variant) IsSerpAPI() bool     { return v == SerpAPI }
@@ -351,7 +338,7 @@ func All() []Variant {
 }
 
 func ByIndex(i int) Variant {
-    if i < 0 || i >= len(variantStrings) {
+    if i < 0 || i >= len(variantLabels) {
         return Invalid
     }
     return Variant(i)
@@ -359,7 +346,7 @@ func ByIndex(i int) Variant {
 
 func Parse(s string) (Variant, error) {
     lower := strings.ToLower(strings.TrimSpace(s))
-    for i, str := range variantStrings {
+    for i, str := range variantLabels {
         if str == lower {
             return Variant(i), nil
         }
@@ -368,8 +355,8 @@ func Parse(s string) (Variant, error) {
 }
 
 func Values() []string {
-    result := make([]string, 0, len(variantStrings)-1)
-    for _, s := range variantStrings[1:] {
+    result := make([]string, 0, len(variantLabels)-1)
+    for _, s := range variantLabels[1:] {
         result = append(result, s)
     }
     return result

@@ -233,35 +233,27 @@ const (
     // Add variants here...
 )
 
-var variantStrings = [...]string{
+var variantLabels = [...]string{
     Invalid: "invalid",
     // Add mappings...
 }
 
-var variantLabels = [...]string{
-    Invalid: "Invalid",
-    // Add labels...
-}
-
 // String returns the string representation
 func (v Variant) String() string {
-    if !v.IsValid() {
-        return variantStrings[Invalid]
-    }
-    return variantStrings[v]
-}
-
-// Label returns the human-readable label
-func (v Variant) Label() string {
     if !v.IsValid() {
         return variantLabels[Invalid]
     }
     return variantLabels[v]
 }
 
+// Label delegates to String
+func (v Variant) Label() string {
+    return v.String()
+}
+
 // IsValid checks if the variant is valid
 func (v Variant) IsValid() bool {
-    return v > Invalid && v < Variant(len(variantStrings))
+    return v > Invalid && v < Variant(len(variantLabels))
 }
 
 // Add Is{Value}() methods for each variant...
@@ -273,7 +265,7 @@ func All() []Variant {
 
 // ByIndex returns variant by index
 func ByIndex(i int) Variant {
-    if i < 0 || i >= len(variantStrings) {
+    if i < 0 || i >= len(variantLabels) {
         return Invalid
     }
     return Variant(i)
@@ -282,7 +274,7 @@ func ByIndex(i int) Variant {
 // Parse parses a string to variant
 func Parse(s string) (Variant, error) {
     lower := strings.ToLower(strings.TrimSpace(s))
-    for i, str := range variantStrings {
+    for i, str := range variantLabels {
         if str == lower {
             return Variant(i), nil
         }
@@ -292,8 +284,8 @@ func Parse(s string) (Variant, error) {
 
 // Values returns all string values
 func Values() []string {
-    result := make([]string, 0, len(variantStrings)-1)
-    for _, s := range variantStrings[1:] {
+    result := make([]string, 0, len(variantLabels)-1)
+    for _, s := range variantLabels[1:] {
         result = append(result, s)
     }
     return result
