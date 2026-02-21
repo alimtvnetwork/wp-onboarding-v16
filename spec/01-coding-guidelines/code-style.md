@@ -526,9 +526,16 @@ function foo(Throwable $e): array
 
 ---
 
-## Rule 9: Multi-Line Parameters — More Than Two Parameters
+## Rule 9: Multi-Line Arguments — Signatures, Calls, and Arrays
 
-When a function/method signature has **more than two parameters**, each parameter must be on its own line with consistent indentation and a **trailing comma** after the last parameter.
+When a function/method **signature or call** has **more than two arguments**, each argument must be on its own line with consistent indentation and a **trailing comma** after the last argument (where syntax permits).
+
+This applies equally to:
+- **Function/method signatures** (parameter declarations)
+- **Function/method calls** (argument expressions)
+- **Constructor calls** (`new Foo(...)`)
+
+### 9a: Function Signatures (>2 Parameters)
 
 ```php
 // ── PHP ──────────────────────────────────────────────────────
@@ -576,6 +583,107 @@ func BuildRecord(
 	success bool,
 	errMsg string,
 ) {
+```
+
+### 9b: Function Calls (>2 Arguments)
+
+```php
+// ── PHP ──────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN (>2 args on one line)
+$this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Failed->value, null, $error->get_error_message());
+
+// ✅ REQUIRED
+$this->logAction(
+    $agentId,
+    ActionType::AgentTest->value,
+    null,
+    StatusType::Failed->value,
+    null,
+    $error->get_error_message(),
+);
+
+// ✅ OK: 2 args — single line is fine
+$this->updateAgent($agentId, $data);
+```
+
+```typescript
+// ── TypeScript ───────────────────────────────────────────────
+
+// ❌ FORBIDDEN (>2 args on one line)
+const result = buildRecord(label, path, true, errorMessage);
+
+// ✅ REQUIRED
+const result = buildRecord(
+    label,
+    path,
+    true,
+    errorMessage,
+);
+
+// ✅ OK: 2 args — single line is fine
+const result = fetchData(url, options);
+```
+
+```go
+// ── Go ───────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN (>2 args on one line)
+result := buildRecord(label, path, true, errMsg)
+
+// ✅ REQUIRED
+result := buildRecord(
+	label,
+	path,
+	true,
+	errMsg,
+)
+```
+
+### 9c: PHP Arrays — Each Item on Its Own Line
+
+In PHP, `array(...)` and `[...]` literals with **more than two items** must place each item on its own line with a trailing comma.
+
+```php
+// ❌ FORBIDDEN (>2 items on one line)
+$statuses = array(301, 302, 303, 307, 308);
+$data = ['agent_id' => $agentId, 'action' => $action, 'slug' => $slug];
+
+// ✅ REQUIRED
+$statuses = array(
+    301,
+    302,
+    303,
+    307,
+    308,
+);
+
+$data = [
+    'agent_id' => $agentId,
+    'action'   => $action,
+    'slug'     => $slug,
+];
+
+// ✅ OK: 2 items — single line is fine
+$pair = array('key' => $value, 'name' => $name);
+```
+
+```typescript
+// ── TypeScript / Go ─────────────────────────────────────────
+// Same principle applies to array/slice literals with >2 items.
+// Each item on its own line with trailing comma.
+
+// ❌ FORBIDDEN
+const codes = [301, 302, 303, 307, 308];
+
+// ✅ REQUIRED
+const codes = [
+    301,
+    302,
+    303,
+    307,
+    308,
+];
 ```
 
 ---
@@ -679,7 +787,8 @@ if err != nil {
 [ ] Functions max 15 lines — extract helpers for longer logic
 [ ] No deeply nested control flow — extract loop/condition bodies to helpers
 [ ] No leading backslash on `Throwable` or other global types in catch/type hints
-[ ] Functions with >2 params — one param per line with trailing comma
+[ ] Functions/calls with >2 args — one arg per line with trailing comma (signatures AND calls)
+[ ] PHP arrays with >2 items — each item on its own line with trailing comma
 [ ] Blank line before control structures (`if`/`for`/`foreach`/`while`) when preceded by statements
 ```
 
