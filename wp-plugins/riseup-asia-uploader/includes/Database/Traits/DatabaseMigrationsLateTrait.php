@@ -18,4 +18,5 @@ if (!defined('ABSPATH')) {
 trait DatabaseMigrationsLateTrait {
     use DatabaseMigrationsV6V8Trait;
     use DatabaseMigrationsV9V11Trait;
+    use DatabaseMigrationsV12Trait;
 }

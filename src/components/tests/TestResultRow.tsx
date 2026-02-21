@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { E2ECaseStatusValues } from "@/lib/constants";
+import type { E2ECaseStatus } from "@/lib/api/types";
 
 interface TestResult {
   id: string;
@@ -16,7 +17,7 @@ interface TestResult {
   suiteId: string;
   caseId: string;
   caseName: string;
-  status: "passed" | "failed" | "skipped" | "error";
+  status: E2ECaseStatus | "Error";
   durationMs: number;
   errorMessage?: string;
   errorDetails?: string;
