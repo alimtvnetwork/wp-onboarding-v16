@@ -22,18 +22,18 @@ trait DatabaseMigrationsV12Trait {
 
     // ── SQL Constants ────────────────────────────────────────────────
 
-    /** transactions.status: lowercase → PascalCase */
+    /** Transactions.Status: lowercase → PascalCase */
     private const V12_TRANSACTIONS_STATUS_QUERY = <<<'SQL'
-        UPDATE %s SET status = CASE status
+        UPDATE %s SET Status = CASE Status
             WHEN 'success' THEN 'Success'
             WHEN 'failed'  THEN 'Failed'
         END
-        WHERE status IN ('success', 'failed')
+        WHERE Status IN ('success', 'failed')
     SQL;
 
-    /** transactions.action: snake_case → PascalCase */
+    /** Transactions.Action: snake_case → PascalCase */
     private const V12_TRANSACTIONS_ACTION_QUERY = <<<'SQL'
-        UPDATE %s SET action = CASE action
+        UPDATE %s SET Action = CASE Action
             WHEN 'upload'                    THEN 'Upload'
             WHEN 'upload_active'             THEN 'UploadActive'
             WHEN 'upload_initiated'          THEN 'UploadInitiated'
@@ -79,79 +79,79 @@ trait DatabaseMigrationsV12Trait {
             WHEN 'snapshot_zip_expire'       THEN 'SnapshotZipExpire'
             WHEN 'snapshot_zip_download'     THEN 'SnapshotZipDownload'
         END
-        WHERE action = LOWER(action) AND action NOT LIKE '%[A-Z]%'
+        WHERE Action = LOWER(Action) AND Action NOT LIKE '%[A-Z]%'
     SQL;
 
-    /** agent_sites.status: lowercase → PascalCase */
+    /** AgentSites.Status: lowercase → PascalCase */
     private const V12_AGENT_SITES_STATUS_QUERY = <<<'SQL'
-        UPDATE %s SET status = CASE status
+        UPDATE %s SET Status = CASE Status
             WHEN 'pending'   THEN 'Pending'
             WHEN 'connected' THEN 'Connected'
             WHEN 'error'     THEN 'Error'
         END
-        WHERE status IN ('pending', 'connected', 'error')
+        WHERE Status IN ('pending', 'connected', 'error')
     SQL;
 
-    /** agent_actions.status: lowercase → PascalCase */
+    /** AgentActions.Status: lowercase → PascalCase */
     private const V12_AGENT_ACTIONS_STATUS_QUERY = <<<'SQL'
-        UPDATE %s SET status = CASE status
+        UPDATE %s SET Status = CASE Status
             WHEN 'success' THEN 'Success'
             WHEN 'failed'  THEN 'Failed'
         END
-        WHERE status IN ('success', 'failed')
+        WHERE Status IN ('success', 'failed')
     SQL;
 
-    /** snapshots.status: lowercase → PascalCase */
+    /** Snapshots.Status: lowercase → PascalCase */
     private const V12_SNAPSHOTS_STATUS_QUERY = <<<'SQL'
-        UPDATE %s SET status = CASE status
+        UPDATE %s SET Status = CASE Status
             WHEN 'pending'   THEN 'Pending'
             WHEN 'scheduled' THEN 'Scheduled'
             WHEN 'running'   THEN 'Running'
             WHEN 'complete'  THEN 'Complete'
             WHEN 'failed'    THEN 'Failed'
         END
-        WHERE status IN ('pending', 'scheduled', 'running', 'complete', 'failed')
+        WHERE Status IN ('pending', 'scheduled', 'running', 'complete', 'failed')
     SQL;
 
-    /** snapshot_progress.status: lowercase → PascalCase */
+    /** SnapshotProgress.Status: lowercase → PascalCase */
     private const V12_SNAPSHOT_PROGRESS_STATUS_QUERY = <<<'SQL'
-        UPDATE %s SET status = CASE status
+        UPDATE %s SET Status = CASE Status
             WHEN 'pending'    THEN 'Pending'
             WHEN 'scheduled'  THEN 'Scheduled'
             WHEN 'running'    THEN 'Running'
             WHEN 'complete'   THEN 'Complete'
             WHEN 'failed'     THEN 'Failed'
         END
-        WHERE status IN ('pending', 'scheduled', 'running', 'complete', 'failed')
+        WHERE Status IN ('pending', 'scheduled', 'running', 'complete', 'failed')
     SQL;
 
-    /** snapshot_settings.value: lowercase/snake_case → PascalCase */
+    /** SnapshotSettings.Value: lowercase/snake_case → PascalCase */
     private const V12_SNAPSHOT_SETTINGS_QUERIES = [
-        "UPDATE %s SET value = 'PerTable'     WHERE key = 'snapshot.mode'             AND value = 'per_table'",
-        "UPDATE %s SET value = 'Incremental'  WHERE key = 'snapshot.backup_type'      AND value = 'incremental'",
-        "UPDATE %s SET value = 'Full'         WHERE key = 'snapshot.backup_type'      AND value = 'full'",
-        "UPDATE %s SET value = 'All'          WHERE key = 'snapshot.plugin_selection'  AND value = 'all'",
-        "UPDATE %s SET value = 'Active'       WHERE key = 'snapshot.plugin_selection'  AND value = 'active'",
-        "UPDATE %s SET value = 'None'         WHERE key = 'snapshot.plugin_selection'  AND value = 'none'",
-        "UPDATE %s SET value = 'Auto'         WHERE key = 'snapshot.provider'          AND value = 'auto'",
-        "UPDATE %s SET value = 'Native'       WHERE key = 'snapshot.provider'          AND value = 'native'",
-        "UPDATE %s SET value = 'WpReset'      WHERE key = 'snapshot.provider'          AND value = 'wp_reset'",
-        "UPDATE %s SET value = 'Updraft'      WHERE key = 'snapshot.provider'          AND value = 'updraft'",
-        "UPDATE %s SET value = 'WordPress'    WHERE key = 'snapshot.scope'             AND value = 'wordpress'",
-        "UPDATE %s SET value = 'All'          WHERE key = 'snapshot.scope'             AND value = 'all'",
-        "UPDATE %s SET value = 'Content'      WHERE key = 'snapshot.scope'             AND value = 'content'",
-        "UPDATE %s SET value = 'Custom'       WHERE key = 'snapshot.scope'             AND value = 'custom'",
-        "UPDATE %s SET value = 'Manual'       WHERE key = 'snapshot.frequency'         AND value = 'manual'",
-        "UPDATE %s SET value = 'Daily'        WHERE key = 'snapshot.frequency'         AND value = 'daily'",
-        "UPDATE %s SET value = 'Weekly'       WHERE key = 'snapshot.frequency'         AND value = 'weekly'",
-        "UPDATE %s SET value = 'Monthly'      WHERE key = 'snapshot.frequency'         AND value = 'monthly'",
-        "UPDATE %s SET value = 'Single'       WHERE key = 'snapshot.mode'              AND value = 'single'",
-        "UPDATE %s SET value = 'Legacy'       WHERE key = 'snapshot.mode'              AND value = 'legacy'",
+        "UPDATE %s SET Value = 'PerTable'     WHERE Key = 'snapshot.mode'             AND Value = 'per_table'",
+        "UPDATE %s SET Value = 'Incremental'  WHERE Key = 'snapshot.backup_type'      AND Value = 'incremental'",
+        "UPDATE %s SET Value = 'Full'         WHERE Key = 'snapshot.backup_type'      AND Value = 'full'",
+        "UPDATE %s SET Value = 'All'          WHERE Key = 'snapshot.plugin_selection'  AND Value = 'all'",
+        "UPDATE %s SET Value = 'Active'       WHERE Key = 'snapshot.plugin_selection'  AND Value = 'active'",
+        "UPDATE %s SET Value = 'None'         WHERE Key = 'snapshot.plugin_selection'  AND Value = 'none'",
+        "UPDATE %s SET Value = 'Auto'         WHERE Key = 'snapshot.provider'          AND Value = 'auto'",
+        "UPDATE %s SET Value = 'Native'       WHERE Key = 'snapshot.provider'          AND Value = 'native'",
+        "UPDATE %s SET Value = 'WpReset'      WHERE Key = 'snapshot.provider'          AND Value = 'wp_reset'",
+        "UPDATE %s SET Value = 'Updraft'      WHERE Key = 'snapshot.provider'          AND Value = 'updraft'",
+        "UPDATE %s SET Value = 'WordPress'    WHERE Key = 'snapshot.scope'             AND Value = 'wordpress'",
+        "UPDATE %s SET Value = 'All'          WHERE Key = 'snapshot.scope'             AND Value = 'all'",
+        "UPDATE %s SET Value = 'Content'      WHERE Key = 'snapshot.scope'             AND Value = 'content'",
+        "UPDATE %s SET Value = 'Custom'       WHERE Key = 'snapshot.scope'             AND Value = 'custom'",
+        "UPDATE %s SET Value = 'Manual'       WHERE Key = 'snapshot.frequency'         AND Value = 'manual'",
+        "UPDATE %s SET Value = 'Daily'        WHERE Key = 'snapshot.frequency'         AND Value = 'daily'",
+        "UPDATE %s SET Value = 'Weekly'       WHERE Key = 'snapshot.frequency'         AND Value = 'weekly'",
+        "UPDATE %s SET Value = 'Monthly'      WHERE Key = 'snapshot.frequency'         AND Value = 'monthly'",
+        "UPDATE %s SET Value = 'Single'       WHERE Key = 'snapshot.mode'              AND Value = 'single'",
+        "UPDATE %s SET Value = 'Legacy'       WHERE Key = 'snapshot.mode'              AND Value = 'legacy'",
     ];
 
-    /** error_sessions.level: UPPERCASE → PascalCase */
+    /** ErrorSessions.Level: UPPERCASE → PascalCase */
     private const V12_ERROR_SESSIONS_LEVEL_QUERY = <<<'SQL'
-        UPDATE error_sessions SET level = CASE level
+        UPDATE %s SET Level = CASE Level
             WHEN 'DEBUG'   THEN 'Debug'
             WHEN 'INFO'    THEN 'Info'
             WHEN 'WARN'    THEN 'Warn'
@@ -163,17 +163,17 @@ trait DatabaseMigrationsV12Trait {
             WHEN 'warning' THEN 'Warn'
             WHEN 'error'   THEN 'Error'
         END
-        WHERE level IN ('DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'debug', 'info', 'warn', 'warning', 'error')
+        WHERE Level IN ('DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'debug', 'info', 'warn', 'warning', 'error')
     SQL;
 
-    /** snapshot_exports.status: lowercase → PascalCase */
+    /** SnapshotExports.Status: lowercase → PascalCase */
     private const V12_SNAPSHOT_EXPORTS_STATUS_QUERY = <<<'SQL'
-        UPDATE %s SET status = CASE status
+        UPDATE %s SET Status = CASE Status
             WHEN 'valid'    THEN 'Valid'
             WHEN 'expired'  THEN 'Expired'
             WHEN 'building' THEN 'Building'
         END
-        WHERE status IN ('valid', 'expired', 'building')
+        WHERE Status IN ('valid', 'expired', 'building')
     SQL;
 
     // ── Migration Entry Point ────────────────────────────────────────
@@ -192,37 +192,38 @@ trait DatabaseMigrationsV12Trait {
         $snapshotProgress = TableType::SnapshotProgress->value;
         $snapshotSettings = TableType::SnapshotSettings->value;
         $snapshotExports = TableType::SnapshotExports->value;
+        $errorSessions = TableType::ErrorSessions->value;
 
         $this->pdo->beginTransaction();
 
         try {
-            // 1. transactions.status
+            // 1. Transactions.Status
             $this->pdo->exec(sprintf(self::V12_TRANSACTIONS_STATUS_QUERY, $txn));
 
-            // 2. transactions.action (WHERE clause catches all-lowercase rows)
+            // 2. Transactions.Action (WHERE clause catches all-lowercase rows)
             $this->pdo->exec(sprintf(self::V12_TRANSACTIONS_ACTION_QUERY, $txn));
 
-            // 3. agent_sites.status
+            // 3. AgentSites.Status
             $this->pdo->exec(sprintf(self::V12_AGENT_SITES_STATUS_QUERY, $agentSites));
 
-            // 4. agent_actions.status
+            // 4. AgentActions.Status
             $this->pdo->exec(sprintf(self::V12_AGENT_ACTIONS_STATUS_QUERY, $agentActions));
 
-            // 5. snapshots.status
+            // 5. Snapshots.Status
             $this->pdo->exec(sprintf(self::V12_SNAPSHOTS_STATUS_QUERY, $snapshots));
 
-            // 6. snapshot_progress.status
+            // 6. SnapshotProgress.Status
             $this->pdo->exec(sprintf(self::V12_SNAPSHOT_PROGRESS_STATUS_QUERY, $snapshotProgress));
 
-            // 7. snapshot_settings.value (key-specific updates)
+            // 7. SnapshotSettings.Value (Key-specific updates)
             foreach (self::V12_SNAPSHOT_SETTINGS_QUERIES as $query) {
                 $this->pdo->exec(sprintf($query, $snapshotSettings));
             }
 
-            // 8. error_sessions.level
-            $this->pdo->exec(self::V12_ERROR_SESSIONS_LEVEL_QUERY);
+            // 8. ErrorSessions.Level
+            $this->pdo->exec(sprintf(self::V12_ERROR_SESSIONS_LEVEL_QUERY, $errorSessions));
 
-            // 9. snapshot_exports.status
+            // 9. SnapshotExports.Status
             $this->pdo->exec(sprintf(self::V12_SNAPSHOT_EXPORTS_STATUS_QUERY, $snapshotExports));
 
             $this->pdo->commit();
