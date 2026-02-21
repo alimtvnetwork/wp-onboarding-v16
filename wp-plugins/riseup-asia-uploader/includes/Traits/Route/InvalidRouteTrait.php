@@ -130,7 +130,7 @@ trait InvalidRouteTrait
             return $data;
         }
 
-        $data['error_category'] = $this->classifyErrorCode($errorCode);
+        $data[ResponseKeyType::ErrorCategory->value] = $this->classifyErrorCode($errorCode);
 
         return $data;
     }
@@ -157,14 +157,14 @@ trait InvalidRouteTrait
     }
 
     private function injectErrorMetadata(array $data): array {
-        if (BooleanHelpers::isKeyMissing($data, 'plugin_version')) {
-            $data['plugin_version'] = PluginConfigType::Version->value;
+        if (BooleanHelpers::isKeyMissing($data, ResponseKeyType::PluginVersion->value)) {
+            $data[ResponseKeyType::PluginVersion->value] = PluginConfigType::Version->value;
         }
         if (BooleanHelpers::isKeyMissing($data, 'timestamp')) {
             $data['timestamp'] = DateHelper::nowIso();
         }
-        if (BooleanHelpers::isKeyMissing($data, 'log_hint')) {
-            $data['log_hint'] = 'Check the plugin error logs or the Activity Logs page for details.';
+        if (BooleanHelpers::isKeyMissing($data, ResponseKeyType::LogHint->value)) {
+            $data[ResponseKeyType::LogHint->value] = 'Check the plugin error logs or the Activity Logs page for details.';
         }
 
         return $data;
@@ -179,9 +179,9 @@ trait InvalidRouteTrait
         $context = array(
             'route'          => $route,
             'status'         => $status,
-            'error_category' => $data['error_category'] ?? 'unknown',
+            ResponseKeyType::ErrorCategory->value => $data[ResponseKeyType::ErrorCategory->value] ?? 'unknown',
             ResponseKeyType::Message->value => $data[ResponseKeyType::Message->value] ?? $data['Status']['Message'] ?? 'Unknown',
-            'plugin_version' => PluginConfigType::Version->value,
+            ResponseKeyType::PluginVersion->value => PluginConfigType::Version->value,
         );
 
         $isWarnLevel = ($errorCode !== null && ($errorCode->isAuthError() || $errorCode->isValidationError()));

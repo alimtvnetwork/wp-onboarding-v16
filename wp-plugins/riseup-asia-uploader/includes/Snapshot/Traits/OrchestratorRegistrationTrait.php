@@ -64,7 +64,7 @@ trait OrchestratorRegistrationTrait {
             ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
             ResponseKeyType::Errors->value => $workerResult[ResponseKeyType::Errors->value] ?? array(),
             ResponseKeyType::Plugins->value => $pluginStats[ResponseKeyType::Count->value] ?? 0,
-            'plugin_details' => $pluginStats[ResponseKeyType::Plugins->value] ?? array(),
+            ResponseKeyType::PluginDetails->value => $pluginStats[ResponseKeyType::Plugins->value] ?? array(),
         ));
     }
 

@@ -73,7 +73,7 @@ trait SnapshotSettingsHandlerTrait {
 
             return new WP_REST_Response(array(
                 ResponseKeyType::Success->value => true, ResponseKeyType::Tables->value => $analysis[ResponseKeyType::Tables->value], 'dependencies' => $analysis['dependencies'],
-                'seed_order' => $analysis['seed_order'], 'table_count' => $analysis['table_count'], 'dep_count' => $analysis['dep_count'],
+                ResponseKeyType::SeedOrder->value => $analysis[ResponseKeyType::SeedOrder->value], ResponseKeyType::TableCount->value => $analysis[ResponseKeyType::TableCount->value], ResponseKeyType::DepCount->value => $analysis[ResponseKeyType::DepCount->value],
             ), HttpStatusType::Ok->value);
         }, 'analyze_dependencies');
     }

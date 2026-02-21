@@ -74,7 +74,7 @@ trait ErrorLogHandlerTrait {
     private function readLogTail(string $filePath, int $maxLines): array {
         $result = array(
             ResponseKeyType::Exists->value => false, 'file' => basename($filePath), ResponseKeyType::Path->value => $filePath,
-            ResponseKeyType::Content->value => '', ResponseKeyType::Lines->value => 0, 'total_size' => 0, ResponseKeyType::Truncated->value => false,
+            ResponseKeyType::Content->value => '', ResponseKeyType::Lines->value => 0, ResponseKeyType::TotalSize->value => 0, ResponseKeyType::Truncated->value => false,
         );
 
         $isFileUnreadable = PathHelper::isFileUnreadable($filePath);

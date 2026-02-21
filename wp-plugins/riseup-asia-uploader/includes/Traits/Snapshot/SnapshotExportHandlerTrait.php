@@ -134,9 +134,9 @@ trait SnapshotExportHandlerTrait {
                 ResponseKeyType::Filename->value => $export['zip_filename'],
                 ResponseKeyType::Size->value     => (int) $export['zip_size'],
                 ResponseKeyType::Cached->value   => $result[ResponseKeyType::Cached->value] ?? false,
-                'included_ids'      => json_decode($export['included_ids'] ?? '[]', true),
-                'incremental_count' => (int) ($export['incremental_count'] ?? 0),
-                'created_at'        => $export['created_at'] ?? '',
+                ResponseKeyType::IncludedIds->value      => json_decode($export['included_ids'] ?? '[]', true),
+                ResponseKeyType::IncrementalCount->value => (int) ($export['incremental_count'] ?? 0),
+                ResponseKeyType::CreatedAt->value        => $export['created_at'] ?? '',
                 'status'            => $export['status'] ?? 'valid',
             )))
             ->setRequestedAt('/' . EndpointType::SnapshotDownload->value)

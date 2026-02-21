@@ -56,8 +56,8 @@ trait PostQueryTrait {
                     'slug'       => $post->post_name,
                     'status'     => $post->post_status,
                     'permalink'  => get_permalink($post->ID),
-                    'created_at' => $post->post_date_gmt . 'Z',
-                    'updated_at' => $post->post_modified_gmt . 'Z',
+                    ResponseKeyType::CreatedAt->value => $post->post_date_gmt . 'Z',
+                    ResponseKeyType::UpdatedAt->value => $post->post_modified_gmt . 'Z',
                 );
             }
 

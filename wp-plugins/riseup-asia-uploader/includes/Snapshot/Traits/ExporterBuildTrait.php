@@ -168,7 +168,7 @@ trait ExporterBuildTrait {
         $this->populateZipArchive($zip, $files, $incrementalData, $snapshot, $snapshotId);
         $zip->close();
 
-        $this->finalizeExportRecord($pdo, $snapshotId, $incrementalData['included_ids'], $incrementalData[ResponseKeyType::Incrementals->value], $zipPath, $zipFilename);
+        $this->finalizeExportRecord($pdo, $snapshotId, $incrementalData[ResponseKeyType::IncludedIds->value], $incrementalData[ResponseKeyType::Incrementals->value], $zipPath, $zipFilename);
         $export = $this->getValidExport($snapshotId);
 
         return ResultHelper::ok(array(
@@ -194,7 +194,7 @@ trait ExporterBuildTrait {
         return array(
             ResponseKeyType::Incrementals->value => $incrementals,
             ResponseKeyType::Files->value        => $incrementalFiles,
-            'included_ids'                       => $includedIds,
+            ResponseKeyType::IncludedIds->value  => $includedIds,
         );
     }
 
@@ -225,7 +225,7 @@ trait ExporterBuildTrait {
     ) {
         $this->addFilesToZip($zip, $files, '');
         $this->addFilesToZip($zip, $incrementalData[ResponseKeyType::Files->value], 'incremental/');
-        $this->addManifestToZip($zip, $snapshot, $snapshotId, $incrementalData['included_ids'], $incrementalData[ResponseKeyType::Incrementals->value]);
+        $this->addManifestToZip($zip, $snapshot, $snapshotId, $incrementalData[ResponseKeyType::IncludedIds->value], $incrementalData[ResponseKeyType::Incrementals->value]);
     }
 
     private function addFilesToZip(
@@ -252,14 +252,14 @@ trait ExporterBuildTrait {
     ) {
         $manifest = array(
             'version' => PluginConfigType::Version->value,
-            'created_at' => DateHelper::nowIso(),
+            ResponseKeyType::CreatedAt->value => DateHelper::nowIso(),
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Filename->value => $snapshot['filename'],
             ResponseKeyType::Scope->value => $snapshot['scope'],
             ResponseKeyType::Tables->value => json_decode($snapshot['tables_json'] ?? '[]', true),
             ResponseKeyType::TotalRows->value => (int) ($snapshot['total_rows'] ?? 0),
-            'included_ids' => $includedIds,
-            'incremental_count' => count($incrementals),
+            ResponseKeyType::IncludedIds->value => $includedIds,
+            ResponseKeyType::IncrementalCount->value => count($incrementals),
             'type' => 'full_with_incrementals',
         );
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));

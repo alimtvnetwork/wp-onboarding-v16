@@ -84,7 +84,7 @@ trait UpdraftCrudTrait {
             return array(
                 'name' => $info['Name'], ResponseKeyType::Rows->value => (int)$info['Rows'],
                 ResponseKeyType::Size->value => (int)$info['Data_length'] + (int)$info['Index_length'],
-                'is_core' => strpos($info['Name'], $wpdb->prefix) === 0,
+                ResponseKeyType::IsCore->value => strpos($info['Name'], $wpdb->prefix) === 0,
             );
         }, $all_tables);
     }
