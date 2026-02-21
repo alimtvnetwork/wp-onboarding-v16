@@ -427,6 +427,12 @@ export const ResponseKeyType = {
   ZipFailed: "zip_failed",
   SkipAudit: "skip_audit",
   TablesRestored: "tables_restored",
+
+  // Cleanup-pipeline keys
+  DeletedByPolicy: "deleted_by_policy",
+  DeletedOrphans: "deleted_orphans",
+  DeletedFailed: "deleted_failed",
+  SpaceFreedBytes: "space_freed_bytes",
 } as const;
 
 export type ResponseKeyType = (typeof ResponseKeyType)[keyof typeof ResponseKeyType];
