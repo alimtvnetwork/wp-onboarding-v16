@@ -2,9 +2,9 @@
 
 > **Enum**: `RiseupAsia\Enums\ResponseKeyType`  
 > **File**: `includes/Enums/ResponseKeyType.php`  
-> **As of**: v1.63.0  
-> **Total cases**: 43  
-> **Total usages**: ~2,150+ across 77 files
+> **As of**: v1.64.0  
+> **Total cases**: 71  
+> **Total usages**: ~2,300+ across 80+ files
 
 ---
 
@@ -93,6 +93,55 @@ Used in nearly every REST response and internal result array.
 | `DeletedOrphans` | `deleted_orphans` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
 | `DeletedFailed` | `deleted_failed` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit data |
 | `SpaceFreedBytes` | `space_freed_bytes` | ~2 files | SnapshotCleaner::runCleanup return, SchedulerExecutorTrait::runCleanup audit + log_data |
+| `Retention` | `retention` | ~3 files | SnapshotCleaner, SnapshotBackupOpsTrait, cleanup settings |
+| `Orphans` | `orphans` | ~3 files | CleanerOrphanTrait, SnapshotCleaner |
+| `Stuck` | `stuck` | ~2 files | SnapshotCleaner stuck-snapshot detection |
+| `DryRun` | `dry_run` | ~2 files | SnapshotCleaner dry-run mode flag |
+| `BytesFreed` | `bytes_freed` | ~2 files | CleanerStorageTrait, cleanup audit |
+| `Deleted` | `deleted` | ~3 files | PluginLifecycleDeleteTrait, cleanup results |
+| `Cleaned` | `cleaned` | ~2 files | CleanerOrphanTrait orphan cleanup results |
+
+---
+
+## Plugin Lifecycle Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `Activated` | `activated` | ~3 files | UploadInstallActivateTrait, plugin lifecycle responses |
+| `PluginSlug` | `plugin_slug` | ~4 files | UploadInstallActivateTrait, PluginLifecycleDeleteTrait |
+| `IsUpdate` | `is_update` | ~3 files | UploadInstallActivateTrait, upload responses |
+| `IsSelfUpdate` | `is_self_update` | ~2 files | UploadInstallActivateTrait self-update detection |
+| `PluginVersion` | `plugin_version` | ~3 files | UploadInstallActivateTrait, version detection |
+| `ActivationError` | `activation_error` | ~2 files | UploadInstallActivateTrait error capture |
+| `Inventory` | `inventory` | ~2 files | RestoreValidationTrait, import inventory |
+
+---
+
+## Log/Diagnostic Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `ErrorLog` | `error_log` | ~2 files | ErrorLogHandlerTrait log reading |
+| `FullLog` | `full_log` | ~2 files | ErrorLogHandlerTrait full content |
+| `StacktraceLog` | `stacktrace_log` | ~2 files | ErrorLogHandlerTrait stacktrace extraction |
+| `Exists` | `exists` | ~2 files | ErrorLogHandlerTrait file existence check |
+| `Content` | `content` | ~3 files | ErrorLogHandlerTrait, log content payloads |
+| `Truncated` | `truncated` | ~2 files | ErrorLogHandlerTrait large-file truncation flag |
+| `Lines` | `lines` | ~2 files | ErrorLogHandlerTrait line-based reading |
+| `TotalLines` | `total_lines` | ~2 files | ErrorLogHandlerTrait line count |
+
+---
+
+## Internal/Domain-Specific Keys
+
+| Case | Value | Usages | Primary Locations |
+|------|-------|--------|-------------------|
+| `Ids` | `ids` | ~2 files | CleanerOrphanTrait batch ID arrays |
+| `TotalSnapshots` | `total_snapshots` | ~2 files | CleanerStorageTrait storage summary |
+| `TotalSizeBytes` | `total_size_bytes` | ~2 files | CleanerStorageTrait storage metrics |
+| `TempFile` | `temp_file` | ~2 files | UploadInstallExtractTrait temp path tracking |
+| `Stmt` | `stmt` | ~2 files | IncrementalExportTrait prepared statement key |
+| `Columns` | `columns` | ~3 files | IncrementalExportTrait column metadata |
 
 ---
 

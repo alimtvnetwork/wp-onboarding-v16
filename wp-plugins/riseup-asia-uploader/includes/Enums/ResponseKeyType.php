@@ -86,6 +86,40 @@ enum ResponseKeyType: string
     case DeletedOrphans  = 'deleted_orphans';
     case DeletedFailed   = 'deleted_failed';
     case SpaceFreedBytes = 'space_freed_bytes';
+    case Retention       = 'retention';
+    case Orphans         = 'orphans';
+    case Stuck           = 'stuck';
+    case DryRun          = 'dry_run';
+    case BytesFreed      = 'bytes_freed';
+    case Deleted         = 'deleted';
+    case Cleaned         = 'cleaned';
+
+    /** Plugin lifecycle keys. */
+    case Activated       = 'activated';
+    case PluginSlug      = 'plugin_slug';
+    case IsUpdate        = 'is_update';
+    case IsSelfUpdate    = 'is_self_update';
+    case PluginVersion   = 'plugin_version';
+    case ActivationError = 'activation_error';
+    case Inventory       = 'inventory';
+
+    /** Log/diagnostic keys. */
+    case ErrorLog      = 'error_log';
+    case FullLog       = 'full_log';
+    case StacktraceLog = 'stacktrace_log';
+    case Exists        = 'exists';
+    case Content       = 'content';
+    case Truncated     = 'truncated';
+    case Lines         = 'lines';
+    case TotalLines    = 'total_lines';
+
+    /** Internal/domain-specific keys. */
+    case Ids            = 'ids';
+    case TotalSnapshots = 'total_snapshots';
+    case TotalSizeBytes = 'total_size_bytes';
+    case TempFile       = 'temp_file';
+    case Stmt           = 'stmt';
+    case Columns        = 'columns';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
