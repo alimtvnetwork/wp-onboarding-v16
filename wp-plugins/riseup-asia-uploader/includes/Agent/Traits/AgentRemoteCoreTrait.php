@@ -16,6 +16,7 @@ use WP_Error;
 use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpConfigType;
+use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
@@ -75,12 +76,14 @@ trait AgentRemoteCoreTrait {
         $baseUrl = $agent->url;
         if (BooleanHelpers::hasValue($agent->redirectUrl)) {
             $resolved = $this->resolveRedirectUrl($agent);
-            if (!is_wp_error($resolved)) {
+            $isResolved = is_wp_error($resolved) === false;
+
+            if ($isResolved) {
                 $baseUrl = $resolved;
             }
         }
 
-        return trailingslashit($baseUrl) . 'wp-json/' . ltrim($endpoint, '/');
+        return trailingslashit($baseUrl) . EndpointType::WpJson->value . ltrim($endpoint, '/');
     }
 
     private function buildAgentRequestArgs(
