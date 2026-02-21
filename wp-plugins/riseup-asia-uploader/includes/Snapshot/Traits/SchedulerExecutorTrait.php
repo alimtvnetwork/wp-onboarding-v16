@@ -94,17 +94,17 @@ trait SchedulerExecutorTrait {
         $result = SnapshotFactory::cleaner($this->logger, $this->db)->runCleanup($settings);
 
         $auditData = array(
-            'deleted_by_policy' => $result['deleted_by_policy'] ?? 0,
-            'deleted_orphans'   => $result['deleted_orphans'] ?? 0,
-            'deleted_failed'    => $result['deleted_failed'] ?? 0,
-            'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
+            ResponseKeyType::DeletedByPolicy->value => $result[ResponseKeyType::DeletedByPolicy->value] ?? 0,
+            ResponseKeyType::DeletedOrphans->value  => $result[ResponseKeyType::DeletedOrphans->value] ?? 0,
+            ResponseKeyType::DeletedFailed->value   => $result[ResponseKeyType::DeletedFailed->value] ?? 0,
+            ResponseKeyType::SpaceFreedBytes->value => $result[ResponseKeyType::SpaceFreedBytes->value] ?? 0,
         );
         $totalDeleted = array_sum(array_slice($auditData, 0, 3));
 
         $cronResult = $this->buildCronResult(ResultHelper::ok(), ActionType::SnapshotCleanup->value, TriggerSourceType::Cron->value, $auditData);
         $cronResult[ResponseKeyType::SkipAudit->value] = ($totalDeleted === 0);
         $cronResult['log_data'] = $auditData + array(
-            'space_freed'  => PathHelper::formatBytes($result['space_freed_bytes']),
+            'space_freed'  => PathHelper::formatBytes($result[ResponseKeyType::SpaceFreedBytes->value]),
             'errors_count' => count($result[ResponseKeyType::Errors->value]),
         );
 

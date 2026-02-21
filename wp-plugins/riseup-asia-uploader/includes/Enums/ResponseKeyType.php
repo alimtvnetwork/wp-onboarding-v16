@@ -81,6 +81,12 @@ enum ResponseKeyType: string
     case SkipAudit     = 'skip_audit';
     case TablesRestored = 'tables_restored';
 
+    /** Cleanup-pipeline keys. */
+    case DeletedByPolicy = 'deleted_by_policy';
+    case DeletedOrphans  = 'deleted_orphans';
+    case DeletedFailed   = 'deleted_failed';
+    case SpaceFreedBytes = 'space_freed_bytes';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
 
