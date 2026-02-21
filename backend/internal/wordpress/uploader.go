@@ -424,10 +424,10 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 
 	// Try envelope format
 	type existsResult struct {
-		PluginSlug string `json:"plugin_slug"`
+		PluginSlug string `json:"pluginSlug"`
 		Exists     bool   `json:"exists"`
 		Status     string `json:"status"`
-		PluginFile string `json:"plugin_file"`
+		PluginFile string `json:"pluginFile"`
 	}
 	if results, ok := UnwrapResults[existsResult](bodyBytes); ok && len(results) > 0 {
 		return results[0].Exists, results[0].Status, results[0].PluginFile, nil
@@ -437,7 +437,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 	var legacy struct {
 		Exists     bool   `json:"exists"`
 		Status     string `json:"status"`
-		PluginFile string `json:"plugin_file"`
+		PluginFile string `json:"pluginFile"`
 	}
 	if err := json.Unmarshal(bodyBytes, &legacy); err != nil {
 		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
@@ -791,12 +791,12 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 // ExportSelfResult represents the result of exporting the uploader plugin.
 type ExportSelfResult struct {
 	Success    bool   `json:"success"`
-	PluginName string `json:"plugin_name"`
+	PluginName string `json:"pluginName"`
 	Version    string `json:"version"`
-	PluginSlug string `json:"plugin_slug"`
-	PluginZip  string `json:"plugin_zip"` // base64 encoded
+	PluginSlug string `json:"pluginSlug"`
+	PluginZip  string `json:"pluginZip"` // base64 encoded
 	Checksum   string `json:"checksum"`
-	FileCount  int    `json:"file_count"`
+	FileCount  int    `json:"fileCount"`
 }
 
 // ExportSelfFromSite fetches the Riseup Asia Uploader plugin as a ZIP from a site.
@@ -847,8 +847,8 @@ type RemoteLogFile struct {
 	Path       string `json:"path"`
 	Content    string `json:"content"`
 	Lines      int    `json:"lines"`
-	TotalLines int    `json:"total_lines"`
-	TotalSize  int64  `json:"total_size"`
+	TotalLines int    `json:"totalLines"`
+	TotalSize  int64  `json:"totalSize"`
 	Truncated  bool   `json:"truncated"`
 }
 
@@ -857,9 +857,9 @@ type RemoteErrorLogsResult struct {
 	Success          bool                     `json:"success"`
 	Version          string                   `json:"version"`
 	Settings         ProgressDetails          `json:"settings"`
-	ErrorLog         *RemoteLogFile           `json:"error_log,omitempty"`
-	FullLog          *RemoteLogFile           `json:"full_log,omitempty"`
-	StackTraceLog    *RemoteLogFile           `json:"stacktrace_log,omitempty"`
+	ErrorLog         *RemoteLogFile           `json:"errorLog,omitempty"`
+	FullLog          *RemoteLogFile           `json:"fullLog,omitempty"`
+	StackTraceLog    *RemoteLogFile           `json:"stacktraceLog,omitempty"`
 	StackTraceFrames []PHPStackTraceFrame     `json:"stackTraceFrames,omitempty"`
 }
 
@@ -911,7 +911,7 @@ type RemoteErrorSessionEntry struct {
 	StackTrace       string                 `json:"stackTrace,omitempty"`
 	StackTraceFrames []PHPStackTraceFrame   `json:"stackTraceFrames,omitempty"`
 	Context          json.RawMessage        `json:"context,omitempty"`
-	CreatedAt        string                 `json:"created_at"`
+	CreatedAt        string                 `json:"createdAt"`
 }
 
 // RemoteFlashState represents the flash notification state from the plugin.

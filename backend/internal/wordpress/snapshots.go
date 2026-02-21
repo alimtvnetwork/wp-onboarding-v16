@@ -23,10 +23,10 @@ type SnapshotRecord struct {
 	Scope     string `json:"scope"`
 	Provider  string `json:"provider"`
 	Status    string `json:"status"`
-	FileSize  int64  `json:"file_size"`
-	TotalRows int    `json:"total_rows"`
+	FileSize  int64  `json:"fileSize"`
+	TotalRows int    `json:"totalRows"`
 	Tables    string `json:"tables"`
-	CreatedAt string `json:"created_at"`
+	CreatedAt string `json:"createdAt"`
 	Error     string `json:"error,omitempty"`
 }
 
@@ -34,14 +34,14 @@ type SnapshotRecord struct {
 type SnapshotSettings struct {
 	Provider      string `json:"provider"`
 	Schedule      string `json:"schedule"`
-	ScheduleTime  string `json:"schedule_time,omitempty"`
-	ScheduleDay   string `json:"schedule_day,omitempty"`
+	ScheduleTime  string `json:"scheduleTime,omitempty"`
+	ScheduleDay   string `json:"scheduleDay,omitempty"`
 	Scope         string `json:"scope"`
-	RetentionType string `json:"retention_type"`
-	RetentionDays int    `json:"retention_days,omitempty"`
-	RetentionMax  int    `json:"retention_max,omitempty"`
-	PreRestore    bool   `json:"pre_restore_backup"`
-	BatchSize     int    `json:"batch_size,omitempty"`
+	RetentionType string `json:"retentionType"`
+	RetentionDays int    `json:"retentionDays,omitempty"`
+	RetentionMax  int    `json:"retentionMax,omitempty"`
+	PreRestore    bool   `json:"preRestoreBackup"`
+	BatchSize     int    `json:"batchSize,omitempty"`
 }
 
 // SnapshotProvider represents an available snapshot provider.
@@ -54,12 +54,12 @@ type SnapshotProvider struct {
 
 // SnapshotStorageStats represents storage statistics.
 type SnapshotStorageStats struct {
-	TotalSnapshots int    `json:"total_snapshots"`
-	TotalSize      int64  `json:"total_size"`
-	TotalSizeHuman string `json:"total_size_human"`
-	DiskFreeSpace  int64  `json:"disk_free_space"`
-	OldestAt       string `json:"oldest_at,omitempty"`
-	NewestAt       string `json:"newest_at,omitempty"`
+	TotalSnapshots int    `json:"totalSnapshots"`
+	TotalSize      int64  `json:"totalSize"`
+	TotalSizeHuman string `json:"totalSizeHuman"`
+	DiskFreeSpace  int64  `json:"diskFreeSpace"`
+	OldestAt       string `json:"oldestAt,omitempty"`
+	NewestAt       string `json:"newestAt,omitempty"`
 }
 
 // AvailableTable represents a database table available for snapshotting.
@@ -67,7 +67,7 @@ type AvailableTable struct {
 	Name   string `json:"name"`
 	Rows   int    `json:"rows"`
 	Size   int64  `json:"size"`
-	IsCore bool   `json:"is_core"`
+	IsCore bool   `json:"isCore"`
 }
 
 // snapshotEndpoint builds the full endpoint path for snapshot operations using fixed paths.
@@ -160,7 +160,7 @@ type SnapshotCreateOptions struct {
 // SnapshotCreateResult holds the result of a create snapshot request.
 type SnapshotCreateResult struct {
 	Success    bool   `json:"success"`
-	SnapshotID int64  `json:"snapshot_id,omitempty"`
+	SnapshotID int64  `json:"snapshotId,omitempty"`
 	Message    string `json:"message,omitempty"`
 	Status     string `json:"status,omitempty"`
 }
@@ -356,8 +356,8 @@ type SnapshotDownloadResult struct {
 	Filename         string `json:"filename"`
 	Size             int64  `json:"size"`
 	Cached           bool   `json:"cached"`
-	IncludedIDs      []int  `json:"included_ids,omitempty"`
-	IncrementalCount int    `json:"incremental_count,omitempty"`
+	IncludedIDs      []int  `json:"includedIds,omitempty"`
+	IncrementalCount int    `json:"incrementalCount,omitempty"`
 }
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot via POST /snapshots/download.
@@ -488,7 +488,7 @@ type SnapshotBackupOptions struct {
 // SnapshotBackupResult holds the result of a backup operation.
 type SnapshotBackupResult struct {
 	Success    bool   `json:"success"`
-	SnapshotID int64  `json:"snapshot_id,omitempty"`
+	SnapshotID int64  `json:"snapshotId,omitempty"`
 	Message    string `json:"message,omitempty"`
 	Status     string `json:"status,omitempty"`
 }

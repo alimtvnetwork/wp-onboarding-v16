@@ -237,8 +237,8 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	}
 
 	// Add plugin slug field
-	if err := writer.WriteField("plugin_slug", pluginSlug); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write plugin_slug field")
+	if err := writer.WriteField("pluginSlug", pluginSlug); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write pluginSlug field")
 	}
 
 	// Add overwrite=true to replace existing

@@ -226,12 +226,12 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read snapshot_id from POST body
+	// Read snapshotId from POST body
 	var body struct {
-		SnapshotID int64 `json:"snapshot_id"`
+		SnapshotID int64 `json:"snapshotId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotID <= 0 {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid or missing snapshot_id")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid or missing snapshotId")
 		return
 	}
 
