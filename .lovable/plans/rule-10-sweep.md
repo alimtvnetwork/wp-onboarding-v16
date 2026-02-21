@@ -21,7 +21,7 @@
   - Worker*, Cleaner*, Scheduler*, Restore* (Worker/Cleaner/Scheduler sweep)
   - Analyzer*, Detector*, ExporterBuild*, ExporterPublicApi*, Import*, IncrementalCore*, IncrementalDelta*, IncrementalExport*, IncrementalRegistration*, Manager*, NativeSnapshotCrud*, NativeSnapshotExec* (final sweep)
 - [x] **Traits/Route/** — 2 files — already clean, no violations found
-- [ ] **Admin/Traits/** — ~9 files — likely `$result = ...; if(is_wp_error(...))` patterns
+- [x] **Admin/Traits/** — 6 files fixed (R9c inline arrays, R10 blank lines, R9b sprintf) — AdminAjaxSnapshotTrait, AdminErrorAjaxTrait, AdminErrorRenderTrait, AdminErrorStateTrait, AdminMenuTrait
 - [ ] **Logging/Traits/** — ~7 files
 - [ ] **Helpers/Traits/** — ~3 files
 - [ ] **Agent/Traits/** — remaining files (AgentRemoteCoreTrait, AgentCrudTrait, AgentCrudReadTrait, AgentLoggingTrait, AgentRemoteTrait)
