@@ -65,13 +65,13 @@ trait WorkerBatchProcessTrait {
         int $jobId,
         array $job,
     ): void {
-        $all_tables  = json_decode($job['tables_json'], true);
-        $pool_size   = (int) $job['pool_size'];
-        $batch_index = (int) $job['current_batch'];
+        $all_tables  = json_decode($job['TablesJson'], true);
+        $pool_size   = (int) $job['PoolSize'];
+        $batch_index = (int) $job['CurrentBatch'];
         $batches     = array_chunk($all_tables, $pool_size);
 
         if ($batch_index >= count($batches)) {
-            $this->finalizeJob($pdo, $jobId, $job['snapshot_dir']);
+            $this->finalizeJob($pdo, $jobId, $job['SnapshotDir']);
 
             return;
         }
@@ -80,8 +80,8 @@ trait WorkerBatchProcessTrait {
             $batch_index + 1, count($batches), count($batches[$batch_index])
         ));
 
-        $rootPdo = $this->openRootDbForBatch($job['snapshot_dir']);
-        $result = $this->exportBatchTables($batches[$batch_index], $job['snapshot_dir'], $rootPdo);
+        $rootPdo = $this->openRootDbForBatch($job['SnapshotDir']);
+        $result = $this->exportBatchTables($batches[$batch_index], $job['SnapshotDir'], $rootPdo);
         $rootPdo = null;
 
         $this->updateJobBatchProgress($pdo, $jobId, $batch_index + 1, $result[ResponseKeyType::Exported->value], $result[ResponseKeyType::Rows->value], $result[ResponseKeyType::Errors->value]);
@@ -91,7 +91,7 @@ trait WorkerBatchProcessTrait {
             $this->scheduleNextBatch($jobId);
             $this->log(LogLevelType::Info->value, sprintf('Next batch scheduled (%d/%d)', $next_batch + 1, count($batches)));
         } else {
-            $this->finalizeJob($pdo, $jobId, $job['snapshot_dir']);
+            $this->finalizeJob($pdo, $jobId, $job['SnapshotDir']);
         }
     }
 

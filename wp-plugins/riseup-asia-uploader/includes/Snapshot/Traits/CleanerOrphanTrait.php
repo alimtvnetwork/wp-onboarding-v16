@@ -23,8 +23,8 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanFiles(bool $dryRun = false): array {
         $result = array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Errors->value => array());
 
-        $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
-        $known_paths = array_map(function ($f) { return $f['filepath']; }, $files);
+        $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
+        $known_paths = array_map(function ($f) { return $f['Filepath']; }, $files);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (PathHelper::isDirMissing($scan_dir)) {
@@ -67,8 +67,8 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanSqliteFiles(bool $dryRun = false): array {
         $result = array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Errors->value => array());
 
-        $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
-        $known_files = array_map(function ($f) { return $f['filename']; }, $files);
+        $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
+        $known_files = array_map(function ($f) { return $f['Filename']; }, $files);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (PathHelper::isDirMissing($scan_dir)) {
@@ -113,8 +113,8 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanDirectories(bool $dryRun = false): array {
         $result = array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Errors->value => array());
 
-        $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
-        $known_paths = array_map(function ($f) { return dirname($f['filepath']); }, $files);
+        $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
+        $known_paths = array_map(function ($f) { return dirname($f['Filepath']); }, $files);
         $known_paths = array_unique($known_paths);
 
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
@@ -169,8 +169,8 @@ trait CleanerOrphanTrait {
         $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
 
         $stuck = $this->db->queryAll(
-            'SELECT id, filepath, filename, status FROM ' . TableType::Snapshots->value .
-            ' WHERE status IN (?, ?, ?) AND created_at < ?',
+            'SELECT Id, Filepath, Filename, Status FROM ' . TableType::Snapshots->value .
+            ' WHERE Status IN (?, ?, ?) AND CreatedAt < ?',
             array(
                 SnapshotStatusType::Pending->value,
                 SnapshotStatusType::Running->value,
@@ -180,22 +180,22 @@ trait CleanerOrphanTrait {
         ) ?: array();
 
         foreach ($stuck as $snapshot) {
-            $result[ResponseKeyType::Ids->value][] = (int) $snapshot['id'];
+            $result[ResponseKeyType::Ids->value][] = (int) $snapshot['Id'];
             $isLiveRun = ($dryRun === false);
 
             if ($isLiveRun) {
                 $this->db->execute(
-                    'UPDATE ' . TableType::Snapshots->value . ' SET status = ?, error = ? WHERE id = ?',
+                    'UPDATE ' . TableType::Snapshots->value . ' SET Status = ?, Error = ? WHERE Id = ?',
                     array(
                         SnapshotStatusType::Failed->value,
                         "Auto-cleaned: stuck for >{$stuck_hours} hours",
-                        $snapshot['id']
+                        $snapshot['Id']
                     )
                 );
 
                 $this->log(LogLevelType::Warn->value, 'Stuck snapshot marked as failed', array(
-                    'id'     => $snapshot['id'],
-                    'status' => $snapshot['status'],
+                    'id'     => $snapshot['Id'],
+                    'status' => $snapshot['Status'],
                 ));
             }
 

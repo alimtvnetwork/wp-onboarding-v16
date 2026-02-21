@@ -61,7 +61,7 @@ trait DatabaseQuerySearchTrait {
         $this->applyFilters($dataQuery, $filters);
 
         $total = $countQuery->count();
-        $logs = $dataQuery->orderByDesc('created_at')->limit($limit)->offset($offset)->findMany();
+        $logs = $dataQuery->orderByDesc('CreatedAt')->limit($limit)->offset($offset)->findMany();
 
         $this->decodeLogDetails($logs);
         $this->fileLogger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
@@ -71,9 +71,9 @@ trait DatabaseQuerySearchTrait {
 
     private function decodeLogDetails(array &$logs): void {
         foreach ($logs as &$log) {
-            $hasDetails = BooleanHelpers::hasValue($log['details'] ?? null);
+            $hasDetails = BooleanHelpers::hasValue($log['Details'] ?? null);
             if ($hasDetails) {
-                $log['details'] = json_decode($log['details'], true);
+                $log['Details'] = json_decode($log['Details'], true);
             }
         }
     }
@@ -87,56 +87,56 @@ trait DatabaseQuerySearchTrait {
     private function applyEqualityFilters(RiseupORM $query, array $filters): void {
         $hasPlugin = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Plugin->value);
         if ($hasPlugin) {
-            $query->where('plugin_slug', $filters[FilterKeyType::Plugin->value]);
+            $query->where('PluginSlug', $filters[FilterKeyType::Plugin->value]);
         }
 
         $hasAction = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Action->value);
         if ($hasAction) {
             $actions = array_map('trim', explode(',', $filters[FilterKeyType::Action->value]));
             if (count($actions) === 1) {
-                $query->where('action', $actions[0]);
+                $query->where('Action', $actions[0]);
             } else {
-                $query->whereIn('action', $actions);
+                $query->whereIn('Action', $actions);
             }
         }
 
         $hasUser = BooleanHelpers::hasFilterValue($filters, FilterKeyType::User->value);
         if ($hasUser) {
-            $query->where('user_login', $filters[FilterKeyType::User->value]);
+            $query->where('UserLogin', $filters[FilterKeyType::User->value]);
         }
 
         $hasStatus = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Status->value);
         if ($hasStatus) {
-            $query->where('status', $filters[FilterKeyType::Status->value]);
+            $query->where('Status', $filters[FilterKeyType::Status->value]);
         }
 
         $hasTriggeredBy = BooleanHelpers::hasFilterValue($filters, FilterKeyType::TriggeredBy->value);
         if ($hasTriggeredBy) {
-            $query->where('triggered_by', $filters[FilterKeyType::TriggeredBy->value]);
+            $query->where('TriggeredBy', $filters[FilterKeyType::TriggeredBy->value]);
         }
 
         $hasUploadSource = BooleanHelpers::hasFilterValue($filters, FilterKeyType::UploadSource->value);
         if ($hasUploadSource) {
-            $query->where('upload_source', $filters[FilterKeyType::UploadSource->value]);
+            $query->where('UploadSource', $filters[FilterKeyType::UploadSource->value]);
         }
     }
 
     private function applyDateRangeFilters(RiseupORM $query, array $filters): void {
         $hasFrom = BooleanHelpers::hasFilterValue($filters, FilterKeyType::From->value);
         if ($hasFrom) {
-            $query->whereGte('created_at', $filters[FilterKeyType::From->value] . 'T00:00:00Z');
+            $query->whereGte('CreatedAt', $filters[FilterKeyType::From->value] . 'T00:00:00Z');
         }
 
         $hasTo = BooleanHelpers::hasFilterValue($filters, FilterKeyType::To->value);
         if ($hasTo) {
-            $query->whereLte('created_at', $filters[FilterKeyType::To->value] . 'T23:59:59Z');
+            $query->whereLte('CreatedAt', $filters[FilterKeyType::To->value] . 'T23:59:59Z');
         }
     }
 
     private function applyTextFilters(RiseupORM $query, array $filters): void {
         $hasSourceMachine = BooleanHelpers::hasFilterValue($filters, FilterKeyType::SourceMachine->value);
         if ($hasSourceMachine) {
-            $query->whereLike('source_machine', '%' . $filters[FilterKeyType::SourceMachine->value] . '%');
+            $query->whereLike('SourceMachine', '%' . $filters[FilterKeyType::SourceMachine->value] . '%');
         }
     }
 
@@ -149,10 +149,10 @@ trait DatabaseQuerySearchTrait {
         try {
             return array(
                 'total_transactions' => Orm::forTable(TableType::Transactions->value)->count(),
-                'by_action'          => $this->countByColumn('action'),
-                'by_status'          => $this->countByColumn('status'),
+                'by_action'          => $this->countByColumn('Action'),
+                'by_status'          => $this->countByColumn('Status'),
                 'last_24h'           => Orm::forTable(TableType::Transactions->value)
-                    ->whereGte('created_at', DateHelper::formatUtc(time() - DAY_IN_SECONDS))
+                    ->whereGte('CreatedAt', DateHelper::formatUtc(time() - DAY_IN_SECONDS))
                     ->count(),
             );
         } catch (Throwable $e) {
@@ -184,7 +184,7 @@ trait DatabaseQuerySearchTrait {
             $cutoff = DateHelper::formatUtc(time() - ($daysToKeep * DAY_IN_SECONDS));
 
             $deleted = Orm::forTable(TableType::Transactions->value)
-                ->whereLt('created_at', $cutoff)
+                ->whereLt('CreatedAt', $cutoff)
                 ->delete();
 
             $this->fileLogger->info('Cleanup complete', array('deleted' => $deleted));

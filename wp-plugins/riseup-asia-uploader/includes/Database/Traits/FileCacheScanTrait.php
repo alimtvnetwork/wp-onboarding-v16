@@ -83,9 +83,9 @@ trait FileCacheScanTrait {
 
         if (isset($cachedEntries[$path])) {
             $cached = $cachedEntries[$path];
-            if ($cached['modified_at'] === $mtimeStr && (int) $cached['file_size'] === $fileInfo['size']) {
+            if ($cached['ModifiedAt'] === $mtimeStr && (int) $cached['FileSize'] === $fileInfo['size']) {
                 return array(
-                    'file'   => array('path' => $path, 'hash' => $cached['md5_hash'], 'modifiedAt' => $mtimeStr, 'size' => (int) $cached['file_size']),
+                    'file'   => array('path' => $path, 'hash' => $cached['Md5Hash'], 'modifiedAt' => $mtimeStr, 'size' => (int) $cached['FileSize']),
                     'cached' => true,
                 );
             }

@@ -67,7 +67,7 @@ trait CleanerRetentionTrait {
             }
 
             $result['details'][] = array(
-                'id' => $snapshot['id'], ResponseKeyType::Filename->value => $snapshot['filename'] ?? '', ResponseKeyType::Reason->value => $reason,
+                'id' => $snapshot['Id'], ResponseKeyType::Filename->value => $snapshot['Filename'] ?? '', ResponseKeyType::Reason->value => $reason,
             );
 
             $this->applyRetentionDelete($snapshot, $dryRun, $result);
@@ -83,7 +83,7 @@ trait CleanerRetentionTrait {
     ): void {
         if ($dryRun) {
             $result['deleted']++;
-            $result['bytes_freed'] += $snapshot[ResponseKeyType::Size->value] ?? 0;
+            $result['bytes_freed'] += $snapshot['FileSize'] ?? 0;
 
             return;
         }
@@ -96,7 +96,7 @@ trait CleanerRetentionTrait {
     }
 
     private function isMasterSnapshot(array $snap): bool {
-        $resolvedScope = isset($snap['scope']) ? SnapshotModeType::tryFrom($snap['scope']) : null;
+        $resolvedScope = isset($snap['Scope']) ? SnapshotModeType::tryFrom($snap['Scope']) : null;
         $isScopeFull = ($resolvedScope !== null && $resolvedScope->isFull());
         if ($isScopeFull) {
 
@@ -117,15 +117,15 @@ trait CleanerRetentionTrait {
         $cutoff = date('c', strtotime("-{$days} days"));
 
         return $this->db->queryAll(
-            'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
-            ' WHERE status = ? AND created_at < ? ORDER BY created_at ASC',
+            'SELECT Id, Filepath, Filename, FileSize, Scope FROM ' . TableType::Snapshots->value .
+            ' WHERE Status = ? AND CreatedAt < ? ORDER BY CreatedAt ASC',
             array(SnapshotStatusType::Complete->value, $cutoff)
         ) ?: array();
     }
 
     private function getSnapshotsBeyondCount(int $count): array {
         $total_result = $this->db->querySingle(
-            'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE status = ?',
+            'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE Status = ?',
             array(SnapshotStatusType::Complete->value)
         );
 
@@ -138,8 +138,8 @@ trait CleanerRetentionTrait {
         $to_delete = $total_result['cnt'] - $count;
 
         return $this->db->queryAll(
-            'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
-            ' WHERE status = ? ORDER BY created_at ASC LIMIT ?',
+            'SELECT Id, Filepath, Filename, FileSize, Scope FROM ' . TableType::Snapshots->value .
+            ' WHERE Status = ? ORDER BY CreatedAt ASC LIMIT ?',
             array(SnapshotStatusType::Complete->value, $to_delete)
         ) ?: array();
     }

@@ -22,17 +22,17 @@ use RiseupAsia\Helpers\DateHelper;
 trait AgentLoggingTrait {
 
     private const ACTION_INSERT_QUERY = <<<'SQL'
-        INSERT INTO agent_actions
-            (agent_site_id, action, target_plugin, status, details, error_msg, created_at)
+        INSERT INTO AgentActions
+            (AgentSiteId, Action, TargetPlugin, Status, Details, ErrorMsg, CreatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     SQL;
 
-    private const ACTION_COUNT_QUERY = 'SELECT COUNT(*) as total FROM agent_actions WHERE agent_site_id = ?';
+    private const ACTION_COUNT_QUERY = 'SELECT COUNT(*) as total FROM AgentActions WHERE AgentSiteId = ?';
 
     private const ACTION_LIST_QUERY = <<<'SQL'
-        SELECT * FROM agent_actions
-        WHERE agent_site_id = ?
-        ORDER BY created_at DESC
+        SELECT * FROM AgentActions
+        WHERE AgentSiteId = ?
+        ORDER BY CreatedAt DESC
         LIMIT ? OFFSET ?
     SQL;
 
@@ -133,8 +133,8 @@ trait AgentLoggingTrait {
 
     private function decodeActionDetails(array &$actions): void {
         foreach ($actions as &$action) {
-            if (BooleanHelpers::hasValue($action['details'])) {
-                $action['details'] = json_decode($action['details'], true);
+            if (BooleanHelpers::hasValue($action['Details'])) {
+                $action['Details'] = json_decode($action['Details'], true);
             }
         }
     }

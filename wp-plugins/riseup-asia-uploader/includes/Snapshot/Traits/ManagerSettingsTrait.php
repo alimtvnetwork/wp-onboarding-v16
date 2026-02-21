@@ -24,6 +24,7 @@ use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
+use RiseupAsia\Enums\TableType;
 
 trait ManagerSettingsTrait {
 
@@ -60,15 +61,15 @@ trait ManagerSettingsTrait {
         }
 
         try {
-            $rows = $pdo->query("SELECT key, value, type FROM snapshot_settings")->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $pdo->query("SELECT Key, Value, Type FROM " . TableType::SnapshotSettings->value)->fetchAll(PDO::FETCH_ASSOC);
             $settings = array();
             foreach ($rows as $row) {
-                $key = str_replace('snapshot.', '', $row['key']);
-                $settings[$key] = $this->castSettingValue($row['value'], $row['type']);
+                $key = str_replace('snapshot.', '', $row['Key']);
+                $settings[$key] = $this->castSettingValue($row['Value'], $row['Type']);
             }
             return $settings;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to read snapshot_settings from SQLite', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Failed to read SnapshotSettings from SQLite', array('error' => $e->getMessage()));
             return array();
         }
     }
@@ -79,7 +80,7 @@ trait ManagerSettingsTrait {
         if ($pdo) {
             try {
                 $now = DateHelper::nowUtc();
-                $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_settings (key, value, type, updated_at) VALUES (?, ?, ?, ?)");
+                $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TableType::SnapshotSettings->value . " (Key, Value, Type, UpdatedAt) VALUES (?, ?, ?, ?)");
 
                 foreach ($settings as $key => $value) {
                     $dbKey = 'snapshot.' . $key;
@@ -88,7 +89,7 @@ trait ManagerSettingsTrait {
                     $stmt->execute(array($dbKey, $dbValue, $type, $now));
                 }
             } catch (Throwable $e) {
-                $this->log(LogLevelType::Error->value, 'Failed to update snapshot_settings', array('error' => $e->getMessage()));
+                $this->log(LogLevelType::Error->value, 'Failed to update SnapshotSettings', array('error' => $e->getMessage()));
             }
         }
 

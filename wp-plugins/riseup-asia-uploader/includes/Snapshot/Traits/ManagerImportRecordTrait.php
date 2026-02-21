@@ -20,7 +20,7 @@ use RiseupAsia\Enums\TableType;
 trait ManagerImportRecordTrait {
 
     private function getNextImportSequence(): int {
-        $result = $this->db->querySingle('SELECT MAX(sequence) as max_seq FROM ' . TableType::Snapshots->value);
+        $result = $this->db->querySingle('SELECT MAX(Sequence) as max_seq FROM ' . TableType::Snapshots->value);
 
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
@@ -45,13 +45,13 @@ trait ManagerImportRecordTrait {
         string $filepath,
     ): array {
         return array(
-            ResponseKeyType::Sequence->value => $sequence, ResponseKeyType::Filename->value => $filename, 'filepath' => $filepath,
-            'provider' => SnapshotProviderType::Native->value, ResponseKeyType::Scope->value => $snapshotData['scope'],
-            'tables_json' => json_encode($snapshotData['tables']),
-            ResponseKeyType::TotalRows->value => $snapshotData['total_rows'] ?? 0, ResponseKeyType::FileSize->value => filesize($filepath),
-            'trigger_source' => 'import', 'status' => SnapshotStatusType::Complete->value,
-            'created_at' => date('c'), 'completed_at' => date('c'),
-            'import_source' => json_encode(array(
+            'Sequence' => $sequence, 'Filename' => $filename, 'Filepath' => $filepath,
+            'Provider' => SnapshotProviderType::Native->value, 'Scope' => $snapshotData['scope'],
+            'TablesJson' => json_encode($snapshotData['tables']),
+            'TotalRows' => $snapshotData['total_rows'] ?? 0, 'FileSize' => filesize($filepath),
+            'TriggerSource' => 'import', 'Status' => SnapshotStatusType::Complete->value,
+            'CreatedAt' => date('c'), 'CompletedAt' => date('c'),
+            'ImportSource' => json_encode(array(
                 'original_id' => $snapshotData['id'] ?? null,
                 'original_created_at' => $snapshotData['created_at'] ?? null,
                 'source_site' => $manifest['source']['site_url'] ?? null,

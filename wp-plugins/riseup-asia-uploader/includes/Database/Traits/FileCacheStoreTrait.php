@@ -27,7 +27,7 @@ trait FileCacheStoreTrait {
 
         try {
             $deleted = Orm::forTable(TableType::FileCache->value)
-                ->where('plugin_slug', $pluginSlug)
+                ->where('PluginSlug', $pluginSlug)
                 ->delete();
 
             $this->logger->info('FileCache: Cache invalidated', array(
@@ -49,12 +49,12 @@ trait FileCacheStoreTrait {
     private function loadCachedEntries(string $pluginSlug): array {
         try {
             $rows = Orm::forTable(TableType::FileCache->value)
-                ->where('plugin_slug', $pluginSlug)
+                ->where('PluginSlug', $pluginSlug)
                 ->findMany();
 
             $entries = array();
             foreach ($rows as $row) {
-                $entries[$row['relative_path']] = $row;
+                $entries[$row['RelativePath']] = $row;
             }
 
             return $entries;
@@ -86,7 +86,7 @@ trait FileCacheStoreTrait {
 
             $stmt = $pdo->prepare(
                 "INSERT OR REPLACE INTO " . TableType::FileCache->value .
-                " (plugin_slug, relative_path, md5_hash, modified_at, file_size, cached_at)" .
+                " (PluginSlug, RelativePath, Md5Hash, ModifiedAt, FileSize, CachedAt)" .
                 " VALUES (?, ?, ?, ?, ?, ?)"
             );
             $stmt->execute(array($pluginSlug, $path, $hash, $modifiedAt, $size, $now));
@@ -101,8 +101,8 @@ trait FileCacheStoreTrait {
     private function deleteCacheEntry(string $pluginSlug, string $path): void {
         try {
             Orm::forTable(TableType::FileCache->value)
-                ->where('plugin_slug', $pluginSlug)
-                ->where('relative_path', $path)
+                ->where('PluginSlug', $pluginSlug)
+                ->where('RelativePath', $path)
                 ->delete();
         } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to delete entry', array(

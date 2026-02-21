@@ -41,7 +41,7 @@ trait ManagerExportTrait {
             );
         }
 
-        $filepath = $snapshot['filepath'];
+        $filepath = $snapshot['Filepath'];
         if (PathHelper::isFileMissing($filepath)) {
             return ResultHelper::error(ResponseMessageType::SnapshotFileMissing->value);
         }
@@ -87,15 +87,15 @@ trait ManagerExportTrait {
             'created_at' => date('c'),
             'exported_at' => date('c'),
             'snapshot' => array(
-                'id' => $snapshot['id'],
-                ResponseKeyType::Sequence->value => $snapshot['sequence'],
-                ResponseKeyType::Filename->value => $snapshot['filename'],
-                ResponseKeyType::Scope->value => $snapshot['scope'],
-                'provider' => $snapshot['provider'],
-                ResponseKeyType::Tables->value => json_decode($snapshot['tables_json'], true),
-                ResponseKeyType::TotalRows->value => $snapshot['total_rows'],
-                ResponseKeyType::FileSize->value => $snapshot['file_size'],
-                'created_at' => $snapshot['created_at'],
+                'id' => $snapshot['Id'],
+                ResponseKeyType::Sequence->value => $snapshot['Sequence'],
+                ResponseKeyType::Filename->value => $snapshot['Filename'],
+                ResponseKeyType::Scope->value => $snapshot['Scope'],
+                'provider' => $snapshot['Provider'],
+                ResponseKeyType::Tables->value => json_decode($snapshot['TablesJson'], true),
+                ResponseKeyType::TotalRows->value => $snapshot['TotalRows'],
+                ResponseKeyType::FileSize->value => $snapshot['FileSize'],
+                'created_at' => $snapshot['CreatedAt'],
             ),
             'source' => array(
                 'wp_version' => get_bloginfo('version'),
