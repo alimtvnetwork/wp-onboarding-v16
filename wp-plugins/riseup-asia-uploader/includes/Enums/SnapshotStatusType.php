@@ -12,14 +12,20 @@ namespace RiseupAsia\Enums;
  */
 enum SnapshotStatusType: string
 {
-    case Pending   = 'pending';
-    case Scheduled = 'scheduled';
-    case Running   = 'running';
-    case Complete  = 'complete';
-    case Failed    = 'failed';
+    case Pending   = 'Pending';
+    case Scheduled = 'Scheduled';
+    case Running   = 'Running';
+    case Complete  = 'Complete';
+    case Failed    = 'Failed';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 
     public function isPending(): bool   { return $this->isEqual(self::Pending); }
     public function isScheduled(): bool { return $this->isEqual(self::Scheduled); }
@@ -29,8 +35,6 @@ enum SnapshotStatusType: string
 
     public function isActive(): bool
     {
-        return $this->isEqual(self::Pending)
-            || $this->isEqual(self::Scheduled)
-            || $this->isEqual(self::Running);
+        return $this->isAnyOf(self::Pending, self::Scheduled, self::Running);
     }
 }

@@ -19,8 +19,8 @@ if (!defined('ABSPATH')) {
  */
 enum StatusType: string
 {
-    case Success = 'success';
-    case Failed  = 'failed';
+    case Success = 'Success';
+    case Failed  = 'Failed';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
@@ -32,6 +32,12 @@ enum StatusType: string
     public function isOtherThan(self $other): bool
     {
         return $this !== $other;
+    }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
     }
 
     /** Check if this status indicates success. */

@@ -12,12 +12,18 @@ namespace RiseupAsia\Enums;
  */
 enum SnapshotWorkerModeType: string
 {
-    case PerTable = 'per_table';
-    case Single   = 'single';
-    case Legacy   = 'legacy';
+    case PerTable = 'PerTable';
+    case Single   = 'Single';
+    case Legacy   = 'Legacy';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 
     public function isPerTable(): bool { return $this->isEqual(self::PerTable); }
     public function isSingle(): bool   { return $this->isEqual(self::Single); }

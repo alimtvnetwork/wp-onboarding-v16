@@ -49,10 +49,16 @@ enum WpErrorCodeType: string
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Check if this code represents an authentication/authorization error. */
     public function isAuthError(): bool
     {
-        return $this->isEqual(self::RestForbidden) || $this->isEqual(self::RestDisabled);
+        return $this->isAnyOf(self::RestForbidden, self::RestDisabled);
     }
 
     /** Check if this code represents a database error. */
@@ -64,13 +70,17 @@ enum WpErrorCodeType: string
     /** Check if this code represents a validation error. */
     public function isValidationError(): bool
     {
-        return $this->isEqual(self::MissingFields) || $this->isEqual(self::NoData);
+        return $this->isAnyOf(self::MissingFields, self::NoData);
     }
 
     /** Check if this code represents a network/HTTP error. */
     public function isNetworkError(): bool
     {
-        return $this->isEqual(self::ApiError) || $this->isEqual(self::HttpError)
-            || $this->isEqual(self::MaxRedirects) || $this->isEqual(self::NoLocation);
+        return $this->isAnyOf(
+            self::ApiError,
+            self::HttpError,
+            self::MaxRedirects,
+            self::NoLocation,
+        );
     }
 }

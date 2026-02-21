@@ -59,9 +59,15 @@ enum ResponseMessageType: string
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Check if this is an error/failure message. */
     public function isFailure(): bool
     {
-        return $this !== self::Success && $this !== self::FileIgnored;
+        return !$this->isAnyOf(self::Success, self::FileIgnored);
     }
 }

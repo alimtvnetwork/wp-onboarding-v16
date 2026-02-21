@@ -63,6 +63,12 @@ enum HookType: string
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /**
      * Build an authenticated AJAX hook name.
      *

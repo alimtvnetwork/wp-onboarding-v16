@@ -20,15 +20,27 @@ if (!defined('ABSPATH')) {
  */
 enum LogLevelType: string
 {
-    case Debug = 'DEBUG';
-    case Info  = 'INFO';
-    case Warn  = 'WARN';
-    case Error = 'ERROR';
+    case Debug = 'Debug';
+    case Info  = 'Info';
+    case Warn  = 'Warn';
+    case Error = 'Error';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
     {
         return $this === $other;
+    }
+
+    /** Check if this enum case differs from the given case. */
+    public function isOtherThan(self $other): bool
+    {
+        return $this !== $other;
+    }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
     }
 
     /** Check if this level is Error. */
@@ -58,6 +70,6 @@ enum LogLevelType: string
     /** Check if this level is Error or Warn. */
     public function isErrorOrWarn(): bool
     {
-        return $this->isEqual(self::Error) || $this->isEqual(self::Warn);
+        return $this->isAnyOf(self::Error, self::Warn);
     }
 }

@@ -12,12 +12,18 @@ namespace RiseupAsia\Enums;
  */
 enum PluginSelectionType: string
 {
-    case All    = 'all';
-    case Active = 'active';
-    case None   = 'none';
+    case All    = 'All';
+    case Active = 'Active';
+    case None   = 'None';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
+
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
 
     public function isAll(): bool    { return $this->isEqual(self::All); }
     public function isActive(): bool { return $this->isEqual(self::Active); }

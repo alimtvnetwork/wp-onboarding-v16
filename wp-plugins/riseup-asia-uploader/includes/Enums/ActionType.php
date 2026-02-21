@@ -20,62 +20,62 @@ if (!defined('ABSPATH')) {
 enum ActionType: string
 {
     // Core plugin actions
-    case Upload           = 'upload';
-    case UploadActive     = 'upload_active';
-    case UploadInitiated  = 'upload_initiated';
-    case Enable           = 'enable';
-    case Disable          = 'disable';
-    case Delete           = 'delete';
-    case FileReplace      = 'file_replace';
-    case FileDelete       = 'file_delete';
-    case Sync             = 'sync';
-    case SyncDelete       = 'sync_delete';
+    case Upload           = 'Upload';
+    case UploadActive     = 'UploadActive';
+    case UploadInitiated  = 'UploadInitiated';
+    case Enable           = 'Enable';
+    case Disable          = 'Disable';
+    case Delete           = 'Delete';
+    case FileReplace      = 'FileReplace';
+    case FileDelete       = 'FileDelete';
+    case Sync             = 'Sync';
+    case SyncDelete       = 'SyncDelete';
 
     // Post/content actions
-    case PostCreate       = 'post_create';
-    case PostUpdate       = 'post_update';
-    case CategoryCreate   = 'category_create';
-    case MediaUpload      = 'media_upload';
+    case PostCreate       = 'PostCreate';
+    case PostUpdate       = 'PostUpdate';
+    case CategoryCreate   = 'CategoryCreate';
+    case MediaUpload      = 'MediaUpload';
 
     // Auth
-    case AuthFailed       = 'auth_failed';
+    case AuthFailed       = 'AuthFailed';
 
     // Export actions
-    case ExportSelf       = 'export_self';
-    case ExportPlugin     = 'export_plugin';
+    case ExportSelf       = 'ExportSelf';
+    case ExportPlugin     = 'ExportPlugin';
 
     // Update actions
-    case UpdateCheck      = 'update_check';
-    case UpdateResolve    = 'update_resolve';
-    case UpdateDownload   = 'update_download';
-    case UpdateInstall    = 'update_install';
+    case UpdateCheck      = 'UpdateCheck';
+    case UpdateResolve    = 'UpdateResolve';
+    case UpdateDownload   = 'UpdateDownload';
+    case UpdateInstall    = 'UpdateInstall';
 
     // Agent actions
-    case AgentAdd           = 'agent_add';
-    case AgentRemove        = 'agent_remove';
-    case AgentTest          = 'agent_test';
-    case AgentSync          = 'agent_sync';
-    case AgentPluginEnable  = 'agent_plugin_enable';
-    case AgentPluginDisable = 'agent_plugin_disable';
-    case AgentPluginDelete  = 'agent_plugin_delete';
-    case AgentPluginUpdate  = 'agent_plugin_update';
-    case AgentApiError      = 'agent_api_error';
+    case AgentAdd           = 'AgentAdd';
+    case AgentRemove        = 'AgentRemove';
+    case AgentTest          = 'AgentTest';
+    case AgentSync          = 'AgentSync';
+    case AgentPluginEnable  = 'AgentPluginEnable';
+    case AgentPluginDisable = 'AgentPluginDisable';
+    case AgentPluginDelete  = 'AgentPluginDelete';
+    case AgentPluginUpdate  = 'AgentPluginUpdate';
+    case AgentApiError      = 'AgentApiError';
 
     // Snapshot actions
-    case SnapshotCreate          = 'snapshot_create';
-    case SnapshotRestore         = 'snapshot_restore';
-    case SnapshotDelete          = 'snapshot_delete';
-    case SnapshotExport          = 'snapshot_export';
-    case SnapshotImport          = 'snapshot_import';
-    case SnapshotCleanup         = 'snapshot_cleanup';
-    case SnapshotFullBackup      = 'snapshot_full_backup';
-    case SnapshotIncremental     = 'snapshot_incremental';
-    case SnapshotRestorePerTable = 'snapshot_restore_pertable';
-    case SnapshotImportPerTable  = 'snapshot_import_pertable';
-    case SnapshotSettingsUpdate  = 'snapshot_settings_update';
-    case SnapshotZipBuild        = 'snapshot_zip_build';
-    case SnapshotZipExpire       = 'snapshot_zip_expire';
-    case SnapshotZipDownload     = 'snapshot_zip_download';
+    case SnapshotCreate          = 'SnapshotCreate';
+    case SnapshotRestore         = 'SnapshotRestore';
+    case SnapshotDelete          = 'SnapshotDelete';
+    case SnapshotExport          = 'SnapshotExport';
+    case SnapshotImport          = 'SnapshotImport';
+    case SnapshotCleanup         = 'SnapshotCleanup';
+    case SnapshotFullBackup      = 'SnapshotFullBackup';
+    case SnapshotIncremental     = 'SnapshotIncremental';
+    case SnapshotRestorePerTable = 'SnapshotRestorePerTable';
+    case SnapshotImportPerTable  = 'SnapshotImportPerTable';
+    case SnapshotSettingsUpdate  = 'SnapshotSettingsUpdate';
+    case SnapshotZipBuild        = 'SnapshotZipBuild';
+    case SnapshotZipExpire       = 'SnapshotZipExpire';
+    case SnapshotZipDownload     = 'SnapshotZipDownload';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
@@ -89,27 +89,33 @@ enum ActionType: string
         return $this !== $other;
     }
 
+    /** Check if the receiver matches any of the given cases. */
+    public function isAnyOf(self ...$others): bool
+    {
+        return in_array($this, $others, true);
+    }
+
     /** Check if this is a snapshot-related action. */
     public function isSnapshot(): bool
     {
-        return str_starts_with($this->value, 'snapshot_');
+        return str_starts_with($this->value, 'Snapshot');
     }
 
     /** Check if this is an agent-related action. */
     public function isAgent(): bool
     {
-        return str_starts_with($this->value, 'agent_');
+        return str_starts_with($this->value, 'Agent');
     }
 
     /** Check if this is an update-related action. */
     public function isUpdate(): bool
     {
-        return str_starts_with($this->value, 'update_');
+        return str_starts_with($this->value, 'Update');
     }
 
     /** Check if this is a plugin lifecycle action (enable/disable/delete). */
     public function isLifecycle(): bool
     {
-        return $this->isEqual(self::Enable) || $this->isEqual(self::Disable) || $this->isEqual(self::Delete);
+        return $this->isAnyOf(self::Enable, self::Disable, self::Delete);
     }
 }
