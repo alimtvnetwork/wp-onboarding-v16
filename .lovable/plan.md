@@ -384,91 +384,33 @@ New enum: `SyncEntryStatusType` at `includes/Enums/SyncEntryStatusType.php`
 
 ---
 
-## Go Phase 1: Enhanced Error Architecture (`pkg/apperror`)
+## ✅ COMPLETED — Go Phase 1: Enhanced Error Architecture (`pkg/apperror`) (2026-02-21)
 
-### 1.1 — `AppError` Stack Trace Guarantee
+All sub-tasks already implemented prior to this phase, with one key addition:
 
-Every `AppError` must capture a stack trace at creation time — not optionally.
+### 1.5 — Typed `ErrorCode` Alias (2026-02-21)
 
-```go
-// pkg/apperror/app_error.go
-type AppError struct {
-    Code       ErrorCode
-    Message    string
-    Cause      error
-    Stack      StackTrace   // always populated at creation
-    Diagnostic ErrorDiagnostic
-}
+Created `type ErrorCode string` with `String()`, `IsValid()`, `IsOtherThan()` methods. Migrated:
+- `codes.go`: All 60+ constants converted from `string` to `ErrorCode`
+- `error.go`: `AppError.Code` field → `ErrorCode`, all constructors (`New`, `NewWithSkip`, `Wrap`, `WrapWithSkip`, `WrapWithDetails`) accept `ErrorCode`
+- `error_json.go`: `appErrorJSON.Code` → `ErrorCode`
+- `match.go`: `Is()` accepts `ErrorCode`
+- `clipboard.go`: Uses `Code.String()` for formatting
+- `result.go`: `FailWrap`, `FailNew` accept `ErrorCode`
+- `result_slice.go`: `FailSliceWrap`, `FailSliceNew` accept `ErrorCode`
+- `result_map.go`: `FailMapWrap`, `FailMapNew` accept `ErrorCode`
+- Added `E15xxx` zip error codes: `ErrFileOpen`, `ErrZipCreate`, `ErrZipWrite`
 
-// Constructor — stack trace captured automatically
-func New(code ErrorCode, message string) *AppError
+**Zero caller changes required** — all 1785 call sites already use `apperror.ErrXxx` typed constants.
 
-// Wrapping — preserves original stack if AppError, adds new context
-func Wrap(err error, message string) *AppError
+**Remaining**: Handler-layer `respondError()` calls (883 instances) use raw string codes — separate migration tracked under Phase E handlers.
 
-// WrapWithCode — wrap with explicit error code
-func WrapWithCode(err error, code ErrorCode, message string) *AppError
-```
+### Previously Implemented (verified 2026-02-21)
 
-### 1.2 — `StackTrace` Type
-
-```go
-// pkg/apperror/stack_trace.go
-type StackFrame struct {
-    Function string
-    File     string
-    Line     int
-}
-
-type StackTrace []StackFrame
-
-func CaptureStack(skip int) StackTrace
-func (s StackTrace) String() string       // full formatted trace
-func (s StackTrace) CallerLine() string   // "file.go:42"
-```
-
-### 1.3 — `AppError` Display Methods
-
-```go
-func (e *AppError) Error() string          // message only (implements error)
-func (e *AppError) FullString() string     // code + message + stack trace + cause chain
-func (e *AppError) Unwrap() error          // standard unwrap for errors.Is/As
-func (e *AppError) Is(target error) bool   // match by ErrorCode
-```
-
-### 1.4 — Generic `Result[T]` (Service-Level)
-
-Extend beyond `dbutil` for all service returns:
-
-```go
-// pkg/apperror/result.go
-type Result[T any] struct {
-    value T
-    err   *AppError
-}
-
-func Ok[T any](value T) Result[T]
-func Fail[T any](err *AppError) Result[T]
-func FailWrap[T any](err error, msg string) Result[T]
-
-func (r Result[T]) HasError() bool
-func (r Result[T]) IsSafe() bool           // !HasError
-func (r Result[T]) Value() T               // panics if HasError
-func (r Result[T]) ValueOr(fallback T) T
-func (r Result[T]) Error() *AppError
-func (r Result[T]) Unwrap() (T, error)     // bridge to (T, error) pattern
-```
-
-### Implementation Files
-
-| File | Action |
-|------|--------|
-| `pkg/apperror/app_error.go` | Rewrite with mandatory StackTrace field |
-| `pkg/apperror/stack_trace.go` | New — StackFrame, CaptureStack, String |
-| `pkg/apperror/result.go` | New — generic Result[T] for services |
-| `pkg/apperror/error_code.go` | Audit — ensure all codes are typed constants |
-
-### Estimated Effort: 4 tasks
+- **1.1** ✅ `AppError` with mandatory `StackTrace` field — `New()` → `CaptureStack(2)`, `Wrap()` → `CaptureStack(3+skip)`
+- **1.2** ✅ `StackTrace` struct — `CaptureStack`, `String()`, `CallerLine()`, `FinalLine()`, `IsEmpty()`, `Depth()`, `HasPrevious()`
+- **1.3** ✅ Display methods — `Error()`, `FullString()`, `Unwrap()`, `Is()`, `ToClipboard()`
+- **1.4** ✅ Generic `Result[T]`, `ResultSlice[T]`, `ResultMap[K,V]` with full semantic API
 
 ---
 

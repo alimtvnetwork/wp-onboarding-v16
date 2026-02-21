@@ -22,7 +22,7 @@ func (e *AppError) ToClipboard() string {
 
 // writeCodeAndMessage writes the code and message header.
 func writeCodeAndMessage(b *strings.Builder, e *AppError) {
-	b.WriteString(fmt.Sprintf("**Code:** %s\n", e.Code))
+	b.WriteString(fmt.Sprintf("**Code:** %s\n", e.Code.String()))
 	b.WriteString(fmt.Sprintf("**Message:** %s\n", e.Message))
 }
 

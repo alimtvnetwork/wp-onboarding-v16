@@ -8,7 +8,7 @@ import (
 
 // AppError represents a structured application error with mandatory stack trace.
 type AppError struct {
-	Code       string            `json:"code"`
+	Code       ErrorCode         `json:"code"`
 	Message    string            `json:"message"`
 	Details    string            `json:"details,omitempty"`
 	Values     map[string]string `json:"values,omitempty"`
@@ -20,10 +20,10 @@ type AppError struct {
 // Error implements the error interface.
 func (e *AppError) Error() string {
 	if e.Details != "" {
-		return fmt.Sprintf("[%s] %s: %s", e.Code, e.Message, e.Details)
+		return fmt.Sprintf("[%s] %s: %s", e.Code.String(), e.Message, e.Details)
 	}
 
-	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
+	return fmt.Sprintf("[%s] %s", e.Code.String(), e.Message)
 }
 
 // String returns the full error representation including stack trace.
@@ -35,7 +35,7 @@ func (e *AppError) String() string {
 func (e *AppError) FullString() string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("[%s] %s", e.Code, e.Message))
+	b.WriteString(fmt.Sprintf("[%s] %s", e.Code.String(), e.Message))
 	appendDetails(&b, e)
 	appendValues(&b, e)
 	appendDiagnostics(&b, e)
@@ -128,7 +128,7 @@ func (e *AppError) HasDiagnostic() bool {
 // --- Constructors ---
 
 // New creates a new AppError with mandatory stack trace.
-func New(code, message string) *AppError {
+func New(code ErrorCode, message string) *AppError {
 	return &AppError{
 		Code:    code,
 		Message: message,
@@ -137,7 +137,7 @@ func New(code, message string) *AppError {
 }
 
 // NewWithSkip creates a new AppError with explicit additional skip for stack capture.
-func NewWithSkip(code, message string, skip int) *AppError {
+func NewWithSkip(code ErrorCode, message string, skip int) *AppError {
 	return &AppError{
 		Code:    code,
 		Message: message,
@@ -147,12 +147,12 @@ func NewWithSkip(code, message string, skip int) *AppError {
 
 // Wrap wraps an existing error with context and mandatory stack trace.
 // If cause is an *AppError, its stack is preserved in PreviousTrace.
-func Wrap(cause error, code, message string) *AppError {
+func Wrap(cause error, code ErrorCode, message string) *AppError {
 	return WrapWithSkip(cause, code, message, 0)
 }
 
 // WrapWithSkip wraps with explicit additional skip for stack capture.
-func WrapWithSkip(cause error, code, message string, skip int) *AppError {
+func WrapWithSkip(cause error, code ErrorCode, message string, skip int) *AppError {
 	stack := CaptureStack(3 + skip)
 	stack = mergeIfAppError(stack, cause)
 
@@ -193,7 +193,7 @@ func setCauseDetails(err *AppError, cause error) {
 }
 
 // WrapWithDetails wraps an error with explicit details override.
-func WrapWithDetails(cause error, code, message, details string) *AppError {
+func WrapWithDetails(cause error, code ErrorCode, message, details string) *AppError {
 	err := WrapWithSkip(cause, code, message, 1)
 	err.Details = details
 
