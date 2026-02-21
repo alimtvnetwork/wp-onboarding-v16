@@ -1289,65 +1289,15 @@ Three categories of remaining issues identified during Phase 5 validation:
 
 ---
 
-## Phase 6A: Migration DDL Modernization
+## ✅ COMPLETED — Phase 6A: Migration DDL Modernization
 
-### Context
+### Result
 
-Migrations V1–V12 create tables with snake_case columns. Migration V13 then renames everything to PascalCase. This chain is **correct for existing installs** but means fresh installs do unnecessary work (create snake_case → immediately rename to PascalCase).
+Audit confirmed V1–V12 DDL already uses PascalCase columns, PascalCase index names (`Idx*`), and `TableType::*->value` for table names. V13 is already idempotent (checks column existence before renaming, skips if already PascalCase).
 
-### Strategy: Consolidate Into PascalCase-Native DDL
+**One fix applied**: `DatabaseMigrationsV1V3Trait.php` line 77 — AgentSites `Status TEXT DEFAULT 'pending'` → `DEFAULT 'Pending'` to match `AgentStatusType::Pending->value`.
 
-Rewrite V1–V12 migration DDL to use PascalCase column names directly. Update V13 to be **idempotent** (skip columns already in PascalCase). This is safe because:
-
-- SQLite `ALTER TABLE RENAME COLUMN` is a no-op when old = new
-- V13 already checks `sqliteTableExists()` and column existence before renaming
-- Fresh installs benefit (no rename overhead); existing installs unaffected (V1–V12 already ran)
-
-### Files to Update
-
-| File | Tables | Columns to Rename |
-|------|--------|-------------------|
-| `DatabaseMigrationsV1V3Trait.php` | Transactions, AgentSites, AgentActions | ~28 columns, 6 indexes |
-| `DatabaseMigrationsV4V5Trait.php` | Transactions (ALTER), Snapshots, SnapshotProgress | ~24 columns, 5 indexes |
-| `DatabaseMigrationsV6V8Trait.php` | SnapshotJobs, SnapshotSettings, RemotePluginsCache | ~20 columns |
-| `DatabaseMigrationsV9V11Trait.php` | ErrorSessions, FlashState, SnapshotExports, Transactions (ALTER) | ~18 columns, 6 indexes |
-| `DatabaseMigrationsV12Trait.php` | (enum value normalization — may reference column names) | Review needed |
-
-### Column Name Mapping (reference V13 constants)
-
-All mappings defined in `DatabaseMigrationsV13Trait::V13_COLUMN_RENAMES` — apply these to original DDL.
-
-### Index Name Mapping
-
-| Old Index | New Index |
-|-----------|-----------|
-| `idx_action` | `IdxTransactions_Action` |
-| `idx_plugin_slug` | `IdxTransactions_PluginSlug` |
-| `idx_user_login` | `IdxTransactions_UserLogin` |
-| `idx_status` | `IdxTransactions_Status` |
-| `idx_created_at` | `IdxTransactions_CreatedAt` |
-| `idx_triggered_by` | `IdxTransactions_TriggeredBy` |
-| `idx_source_machine` | `IdxTransactions_SourceMachine` |
-| `idx_plugin_version` | `IdxTransactions_PluginVersion` |
-| `idx_upload_source` | `IdxTransactions_UploadSource` |
-| `idx_agent_sites_status` | `IdxAgentSites_Status` |
-| `idx_agent_actions_site_id` | `IdxAgentActions_AgentSiteId` |
-| `idx_agent_actions_action` | `IdxAgentActions_Action` |
-| `idx_agent_actions_created` | `IdxAgentActions_CreatedAt` |
-| `idx_snapshots_created` | `IdxSnapshots_CreatedAt` |
-| `idx_snapshots_status` | `IdxSnapshots_Status` |
-| `idx_snapshots_provider` | `IdxSnapshots_Provider` |
-| `idx_snapshot_progress_snapshot` | `IdxSnapshotProgress_SnapshotId` |
-| `idx_error_sessions_level` | `IdxErrorSessions_Level` |
-| `idx_error_sessions_created` | `IdxErrorSessions_CreatedAt` |
-| `idx_snapshot_exports_snapshot` | `IdxSnapshotExports_SnapshotId` |
-| `idx_snapshot_exports_status` | `IdxSnapshotExports_Status` |
-
-### V13 Safety Update
-
-Add column-existence check: if column is already PascalCase, skip rename. The current logic already does this (checks `in_array($oldCol, $existingColumns)`) so V13 is already safe — no changes needed.
-
-### Estimated Effort: 5 tasks (one per migration trait file)
+V12 enum-value normalization references PascalCase column names correctly. No other changes needed.
 
 ---
 
