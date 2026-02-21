@@ -30,6 +30,7 @@ trait PathHelperDirTrait {
 
         if ($realBase === false) {
             self::safeLog(LogLevelType::Warn->value, '[PATH] Base path does not exist', array('base' => $basePath));
+
             return false;
         }
 
@@ -95,18 +96,25 @@ trait PathHelperDirTrait {
 
     private static function handleExistingDir(string $path, bool $secure): bool {
         self::safeLog(LogLevelType::Debug->value, '[PATH] Directory already exists', array('path' => $path));
+
         if ($secure) { self::addSecurityFiles($path); }
+
         return true;
     }
 
     private static function createNewDir(string $path, bool $secure): bool {
         self::safeLog(LogLevelType::Info->value, '[PATH] Creating directory', array('path' => $path, 'secure' => $secure));
+
         if (!wp_mkdir_p($path)) {
             self::logDirCreationFailure($path);
+
             return false;
         }
+
         self::safeLog(LogLevelType::Info->value, '[PATH] Directory created successfully', array('path' => $path));
+
         if ($secure) { self::addSecurityFiles($path); }
+
         return true;
     }
 
@@ -127,6 +135,7 @@ trait PathHelperDirTrait {
 
         if (self::isFileMissing($htaccessPath)) {
             $content = "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n";
+
             if (@file_put_contents($htaccessPath, $content) === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create .htaccess', array('path' => $htaccessPath));
                 $isSecured = false;
@@ -152,6 +161,7 @@ trait PathHelperDirTrait {
             self::safeLog(LogLevelType::Error->value, '[PATH] Empty path from segments', array('segments' => $segments));
             return false;
         }
+
         if (!self::makeDirectory($path, $secure)) { return false; }
 
         return $path;

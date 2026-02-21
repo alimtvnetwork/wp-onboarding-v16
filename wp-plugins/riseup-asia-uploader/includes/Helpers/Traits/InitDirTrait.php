@@ -27,11 +27,13 @@ trait InitDirTrait {
         if (BooleanHelpers::isClassExists(PathHelper::class)) {
             $result = PathHelper::makeDirectory($path, $secure);
             self::$ensured_dirs[$normalized] = $result;
+
             return $result;
         }
 
         $result = self::makeDirectoryNative($path, $secure);
         self::$ensured_dirs[$normalized] = $result;
+
         return $result;
     }
 
@@ -52,6 +54,7 @@ trait InitDirTrait {
         }
 
         if ($secure) { self::addSecurityFiles($path); }
+
         return true;
     }
 

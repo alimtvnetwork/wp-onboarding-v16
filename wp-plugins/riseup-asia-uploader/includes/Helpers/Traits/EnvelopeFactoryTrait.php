@@ -80,6 +80,7 @@ trait EnvelopeFactoryTrait {
 
     private static function framesToLines(array $frames): array {
         $lines = array();
+
         foreach ($frames as $frame) {
             $file = isset($frame['fileBase']) ? $frame['fileBase'] : '';
             $line = isset($frame['line']) ? $frame['line'] : 0;
