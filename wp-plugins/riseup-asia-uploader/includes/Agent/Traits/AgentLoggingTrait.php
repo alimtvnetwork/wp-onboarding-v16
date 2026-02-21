@@ -77,9 +77,13 @@ trait AgentLoggingTrait {
         $stmt = $pdo->prepare(self::ACTION_INSERT_QUERY);
 
         $stmt->execute(array(
-            $agentId, $action, $plugin, $status,
+            $agentId,
+            $action,
+            $plugin,
+            $status,
             $details ? json_encode($details) : null,
-            $errorMsg, DateHelper::nowUtc(),
+            $errorMsg,
+            DateHelper::nowUtc(),
         ));
 
         return (int) $pdo->lastInsertId();
@@ -126,7 +130,11 @@ trait AgentLoggingTrait {
         int $offset,
     ): array {
         $stmt = $pdo->prepare(self::ACTION_LIST_QUERY);
-        $stmt->execute(array($agentId, $limit, $offset));
+        $stmt->execute(array(
+            $agentId,
+            $limit,
+            $offset,
+        ));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
