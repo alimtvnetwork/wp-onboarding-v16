@@ -55,7 +55,7 @@ interface TestRun {
   id: string;
   startedAt: string;
   completedAt?: string;
-  status: "running" | "passed" | "failed" | "aborted";
+  status: "Running" | "Passed" | "Failed" | "Aborted" | "Pending" | "Completed";
   totalTests: number;
   passedTests: number;
   failedTests: number;
@@ -69,7 +69,7 @@ interface TestResult {
   suiteId: string;
   caseId: string;
   caseName: string;
-  status: "passed" | "failed" | "skipped" | "error";
+  status: "Passed" | "Failed" | "Skipped" | "Error" | "Pending" | "Running";
   durationMs: number;
   errorMessage?: string;
   errorDetails?: string;
@@ -223,7 +223,7 @@ export default function Tests() {
   // Build last-result map from most recent completed run
   const lastRunResults = new Map<string, { status: string; durationMs: number }>();
   if (runs?.length) {
-    const lastCompleted = runs.find((r) => r.status !== "running");
+    const lastCompleted = runs.find((r) => r.status !== "Running");
     if (lastCompleted && expandedRun === lastCompleted.id && runDetails?.results) {
       runDetails.results.forEach((r) => {
         lastRunResults.set(r.caseId, { status: r.status, durationMs: r.durationMs });
@@ -247,19 +247,19 @@ export default function Tests() {
     }
   };
 
-  const runningRun = runs?.find((r) => r.status === "running");
+  const runningRun = runs?.find((r) => r.status === "Running");
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "passed":
+      case "Passed":
         return <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />;
-      case "failed":
+      case "Failed":
         return <XCircle className="h-4 w-4 text-destructive" />;
-      case "running":
+      case "Running":
         return <Loader2 className="h-4 w-4 text-primary animate-spin" />;
-      case "aborted":
+      case "Aborted":
         return <AlertTriangle className="h-4 w-4 text-amber-500 dark:text-amber-400" />;
-      case "skipped":
+      case "Skipped":
         return <Clock className="h-4 w-4 text-muted-foreground" />;
       default:
         return null;
@@ -268,10 +268,10 @@ export default function Tests() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      passed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-      failed: "bg-destructive/10 text-destructive",
-      running: "bg-primary/10 text-primary",
-      aborted: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+      Passed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+      Failed: "bg-destructive/10 text-destructive",
+      Running: "bg-primary/10 text-primary",
+      Aborted: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
     };
     return (
       <Badge variant="secondary" className={variants[status] || ""}>
@@ -437,7 +437,7 @@ export default function Tests() {
           ) : (
             <div className="space-y-2">
               {runs
-                .filter((r) => r.status !== "running")
+                .filter((r) => r.status !== "Running")
                 .map((run) => (
                   <Collapsible
                     key={run.id}
@@ -492,7 +492,7 @@ export default function Tests() {
                               key={result.id}
                               result={result}
                               onViewError={
-                                result.status === "failed" || result.status === "error"
+                                result.status === "Failed" || result.status === "Error"
                                   ? () => setSelectedError(result)
                                   : undefined
                               }

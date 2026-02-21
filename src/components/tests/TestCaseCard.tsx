@@ -24,7 +24,7 @@ interface TestCaseCardProps {
   testCase: TestCase;
   selected: boolean;
   onToggle: () => void;
-  lastStatus?: "passed" | "failed" | "skipped" | "error" | "running";
+  lastStatus?: "Passed" | "Failed" | "Skipped" | "Error" | "Running" | "Pending";
   lastDurationMs?: number;
   onRerun?: () => void;
   isRerunning?: boolean;
@@ -32,14 +32,14 @@ interface TestCaseCardProps {
 
 function getStatusIndicator(status?: string) {
   switch (status) {
-    case "passed":
+    case "Passed":
       return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />;
-    case "failed":
-    case "error":
+    case "Failed":
+    case "Error":
       return <XCircle className="h-3.5 w-3.5 text-destructive" />;
-    case "running":
+    case "Running":
       return <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />;
-    case "skipped":
+    case "Skipped":
       return <Clock className="h-3.5 w-3.5 text-muted-foreground" />;
     default:
       return null;
@@ -114,7 +114,7 @@ export function TestCaseCard({
           <span>
             {testCase.steps.length} step{testCase.steps.length !== 1 ? "s" : ""}
           </span>
-          {lastDurationMs !== undefined && lastStatus && lastStatus !== "running" && (
+          {lastDurationMs !== undefined && lastStatus && lastStatus !== "Running" && (
             <span>{lastDurationMs}ms</span>
           )}
         </div>

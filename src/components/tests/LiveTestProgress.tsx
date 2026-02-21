@@ -22,14 +22,14 @@ interface LiveTestProgressProps {
 
 function getStatusIcon(status: string) {
   switch (status) {
-    case "passed":
+    case "Passed":
       return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />;
-    case "failed":
-    case "error":
+    case "Failed":
+    case "Error":
       return <XCircle className="h-3.5 w-3.5 text-destructive" />;
-    case "running":
+    case "Running":
       return <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />;
-    case "skipped":
+    case "Skipped":
       return <Clock className="h-3.5 w-3.5 text-muted-foreground" />;
     default:
       return <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />;
@@ -104,7 +104,7 @@ export function LiveTestProgress({
                   </span>
                   <span className="truncate">{r.caseName}</span>
                 </div>
-                {r.status !== "running" && (
+                {r.status !== "Running" && (
                   <span className="text-xs text-muted-foreground">{r.durationMs}ms</span>
                 )}
               </div>

@@ -2,12 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
 import { E2ECaseStatusValues } from "@/lib/constants";
+import type { E2ECaseStatus } from "@/lib/api/types";
 
 export interface LiveTestResult {
   caseId: string;
   caseName: string;
   suiteId: string;
-  status: "passed" | "failed" | "skipped" | "error" | "running";
+  status: E2ECaseStatus | "Error";
   durationMs: number;
   errorMessage?: string;
 }
