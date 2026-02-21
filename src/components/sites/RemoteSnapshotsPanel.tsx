@@ -119,7 +119,7 @@ function SnapshotRow({
 }) {
   const [downloading, setDownloading] = useState(false);
   const isRunning = snapshot.status === SnapshotRunStatus.Running || snapshot.status === SnapshotRunStatus.InProgress;
-  const isIncremental = snapshot.snapshot_type === SnapshotTypeValues.Incremental || snapshot.scope === "Incremental";
+  const isIncremental = snapshot.snapshotType === SnapshotTypeValues.Incremental || snapshot.scope === "Incremental";
 
   const statusBadge = (() => {
     switch (snapshot.status) {
@@ -260,21 +260,21 @@ function SnapshotRow({
         <Badge className={`${scopeColors[snapshot.scope] || "bg-muted text-muted-foreground"} text-xs`}>
           {snapshot.scope}
         </Badge>
-        {snapshot.file_size > 0 && (
+        {snapshot.fileSize > 0 && (
           <span className="flex items-center gap-1">
             <HardDrive className="h-3 w-3" />
-            {formatBytes(snapshot.file_size)}
+            {formatBytes(snapshot.fileSize)}
           </span>
         )}
-        {snapshot.total_rows > 0 && (
+        {snapshot.totalRows > 0 && (
           <span className="flex items-center gap-1">
             <Table className="h-3 w-3" />
-            {snapshot.total_rows.toLocaleString()} rows
+            {snapshot.totalRows.toLocaleString()} rows
           </span>
         )}
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {relativeTime(snapshot.created_at)}
+          {relativeTime(snapshot.createdAt)}
         </span>
         <Badge variant="outline" className="text-[10px] h-4">
           {snapshot.provider}
@@ -312,7 +312,7 @@ function SnapshotDetailContent({ snapshot, siteId }: { snapshot: SnapshotRecord;
   const [zipLoading, setZipLoading] = useState(false);
   const [zipError, setZipError] = useState<string | null>(null);
 
-  const isIncremental = snapshot.snapshot_type === SnapshotTypeValues.Incremental || snapshot.scope === "Incremental";
+  const isIncremental = snapshot.snapshotType === SnapshotTypeValues.Incremental || snapshot.scope === "Incremental";
 
   const handleDownload = async () => {
     setZipLoading(true);
@@ -348,30 +348,30 @@ function SnapshotDetailContent({ snapshot, siteId }: { snapshot: SnapshotRecord;
         <div className="font-medium capitalize">{snapshot.scope}</div>
         <div className="text-muted-foreground">Provider</div>
         <div className="font-medium">{snapshot.provider}</div>
-        {snapshot.file_size > 0 && (
+        {snapshot.fileSize > 0 && (
           <>
             <div className="text-muted-foreground">File Size</div>
-            <div className="font-medium">{formatBytes(snapshot.file_size)}</div>
+            <div className="font-medium">{formatBytes(snapshot.fileSize)}</div>
           </>
         )}
-        {snapshot.total_rows > 0 && (
+        {snapshot.totalRows > 0 && (
           <>
             <div className="text-muted-foreground">Total Rows</div>
-            <div className="font-medium">{snapshot.total_rows.toLocaleString()}</div>
+            <div className="font-medium">{snapshot.totalRows.toLocaleString()}</div>
           </>
         )}
         <div className="text-muted-foreground">Created</div>
-        <div className="font-medium">{relativeTime(snapshot.created_at)}</div>
-        {snapshot.snapshot_type && (
+        <div className="font-medium">{relativeTime(snapshot.createdAt)}</div>
+        {snapshot.snapshotType && (
           <>
             <div className="text-muted-foreground">Type</div>
-            <div className="font-medium capitalize">{snapshot.snapshot_type}</div>
+            <div className="font-medium capitalize">{snapshot.snapshotType}</div>
           </>
         )}
-        {snapshot.incremental_count != null && snapshot.incremental_count > 0 && (
+        {snapshot.incrementalCount != null && snapshot.incrementalCount > 0 && (
           <>
             <div className="text-muted-foreground">Incrementals</div>
-            <div className="font-medium">{snapshot.incremental_count}</div>
+            <div className="font-medium">{snapshot.incrementalCount}</div>
           </>
         )}
       </div>
@@ -715,8 +715,8 @@ function SnapshotSettingsTab({
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Retention Policy</Label>
         <Select
-          value={(current.retention_type as string) || "count"}
-          onValueChange={(v) => handleChange("retention_type", v)}
+          value={(current.retentionType as string) || "count"}
+          onValueChange={(v) => handleChange("retentionType", v)}
         >
           <SelectTrigger className="h-8 text-xs">
             <SelectValue />
@@ -729,28 +729,28 @@ function SnapshotSettingsTab({
         </Select>
       </div>
 
-      {(current.retention_type as string) === "days" && (
+      {(current.retentionType as string) === "days" && (
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Keep snapshots for (days)</Label>
           <Input
             type="number"
             className="h-8 text-xs"
-            value={(current.retention_days as number) || 30}
-            onChange={(e) => handleChange("retention_days", parseInt(e.target.value) || 30)}
+            value={(current.retentionDays as number) || 30}
+            onChange={(e) => handleChange("retentionDays", parseInt(e.target.value) || 30)}
             min={1}
             max={365}
           />
         </div>
       )}
 
-      {(current.retention_type as string) === "count" && (
+      {(current.retentionType as string) === "count" && (
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Keep last N snapshots</Label>
           <Input
             type="number"
             className="h-8 text-xs"
-            value={(current.retention_max as number) || 10}
-            onChange={(e) => handleChange("retention_max", parseInt(e.target.value) || 10)}
+            value={(current.retentionMax as number) || 10}
+            onChange={(e) => handleChange("retentionMax", parseInt(e.target.value) || 10)}
             min={1}
             max={100}
           />
@@ -761,12 +761,12 @@ function SnapshotSettingsTab({
 
       {/* Parallel Execution & Storage Config */}
       <SnapshotConfigPanel
-        storageMode={((current.storage_mode as string) || "single") as "single" | "per-table"}
-        onStorageModeChange={(mode) => handleChange("storage_mode", mode)}
-        workerCount={(current.worker_count as number) || 4}
-        onWorkerCountChange={(count) => handleChange("worker_count", count)}
-        batchSize={(current.batch_size as number) || 10}
-        onBatchSizeChange={(size) => handleChange("batch_size", size)}
+        storageMode={((current.storageMode as string) || "single") as "single" | "per-table"}
+        onStorageModeChange={(mode) => handleChange("storageMode", mode)}
+        workerCount={(current.workerCount as number) || 4}
+        onWorkerCountChange={(count) => handleChange("workerCount", count)}
+        batchSize={(current.batchSize as number) || 10}
+        onBatchSizeChange={(size) => handleChange("batchSize", size)}
         showRetention={false}
       />
 
@@ -776,8 +776,8 @@ function SnapshotSettingsTab({
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">Pre-Restore Backup</Label>
         <Switch
-          checked={(current.pre_restore_backup as boolean) !== false}
-          onCheckedChange={(v) => handleChange("pre_restore_backup", v)}
+          checked={(current.preRestoreBackup as boolean) !== false}
+          onCheckedChange={(v) => handleChange("preRestoreBackup", v)}
         />
       </div>
 
@@ -908,7 +908,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   }, [isLoading]);
 
   // C3: Inline worker count from settings
-  const currentWorkerCount = (settings as SnapshotSettings | undefined)?.worker_count as number || 4;
+  const currentWorkerCount = (settings as SnapshotSettings | undefined)?.workerCount as number || 4;
 
   // C4: Real-time progress via WebSocket
   const [progress, setProgress] = useState<SnapshotProgressState>(INITIAL_PROGRESS);
@@ -979,7 +979,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   // Available parent snapshots for incremental backups (completed full snapshots only)
   const completedFullSnapshots = useMemo(
     () => snapshots.filter(
-      (s) => s.status === "complete" && s.snapshot_type !== SnapshotTypeValues.Incremental && s.scope !== "Incremental"
+      (s) => s.status === "complete" && s.snapshotType !== SnapshotTypeValues.Incremental && s.scope !== "Incremental"
     ),
     [snapshots]
   );
@@ -1214,7 +1214,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                                 <span className="font-medium">#{s.sequence}</span>
                                 <span className="text-muted-foreground">—</span>
                                 <span className="truncate">{s.filename}</span>
-                                <span className="text-muted-foreground text-[10px] shrink-0">{relativeTime(s.created_at)}</span>
+                                <span className="text-muted-foreground text-[10px] shrink-0">{relativeTime(s.createdAt)}</span>
                               </span>
                             </SelectItem>
                           ))}
@@ -1258,7 +1258,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                               <span className="text-muted-foreground text-[10px]">
                                 {table.rows.toLocaleString()} rows
                               </span>
-                              {table.is_core && (
+                              {table.isCore && (
                                 <Badge variant="outline" className="text-[9px] h-3.5 px-1">core</Badge>
                               )}
                             </label>
@@ -1277,7 +1277,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                 <Slider
                   value={[currentWorkerCount]}
                   onValueChange={([v]) => {
-                    updateSettings({ worker_count: v });
+                    updateSettings({ workerCount: v });
                   }}
                   min={1}
                   max={10}
@@ -1399,25 +1399,25 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                     {(() => {
                       // Group snapshots: full snapshots at top level, incrementals nested under parent
                       const fullSnapshots = snapshots.filter(
-                        (s) => s.snapshot_type !== SnapshotTypeValues.Incremental && s.scope !== "Incremental"
+                        (s) => s.snapshotType !== SnapshotTypeValues.Incremental && s.scope !== "Incremental"
                       );
                       const incrementals = snapshots.filter(
-                        (s) => s.snapshot_type === SnapshotTypeValues.Incremental || s.scope === "Incremental"
+                        (s) => s.snapshotType === SnapshotTypeValues.Incremental || s.scope === "Incremental"
                       );
 
                       // Build a map from parent directory to incremental snapshots
                       const incrementalsByParent = new Map<string, SnapshotRecord[]>();
                       for (const inc of incrementals) {
-                        const parentDir = inc.parent_dir || "";
+                        const parentDir = inc.parentDir || "";
                         if (!incrementalsByParent.has(parentDir)) {
                           incrementalsByParent.set(parentDir, []);
                         }
                         incrementalsByParent.get(parentDir)!.push(inc);
                       }
 
-                      // Unmatched incrementals (no parent_dir or parent not found)
+                      // Unmatched incrementals (no parentDir or parent not found)
                       const unmatchedIncrementals = incrementals.filter(
-                        (inc) => !inc.parent_dir
+                        (inc) => !inc.parentDir
                       );
 
                       return (
@@ -1495,7 +1495,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                 ) : (
                   <div className="space-y-0 pr-2">
                     {snapshots
-                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                       .map((snapshot, index) => {
                         const isMaster = snapshot.filename?.includes("_full_") || index === snapshots.length - 1;
                         const isIncremental = snapshot.filename?.includes("incremental") || snapshot.filename?.includes("inc_");
@@ -1546,21 +1546,21 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                                     )}
                                   </div>
                                   <span className="text-[10px] text-muted-foreground shrink-0">
-                                    {relativeTime(snapshot.created_at)}
+                                    {relativeTime(snapshot.createdAt)}
                                   </span>
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-                                  {snapshot.total_rows > 0 && (
+                                  {snapshot.totalRows > 0 && (
                                     <span className="flex items-center gap-0.5">
                                       <Table className="h-2.5 w-2.5" />
-                                      {snapshot.total_rows.toLocaleString()} rows
+                                      {snapshot.totalRows.toLocaleString()} rows
                                     </span>
                                   )}
-                                  {snapshot.file_size > 0 && (
+                                  {snapshot.fileSize > 0 && (
                                     <span className="flex items-center gap-0.5">
                                       <HardDrive className="h-2.5 w-2.5" />
-                                      {formatBytes(snapshot.file_size)}
+                                      {formatBytes(snapshot.fileSize)}
                                     </span>
                                   )}
                                   <Badge
@@ -1606,9 +1606,9 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
               <span>
                 Delete snapshot #{deleteTarget?.sequence} ({deleteTarget?.filename})? This cannot be undone.
               </span>
-              {deleteTarget && deleteTarget.snapshot_type !== SnapshotTypeValues.Incremental && deleteTarget.scope !== "Incremental" && (deleteTarget.incremental_count ?? 0) > 0 && (
+              {deleteTarget && deleteTarget.snapshotType !== SnapshotTypeValues.Incremental && deleteTarget.scope !== "Incremental" && (deleteTarget.incrementalCount ?? 0) > 0 && (
                 <span className="block text-destructive font-medium">
-                  ⚠ This is a full snapshot with {deleteTarget.incremental_count} incremental backup(s). Deleting it will also remove all its incremental children.
+                  ⚠ This is a full snapshot with {deleteTarget.incrementalCount} incremental backup(s). Deleting it will also remove all its incremental children.
                 </span>
               )}
             </AlertDialogDescription>
