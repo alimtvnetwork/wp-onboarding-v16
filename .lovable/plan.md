@@ -707,6 +707,230 @@ Each phase is independently deployable. **Go Phase 1 is the critical foundation*
 
 ---
 
-## Next Steps
+## ✅ Go Phase 1 — Partially Complete (2026-02-21)
 
-Confirm which Go Phase to start with (recommended: **Go Phase 1** — error architecture).
+- AppError struct with mandatory StackTrace ✅ (already implemented)
+- Result[T], ResultSlice[T], ResultMap[K,V] ✅ (already implemented)
+- Error codes in `codes.go` ✅
+- Typed diagnostic setters ✅
+- Service Adapter pattern ✅
+
+---
+
+# 🆕 Backend Standards Compliance Plan (2026-02-21)
+
+## Overview
+
+Comprehensive plan to bring the Go backend into full compliance: byte-based enums, AppError JSON serialization, Go file naming conventions, config type safety, and remaining raw error audit.
+
+---
+
+## Phase A: Spec Updates (Must Complete First)
+
+### A1 — Add Go File Naming & Organization Convention to Spec
+
+**File:** `spec/03-golang-standards/readme.md`  
+**Action:** Add new section covering:
+
+| Rule | Convention | Example |
+|------|-----------|---------|
+| Package directory | `snake_case` | `site_health/` |
+| File name | `snake_case`, maps to primary type | `server_config.go` → `ServerConfig` |
+| One exported type per file | Each struct/interface gets its own file | Split `config.go` → `config.go`, `server_config.go`, etc. |
+| Suffix convention | `_crud.go`, `_helpers.go`, `_validation.go` | `plugin_crud.go` |
+| Max 300 lines target | Soft limit 400 | Split when exceeded |
+| Functions | Group related funcs with their type's file | `StatusType` methods stay in `status_type.go` |
+
+### A2 — Add AppError JSON Serialization to Spec
+
+**File:** `spec/05-error-manage/06-apperror-package/readme.md`  
+**Action:** Add section "§11 — JSON Serialization":
+
+- `AppError` already has JSON tags ✅
+- Add `MarshalJSON()` that includes `Cause` as string (currently `json:"-"`)
+- Add `UnmarshalJSON()` that reconstructs `Cause` from string
+- All sub-structs (`StackTrace`, `StackFrame`, `ErrorDiagnostic`) already have JSON tags ✅
+
+### A3 — Make MarshalJSON/UnmarshalJSON Mandatory for Enums
+
+**File:** `spec/03-golang-standards/01-enum-specification/02-required-methods.md`  
+**Action:** Move from "Optional" to "Mandatory". All byte-based enums MUST implement JSON marshal/unmarshal.
+
+### A4 — Add WP Plugin Publish to Enum Spec Inventory
+
+**File:** `spec/03-golang-standards/01-enum-specification/00-overview.md`  
+**Action:** Add to "Applies To" table with status "🔄 Migration In Progress".
+
+---
+
+## Phase B: Enum Migration (String → Byte-Based)
+
+### Current State — 13 String-Based Types
+
+All in `backend/internal/wordpress/` and `backend/internal/services/session/`:
+
+| # | Type | File | Current Base | Variants |
+|---|------|------|-------------|----------|
+| 1 | `StatusType` | `status_type.go` | `string` | Success, Failed |
+| 2 | `UploadSourceType` | `upload_source_type.go` | `string` | TBD |
+| 3 | `HeaderType` | `header_type.go` | `string` | HTTP header names |
+| 4 | `EndpointType` | `endpoint_type.go` | `string` | REST API paths |
+| 5 | `ActionType` | `action_type.go` | `string` | Transaction actions |
+| 6 | `ResponseMessageType` | `response_message_type.go` | `string` | API messages |
+| 7 | `PluginStatusType` | `plugin_status_type.go` | `string` | WP plugin states |
+| 8 | `PostStatusType` | `post_status_type.go` | `string` | WP post states |
+| 9 | `SnapshotErrorType` | `snapshot_error_type.go` | `string` | Snapshot error codes |
+| 10 | `ResponseKeyType` | `response_key_type.go` | `string` | JSON response keys |
+| 11 | `HttpStatusType` | `http_status_type.go` | `int` | HTTP status codes |
+| 12 | `SessionType` | `session/service.go` | `string` | Session types (inline) |
+
+### Per-Enum Migration Steps
+
+For each enum:
+1. Change base type from `string`/`int` to `byte`
+2. Add `Invalid` as zero value with `iota`
+3. Add `variantStrings` and `variantLabels` lookup tables
+4. Add 7 mandatory methods: `String`, `Label`, `Is{Value}`, `All`, `ByIndex`, `Parse`, `IsValid`
+5. Add `MarshalJSON` / `UnmarshalJSON`
+6. Update all call sites (replace `.String()` comparisons with `.Is{Value}()`)
+
+### Special Considerations
+
+| Type | Issue | Proposed Resolution |
+|------|-------|-------------------|
+| `HttpStatusType` | HTTP codes (200, 404) don't fit byte iota | **Decision needed** |
+| `EndpointType` | String-valued paths, 30+ variants | Byte with string lookup works |
+| `ResponseKeyType` | 45+ JSON key strings | Byte with string lookup works |
+| `SessionType` | Inline in `service.go` | Extract to `session_type.go` |
+
+### Location Decision
+
+**Current:** All in `backend/internal/wordpress/`  
+**Options:**
+- **A:** Move to `backend/internal/enums/{category}/variant.go` (full spec compliance)
+- **B:** Keep in current packages, convert to byte-based (pragmatic)
+
+---
+
+## Phase C: Config Refactoring
+
+### C1 — Config JSON Tags Decision
+
+**Current:** `json:"camelCase"` matching `config.json` file format  
+**Spec says:** PascalCase for API response structs  
+
+**Recommendation:** Config structs are **file contracts**, not API responses. Keep camelCase JSON tags for config. Only API response structs use PascalCase.
+
+### C2 — Replace Config String Fields with Enums
+
+| Config Field | Current | Target Enum |
+|-------------|---------|-------------|
+| `LoggingConfig.Level` | `string` | `log_level.Variant` |
+| `SnapshotConfig.Mode` | `string` | `snapshot_mode.Variant` |
+| `SnapshotConfig.BackupType` | `string` | `backup_type.Variant` |
+| `SnapshotConfig.PluginSelection` | `string` | `plugin_selection.Variant` |
+
+### C3 — Split Config File (535 Lines → ≤300)
+
+| New File | Content | ~Lines |
+|----------|---------|--------|
+| `config.go` | `Config` struct + `Load()` + `DefaultConfig()` | ~120 |
+| `config_structs.go` | All sub-config structs | ~100 |
+| `config_seed.go` | `SeedIfNeeded()`, `seedFromConfig()`, `seedSitesAndPlugins()` | ~180 |
+| `config_helpers.go` | `ensureMappingsExist()`, `normalizeUrl()`, `compareVersions()` | ~80 |
+
+### C4 — Replace Comments with Self-Documenting Code
+
+Remove inline comments from config structs where enums or descriptive field names make intent clear.
+
+### C5 — Remove Redundant JSON Tags
+
+If Go field name matches desired JSON key (only applicable if PascalCase), drop the tag. Keep `omitempty` tags.
+
+---
+
+## Phase D: AppError JSON Serialization
+
+### D1 — Add MarshalJSON to AppError
+
+```go
+// error_json.go
+func (e *AppError) MarshalJSON() ([]byte, error) {
+    type alias AppError
+    return json.Marshal(&struct {
+        *alias
+        CauseMessage string `json:"cause,omitempty"`
+    }{
+        alias:        (*alias)(e),
+        CauseMessage: causeMessage(e),
+    })
+}
+
+func causeMessage(e *AppError) string {
+    if e.Cause == nil {
+        return ""
+    }
+    return e.Cause.Error()
+}
+```
+
+### D2 — Add UnmarshalJSON to AppError
+
+```go
+func (e *AppError) UnmarshalJSON(data []byte) error {
+    type alias AppError
+    aux := &struct {
+        *alias
+        CauseMessage string `json:"cause,omitempty"`
+    }{alias: (*alias)(e)}
+    if err := json.Unmarshal(data, aux); err != nil {
+        return err
+    }
+    if aux.CauseMessage != "" {
+        e.Cause = errors.New(aux.CauseMessage)
+    }
+    return nil
+}
+```
+
+### D3 — New File: `backend/pkg/apperror/error_json.go`
+
+---
+
+## Phase E: Remaining Raw Error Audit
+
+### E1 — `requestsession/store.go`
+
+Convert `fmt.Errorf` → `apperror.Wrap`/`apperror.New`.
+
+### E2 — `session/service.go`
+
+Convert `fmt.Errorf` → `apperror.Wrap`/`apperror.New`.
+
+### E3 — Config Load/Seed Errors
+
+`config.go` has bare `return err` in `Load()`, `SeedIfNeeded()`, and all seed functions. Wrap with `apperror.Wrap(err, apperror.ErrConfigLoad/ErrConfigSeed, ...)`.
+
+### E4 — Full Backend Sweep
+
+Run: `grep -rn "fmt.Errorf\|errors.New\|return err$" backend/internal/ backend/pkg/`
+
+---
+
+## Execution Order
+
+```
+Phase A (Specs)  ──► Phase B (Enums)    ──► Phase C (Config)
+                 ──► Phase D (AppError)  ──► Phase E (Error Audit)
+```
+
+Phase A must complete first. B and D can proceed in parallel. C depends on B (enum types for config fields). E depends on D.
+
+---
+
+## Open Questions (Require User Decision)
+
+1. **Enum location:** Move to `internal/enums/` or keep in `internal/wordpress/`?
+2. **HttpStatusType:** Keep as `int` or convert to byte with grouped categories?
+3. **Config JSON tags:** Confirm keeping camelCase for config file contract?
+4. **String-valued enums** (EndpointType, ResponseKeyType): These map to actual strings (URLs, JSON keys). Confirm byte conversion with lookup tables?
