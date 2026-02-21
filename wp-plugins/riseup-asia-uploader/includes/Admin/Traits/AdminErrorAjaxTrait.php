@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
@@ -27,7 +28,7 @@ trait AdminErrorAjaxTrait {
     public function ajaxDismissErrorFlash() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $db = Database::getInstance();
@@ -40,14 +41,14 @@ trait AdminErrorAjaxTrait {
         $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '{$maxId}', '{$now}')");
         $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        wp_send_json_success(array('message' => 'All errors marked as seen', 'last_seen_id' => $maxId));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'All errors marked as seen', 'last_seen_id' => $maxId));
     }
 
     /** AJAX handler: Clear all error sessions. */
     public function ajaxClearErrorSessions() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $db = Database::getInstance();
@@ -58,7 +59,7 @@ trait AdminErrorAjaxTrait {
         $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '0', '{$now}')");
         $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        wp_send_json_success(array('message' => 'All error sessions cleared'));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'All error sessions cleared'));
     }
 
     /** Resolve a log file type to its absolute path. */
@@ -80,14 +81,14 @@ trait AdminErrorAjaxTrait {
     public function ajaxReadLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
         $path = $this->resolveLogFilePath($type);
 
         if ($path === false) {
-            wp_send_json_error(array('message' => 'Invalid file type'));
+            wp_send_json_error(array(ResponseKeyType::Message->value => 'Invalid file type'));
         }
 
         wp_send_json_success($this->readLogFileContent($path));
@@ -126,20 +127,20 @@ trait AdminErrorAjaxTrait {
     public function ajaxClearLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
         $path = $this->resolveLogFilePath($type);
 
         if ($path === false) {
-            wp_send_json_error(array('message' => 'Invalid file type'));
+            wp_send_json_error(array(ResponseKeyType::Message->value => 'Invalid file type'));
         }
 
         if (file_exists($path)) {
             file_put_contents($path, '');
         }
 
-        wp_send_json_success(array('message' => 'File cleared', 'file_type' => $type));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', 'file_type' => $type));
     }
 }
