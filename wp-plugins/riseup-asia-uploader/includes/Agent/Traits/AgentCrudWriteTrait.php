@@ -22,13 +22,13 @@ use RiseupAsia\Helpers\DateHelper;
 
 trait AgentCrudWriteTrait {
 
-    // Literal 'pending' required in SQL heredoc; matches agent status domain value
+    // Literal 'Pending' required in SQL heredoc; matches agent status domain value
     private const AGENT_INSERT_QUERY = <<<'SQL'
-        INSERT INTO agent_sites (name, url, username, app_password_encrypted, redirect_url, status, created_at)
-        VALUES (?, ?, ?, ?, ?, 'pending', ?)
+        INSERT INTO AgentSites (Name, Url, Username, AppPasswordEncrypted, RedirectUrl, Status, CreatedAt)
+        VALUES (?, ?, ?, ?, ?, 'Pending', ?)
     SQL;
 
-    private const AGENT_DELETE_QUERY = 'DELETE FROM agent_sites WHERE id = ?';
+    private const AGENT_DELETE_QUERY = 'DELETE FROM AgentSites WHERE Id = ?';
 
     public function addAgent(array $data): int|WP_Error {
         $nameKey = AgentFieldType::Name->value;
@@ -83,11 +83,11 @@ trait AgentCrudWriteTrait {
             return new WP_Error(WpErrorCodeType::NoData->value, 'No fields to update');
         }
 
-        $update[$setsKey][] = 'updated_at = ?';
+        $update[$setsKey][] = 'UpdatedAt = ?';
         $update[$paramsKey][] = DateHelper::nowUtc();
         $update[$paramsKey][] = $id;
 
-        $sql = 'UPDATE agent_sites SET ' . implode(', ', $update[$setsKey]) . ' WHERE id = ?';
+        $sql = 'UPDATE AgentSites SET ' . implode(', ', $update[$setsKey]) . ' WHERE Id = ?';
 
         $query = new TypedQuery($pdo);
         $result = $query->exec($sql, $update[$paramsKey]);
@@ -152,13 +152,13 @@ trait AgentCrudWriteTrait {
         array &$params,
     ): void {
         $fieldMap = [
-            AgentFieldType::Name->value        => fn($v) => ['name = ?', sanitize_text_field($v)],
-            AgentFieldType::Url->value         => fn($v) => ['url = ?', esc_url_raw($this->normalizeUrl($v))],
-            AgentFieldType::Username->value    => fn($v) => ['username = ?', sanitize_user($v)],
-            AgentFieldType::RedirectUrl->value => fn($v) => ['redirect_url = ?', esc_url_raw($v)],
-            AgentFieldType::Status->value      => fn($v) => ['status = ?', sanitize_key($v)],
-            AgentFieldType::LastSync->value    => fn($v) => ['last_sync = ?', $v],
-            AgentFieldType::LastError->value   => fn($v) => ['last_error = ?', $v],
+            AgentFieldType::Name->value        => fn($v) => ['Name = ?', sanitize_text_field($v)],
+            AgentFieldType::Url->value         => fn($v) => ['Url = ?', esc_url_raw($this->normalizeUrl($v))],
+            AgentFieldType::Username->value    => fn($v) => ['Username = ?', sanitize_user($v)],
+            AgentFieldType::RedirectUrl->value => fn($v) => ['RedirectUrl = ?', esc_url_raw($v)],
+            AgentFieldType::Status->value      => fn($v) => ['Status = ?', sanitize_key($v)],
+            AgentFieldType::LastSync->value    => fn($v) => ['LastSync = ?', $v],
+            AgentFieldType::LastError->value   => fn($v) => ['LastError = ?', $v],
         ];
 
         foreach ($fieldMap as $field => $transform) {
@@ -183,7 +183,7 @@ trait AgentCrudWriteTrait {
             return;
         }
 
-        $sets[] = 'app_password_encrypted = ?';
+        $sets[] = 'AppPasswordEncrypted = ?';
         $params[] = $this->encrypt($data[$passwordKey]);
     }
 }

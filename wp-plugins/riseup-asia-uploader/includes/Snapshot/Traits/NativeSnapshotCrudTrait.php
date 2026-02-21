@@ -32,7 +32,7 @@ trait NativeSnapshotCrudTrait {
             return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
-        $filepath = $snapshot['filepath'];
+        $filepath = $snapshot['Filepath'];
         if (PathHelper::fileExists($filepath)) {
             $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
             if ($isDeleteFailed) {
@@ -47,8 +47,8 @@ trait NativeSnapshotCrudTrait {
             PathHelper::deleteFile($zip_path);
         }
 
-        $this->db->delete(TableType::Snapshots->value, array('id' => $snapshotId));
-        $this->log(LogLevelType::Info->value, 'Snapshot deleted', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot['filename']));
+        $this->db->delete(TableType::Snapshots->value, array('Id' => $snapshotId));
+        $this->log(LogLevelType::Info->value, 'Snapshot deleted', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot['Filename']));
 
         return ResultHelper::ok();
     }
@@ -61,7 +61,7 @@ trait NativeSnapshotCrudTrait {
             return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
-        $filepath = $snapshot['filepath'];
+        $filepath = $snapshot['Filepath'];
         if (PathHelper::isFileMissing($filepath)) {
 
             return ResultHelper::error(ResponseMessageType::SnapshotFileMissing->value);
@@ -100,11 +100,11 @@ trait NativeSnapshotCrudTrait {
             'version'                           => PluginConfigType::Version->value,
             'created_at'                        => date('c'),
             ResponseKeyType::SnapshotId->value  => $snapshotId,
-            ResponseKeyType::Filename->value    => $snapshot['filename'],
-            ResponseKeyType::Scope->value       => $snapshot['scope'],
-            ResponseKeyType::Tables->value      => json_decode($snapshot['tables_json'], true),
-            ResponseKeyType::TotalRows->value   => $snapshot['total_rows'],
-            ResponseKeyType::FileSize->value    => $snapshot['file_size'],
+            ResponseKeyType::Filename->value    => $snapshot['Filename'],
+            ResponseKeyType::Scope->value       => $snapshot['Scope'],
+            ResponseKeyType::Tables->value      => json_decode($snapshot['TablesJson'], true),
+            ResponseKeyType::TotalRows->value   => $snapshot['TotalRows'],
+            ResponseKeyType::FileSize->value    => $snapshot['FileSize'],
         );
     }
 
@@ -122,15 +122,15 @@ trait NativeSnapshotCrudTrait {
 
     public function getSnapshot(int $snapshotId): ?array {
 
-        return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ?', array($snapshotId));
+        return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?', array($snapshotId));
     }
 
     public function listSnapshots(int $limit = 50, int $offset = 0): array { // PaginationConfigType::DefaultLimit
         $snapshots = $this->db->queryAll(
-            'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
         );
-        $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
+        $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?', array($this->provider_id));
 
         return array(
             ResponseKeyType::Snapshots->value => $snapshots ?: array(),

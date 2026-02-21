@@ -1,6 +1,6 @@
 <?php
 /**
- * AgentSite — Readonly model for agent_sites rows.
+ * AgentSite — Readonly model for AgentSites rows.
  *
  * Provides a typed, immutable representation of an agent site record.
  * Use fromRow() as the canonical mapper for TypedQuery operations.
@@ -45,18 +45,18 @@ final readonly class AgentSite {
      */
     public static function fromRow(array $row, ?string $decryptedPassword = null): self {
         return new self(
-            id:                 (int) $row['id'],
-            name:               $row['name'],
-            url:                $row['url'],
-            username:           $row['username'],
-            redirectUrl:        $row['redirect_url'] ?? null,
-            redirectResolved:   $row['redirect_resolved'] ?? null,
-            redirectResolvedAt: $row['redirect_resolved_at'] ?? null,
-            status:             $row['status'] ?? AgentStatusType::Pending->value,
-            lastSync:           $row['last_sync'] ?? null,
-            lastError:          $row['last_error'] ?? null,
-            createdAt:          $row['created_at'],
-            updatedAt:          $row['updated_at'] ?? null,
+            id:                 (int) $row['Id'],
+            name:               $row['Name'],
+            url:                $row['Url'],
+            username:           $row['Username'],
+            redirectUrl:        $row['RedirectUrl'] ?? null,
+            redirectResolved:   $row['RedirectResolved'] ?? null,
+            redirectResolvedAt: $row['RedirectResolvedAt'] ?? null,
+            status:             $row['Status'] ?? AgentStatusType::Pending->value,
+            lastSync:           $row['LastSync'] ?? null,
+            lastError:          $row['LastError'] ?? null,
+            createdAt:          $row['CreatedAt'],
+            updatedAt:          $row['UpdatedAt'] ?? null,
             appPassword:        $decryptedPassword,
         );
     }

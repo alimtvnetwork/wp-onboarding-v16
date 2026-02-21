@@ -90,34 +90,38 @@ trait DatabaseQueryLogTrait {
 
         return Orm::forTable(TableType::Transactions->value)
             ->create()
-            ->set('action', $action)
-            ->set('plugin_slug', $pluginSlug)
-            ->set('post_id', $postId)
-            ->set('user_login', $userLogin)
-            ->set('user_id', $userId)
-            ->set('ip_address', $ipAddress)
-            ->set('details', $detailsJson)
-            ->set('status', $status)
-            ->set('error_msg', $errorMsg)
-            ->set('created_at', DateHelper::nowUtc());
+            ->set('Action', $action)
+            ->set('PluginSlug', $pluginSlug)
+            ->set('PostId', $postId)
+            ->set('UserLogin', $userLogin)
+            ->set('UserId', $userId)
+            ->set('IpAddress', $ipAddress)
+            ->set('Details', $detailsJson)
+            ->set('Status', $status)
+            ->set('ErrorMsg', $errorMsg)
+            ->set('CreatedAt', DateHelper::nowUtc());
     }
 
     private function applyEnhancedFields($record, array $enhanced): void {
-        $stringFields = array('plugin_file', 'triggered_by', 'source_machine', 'plugin_version', 'upload_source');
-        foreach ($stringFields as $field) {
-            $hasField = BooleanHelpers::hasValue($enhanced[$field] ?? null);
+        $fieldMap = array(
+            'plugin_file' => 'PluginFile', 'triggered_by' => 'TriggeredBy',
+            'source_machine' => 'SourceMachine', 'plugin_version' => 'PluginVersion',
+            'upload_source' => 'UploadSource',
+        );
+        foreach ($fieldMap as $paramKey => $dbColumn) {
+            $hasField = BooleanHelpers::hasValue($enhanced[$paramKey] ?? null);
             if ($hasField) {
-                $record->set($field, $enhanced[$field]);
+                $record->set($dbColumn, $enhanced[$paramKey]);
             }
         }
 
         $hasAgentSiteId = BooleanHelpers::hasValue($enhanced['agent_site_id'] ?? null);
         if ($hasAgentSiteId) {
-            $record->set('agent_site_id', (int) $enhanced['agent_site_id']);
+            $record->set('AgentSiteId', (int) $enhanced['agent_site_id']);
         }
 
         if (isset($enhanced['was_active'])) {
-            $record->set('was_active', $enhanced['was_active'] ? 1 : 0);
+            $record->set('WasActive', $enhanced['was_active'] ? 1 : 0);
         }
     }
 
@@ -153,9 +157,9 @@ trait DatabaseQueryLogTrait {
             $log = Orm::forTable(TableType::Transactions->value)
                 ->findOne($id);
 
-            $hasLogDetails = $log && BooleanHelpers::hasValue($log['details'] ?? null);
+            $hasLogDetails = $log && BooleanHelpers::hasValue($log['Details'] ?? null);
             if ($hasLogDetails) {
-                $log['details'] = json_decode($log['details'], true);
+                $log['Details'] = json_decode($log['Details'], true);
             }
 
             return $log;

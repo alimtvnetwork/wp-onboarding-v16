@@ -21,15 +21,15 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudReadTrait {
 
-    private const AGENT_SELECT_QUERY = 'SELECT * FROM agent_sites WHERE id = ?';
+    private const AGENT_SELECT_QUERY = 'SELECT * FROM AgentSites WHERE Id = ?';
 
-    private const AGENT_COUNT_QUERY = 'SELECT COUNT(*) as total FROM agent_sites';
+    private const AGENT_COUNT_QUERY = 'SELECT COUNT(*) as total FROM AgentSites';
 
     private const AGENT_LIST_QUERY = <<<'SQL'
-        SELECT id, name, url, username, redirect_url, redirect_resolved,
-               redirect_resolved_at, status, last_sync, last_error,
-               created_at, updated_at
-        FROM agent_sites
+        SELECT Id, Name, Url, Username, RedirectUrl, RedirectResolved,
+               RedirectResolvedAt, Status, LastSync, LastError,
+               CreatedAt, UpdatedAt
+        FROM AgentSites
     SQL;
 
     public function getAgent(int $id, bool $includePassword = false): ?array {
@@ -82,7 +82,7 @@ trait AgentCrudReadTrait {
         }
 
         $listParams = array_merge($where['params'], [$limit, $offset]);
-        $listSql = self::AGENT_LIST_QUERY . " {$where['sql']} ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $listSql = self::AGENT_LIST_QUERY . " {$where['sql']} ORDER BY CreatedAt DESC LIMIT ? OFFSET ?";
 
         $listResult = $query->queryMany(
             $listSql,
@@ -108,7 +108,7 @@ trait AgentCrudReadTrait {
 
     private function mapAgentRow(array $row, bool $includePassword): AgentSite {
         $password = $includePassword
-            ? $this->decrypt($row['app_password_encrypted'])
+            ? $this->decrypt($row['AppPasswordEncrypted'])
             : null;
 
         return AgentSite::fromRow($row, $password);
@@ -120,7 +120,7 @@ trait AgentCrudReadTrait {
 
         $hasStatusFilter = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Status->value);
         if ($hasStatusFilter) {
-            $conditions[] = 'status = ?';
+            $conditions[] = 'Status = ?';
             $params[] = $filters[FilterKeyType::Status->value];
         }
 

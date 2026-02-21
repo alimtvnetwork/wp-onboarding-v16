@@ -31,7 +31,7 @@ trait WorkerProgressTrait {
 
         try {
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TableType::SnapshotProgress->value . "
-                (snapshot_id, table_name, status, rows_total, rows_exported, started_at)
+                (SnapshotId, TableName, Status, RowsTotal, RowsExported, StartedAt)
                 VALUES (0, ?, '" . SnapshotStatusType::Pending->value . "', 0, 0, ?)");
 
             $now = DateHelper::nowIso();
@@ -40,7 +40,7 @@ trait WorkerProgressTrait {
                 $stmt->execute(array($table, $now));
 
                 $pdo->exec("UPDATE " . TableType::SnapshotProgress->value .
-                    " SET rows_total = {$count} WHERE snapshot_id = 0 AND table_name = '{$table}'");
+                    " SET RowsTotal = {$count} WHERE SnapshotId = 0 AND TableName = '{$table}'");
             }
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to init progress records', array('error' => $e->getMessage()));
@@ -63,8 +63,8 @@ trait WorkerProgressTrait {
         try {
             $now = DateHelper::nowIso();
             $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotProgress->value . "
-                SET status = ?, rows_exported = ?, completed_at = ?, error_message = ?
-                WHERE snapshot_id = 0 AND table_name = ?");
+                SET Status = ?, RowsExported = ?, CompletedAt = ?, ErrorMessage = ?
+                WHERE SnapshotId = 0 AND TableName = ?");
             $stmt->execute(array(
                 $status, $rows,
                 ($status === SnapshotStatusType::Complete->value || $status === SnapshotStatusType::Failed->value) ? $now : null,

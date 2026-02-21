@@ -23,11 +23,11 @@ trait CleanerDeletionTrait {
 
     private function deleteSnapshot(array $snapshot): array {
         $bytes_freed = 0;
-        $filepath = $snapshot['filepath'];
+        $filepath = $snapshot['Filepath'];
         $is_directory = is_dir($filepath);
 
         if ($is_directory) {
-            $bytes_freed += $this->cascadeDeleteIncrementalDir($filepath, (int) $snapshot['id']);
+            $bytes_freed += $this->cascadeDeleteIncrementalDir($filepath, (int) $snapshot['Id']);
             $dir_size = $this->getDirectorySize($filepath);
             $this->deleteDirectoryRecursive($filepath);
             $bytes_freed += $dir_size;
@@ -41,12 +41,12 @@ trait CleanerDeletionTrait {
             }
         }
 
-        $this->deleteSnapshotRecords((int) $snapshot['id']);
-        $this->removeExportCache((int) $snapshot['id']);
+        $this->deleteSnapshotRecords((int) $snapshot['Id']);
+        $this->removeExportCache((int) $snapshot['Id']);
 
         $this->log(LogLevelType::Debug->value, 'Deleted snapshot', array(
-            'id'                             => $snapshot['id'],
-            ResponseKeyType::Filename->value => $snapshot['filename'] ?? '',
+            'id'                             => $snapshot['Id'],
+            ResponseKeyType::Filename->value => $snapshot['Filename'] ?? '',
             'bytes_freed'                    => PathHelper::formatBytes($bytes_freed),
         ));
 
@@ -97,9 +97,9 @@ trait CleanerDeletionTrait {
     }
 
     private function deleteSnapshotRecords(int $snapshotId): void {
-        $this->db->delete(TableType::Snapshots->value, array('id' => $snapshotId));
+        $this->db->delete(TableType::Snapshots->value, array('Id' => $snapshotId));
         $this->db->execute(
-            'DELETE FROM ' . TableType::SnapshotProgress->value . ' WHERE snapshot_id = ?',
+            'DELETE FROM ' . TableType::SnapshotProgress->value . ' WHERE SnapshotId = ?',
             array($snapshotId)
         );
     }
@@ -121,13 +121,13 @@ trait CleanerDeletionTrait {
     private function cascadeDeleteIncrementalRecords(string $parentDir): void {
         try {
             $incrementals = $this->db->query_all(
-                'SELECT id FROM ' . TableType::Snapshots->value .
-                " WHERE scope = '" . \RiseupAsia\Enums\SnapshotModeType::Incremental->value . "' AND filepath LIKE ?",
+                'SELECT Id FROM ' . TableType::Snapshots->value .
+                " WHERE Scope = '" . \RiseupAsia\Enums\SnapshotModeType::Incremental->value . "' AND Filepath LIKE ?",
                 array($parentDir . '/incremental/%')
             ) ?: array();
 
             foreach ($incrementals as $inc) {
-                $this->deleteSnapshotRecords((int) $inc['id']);
+                $this->deleteSnapshotRecords((int) $inc['Id']);
             }
 
             $this->log(LogLevelType::Debug->value, 'Deleted incremental DB records', array(

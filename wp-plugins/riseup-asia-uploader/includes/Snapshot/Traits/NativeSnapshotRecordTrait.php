@@ -79,9 +79,9 @@ trait NativeSnapshotRecordTrait {
         string $trigger,
     ): int|false {
         $result = $this->db->insert(TableType::Snapshots->value, array(
-            'sequence' => $sequence, 'filename' => $filename . '.sqlite', 'filepath' => $filepath,
-            'provider' => $this->provider_id, 'scope' => $scope, 'tables_json' => json_encode($tables),
-            'trigger_source' => $trigger, 'status' => SnapshotStatusType::Pending->value, 'created_at' => date('c'),
+            'Sequence' => $sequence, 'Filename' => $filename . '.sqlite', 'Filepath' => $filepath,
+            'Provider' => $this->provider_id, 'Scope' => $scope, 'TablesJson' => json_encode($tables),
+            'TriggerSource' => $trigger, 'Status' => SnapshotStatusType::Pending->value, 'CreatedAt' => date('c'),
         ));
 
         return $result ? $this->db->lastInsertId() : false;
@@ -92,21 +92,21 @@ trait NativeSnapshotRecordTrait {
         string $status,
         ?string $error = null,
     ): void {
-        $data = array('status' => $status, 'updated_at' => date('c'));
+        $data = array('Status' => $status, 'UpdatedAt' => date('c'));
         if ($error) {
-            $data['error_message'] = $error;
+            $data['ErrorMessage'] = $error;
         }
         if ($status === SnapshotStatusType::Running->value) {
-            $data['started_at'] = date('c');
+            $data['StartedAt'] = date('c');
         }
-        $this->db->update(TableType::Snapshots->value, $data, array('id' => $snapshotId));
+        $this->db->update(TableType::Snapshots->value, $data, array('Id' => $snapshotId));
     }
 
     private function finalizeSnapshot(int $snapshotId, array $details): void {
         $this->db->update(TableType::Snapshots->value, array(
-            'status' => $details['status'], 'file_size' => $details['file_size'],
-            'total_rows' => $details['total_rows'], 'table_counts_json' => json_encode($details['table_counts']),
-            'duration_ms' => $details['duration_ms'], 'completed_at' => date('c'), 'updated_at' => date('c'),
-        ), array('id' => $snapshotId));
+            'Status' => $details['status'], 'FileSize' => $details['file_size'],
+            'TotalRows' => $details['total_rows'], 'TableCountsJson' => json_encode($details['table_counts']),
+            'DurationMs' => $details['duration_ms'], 'CompletedAt' => date('c'), 'UpdatedAt' => date('c'),
+        ), array('Id' => $snapshotId));
     }
 }
