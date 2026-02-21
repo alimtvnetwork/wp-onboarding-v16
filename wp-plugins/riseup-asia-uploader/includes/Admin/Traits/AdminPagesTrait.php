@@ -88,14 +88,14 @@ trait AdminPagesTrait {
     /** Render the settings page. */
     public function renderSettingsPage() {
         $settings = self::getSettings();
-        $update_settings = UpdateResolver::getInstance()->getSettings();
+        $updateSettings = UpdateResolver::getInstance()->getSettings();
 
         $detector = SnapshotFactory::detector();
-        $snapshot_settings = $detector->getSettings();
-        $snapshot_providers = $detector->detectAvailableProviders();
+        $snapshotSettings = $detector->getSettings();
+        $snapshotProviders = $detector->detectAvailableProviders();
 
-        $endpoint_groups = $this->buildEndpointGroups();
-        $endpointsMeta = $this->flattenEndpointGroups($endpoint_groups);
+        $endpointGroups = $this->buildEndpointGroups();
+        $endpointsMeta = $this->flattenEndpointGroups($endpointGroups);
 
         include dirname(__FILE__) . '/../../templates/admin-settings.php';
     }
