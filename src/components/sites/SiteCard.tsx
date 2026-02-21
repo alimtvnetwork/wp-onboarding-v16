@@ -102,7 +102,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     if (!snapshots?.length) return null;
     const completed = (snapshots as SnapshotRecord[])
       .filter((s) => s.status === "complete" || s.status === "completed")
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return completed[0] || null;
   }, [snapshots]);
 
@@ -314,7 +314,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             {lastBackup && (
               <span className="inline-flex items-center gap-1 text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                <span>Last backup {formatDistanceToNow(parseISO(lastBackup.created_at), { addSuffix: true })}</span>
+                <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
               </span>
             )}
             {nextScheduledRun?.nextRunAt && (

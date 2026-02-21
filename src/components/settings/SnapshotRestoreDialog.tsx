@@ -105,14 +105,14 @@ export function SnapshotRestoreDialog({ snapshot, open, onOpenChange, onRestoreC
                   <Database className="h-3 w-3" />
                   Rows
                 </div>
-                <p className="text-sm font-mono font-semibold">{snapshot.total_rows?.toLocaleString() ?? "—"}</p>
+                <p className="text-sm font-mono font-semibold">{snapshot.totalRows?.toLocaleString() ?? "—"}</p>
               </div>
               <div className="text-center space-y-0.5">
                 <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                   <HardDrive className="h-3 w-3" />
                   Size
                 </div>
-                <p className="text-sm font-mono font-semibold">{snapshot.file_size ? formatBytes(snapshot.file_size) : "—"}</p>
+                <p className="text-sm font-mono font-semibold">{snapshot.fileSize ? formatBytes(snapshot.fileSize) : "—"}</p>
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ export function SnapshotRestoreDialog({ snapshot, open, onOpenChange, onRestoreC
               Created
             </span>
             <span className="font-mono">
-              {snapshot.created_at ? format(new Date(snapshot.created_at), "PPpp") : "—"}
+              {snapshot.createdAt ? format(new Date(snapshot.createdAt), "PPpp") : "—"}
             </span>
           </div>
 

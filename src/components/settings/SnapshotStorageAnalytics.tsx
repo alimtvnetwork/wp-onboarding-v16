@@ -20,18 +20,18 @@ interface Props {
 export function SnapshotStorageAnalytics({ snapshots }: Props) {
   const { dailyData, stats } = useMemo(() => {
     const sorted = [...(snapshots ?? [])].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
     // Group by day
     const byDay = new Map<string, { size: number; count: number; rows: number }>();
     let cumSize = 0;
     sorted.forEach((s) => {
-      const day = format(startOfDay(parseISO(s.created_at)), "yyyy-MM-dd");
+      const day = format(startOfDay(parseISO(s.createdAt)), "yyyy-MM-dd");
       const existing = byDay.get(day) || { size: 0, count: 0, rows: 0 };
-      existing.size += s.file_size ?? 0;
+      existing.size += s.fileSize ?? 0;
       existing.count += 1;
-      existing.rows += s.total_rows ?? 0;
+      existing.rows += s.totalRows ?? 0;
       byDay.set(day, existing);
     });
 
@@ -47,8 +47,8 @@ export function SnapshotStorageAnalytics({ snapshots }: Props) {
       };
     });
 
-    const totalSize = sorted.reduce((sum, s) => sum + (s.file_size ?? 0), 0);
-    const totalRows = sorted.reduce((sum, s) => sum + (s.total_rows ?? 0), 0);
+    const totalSize = sorted.reduce((sum, s) => sum + (s.fileSize ?? 0), 0);
+    const totalRows = sorted.reduce((sum, s) => sum + (s.totalRows ?? 0), 0);
     const avgSize = sorted.length > 0 ? totalSize / sorted.length : 0;
 
     return {

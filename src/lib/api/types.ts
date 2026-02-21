@@ -623,36 +623,36 @@ export interface SnapshotRecord {
   scope: string;
   provider: string;
   status: string;
-  file_size: number;
-  total_rows: number;
+  fileSize: number;
+  totalRows: number;
   tables: string;
-  created_at: string;
+  createdAt: string;
   error?: string;
   /** 'full' | 'incremental' — derived from scope or tables_json metadata */
-  snapshot_type?: SnapshotType;
+  snapshotType?: SnapshotType;
   /** For incrementals: the parent full snapshot's ID */
-  parent_id?: number;
+  parentId?: number;
   /** For incrementals: the master directory name */
-  parent_dir?: string;
+  parentDir?: string;
   /** For full snapshots: count of child incrementals */
-  incremental_count?: number;
+  incrementalCount?: number;
 }
 
 export interface SnapshotSettings {
   provider: string;
   schedule: string;
-  schedule_time?: string;
-  schedule_day?: string;
+  scheduleTime?: string;
+  scheduleDay?: string;
   scope: string;
-  retention_type: string;
-  retention_days?: number;
-  retention_max?: number;
-  pre_restore_backup: boolean;
-  batch_size?: number;
+  retentionType: string;
+  retentionDays?: number;
+  retentionMax?: number;
+  preRestoreBackup: boolean;
+  batchSize?: number;
   // Multi-schedule & parallel execution (synced with global settings)
   schedules?: SnapshotSchedule[];
-  storage_mode?: "single" | "per-table";
-  worker_count?: number;
+  storageMode?: "single" | "per-table";
+  workerCount?: number;
 }
 
 export interface SnapshotProviderInfo {
@@ -666,7 +666,7 @@ export interface AvailableTable {
   name: string;
   rows: number;
   size: number;
-  is_core: boolean;
+  isCore: boolean;
 }
 
 // Publish History types

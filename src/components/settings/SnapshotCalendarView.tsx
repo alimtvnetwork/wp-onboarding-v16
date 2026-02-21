@@ -75,7 +75,7 @@ export function SnapshotCalendarView({ snapshots, cronJobs }: Props) {
     days.forEach((day) => {
       const key = format(day, "yyyy-MM-dd");
       const daySnaps = (snapshots ?? []).filter((s) =>
-        s.created_at ? isSameDay(parseISO(s.created_at), day) : false
+        s.createdAt ? isSameDay(parseISO(s.createdAt), day) : false
       );
       const hasScheduled = scheduledDates.some((sd) => isSameDay(sd, day));
       map.set(key, { date: day, snapshots: daySnaps, hasScheduled });
@@ -216,7 +216,7 @@ export function SnapshotCalendarView({ snapshots, cronJobs }: Props) {
                             <XCircle className="h-3 w-3 text-destructive shrink-0" />
                           )}
                           <span className="truncate">
-                            #{s.sequence} · {s.total_rows?.toLocaleString() ?? "?"} rows
+                            #{s.sequence} · {s.totalRows?.toLocaleString() ?? "?"} rows
                           </span>
                         </div>
                       ))}

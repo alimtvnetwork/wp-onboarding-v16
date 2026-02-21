@@ -915,15 +915,15 @@ function SnapshotHistoryViewer() {
                     <span className="font-mono">{snap.tables?.split(",").length ?? 0}</span>
                   </TableCell>
                   <TableCell className="text-xs font-mono hidden md:table-cell">
-                    {snap.total_rows?.toLocaleString() ?? "—"}
+                    {snap.totalRows?.toLocaleString() ?? "—"}
                   </TableCell>
                   <TableCell className="text-xs font-mono hidden md:table-cell">
-                    {snap.file_size ? formatBytes(snap.file_size) : "—"}
+                    {snap.fileSize ? formatBytes(snap.fileSize) : "—"}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    <span title={snap.created_at ? format(new Date(snap.created_at), "PPpp") : ""}>
-                      {snap.created_at
-                        ? formatDistanceToNow(new Date(snap.created_at), { addSuffix: true })
+                    <span title={snap.createdAt ? format(new Date(snap.createdAt), "PPpp") : ""}>
+                      {snap.createdAt
+                        ? formatDistanceToNow(new Date(snap.createdAt), { addSuffix: true })
                         : "—"}
                     </span>
                   </TableCell>
@@ -987,8 +987,8 @@ function SnapshotDetailDrawer({
               Snapshot #{snapshot?.sequence}
             </SheetTitle>
             <SheetDescription>
-              {snapshot?.created_at
-                ? format(new Date(snapshot.created_at), "PPpp")
+              {snapshot?.createdAt
+                ? format(new Date(snapshot.createdAt), "PPpp")
                 : "Unknown date"}
             </SheetDescription>
           </SheetHeader>
@@ -1007,11 +1007,11 @@ function SnapshotDetailDrawer({
                 </div>
                 <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Total Rows</p>
-                  <p className="text-sm font-mono font-medium">{snapshot.total_rows?.toLocaleString() ?? "—"}</p>
+                  <p className="text-sm font-mono font-medium">{snapshot.totalRows?.toLocaleString() ?? "—"}</p>
                 </div>
                 <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider">File Size</p>
-                  <p className="text-sm font-mono font-medium">{snapshot.file_size ? formatBytes(snapshot.file_size) : "—"}</p>
+                  <p className="text-sm font-mono font-medium">{snapshot.fileSize ? formatBytes(snapshot.fileSize) : "—"}</p>
                 </div>
               </div>
 

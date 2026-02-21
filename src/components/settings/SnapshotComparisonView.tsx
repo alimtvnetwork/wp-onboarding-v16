@@ -52,7 +52,7 @@ function parseTableInfo(snap: SnapshotRecord | undefined): Map<string, number> {
   if (!snap?.tables) return map;
   const tables = snap.tables.split(",").filter(Boolean);
   // We don't have per-table row counts from the record, so we distribute evenly as an estimate
-  const perTable = snap.total_rows ? Math.round(snap.total_rows / (tables.length || 1)) : 0;
+  const perTable = snap.totalRows ? Math.round(snap.totalRows / (tables.length || 1)) : 0;
   tables.forEach((t) => map.set(t.trim(), perTable));
   return map;
 }
@@ -111,15 +111,15 @@ export function SnapshotComparisonView({ snapshots }: SnapshotComparisonViewProp
     const removed = diffs.filter((d) => d.status === "removed").length;
     const changed = diffs.filter((d) => d.status === "changed").length;
     const unchanged = diffs.filter((d) => d.status === "unchanged").length;
-    const totalRowDelta = leftSnap && rightSnap ? (rightSnap.total_rows ?? 0) - (leftSnap.total_rows ?? 0) : 0;
-    const sizeDelta = leftSnap && rightSnap ? (rightSnap.file_size ?? 0) - (leftSnap.file_size ?? 0) : 0;
+    const totalRowDelta = leftSnap && rightSnap ? (rightSnap.totalRows ?? 0) - (leftSnap.totalRows ?? 0) : 0;
+    const sizeDelta = leftSnap && rightSnap ? (rightSnap.fileSize ?? 0) - (leftSnap.fileSize ?? 0) : 0;
     return { added, removed, changed, unchanged, totalRowDelta, sizeDelta };
   }, [diffs, leftSnap, rightSnap]);
 
   if (snapshots.length < 2) return null;
 
   const snapLabel = (s: SnapshotRecord) =>
-    `#${s.sequence} — ${s.created_at ? format(new Date(s.created_at), "MMM d, HH:mm") : "?"}`;
+    `#${s.sequence} — ${s.createdAt ? format(new Date(s.createdAt), "MMM d, HH:mm") : "?"}`;
 
   return (
     <>
