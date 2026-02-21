@@ -34,7 +34,6 @@ trait OrchestratorRegistrationTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-
             return false;
         }
 
@@ -66,7 +65,6 @@ trait OrchestratorRegistrationTrait {
     }
 
     private function buildSnapshotTablesJson(array $workerResult, array $pluginStats): string {
-
         return json_encode(array(
             ResponseKeyType::Exported->value      => $workerResult[ResponseKeyType::Tables->value] ?? 0,
             ResponseKeyType::TotalRows->value     => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,

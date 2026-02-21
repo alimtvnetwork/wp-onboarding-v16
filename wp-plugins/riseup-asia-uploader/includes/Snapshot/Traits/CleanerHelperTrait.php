@@ -54,7 +54,6 @@ trait CleanerHelperTrait {
 
     private function deleteDirectoryRecursive(string $dir): void {
         if (PathHelper::isDirMissing($dir)) {
-
             return;
         }
 
@@ -77,7 +76,6 @@ trait CleanerHelperTrait {
         $size = 0;
 
         if (PathHelper::isDirMissing($dir)) {
-
             return 0;
         }
 
@@ -131,7 +129,6 @@ trait CleanerHelperTrait {
         $isLoggerMissing = ($this->logger === null);
 
         if ($isLoggerMissing) {
-
             return;
         }
 

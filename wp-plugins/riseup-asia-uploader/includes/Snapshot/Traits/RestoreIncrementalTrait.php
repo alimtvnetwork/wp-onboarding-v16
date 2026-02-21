@@ -38,7 +38,6 @@ trait RestoreIncrementalTrait {
         $isSkipped = ($shouldApply === false);
 
         if ($isSkipped) {
-
             return array(
                 ResponseKeyType::Applied->value   => 0,
                 ResponseKeyType::TotalRows->value  => 0,
@@ -64,7 +63,6 @@ trait RestoreIncrementalTrait {
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($incrementals)) {
-
             return array(
                 ResponseKeyType::Applied->value   => 0,
                 ResponseKeyType::TotalRows->value  => 0,

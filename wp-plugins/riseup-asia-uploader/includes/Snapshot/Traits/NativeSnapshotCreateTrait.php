@@ -80,7 +80,6 @@ trait NativeSnapshotCreateTrait {
      */
     private function scheduleOrExecute(string $scope, string $trigger): array {
         if ($scope === SnapshotScopeType::Full->value) {
-
             return $this->error(SnapshotErrorType::InvalidScope, 'Full snapshot scope is not supported for native provider');
         }
 

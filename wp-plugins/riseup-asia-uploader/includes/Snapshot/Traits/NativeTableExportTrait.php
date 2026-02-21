@@ -33,7 +33,6 @@ trait NativeTableExportTrait {
             $isCreateSqlMissing = ($create_sql === null || $create_sql === false);
 
             if ($isCreateSqlMissing) {
-
                 throw new Exception('Failed to get table structure');
             }
 
@@ -43,7 +42,6 @@ trait NativeTableExportTrait {
             $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
 
             if ($count === 0) {
-
                 return array(
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Rows->value    => 0,

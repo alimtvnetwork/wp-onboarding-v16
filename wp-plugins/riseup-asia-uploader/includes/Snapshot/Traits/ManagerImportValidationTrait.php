@@ -26,7 +26,6 @@ trait ManagerImportValidationTrait {
             $isFieldMissing = BooleanHelpers::isKeyMissing($manifest, $field);
 
             if ($isFieldMissing) {
-
                 return array(
                     ResponseKeyType::Valid->value => false,
                     ResponseKeyType::Error->value => "Missing required field: {$field}",
@@ -40,7 +39,6 @@ trait ManagerImportValidationTrait {
             $isSnapshotFieldMissing = BooleanHelpers::isKeyMissing($manifest['snapshot'], $field);
 
             if ($isSnapshotFieldMissing) {
-
                 return array(
                     ResponseKeyType::Valid->value => false,
                     ResponseKeyType::Error->value => "Missing snapshot field: {$field}",
@@ -51,7 +49,6 @@ trait ManagerImportValidationTrait {
         $formatVersion = $manifest['format_version'] ?? '1.0';
 
         if (version_compare($formatVersion, '2.0', '>=')) {
-
             return array(
                 ResponseKeyType::Valid->value => false,
                 ResponseKeyType::Error->value => 'Unsupported format version: ' . $formatVersion,
@@ -70,7 +67,6 @@ trait ManagerImportValidationTrait {
             $integrity = $result->fetchColumn();
 
             if ($integrity !== 'ok') {
-
                 return array(
                     ResponseKeyType::Valid->value => false,
                     ResponseKeyType::Error->value => 'Database integrity check failed: ' . $integrity,
@@ -81,7 +77,6 @@ trait ManagerImportValidationTrait {
             $isMetaTableAbsent = ($metaCheck->fetch() === false);
 
             if ($isMetaTableAbsent) {
-
                 return array(
                     ResponseKeyType::Valid->value => false,
                     ResponseKeyType::Error->value => 'Missing _snapshot_meta table',
@@ -92,7 +87,6 @@ trait ManagerImportValidationTrait {
 
             return array(ResponseKeyType::Valid->value => true);
         } catch (Throwable $e) {
-
             return array(
                 ResponseKeyType::Valid->value => false,
                 ResponseKeyType::Error->value => 'SQLite error: ' . $e->getMessage(),

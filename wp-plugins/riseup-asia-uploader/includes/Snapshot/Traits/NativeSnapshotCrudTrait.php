@@ -28,7 +28,6 @@ trait NativeSnapshotCrudTrait {
         $isSnapshotMissing = ($snapshot === null);
 
         if ($isSnapshotMissing) {
-
             return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
@@ -63,14 +62,12 @@ trait NativeSnapshotCrudTrait {
         $isSnapshotMissing = ($snapshot === null);
 
         if ($isSnapshotMissing) {
-
             return ResultHelper::error(ResponseMessageType::SnapshotNotFound->value);
         }
 
         $filepath = $snapshot['Filepath'];
 
         if (PathHelper::isFileMissing($filepath)) {
-
             return ResultHelper::error(ResponseMessageType::SnapshotFileMissing->value);
         }
 
@@ -86,7 +83,6 @@ trait NativeSnapshotCrudTrait {
 
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-
             return ResultHelper::error(ResponseMessageType::ZipCreateFailed->value);
         }
 
@@ -105,7 +101,6 @@ trait NativeSnapshotCrudTrait {
     }
 
     private function buildExportManifest(int $snapshotId, array $snapshot): array {
-
         return array(
             'version'                           => PluginConfigType::Version->value,
             ResponseKeyType::CreatedAt->value   => date('c'),
@@ -131,7 +126,6 @@ trait NativeSnapshotCrudTrait {
     }
 
     public function getSnapshot(int $snapshotId): ?array {
-
         return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?', array($snapshotId));
     }
 

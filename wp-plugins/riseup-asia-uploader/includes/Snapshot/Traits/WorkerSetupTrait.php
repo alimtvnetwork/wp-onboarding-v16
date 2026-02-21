@@ -48,7 +48,6 @@ trait WorkerSetupTrait {
         $isDirCreateFailed = (PathHelper::makeDirectory($snapshot_dir, true) === false);
 
         if ($isDirCreateFailed) {
-
             return ResultHelper::error('Failed to create snapshot directory');
         }
 
@@ -104,7 +103,6 @@ trait WorkerSetupTrait {
         $isLoggerMissing = ($this->logger === null);
 
         if ($isLoggerMissing) {
-
             return;
         }
 

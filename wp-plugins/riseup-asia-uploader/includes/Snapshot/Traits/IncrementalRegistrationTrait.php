@@ -70,7 +70,6 @@ trait IncrementalRegistrationTrait {
         int $tablesChanged,
         int $totalNewRows,
     ): string {
-
         return json_encode(array(
             'type' => SnapshotModeType::Incremental->value,
             'master' => basename($masterDir),

@@ -39,7 +39,6 @@ trait WorkerTableExportTrait {
 
             return $this->buildExportResult($filename, $filepath, $exported);
         } catch (Throwable $e) {
-
             return array(
                 ResponseKeyType::Success->value  => false,
                 ResponseKeyType::Error->value    => $e->getMessage(),
@@ -61,7 +60,6 @@ trait WorkerTableExportTrait {
         $isCreateSqlMissing = ($create_sql === null);
 
         if ($isCreateSqlMissing) {
-
             throw new Exception('Failed to get table structure for ' . $table);
         }
 

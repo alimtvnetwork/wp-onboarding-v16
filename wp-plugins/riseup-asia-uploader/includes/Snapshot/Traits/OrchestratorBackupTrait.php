@@ -54,7 +54,6 @@ trait OrchestratorBackupTrait {
             $isExportFailed = BooleanHelpers::isResultFailed($worker_result);
 
             if ($isExportFailed) {
-
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
@@ -88,7 +87,6 @@ trait OrchestratorBackupTrait {
                 'status'                            => $worker_result['status'] ?? null,
             );
         } catch (Throwable $e) {
-
             return $this->buildExceptionResult($e, 'async_orchestration');
         }
     }
@@ -101,7 +99,6 @@ trait OrchestratorBackupTrait {
             $isExportFailed = BooleanHelpers::isResultFailed($worker_result);
 
             if ($isExportFailed) {
-
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
@@ -111,7 +108,6 @@ trait OrchestratorBackupTrait {
 
             return $context;
         } catch (Throwable $e) {
-
             return $this->buildExceptionResult($e, 'sync_orchestration');
         }
     }
@@ -172,7 +168,6 @@ trait OrchestratorBackupTrait {
         $zip_result = $this->createZipExport($snapshotDir, $resolved['title']);
 
         if ($zip_result[ResponseKeyType::Success->value]) {
-
             return array(
                 ResponseKeyType::Path->value      => $zip_result[ResponseKeyType::Path->value],
                 ResponseKeyType::Size->value      => $zip_result[ResponseKeyType::Size->value],
@@ -203,7 +198,6 @@ trait OrchestratorBackupTrait {
             $isMasterDirMissing = ($master_dir === null);
 
             if ($isMasterDirMissing) {
-
                 return array(
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'No full snapshot found. A full backup is required before creating an incremental.',
@@ -220,7 +214,6 @@ trait OrchestratorBackupTrait {
 
             return $result;
         } catch (Throwable $e) {
-
             return $this->buildExceptionResult($e, 'incremental_orchestration');
         }
     }
@@ -237,7 +230,6 @@ trait OrchestratorBackupTrait {
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($row && is_dir($row['Filepath'])) {
-
                     return $row['Filepath'];
                 }
             }

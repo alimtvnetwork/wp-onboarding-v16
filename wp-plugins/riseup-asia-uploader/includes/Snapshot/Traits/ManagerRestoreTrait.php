@@ -30,7 +30,6 @@ trait ManagerRestoreTrait {
         $guard = $this->guardRestorePreConditions($snapshotId, $options);
 
         if ($guard !== null) {
-
             return $guard;
         }
 
@@ -46,7 +45,6 @@ trait ManagerRestoreTrait {
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
 
         if ($backupId instanceof array) {
-
             return $backupId;
         }
 
@@ -57,7 +55,6 @@ trait ManagerRestoreTrait {
 
     private function guardRestorePreConditions(int $snapshotId, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
-
             return ResultHelper::errorWithCode(
                 'Restore requires explicit confirmation (confirm=true)',
                 SnapshotErrorType::RestoreNoConfirm->value,
@@ -67,7 +64,6 @@ trait ManagerRestoreTrait {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null || $provider === false);
         if ($isProviderMissing) {
-
             return ResultHelper::errorWithCode(
                 ResponseMessageType::SnapshotProviderMissing->value,
                 SnapshotErrorType::ProviderNotAvail->value,
@@ -77,7 +73,6 @@ trait ManagerRestoreTrait {
         $snapshot = $provider->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
         if ($isSnapshotMissing) {
-
             return ResultHelper::errorWithCode(
                 ResponseMessageType::SnapshotNotFound->value,
                 SnapshotErrorType::NotFound->value,
@@ -114,7 +109,6 @@ trait ManagerRestoreTrait {
         $filepath = $snapshot['filepath'];
 
         if (PathHelper::isFileMissing($filepath)) {
-
             return ResultHelper::error('Snapshot file not found: ' . basename($filepath));
         }
 
@@ -124,7 +118,6 @@ trait ManagerRestoreTrait {
 
             $tables = $this->getRestoreTables($snapshot, $options);
             if (empty($tables)) {
-
                 return ResultHelper::error('No tables to restore');
             }
 
@@ -165,7 +158,6 @@ trait ManagerRestoreTrait {
 
             $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
             if (BooleanHelpers::hasValue($options['strict'])) {
-
                 throw new Exception('Table restore failed: ' . $table);
             }
         }

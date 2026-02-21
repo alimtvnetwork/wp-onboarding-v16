@@ -64,7 +64,6 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
-
             return array();
         }
     }
@@ -79,7 +78,6 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
-
             return array();
         }
     }
@@ -94,7 +92,6 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
-
             return array();
         }
     }
