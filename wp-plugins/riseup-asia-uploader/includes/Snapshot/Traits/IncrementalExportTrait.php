@@ -42,7 +42,6 @@ trait IncrementalExportTrait {
                 ResponseKeyType::Checksum->value => md5_file($filepath),
             );
         } catch (Throwable $e) {
-
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value => $e->getMessage(),
@@ -63,7 +62,6 @@ trait IncrementalExportTrait {
         $isCreateResultMissing = ($createResult === null);
 
         if ($isCreateResultMissing) {
-
             throw new Exception('Failed to get CREATE TABLE for ' . $table);
         }
 

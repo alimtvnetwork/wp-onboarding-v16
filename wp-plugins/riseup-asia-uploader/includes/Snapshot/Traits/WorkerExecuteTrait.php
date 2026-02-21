@@ -27,7 +27,6 @@ trait WorkerExecuteTrait {
         $sizeCheck = $this->validatePreSnapshotSize();
 
         if ($sizeCheck !== null) {
-
             return $sizeCheck;
         }
 
@@ -35,7 +34,6 @@ trait WorkerExecuteTrait {
         $isPreparationFailed = BooleanHelpers::isResultFailed($prepared);
 
         if ($isPreparationFailed) {
-
             return $prepared;
         }
 
@@ -74,7 +72,6 @@ trait WorkerExecuteTrait {
         $sizeCheck = $this->validatePreSnapshotSize();
 
         if ($sizeCheck !== null) {
-
             return $sizeCheck;
         }
 
@@ -82,7 +79,6 @@ trait WorkerExecuteTrait {
         $isPreparationFailed = BooleanHelpers::isResultFailed($prepared);
 
         if ($isPreparationFailed) {
-
             return $prepared;
         }
 

@@ -179,7 +179,6 @@ trait OrchestratorPluginTrait {
             $zip = new ZipArchive();
 
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-
                 return ResultHelper::error('Failed to create ZIP');
             }
 
@@ -212,7 +211,6 @@ trait OrchestratorPluginTrait {
 
             return ResultHelper::ok();
         } catch (Throwable $e) {
-
             return ResultHelper::errorFromException($e);
         }
     }
@@ -221,7 +219,6 @@ trait OrchestratorPluginTrait {
         $root_path = $snapshotDir . '/a-root.db';
 
         if (PathHelper::isFileMissing($root_path)) {
-
             return null;
         }
 

@@ -32,7 +32,6 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
 
         if ($isProviderMissing) {
-
             return ResultHelper::errorWithCode(
                 ResponseMessageType::SnapshotProviderMissing->value,
                 SnapshotErrorType::ProviderNotAvail->value,
@@ -52,7 +51,6 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
 
         if ($isProviderMissing) {
-
             return ResultHelper::error(ResponseMessageType::ProviderMissing->value);
         }
 
@@ -64,7 +62,6 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
 
         if ($isProviderMissing) {
-
             return null;
         }
 
@@ -72,7 +69,6 @@ trait ManagerCoreTrait {
     }
 
     public function getSnapshotById(int $snapshotId): ?array {
-
         return $this->getSnapshot($snapshotId);
     }
 
@@ -91,7 +87,6 @@ trait ManagerCoreTrait {
     }
 
     public function getProviders(): array {
-
         return $this->detector->getAvailableProviders();
     }
 
@@ -100,7 +95,6 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
 
         if ($isProviderMissing) {
-
             return array();
         }
 
@@ -122,7 +116,6 @@ trait ManagerCoreTrait {
         $isLoggerMissing = ($this->logger === null);
 
         if ($isLoggerMissing) {
-
             return;
         }
 

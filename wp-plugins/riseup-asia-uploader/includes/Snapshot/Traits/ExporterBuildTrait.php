@@ -45,7 +45,6 @@ trait ExporterBuildTrait {
         $isExportsDirMissing = ($exportsDir === null);
 
         if ($isExportsDirMissing) {
-
             return ResultHelper::errorWithCode(
                 'Failed to create exports directory',
                 SnapshotErrorType::ExportBuildFailed->value,
@@ -57,7 +56,6 @@ trait ExporterBuildTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-
             return ResultHelper::errorWithCode(
                 'Database unavailable',
                 SnapshotErrorType::ExportBuildFailed->value,

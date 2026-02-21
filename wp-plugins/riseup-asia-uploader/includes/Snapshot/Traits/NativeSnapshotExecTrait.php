@@ -27,7 +27,6 @@ trait NativeSnapshotExecTrait {
         $isSnapshotMissing = ($snapshot === null);
 
         if ($isSnapshotMissing) {
-
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => 'Snapshot record not found',
@@ -50,7 +49,6 @@ trait NativeSnapshotExecTrait {
         }
 
         try {
-
             return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $start_time);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Snapshot failed', array(

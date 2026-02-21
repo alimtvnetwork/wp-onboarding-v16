@@ -57,7 +57,6 @@ trait RestoreTableTrait {
             $isStrictMode = BooleanHelpers::hasValue($options['strict'] ?? null);
 
             if ($isStrictMode) {
-
                 throw new Exception('Strict mode: table restore failed for ' . $table);
             }
         }
@@ -78,7 +77,6 @@ trait RestoreTableTrait {
         $isTableInfoMissing = ($table_info === null);
 
         if ($isTableInfoMissing) {
-
             return ResultHelper::error(
                 $table . ': not found in inventory',
                 array(ResponseKeyType::Rows->value => 0),
@@ -112,7 +110,6 @@ trait RestoreTableTrait {
             $isValidationFailed = BooleanHelpers::isResultFailed($validated);
 
             if ($isValidationFailed) {
-
                 return $validated;
             }
 
@@ -124,7 +121,6 @@ trait RestoreTableTrait {
                 $validated['row_count'],
             );
         } catch (Throwable $e) {
-
             return ResultHelper::errorFromException(
                 $e,
                 array(ResponseKeyType::Rows->value => 0),

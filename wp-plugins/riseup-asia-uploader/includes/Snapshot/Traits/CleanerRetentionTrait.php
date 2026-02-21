@@ -24,7 +24,6 @@ trait CleanerRetentionTrait {
         $resolved = $this->resolveRetentionSnapshots($settings);
 
         if (empty($resolved['snapshots'])) {
-
             return array(
                 ResponseKeyType::Deleted->value       => 0,
                 ResponseKeyType::SkippedMaster->value  => 0,
@@ -40,7 +39,6 @@ trait CleanerRetentionTrait {
         $isDaysRetention = ($settings['retention_type'] === RetentionType::Days->value && BooleanHelpers::hasValue($settings['retention_days']));
 
         if ($isDaysRetention) {
-
             return array(
                 'snapshots' => $this->getSnapshotsOlderThan((int) $settings['retention_days']),
                 'reason'    => "older than {$settings['retention_days']} days",
@@ -50,7 +48,6 @@ trait CleanerRetentionTrait {
         $isCountRetention = ($settings['retention_type'] === RetentionType::Count->value && BooleanHelpers::hasValue($settings['retention_count']));
 
         if ($isCountRetention) {
-
             return array(
                 'snapshots' => $this->getSnapshotsBeyondCount((int) $settings['retention_count']),
                 'reason'    => "exceeds max count of {$settings['retention_count']}",
@@ -115,7 +112,6 @@ trait CleanerRetentionTrait {
         $isScopeFull = ($resolvedScope !== null && $resolvedScope->isFull());
 
         if ($isScopeFull) {
-
             return true;
         }
 
@@ -123,7 +119,6 @@ trait CleanerRetentionTrait {
         $isTypeFull = ($resolvedType !== null && $resolvedType->isFull());
 
         if ($isTypeFull) {
-
             return true;
         }
 
@@ -150,7 +145,6 @@ trait CleanerRetentionTrait {
         $isBelowThreshold = ($isResultMissing || $total_result['cnt'] <= $count);
 
         if ($isBelowThreshold) {
-
             return array();
         }
 

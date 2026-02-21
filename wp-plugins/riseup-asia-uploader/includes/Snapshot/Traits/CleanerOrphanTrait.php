@@ -34,7 +34,6 @@ trait CleanerOrphanTrait {
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
 
         if (PathHelper::isDirMissing($scan_dir)) {
-
             return $result;
         }
 
@@ -90,7 +89,6 @@ trait CleanerOrphanTrait {
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
 
         if (PathHelper::isDirMissing($scan_dir)) {
-
             return $result;
         }
 
@@ -148,7 +146,6 @@ trait CleanerOrphanTrait {
         $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
 
         if (PathHelper::isDirMissing($scan_dir)) {
-
             return $result;
         }
 

@@ -36,7 +36,6 @@ trait CleanerDeletionTrait {
             $bytes_freed += $this->deleteSingleFileSnapshot($filepath);
 
             if ($bytes_freed === -1) {
-
                 return ResultHelper::failed(array(
                     'bytes_freed' => 0,
                 ));
@@ -61,7 +60,6 @@ trait CleanerDeletionTrait {
         $incremental_dir = $filepath . '/incremental';
 
         if (PathHelper::isDirMissing($incremental_dir)) {
-
             return 0;
         }
 

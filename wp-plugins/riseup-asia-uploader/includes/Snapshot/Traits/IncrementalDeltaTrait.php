@@ -65,7 +65,6 @@ trait IncrementalDeltaTrait {
         );
 
         if ($newCount === 0) {
-
             return null;
         }
 
@@ -139,7 +138,6 @@ trait IncrementalDeltaTrait {
                 ResponseKeyType::Checksum->value => md5_file($filepath),
             ));
         } catch (Throwable $e) {
-
             return ResultHelper::errorFromException($e, array(
                 ResponseKeyType::Rows->value     => 0,
                 ResponseKeyType::Filename->value => $filename,
@@ -156,12 +154,10 @@ trait IncrementalDeltaTrait {
         int $sequence,
     ): ?int {
         if ($info['pk_column'] === null) {
-
             return null;
         }
 
         if ($sequence === 1) {
-
             return $this->getMaxIdFromMasterSqlite($rootPdo, $tableName, $info['pk_column'], $info);
         }
 
@@ -178,7 +174,6 @@ trait IncrementalDeltaTrait {
         $isSqliteFileMissing = ($sqliteFile === null);
 
         if ($isSqliteFileMissing) {
-
             return (int) $info['row_count'];
         }
 
@@ -219,7 +214,6 @@ trait IncrementalDeltaTrait {
             $maxId = $this->readMaxIdFromSqlite($prevSqlite, $tableName, $pk);
 
             if ($maxId !== null) {
-
                 return $maxId;
             }
         }
@@ -233,7 +227,6 @@ trait IncrementalDeltaTrait {
         string $pk,
     ): ?int {
         if (PathHelper::isFileMissing($sqlitePath)) {
-
             return null;
         }
 
@@ -245,7 +238,6 @@ trait IncrementalDeltaTrait {
 
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
         } catch (Throwable $e) {
-
             return null;
         }
     }
@@ -262,7 +254,6 @@ trait IncrementalDeltaTrait {
         $isFilenameAbsent = ($filename === false || $filename === null);
 
         if ($isFilenameAbsent) {
-
             return null;
         }
 
@@ -275,7 +266,6 @@ trait IncrementalDeltaTrait {
     private function getRootDirFromPdo(PDO $rootPdo): string {
         $result = $rootPdo->query("PRAGMA database_list")->fetch(PDO::FETCH_ASSOC);
         if ($result && isset($result['file'])) {
-
             return dirname($result['file']);
         }
 

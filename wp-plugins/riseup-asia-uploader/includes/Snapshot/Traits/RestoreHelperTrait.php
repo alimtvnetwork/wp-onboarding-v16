@@ -66,7 +66,6 @@ trait RestoreHelperTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-
             return;
         }
 
@@ -121,7 +120,6 @@ trait RestoreHelperTrait {
         $isLoggerMissing = ($this->logger === null);
 
         if ($isLoggerMissing) {
-
             return;
         }
 

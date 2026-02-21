@@ -28,7 +28,6 @@ trait OrchestratorZipTrait {
             $zip = new ZipArchive();
 
             if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-
                 return array(
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Failed to create ZIP',
@@ -40,7 +39,6 @@ trait OrchestratorZipTrait {
 
             return $this->validateZipExport($zip_path, $zip_filename, $file_count);
         } catch (Throwable $e) {
-
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),

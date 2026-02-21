@@ -29,7 +29,6 @@ trait ManagerTableRestoreTrait {
             $isTableAbsent = ($check->fetch() === false);
 
             if ($isTableAbsent) {
-
                 return ResultHelper::error(
                     'Table not found in snapshot',
                     array(ResponseKeyType::Rows->value => 0),
@@ -42,7 +41,6 @@ trait ManagerTableRestoreTrait {
 
             return $this->truncateAndInsert($sqlite, $table, $columnNames);
         } catch (Throwable $e) {
-
             return ResultHelper::errorFromException(
                 $e,
                 array(ResponseKeyType::Rows->value => 0),
@@ -117,7 +115,6 @@ trait ManagerTableRestoreTrait {
         $isProviderMissing = ($provider === null);
 
         if ($isProviderMissing) {
-
             return ResultHelper::error(ResponseMessageType::ProviderMissing->value);
         }
 

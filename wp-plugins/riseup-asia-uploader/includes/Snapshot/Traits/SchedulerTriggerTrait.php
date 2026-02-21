@@ -126,7 +126,6 @@ trait SchedulerTriggerTrait {
         );
 
         if ($scheduled === false) {
-
             return ResultHelper::error('Failed to schedule background restore');
         }
 

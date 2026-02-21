@@ -32,7 +32,6 @@ trait WorkerJobLifecycleTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-
             return false;
         }
 

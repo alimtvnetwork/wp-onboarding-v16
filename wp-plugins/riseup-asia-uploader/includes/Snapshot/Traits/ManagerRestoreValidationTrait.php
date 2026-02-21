@@ -82,7 +82,6 @@ trait ManagerRestoreValidationTrait {
         $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', array(ResponseKeyType::Error->value => $backupResult[ResponseKeyType::Error->value]));
 
         if (BooleanHelpers::hasValue($options['require_backup'])) {
-
             return ResultHelper::error('Pre-restore backup failed: ' . $backupResult[ResponseKeyType::Error->value]);
         }
 
