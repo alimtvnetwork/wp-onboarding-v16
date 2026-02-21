@@ -6,6 +6,9 @@
  * @since   1.8.0
  */
 
+use RiseupAsia\Enums\AgentStatusType;
+use RiseupAsia\Enums\PluginConfigType;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -14,7 +17,7 @@ if (!defined('ABSPATH')) {
     <h1>
         <span class="dashicons dashicons-networking"></span>
         <?php esc_html_e('Riseup Asia Uploader - Agent Sites', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(\RiseupAsia\Enums\PluginConfigType::Version->value); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
 
     <p class="description">
@@ -204,9 +207,9 @@ if (!defined('ABSPATH')) {
     font-size: 12px;
     font-weight: 500;
 }
-.status-pending { background: #f0f0f1; color: #50575e; }
-.status-connected { background: #d4edda; color: #155724; }
-.status-error { background: #f8d7da; color: #721c24; }
+.status-<?php echo AgentStatusType::Pending->value; ?> { background: #f0f0f1; color: #50575e; }
+.status-<?php echo AgentStatusType::Connected->value; ?> { background: #d4edda; color: #155724; }
+.status-<?php echo AgentStatusType::Error->value; ?> { background: #f8d7da; color: #721c24; }
 
 .riseup-modal {
     position: fixed;
@@ -272,7 +275,7 @@ if (!defined('ABSPATH')) {
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-    var apiBase = '<?php echo esc_js(rest_url(\RiseupAsia\Enums\PluginConfigType::apiFullNamespace())); ?>';
+    var apiBase = '<?php echo esc_js(rest_url(PluginConfigType::apiFullNamespace())); ?>';
     var nonce = '<?php echo wp_create_nonce('wp_rest'); ?>';
     var currentAgentId = null;
 
@@ -310,8 +313,8 @@ jQuery(document).ready(function($) {
                 $tbody.append('<tr class="no-agents"><td colspan="5"><?php esc_html_e('No agent sites registered yet.', 'riseup-asia-uploader'); ?></td></tr>');
             } else {
                 response.agents.forEach(function(agent) {
-                    var statusClass = 'status-' + agent.status;
-                    var statusLabel = agent.status.charAt(0).toUpperCase() + agent.status.slice(1);
+                    var statusClass = 'status-' + agent.status; // AgentStatusType PascalCase values
+                    var statusLabel = agent.status;
                     var lastSync = agent.last_sync ? new Date(agent.last_sync).toLocaleString() : '-';
                     
                     var row = '<tr data-id="' + agent.id + '">' +
