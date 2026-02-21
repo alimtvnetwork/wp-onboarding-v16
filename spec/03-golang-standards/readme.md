@@ -288,6 +288,26 @@ func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
 
 ---
 
+## Database Naming Convention — PascalCase
+
+> **Canonical source:** [Database Naming Convention](../01-coding-guidelines/database-naming.md)
+
+All custom SQLite table names, column names, and index names MUST use **PascalCase**. Go struct `db` and `json` tags must match.
+
+```go
+// ✅ PascalCase table and column names
+const queryList = `SELECT Id, ProjectId, DisplayName, CreatedAt FROM Projects`
+
+type Project struct {
+    Id          int64  `db:"Id"          json:"Id"`
+    ProjectId   string `db:"ProjectId"   json:"ProjectId"`
+    DisplayName string `db:"DisplayName" json:"DisplayName"`
+    CreatedAt   string `db:"CreatedAt"   json:"CreatedAt"`
+}
+```
+
+---
+
 ## Database Wrapper — `pkg/dbutil`
 
 All database queries MUST use the generic `dbutil` package. Returns typed result envelopes with automatic `apperror` stack traces.
