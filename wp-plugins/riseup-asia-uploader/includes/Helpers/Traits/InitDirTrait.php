@@ -58,6 +58,7 @@ trait InitDirTrait {
         $isSecured = true;
 
         $htaccess = $path . '/.htaccess';
+
         if (PathHelper::isFileMissing($htaccess)) {
             if (@file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n") === false) {
                 $isSecured = false;
@@ -65,6 +66,7 @@ trait InitDirTrait {
         }
 
         $index = $path . '/index.php';
+
         if (PathHelper::isFileMissing($index)) {
             if (@file_put_contents($index, "<?php\n// Silence is golden.\n") === false) {
                 $isSecured = false;
@@ -80,10 +82,12 @@ trait InitDirTrait {
         bool $secure = false,
     ): string|false {
         $isBaseDirFailed = (self::makeDirectory($baseDir, $secure) === false);
+
         if ($isBaseDirFailed) { return false; }
 
         $fullPath = rtrim($baseDir, '/') . '/' . ltrim($subDir, '/');
         $isSubDirFailed = (self::makeDirectory($fullPath, false) === false);
+
         if ($isSubDirFailed) { return false; }
 
         return $fullPath;
@@ -95,6 +99,7 @@ trait InitDirTrait {
         }
 
         $upload_dir = wp_upload_dir();
+
         if (isset($upload_dir['error']) && $upload_dir['error']) {
             return dirname(__DIR__) . '/data';
         }

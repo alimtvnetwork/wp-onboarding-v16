@@ -31,6 +31,7 @@ class InitHelpers {
 
     public static function initSqliteConnection(string $dbPath, FileLogger $logger): ?PDO {
         $prereqError = self::checkSqlitePrerequisites($dbPath, $logger);
+
         if ($prereqError) {
             return null;
         }

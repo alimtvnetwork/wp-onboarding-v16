@@ -1,5 +1,4 @@
 <?php
-
 namespace RiseupAsia\Helpers;
 
 if (!defined('ABSPATH')) {

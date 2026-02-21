@@ -34,6 +34,7 @@ trait PathHelperFileTrait {
         $base = self::getBaseDir();
         $fullPath = str_replace('\\', '/', $fullPath);
         $base = str_replace('\\', '/', $base);
+
         if (strpos($fullPath, $base) === 0) {
             return ltrim(substr($fullPath, strlen($base)), '/');
         }
@@ -60,6 +61,7 @@ trait PathHelperFileTrait {
         if (self::isDirAbsent($path)) { return false; }
 
         $files = array_diff(scandir($path), array('.', '..'));
+
         foreach ($files as $file) {
             $filePath = self::join($path, $file);
             if (is_dir($filePath)) {

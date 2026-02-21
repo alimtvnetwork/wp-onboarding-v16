@@ -11,6 +11,7 @@ namespace RiseupAsia\Helpers\Traits;
 if (!defined('ABSPATH')) {
     exit;
 }
+
 use WP_REST_Response;
 use RiseupAsia\Helpers\DateHelper;
 

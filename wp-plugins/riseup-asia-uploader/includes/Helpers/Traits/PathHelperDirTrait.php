@@ -28,12 +28,14 @@ trait PathHelperDirTrait {
 
     public static function isSafePath(string $path, string $basePath): bool {
         $realBase = realpath($basePath);
+
         if ($realBase === false) {
             self::safeLog(LogLevelType::Warn->value, '[PATH] Base path does not exist', array('base' => $basePath));
             return false;
         }
 
         $realPath = self::resolvePathOrParent($path);
+
         if ($realPath === null) { return false; }
 
         $realBase = str_replace('\\', '/', $realBase);
@@ -44,10 +46,12 @@ trait PathHelperDirTrait {
 
     private static function resolvePathOrParent(string $path): ?string {
         $realPath = realpath($path);
+
         if ($realPath !== false) { return $realPath; }
 
         $parent = dirname($path);
         $realParent = realpath($parent);
+
         if ($realParent === false) {
             self::safeLog(LogLevelType::Warn->value, '[PATH] Neither path nor parent exists', array('path' => $path, 'parent' => $parent));
             return null;
@@ -63,6 +67,7 @@ trait PathHelperDirTrait {
     ): bool {
         $isSafe = strpos($realPath, $realBase) === 0;
         $isTraversalDetected = ($isSafe === false);
+
         if ($isTraversalDetected) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Path traversal attempt detected', array('path' => $path, 'resolved' => $realPath, 'base' => $realBase));
         }
@@ -78,6 +83,7 @@ trait PathHelperDirTrait {
 
     public static function makeDirectory(string $path, bool $secure = false): bool {
         $path = self::join($path);
+
         if (empty($path)) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Empty path provided to makeDirectory');
             return false;
@@ -108,8 +114,10 @@ trait PathHelperDirTrait {
     private static function logDirCreationFailure(string $path): void {
         $error = error_get_last();
         self::safeLog(LogLevelType::Error->value, '[PATH] Directory creation failed', array(
-            'path' => $path, 'error' => $error ? $error['message'] : 'Unknown error',
-            'parent_exists' => is_dir(dirname($path)), 'parent_writable' => is_writable(dirname($path)),
+            'path'            => $path,
+            'error'           => $error ? $error['message'] : 'Unknown error',
+            'parent_exists'   => is_dir(dirname($path)),
+            'parent_writable' => is_writable(dirname($path)),
         ));
     }
 
@@ -138,6 +146,7 @@ trait PathHelperDirTrait {
 
     public static function makePath(bool $secure, string ...$segments) {
         $path = self::join(...$segments);
+
         if (empty($path)) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Empty path from segments', array('segments' => $segments));
             return false;

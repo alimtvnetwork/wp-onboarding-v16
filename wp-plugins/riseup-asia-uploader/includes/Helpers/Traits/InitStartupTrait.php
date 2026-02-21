@@ -34,8 +34,10 @@ trait InitStartupTrait {
         $elapsed_ms = round((microtime(true) - $start) * 1000, 2);
 
         self::$startup_results[] = array(
-            'name' => $name, ResponseKeyType::Success->value => $error === null,
-            ResponseKeyType::Error->value => $error, 'time_ms' => $elapsed_ms,
+            'name'                          => $name,
+            ResponseKeyType::Success->value => $error === null,
+            ResponseKeyType::Error->value   => $error,
+            'time_ms'                       => $elapsed_ms,
         );
 
         return $result;
@@ -63,8 +65,12 @@ trait InitStartupTrait {
 
         if ($failed > 0) {
             $logger->warn('[INIT] Startup complete with failures', array(
-                'total' => $total, 'failed' => $failed, 'time_ms' => $time,
-                'failures' => array_map(function (array $r): string { return $r['name'] . ': ' . $r[ResponseKeyType::Error->value]; }, self::getFailedStartups()),
+                'total'    => $total,
+                'failed'   => $failed,
+                'time_ms'  => $time,
+                'failures' => array_map(function (array $r): string {
+                    return $r['name'] . ': ' . $r[ResponseKeyType::Error->value];
+                }, self::getFailedStartups()),
             ));
 
             return;

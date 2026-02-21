@@ -70,6 +70,7 @@ trait EnvelopeFactoryTrait {
 
     private static function buildBacktraceErrors(array $errors): array {
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
+
         if (class_exists(FrameBuilder::class)) {
             $frames = FrameBuilder::backtraceToFrames($backtrace);
             $errors['Backend'] = self::framesToLines($frames);

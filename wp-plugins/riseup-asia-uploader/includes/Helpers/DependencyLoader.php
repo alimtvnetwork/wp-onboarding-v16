@@ -55,6 +55,7 @@ class DependencyLoader {
 
     public static function loadManifest(array $manifest): int {
         $failures = 0;
+
         foreach ($manifest as $entry) {
             $isLoadFailed = (self::load($entry[0], $entry[1]) === false);
             if ($isLoadFailed) {
@@ -81,7 +82,8 @@ class DependencyLoader {
 
         if ($failed > 0) {
             $logger->warn('[DEPS] Dependency loading complete with failures', array(
-                'total' => $total, 'failed' => $failed,
+                'total'    => $total,
+                'failed'   => $failed,
                 'failures' => array_map(function (array $r): string {
                     return $r['label'] . ' (' . $r['file'] . '): ' . $r['error'];
                 }, self::getFailures()),
