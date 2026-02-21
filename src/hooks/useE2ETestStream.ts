@@ -59,7 +59,7 @@ export function useE2ETestStream() {
               ...prev,
               completedTests: (prev.completedTests || 0) + 1,
               passedTests: prev.passedTests + (result.status === E2ECaseStatusValues.Passed ? 1 : 0),
-              failedTests: prev.failedTests + (result.status === E2ECaseStatusValues.Failed || result.status === "error" ? 1 : 0),
+              failedTests: prev.failedTests + (result.status === E2ECaseStatusValues.Failed || result.status === "Error" ? 1 : 0),
               skippedTests: prev.skippedTests + (result.status === E2ECaseStatusValues.Skipped ? 1 : 0),
               currentTest: result.caseName,
             }

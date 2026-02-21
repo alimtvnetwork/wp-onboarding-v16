@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord, SnapshotCronJob } from "@/lib/api";
-import { ConnectionStatus, STALE_TIME_DEFAULT_MS } from "@/lib/constants";
+import { ConnectionStatus, CronJobStatus, STALE_TIME_DEFAULT_MS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useErrorStore } from "@/stores/errorStore";
@@ -110,7 +110,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const nextScheduledRun = useMemo(() => {
     if (!cronJobs?.length) return null;
     const active = (cronJobs as SnapshotCronJob[])
-      .filter((j) => j.status === "active" && j.nextRunAt)
+      .filter((j) => j.status === CronJobStatus.Active && j.nextRunAt)
       .sort((a, b) => new Date(a.nextRunAt!).getTime() - new Date(b.nextRunAt!).getTime());
     return active[0] || null;
   }, [cronJobs]);
@@ -333,8 +333,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => navigate(`/api-explorer?siteId=${site.id}`)}
-            disabled={site.connectionStatus !== "connected"}
-            title={site.connectionStatus !== "connected" ? "Connect site first" : "Test API endpoints"}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Test API endpoints"}
           >
             <FlaskConical className="h-4 w-4 shrink-0" />
             <span className="text-[10px] leading-tight truncate">API</span>
@@ -344,8 +344,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => setShowRemotePlugins(true)}
-            disabled={site.connectionStatus !== "connected"}
-            title={site.connectionStatus !== "connected" ? "Connect site first" : "View plugins on this site"}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "View plugins on this site"}
           >
             <Eye className="h-4 w-4 shrink-0" />
             <span className="text-[10px] leading-tight truncate">Plugins</span>
@@ -355,8 +355,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => setShowSnapshots(true)}
-            disabled={site.connectionStatus !== "connected"}
-            title={site.connectionStatus !== "connected" ? "Connect site first" : "Manage database snapshots"}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Manage database snapshots"}
           >
             <Database className="h-4 w-4 shrink-0" />
             <span className="text-[10px] leading-tight truncate">Snapshots</span>
@@ -376,8 +376,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={handleDeployUploader}
-            disabled={deployingUploader || site.connectionStatus !== "connected"}
-            title={site.connectionStatus !== "connected" ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
+            disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
           >
             {deployingUploader ? (
               <Loader2 className="h-4 w-4 animate-spin shrink-0" />

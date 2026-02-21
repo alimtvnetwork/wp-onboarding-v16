@@ -23,6 +23,7 @@ import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { SnapshotInterval, SnapshotSchedule, SnapshotRecord, SnapshotCronJob } from "@/lib/api/types";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { api, requireSuccess } from "@/lib/api";
+import { CronJobStatus } from "@/lib/constants";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
 import {
   Sheet,
@@ -580,9 +581,9 @@ function SnapshotProgressPanel() {
 /* -------------------------------------------------------------------------- */
 
 const CRON_STATUS_CONFIG: Record<string, { className: string; label: string }> = {
-  active: { className: "text-emerald-500", label: "Active" },
-  paused: { className: "text-amber-500", label: "Paused" },
-  error: { className: "text-destructive", label: "Error" },
+  Active: { className: "text-emerald-500", label: "Active" },
+  Paused: { className: "text-amber-500", label: "Paused" },
+  Error: { className: "text-destructive", label: "Error" },
 };
 
 function CronJobsPanel() {
@@ -636,10 +637,10 @@ function CronJobsPanel() {
   const handleTogglePause = async (job: SnapshotCronJob) => {
     setActionLoading(job.id);
     try {
-      const apiFn = job.status === "paused" ? api.resumeSnapshotCronJob : api.pauseSnapshotCronJob;
+      const apiFn = job.status === CronJobStatus.Paused ? api.resumeSnapshotCronJob : api.pauseSnapshotCronJob;
       const res = await apiFn(0, job.id);
-      requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${job.id}/${job.status === "paused" ? "resume" : "pause"}`, method: "POST" });
-      toast.success(job.status === "paused" ? "Cron job resumed" : "Cron job paused");
+      requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${job.id}/${job.status === CronJobStatus.Paused ? "resume" : "pause"}`, method: "POST" });
+      toast.success(job.status === CronJobStatus.Paused ? "Cron job resumed" : "Cron job paused");
       refetch();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -705,7 +706,7 @@ function CronJobsPanel() {
                 key={job.id}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                  job.status === "active" ? "bg-accent/20 border-primary/15" : "bg-muted/30"
+                  job.status === CronJobStatus.Active ? "bg-accent/20 border-primary/15" : "bg-muted/30"
                 )}
               >
                 <div className="flex-1 min-w-0 space-y-1">
@@ -742,11 +743,11 @@ function CronJobsPanel() {
                     onClick={() => handleTogglePause(job)}
                     disabled={isThisLoading}
                     className="h-7 w-7 p-0"
-                    title={job.status === "paused" ? "Resume" : "Pause"}
+                    title={job.status === CronJobStatus.Paused ? "Resume" : "Pause"}
                   >
                     {isThisLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : job.status === "paused" ? (
+                    ) : job.status === CronJobStatus.Paused ? (
                       <Play className="h-3.5 w-3.5" />
                     ) : (
                       <Pause className="h-3.5 w-3.5" />

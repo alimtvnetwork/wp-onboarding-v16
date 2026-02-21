@@ -217,7 +217,7 @@ export interface Site {
   url: string;
   username: string;
   category: string | null;
-  connectionStatus: "connected" | "disconnected" | "unknown";
+  connectionStatus: "Connected" | "Disconnected" | "Unknown";
   lastTestedAt: string | null;
   lastSyncAt: string | null;
   createdAt: string;
@@ -317,7 +317,7 @@ export interface RemotePlugin {
   slug: string;
   name: string;
   version: string;
-  status: "active" | "inactive";
+  status: "Active" | "Inactive";
   author: string;
   description: string;
   pluginUri: string;
@@ -358,7 +358,7 @@ export interface SessionSummary {
   pluginName?: string;
   siteId?: number;
   siteName?: string;
-  status: "running" | "completed" | "error";
+  status: "Running" | "Completed" | "Error";
   startedAt: string;
   endedAt?: string;
 }
@@ -567,8 +567,8 @@ export interface ErrorHistoryStats {
 }
 
 // Snapshot Types
-export type SnapshotScope = "all" | "wordpress" | "content" | "custom";
-export type SnapshotType = "full" | "incremental";
+export type SnapshotScope = "All" | "Wordpress" | "Content" | "Custom";
+export type SnapshotType = "Full" | "Incremental";
 
 export interface CreateSnapshotOptions {
   name?: string;
@@ -678,7 +678,7 @@ export interface PublishHistoryEntry {
   siteName: string;
   siteUrl: string;
   sessionId?: string;
-  status: "success" | "failed" | "partial";
+  status: "Success" | "Failed" | "Partial";
   mode: string;
   actionType?: string;
   version?: string;
@@ -711,10 +711,10 @@ export interface SnapshotCronJob {
   interval: SnapshotInterval;
   cronExpression: string;
   enabled: boolean;
-  status: "active" | "paused" | "error";
+  status: "Active" | "Paused" | "Error";
   lastRunAt?: string;
   nextRunAt?: string;
-  lastStatus?: "completed" | "failed" | "running";
+  lastStatus?: "Completed" | "Failed" | "Running";
   lastError?: string;
   runCount: number;
 }
@@ -730,7 +730,7 @@ export interface SnapshotCronSyncResult {
 // NOTE: Canonical site health types live in src/types/siteHealth.ts
 // The API methods use those types via the hook layer.
 // These are lightweight types for the raw API response shape.
-export type SiteHealthStatus = "healthy" | "degraded" | "down" | "unknown";
+export type SiteHealthStatus = "Healthy" | "Degraded" | "Down" | "Unknown";
 
 export interface SiteHealthCheckResult {
   siteId: number;
@@ -741,8 +741,8 @@ export interface SiteHealthCheckResult {
 }
 
 // E2E Testing Types
-export type E2ECaseStatus = "pending" | "running" | "passed" | "failed" | "skipped";
-export type E2ERunStatus = "pending" | "running" | "completed" | "aborted" | "failed";
+export type E2ECaseStatus = "Pending" | "Running" | "Passed" | "Failed" | "Skipped";
+export type E2ERunStatus = "Pending" | "Running" | "Completed" | "Aborted" | "Failed";
 
 export interface E2ESuite {
   id: string;
@@ -767,7 +767,7 @@ export interface E2ETestResult {
   caseId: string;
   caseName: string;
   suiteName?: string;
-  status: E2ECaseStatus | "error";
+  status: E2ECaseStatus | "Error";
   durationMs: number;
   duration?: number;
   error?: string;

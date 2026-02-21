@@ -1,15 +1,16 @@
 // src/lib/constants.ts — Named constants and const enums for all status/action strings.
 // Spec: spec/02-typescript-standards/README.md v2.0.0
 // Rule: No magic strings or magic numbers — all identifiers come from here.
+// Phase 3: All enum string values use PascalCase to match Go/PHP backend enums.
 
 // ---------------------------------------------------------------------------
 // Connection
 // ---------------------------------------------------------------------------
 
 export const ConnectionStatus = {
-  Connected: "connected",
-  Disconnected: "disconnected",
-  Unknown: "unknown",
+  Connected: "Connected",
+  Disconnected: "Disconnected",
+  Unknown: "Unknown",
 } as const;
 
 export type ConnectionStatus = (typeof ConnectionStatus)[keyof typeof ConnectionStatus];
@@ -19,9 +20,9 @@ export type ConnectionStatus = (typeof ConnectionStatus)[keyof typeof Connection
 // ---------------------------------------------------------------------------
 
 export const PublishStatus = {
-  Success: "success",
-  Failed: "failed",
-  Partial: "partial",
+  Success: "Success",
+  Failed: "Failed",
+  Partial: "Partial",
 } as const;
 
 export type PublishStatus = (typeof PublishStatus)[keyof typeof PublishStatus];
@@ -31,10 +32,10 @@ export type PublishStatus = (typeof PublishStatus)[keyof typeof PublishStatus];
 // ---------------------------------------------------------------------------
 
 export const PublishOperationStatus = {
-  Pending: "pending",
-  Running: "running",
-  Success: "success",
-  Error: "error",
+  Pending: "Pending",
+  Running: "Running",
+  Success: "Success",
+  Error: "Error",
 } as const;
 
 export type PublishOperationStatus = (typeof PublishOperationStatus)[keyof typeof PublishOperationStatus];
@@ -44,21 +45,21 @@ export type PublishOperationStatus = (typeof PublishOperationStatus)[keyof typeo
 // ---------------------------------------------------------------------------
 
 export const PublishStageName = {
-  Backup: "backup",
-  Package: "package",
-  Upload: "upload",
-  Activate: "activate",
-  Cleanup: "cleanup",
+  Backup: "Backup",
+  Package: "Package",
+  Upload: "Upload",
+  Activate: "Activate",
+  Cleanup: "Cleanup",
 } as const;
 
 export type PublishStageName = (typeof PublishStageName)[keyof typeof PublishStageName];
 
 export const PublishStageStatus = {
-  Pending: "pending",
-  Running: "running",
-  Success: "success",
-  Error: "error",
-  Skipped: "skipped",
+  Pending: "Pending",
+  Running: "Running",
+  Success: "Success",
+  Error: "Error",
+  Skipped: "Skipped",
 } as const;
 
 export type PublishStageStatus = (typeof PublishStageStatus)[keyof typeof PublishStageStatus];
@@ -68,20 +69,20 @@ export type PublishStageStatus = (typeof PublishStageStatus)[keyof typeof Publis
 // ---------------------------------------------------------------------------
 
 export const SnapshotRunStatus = {
-  Pending: "pending",
-  Running: "running",
-  InProgress: "in_progress",
-  Completed: "completed",
-  Failed: "failed",
-  Error: "error",
+  Pending: "Pending",
+  Running: "Running",
+  InProgress: "InProgress",
+  Completed: "Completed",
+  Failed: "Failed",
+  Error: "Error",
 } as const;
 
 export type SnapshotRunStatus = (typeof SnapshotRunStatus)[keyof typeof SnapshotRunStatus];
 
 export const SnapshotExportStatus = {
-  Valid: "valid",
-  Expired: "expired",
-  Building: "building",
+  Valid: "Valid",
+  Expired: "Expired",
+  Building: "Building",
 } as const;
 
 export type SnapshotExportStatus = (typeof SnapshotExportStatus)[keyof typeof SnapshotExportStatus];
@@ -91,12 +92,12 @@ export type SnapshotExportStatus = (typeof SnapshotExportStatus)[keyof typeof Sn
 // ---------------------------------------------------------------------------
 
 export const SyncStatus = {
-  Synced: "synced",
-  Ok: "ok",
-  Modified: "modified",
-  Pending: "pending",
-  Error: "error",
-  Failed: "failed",
+  Synced: "Synced",
+  Ok: "Ok",
+  Modified: "Modified",
+  Pending: "Pending",
+  Error: "Error",
+  Failed: "Failed",
 } as const;
 
 export type SyncStatus = (typeof SyncStatus)[keyof typeof SyncStatus];
@@ -106,10 +107,10 @@ export type SyncStatus = (typeof SyncStatus)[keyof typeof SyncStatus];
 // ---------------------------------------------------------------------------
 
 export const DeployStatus = {
-  Idle: "idle",
-  Deploying: "deploying",
-  Completed: "completed",
-  Error: "error",
+  Idle: "Idle",
+  Deploying: "Deploying",
+  Completed: "Completed",
+  Error: "Error",
 } as const;
 
 export type DeployStatus = (typeof DeployStatus)[keyof typeof DeployStatus];
@@ -119,16 +120,16 @@ export type DeployStatus = (typeof DeployStatus)[keyof typeof DeployStatus];
 // ---------------------------------------------------------------------------
 
 export const ConnectionTestStep = {
-  Start: "start",
-  Complete: "complete",
+  Start: "Start",
+  Complete: "Complete",
 } as const;
 
 export type ConnectionTestStepName = (typeof ConnectionTestStep)[keyof typeof ConnectionTestStep];
 
 export const ConnectionTestStatus = {
-  Running: "running",
-  Success: "success",
-  Error: "error",
+  Running: "Running",
+  Success: "Success",
+  Error: "Error",
 } as const;
 
 export type ConnectionTestStatus = (typeof ConnectionTestStatus)[keyof typeof ConnectionTestStatus];
@@ -138,17 +139,17 @@ export type ConnectionTestStatus = (typeof ConnectionTestStatus)[keyof typeof Co
 // ---------------------------------------------------------------------------
 
 export const CronJobStatus = {
-  Active: "active",
-  Paused: "paused",
-  Error: "error",
+  Active: "Active",
+  Paused: "Paused",
+  Error: "Error",
 } as const;
 
 export type CronJobStatus = (typeof CronJobStatus)[keyof typeof CronJobStatus];
 
 export const CronLastStatus = {
-  Completed: "completed",
-  Failed: "failed",
-  Running: "running",
+  Completed: "Completed",
+  Failed: "Failed",
+  Running: "Running",
 } as const;
 
 export type CronLastStatus = (typeof CronLastStatus)[keyof typeof CronLastStatus];
@@ -158,8 +159,8 @@ export type CronLastStatus = (typeof CronLastStatus)[keyof typeof CronLastStatus
 // ---------------------------------------------------------------------------
 
 export const RemotePluginStatus = {
-  Active: "active",
-  Inactive: "inactive",
+  Active: "Active",
+  Inactive: "Inactive",
 } as const;
 
 export type RemotePluginStatus = (typeof RemotePluginStatus)[keyof typeof RemotePluginStatus];
@@ -169,9 +170,9 @@ export type RemotePluginStatus = (typeof RemotePluginStatus)[keyof typeof Remote
 // ---------------------------------------------------------------------------
 
 export const SessionStatus = {
-  Running: "running",
-  Completed: "completed",
-  Error: "error",
+  Running: "Running",
+  Completed: "Completed",
+  Error: "Error",
 } as const;
 
 export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus];
@@ -181,19 +182,19 @@ export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus];
 // ---------------------------------------------------------------------------
 
 export const E2ECaseStatusValues = {
-  Pending: "pending",
-  Running: "running",
-  Passed: "passed",
-  Failed: "failed",
-  Skipped: "skipped",
+  Pending: "Pending",
+  Running: "Running",
+  Passed: "Passed",
+  Failed: "Failed",
+  Skipped: "Skipped",
 } as const;
 
 export const E2ERunStatusValues = {
-  Pending: "pending",
-  Running: "running",
-  Completed: "completed",
-  Aborted: "aborted",
-  Failed: "failed",
+  Pending: "Pending",
+  Running: "Running",
+  Completed: "Completed",
+  Aborted: "Aborted",
+  Failed: "Failed",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -201,20 +202,20 @@ export const E2ERunStatusValues = {
 // ---------------------------------------------------------------------------
 
 export const FileChangeStatus = {
-  Added: "added",
-  Modified: "modified",
-  Deleted: "deleted",
-  Renamed: "renamed",
-  Synced: "synced",
+  Added: "Added",
+  Modified: "Modified",
+  Deleted: "Deleted",
+  Renamed: "Renamed",
+  Synced: "Synced",
 } as const;
 
 export type FileChangeStatus = (typeof FileChangeStatus)[keyof typeof FileChangeStatus];
 
 export const FileDirection = {
-  LocalNewer: "local_newer",
-  RemoteNewer: "remote_newer",
-  LocalOnly: "local_only",
-  RemoteOnly: "remote_only",
+  LocalNewer: "LocalNewer",
+  RemoteNewer: "RemoteNewer",
+  LocalOnly: "LocalOnly",
+  RemoteOnly: "RemoteOnly",
 } as const;
 
 export type FileDirection = (typeof FileDirection)[keyof typeof FileDirection];
@@ -224,11 +225,11 @@ export type FileDirection = (typeof FileDirection)[keyof typeof FileDirection];
 // ---------------------------------------------------------------------------
 
 export const ActivityTypeValues = {
-  Publish: "publish",
-  Snapshot: "snapshot",
-  Plugin: "plugin",
-  Config: "config",
-  Connection: "connection",
+  Publish: "Publish",
+  Snapshot: "Snapshot",
+  Plugin: "Plugin",
+  Config: "Config",
+  Connection: "Connection",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -254,10 +255,10 @@ export const CLEANUP_DELAY_MS = 1_800_000 as const;
 // ---------------------------------------------------------------------------
 
 export const SiteHealthStatusValues = {
-  Healthy: "healthy",
-  Degraded: "degraded",
-  Down: "down",
-  Unknown: "unknown",
+  Healthy: "Healthy",
+  Degraded: "Degraded",
+  Down: "Down",
+  Unknown: "Unknown",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -265,15 +266,15 @@ export const SiteHealthStatusValues = {
 // ---------------------------------------------------------------------------
 
 export const SnapshotScopeValues = {
-  All: "all",
-  Wordpress: "wordpress",
-  Content: "content",
-  Custom: "custom",
+  All: "All",
+  Wordpress: "Wordpress",
+  Content: "Content",
+  Custom: "Custom",
 } as const;
 
 export const SnapshotTypeValues = {
-  Full: "full",
-  Incremental: "incremental",
+  Full: "Full",
+  Incremental: "Incremental",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -281,8 +282,8 @@ export const SnapshotTypeValues = {
 // ---------------------------------------------------------------------------
 
 export const StorageModeValues = {
-  Single: "single",
-  PerTable: "per-table",
+  Single: "Single",
+  PerTable: "PerTable",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -290,24 +291,24 @@ export const StorageModeValues = {
 // ---------------------------------------------------------------------------
 
 export const PublishActionType = {
-  PluginDisable: "PLUGIN_DISABLE",
-  PluginEnable: "PLUGIN_ENABLE",
-  PluginDelete: "PLUGIN_DELETE",
-  UploadScript: "UPLOAD_SCRIPT",
-  Publish: "PUBLISH",
-  Sync: "SYNC",
-  Backup: "BACKUP",
-  Restore: "RESTORE",
-  SnapshotCreate: "SNAPSHOT_CREATE",
-  SnapshotRestore: "SNAPSHOT_RESTORE",
-  SnapshotDelete: "SNAPSHOT_DELETE",
-  SnapshotExport: "SNAPSHOT_EXPORT",
-  SnapshotImport: "SNAPSHOT_IMPORT",
-  SnapshotCleanup: "SNAPSHOT_CLEANUP",
-  SnapshotFullBackup: "SNAPSHOT_FULL_BACKUP",
-  SnapshotIncremental: "SNAPSHOT_INCREMENTAL",
-  SnapshotRestorePerTable: "SNAPSHOT_RESTORE_PERTABLE",
-  SnapshotImportPerTable: "SNAPSHOT_IMPORT_PERTABLE",
+  PluginDisable: "PluginDisable",
+  PluginEnable: "PluginEnable",
+  PluginDelete: "PluginDelete",
+  UploadScript: "UploadScript",
+  Publish: "Publish",
+  Sync: "Sync",
+  Backup: "Backup",
+  Restore: "Restore",
+  SnapshotCreate: "SnapshotCreate",
+  SnapshotRestore: "SnapshotRestore",
+  SnapshotDelete: "SnapshotDelete",
+  SnapshotExport: "SnapshotExport",
+  SnapshotImport: "SnapshotImport",
+  SnapshotCleanup: "SnapshotCleanup",
+  SnapshotFullBackup: "SnapshotFullBackup",
+  SnapshotIncremental: "SnapshotIncremental",
+  SnapshotRestorePerTable: "SnapshotRestorePerTable",
+  SnapshotImportPerTable: "SnapshotImportPerTable",
 } as const;
 
 export type PublishActionType = (typeof PublishActionType)[keyof typeof PublishActionType];
@@ -317,10 +318,10 @@ export type PublishActionType = (typeof PublishActionType)[keyof typeof PublishA
 // ---------------------------------------------------------------------------
 
 export const LogLevel = {
-  Debug: "debug",
-  Info: "info",
-  Warn: "warn",
-  Error: "error",
+  Debug: "Debug",
+  Info: "Info",
+  Warn: "Warn",
+  Error: "Error",
 } as const;
 
 export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
@@ -330,12 +331,12 @@ export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
 // ---------------------------------------------------------------------------
 
 export const SessionType = {
-  Publish: "publish",
-  Sync: "sync",
-  Connect: "connect",
-  Backup: "backup",
-  BulkPublish: "bulk_publish",
-  RemotePluginAction: "remote_plugin_action",
+  Publish: "Publish",
+  Sync: "Sync",
+  Connect: "Connect",
+  Backup: "Backup",
+  BulkPublish: "BulkPublish",
+  RemotePluginAction: "RemotePluginAction",
 } as const;
 
 export type SessionType = (typeof SessionType)[keyof typeof SessionType];

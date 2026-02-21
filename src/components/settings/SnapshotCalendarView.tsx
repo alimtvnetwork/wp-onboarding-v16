@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { SnapshotRecord, SnapshotCronJob } from "@/lib/api/types";
+import { CronJobStatus } from "@/lib/constants";
 import {
   startOfMonth,
   endOfMonth,
@@ -48,7 +49,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function getScheduledDates(cronJobs: SnapshotCronJob[], monthStart: Date, monthEnd: Date): Date[] {
   const dates: Date[] = [];
   cronJobs?.forEach((job) => {
-    if (job.status !== "active" || !job.nextRunAt) return;
+    if (job.status !== CronJobStatus.Active || !job.nextRunAt) return;
     const nextRun = parseISO(job.nextRunAt);
     if (nextRun >= monthStart && nextRun <= monthEnd) {
       dates.push(startOfDay(nextRun));

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { usePublishStore, PublishOperation } from "@/stores/publishStore";
+import { PublishOperationStatus, PublishStageStatus } from "@/lib/constants";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -50,15 +51,15 @@ export function QuickPublishIndicator({
   if (operations.length === 0) return null;
   
   // Get the most recent/active operation
-  const activeOps = operations.filter(op => op.status === 'running' || op.status === 'pending');
-  const completedOps = operations.filter(op => op.status === 'success' || op.status === 'error');
+  const activeOps = operations.filter(op => op.status === PublishOperationStatus.Running || op.status === PublishOperationStatus.Pending);
+  const completedOps = operations.filter(op => op.status === PublishOperationStatus.Success || op.status === PublishOperationStatus.Error);
   const primaryOp = activeOps[0] || completedOps[0];
   
   if (!primaryOp) return null;
   
-  const isActive = primaryOp.status === 'running' || primaryOp.status === 'pending';
-  const isSuccess = primaryOp.status === 'success';
-  const isError = primaryOp.status === 'error';
+  const isActive = primaryOp.status === PublishOperationStatus.Running || primaryOp.status === PublishOperationStatus.Pending;
+  const isSuccess = primaryOp.status === PublishOperationStatus.Success;
+  const isError = primaryOp.status === PublishOperationStatus.Error;
   
   // Compact mode: just show spinner/icon
   if (compact) {
@@ -146,13 +147,13 @@ interface OperationItemProps {
 }
 
 function OperationItem({ operation, onViewLogs }: OperationItemProps) {
-  const isActive = operation.status === 'running' || operation.status === 'pending';
-  const isSuccess = operation.status === 'success';
-  const isError = operation.status === 'error';
+  const isActive = operation.status === PublishOperationStatus.Running || operation.status === PublishOperationStatus.Pending;
+  const isSuccess = operation.status === PublishOperationStatus.Success;
+  const isError = operation.status === PublishOperationStatus.Error;
   
   // Find current stage
-  const currentStage = operation.stages.find(s => s.status === 'running');
-  const failedStage = operation.stages.find(s => s.status === 'error');
+  const currentStage = operation.stages.find(s => s.status === PublishStageStatus.Running);
+  const failedStage = operation.stages.find(s => s.status === PublishStageStatus.Error);
   
   return (
     <div className={cn(
