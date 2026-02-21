@@ -24,6 +24,7 @@ trait AdminErrorStateTrait {
             $db = Database::getInstance();
             $pdo = $db->getPdo();
             $isPdoMissing = ($pdo === null);
+
             if ($isPdoMissing) {
                 return 0;
             }
@@ -44,6 +45,7 @@ trait AdminErrorStateTrait {
             $db = Database::getInstance();
             $pdo = $db->getPdo();
             $isPdoMissing = ($pdo === null);
+
             if ($isPdoMissing) {
                 return $default;
             }

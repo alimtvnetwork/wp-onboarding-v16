@@ -155,11 +155,17 @@ trait AdminErrorRenderTrait {
         $latestErrorTime = $this->resolveLatestErrorTime($errors, $hasUnseen);
 
         return array(
-            'errors' => $errors, 'total' => $total, 'total_pages' => $totalPages,
-            'page' => $page, 'last_seen_id' => $lastSeenId, 'has_unseen' => $hasUnseen,
-            'unseen_count' => $unseenCount, 'latest_error_time' => $latestErrorTime,
-            'filter_level' => $defaults['filter_level'], 'filter_search' => $defaults['filter_search'],
-            'db_error_message' => '',
+            'errors'            => $errors,
+            'total'             => $total,
+            'total_pages'       => $totalPages,
+            'page'              => $page,
+            'last_seen_id'      => $lastSeenId,
+            'has_unseen'        => $hasUnseen,
+            'unseen_count'      => $unseenCount,
+            'latest_error_time' => $latestErrorTime,
+            'filter_level'      => $defaults['filter_level'],
+            'filter_search'     => $defaults['filter_search'],
+            'db_error_message'  => '',
         );
     }
 

@@ -50,7 +50,13 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse text fields from $_POST into settings. */
     private function parsePostTextFields(array &$settings) {
-        $fields = array('preferred_provider', 'schedule_frequency', 'schedule_time', 'default_scope', 'retention_type');
+        $fields = array(
+            'preferred_provider',
+            'schedule_frequency',
+            'schedule_time',
+            'default_scope',
+            'retention_type',
+        );
 
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
@@ -61,7 +67,13 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse integer fields from $_POST into settings. */
     private function parsePostIntFields(array &$settings) {
-        $fields = array('schedule_day', 'retention_days', 'retention_count', 'max_snapshot_size_mb', 'batch_size');
+        $fields = array(
+            'schedule_day',
+            'retention_days',
+            'retention_count',
+            'max_snapshot_size_mb',
+            'batch_size',
+        );
 
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
@@ -140,7 +152,7 @@ trait AdminAjaxSnapshotTrait {
                 $result['deleted_by_policy'],
                 $result['deleted_orphans'],
                 $result['deleted_failed'],
-                PathHelper::formatBytes($result['space_freed_bytes'])
+                PathHelper::formatBytes($result['space_freed_bytes']),
             ),
             'result' => $result,
         ));

@@ -45,10 +45,26 @@ trait AdminMenuTrait {
         $slug = PluginConfigType::Slug->value;
 
         $submenus = array(
-            array($slug, 'Activity Logs', 'renderLogsPage'),
-            array(AdminPageType::Settings->value, 'Settings', 'renderSettingsPage'),
-            array(AdminPageType::Agents->value, 'Agent Sites', 'renderAgentsPage'),
-            array(AdminPageType::Snapshots->value, 'Snapshots', 'renderSnapshotsPage'),
+            array(
+                $slug,
+                'Activity Logs',
+                'renderLogsPage',
+            ),
+            array(
+                AdminPageType::Settings->value,
+                'Settings',
+                'renderSettingsPage',
+            ),
+            array(
+                AdminPageType::Agents->value,
+                'Agent Sites',
+                'renderAgentsPage',
+            ),
+            array(
+                AdminPageType::Snapshots->value,
+                'Snapshots',
+                'renderSnapshotsPage',
+            ),
         );
 
         foreach ($submenus as $item) {
