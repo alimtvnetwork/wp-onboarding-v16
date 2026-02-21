@@ -37,6 +37,7 @@ trait PathHelperFileTrait {
         if (strpos($fullPath, $base) === 0) {
             return ltrim(substr($fullPath, strlen($base)), '/');
         }
+
         return $fullPath;
     }
 
@@ -71,6 +72,7 @@ trait PathHelperFileTrait {
         }
 
         if (!@rmdir($path)) { return false; }
+
         return true;
     }
 
@@ -86,6 +88,7 @@ trait PathHelperFileTrait {
         $units = array('B', 'KB', 'MB', 'GB', 'TB');
         $factor = floor(log($bytes, 1024));
         $factor = min($factor, count($units) - 1);
+
         return sprintf(
             "%.{$decimals}f %s",
             $bytes / pow(1024, $factor),

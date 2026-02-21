@@ -41,6 +41,7 @@ trait PathHelperCoreTrait {
             InitHelpers::errorLogWithPrefix('[ERROR] Logger init failed: ' . $e->getMessage());
             self::$logger = null;
         }
+
         self::$isBootstrapping = false;
 
         return self::$logger;
@@ -71,6 +72,7 @@ trait PathHelperCoreTrait {
 
     public static function join(string ...$segments): string {
         $filtered = array_filter($segments, function($seg) { return $seg !== null && $seg !== ''; });
+
         if (empty($filtered)) { return ''; }
         $path = implode('/', $filtered);
         $path = str_replace('\\\\', '/', $path);
