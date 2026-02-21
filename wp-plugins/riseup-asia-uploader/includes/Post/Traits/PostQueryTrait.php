@@ -61,7 +61,7 @@ trait PostQueryTrait {
             }
 
             return array(
-                ResponseKeyType::Success->value => true, 'total' => $query->found_posts,
+                ResponseKeyType::Success->value => true, ResponseKeyType::Total->value => $query->found_posts,
                 'limit' => $args['posts_per_page'], 'offset' => $args['offset'],
                 'posts' => $posts,
             );

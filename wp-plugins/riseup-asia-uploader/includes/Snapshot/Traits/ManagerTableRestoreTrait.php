@@ -29,7 +29,7 @@ trait ManagerTableRestoreTrait {
             $isTableAbsent = ($check->fetch() === false);
             if ($isTableAbsent) {
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table not found in snapshot', 'rows' => 0);
+                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Table not found in snapshot', ResponseKeyType::Rows->value => 0);
             }
 
             $columnsResult = $sqlite->query("PRAGMA table_info('{$table}')");
@@ -39,7 +39,7 @@ trait ManagerTableRestoreTrait {
             return $this->truncateAndInsert($sqlite, $table, $columnNames);
         } catch (Throwable $e) {
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), 'rows' => 0);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $e->getMessage(), ResponseKeyType::Rows->value => 0);
         }
     }
 
@@ -62,7 +62,7 @@ trait ManagerTableRestoreTrait {
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
             $this->wpdb->query("COMMIT");
 
-            return array(ResponseKeyType::Success->value => true, 'rows' => $totalRows);
+            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Rows->value => $totalRows);
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
