@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	stagestatus "wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
@@ -330,9 +331,10 @@ func (s *Service) LogStageEnd(sessionID, stageName, status string, durationMs in
 	}
 
 	statusIcon := "✓"
-	if status == "error" || status == "failed" {
+	parsedStatus, _ := stagestatus.Parse(status)
+	if parsedStatus.IsFailed() || status == "error" {
 		statusIcon = "✗"
-	} else if status == "skipped" {
+	} else if parsedStatus.IsSkipped() {
 		statusIcon = "○"
 	}
 

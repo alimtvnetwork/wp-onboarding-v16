@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	loglevel "wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/ziputil"
 )
@@ -296,7 +297,7 @@ func GetSettings(w http.ResponseWriter, r *http.Request) {
 			Location:                "backups",
 		},
 		Logging: LoggingSettings{
-			Level:         "info",
+			Level:         loglevel.Info.String(),
 			RetentionDays: 7,
 			DebugMode:     false,
 		},
