@@ -928,9 +928,17 @@ Phase A must complete first. B and D can proceed in parallel. C depends on B (en
 
 ---
 
-## Open Questions (Require User Decision)
+## ✅ Decisions Resolved (2026-02-21)
 
-1. **Enum location:** Move to `internal/enums/` or keep in `internal/wordpress/`?
-2. **HttpStatusType:** Keep as `int` or convert to byte with grouped categories?
-3. **Config JSON tags:** Confirm keeping camelCase for config file contract?
-4. **String-valued enums** (EndpointType, ResponseKeyType): These map to actual strings (URLs, JSON keys). Confirm byte conversion with lookup tables?
+| Question | Decision |
+|----------|----------|
+| Enum location | `internal/enums/{category}/variant.go` — full spec compliance |
+| HttpStatusType | Keep as `int` — exempt from byte conversion, add required methods |
+| Config JSON tags | **Convert to PascalCase** — update both struct tags AND `config.json` keys |
+| String-valued enums | **Convert to byte** — use `variantStrings` lookup tables |
+
+---
+
+## Next Steps
+
+Start with **Phase A** (spec updates), then proceed to **Phase B** (enum migration) and **Phase D** (AppError serialization) in parallel.
