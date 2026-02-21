@@ -1,14 +1,14 @@
 # Cross-Language Code Style — Braces, Nesting, Spacing & Function Size
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-16  
+> **Version:** 3.1.0  
+> **Updated:** 2026-02-21  
 > **Applies to:** PHP, TypeScript, Go
 
 ---
 
 ## Overview
 
-These nine rules govern control-flow formatting and function design across **all languages** in the project. Language-specific specs (PHP, TypeScript, Go) reference this document as the single source of truth.
+These ten rules govern control-flow formatting and function design across **all languages** in the project. Language-specific specs (PHP, TypeScript, Go) reference this document as the single source of truth.
 
 ---
 
@@ -580,6 +580,94 @@ func BuildRecord(
 
 ---
 
+## Rule 10: Blank Line Before Control Structures When Preceded by Statements
+
+When an `if`, `for`, `foreach`/`for...of`, or `while` block is preceded by **one or more non-brace statements** (assignments, function calls, etc.), insert **one blank line** before the control structure. This visually separates "setup" from "decision" logic.
+
+**Exception:** No blank line is needed when the control structure is the first statement in a block or immediately follows another closing `}` (already covered by Rule 5).
+
+```php
+// ── PHP ──────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN: No blank line between statement and if
+$result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
+if (is_wp_error($result)) {
+    return $result;
+}
+
+// ✅ REQUIRED: Blank line before if when preceded by a statement
+$result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
+
+if (is_wp_error($result)) {
+    return $result;
+}
+
+// ❌ FORBIDDEN: No blank line between statement and foreach
+$items = $this->fetchItems();
+foreach ($items as $item) {
+    $this->process($item);
+}
+
+// ✅ REQUIRED
+$items = $this->fetchItems();
+
+foreach ($items as $item) {
+    $this->process($item);
+}
+
+// ✅ OK: if is the first statement — no blank line needed
+public function handle(): void {
+    if ($this->isDone()) {
+        return;
+    }
+}
+
+// ✅ OK: if follows a closing brace — Rule 5 applies instead
+if ($guardA) {
+    return;
+}
+
+if ($guardB) {
+    return;
+}
+```
+
+```typescript
+// ── TypeScript ───────────────────────────────────────────────
+
+// ❌ FORBIDDEN
+const data = await fetchData(url);
+if (!data) {
+    return null;
+}
+
+// ✅ REQUIRED
+const data = await fetchData(url);
+
+if (!data) {
+    return null;
+}
+```
+
+```go
+// ── Go ───────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN
+result, err := doWork(ctx)
+if err != nil {
+    return err
+}
+
+// ✅ REQUIRED
+result, err := doWork(ctx)
+
+if err != nil {
+    return err
+}
+```
+
+---
+
 ## Checklist Summary (Copy for PRs)
 
 ```
@@ -592,6 +680,7 @@ func BuildRecord(
 [ ] No deeply nested control flow — extract loop/condition bodies to helpers
 [ ] No leading backslash on `Throwable` or other global types in catch/type hints
 [ ] Functions with >2 params — one param per line with trailing comma
+[ ] Blank line before control structures (`if`/`for`/`foreach`/`while`) when preceded by statements
 ```
 
 ---
@@ -607,4 +696,4 @@ func BuildRecord(
 
 ---
 
-*Cross-language code style specification v3.0.0 — 2026-02-16*
+*Cross-language code style specification v3.1.0 — 2026-02-21*
