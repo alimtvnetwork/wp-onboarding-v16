@@ -821,7 +821,7 @@ Already implemented in `backend/pkg/apperror/error_json.go`:
 
 ---
 
-## Phase E: Remaining Raw Error Audit (In Progress)
+## ✅ COMPLETED — Phase E: Raw Error Audit (2026-02-21)
 
 ### ✅ E1 — `requestsession/store.go` (2026-02-21)
 
@@ -846,37 +846,24 @@ Converted all bare `return err` across 3 files:
 - `database/splitdb/manager.go` — 8 violations fixed (schema, project/db CRUD, list, archive, purge)
 - `database/splitdb/export.go` — 5 violations fixed (zip extract, register imports, export by type)
 
-### ❌ E5 — Remaining Files
+### ✅ E5 — `api/handlers/error_settings_handlers.go` (2026-02-21)
 
-- `api/handlers/error_settings_handlers.go` (~3 bare `return err` in zip helper)
+Converted 3 bare `return err` in `addFileToZip` → `apperror.Wrap` with `ErrFileOpen`, `ErrZipCreate`, `ErrZipWrite`.
 
----
+### ✅ E6 — Final Audit (2026-02-21)
 
-## Execution Order
-
-```
-Phase A (Specs)  ──► Phase B (Enums)    ──► Phase C (Config)
-                 ──► Phase D (AppError)  ──► Phase E (Error Audit)
-```
-
-Phase A must complete first. B and D can proceed in parallel. C depends on B (enum types for config fields). E depends on D.
-
----
-
-## ✅ Decisions Resolved (2026-02-21)
-
-| Question | Decision |
-|----------|----------|
-| Enum location | `internal/enums/{category}/variant.go` — full spec compliance |
-| HttpStatusType | Keep as `int` — exempt from byte conversion, add required methods |
-| Config JSON tags | **Convert to PascalCase** — update both struct tags AND `config.json` keys |
-| String-valued enums | **Convert to byte** — use `variantStrings` lookup tables |
+Full-codebase audit confirmed zero remaining actionable violations. Remaining `return err` instances fall under documented §10.5 exemptions:
+- `filepath.Walk` callbacks (`site/service.go`, `publish/service.go`)
+- E2E test harness (`e2e/` package)
+- Enum `UnmarshalJSON` methods (`internal/enums/*/variant.go`) — circular import risk with `apperror`
+- `apperror` package internals (returns `*AppError`, not bare `error`)
+- Boolean checks (`return err == nil`) — not error returns
 
 ---
 
 ## Next Steps
 
-Phases B, C, and D complete. Proceed to **Phase E** (remaining raw error audit).
+Phase E complete. Proceed to **Go Phase 3** (constants, enums, DRY enforcement).
 
 ---
 
