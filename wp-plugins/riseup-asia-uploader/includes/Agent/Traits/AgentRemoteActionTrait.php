@@ -39,7 +39,6 @@ trait AgentRemoteActionTrait {
 
         $resolved = $this->followRedirectChain($agent->redirectUrl);
 
-
         if (is_wp_error($resolved)) {
             return $resolved;
         }
