@@ -52,6 +52,8 @@ const (
 | `ByIndex` | `ByIndex(i int) Variant` | Get variant by index |
 | `Parse` | `Parse(s string) (Variant, error)` | Parse string to variant |
 | `IsValid` | `(v Variant) IsValid() bool` | Check if variant is valid |
+| `MarshalJSON` | `(v Variant) MarshalJSON() ([]byte, error)` | JSON serialization |
+| `UnmarshalJSON` | `(v *Variant) UnmarshalJSON([]byte) error` | JSON deserialization |
 
 ### Key Rules
 
@@ -79,8 +81,8 @@ internal/enums/
 
 ## Applies To
 
-| CLI | Status | Score | Audit Report |
-|-----|--------|-------|--------------|
+| CLI / Project | Status | Score | Audit Report |
+|---------------|--------|-------|--------------|
 | GSearch CLI | ✅ Compliant | 50/50 | `.lovable/audits/gsearch-cli-enum-compliance-audit-2026-02-06.md` |
 | BRun CLI | ✅ Compliant | 50/50 | `.lovable/audits/brun-cli-enum-compliance-audit-2026-02-06.md` |
 | AI Bridge CLI | ✅ Compliant | 50/50 | `.lovable/audits/ai-bridge-cli-enum-compliance-audit-2026-02-06.md` |
@@ -90,8 +92,10 @@ internal/enums/
 | AI Transcribe CLI | ✅ Compliant | 50/50 | `.lovable/audits/ai-transcribe-cli-enum-compliance-audit-2026-02-06.md` |
 | WP Plugin Builder | ✅ Compliant | 50/50 | `.lovable/audits/wp-plugin-builder-cli-enum-compliance-audit-2026-02-06.md` |
 | Spec Management | ✅ Compliant | 50/50 | `.lovable/audits/spec-management-enum-compliance-audit-2026-02-06.md` |
+| **WP Plugin Publish** | 🔄 Migration In Progress | — | 12 string-based enums to migrate |
 
-> **Note:** All 9 CLIs have been migrated to `Invalid` as zero value per spec v2.0.0 (completed 2026-02-11).
+> **Note:** All 9 CLIs have been migrated to `Invalid` as zero value per spec v2.0.0 (completed 2026-02-11).  
+> **Note:** WP Plugin Publish backend has 12 string-based + 1 int-based enum types pending migration to byte-based pattern (added 2026-02-21).
 
 ---
 
