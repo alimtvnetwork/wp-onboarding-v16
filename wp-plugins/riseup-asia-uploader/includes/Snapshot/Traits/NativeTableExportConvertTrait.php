@@ -21,6 +21,7 @@ trait NativeTableExportConvertTrait {
         $sql = $this->convertMysqlDataTypes($sql);
         $sql = $this->stripMysqlColumnModifiers($sql);
         $sql = $this->stripMysqlIndexDefinitions($sql);
+
         return $sql;
     }
 
@@ -30,6 +31,7 @@ trait NativeTableExportConvertTrait {
         $sql = preg_replace('/\s+COLLATE\s*=?\s*\w+/i', '', $sql);
         $sql = preg_replace('/\s+AUTO_INCREMENT\s*=\s*\d+/i', '', $sql);
         $sql = preg_replace('/\s+ROW_FORMAT\s*=\s*\w+/i', '', $sql);
+
         return preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $sql);
     }
 
@@ -37,6 +39,7 @@ trait NativeTableExportConvertTrait {
         $sql = preg_replace('/\s+COLLATE\s+\w+/i', '', $sql);
         $sql = preg_replace('/\s+CHARACTER\s+SET\s+\w+/i', '', $sql);
         $sql = preg_replace('/\s+UNSIGNED\b/i', '', $sql);
+
         return preg_replace('/\s+ZEROFILL\b/i', '', $sql);
     }
 
@@ -45,6 +48,7 @@ trait NativeTableExportConvertTrait {
         $sql = preg_replace('/,\s*UNIQUE\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
         $sql = preg_replace('/,\s*FULLTEXT\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
         $sql = preg_replace('/,\s*SPATIAL\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
+
         return preg_replace('/,\s*\)/', ')', $sql);
     }
 
@@ -95,6 +99,7 @@ trait NativeTableExportConvertTrait {
             $prefix . 'posts', $prefix . 'postmeta', $prefix . 'comments', $prefix . 'commentmeta',
             $prefix . 'terms', $prefix . 'termmeta', $prefix . 'term_taxonomy', $prefix . 'term_relationships',
         );
+
         return array_filter($all_tables, function($table) use ($content_tables) { return in_array($table, $content_tables); });
     }
 }

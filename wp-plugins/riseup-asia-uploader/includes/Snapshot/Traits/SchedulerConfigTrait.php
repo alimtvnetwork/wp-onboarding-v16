@@ -51,11 +51,13 @@ trait SchedulerConfigTrait {
         $isScheduleDisabled = ($settings['schedule_enabled'] === false || empty($settings['schedule_enabled']));
         if ($isScheduleDisabled) {
             $this->logger->debug('[SCHEDULER] Scheduled snapshots disabled');
+
             return;
         }
 
         if ($settings['schedule_frequency'] === SnapshotFrequencyType::Manual->value) {
             $this->logger->debug('[SCHEDULER] Frequency set to manual - no cron scheduling');
+
             return;
         }
 
