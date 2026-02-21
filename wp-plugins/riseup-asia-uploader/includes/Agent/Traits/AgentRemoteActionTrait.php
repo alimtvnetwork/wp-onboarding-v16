@@ -15,9 +15,12 @@ if (!defined('ABSPATH')) {
 use WP_Error;
 use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Enums\AgentStatusType;
-use RiseupAsia\Enums\HttpMethodType;
-use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpConfigType;
+use RiseupAsia\Enums\HttpHeaderType;
+use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
@@ -66,20 +69,24 @@ trait AgentRemoteActionTrait {
             }
 
             $status = wp_remote_retrieve_response_code($response);
-            if (BooleanHelpers::isAbsentFromList($status, array(
-                301,
-                302,
-                303,
-                307,
-                308,
-            ))) {
-                break;
+            $httpStatus = HttpStatusType::tryFrom($status);
+            $isRedirect = ($httpStatus !== null && $httpStatus->isRedirect());
+
+            if ($isRedirect) {
+                $this->fileLogger->debug('Redirect detected', array(
+                    'url'    => $url,
+                    'status' => $status,
+                ));
+
+                $location = wp_remote_retrieve_header($response, HttpHeaderType::Location->value);
+                if (BooleanHelpers::hasValue($location)) {
+                    $url = $location;
+                }
+
+                continue;
             }
 
-            $location = wp_remote_retrieve_header($response, 'location');
-            if (BooleanHelpers::hasValue($location)) {
-                $url = $location;
-            }
+            break;
         }
 
         return $url;
@@ -87,10 +94,11 @@ trait AgentRemoteActionTrait {
 
     public function testConnection(int $agentId): array {
         $this->fileLogger->info('Testing agent connection', array('id' => $agentId));
+
         $result = $this->apiRequest(
             $agentId,
             HttpMethodType::Get->value,
-            PluginConfigType::apiFullNamespace() . '/status',
+            PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value,
         );
 
         if (is_wp_error($result)) {
@@ -105,6 +113,7 @@ trait AgentRemoteActionTrait {
             'status'     => AgentStatusType::Error->value,
             'last_error' => $error->get_error_message(),
         ));
+
         $this->logAction(
             $agentId,
             ActionType::AgentTest->value,
@@ -125,6 +134,7 @@ trait AgentRemoteActionTrait {
             'last_sync'  => DateHelper::nowUtc(),
             'last_error' => null,
         ));
+
         $this->logAction(
             $agentId,
             ActionType::AgentTest->value,
@@ -140,10 +150,11 @@ trait AgentRemoteActionTrait {
 
     public function syncPlugins(int $agentId): array|WP_Error {
         $this->fileLogger->info('Syncing plugins from agent', array('id' => $agentId));
+
         $result = $this->apiRequest(
             $agentId,
             HttpMethodType::Get->value,
-            PluginConfigType::apiFullNamespace() . '/plugins',
+            PluginConfigType::apiFullNamespace() . '/' . EndpointType::Plugins->value,
         );
 
         if (is_wp_error($result)) {
@@ -163,7 +174,11 @@ trait AgentRemoteActionTrait {
             'status'    => AgentStatusType::Connected->value,
             'last_sync' => DateHelper::nowUtc(),
         ));
-        $plugins = isset($result[ResponseKeyType::Plugins->value]) ? $result[ResponseKeyType::Plugins->value] : $result;
+
+        $plugins = isset($result[ResponseKeyType::Plugins->value])
+            ? $result[ResponseKeyType::Plugins->value]
+            : $result;
+
         $this->logAction(
             $agentId,
             ActionType::AgentSync->value,
@@ -185,7 +200,12 @@ trait AgentRemoteActionTrait {
             'action'   => $action,
             'slug'     => $slug,
         ));
-        $endpoint = PluginConfigType::apiFullNamespace() . '/plugins/' . urlencode($slug) . '/' . $action;
+
+        $endpoint = PluginConfigType::apiFullNamespace()
+            . '/' . EndpointType::Plugins->value
+            . '/' . urlencode($slug)
+            . '/' . $action;
+
         $result = $this->apiRequest(
             $agentId,
             HttpMethodType::Post->value,
@@ -218,4 +238,3 @@ trait AgentRemoteActionTrait {
         ));
     }
 }
-

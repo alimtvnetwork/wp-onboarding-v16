@@ -20,13 +20,24 @@ enum HttpStatusType: int
     case Ok          = 200;
     case Created     = 201;
     case NoContent   = 204;
+
+    // ── Redirect ────────────────────────────────────────────────────
+    case MovedPermanently  = 301;
+    case Found             = 302;
+    case SeeOther          = 303;
+    case TemporaryRedirect = 307;
+    case PermanentRedirect = 308;
+
+    // ── Client Error ────────────────────────────────────────────────
     case BadRequest  = 400;
     case Unauthorized = 401;
     case Forbidden   = 403;
     case NotFound    = 404;
-    case Conflict    = 409;
     case RequestTimeout = 408;
+    case Conflict    = 409;
     case TooManyRequests = 429;
+
+    // ── Server Error ────────────────────────────────────────────────
     case ServerError = 500;
     case NotImplemented = 501;
     case BadGateway  = 502;
@@ -79,6 +90,18 @@ enum HttpStatusType: int
             self::BadGateway,
             self::ServiceUnavailable,
             self::GatewayTimeout,
+        );
+    }
+
+    /** Check if this status code indicates an HTTP redirect (3xx). */
+    public function isRedirect(): bool
+    {
+        return $this->isAnyOf(
+            self::MovedPermanently,
+            self::Found,
+            self::SeeOther,
+            self::TemporaryRedirect,
+            self::PermanentRedirect,
         );
     }
 }

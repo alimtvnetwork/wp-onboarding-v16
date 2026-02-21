@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
 
 use WP_Error;
 use RiseupAsia\Enums\HttpConfigType;
+use RiseupAsia\Enums\HttpHeaderType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\UpdateConfigType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -52,13 +54,16 @@ trait UpdateResolverUrlTrait {
         }
 
         $status = wp_remote_retrieve_response_code($response);
+        $httpStatus = HttpStatusType::tryFrom($status);
+        $isRedirect = ($httpStatus !== null && $httpStatus->isRedirect());
+
         $this->fileLogger->debug('Redirect check', array('url' => $url, 'status' => $status));
 
-        if (BooleanHelpers::isAbsentFromList($status, array(301, 302, 303, 307, 308))) {
+        if ($isRedirect === false) {
             return null;
         }
 
-        $location = wp_remote_retrieve_header($response, 'location');
+        $location = wp_remote_retrieve_header($response, HttpHeaderType::Location->value);
         if (empty($location)) {
             $this->fileLogger->error('Redirect without Location header', array('url' => $url));
 
