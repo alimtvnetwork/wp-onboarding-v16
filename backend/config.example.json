@@ -19,7 +19,7 @@
     "MaxBackupsPerPlugin": 10
   },
   "Logging": {
-    "Level": "info",
+    "Level": "Info",
     "RetentionDays": 7,
     "DebugMode": false,
     "TimeFormat": "2006-01-02 03:04:05 PM"
