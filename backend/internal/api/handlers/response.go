@@ -35,19 +35,31 @@ func respondCreated[T any](w http.ResponseWriter, data T) {
 }
 
 // respondError writes an error envelope with auto-captured Go stack traces
-func respondError(w http.ResponseWriter, status wordpress.HttpStatusType, code, message string) {
+func respondError(
+	w http.ResponseWriter,
+	status wordpress.HttpStatusType,
+	code string,
+	message string,
+) {
 	envelope.Write(w, envelope.ErrorWithStack(status.Int(), code, message))
 }
 
 // respondErrorWithSession writes an error envelope with session ID and stack traces.
 // Extracts sessionId from apperror diagnostic if available.
-func respondErrorWithSession(w http.ResponseWriter, status wordpress.HttpStatusType, code, message string, err error) {
+func respondErrorWithSession(
+	w http.ResponseWriter,
+	status wordpress.HttpStatusType,
+	code string,
+	message string,
+	err error,
+) {
 	resp := envelope.ErrorWithStack(status.Int(), code, message)
 	if appErr, ok := err.(*apperror.AppError); ok {
 		if appErr.Diagnostic.SessionID != "" {
 			resp = resp.WithSessionId(appErr.Diagnostic.SessionID)
 		}
 	}
+
 	envelope.Write(w, resp)
 }
 
@@ -59,7 +71,12 @@ func respondDeleted(w http.ResponseWriter) {
 // respondList writes a paginated list envelope.
 // Generic: compile-time type checking on the data parameter.
 // requestPath is the base URL path used to generate navigation URLs.
-func respondList[T any](w http.ResponseWriter, data T, pg envelope.Pagination, requestPath string) {
+func respondList[T any](
+	w http.ResponseWriter,
+	data T,
+	pg envelope.Pagination,
+	requestPath string,
+) {
 	envelope.Write(w, envelope.List(data, pg, requestPath))
 }
 
@@ -72,6 +89,7 @@ func respondListUnpaginated[T any](w http.ResponseWriter, data T, count int) {
 // getIDParam extracts an ID parameter from the URL
 func getIDParam(r *http.Request, name string) (int64, error) {
 	vars := mux.Vars(r)
+
 	return strconv.ParseInt(vars[name], 10, 64)
 }
 
@@ -79,9 +97,16 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 // Returns true if the service is available.
 func requireService(w http.ResponseWriter, service any, name string) bool {
 	if service == nil {
-		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
+		respondError(
+			w,
+			wordpress.HttpStatusServiceUnavailable,
+			"E9001",
+			responsemessage.ServiceNotAvailable.String(),
+		)
+
 		return false
 	}
+
 	return true
 }
 
@@ -89,9 +114,16 @@ func requireService(w http.ResponseWriter, service any, name string) bool {
 // a 400 error response if decoding fails.
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", responsemessage.InvalidRequestBody.String())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1001",
+			responsemessage.InvalidRequestBody.String(),
+		)
+
 		return false
 	}
+
 	return true
 }
 
@@ -99,9 +131,16 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (int64, bool) {
 	id, err := getIDParam(r, paramName)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidId.String())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			"E1002",
+			responsemessage.InvalidId.String(),
+		)
+
 		return 0, false
 	}
+
 	return id, true
 }
 
@@ -121,6 +160,7 @@ func resolveHTTPStatus(err error, fallback wordpress.HttpStatusType) wordpress.H
 	if errors.As(err, &apiErr) && apiErr.StatusCode > 0 {
 		return wordpress.HttpStatusType(apiErr.StatusCode)
 	}
+
 	// Check apperror wrapping an APIError
 	var appErr *apperror.AppError
 	if errors.As(err, &appErr) && appErr.Unwrap() != nil {
@@ -129,5 +169,6 @@ func resolveHTTPStatus(err error, fallback wordpress.HttpStatusType) wordpress.H
 			return wordpress.HttpStatusType(inner.StatusCode)
 		}
 	}
+
 	return fallback
 }
