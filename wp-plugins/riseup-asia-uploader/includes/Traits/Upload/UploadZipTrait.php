@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -39,7 +40,7 @@ trait UploadZipTrait
         $final_slug = $hasSlug ? $slug : $detected_slug;
         $this->fileLogger->info('Plugin slug determined', array('slug' => $final_slug));
 
-        return array('temp_file' => $temp_file, 'slug' => $final_slug);
+        return array(ResponseKeyType::TempFile->value => $temp_file, 'slug' => $final_slug);
     }
 
     /** Write ZIP content to a temp file. */
@@ -164,12 +165,12 @@ trait UploadZipTrait
         $this->logger->logPluginAction(
             ActionType::Upload->value, $slug, StatusType::Success->value,
             array(
-                'is_update' => true, 'is_self_update' => true,
+                ResponseKeyType::IsUpdate->value => true, ResponseKeyType::IsSelfUpdate->value => true,
                 'old_version' => $old_version, 'new_version' => $client_version,
                 'file_size' => $file_size, 'note' => 'Pre-logged before self-update to ensure audit trail',
             ),
             null,
-            array('plugin_version' => $client_version ?: $old_version, 'upload_source' => $upload_source)
+            array(ResponseKeyType::PluginVersion->value => $client_version ?: $old_version, 'upload_source' => $upload_source)
         );
     }
 }

@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Admin\Admin;
@@ -29,13 +30,13 @@ trait ErrorLogHandlerTrait {
             $result = array('version' => PluginConfigType::Version->value, 'settings' => $settings);
 
             if ($settings['include_error_log']) {
-                $result['error_log'] = $this->readLogTail($this->fileLogger->getErrorFile(), $settings['max_lines']);
+                $result[ResponseKeyType::ErrorLog->value] = $this->readLogTail($this->fileLogger->getErrorFile(), $settings['max_lines']);
             }
             if ($settings['include_full_log']) {
-                $result['full_log'] = $this->readLogTail($this->fileLogger->getLogFile(), $settings['max_lines']);
+                $result[ResponseKeyType::FullLog->value] = $this->readLogTail($this->fileLogger->getLogFile(), $settings['max_lines']);
             }
             if ($settings['include_stacktrace']) {
-                $result['stacktrace_log'] = $this->readLogTail($this->fileLogger->getStacktraceFile(), $settings['max_lines']);
+                $result[ResponseKeyType::StacktraceLog->value] = $this->readLogTail($this->fileLogger->getStacktraceFile(), $settings['max_lines']);
             }
 
             return EnvelopeBuilder::success()->autoDetectRequestedAt()->setSingleResult($result)->toResponse();
@@ -69,8 +70,8 @@ trait ErrorLogHandlerTrait {
     /** Read the last N lines of a log file. */
     private function readLogTail(string $filePath, int $maxLines): array {
         $result = array(
-            'exists' => false, 'file' => basename($filePath), 'path' => $filePath,
-            'content' => '', 'lines' => 0, 'total_size' => 0, 'truncated' => false,
+            ResponseKeyType::Exists->value => false, 'file' => basename($filePath), ResponseKeyType::Path->value => $filePath,
+            ResponseKeyType::Content->value => '', ResponseKeyType::Lines->value => 0, 'total_size' => 0, ResponseKeyType::Truncated->value => false,
         );
 
         $isFileUnreadable = PathHelper::isFileUnreadable($filePath);
@@ -78,23 +79,23 @@ trait ErrorLogHandlerTrait {
             return $result;
         }
 
-        $result['exists']     = true;
+        $result[ResponseKeyType::Exists->value]     = true;
         $result['total_size'] = filesize($filePath);
 
         $allLines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($allLines === false) {
-            $result['content'] = 'Failed to read file';
+            $result[ResponseKeyType::Content->value] = 'Failed to read file';
 
             return $result;
         }
 
         $totalLines = count($allLines);
-        $result['truncated'] = ($totalLines > $maxLines);
+        $result[ResponseKeyType::Truncated->value] = ($totalLines > $maxLines);
         $lines = ($totalLines > $maxLines) ? array_slice($allLines, -$maxLines) : $allLines;
 
-        $result['lines']       = count($lines);
-        $result['total_lines'] = $totalLines;
-        $result['content']     = implode("\n", $lines);
+        $result[ResponseKeyType::Lines->value]      = count($lines);
+        $result[ResponseKeyType::TotalLines->value]  = $totalLines;
+        $result[ResponseKeyType::Content->value]     = implode("\n", $lines);
 
         return $result;
     }

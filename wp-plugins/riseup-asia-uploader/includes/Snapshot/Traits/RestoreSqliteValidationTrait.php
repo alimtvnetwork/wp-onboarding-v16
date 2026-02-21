@@ -50,7 +50,7 @@ trait RestoreSqliteValidationTrait {
 
         return ResultHelper::ok(array(
             'sqlite'    => $sqlite,
-            'columns'   => $column_names,
+            ResponseKeyType::Columns->value => $column_names,
             'row_count' => $row_count,
         ));
     }

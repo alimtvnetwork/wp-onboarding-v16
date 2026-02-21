@@ -16,6 +16,7 @@ use WP_REST_Response;
 use ZipArchive;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 
 trait UploadInstallExtractTrait
 {
@@ -55,7 +56,7 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zip_result) {
         $context = $this->prepareExtractionContext($input, $zip_result);
 
-        $isPreviouslyActive = $this->deactivateIfUpdating($context['slug'], $context['is_update'], $context['target_dir']);
+        $isPreviouslyActive = $this->deactivateIfUpdating($context['slug'], $context[ResponseKeyType::IsUpdate->value], $context['target_dir']);
 
         $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input);
         if ($stepResult instanceof WP_REST_Response) {
@@ -79,9 +80,9 @@ trait UploadInstallExtractTrait
         }
 
         return array(
-            'temp_file' => $zip_result['temp_file'], 'slug' => $slug,
-            'target_dir' => $target_dir, 'is_update' => $is_update,
-            'is_self_update' => $is_self_update,
+            ResponseKeyType::TempFile->value => $zip_result[ResponseKeyType::TempFile->value], 'slug' => $slug,
+            'target_dir' => $target_dir, ResponseKeyType::IsUpdate->value => $is_update,
+            ResponseKeyType::IsSelfUpdate->value => $is_self_update,
         );
     }
 
@@ -91,7 +92,7 @@ trait UploadInstallExtractTrait
         bool $isPreviouslyActive,
         array $input,
     ) {
-        $extract_result = $this->extractToPluginsDir($ctx['temp_file'], $ctx['slug'], $ctx['target_dir']);
+        $extract_result = $this->extractToPluginsDir($ctx[ResponseKeyType::TempFile->value], $ctx['slug'], $ctx['target_dir']);
         if ($extract_result instanceof WP_REST_Response) {
             return $extract_result;
         }
@@ -101,16 +102,16 @@ trait UploadInstallExtractTrait
             return $plugin_file;
         }
 
-        $activation = $this->activateIfNeeded($plugin_file, $ctx['slug'], $input['activate'], $isPreviouslyActive, $ctx['is_update']);
+        $activation = $this->activateIfNeeded($plugin_file, $ctx['slug'], $input['activate'], $isPreviouslyActive, $ctx[ResponseKeyType::IsUpdate->value]);
         if ($activation instanceof WP_REST_Response) {
             return $activation;
         }
 
-        $version_info = $this->detectInstalledVersion($plugin_file, $ctx['slug'], $ctx['is_self_update'], $input['client_plugin_version']);
+        $version_info = $this->detectInstalledVersion($plugin_file, $ctx['slug'], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['client_plugin_version']);
 
         return array(
-            'slug' => $ctx['slug'], 'is_update' => $ctx['is_update'], 'activated' => $activation['activated'],
-            'plugin_version' => $version_info['version'], 'is_self_update' => $ctx['is_self_update'],
+            'slug' => $ctx['slug'], ResponseKeyType::IsUpdate->value => $ctx[ResponseKeyType::IsUpdate->value], ResponseKeyType::Activated->value => $activation[ResponseKeyType::Activated->value],
+            ResponseKeyType::PluginVersion->value => $version_info['version'], ResponseKeyType::IsSelfUpdate->value => $ctx[ResponseKeyType::IsSelfUpdate->value],
         );
     }
 

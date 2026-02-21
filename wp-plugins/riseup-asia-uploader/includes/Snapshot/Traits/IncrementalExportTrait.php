@@ -73,7 +73,7 @@ trait IncrementalExportTrait {
         $prepared = $this->prepareDeltaBatchStatement($sqlite, $table);
         $sqlite->beginTransaction();
 
-        $exported = $this->executeDeltaBatchLoop($prepared['stmt'], $table, $pkColumn, $lastMaxId);
+        $exported = $this->executeDeltaBatchLoop($prepared[ResponseKeyType::Stmt->value], $table, $pkColumn, $lastMaxId);
 
         $sqlite->commit();
 
@@ -88,7 +88,7 @@ trait IncrementalExportTrait {
 
         $stmt = $sqlite->prepare("INSERT OR REPLACE INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
 
-        return array('stmt' => $stmt, 'columns' => $columnNames);
+        return array(ResponseKeyType::Stmt->value => $stmt, ResponseKeyType::Columns->value => $columnNames);
     }
 
     private function executeDeltaBatchLoop(
