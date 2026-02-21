@@ -36,14 +36,14 @@ trait ExporterPublicApiTrait {
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
         if ($isSnapshotMissing) {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Full snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
+            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Full snapshot not found', ResponseKeyType::Code->value => SnapshotErrorType::NotFound->value);
         }
 
         $existing = $this->getValidExport($fullSnapshotId);
         if ($existing && file_exists($existing['zip_path'])) {
             $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array('export_id' => $existing['id'], 'filename' => $existing['zip_filename']));
 
-            return array(ResponseKeyType::Success->value => true, 'cached' => true, 'export' => $existing);
+            return array(ResponseKeyType::Success->value => true, ResponseKeyType::Cached->value => true, 'export' => $existing);
         }
 
         if ($existing) {

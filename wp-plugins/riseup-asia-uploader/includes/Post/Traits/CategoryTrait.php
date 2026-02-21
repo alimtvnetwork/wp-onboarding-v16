@@ -87,7 +87,7 @@ trait CategoryTrait {
             $total = wp_count_terms(array('taxonomy' => 'category', 'hide_empty' => false));
 
             return array(
-                ResponseKeyType::Success->value => true, 'total' => (int) $total,
+                ResponseKeyType::Success->value => true, ResponseKeyType::Total->value => (int) $total,
                 'limit' => $args['number'], 'offset' => $args['offset'],
                 'categories' => $categories,
             );
