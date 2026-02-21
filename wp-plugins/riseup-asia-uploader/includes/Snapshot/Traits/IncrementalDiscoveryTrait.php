@@ -19,7 +19,6 @@ use PDO;
 use Throwable;
 
 trait IncrementalDiscoveryTrait {
-
     use RootDbCompatTrait;
 
     public function findLatestMasterSnapshot(): ?string {

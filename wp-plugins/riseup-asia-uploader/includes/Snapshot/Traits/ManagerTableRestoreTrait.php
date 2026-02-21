@@ -23,7 +23,6 @@ use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerTableRestoreTrait {
-
     private function restoreTable(PDO $sqlite, string $table): array {
         try {
             $check = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");

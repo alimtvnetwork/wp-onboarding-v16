@@ -21,7 +21,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 
 trait NativeTableExportTrait {
-
     use NativeTableExportConvertTrait;
 
     private function exportTable(

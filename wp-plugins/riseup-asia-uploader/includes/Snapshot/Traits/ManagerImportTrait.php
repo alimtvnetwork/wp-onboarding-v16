@@ -23,7 +23,6 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerImportTrait {
-
     use ManagerImportValidationTrait;
     use ManagerImportRecordTrait;
 

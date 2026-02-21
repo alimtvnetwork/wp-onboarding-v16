@@ -22,7 +22,6 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
 
 trait NativeSnapshotRecordTrait {
-
     use NativeSnapshotCrudTrait;
 
     private function createSqliteDatabase(string $filepath): ?PDO {

@@ -18,7 +18,6 @@ use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait ManagerImportRecordTrait {
-
     private function getNextImportSequence(): int {
         $result = $this->db->querySingle('SELECT MAX(Sequence) as max_seq FROM ' . TableType::Snapshots->value);
 

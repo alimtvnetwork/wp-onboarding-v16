@@ -19,7 +19,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 
 trait ManagerImportValidationTrait {
-
     private function validateManifest(array $manifest): array {
         $required = array('version', 'snapshot');
 

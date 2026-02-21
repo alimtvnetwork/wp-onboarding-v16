@@ -15,7 +15,6 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\SnapshotScopeType;
 
 trait NativeTableExportConvertTrait {
-
     private function convertCreateStatement(string $mysqlCreate, string $table): string {
         $sql = $this->stripMysqlTableOptions($mysqlCreate);
         $sql = $this->convertMysqlDataTypes($sql);

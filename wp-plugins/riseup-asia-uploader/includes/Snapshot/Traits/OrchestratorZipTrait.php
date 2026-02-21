@@ -20,7 +20,6 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 
 trait OrchestratorZipTrait {
-
     private function createZipExport(string $snapshotDir, string $title): array {
         try {
             $zip_filename = sanitize_title($title) . '_' . date('Y-m-d_His') . '.zip';

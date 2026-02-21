@@ -21,9 +21,7 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait OrchestratorHelpersTrait {
-
     private function buildPhaseError(string $phase, array $result): array {
-
         return array(
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => 'Table export failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown error'),

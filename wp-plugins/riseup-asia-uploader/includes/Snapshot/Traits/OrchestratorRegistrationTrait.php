@@ -23,7 +23,6 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
 
 trait OrchestratorRegistrationTrait {
-
     private function registerSnapshot(
         string $title,
         string $scope,
