@@ -61,7 +61,9 @@ trait AgentRemoteCoreTrait {
         $args = $this->buildAgentRequestArgs($agent, $method, $body);
 
         $this->fileLogger->debug('Agent API request', array(
-            'agent_id' => $agentId, 'method' => $method, 'url' => $url,
+            'agent_id' => $agentId,
+            'method' => $method,
+            'url' => $url,
         ));
 
         $response = wp_remote_request($url, $args);
@@ -89,7 +91,11 @@ trait AgentRemoteCoreTrait {
         $args = HttpConfigType::authenticatedOptions($method, $this->buildAuthHeader($agent));
 
         $hasBody = BooleanHelpers::hasValue($body);
-        $isBodyMethod = in_array($method, array(HttpMethodType::Post->value, HttpMethodType::Put->value, HttpMethodType::Patch->value));
+        $isBodyMethod = in_array($method, array(
+            HttpMethodType::Post->value,
+            HttpMethodType::Put->value,
+            HttpMethodType::Patch->value,
+        ));
 
         if ($hasBody && $isBodyMethod) {
             $args['body'] = json_encode($body);

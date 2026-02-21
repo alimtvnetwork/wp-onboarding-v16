@@ -122,6 +122,7 @@ trait AgentCrudReadTrait {
         $params = [];
 
         $hasStatusFilter = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Status->value);
+
         if ($hasStatusFilter) {
             $conditions[] = 'Status = ?';
             $params[] = $filters[FilterKeyType::Status->value];
