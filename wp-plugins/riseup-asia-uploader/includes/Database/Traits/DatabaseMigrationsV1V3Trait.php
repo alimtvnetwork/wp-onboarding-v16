@@ -74,7 +74,7 @@ trait DatabaseMigrationsV1V3Trait {
             RedirectUrl TEXT,
             RedirectResolved TEXT,
             RedirectResolvedAt TEXT,
-            Status TEXT DEFAULT 'pending',
+            Status TEXT DEFAULT 'Pending',
             LastSync TEXT,
             LastError TEXT,
             CreatedAt TEXT NOT NULL,
