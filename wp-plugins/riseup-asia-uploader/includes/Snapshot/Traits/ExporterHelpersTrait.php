@@ -66,6 +66,7 @@ trait ExporterHelpersTrait {
 
         $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE SnapshotId = ? AND Status = ?');
         $stmt->execute(array($snapshotId, SnapshotExportStatusType::Valid->value));
+
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
@@ -80,6 +81,7 @@ trait ExporterHelpersTrait {
 
         $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE Id = ?');
         $stmt->execute(array($exportId));
+
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 

@@ -84,6 +84,7 @@ trait PathHelperDirTrait {
         }
 
         if (is_dir($path)) { return self::handleExistingDir($path, $secure); }
+
         return self::createNewDir($path, $secure);
     }
 
@@ -142,6 +143,7 @@ trait PathHelperDirTrait {
             return false;
         }
         if (!self::makeDirectory($path, $secure)) { return false; }
+
         return $path;
     }
 }

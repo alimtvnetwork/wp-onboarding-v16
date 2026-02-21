@@ -110,6 +110,7 @@ trait ImportExecutionFileTrait {
         foreach ($entries as $entry) {
             $size += $entry->getSize();
         }
+
         return $size;
     }
 }

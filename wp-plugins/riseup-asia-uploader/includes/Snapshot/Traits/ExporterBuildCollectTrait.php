@@ -67,6 +67,7 @@ trait ExporterBuildCollectTrait {
         );
         $parentDir = '%/' . $parentName . '/incremental/%';
         $stmt->execute(array($parentDir, SnapshotStatusType::Complete->value));
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
