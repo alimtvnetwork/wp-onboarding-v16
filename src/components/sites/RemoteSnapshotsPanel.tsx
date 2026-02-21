@@ -119,7 +119,7 @@ function SnapshotRow({
 }) {
   const [downloading, setDownloading] = useState(false);
   const isRunning = snapshot.status === SnapshotRunStatus.Running || snapshot.status === SnapshotRunStatus.InProgress;
-  const isIncremental = snapshot.snapshot_type === SnapshotTypeValues.Incremental || snapshot.scope === "incremental";
+  const isIncremental = snapshot.snapshot_type === SnapshotTypeValues.Incremental || snapshot.scope === "Incremental";
 
   const statusBadge = (() => {
     switch (snapshot.status) {
@@ -312,7 +312,7 @@ function SnapshotDetailContent({ snapshot, siteId }: { snapshot: SnapshotRecord;
   const [zipLoading, setZipLoading] = useState(false);
   const [zipError, setZipError] = useState<string | null>(null);
 
-  const isIncremental = snapshot.snapshot_type === "incremental" || snapshot.scope === "incremental";
+  const isIncremental = snapshot.snapshot_type === SnapshotTypeValues.Incremental || snapshot.scope === "Incremental";
 
   const handleDownload = async () => {
     setZipLoading(true);
@@ -979,7 +979,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   // Available parent snapshots for incremental backups (completed full snapshots only)
   const completedFullSnapshots = useMemo(
     () => snapshots.filter(
-      (s) => s.status === "complete" && s.snapshot_type !== "incremental" && s.scope !== "incremental"
+      (s) => s.status === "complete" && s.snapshot_type !== SnapshotTypeValues.Incremental && s.scope !== "Incremental"
     ),
     [snapshots]
   );
@@ -996,7 +996,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
     const opts: CreateSnapshotOptions = {};
     if (createName.trim()) opts.name = createName.trim();
     if (createScope === "custom" && customTables.length > 0) {
-      opts.scope = "custom";
+      opts.scope = "Custom";
       opts.tables = customTables;
     } else {
       opts.scope = createScope as SnapshotScope;
@@ -1399,10 +1399,10 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                     {(() => {
                       // Group snapshots: full snapshots at top level, incrementals nested under parent
                       const fullSnapshots = snapshots.filter(
-                        (s) => s.snapshot_type !== "incremental" && s.scope !== "incremental"
+                        (s) => s.snapshot_type !== SnapshotTypeValues.Incremental && s.scope !== "Incremental"
                       );
                       const incrementals = snapshots.filter(
-                        (s) => s.snapshot_type === "incremental" || s.scope === "incremental"
+                        (s) => s.snapshot_type === SnapshotTypeValues.Incremental || s.scope === "Incremental"
                       );
 
                       // Build a map from parent directory to incremental snapshots
@@ -1606,7 +1606,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
               <span>
                 Delete snapshot #{deleteTarget?.sequence} ({deleteTarget?.filename})? This cannot be undone.
               </span>
-              {deleteTarget && deleteTarget.snapshot_type !== "incremental" && deleteTarget.scope !== "incremental" && (deleteTarget.incremental_count ?? 0) > 0 && (
+              {deleteTarget && deleteTarget.snapshot_type !== SnapshotTypeValues.Incremental && deleteTarget.scope !== "Incremental" && (deleteTarget.incremental_count ?? 0) > 0 && (
                 <span className="block text-destructive font-medium">
                   ⚠ This is a full snapshot with {deleteTarget.incremental_count} incremental backup(s). Deleting it will also remove all its incremental children.
                 </span>

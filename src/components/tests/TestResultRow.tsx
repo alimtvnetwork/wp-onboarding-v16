@@ -50,7 +50,7 @@ function getStatusIcon(status: string) {
 }
 
 export function TestResultRow({ result, onViewError, onRerun, isRerunning }: TestResultRowProps) {
-  const isFailed = result.status === E2ECaseStatusValues.Failed || result.status === "error";
+  const isFailed = result.status === E2ECaseStatusValues.Failed || result.status === "Error";
 
   return (
     <div

@@ -1,7 +1,7 @@
 import { Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type LogStatus = "running" | "success" | "error" | "warning" | "info";
+export type LogStatus = "Running" | "Success" | "Error" | "Warning" | "Info";
 
 export interface LiveLogEntryProps {
   timestamp: Date;
@@ -25,15 +25,15 @@ export function LiveLogEntry({
 }: LiveLogEntryProps) {
   const getStatusIcon = () => {
     switch (status) {
-      case "running":
+      case "Running":
         return <Loader2 className="h-3 w-3 animate-spin text-primary" />;
-      case "success":
+      case "Success":
         return <CheckCircle className="h-3 w-3 text-primary" />;
-      case "error":
+      case "Error":
         return <XCircle className="h-3 w-3 text-destructive" />;
-      case "warning":
+      case "Warning":
         return <AlertCircle className="h-3 w-3 text-warning" />;
-      case "info":
+      case "Info":
       default:
         return <CheckCircle className="h-3 w-3 text-muted-foreground" />;
     }
@@ -41,11 +41,11 @@ export function LiveLogEntry({
 
   const getStatusColor = () => {
     switch (status) {
-      case "error":
+      case "Error":
         return "text-destructive";
-      case "success":
+      case "Success":
         return "text-primary";
-      case "warning":
+      case "Warning":
         return "text-warning";
       default:
         return "";
@@ -54,11 +54,11 @@ export function LiveLogEntry({
 
   const getBackgroundColor = () => {
     switch (status) {
-      case "error":
+      case "Error":
         return "bg-destructive/10";
-      case "success":
+      case "Success":
         return "bg-primary/5";
-      case "warning":
+      case "Warning":
         return "bg-warning/10";
       default:
         return "";
