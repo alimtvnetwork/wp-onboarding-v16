@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	connectionstep "wp-plugin-publish/internal/enums/connection_step"
 	contenttype "wp-plugin-publish/internal/enums/content_type"
 	"wp-plugin-publish/internal/enums/header"
 	poststatus "wp-plugin-publish/internal/enums/post_status"
@@ -241,32 +242,32 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 
 	// Step 1: Check if site is reachable
-	c.progress("dns_check", stagestatus.Running.String(), fmt.Sprintf("Resolving %s...", c.baseURL), ProgressDetails{
+	c.progress(connectionstep.DnsCheck.String(), stagestatus.Running.String(), fmt.Sprintf("Resolving %s...", c.baseURL), ProgressDetails{
 		"url": c.baseURL,
 	})
 	resp, err := c.httpClient.Get(c.baseURL)
 	if err != nil {
-		c.progress("dns_check", stagestatus.Failed.String(), fmt.Sprintf("Cannot reach site: %v", err), ProgressDetails{"error": err.Error(), "url": c.baseURL})
+		c.progress(connectionstep.DnsCheck.String(), stagestatus.Failed.String(), fmt.Sprintf("Cannot reach site: %v", err), ProgressDetails{"error": err.Error(), "url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "cannot reach WordPress site").
 			WithURL(c.baseURL)
 	}
 	resp.Body.Close()
-	c.progress("dns_check", stagestatus.Completed.String(), "Site is reachable", ProgressDetails{"status": resp.StatusCode, "url": c.baseURL})
+	c.progress(connectionstep.DnsCheck.String(), stagestatus.Completed.String(), "Site is reachable", ProgressDetails{"status": resp.StatusCode, "url": c.baseURL})
 
 	// Step 2: Check WordPress REST API root
-	c.progress("rest_api_check", stagestatus.Running.String(), "Checking WordPress REST API...", ProgressDetails{
+	c.progress(connectionstep.RestApiCheck.String(), stagestatus.Running.String(), "Checking WordPress REST API...", ProgressDetails{
 		"url": c.baseURL,
 	})
 	resp, err = c.httpClient.Get(fmt.Sprintf("%s/wp-json/", c.baseURL))
 	if err != nil {
-		c.progress("rest_api_check", stagestatus.Failed.String(), fmt.Sprintf("REST API not accessible: %v", err), ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.RestApiCheck.String(), stagestatus.Failed.String(), fmt.Sprintf("REST API not accessible: %v", err), ProgressDetails{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPAPIDisabled, "REST API not accessible").
 			WithURL(c.baseURL)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == HttpStatusNotFound.Int() {
-		c.progress("rest_api_check", stagestatus.Failed.String(), "REST API not found - is permalink structure set?", ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.RestApiCheck.String(), stagestatus.Failed.String(), "REST API not found - is permalink structure set?", ProgressDetails{"url": c.baseURL})
 		return nil, apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").
 			WithURL(c.baseURL)
 	}
@@ -280,16 +281,16 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		result.SiteName = rootInfo.Name
 		result.SiteDescription = rootInfo.Description
 	}
-	c.progress("rest_api_check", stagestatus.Completed.String(), "REST API is available", ProgressDetails{"siteName": result.SiteName, "url": c.baseURL})
+	c.progress(connectionstep.RestApiCheck.String(), stagestatus.Completed.String(), "REST API is available", ProgressDetails{"siteName": result.SiteName, "url": c.baseURL})
 
 	// Step 3: Test authentication with users/me endpoint
-	c.progress("auth_check", stagestatus.Running.String(), fmt.Sprintf("Authenticating as %s...", c.username), ProgressDetails{
+	c.progress(connectionstep.AuthCheck.String(), stagestatus.Running.String(), fmt.Sprintf("Authenticating as %s...", c.username), ProgressDetails{
 		"url":      c.baseURL,
 		"username": c.username,
 	})
 	resp, err = c.request("GET", WPCoreUsersMe, nil)
 	if err != nil {
-		c.progress("auth_check", stagestatus.Failed.String(), fmt.Sprintf("Authentication request failed: %v", err), ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.AuthCheck.String(), stagestatus.Failed.String(), fmt.Sprintf("Authentication request failed: %v", err), ProgressDetails{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPAuth, "authentication request failed").
 			WithURL(c.baseURL).
 			WithUsername(c.username)
@@ -297,7 +298,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == HttpStatusUnauthorized.Int() {
-		c.progress("auth_check", stagestatus.Failed.String(), "Invalid username or application password", ProgressDetails{
+		c.progress(connectionstep.AuthCheck.String(), stagestatus.Failed.String(), "Invalid username or application password", ProgressDetails{
 			"hint": "Generate an application password in WordPress: Users → Profile → Application Passwords",
 			"url":  c.baseURL,
 		})
@@ -306,14 +307,14 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			WithUsername(c.username)
 	}
 	if resp.StatusCode == HttpStatusForbidden.Int() {
-		c.progress("auth_check", stagestatus.Failed.String(), "Access forbidden - user lacks permissions", ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.AuthCheck.String(), stagestatus.Failed.String(), "Access forbidden - user lacks permissions", ProgressDetails{"url": c.baseURL})
 		return nil, apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").
 			WithURL(c.baseURL).
 			WithStatusCode(resp.StatusCode)
 	}
 	if resp.StatusCode != HttpStatusOk.Int() {
 		body, _ := io.ReadAll(resp.Body)
-		c.progress("auth_check", stagestatus.Failed.String(), fmt.Sprintf("Unexpected response: %d", resp.StatusCode), ProgressDetails{
+		c.progress(connectionstep.AuthCheck.String(), stagestatus.Failed.String(), fmt.Sprintf("Unexpected response: %d", resp.StatusCode), ProgressDetails{
 			"body": string(body),
 			"url":  c.baseURL,
 		})
@@ -339,26 +340,26 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		// Check for plugin management capability
 		result.CanManagePlugins = userInfo.Capabilities["activate_plugins"] || userInfo.Capabilities["install_plugins"]
 	}
-	c.progress("auth_check", stagestatus.Completed.String(), fmt.Sprintf("Authenticated as %s (ID: %d)", result.UserDisplayName, result.UserID), ProgressDetails{
+	c.progress(connectionstep.AuthCheck.String(), stagestatus.Completed.String(), fmt.Sprintf("Authenticated as %s (ID: %d)", result.UserDisplayName, result.UserID), ProgressDetails{
 		"userId": result.UserID,
 		"roles":  result.UserRoles,
 		"url":    c.baseURL,
 	})
 
 	// Step 4: Check plugin management permissions
-	c.progress("plugin_access_check", stagestatus.Running.String(), "Checking plugin management access...", ProgressDetails{
+	c.progress(connectionstep.PluginAccessCheck.String(), stagestatus.Running.String(), "Checking plugin management access...", ProgressDetails{
 		"url": c.baseURL,
 	})
 	resp, err = c.request("GET", WPCorePlugins, nil)
 	if err != nil {
-		c.progress("plugin_access_check", stagestatus.Failed.String(), fmt.Sprintf("Plugin endpoint request failed: %v", err), ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.PluginAccessCheck.String(), stagestatus.Failed.String(), fmt.Sprintf("Plugin endpoint request failed: %v", err), ProgressDetails{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPPluginList, "plugin endpoint not accessible").
 			WithURL(c.baseURL)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == HttpStatusUnauthorized.Int() || resp.StatusCode == HttpStatusForbidden.Int() {
-		c.progress("plugin_access_check", stagestatus.Failed.String(), "User cannot manage plugins - requires administrator role", ProgressDetails{
+		c.progress(connectionstep.PluginAccessCheck.String(), stagestatus.Failed.String(), "User cannot manage plugins - requires administrator role", ProgressDetails{
 			"userRoles": result.UserRoles,
 			"url":       c.baseURL,
 		})
@@ -368,13 +369,13 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 	if resp.StatusCode == HttpStatusOk.Int() {
 		result.CanManagePlugins = true
-		c.progress("plugin_access_check", stagestatus.Completed.String(), "Plugin management access confirmed", ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.PluginAccessCheck.String(), stagestatus.Completed.String(), "Plugin management access confirmed", ProgressDetails{"url": c.baseURL})
 	} else {
-		c.progress("plugin_access_check", "warning", fmt.Sprintf("Plugin endpoint returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
+		c.progress(connectionstep.PluginAccessCheck.String(), "warning", fmt.Sprintf("Plugin endpoint returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
 	}
 
 	// Step 5: Test write permissions by creating a draft post (optional, non-destructive)
-	c.progress("write_test", stagestatus.Running.String(), "Testing write permissions...", ProgressDetails{
+	c.progress(connectionstep.WriteTest.String(), stagestatus.Running.String(), "Testing write permissions...", ProgressDetails{
 		"url": c.baseURL,
 	})
 	testPost := struct {
@@ -388,7 +389,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 	resp, err = c.request("POST", WPCorePosts, testPost)
 	if err != nil {
-		c.progress("write_test", "warning", "Could not test write permissions", ProgressDetails{"error": err.Error(), "url": c.baseURL})
+		c.progress(connectionstep.WriteTest.String(), "warning", "Could not test write permissions", ProgressDetails{"error": err.Error(), "url": c.baseURL})
 		// Non-fatal - just report
 	} else {
 		defer resp.Body.Close()
@@ -404,15 +405,15 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 					deleteResp.Body.Close()
 				}
 				result.CanWritePosts = true
-				c.progress("write_test", stagestatus.Completed.String(), "Write permissions verified (test post created and deleted)", ProgressDetails{
+				c.progress(connectionstep.WriteTest.String(), stagestatus.Completed.String(), "Write permissions verified (test post created and deleted)", ProgressDetails{
 					"testPostId": createdPost.ID,
 					"url":        c.baseURL,
 				})
 			}
 		} else if resp.StatusCode == HttpStatusUnauthorized.Int() || resp.StatusCode == HttpStatusForbidden.Int() {
-			c.progress("write_test", "warning", "User cannot create posts", ProgressDetails{"url": c.baseURL})
+			c.progress(connectionstep.WriteTest.String(), "warning", "User cannot create posts", ProgressDetails{"url": c.baseURL})
 		} else {
-			c.progress("write_test", "warning", fmt.Sprintf("Write test returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
+			c.progress(connectionstep.WriteTest.String(), "warning", fmt.Sprintf("Write test returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
 		}
 	}
 

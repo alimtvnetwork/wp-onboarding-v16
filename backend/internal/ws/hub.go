@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	connectionstatus "wp-plugin-publish/internal/enums/connection_status"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -466,7 +468,7 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Send connection confirmation
 	Broadcast(h, EventConnection, ConnectionConfirmation{
-		Status:   "connected",
+		Status:   connectionstatus.Connected.DBValue(),
 		ClientID: conn.RemoteAddr().String(),
 	})
 

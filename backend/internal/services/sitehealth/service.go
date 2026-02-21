@@ -10,6 +10,7 @@ import (
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/enums/endpoint"
+	healthstatus "wp-plugin-publish/internal/enums/health_status"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
@@ -55,7 +56,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 		"SELECT Name, Url, Username, PasswordEncrypted FROM Sites WHERE Id = ?", siteID,
 	).Scan(&siteName, &siteURL, &username, &passwordEncrypted)
 	if err != nil {
-		return apperror.FailWrap[models.SiteHealthCheck](err, "E4001", "site not found").
+		return apperror.FailWrap[models.SiteHealthCheck](err, apperror.ErrFSRead, "site not found").
 			WithSiteID(siteID)
 	}
 
@@ -70,7 +71,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 	statusURL := fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, endpoint.Status)
 	req, err := http.NewRequestWithContext(ctx, "GET", statusURL, nil)
 	if err != nil {
-		check.Status = "down"
+		check.Status = healthstatus.Down.DBValue()
 		check.ErrorMessage = err.Error()
 		s.saveCheck(&check)
 		return apperror.Ok(check)
@@ -81,7 +82,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 	check.ResponseMs = elapsed
 
 	if err != nil {
-		check.Status = "down"
+		check.Status = healthstatus.Down.DBValue()
 		check.ErrorMessage = err.Error()
 		s.saveCheck(&check)
 		return apperror.Ok(check)
@@ -93,22 +94,22 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 	httpStatus := wordpress.HttpStatusType(resp.StatusCode)
 	switch {
 	case httpStatus.IsSuccess():
-		check.Status = "healthy"
+		check.Status = healthstatus.Healthy.DBValue()
 		check.UploaderOk = true
 	case resp.StatusCode == wordpress.HttpStatusUnauthorized.Int() || resp.StatusCode == wordpress.HttpStatusForbidden.Int():
-		check.Status = "healthy"
+		check.Status = healthstatus.Healthy.DBValue()
 		check.UploaderOk = false
 	case httpStatus.IsServerError():
-		check.Status = "down"
+		check.Status = healthstatus.Down.DBValue()
 		check.ErrorMessage = fmt.Sprintf("HTTP %d", resp.StatusCode)
 	default:
-		check.Status = "degraded"
+		check.Status = healthstatus.Degraded.DBValue()
 		check.ErrorMessage = fmt.Sprintf("HTTP %d", resp.StatusCode)
 	}
 
 	// Slow response = degraded
-	if check.Status == "healthy" && elapsed > 5000 {
-		check.Status = "degraded"
+	if check.Status == healthstatus.Healthy.DBValue() && elapsed > 5000 {
+		check.Status = healthstatus.Degraded.DBValue()
 	}
 
 	s.saveCheck(&check)
@@ -119,7 +120,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 func (s *Service) CheckAllSites(ctx context.Context) apperror.ResultSlice[models.SiteHealthCheck] {
 	rows, err := s.db.QueryContext(ctx, "SELECT Id FROM Sites")
 	if err != nil {
-		return apperror.FailSliceWrap[models.SiteHealthCheck](err, "E4002", "failed to list sites")
+		return apperror.FailSliceWrap[models.SiteHealthCheck](err, apperror.ErrFSWrite, "failed to list sites")
 	}
 	defer rows.Close()
 
@@ -160,7 +161,7 @@ func (s *Service) GetHistory(siteID int64, limit int) apperror.ResultSlice[model
 		LIMIT ?
 	`, siteID, siteID, limit)
 	if err != nil {
-		return apperror.FailSliceWrap[models.SiteHealthCheck](err, "E4003", "failed to query health history")
+		return apperror.FailSliceWrap[models.SiteHealthCheck](err, apperror.ErrFSDelete, "failed to query health history")
 	}
 	defer rows.Close()
 
@@ -186,19 +187,19 @@ func (s *Service) GetSummaries(ctx context.Context) apperror.ResultSlice[models.
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT 
 			s.Id, s.Name, s.Url,
-			COALESCE((SELECT Status FROM SiteHealthChecks WHERE SiteId = s.Id ORDER BY CreatedAt DESC LIMIT 1), 'unknown') as CurrentStatus,
+			COALESCE((SELECT Status FROM SiteHealthChecks WHERE SiteId = s.Id ORDER BY CreatedAt DESC LIMIT 1), '`+healthstatus.Unknown.DBValue()+`') as CurrentStatus,
 			(SELECT MAX(CreatedAt) FROM SiteHealthChecks WHERE SiteId = s.Id) as LastCheckedAt,
 			COALESCE((SELECT AVG(ResponseMs) FROM SiteHealthChecks WHERE SiteId = s.Id), 0) as AvgResponseMs,
 			COALESCE((SELECT COUNT(*) FROM SiteHealthChecks WHERE SiteId = s.Id), 0) as TotalChecks,
-			COALESCE((SELECT COUNT(*) FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = 'healthy'), 0) as HealthyChecks,
-			COALESCE((SELECT COUNT(*) FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = 'down'), 0) as DownChecks,
-			(SELECT MAX(CreatedAt) FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = 'down') as LastErrorAt,
-			COALESCE((SELECT ErrorMessage FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = 'down' ORDER BY CreatedAt DESC LIMIT 1), '') as LastError
+			COALESCE((SELECT COUNT(*) FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = '`+healthstatus.Healthy.DBValue()+`'), 0) as HealthyChecks,
+			COALESCE((SELECT COUNT(*) FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = '`+healthstatus.Down.DBValue()+`'), 0) as DownChecks,
+			(SELECT MAX(CreatedAt) FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = '`+healthstatus.Down.DBValue()+`') as LastErrorAt,
+			COALESCE((SELECT ErrorMessage FROM SiteHealthChecks WHERE SiteId = s.Id AND Status = '`+healthstatus.Down.DBValue()+`' ORDER BY CreatedAt DESC LIMIT 1), '') as LastError
 		FROM Sites s
 		ORDER BY s.Name
 	`)
 	if err != nil {
-		return apperror.FailSliceWrap[models.SiteHealthSummary](err, "E4004", "failed to query health summaries")
+		return apperror.FailSliceWrap[models.SiteHealthSummary](err, apperror.ErrFSNotFound, "failed to query health summaries")
 	}
 	defer rows.Close()
 
@@ -231,11 +232,11 @@ func (s *Service) GetStats(ctx context.Context) apperror.Result[models.SiteHealt
 
 	for _, sm := range summaries {
 		switch sm.CurrentStatus {
-		case "healthy":
+		case healthstatus.Healthy.DBValue():
 			stats.HealthySites++
-		case "degraded":
+		case healthstatus.Degraded.DBValue():
 			stats.DegradedSites++
-		case "down":
+		case healthstatus.Down.DBValue():
 			stats.DownSites++
 		default:
 			stats.UnknownSites++
@@ -260,7 +261,7 @@ func (s *Service) ClearHistory(olderThanDays int) apperror.Result[int64] {
 	cutoff := time.Now().AddDate(0, 0, -olderThanDays).Format("2006-01-02 15:04:05")
 	result, err := s.db.Exec("DELETE FROM SiteHealthChecks WHERE CreatedAt < ?", cutoff)
 	if err != nil {
-		return apperror.FailWrap[int64](err, "E4005", "failed to clear health history")
+		return apperror.FailWrap[int64](err, apperror.ErrFSPermission, "failed to clear health history")
 	}
 	deleted, _ := result.RowsAffected()
 	return apperror.Ok(deleted)
