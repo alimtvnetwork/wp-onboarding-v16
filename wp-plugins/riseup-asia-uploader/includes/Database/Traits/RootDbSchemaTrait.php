@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotConfigType;
@@ -118,20 +120,35 @@ trait RootDbSchemaTrait {
      */
     public function resolveRootDbColumnName(PDO $pdo, string $table, string $pascalColumn): string {
         $legacyColumnMap = array(
-            'Id' => 'id', 'Title' => 'title', 'Type' => 'type',
-            'CreatedAt' => 'created_at', 'CreatedBy' => 'created_by',
-            'MysqlVersion' => 'mysql_version', 'WpVersion' => 'wp_version',
-            'PluginVersion' => 'plugin_version', 'TableCount' => 'table_count',
-            'TotalRows' => 'total_rows', 'ConfigJson' => 'config_json',
-            'TableName' => 'table_name', 'RowCount' => 'row_count',
-            'SqliteFile' => 'sqlite_file', 'FileSizeBytes' => 'file_size_bytes',
-            'ChecksumMd5' => 'checksum_md5', 'ExportedAt' => 'exported_at',
-            'ParentTable' => 'parent_table', 'ChildTable' => 'child_table',
-            'FkColumn' => 'fk_column', 'RefColumn' => 'ref_column',
-            'SequenceNum' => 'sequence_num', 'FolderName' => 'folder_name',
-            'TablesChanged' => 'tables_changed', 'TotalNewRows' => 'total_new_rows',
-            'RelativePath' => 'relative_path', 'PluginSlug' => 'plugin_slug',
-            'PluginName' => 'plugin_name', 'ZipFile' => 'zip_file',
+            'Id'              => 'id',
+            'Title'           => 'title',
+            'Type'            => 'type',
+            'CreatedAt'       => 'created_at',
+            'CreatedBy'       => 'created_by',
+            'MysqlVersion'    => 'mysql_version',
+            'WpVersion'       => 'wp_version',
+            'PluginVersion'   => 'plugin_version',
+            'TableCount'      => 'table_count',
+            'TotalRows'       => 'total_rows',
+            'ConfigJson'      => 'config_json',
+            'TableName'       => 'table_name',
+            'RowCount'        => 'row_count',
+            'SqliteFile'      => 'sqlite_file',
+            'FileSizeBytes'   => 'file_size_bytes',
+            'ChecksumMd5'     => 'checksum_md5',
+            'ExportedAt'      => 'exported_at',
+            'ParentTable'     => 'parent_table',
+            'ChildTable'      => 'child_table',
+            'FkColumn'        => 'fk_column',
+            'RefColumn'       => 'ref_column',
+            'SequenceNum'     => 'sequence_num',
+            'FolderName'      => 'folder_name',
+            'TablesChanged'   => 'tables_changed',
+            'TotalNewRows'    => 'total_new_rows',
+            'RelativePath'    => 'relative_path',
+            'PluginSlug'      => 'plugin_slug',
+            'PluginName'      => 'plugin_name',
+            'ZipFile'         => 'zip_file',
         );
 
         $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);

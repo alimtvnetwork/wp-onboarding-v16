@@ -26,6 +26,7 @@ trait FileCacheScanTrait {
         $this->logger->debug('FileCache: Building manifest', array('slug' => $pluginSlug));
 
         $isDbUnavailable = ($this->db->isReady() === false);
+
         if ($isDbUnavailable) {
             $this->logger->warn('FileCache: Database not ready, falling back to full scan');
 
@@ -141,6 +142,7 @@ trait FileCacheScanTrait {
         array &$files,
     ): void {
         $items = @scandir($dir);
+
         if ($items === false) {
             return;
         }

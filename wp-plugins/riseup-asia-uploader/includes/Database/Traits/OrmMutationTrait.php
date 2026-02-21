@@ -57,7 +57,7 @@ trait OrmMutationTrait {
             "INSERT INTO %s (%s) VALUES (%s)",
             $this->tableName,
             implode(', ', $columns),
-            implode(', ', $placeholders)
+            implode(', ', $placeholders),
         );
 
         $params = array();
@@ -95,7 +95,7 @@ trait OrmMutationTrait {
             "UPDATE %s SET %s WHERE %s",
             $this->tableName,
             implode(', ', $setClauses),
-            implode(' AND ', $this->whereClauses)
+            implode(' AND ', $this->whereClauses),
         );
 
         $params = array_merge($params, $this->whereParams);

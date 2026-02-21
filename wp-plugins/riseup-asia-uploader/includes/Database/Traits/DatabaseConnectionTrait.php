@@ -12,6 +12,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Exception;
+use PDO;
+use PDOException;
+use Throwable;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Database\ORM;
@@ -53,6 +57,7 @@ trait DatabaseConnectionTrait {
         $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
         $isDirCreationFailed = (PathHelper::makeDirectory($baseDir, true) === false);
+
         if ($isDirCreationFailed) {
             $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
 
@@ -165,6 +170,7 @@ trait DatabaseConnectionTrait {
      */
     public function getPdo() {
         $isInitPending = ($this->isInitAttempted === false);
+
         if ($isInitPending) {
             $this->init();
         }
@@ -179,6 +185,7 @@ trait DatabaseConnectionTrait {
      */
     public function isReady() {
         $isInitPending = ($this->isInitAttempted === false);
+
         if ($isInitPending) {
             $this->init();
         }

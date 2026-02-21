@@ -41,6 +41,7 @@ trait DatabaseQueryLogTrait {
         array $enhanced = array(),
     ): int|false {
         $isDbUnready = ($this->isReady() === false);
+
         if ($isDbUnready) {
             $this->fileLogger->warn('Database not ready, cannot log transaction');
 
@@ -149,12 +150,13 @@ trait DatabaseQueryLogTrait {
                 'agent_site_id'  => $params['agent_site_id'] ?? null,
                 'plugin_version' => $params['plugin_version'] ?? null,
                 'upload_source'  => $params['upload_source'] ?? null,
-            )
+            ),
         );
     }
 
     public function getTransaction(int $id): ?array {
         $isDbUnready = ($this->isReady() === false);
+
         if ($isDbUnready) {
             return null;
         }
@@ -164,6 +166,7 @@ trait DatabaseQueryLogTrait {
                 ->findOne($id);
 
             $hasLogDetails = $log && BooleanHelpers::hasValue($log['Details'] ?? null);
+
             if ($hasLogDetails) {
                 $log['Details'] = json_decode($log['Details'], true);
             }
