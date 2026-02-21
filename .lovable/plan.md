@@ -942,3 +942,105 @@ Phase A must complete first. B and D can proceed in parallel. C depends on B (en
 ## Next Steps
 
 Start with **Phase A** (spec updates), then proceed to **Phase B** (enum migration) and **Phase D** (AppError serialization) in parallel.
+
+---
+
+# 🆕 PascalCase Enum Labels — Cross-System Remediation Plan (2026-02-21)
+
+## Summary
+
+All Go identifier-style enum `variantLabels` updated from snake_case/lowercase to PascalCase (matching Go constant names). This affects serialization, parsing, config files, and cross-system communication with PHP and TypeScript.
+
+## ✅ Completed (Go Backend)
+
+| Change | Files | Status |
+|--------|-------|--------|
+| PascalCase labels for 10 identifier enums | `action`, `backup_type`, `log_level`, `plugin_selection`, `plugin_status`, `post_status`, `snapshot_error`, `snapshot_mode`, `status`, `upload_source` | ✅ Done |
+| Case-insensitive `Parse()` via `strings.EqualFold` | All 10 enums above | ✅ Done |
+| Config JSON values updated | `config.json`, `config.example.json` | ✅ Done |
+
+### Exempt Enums (Functional Labels — NOT Changed)
+
+| Enum | Reason |
+|------|--------|
+| `content_type` | MIME type strings (`application/json`, `multipart/form-data`) |
+| `endpoint` | URL path strings (`/status`, `/plugins`, `/upload`) |
+| `header` | HTTP header names (`Authorization`, `Content-Type`) |
+| `response_key` | JSON envelope keys (`success`, `message`, `data`) — API contract |
+| `response_message` | Human-readable strings (`Operation completed successfully`) |
+
+## 🔄 Phase 1: Go Backend Consumers
+
+### 1.1 Database Stored Values
+- [ ] Audit all database columns storing enum string values (action logs, status fields)
+- [ ] Create migration to UPDATE stored values from snake_case → PascalCase
+- [ ] `Parse()` already handles legacy values (case-insensitive via `EqualFold`)
+
+### 1.2 WebSocket Broadcasts
+- [ ] Verify enum values in broadcast payloads now emit PascalCase
+- [ ] Update any hardcoded string comparisons in ws handlers
+
+### 1.3 Go Hardcoded Strings
+- [ ] Search for `== "upload_active"`, `== "per_table"`, etc.
+- [ ] Replace with enum constant checks (e.g., `action.IsUploadActive()`)
+
+## 🔄 Phase 2: PHP Plugin Updates
+
+### 2.1 Enum Case Values
+Update PHP backed enum `->value` properties to match PascalCase:
+
+| PHP Enum | Old Values | New Values |
+|----------|-----------|------------|
+| `ActionType` | `upload`, `upload_active`, `enable`, ... | `Upload`, `UploadActive`, `Enable`, ... |
+| `PluginStatusType` | `active`, `inactive` | `Active`, `Inactive` |
+| `PostStatusType` | `publish`, `draft`, `pending` | `Publish`, `Draft`, `Pending` |
+| `UploadSourceType` | `upload_script`, `rest_api`, `admin_ui`, `wp_cli` | `Script`, `RestAPI`, `AdminUI`, `WPCLI` |
+| `StatusType` | `success`, `failed` | `Success`, `Failed` |
+| `SnapshotErrorType` | `SNAPSHOT_LOCK_EXISTS`, ... | `LockExists`, ... |
+| `SnapshotModeType` | `per_table`, `single_db` | `PerTable`, `SingleDb` |
+| `BackupTypeType` | `incremental`, `full` | `Incremental`, `Full` |
+| `LogLevelType` | `debug`, `info`, `warn`, `error` | `Debug`, `Info`, `Warn`, `Error` |
+| `PluginSelectionType` | `all`, `selective` | `All`, `Selective` |
+
+### 2.2 New PHP Enum Methods
+- [ ] Add `isOther(self $other): bool` — returns `$this !== $other`
+- [ ] Add `isAnyOf(self ...$others): bool` — returns true if receiver matches any
+
+### 2.3 PHP Hardcoded Comparisons
+- [ ] Search PHP codebase for hardcoded string comparisons against old values
+- [ ] Replace with enum method calls
+
+### 2.4 WordPress Database Values
+- [ ] Audit `wp_options`, `wp_postmeta`, and custom tables for stored enum strings
+- [ ] Create upgrade routine to update stored values on plugin update
+
+## 🔄 Phase 3: TypeScript Frontend Updates
+
+### 3.1 Constants File
+- [ ] Update `src/lib/constants.ts` enum string values to PascalCase
+- [ ] Audit all component/service files that compare against old values
+
+### 3.2 API Response Handling
+- [ ] Verify frontend correctly handles PascalCase values in API responses
+- [ ] Update any switch/if-else blocks comparing enum strings
+
+## 🔄 Phase 4: Spec Updates
+
+### 4.1 Enum Specification
+- [ ] Update `02-required-methods.md` examples to PascalCase labels
+- [ ] Update complete example in same file
+- [ ] Document PascalCase label convention as mandatory rule
+
+### 4.2 PHP Standards
+- [ ] Update PHP enum spec to reflect PascalCase `->value` properties
+- [ ] Update `response-key-type-inventory.md` if any response keys changed
+
+### 4.3 Cross-Language Audit
+- [ ] Update `php-go-consistency-audit.md` to reflect new enum value format
+
+## Migration Safety
+
+- **Go `Parse()` is case-insensitive** (`strings.EqualFold`) — accepts both old and new values
+- **PHP migration** should update `tryFrom()` to handle both formats during transition
+- **Database migration** should be idempotent (`UPDATE WHERE value = old_value`)
+- **Frontend** can be updated independently since it reads from API responses

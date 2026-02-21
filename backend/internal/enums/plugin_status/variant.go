@@ -16,9 +16,9 @@ const (
 )
 
 var variantLabels = [...]string{
-	Invalid:  "invalid",
-	Active:   "active",
-	Inactive: "inactive",
+	Invalid:  "Invalid",
+	Active:   "Active",
+	Inactive: "Inactive",
 }
 
 func (v Variant) String() string {
@@ -63,9 +63,9 @@ func ByIndex(i int) Variant {
 }
 
 func Parse(s string) (Variant, error) {
-	lower := strings.ToLower(strings.TrimSpace(s))
+	trimmed := strings.TrimSpace(s)
 	for i, str := range variantLabels {
-		if str == lower {
+		if strings.EqualFold(str, trimmed) {
 			return Variant(i), nil
 		}
 	}

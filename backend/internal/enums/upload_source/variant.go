@@ -18,11 +18,11 @@ const (
 )
 
 var variantLabels = [...]string{
-	Invalid: "invalid",
-	Script:  "upload_script",
-	RestAPI: "rest_api",
-	AdminUI: "admin_ui",
-	WPCLI:   "wp_cli",
+	Invalid: "Invalid",
+	Script:  "Script",
+	RestAPI: "RestAPI",
+	AdminUI: "AdminUI",
+	WPCLI:   "WPCLI",
 }
 
 func (v Variant) String() string {
@@ -69,9 +69,9 @@ func ByIndex(i int) Variant {
 }
 
 func Parse(s string) (Variant, error) {
-	lower := strings.ToLower(strings.TrimSpace(s))
+	trimmed := strings.TrimSpace(s)
 	for i, str := range variantLabels {
-		if str == lower {
+		if strings.EqualFold(str, trimmed) {
 			return Variant(i), nil
 		}
 	}

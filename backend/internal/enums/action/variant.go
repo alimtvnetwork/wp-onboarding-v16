@@ -29,22 +29,22 @@ const (
 )
 
 var variantLabels = [...]string{
-	Invalid:        "invalid",
-	Upload:         "upload",
-	UploadActive:   "upload_active",
-	Enable:         "enable",
-	Disable:        "disable",
-	Delete:         "delete",
-	FileReplace:    "file_replace",
-	FileDelete:     "file_delete",
-	Sync:           "sync",
-	PostCreate:     "post_create",
-	PostUpdate:     "post_update",
-	CategoryCreate: "category_create",
-	MediaUpload:    "media_upload",
-	AuthFailed:     "auth_failed",
-	ExportSelf:     "export_self",
-	ExportPlugin:   "export_plugin",
+	Invalid:        "Invalid",
+	Upload:         "Upload",
+	UploadActive:   "UploadActive",
+	Enable:         "Enable",
+	Disable:        "Disable",
+	Delete:         "Delete",
+	FileReplace:    "FileReplace",
+	FileDelete:     "FileDelete",
+	Sync:           "Sync",
+	PostCreate:     "PostCreate",
+	PostUpdate:     "PostUpdate",
+	CategoryCreate: "CategoryCreate",
+	MediaUpload:    "MediaUpload",
+	AuthFailed:     "AuthFailed",
+	ExportSelf:     "ExportSelf",
+	ExportPlugin:   "ExportPlugin",
 }
 
 func (v Variant) String() string {
@@ -94,17 +94,17 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 
 // IsSnapshot checks if this is a snapshot-related action.
 func (v Variant) IsSnapshot() bool {
-	return strings.HasPrefix(v.String(), "snapshot_")
+	return strings.HasPrefix(v.String(), "Snapshot")
 }
 
 // IsAgent checks if this is an agent-related action.
 func (v Variant) IsAgent() bool {
-	return strings.HasPrefix(v.String(), "agent_")
+	return strings.HasPrefix(v.String(), "Agent")
 }
 
 // IsUpdate checks if this is an update-related action.
 func (v Variant) IsUpdate() bool {
-	return strings.HasPrefix(v.String(), "update_")
+	return strings.HasPrefix(v.String(), "Update")
 }
 
 // IsLifecycle checks if this is a plugin lifecycle action (enable/disable/delete).
@@ -129,9 +129,9 @@ func ByIndex(i int) Variant {
 }
 
 func Parse(s string) (Variant, error) {
-	lower := strings.ToLower(strings.TrimSpace(s))
+	trimmed := strings.TrimSpace(s)
 	for i, str := range variantLabels {
-		if str == lower {
+		if strings.EqualFold(str, trimmed) {
 			return Variant(i), nil
 		}
 	}

@@ -25,18 +25,18 @@ const (
 )
 
 var variantLabels = [...]string{
-	Invalid:             "invalid",
-	LockExists:          "SNAPSHOT_LOCK_EXISTS",
-	NotFound:            "SNAPSHOT_NOT_FOUND",
-	Corrupt:             "SNAPSHOT_CORRUPT",
-	TooLarge:            "SNAPSHOT_TOO_LARGE",
-	RestoreFailed:       "RESTORE_FAILED",
-	RestoreNoConfirm:    "RESTORE_NO_CONFIRM",
-	ProviderNotAvail:    "PROVIDER_NOT_AVAILABLE",
-	IncrementalNoParent: "INCREMENTAL_NO_PARENT",
-	ExportNotFound:      "EXPORT_NOT_FOUND",
-	ExportBuildFailed:   "EXPORT_BUILD_FAILED",
-	ExportTokenInvalid:  "EXPORT_TOKEN_INVALID",
+	Invalid:             "Invalid",
+	LockExists:          "LockExists",
+	NotFound:            "NotFound",
+	Corrupt:             "Corrupt",
+	TooLarge:            "TooLarge",
+	RestoreFailed:       "RestoreFailed",
+	RestoreNoConfirm:    "RestoreNoConfirm",
+	ProviderNotAvail:    "ProviderNotAvail",
+	IncrementalNoParent: "IncrementalNoParent",
+	ExportNotFound:      "ExportNotFound",
+	ExportBuildFailed:   "ExportBuildFailed",
+	ExportTokenInvalid:  "ExportTokenInvalid",
 }
 
 func (v Variant) String() string {
