@@ -29,9 +29,11 @@ trait AuthCredentialTrait
         if (BooleanHelpers::hasValue($authHeader)) {
             return $authHeader;
         }
+
         if (BooleanHelpers::hasValue($_SERVER['HTTP_AUTHORIZATION'] ?? null)) {
             return $_SERVER['HTTP_AUTHORIZATION'];
         }
+
         if (BooleanHelpers::hasValue($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null)) {
             return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }

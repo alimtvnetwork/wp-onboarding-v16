@@ -150,6 +150,7 @@ class IncrementalBackup {
         if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
+
         $isLoggerMissing = ($this->logger === null);
         if ($isLoggerMissing) {
 

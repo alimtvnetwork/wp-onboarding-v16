@@ -83,6 +83,7 @@ trait PluginListTrait
                 if ($plugin_slug === '.') {
                     $plugin_slug = basename($plugin_file, '.php');
                 }
+
                 if ($plugin_slug === $slug) {
 
                     return EnvelopeBuilder::success()

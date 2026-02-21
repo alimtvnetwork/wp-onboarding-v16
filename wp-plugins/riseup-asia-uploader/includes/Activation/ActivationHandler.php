@@ -102,8 +102,9 @@ class ActivationHandler
 
     private static function ensureDirs(string $baseDir, string $logsDir): void {
         if (PathHelper::isDirMissing($baseDir)) {
-            wp_mkdir_p($baseDir);
+        wp_mkdir_p($baseDir);
         }
+
         if (PathHelper::isDirMissing($logsDir)) {
             wp_mkdir_p($logsDir);
         }

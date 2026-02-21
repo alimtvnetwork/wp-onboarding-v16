@@ -40,6 +40,7 @@ trait SyncPushTrait
         if (empty($slug)) {
             return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
+
         $isFilesInvalid = (BooleanHelpers::isValueEmpty($files) || is_array($files) === false);
         if ($isFilesInvalid) {
             return $this->errorResponse('Files array is required', HttpStatusType::BadRequest->value);
@@ -50,6 +51,7 @@ trait SyncPushTrait
             if (PathHelper::isDirMissing($plugin_dir)) {
                 return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
+
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
             return new WP_REST_Response($result, HttpStatusType::Ok->value);
         } catch (Throwable $e) {

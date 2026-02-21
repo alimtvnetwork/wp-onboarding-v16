@@ -38,10 +38,12 @@ trait AuthPermissionTrait
             if ($isEndpointDisabled) {
                 return new WP_Error(WpErrorCodeType::RestDisabled->value, 'This endpoint is disabled', array('status' => HttpStatusType::Forbidden->value));
             }
+
             $isAuthOptional = ($this->isAuthRequired($endpoint) === false);
             if ($isAuthOptional) {
                 return true;
             }
+
             return call_user_func($authCheck, $request);
         };
     }

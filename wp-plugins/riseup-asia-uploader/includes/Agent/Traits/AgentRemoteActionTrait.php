@@ -33,10 +33,12 @@ trait AgentRemoteActionTrait {
         if ($this->isRedirectCacheValid($agent)) {
             return $agent->redirectResolved;
         }
+
         $resolved = $this->followRedirectChain($agent->redirectUrl);
         if (is_wp_error($resolved)) {
             return $resolved;
         }
+
         $this->updateAgent($agent->id, array(
             'redirect_resolved'    => $resolved,
             'redirect_resolved_at' => DateHelper::nowUtc(),
@@ -63,11 +65,13 @@ trait AgentRemoteActionTrait {
             if (BooleanHelpers::isAbsentFromList($status, array(301, 302, 303, 307, 308))) {
                 break;
             }
+
             $location = wp_remote_retrieve_header($response, 'location');
             if (BooleanHelpers::hasValue($location)) {
                 $url = $location;
             }
         }
+
         return $url;
     }
 
@@ -77,6 +81,7 @@ trait AgentRemoteActionTrait {
         if (is_wp_error($result)) {
             return $this->handleTestConnectionFailure($agentId, $result);
         }
+
         return $this->handleTestConnectionSuccess($agentId, $result);
     }
 
@@ -113,6 +118,7 @@ trait AgentRemoteActionTrait {
             $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Failed->value, null, $result->get_error_message());
             return $result;
         }
+
         $this->updateAgent($agentId, array(
             'status'    => AgentStatusType::Connected->value,
             'last_sync' => DateHelper::nowUtc(),
@@ -136,6 +142,7 @@ trait AgentRemoteActionTrait {
             $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Failed->value, null, $result->get_error_message());
             return $result;
         }
+
         $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Success->value);
 
         return ResultHelper::ok(array(

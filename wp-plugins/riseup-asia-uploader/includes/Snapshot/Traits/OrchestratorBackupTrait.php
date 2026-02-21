@@ -128,6 +128,7 @@ trait OrchestratorBackupTrait {
 
             return array(ResponseKeyType::Path->value => $zip_result[ResponseKeyType::Path->value], ResponseKeyType::Size->value => $zip_result[ResponseKeyType::Size->value], ResponseKeyType::ZipFailed->value => false);
         }
+
         $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array(ResponseKeyType::Error->value => $zip_result[ResponseKeyType::Error->value]));
 
         return array(ResponseKeyType::Path->value => null, ResponseKeyType::Size->value => 0, ResponseKeyType::ZipFailed->value => true);
