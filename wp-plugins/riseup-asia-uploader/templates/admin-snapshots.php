@@ -6,14 +6,17 @@
  * @since   1.9.0
  */
 
+use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\AjaxActionType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\StorageModeType;
 
 if (!defined('ABSPATH')) {
@@ -67,10 +70,10 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="snapshot_scope">
-                            <option value="<?php echo SnapshotScopeType::All->value; ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotScopeType::WordPress->value; ?>"><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotScopeType::Content->value; ?>"><?php esc_html_e('Content Only (Posts, Terms, Comments)', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotScopeType::Custom->value; ?>"><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::All->value); ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::WordPress->value); ?>"><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Content->value); ?>"><?php esc_html_e('Content Only (Posts, Terms, Comments)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Custom->value); ?>"><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -90,8 +93,8 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="snapshot_provider">
-                            <option value="<?php echo SnapshotProviderType::Auto->value; ?>"><?php esc_html_e('Auto-Detect (Recommended)', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotProviderType::Native->value; ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Auto->value); ?>"><?php esc_html_e('Auto-Detect (Recommended)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Native->value); ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -561,6 +564,35 @@ jQuery(document).ready(function($) {
     var allSnapshots = []; // cache for hierarchy building
 
     // =========================================================================
+    // ENUM CONSTANTS (from PHP — prevents magic strings in JS)
+    // =========================================================================
+
+    var SNAP_STATUS = {
+        complete:  '<?php echo esc_js(SnapshotStatusType::Complete->value); ?>',
+        running:   '<?php echo esc_js(SnapshotStatusType::Running->value); ?>',
+        failed:    '<?php echo esc_js(SnapshotStatusType::Failed->value); ?>',
+        pending:   '<?php echo esc_js(SnapshotStatusType::Pending->value); ?>',
+        scheduled: '<?php echo esc_js(SnapshotStatusType::Scheduled->value); ?>'
+    };
+    var SNAP_MODE = {
+        full:        '<?php echo esc_js(SnapshotModeType::Full->value); ?>',
+        incremental: '<?php echo esc_js(SnapshotModeType::Incremental->value); ?>'
+    };
+    var SNAP_SCOPE = {
+        all:       '<?php echo esc_js(SnapshotScopeType::All->value); ?>',
+        wordpress: '<?php echo esc_js(SnapshotScopeType::WordPress->value); ?>',
+        content:   '<?php echo esc_js(SnapshotScopeType::Content->value); ?>',
+        custom:    '<?php echo esc_js(SnapshotScopeType::Custom->value); ?>'
+    };
+    var SNAP_FREQ = {
+        manual:  '<?php echo esc_js(SnapshotFrequencyType::Manual->value); ?>',
+        daily:   '<?php echo esc_js(SnapshotFrequencyType::Daily->value); ?>',
+        weekly:  '<?php echo esc_js(SnapshotFrequencyType::Weekly->value); ?>',
+        monthly: '<?php echo esc_js(SnapshotFrequencyType::Monthly->value); ?>'
+    };
+
+
+    // =========================================================================
     // UTILITY HELPERS
     // =========================================================================
 
@@ -591,40 +623,40 @@ jQuery(document).ready(function($) {
     }
 
     function statusBadge(status) {
-        var colors = {
-            Complete: 'background:#d1e4dd;color:#0a7a4d;',
-            Running: 'background:#fff3cd;color:#664d03;',
-            in_progress: 'background:#fff3cd;color:#664d03;',
-            Failed: 'background:#f8d7da;color:#721c24;',
-            Pending: 'background:#e3f2fd;color:#1565c0;',
-            Scheduled: 'background:#e8eaf6;color:#283593;'
-        };
+        // Keys match SnapshotStatusType enum values
+        var colors = {};
+        colors[SNAP_STATUS.complete]  = 'background:#d1e4dd;color:#0a7a4d;';
+        colors[SNAP_STATUS.running]   = 'background:#fff3cd;color:#664d03;';
+        colors.in_progress            = 'background:#fff3cd;color:#664d03;'; // legacy compat
+        colors[SNAP_STATUS.failed]    = 'background:#f8d7da;color:#721c24;';
+        colors[SNAP_STATUS.pending]   = 'background:#e3f2fd;color:#1565c0;';
+        colors[SNAP_STATUS.scheduled] = 'background:#e8eaf6;color:#283593;';
         var style = colors[status] || 'background:#f5f5f5;color:#757575;';
         var icon = '';
-        if (status === 'Running' || status === 'in_progress') {
+        if (status === SNAP_STATUS.running || status === 'in_progress') {
             icon = '<span class="dashicons dashicons-update riseup-spin" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
-        } else if (status === 'Complete') {
+        } else if (status === SNAP_STATUS.complete) {
             icon = '<span class="dashicons dashicons-yes-alt" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
-        } else if (status === 'Failed') {
+        } else if (status === SNAP_STATUS.failed) {
             icon = '<span class="dashicons dashicons-dismiss" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
         }
         return '<span class="riseup-badge" style="' + style + '">' + icon + status + '</span>';
     }
 
     function typeBadge(snapshotType) {
-        if (snapshotType === 'Incremental') {
-            return '<span class="dashicons dashicons-randomize" style="color:#6c3483;font-size:16px;width:16px;height:16px;" title="Incremental"></span>';
+        if (snapshotType === SNAP_MODE.incremental) {
+            return '<span class="dashicons dashicons-randomize" style="color:#6c3483;font-size:16px;width:16px;height:16px;" title="' + SNAP_MODE.incremental + '"></span>';
         }
-        return '<span class="dashicons dashicons-media-archive" style="color:#2271b1;font-size:16px;width:16px;height:16px;" title="Full"></span>';
+        return '<span class="dashicons dashicons-media-archive" style="color:#2271b1;font-size:16px;width:16px;height:16px;" title="' + SNAP_MODE.full + '"></span>';
     }
 
     function scopeBadge(scope) {
-        var colors = {
-            All: 'background:#f3e5f5;color:#7b1fa2;',
-            WordPress: 'background:#e3f2fd;color:#1565c0;',
-            Content: 'background:#e8f5e9;color:#2e7d32;',
-            Custom: 'background:#fff3e0;color:#e65100;'
-        };
+        // Keys match SnapshotScopeType enum values
+        var colors = {};
+        colors[SNAP_SCOPE.all]       = 'background:#f3e5f5;color:#7b1fa2;';
+        colors[SNAP_SCOPE.wordpress] = 'background:#e3f2fd;color:#1565c0;';
+        colors[SNAP_SCOPE.content]   = 'background:#e8f5e9;color:#2e7d32;';
+        colors[SNAP_SCOPE.custom]    = 'background:#fff3e0;color:#e65100;';
         var style = colors[scope] || 'background:#f5f5f5;color:#757575;';
         return '<span class="riseup-badge" style="' + style + '">' + (scope || 'All') + '</span>';
     }
@@ -694,7 +726,7 @@ jQuery(document).ready(function($) {
         html += ' <button type="button" class="button button-small btn-copy-error" title="Copy diagnostic to clipboard" style="margin-left:6px;">';
         html += '<span class="dashicons dashicons-clipboard" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Copy</button>';
         if (err.logHint) {
-            html += ' <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-uploader-logs')); ?>" class="button button-small" style="margin-left:4px;" title="' + err.logHint + '">';
+            html += ' <a href="<?php echo esc_url(AdminPageType::Logs->adminUrl()); ?>" class="button button-small" style="margin-left:4px;" title="' + err.logHint + '">';
             html += '<span class="dashicons dashicons-list-view" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Check Logs</a>';
         }
         $el.html(html).show();
@@ -763,8 +795,8 @@ jQuery(document).ready(function($) {
                 if (response.table_progress && response.table_progress.length > 0) {
                     var html = '';
                     response.table_progress.forEach(function(t) {
-                        var tColor = t.status === 'Complete' ? '#0a7a4d' : (t.status === 'Running' ? '#664d03' : '#757575');
-                        var tIcon = t.status === 'Complete' ? '✓' : (t.status === 'Running' ? '⟳' : '○');
+                        var tColor = t.status === SNAP_STATUS.complete ? '#0a7a4d' : (t.status === SNAP_STATUS.running ? '#664d03' : '#757575');
+                        var tIcon = t.status === SNAP_STATUS.complete ? '✓' : (t.status === SNAP_STATUS.running ? '⟳' : '○');
                         html += '<span class="riseup-table-status" style="color:' + tColor + ';">' + tIcon + ' ' + t.table + '</span> ';
                     });
                     $('#progress_tables_list').html(html);
@@ -772,9 +804,9 @@ jQuery(document).ready(function($) {
                 }
 
                 // Keep polling if still running
-                if (response.status === 'Complete' || response.status === 'Failed') {
+                if (response.status === SNAP_STATUS.complete || response.status === SNAP_STATUS.failed) {
                     activeJobId = null;
-                    if (response.status === 'Complete') {
+                    if (response.status === SNAP_STATUS.complete) {
                         showStatus($status, '✓ Snapshot completed successfully', false);
                     } else {
                         showStatus($status, '✗ Snapshot job failed', true);
@@ -838,7 +870,7 @@ jQuery(document).ready(function($) {
                 var hasRunningJob = false;
 
                 snapshots.forEach(function(s) {
-                    var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
+                    var isIncr = (s.snapshot_type === SNAP_MODE.incremental || s.scope === SNAP_MODE.incremental);
                     if (isIncr && s.parent_id) {
                         if (!incrementalsByParent[s.parent_id]) {
                             incrementalsByParent[s.parent_id] = [];
@@ -849,7 +881,7 @@ jQuery(document).ready(function($) {
                     }
 
                     // Check for running jobs
-                    if (s.status === 'Running' || s.status === 'in_progress') {
+                    if (s.status === SNAP_STATUS.running || s.status === 'in_progress') {
                         hasRunningJob = true;
                         if (s.job_id && !activeJobId) {
                             startProgressPolling(s.job_id);
@@ -872,7 +904,7 @@ jQuery(document).ready(function($) {
 
                 // Render orphan incrementals (no parent in current page)
                 snapshots.forEach(function(s) {
-                    var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
+                    var isIncr = (s.snapshot_type === SNAP_MODE.incremental || s.scope === SNAP_MODE.incremental);
                     var isParentMissing = s.parent_id && fullSnapshots.every(function(f) { return f.id !== s.parent_id; });
                     var isOrphanIncremental = isIncr && isParentMissing;
                     if (isOrphanIncremental) {
@@ -913,20 +945,20 @@ jQuery(document).ready(function($) {
     }
 
     function buildSnapshotRow(s, isNested, incrCount) {
-        var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
+        var isIncr = (s.snapshot_type === SNAP_MODE.incremental || s.scope === SNAP_MODE.incremental);
         var rowClass = isNested ? 'riseup-nested-row' : '';
-        var isRunning = (s.status === 'Running' || s.status === 'in_progress');
+        var isRunning = (s.status === SNAP_STATUS.running || s.status === 'in_progress');
 
-        var html = '<tr class="' + rowClass + '" data-id="' + s.id + '" data-type="' + (s.snapshot_type || 'Full') + '" data-incr-count="' + incrCount + '">';
+        var html = '<tr class="' + rowClass + '" data-id="' + s.id + '" data-type="' + (s.snapshot_type || SNAP_MODE.full) + '" data-incr-count="' + incrCount + '">';
         html += '<td>' + (s.sequence || s.id) + '</td>';
-        html += '<td>' + typeBadge(s.snapshot_type || 'Full') + '</td>';
+        html += '<td>' + typeBadge(s.snapshot_type || SNAP_MODE.full) + '</td>';
         html += '<td>';
         if (isNested) {
             html += '<span class="riseup-indent">↳</span> ';
         }
         html += '<code>' + (s.filename || '-') + '</code>';
         if (isIncr) {
-            html += ' <span class="riseup-badge" style="background:#f3e5f5;color:#7b1fa2;font-size:10px;padding:1px 5px;">Incremental</span>';
+            html += ' <span class="riseup-badge" style="background:#f3e5f5;color:#7b1fa2;font-size:10px;padding:1px 5px;">' + SNAP_MODE.incremental + '</span>';
         }
         if (incrCount > 0) {
             html += ' <span class="riseup-badge" style="background:#e3f2fd;color:#1565c0;font-size:10px;padding:1px 5px;">' + incrCount + ' incremental' + (incrCount > 1 ? 's' : '') + '</span>';
@@ -937,11 +969,11 @@ jQuery(document).ready(function($) {
         html += '<td>' + (s.table_count || '-') + '</td>';
         html += '<td>' + (s.total_rows ? s.total_rows.toLocaleString() : '-') + '</td>';
         html += '<td>' + formatBytes(s.file_size) + '</td>';
-        html += '<td>' + statusBadge(s.status || 'Complete') + '</td>';
+        html += '<td>' + statusBadge(s.status || SNAP_STATUS.complete) + '</td>';
         html += '<td title="' + (s.created_at || '') + '">' + relativeTime(s.created_at) + '</td>';
         html += '<td class="riseup-snapshot-actions">';
-        if (s.status === 'Complete' || !s.status) {
-            html += '<button class="button button-small btn-restore" data-id="' + s.id + '" data-name="' + (s.filename || '#' + s.id) + '" data-type="' + (s.snapshot_type || 'Full') + '" title="Restore">';
+        if (s.status === SNAP_STATUS.complete || !s.status) {
+            html += '<button class="button button-small btn-restore" data-id="' + s.id + '" data-name="' + (s.filename || '#' + s.id) + '" data-type="' + (s.snapshot_type || SNAP_MODE.full) + '" title="Restore">';
             html += '<span class="dashicons dashicons-database-import"></span></button> ';
 
             // Download ZIP button — only for full snapshots
@@ -952,7 +984,7 @@ jQuery(document).ready(function($) {
             }
         }
         if (!isRunning) {
-            html += '<button class="button button-small btn-delete-snapshot" data-id="' + s.id + '" data-type="' + (s.snapshot_type || 'Full') + '" data-name="' + (s.filename || '#' + s.id) + '" data-incr-count="' + incrCount + '" title="Delete">';
+            html += '<button class="button button-small btn-delete-snapshot" data-id="' + s.id + '" data-type="' + (s.snapshot_type || SNAP_MODE.full) + '" data-name="' + (s.filename || '#' + s.id) + '" data-incr-count="' + incrCount + '" title="Delete">';
             html += '<span class="dashicons dashicons-trash" style="color:#d63638;"></span></button>';
         }
         html += '</td>';
@@ -1133,7 +1165,7 @@ jQuery(document).ready(function($) {
         var $btn = $(this);
         // Find the latest full snapshot
         var latestFull = allSnapshots.find(function(s) {
-            return (s.snapshot_type === 'Full' || (!s.snapshot_type && !s.parent_id)) && s.status === 'Complete';
+            return (s.snapshot_type === SNAP_MODE.full || (!s.snapshot_type && !s.parent_id)) && s.status === SNAP_STATUS.complete;
         });
         if (!latestFull) {
             showStatus($status, '✗ No full snapshot found — create a full snapshot first', true);
@@ -1237,7 +1269,7 @@ jQuery(document).ready(function($) {
         currentRestoreType = $(this).data('type') || 'full';
         $('#restore_snapshot_name').text($(this).data('name'));
 
-        if (currentRestoreType === 'Incremental') {
+        if (currentRestoreType === SNAP_MODE.incremental) {
             $('#restore_incremental_warning').show();
         } else {
             $('#restore_incremental_warning').hide();
@@ -1412,7 +1444,7 @@ jQuery(document).ready(function($) {
 
         $('#delete_message').text('Are you sure you want to delete snapshot "' + name + '"? This cannot be undone.');
 
-        if (type !== 'Incremental' && incrCount > 0) {
+        if (type !== SNAP_MODE.incremental && incrCount > 0) {
             $('#delete_cascade_text').text(
                 'This full snapshot has ' + incrCount + ' incremental backup' + (incrCount > 1 ? 's' : '') +
                 '. Deleting it will also permanently remove all ' + incrCount + ' incremental snapshot' + (incrCount > 1 ? 's' : '') + '.'
@@ -1557,7 +1589,7 @@ jQuery(document).ready(function($) {
             var day = s.created_at.substring(0, 10);
             if (!byDay[day]) byDay[day] = { full: 0, incr: 0 };
             var sz = parseInt(s.file_size) || 0;
-            var isIncr = (s.snapshot_type === 'Incremental' || s.scope === 'Incremental');
+            var isIncr = (s.snapshot_type === SNAP_MODE.incremental || s.scope === SNAP_MODE.incremental);
             if (isIncr) { byDay[day].incr += sz; } else { byDay[day].full += sz; }
         });
 
@@ -1603,7 +1635,7 @@ jQuery(document).ready(function($) {
     // MONTHLY CALENDAR
     // =========================================================================
 
-    var calYear, calMonth, cachedSchedule = 'Manual';
+    var calYear, calMonth, cachedSchedule = SNAP_FREQ.manual;
     (function() {
         var now = new Date();
         calYear = now.getFullYear();
@@ -1617,12 +1649,12 @@ jQuery(document).ready(function($) {
 
     function getScheduledDates(year, month, frequency) {
         var dates = {};
-        if (!frequency || frequency === 'Manual') return dates;
+        if (!frequency || frequency === SNAP_FREQ.manual) return dates;
         var daysInMonth = new Date(year, month + 1, 0).getDate();
         var today = new Date();
         today.setHours(0,0,0,0);
 
-        if (frequency === 'Daily') {
+        if (frequency === SNAP_FREQ.daily) {
             for (var d = 1; d <= daysInMonth; d++) {
                 var dt = new Date(year, month, d);
                 if (dt >= today) {
@@ -1630,7 +1662,7 @@ jQuery(document).ready(function($) {
                     dates[key] = true;
                 }
             }
-        } else if (frequency === 'Weekly') {
+        } else if (frequency === SNAP_FREQ.weekly) {
             // Every Sunday (day 0) in the month, from today onward
             for (var d = 1; d <= daysInMonth; d++) {
                 var dt = new Date(year, month, d);
@@ -1639,7 +1671,7 @@ jQuery(document).ready(function($) {
                     dates[key] = true;
                 }
             }
-        } else if (frequency === 'Monthly') {
+        } else if (frequency === SNAP_FREQ.monthly) {
             // 1st of month, from today onward
             var dt = new Date(year, month, 1);
             if (dt >= today) {
@@ -1701,7 +1733,7 @@ jQuery(document).ready(function($) {
                     if (entries.length > 0 || isScheduled) {
                         var hasFull = false, hasIncr = false;
                         entries.forEach(function(e) {
-                            if (e.snapshot_type === 'Incremental' || e.scope === 'Incremental') hasIncr = true;
+                            if (e.snapshot_type === SNAP_MODE.incremental || e.scope === SNAP_MODE.incremental) hasIncr = true;
                             else hasFull = true;
                         });
                         html += '<div class="riseup-cal-dots">';

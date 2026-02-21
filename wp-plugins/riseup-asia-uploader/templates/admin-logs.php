@@ -10,6 +10,7 @@
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Enums\UploadSourceType;
@@ -240,7 +241,7 @@ $upload_source_classes = array(
                         <?php if ($hasLogDetails): ?>
                             data-details="<?php echo esc_attr(json_encode($log['Details'])); ?>"
                         <?php elseif ($hasErrorMsg): ?>
-                            data-details="<?php echo esc_attr(json_encode(array('error' => $log['ErrorMsg']))); ?>"
+                            data-details="<?php echo esc_attr(json_encode(array(ResponseKeyType::Error->value => $log['ErrorMsg']))); ?>"
                         <?php endif; ?>>
                         <td class="column-id"><?php echo esc_html($log['Id']); ?></td>
                         <td class="column-timestamp">
