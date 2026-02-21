@@ -67,7 +67,9 @@ trait SchedulerConfigTrait {
 
         if ($result) {
             $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
-                'frequency' => $settings['schedule_frequency'], 'next_run' => date('c', $next_run), 'recurrence' => $recurrence,
+                'frequency' => $settings['schedule_frequency'],
+                'next_run' => date('c', $next_run),
+                'recurrence' => $recurrence,
             ));
         } else {
             $this->logger->error('[SCHEDULER] Failed to schedule snapshot cron');

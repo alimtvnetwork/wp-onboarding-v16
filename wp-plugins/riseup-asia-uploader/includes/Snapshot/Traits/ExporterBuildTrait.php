@@ -32,7 +32,10 @@ trait ExporterBuildTrait {
         $snapshotId = (int) $snapshot['id'];
         $snapshotDir = dirname($snapshot['filepath']);
 
-        $this->log(LogLevelType::Info->value, 'Building ZIP export', array(ResponseKeyType::SnapshotId->value => $snapshotId, 'dir' => basename($snapshotDir)));
+        $this->log(LogLevelType::Info->value, 'Building ZIP export', array(
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            'dir' => basename($snapshotDir),
+        ));
 
         $exportsDir = $this->ensureExportsDir();
         $isExportsDirMissing = ($exportsDir === null);
@@ -132,7 +135,13 @@ trait ExporterBuildTrait {
             ' (SnapshotId, ZipFilename, ZipPath, ZipSize, IncludedIds, IncrementalCount, Status, CreatedAt)' .
             ' VALUES (?, ?, ?, 0, ?, 0, ?, datetime(\'now\'))'
         );
-        $stmt->execute(array($snapshotId, $zipFilename, $zipPath, json_encode(array($snapshotId)), SnapshotExportStatusType::Building->value));
+        $stmt->execute(array(
+            $snapshotId,
+            $zipFilename,
+            $zipPath,
+            json_encode(array($snapshotId)),
+            SnapshotExportStatusType::Building->value,
+        ));
     }
 
     private function assembleZipArchive(
@@ -242,11 +251,16 @@ trait ExporterBuildTrait {
         array $incrementals,
     ) {
         $manifest = array(
-            'version' => PluginConfigType::Version->value, 'created_at' => DateHelper::nowIso(), ResponseKeyType::SnapshotId->value => $snapshotId,
-            ResponseKeyType::Filename->value => $snapshot['filename'], ResponseKeyType::Scope->value => $snapshot['scope'],
+            'version' => PluginConfigType::Version->value,
+            'created_at' => DateHelper::nowIso(),
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            ResponseKeyType::Filename->value => $snapshot['filename'],
+            ResponseKeyType::Scope->value => $snapshot['scope'],
             ResponseKeyType::Tables->value => json_decode($snapshot['tables_json'] ?? '[]', true),
-            ResponseKeyType::TotalRows->value => (int) ($snapshot['total_rows'] ?? 0), 'included_ids' => $includedIds,
-            'incremental_count' => count($incrementals), 'type' => 'full_with_incrementals',
+            ResponseKeyType::TotalRows->value => (int) ($snapshot['total_rows'] ?? 0),
+            'included_ids' => $includedIds,
+            'incremental_count' => count($incrementals),
+            'type' => 'full_with_incrementals',
         );
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
@@ -263,10 +277,12 @@ trait ExporterBuildTrait {
         $stmt = $pdo->prepare(
             'UPDATE ' . TableType::SnapshotExports->value . ' SET Status = ?, ZipSize = ?, IncludedIds = ?, IncrementalCount = ? WHERE SnapshotId = ?'
         );
-        $stmt->execute(array(SnapshotExportStatusType::Valid->value, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
+        $stmt->execute(array($snapshotId, $zipFilename, $zipPath, json_encode(array($snapshotId)), SnapshotExportStatusType::Building->value));
 
         $this->log(LogLevelType::Info->value, 'ZIP export built successfully', array(
-            ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $zipFilename, ResponseKeyType::Size->value => PathHelper::formatBytes($zipSize),
+            ResponseKeyType::SnapshotId->value => $snapshotId,
+            ResponseKeyType::Filename->value => $zipFilename,
+            ResponseKeyType::Size->value => PathHelper::formatBytes($zipSize),
         ));
     }
 }

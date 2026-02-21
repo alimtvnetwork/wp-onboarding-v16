@@ -60,8 +60,10 @@ trait OrchestratorRegistrationTrait {
     private function buildSnapshotTablesJson(array $workerResult, array $pluginStats): string {
 
         return json_encode(array(
-            ResponseKeyType::Exported->value => $workerResult[ResponseKeyType::Tables->value] ?? 0, ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
-            ResponseKeyType::Errors->value => $workerResult[ResponseKeyType::Errors->value] ?? array(), ResponseKeyType::Plugins->value => $pluginStats[ResponseKeyType::Count->value] ?? 0,
+            ResponseKeyType::Exported->value => $workerResult[ResponseKeyType::Tables->value] ?? 0,
+            ResponseKeyType::TotalRows->value => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
+            ResponseKeyType::Errors->value => $workerResult[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::Plugins->value => $pluginStats[ResponseKeyType::Count->value] ?? 0,
             'plugin_details' => $pluginStats[ResponseKeyType::Plugins->value] ?? array(),
         ));
     }
@@ -82,9 +84,18 @@ trait OrchestratorRegistrationTrait {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $stmt->execute(array(
-            $sequence, basename($snapshotDir), $snapshotDir, SnapshotProviderType::Native->value, $scope,
-            $tablesJson, $workerResult[ResponseKeyType::TotalRows->value] ?? 0, $dirSize,
-            SnapshotTriggerType::Api->value, SnapshotStatusType::Complete->value, $now, $now,
+            $sequence,
+            basename($snapshotDir),
+            $snapshotDir,
+            SnapshotProviderType::Native->value,
+            $scope,
+            $tablesJson,
+            $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
+            $dirSize,
+            SnapshotTriggerType::Api->value,
+            SnapshotStatusType::Complete->value,
+            $now,
+            $now,
         ));
 
         return (int)$pdo->lastInsertId();

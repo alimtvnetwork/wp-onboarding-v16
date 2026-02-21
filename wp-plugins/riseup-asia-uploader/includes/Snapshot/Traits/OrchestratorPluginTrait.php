@@ -90,7 +90,9 @@ trait OrchestratorPluginTrait {
             if ($isIneligible) continue;
 
             $plugins_to_snapshot[$plugin_file] = array(
-                'slug' => $slug, 'name' => $plugin_data['Name'] ?? $slug, 'version' => $plugin_data['Version'] ?? '0.0.0',
+                'slug' => $slug,
+                'name' => $plugin_data['Name'] ?? $slug,
+                'version' => $plugin_data['Version'] ?? '0.0.0',
             );
         }
 

@@ -45,12 +45,18 @@ trait ManagerImportRecordTrait {
         string $filepath,
     ): array {
         return array(
-            'Sequence' => $sequence, 'Filename' => $filename, 'Filepath' => $filepath,
-            'Provider' => SnapshotProviderType::Native->value, 'Scope' => $snapshotData['scope'],
+            'Sequence' => $sequence,
+            'Filename' => $filename,
+            'Filepath' => $filepath,
+            'Provider' => SnapshotProviderType::Native->value,
+            'Scope' => $snapshotData['scope'],
             'TablesJson' => json_encode($snapshotData['tables']),
-            'TotalRows' => $snapshotData['total_rows'] ?? 0, 'FileSize' => filesize($filepath),
-            'TriggerSource' => 'import', 'Status' => SnapshotStatusType::Complete->value,
-            'CreatedAt' => date('c'), 'CompletedAt' => date('c'),
+            'TotalRows' => $snapshotData['total_rows'] ?? 0,
+            'FileSize' => filesize($filepath),
+            'TriggerSource' => 'import',
+            'Status' => SnapshotStatusType::Complete->value,
+            'CreatedAt' => date('c'),
+            'CompletedAt' => date('c'),
             'ImportSource' => json_encode(array(
                 'original_id' => $snapshotData['id'] ?? null,
                 'original_created_at' => $snapshotData['created_at'] ?? null,

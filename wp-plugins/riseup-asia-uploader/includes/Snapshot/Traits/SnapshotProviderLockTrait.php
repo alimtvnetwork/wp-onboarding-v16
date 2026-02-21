@@ -95,7 +95,9 @@ trait SnapshotProviderLockTrait {
     private function writeLockFile(): bool {
         $lock_file = PathHelper::join($this->getSnapshotsDir(), '.lock');
         $lock_data = json_encode(array(
-            'locked_at' => date('c'), 'locked_by' => $this->provider_id, 'pid' => getmypid(),
+            'locked_at' => date('c'),
+            'locked_by' => $this->provider_id,
+            'pid' => getmypid(),
         ));
 
         $result = @file_put_contents($lock_file, $lock_data);

@@ -186,11 +186,15 @@ trait ImportExecutionTrait {
         array $plugins,
     ): array {
         return array(
-            'original_title' => $metadata['title'] ?? null, 'original_type' => $metadata['type'] ?? null,
+            'original_title' => $metadata['title'] ?? null,
+            'original_type' => $metadata['type'] ?? null,
             'original_created_at' => $metadata['created_at'] ?? null,
-            'wp_version' => $metadata['wp_version'] ?? null, 'mysql_version' => $metadata['mysql_version'] ?? null,
-            'table_count' => count($tables), 'incremental_count' => count($incrementals),
-            'plugin_count' => count($plugins), 'format' => SnapshotWorkerModeType::PerTable->value,
+            'wp_version' => $metadata['wp_version'] ?? null,
+            'mysql_version' => $metadata['mysql_version'] ?? null,
+            'table_count' => count($tables),
+            'incremental_count' => count($incrementals),
+            'plugin_count' => count($plugins),
+            'format' => SnapshotWorkerModeType::PerTable->value,
         );
     }
 }

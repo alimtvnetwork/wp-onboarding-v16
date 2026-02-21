@@ -60,7 +60,11 @@ trait DetectorSettingsTrait {
      */
     public function getBestAvailableProvider(): string {
         $providers = $this->detectAvailableProviders();
-        $priority = array(SnapshotProviderType::WpReset->value, SnapshotProviderType::Updraft->value, SnapshotProviderType::Native->value);
+        $priority = array(
+            SnapshotProviderType::WpReset->value,
+            SnapshotProviderType::Updraft->value,
+            SnapshotProviderType::Native->value,
+        );
 
         foreach ($priority as $provider_id) {
             foreach ($providers as $provider) {
@@ -135,14 +139,21 @@ trait DetectorSettingsTrait {
     public function getSettings(): array {
         $defaults = array(
             'preferred_provider' => SnapshotProviderType::Auto->value,
-            'schedule_enabled' => false, 'schedule_frequency' => SnapshotFrequencyType::Daily->value,
-            'schedule_time' => '03:00', 'schedule_day' => 1,
-            'default_scope' => SnapshotScopeType::WordPress->value, 'custom_tables' => array(),
-            'retention_type' => RetentionType::Days->value, 'retention_days' => SnapshotConfigType::RetentionDaysDefault->value,
+            'schedule_enabled' => false,
+            'schedule_frequency' => SnapshotFrequencyType::Daily->value,
+            'schedule_time' => '03:00',
+            'schedule_day' => 1,
+            'default_scope' => SnapshotScopeType::WordPress->value,
+            'custom_tables' => array(),
+            'retention_type' => RetentionType::Days->value,
+            'retention_days' => SnapshotConfigType::RetentionDaysDefault->value,
             'retention_count' => SnapshotConfigType::RetentionCountDefault->value,
-            'pre_restore_backup' => true, 'require_restore_confirm' => true,
-            'max_snapshot_size_mb' => SnapshotConfigType::MaxSizeMb->value, 'batch_size' => SnapshotConfigType::BatchSize->value,
-            'worker_pool_size' => SnapshotConfigType::WorkerPoolDefault->value, 'storage_mode' => StorageModeType::PerTable->value,
+            'pre_restore_backup' => true,
+            'require_restore_confirm' => true,
+            'max_snapshot_size_mb' => SnapshotConfigType::MaxSizeMb->value,
+            'batch_size' => SnapshotConfigType::BatchSize->value,
+            'worker_pool_size' => SnapshotConfigType::WorkerPoolDefault->value,
+            'storage_mode' => StorageModeType::PerTable->value,
         );
 
         $saved = get_option(OptionNameType::SnapshotSettings->value, array());

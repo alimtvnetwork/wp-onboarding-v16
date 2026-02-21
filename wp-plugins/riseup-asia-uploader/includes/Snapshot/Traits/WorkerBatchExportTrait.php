@@ -33,7 +33,9 @@ trait WorkerBatchExportTrait {
 
         foreach ($batches as $batch_index => $batch_tables) {
             $this->log(LogLevelType::Info->value, sprintf('Processing batch %d/%d (%d tables)',
-                $batch_index + 1, count($batches), count($batch_tables)
+                $batch_index + 1,
+                count($batches),
+                count($batch_tables),
             ));
 
             $result = $this->exportBatchTables($batch_tables, $snapshotDir, $rootPdo);
@@ -67,8 +69,12 @@ trait WorkerBatchExportTrait {
                 $exported++;
                 if ($rootPdo) {
                     $this->rootDb->registerTable(
-                        $rootPdo, $table, $result[ResponseKeyType::Rows->value],
-                        $result[ResponseKeyType::Filename->value], $result[ResponseKeyType::FileSize->value], $result[ResponseKeyType::Checksum->value]
+                        $rootPdo,
+                        $table,
+                        $result[ResponseKeyType::Rows->value],
+                        $result[ResponseKeyType::Filename->value],
+                        $result[ResponseKeyType::FileSize->value],
+                        $result[ResponseKeyType::Checksum->value],
                     );
                 }
                 $this->updateProgress($table, SnapshotStatusType::Complete->value, $result[ResponseKeyType::Rows->value]);
@@ -94,8 +100,10 @@ trait WorkerBatchExportTrait {
         $duration = microtime(true) - $startTime;
 
         $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
-            'job_id' => $jobId, ResponseKeyType::Directory->value => $prepared['dir_name'],
-            'total_tables' => count($seedOrder), 'pool_size' => $this->poolSize,
+            'job_id' => $jobId,
+            ResponseKeyType::Directory->value => $prepared['dir_name'],
+            'total_tables' => count($seedOrder),
+            'pool_size' => $this->poolSize,
             'setup_time' => round($duration, 2) . 's',
         ));
 

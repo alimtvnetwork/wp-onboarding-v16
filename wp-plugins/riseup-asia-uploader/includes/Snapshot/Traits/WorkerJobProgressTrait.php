@@ -42,13 +42,19 @@ trait WorkerJobProgressTrait {
         $table_progress = $this->loadTableProgress($pdo);
 
         return array(
-            'job_id' => (int) $job['Id'], 'status' => $job['Status'],
-            'total_tables' => $total_tables, 'tables_exported' => (int) $job['TablesExported'],
-            ResponseKeyType::TotalRows->value => (int) $job['TotalRows'], 'pool_size' => $pool_size,
-            'total_batches' => $total_batches, 'current_batch' => (int) $job['CurrentBatch'],
+            'job_id' => (int) $job['Id'],
+            'status' => $job['Status'],
+            'total_tables' => $total_tables,
+            'tables_exported' => (int) $job['TablesExported'],
+            ResponseKeyType::TotalRows->value => (int) $job['TotalRows'],
+            'pool_size' => $pool_size,
+            'total_batches' => $total_batches,
+            'current_batch' => (int) $job['CurrentBatch'],
             ResponseKeyType::Errors->value => json_decode($job['ErrorsJson'] ?? '[]', true),
-            'created_at' => $job['CreatedAt'], 'updated_at' => $job['UpdatedAt'],
-            'completed_at' => $job['CompletedAt'], 'table_progress' => $table_progress,
+            'created_at' => $job['CreatedAt'],
+            'updated_at' => $job['UpdatedAt'],
+            'completed_at' => $job['CompletedAt'],
+            'table_progress' => $table_progress,
             'percent' => $total_tables > 0 ? round(((int) $job['TablesExported'] / $total_tables) * 100, 1) : 0,
         );
     }

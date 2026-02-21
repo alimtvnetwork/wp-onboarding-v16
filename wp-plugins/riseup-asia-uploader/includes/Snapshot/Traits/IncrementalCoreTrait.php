@@ -40,7 +40,10 @@ trait IncrementalCoreTrait {
             return ResultHelper::error('Failed to create incremental directory: ' . $folder_name);
         }
 
-        $this->log(LogLevelType::Info->value, 'Incremental directory created', array(ResponseKeyType::Sequence->value => $sequence, ResponseKeyType::FolderName->value => $folder_name));
+        $this->log(LogLevelType::Info->value, 'Incremental directory created', array(
+            ResponseKeyType::Sequence->value => $sequence,
+            ResponseKeyType::FolderName->value => $folder_name,
+        ));
 
         return ResultHelper::ok(array(
             'rootPdo'                            => $rootPdo,

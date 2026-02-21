@@ -35,7 +35,10 @@ trait WorkerSetupTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
-            'title' => $title, ResponseKeyType::Scope->value => $scope, 'type' => $type, 'pool_size' => $this->poolSize,
+            'title' => $title,
+            ResponseKeyType::Scope->value => $scope,
+            'type' => $type,
+            'pool_size' => $this->poolSize,
         ));
 
         $base_dir = $this->getSnapshotsBaseDir();
@@ -60,7 +63,9 @@ trait WorkerSetupTrait {
     private function initRootDb(string $snapshotDir, array $config): PDO {
         $rootPdo = $this->rootDb->create($snapshotDir . '/' . SnapshotConfigType::RootDbFilename);
         $this->rootDb->populateMetadata($rootPdo, array(
-            'title' => $config['title'] ?? SnapshotConfigType::DefaultTitle, 'type' => $config['type'] ?? SnapshotModeType::Full->value, 'settings' => $config['settings'] ?? null,
+            'title' => $config['title'] ?? SnapshotConfigType::DefaultTitle,
+            'type' => $config['type'] ?? SnapshotModeType::Full->value,
+            'settings' => $config['settings'] ?? null,
         ));
 
         return $rootPdo;
@@ -68,7 +73,10 @@ trait WorkerSetupTrait {
 
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value);
-        $this->log(LogLevelType::Info->value, 'Export order determined', array(ResponseKeyType::Tables->value => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
+        $this->log(LogLevelType::Info->value, 'Export order determined', array(
+            ResponseKeyType::Tables->value => count($analysis['seed_order']),
+            'pool_size' => $this->poolSize,
+        ));
 
         return $analysis['seed_order'];
     }

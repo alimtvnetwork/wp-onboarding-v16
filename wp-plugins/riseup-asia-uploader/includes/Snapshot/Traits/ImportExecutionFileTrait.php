@@ -79,6 +79,7 @@ trait ImportExecutionFileTrait {
             if ($entry === '.' || $entry === '..') continue;
             $srcPath = PathHelper::join($src, $entry);
             $destPath = PathHelper::join($dest, $entry);
+
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath, $destPath);
             } else {
@@ -95,6 +96,7 @@ trait ImportExecutionFileTrait {
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;
             $path = PathHelper::join($dir, $entry);
+
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             } else {
