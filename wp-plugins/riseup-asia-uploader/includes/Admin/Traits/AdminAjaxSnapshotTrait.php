@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Helpers\PathHelper;
@@ -26,7 +27,7 @@ trait AdminAjaxSnapshotTrait {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $settings = $this->parseSnapshotSettingsFromPost();
@@ -110,9 +111,9 @@ trait AdminAjaxSnapshotTrait {
         }
 
         if ($result) {
-            wp_send_json_success(array('message' => 'Snapshot settings saved'));
+            wp_send_json_success(array(ResponseKeyType::Message->value => 'Snapshot settings saved'));
         } else {
-            wp_send_json_success(array('message' => 'Settings unchanged'));
+            wp_send_json_success(array(ResponseKeyType::Message->value => 'Settings unchanged'));
         }
     }
 
@@ -121,14 +122,14 @@ trait AdminAjaxSnapshotTrait {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $scheduler = SnapshotFactory::scheduler();
         $result = $scheduler->runManualCleanup();
 
         wp_send_json_success(array(
-            'message' => sprintf(
+            ResponseKeyType::Message->value => sprintf(
                 'Cleanup complete: %d by policy, %d orphans, %d failed removed. Freed %s.',
                 $result['deleted_by_policy'],
                 $result['deleted_orphans'],
@@ -144,7 +145,7 @@ trait AdminAjaxSnapshotTrait {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
         $scheduler = SnapshotFactory::scheduler();
