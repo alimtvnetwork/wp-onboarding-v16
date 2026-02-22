@@ -25,7 +25,6 @@ use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
 
 class RootDb {
-
     use RootDbSchemaTrait;
     use RootDbRegistrationTrait;
 

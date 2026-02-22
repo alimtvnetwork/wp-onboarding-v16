@@ -27,7 +27,6 @@ use RiseupAsia\Database\Traits\OrmMutationTrait;
  * Fluent query builder with method chaining support.
  */
 class Orm {
-
     use OrmWhereTrait;
     use OrmQueryTrait;
     use OrmMutationTrait;
