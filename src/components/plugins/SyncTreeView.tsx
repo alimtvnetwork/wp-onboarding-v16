@@ -83,6 +83,7 @@ function buildSyncTree(changes: FileChange[]): SyncTreeNode[] {
 
   function toSortedArray(obj: Record<string, SyncTreeNode>): SyncTreeNode[] {
     const nodes = Object.values(obj);
+
     // Calculate folder aggregate counts
     for (const node of nodes) {
       if (node.type === "folder" && node.children) {

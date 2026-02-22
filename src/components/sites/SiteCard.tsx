@@ -103,6 +103,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     const completed = (snapshots as SnapshotRecord[])
       .filter((s) => s.status === "complete" || s.status === "completed")
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     return completed[0] || null;
   }, [snapshots]);
 
@@ -112,6 +113,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     const active = (cronJobs as SnapshotCronJob[])
       .filter((j) => j.status === CronJobStatus.Active && j.nextRunAt)
       .sort((a, b) => new Date(a.nextRunAt!).getTime() - new Date(b.nextRunAt!).getTime());
+
     return active[0] || null;
   }, [cronJobs]);
 
