@@ -8,6 +8,10 @@
 
 namespace RiseupAsia\Enums;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 enum HttpConfigType: int
 {
     case TimeoutDefault = 30;

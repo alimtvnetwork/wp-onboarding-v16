@@ -7,6 +7,10 @@
 
 namespace RiseupAsia\Enums;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 enum OptionNameType: string
 {
     case SnapshotSettings   = 'riseup_snapshot_settings';

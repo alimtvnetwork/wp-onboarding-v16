@@ -7,6 +7,10 @@
 
 namespace RiseupAsia\Enums;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 enum RestoreStrategyType: string
 {
     case Truncate = 'Truncate';

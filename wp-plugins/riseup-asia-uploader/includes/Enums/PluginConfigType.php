@@ -7,6 +7,10 @@
 
 namespace RiseupAsia\Enums;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 enum PluginConfigType: string
 {
     case Slug            = 'riseup-asia-uploader';
