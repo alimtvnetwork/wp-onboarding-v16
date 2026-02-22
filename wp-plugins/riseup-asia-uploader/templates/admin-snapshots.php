@@ -289,10 +289,10 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_schedule">
-                            <option value="<?php echo SnapshotFrequencyType::Manual->value; ?>"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotFrequencyType::Daily->value; ?>"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotFrequencyType::Weekly->value; ?>"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotFrequencyType::Monthly->value; ?>"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Manual->value); ?>"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Daily->value); ?>"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Weekly->value); ?>"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Monthly->value); ?>"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -302,9 +302,9 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_retention_type">
-                            <option value="<?php echo RetentionType::None->value; ?>"><?php esc_html_e('None (Manual Cleanup)', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo RetentionType::Days->value; ?>"><?php esc_html_e('Keep for N Days', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo RetentionType::Count->value; ?>"><?php esc_html_e('Keep Last N Snapshots', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::None->value); ?>"><?php esc_html_e('None (Manual Cleanup)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::Days->value); ?>"><?php esc_html_e('Keep for N Days', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::Count->value); ?>"><?php esc_html_e('Keep Last N Snapshots', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -323,9 +323,9 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_scope">
-                            <option value="<?php echo SnapshotScopeType::All->value; ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotScopeType::WordPress->value; ?>"><?php esc_html_e('WordPress Core', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotScopeType::Content->value; ?>"><?php esc_html_e('Content Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::All->value); ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::WordPress->value); ?>"><?php esc_html_e('WordPress Core', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Content->value); ?>"><?php esc_html_e('Content Only', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -335,8 +335,8 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <select id="setting_provider">
-                            <option value="<?php echo SnapshotProviderType::Auto->value; ?>"><?php esc_html_e('Auto-Detect', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo SnapshotProviderType::Native->value; ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Auto->value); ?>"><?php esc_html_e('Auto-Detect', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Native->value); ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -355,16 +355,16 @@ if (!defined('ABSPATH')) {
                     </th>
                     <td>
                         <div class="riseup-storage-cards">
-                            <label class="riseup-storage-card" data-mode="<?php echo StorageModeType::Single->value; ?>">
-                                <input type="radio" name="setting_storage_mode" value="<?php echo StorageModeType::Single->value; ?>">
+                            <label class="riseup-storage-card" data-mode="<?php echo esc_attr(StorageModeType::Single->value); ?>">
+                                <input type="radio" name="setting_storage_mode" value="<?php echo esc_attr(StorageModeType::Single->value); ?>">
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-media-archive" style="font-size: 24px; width: 24px; height: 24px;"></span>
                                     <strong><?php esc_html_e('Single File', 'riseup-asia-uploader'); ?></strong>
                                     <span class="description"><?php esc_html_e('One SQLite file per snapshot', 'riseup-asia-uploader'); ?></span>
                                 </div>
                             </label>
-                            <label class="riseup-storage-card active" data-mode="<?php echo StorageModeType::PerTable->value; ?>">
-                                <input type="radio" name="setting_storage_mode" value="<?php echo StorageModeType::PerTable->value; ?>" checked>
+                            <label class="riseup-storage-card active" data-mode="<?php echo esc_attr(StorageModeType::PerTable->value); ?>">
+                                <input type="radio" name="setting_storage_mode" value="<?php echo esc_attr(StorageModeType::PerTable->value); ?>" checked>
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-grid-view" style="font-size: 24px; width: 24px; height: 24px;"></span>
                                     <strong><?php esc_html_e('Per-Table', 'riseup-asia-uploader'); ?></strong>
@@ -627,13 +627,13 @@ jQuery(document).ready(function($) {
         var colors = {};
         colors[SNAP_STATUS.complete]  = 'background:#d1e4dd;color:#0a7a4d;';
         colors[SNAP_STATUS.running]   = 'background:#fff3cd;color:#664d03;';
-        colors.in_progress            = 'background:#fff3cd;color:#664d03;'; // legacy compat
+        colors.in_progress            = 'background:#fff3cd;color:#664d03;'; // legacy compat — pre-enum status value
         colors[SNAP_STATUS.failed]    = 'background:#f8d7da;color:#721c24;';
         colors[SNAP_STATUS.pending]   = 'background:#e3f2fd;color:#1565c0;';
         colors[SNAP_STATUS.scheduled] = 'background:#e8eaf6;color:#283593;';
         var style = colors[status] || 'background:#f5f5f5;color:#757575;';
         var icon = '';
-        if (status === SNAP_STATUS.running || status === 'in_progress') {
+        if (status === SNAP_STATUS.running || status === 'in_progress') { // legacy compat — pre-enum status value
             icon = '<span class="dashicons dashicons-update riseup-spin" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
         } else if (status === SNAP_STATUS.complete) {
             icon = '<span class="dashicons dashicons-yes-alt" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-right:3px;"></span>';
@@ -658,7 +658,7 @@ jQuery(document).ready(function($) {
         colors[SNAP_SCOPE.content]   = 'background:#e8f5e9;color:#2e7d32;';
         colors[SNAP_SCOPE.custom]    = 'background:#fff3e0;color:#e65100;';
         var style = colors[scope] || 'background:#f5f5f5;color:#757575;';
-        return '<span class="riseup-badge" style="' + style + '">' + (scope || 'All') + '</span>';
+        return '<span class="riseup-badge" style="' + style + '">' + (scope || SNAP_SCOPE.all) + '</span>';
     }
 
     // Status helper
@@ -881,7 +881,7 @@ jQuery(document).ready(function($) {
                     }
 
                     // Check for running jobs
-                    if (s.status === SNAP_STATUS.running || s.status === 'in_progress') {
+                    if (s.status === SNAP_STATUS.running || s.status === 'in_progress') { // legacy compat — pre-enum status value
                         hasRunningJob = true;
                         if (s.job_id && !activeJobId) {
                             startProgressPolling(s.job_id);
@@ -947,7 +947,7 @@ jQuery(document).ready(function($) {
     function buildSnapshotRow(s, isNested, incrCount) {
         var isIncr = (s.snapshot_type === SNAP_MODE.incremental || s.scope === SNAP_MODE.incremental);
         var rowClass = isNested ? 'riseup-nested-row' : '';
-        var isRunning = (s.status === SNAP_STATUS.running || s.status === 'in_progress');
+        var isRunning = (s.status === SNAP_STATUS.running || s.status === 'in_progress'); // legacy compat — pre-enum status value
 
         var html = '<tr class="' + rowClass + '" data-id="' + s.id + '" data-type="' + (s.snapshot_type || SNAP_MODE.full) + '" data-incr-count="' + incrCount + '">';
         html += '<td>' + (s.sequence || s.id) + '</td>';
@@ -1266,7 +1266,7 @@ jQuery(document).ready(function($) {
 
     $(document).on('click', '.btn-restore', function() {
         currentRestoreId = $(this).data('id');
-        currentRestoreType = $(this).data('type') || 'full';
+        currentRestoreType = $(this).data('type') || SNAP_MODE.full;
         $('#restore_snapshot_name').text($(this).data('name'));
 
         if (currentRestoreType === SNAP_MODE.incremental) {
@@ -1439,7 +1439,7 @@ jQuery(document).ready(function($) {
     $(document).on('click', '.btn-delete-snapshot', function() {
         currentDeleteId = $(this).data('id');
         var name = $(this).data('name');
-        var type = $(this).data('type') || 'full';
+        var type = $(this).data('type') || SNAP_MODE.full;
         var incrCount = parseInt($(this).data('incr-count')) || 0;
 
         $('#delete_message').text('Are you sure you want to delete snapshot "' + name + '"? This cannot be undone.');
