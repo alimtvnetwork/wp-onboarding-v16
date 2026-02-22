@@ -7,6 +7,10 @@
 
 namespace RiseupAsia\Enums;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 enum ResponseKeyType: string
 {
     /** Envelope keys — present in most response arrays. */

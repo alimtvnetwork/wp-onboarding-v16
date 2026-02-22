@@ -7,6 +7,10 @@
 
 namespace RiseupAsia\Enums;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 enum SnapshotWorkerModeType: string
 {
     case PerTable = 'PerTable';
