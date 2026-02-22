@@ -24,7 +24,6 @@ use RiseupAsia\Helpers\DateHelper;
  * Provides file-based logging with detailed context and MD5 deduplication.
  */
 class FileLogger {
-
     use LoggerPathTrait;
     use LoggerFormatTrait;
     use LoggerWriteTrait;

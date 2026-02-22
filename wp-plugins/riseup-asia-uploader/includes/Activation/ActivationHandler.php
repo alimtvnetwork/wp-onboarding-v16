@@ -22,7 +22,6 @@ use RiseupAsia\Helpers\DateHelper;
 
 class ActivationHandler
 {
-    
     private const VERSION_UNKNOWN = 'unknown';
     private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
     private const DIAGNOSTICS_EXPIRY = DAY_IN_SECONDS;
