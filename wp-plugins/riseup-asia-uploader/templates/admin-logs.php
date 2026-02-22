@@ -189,10 +189,10 @@ $upload_source_classes = array(
                 <?php 
                 $current_date_group = '';
                 foreach ($logs as $log): 
-                    $triggered_by = isset($log[LogColumnType::TriggeredBy->value]) ? $log[LogColumnType::TriggeredBy->value] : '';
-                    $source_machine = isset($log[LogColumnType::SourceMachine->value]) ? $log[LogColumnType::SourceMachine->value] : '';
-                    $plugin_version = isset($log[LogColumnType::PluginVersion->value]) ? $log[LogColumnType::PluginVersion->value] : '';
-                    $upload_source = isset($log[LogColumnType::UploadSource->value]) ? $log[LogColumnType::UploadSource->value] : '';
+                    $triggered_by = $this->logString($log, LogColumnType::TriggeredBy);
+                    $source_machine = $this->logString($log, LogColumnType::SourceMachine);
+                    $plugin_version = $this->logString($log, LogColumnType::PluginVersion);
+                    $upload_source = $this->logString($log, LogColumnType::UploadSource);
                     $trigger_class = isset($trigger_classes[$triggered_by]) ? $trigger_classes[$triggered_by] : 'trigger-unknown';
                     $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
                     $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';

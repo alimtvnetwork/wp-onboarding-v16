@@ -21,8 +21,10 @@ use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Snapshot\SnapshotFactory;
+use RiseupAsia\Traits\Log\LogValueTrait;
 
 trait AdminPagesTrait {
+    use LogValueTrait;
 
     /** Render the logs page. */
     public function renderLogsPage() {
