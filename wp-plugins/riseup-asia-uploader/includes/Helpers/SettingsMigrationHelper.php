@@ -48,6 +48,7 @@ class SettingsMigrationHelper {
         'updraft' => 'Updraft',
         // SnapshotFrequencyType
         'manual'  => 'Manual',
+        'hourly'  => 'Hourly',
         'daily'   => 'Daily',
         'weekly'  => 'Weekly',
         'monthly' => 'Monthly',

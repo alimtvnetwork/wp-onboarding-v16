@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 enum SnapshotFrequencyType: string
 {
     case Manual  = 'Manual';
+    case Hourly  = 'Hourly';
     case Daily   = 'Daily';
     case Weekly  = 'Weekly';
     case Monthly = 'Monthly';
@@ -23,6 +24,7 @@ enum SnapshotFrequencyType: string
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
     public function isManual(): bool  { return $this->isEqual(self::Manual); }
+    public function isHourly(): bool  { return $this->isEqual(self::Hourly); }
     public function isDaily(): bool   { return $this->isEqual(self::Daily); }
     public function isWeekly(): bool  { return $this->isEqual(self::Weekly); }
     public function isMonthly(): bool { return $this->isEqual(self::Monthly); }

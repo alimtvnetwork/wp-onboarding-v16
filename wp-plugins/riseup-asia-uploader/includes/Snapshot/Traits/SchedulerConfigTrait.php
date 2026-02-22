@@ -18,6 +18,13 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SchedulerConfigTrait {
     public function registerCronSchedules(array $schedules): array {
+        if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Hourly->value)) {
+            $schedules[SnapshotFrequencyType::Hourly->value] = array(
+                'interval' => HOUR_IN_SECONDS,
+                'display'  => __('Once Hourly', 'riseup-asia-uploader'),
+            );
+        }
+
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Weekly->value)) {
             $schedules[SnapshotFrequencyType::Weekly->value] = array(
                 'interval' => WEEK_IN_SECONDS,
