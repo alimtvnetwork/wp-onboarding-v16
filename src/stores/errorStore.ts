@@ -180,13 +180,16 @@ function captureStackTrace(error?: unknown): string {
   if (error instanceof Error && error.stack) {
     return error.stack;
   }
+
   // Create a stack trace from current position
   const stackError = new Error();
+
   if (stackError.stack) {
     // Remove the first 2-3 lines (Error + captureStackTrace + captureError/captureException)
     const lines = stackError.stack.split('\n');
     return lines.slice(3).join('\n');
   }
+
   return '';
 }
 
@@ -292,6 +295,7 @@ export function parseFullStackTrace(stack: string): ParsedStackTrace {
  */
 function parseStackTrace(stack: string): { file?: string; line?: number; function?: string } {
   const parsed = parseFullStackTrace(stack);
+
   if (parsed.primaryFrame) {
     return {
       file: parsed.primaryFrame.file,
@@ -316,6 +320,7 @@ function buildInvocationChain(
   if (source) {
     chain.push(source);
   }
+
   if (parentSource && parentSource !== source) {
     chain.push(parentSource);
   }
@@ -452,6 +457,7 @@ function commitErrorToStore(
   set((state) => {
     const newPendingSync = new Set(state.pendingSync);
     newPendingSync.add(captured.id);
+
     return {
       recentErrors: [captured, ...state.recentErrors].slice(0, 50),
       pendingSync: newPendingSync,
@@ -520,6 +526,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     });
     
     commitErrorToStore(captured, set);
+
     return captured;
   },
   
@@ -601,6 +608,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     });
     
     commitErrorToStore(captured, set);
+
     return captured;
   },
   
@@ -624,6 +632,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     if (errorQueue.length <= 1) return;
     
     let newIndex = currentQueueIndex;
+
     if (direction === 'prev') {
       newIndex = currentQueueIndex > 0 ? currentQueueIndex - 1 : errorQueue.length - 1;
     } else {

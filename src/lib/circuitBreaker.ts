@@ -52,6 +52,7 @@ function getCircuitState(key: string): CircuitState {
       isOpen: false,
     });
   }
+
   return circuits.get(key)!;
 }
 
@@ -262,6 +263,7 @@ export async function withCircuitBreaker<T>(
   try {
     const result = await operation();
     circuitBreaker.recordSuccess(functionKey);
+
     return result;
   } catch (error: unknown) {
     circuitBreaker.recordFailure(functionKey, error);
