@@ -133,7 +133,10 @@ function buildPageWindow(current: number, total: number, windowSize = 5): number
   if (end - start + 1 < windowSize) {
     start = Math.max(1, end - windowSize + 1);
   }
+
   const pages: number[] = [];
+
   for (let i = start; i <= end; i++) pages.push(i);
+
   return pages;
 }
