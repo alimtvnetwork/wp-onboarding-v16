@@ -181,6 +181,7 @@ export function generateCompactReport(
 
   // Backend error.log.txt section (built from CapturedError, no API call)
   const backendLog = buildBackendErrorLogSection(error);
+
   if (backendLog) {
     sections.push(`\n### Backend error.log.txt\n\n\`\`\`\n${backendLog}\n\`\`\``);
   }
@@ -202,20 +203,25 @@ export function generateErrorReport(
   if (app?.gitCommit) {
     appInfo.push(`**Git Commit:** ${app.gitCommit.substring(0, 7)}`);
   }
+
   if (app?.buildTime) {
     appInfo.push(`**Build Time:** ${app.buildTime}`);
   }
 
   const triggerContext: string[] = [];
+
   if (error.triggerComponent) {
     triggerContext.push(`**Component:** ${error.triggerComponent}`);
   }
+
   if (error.triggerAction) {
     triggerContext.push(`**Action:** ${error.triggerAction}`);
   }
+
   if (error.context?.source) {
     triggerContext.push(`**Source:** ${error.context.source}`);
   }
+
   const triggerSection = triggerContext.length > 0 
     ? `### Trigger Context\n${triggerContext.join("\n")}\n` 
     : "";
