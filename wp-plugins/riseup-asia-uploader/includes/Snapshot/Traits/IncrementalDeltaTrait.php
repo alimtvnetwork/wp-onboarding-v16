@@ -10,6 +10,10 @@
 
 namespace RiseupAsia\Snapshot\Traits;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
