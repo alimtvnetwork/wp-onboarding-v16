@@ -324,6 +324,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                     <td>
                         <select id="snap_schedule_frequency">
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Manual->value); ?>" <?php selected($snapshotSettings['schedule_frequency'], SnapshotFrequencyType::Manual->value); ?>><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Hourly->value); ?>" <?php selected($snapshotSettings['schedule_frequency'], SnapshotFrequencyType::Hourly->value); ?>><?php esc_html_e('Hourly', 'riseup-asia-uploader'); ?></option>
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Daily->value); ?>" <?php selected($snapshotSettings['schedule_frequency'], SnapshotFrequencyType::Daily->value); ?>><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Weekly->value); ?>" <?php selected($snapshotSettings['schedule_frequency'], SnapshotFrequencyType::Weekly->value); ?>><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Monthly->value); ?>" <?php selected($snapshotSettings['schedule_frequency'], SnapshotFrequencyType::Monthly->value); ?>><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
@@ -338,7 +339,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                         <input type="time" id="snap_schedule_time" value="<?php echo esc_attr($snapshotSettings['schedule_time']); ?>">
                     </td>
                 </tr>
-                <tr id="snap_day_row" style="<?php $isHiddenFreq = SnapshotFrequencyType::tryFrom($snapshotSettings['schedule_frequency'] ?? ''); echo ($isHiddenFreq !== null && $isHiddenFreq->isAnyOf(SnapshotFrequencyType::Daily, SnapshotFrequencyType::Manual)) ? 'display:none;' : ''; ?>">
+                <tr id="snap_day_row" style="<?php $isHiddenFreq = SnapshotFrequencyType::tryFrom($snapshotSettings['schedule_frequency'] ?? ''); echo ($isHiddenFreq !== null && $isHiddenFreq->isAnyOf(SnapshotFrequencyType::Hourly, SnapshotFrequencyType::Daily, SnapshotFrequencyType::Manual)) ? 'display:none;' : ''; ?>">
                     <th scope="row">
                         <label for="snap_schedule_day"><?php esc_html_e('Day', 'riseup-asia-uploader'); ?></label>
                     </th>
@@ -708,7 +709,9 @@ jQuery(document).ready(function($) {
     // Toggle day row visibility based on frequency
     $('#snap_schedule_frequency').on('change', function() {
         var freq = $(this).val();
+        var isHourly = freq === '<?php echo esc_js(SnapshotFrequencyType::Hourly->value); ?>';
         $('#snap_day_row').toggle(freq === '<?php echo esc_js(SnapshotFrequencyType::Weekly->value); ?>' || freq === '<?php echo esc_js(SnapshotFrequencyType::Monthly->value); ?>');
+        $('#snap_schedule_time').closest('tr').toggle(!isHourly);
     });
 
     // Toggle retention rows based on type

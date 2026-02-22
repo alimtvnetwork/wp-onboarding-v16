@@ -291,6 +291,7 @@ if (!defined('ABSPATH')) {
                     <td>
                         <select id="setting_schedule">
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Manual->value); ?>"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Hourly->value); ?>"><?php esc_html_e('Hourly', 'riseup-asia-uploader'); ?></option>
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Daily->value); ?>"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Weekly->value); ?>"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
                             <option value="<?php echo esc_attr(SnapshotFrequencyType::Monthly->value); ?>"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
@@ -587,6 +588,7 @@ jQuery(document).ready(function($) {
     };
     var SNAP_FREQ = {
         manual:  '<?php echo esc_js(SnapshotFrequencyType::Manual->value); ?>',
+        hourly:  '<?php echo esc_js(SnapshotFrequencyType::Hourly->value); ?>',
         daily:   '<?php echo esc_js(SnapshotFrequencyType::Daily->value); ?>',
         weekly:  '<?php echo esc_js(SnapshotFrequencyType::Weekly->value); ?>',
         monthly: '<?php echo esc_js(SnapshotFrequencyType::Monthly->value); ?>'

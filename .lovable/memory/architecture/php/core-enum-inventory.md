@@ -13,6 +13,7 @@ Core enums in the `RiseupAsia\Enums` namespace include:
 - **PaginationConfigType**: API result limits (LogRetrievalMaxLines, DefaultLimit).
 - **LogCategoryType**: Context for logPluginAction (Snapshot, Agent, Sync, Plugin, Update, Post).
 - **StorageModeType** & **SnapshotWorkerModeType**: Storage and worker strategies (PerTable, Single, Legacy).
+- **SnapshotFrequencyType**: Snapshot schedule frequency values (Manual, Hourly, Daily, Weekly, Monthly).
 - **FilterKeyType**: Keys for array-based query filters (Status, Plugin, Action, User, TriggeredBy, UploadSource, From, To, SourceMachine).
 - **ResponseKeyType**: Standardized envelope and data keys (Success, Error, Message, Data, Code, Valid, Total, Agents, Sql, Actions, Sets, Logs, Snapshots).
 - **ResponseMessageType**: Centralized repeated API messages (ConnectionSuccessful, SnapshotNotFound, SnapshotProviderMissing, ProviderMissing, SnapshotFileMissing, UploadedFileMissing, ZipCreateFailed, TempDirCreateFailed, InvalidFileTypeZip).

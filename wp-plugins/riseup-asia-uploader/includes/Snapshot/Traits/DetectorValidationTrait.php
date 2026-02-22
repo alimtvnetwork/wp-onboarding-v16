@@ -40,6 +40,7 @@ trait DetectorValidationTrait {
             ),
             'schedule_frequency' => array(
                 SnapshotFrequencyType::Manual->value,
+                SnapshotFrequencyType::Hourly->value,
                 SnapshotFrequencyType::Daily->value,
                 SnapshotFrequencyType::Weekly->value,
                 SnapshotFrequencyType::Monthly->value,
