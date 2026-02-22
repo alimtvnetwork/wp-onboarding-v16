@@ -17,11 +17,11 @@ enum FilterKeyType: string
     case Plugin        = 'plugin';
     case Action        = 'action';
     case User          = 'user';
-    case TriggeredBy   = 'triggered_by';
-    case UploadSource  = 'upload_source';
+    case TriggeredBy   = 'triggeredBy';
+    case UploadSource  = 'uploadSource';
     case From          = 'from';
     case To            = 'to';
-    case SourceMachine = 'source_machine';
+    case SourceMachine = 'sourceMachine';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
