@@ -23,13 +23,11 @@ use RiseupAsia\Helpers\DateHelper;
 class ActivationHandler
 {
     private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
-    private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
     private const DIAGNOSTICS_EXPIRY = DAY_IN_SECONDS;
 
     public static function activate(): void {
         InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — starting activation');
         try {
-            $dirs = self::resolveDirs();
             $dirs = self::resolveDirs();
 
             if ($dirs === null) {
@@ -77,9 +75,6 @@ class ActivationHandler
         }
     }
 
-
-    /**
-
     /**
      * @return array{base: string, logs: string}|null
      */
@@ -99,7 +94,7 @@ class ActivationHandler
 
     private static function ensureDirs(string $baseDir, string $logsDir): void {
         if (PathHelper::isDirMissing($baseDir)) {
-        wp_mkdir_p($baseDir);
+            wp_mkdir_p($baseDir);
         }
 
         if (PathHelper::isDirMissing($logsDir)) {
