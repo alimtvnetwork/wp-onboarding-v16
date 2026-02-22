@@ -13,11 +13,13 @@ if (!defined('ABSPATH')) {
 
 enum OptionNameType: string
 {
-    case SnapshotSettings   = 'riseup_snapshot_settings';
-    case LogRetrieval       = 'riseup_log_retrieval_settings';
-    case UpdateSettings     = 'riseup_update_settings';
-    case PluginSettings     = 'riseup_asia_settings';
-    case ErrorNotification  = 'riseup_error_notification_settings';
+    case SnapshotSettings   = 'RiseupSnapshotSettings';
+    case LogRetrieval       = 'RiseupLogRetrievalSettings';
+    case UpdateSettings     = 'RiseupUpdateSettings';
+    case PluginSettings     = 'RiseupAsiaSettings';
+    case ErrorNotification  = 'RiseupErrorNotificationSettings';
+
+    /** WordPress core — value must remain snake_case. */
     case ActivePlugins      = 'active_plugins';
 
     public function isEqual(self $other): bool { return $this === $other; }

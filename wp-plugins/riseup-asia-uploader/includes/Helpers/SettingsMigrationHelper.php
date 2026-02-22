@@ -3,7 +3,8 @@
  * SettingsMigrationHelper — One-time wp_options value normalization.
  *
  * Migrates stored snapshot/plugin settings from legacy lowercase/snake_case
- * values to PascalCase enum values. Idempotent — safe to run multiple times.
+ * values to PascalCase enum values. Also renames legacy snake_case wp_options
+ * keys to PascalCase. Idempotent — safe to run multiple times.
  *
  * @package RiseupAsia\Helpers
  * @since   2.6.0
@@ -19,7 +20,20 @@ use RiseupAsia\Enums\OptionNameType;
 
 class SettingsMigrationHelper {
     /** Option key tracking whether migration has run. */
-    private const MIGRATION_FLAG = 'riseup_settings_migrated_v1';
+    private const MIGRATION_FLAG = 'riseup_settings_migrated_v2';
+
+    /**
+     * Legacy wp_options key → new PascalCase key mapping.
+     *
+     * @var array<string,string>
+     */
+    private const KEY_MAP = array(
+        'riseup_snapshot_settings'            => 'RiseupSnapshotSettings',
+        'riseup_log_retrieval_settings'       => 'RiseupLogRetrievalSettings',
+        'riseup_update_settings'              => 'RiseupUpdateSettings',
+        'riseup_asia_settings'                => 'RiseupAsiaSettings',
+        'riseup_error_notification_settings'  => 'RiseupErrorNotificationSettings',
+    );
 
     /**
      * Value mappings: old lowercase/snake_case → new PascalCase.
@@ -70,8 +84,38 @@ class SettingsMigrationHelper {
             return;
         }
 
+        self::migrateOptionKeys();
         self::migrateSnapshotSettings();
         update_option(self::MIGRATION_FLAG, true);
+    }
+
+    /**
+     * Rename legacy snake_case wp_options keys to PascalCase.
+     *
+     * Copies the value from the old key to the new key, then deletes the old key.
+     * Skips if the old key does not exist or the new key already has data.
+     */
+    private static function migrateOptionKeys(): void {
+        foreach (self::KEY_MAP as $oldKey => $newKey) {
+            $oldValue = get_option($oldKey, null);
+            $isOldKeyMissing = ($oldValue === null);
+
+            if ($isOldKeyMissing) {
+                continue;
+            }
+
+            $newValue = get_option($newKey, null);
+            $isNewKeyPresent = ($newValue !== null);
+
+            if ($isNewKeyPresent) {
+                delete_option($oldKey);
+
+                continue;
+            }
+
+            update_option($newKey, $oldValue);
+            delete_option($oldKey);
+        }
     }
 
     /** Normalize snapshot settings values to PascalCase. */
