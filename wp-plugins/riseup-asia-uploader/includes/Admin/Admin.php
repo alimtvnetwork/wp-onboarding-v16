@@ -39,7 +39,6 @@ class Admin {
     use AdminErrorPageTrait;
     use AdminErrorAjaxTrait;
 
-
     /**
      * Default settings.
      */
