@@ -6,6 +6,10 @@
  * @since   1.60.0
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 namespace RiseupAsia\ErrorHandling;
 
 use Throwable;
