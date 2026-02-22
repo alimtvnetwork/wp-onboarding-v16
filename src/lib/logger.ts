@@ -69,6 +69,7 @@ function generateId(): string {
  */
 function extractStackInfo(): { filePath?: string; lineNumber?: number; stack?: string } {
   const stack = new Error().stack;
+
   if (!stack) return {};
 
   const lines = stack.split('\n');
@@ -85,6 +86,7 @@ function extractStackInfo(): { filePath?: string; lineNumber?: number; stack?: s
   
   if (match) {
     let filePath = match[1];
+
     // Clean up the path
     if (filePath.includes('/src/')) {
       filePath = 'src/' + filePath.split('/src/').pop();
@@ -112,6 +114,7 @@ function shouldLog(level: LogLevel): boolean {
  */
 function addToBuffer(entry: LogEntry): void {
   logBuffer.push(entry);
+
   if (logBuffer.length > config.maxEntries) {
     logBuffer.shift();
   }

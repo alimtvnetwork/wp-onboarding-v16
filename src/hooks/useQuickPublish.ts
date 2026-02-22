@@ -75,6 +75,7 @@ export function useQuickPublish() {
         };
       }
       execLogger.endChain(chainId, 'Unknown error');
+
       return { success: false, error: 'Unknown error' };
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error';

@@ -142,6 +142,7 @@ class WebSocketClient {
     if (!this.handlers.has(event)) {
       this.handlers.set(event, new Set());
     }
+
     this.handlers.get(event)!.add(handler);
 
     return () => {
@@ -167,10 +168,12 @@ class WebSocketClient {
     this.isReconnectEnabled = false;
     this.reconnectAttempts = 0;
     this.currentReconnectDelay = this.reconnectDelay;
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+
     this.ws?.close();
     this.ws = null;
   }

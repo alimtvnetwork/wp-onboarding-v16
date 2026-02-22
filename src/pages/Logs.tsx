@@ -347,6 +347,7 @@ export default function Logs() {
     const merged = [...logs];
     // Add notification logs that aren't already present as WS logs
     const existingIds = new Set(logs.map(l => l.id));
+
     for (const nl of notificationLogs) {
       if (!existingIds.has(nl.id)) {
         merged.push(nl);
@@ -354,6 +355,7 @@ export default function Logs() {
     }
     // Sort newest first
     merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
     return merged;
   }, [logs, notificationLogs]);
 

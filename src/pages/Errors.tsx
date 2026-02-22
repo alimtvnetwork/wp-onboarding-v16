@@ -85,6 +85,7 @@ export default function Errors() {
     // Deduplicate by message+timestamp proximity
     const all = [...storeErrors, ...errorNotifications];
     const seen = new Set<string>();
+
     return all.filter((e) => {
       const key = `${e.message}-${(e.createdAt ?? '').slice(0, 16)}`;
       if (seen.has(key)) return false;

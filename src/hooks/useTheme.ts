@@ -67,6 +67,7 @@ function resolveTheme(theme: Theme): "light" | "dark" | "high-contrast" | "high-
   if (theme === "system") {
     return getSystemTheme();
   }
+
   return theme;
 }
 
