@@ -9,6 +9,7 @@
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\AjaxActionType;
 use RiseupAsia\Enums\NonceType;
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\RetentionType;
@@ -841,7 +842,7 @@ jQuery(document).ready(function($) {
     function loadSnapshots(page) {
         page = page || 1;
         currentPage = page;
-        var limit = 50;
+        var limit = <?php echo (int) PaginationConfigType::DefaultLimit->value; ?>;
         var offset = (page - 1) * limit;
 
         $('#snapshots_loading').show();

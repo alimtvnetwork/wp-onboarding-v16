@@ -66,7 +66,7 @@ trait UpdraftCrudTrait {
         );
     }
 
-    public function listSnapshots(int $limit = 50, int $offset = 0): array {
+    public function listSnapshots(int $limit = 50, int $offset = 0): array { // PaginationConfigType::DefaultLimit
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
             array(
