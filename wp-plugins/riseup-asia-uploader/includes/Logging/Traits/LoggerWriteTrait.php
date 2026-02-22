@@ -6,6 +6,10 @@
  * @since   1.4.0
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 namespace RiseupAsia\Logging\Traits;
 
 use PDO;

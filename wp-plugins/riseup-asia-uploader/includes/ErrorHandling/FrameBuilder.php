@@ -1,4 +1,9 @@
 <?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 namespace RiseupAsia\ErrorHandling;
 
 use Throwable;

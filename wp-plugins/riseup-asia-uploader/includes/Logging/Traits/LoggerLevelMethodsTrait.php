@@ -6,6 +6,10 @@
  * @since   1.57.0
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 namespace RiseupAsia\Logging\Traits;
 
 use Throwable;
