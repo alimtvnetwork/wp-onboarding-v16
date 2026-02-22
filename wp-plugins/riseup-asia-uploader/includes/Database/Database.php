@@ -28,12 +28,10 @@ use RiseupAsia\Logging\FileLogger;
  * Handles all SQLite database operations for transaction logging.
  */
 class Database {
-
     use DatabaseConnectionTrait;
     use DatabaseMigrationsEarlyTrait;
     use DatabaseMigrationsLateTrait;
     use DatabaseQueryTrait;
-
 
     /** @var PDO|null */
     private $pdo = null;
