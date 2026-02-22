@@ -10,9 +10,7 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-| S-019 | 2026-02-21 | Medium | Formatting sweep | open | Fix formatting violations in Database/*.php root classes (Orm, RootDb, Database) |
-| S-020 | 2026-02-21 | Medium | Formatting sweep | open | Fix formatting violations in ErrorHandling/*.php (4 files) |
-| S-021 | 2026-02-21 | Medium | Formatting sweep | open | Fix formatting violations in Core/*.php (Plugin.php, etc.) |
+| S-021 | 2026-02-21 | Medium | Formatting sweep | open | Fix R12 + formatting violations in Core/Plugin.php, Admin/Admin.php, Logging/FileLogger.php |
 | S-022 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in Templates/*.php (admin templates) |
 | S-023 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in root files (riseup-asia-uploader.php, Autoloader.php) |
 | S-024 | 2026-02-21 | Medium | PHP-Go audit | open | Deduplicate Database::DEFAULT_LIMIT/MAX_LIMIT with PaginationConfigType enum values |
@@ -20,6 +18,10 @@
 | S-026 | 2026-02-21 | Low | Plan review | open | Update TypeScript frontend enum string values to PascalCase (Phase 3) |
 | S-027 | 2026-02-21 | Low | Plan review | open | Fix admin-errors.php template magic strings (Phase 7D — LogLevelType casing) |
 | S-028 | 2026-02-21 | Low | Memory review | open | Update core-enum-inventory memory to include LogColumnType enum (16 column cases) |
+| S-029 | 2026-02-22 | High | Deep scan | open | Add ABSPATH guards to ~16 enum files missing them (PluginConfigType, ResponseKeyType, etc.) |
+| S-030 | 2026-02-22 | High | Deep scan | open | Add ABSPATH guards to ErrorResponse, FrameBuilder, FileLogger, Logger, and 7 Logging Traits |
+| S-031 | 2026-02-22 | Medium | Deep scan | open | Fix ActivationHandler: R12, R4, indentation bug at line 105 |
+| S-032 | 2026-02-22 | Low | Deep scan | open | Remove dead loadDependencies() method and redundant class_exists check in ActivationHandler |
 
 ---
 
@@ -45,6 +47,8 @@
 | S-016 | DRY Phase 10 — Envelope Schema Alignment | 2026-02-09 | `envelope.schema.json` v1.0.0 |
 | S-017 | Post-Deploy Version Verification Pass | 2026-02-09 | Auto version drift detection via force-sync |
 | S-018 | Remove Vestigial `pnpmVirtualStorePath` Config Key | 2026-02-09 | Removed from `powershell.json` |
+| S-019 | Fix Database/*.php R12 violations | 2026-02-22 | Fixed in Database.php, Orm.php, RootDb.php |
+| S-020 | Fix ErrorHandling/*.php formatting | 2026-02-22 | All 4 files verified compliant — no changes needed |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -60,8 +64,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 10 |
-| Completed | 18 |
+| Open | 12 |
+| Completed | 20 |
 | Rejected | 0 |
 | **Total** | **28** |
 

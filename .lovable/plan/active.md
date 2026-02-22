@@ -1,12 +1,12 @@
 # Active & Future Phases
 
-**Updated: 2026-02-21**
+**Updated: 2026-02-22**
 
 ---
 
-## Current Status: Formatting Sweep In Progress 🔄
+## Current Status: Deep Scan Complete — Formatting Sweep Continues 🔄
 
-All major architectural work (enum migration, PascalCase DB schema, error architecture, boot diagnostics, settings migration) is complete. Current focus is formatting compliance sweep across PHP trait files.
+All major architectural work is complete. Boot chain deep scan confirmed **no load-breaking issues**. Remaining work is formatting compliance, ABSPATH guard additions, and dead code cleanup.
 
 ---
 
@@ -27,36 +27,69 @@ All major architectural work (enum migration, PascalCase DB schema, error archit
 | Traits/Route/ | ✅ Done | Clean |
 | Go Handlers | ✅ Done | 8 files |
 | Go Services | ✅ Done | 27 calls |
-| Database/*.php | 🔵 Pending | — |
-| ErrorHandling/*.php | 🔵 Pending | — |
-| Core/*.php | 🔵 Pending | — |
+| Database/*.php | ✅ Done | 3 (R12 ×3 in Database, Orm, RootDb) |
+| ErrorHandling/*.php | ✅ Done | Clean (all 4 files compliant) |
+| Core/Plugin.php | 🔵 Pending | R12 (empty line after class brace) |
+| Admin/Admin.php | 🔵 Pending | Double blank line after traits |
+| Logging/FileLogger.php | 🔵 Pending | R12 (empty line after class brace) |
+| Activation/ActivationHandler.php | 🔵 Pending | R12 + R4 + indentation bug |
 | Templates/*.php | 🔵 Pending | — |
 | Root files | 🔵 Pending | — |
 
+### ABSPATH Guard Sweep (New — from deep scan)
+
+| Scope | Status | Files Affected |
+|-------|--------|----------------|
+| Enum files (16 files) | 🔵 Pending | SnapshotModeType, PluginConfigType, ResponseKeyType, etc. |
+| Logging files (9 files) | 🔵 Pending | FileLogger, Logger, all Logging/Traits/ |
+| ErrorHandling (2 files) | 🔵 Pending | ErrorResponse, FrameBuilder |
+
+### Dead Code Cleanup (New — from deep scan)
+
+| Item | Status |
+|------|--------|
+| ActivationHandler::loadDependencies() empty method | 🔵 Pending |
+| ActivationHandler::ensureSecurity() redundant class_exists | 🔵 Pending |
+
 ---
 
-## Completed Tracks (Recent — 2026-02-21)
+## Deep Scan Results (2026-02-22) ✅
 
-### Formatting Sweep — All Traits Directories ✅
-All 6 PHP trait directories (`Snapshot/`, `Database/`, `Admin/`, `Logging/`, `Agent/`, `Helpers/`) fully swept for R4, R5, R9, R10, R12 violations.
+**Boot chain integrity verified.** No load-breaking issues found. Full analysis in `.lovable/memory/workflow/09-deep-scan-boot-chain.md`.
+
+---
+
+## Completed Tracks (Recent)
+
+### Deep Scan — Boot Chain Integrity ✅ (2026-02-22)
+Full scan of plugin boot sequence (autoloader → activation → plugins_loaded → Plugin/Admin init). All failure paths wrapped in try/catch with BootErrorCollector. No circular dependencies or missing imports in critical path.
+
+### Formatting Sweep — ErrorHandling/*.php ✅ (2026-02-22)
+All 4 files (BootErrorCollector, ErrorResponse, FatalErrorHandler, FrameBuilder) verified compliant.
+
+### Formatting Sweep — Database/*.php ✅ (2026-02-22)
+Fixed R12 violations (empty line after opening class brace) in Database.php, Orm.php, RootDb.php.
+
+### Formatting Sweep — All Traits Directories ✅ (2026-02-21)
+All 6 PHP trait directories fully swept for R4, R5, R9, R10, R12 violations.
 
 ### PHP–Go Consistency Audit ✅
 All 5 phases complete. Route registration gaps fixed, endpoint parity achieved, HTTP status enum migration done.
 
 ### PascalCase Enum Labels — Cross-System ✅
-24 PHP enums + 10 Go enums migrated to PascalCase values. Settings migration helper created. DB V12/V14 migrations handle stored value updates.
+24 PHP enums + 10 Go enums migrated. Settings migration helper created. DB V12/V14 migrations done.
 
 ### PascalCase Database Schema ✅
-All 5 phases complete. Go SplitDB + E2E tables migrated. PHP Plugin SQLite V13 migration created. Root DB schema updated with backward compat via `RootDbCompatTrait`.
+All 5 phases complete. Go SplitDB + E2E tables migrated. PHP Plugin SQLite V13 migration created.
 
 ### Go Backend Strict Guidelines ✅
-Phases 1–3 complete (ErrorCode typed alias, lint scripts, 3 new domain enums, magic string migration). Phase E raw error audit complete across all Go files.
+Phases 1–3 + Phase E complete.
 
 ### Backend Standards Compliance ✅
-Phases A–E complete (spec updates, byte-based enum migration, config refactoring, AppError JSON, raw error audit).
+Phases A–E complete.
 
 ### Template Magic String Elimination (Phase 7) ✅
-Phases 7A–7G complete. All 5 admin templates cleaned. `SettingsMigrationHelper` created. `LogColumnType` enum created for admin-logs.php.
+Phases 7A–7G complete.
 
 ---
 
@@ -65,27 +98,13 @@ Phases 7A–7G complete. All 5 admin templates cleaned. `SettingsMigrationHelper
 ### PHP–Go Consistency Audit — Phase 1: Constant Deduplication
 - Remove `Database::DEFAULT_LIMIT` / `MAX_LIMIT`, replace with `PaginationConfigType`
 - Replace all hardcoded `$limit = 50` and `$perPage = 50`
-- **Note**: PHP default params can't use enum values — documented as PHP constraint
 
 ### Phase 5: Licensing System Architecture
-- License server + WP plugin client
-- Full architecture documented in `plan.md`
-- Estimated: 8–10 tasks
+- License server + WP plugin client (8–10 tasks)
 
 ### Go Phase 4: Positive Logic & Boolean Standards
-- Positive boolean naming (`IsValid` not `IsNotValid`)
-- Negation elimination patterns
-- Estimated: 2 tasks
-
 ### Go Phase 5: Code Organization Standards
-- Package restructuring
-- File naming conventions enforcement
-- Estimated: 3 tasks
-
 ### Go Phase 6: CI Lint Scripts & Integration
-- Complete lint script suite
-- CI pipeline integration
-- Estimated: 2 tasks
 
 ### PascalCase Cross-System Remaining
 - Phase 2.3: PHP hardcoded string comparisons audit
@@ -95,7 +114,6 @@ Phases 7A–7G complete. All 5 admin templates cleaned. `SettingsMigrationHelper
 
 ### Template Phase 7D: admin-errors.php
 - LogLevelType casing mismatch (`'ERROR'` stored vs `'Error'` enum)
-- FQCN imports cleanup
 
 ---
 
@@ -108,4 +126,4 @@ Phases 7A–7G complete. All 5 admin templates cleaned. `SettingsMigrationHelper
 
 ---
 
-*Master plan details in `plan.md`. Formatting sweep tracked in `.lovable/plans/rule-10-sweep.md`.*
+*Master plan details in `plan.md`. Formatting sweep tracked in `.lovable/plans/rule-10-sweep.md`. Deep scan findings in `.lovable/memory/workflow/09-deep-scan-boot-chain.md`.*
