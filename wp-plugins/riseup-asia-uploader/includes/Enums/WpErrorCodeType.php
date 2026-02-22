@@ -18,22 +18,22 @@ enum WpErrorCodeType: string
     case RestForbidden = 'rest_forbidden';
     case RestDisabled  = 'rest_disabled';
 
-    /** Custom plugin error codes. */
-    case DatabaseError     = 'db_error';
-    case NoData            = 'no_data';
-    case MissingFields     = 'missing_fields';
-    case NotFound          = 'not_found';
-    case ApiError          = 'api_error';
-    case MaxRedirects      = 'max_redirects';
-    case NoLocation        = 'no_location';
-    case NoMasterUrl       = 'no_master_url';
-    case Disabled          = 'disabled';
-    case HttpError         = 'http_error';
-    case InternalError     = 'internal_error';
-    case FileNotFound      = 'file_not_found';
-    case ChecksumMismatch  = 'checksum_mismatch';
-    case BackupFailed      = 'backup_failed';
-    case RollbackFailed    = 'rollback_failed';
+    /** Custom plugin error codes — PascalCase values per enum standard. */
+    case DatabaseError     = 'DbError';
+    case NoData            = 'NoData';
+    case MissingFields     = 'MissingFields';
+    case NotFound          = 'NotFound';
+    case ApiError          = 'ApiError';
+    case MaxRedirects      = 'MaxRedirects';
+    case NoLocation        = 'NoLocation';
+    case NoMasterUrl       = 'NoMasterUrl';
+    case Disabled          = 'Disabled';
+    case HttpError         = 'HttpError';
+    case InternalError     = 'InternalError';
+    case FileNotFound      = 'FileNotFound';
+    case ChecksumMismatch  = 'ChecksumMismatch';
+    case BackupFailed      = 'BackupFailed';
+    case RollbackFailed    = 'RollbackFailed';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
