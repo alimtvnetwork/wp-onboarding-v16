@@ -22,15 +22,14 @@ use RiseupAsia\Helpers\DateHelper;
 
 class ActivationHandler
 {
-    private const VERSION_UNKNOWN = 'unknown';
+    private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
     private const DIAGNOSTICS_TRANSIENT = 'riseup_boot_diagnostics';
     private const DIAGNOSTICS_EXPIRY = DAY_IN_SECONDS;
 
     public static function activate(): void {
         InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — starting activation');
         try {
-            self::loadDependencies();
-            InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — dependencies loaded');
+            $dirs = self::resolveDirs();
             $dirs = self::resolveDirs();
 
             if ($dirs === null) {
@@ -78,9 +77,8 @@ class ActivationHandler
         }
     }
 
-    private static function loadDependencies(): void {
-        // PSR-4 autoloader handles all class loading — no manual requires needed.
-    }
+
+    /**
 
     /**
      * @return array{base: string, logs: string}|null
@@ -153,19 +151,6 @@ class ActivationHandler
     }
 
     private static function ensureSecurity(string $baseDir): void {
-        if (class_exists(InitHelpers::class)) {
-            InitHelpers::addSecurityFiles($baseDir);
-            return;
-        }
-
-        $htaccess = $baseDir . '/.htaccess';
-        if (PathHelper::isFileMissing($htaccess)) {
-            @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
-        }
-
-        $index = $baseDir . '/index.php';
-        if (PathHelper::isFileMissing($index)) {
-            @file_put_contents($index, "<?php\n// Silence is golden.\n");
-        }
+        InitHelpers::addSecurityFiles($baseDir);
     }
 }
