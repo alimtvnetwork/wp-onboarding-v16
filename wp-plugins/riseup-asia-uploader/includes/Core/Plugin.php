@@ -51,7 +51,6 @@ use RiseupAsia\Traits\Snapshot\SnapshotBackupTrait;
 use RiseupAsia\Traits\FileSystem\FileSystemTrait;
 
 class Plugin {
-
     // Wave 1 traits
     use LifecycleHooksTrait;
     use RouteRegistrationTrait;
