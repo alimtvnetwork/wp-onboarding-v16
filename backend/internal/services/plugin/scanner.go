@@ -156,7 +156,7 @@ func (s *Service) walkDirectory(path string, scan *ScanResult) error {
 func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
 	scan := s.ScanDirectory(ctx, path)
 	if scan.HasError() {
-		return scan.Error()
+		return scan.AppError()
 	}
 
 	scanVal := scan.Value()
@@ -212,7 +212,7 @@ func (s *Service) readPluginDetected(path string) (*PluginDetected, error) {
 func (s *Service) ValidatePath(ctx context.Context, path string) error {
 	scan := s.ScanDirectory(ctx, path)
 	if scan.HasError() {
-		return scan.Error()
+		return scan.AppError()
 	}
 
 	scanVal := scan.Value()

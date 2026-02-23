@@ -118,7 +118,7 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Plugin] 
 	)
 
 	if set.HasError() {
-		return apperror.FailSlice[models.Plugin](set.Error())
+		return apperror.FailSlice[models.Plugin](set.AppError())
 	}
 
 	plugins := set.Items()
@@ -154,7 +154,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 		id,
 	)
 	if result.HasError() {
-		return apperror.FailWrap[models.Plugin](result.Error(), apperror.ErrDatabaseQuery, "get plugin by Id")
+		return apperror.FailWrap[models.Plugin](result.AppError(), apperror.ErrDatabaseQuery, "get plugin by Id")
 	}
 	if result.IsEmpty() {
 		return apperror.FailNew[models.Plugin](apperror.ErrNotFound, "plugin not found")
@@ -218,7 +218,7 @@ func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (ap
 		input.Path,
 	)
 	if result.HasError() {
-		return apperror.Fail[models.Plugin](result.Error()), true
+		return apperror.Fail[models.Plugin](result.AppError()), true
 	}
 	if result.IsEmpty() {
 		return apperror.Result[models.Plugin]{}, false
@@ -262,7 +262,7 @@ func (s *Service) insertPlugin(ctx context.Context, input CreateInput) apperror.
 		fileCount,
 	)
 	if res.HasError() {
-		return apperror.Fail[models.Plugin](res.Error())
+		return apperror.Fail[models.Plugin](res.AppError())
 	}
 
 	s.log.Info("Plugin created", "pluginId", res.LastInsertId, "name", input.Name)
@@ -314,7 +314,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 	query := "UPDATE Plugins SET " + strings.Join(updates, ", ") + " WHERE Id = ?"
 	res := dbutil.Exec(ctx, s.dbu, query, args...)
 	if res.HasError() {
-		return apperror.Fail[models.Plugin](res.Error())
+		return apperror.Fail[models.Plugin](res.AppError())
 	}
 
 	return s.GetById(ctx, id)
@@ -381,7 +381,7 @@ func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
 		id,
 	)
 	if res.HasError() {
-		return res.Error()
+		return res.AppError()
 	}
 
 	dbutil.Exec(
@@ -404,7 +404,7 @@ func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
 		id,
 	)
 	if res.HasError() {
-		return res.Error()
+		return res.AppError()
 	}
 
 	s.log.Info("Plugin deleted", "pluginId", id)
@@ -432,7 +432,7 @@ func (s *Service) RefreshFileCount(ctx context.Context, id int64) error {
 		id,
 	)
 	if res.HasError() {
-		return res.Error()
+		return res.AppError()
 	}
 	return nil
 }
