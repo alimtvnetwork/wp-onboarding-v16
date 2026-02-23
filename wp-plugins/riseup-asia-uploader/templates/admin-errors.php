@@ -21,27 +21,27 @@ use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
-$level_colors = array(
+$levelColors = array(
     LogLevelType::Error->value => '#dc3545',
     LogLevelType::Warn->value  => '#fd7e14',
     LogLevelType::Info->value  => '#0d6efd',
     LogLevelType::Debug->value => '#6c757d',
 );
 
-$active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
+$activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
 $nonce = wp_create_nonce(NonceType::Admin->value);
 ?>
 <div class="wrap riseup-admin riseup-error-log">
 
-    <?php if ($has_unseen): ?>
+    <?php if ($hasUnseen): ?>
     <div id="riseup-flash-banner" class="riseup-flash-banner">
         <div class="flash-icon">⚠️</div>
         <div class="flash-content">
             <strong><?php echo esc_html(sprintf(
-                _n('%d new error since your last visit', '%d new errors since your last visit', $unseen_count, 'riseup-asia-uploader'),
-                $unseen_count
+                _n('%d new error since your last visit', '%d new errors since your last visit', $unseenCount, 'riseup-asia-uploader'),
+                $unseenCount
             )); ?></strong>
-            <span class="flash-time"><?php esc_html_e('Latest:', 'riseup-asia-uploader'); ?> <?php echo esc_html($latest_error_time); ?></span>
+            <span class="flash-time"><?php esc_html_e('Latest:', 'riseup-asia-uploader'); ?> <?php echo esc_html($latestErrorTime); ?></span>
         </div>
         <button type="button" id="riseup-dismiss-flash" class="button button-small flash-dismiss">
             <?php esc_html_e('Mark as Seen', 'riseup-asia-uploader'); ?>
@@ -50,11 +50,11 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
     <?php endif; ?>
 
     <?php
-    $hasDbErrorMessage = BooleanHelpers::hasValue($db_error_message ?? null);
+    $hasDbErrorMessage = BooleanHelpers::hasValue($dbErrorMessage ?? null);
     if ($hasDbErrorMessage):
     ?>
     <div class="notice notice-warning" style="padding: 12px; margin-bottom: 16px;">
-        <p><strong><span class="dashicons dashicons-info" style="color: #dba617;"></span> <?php echo esc_html($db_error_message); ?></strong></p>
+        <p><strong><span class="dashicons dashicons-info" style="color: #dba617;"></span> <?php echo esc_html($dbErrorMessage); ?></strong></p>
         <p class="description"><?php esc_html_e('The file-based log tabs (Log, Error Log, Stack Trace) are still available below.', 'riseup-asia-uploader'); ?></p>
     </div>
     <?php endif; ?>
@@ -63,8 +63,8 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
         <span class="dashicons dashicons-warning"></span>
         <?php esc_html_e('Error Log', 'riseup-asia-uploader'); ?>
         <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
-        <?php if ($unseen_count > 0): ?>
-            <span class="error-count-badge"><?php echo esc_html($unseen_count); ?></span>
+        <?php if ($unseenCount > 0): ?>
+            <span class="error-count-badge"><?php echo esc_html($unseenCount); ?></span>
         <?php endif; ?>
     </h1>
 
@@ -75,25 +75,25 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
     <!-- Tab Navigation -->
     <nav class="nav-tab-wrapper riseup-tabs">
         <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Sessions->value)); ?>"
-           class="nav-tab <?php echo $active_tab === AdminTabType::Sessions->value ? 'nav-tab-active' : ''; ?>">
+           class="nav-tab <?php echo $activeTab === AdminTabType::Sessions->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-database"></span>
             <?php esc_html_e('Error Sessions', 'riseup-asia-uploader'); ?>
-            <?php if ($unseen_count > 0): ?>
-                <span class="tab-badge"><?php echo esc_html($unseen_count); ?></span>
+            <?php if ($unseenCount > 0): ?>
+                <span class="tab-badge"><?php echo esc_html($unseenCount); ?></span>
             <?php endif; ?>
         </a>
         <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Log->value)); ?>"
-           class="nav-tab <?php echo $active_tab === AdminTabType::Log->value ? 'nav-tab-active' : ''; ?>">
+           class="nav-tab <?php echo $activeTab === AdminTabType::Log->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-text-page"></span>
             <?php esc_html_e('Log', 'riseup-asia-uploader'); ?>
         </a>
         <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Error->value)); ?>"
-           class="nav-tab <?php echo $active_tab === AdminTabType::Error->value ? 'nav-tab-active' : ''; ?>">
+           class="nav-tab <?php echo $activeTab === AdminTabType::Error->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-warning"></span>
             <?php esc_html_e('Error Log', 'riseup-asia-uploader'); ?>
         </a>
         <a href="<?php echo esc_url(add_query_arg('tab', AdminTabType::Stacktrace->value)); ?>"
-           class="nav-tab <?php echo $active_tab === AdminTabType::Stacktrace->value ? 'nav-tab-active' : ''; ?>">
+           class="nav-tab <?php echo $activeTab === AdminTabType::Stacktrace->value ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-editor-code"></span>
             <?php esc_html_e('Stack Trace', 'riseup-asia-uploader'); ?>
         </a>
@@ -102,7 +102,7 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
     <!-- Tab Content -->
     <div class="riseup-tab-content">
 
-    <?php if ($active_tab === AdminTabType::Sessions->value): ?>
+    <?php if ($activeTab === AdminTabType::Sessions->value): ?>
         <!-- ============================================================ -->
         <!-- ERROR SESSIONS TAB (original table view)                      -->
         <!-- ============================================================ -->
@@ -117,13 +117,13 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                         <span><?php esc_html_e('Level:', 'riseup-asia-uploader'); ?></span>
                         <select name="filter_level">
                             <option value=""><?php esc_html_e('All Levels', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(LogLevelType::Error->value); ?>" <?php selected($filter_level, LogLevelType::Error->value); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(LogLevelType::Warn->value); ?>" <?php selected($filter_level, LogLevelType::Warn->value); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(LogLevelType::Error->value); ?>" <?php selected($filterLevel, LogLevelType::Error->value); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(LogLevelType::Warn->value); ?>" <?php selected($filterLevel, LogLevelType::Warn->value); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
                         </select>
                     </label>
                     <label>
                         <span><?php esc_html_e('Search:', 'riseup-asia-uploader'); ?></span>
-                        <input type="text" name="filter_search" value="<?php echo esc_attr($filter_search); ?>" placeholder="<?php esc_attr_e('Search messages...', 'riseup-asia-uploader'); ?>">
+                        <input type="text" name="filter_search" value="<?php echo esc_attr($filterSearch); ?>" placeholder="<?php esc_attr_e('Search messages...', 'riseup-asia-uploader'); ?>">
                     </label>
                     <button type="submit" class="button button-primary"><?php esc_html_e('Filter', 'riseup-asia-uploader'); ?></button>
                     <a href="<?php echo esc_url(admin_url('admin.php?page=' . AdminPageType::Errors->value . '&tab=' . AdminTabType::Sessions->value)); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
@@ -140,10 +140,10 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                 <strong><?php echo esc_html($total); ?></strong>
                 <?php esc_html_e('total errors', 'riseup-asia-uploader'); ?>
             </span>
-            <?php if ($page > 1 || $page < $total_pages): ?>
+            <?php if ($page > 1 || $page < $totalPages): ?>
                 <span class="stat-item">
                     <?php esc_html_e('Page', 'riseup-asia-uploader'); ?> <?php echo esc_html($page); ?>
-                    <?php esc_html_e('of', 'riseup-asia-uploader'); ?> <?php echo esc_html($total_pages); ?>
+                    <?php esc_html_e('of', 'riseup-asia-uploader'); ?> <?php echo esc_html($totalPages); ?>
                 </span>
             <?php endif; ?>
         </div>
@@ -168,19 +168,19 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                 <?php else: ?>
                     <?php foreach ($errors as $error): ?>
                         <?php
-                        $is_new = ($error['Id'] > $last_seen_id);
+                        $isNew = ($error['Id'] > $lastSeenId);
                         $level  = $error['Level'];
-                        $color  = isset($level_colors[$level]) ? $level_colors[$level] : '#6c757d';
+                        $color  = isset($levelColors[$level]) ? $levelColors[$level] : '#6c757d';
                         $hasFile = BooleanHelpers::hasValue($error['File'] ?? null);
                         $hasContext = BooleanHelpers::hasValue($error['ContextJson'] ?? null);
                         $hasStackTrace = BooleanHelpers::hasValue($error['StackTrace'] ?? null);
                         $hasDetailsData = $hasContext || $hasStackTrace;
                         $sourceDisplay = $hasFile ? basename($error['File']) . ':' . $error['Line'] : '—';
                         ?>
-                        <tr class="<?php echo $is_new ? 'error-row-new' : ''; ?>">
+                        <tr class="<?php echo $isNew ? 'error-row-new' : ''; ?>">
                             <td class="column-id">
                                 <?php echo esc_html($error['Id']); ?>
-                                <?php if ($is_new): ?>
+                                <?php if ($isNew): ?>
                                     <span class="new-badge">NEW</span>
                                 <?php endif; ?>
                             </td>
@@ -224,7 +224,7 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
         </table>
 
         <!-- Pagination -->
-        <?php if ($total_pages > 1): ?>
+        <?php if ($totalPages > 1): ?>
             <div class="tablenav bottom">
                 <div class="tablenav-pages">
                     <?php
@@ -233,7 +233,7 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                         'format'    => '',
                         'prev_text' => '&laquo;',
                         'next_text' => '&raquo;',
-                        'total'     => $total_pages,
+                        'total'     => $totalPages,
                         'current'   => $page,
                     ));
                     ?>
@@ -246,18 +246,18 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
         <!-- FILE VIEWER TAB (log, error, stacktrace)                      -->
         <!-- ============================================================ -->
         <?php
-        $file_type = $active_tab; // 'log', 'error', or 'stacktrace'
-        $file_labels = array(
+        $fileType = $activeTab; // 'log', 'error', or 'stacktrace'
+        $fileLabels = array(
             AdminTabType::Log->value        => __('General Log', 'riseup-asia-uploader') . ' (log.txt)',
             AdminTabType::Error->value      => __('Error Log', 'riseup-asia-uploader') . ' (error.txt)',
             AdminTabType::Stacktrace->value => __('Stack Trace', 'riseup-asia-uploader') . ' (stacktrace.txt)',
         );
-        $file_label = isset($file_labels[$file_type]) ? $file_labels[$file_type] : $file_type;
+        $fileLabel = isset($fileLabels[$fileType]) ? $fileLabels[$fileType] : $fileType;
         ?>
 
         <div class="riseup-file-viewer-card">
             <div class="file-viewer-header">
-                <h2><?php echo esc_html($file_label); ?></h2>
+                <h2><?php echo esc_html($fileLabel); ?></h2>
                 <div class="file-viewer-actions">
                     <span class="file-size-label" id="file-size-label"></span>
 

@@ -124,11 +124,11 @@ trait ErrorSessionHandlerTrait {
         return (json_last_error() === JSON_ERROR_NONE) ? $decoded : $json;
     }
 
-    /** Count errors with id > last_seen_id. */
-    private function countUnseenErrors(PDO $pdo, int $last_seen_id): int {
+    /** Count errors with id > lastSeenId. */
+    private function countUnseenErrors(PDO $pdo, int $lastSeenId): int {
         try {
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
-            $stmt->execute(array($last_seen_id));
+            $stmt->execute(array($lastSeenId));
 
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
