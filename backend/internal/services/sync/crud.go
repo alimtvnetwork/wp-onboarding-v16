@@ -12,7 +12,7 @@ import (
 
 // siteInfo holds minimal site connection details for creating a WP client.
 type siteInfo struct {
-	URL      string
+	Url      string
 	Username string
 }
 
@@ -86,7 +86,7 @@ func scanMappingRow(row *sql.Row) (models.PluginMapping, error) {
 		&m.RemoteSlug,
 		&syncStatus,
 		&m.SiteName,
-		&m.SiteURL,
+		&m.SiteUrl,
 	)
 	m.SyncStatus = syncStatus
 	return m, err
@@ -108,7 +108,7 @@ func scanMappingRows(rows *sql.Rows) (models.PluginMapping, error) {
 		&createdAt,
 		&updatedAt,
 		&m.SiteName,
-		&m.SiteURL,
+		&m.SiteUrl,
 	)
 	return m, err
 }
@@ -116,18 +116,18 @@ func scanMappingRows(rows *sql.Rows) (models.PluginMapping, error) {
 // scanSiteInfoRow is a dbutil.RowScanner[siteInfo] for QueryOne.
 func scanSiteInfoRow(row *sql.Row) (siteInfo, error) {
 	var info siteInfo
-	err := row.Scan(&info.URL, &info.Username)
+	err := row.Scan(&info.Url, &info.Username)
 	return info, err
 }
 
 // GetFileChanges returns pending file changes for a plugin.
-func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64) apperror.ResultSlice[models.FileChange] {
+func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginId, siteId int64) apperror.ResultSlice[models.FileChange] {
 	set := dbutil.QueryMany[models.FileChange](
 		ctx,
 		s.dbu,
 		fileChangesSelectQuery,
 		scanFileChangeRows,
-		pluginID,
+		pluginId,
 	)
 	if set.HasError() {
 		return set.ToAppResultSlice()
@@ -162,14 +162,14 @@ func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileC
 }
 
 // MarkSynced marks specific files as synced.
-func (s *serviceImpl) MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) error {
+func (s *serviceImpl) MarkSynced(ctx context.Context, pluginId, siteId int64, files []string) error {
 	if len(files) == 0 {
 		return nil
 	}
 
 	placeholders := make([]string, len(files))
 	args := make([]any, len(files)+1)
-	args[0] = pluginID
+	args[0] = pluginId
 	for i, f := range files {
 		placeholders[i] = "?"
 		args[i+1] = f
@@ -186,12 +186,12 @@ func (s *serviceImpl) MarkSynced(ctx context.Context, pluginID, siteID int64, fi
 }
 
 // ClearChanges removes all pending changes for a plugin.
-func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
+func (s *serviceImpl) ClearChanges(ctx context.Context, pluginId int64) error {
 	res := dbutil.Exec(
 		ctx,
 		s.dbu,
 		fileChangesClearQuery,
-		pluginID,
+		pluginId,
 	)
 	if res.HasError() {
 		return res.AppError()
@@ -200,13 +200,13 @@ func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
 }
 
 // getMappings retrieves all mappings for a plugin.
-func (s *serviceImpl) getMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error) {
+func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) ([]models.PluginMapping, error) {
 	set := dbutil.QueryMany[models.PluginMapping](
 		ctx,
 		s.dbu,
 		mappingsListQuery,
 		scanMappingRows,
-		pluginID,
+		pluginId,
 	)
 	if set.HasError() {
 		return nil, set.AppError()
@@ -215,47 +215,47 @@ func (s *serviceImpl) getMappings(ctx context.Context, pluginID int64) ([]models
 }
 
 // getMapping retrieves a specific plugin-site mapping.
-func (s *serviceImpl) getMapping(ctx context.Context, pluginID, siteID int64) (*models.PluginMapping, error) {
+func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) (*models.PluginMapping, error) {
 	result := dbutil.QueryOne[models.PluginMapping](
 		ctx,
 		s.dbu,
 		mappingSelectQuery,
 		scanMappingRow,
-		pluginID,
-		siteID,
+		pluginId,
+		siteId,
 	)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
 	if result.IsEmpty() {
 		return nil, apperror.New(apperror.ErrNotFound, "plugin-site mapping not found").
-			WithPluginId(pluginID).WithSiteId(siteID)
+			WithPluginId(pluginId).WithSiteId(siteId)
 	}
 	m := result.Value()
 	return &m, nil
 }
 
 // getSiteInfo retrieves minimal site info for creating a WP client.
-func (s *serviceImpl) getSiteInfo(ctx context.Context, siteID int64) (*siteInfo, error) {
+func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo, error) {
 	result := dbutil.QueryOne[siteInfo](
 		ctx,
 		s.dbu,
 		siteInfoSelectQuery,
 		scanSiteInfoRow,
-		siteID,
+		siteId,
 	)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
 	if result.IsEmpty() {
-		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteId(siteID)
+		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteId(siteId)
 	}
 	info := result.Value()
 	return &info, nil
 }
 
 // updateMappingSyncStatus updates the sync status of a mapping.
-func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginID, siteID int64, inSync bool) {
+func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginId, siteId int64, inSync bool) {
 	status := "out_of_sync"
 	if inSync {
 		status = "synced"
@@ -265,7 +265,7 @@ func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginID, sit
 		s.dbu,
 		mappingSyncStatusUpdateQuery,
 		status,
-		pluginID,
-		siteID,
+		pluginId,
+		siteId,
 	)
 }

@@ -43,14 +43,14 @@ func New(cfg Config) *Service {
 // Save persists an error to the database
 func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.ErrorHistory] {
 	// Generate error ID if not provided
-	if input.ErrorID == "" {
-		input.ErrorID = fmt.Sprintf("%d-%s", time.Now().UnixMilli(), randomString(8))
+	if input.ErrorId == "" {
+		input.ErrorId = fmt.Sprintf("%d-%s", time.Now().UnixMilli(), randomString(8))
 	}
 
 	// Marshal JSON fields
 	contextJSON, _ := json.Marshal(input.Context)
 	requestBodyJSON, _ := json.Marshal(input.RequestBody)
-	phpStackFramesJSON, _ := json.Marshal(input.PHPStackFrames)
+	phpStackFramesJSON, _ := json.Marshal(input.PhpStackFrames)
 	backendLogsJSON, _ := json.Marshal(input.BackendLogs)
 	invocationChainJSON, _ := json.Marshal(input.InvocationChain)
 
@@ -65,26 +65,26 @@ func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.Er
 	`
 
 	result, err := s.db.Exec(query,
-		input.ErrorID, input.Code, input.Level, input.Message, input.Details, string(contextJSON),
+		input.ErrorId, input.Code, input.Level, input.Message, input.Details, string(contextJSON),
 		input.StackTrace, input.Endpoint, input.Method, string(requestBodyJSON), input.ResponseStatus,
-		input.SessionID, input.SessionType, string(phpStackFramesJSON), string(backendLogsJSON),
-		input.BackendStackTrace, input.SiteURL, input.TriggerComponent, input.TriggerAction,
+		input.SessionId, input.SessionType, string(phpStackFramesJSON), string(backendLogsJSON),
+		input.BackendStackTrace, input.SiteUrl, input.TriggerComponent, input.TriggerAction,
 		string(invocationChainJSON), input.UIClickPath, input.MarkdownReport,
 	)
 	if err != nil {
 		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "insert error history").
-			WithValue("errorId", input.ErrorID)
+			WithValue("errorId", input.ErrorId)
 	}
 
 	id, _ := result.LastInsertId()
 
 	if s.log != nil {
-		s.log.Debug("Error history saved", "errorId", input.ErrorID, "code", input.Code)
+		s.log.Debug("Error history saved", "errorId", input.ErrorId, "code", input.Code)
 	}
 
 	return apperror.Ok(models.ErrorHistory{
-		ID:      id,
-		ErrorID: input.ErrorID,
+		Id:      id,
+		ErrorId: input.ErrorId,
 		Code:    input.Code,
 		Level:   input.Level,
 		Message: input.Message,
@@ -186,15 +186,15 @@ func (s *Service) GetById(id int64) apperror.Result[models.ErrorHistory] {
 	var e models.ErrorHistory
 	var createdAt string
 	var details, contextJSON, stackTrace, endpoint, method, requestBodyJSON sql.NullString
-	var sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace sql.NullString
-	var siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString
+	var sessionId, sessionType, phpStackFramesJson, backendLogsJSON, backendStackTrace sql.NullString
+	var siteUrl, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString
 	var responseStatus sql.NullInt64
 
 	err := s.db.QueryRow(query, id).Scan(
-		&e.ID, &e.ErrorID, &e.Code, &e.Level, &e.Message, &details, &contextJSON,
+		&e.Id, &e.ErrorId, &e.Code, &e.Level, &e.Message, &details, &contextJSON,
 		&stackTrace, &endpoint, &method, &requestBodyJSON, &responseStatus,
-		&sessionID, &sessionType, &phpStackFramesJSON, &backendLogsJSON,
-		&backendStackTrace, &siteURL, &triggerComponent, &triggerAction,
+		&sessionId, &sessionType, &phpStackFramesJson, &backendLogsJSON,
+		&backendStackTrace, &siteUrl, &triggerComponent, &triggerAction,
 		&invocationChainJSON, &uiClickPath, &markdownReport, &createdAt,
 	)
 	if err == sql.ErrNoRows {
@@ -207,10 +207,10 @@ func (s *Service) GetById(id int64) apperror.Result[models.ErrorHistory] {
 	}
 
 	populateErrorHistoryFields(&e, details, contextJSON, stackTrace, endpoint, method, requestBodyJSON,
-		responseStatus, sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace,
-		siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport, createdAt)
+		responseStatus, sessionId, sessionType, phpStackFramesJson, backendLogsJSON, backendStackTrace,
+		siteUrl, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport, createdAt)
 
-	e.ParseJSONFields()
+	e.ParseJsonFields()
 
 	return apperror.Ok(e)
 }
@@ -274,7 +274,7 @@ func (s *Service) BulkExport(ids []int64) apperror.Result[string] {
 
 	var reports []string
 	for _, id := range ids {
-		result := s.GetByID(id)
+		result := s.GetById(id)
 		if result.HasError() {
 			continue
 		}
@@ -285,7 +285,7 @@ func (s *Service) BulkExport(ids []int64) apperror.Result[string] {
 		} else {
 			// Generate basic report
 			report := fmt.Sprintf("## Error %s\n\n**Code:** %s\n**Level:** %s\n**Message:** %s\n**Time:** %s\n",
-				e.ErrorID, e.Code, e.Level, e.Message, e.CreatedAt.Format(time.RFC3339))
+				e.ErrorId, e.Code, e.Level, e.Message, e.CreatedAt.Format(time.RFC3339))
 			if e.Details != "" {
 				report += fmt.Sprintf("\n**Details:** %s\n", e.Details)
 			}
@@ -347,15 +347,15 @@ func scanErrorHistoryRow(rows *sql.Rows) (models.ErrorHistory, error) {
 	var e models.ErrorHistory
 	var createdAt string
 	var details, contextJSON, stackTrace, endpoint, method, requestBodyJSON sql.NullString
-	var sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace sql.NullString
-	var siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString
+	var sessionId, sessionType, phpStackFramesJson, backendLogsJSON, backendStackTrace sql.NullString
+	var siteUrl, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString
 	var responseStatus sql.NullInt64
 
 	err := rows.Scan(
-		&e.ID, &e.ErrorID, &e.Code, &e.Level, &e.Message, &details, &contextJSON,
+		&e.Id, &e.ErrorId, &e.Code, &e.Level, &e.Message, &details, &contextJSON,
 		&stackTrace, &endpoint, &method, &requestBodyJSON, &responseStatus,
-		&sessionID, &sessionType, &phpStackFramesJSON, &backendLogsJSON,
-		&backendStackTrace, &siteURL, &triggerComponent, &triggerAction,
+		&sessionId, &sessionType, &phpStackFramesJson, &backendLogsJSON,
+		&backendStackTrace, &siteUrl, &triggerComponent, &triggerAction,
 		&invocationChainJSON, &uiClickPath, &markdownReport, &createdAt,
 	)
 	if err != nil {
@@ -363,10 +363,10 @@ func scanErrorHistoryRow(rows *sql.Rows) (models.ErrorHistory, error) {
 	}
 
 	populateErrorHistoryFields(&e, details, contextJSON, stackTrace, endpoint, method, requestBodyJSON,
-		responseStatus, sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace,
-		siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport, createdAt)
+		responseStatus, sessionId, sessionType, phpStackFramesJson, backendLogsJSON, backendStackTrace,
+		siteUrl, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport, createdAt)
 
-	e.ParseJSONFields()
+	e.ParseJsonFields()
 
 	return e, nil
 }
@@ -375,8 +375,8 @@ func scanErrorHistoryRow(rows *sql.Rows) (models.ErrorHistory, error) {
 func populateErrorHistoryFields(e *models.ErrorHistory,
 	details, contextJSON, stackTrace, endpoint, method, requestBodyJSON sql.NullString,
 	responseStatus sql.NullInt64,
-	sessionID, sessionType, phpStackFramesJSON, backendLogsJSON, backendStackTrace sql.NullString,
-	siteURL, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString,
+	sessionId, sessionType, phpStackFramesJson, backendLogsJSON, backendStackTrace sql.NullString,
+	siteUrl, triggerComponent, triggerAction, invocationChainJSON, uiClickPath, markdownReport sql.NullString,
 	createdAt string,
 ) {
 	e.Details = details.String
@@ -386,12 +386,12 @@ func populateErrorHistoryFields(e *models.ErrorHistory,
 	e.Method = method.String
 	e.RequestBodyJSON = requestBodyJSON.String
 	e.ResponseStatus = int(responseStatus.Int64)
-	e.SessionID = sessionID.String
+	e.SessionId = sessionId.String
 	e.SessionType = sessionType.String
-	e.PHPStackFramesJSON = phpStackFramesJSON.String
+	e.PhpStackFramesJson = phpStackFramesJson.String
 	e.BackendLogsJSON = backendLogsJSON.String
 	e.BackendStackTrace = backendStackTrace.String
-	e.SiteURL = siteURL.String
+	e.SiteUrl = siteUrl.String
 	e.TriggerComponent = triggerComponent.String
 	e.TriggerAction = triggerAction.String
 	e.InvocationChainJSON = invocationChainJSON.String
