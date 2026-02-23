@@ -28,13 +28,10 @@ Updated: 2026-02-23
 
 - **S-024**: Database pagination constants — audit confirmed already deduplicated (2026-02-23).
 
-## Pending Tasks (6 open suggestions)
+## Pending Tasks (3 open suggestions)
 
 | ID | Priority | Description |
 |----|----------|-------------|
 | S-022 | Low | Fix formatting in Templates/*.php |
 | S-023 | Low | Fix formatting in root files |
-| S-025 | Low | Audit PHP hardcoded string comparisons vs old enum values |
 | S-026 | Low | Update TypeScript enum string values to PascalCase |
-| S-027 | Low | Fix admin-errors.php template magic strings |
-| S-028 | Low | Update core-enum-inventory memory to include LogColumnType |
