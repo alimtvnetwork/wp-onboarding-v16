@@ -28,10 +28,11 @@ Updated: 2026-02-23
 
 - **S-024**: Database pagination constants — audit confirmed already deduplicated (2026-02-23).
 
-## Pending Tasks (3 open suggestions)
+- **S-022**: Templates formatting — all 5 templates audited, fully compliant (2026-02-23).
+- **S-023**: Root files formatting — both files audited, fully compliant (2026-02-23).
+
+## Pending Tasks (1 open suggestion)
 
 | ID | Priority | Description |
 |----|----------|-------------|
-| S-022 | Low | Fix formatting in Templates/*.php |
-| S-023 | Low | Fix formatting in root files |
-| S-026 | Low | Update TypeScript enum string values to PascalCase |
+| S-026 | Low | Update TypeScript frontend enum string values to PascalCase |

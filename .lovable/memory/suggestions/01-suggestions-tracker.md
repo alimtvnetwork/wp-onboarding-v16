@@ -10,8 +10,6 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-| S-022 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in Templates/*.php (admin templates) |
-| S-023 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in root files (riseup-asia-uploader.php, Autoloader.php) |
 | S-026 | 2026-02-21 | Low | Plan review | open | Update TypeScript frontend enum string values to PascalCase (Phase 3) |
 
 ---
@@ -49,6 +47,8 @@
 | S-025 | Audit old enum value comparisons | 2026-02-23 | Zero hardcoded old lowercase enum comparisons found — already resolved |
 | S-027 | Fix admin-errors.php template magic strings | 2026-02-23 | Template already uses LogLevelType, AdminTabType, AdminPageType, NonceType enums — no magic strings |
 | S-028 | Update core-enum-inventory with LogColumnType | 2026-02-23 | Added LogColumnType (16 cases) to inventory |
+| S-022 | Fix formatting in Templates/*.php | 2026-02-23 | All 5 templates audited — no formatting violations found |
+| S-023 | Fix formatting in root files | 2026-02-23 | Both riseup-asia-uploader.php and Autoloader.php audited — fully compliant |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -64,8 +64,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 3 |
-| Completed | 29 |
+| Open | 1 |
+| Completed | 31 |
 | Rejected | 0 |
 | **Total** | **32** |
 
