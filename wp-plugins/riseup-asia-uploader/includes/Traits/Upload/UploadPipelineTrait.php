@@ -58,7 +58,7 @@ trait UploadPipelineTrait
 
         $this->logUploadInitiated($input);
 
-        $zipResult = $this->validateAndWriteZip($input['zip_content'], $input['slug']);
+        $zipResult = $this->validateAndWriteZip($input['zipContent'], $input['slug']);
         if ($zipResult instanceof WP_REST_Response) {
             return $zipResult;
         }
@@ -78,12 +78,12 @@ trait UploadPipelineTrait
 
         $this->logger->logUploadInitiated($input['slug'], array(
             'activate'       => $input['activate'],
-            'upload_source'  => $input['upload_source'],
-            'client_version' => $input['client_plugin_version'],
-            'file_size'      => strlen($input['zip_content']),
+            'uploadSource'   => $input['uploadSource'],
+            'clientVersion'  => $input['clientPluginVersion'],
+            'fileSize'       => strlen($input['zipContent']),
         ), array(
-            'plugin_version' => $input['client_plugin_version'] ?: PluginConfigType::Version->value,
-            'upload_source'  => $input['upload_source'],
+            'plugin_version' => $input['clientPluginVersion'] ?: PluginConfigType::Version->value,
+            'upload_source'  => $input['uploadSource'],
         ));
     }
 
@@ -99,11 +99,11 @@ trait UploadPipelineTrait
             $this->logger->logUpload($result[ResponseKeyType::Slug->value], array(
                 ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
                 ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
-                'file_size' => strlen($input['zip_content']),
+                'fileSize' => strlen($input['zipContent']),
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
             ), array(
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
-                'upload_source' => $input['upload_source'],
+                'upload_source' => $input['uploadSource'],
             ));
         }
 
@@ -112,7 +112,7 @@ trait UploadPipelineTrait
             ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
             ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
             ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
-            'upload_source' => $input['upload_source'],
+            'uploadSource' => $input['uploadSource'],
         ));
     }
 
@@ -124,7 +124,7 @@ trait UploadPipelineTrait
                 ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
                 ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
-                'upload_source' => $input['upload_source'],
+                'uploadSource' => $input['uploadSource'],
             ))
             ->toResponse();
     }

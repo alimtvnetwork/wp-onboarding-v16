@@ -103,13 +103,13 @@ trait UploadParserTrait {
 
         $this->fileLogger->debug('Upload parameters', array(
             'slug' => $slug, 'activate' => $activate,
-            'upload_source' => $uploadSource, 'client_version' => $clientPluginVersion,
-            'file_size' => strlen($zipContent),
+            'uploadSource' => $uploadSource, 'clientVersion' => $clientPluginVersion,
+            'fileSize' => strlen($zipContent),
         ));
 
         return array(
-            'zip_content' => $zipContent, 'slug' => $slug, 'activate' => $activate,
-            'upload_source' => $uploadSource, 'client_plugin_version' => $clientPluginVersion,
+            'zipContent' => $zipContent, 'slug' => $slug, 'activate' => $activate,
+            'uploadSource' => $uploadSource, 'clientPluginVersion' => $clientPluginVersion,
         );
     }
 
