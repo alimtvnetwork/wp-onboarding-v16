@@ -130,7 +130,7 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 		scanSiteRows,
 	)
 	if set.HasError() {
-		return apperror.FailSlice[models.Site](set.AppError())
+		return set.ToAppResultSlice()
 	}
 
 	items := set.Items()
@@ -150,7 +150,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 		id,
 	)
 	if result.HasError() {
-		return apperror.FailWrap[models.Site](result.AppError(), apperror.ErrDBRead, "failed to query site")
+		return apperror.Fail[models.Site](result.AppError())
 	}
 	if result.IsEmpty() {
 		return apperror.FailNew[models.Site](apperror.ErrNotFound, "site not found")
@@ -171,7 +171,7 @@ func (s *Service) GetByURL(ctx context.Context, siteURL string) apperror.Result[
 		normalizedURL,
 	)
 	if result.HasError() {
-		return apperror.FailWrap[models.Site](result.AppError(), apperror.ErrDBRead, "failed to query site by URL")
+		return apperror.Fail[models.Site](result.AppError())
 	}
 
 	// Not found is not an error for this method — return empty Result
@@ -216,6 +216,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		return apperror.Fail[models.Site](res.AppError())
 	}
 
+
 	s.log.Info("Site created", "id", res.LastInsertID, "name", input.Name, "url", normalizedURL)
 	return s.GetByID(ctx, res.LastInsertID)
 }
@@ -241,6 +242,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 	if res.HasError() {
 		return apperror.Fail[models.Site](res.AppError())
 	}
+
 
 	s.log.Info("Site updated", "id", id)
 	return s.GetByID(ctx, id)

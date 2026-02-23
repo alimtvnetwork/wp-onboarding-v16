@@ -224,6 +224,7 @@ func (s *Service) GetStats(ctx context.Context) apperror.Result[models.SiteHealt
 	if summariesResult.HasError() {
 		return apperror.Fail[models.SiteHealthStats](summariesResult.AppError())
 	}
+
 	summaries := summariesResult.Items()
 
 	stats := models.SiteHealthStats{TotalSites: len(summaries)}

@@ -130,7 +130,7 @@ func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginID, siteID int64
 		pluginID,
 	)
 	if set.HasError() {
-		return apperror.FailSlice[models.FileChange](set.AppError())
+		return set.ToAppResultSlice()
 	}
 
 	changes := set.Items()

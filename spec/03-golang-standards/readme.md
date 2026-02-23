@@ -253,11 +253,21 @@ m.Remove(key)       // deletes key; no-op if error state
 ### Service Usage Pattern
 
 ```go
-// ✅ Service method returning Result[T]
+// ✅ Same-type propagation — use bridge method (no unwrap+rewrap)
+func (s *SiteService) ListAll(ctx context.Context) apperror.ResultSlice[Site] {
+    set := dbutil.QueryMany[Site](ctx, s.db, query, scanSite)
+    if set.HasError() {
+        return set.ToAppResultSlice()
+    }
+
+    return apperror.OkSlice(set.Items())
+}
+
+// ✅ Single-row with post-processing — direct propagation via AppError()
 func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[Plugin] {
     dbResult := dbutil.QueryOne[Plugin](ctx, s.db, query, scanPlugin, id)
     if dbResult.HasError() {
-        return apperror.FailWrap[Plugin](dbResult.AppError(), ErrPluginGet, "get plugin by id")
+        return apperror.Fail[Plugin](dbResult.AppError())
     }
     if dbResult.IsEmpty() {
         return apperror.FailNew[Plugin](ErrNotFound, "plugin not found")
@@ -266,14 +276,13 @@ func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[P
     return apperror.Ok(dbResult.Value())
 }
 
-// ✅ Service method returning ResultSlice[T]
-func (s *SiteService) ListAll(ctx context.Context) apperror.ResultSlice[Site] {
-    dbResult := dbutil.QueryMany[Site](ctx, s.db, query, scanSite)
-    if dbResult.HasError() {
-        return apperror.FailSliceWrap[Site](dbResult.AppError(), ErrSiteList, "list sites")
+// ✅ Cross-type propagation — different T, Fail[NewT] is correct
+func (s *GitService) Pull(ctx context.Context, pluginID int64) apperror.Result[PullResult] {
+    pResult := s.pluginService.GetById(ctx, pluginID)
+    if pResult.HasError() {
+        return apperror.Fail[PullResult](pResult.AppError())
     }
-
-    return apperror.OkSlice(dbResult.Items())
+    // ...
 }
 
 // ✅ Handler consuming Result[T]
@@ -287,6 +296,24 @@ func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
     writeJSON(w, result.Value())
 }
 ```
+
+### Error Propagation Rules
+
+| Scenario | Pattern | Example |
+|----------|---------|---------|
+| Same T, dbutil→apperror slice | Bridge method | `set.ToAppResultSlice()` |
+| Same T, dbutil→apperror single | Bridge method | `result.ToAppResult()` |
+| Different T (cross-type) | `Fail[NewT](src.AppError())` | `apperror.Fail[BuildResult](pluginResult.AppError())` |
+| Same wrapper, same T | Direct return | `return existingResult` |
+
+> **Anti-pattern:** Never unwrap an error just to re-wrap it into the same type parameter:
+> ```go
+> // ❌ FORBIDDEN: redundant unwrap+rewrap (same T)
+> return apperror.FailSlice[Plugin](set.AppError())
+>
+> // ✅ REQUIRED: use bridge method
+> return set.ToAppResultSlice()
+> ```
 
 ---
 

@@ -116,9 +116,8 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Plugin] 
 		query,
 		scanPluginRows,
 	)
-
 	if set.HasError() {
-		return apperror.FailSlice[models.Plugin](set.AppError())
+		return set.ToAppResultSlice()
 	}
 
 	plugins := set.Items()
@@ -154,7 +153,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 		id,
 	)
 	if result.HasError() {
-		return apperror.FailWrap[models.Plugin](result.AppError(), apperror.ErrDatabaseQuery, "get plugin by Id")
+		return apperror.Fail[models.Plugin](result.AppError())
 	}
 	if result.IsEmpty() {
 		return apperror.FailNew[models.Plugin](apperror.ErrNotFound, "plugin not found")
@@ -220,6 +219,7 @@ func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (ap
 	if result.HasError() {
 		return apperror.Fail[models.Plugin](result.AppError()), true
 	}
+
 	if result.IsEmpty() {
 		return apperror.Result[models.Plugin]{}, false
 	}
@@ -264,6 +264,7 @@ func (s *Service) insertPlugin(ctx context.Context, input CreateInput) apperror.
 	if res.HasError() {
 		return apperror.Fail[models.Plugin](res.AppError())
 	}
+
 
 	s.log.Info("Plugin created", "pluginId", res.LastInsertId, "name", input.Name)
 	s.insertGitConfig(ctx, res.LastInsertId, input)
@@ -316,6 +317,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 	if res.HasError() {
 		return apperror.Fail[models.Plugin](res.AppError())
 	}
+
 
 	return s.GetById(ctx, id)
 }

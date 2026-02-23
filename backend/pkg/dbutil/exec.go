@@ -10,7 +10,7 @@ import (
 type ExecResult struct {
 	AffectedRows int64
 	LastInsertId int64
-	err          error
+	err          *apperror.AppError
 	stackTrace   string
 }
 
@@ -20,9 +20,9 @@ func (r ExecResult) HasError() bool { return r.err != nil }
 // IsSafe returns true when there is no error.
 func (r ExecResult) IsSafe() bool { return r.err == nil }
 
-// AppError returns the underlying error, or nil.
+// AppError returns the underlying *AppError, or nil.
 // Named AppError (not Error) to avoid confusion with Go's native error interface.
-func (r ExecResult) AppError() error { return r.err }
+func (r ExecResult) AppError() *apperror.AppError { return r.err }
 
 // StackTrace returns the captured stack trace if an error occurred.
 func (r ExecResult) StackTrace() string { return r.stackTrace }

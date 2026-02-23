@@ -277,6 +277,7 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) apperror.ResultSlice[
 	if pluginListResult.HasError() {
 		return apperror.FailSlice[SyncResult](pluginListResult.AppError())
 	}
+
 	pluginList := pluginListResult.Items()
 
 	for _, plug := range pluginList {

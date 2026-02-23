@@ -16,8 +16,8 @@ Database operations across Go and PHP utilize a generic wrapper pattern to centr
 | File | Contents |
 |------|----------|
 | `db.go` | `DB` struct wrapping `*sql.DB`, `New()` constructor, context-aware delegates |
-| `result.go` | `Result[T]` — single-item envelope with `IsDefined`, `IsEmpty`, `HasError`, `IsSafe`, `Value`, `AppError`, `StackTrace` |
-| `result_set.go` | `ResultSet[T]` — multi-row envelope with `HasAny`, `IsEmpty`, `Count`, `HasError`, `IsSafe`, `Items`, `First`, `AppError`, `StackTrace` |
+| `result.go` | `Result[T]` — single-item envelope with `IsDefined`, `IsEmpty`, `HasError`, `IsSafe`, `Value`, `AppError`, `StackTrace`, `ToAppResult` |
+| `result_set.go` | `ResultSet[T]` — multi-row envelope with `HasAny`, `IsEmpty`, `Count`, `HasError`, `IsSafe`, `Items`, `First`, `AppError`, `StackTrace`, `ToAppResultSlice` |
 | `query.go` | `QueryOne[T]`, `QueryMany[T]` — generic query functions using `RowScanner[T]` / `RowsScanner[T]` |
 | `exec.go` | `Exec` — non-query wrapper returning `ExecResult` with `AffectedRows`, `LastInsertId`, `AppError` |
 
@@ -29,7 +29,19 @@ Database operations across Go and PHP utilize a generic wrapper pattern to centr
 4. **sql.ErrNoRows** is not an error — `QueryOne` returns `Result[T]{defined: false}` so callers check `IsEmpty()`
 5. **All errors** auto-wrapped with `apperror.Wrap()` capturing stack traces
 6. **Scanner functions** (`RowScanner[T]`, `RowsScanner[T]`) provided by callers for type-safe row mapping
-7. **`.AppError()` method** (not `.Error()`) — unified naming across both `dbutil` and `apperror` result types to avoid confusion with Go's native `error` interface. The dbutil types return `error` while apperror types return `*AppError`, but both use the same method name for consistency.
+7. **`.AppError()` returns `*apperror.AppError`** — all dbutil types (`Result[T]`, `ResultSet[T]`, `ExecResult`) store and return the concrete `*apperror.AppError` type, not raw `error`. This ensures type-safe propagation to `apperror.Fail[T]()` / `apperror.FailSlice[T]()` without casts
+8. **Bridge methods** (`ToAppResult()`, `ToAppResultSlice()`) convert directly from `dbutil` → `apperror` result types for same-type `T`, eliminating redundant unwrap+rewrap. `ToAppResultSlice` normalizes nil items to empty slice
+
+### Error Propagation Rules
+
+| Scenario | Pattern |
+|----------|---------|
+| Same T, dbutil→apperror slice | `set.ToAppResultSlice()` |
+| Same T, dbutil→apperror single | `result.ToAppResult()` |
+| Different T (cross-type) | `apperror.Fail[NewT](src.AppError())` |
+| Same wrapper, same T | Direct return |
+
+**Anti-pattern:** Never unwrap an error just to re-wrap it with the same type parameter.
 
 ### Error Codes
 
