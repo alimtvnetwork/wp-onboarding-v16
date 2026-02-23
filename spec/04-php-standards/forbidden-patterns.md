@@ -270,6 +270,47 @@ return array(
 
 ---
 
+## 9. Magic Strings — Plugin Identity (`PluginConfigType`)
+
+> **Added:** 2026-02-23 — Eliminates hardcoded plugin name and log prefix strings scattered across the codebase.
+
+### Why This Matters
+
+The plugin name (`'Riseup Asia Uploader'`) and log prefix (`'[Riseup Asia]'`) are already centralized in `PluginConfigType::Name` and `PluginConfigType::LogPrefix`. Hardcoding these strings in class constants, email subjects, admin notices, or generated file comments creates maintenance debt — a rebrand or rename requires a full codebase grep instead of a single enum update.
+
+### Forbidden Patterns
+
+| # | ❌ Forbidden | ✅ Required | Why |
+|---|-------------|------------|-----|
+| 9.1 | `private const LOG_PREFIX = '[Riseup Asia] ClassName: '` | Derive from `PluginConfigType::LogPrefix->value` at runtime | Hardcoded prefix duplicates enum value |
+| 9.2 | `'[Riseup Asia] Plugin Boot Errors on ' . $site` | `PluginConfigType::LogPrefix->value . ' Plugin Boot Errors on ' . $site` | Email subject uses hardcoded prefix |
+| 9.3 | `'Riseup Asia Uploader — Boot Error Report'` | `PluginConfigType::Name->value . ' — Boot Error Report'` | User-facing text uses hardcoded name |
+| 9.4 | `'⚠️ Riseup Asia Uploader:'` in admin notices | `'⚠️ ' . PluginConfigType::Name->value . ':'` | Admin HTML uses hardcoded name |
+| 9.5 | `'# Riseup Asia Uploader - Security'` in generated files | `'# ' . PluginConfigType::Name->value . ' - Security'` | Generated file comments use hardcoded name |
+| 9.6 | `'from the Riseup Asia Uploader plugin.'` | `'from the ' . PluginConfigType::Name->value . ' plugin.'` | Email body uses hardcoded name |
+
+### PHP Const Limitation
+
+PHP `const` expressions cannot reference enum cases (`PluginConfigType::LogPrefix->value`). For classes that previously used `private const LOG_PREFIX = '[Riseup Asia] ClassName: '`, replace with a private static method:
+
+```php
+// ❌ FORBIDDEN — hardcoded prefix in const
+private const LOG_PREFIX = '[Riseup Asia] AdminMailer: ';
+
+// ✅ REQUIRED — derived from enum at runtime
+private static function logPrefix(): string {
+    return PluginConfigType::LogPrefix->value . ' AdminMailer: ';
+}
+```
+
+### Exception
+
+The `Autoloader` class is **exempt** — it loads before enums are available and explicitly cannot depend on `PluginConfigType`. Its hardcoded `LOG_PREFIX` is acceptable.
+
+PHPDoc `@package` headers and file-level doc block comments (e.g., `* Riseup Asia Uploader - File Logger`) are documentation, not logic — they are exempt from this rule.
+
+---
+
 ## Checklist Summary (Copy for PRs)
 
 ```
