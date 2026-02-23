@@ -11,7 +11,7 @@ import "time"
 
 // AutoPublishTriggeredData is broadcast when file-watcher auto-publish begins.
 type AutoPublishTriggeredData struct {
-	PluginID   int64  `json:"pluginId"`
+	PluginId   int64  `json:"pluginId"`
 	PluginName string `json:"pluginName"`
 	Changes    int    `json:"changes"`
 	Sites      int    `json:"sites"`
@@ -19,16 +19,16 @@ type AutoPublishTriggeredData struct {
 
 // AutoPublishFailedData is broadcast when auto-publish fails for a site.
 type AutoPublishFailedData struct {
-	PluginID int64  `json:"pluginId"`
-	SiteID   int64  `json:"siteId"`
+	PluginId int64  `json:"pluginId"`
+	SiteId   int64  `json:"siteId"`
 	SiteName string `json:"siteName"`
 	Error    string `json:"error"`
 }
 
 // AutoPublishCompleteData is broadcast when auto-publish succeeds for a site.
 type AutoPublishCompleteData struct {
-	PluginID     int64  `json:"pluginId"`
-	SiteID       int64  `json:"siteId"`
+	PluginId     int64  `json:"pluginId"`
+	SiteId       int64  `json:"siteId"`
 	SiteName     string `json:"siteName"`
 	FilesUpdated int    `json:"filesUpdated"`
 }
@@ -51,7 +51,7 @@ type FileChangeItem struct {
 
 // FileChangeBatchData is broadcast when the watcher detects file changes.
 type FileChangeBatchData struct {
-	PluginID    int64              `json:"pluginId"`
+	PluginId    int64              `json:"pluginId"`
 	TriggerType string            `json:"triggerType"`
 	Changes     []FileChangeItem  `json:"changes"`
 	Summary     FileChangeSummary `json:"summary"`
@@ -61,19 +61,19 @@ type FileChangeBatchData struct {
 
 // GitPullStartedData is broadcast when git pull begins.
 type GitPullStartedData struct {
-	PluginID   int64  `json:"pluginId"`
+	PluginId   int64  `json:"pluginId"`
 	PluginName string `json:"pluginName"`
 }
 
 // GitPullFailedData is broadcast when git pull fails.
 type GitPullFailedData struct {
-	PluginID int64  `json:"pluginId"`
+	PluginId int64  `json:"pluginId"`
 	Error    string `json:"error"`
 }
 
 // GitPullCompleteData is broadcast when git pull completes successfully.
 type GitPullCompleteData struct {
-	PluginID     int64  `json:"pluginId"`
+	PluginId     int64  `json:"pluginId"`
 	IsSuccess    bool   `json:"success"`
 	FilesChanged int    `json:"filesChanged"`
 	CommitHash   string `json:"commitHash"`
@@ -88,14 +88,14 @@ type GitPullAllCompleteData struct {
 
 // GitCommitCompleteData is broadcast when git commit completes.
 type GitCommitCompleteData struct {
-	PluginID   int64  `json:"pluginId"`
+	PluginId   int64  `json:"pluginId"`
 	IsSuccess  bool   `json:"success"`
 	CommitHash string `json:"commitHash"`
 }
 
 // GitPushCompleteData is broadcast when git push completes.
 type GitPushCompleteData struct {
-	PluginID  int64 `json:"pluginId"`
+	PluginId  int64 `json:"pluginId"`
 	IsSuccess bool  `json:"success"`
 	Pushed    int   `json:"pushed"`
 }
@@ -104,21 +104,21 @@ type GitPushCompleteData struct {
 
 // BuildStartedData is broadcast when a build command begins.
 type BuildStartedData struct {
-	PluginID   int64  `json:"pluginId"`
+	PluginId   int64  `json:"pluginId"`
 	PluginName string `json:"pluginName"`
 	Command    string `json:"command"`
 }
 
 // BuildFailedData is broadcast when a build command fails.
 type BuildFailedData struct {
-	PluginID int64  `json:"pluginId"`
+	PluginId int64  `json:"pluginId"`
 	Error    string `json:"error"`
 	ExitCode int    `json:"exitCode"`
 }
 
 // BuildCompleteData is broadcast when a build command succeeds.
 type BuildCompleteData struct {
-	PluginID  int64 `json:"pluginId"`
+	PluginId  int64 `json:"pluginId"`
 	IsSuccess bool  `json:"success"`
 	Duration  int64 `json:"duration"`
 }
@@ -127,8 +127,8 @@ type BuildCompleteData struct {
 
 // SyncStepProgressData is broadcast during sync operations with step granularity.
 type SyncStepProgressData struct {
-	PluginID int64  `json:"pluginId"`
-	SiteID   int64  `json:"siteId"`
+	PluginId int64  `json:"pluginId"`
+	SiteId   int64  `json:"siteId"`
 	Step     string `json:"step"`
 	Progress int    `json:"progress"`
 	Total    int    `json:"total"`
@@ -139,8 +139,8 @@ type SyncStepProgressData struct {
 
 // PublishStageProgressData is broadcast during publish with stage + step detail.
 type PublishStageProgressData struct {
-	PluginID int64  `json:"pluginId"`
-	SiteID   int64  `json:"siteId"`
+	PluginId int64  `json:"pluginId"`
+	SiteId   int64  `json:"siteId"`
 	Stage    string `json:"stage"`
 	Step     string `json:"step"`
 	Status   string `json:"status"`
@@ -151,8 +151,8 @@ type PublishStageProgressData struct {
 
 // PublishStageStatusData is broadcast for explicit stage status updates (may include details).
 type PublishStageStatusData struct {
-	PluginID int64           `json:"pluginId"`
-	SiteID   int64           `json:"siteId"`
+	PluginId int64           `json:"pluginId"`
+	SiteId   int64           `json:"siteId"`
 	Stage    string          `json:"stage"`
 	Step     string          `json:"step"`
 	Status   string          `json:"status"`
@@ -165,12 +165,12 @@ type PublishStageStatusData struct {
 // PublishStageCompleteData is broadcast when a publish stage completes.
 type PublishStageCompleteData struct {
 	Type      string          `json:"type"`
-	SessionID string          `json:"sessionId"`
+	SessionId string          `json:"sessionId"`
 	Stage     string          `json:"stage"`
 	Status    string          `json:"status"`
 	Duration  int64           `json:"duration"`
-	PluginID  int64           `json:"pluginId"`
-	SiteID    int64           `json:"siteId"`
+	PluginId  int64           `json:"pluginId"`
+	SiteId    int64           `json:"siteId"`
 	Details   json.RawMessage `json:"details,omitempty"`
 }
 
@@ -179,16 +179,16 @@ type PublishStageCompleteData struct {
 // ScheduledJobStartedData is broadcast when a scheduled publish job starts.
 type ScheduledJobStartedData struct {
 	Type       string `json:"type"`
-	JobID      string `json:"jobId"`
-	PluginID   int64  `json:"pluginId"`
+	JobId      string `json:"jobId"`
+	PluginId   int64  `json:"pluginId"`
 	PluginName string `json:"pluginName"`
 }
 
 // ScheduledJobCompleteData is broadcast when a scheduled publish job completes.
 type ScheduledJobCompleteData struct {
 	Type       string     `json:"type"`
-	JobID      string     `json:"jobId"`
-	PluginID   int64      `json:"pluginId"`
+	JobId      string     `json:"jobId"`
+	PluginId   int64      `json:"pluginId"`
 	PluginName string     `json:"pluginName"`
 	DurationMs int64      `json:"durationMs"`
 	NextRunAt  *time.Time `json:"nextRunAt,omitempty"`
@@ -196,8 +196,8 @@ type ScheduledJobCompleteData struct {
 
 // ScheduledJobSummary holds the shape of a single job in a jobs-update broadcast.
 type ScheduledJobSummary struct {
-	ID         string `json:"id"`
-	PluginID   int64  `json:"pluginId"`
+	Id         string `json:"id"`
+	PluginId   int64  `json:"pluginId"`
 	PluginName string `json:"pluginName"`
 	IsEnabled  bool   `json:"enabled"`
 	Schedule   string `json:"schedule"`
@@ -225,26 +225,26 @@ type QueueStatusData struct {
 
 // VersionCreatedData is broadcast when a new plugin version is recorded.
 type VersionCreatedData struct {
-	VersionID    int64  `json:"versionId"`
+	VersionId    int64  `json:"versionId"`
 	Version      string `json:"version"`
-	PluginID     int64  `json:"pluginId"`
-	SiteID       int64  `json:"siteId"`
+	PluginId     int64  `json:"pluginId"`
+	SiteId       int64  `json:"siteId"`
 	FilesUpdated int    `json:"filesUpdated"`
 	PublishType  string `json:"publishType"`
 }
 
 // RollbackStartedData is broadcast when a version rollback begins.
 type RollbackStartedData struct {
-	VersionID int64  `json:"versionId"`
+	VersionId int64  `json:"versionId"`
 	Version   string `json:"version"`
-	PluginID  int64  `json:"pluginId"`
-	SiteID    int64  `json:"siteId"`
+	PluginId  int64  `json:"pluginId"`
+	SiteId    int64  `json:"siteId"`
 }
 
 // RollbackCompleteData is broadcast when a version rollback finishes.
 type RollbackCompleteData struct {
 	IsSuccess      bool   `json:"success"`
-	VersionID      int64  `json:"versionId"`
+	VersionId      int64  `json:"versionId"`
 	Version        string `json:"version"`
 	RolledBackAt   string `json:"rolledBackAt"`
 	Implementation string `json:"implementation"`
@@ -255,28 +255,28 @@ type RollbackCompleteData struct {
 
 // E2ERunStartedData is broadcast when an E2E test run begins.
 type E2ERunStartedData struct {
-	RunID      string `json:"runId"`
+	RunId      string `json:"runId"`
 	TotalTests int    `json:"totalTests"`
 }
 
 // E2ETestStartedData is broadcast when an individual E2E test case begins.
 type E2ETestStartedData struct {
-	RunID    string `json:"runId"`
-	CaseID   string `json:"caseId"`
+	RunId    string `json:"runId"`
+	CaseId   string `json:"caseId"`
 	CaseName string `json:"caseName"`
 }
 
 // E2ETestCompletedData is broadcast when an individual E2E test case finishes.
 type E2ETestCompletedData struct {
-	RunID      string `json:"runId"`
-	CaseID     string `json:"caseId"`
+	RunId      string `json:"runId"`
+	CaseId     string `json:"caseId"`
 	Status     string `json:"status"`
 	DurationMs int64  `json:"durationMs"`
 }
 
 // E2ERunCompletedData is broadcast when an E2E test run finishes.
 type E2ERunCompletedData struct {
-	RunID  string `json:"runId"`
+	RunId  string `json:"runId"`
 	Status string `json:"status"`
 	Passed int    `json:"passed,omitempty"`
 	Failed int    `json:"failed,omitempty"`

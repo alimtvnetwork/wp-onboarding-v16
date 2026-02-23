@@ -19,7 +19,7 @@ func (s *Service) GetRemoteSnapshots(ctx context.Context, siteID int64) ([]wordp
 	snapshots, err := client.GetSnapshots()
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch snapshots").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	if snapshots == nil {
@@ -40,8 +40,8 @@ func (s *Service) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int6
 	snapshot, err := client.GetSnapshot(snapshotID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch snapshot").
-			WithSiteID(siteID).
-			WithSnapshotID(snapshotID)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID)
 	}
 
 	return snapshot, nil
@@ -57,7 +57,7 @@ func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts w
 	result, err := client.CreateSnapshot(opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to create snapshot").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	s.log.Info("Remote snapshot created", "siteId", siteID)
@@ -69,13 +69,13 @@ func (s *Service) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "failed to create WordPress client for snapshot deletion").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	if err := client.DeleteSnapshot(snapshotID); err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "failed to delete snapshot").
-			WithSiteID(siteID).
-			WithSnapshotID(snapshotID)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID)
 	}
 
 	s.log.Info("Remote snapshot deleted", "siteId", siteID, "snapshotId", snapshotID)
@@ -92,8 +92,8 @@ func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID 
 	result, err := client.RestoreSnapshot(snapshotID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to restore snapshot").
-			WithSiteID(siteID).
-			WithSnapshotID(snapshotID)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID)
 	}
 
 	s.log.Info("Remote snapshot restored", "siteId", siteID, "snapshotId", snapshotID)
@@ -110,7 +110,7 @@ func (s *Service) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (
 	settings, err := client.GetSnapshotSettings()
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch snapshot settings").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	return settings, nil
@@ -126,7 +126,7 @@ func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64
 	result, err := client.UpdateSnapshotSettings(settings)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to update snapshot settings").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	s.log.Info("Remote snapshot settings updated", "siteId", siteID)
@@ -143,7 +143,7 @@ func (s *Service) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) 
 	providers, err := client.GetSnapshotProviders()
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch snapshot providers").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	return providers, nil
@@ -159,7 +159,7 @@ func (s *Service) GetRemoteAvailableTables(ctx context.Context, siteID int64) ([
 	tables, err := client.GetAvailableTables()
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch available tables").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	s.log.Debug("Remote available tables fetched", "siteId", siteID, "count", len(tables))
@@ -177,8 +177,8 @@ func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 	resp, err := client.ExportSnapshot(snapshotID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to export snapshot").
-			WithSiteID(siteID).
-			WithSnapshotID(snapshotID)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID)
 	}
 
 	s.log.Info("Remote snapshot export started", "siteId", siteID, "snapshotId", snapshotID)
@@ -197,22 +197,22 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 	meta, err := client.DownloadSnapshotZip(snapshotID)
 	if err != nil {
 		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to request snapshot download").
-			WithSiteID(siteID).
-			WithSnapshotID(snapshotID)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID)
 	}
 
 	if meta.URL == "" {
 		return nil, nil, apperror.New(apperror.ErrInternal, "no download URL in response").
-			WithSiteID(siteID).
-			WithSnapshotID(snapshotID)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID)
 	}
 
 	// Step 2: Stream the ZIP file from the download URL
 	zipResp, err := client.StreamSnapshotZip(meta.URL)
 	if err != nil {
 		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
-			WithSiteID(siteID).
-			WithSnapshotID(snapshotID).
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID).
 			WithURL(meta.URL)
 	}
 
@@ -246,7 +246,7 @@ func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, op
 	result, err := client.FullBackup(opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger full backup").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	s.log.Info("Remote full backup triggered", "siteId", siteID)
@@ -263,7 +263,7 @@ func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID in
 	result, err := client.IncrementalBackup(opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger incremental backup").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	s.log.Info("Remote incremental backup triggered", "siteId", siteID)
@@ -280,7 +280,7 @@ func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPat
 	result, err := client.ImportSnapshot(zipPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to import snapshot").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	s.log.Info("Remote snapshot imported", "siteId", siteID)
@@ -297,7 +297,7 @@ func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts
 	result, err := client.CleanupSnapshots(opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger snapshot cleanup").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	s.log.Info("Remote snapshot cleanup triggered", "siteId", siteID)

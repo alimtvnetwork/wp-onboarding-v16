@@ -97,12 +97,12 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (*ws.RollbackCo
 	ver, err := s.db.GetPluginVersionByID(versionID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
-			WithVersionID(versionID)
+			WithVersionId(versionID)
 	}
 
 	if ver.BackupPath == "" {
 		return nil, apperror.New(apperror.ErrVersionNoBackup, "no backup available for this version").
-			WithVersionID(versionID)
+			WithVersionId(versionID)
 	}
 
 	pluginID := ver.PluginID
