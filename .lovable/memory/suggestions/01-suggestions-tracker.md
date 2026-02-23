@@ -10,8 +10,8 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-| S-039 | 2026-02-23 | Low | Audit | open | Fix FrameBuilder.php: remove empty line after `<?php` (Rule 13) and move namespace before ABSPATH guard |
-| S-040 | 2026-02-23 | Low | Audit | open | Replace Autoloader LOG_PREFIX hardcoded string with PluginConfigType::LogPrefix->value |
+
+*No open suggestions.*
 
 ---
 
@@ -57,6 +57,8 @@
 | S-036 | Add SEPARATOR_WIDTH constant to AdminMailer | 2026-02-23 | Replaced 3 magic `50` values with `self::SEPARATOR_WIDTH` |
 | S-037 | Replace gmdate() in AgentRemoteActionTraitTest | 2026-02-23 | Done as part of S-033 |
 | S-038 | Add DateHelper::relativeDayKey() helper | 2026-02-23 | Extracted Today/Yesterday logic from admin-logs.php into reusable method |
+| S-039 | Fix FrameBuilder.php Rule 13 + namespace order | 2026-02-23 | Removed empty line after `<?php`, moved namespace before ABSPATH guard |
+| S-040 | Autoloader LOG_PREFIX — closed as N/A | 2026-02-23 | Autoloader.php is exempt (self-contained bootstrapping dependency) |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -72,8 +74,9 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 2 |
-| Completed | 38 |
+| Open | 0 |
+| Completed | 39 |
+| Closed N/A | 1 |
 | Rejected | 0 |
 | **Total** | **40** |
 
