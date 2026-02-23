@@ -253,7 +253,7 @@ return $execResult->affectedRows() > 0;
 
 ### Go — Propagation Rules
 
-> `.Error()` returns `*AppError` — stack trace and diagnostic context are always preserved.
+> `.AppError()` returns `*AppError` — stack trace and diagnostic context are always preserved. Named `AppError()` (not `Error()`) to avoid confusion with Go's native `error` interface.
 
 ```go
 // ✅ Same-type → direct return (Result, ResultSlice, ResultMap)
@@ -264,11 +264,11 @@ plugin := result.Value()
 // ✅ Cross-type → Fail/FailSlice/FailMap IS needed
 plugins := s.pluginService.List(ctx)       // ResultSlice[Plugin]
 if plugins.HasError() {
-    return apperror.FailSlice[SyncResult](plugins.Error())
+    return apperror.FailSlice[SyncResult](plugins.AppError())
 }
 
 // ❌ WRONG — redundant (same type re-wrapped)
-if result.HasError() { return apperror.Fail[Plugin](result.Error()) }
+if result.HasError() { return apperror.Fail[Plugin](result.AppError()) }
 
 // ✅ Collection access — guard via IsSafe()
 if result.IsSafe() {
@@ -278,7 +278,7 @@ if result.IsSafe() {
 // ✅ Adapter unwrap — Result[T] → (*T, error)
 func (a *Adapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
     result := a.Service.GetById(ctx, id)
-    if result.HasError() { return nil, result.Error() }
+    if result.HasError() { return nil, result.AppError() }
     v := result.Value()
     return &v, nil
 }

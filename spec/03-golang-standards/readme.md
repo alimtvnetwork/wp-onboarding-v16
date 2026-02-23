@@ -188,7 +188,7 @@ result.IsEmpty()     // true if no value was set
 // Access methods
 result.Value()             // returns T; panics if HasError
 result.ValueOr(fallback)   // returns T or fallback if empty
-result.Error()             // returns *AppError or nil
+result.AppError()          // returns *AppError or nil (named AppError to avoid confusion with Go's error)
 result.Unwrap()            // bridges to (T, error) pattern
 ```
 
@@ -214,7 +214,7 @@ set.Items()        // returns []T (nil if error)
 set.First()        // Result[T] for first item
 set.Last()         // Result[T] for last item
 set.GetAt(index)   // Result[T] at index; empty if out of bounds
-set.Error()        // returns *AppError or nil
+set.AppError()     // returns *AppError or nil
 
 // Mutation methods
 set.Append(items...)  // adds items; no-op if in error state
@@ -243,7 +243,7 @@ m.Items()        // returns map[K]V (nil if error)
 m.Get(key)       // Result[V] for key; empty if not found
 m.Keys()         // returns []K
 m.Values()       // returns []V
-m.Error()        // returns *AppError or nil
+m.AppError()     // returns *AppError or nil
 
 // Mutation methods
 m.Set(key, value)   // adds/updates; no-op if error state
@@ -257,7 +257,7 @@ m.Remove(key)       // deletes key; no-op if error state
 func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[Plugin] {
     dbResult := dbutil.QueryOne[Plugin](ctx, s.db, query, scanPlugin, id)
     if dbResult.HasError() {
-        return apperror.FailWrap[Plugin](dbResult.Error(), ErrPluginGet, "get plugin by id")
+        return apperror.FailWrap[Plugin](dbResult.AppError(), ErrPluginGet, "get plugin by id")
     }
     if dbResult.IsEmpty() {
         return apperror.FailNew[Plugin](ErrNotFound, "plugin not found")
@@ -270,7 +270,7 @@ func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[P
 func (s *SiteService) ListAll(ctx context.Context) apperror.ResultSlice[Site] {
     dbResult := dbutil.QueryMany[Site](ctx, s.db, query, scanSite)
     if dbResult.HasError() {
-        return apperror.FailSliceWrap[Site](dbResult.Error(), ErrSiteList, "list sites")
+        return apperror.FailSliceWrap[Site](dbResult.AppError(), ErrSiteList, "list sites")
     }
 
     return apperror.OkSlice(dbResult.Items())
@@ -280,7 +280,7 @@ func (s *SiteService) ListAll(ctx context.Context) apperror.ResultSlice[Site] {
 func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
     result := h.plugins.GetById(r.Context(), pluginId)
     if result.HasError() {
-        writeError(w, result.Error())
+        writeError(w, result.AppError())
         return
     }
 
