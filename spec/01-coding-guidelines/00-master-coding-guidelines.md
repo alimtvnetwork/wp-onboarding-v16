@@ -247,7 +247,7 @@ var variantLabels = [...]string{
 | R2 | Zero nested `if` — absolute ban |
 | R3 | Extract complex conditions into named booleans |
 | R4 | Blank line before `return`/`throw` when preceded by statements |
-| R5 | Blank line after `}` when followed by more code |
+| R5 | Blank line after `}` when followed by more code (5a: if, 5b: loops, 5c: try/switch) |
 | R6 | Max 15 lines per function body |
 | R7 | Zero nested `if` reinforcement |
 | R9a | Function signatures >2 params → one per line with trailing comma |

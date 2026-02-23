@@ -80,6 +80,7 @@ trait DatabaseConvenienceTrait {
         foreach (array_keys($data) as $col) {
             $setParts[] = "{$col} = ?";
         }
+
         $setClause = implode(', ', $setParts);
         $sql       = "UPDATE {$table} SET {$setClause} WHERE {$where}";
 
