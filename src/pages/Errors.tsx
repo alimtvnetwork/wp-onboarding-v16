@@ -71,7 +71,7 @@ export default function Errors() {
     }));
 
     const errorNotifications: DisplayError[] = notifications
-      .filter((n) => n.type === "error")
+      .filter((n) => n.type === "Error")
       .map((n) => ({
         id: n.id,
         code: "NOTIF",

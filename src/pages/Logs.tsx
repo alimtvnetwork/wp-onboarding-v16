@@ -282,10 +282,10 @@ export default function Logs() {
 
   // Convert persisted notifications to LogEntry format
   const notificationLevelMap: Record<NotificationType, LogEntry["level"]> = {
-    success: "info",
-    error: "error",
-    warning: "warn",
-    info: "info",
+    Success: "info",
+    Error: "error",
+    Warning: "warn",
+    Info: "info",
   };
 
   const notificationLogs = useMemo<LogEntry[]>(() => {

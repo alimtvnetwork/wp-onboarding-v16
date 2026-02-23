@@ -32,11 +32,11 @@ import {
 } from "@/lib/activityUtils";
 
 const TYPE_ICONS: Record<ActivityType, React.ElementType> = {
-  publish: Upload,
-  snapshot: Database,
-  plugin: Package,
-  config: Settings2,
-  connection: Plug,
+  Publish: Upload,
+  Snapshot: Database,
+  Plugin: Package,
+  Config: Settings2,
+  Connection: Plug,
 };
 
 export default function ActivityFeed() {

@@ -1528,7 +1528,7 @@ export default function Plugins() {
       <BackupProgressDialog
         open={showBackupProgress}
         onOpenChange={setShowBackupProgress}
-        operation="create"
+        operation="Create"
         pluginName={backupPlugin?.name}
         mappingId={backupPlugin?.id}
         onComplete={(success) => {

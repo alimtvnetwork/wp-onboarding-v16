@@ -802,7 +802,7 @@ export interface E2ERunSummary {
 }
 
 // Activity Feed Types
-export type ActivityType = "publish" | "snapshot" | "plugin" | "config" | "connection";
+export type ActivityType = "Publish" | "Snapshot" | "Plugin" | "Config" | "Connection";
 
 // ---------------------------------------------------------------------------
 // Per-type metadata interfaces (discriminated by ActivityEntry.type)
@@ -869,27 +869,27 @@ interface ActivityEntryBase {
 }
 
 export interface PublishActivityEntry extends ActivityEntryBase {
-  type: "publish";
+  type: "Publish";
   metadata: PublishMetadata;
 }
 
 export interface SnapshotActivityEntry extends ActivityEntryBase {
-  type: "snapshot";
+  type: "Snapshot";
   metadata: SnapshotMetadata;
 }
 
 export interface PluginActivityEntry extends ActivityEntryBase {
-  type: "plugin";
+  type: "Plugin";
   metadata: PluginMetadata;
 }
 
 export interface ConfigActivityEntry extends ActivityEntryBase {
-  type: "config";
+  type: "Config";
   metadata: ConfigMetadata;
 }
 
 export interface ConnectionActivityEntry extends ActivityEntryBase {
-  type: "connection";
+  type: "Connection";
   metadata: ConnectionMetadata;
 }
 
