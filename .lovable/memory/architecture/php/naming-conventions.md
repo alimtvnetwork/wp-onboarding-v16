@@ -1,7 +1,26 @@
 # Memory: architecture/php/naming-conventions
-Updated: 2026-02-13
+Updated: 2026-02-23
 
 PHP naming follows a strict pattern: Classes/Interfaces/Traits use PascalCase; methods and variables use camelCase (e.g., $isActive, processUpload()), intentionally overriding WordPress snake_case for internal consistency. This camelCase convention applies to all REST route callback strings and WordPress hook references (e.g., array($this, 'registerRoutes')). However, WordPress-registered identifiers like hook names, settings groups, and AJAX action slugs remain snake_case to match core API contracts.
+
+## Migration Status
+
+Batches A–E are **complete** as of 2026-02-23. All instance/static properties, local variables, method parameters, and internal array keys across the entire `includes/` directory have been converted to camelCase. A codebase-wide audit confirmed zero remaining actionable snake_case identifiers.
+
+## Confirmed Exemptions
+
+The following categories are **exempt** from camelCase and must retain their original casing:
+
+- **WordPress globals:** `$wp_reset`, `$wpdb`, and other core globals remain snake_case; must be converted to camelCase immediately upon assignment to a local/property (e.g., `$this->wpReset = $wp_reset`).
+- **WordPress core hooks/filters:** Hook names registered with `add_action`/`add_filter` (e.g., `'admin_notices'`, `'wp_mail'`).
+- **WP-Cron argument keys:** Keys like `'snapshot_type'`, `'master_snapshot_id'` passed through `wp_schedule_single_event`.
+- **wp_options settings keys:** Internal settings storage keys (e.g., `'retention_type'`).
+- **WordPress transients:** Core transient names.
+- **PHP superglobals:** `$_GET`, `$_POST`, `$_SERVER`, etc.
+- **HTML form `name` attributes** and **URL query parameters.**
+- **JSON manifest keys:** External-facing keys (e.g., `'format_version'`).
+- **SQLite internal metadata keys.**
+- **Autoloader.php** and **PHPDoc `@package`/`@since` headers:** Exempt as they must remain self-contained or serve static documentation.
 
 ## Boolean Property Naming
 
