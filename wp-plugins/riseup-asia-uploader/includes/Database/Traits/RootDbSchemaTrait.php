@@ -194,8 +194,8 @@ trait RootDbSchemaTrait {
 
         $this->log(LogLevelType::Info->value, 'Metadata populated', array(
             ResponseKeyType::Title->value => $config[ResponseKeyType::Title->value] ?? 'Untitled',
-            'mysql_version' => $mysqlVersion,
-            'wp_version' => $wpVersion,
+            'mysqlVersion' => $mysqlVersion,
+            'wpVersion' => $wpVersion,
         ));
     }
 

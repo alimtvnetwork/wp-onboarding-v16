@@ -94,7 +94,7 @@ trait SnapshotExportHandlerTrait {
     }
 
     private function buildDownloadResponse(int $snapshotId) {
-        $this->fileLogger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
+        $this->fileLogger->info('Snapshot download requested', array('snapshotId' => $snapshotId));
 
         $this->logger->logPluginAction(
             ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,

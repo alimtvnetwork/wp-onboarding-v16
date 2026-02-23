@@ -173,7 +173,7 @@ trait DetectorSettingsTrait {
         $result = update_option(OptionNameType::SnapshotSettings->value, $updated);
 
         if ($result) {
-            $this->logger->info('[SNAPSHOT] Settings updated', array('changed_keys' => array_keys(array_diff_assoc($settings, $current))));
+            $this->logger->info('[SNAPSHOT] Settings updated', array('changedKeys' => array_keys(array_diff_assoc($settings, $current))));
         }
 
         return $result;

@@ -125,7 +125,7 @@ trait UploadZipTrait
         }
 
         $dupDir = $pluginsDir . '/' . $pdir;
-        $this->fileLogger->warn('Duplicate plugin folder detected', array('duplicate_dir' => $pdir, 'target_slug' => $slug));
+        $this->fileLogger->warn('Duplicate plugin folder detected', array('duplicateDir' => $pdir, 'targetSlug' => $slug));
 
         if (is_plugin_active($pfile)) {
             deactivate_plugins($pfile);
@@ -160,14 +160,14 @@ trait UploadZipTrait
         $fileSize,
     ) {
         $oldVersion = PluginConfigType::Version->value;
-        $this->fileLogger->info('Self-update detected, pre-logging activity', array('old_version' => $oldVersion));
+        $this->fileLogger->info('Self-update detected, pre-logging activity', array('oldVersion' => $oldVersion));
 
         $this->logger->logPluginAction(
             ActionType::Upload->value, $slug, StatusType::Success->value,
             array(
                 ResponseKeyType::IsUpdate->value => true, ResponseKeyType::IsSelfUpdate->value => true,
-                'old_version' => $oldVersion, 'new_version' => $clientVersion,
-                'file_size' => $fileSize, 'note' => 'Pre-logged before self-update to ensure audit trail',
+                'oldVersion' => $oldVersion, 'newVersion' => $clientVersion,
+                'fileSize' => $fileSize, 'note' => 'Pre-logged before self-update to ensure audit trail',
             ),
             null,
             array(ResponseKeyType::PluginVersion->value => $clientVersion ?: $oldVersion, 'uploadSource' => $uploadSource)

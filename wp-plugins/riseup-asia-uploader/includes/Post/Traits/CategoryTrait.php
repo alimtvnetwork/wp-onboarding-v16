@@ -57,7 +57,7 @@ trait CategoryTrait {
                 'slug' => $args['slug'] ?? '',
             ));
 
-            $this->fileLogger->info('Category created', array('term_id' => $result['term_id']));
+            $this->fileLogger->info('Category created', array('termId' => $result['term_id']));
             return ResultHelper::ok(array(
                 ResponseKeyType::Category->value => $this->formatCategory(get_term($result['term_id'], 'category')),
             ));
