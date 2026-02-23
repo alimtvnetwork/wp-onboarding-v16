@@ -10,7 +10,6 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-| S-021 | 2026-02-21 | Medium | Formatting sweep | open | Fix R12 + formatting violations in Core/Plugin.php, Admin/Admin.php, Logging/FileLogger.php |
 | S-022 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in Templates/*.php (admin templates) |
 | S-023 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in root files (riseup-asia-uploader.php, Autoloader.php) |
 | S-024 | 2026-02-21 | Medium | PHP-Go audit | open | Deduplicate Database::DEFAULT_LIMIT/MAX_LIMIT with PaginationConfigType enum values |
@@ -18,8 +17,6 @@
 | S-026 | 2026-02-21 | Low | Plan review | open | Update TypeScript frontend enum string values to PascalCase (Phase 3) |
 | S-027 | 2026-02-21 | Low | Plan review | open | Fix admin-errors.php template magic strings (Phase 7D — LogLevelType casing) |
 | S-028 | 2026-02-21 | Low | Memory review | open | Update core-enum-inventory memory to include LogColumnType enum (16 column cases) |
-| S-031 | 2026-02-22 | Medium | Deep scan | open | Fix ActivationHandler: R12, R4, indentation bug at line 105 |
-| S-032 | 2026-02-22 | Low | Deep scan | open | Remove dead loadDependencies() method and redundant class_exists check in ActivationHandler |
 
 ---
 
@@ -49,6 +46,9 @@
 | S-020 | Fix ErrorHandling/*.php formatting | 2026-02-22 | All 4 files verified compliant — no changes needed |
 | S-029 | Add ABSPATH guards to enum files | 2026-02-23 | Audit confirmed all 53 enum files already have guards — no changes needed |
 | S-030 | Add ABSPATH guards to Logging/ErrorHandling files | 2026-02-23 | Audit confirmed all 13 files already have guards — no changes needed |
+| S-021 | Fix R12 + formatting in Plugin.php, Admin.php, FileLogger.php | 2026-02-23 | Audit confirmed all 3 files already compliant — no changes needed |
+| S-031 | Fix ActivationHandler R12, R4, indentation | 2026-02-23 | Audit confirmed all violations already resolved — no changes needed |
+| S-032 | Remove dead loadDependencies() + redundant class_exists | 2026-02-23 | Audit confirmed both already removed — no changes needed |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -64,8 +64,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 10 |
-| Completed | 22 |
+| Open | 7 |
+| Completed | 25 |
 | Rejected | 0 |
 | **Total** | **32** |
 
