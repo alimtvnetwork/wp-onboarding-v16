@@ -19,7 +19,7 @@ use RiseupAsia\Enums\HttpStatusType;
 trait EnvelopeFactoryTrait {
     public static function success(string $message = 'OK', int $code = HttpStatusType::Ok->value): static {
         $builder = new self();
-        $builder->is_success = true;
+        $builder->isSuccess = true;
         $builder->code = $code;
         $builder->message = $message;
 
@@ -32,10 +32,10 @@ trait EnvelopeFactoryTrait {
         ?Throwable $exception = null,
     ): static {
         $builder = new self();
-        $builder->is_success = false;
+        $builder->isSuccess = false;
         $builder->code = $code;
         $builder->message = $message;
-        $builder->has_errors = true;
+        $builder->hasErrors = true;
 
         $errors = array(
             'BackendMessage' => $message,
@@ -56,8 +56,8 @@ trait EnvelopeFactoryTrait {
     }
 
     private static function buildExceptionErrors(array $errors, Throwable $exception): array {
-        $trace_lines = explode("\n", $exception->getTraceAsString());
-        $errors['DelegatedServiceErrorStack'] = $trace_lines;
+        $traceLines = explode("\n", $exception->getTraceAsString());
+        $errors['DelegatedServiceErrorStack'] = $traceLines;
 
         if (class_exists(FrameBuilder::class)) {
             $frames = FrameBuilder::exceptionToFrames($exception);

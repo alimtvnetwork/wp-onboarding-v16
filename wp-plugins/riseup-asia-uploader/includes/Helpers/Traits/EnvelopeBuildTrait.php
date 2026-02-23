@@ -30,8 +30,8 @@ trait EnvelopeBuildTrait {
 
     private function buildStatusBlock(): array {
         return array(
-            'IsSuccess' => $this->is_success,
-            'IsFailed'  => !$this->is_success,
+            'IsSuccess' => $this->isSuccess,
+            'IsFailed'  => !$this->isSuccess,
             'Code'      => $this->code,
             'Message'   => $this->message,
             'Timestamp' => DateHelper::nowUtc(),
@@ -39,25 +39,25 @@ trait EnvelopeBuildTrait {
     }
 
     private function buildAttributesBlock(): array {
-        $result_count = count($this->results);
+        $resultCount = count($this->results);
 
         return array(
-            'RequestedAt' => $this->requested_at,
-            'RequestDelegatedAt' => $this->delegated_at,
-            'HasAnyErrors' => $this->has_errors,
-            'IsSingle' => ($result_count === 1),
-            'IsMultiple' => ($result_count > 1),
-            'TotalRecords' => $this->total_records > 0 ? $this->total_records : $result_count,
-            'PerPage' => $this->per_page,
-            'TotalPages' => $this->total_pages,
-            'CurrentPage' => $this->current_page,
+            'RequestedAt' => $this->requestedAt,
+            'RequestDelegatedAt' => $this->delegatedAt,
+            'HasAnyErrors' => $this->hasErrors,
+            'IsSingle' => ($resultCount === 1),
+            'IsMultiple' => ($resultCount > 1),
+            'TotalRecords' => $this->totalRecords > 0 ? $this->totalRecords : $resultCount,
+            'PerPage' => $this->perPage,
+            'TotalPages' => $this->totalPages,
+            'CurrentPage' => $this->currentPage,
         );
     }
 
     private function appendOptionalSections(array &$envelope) {
         if ($this->navigation !== null) { $envelope['Navigation'] = $this->navigation; }
         if ($this->errors !== null) { $envelope['Errors'] = $this->errors; }
-        if ($this->methods_stack !== null) { $envelope['MethodsStack'] = $this->methods_stack; }
+        if ($this->methodsStack !== null) { $envelope['MethodsStack'] = $this->methodsStack; }
     }
 
     public function toResponse() {

@@ -15,24 +15,24 @@ if (!defined('ABSPATH')) {
 trait EnvelopeSettersTrait {
     public function setResults(array $results): static { $this->results = $results; return $this; }
     public function setSingleResult(array $item): static { $this->results = array($item); return $this; }
-    public function setRequestedAt(string $path): static { $this->requested_at = $path; return $this; }
+    public function setRequestedAt(string $path): static { $this->requestedAt = $path; return $this; }
 
     public function autoDetectRequestedAt(): static {
-        if (isset($_SERVER['REQUEST_URI'])) { $this->requested_at = $_SERVER['REQUEST_URI']; }
+        if (isset($_SERVER['REQUEST_URI'])) { $this->requestedAt = $_SERVER['REQUEST_URI']; }
         return $this;
     }
 
-    public function setDelegatedAt(string $url): static { $this->delegated_at = $url; return $this; }
+    public function setDelegatedAt(string $url): static { $this->delegatedAt = $url; return $this; }
 
     public function setPagination(
         int $totalRecords,
         int $perPage,
         int $currentPage,
     ): static {
-        $this->total_records = $totalRecords;
-        $this->per_page = $perPage;
-        $this->current_page = $currentPage;
-        $this->total_pages = ($perPage > 0) ? (int) ceil($totalRecords / $perPage) : 0;
+        $this->totalRecords = $totalRecords;
+        $this->perPage = $perPage;
+        $this->currentPage = $currentPage;
+        $this->totalPages = ($perPage > 0) ? (int) ceil($totalRecords / $perPage) : 0;
         return $this;
     }
 
@@ -50,13 +50,13 @@ trait EnvelopeSettersTrait {
     }
 
     public function setMethodsStack(array $backendStack, array $frontendStack = array()): static {
-        $this->methods_stack = array('Backend' => $backendStack, 'Frontend' => $frontendStack);
+        $this->methodsStack = array('Backend' => $backendStack, 'Frontend' => $frontendStack);
         return $this;
     }
 
     public function setErrors(array $errors): static {
         $this->errors = $errors;
-        $this->has_errors = true;
+        $this->hasErrors = true;
         return $this;
     }
 }

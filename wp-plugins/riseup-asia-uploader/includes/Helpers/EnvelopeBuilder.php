@@ -22,18 +22,18 @@ class EnvelopeBuilder {
     use EnvelopeSettersTrait;
     use EnvelopeBuildTrait;
 
-    private $is_success = true;
+    private $isSuccess = true;
     private $code = 200; // Matches HttpStatusType::Ok->value; literal required for PHP property default
     private $message = 'OK';
     private $results = array();
-    private $requested_at = '';
-    private $delegated_at = '';
-    private $has_errors = false;
-    private $total_records = 0;
-    private $per_page = 0;
-    private $total_pages = 0;
-    private $current_page = 0;
+    private $requestedAt = '';
+    private $delegatedAt = '';
+    private $hasErrors = false;
+    private $totalRecords = 0;
+    private $perPage = 0;
+    private $totalPages = 0;
+    private $currentPage = 0;
     private $navigation = null;
     private $errors = null;
-    private $methods_stack = null;
+    private $methodsStack = null;
 }
