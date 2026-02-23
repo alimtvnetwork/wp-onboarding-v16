@@ -25,8 +25,8 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
     use NativeTableExportTrait;
     use NativeSnapshotRecordTrait;
 
-    protected string $provider_id = SnapshotProviderType::Native->value;
-    protected string $provider_name = 'Native SQLite';
+    protected string $providerId = SnapshotProviderType::Native->value;
+    protected string $providerName = 'Native SQLite';
     private wpdb $wpdb;
 
     public function __construct(FileLogger $logger, Database $db) {

@@ -12,8 +12,8 @@ abstract class SnapshotProviderInterface {
     use SnapshotProviderHelpersTrait;
     use SnapshotProviderLockTrait;
 
-    protected string $provider_id;
-    protected string $provider_name;
+    protected string $providerId;
+    protected string $providerName;
     protected FileLogger $logger;
     protected Database $db;
 
@@ -22,8 +22,8 @@ abstract class SnapshotProviderInterface {
         $this->db = $db;
     }
 
-    public function getProviderId(): string { return $this->provider_id; }
-    public function getProviderName(): string { return $this->provider_name; }
+    public function getProviderId(): string { return $this->providerId; }
+    public function getProviderName(): string { return $this->providerName; }
 
     abstract public function isAvailable(): bool;
     abstract public function getCapabilities(): array;

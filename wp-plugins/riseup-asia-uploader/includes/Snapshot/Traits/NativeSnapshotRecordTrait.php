@@ -74,7 +74,7 @@ trait NativeSnapshotRecordTrait {
             'wp_version'     => get_bloginfo('version'),
             'site_url'       => get_site_url(),
             'php_version'    => PHP_VERSION,
-            'provider'       => $this->provider_id,
+            'provider'       => $this->providerId,
             'plugin_version' => PluginConfigType::Version->value,
         );
 
@@ -97,7 +97,7 @@ trait NativeSnapshotRecordTrait {
             'Sequence'      => $sequence,
             'Filename'      => $filename . '.sqlite',
             'Filepath'      => $filepath,
-            'Provider'      => $this->provider_id,
+            'Provider'      => $this->providerId,
             'Scope'         => $scope,
             'TablesJson'    => json_encode($tables),
             'TriggerSource' => $trigger,

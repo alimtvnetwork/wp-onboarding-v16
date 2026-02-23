@@ -20,8 +20,8 @@ use RiseupAsia\Logging\FileLogger;
 class SnapshotProviderUpdraft extends SnapshotProviderInterface {
     use UpdraftCrudTrait;
 
-    protected string $provider_id = SnapshotProviderType::Updraft->value;
-    protected string $provider_name = 'UpdraftPlus';
+    protected string $providerId = SnapshotProviderType::Updraft->value;
+    protected string $providerName = 'UpdraftPlus';
     private mixed $updraft = null;
 
     public function __construct(FileLogger $logger, Database $db) {

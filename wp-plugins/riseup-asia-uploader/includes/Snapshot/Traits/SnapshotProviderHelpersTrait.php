@@ -23,16 +23,16 @@ trait SnapshotProviderHelpersTrait {
         string $message,
         array $context = array(),
     ): void {
-        $prefix = '[SNAPSHOT] [' . strtoupper($this->provider_id) . ']';
-        $full_message = $prefix . ' ' . $message;
+        $prefix = '[SNAPSHOT] [' . strtoupper($this->providerId) . ']';
+        $fullMessage = $prefix . ' ' . $message;
 
         $hasContext = BooleanHelpers::hasValue($context);
         if ($hasContext) {
-            $full_message .= ' ' . json_encode($context);
+            $fullMessage .= ' ' . json_encode($context);
         }
 
         if ($this->logger) {
-            $this->dispatchLog($level, $full_message);
+            $this->dispatchLog($level, $fullMessage);
         }
     }
 

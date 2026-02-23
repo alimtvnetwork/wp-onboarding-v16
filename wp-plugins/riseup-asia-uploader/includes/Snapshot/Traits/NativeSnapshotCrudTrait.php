@@ -133,14 +133,14 @@ trait NativeSnapshotCrudTrait {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
             array(
-                $this->provider_id,
+                $this->providerId,
                 $limit,
                 $offset,
             )
         );
         $total = $this->db->querySingle(
             'SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?',
-            array($this->provider_id),
+            array($this->providerId),
         );
 
         return array(

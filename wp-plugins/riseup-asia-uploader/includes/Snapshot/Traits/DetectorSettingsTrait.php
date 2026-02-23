@@ -66,10 +66,10 @@ trait DetectorSettingsTrait {
             SnapshotProviderType::Native->value,
         );
 
-        foreach ($priority as $provider_id) {
+        foreach ($priority as $candidateId) {
             foreach ($providers as $provider) {
-                if ($provider['id'] === $provider_id && $provider['available']) {
-                    return $provider_id;
+                if ($provider['id'] === $candidateId && $provider['available']) {
+                    return $candidateId;
                 }
             }
         }
@@ -78,10 +78,8 @@ trait DetectorSettingsTrait {
     }
 
     /**
-     * Get a provider instance.
-     *
-     * @param string|null $provider_id Provider ID, or null for preferred.
-     * @return RiseupSnapshotProviderInterface Provider instance.
+     * @param string|null $providerId Provider ID, or null for preferred.
+     * @return SnapshotProviderInterface Provider instance.
      * @throws Exception If provider not available.
      */
     public function getProviderInstance(?string $providerId = null): SnapshotProviderInterface {
