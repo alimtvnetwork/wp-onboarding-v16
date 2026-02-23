@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import { toast } from "sonner";
 
-export type BackupOperation = "create" | "restore" | "export" | "import";
+export type BackupOperation = "Create" | "Restore" | "Export" | "Import";
 
 export interface BackupStage {
   name: string;
@@ -46,7 +46,7 @@ const OPERATION_CONFIG: Record<BackupOperation, {
   icon: typeof Archive;
   stages: BackupStage[];
 }> = {
-  create: {
+  Create: {
     title: "Creating Backup",
     icon: Archive,
     stages: [
@@ -57,7 +57,7 @@ const OPERATION_CONFIG: Record<BackupOperation, {
       { name: "complete", label: "Finalizing", status: "pending" },
     ],
   },
-  restore: {
+  Restore: {
     title: "Restoring Backup",
     icon: RotateCcw,
     stages: [
@@ -68,7 +68,7 @@ const OPERATION_CONFIG: Record<BackupOperation, {
       { name: "complete", label: "Finalizing", status: "pending" },
     ],
   },
-  export: {
+  Export: {
     title: "Exporting",
     icon: Archive,
     stages: [
@@ -78,7 +78,7 @@ const OPERATION_CONFIG: Record<BackupOperation, {
       { name: "complete", label: "Finalizing", status: "pending" },
     ],
   },
-  import: {
+  Import: {
     title: "Importing",
     icon: Archive,
     stages: [
@@ -317,10 +317,10 @@ export function BackupProgressDialog({
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-primary" />
                 <span className="font-medium">
-                  {operation === "create" && "Backup created successfully"}
-                  {operation === "restore" && "Backup restored successfully"}
-                  {operation === "export" && "Export completed successfully"}
-                  {operation === "import" && "Import completed successfully"}
+                  {operation === "Create" && "Backup created successfully"}
+                  {operation === "Restore" && "Backup restored successfully"}
+                  {operation === "Export" && "Export completed successfully"}
+                  {operation === "Import" && "Import completed successfully"}
                 </span>
               </div>
             </div>

@@ -31,8 +31,8 @@ Updated: 2026-02-23
 - **S-022**: Templates formatting — all 5 templates audited, fully compliant (2026-02-23).
 - **S-023**: Root files formatting — both files audited, fully compliant (2026-02-23).
 
-## Pending Tasks (1 open suggestion)
+- **S-026**: TypeScript enum PascalCase — converted ActivityType, BackupOperation, NotificationType + all 8 consumer files (2026-02-23).
 
-| ID | Priority | Description |
-|----|----------|-------------|
-| S-026 | Low | Update TypeScript frontend enum string values to PascalCase |
+## Pending Tasks
+
+**All 32 suggestions completed.** 🎉

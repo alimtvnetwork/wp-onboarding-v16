@@ -18,25 +18,25 @@ const typeConfig: Record<NotificationType, {
   borderVar: string;
   fgVar: string;
 }> = {
-  success: {
+  Success: {
     icon: CheckCircle2,
     bgVar: "--toast-success-bg",
     borderVar: "--toast-success-border",
     fgVar: "--toast-success-fg",
   },
-  error: {
+  Error: {
     icon: XCircle,
     bgVar: "--toast-error-bg",
     borderVar: "--toast-error-border",
     fgVar: "--toast-error-fg",
   },
-  warning: {
+  Warning: {
     icon: AlertTriangle,
     bgVar: "--toast-warning-bg",
     borderVar: "--toast-warning-border",
     fgVar: "--toast-warning-fg",
   },
-  info: {
+  Info: {
     icon: Info,
     bgVar: "--toast-info-bg",
     borderVar: "--toast-info-border",

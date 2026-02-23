@@ -10,7 +10,7 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-| S-026 | 2026-02-21 | Low | Plan review | open | Update TypeScript frontend enum string values to PascalCase (Phase 3) |
+
 
 ---
 
@@ -49,6 +49,7 @@
 | S-028 | Update core-enum-inventory with LogColumnType | 2026-02-23 | Added LogColumnType (16 cases) to inventory |
 | S-022 | Fix formatting in Templates/*.php | 2026-02-23 | All 5 templates audited — no formatting violations found |
 | S-023 | Fix formatting in root files | 2026-02-23 | Both riseup-asia-uploader.php and Autoloader.php audited — fully compliant |
+| S-026 | Update TS enum string values to PascalCase | 2026-02-23 | Converted ActivityType, BackupOperation, NotificationType + all consumers (8 files) |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -64,8 +65,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 1 |
-| Completed | 31 |
+| Open | 0 |
+| Completed | 32 |
 | Rejected | 0 |
 | **Total** | **32** |
 
