@@ -1,7 +1,7 @@
 # PHP Enums — Complete Reference
 
-> **Version:** 7.0.0  
-> **Updated:** 2026-02-14  
+> **Version:** 7.1.0  
+> **Updated:** 2026-02-23  
 > **Applies to:** WordPress companion plugins (PHP 8.1+)
 
 ---
@@ -456,20 +456,62 @@ enum ActionType: string
 
 ---
 
-### TableType — SQLite Table Names
+### TableType — SQLite Table Names (PascalCase)
+
+All custom SQLite table names use **PascalCase** values. This aligns with the [cross-language database naming convention](../01-coding-guidelines/database-naming.md).
 
 ```php
 enum TableType: string
 {
-    // Core: Transactions
-    // Agent: AgentSites, AgentActions
-    // Snapshot: Snapshots, SnapshotProgress, SnapshotJobs, SnapshotSettings, SnapshotExports
-    // Sync: FileCache
+    case Transactions     = 'Transactions';
+    case AgentSites       = 'AgentSites';
+    case AgentActions     = 'AgentActions';
+    case Snapshots        = 'Snapshots';
+    case SnapshotProgress = 'SnapshotProgress';
+    case SnapshotJobs     = 'SnapshotJobs';
+    case SnapshotSettings = 'SnapshotSettings';
+    case SnapshotExports  = 'SnapshotExports';
+    case FileCache        = 'FileCache';
+    case RemotePluginsCache = 'RemotePluginsCache';
+    case ErrorSessions    = 'ErrorSessions';
+    case FlashState       = 'FlashState';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshot'); }
-    public function isAgent(): bool    { return str_starts_with($this->value, 'agent'); }
+    public function isSnapshot(): bool { return str_starts_with($this->value, 'Snapshot'); }
+    public function isAgent(): bool    { return str_starts_with($this->value, 'Agent'); }
+}
+```
+
+### LogColumnType — Log Table Column Names (PascalCase)
+
+Enum for type-safe access to Transactions table columns. Used by `LogValueTrait` for `logValue()` / `logString()` calls.
+
+```php
+enum LogColumnType: string
+{
+    case Id            = 'Id';
+    case Action        = 'Action';
+    case PluginSlug    = 'PluginSlug';
+    case PluginFile    = 'PluginFile';
+    case PluginVersion = 'PluginVersion';
+    case PostId        = 'PostId';
+    case Status        = 'Status';
+    case Details       = 'Details';
+    case ErrorMsg      = 'ErrorMsg';
+    case UserLogin     = 'UserLogin';
+    case UserId        = 'UserId';
+    case IpAddress     = 'IpAddress';
+    case TriggeredBy   = 'TriggeredBy';
+    case UploadSource  = 'UploadSource';
+    case SourceMachine = 'SourceMachine';
+    case CreatedAt     = 'CreatedAt';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }
 ```
 
@@ -714,6 +756,22 @@ final class ErrorType
 - [Naming Conventions](./naming-conventions.md) — PascalCase for enums, camelCase for methods
 - [Golang Standards](../03-golang-standards/readme.md) — Go equivalent patterns
 
+## Log Context Array Keys — camelCase
+
+Internal log context array keys (passed to `fileLogger` and `logger` calls) MUST use **camelCase**. This matches the zero-underscore policy for all logic-level identifiers.
+
+```php
+// ❌ FORBIDDEN: snake_case log context keys
+$this->fileLogger->info('Post created', array('post_id' => $postId));
+$this->fileLogger->warn('Duplicate detected', array('duplicate_dir' => $dir));
+
+// ✅ REQUIRED: camelCase log context keys
+$this->fileLogger->info('Post created', array('postId' => $postId));
+$this->fileLogger->warn('Duplicate detected', array('duplicateDir' => $dir));
+```
+
+**Exempt:** Persistence-level keys (wp_options, SQLite `_snapshot_meta` table keys, V13 migration mappings), WordPress API return values (e.g., `$result['term_id']`), and internal markers (e.g., `_invocation_chain`).
+
 ---
 
-*PHP Enum specification v7.0.0 — 2026-02-14*
+*PHP Enum specification v7.1.0 — 2026-02-23*

@@ -1,7 +1,7 @@
 # PHP Naming Conventions
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-12  
+> **Version:** 1.1.0  
+> **Updated:** 2026-02-23  
 > **Baseline:** PSR-12 / PSR-1  
 > **Applies to:** All PHP code unless overridden by project-specific or framework-specific conventions
 
@@ -230,6 +230,34 @@ These are exceptions and should be minimal in modern architecture.
 
 ---
 
+## Array Key Conventions
+
+### Log Context Keys — camelCase
+
+Internal log context array keys (passed to logger calls) MUST use **camelCase**:
+
+```php
+// ✅ REQUIRED
+$this->fileLogger->info('Post created', array('postId' => $postId));
+$this->fileLogger->warn('Duplicate detected', array('duplicateDir' => $dir, 'targetSlug' => $slug));
+$this->fileLogger->debug('Agent API request', array('agentId' => $id, 'method' => $method));
+```
+
+### Database Column Keys — PascalCase
+
+Array keys referencing database columns (inserts, updates, WHERE conditions) MUST use **PascalCase** to match the schema:
+
+```php
+// ✅ REQUIRED
+$this->db->insert(TableType::Transactions->value, array('PluginSlug' => $slug, 'CreatedAt' => $now));
+```
+
+### Persistence-Level Keys — Exempt
+
+WordPress `wp_options` keys, SQLite `_snapshot_meta` keys, and external API response keys retain their native casing (typically snake_case). These are **not** subject to the camelCase rule.
+
+---
+
 ## Summary Table
 
 | Element                    | Convention                     | Example                          |
@@ -247,6 +275,8 @@ These are exceptions and should be minimal in modern architecture.
 | File (enum)                | PascalCase + Type.php          | `UploadSourceType.php`           |
 | File (config/procedural)   | lowercase_with_underscores.php | `constants.php`                  |
 | Directory (domain folder)  | PascalCase                     | `Snapshot/`, `Database/`         |
+| Log context array key      | camelCase                      | `'postId'`, `'masterDir'`        |
+| DB column array key        | PascalCase                     | `'PluginSlug'`, `'CreatedAt'`    |
 
 ---
 

@@ -1,8 +1,8 @@
 # Required Methods
 
-**Version:** 4.0.0  
+**Version:** 4.1.0  
 **Status:** Complete  
-**Updated:** 2026-02-21
+**Updated:** 2026-02-23
 
 ---
 
@@ -440,6 +440,22 @@ func (v *Variant) UnmarshalJSON(data []byte) error {
     return nil
 }
 ```
+
+---
+
+## PascalCase Label Convention
+
+**Mandatory rule (since v4.1.0):** All `variantLabels` entries MUST use **PascalCase** strings matching the constant name. This aligns Go enum serialization with the cross-language standard (PHP, TypeScript).
+
+| ❌ Forbidden | ✅ Required |
+|-------------|-----------|
+| `"per_table"` | `"PerTable"` |
+| `"serpapi"` | `"SerpAPI"` |
+| `"maps_scraper"` | `"MapsScraper"` |
+
+**Exception:** Protocol-driven enums (`content_type`, `endpoint`, `header`, `response_key`, `response_message`) preserve their functional values (e.g., `"application/json"`, `"X-Riseup-Auth"`).
+
+**Parse() compatibility:** `Parse()` uses `strings.EqualFold()`, so it accepts both old snake_case and new PascalCase inputs during migration.
 
 ---
 
