@@ -96,16 +96,21 @@ trait UploadPipelineTrait
         $isExternalUpload = ($result['is_self_update'] === false);
         if ($isExternalUpload) {
             $this->logger->logUpload($result['slug'], array(
-                'is_update' => $result['is_update'], 'activated' => $result['activated'],
-                'file_size' => strlen($input['zip_content']), 'plugin_version' => $result['plugin_version'],
+                'is_update' => $result['is_update'],
+                'activated' => $result['activated'],
+                'file_size' => strlen($input['zip_content']),
+                'plugin_version' => $result['plugin_version'],
             ), array(
-                'plugin_version' => $result['plugin_version'], 'upload_source' => $input['upload_source'],
+                'plugin_version' => $result['plugin_version'],
+                'upload_source' => $input['upload_source'],
             ));
         }
 
         $this->fileLogger->info('Upload complete', array(
-            'slug' => $result['slug'], 'is_update' => $result['is_update'],
-            'activated' => $result['activated'], 'plugin_version' => $result['plugin_version'],
+            'slug' => $result['slug'],
+            'is_update' => $result['is_update'],
+            'activated' => $result['activated'],
+            'plugin_version' => $result['plugin_version'],
             'upload_source' => $input['upload_source'],
         ));
     }
