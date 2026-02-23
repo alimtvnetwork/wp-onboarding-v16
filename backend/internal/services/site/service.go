@@ -51,22 +51,22 @@ type WPClientFactory func(url, user, pass string, onProgress func(step, status, 
 
 // WSHub interface for broadcasting messages
 type WSHub interface {
-	BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details json.RawMessage)
+	BroadcastConnectionTestProgress(siteId int64, step string, status string, message string, details json.RawMessage)
 	BroadcastLog(level string, message string, context json.RawMessage)
-	BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details json.RawMessage)
-	BroadcastWithSession(eventType string, data any, sessionID string)
+	BroadcastRemotePluginLogWithSession(siteId int64, action, sessionId, level, step, message string, details json.RawMessage)
+	BroadcastWithSession(eventType string, data any, sessionId string)
 }
 
 // SessionService interface for session-based logging
 type SessionService interface {
-	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
-	Log(sessionID, level, step, message string, details json.RawMessage)
-	LogStageStart(sessionID, stageName string)
-	LogStageEnd(sessionID, stageName, status string, durationMs int64)
-	EndSession(sessionID, status, errorMsg string)
-	SaveRequest(sessionID string, req *session.SessionRequest)
-	SaveResponse(sessionID string, resp *session.SessionResponse)
-	SaveError(sessionID string, stackTrace *session.SessionStackTrace, errorMsg string, details json.RawMessage)
+	StartSession(sessionType session.SessionType, pluginId, siteId int64, pluginName, siteName string) (string, error)
+	Log(sessionId, level, step, message string, details json.RawMessage)
+	LogStageStart(sessionId, stageName string)
+	LogStageEnd(sessionId, stageName, status string, durationMs int64)
+	EndSession(sessionId, status, errorMsg string)
+	SaveRequest(sessionId string, req *session.SessionRequest)
+	SaveResponse(sessionId string, resp *session.SessionResponse)
+	SaveError(sessionId string, stackTrace *session.SessionStackTrace, errorMsg string, details json.RawMessage)
 }
 
 // Service provides site management operations
@@ -81,7 +81,7 @@ type Service struct {
 	cacheEnabled    bool
 	cacheTTLMinutes int
 	// errorLogHashes tracks MD5 hashes of error log entries to prevent duplicate writes.
-	// Key: MD5 hex string of (action+siteID+plugin+endpoint+statusCode+responseBody).
+	// Key: MD5 hex string of (action+siteId+plugin+endpoint+statusCode+responseBody).
 	// Identical errors are written only once; subsequent occurrences are silently skipped.
 	errorLogHashes   map[string]struct{}
 	errorLogHashesMu sync.Mutex
@@ -118,16 +118,16 @@ func New(cfg Config) *Service {
 	}
 }
 
-// CRUD operations (List, GetByID, GetByURL, Create, Update, Delete) are in crud.go.
+// CRUD operations (List, GetById, GetByUrl, Create, Update, Delete) are in crud.go.
 
 // TestConnection verifies the WordPress REST API is accessible
 func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResult, error) {
 	// Broadcast start
 	s.broadcastProgress(id, "start", stagestatus.Running.String(), "Starting connection test...", nil)
 
-	siteResult := s.GetByID(ctx, id)
+	siteResult := s.GetById(ctx, id)
 	if siteResult.HasError() {
-		s.broadcastProgress(id, "fetch_site", stagestatus.Failed.String(), "Failed to retrieve site info", toJSON(ErrorDetail{Error: siteResult.AppError().Error()}))
+		s.broadcastProgress(id, "fetch_site", stagestatus.Failed.String(), "Failed to retrieve site info", toJson(ErrorDetail{Error: siteResult.AppError().Error()}))
 		return nil, siteResult.AppError()
 	}
 	site := siteResult.Value()
@@ -137,18 +137,18 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	s.broadcastProgress(id, "decrypt", stagestatus.Running.String(), "Decrypting credentials...", nil)
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		s.broadcastProgress(id, "decrypt", stagestatus.Failed.String(), "Failed to decrypt credentials", toJSON(ErrorDetail{Error: err.Error()}))
+		s.broadcastProgress(id, "decrypt", stagestatus.Failed.String(), "Failed to decrypt credentials", toJson(ErrorDetail{Error: err.Error()}))
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 	s.broadcastProgress(id, "decrypt", stagestatus.Completed.String(), "Credentials decrypted", nil)
 
 	// Create WordPress client with progress callback
-	s.broadcastProgress(id, "connect", stagestatus.Running.String(), fmt.Sprintf("Connecting to %s...", site.URL), nil)
+	s.broadcastProgress(id, "connect", stagestatus.Running.String(), fmt.Sprintf("Connecting to %s...", site.Url), nil)
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
 		raw, _ := json.Marshal(details)
 		s.broadcastProgress(id, step, status, message, raw) // pass-through from WP client
 	}
-	client := s.wpClientFactory(site.URL, site.Username, string(password), progressCallback)
+	client := s.wpClientFactory(site.Url, site.Username, string(password), progressCallback)
 
 	// Test connection
 	result := &ConnectionResult{}
@@ -156,8 +156,8 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(id, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
-			URL:      site.URL,
+		s.broadcastProgress(id, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJson(ConnectionFailureDetails{
+			Url:      site.Url,
 			Username: site.Username,
 		}))
 		
@@ -173,7 +173,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(id, "api_test", stagestatus.Completed.String(), fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
+	s.broadcastProgress(id, "api_test", stagestatus.Completed.String(), fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), toJson(ConnectionSuccessDetails{
 		WPVersion: connInfo.WPVersion,
 	}))
 
@@ -187,14 +187,14 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 }
 
 // TestConnectionWithCredentials tests a connection without saving (for pre-create validation)
-func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, username, password string) (*ConnectionResult, error) {
-	normalizedURL := normalizeURL(siteURL)
+func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteUrl, username, password string) (*ConnectionResult, error) {
+	normalizedUrl := normalizeUrl(siteUrl)
 	
 	// Broadcast progress (use 0 as siteId for pre-create tests)
 	s.broadcastProgress(0, "start", stagestatus.Running.String(), "Testing connection with provided credentials...", nil)
-	s.broadcastProgress(0, "normalize", stagestatus.Completed.String(), fmt.Sprintf("Normalized URL: %s", normalizedURL), toJSON(URLNormalizeDetails{
-		OriginalURL:   siteURL,
-		NormalizedURL: normalizedURL,
+	s.broadcastProgress(0, "normalize", stagestatus.Completed.String(), fmt.Sprintf("Normalized URL: %s", normalizedUrl), toJson(UrlNormalizeDetails{
+		OriginalUrl:   siteUrl,
+		NormalizedUrl: normalizedUrl,
 	}))
 	
 	// Create WordPress client with progress callback
@@ -202,15 +202,15 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 		raw, _ := json.Marshal(details)
 		s.broadcastProgress(0, step, status, message, raw) // pass-through from WP client
 	}
-	client := s.wpClientFactory(normalizedURL, username, password, progressCallback)
+	client := s.wpClientFactory(normalizedUrl, username, password, progressCallback)
 
 	result := &ConnectionResult{}
 	connInfo, err := client.TestConnection()
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(0, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
-			URL:      normalizedURL,
+		s.broadcastProgress(0, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJson(ConnectionFailureDetails{
+			Url:      normalizedUrl,
 			Username: username,
 		}))
 		s.broadcastProgress(0, "complete", stagestatus.Failed.String(), "Connection test failed", nil)
@@ -222,7 +222,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(0, "api_test", stagestatus.Completed.String(), fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
+	s.broadcastProgress(0, "api_test", stagestatus.Completed.String(), fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toJson(ConnectionSuccessDetails{
 		WPVersion: connInfo.WPVersion,
 	}))
 	s.broadcastProgress(0, "complete", stagestatus.Completed.String(), "Connection test completed successfully", nil)
@@ -231,17 +231,17 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 }
 
 // broadcastProgress sends connection test progress via WebSocket
-func (s *Service) broadcastProgress(siteID int64, step, status, message string, details json.RawMessage) {
+func (s *Service) broadcastProgress(siteId int64, step, status, message string, details json.RawMessage) {
 	if s.wsHub != nil {
-		s.wsHub.BroadcastConnectionTestProgress(siteID, step, status, message, details)
+		s.wsHub.BroadcastConnectionTestProgress(siteId, step, status, message, details)
 	}
 	// Also log
-	s.log.Debug("Connection test progress", "siteId", siteID, "step", step, "status", status, "message", message)
+	s.log.Debug("Connection test progress", "siteId", siteId, "step", step, "status", status, "message", message)
 }
 
 // GetDecryptedPassword returns the decrypted password for a site
 func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, error) {
-	result := s.GetByID(ctx, id)
+	result := s.GetById(ctx, id)
 	if result.HasError() {
 		return "", result.AppError()
 	}
@@ -265,22 +265,22 @@ type ConnectionResult struct {
 	Message         string `json:"message,omitempty"`
 }
 
-// normalizeURL normalizes a URL for consistent storage
+// normalizeUrl normalizes a URL for consistent storage
 // Removes common paths like /wp-admin, /wp-login.php, trailing slashes
-func normalizeURL(rawURL string) string {
-	rawURL = strings.TrimSpace(rawURL)
+func normalizeUrl(rawUrl string) string {
+	rawUrl = strings.TrimSpace(rawUrl)
 	
 	// Ensure protocol
-	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
-		rawURL = "https://" + rawURL
+	if !strings.HasPrefix(rawUrl, "http://") && !strings.HasPrefix(rawUrl, "https://") {
+		rawUrl = "https://" + rawUrl
 	}
 	
 	// Parse URL to properly handle paths
-	parsed, err := url.Parse(rawURL)
+	parsed, err := url.Parse(rawUrl)
 	if err != nil {
 		// Fallback to simple cleanup
-		rawURL = strings.TrimSuffix(rawURL, "/")
-		return rawURL
+		rawUrl = strings.TrimSuffix(rawUrl, "/")
+		return rawUrl
 	}
 	
 	// Remove common WordPress admin paths
@@ -318,7 +318,7 @@ func normalizeURL(rawURL string) string {
 // BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
 func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*BootstrapResult, error) {
 	// Get site details
-	result := s.GetByID(ctx, id)
+	result := s.GetById(ctx, id)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -326,10 +326,10 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	// Broadcast start
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Starting Riseup Asia Uploader deployment", toJSON(SiteContextDetails{
-			SiteID:   id,
+		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Starting Riseup Asia Uploader deployment", toJson(SiteContextDetails{
+			SiteId:   id,
 			SiteName: site.Name,
-			SiteURL:  site.URL,
+			SiteUrl:  site.Url,
 		}))
 	}
 
@@ -343,8 +343,8 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
 		if s.wsHub != nil {
 			raw, _ := json.Marshal(details)
-			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("[%s] %s", step, message), toJSON(BootstrapLogDetails{
-				SiteID:   id,
+			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("[%s] %s", step, message), toJson(BootstrapLogDetails{
+				SiteId:   id,
 				SiteName: site.Name,
 				Step:     step,
 				Status:   status,
@@ -352,7 +352,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 			}))
 		}
 	}
-	client := s.wpClientFactory(site.URL, site.Username, string(decrypted), progressCallback)
+	client := s.wpClientFactory(site.Url, site.Username, string(decrypted), progressCallback)
 
 	// If uploader path not specified, try to determine it
 	if uploaderPath == "" {
@@ -361,8 +361,8 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Creating plugin ZIP archive", toJSON(ZipCreationDetails{
-			SiteID: id,
+		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Creating plugin ZIP archive", toJson(ZipCreationDetails{
+			SiteId: id,
 			Path:   uploaderPath,
 		}))
 	}
@@ -371,7 +371,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog(loglevel.Error.Lower(), fmt.Sprintf("Failed to create ZIP: %v", err), toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Error.Lower(), fmt.Sprintf("Failed to create ZIP: %v", err), toJson(SiteIdDetail{SiteId: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
@@ -385,26 +385,26 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	if available && namespace != "" {
 		// Uploader is already on the site - use it to update itself
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJson(SiteIdDetail{SiteId: id}))
 		}
 		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, wordpress.UploadSourceRestAPI)
 	} else {
 		// First-time installation - use Onboard plugin or standard upload
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog(loglevel.Info.Lower(), "First-time installation - checking for Onboard plugin", toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Info.Lower(), "First-time installation - checking for Onboard plugin", toJson(SiteIdDetail{SiteId: id}))
 		}
 		
 		// Try Onboard plugin first
 		onboardAvailable := s.checkOnboardAvailable(client)
 		if onboardAvailable {
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Using Onboard plugin for installation", toJSON(SiteIDDetail{SiteID: id}))
+				s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Using Onboard plugin for installation", toJson(SiteIdDetail{SiteId: id}))
 			}
 			uploadResult, err = client.UploadPluginViaOnboard(zipPath, true)
 		} else {
 		// No helper plugin available - this is a limitation
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog(loglevel.Error.Lower(), "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", toJSON(SiteIDDetail{SiteID: id}))
+				s.wsHub.BroadcastLog(loglevel.Error.Lower(), "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", toJson(SiteIdDetail{SiteId: id}))
 			}
 			return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
 		}
@@ -412,21 +412,21 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog(loglevel.Error.Lower(), fmt.Sprintf("Upload failed: %v", err), toJSON(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog(loglevel.Error.Lower(), fmt.Sprintf("Upload failed: %v", err), toJson(SiteIdDetail{SiteId: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Riseup Asia Uploader deployed successfully", toJSON(UploaderDeployDetails{
-			SiteID:    id,
+		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Riseup Asia Uploader deployed successfully", toJson(UploaderDeployDetails{
+			SiteId:    id,
 			SiteName:  site.Name,
 			Activated: uploadResult.Activated,
 		}))
 	}
 
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site",
-		"siteId", id, "siteName", site.Name, "siteUrl", site.URL, "activated", uploadResult.Activated)
+		"siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", uploadResult.Activated)
 
 	return &BootstrapResult{
 		Success:   true,
@@ -591,31 +591,31 @@ type RemotePluginsResult struct {
 }
 
 // GetRemotePlugins fetches all plugins installed on a remote WordPress site (with caching)
-func (s *Service) GetRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
-	return s.GetRemotePluginsWithCache(ctx, siteID, false)
+func (s *Service) GetRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
+	return s.GetRemotePluginsWithCache(ctx, siteId, false)
 }
 
 // GetRemotePluginsWithCache fetches remote plugins with optional cache bypass
-func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteID int64, forceRefresh bool) ([]RemotePlugin, error) {
+func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, forceRefresh bool) ([]RemotePlugin, error) {
 	// Try cache first (if enabled and not forcing refresh)
 	if s.cacheEnabled && !forceRefresh {
-		cached, err := s.getRemotePluginsFromCache(ctx, siteID)
+		cached, err := s.getRemotePluginsFromCache(ctx, siteId)
 		if err == nil && cached != nil {
-			s.log.Debug("Remote plugins loaded from cache", "siteId", siteID, "count", len(cached))
+			s.log.Debug("Remote plugins loaded from cache", "siteId", siteId, "count", len(cached))
 			return cached, nil
 		}
 	}
 
 	// Fetch from remote
-	plugins, err := s.fetchRemotePlugins(ctx, siteID)
+	plugins, err := s.fetchRemotePlugins(ctx, siteId)
 	if err != nil {
 		return nil, err
 	}
 
 	// Cache the result (if enabled)
 	if s.cacheEnabled {
-		if err := s.cacheRemotePlugins(ctx, siteID, plugins); err != nil {
-			s.log.Warn("Failed to cache remote plugins", "siteId", siteID, "error", err)
+		if err := s.cacheRemotePlugins(ctx, siteId, plugins); err != nil {
+			s.log.Warn("Failed to cache remote plugins", "siteId", siteId, "error", err)
 		}
 	}
 
@@ -624,8 +624,8 @@ func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteID int64, f
 
 // fetchRemotePlugins fetches plugins directly from the remote WordPress site.
 // Prefers the Riseup Asia Uploader API for reliability; falls back to WP Core API.
-func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
-	result := s.GetByID(ctx, siteID)
+func (s *Service) fetchRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
+	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -636,7 +636,7 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
-	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 
 	// Try Riseup Asia Uploader API first (more reliable, avoids WP Core 500 errors)
 	uploaderPlugins, uploaderErr := client.ListPluginsViaUploader()
@@ -645,7 +645,7 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 		for _, p := range uploaderPlugins {
 			// Skip plugins with no file identifier — these cannot be managed
 			if p.File == "" && p.Slug == "" {
-				s.log.Warn("Skipping remote plugin with empty file and slug", "name", p.Name, "siteId", siteID)
+				s.log.Warn("Skipping remote plugin with empty file and slug", "name", p.Name, "siteId", siteId)
 				continue
 			}
 
@@ -662,7 +662,7 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 			if pluginFile == "" {
 				// Derive file from slug if missing (e.g., "akismet" -> "akismet/akismet.php")
 				pluginFile = slug + "/" + slug + ".php"
-				s.log.Warn("Remote plugin missing file path, derived from slug", "slug", slug, "derivedFile", pluginFile, "siteId", siteID)
+				s.log.Warn("Remote plugin missing file path, derived from slug", "slug", slug, "derivedFile", pluginFile, "siteId", siteId)
 			}
 
 			status := "inactive"
@@ -679,26 +679,26 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 				Description: p.Description,
 			})
 		}
-		s.log.Debug("Remote plugins fetched via Uploader API", "siteId", siteID, "count", len(result))
+		s.log.Debug("Remote plugins fetched via Uploader API", "siteId", siteId, "count", len(result))
 		return result, nil
 	}
 
 	// No WP Core fallback — Riseup Asia Uploader is required for reliable plugin management
-	s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteID, "siteUrl", site.URL, "error", uploaderErr)
+	s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteId, "siteUrl", site.Url, "error", uploaderErr)
 	return nil, apperror.Wrap(uploaderErr, apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site. Please deploy or update the companion plugin.")
 }
 
 // getRemotePluginsFromCache retrieves cached plugins if not expired.
-func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
+func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
 	type cacheRow struct {
-		PluginsJSON string
+		PluginsJson string
 		ExpiresAt   string
 	}
 	result := dbutil.QueryOne[cacheRow](ctx, s.dbu, cacheSelectQuery, func(row *sql.Row) (cacheRow, error) {
 		var r cacheRow
-		err := row.Scan(&r.PluginsJSON, &r.ExpiresAt)
+		err := row.Scan(&r.PluginsJson, &r.ExpiresAt)
 		return r, err
-	}, siteID)
+	}, siteId)
 
 	if result.HasError() {
 		return nil, result.AppError()
@@ -708,15 +708,15 @@ func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteID int64) (
 	}
 
 	var plugins []RemotePlugin
-	if err := json.Unmarshal([]byte(result.Value().PluginsJSON), &plugins); err != nil {
+	if err := json.Unmarshal([]byte(result.Value().PluginsJson), &plugins); err != nil {
 		return nil, err
 	}
 	return plugins, nil
 }
 
 // cacheRemotePlugins stores plugins in the cache.
-func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins []RemotePlugin) error {
-	pluginsJSON, err := json.Marshal(plugins)
+func (s *Service) cacheRemotePlugins(ctx context.Context, siteId int64, plugins []RemotePlugin) error {
+	pluginsJson, err := json.Marshal(plugins)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to marshal remote plugins for cache")
 	}
@@ -726,8 +726,8 @@ func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins 
 		ctx,
 		s.dbu,
 		cacheUpsertQuery,
-		siteID,
-		string(pluginsJSON),
+		siteId,
+		string(pluginsJson),
 		expiresAt.Format("2006-01-02 15:04:05"),
 	)
 	if res.HasError() {
@@ -737,30 +737,30 @@ func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins 
 }
 
 // ForceSyncRemotePlugins clears cache and fetches fresh data.
-func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
-	if err := s.InvalidateRemotePluginsCache(ctx, siteID); err != nil {
-		s.log.Warn("Failed to invalidate cache before force sync", "siteId", siteID, "error", err)
+func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
+	if err := s.InvalidateRemotePluginsCache(ctx, siteId); err != nil {
+		s.log.Warn("Failed to invalidate cache before force sync", "siteId", siteId, "error", err)
 	}
-	return s.GetRemotePluginsWithCache(ctx, siteID, true)
+	return s.GetRemotePluginsWithCache(ctx, siteId, true)
 }
 
 // InvalidateRemotePluginsCache removes cached plugins for a site.
-func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error {
+func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteId int64) error {
 	res := dbutil.Exec(
 		ctx,
 		s.dbu,
 		cacheDeleteQuery,
-		siteID,
+		siteId,
 	)
 	if res.HasError() {
 		return res.AppError()
 	}
-	s.log.Debug("Remote plugins cache invalidated", "siteId", siteID)
+	s.log.Debug("Remote plugins cache invalidated", "siteId", siteId)
 	return nil
 }
 
 // GetRemotePluginsCacheStatus returns cache status for a site
-func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64) (bool, *time.Time, *time.Time, error) {
+func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64) (bool, *time.Time, *time.Time, error) {
 	query := `
 		SELECT CachedAt, ExpiresAt 
 		FROM RemotePluginsCache 
@@ -768,7 +768,7 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 	`
 	
 	var cachedAtStr, expiresAtStr string
-	err := s.db.QueryRowContext(ctx, query, siteID).Scan(&cachedAtStr, &expiresAtStr)
+	err := s.db.QueryRowContext(ctx, query, siteId).Scan(&cachedAtStr, &expiresAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil, nil, nil // No cache
@@ -796,8 +796,8 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 
 // CheckRemotePluginExists performs a lightweight pre-flight check to verify
 // a plugin slug is installed on the remote WordPress site before lifecycle actions.
-func (s *Service) CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error) {
-	result := s.GetByID(ctx, siteID)
+func (s *Service) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (bool, string, string, error) {
+	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return false, "", "", apperror.Wrap(result.AppError(), apperror.ErrNotFound, "site not found")
 	}
@@ -808,30 +808,30 @@ func (s *Service) CheckRemotePluginExists(ctx context.Context, siteID int64, plu
 		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
-	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 	return client.CheckPluginExistsViaUploader(pluginSlug)
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 // Uses the Riseup Asia Uploader API for reliable plugin lifecycle management.
-func (s *Service) EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
-	return s.executeRemotePluginAction(ctx, siteID, pluginSlug, "enable", func(client *wordpress.Client) error {
+func (s *Service) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+	return s.executeRemotePluginAction(ctx, siteId, pluginSlug, "enable", func(client *wordpress.Client) error {
 		return client.EnablePluginViaUploader(pluginSlug)
 	})
 }
 
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
 // Uses the Riseup Asia Uploader API for reliable plugin lifecycle management.
-func (s *Service) DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
-	return s.executeRemotePluginAction(ctx, siteID, pluginSlug, "disable", func(client *wordpress.Client) error {
+func (s *Service) DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+	return s.executeRemotePluginAction(ctx, siteId, pluginSlug, "disable", func(client *wordpress.Client) error {
 		return client.DisablePluginViaUploader(pluginSlug)
 	})
 }
 
 // DeleteRemotePlugin removes a plugin from a remote WordPress site
 // Uses the Riseup Asia Uploader API for reliable plugin lifecycle management.
-func (s *Service) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
-	return s.executeRemotePluginAction(ctx, siteID, pluginSlug, "delete", func(client *wordpress.Client) error {
+func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+	return s.executeRemotePluginAction(ctx, siteId, pluginSlug, "delete", func(client *wordpress.Client) error {
 		// First deactivate, then delete via Riseup Asia Uploader
 		// Ignore 404 on disable — plugin may not be installed yet (nothing to deactivate)
 		if disableErr := client.DisablePluginViaUploader(pluginSlug); disableErr != nil {
@@ -846,18 +846,18 @@ func (s *Service) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSl
 }
 
 // executeRemotePluginAction runs a remote plugin action with session logging and stack trace capture
-func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, pluginSlug, action string, execFn func(*wordpress.Client) error) error {
+func (s *Service) executeRemotePluginAction(ctx context.Context, siteId int64, pluginSlug, action string, execFn func(*wordpress.Client) error) error {
 	startTime := time.Now()
 
 	// Get site info
-	siteResult := s.GetByID(ctx, siteID)
+	siteResult := s.GetById(ctx, siteId)
 	if siteResult.HasError() {
 		return siteResult.AppError()
 	}
 	site := siteResult.Value()
 
 	// Start session if service available
-	var sessionID string
+	var sessionId string
 	if s.sessionService != nil {
 		var sessionType session.SessionType
 		switch action {
@@ -870,24 +870,24 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		default:
 			sessionType = session.SessionType("remote_plugin_action")
 		}
-		sessionID, _ = s.sessionService.StartSession(sessionType, 0, siteID, pluginSlug, site.Name)
+		sessionId, _ = s.sessionService.StartSession(sessionType, 0, siteId, pluginSlug, site.Name)
 	}
 
 	// Log start
-	s.logRemoteAction(sessionID, siteID, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), session.ToJSON(RemoteActionContext{
-		SiteID:     siteID,
+	s.logRemoteAction(sessionId, siteId, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), session.ToJSON(RemoteActionContext{
+		SiteId:     siteId,
 		SiteName:   site.Name,
-		SiteURL:    site.URL,
+		SiteUrl:    site.Url,
 		PluginSlug: pluginSlug,
 	}))
 
 	// Save request.json — the inbound request from frontend
-	if s.sessionService != nil && sessionID != "" {
-		s.sessionService.SaveRequest(sessionID, &session.SessionRequest{
-			URL:    fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", siteID, pluginSlug, action),
+	if s.sessionService != nil && sessionId != "" {
+		s.sessionService.SaveRequest(sessionId, &session.SessionRequest{
+			URL:    fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", siteId, pluginSlug, action),
 			Method: "POST",
-		Body: toJSON(RemoteActionRequestBody{
-				SiteID:     siteID,
+		Body: toJson(RemoteActionRequestBody{
+				SiteId:     siteId,
 				PluginSlug: pluginSlug,
 				Action:     action,
 			}),
@@ -897,33 +897,33 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	// Broadcast start event
 	if s.wsHub != nil {
 		s.wsHub.BroadcastWithSession("remote_plugin_action_started", RemoteActionStartedEvent{
-			SiteID:     siteID,
+			SiteId:     siteId,
 			SiteName:   site.Name,
 			Action:     action,
 			PluginSlug: pluginSlug,
-		}, sessionID)
+		}, sessionId)
 	}
 
 	// Step 1: Decrypt credentials
-	s.logRemoteAction(sessionID, siteID, action, "info", "decrypt", "Decrypting site credentials...", nil)
+	s.logRemoteAction(sessionId, siteId, action, "info", "decrypt", "Decrypting site credentials...", nil)
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
 		errMsg := "failed to decrypt password"
-		s.logRemoteAction(sessionID, siteID, action, "error", "decrypt", errMsg, session.ToJSON(ErrorDetail{Error: err.Error()}))
-		s.endRemoteSession(sessionID, "error", errMsg)
+		s.logRemoteAction(sessionId, siteId, action, "error", "decrypt", errMsg, session.ToJSON(ErrorDetail{Error: err.Error()}))
+		s.endRemoteSession(sessionId, "error", errMsg)
 		return apperror.Wrap(err, apperror.ErrInternal, errMsg)
 	}
 
 	// Step 2: Create WordPress client
-	s.logRemoteAction(sessionID, siteID, action, "info", "connect", fmt.Sprintf("Connecting to WordPress site: %s", site.URL), nil)
-	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	s.logRemoteAction(sessionId, siteId, action, "info", "connect", fmt.Sprintf("Connecting to WordPress site: %s", site.Url), nil)
+	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 
 	// Step 3: Execute the action
-	if s.sessionService != nil && sessionID != "" {
-		s.sessionService.LogStageStart(sessionID, action)
+	if s.sessionService != nil && sessionId != "" {
+		s.sessionService.LogStageStart(sessionId, action)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), session.ToJSON(RemoteActionExecDetails{
-		TargetURL:  site.URL,
+	s.logRemoteAction(sessionId, siteId, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), session.ToJSON(RemoteActionExecDetails{
+		TargetUrl:  site.Url,
 		PluginSlug: pluginSlug,
 	}))
 
@@ -935,108 +935,104 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		errDetails := s.extractErrorDetails(err)
 
 		// Save response.json with error data
-		if s.sessionService != nil && sessionID != "" {
+		if s.sessionService != nil && sessionId != "" {
 			// Parse response body for structured storage
-			var bodyJSON json.RawMessage
+			var bodyJson json.RawMessage
 			if errDetails.ResponseBody != "" {
 				// Try to store as parsed JSON; fall back to raw string
 				if json.Valid([]byte(errDetails.ResponseBody)) {
-					bodyJSON = json.RawMessage(errDetails.ResponseBody)
+					bodyJson = json.RawMessage(errDetails.ResponseBody)
 				} else {
-					bodyJSON, _ = json.Marshal(errDetails.ResponseBody)
+					bodyJson, _ = json.Marshal(errDetails.ResponseBody)
 				}
 			}
-			s.sessionService.SaveResponse(sessionID, &session.SessionResponse{
-				RequestURL:  errDetails.URL,
-				ResponseURL: errDetails.URL,
+			s.sessionService.SaveResponse(sessionId, &session.SessionResponse{
+				RequestURL:  errDetails.Url,
+				ResponseURL: errDetails.Url,
 				StatusCode:  errDetails.StatusCode,
-				Body:        bodyJSON,
+				Body:        bodyJson,
 			})
 
 			// Build PHP stack frames for error.log
-			phpFrames := s.buildPHPStackFrames(errDetails)
+			phpFrames := s.buildPhpStackFrames(errDetails)
 			// Capture Go runtime stack trace (skip 2: CaptureGoStack + this closure)
 			goFrames := session.CaptureGoStack(2)
-			s.sessionService.SaveError(sessionID, &session.SessionStackTrace{
+			s.sessionService.SaveError(sessionId, &session.SessionStackTrace{
 				Golang: goFrames,
 				PHP:    phpFrames,
 			}, err.Error(), session.ToJSON(errDetails))
 		}
 
-		s.logRemoteAction(sessionID, siteID, action, "error", action, fmt.Sprintf("Failed to %s plugin: %s", action, pluginSlug), session.ToJSON(errDetails))
+		s.logRemoteAction(sessionId, siteId, action, "error", action, fmt.Sprintf("Failed to %s plugin: %s", action, pluginSlug), session.ToJSON(errDetails))
 
-		if s.sessionService != nil && sessionID != "" {
-			s.sessionService.LogStageEnd(sessionID, action, "error", durationMs)
+		if s.sessionService != nil && sessionId != "" {
+			s.sessionService.LogStageEnd(sessionId, action, "error", durationMs)
 		}
 
 		// Pull recent PHP error sessions from the remote site for deeper diagnostics
-		s.fetchAndAttachRemotePHPErrors(client, sessionID, siteID, action, pluginSlug, site.Name, site.URL, errDetails)
+		s.fetchAndAttachRemotePhpErrors(client, sessionId, siteId, action, pluginSlug, site.Name, site.Url, errDetails)
 
 		// Write to error.log.txt (now enriched with PHP errors)
-		s.logToErrorFile(action, siteID, pluginSlug, site.Name, site.URL, errDetails)
+		s.logToErrorFile(action, siteId, pluginSlug, site.Name, site.Url, errDetails)
 
-		s.endRemoteSession(sessionID, "error", err.Error())
+		s.endRemoteSession(sessionId, "error", err.Error())
 
 		// Broadcast failure
 		if s.wsHub != nil {
 		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
-				SiteID:       siteID,
+				SiteId:       siteId,
 				Action:       action,
 				PluginSlug:   pluginSlug,
 				Success:      false,
 				Error:        err.Error(),
 				ErrorDetails: errDetails,
 				DurationMs:   durationMs,
-			}, sessionID)
+			}, sessionId)
 		}
 
-		errCode := apperror.ErrWPPluginActivate
-		if action == action_enum.Delete.String() {
-			errCode = apperror.ErrWPPluginDelete
-		}
-		return apperror.Wrap(err, errCode, fmt.Sprintf("failed to %s plugin", action)).
-			WithSiteId(siteID).
-			WithPlugin(pluginSlug).
-			WithSessionId(sessionID)
+		return apperror.Wrap(err, apperror.ErrWPConnection, fmt.Sprintf("failed to %s remote plugin", action)).
+			WithSiteId(siteId).
+			WithPluginSlug(pluginSlug).
+			WithSessionId(sessionId)
 	}
 
 	// Success — save response.json
-	if s.sessionService != nil && sessionID != "" {
-		s.sessionService.SaveResponse(sessionID, &session.SessionResponse{
-			RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.URL, action),
-			ResponseURL: site.URL,
+	if s.sessionService != nil && sessionId != "" {
+		s.sessionService.SaveResponse(sessionId, &session.SessionResponse{
+			RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.Url, action),
+			ResponseURL: site.Url,
 			StatusCode:  200,
-		Body:        toJSON(RemoteActionSuccessBody{Success: true, Action: action, Plugin: pluginSlug}),
+		Body:        toJson(RemoteActionSuccessBody{Success: true, Action: action, Plugin: pluginSlug}),
 		})
-		s.sessionService.LogStageEnd(sessionID, action, "success", durationMs)
+		s.sessionService.LogStageEnd(sessionId, action, "success", durationMs)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), session.ToJSON(DurationDetail{
+	s.logRemoteAction(sessionId, siteId, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), session.ToJSON(DurationDetail{
 		DurationMs: durationMs,
 	}))
 
 	// Invalidate cache since plugin status changed
-	_ = s.InvalidateRemotePluginsCache(ctx, siteID)
+	_ = s.InvalidateRemotePluginsCache(ctx, siteId)
 
-	s.endRemoteSession(sessionID, "success", "")
+	s.endRemoteSession(sessionId, "success", "")
 
 	// Broadcast success
 	if s.wsHub != nil {
 		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
-			SiteID:     siteID,
+			SiteId:     siteId,
 			SiteName:   site.Name,
 			Action:     action,
 			PluginSlug: pluginSlug,
 			Success:    true,
 			DurationMs: durationMs,
-		}, sessionID)
+		}, sessionId)
 	}
 
-	s.log.Info(fmt.Sprintf("Remote plugin %sd", action), "siteId", siteID, "plugin", pluginSlug)
+	s.log.Info(fmt.Sprintf("Remote plugin %sd", action), "siteId", siteId, "plugin", pluginSlug)
 	return nil
 }
 
-// buildPHPStackFrames converts typed PHP stack frames into session StackFrame structs
-func (s *Service) buildPHPStackFrames(details *ExtractedErrorDetails) []session.StackFrame {
+// buildPhpStackFrames converts typed PHP stack frames into session StackFrame structs
+func (s *Service) buildPhpStackFrames(details *ExtractedErrorDetails) []session.StackFrame {
 	frames := make([]session.StackFrame, 0, len(details.StackTraceFrames))
 	for _, f := range details.StackTraceFrames {
 		frames = append(frames, session.StackFrame{
@@ -1062,7 +1058,7 @@ func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 
 	details.Method = apiErr.Method
 	details.Endpoint = apiErr.Endpoint
-	details.URL = apiErr.URL
+	details.Url = apiErr.URL
 	details.StatusCode = apiErr.StatusCode
 	details.RequestBody = apiErr.RequestBody
 	details.ResponseBody = apiErr.ResponseBody
@@ -1073,7 +1069,7 @@ func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 		details.PluginSlugIn = apiErr.PluginSlugIn
 	}
 	if apiErr.PluginIDUsed != "" {
-		details.PluginIDUsed = apiErr.PluginIDUsed
+		details.PluginIdUsed = apiErr.PluginIDUsed
 	}
 
 	// Try to parse structured data from response body using typed envelope structs
@@ -1090,14 +1086,14 @@ func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 		details.DelegatedServiceErrorStack = envResp.Errors.DelegatedServiceErrorStack
 	}
 	if len(envResp.Errors.Backend) > 0 {
-		details.PHPBackendStack = envResp.Errors.Backend
+		details.PhpBackendStack = envResp.Errors.Backend
 	}
 
 	// Legacy format: error.details.stackTraceFrames
 	if envResp.ErrorLegacy.Details.StackTraceFrames != nil {
-		parsed := make([]PHPStackFrame, 0, len(envResp.ErrorLegacy.Details.StackTraceFrames))
+		parsed := make([]PhpStackFrame, 0, len(envResp.ErrorLegacy.Details.StackTraceFrames))
 		for _, fm := range envResp.ErrorLegacy.Details.StackTraceFrames {
-			parsed = append(parsed, PHPStackFrame{
+			parsed = append(parsed, PhpStackFrame{
 				Function: fm.Function,
 				File:     fm.File,
 				Line:     fm.Line,
@@ -1116,15 +1112,15 @@ func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 
 // logRemoteAction logs a remote plugin action to session and WebSocket.
 // It extracts human-readable names from the details for structured logging.
-func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level, step, message string, details json.RawMessage) {
+func (s *Service) logRemoteAction(sessionId string, siteId int64, action, level, step, message string, details json.RawMessage) {
 	// Log to session file
-	if s.sessionService != nil && sessionID != "" {
-		s.sessionService.Log(sessionID, level, step, message, details)
+	if s.sessionService != nil && sessionId != "" {
+		s.sessionService.Log(sessionId, level, step, message, details)
 	}
 
 	// Broadcast via WebSocket (now accepts json.RawMessage directly)
 	if s.wsHub != nil {
-		s.wsHub.BroadcastRemotePluginLogWithSession(siteID, action, sessionID, level, step, message, details)
+		s.wsHub.BroadcastRemotePluginLogWithSession(siteId, action, sessionId, level, step, message, details)
 	}
 
 	// Parse details for name resolution in structured logging
@@ -1135,32 +1131,32 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 
 	// Resolve names from details or DB for structured logging
 	siteName := logCtx.SiteName
-	siteURL := logCtx.SiteURL
+	siteUrl := logCtx.SiteUrl
 	pluginSlug := logCtx.PluginSlug
 	// DB fallback for site info
-	if (siteName == "" || siteURL == "") && siteID > 0 {
-		if siteResult := s.GetByID(context.Background(), siteID); siteResult.IsSafe() {
+	if (siteName == "" || siteUrl == "") && siteId > 0 {
+		if siteResult := s.GetById(context.Background(), siteId); siteResult.IsSafe() {
 			site := siteResult.Value()
 			if siteName == "" {
 				siteName = site.Name
 			}
-			if siteURL == "" {
-				siteURL = site.URL
+			if siteUrl == "" {
+				siteUrl = site.Url
 			}
 		}
 	}
 	if siteName == "" {
-		siteName = fmt.Sprintf("site#%d", siteID)
+		siteName = fmt.Sprintf("site#%d", siteId)
 	}
 
 	// Log with names first, IDs second, then technical details
 	logFields := []interface{}{
 		"site", siteName,
 	}
-	if siteURL != "" {
-		logFields = append(logFields, "siteUrl", siteURL)
+	if siteUrl != "" {
+		logFields = append(logFields, "siteUrl", siteUrl)
 	}
-	logFields = append(logFields, "siteId", siteID, "action", action, "step", step)
+	logFields = append(logFields, "siteId", siteId, "action", action, "step", step)
 	if pluginSlug != "" {
 		logFields = append(logFields, "pluginSlug", pluginSlug)
 	}
@@ -1173,31 +1169,31 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 }
 
 // endRemoteSession ends the session if service is available
-func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
-	if s.sessionService != nil && sessionID != "" {
-		s.sessionService.EndSession(sessionID, status, errorMsg)
+func (s *Service) endRemoteSession(sessionId, status, errorMsg string) {
+	if s.sessionService != nil && sessionId != "" {
+		s.sessionService.EndSession(sessionId, status, errorMsg)
 	}
 }
 
-// fetchAndAttachRemotePHPErrors pulls recent PHP error sessions from the remote WordPress
+// fetchAndAttachRemotePhpErrors pulls recent PHP error sessions from the remote WordPress
 // site and enriches the error details map with them. It also logs them to the session.
 // This runs best-effort and never returns errors — failures are silently logged.
-func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessionID string, siteID int64, action, pluginSlug, siteName, siteURL string, errDetails *ExtractedErrorDetails) {
-	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
+func (s *Service) fetchAndAttachRemotePhpErrors(client *wordpress.Client, sessionId string, siteId int64, action, pluginSlug, siteName, siteUrl string, errDetails *ExtractedErrorDetails) {
+	s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
 
 	// Fetch error sessions
 	result, fetchErr := client.FetchRemoteErrorSessions("error", "", 0, 10, 0)
 	if fetchErr != nil {
-		s.logRemoteAction(sessionID, siteID, action, "warn", "fetch_php_errors",
+		s.logRemoteAction(sessionId, siteId, action, "warn", "fetch_php_errors",
 			fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()), nil)
 	}
 
 	if result != nil && len(result.Entries) > 0 {
 		// Attach to error details so they appear in error.log.txt and WebSocket broadcast
-		phpErrors := make([]PHPErrorEntry, 0, len(result.Entries))
+		phpErrors := make([]PhpErrorEntry, 0, len(result.Entries))
 		for _, entry := range result.Entries {
-			phpErr := PHPErrorEntry{
-				ID:        entry.ID,
+			phpErr := PhpErrorEntry{
+				Id:        entry.ID,
 				Level:     entry.Level,
 				Message:   entry.Message,
 				File:      entry.File,
@@ -1211,47 +1207,47 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 			}
 			phpErrors = append(phpErrors, phpErr)
 		}
-		errDetails.RemotePHPErrors = phpErrors
-		errDetails.RemotePHPErrorCount = len(result.Entries)
+		errDetails.RemotePhpErrors = phpErrors
+		errDetails.RemotePhpErrorCount = len(result.Entries)
 
 		if result.Flash.HasUnseen {
-			errDetails.RemotePHPFlashUnseen = result.Flash.UnseenCount
+			errDetails.RemotePhpFlashUnseen = result.Flash.UnseenCount
 		}
 
-		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
+		s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_errors",
 			fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
-			session.ToJSON(PHPErrorCountDetail{PHPErrorCount: len(result.Entries)}))
+			session.ToJSON(PhpErrorCountDetail{PhpErrorCount: len(result.Entries)}))
 
 		// Log each PHP error to session for full traceability
-		if s.sessionService != nil && sessionID != "" {
+		if s.sessionService != nil && sessionId != "" {
 			for _, entry := range result.Entries {
-				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, session.ToJSON(PHPErrorDetail{
-					PHPFile:    entry.File,
-					PHPLine:    derefInt(entry.Line),
-					PHPLevel:   entry.Level,
-					PHPCreated: entry.CreatedAt,
+				s.sessionService.Log(sessionId, "error", "remote_php_error", entry.Message, session.ToJSON(PhpErrorDetail{
+					PhpFile:    entry.File,
+					PhpLine:    derefInt(entry.Line),
+					PhpLevel:   entry.Level,
+					PhpCreated: entry.CreatedAt,
 				}))
 			}
 		}
 	} else if fetchErr == nil {
-		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
+		s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
 	}
 
 	// Fetch stacktrace.txt via error-logs endpoint for deep PHP diagnostics
-	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace", "Pulling PHP stacktrace.txt from remote site...", nil)
+	s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_stacktrace", "Pulling PHP stacktrace.txt from remote site...", nil)
 
 	logsResult, logsErr := client.FetchRemoteErrorLogs()
 	if logsErr != nil {
-		s.logRemoteAction(sessionID, siteID, action, "warn", "fetch_php_stacktrace",
+		s.logRemoteAction(sessionId, siteId, action, "warn", "fetch_php_stacktrace",
 			fmt.Sprintf("Could not fetch remote error logs: %s", logsErr.Error()), nil)
 		return
 	}
 
 	if logsResult != nil && logsResult.StackTraceLog != nil && logsResult.StackTraceLog.Exists && logsResult.StackTraceLog.Content != "" {
-		errDetails.RemotePHPStackTrace = logsResult.StackTraceLog.Content
-		errDetails.RemotePHPStackTraceLines = logsResult.StackTraceLog.Lines
+		errDetails.RemotePhpStackTrace = logsResult.StackTraceLog.Content
+		errDetails.RemotePhpStackTraceLines = logsResult.StackTraceLog.Lines
 
-		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace",
+		s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_stacktrace",
 			fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", logsResult.StackTraceLog.Lines, logsResult.StackTraceLog.TotalSize),
 			session.ToJSON(StackTraceLogDetails{
 				Lines:     logsResult.StackTraceLog.Lines,
@@ -1260,31 +1256,31 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 			}))
 
 		// Persist stacktrace content to session error.log for diagnostics API
-		if s.sessionService != nil && sessionID != "" {
-			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", session.ToJSON(StackTraceContentDetails{
+		if s.sessionService != nil && sessionId != "" {
+			s.sessionService.Log(sessionId, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", session.ToJSON(StackTraceContentDetails{
 				Content:   logsResult.StackTraceLog.Content,
 				Lines:     logsResult.StackTraceLog.Lines,
 				Truncated: logsResult.StackTraceLog.Truncated,
 			}))
 		}
 	} else {
-		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace", "No stacktrace.txt content available on remote site", nil)
+		s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_stacktrace", "No stacktrace.txt content available on remote site", nil)
 	}
 }
 
 // logToErrorFile writes error details to data/errors/error.log.txt
 // Uses MD5 deduplication to suppress identical error entries.
 // Format matches the standardized error log spec with full request attribution.
-func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details *ExtractedErrorDetails) {
+func (s *Service) logToErrorFile(action string, siteId int64, pluginSlug, siteName, siteUrl string, details *ExtractedErrorDetails) {
 	// Build deduplication hash from stable error identity (excludes timestamp)
-	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteID, pluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
+	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteId, pluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
 	hashBytes := md5.Sum([]byte(hashInput))
 	hashHex := hex.EncodeToString(hashBytes[:])
 
 	s.errorLogHashesMu.Lock()
 	if _, exists := s.errorLogHashes[hashHex]; exists {
 		s.errorLogHashesMu.Unlock()
-		s.log.Debug("Duplicate error log entry suppressed", "action", action, "siteId", siteID, "plugin", pluginSlug, "hash", hashHex)
+		s.log.Debug("Duplicate error log entry suppressed", "action", action, "siteId", siteId, "plugin", pluginSlug, "hash", hashHex)
 		return
 	}
 	s.errorLogHashes[hashHex] = struct{}{}
@@ -1320,9 +1316,9 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	if method == "" {
 		method = "POST"
 	}
-	delegatedURL := details.URL
-	if delegatedURL == "" && details.Endpoint != "" {
-		delegatedURL = fmt.Sprintf("%s/wp-json%s", siteURL, details.Endpoint)
+	delegatedUrl := details.Url
+	if delegatedUrl == "" && details.Endpoint != "" {
+		delegatedUrl = fmt.Sprintf("%s/wp-json%s", siteUrl, details.Endpoint)
 	}
 
 	// Detect if a WP Core mutation endpoint was used (guard rail)
@@ -1335,13 +1331,13 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 		// Determine the correct Riseup Uploader endpoint
 		switch action {
 		case "disable":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, wordpress.EndpointDisable)
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, wordpress.EndpointDisable)
 		case "enable":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, wordpress.EndpointEnable)
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, wordpress.EndpointEnable)
 		case "delete":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, wordpress.EndpointDelete)
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, wordpress.EndpointDelete)
 		default:
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteURL, wordpress.RiseupAsiaNamespace, action)
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteUrl, wordpress.RiseupAsiaNamespace, action)
 		}
 	}
 
@@ -1360,10 +1356,10 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	// Build log entry in the redefined format
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
-	logEntry += fmt.Sprintf("  Site Request URL: %s\n", delegatedURL)
-	logEntry += fmt.Sprintf("  Site ID: %d\n", siteID)
+	logEntry += fmt.Sprintf("  Site Request URL: %s\n", delegatedUrl)
+	logEntry += fmt.Sprintf("  Site ID: %d\n", siteId)
 	logEntry += fmt.Sprintf("  Site Name: %s\n", siteName)
-	logEntry += fmt.Sprintf("  Site Base URL: %s\n", siteURL)
+	logEntry += fmt.Sprintf("  Site Base URL: %s\n", siteUrl)
 	logEntry += fmt.Sprintf("  Plugin Identifier: %s\n", pluginIdentifier)
 	logEntry += fmt.Sprintf("  Requested Action: %s\n", action)
 	logEntry += "  Delegated Request:\n"
@@ -1413,9 +1409,9 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	}
 
 	// Remote PHP error sessions (fetched from plugin's SQLite DB)
-	if len(details.RemotePHPErrors) > 0 {
-		logEntry += fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(details.RemotePHPErrors))
-		for i, phpErr := range details.RemotePHPErrors {
+	if len(details.RemotePhpErrors) > 0 {
+		logEntry += fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(details.RemotePhpErrors))
+		for i, phpErr := range details.RemotePhpErrors {
 			logEntry += fmt.Sprintf("    [%d] [%s] %s\n", i+1, strings.ToUpper(phpErr.Level), phpErr.Message)
 			logEntry += fmt.Sprintf("        File: %s  Line: %d  At: %s\n", phpErr.File, phpErr.Line, phpErr.CreatedAt)
 		}
@@ -1428,14 +1424,14 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 
 // SiteCredentials holds decrypted credentials for API access
 type SiteCredentials struct {
-	URL         string `json:"url"`
+	Url         string `json:"url"`
 	Username    string `json:"username"`
 	AppPassword string `json:"appPassword"`
 }
 
 // GetCredentials returns the decrypted credentials for a site (for API Explorer)
-func (s *Service) GetCredentials(ctx context.Context, siteID int64) (*SiteCredentials, error) {
-	result := s.GetByID(ctx, siteID)
+func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCredentials, error) {
+	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -1446,10 +1442,10 @@ func (s *Service) GetCredentials(ctx context.Context, siteID int64) (*SiteCreden
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
-	s.log.Debug("Credentials retrieved for site", "siteId", siteID, "siteName", site.Name)
+	s.log.Debug("Credentials retrieved for site", "siteId", siteId, "siteName", site.Name)
 	
 	return &SiteCredentials{
-		URL:         site.URL,
+		Url:         site.Url,
 		Username:    site.Username,
 		AppPassword: string(password),
 	}, nil
@@ -1475,8 +1471,8 @@ type RemotePluginFilesResult struct {
 }
 
 // GetRemotePluginFiles fetches the file list for a remote plugin via Riseup Asia Uploader
-func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (*RemotePluginFilesResult, error) {
-	result := s.GetByID(ctx, siteID)
+func (s *Service) GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*RemotePluginFilesResult, error) {
+	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -1487,24 +1483,24 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, plugin
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
-	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 	
 	// Use the Riseup Asia Uploader endpoint
 	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").
-			WithSiteId(siteID).
+			WithSiteId(siteId).
 			WithPluginSlug(pluginSlug)
 	}
 
 	// Convert wordpress.RemoteFile to our local type
-	result := &RemotePluginFilesResult{
+	filesResult := &RemotePluginFilesResult{
 		PluginSlug: pluginSlug,
 		TotalFiles: len(files),
 		Files:      make([]RemotePluginFile, 0, len(files)),
 	}
 	for _, f := range files {
-		result.Files = append(result.Files, RemotePluginFile{
+		filesResult.Files = append(filesResult.Files, RemotePluginFile{
 			Path:       f.Path,
 			Hash:       f.Hash,
 			Size:       f.Size,
@@ -1512,13 +1508,13 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, plugin
 		})
 	}
 
-	s.log.Debug("Remote plugin files fetched", "siteId", siteID, "pluginSlug", pluginSlug, "fileCount", len(result.Files))
-	return result, nil
+	s.log.Debug("Remote plugin files fetched", "siteId", siteId, "pluginSlug", pluginSlug, "fileCount", len(filesResult.Files))
+	return filesResult, nil
 }
 
 // GetRemotePluginFileContent fetches the content of a specific file from a remote plugin
-func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error) {
-	result := s.GetByID(ctx, siteID)
+func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteId int64, pluginSlug, filePath string) (string, error) {
+	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return "", result.AppError()
 	}
@@ -1529,17 +1525,17 @@ func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, 
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
-	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 	
 	content, err := client.GetPluginFileContent(ctx, pluginSlug, filePath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").
-			WithSiteId(siteID).
+			WithSiteId(siteId).
 			WithPluginSlug(pluginSlug).
 			WithFilePath(filePath)
 	}
 
-	s.log.Debug("Remote file content fetched", "siteId", siteID, "pluginSlug", pluginSlug, "filePath", filePath, "contentLen", len(content))
+	s.log.Debug("Remote file content fetched", "siteId", siteId, "pluginSlug", pluginSlug, "filePath", filePath, "contentLen", len(content))
 	return content, nil
 }
 
