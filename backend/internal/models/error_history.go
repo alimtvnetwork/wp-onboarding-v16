@@ -8,8 +8,8 @@ import (
 
 // ErrorHistory represents a captured error/notification for persistent storage
 type ErrorHistory struct {
-	ID                  int64           `json:"id"`
-	ErrorID             string          `json:"errorId"`
+	Id                  int64           `json:"id"`
+	ErrorId             string          `json:"errorId"`
 	Code                string          `json:"code"`
 	Level               string          `json:"level"`
 	Message             string          `json:"message"`
@@ -22,7 +22,7 @@ type ErrorHistory struct {
 	RequestBodyJSON     string          `json:"-"`
 	RequestBody         json.RawMessage `json:"requestBody,omitempty"`
 	ResponseStatus      int             `json:"responseStatus,omitempty"`
-	SessionID           string          `json:"sessionId,omitempty"`
+	SessionId           string          `json:"sessionId,omitempty"`
 	SessionType         string          `json:"sessionType,omitempty"`
 	PHPStackFramesJSON  string          `json:"-"`
 	PHPStackFrames      []PHPStackFrame `json:"phpStackFrames,omitempty"`
@@ -50,7 +50,7 @@ type PHPStackFrame struct {
 
 // ErrorHistoryInput represents the input for creating an error history entry
 type ErrorHistoryInput struct {
-	ErrorID            string          `json:"errorId"`
+	ErrorId            string          `json:"errorId"`
 	Code               string          `json:"code"`
 	Level              string          `json:"level"`
 	Message            string          `json:"message"`
@@ -61,7 +61,7 @@ type ErrorHistoryInput struct {
 	Method             string          `json:"method,omitempty"`
 	RequestBody        json.RawMessage `json:"requestBody,omitempty"`
 	ResponseStatus     int             `json:"responseStatus,omitempty"`
-	SessionID          string          `json:"sessionId,omitempty"`
+	SessionId          string          `json:"sessionId,omitempty"`
 	SessionType        string          `json:"sessionType,omitempty"`
 	PHPStackFrames     []PHPStackFrame `json:"phpStackFrames,omitempty"`
 	BackendLogs        []string        `json:"backendLogs,omitempty"`

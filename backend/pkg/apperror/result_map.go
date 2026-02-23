@@ -120,5 +120,6 @@ func (r ResultMap[K, V]) Values() []V {
 	return vals
 }
 
-// Error returns the underlying AppError, or nil.
-func (r ResultMap[K, V]) Error() *AppError { return r.err }
+// AppError returns the underlying AppError, or nil.
+// Named AppError (not Error) to avoid confusion with Go's native error interface.
+func (r ResultMap[K, V]) AppError() *AppError { return r.err }

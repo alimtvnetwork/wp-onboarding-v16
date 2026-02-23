@@ -208,7 +208,7 @@ func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, plugi
 	existingResult := s.GetMappingsBySite(ctx, siteID)
 	var existingMappings []models.PluginMapping
 	if existingResult.HasError() {
-		s.log.Warn("Failed to fetch existing site mappings", "siteId", siteID, "error", existingResult.Error())
+		s.log.Warn("Failed to fetch existing site mappings", "siteId", siteID, "error", existingResult.AppError())
 		existingMappings = []models.PluginMapping{}
 	} else {
 		existingMappings = existingResult.Items()

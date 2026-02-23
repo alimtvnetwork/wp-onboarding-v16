@@ -30,7 +30,7 @@ type SyncServiceAdapter struct {
 func (a *SyncServiceAdapter) CheckSync(ctx context.Context, pluginID, siteID int64) (*sync.SyncResult, error) {
 	result := a.Service.CheckSync(ctx, pluginID, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -39,7 +39,7 @@ func (a *SyncServiceAdapter) CheckSync(ctx context.Context, pluginID, siteID int
 func (a *SyncServiceAdapter) CheckAllSites(ctx context.Context, pluginID int64) (*sync.BatchSyncResult, error) {
 	result := a.Service.CheckAllSites(ctx, pluginID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -48,7 +48,7 @@ func (a *SyncServiceAdapter) CheckAllSites(ctx context.Context, pluginID int64) 
 func (a *SyncServiceAdapter) CheckAllPlugins(ctx context.Context) ([]sync.SyncResult, error) {
 	result := a.Service.CheckAllPlugins(ctx)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -56,7 +56,7 @@ func (a *SyncServiceAdapter) CheckAllPlugins(ctx context.Context) ([]sync.SyncRe
 func (a *SyncServiceAdapter) GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error) {
 	result := a.Service.GetFileChanges(ctx, pluginID, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -64,7 +64,7 @@ func (a *SyncServiceAdapter) GetFileChanges(ctx context.Context, pluginID, siteI
 func (a *SyncServiceAdapter) PushSync(ctx context.Context, pluginID, siteID int64) (*sync.PushSyncResult, error) {
 	result := a.Service.PushSync(ctx, pluginID, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -85,7 +85,7 @@ type WatcherServiceAdapter struct {
 func (a *WatcherServiceAdapter) TriggerScan(ctx context.Context, pluginID int64) (*watcher.ScanResult, error) {
 	result := a.Service.TriggerScan(ctx, pluginID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -94,7 +94,7 @@ func (a *WatcherServiceAdapter) TriggerScan(ctx context.Context, pluginID int64)
 func (a *WatcherServiceAdapter) ScanAll(ctx context.Context) ([]watcher.ScanResult, error) {
 	result := a.Service.ScanAll(ctx)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }

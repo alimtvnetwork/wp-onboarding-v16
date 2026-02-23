@@ -50,7 +50,7 @@ type pluginRaw struct {
 // scanPluginColumns scans columns into pluginRaw (shared by Row and Rows scanners).
 func scanPluginColumns(dest *pluginRaw, scan func(dest ...any) error) error {
 	return scan(
-		&dest.plugin.ID,
+		&dest.plugin.Id,
 		&dest.plugin.Name,
 		&dest.plugin.Path,
 		&dest.category,
@@ -134,7 +134,7 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Plugin] 
 // loadMappingsForAll attaches mappings to each plugin in the slice.
 func (s *Service) loadMappingsForAll(ctx context.Context, plugins []models.Plugin) []models.Plugin {
 	for i := range plugins {
-		result := s.GetMappings(ctx, plugins[i].ID)
+		result := s.GetMappings(ctx, plugins[i].Id)
 		if result.IsSafe() {
 			plugins[i].Mappings = result.Items()
 		}
@@ -142,9 +142,9 @@ func (s *Service) loadMappingsForAll(ctx context.Context, plugins []models.Plugi
 	return plugins
 }
 
-// GetByID returns a plugin by its ID.
-func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Plugin] {
-	s.log.Debug("Getting plugin by ID", "pluginId", id)
+// GetById returns a plugin by its Id.
+func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.Plugin] {
+	s.log.Debug("Getting plugin by Id", "pluginId", id)
 
 	result := dbutil.QueryOne[models.Plugin](
 		ctx,
@@ -154,14 +154,14 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 		id,
 	)
 	if result.HasError() {
-		return apperror.FailWrap[models.Plugin](result.Error(), apperror.ErrDatabaseQuery, "get plugin by ID")
+		return apperror.FailWrap[models.Plugin](result.Error(), apperror.ErrDatabaseQuery, "get plugin by Id")
 	}
 	if result.IsEmpty() {
 		return apperror.FailNew[models.Plugin](apperror.ErrNotFound, "plugin not found")
 	}
 
 	p := result.Value()
-	mappings := s.GetMappings(ctx, p.ID)
+	mappings := s.GetMappings(ctx, p.Id)
 	if mappings.IsSafe() {
 		p.Mappings = mappings.Items()
 	}
@@ -226,7 +226,7 @@ func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (ap
 
 	if input.ForceCreate {
 		s.log.Info("Plugin path already registered; returning existing", "pluginId", result.Value(), "path", input.Path)
-		return s.GetByID(ctx, result.Value()), true
+		return s.GetById(ctx, result.Value()), true
 	}
 
 	return apperror.FailNew[models.Plugin](apperror.ErrDuplicate, "plugin path already registered"), true
@@ -265,9 +265,9 @@ func (s *Service) insertPlugin(ctx context.Context, input CreateInput) apperror.
 		return apperror.Fail[models.Plugin](res.Error())
 	}
 
-	s.log.Info("Plugin created", "pluginId", res.LastInsertID, "name", input.Name)
-	s.insertGitConfig(ctx, res.LastInsertID, input)
-	return s.GetByID(ctx, res.LastInsertID)
+	s.log.Info("Plugin created", "pluginId", res.LastInsertId, "name", input.Name)
+	s.insertGitConfig(ctx, res.LastInsertId, input)
+	return s.GetById(ctx, res.LastInsertId)
 }
 
 // encodeExcludePatterns marshals exclude patterns to JSON string.
@@ -298,7 +298,7 @@ func (s *Service) insertGitConfig(ctx context.Context, pluginID int64, input Cre
 func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apperror.Result[models.Plugin] {
 	s.log.Info("Updating plugin", "pluginId", id)
 
-	existing := s.GetByID(ctx, id)
+	existing := s.GetById(ctx, id)
 	if existing.HasError() {
 		return existing
 	}
@@ -317,7 +317,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 		return apperror.Fail[models.Plugin](res.Error())
 	}
 
-	return s.GetByID(ctx, id)
+	return s.GetById(ctx, id)
 }
 
 // buildUpdateFields constructs SET clauses and args from non-nil input fields.
@@ -364,9 +364,9 @@ func appendOptionalFields(updates *[]string, args *[]any, input UpdateInput) {
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	s.log.Info("Deleting plugin", "pluginId", id)
 
-	result := s.GetByID(ctx, id)
+	result := s.GetById(ctx, id)
 	if result.HasError() {
-		return result.Error()
+		return result.AppError()
 	}
 
 	return s.deletePluginCascade(ctx, id)
@@ -413,15 +413,15 @@ func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
 
 // RefreshFileCount updates the file count for a plugin.
 func (s *Service) RefreshFileCount(ctx context.Context, id int64) error {
-	result := s.GetByID(ctx, id)
+	result := s.GetById(ctx, id)
 	if result.HasError() {
-		return result.Error()
+		return result.AppError()
 	}
 
 	plugin := result.Value()
 	scan := s.ScanDirectory(ctx, plugin.Path)
 	if scan.HasError() {
-		return scan.Error()
+		return scan.AppError()
 	}
 
 	res := dbutil.Exec(

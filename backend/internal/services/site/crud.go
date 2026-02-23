@@ -286,7 +286,7 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	result := s.GetByID(ctx, id)
 	if result.HasError() {
-		return result.Error()
+		return result.AppError()
 	}
 
 	res := dbutil.Exec(

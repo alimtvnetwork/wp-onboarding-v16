@@ -127,8 +127,8 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 
 	siteResult := s.GetByID(ctx, id)
 	if siteResult.HasError() {
-		s.broadcastProgress(id, "fetch_site", stagestatus.Failed.String(), "Failed to retrieve site info", toJSON(ErrorDetail{Error: siteResult.Error().Error()}))
-		return nil, siteResult.Error()
+		s.broadcastProgress(id, "fetch_site", stagestatus.Failed.String(), "Failed to retrieve site info", toJSON(ErrorDetail{Error: siteResult.AppError().Error()}))
+		return nil, siteResult.AppError()
 	}
 	site := siteResult.Value()
 	s.broadcastProgress(id, "fetch_site", stagestatus.Completed.String(), fmt.Sprintf("Retrieved site: %s", site.Name), nil)
@@ -243,7 +243,7 @@ func (s *Service) broadcastProgress(siteID int64, step, status, message string, 
 func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, error) {
 	result := s.GetByID(ctx, id)
 	if result.HasError() {
-		return "", result.Error()
+		return "", result.AppError()
 	}
 	site := result.Value()
 
@@ -320,7 +320,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	// Get site details
 	result := s.GetByID(ctx, id)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	site := result.Value()
 
@@ -627,7 +627,7 @@ func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteID int64, f
 func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
 	result := s.GetByID(ctx, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	site := result.Value()
 
@@ -799,7 +799,7 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 func (s *Service) CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error) {
 	result := s.GetByID(ctx, siteID)
 	if result.HasError() {
-		return false, "", "", apperror.Wrap(result.Error(), apperror.ErrNotFound, "site not found")
+		return false, "", "", apperror.Wrap(result.AppError(), apperror.ErrNotFound, "site not found")
 	}
 	site := result.Value()
 
@@ -852,7 +852,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	// Get site info
 	siteResult := s.GetByID(ctx, siteID)
 	if siteResult.HasError() {
-		return siteResult.Error()
+		return siteResult.AppError()
 	}
 	site := siteResult.Value()
 
@@ -1437,7 +1437,7 @@ type SiteCredentials struct {
 func (s *Service) GetCredentials(ctx context.Context, siteID int64) (*SiteCredentials, error) {
 	result := s.GetByID(ctx, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	site := result.Value()
 
@@ -1478,7 +1478,7 @@ type RemotePluginFilesResult struct {
 func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (*RemotePluginFilesResult, error) {
 	result := s.GetByID(ctx, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	site := result.Value()
 
@@ -1520,7 +1520,7 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, plugin
 func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error) {
 	result := s.GetByID(ctx, siteID)
 	if result.HasError() {
-		return "", result.Error()
+		return "", result.AppError()
 	}
 	site := result.Value()
 

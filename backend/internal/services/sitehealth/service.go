@@ -137,7 +137,7 @@ func (s *Service) CheckAllSites(ctx context.Context) apperror.ResultSlice[models
 	for _, id := range siteIDs {
 		result := s.CheckSite(ctx, id)
 		if result.HasError() {
-			s.log.Warn("Health check failed", "siteId", id, "error", result.Error())
+			s.log.Warn("Health check failed", "siteId", id, "error", result.AppError())
 			continue
 		}
 		results = append(results, result.Value())
@@ -222,7 +222,7 @@ func (s *Service) GetSummaries(ctx context.Context) apperror.ResultSlice[models.
 func (s *Service) GetStats(ctx context.Context) apperror.Result[models.SiteHealthStats] {
 	summariesResult := s.GetSummaries(ctx)
 	if summariesResult.HasError() {
-		return apperror.Fail[models.SiteHealthStats](summariesResult.Error())
+		return apperror.Fail[models.SiteHealthStats](summariesResult.AppError())
 	}
 	summaries := summariesResult.Items()
 

@@ -149,8 +149,8 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	// Get plugin info early to have name for session
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
-		result.ErrorMessage = pluginResult.Error().Error()
-		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 0, pluginResult.Error().Error())
+		result.ErrorMessage = pluginResult.AppError().Error()
+		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 0, pluginResult.AppError().Error())
 		return apperror.Ok(*result)
 	}
 	pluginInfo := pluginResult.Value()
@@ -1561,7 +1561,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 	// Get plugin info
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
-		return apperror.Fail[PublishPreviewResult](apperror.Wrap(pluginResult.Error(), apperror.ErrNotFound, "plugin not found"))
+		return apperror.Fail[PublishPreviewResult](apperror.Wrap(pluginResult.AppError(), apperror.ErrNotFound, "plugin not found"))
 	}
 	pluginInfo := pluginResult.Value()
 	result.PluginName = pluginInfo.Name
@@ -1767,7 +1767,7 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 	// Get plugin info
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
-		return apperror.Fail[FileDiffResult](apperror.Wrap(pluginResult.Error(), apperror.ErrDatabaseQuery, "plugin not found"))
+		return apperror.Fail[FileDiffResult](apperror.Wrap(pluginResult.AppError(), apperror.ErrDatabaseQuery, "plugin not found"))
 	}
 	pluginInfo := pluginResult.Value()
 

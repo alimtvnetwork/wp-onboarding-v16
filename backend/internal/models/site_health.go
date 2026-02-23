@@ -5,8 +5,8 @@ import "time"
 
 // SiteHealthCheck represents a single health check result
 type SiteHealthCheck struct {
-	ID           int64     `json:"id"`
-	SiteID       int64     `json:"siteId"`
+	Id           int64     `json:"id"`
+	SiteId       int64     `json:"siteId"`
 	SiteName     string    `json:"siteName"`
 	SiteURL      string    `json:"siteUrl"`
 	Status       string    `json:"status"`       // healthy, degraded, down, unknown
@@ -21,7 +21,7 @@ type SiteHealthCheck struct {
 
 // SiteHealthSummary provides aggregated health data for a site
 type SiteHealthSummary struct {
-	SiteID          int64   `json:"siteId"`
+	SiteId          int64   `json:"siteId"`
 	SiteName        string  `json:"siteName"`
 	SiteURL         string  `json:"siteUrl"`
 	CurrentStatus   string  `json:"currentStatus"`
@@ -49,7 +49,7 @@ type SiteHealthStats struct {
 
 // SiteHealthFilters for querying health checks
 type SiteHealthFilters struct {
-	SiteID    int64  `json:"siteId,omitempty"`
+	SiteId    int64  `json:"siteId,omitempty"`
 	Status    string `json:"status,omitempty"`
 	StartDate string `json:"startDate,omitempty"`
 	EndDate   string `json:"endDate,omitempty"`

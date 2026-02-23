@@ -123,7 +123,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) apperror.Result[Pull
 	// Get plugin details
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return apperror.Fail[PullResult](pResult.Error())
+		return apperror.Fail[PullResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
@@ -214,7 +214,7 @@ func (s *Service) PullAll(ctx context.Context) apperror.Result[BatchPullResult] 
 
 	pluginsResult := s.pluginService.List(ctx)
 	if pluginsResult.HasError() {
-		return apperror.Fail[BatchPullResult](pluginsResult.Error())
+		return apperror.Fail[BatchPullResult](pluginsResult.AppError())
 	}
 	plugins := pluginsResult.Items()
 
@@ -261,14 +261,14 @@ func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[Bui
 	// Get plugin
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return apperror.Fail[BuildResult](pResult.Error())
+		return apperror.Fail[BuildResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
 	// Get git config
 	configResult := s.GetConfig(ctx, pluginID)
 	if configResult.HasError() {
-		return apperror.Fail[BuildResult](configResult.Error())
+		return apperror.Fail[BuildResult](configResult.AppError())
 	}
 	config := configResult.Value()
 	isBuildMissing := !config.BuildEnabled || config.BuildCommand == ""
@@ -344,7 +344,7 @@ func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) apperror.Res
 	// First pull
 	pullResult := s.Pull(ctx, pluginID)
 	if pullResult.HasError() {
-		return apperror.Fail[PullAndBuildResult](pullResult.Error())
+		return apperror.Fail[PullAndBuildResult](pullResult.AppError())
 	}
 	pull := pullResult.Value()
 
@@ -354,7 +354,7 @@ func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) apperror.Res
 	if pull.Success && pull.FilesChanged > 0 {
 		buildResult := s.Build(ctx, pluginID)
 		if buildResult.HasError() {
-			return apperror.Fail[PullAndBuildResult](buildResult.Error())
+			return apperror.Fail[PullAndBuildResult](buildResult.AppError())
 		}
 		v := buildResult.Value()
 		combined.Build = &v
@@ -415,7 +415,7 @@ type StatusResult struct {
 func (s *Service) Status(ctx context.Context, pluginID int64) apperror.Result[StatusResult] {
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return apperror.Fail[StatusResult](pResult.Error())
+		return apperror.Fail[StatusResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
@@ -482,7 +482,7 @@ type CommitResult struct {
 func (s *Service) Commit(ctx context.Context, pluginID int64, message string) apperror.Result[CommitResult] {
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return apperror.Fail[CommitResult](pResult.Error())
+		return apperror.Fail[CommitResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
@@ -539,7 +539,7 @@ type PushResult struct {
 func (s *Service) Push(ctx context.Context, pluginID int64) apperror.Result[PushResult] {
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return apperror.Fail[PushResult](pResult.Error())
+		return apperror.Fail[PushResult](pResult.AppError())
 	}
 	p := pResult.Value()
 

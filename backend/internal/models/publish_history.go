@@ -5,13 +5,13 @@ import "time"
 
 // PublishHistory represents a record of a publish operation
 type PublishHistory struct {
-	ID               int64     `json:"id"`
-	PluginID         int64     `json:"pluginId"`
+	Id               int64     `json:"id"`
+	PluginId         int64     `json:"pluginId"`
 	PluginName       string    `json:"pluginName"`
-	SiteID           int64     `json:"siteId"`
+	SiteId           int64     `json:"siteId"`
 	SiteName         string    `json:"siteName"`
 	SiteURL          string    `json:"siteUrl"`
-	SessionID        string    `json:"sessionId,omitempty"`
+	SessionId        string    `json:"sessionId,omitempty"`
 	Status           string    `json:"status"`           // success, failed, partial
 	Mode             string    `json:"mode"`             // full, selected
 	FilesUpdated     int       `json:"filesUpdated"`
@@ -25,8 +25,8 @@ type PublishHistory struct {
 
 // PublishHistoryFilters for querying publish history
 type PublishHistoryFilters struct {
-	PluginID int64  `json:"pluginId,omitempty"`
-	SiteID   int64  `json:"siteId,omitempty"`
+	PluginId int64  `json:"pluginId,omitempty"`
+	SiteId   int64  `json:"siteId,omitempty"`
 	Status   string `json:"status,omitempty"`
 	Search   string `json:"search,omitempty"`
 }

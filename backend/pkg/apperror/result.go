@@ -62,8 +62,9 @@ func (r Result[T]) ValueOr(fallback T) T {
 	return fallback
 }
 
-// Error returns the underlying AppError, or nil.
-func (r Result[T]) Error() *AppError { return r.err }
+// AppError returns the underlying AppError, or nil.
+// Named AppError (not Error) to avoid confusion with Go's native error interface.
+func (r Result[T]) AppError() *AppError { return r.err }
 
 // Unwrap bridges to the standard (T, error) pattern.
 func (r Result[T]) Unwrap() (T, error) {
