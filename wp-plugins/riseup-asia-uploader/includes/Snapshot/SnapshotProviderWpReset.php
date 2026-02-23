@@ -22,8 +22,8 @@ use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 
 class SnapshotProviderWPReset extends SnapshotProviderInterface {
-    protected string $provider_id = SnapshotProviderType::WpReset->value;
-    protected string $provider_name = 'WP Reset';
+    protected string $providerId = SnapshotProviderType::WpReset->value;
+    protected string $providerName = 'WP Reset';
     private mixed $wpReset = null;
 
     public function __construct(FileLogger $logger, Database $db) {
@@ -116,7 +116,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function getSnapshot(int $snapshotId): ?array {
         return $this->db->querySingle(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ? AND Provider = ?',
-            array($snapshotId, $this->provider_id),
+            array($snapshotId, $this->providerId),
         );
     }
 
@@ -124,12 +124,12 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
-            array($this->provider_id, $limit, $offset),
+            array($this->providerId, $limit, $offset),
         );
 
         $total = $this->db->querySingle(
             'SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?',
-            array($this->provider_id),
+            array($this->providerId),
         );
 
         return array(

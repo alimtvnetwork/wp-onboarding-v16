@@ -62,7 +62,7 @@ trait UpdraftCrudTrait {
     public function getSnapshot(int $snapshotId): ?array {
         return $this->db->querySingle(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ? AND Provider = ?',
-            array($snapshotId, $this->provider_id)
+            array($snapshotId, $this->providerId)
         );
     }
 
@@ -70,7 +70,7 @@ trait UpdraftCrudTrait {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
             array(
-                $this->provider_id,
+                $this->providerId,
                 $limit,
                 $offset,
             )
@@ -78,7 +78,7 @@ trait UpdraftCrudTrait {
 
         $total = $this->db->querySingle(
             'SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?',
-            array($this->provider_id)
+            array($this->providerId)
         );
 
         return array(
