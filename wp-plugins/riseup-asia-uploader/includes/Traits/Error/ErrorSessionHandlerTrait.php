@@ -63,7 +63,7 @@ trait ErrorSessionHandlerTrait {
     private function buildErrorSessionQuery(WP_REST_Request $request): array {
         $level    = sanitize_text_field($request->get_param('level') ?: '');
         $search   = sanitize_text_field($request->get_param('search') ?: '');
-        $since_id = (int) ($request->get_param('since_id') ?: 0);
+        $sinceId = (int) ($request->get_param('since_id') ?: 0);
         $limit    = max(1, min(1000, (int) ($request->get_param('limit') ?: 100)));
         $offset   = max(0, (int) ($request->get_param('offset') ?: 0));
 
@@ -71,18 +71,18 @@ trait ErrorSessionHandlerTrait {
         $params = array();
         if (BooleanHelpers::hasValue($level))  { $where[] = 'Level = ?';      $params[] = strtoupper($level); }
         if (BooleanHelpers::hasValue($search)) { $where[] = 'Message LIKE ?'; $params[] = '%' . $search . '%'; }
-        if ($since_id > 0)   { $where[] = 'Id > ?';         $params[] = $since_id; }
+        if ($sinceId > 0)   { $where[] = 'Id > ?';         $params[] = $sinceId; }
 
         $hasWhereClause = BooleanHelpers::hasValue($where);
         return array(
-            'where_sql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
+            'whereSql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
             'params' => $params, 'limit' => $limit, 'offset' => $offset,
         );
     }
 
     /** Count total error sessions matching the query. */
     private function countErrorSessions(PDO $pdo, array $query): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$query['where_sql']}");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$query['whereSql']}");
         $stmt->execute($query['params']);
 
         return (int) $stmt->fetchColumn();
@@ -90,7 +90,7 @@ trait ErrorSessionHandlerTrait {
 
     /** Fetch error sessions matching the query. */
     private function fetchErrorSessions(PDO $pdo, array $query): array {
-        $sql = "SELECT * FROM " . TableType::ErrorSessions->value . " {$query['where_sql']} ORDER BY Id DESC LIMIT ? OFFSET ?";
+        $sql = "SELECT * FROM " . TableType::ErrorSessions->value . " {$query['whereSql']} ORDER BY Id DESC LIMIT ? OFFSET ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(array_merge($query['params'], array($query['limit'], $query['offset'])));
 
@@ -105,7 +105,7 @@ trait ErrorSessionHandlerTrait {
                 'id' => (int) $row['Id'], 'level' => $row['Level'], 'message' => $row['Message'],
                 'file' => $row['File'], 'fileBase' => $row['File'] ? basename($row['File']) : null,
                 'line' => $row['Line'] ? (int) $row['Line'] : null, 'stackTrace' => $row['StackTrace'],
-                'context' => $this->parseContextJson($row['ContextJson'] ?? ''), 'created_at' => $row['CreatedAt'],
+                'context' => $this->parseContextJson($row['ContextJson'] ?? ''), 'createdAt' => $row['CreatedAt'],
             );
             if (BooleanHelpers::hasValue($row['StackTrace'])) {
                 $entry['stackTraceFrames'] = $this->parseStackTraceString($row['StackTrace']);
