@@ -995,9 +995,9 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			errCode = apperror.ErrWPPluginDelete
 		}
 		return apperror.Wrap(err, errCode, fmt.Sprintf("failed to %s plugin", action)).
-			WithSiteID(siteID).
+			WithSiteId(siteID).
 			WithPlugin(pluginSlug).
-			WithSessionID(sessionID)
+			WithSessionId(sessionID)
 	}
 
 	// Success — save response.json
@@ -1493,7 +1493,7 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, plugin
 	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").
-			WithSiteID(siteID).
+			WithSiteId(siteID).
 			WithPluginSlug(pluginSlug)
 	}
 
@@ -1534,7 +1534,7 @@ func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, 
 	content, err := client.GetPluginFileContent(ctx, pluginSlug, filePath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").
-			WithSiteID(siteID).
+			WithSiteId(siteID).
 			WithPluginSlug(pluginSlug).
 			WithFilePath(filePath)
 	}

@@ -11,13 +11,13 @@ type ErrorDiagnostic struct {
 	FilePath   string `json:"filePath,omitempty"`
 	PluginSlug string `json:"pluginSlug,omitempty"`
 	Plugin     string `json:"plugin,omitempty"`
-	SiteID     int64  `json:"siteId,omitempty"`
-	PluginID   int64  `json:"pluginId,omitempty"`
-	SnapshotID int64  `json:"snapshotId,omitempty"`
-	MappingID  int64  `json:"mappingId,omitempty"`
-	VersionID  int64  `json:"versionId,omitempty"`
-	SessionID  string `json:"sessionId,omitempty"`
-	RunID      string `json:"runId,omitempty"`
+	SiteId     int64  `json:"siteId,omitempty"`
+	PluginId   int64  `json:"pluginId,omitempty"`
+	SnapshotId int64  `json:"snapshotId,omitempty"`
+	MappingId  int64  `json:"mappingId,omitempty"`
+	VersionId  int64  `json:"versionId,omitempty"`
+	SessionId  string `json:"sessionId,omitempty"`
+	RunId      string `json:"runId,omitempty"`
 	StatusCode int    `json:"statusCode,omitempty"`
 	Method     string `json:"method,omitempty"`
 	Endpoint   string `json:"endpoint,omitempty"`
@@ -85,45 +85,45 @@ func (e *AppError) WithPluginSlug(s string) *AppError {
 	return e
 }
 
-// WithSiteID sets the siteId diagnostic field.
-func (e *AppError) WithSiteID(id int64) *AppError {
-	e.Diagnostic.SiteID = id
+// WithSiteId sets the siteId diagnostic field.
+func (e *AppError) WithSiteId(id int64) *AppError {
+	e.Diagnostic.SiteId = id
 	return e
 }
 
-// WithPluginID sets the pluginId diagnostic field.
-func (e *AppError) WithPluginID(id int64) *AppError {
-	e.Diagnostic.PluginID = id
+// WithPluginId sets the pluginId diagnostic field.
+func (e *AppError) WithPluginId(id int64) *AppError {
+	e.Diagnostic.PluginId = id
 	return e
 }
 
-// WithSnapshotID sets the snapshotId diagnostic field.
-func (e *AppError) WithSnapshotID(id int64) *AppError {
-	e.Diagnostic.SnapshotID = id
+// WithSnapshotId sets the snapshotId diagnostic field.
+func (e *AppError) WithSnapshotId(id int64) *AppError {
+	e.Diagnostic.SnapshotId = id
 	return e
 }
 
-// WithMappingID sets the mappingId diagnostic field.
-func (e *AppError) WithMappingID(id int64) *AppError {
-	e.Diagnostic.MappingID = id
+// WithMappingId sets the mappingId diagnostic field.
+func (e *AppError) WithMappingId(id int64) *AppError {
+	e.Diagnostic.MappingId = id
 	return e
 }
 
-// WithVersionID sets the versionId diagnostic field.
-func (e *AppError) WithVersionID(id int64) *AppError {
-	e.Diagnostic.VersionID = id
+// WithVersionId sets the versionId diagnostic field.
+func (e *AppError) WithVersionId(id int64) *AppError {
+	e.Diagnostic.VersionId = id
 	return e
 }
 
-// WithSessionID sets the sessionId diagnostic field.
-func (e *AppError) WithSessionID(id string) *AppError {
-	e.Diagnostic.SessionID = id
+// WithSessionId sets the sessionId diagnostic field.
+func (e *AppError) WithSessionId(id string) *AppError {
+	e.Diagnostic.SessionId = id
 	return e
 }
 
-// WithRunID sets the runId diagnostic field.
-func (e *AppError) WithRunID(id string) *AppError {
-	e.Diagnostic.RunID = id
+// WithRunId sets the runId diagnostic field.
+func (e *AppError) WithRunId(id string) *AppError {
+	e.Diagnostic.RunId = id
 	return e
 }
 

@@ -60,15 +60,15 @@ type Message struct {
 	Type      string `json:"type"`
 	Data      any    `json:"data"`
 	Timestamp string `json:"timestamp"`
-	SessionID string `json:"sessionId,omitempty"`
+	SessionId string `json:"sessionId,omitempty"`
 }
 
 // --- Typed broadcast data structs (GE pattern: no raw map[string]any in business logic) ---
 
 // SyncProgressData holds sync progress broadcast payload.
 type SyncProgressData struct {
-	PluginID int64  `json:"pluginId"`
-	SiteID   int64  `json:"siteId"`
+	PluginId int64  `json:"pluginId"`
+	SiteId   int64  `json:"siteId"`
 	Progress int    `json:"progress"`
 	Total    int    `json:"total"`
 	Message  string `json:"message"`
@@ -76,7 +76,7 @@ type SyncProgressData struct {
 
 // ScanProgressData holds scan progress broadcast payload.
 type ScanProgressData struct {
-	PluginID     int64  `json:"pluginId"`
+	PluginId     int64  `json:"pluginId"`
 	FilesScanned int    `json:"filesScanned"`
 	TotalFiles   int    `json:"totalFiles"`
 	CurrentFile  string `json:"currentFile"`
@@ -84,8 +84,8 @@ type ScanProgressData struct {
 
 // PublishProgressData holds publish progress broadcast payload.
 type PublishProgressData struct {
-	PluginID int64  `json:"pluginId"`
-	SiteID   int64  `json:"siteId"`
+	PluginId int64  `json:"pluginId"`
+	SiteId   int64  `json:"siteId"`
 	Stage    string `json:"stage"`
 	Progress int    `json:"progress"`
 	Message  string `json:"message"`
@@ -93,7 +93,7 @@ type PublishProgressData struct {
 
 // FileChangeData holds file change broadcast payload.
 type FileChangeData struct {
-	PluginID   int64  `json:"pluginId"`
+	PluginId   int64  `json:"pluginId"`
 	FilePath   string `json:"filePath"`
 	ChangeType string `json:"changeType"`
 }
@@ -107,7 +107,7 @@ type ErrorData struct {
 
 // ConnectionTestProgressData holds connection test progress broadcast payload.
 type ConnectionTestProgressData struct {
-	SiteID  int64           `json:"siteId"`
+	SiteId  int64           `json:"siteId"`
 	Step    string          `json:"step"`
 	Status  string          `json:"status"`
 	Message string          `json:"message"`
@@ -124,16 +124,16 @@ type LogData struct {
 // OperationLogData holds operation log broadcast payload.
 type OperationLogData struct {
 	OperationType string            `json:"operationType"`
-	PluginID      int64             `json:"pluginId"`
-	SiteID        int64             `json:"siteId"`
-	SessionID     string            `json:"sessionId,omitempty"`
+	PluginId      int64             `json:"pluginId"`
+	SiteId        int64             `json:"siteId"`
+	SessionId     string            `json:"sessionId,omitempty"`
 	Log           OperationLogEntry `json:"log"`
 }
 
 // ConnectionConfirmation holds connection confirmation broadcast payload.
 type ConnectionConfirmation struct {
 	Status   string `json:"status"`
-	ClientID string `json:"clientId"`
+	ClientId string `json:"clientId"`
 }
 
 // IncomingMessage represents a parsed incoming WebSocket message.
@@ -262,20 +262,20 @@ func Broadcast[T any](h *Hub, eventType string, data T) {
 }
 
 // BroadcastWithSession sends a typed message to all connected clients with a session ID.
-func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionID string) {
+func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionId string) {
 	h.broadcast <- &Message{
 		Type:      eventType,
 		Data:      data,
 		Timestamp: utcTimestamp(),
-		SessionID: sessionID,
+		SessionId: sessionId,
 	}
 }
 
 // BroadcastSyncProgress sends a sync progress update
-func (h *Hub) BroadcastSyncProgress(pluginID, siteID int64, progress int, total int, message string) {
+func (h *Hub) BroadcastSyncProgress(pluginId, siteId int64, progress int, total int, message string) {
 	Broadcast(h, EventSyncProgress, SyncProgressData{
-		PluginID: pluginID,
-		SiteID:   siteID,
+		PluginId: pluginId,
+		SiteId:   siteId,
 		Progress: progress,
 		Total:    total,
 		Message:  message,
@@ -283,9 +283,9 @@ func (h *Hub) BroadcastSyncProgress(pluginID, siteID int64, progress int, total 
 }
 
 // BroadcastScanProgress sends a scan progress update
-func (h *Hub) BroadcastScanProgress(pluginID int64, filesScanned int, totalFiles int, currentFile string) {
+func (h *Hub) BroadcastScanProgress(pluginId int64, filesScanned int, totalFiles int, currentFile string) {
 	Broadcast(h, EventScanProgress, ScanProgressData{
-		PluginID:     pluginID,
+		PluginId:     pluginId,
 		FilesScanned: filesScanned,
 		TotalFiles:   totalFiles,
 		CurrentFile:  currentFile,
@@ -293,10 +293,10 @@ func (h *Hub) BroadcastScanProgress(pluginID int64, filesScanned int, totalFiles
 }
 
 // BroadcastPublishProgress sends a publish progress update
-func (h *Hub) BroadcastPublishProgress(pluginID, siteID int64, stage string, progress int, message string) {
+func (h *Hub) BroadcastPublishProgress(pluginId, siteId int64, stage string, progress int, message string) {
 	Broadcast(h, EventPublishProgress, PublishProgressData{
-		PluginID: pluginID,
-		SiteID:   siteID,
+		PluginId: pluginId,
+		SiteId:   siteId,
 		Stage:    stage,
 		Progress: progress,
 		Message:  message,
@@ -304,9 +304,9 @@ func (h *Hub) BroadcastPublishProgress(pluginID, siteID int64, stage string, pro
 }
 
 // BroadcastFileChange notifies clients of a file change
-func (h *Hub) BroadcastFileChange(pluginID int64, filePath, changeType string) {
+func (h *Hub) BroadcastFileChange(pluginId int64, filePath, changeType string) {
 	Broadcast(h, EventFileChange, FileChangeData{
-		PluginID:   pluginID,
+		PluginId:   pluginId,
 		FilePath:   filePath,
 		ChangeType: changeType,
 	})
@@ -322,9 +322,9 @@ func (h *Hub) BroadcastError(code, message string, context json.RawMessage) {
 }
 
 // BroadcastConnectionTestProgress sends a connection test progress update
-func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details json.RawMessage) {
+func (h *Hub) BroadcastConnectionTestProgress(siteId int64, step string, status string, message string, details json.RawMessage) {
 	Broadcast(h, EventConnectionTestProgress, ConnectionTestProgressData{
-		SiteID:  siteID,
+		SiteId:  siteId,
 		Step:    step,
 		Status:  status,
 		Message: message,
@@ -353,32 +353,32 @@ type OperationLogEntry struct {
 }
 
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
-func (h *Hub) BroadcastOperationLog(operationType string, pluginID, siteID int64, entry OperationLogEntry) {
-	h.BroadcastOperationLogWithSession(operationType, pluginID, siteID, "", entry)
+func (h *Hub) BroadcastOperationLog(operationType string, pluginId, siteId int64, entry OperationLogEntry) {
+	h.BroadcastOperationLogWithSession(operationType, pluginId, siteId, "", entry)
 }
 
 // BroadcastOperationLogWithSession sends a detailed operation log entry with session ID
-func (h *Hub) BroadcastOperationLogWithSession(operationType string, pluginID, siteID int64, sessionID string, entry OperationLogEntry) {
+func (h *Hub) BroadcastOperationLogWithSession(operationType string, pluginId, siteId int64, sessionId string, entry OperationLogEntry) {
 	if entry.Timestamp == "" {
 		entry.Timestamp = formatLogTimestamp()
 	}
 	BroadcastWithSession(h, EventLog, OperationLogData{
 		OperationType: operationType,
-		PluginID:      pluginID,
-		SiteID:        siteID,
-		SessionID:     sessionID,
+		PluginId:      pluginId,
+		SiteId:        siteId,
+		SessionId:     sessionId,
 		Log:           entry,
-	}, sessionID)
+	}, sessionId)
 }
 
 // BroadcastPublishLog is a convenience method for publish operation logs
-func (h *Hub) BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details json.RawMessage) {
-	h.BroadcastPublishLogWithSession(pluginID, siteID, "", level, step, message, details)
+func (h *Hub) BroadcastPublishLog(pluginId, siteId int64, level, step, message string, details json.RawMessage) {
+	h.BroadcastPublishLogWithSession(pluginId, siteId, "", level, step, message, details)
 }
 
 // BroadcastPublishLogWithSession is a convenience method for publish operation logs with session
-func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("publish", pluginID, siteID, sessionID, OperationLogEntry{
+func (h *Hub) BroadcastPublishLogWithSession(pluginId, siteId int64, sessionId, level, step, message string, details json.RawMessage) {
+	h.BroadcastOperationLogWithSession("publish", pluginId, siteId, sessionId, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
@@ -387,8 +387,8 @@ func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, 
 }
 
 // BroadcastSyncLog is a convenience method for sync operation logs
-func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLog("sync", pluginID, siteID, OperationLogEntry{
+func (h *Hub) BroadcastSyncLog(pluginId, siteId int64, level, step, message string, details json.RawMessage) {
+	h.BroadcastOperationLog("sync", pluginId, siteId, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
@@ -397,8 +397,8 @@ func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message stri
 }
 
 // BroadcastSyncLogWithSession is a convenience method for sync operation logs with session
-func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("sync", pluginID, siteID, sessionID, OperationLogEntry{
+func (h *Hub) BroadcastSyncLogWithSession(pluginId, siteId int64, sessionId, level, step, message string, details json.RawMessage) {
+	h.BroadcastOperationLogWithSession("sync", pluginId, siteId, sessionId, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
@@ -407,8 +407,8 @@ func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, lev
 }
 
 // BroadcastBackupLog is a convenience method for backup operation logs
-func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLog("backup", pluginID, 0, OperationLogEntry{
+func (h *Hub) BroadcastBackupLog(pluginId int64, level, step, message string, details json.RawMessage) {
+	h.BroadcastOperationLog("backup", pluginId, 0, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
@@ -417,8 +417,8 @@ func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, de
 }
 
 // BroadcastBackupLogWithSession is a convenience method for backup operation logs with session
-func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("backup", pluginID, 0, sessionID, OperationLogEntry{
+func (h *Hub) BroadcastBackupLogWithSession(pluginId int64, sessionId, level, step, message string, details json.RawMessage) {
+	h.BroadcastOperationLogWithSession("backup", pluginId, 0, sessionId, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
@@ -427,13 +427,13 @@ func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, st
 }
 
 // BroadcastRemotePluginLog is a convenience method for remote plugin action logs
-func (h *Hub) BroadcastRemotePluginLog(siteID int64, action, level, step, message string, details json.RawMessage) {
-	h.BroadcastRemotePluginLogWithSession(siteID, action, "", level, step, message, details)
+func (h *Hub) BroadcastRemotePluginLog(siteId int64, action, level, step, message string, details json.RawMessage) {
+	h.BroadcastRemotePluginLogWithSession(siteId, action, "", level, step, message, details)
 }
 
 // BroadcastRemotePluginLogWithSession is a convenience method for remote plugin action logs with session
-func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("remote_plugin_"+action, 0, siteID, sessionID, OperationLogEntry{
+func (h *Hub) BroadcastRemotePluginLogWithSession(siteId int64, action, sessionId, level, step, message string, details json.RawMessage) {
+	h.BroadcastOperationLogWithSession("remote_plugin_"+action, 0, siteId, sessionId, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
@@ -443,11 +443,11 @@ func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionI
 
 // BroadcastWithSession is a method wrapper for the package-level generic BroadcastWithSession function,
 // satisfying interfaces that require a method on *Hub.
-func (h *Hub) BroadcastWithSession(eventType string, data any, sessionID string) {
+func (h *Hub) BroadcastWithSession(eventType string, data any, sessionId string) {
 	h.broadcast <- &Message{
 		Type:      eventType,
 		Data:      data,
-		SessionID: sessionID,
+		SessionId: sessionId,
 	}
 }
 
@@ -469,7 +469,7 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Send connection confirmation
 	Broadcast(h, EventConnection, ConnectionConfirmation{
 		Status:   connectionstatus.Connected.DBValue(),
-		ClientID: conn.RemoteAddr().String(),
+		ClientId: conn.RemoteAddr().String(),
 	})
 
 	// Start goroutines for reading and writing

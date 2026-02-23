@@ -17,9 +17,9 @@ type ActionResponse struct {
 	Disabled bool   `json:"disabled,omitempty"`
 	Aborted  bool   `json:"aborted,omitempty"`
 	Restored bool   `json:"restored,omitempty"`
-	ID       string `json:"id,omitempty"`
+	Id       string `json:"id,omitempty"`
 	Plugin   string `json:"plugin,omitempty"`
-	SiteID   int64  `json:"siteId,omitempty"`
+	SiteId   int64  `json:"siteId,omitempty"`
 	Message  string `json:"message,omitempty"`
 	Count    int    `json:"count,omitempty"`
 }
@@ -83,7 +83,7 @@ type PluginExistsResponse struct {
 
 // SessionLogsResponse is the response for session log retrieval.
 type SessionLogsResponse struct {
-	SessionID string `json:"sessionId"`
+	SessionId string `json:"sessionId"`
 	Logs      string `json:"logs"`
 }
 
@@ -112,7 +112,7 @@ type MultiScanResponse struct {
 
 // BulkBootstrapSiteResult is the result for a single site in bulk bootstrap.
 type BulkBootstrapSiteResult struct {
-	SiteID    int64  `json:"siteId"`
+	SiteId    int64  `json:"siteId"`
 	SiteName  string `json:"siteName"`
 	Success   bool   `json:"success"`
 	Message   string `json:"message"`
@@ -200,5 +200,5 @@ type ServerSettings struct {
 // SnapshotDeleteResponse is the response for snapshot deletion.
 type SnapshotDeleteResponse struct {
 	Deleted    bool  `json:"deleted"`
-	SnapshotID int64 `json:"snapshotId"`
+	SnapshotId int64 `json:"snapshotId"`
 }

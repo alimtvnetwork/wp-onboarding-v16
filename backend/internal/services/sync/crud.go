@@ -229,7 +229,7 @@ func (s *serviceImpl) getMapping(ctx context.Context, pluginID, siteID int64) (*
 	}
 	if result.IsEmpty() {
 		return nil, apperror.New(apperror.ErrNotFound, "plugin-site mapping not found").
-			WithPluginID(pluginID).WithSiteID(siteID)
+			WithPluginId(pluginID).WithSiteId(siteID)
 	}
 	m := result.Value()
 	return &m, nil
@@ -248,7 +248,7 @@ func (s *serviceImpl) getSiteInfo(ctx context.Context, siteID int64) (*siteInfo,
 		return nil, result.AppError()
 	}
 	if result.IsEmpty() {
-		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteID(siteID)
+		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteId(siteID)
 	}
 	info := result.Value()
 	return &info, nil

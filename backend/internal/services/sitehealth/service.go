@@ -57,7 +57,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 	).Scan(&siteName, &siteURL, &username, &passwordEncrypted)
 	if err != nil {
 		return apperror.FailWrap[models.SiteHealthCheck](err, apperror.ErrFSRead, "site not found").
-			WithSiteID(siteID)
+			WithSiteId(siteID)
 	}
 
 	check := models.SiteHealthCheck{

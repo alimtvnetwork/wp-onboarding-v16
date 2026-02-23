@@ -385,7 +385,7 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	if s.activeRun != nil && s.activeRun.Status == teststatus.Running.String() {
 		s.mu.Unlock()
 		return nil, apperror.New(apperror.ErrE2ERunning, "test run already in progress").
-			WithRunID(s.activeRun.ID)
+			WithRunId(s.activeRun.ID)
 	}
 	s.mu.Unlock()
 
@@ -634,7 +634,7 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 	}
 
 	return apperror.New(apperror.ErrNotFound, "no active run with ID").
-		WithRunID(runID)
+		WithRunId(runID)
 }
 
 // ListRuns returns past test runs
