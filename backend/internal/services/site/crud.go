@@ -192,7 +192,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 
 	existing := s.GetByURL(ctx, normalizedURL)
 	if existing.HasError() {
-		return apperror.Fail[models.Site](existing.Error())
+		return existing
 	}
 	if existing.IsDefined() {
 		return apperror.FailNew[models.Site](apperror.ErrValidation, "site with this URL already exists")
@@ -224,7 +224,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apperror.Result[models.Site] {
 	existingResult := s.GetByID(ctx, id)
 	if existingResult.HasError() {
-		return apperror.Fail[models.Site](existingResult.Error())
+		return existingResult
 	}
 
 	existing := existingResult.Value()
