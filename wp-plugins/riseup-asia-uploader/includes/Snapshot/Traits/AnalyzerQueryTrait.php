@@ -41,7 +41,7 @@ trait AnalyzerQueryTrait {
         $isContent = ($resolvedScope !== null && $resolvedScope->isContent());
 
         if ($isContent) {
-            $content_suffixes = array(
+            $contentSuffixes = array(
                 'posts',
                 'postmeta',
                 'terms',
@@ -53,10 +53,10 @@ trait AnalyzerQueryTrait {
                 'users',
                 'usermeta',
             );
-            $content_tables = array_map(function($s) use ($prefix) {
+            $contentTables = array_map(function($s) use ($prefix) {
                 return $prefix . $s;
-            }, $content_suffixes);
-            $tables = array_intersect($tables, $content_tables);
+            }, $contentSuffixes);
+            $tables = array_intersect($tables, $contentTables);
         }
 
         return array_values($tables);
@@ -68,7 +68,7 @@ trait AnalyzerQueryTrait {
      * @return array Dependency edges.
      */
     public function detectDependencies() {
-        $db_name = $this->wpdb->dbname;
+        $dbName = $this->wpdb->dbname;
 
         $sql = $this->wpdb->prepare(
             "SELECT TABLE_NAME AS child_table, COLUMN_NAME AS fk_column,
@@ -76,13 +76,13 @@ trait AnalyzerQueryTrait {
              FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
              WHERE TABLE_SCHEMA = %s AND REFERENCED_TABLE_NAME IS NOT NULL
              ORDER BY TABLE_NAME, COLUMN_NAME",
-            $db_name
+            $dbName
         );
 
         $rows = $this->wpdb->get_results($sql, ARRAY_A);
 
         if (empty($rows)) {
-            $this->log(LogLevelType::Info->value, 'No foreign key dependencies detected', array('database' => $db_name));
+            $this->log(LogLevelType::Info->value, 'No foreign key dependencies detected', array('database' => $dbName));
 
             return array();
         }
@@ -97,7 +97,7 @@ trait AnalyzerQueryTrait {
             );
         }
 
-        $this->log(LogLevelType::Info->value, 'Dependencies detected', array('count' => count($deps), 'database' => $db_name));
+        $this->log(LogLevelType::Info->value, 'Dependencies detected', array('count' => count($deps), 'database' => $dbName));
 
         return $deps;
     }
@@ -112,20 +112,20 @@ trait AnalyzerQueryTrait {
         $tables = $this->getTables($scope);
         $dependencies = $this->detectDependencies();
 
-        $table_set = array_flip($tables);
-        $scoped_deps = array_filter($dependencies, function($dep) use ($table_set) {
-            return isset($table_set[$dep[ResponseKeyType::ParentTable->value]]) && isset($table_set[$dep[ResponseKeyType::ChildTable->value]]);
+        $tableSet = array_flip($tables);
+        $scopedDeps = array_filter($dependencies, function($dep) use ($tableSet) {
+            return isset($tableSet[$dep[ResponseKeyType::ParentTable->value]]) && isset($tableSet[$dep[ResponseKeyType::ChildTable->value]]);
         });
-        $scoped_deps = array_values($scoped_deps);
+        $scopedDeps = array_values($scopedDeps);
 
-        $sorted = $this->topologicalSort($tables, $scoped_deps);
+        $sorted = $this->topologicalSort($tables, $scopedDeps);
 
         return array(
             ResponseKeyType::Tables->value       => $tables,
-            ResponseKeyType::Dependencies->value  => $scoped_deps,
+            ResponseKeyType::Dependencies->value  => $scopedDeps,
             ResponseKeyType::SeedOrder->value     => $sorted,
             ResponseKeyType::TableCount->value    => count($tables),
-            ResponseKeyType::DepCount->value      => count($scoped_deps),
+            ResponseKeyType::DepCount->value      => count($scopedDeps),
         );
     }
 

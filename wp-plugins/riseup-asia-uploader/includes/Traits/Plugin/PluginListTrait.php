@@ -260,8 +260,8 @@ trait PluginListTrait
     /**
      * Read a file and return its content as a REST response.
      *
-     * @param string $real_path Absolute file path.
-     * @param string $rel_path  Relative file path.
+     * @param string $realPath Absolute file path.
+     * @param string $relPath  Relative file path.
      * @return WP_REST_Response
      */
     private function readAndReturnFile(string $realPath, string $relPath) {

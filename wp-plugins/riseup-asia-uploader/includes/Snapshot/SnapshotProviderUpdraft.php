@@ -38,12 +38,12 @@ class SnapshotProviderUpdraft extends SnapshotProviderInterface {
     }
 
     public function getCapabilities(): array {
-        $is_premium = defined('UPDRAFTPLUS_VERSION') && strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
+        $isPremium = defined('UPDRAFTPLUS_VERSION') && strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
 
         return array(
             'fullSite' => true,
             'databaseOnly' => true,
-            'selective' => $is_premium,
+            'selective' => $isPremium,
             'scheduled' => true,
             'restore' => true,
             'export' => true,

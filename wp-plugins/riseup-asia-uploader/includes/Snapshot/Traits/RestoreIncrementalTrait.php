@@ -59,7 +59,7 @@ trait RestoreIncrementalTrait {
         $pathCol = $this->resolveRootCol($rootPdo, $table, 'RelativePath', 'relative_path');
 
         $incrementals = $rootPdo->query(
-            "SELECT {$seqCol} AS sequence_num, {$folderCol} AS folder_name, {$pathCol} AS relative_path FROM {$table} ORDER BY {$seqCol} ASC"
+            "SELECT {$seqCol} AS sequenceNum, {$folderCol} AS folderName, {$pathCol} AS relativePath FROM {$table} ORDER BY {$seqCol} ASC"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($incrementals)) {
@@ -73,12 +73,12 @@ trait RestoreIncrementalTrait {
         $this->log(LogLevelType::Info->value, 'Applying incrementals', array(ResponseKeyType::Count->value => count($incrementals)));
 
         $applied = 0;
-        $total_rows = 0;
+        $totalRows = 0;
         $errors = array();
 
         foreach ($incrementals as $inc) {
             $result = $this->applySingleIncremental($inc, $snapshotDir, $restoreOrder);
-            $total_rows += $result[ResponseKeyType::Rows->value];
+            $totalRows += $result[ResponseKeyType::Rows->value];
             $applied++;
             $hasErrors = BooleanHelpers::hasValue($result[ResponseKeyType::Errors->value]);
 
@@ -89,7 +89,7 @@ trait RestoreIncrementalTrait {
 
         return array(
             ResponseKeyType::Applied->value   => $applied,
-            ResponseKeyType::TotalRows->value  => $total_rows,
+            ResponseKeyType::TotalRows->value  => $totalRows,
             ResponseKeyType::Errors->value     => $errors,
         );
     }
@@ -99,44 +99,44 @@ trait RestoreIncrementalTrait {
         string $snapshotDir,
         array $restoreOrder,
     ): array {
-        $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
+        $incDir = $snapshotDir . '/' . rtrim($inc['relativePath'], '/');
 
-        if (PathHelper::isDirMissing($inc_dir)) {
-            $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
+        if (PathHelper::isDirMissing($incDir)) {
+            $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folderName']));
 
             return array(
                 ResponseKeyType::Rows->value   => 0,
-                ResponseKeyType::Errors->value => array('Incremental directory missing: ' . $inc['folder_name']),
+                ResponseKeyType::Errors->value => array('Incremental directory missing: ' . $inc['folderName']),
             );
         }
 
-        $this->log(LogLevelType::Info->value, 'Applying incremental: ' . $inc['folder_name']);
+        $this->log(LogLevelType::Info->value, 'Applying incremental: ' . $inc['folderName']);
 
-        $sqlite_files = glob($inc_dir . '/*.sqlite');
-        $inc_rows = 0;
+        $sqliteFiles = glob($incDir . '/*.sqlite');
+        $incRows = 0;
         $errors = array();
 
-        foreach ($sqlite_files as $sqlite_file) {
-            $table = basename($sqlite_file, '.sqlite');
+        foreach ($sqliteFiles as $sqliteFile) {
+            $table = basename($sqliteFile, '.sqlite');
 
             if (BooleanHelpers::isAbsentFromList($table, $restoreOrder)) {
                 continue;
             }
 
-            $result = $this->restoreTableFromFile($sqlite_file, $table, 'merge');
+            $result = $this->restoreTableFromFile($sqliteFile, $table, 'merge');
 
             if ($result[ResponseKeyType::Success->value]) {
-                $inc_rows += $result[ResponseKeyType::Rows->value];
+                $incRows += $result[ResponseKeyType::Rows->value];
                 $this->log(LogLevelType::Info->value, sprintf(
                     'Incremental %s: %s (+%d rows)',
-                    $inc['folder_name'],
+                    $inc['folderName'],
                     $table,
                     $result[ResponseKeyType::Rows->value],
                 ));
             } else {
                 $errors[] = sprintf(
                     'Incremental %s/%s: %s',
-                    $inc['folder_name'],
+                    $inc['folderName'],
                     $table,
                     $result[ResponseKeyType::Error->value],
                 );
@@ -144,7 +144,7 @@ trait RestoreIncrementalTrait {
         }
 
         return array(
-            ResponseKeyType::Rows->value   => $inc_rows,
+            ResponseKeyType::Rows->value   => $incRows,
             ResponseKeyType::Errors->value => $errors,
         );
     }

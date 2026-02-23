@@ -25,15 +25,15 @@ trait CleanerStorageTrait {
         $stats = array(
             ResponseKeyType::TotalSnapshots->value => 0,
             ResponseKeyType::TotalSizeBytes->value => 0,
-            'total_size_formatted'                 => '0 B',
-            'oldest_timestamp'                     => null,
-            'newest_timestamp'                     => null,
-            'disk_free_bytes'                      => 0,
-            'disk_free_formatted'                  => '0 B',
+            'totalSizeFormatted'                   => '0 B',
+            'oldestTimestamp'                       => null,
+            'newestTimestamp'                       => null,
+            'diskFreeBytes'                        => 0,
+            'diskFreeFormatted'                    => '0 B',
         );
 
         try {
-            $db_stats = $this->db->querySingle(
+            $dbStats = $this->db->querySingle(
                 'SELECT
                     COUNT(*) as count,
                     COALESCE(SUM(FileSize), 0) as total_size,
@@ -44,28 +44,28 @@ trait CleanerStorageTrait {
                 array(SnapshotStatusType::Complete->value)
             );
 
-            if ($db_stats) {
-                $stats[ResponseKeyType::TotalSnapshots->value] = intval($db_stats[ResponseKeyType::Count->value]);
-                $stats[ResponseKeyType::TotalSizeBytes->value] = intval($db_stats['total_size']);
-                $stats['total_size_formatted'] = PathHelper::formatBytes($stats[ResponseKeyType::TotalSizeBytes->value]);
+            if ($dbStats) {
+                $stats[ResponseKeyType::TotalSnapshots->value] = intval($dbStats[ResponseKeyType::Count->value]);
+                $stats[ResponseKeyType::TotalSizeBytes->value] = intval($dbStats['total_size']);
+                $stats['totalSizeFormatted'] = PathHelper::formatBytes($stats[ResponseKeyType::TotalSizeBytes->value]);
 
-                if ($db_stats['oldest']) {
-                    $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);
+                if ($dbStats['oldest']) {
+                    $stats['oldestTimestamp'] = strtotime($dbStats['oldest']);
                 }
 
-                if ($db_stats['newest']) {
-                    $stats['newest_timestamp'] = strtotime($db_stats['newest']);
+                if ($dbStats['newest']) {
+                    $stats['newestTimestamp'] = strtotime($dbStats['newest']);
                 }
             }
 
-            $snapshots_dir = PathHelper::getSnapshotsDir();
+            $snapshotsDir = PathHelper::getSnapshotsDir();
 
-            if (PathHelper::dirExists($snapshots_dir)) {
-                $free = PathHelper::getFreeSpace($snapshots_dir);
+            if (PathHelper::dirExists($snapshotsDir)) {
+                $free = PathHelper::getFreeSpace($snapshotsDir);
 
                 if ($free !== false) {
-                    $stats['disk_free_bytes']     = $free;
-                    $stats['disk_free_formatted'] = PathHelper::formatBytes($free);
+                    $stats['diskFreeBytes']     = $free;
+                    $stats['diskFreeFormatted'] = PathHelper::formatBytes($free);
                 }
             }
         } catch (Throwable $e) {
@@ -77,9 +77,9 @@ trait CleanerStorageTrait {
 
     public function estimateCleanup(array $settings): array {
         $estimate = array(
-            'snapshots_count' => 0,
-            'bytes'           => 0,
-            'bytes_formatted' => '0 B',
+            'snapshotsCount' => 0,
+            'bytes'          => 0,
+            'bytesFormatted' => '0 B',
         );
 
         try {
@@ -97,9 +97,9 @@ trait CleanerStorageTrait {
                 return $isOrdinarySnapshot;
             });
 
-            $estimate['snapshots_count'] = count($snapshots);
+            $estimate['snapshotsCount'] = count($snapshots);
             $estimate[ResponseKeyType::Bytes->value] = array_sum(array_column($snapshots, 'size'));
-            $estimate['bytes_formatted'] = PathHelper::formatBytes($estimate[ResponseKeyType::Bytes->value]);
+            $estimate['bytesFormatted'] = PathHelper::formatBytes($estimate[ResponseKeyType::Bytes->value]);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array(ResponseKeyType::Error->value => $e->getMessage()));
         }

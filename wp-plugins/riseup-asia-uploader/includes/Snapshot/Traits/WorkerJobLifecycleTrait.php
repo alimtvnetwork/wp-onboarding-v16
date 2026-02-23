@@ -121,7 +121,7 @@ trait WorkerJobLifecycleTrait {
     ): void {
         $now = DateHelper::nowIso();
         $job = $this->getJob($pdo, $jobId);
-        $all_errors = array_merge(json_decode($job['ErrorsJson'] ?? '[]', true), $batchErrors);
+        $allErrors = array_merge(json_decode($job['ErrorsJson'] ?? '[]', true), $batchErrors);
 
         $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET CurrentBatch = ?, TablesExported = TablesExported + ?,
@@ -132,7 +132,7 @@ trait WorkerJobLifecycleTrait {
             $nextBatch,
             $batchExported,
             $batchRows,
-            json_encode($all_errors),
+            json_encode($allErrors),
             $now,
             $jobId,
         ));
@@ -144,11 +144,11 @@ trait WorkerJobLifecycleTrait {
         string $snapshotDir,
     ): void {
         $job = $this->getJob($pdo, $jobId);
-        $root_path = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . '/a-root.db';
 
-        if (file_exists($root_path)) {
+        if (file_exists($rootPath)) {
             try {
-                $rootPdo = new PDO('sqlite:' . $root_path);
+                $rootPdo = new PDO('sqlite:' . $rootPath);
                 $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $this->rootDb->updateStats($rootPdo, (int) $job['TablesExported'], (int) $job['TotalRows']);
                 $rootPdo = null;
@@ -162,8 +162,8 @@ trait WorkerJobLifecycleTrait {
         $errors = json_decode($job['ErrorsJson'] ?? '[]', true);
 
         $this->log(LogLevelType::Info->value, 'Snapshot job complete', array(
-            'job_id'                              => $jobId,
-            'tables_exported'                     => $job['TablesExported'],
+            'jobId'                               => $jobId,
+            'tablesExported'                      => $job['TablesExported'],
             ResponseKeyType::TotalRows->value     => $job['TotalRows'],
             ResponseKeyType::Errors->value        => count($errors),
         ));
@@ -173,7 +173,7 @@ trait WorkerJobLifecycleTrait {
         wp_schedule_single_event(
             time() + 5,
             HookType::CronSnapshotWorkerBatch->value,
-            array(array('job_id' => $jobId)),
+            array(array('jobId' => $jobId)),
         );
     }
 }

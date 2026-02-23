@@ -25,28 +25,28 @@ trait WorkerBatchExportTrait {
         string $snapshotDir,
         PDO $rootPdo,
     ): array {
-        $total_rows = 0;
-        $exported_tables = 0;
+        $totalRows = 0;
+        $exportedTables = 0;
         $errors = array();
         $batches = array_chunk($seedOrder, $this->poolSize);
 
-        foreach ($batches as $batch_index => $batch_tables) {
+        foreach ($batches as $batchIndex => $batchTables) {
             $this->log(LogLevelType::Info->value, sprintf(
                 'Processing batch %d/%d (%d tables)',
-                $batch_index + 1,
+                $batchIndex + 1,
                 count($batches),
-                count($batch_tables),
+                count($batchTables),
             ));
 
-            $result = $this->exportBatchTables($batch_tables, $snapshotDir, $rootPdo);
-            $total_rows += $result[ResponseKeyType::Rows->value];
-            $exported_tables += $result[ResponseKeyType::Exported->value];
+            $result = $this->exportBatchTables($batchTables, $snapshotDir, $rootPdo);
+            $totalRows += $result[ResponseKeyType::Rows->value];
+            $exportedTables += $result[ResponseKeyType::Exported->value];
             $errors = array_merge($errors, $result[ResponseKeyType::Errors->value]);
         }
 
         return array(
-            ResponseKeyType::TotalRows->value     => $total_rows,
-            ResponseKeyType::ExportedTables->value => $exported_tables,
+            ResponseKeyType::TotalRows->value     => $totalRows,
+            ResponseKeyType::ExportedTables->value => $exportedTables,
             ResponseKeyType::Errors->value         => $errors,
         );
     }
@@ -115,7 +115,7 @@ trait WorkerBatchExportTrait {
             ResponseKeyType::Directory->value   => $prepared[ResponseKeyType::DirName->value],
             ResponseKeyType::TotalTables->value => count($seedOrder),
             ResponseKeyType::PoolSize->value    => $this->poolSize,
-            'setup_time'                        => round($duration, 2) . 's',
+            'setupTime'                         => round($duration, 2) . 's',
         ));
 
         return ResultHelper::ok(array(

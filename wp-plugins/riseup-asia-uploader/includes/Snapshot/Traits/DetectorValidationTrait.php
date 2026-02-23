@@ -87,9 +87,9 @@ trait DetectorValidationTrait {
     }
 
     private function validateMiscFields(array &$settings): void {
-        $valid_storage = StorageModeType::validValues();
+        $validStorage = StorageModeType::validValues();
 
-        if (BooleanHelpers::isAbsentFromList($settings['storage_mode'] ?? StorageModeType::PerTable->value, $valid_storage)) {
+        if (BooleanHelpers::isAbsentFromList($settings['storage_mode'] ?? StorageModeType::PerTable->value, $validStorage)) {
             $settings['storage_mode'] = StorageModeType::PerTable->value;
         }
 

@@ -28,7 +28,7 @@ class SnapshotDetector {
 
     private FileLogger $logger;
     private Database $db;
-    private array $provider_instances = array();
+    private array $providerInstances = array();
 
     public function __construct(FileLogger $logger, Database $db) {
         $this->logger = $logger;

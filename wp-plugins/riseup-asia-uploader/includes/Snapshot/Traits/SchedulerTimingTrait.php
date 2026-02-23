@@ -55,8 +55,8 @@ trait SchedulerTimingTrait {
         int $day,
     ): int {
         $now = current_time('timestamp');
-        $day_name = $this->getDayName($day);
-        $next = strtotime("next {$day_name} {$hour}:{$minute}:00");
+        $dayName = $this->getDayName($day);
+        $next = strtotime("next {$dayName} {$hour}:{$minute}:00");
 
         if (date('N') == $day) {
             $today = strtotime("today {$hour}:{$minute}:00");
@@ -77,12 +77,12 @@ trait SchedulerTimingTrait {
     ): int {
         $now = current_time('timestamp');
         $day = min(28, max(1, $day));
-        $current_month = date('Y-m');
-        $next = strtotime("{$current_month}-{$day} {$hour}:{$minute}:00");
+        $currentMonth = date('Y-m');
+        $next = strtotime("{$currentMonth}-{$day} {$hour}:{$minute}:00");
 
         if ($next <= $now) {
-            $next_month = date('Y-m', strtotime('+1 month'));
-            $next = strtotime("{$next_month}-{$day} {$hour}:{$minute}:00");
+            $nextMonth = date('Y-m', strtotime('+1 month'));
+            $next = strtotime("{$nextMonth}-{$day} {$hour}:{$minute}:00");
         }
 
         return $next;

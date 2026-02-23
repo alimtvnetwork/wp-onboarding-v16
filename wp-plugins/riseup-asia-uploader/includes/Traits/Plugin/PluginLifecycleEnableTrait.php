@@ -82,9 +82,9 @@ trait PluginLifecycleEnableTrait {
     }
 
     /** Attempt to activate a plugin. */
-    private function tryActivatePlugin(string $slug, string $plugin_file) {
+    private function tryActivatePlugin(string $slug, string $pluginFile) {
         try {
-            $result = activate_plugin($plugin_file);
+            $result = activate_plugin($pluginFile);
             if (is_wp_error($result)) {
                 $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, array('error' => $result->get_error_message()));
 
@@ -104,16 +104,16 @@ trait PluginLifecycleEnableTrait {
     }
 
     /** Attempt to deactivate a plugin. */
-    private function tryDeactivatePlugin(string $slug, string $plugin_file) {
+    private function tryDeactivatePlugin(string $slug, string $pluginFile) {
         try {
-            deactivate_plugins($plugin_file);
+            deactivate_plugins($pluginFile);
         } catch (Throwable $e) {
             $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage()));
 
             return $this->errorResponse('Exception during deactivation: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
 
-        if (is_plugin_active($plugin_file)) {
+        if (is_plugin_active($pluginFile)) {
             $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, array('error' => 'Plugin remained active'));
 
             return $this->errorResponse(ResponseMessageType::DeactivationFailed->value . ': Plugin remained active', HttpStatusType::ServerError->value);
