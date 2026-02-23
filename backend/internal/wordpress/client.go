@@ -40,12 +40,12 @@ type APIError struct {
 	Operation     string
 	Method        string
 	Endpoint      string
-	URL           string
+	Url           string
 	StatusCode    int
 	RequestBody   string // The JSON body sent in the request
 	ResponseBody  string
 	PluginSlugIn  string
-	PluginIDUsed  string
+	PluginIdUsed  string
 	StackTrace    string // Captured stack trace at error time
 }
 
@@ -60,8 +60,8 @@ func (e *APIError) Error() string {
 	req := ""
 	if e.Method != "" || e.Endpoint != "" {
 		req = fmt.Sprintf(" (%s %s)", strings.ToUpper(e.Method), e.Endpoint)
-	} else if e.URL != "" {
-		req = fmt.Sprintf(" (%s)", e.URL)
+	} else if e.Url != "" {
+		req = fmt.Sprintf(" (%s)", e.Url)
 	}
 
 	return fmt.Sprintf("%s%s: status %d", op, req, e.StatusCode)
@@ -326,22 +326,22 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 
 	// Parse user info
 	var userInfo struct {
-		ID          int      `json:"id"`
+		Id          int      `json:"id"`
 		Name        string   `json:"name"`
 		Slug        string   `json:"slug"`
 		Roles       []string `json:"roles"`
 		Capabilities map[string]bool `json:"capabilities"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err == nil {
-		result.UserID = userInfo.ID
+		result.UserId = userInfo.Id
 		result.UserDisplayName = userInfo.Name
 		result.UserRoles = userInfo.Roles
 		
 		// Check for plugin management capability
 		result.CanManagePlugins = userInfo.Capabilities["activate_plugins"] || userInfo.Capabilities["install_plugins"]
 	}
-	c.progress(connectionstep.AuthCheck.String(), stagestatus.Completed.String(), fmt.Sprintf("Authenticated as %s (ID: %d)", result.UserDisplayName, result.UserID), ProgressDetails{
-		"userId": result.UserID,
+	c.progress(connectionstep.AuthCheck.String(), stagestatus.Completed.String(), fmt.Sprintf("Authenticated as %s (ID: %d)", result.UserDisplayName, result.UserId), ProgressDetails{
+		"userId": result.UserId,
 		"roles":  result.UserRoles,
 		"url":    c.baseURL,
 	})
@@ -393,20 +393,20 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		// Non-fatal - just report
 	} else {
 		defer resp.Body.Close()
-		if resp.StatusCode == HttpStatusCreated.Int() {
+	if resp.StatusCode == HttpStatusCreated.Int() {
 			// Successfully created - now delete it
 			var createdPost struct {
-				ID int `json:"id"`
+				Id int `json:"id"`
 			}
-			if err := json.NewDecoder(resp.Body).Decode(&createdPost); err == nil && createdPost.ID > 0 {
+			if err := json.NewDecoder(resp.Body).Decode(&createdPost); err == nil && createdPost.Id > 0 {
 				// Delete the test post
-				deleteResp, _ := c.request("DELETE", fmt.Sprintf(WPCorePostByID+"?force=true", createdPost.ID), nil)
+				deleteResp, _ := c.request("DELETE", fmt.Sprintf(WPCorePostById+"?force=true", createdPost.Id), nil)
 				if deleteResp != nil {
 					deleteResp.Body.Close()
 				}
 				result.CanWritePosts = true
 				c.progress(connectionstep.WriteTest.String(), stagestatus.Completed.String(), "Write permissions verified (test post created and deleted)", ProgressDetails{
-					"testPostId": createdPost.ID,
+					"testPostId": createdPost.Id,
 					"url":        c.baseURL,
 				})
 			}
@@ -436,7 +436,7 @@ func (c *Client) GetPlugins() ([]PluginInfo, error) {
 			Operation:    "get plugins list",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -465,7 +465,7 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 			Operation:    "get plugin (not found)",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: "",
 			PluginSlugIn: slug,
@@ -478,7 +478,7 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 			Operation:    "get plugin",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 			PluginSlugIn: slug,
@@ -502,7 +502,7 @@ type ConnectionInfo struct {
 	WPVersion        string   `json:"wpVersion,omitempty"`
 	SiteName         string   `json:"siteName,omitempty"`
 	SiteDescription  string   `json:"siteDescription,omitempty"`
-	UserID           int      `json:"userId,omitempty"`
+	UserId           int      `json:"userId,omitempty"`
 	UserDisplayName  string   `json:"userDisplayName,omitempty"`
 	UserRoles        []string `json:"userRoles,omitempty"`
 	CanManagePlugins bool     `json:"canManagePlugins"`

@@ -68,7 +68,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 			Operation:    "get sync manifest",
 			Method:       "POST",
 			Endpoint:     string(endpoint),
-			URL:          c.fullURL(string(endpoint)),
+			Url:          c.fullURL(string(endpoint)),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(body, 2000),
 		}
@@ -123,7 +123,7 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 			Operation:    "get plugin files",
 			Method:       "POST",
 			Endpoint:     string(endpoint),
-			URL:          c.fullURL(string(endpoint)),
+			Url:          c.fullURL(string(endpoint)),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(body, 2000),
 		}
@@ -169,7 +169,7 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 			Operation:    "request mutation token",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(body, 8192),
 		}
@@ -289,7 +289,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 			Operation:    "upload plugin zip",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          url,
+			Url:          url,
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(respBody, 8192),
 			PluginSlugIn: pluginSlug,
@@ -370,7 +370,7 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 			Operation:    "get file content",
 			Method:       "POST",
 			Endpoint:     string(endpoint),
-			URL:          c.fullURL(string(endpoint)),
+			Url:          c.fullURL(string(endpoint)),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 500),
 		}

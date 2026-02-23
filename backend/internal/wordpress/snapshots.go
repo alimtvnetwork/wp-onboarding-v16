@@ -90,7 +90,7 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 			Operation:    "get snapshots",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -136,7 +136,7 @@ func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
 			Operation:    "get snapshot",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -180,7 +180,7 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResu
 			Operation:    "create snapshot",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -210,7 +210,7 @@ func (c *Client) DeleteSnapshot(snapshotID int64) error {
 			Operation:    "delete snapshot",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -251,7 +251,7 @@ func (c *Client) RestoreSnapshot(snapshotID int64) (*SnapshotRestoreResult, erro
 			Operation:    "restore snapshot",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -280,7 +280,7 @@ func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
 			Operation:    "get snapshot settings",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -309,7 +309,7 @@ func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSet
 			Operation:    "update snapshot settings",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -340,7 +340,7 @@ func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 			Operation:    "export snapshot",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -376,7 +376,7 @@ func (c *Client) DownloadSnapshotZip(snapshotID int64) (*SnapshotDownloadResult,
 			Operation:    "download snapshot zip",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -403,7 +403,7 @@ func (c *Client) StreamSnapshotZip(downloadURL string) (*http.Response, error) {
 			Operation:    "stream snapshot zip",
 			Method:       "GET",
 			Endpoint:     downloadURL,
-			URL:          downloadURL,
+			Url:          downloadURL,
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -426,7 +426,7 @@ func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 			Operation:    "get snapshot providers",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -455,7 +455,7 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 			Operation:    "get available tables",
 			Method:       "GET",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -508,7 +508,7 @@ func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, 
 			Operation:    "full backup",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -537,7 +537,7 @@ func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupR
 			Operation:    "incremental backup",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -597,7 +597,7 @@ func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 			Operation:    "import snapshot",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}
@@ -639,7 +639,7 @@ func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanup
 			Operation:    "snapshot cleanup",
 			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
+			Url:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 		}

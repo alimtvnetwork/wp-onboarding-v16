@@ -34,7 +34,7 @@ func New(cfg Config) *Service {
 }
 
 // Interface methods are implemented in:
-// - crud.go: List, GetByID, Create, Update, Delete, RefreshFileCount
+// - crud.go: List, GetById, Create, Update, Delete, RefreshFileCount
 // - scanner.go: ScanDirectory, ValidatePath
 // - mappings.go: GetMappings, GetMappingsBySite, CreateMapping, DeleteMapping, UpdateMappingsForPlugin
 
@@ -42,7 +42,7 @@ func New(cfg Config) *Service {
 type ServiceInterface interface {
 	// CRUD operations — Result-wrapped returns
 	List(ctx context.Context) apperror.ResultSlice[models.Plugin]
-	GetByID(ctx context.Context, id int64) apperror.Result[models.Plugin]
+	GetById(ctx context.Context, id int64) apperror.Result[models.Plugin]
 	Create(ctx context.Context, input CreateInput) apperror.Result[models.Plugin]
 	Update(ctx context.Context, id int64, input UpdateInput) apperror.Result[models.Plugin]
 	Delete(ctx context.Context, id int64) error

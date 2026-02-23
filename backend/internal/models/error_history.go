@@ -24,12 +24,12 @@ type ErrorHistory struct {
 	ResponseStatus      int             `json:"responseStatus,omitempty"`
 	SessionId           string          `json:"sessionId,omitempty"`
 	SessionType         string          `json:"sessionType,omitempty"`
-	PHPStackFramesJSON  string          `json:"-"`
-	PHPStackFrames      []PHPStackFrame `json:"phpStackFrames,omitempty"`
+	PhpStackFramesJson  string          `json:"-"`
+	PhpStackFrames      []PhpStackFrame `json:"phpStackFrames,omitempty"`
 	BackendLogsJSON     string          `json:"-"`
 	BackendLogs         []string        `json:"backendLogs,omitempty"`
 	BackendStackTrace   string          `json:"backendStackTrace,omitempty"`
-	SiteURL             string          `json:"siteUrl,omitempty"`
+	SiteUrl             string          `json:"siteUrl,omitempty"`
 	TriggerComponent    string          `json:"triggerComponent,omitempty"`
 	TriggerAction       string          `json:"triggerAction,omitempty"`
 	InvocationChainJSON string          `json:"-"`
@@ -39,8 +39,8 @@ type ErrorHistory struct {
 	CreatedAt           time.Time       `json:"createdAt"`
 }
 
-// PHPStackFrame represents a single PHP stack trace frame
-type PHPStackFrame struct {
+// PhpStackFrame represents a single PHP stack trace frame
+type PhpStackFrame struct {
 	File     string `json:"file,omitempty"`
 	FileBase string `json:"fileBase,omitempty"`
 	Line     int    `json:"line,omitempty"`
@@ -63,10 +63,10 @@ type ErrorHistoryInput struct {
 	ResponseStatus     int             `json:"responseStatus,omitempty"`
 	SessionId          string          `json:"sessionId,omitempty"`
 	SessionType        string          `json:"sessionType,omitempty"`
-	PHPStackFrames     []PHPStackFrame `json:"phpStackFrames,omitempty"`
+	PhpStackFrames     []PhpStackFrame `json:"phpStackFrames,omitempty"`
 	BackendLogs        []string        `json:"backendLogs,omitempty"`
 	BackendStackTrace  string          `json:"backendStackTrace,omitempty"`
-	SiteURL            string          `json:"siteUrl,omitempty"`
+	SiteUrl            string          `json:"siteUrl,omitempty"`
 	TriggerComponent   string          `json:"triggerComponent,omitempty"`
 	TriggerAction      string          `json:"triggerAction,omitempty"`
 	InvocationChain    []string        `json:"invocationChain,omitempty"`
@@ -90,16 +90,16 @@ type ErrorHistoryFilters struct {
 	Search    string `json:"search,omitempty"`
 }
 
-// ParseJSONFields parses the JSON string fields into their structured counterparts
-func (e *ErrorHistory) ParseJSONFields() {
+// ParseJsonFields parses the JSON string fields into their structured counterparts
+func (e *ErrorHistory) ParseJsonFields() {
 	if e.ContextJSON != "" {
 		e.Context = json.RawMessage(e.ContextJSON)
 	}
 	if e.RequestBodyJSON != "" {
 		e.RequestBody = json.RawMessage(e.RequestBodyJSON)
 	}
-	if e.PHPStackFramesJSON != "" {
-		json.Unmarshal([]byte(e.PHPStackFramesJSON), &e.PHPStackFrames)
+	if e.PhpStackFramesJson != "" {
+		json.Unmarshal([]byte(e.PhpStackFramesJson), &e.PhpStackFrames)
 	}
 	if e.BackendLogsJSON != "" {
 		json.Unmarshal([]byte(e.BackendLogsJSON), &e.BackendLogs)

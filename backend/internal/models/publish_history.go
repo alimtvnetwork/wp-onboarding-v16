@@ -10,7 +10,7 @@ type PublishHistory struct {
 	PluginName       string    `json:"pluginName"`
 	SiteId           int64     `json:"siteId"`
 	SiteName         string    `json:"siteName"`
-	SiteURL          string    `json:"siteUrl"`
+	SiteUrl          string    `json:"siteUrl"`
 	SessionId        string    `json:"sessionId,omitempty"`
 	Status           string    `json:"status"`           // success, failed, partial
 	Mode             string    `json:"mode"`             // full, selected
