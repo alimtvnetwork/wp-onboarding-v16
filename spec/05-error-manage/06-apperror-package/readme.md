@@ -467,7 +467,7 @@ Services return `Result[T]`, `ResultSlice[T]`, and `ResultMap[K, V]` to preserve
 **Rules:**
 - Services **never** return raw `(T, error)` for data-fetching operations — use `Result[T]` or `ResultSlice[T]`
 - Void operations (`Delete`, `MarkSynced`, etc.) may return plain `error`
-- Adapters are the **only** place that calls `.Value()`, `.Items()`, or `.Error()` to convert back to tuples
+- Adapters are the **only** place that calls `.Value()`, `.Items()`, or `.AppError()` to convert back to tuples
 - Handlers and other transport-layer code **never** import `apperror.Result` types directly
 
 ### 10.2 Adapter Implementation
