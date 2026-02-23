@@ -1,6 +1,6 @@
 # Active Development Plan
 
-Updated: 2026-02-22
+Updated: 2026-02-23
 
 ## Current Focus Areas
 
@@ -16,9 +16,22 @@ Updated: 2026-02-22
 - **S-016**: Scanned TypeScript/React files — zero R12/R13 violations found.
 - **S-024**: Added `Hourly` case to `SnapshotFrequencyType` and wired into all consumers.
 - **S-025**: Fixed R9c violation in `ManagerImportValidationTrait.php`.
-- **S-029**: Added ABSPATH guards to `DbResult.php` and `IncrementalDeltaTrait.php`.
-- **S-030**: Fixed R10 violations in `ActivationHandler.php`.
+- **S-029**: ABSPATH guards — audit confirmed all 53 enum files already compliant (2026-02-23).
+- **S-030**: ABSPATH guards — audit confirmed all 13 Logging/ErrorHandling files already compliant (2026-02-23).
+- **Phase 8**: Plugin identity hardcoded strings replaced with `PluginConfigType` enum (2026-02-23).
+- **Memory review**: Cross-references audited and fixed across all architecture docs (2026-02-23).
 
-## Pending Tasks
+## Pending Tasks (10 open suggestions)
 
-- None — all tracked suggestions are complete.
+| ID | Priority | Description |
+|----|----------|-------------|
+| S-021 | Medium | Fix R12 + formatting in Plugin.php, Admin.php, FileLogger.php |
+| S-024 | Medium | Deduplicate Database DEFAULT_LIMIT/MAX_LIMIT with PaginationConfigType |
+| S-031 | Medium | Fix ActivationHandler R12, R4, indentation |
+| S-022 | Low | Fix formatting in Templates/*.php |
+| S-023 | Low | Fix formatting in root files |
+| S-025 | Low | Audit PHP hardcoded string comparisons vs old enum values |
+| S-026 | Low | Update TypeScript enum string values to PascalCase |
+| S-027 | Low | Fix admin-errors.php template magic strings |
+| S-028 | Low | Update core-enum-inventory memory to include LogColumnType |
+| S-032 | Low | Remove dead loadDependencies() + redundant class_exists |
