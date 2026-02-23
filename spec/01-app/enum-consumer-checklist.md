@@ -27,8 +27,16 @@ If any consumer is missed, the new case will either:
 - Be invisible in the UI despite being a valid backend value.
 - Cause a `default` branch to fire in a switch, producing incorrect behavior.
 
+## WordPress i18n Text Domain Constraint
+
+> **RULE-I18N-LITERAL** — WordPress i18n function calls (`__()`, `_e()`, `esc_html__()`, `esc_html_e()`, `esc_attr__()`, `esc_attr_e()`, `_n()`, `_x()`) **must** use a **literal string** for the text domain parameter. Constants, variables, or enum values are **prohibited**.
+
+WordPress's `make-pot` CLI performs static analysis and cannot resolve constants or enum expressions. Using anything other than a bare string literal causes silent extraction failure — the `.pot` file will be empty with no runtime error.
+
+**This exemption is permanent and unconditional.** The text domain `'riseup-asia-uploader'` will appear hundreds of times across template and PHP files. It is **not** a magic string violation.
+
 ## Known Pitfalls and Prevention
 
 | Issue | Reference |
 |-------|-----------|
-| — | No issues recorded yet. Update this table when issues are filed. |
+| i18n text domain must remain a literal string — never replace with enum/constant | `/spec/02-app/issues/06-i18n-text-domain-literal-requirement.md` |

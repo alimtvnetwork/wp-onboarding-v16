@@ -34,3 +34,4 @@ Every time a mistake is identified and fixed, the following steps are **mandator
 | Blank line mandatory before `if`/`foreach`/`switch`/`match` after assignments (R10). | `03-r10-activation-handler-formatting` | `/spec/01-app/formatting-rules-reference.md` |
 | Arrays/calls with >2 items must be one item per line with trailing comma (R9). Applies to all files retroactively. | `04-r9-multi-file-array-formatting` | `/spec/01-app/formatting-rules-reference.md` |
 | Any new structured array key must be added to `ResponseKeyType` before use. No raw strings for domain-level keys. Fixed bug: `$analysis['seed_order']` used wrong snake_case key. | `05-response-key-type-expansion` | `/spec/01-app/enum-consumer-checklist.md` |
+| WordPress i18n text domain must be a literal string — never replace with enum/constant. `make-pot` requires static analysis. | `06-i18n-text-domain-literal-requirement` | `/spec/01-app/enum-consumer-checklist.md` |
