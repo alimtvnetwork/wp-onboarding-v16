@@ -33,7 +33,7 @@ trait SnapshotImportStreamTrait {
             return $validated;
         }
 
-        $this->streamZipFile($validated['export_id'], $validated['export']);
+        $this->streamZipFile($validated['exportId'], $validated['export']);
     }
 
     private function validateAndResolveExport(WP_REST_Request $request): array|WP_REST_Response {
@@ -57,7 +57,7 @@ trait SnapshotImportStreamTrait {
             ), HttpStatusType::Forbidden->value);
         }
 
-        return array('export_id' => $exportId, 'export' => $export);
+        return array('exportId' => $exportId, 'export' => $export);
     }
 
     private function sendZipHeaders(string $filename, int $filesize) {
@@ -69,8 +69,8 @@ trait SnapshotImportStreamTrait {
     }
 
     private function streamZipFile(int $exportId, array $export) {
-        $filepath = $export['zip_path'];
-        $filename = $export['zip_filename'];
+        $filepath = $export['ZipPath'];
+        $filename = $export['ZipFilename'];
         $filesize = filesize($filepath);
 
         $this->logger->logPluginAction(ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,

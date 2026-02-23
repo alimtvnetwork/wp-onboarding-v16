@@ -30,7 +30,7 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?');
         $stmt->execute(array($snapshotId));
         $snapshot = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -40,19 +40,19 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        if ($snapshot['scope'] === SnapshotModeType::Incremental->value) {
+        if ($snapshot['Scope'] === SnapshotModeType::Incremental->value) {
             $this->log(LogLevelType::Warn->value, 'Cannot export incremental snapshot directly', array('id' => $snapshotId));
 
             return null;
         }
 
-        $snapshotStatus = SnapshotStatusType::tryFrom($snapshot['status'] ?? '');
+        $snapshotStatus = SnapshotStatusType::tryFrom($snapshot['Status'] ?? '');
         $isSnapshotIncomplete = ($snapshotStatus === null || $snapshotStatus->isOtherThan(SnapshotStatusType::Complete));
 
         if ($isSnapshotIncomplete) {
             $this->log(LogLevelType::Warn->value, 'Snapshot not complete', array(
                 'id'     => $snapshotId,
-                'status' => $snapshot['status'],
+                'status' => $snapshot['Status'],
             ));
 
             return null;

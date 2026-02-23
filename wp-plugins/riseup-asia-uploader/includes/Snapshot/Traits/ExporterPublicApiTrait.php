@@ -59,7 +59,7 @@ trait ExporterPublicApiTrait {
         }
 
         if ($existing) {
-            $this->deleteExportRecord($existing['id']);
+            $this->deleteExportRecord($existing['Id']);
         }
 
         return $this->buildZip($snapshot);
@@ -86,15 +86,15 @@ trait ExporterPublicApiTrait {
             return false;
         }
 
-        if (file_exists($export['zip_path'])) {
-            @unlink($export['zip_path']);
-            $this->log(LogLevelType::Info->value, 'Deleted cached ZIP file', array('path' => basename($export['zip_path'])));
+        if (file_exists($export['ZipPath'])) {
+            @unlink($export['ZipPath']);
+            $this->log(LogLevelType::Info->value, 'Deleted cached ZIP file', array('path' => basename($export['ZipPath'])));
         }
 
-        $stmt = $pdo->prepare('UPDATE ' . TableType::SnapshotExports->value . ' SET status = ?, expires_at = datetime(\'now\') WHERE id = ?');
-        $stmt->execute(array(SnapshotExportStatusType::Expired->value, $export['id']));
+        $stmt = $pdo->prepare('UPDATE ' . TableType::SnapshotExports->value . ' SET Status = ?, ExpiresAt = datetime(\'now\') WHERE Id = ?');
+        $stmt->execute(array(SnapshotExportStatusType::Expired->value, $export['Id']));
 
-        $this->log(LogLevelType::Info->value, 'Export marked as expired', array('export_id' => $export['id']));
+        $this->log(LogLevelType::Info->value, 'Export marked as expired', array('exportId' => $export['Id']));
 
         return true;
     }
@@ -134,7 +134,7 @@ trait ExporterPublicApiTrait {
      */
     public function getDownloadUrl(int $exportId): ?string {
         $export = $this->getExportById($exportId);
-        $exportStatus = SnapshotExportStatusType::tryFrom($export['status'] ?? '');
+        $exportStatus = SnapshotExportStatusType::tryFrom($export['Status'] ?? '');
         $isExportInvalid = ($export === null || $export === false || $exportStatus === null || $exportStatus->isOtherThan(SnapshotExportStatusType::Valid));
 
         if ($isExportInvalid) {

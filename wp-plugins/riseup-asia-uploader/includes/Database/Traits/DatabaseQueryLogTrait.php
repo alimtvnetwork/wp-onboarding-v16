@@ -107,49 +107,50 @@ trait DatabaseQueryLogTrait {
 
     private function applyEnhancedFields($record, array $enhanced): void {
         $fieldMap = array(
-            'plugin_file' => 'PluginFile',
-            'triggered_by' => 'TriggeredBy',
-            'source_machine' => 'SourceMachine',
-            'plugin_version' => 'PluginVersion',
-            'upload_source' => 'UploadSource',
+            'pluginFile' => 'PluginFile',
+            'triggeredBy' => 'TriggeredBy',
+            'sourceMachine' => 'SourceMachine',
+            'pluginVersion' => 'PluginVersion',
+            'uploadSource' => 'UploadSource',
         );
 
         foreach ($fieldMap as $paramKey => $dbColumn) {
             $hasField = BooleanHelpers::hasValue($enhanced[$paramKey] ?? null);
+
             if ($hasField) {
                 $record->set($dbColumn, $enhanced[$paramKey]);
             }
         }
 
-        $hasAgentSiteId = BooleanHelpers::hasValue($enhanced['agent_site_id'] ?? null);
+        $hasAgentSiteId = BooleanHelpers::hasValue($enhanced['agentSiteId'] ?? null);
 
         if ($hasAgentSiteId) {
-            $record->set('AgentSiteId', (int) $enhanced['agent_site_id']);
+            $record->set('AgentSiteId', (int) $enhanced['agentSiteId']);
         }
 
-        if (isset($enhanced['was_active'])) {
-            $record->set('WasActive', $enhanced['was_active'] ? 1 : 0);
+        if (isset($enhanced['wasActive'])) {
+            $record->set('WasActive', $enhanced['wasActive'] ? 1 : 0);
         }
     }
 
     public function logEnhancedTransaction(array $params): int|false {
         return $this->logTransaction(
             $params['action'] ?? '',
-            $params['plugin_slug'] ?? null,
-            $params['post_id'] ?? null,
-            $params['user_login'] ?? '',
-            $params['user_id'] ?? null,
-            $params['ip_address'] ?? '',
+            $params['pluginSlug'] ?? null,
+            $params['postId'] ?? null,
+            $params['userLogin'] ?? '',
+            $params['userId'] ?? null,
+            $params['ipAddress'] ?? '',
             $params['details'] ?? array(),
             $params['status'] ?? StatusType::Success->value,
-            $params['error_msg'] ?? null,
+            $params['errorMsg'] ?? null,
             array(
-                'plugin_file'    => $params['plugin_file'] ?? null,
-                'was_active'     => $params['was_active'] ?? null,
-                'triggered_by'   => $params['triggered_by'] ?? null,
-                'agent_site_id'  => $params['agent_site_id'] ?? null,
-                'plugin_version' => $params['plugin_version'] ?? null,
-                'upload_source'  => $params['upload_source'] ?? null,
+                'pluginFile'    => $params['pluginFile'] ?? null,
+                'wasActive'     => $params['wasActive'] ?? null,
+                'triggeredBy'   => $params['triggeredBy'] ?? null,
+                'agentSiteId'   => $params['agentSiteId'] ?? null,
+                'pluginVersion' => $params['pluginVersion'] ?? null,
+                'uploadSource'  => $params['uploadSource'] ?? null,
             ),
         );
     }

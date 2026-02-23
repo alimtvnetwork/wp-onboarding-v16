@@ -74,15 +74,13 @@ All sub-phases 7A–7G complete.
 
 ---
 
-## Pending (Not Yet Started)
+## ✅ COMPLETED — PHP Plugin SQLite PascalCase Migration (Phase 3)
 
-### PHP Plugin SQLite PascalCase Migration (Phase 3)
-
-- Phase 3A: Update `TableType` enum values to PascalCase
-- Phase 3B: Migration v13 — table renames via `ALTER TABLE`
-- Phase 3C: Migration v13 — column renames via `ALTER TABLE ... RENAME COLUMN`
-- Phase 3D: Update all PHP code references (SQL queries, Orm, traits)
-- **Estimated effort:** 3 sessions
+- Phase 3A: ✅ `TableType` enum values already PascalCase
+- Phase 3B: ✅ Migration v13 — table renames via `ALTER TABLE`
+- Phase 3C: ✅ Migration v13 — column renames via `ALTER TABLE ... RENAME COLUMN`
+- Phase 3D: ✅ Updated all PHP code references (9 files fixed — Issue #07)
+- Phase 3E: ✅ Batch F camelCase refactor — internal array keys in enhanced fields
 
 ### PascalCase Spec Documentation Updates (Phase 4)
 

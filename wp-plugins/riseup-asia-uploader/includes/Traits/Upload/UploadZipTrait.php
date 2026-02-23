@@ -170,7 +170,7 @@ trait UploadZipTrait
                 'file_size' => $fileSize, 'note' => 'Pre-logged before self-update to ensure audit trail',
             ),
             null,
-            array(ResponseKeyType::PluginVersion->value => $clientVersion ?: $oldVersion, 'upload_source' => $uploadSource)
+            array(ResponseKeyType::PluginVersion->value => $clientVersion ?: $oldVersion, 'uploadSource' => $uploadSource)
         );
     }
 }
