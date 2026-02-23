@@ -382,92 +382,38 @@ return $execResult->affectedRows() > 0;
 ```
 
 ```go
-// Go — apperror.Result[T] / ResultSlice[T] / ResultMap[K, V]
-result := dbutil.QueryOne[T](ctx, db, query, scanner, id)
+// Go — Propagation Rules (Result[T], ResultSlice[T], ResultMap[K,V])
+// .Error() returns *AppError — always preserves stack trace and context.
 
-// ❌ WRONG: No guard — error silently swallowed
-result.Value()
+// ✅ Same-type → direct return (applies to Result, ResultSlice, ResultMap)
+result := svc.GetById(ctx, id)           // Result[Plugin]
+if result.HasError() { return result }    // no re-wrapping needed
+plugin := result.Value()
 
-// ❌ WRONG: Redundant re-wrapping — result.Error() is already *AppError
-if result.HasError() {
-    return apperror.Fail[T](result.Error())
-}
-
-// ✅ CORRECT: Direct propagation — result is already Result[T]
-if result.HasError() {
-    return result
-}
-
-return apperror.Ok(result.Value())
-```
-
-```go
-// ✅ CORRECT: Cross-type propagation (Result[T] → Result[U])
-// When the return type differs, Fail re-wrapping IS needed:
-siteResult := siteSvc.GetById(ctx, siteId)
-if siteResult.HasError() {
-    return apperror.Fail[PluginList](siteResult.Error())
-}
-```
-
-```go
-// Go — ResultSlice: Same-type vs Cross-type propagation
-// ✅ Same-type — direct return (no FailSlice needed)
-result := s.List(ctx) // returns ResultSlice[models.Site]
-if result.HasError() {
-    return result
-}
-
-// ❌ WRONG — redundant FailSlice (same type)
-if result.HasError() {
-    return apperror.FailSlice[models.Site](result.Error()) // redundant
-}
-
-// ✅ Cross-type — FailSlice IS needed (ResultSlice[T] → ResultSlice[U])
-plugins := s.pluginService.List(ctx) // returns ResultSlice[models.Plugin]
+// ✅ Cross-type → Fail/FailSlice/FailMap IS needed
+plugins := s.pluginService.List(ctx)      // ResultSlice[Plugin]
 if plugins.HasError() {
     return apperror.FailSlice[SyncResult](plugins.Error())
 }
 
-// Same rule applies to ResultMap:
-// ✅ Same-type → direct return
-// ✅ Cross-type → apperror.FailMap[K2, V2](result.Error())
-```
+// ❌ WRONG — redundant (same type re-wrapped)
+if result.HasError() { return apperror.Fail[Plugin](result.Error()) }
 
-```go
-// Go — ResultSlice (collection access)
-result := svc.List(ctx)
-
-// ❌ WRONG: No guard — iterating potentially errored slice
-for _, item := range result.Items() { ... }
-
-// ✅ CORRECT: Guard via IsSafe()
+// ✅ Collection access — guard via IsSafe()
 if result.IsSafe() {
-    for _, item := range result.Items() {
-        process(item)
-    }
+    for _, item := range result.Items() { process(item) }
 }
-```
 
-```go
-// Go — Adapter Unwrap Pattern
-func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
+// ✅ Adapter unwrap — Result[T] → (*T, error)
+func (a *Adapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
     result := a.Service.GetById(ctx, id)
-    if result.HasError() {
-        return nil, result.Error()
-    }
-
+    if result.HasError() { return nil, result.Error() }
     v := result.Value()
-
     return &v, nil
 }
 ```
 
-```typescript
-// TypeScript — If Result pattern is adopted, same rule applies
-// ❌ WRONG: result.value()  (no guard)
-// ✅ CORRECT: Check .hasError() before .value() access
-```
+> **Full examples with PHP/Go/TypeScript:** see [apperror § Result Guard Rule](../05-error-manage/06-apperror-package/readme.md#12-result-guard-rule--mandatory-error-check-before-value-access)
 
 #### Enforcement Checklist
 
