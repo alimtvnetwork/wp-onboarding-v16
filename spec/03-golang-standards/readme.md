@@ -140,7 +140,7 @@ return apperror.Wrap(err, "E5002", "remote site request failed").
     WithURL(requestURL).
     WithSlug(pluginSlug).
     WithStatusCode(resp.StatusCode).
-    WithSiteID(siteID)
+    WithSiteId(siteId)
 ```
 
 ### Error Code Convention
@@ -254,10 +254,10 @@ m.Remove(key)       // deletes key; no-op if error state
 
 ```go
 // ✅ Service method returning Result[T]
-func (s *PluginService) GetByID(ctx context.Context, id int64) apperror.Result[Plugin] {
+func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[Plugin] {
     dbResult := dbutil.QueryOne[Plugin](ctx, s.db, query, scanPlugin, id)
     if dbResult.HasError() {
-        return apperror.FailWrap[Plugin](dbResult.Error(), ErrPluginGet, "get plugin by ID")
+        return apperror.FailWrap[Plugin](dbResult.Error(), ErrPluginGet, "get plugin by id")
     }
     if dbResult.IsEmpty() {
         return apperror.FailNew[Plugin](ErrNotFound, "plugin not found")
@@ -278,7 +278,7 @@ func (s *SiteService) ListAll(ctx context.Context) apperror.ResultSlice[Site] {
 
 // ✅ Handler consuming Result[T]
 func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
-    result := h.plugins.GetByID(r.Context(), pluginID)
+    result := h.plugins.GetById(r.Context(), pluginId)
     if result.HasError() {
         writeError(w, result.Error())
         return
@@ -326,7 +326,7 @@ All database queries MUST use the generic `dbutil` package. Returns typed result
 
 ```go
 // Single row — returns Result[T]
-result := dbutil.QueryOne[Plugin](ctx, db, query, scanPlugin, pluginID)
+result := dbutil.QueryOne[Plugin](ctx, db, query, scanPlugin, pluginId)
 
 // Multiple rows — returns ResultSet[T]
 set := dbutil.QueryMany[Site](ctx, db, query, scanSite)
@@ -345,7 +345,7 @@ All structs used in API responses must have explicit JSON tags with PascalCase k
 
 ```go
 type PluginDetails struct {
-    ID        int    `json:"Id"`
+    Id        int    `json:"Id"`
     Name      string `json:"Name"`
     Slug      string `json:"Slug"`
     Version   string `json:"Version"`
@@ -360,20 +360,20 @@ Functions should have **2-3 parameters maximum**. Use config/options structs for
 
 ```go
 // ❌ Bad: Too many parameters
-func StartSession(sessionType SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
+func StartSession(sessionType SessionType, pluginId, siteId int64, pluginName, siteName string) (string, error)
 
 // ✅ Good: Use a struct
 type StartSessionInput struct {
     Type       SessionType
-    PluginID   int64
-    SiteID     int64
+    PluginId   int64
+    SiteId     int64
     PluginName string
     SiteName   string
 }
 func StartSession(input StartSessionInput) (string, error)
 
 // ✅ Acceptable: 2-3 essential parameters (context doesn't count)
-func GetByID(ctx context.Context, id int64) (*Model, error)
+func GetById(ctx context.Context, id int64) (*Model, error)
 ```
 
 ---
@@ -645,10 +645,10 @@ return apperror.Wrap(err, apperror.ErrUploadFailed, "failed to upload plugin")
 
 ```go
 // ❌ WRONG — raw tuple, no semantic methods
-func (s *PluginService) GetByID(ctx context.Context, id int64) (*Plugin, error) { ... }
+func (s *PluginService) GetById(ctx context.Context, id int64) (*Plugin, error) { ... }
 
 // ✅ CORRECT — typed result wrapper
-func (s *PluginService) GetByID(ctx context.Context, id int64) apperror.Result[Plugin] { ... }
+func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[Plugin] { ... }
 ```
 
 ### Mistake 6: `interface{}` / `any` in Business Logic

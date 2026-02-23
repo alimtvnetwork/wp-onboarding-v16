@@ -199,7 +199,7 @@ All errors crossing service boundaries must use `apperror`:
 ```go
 // Wrap existing errors with code and context
 return apperror.Wrap(err, apperror.ErrSyncCheck, "failed to upload plugin").
-    WithPluginContext(pluginID, pluginSlug).
+    WithPluginContext(pluginId, pluginSlug).
     WithEndpoint(requestURL)
 
 // Create new errors
@@ -338,7 +338,7 @@ When a remote WordPress operation fails, the Go backend automatically:
 The backend uses MD5 hashing to suppress identical error log entries:
 
 ```
-Hash = MD5(action + siteID + plugin + endpoint + statusCode + responseBody)
+Hash = MD5(action + siteId + plugin + endpoint + statusCode + responseBody)
 ```
 
 A "Clear Dedup Hashes" button in Settings resets the in-memory hash map.

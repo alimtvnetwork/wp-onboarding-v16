@@ -255,24 +255,24 @@ return $execResult->affectedRows() > 0;
 
 ```go
 // ❌ WRONG: No guard
-result := svc.GetByID(ctx, id)
+result := svc.GetById(ctx, id)
 plugin := result.Value()
 
 // ❌ WRONG: Redundant re-wrapping — result is already Result[T]
-result := svc.GetByID(ctx, id)
+result := svc.GetById(ctx, id)
 if result.HasError() {
     return apperror.Fail[Plugin](result.Error()) // redundant
 }
 
 // ✅ CORRECT: Direct propagation (same type)
-result := svc.GetByID(ctx, id)
+result := svc.GetById(ctx, id)
 if result.HasError() {
     return result
 }
 plugin := result.Value()
 
 // ✅ CORRECT: Cross-type propagation (Result[T] → Result[U])
-siteResult := siteSvc.GetByID(ctx, siteID)
+siteResult := siteSvc.GetById(ctx, siteId)
 if siteResult.HasError() {
     return apperror.Fail[PluginList](siteResult.Error())
 }
@@ -308,8 +308,8 @@ if result.IsSafe() {
 
 ```go
 // ✅ CORRECT: Adapter unwrap pattern
-func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
-    result := a.Service.GetByID(ctx, id)
+func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
+    result := a.Service.GetById(ctx, id)
     if result.HasError() {
         return nil, result.Error()
     }

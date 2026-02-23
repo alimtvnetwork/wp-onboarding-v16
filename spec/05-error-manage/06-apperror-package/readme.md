@@ -211,8 +211,8 @@ err.WithFile(f string)
 err.WithFilePath(p string)
 err.WithURL(u string)
 err.WithSlug(s string)
-err.WithSiteID(id int64)
-err.WithPluginID(id int64)
+err.WithSiteId(id int64)
+err.WithPluginId(id int64)
 err.WithStatusCode(code int)
 err.WithMethod(m string)
 err.WithEndpoint(ep string)
@@ -413,10 +413,10 @@ The table below shows what each constructor passes to its underlying `CaptureSta
 ### Service Method Returning Result[T]
 
 ```go
-func (s *PluginService) GetByID(ctx context.Context, id int64) apperror.Result[Plugin] {
-    plugin, err := s.repo.FindByID(ctx, id)
+func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[Plugin] {
+    plugin, err := s.repo.FindById(ctx, id)
     if err != nil {
-        return apperror.FailWrap[Plugin](err, apperror.ErrDatabaseQuery, "get plugin by ID").
+        return apperror.FailWrap[Plugin](err, apperror.ErrDatabaseQuery, "get plugin by id").
             WithValue("pluginId", fmt.Sprintf("%d", id))
     }
     if plugin == nil {
@@ -431,7 +431,7 @@ func (s *PluginService) GetByID(ctx context.Context, id int64) apperror.Result[P
 
 ```go
 func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
-    result := h.plugins.GetByID(r.Context(), pluginID)
+    result := h.plugins.GetById(r.Context(), pluginId)
     if result.HasError() {
         writeError(w, result.Error())
         return
@@ -481,8 +481,8 @@ type SiteServiceAdapter struct {
 }
 
 // Result[T] → (*T, error) unwrap for single-value returns
-func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Site, error) {
-    result := a.Service.GetByID(ctx, id)  // returns apperror.Result[models.Site]
+func (a *SiteServiceAdapter) GetById(ctx context.Context, id int64) (*models.Site, error) {
+    result := a.Service.GetById(ctx, id)  // returns apperror.Result[models.Site]
     if result.HasError() {
         return nil, result.Error()
     }
@@ -516,7 +516,7 @@ When **Service A** holds a direct reference to **Service B** (not through the ad
 
 ```go
 // sync service calls plugin service directly (not through adapter)
-plugResult := s.pluginService.GetByID(ctx, pluginID)
+plugResult := s.pluginService.GetById(ctx, pluginId)
 if plugResult.HasError() {
     return apperror.FailWrap[PushSyncResult](plugResult.Error(), apperror.ErrDatabaseQuery, "failed to get plugin")
 }
@@ -558,17 +558,17 @@ return apperror.New(apperror.ErrNotFound, "entry not found")
 
 | Service | Result Types | Adapter File |
 |---------|-------------|--------------|
-| Plugin | `List`, `GetByID`, `Create`, `Update`, `ScanDirectory`, `GetMappings`, `GetMappingsBySite`, `CreateMapping` | `adapter_plugin.go` |
-| Site | `List`, `GetByID`, `GetByURL`, `Create`, `Update` | `adapter_site.go` |
+| Plugin | `List`, `GetById`, `Create`, `Update`, `ScanDirectory`, `GetMappings`, `GetMappingsBySite`, `CreateMapping` | `adapter_plugin.go` |
+| Site | `List`, `GetById`, `GetByUrl`, `Create`, `Update` | `adapter_site.go` |
 | Sync | `CheckSync`, `CheckAllSites`, `CheckAllPlugins`, `PushSync`, `GetFileChanges` | `adapter_sync.go` |
 | Publish | `Publish`, `PublishFiles`, `PreviewPublish`, `GetFileDiff` | `adapter_publish.go` |
 | Git | `Pull`, `PullAll`, `Build`, `PullAndBuild`, `GetConfig`, `Status`, `Commit`, `Push` | `adapter_git.go` |
 | Watcher | `TriggerScan`, `ScanAfterGitPull`, `ScanAll` | `adapter_sync.go` |
-| Backup | `Create`, `List`, `GetByID`, `Restore`, `ExportToZip`, `ImportFromZip` | `adapter_publish.go` |
+| Backup | `Create`, `List`, `GetById`, `Restore`, `ExportToZip`, `ImportFromZip` | `adapter_publish.go` |
 | Session | `GetSession`, `GetSessionLogs`, `GetSessionDiagnostics`, `ListSessions` | `adapter_session.go` |
-| ErrorHistory | `Save`, `List`, `GetByID`, `GetByErrorID`, `Clear`, `BulkExport`, `GetStats` | `adapter_session.go` |
+| ErrorHistory | `Save`, `List`, `GetById`, `GetByErrorId`, `Clear`, `BulkExport`, `GetStats` | `adapter_session.go` |
 | SiteHealth | `CheckSite`, `CheckAllSites`, `GetHistory`, `GetSummaries`, `GetStats`, `ClearHistory` | `adapter_history.go` |
-| PublishHistory | `Record`, `List`, `GetByID`, `GetStats`, `Clear` | `adapter_history.go` |
+| PublishHistory | `Record`, `List`, `GetById`, `GetStats`, `Clear` | `adapter_history.go` |
 
 ---
 
@@ -581,7 +581,7 @@ return apperror.New(apperror.ErrNotFound, "entry not found")
 | Scenario | Tag Required? | Example |
 |----------|--------------|---------|
 | Field name matches JSON key | ❌ No | `Version string` (serializes as `"Version"`) |
-| JSON key differs (camelCase) | ✅ Yes | `SiteID int64 \`json:"siteId"\`` |
+| JSON key differs (camelCase) | ✅ Yes | `SiteId int64 \`json:"siteId"\`` |
 | Field needs omitempty | ✅ Yes | `Details string \`json:"details,omitempty"\`` |
 | Both differ + omitempty | ✅ Yes | `PluginSlug string \`json:"pluginSlug,omitempty"\`` |
 | Excluded from JSON | ✅ Yes | `Cause error \`json:"-"\`` |
@@ -710,7 +710,7 @@ Every call site that receives a `Result[T]`, `ResultSlice[T]`, or `ResultMap[K, 
 
 ```go
 // Silent failure: if result has an error, Value() panics or returns zero
-result := svc.GetByID(ctx, id)
+result := svc.GetById(ctx, id)
 plugin := result.Value()
 ```
 
@@ -718,7 +718,7 @@ plugin := result.Value()
 
 ```go
 // result is already Result[T] with the error — just return it
-result := svc.GetByID(ctx, id)
+result := svc.GetById(ctx, id)
 if result.HasError() {
     return result
 }
@@ -729,7 +729,7 @@ plugin := result.Value()
 
 ```go
 // When the return type differs, Fail re-wrapping IS needed:
-siteResult := siteSvc.GetByID(ctx, siteID)
+siteResult := siteSvc.GetById(ctx, siteId)
 if siteResult.HasError() {
     return apperror.Fail[PluginList](siteResult.Error())
 }
@@ -739,7 +739,7 @@ if siteResult.HasError() {
 
 ```go
 // result.Error() is already *AppError — no need to re-wrap into same Result[T]
-result := svc.GetByID(ctx, id)
+result := svc.GetById(ctx, id)
 if result.HasError() {
     return apperror.Fail[Plugin](result.Error()) // redundant
 }
@@ -802,8 +802,8 @@ if result.IsSafe() {
 #### ✅ CORRECT — Adapter Unwrap Pattern
 
 ```go
-func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
-    result := a.Service.GetByID(ctx, id)
+func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
+    result := a.Service.GetById(ctx, id)
     if result.HasError() {
         return nil, result.Error()
     }

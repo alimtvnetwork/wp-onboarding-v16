@@ -499,12 +499,12 @@ func FetchResults[T any]() (T, error) { ... }
 
 **Before (❌):**
 ```go
-func (s *PluginService) GetByID(ctx context.Context, id int64) (*Plugin, error) { ... }
+func (s *PluginService) GetById(ctx context.Context, id int64) (*Plugin, error) { ... }
 ```
 
 **After (✅):**
 ```go
-func (s *PluginService) GetByID(ctx context.Context, id int64) apperror.Result[Plugin] { ... }
+func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[Plugin] { ... }
 ```
 
 **Prevention:** All service methods must return `apperror.Result[T]`, `apperror.ResultSlice[T]`, or `apperror.ResultMap[K,V]`.
