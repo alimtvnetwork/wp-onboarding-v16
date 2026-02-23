@@ -1,6 +1,6 @@
 {
   "namespace": "riseup-asia-uploader/v1",
-  "version": "1.58.0",
+  "version": "1.63.0",
   "description": "Complete listing of all REST API endpoints registered by the Riseup Asia Uploader plugin. Synchronized with EndpointType enum.",
   "endpoints": [
     {
