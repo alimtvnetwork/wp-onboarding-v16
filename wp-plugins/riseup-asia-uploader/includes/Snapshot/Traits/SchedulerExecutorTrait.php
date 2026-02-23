@@ -135,8 +135,8 @@ trait SchedulerExecutorTrait {
 
         $cronResult[ResponseKeyType::SkipAudit->value] = ($totalDeleted === 0);
         $cronResult[ResponseKeyType::LogDataKey->value] = $auditData + array(
-            'space_freed'  => PathHelper::formatBytes($result[ResponseKeyType::SpaceFreedBytes->value]),
-            'errors_count' => count($result[ResponseKeyType::Errors->value]),
+            'spaceFreed'  => PathHelper::formatBytes($result[ResponseKeyType::SpaceFreedBytes->value]),
+            'errorsCount' => count($result[ResponseKeyType::Errors->value]),
         );
 
         return $cronResult;

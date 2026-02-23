@@ -125,7 +125,7 @@ trait CleanerDeletionTrait {
 
     private function cascadeDeleteIncrementalRecords(string $parentDir): void {
         try {
-            $incrementals = $this->db->query_all(
+            $incrementals = $this->db->queryAll(
                 'SELECT Id FROM ' . TableType::Snapshots->value .
                 " WHERE Scope = '" . SnapshotModeType::Incremental->value . "' AND Filepath LIKE ?",
                 array($parentDir . '/incremental/%')

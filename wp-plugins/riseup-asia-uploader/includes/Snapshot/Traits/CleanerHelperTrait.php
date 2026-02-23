@@ -97,11 +97,11 @@ trait CleanerHelperTrait {
             $this->db->logTransaction(
                 ActionType::SnapshotCleanup->value,
                 json_encode(array(
-                    'retention_deleted'              => $results['retention']['deleted'],
-                    'retention_skipped'              => $results['retention']['skipped_master'],
-                    'orphans_removed'                => $results['orphans'][ResponseKeyType::Removed->value],
-                    'stuck_cleaned'                  => $results['stuck']['cleaned'],
-                    'space_freed'                    => PathHelper::formatBytes($results['space_freed_bytes']),
+                    'retentionDeleted'               => $results[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value],
+                    'retentionSkipped'               => $results[ResponseKeyType::Retention->value][ResponseKeyType::SkippedMaster->value],
+                    'orphansRemoved'                 => $results[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value],
+                    'stuckCleaned'                   => $results[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value],
+                    'spaceFreed'                     => PathHelper::formatBytes($results[ResponseKeyType::SpaceFreedBytes->value]),
                     ResponseKeyType::Errors->value   => count($results[ResponseKeyType::Errors->value]),
                     ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
                 )),

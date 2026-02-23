@@ -107,8 +107,8 @@ trait IncrementalRegistrationTrait {
     ): int {
         $now = DateHelper::nowIso();
         $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "
-            (sequence, filename, filepath, provider, scope, tables_json, total_rows,
-             file_size, trigger_source, status, created_at, completed_at)
+            (Sequence, Filename, Filepath, Provider, Scope, TablesJson, TotalRows,
+             FileSize, TriggerSource, Status, CreatedAt, CompletedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $stmt->execute(array(
@@ -159,7 +159,7 @@ trait IncrementalRegistrationTrait {
         $isParentMissing = ($parent === false || $parent === null);
 
         if ($isParentMissing) {
-            $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($masterDir)));
+            $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('masterDir' => basename($masterDir)));
 
             return null;
         }
@@ -175,9 +175,9 @@ trait IncrementalRegistrationTrait {
             return;
         }
 
-        $invalidated = $exporter->invalidateZip((int) $parent['id']);
+        $invalidated = $exporter->invalidateZip((int) $parent['Id']);
         $this->log(LogLevelType::Info->value, 'Parent ZIP export invalidated after incremental backup', array(
-            'parent_id'   => $parent['id'],
+            'parentId'    => $parent['Id'],
             'invalidated' => $invalidated,
         ));
     }

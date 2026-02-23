@@ -209,7 +209,7 @@ trait ImportExecutionTrait {
             ResponseKeyType::TableCount->value => count($tables),
             ResponseKeyType::IncrementalCount->value => count($incrementals),
             ResponseKeyType::PluginCount->value => count($plugins),
-            'format' => SnapshotWorkerModeType::PerTable->value,
+            ResponseKeyType::Format->value => SnapshotWorkerModeType::PerTable->value,
         );
     }
 }
