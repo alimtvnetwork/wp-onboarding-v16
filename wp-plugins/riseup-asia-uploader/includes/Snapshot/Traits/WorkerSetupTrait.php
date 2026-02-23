@@ -41,19 +41,19 @@ trait WorkerSetupTrait {
             ResponseKeyType::PoolSize->value      => $this->poolSize,
         ));
 
-        $base_dir = $this->getSnapshotsBaseDir();
-        $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
-        $snapshot_dir = $base_dir . '/' . $dir_name;
+        $baseDir = $this->getSnapshotsBaseDir();
+        $dirName = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
+        $snapshotDir = $baseDir . '/' . $dirName;
 
-        $isDirCreateFailed = (PathHelper::makeDirectory($snapshot_dir, true) === false);
+        $isDirCreateFailed = (PathHelper::makeDirectory($snapshotDir, true) === false);
 
         if ($isDirCreateFailed) {
             return ResultHelper::error('Failed to create snapshot directory');
         }
 
         return ResultHelper::ok(array(
-            ResponseKeyType::SnapshotDir->value => $snapshot_dir,
-            ResponseKeyType::DirName->value     => $dir_name,
+            ResponseKeyType::SnapshotDir->value => $snapshotDir,
+            ResponseKeyType::DirName->value     => $dirName,
             ResponseKeyType::Title->value       => $title,
             ResponseKeyType::Scope->value       => $scope,
             ResponseKeyType::Type->value        => $type,
