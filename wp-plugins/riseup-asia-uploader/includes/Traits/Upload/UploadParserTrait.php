@@ -28,9 +28,9 @@ trait UploadParserTrait {
      */
     private function parseUploadInput($request) {
         $files = $request->get_file_params();
-        $is_multipart = !empty($files['plugin_zip']);
+        $isMultipart = !empty($files['plugin_zip']);
 
-        if ($is_multipart) {
+        if ($isMultipart) {
             return $this->parseMultipartInput($files, $request);
         }
 
@@ -53,14 +53,15 @@ trait UploadParserTrait {
             return $this->errorResponse('File upload failed (error code: ' . $upload['error'] . ')', HttpStatusType::BadRequest->value);
         }
 
-        $zip_content = file_get_contents($upload['tmp_name']);
-        if ($zip_content === false) {
+        $zipContent = file_get_contents($upload['tmp_name']);
+        if ($zipContent === false) {
             $this->fileLogger->error('Failed to read uploaded file');
             return $this->errorResponse('Failed to read uploaded file', HttpStatusType::ServerError->value);
         }
 
-        $body_params = $request->get_body_params();
-        return $this->buildUploadParams($zip_content, $body_params);
+        $bodyParams = $request->get_body_params();
+
+        return $this->buildUploadParams($zipContent, $bodyParams);
     }
 
     /**
@@ -78,37 +79,37 @@ trait UploadParserTrait {
         }
 
         $this->fileLogger->info('Processing base64 JSON upload');
-        $zip_content = base64_decode($data['plugin_zip']);
-        if ($zip_content === false) {
+        $zipContent = base64_decode($data['plugin_zip']);
+        if ($zipContent === false) {
             $this->fileLogger->error('Invalid base64 data');
             return $this->errorResponse('Invalid base64 data', HttpStatusType::BadRequest->value);
         }
 
-        return $this->buildUploadParams($zip_content, $data);
+        return $this->buildUploadParams($zipContent, $data);
     }
 
     /**
      * Build normalized upload parameters from raw data.
      *
-     * @param string $zip_content Raw ZIP bytes.
-     * @param array  $data        Form/JSON params.
+     * @param string $zipContent Raw ZIP bytes.
+     * @param array  $data       Form/JSON params.
      * @return array Normalized upload parameters.
      */
-    private function buildUploadParams($zip_content, $data) {
+    private function buildUploadParams($zipContent, $data) {
         $slug     = sanitize_file_name($data['slug'] ?? '');
         $activate = !empty($data['activate']);
-        $upload_source = $this->resolveUploadSource($data);
-        $client_plugin_version = isset($data['plugin_version']) ? sanitize_text_field($data['plugin_version']) : '';
+        $uploadSource = $this->resolveUploadSource($data);
+        $clientPluginVersion = isset($data['plugin_version']) ? sanitize_text_field($data['plugin_version']) : '';
 
         $this->fileLogger->debug('Upload parameters', array(
             'slug' => $slug, 'activate' => $activate,
-            'upload_source' => $upload_source, 'client_version' => $client_plugin_version,
-            'file_size' => strlen($zip_content),
+            'upload_source' => $uploadSource, 'client_version' => $clientPluginVersion,
+            'file_size' => strlen($zipContent),
         ));
 
         return array(
-            'zip_content' => $zip_content, 'slug' => $slug, 'activate' => $activate,
-            'upload_source' => $upload_source, 'client_plugin_version' => $client_plugin_version,
+            'zip_content' => $zipContent, 'slug' => $slug, 'activate' => $activate,
+            'upload_source' => $uploadSource, 'client_plugin_version' => $clientPluginVersion,
         );
     }
 
@@ -121,6 +122,7 @@ trait UploadParserTrait {
     private function resolveUploadSource(array $data): string {
         $source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UploadSourceType::RestApi->value;
         $validSources = UploadSourceType::validValues();
+
         return in_array($source, $validSources, true) ? $source : UploadSourceType::RestApi->value;
     }
 }
