@@ -1381,3 +1381,41 @@ All value migrations to PascalCase are now complete:
 | **7E** | `admin-agents.php` magic strings | 1 | ✅ Done |
 | **7F** | `admin-snapshots.php` magic strings | 2 | ✅ Done |
 | **Total** | | **13** | **~5 sessions** |
+
+---
+
+## Phase 8: Eliminate Hardcoded Plugin Identity Strings (2026-02-23)
+
+> **Spec:** `spec/04-php-standards/forbidden-patterns.md` § 9
+
+### Problem
+
+`PluginConfigType::LogPrefix` (`'[Riseup Asia]'`) and `PluginConfigType::Name` (`'Riseup Asia Uploader'`) are centralized in the enum but hardcoded as magic strings in 7 logic-level locations across 5 files. A rebrand requires a full codebase grep instead of a single enum update.
+
+### Affected Files
+
+| # | File | Issue | Fix |
+|---|------|-------|-----|
+| 8.1 | `Notification/AdminMailer.php` | `private const LOG_PREFIX = '[Riseup Asia] AdminMailer: '` | Replace const with `private static function logPrefix()` using `PluginConfigType::LogPrefix->value` |
+| 8.2 | `Notification/AdminMailer.php` | `buildSubject()`: `'[Riseup Asia] Plugin Boot Errors on '` | Use `PluginConfigType::LogPrefix->value` |
+| 8.3 | `Notification/AdminMailer.php` | `buildBody()`: `'Riseup Asia Uploader — Boot Error Report'` | Use `PluginConfigType::Name->value` |
+| 8.4 | `Notification/AdminMailer.php` | `buildBody()`: `'from the Riseup Asia Uploader plugin.'` | Use `PluginConfigType::Name->value` |
+| 8.5 | `Admin/Traits/AdminErrorStateTrait.php` | `'⚠️ Riseup Asia Uploader:'` in admin notice HTML | Use `PluginConfigType::Name->value` |
+| 8.6 | `Helpers/Traits/PathHelperDirTrait.php` | `'# Riseup Asia Uploader - Security'` in generated .htaccess | Use `PluginConfigType::Name->value` |
+| 8.7 | `Helpers/Traits/InitDirTrait.php` | `'# Riseup Asia Uploader - Security'` in generated .htaccess | Use `PluginConfigType::Name->value` |
+| 8.8 | `Activation/ActivationHandler.php` | `'# Riseup Asia Uploader - Stack Trace Log'` | Use `PluginConfigType::Name->value` |
+
+### Exempt
+
+| File | Reason |
+|------|--------|
+| `Autoloader.php` | Loads before enums; cannot depend on `PluginConfigType` |
+| PHPDoc `@package` / file headers | Documentation, not logic |
+
+### Acceptance Criteria
+
+- [ ] Zero hardcoded `'Riseup Asia'` or `'Riseup Asia Uploader'` in logic-level code (excluding Autoloader and doc blocks)
+- [ ] All occurrences derive from `PluginConfigType::LogPrefix` or `PluginConfigType::Name`
+- [ ] `AdminMailer::LOG_PREFIX` const replaced with `logPrefix()` static method
+
+### Estimated Effort: 1 task (all 5 files in one batch)
