@@ -10,6 +10,7 @@ use RiseupAsia\Enums\AgentStatusType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 
 if (!defined('ABSPATH')) {
@@ -282,6 +283,66 @@ jQuery(document).ready(function($) {
     var nonce = '<?php echo wp_create_nonce(NonceType::WpRest->value); ?>';
     var currentAgentId = null;
 
+    // =========================================================================
+    // ENUM CONSTANTS (from PHP — prevents magic strings in JS)
+    // =========================================================================
+
+    var ENDPOINTS = {
+        agents:        '<?php echo esc_js(EndpointType::Agents->value); ?>',
+        agentsAdd:     '<?php echo esc_js(EndpointType::AgentsAdd->value); ?>',
+        agentsRemove:  '<?php echo esc_js(EndpointType::AgentsRemove->value); ?>',
+        agentsTest:    '<?php echo esc_js(EndpointType::AgentsTest->value); ?>',
+        agentsSync:    '<?php echo esc_js(EndpointType::AgentsSync->value); ?>',
+        agentsPlugins: '<?php echo esc_js(EndpointType::AgentsPlugins->value); ?>',
+        agentAction:   '<?php echo esc_js(EndpointType::AgentAction->value); ?>',
+        agentHistory:  '<?php echo esc_js(EndpointType::AgentHistory->value); ?>'
+    };
+
+    var AGENT_STATUS = {
+        pending:   '<?php echo esc_js(AgentStatusType::Pending->value); ?>',
+        connected: '<?php echo esc_js(AgentStatusType::Connected->value); ?>',
+        error:     '<?php echo esc_js(AgentStatusType::Error->value); ?>'
+    };
+
+    var STATUS = {
+        success: '<?php echo esc_js(StatusType::Success->value); ?>'
+    };
+
+    var RESPONSE_KEYS = {
+        agents:  '<?php echo esc_js(ResponseKeyType::Agents->value); ?>',
+        actions: '<?php echo esc_js(ResponseKeyType::Actions->value); ?>',
+        plugins: '<?php echo esc_js(ResponseKeyType::Plugins->value); ?>',
+        count:   '<?php echo esc_js(ResponseKeyType::Count->value); ?>',
+        message: '<?php echo esc_js(ResponseKeyType::Message->value); ?>'
+    };
+
+    var PLUGIN_STATUS = {
+        active: '<?php echo esc_js(__("active", "riseup-asia-uploader")); ?>'
+    };
+
+    var LABELS = {
+        active:              '<?php echo esc_js(__("Active", "riseup-asia-uploader")); ?>',
+        inactive:            '<?php echo esc_js(__("Inactive", "riseup-asia-uploader")); ?>',
+        enable:              '<?php echo esc_js(__("Enable", "riseup-asia-uploader")); ?>',
+        disable:             '<?php echo esc_js(__("Disable", "riseup-asia-uploader")); ?>',
+        deleteBtn:           '<?php echo esc_js(__("Delete", "riseup-asia-uploader")); ?>',
+        noPluginsFound:      '<?php echo esc_js(__("No plugins found", "riseup-asia-uploader")); ?>',
+        failedLoadPlugins:   '<?php echo esc_js(__("Failed to load plugins", "riseup-asia-uploader")); ?>',
+        confirmDeletePlugin: '<?php echo esc_js(__("Are you sure you want to delete this plugin from the remote site?", "riseup-asia-uploader")); ?>',
+        noActionHistory:     '<?php echo esc_js(__("No action history", "riseup-asia-uploader")); ?>',
+        failedLoadHistory:   '<?php echo esc_js(__("Failed to load history", "riseup-asia-uploader")); ?>',
+        confirmRemoveAgent:  '<?php echo esc_js(__("Remove agent site \"%s\"? This cannot be undone.", "riseup-asia-uploader")); ?>',
+        connectionSuccess:   '<?php echo esc_js(__("Connection successful!", "riseup-asia-uploader")); ?>',
+        connectionFailed:    '<?php echo esc_js(__("Connection failed:", "riseup-asia-uploader")); ?>',
+        testFailed:          '<?php echo esc_js(__("Test failed:", "riseup-asia-uploader")); ?>',
+        synced:              '<?php echo esc_js(__("Synced %d plugins", "riseup-asia-uploader")); ?>',
+        syncFailed:          '<?php echo esc_js(__("Sync failed:", "riseup-asia-uploader")); ?>',
+        actionFailed:        '<?php echo esc_js(__("Action failed:", "riseup-asia-uploader")); ?>',
+        failedToRemove:      '<?php echo esc_js(__("Failed to remove:", "riseup-asia-uploader")); ?>',
+        failedToLoadAgents:  '<?php echo esc_js(__("Failed to load agents:", "riseup-asia-uploader")); ?>',
+        failedToAddAgent:    '<?php echo esc_js(__("Failed to add agent", "riseup-asia-uploader")); ?>'
+    };
+
     // Helper: AJAX request
     function apiRequest(method, endpoint, data) {
         return $.ajax({
@@ -309,13 +370,13 @@ jQuery(document).ready(function($) {
         $('#agents-loading').show();
         $('#agents-table').hide();
         
-        apiRequest('GET', 'agents').done(function(response) {
+        apiRequest('GET', ENDPOINTS.agents).done(function(response) {
             var $tbody = $('#agents-tbody').empty();
             
-            if (!response.agents || response.agents.length === 0) {
+            if (!response[RESPONSE_KEYS.agents] || response[RESPONSE_KEYS.agents].length === 0) {
                 $tbody.append('<tr class="no-agents"><td colspan="5"><?php esc_html_e('No agent sites registered yet.', 'riseup-asia-uploader'); ?></td></tr>');
             } else {
-                response.agents.forEach(function(agent) {
+                response[RESPONSE_KEYS.agents].forEach(function(agent) {
                     var statusClass = 'status-' + agent.status; // AgentStatusType PascalCase values
                     var statusLabel = agent.status;
                     var lastSync = agent.last_sync ? new Date(agent.last_sync).toLocaleString() : '-';
@@ -337,7 +398,7 @@ jQuery(document).ready(function($) {
                 });
             }
         }).fail(function(xhr) {
-            showStatus('#add-agent-status', 'Failed to load agents: ' + (xhr.responseJSON?.error?.message || 'Unknown error'), true);
+            showStatus('#add-agent-status', LABELS.failedToLoadAgents + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'), true);
         }).always(function() {
             $('#agents-loading').hide();
             $('#agents-table').show();
@@ -363,12 +424,12 @@ jQuery(document).ready(function($) {
             redirect_url: $('#agent_redirect_url').val() || null
         };
         
-        apiRequest('POST', 'agents', data).done(function(response) {
-            showStatus('#add-agent-status', response.message, false);
+        apiRequest('POST', ENDPOINTS.agents, data).done(function(response) {
+            showStatus('#add-agent-status', response[RESPONSE_KEYS.message], false);
             $form[0].reset();
             loadAgents();
         }).fail(function(xhr) {
-            showStatus('#add-agent-status', xhr.responseJSON?.error?.message || 'Failed to add agent', true);
+            showStatus('#add-agent-status', xhr.responseJSON?.error?.message || LABELS.failedToAddAgent, true);
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -383,11 +444,11 @@ jQuery(document).ready(function($) {
         var id = $row.data('id');
         var $btn = $(this).prop('disabled', true);
         
-        apiRequest('POST', 'agents/' + id + '/test').done(function(response) {
-            alert(response.success ? 'Connection successful!' : 'Connection failed: ' + response.message);
+        apiRequest('POST', ENDPOINTS.agents + '/' + id + '/test').done(function(response) {
+            alert(response[RESPONSE_KEYS.success] ? LABELS.connectionSuccess : LABELS.connectionFailed + ' ' + response[RESPONSE_KEYS.message]);
             loadAgents();
         }).fail(function(xhr) {
-            alert('Test failed: ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.testFailed + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -399,11 +460,11 @@ jQuery(document).ready(function($) {
         var id = $row.data('id');
         var $btn = $(this).prop('disabled', true);
         
-        apiRequest('POST', 'agents/' + id + '/sync').done(function(response) {
-            alert('Synced ' + response.count + ' plugins');
+        apiRequest('POST', ENDPOINTS.agents + '/' + id + '/sync').done(function(response) {
+            alert(LABELS.synced.replace('%d', response[RESPONSE_KEYS.count]));
             loadAgents();
         }).fail(function(xhr) {
-            alert('Sync failed: ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.syncFailed + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -421,17 +482,17 @@ jQuery(document).ready(function($) {
         $('#plugins-table').hide();
         $('#agent-plugins-modal').show();
         
-        apiRequest('POST', 'agents/' + id + '/sync').done(function(response) {
+        apiRequest('POST', ENDPOINTS.agents + '/' + id + '/sync').done(function(response) {
             var $tbody = $('#plugins-tbody').empty();
             
-            if (!response.plugins || response.plugins.length === 0) {
-                $tbody.append('<tr><td colspan="4">No plugins found</td></tr>');
+            if (!response[RESPONSE_KEYS.plugins] || response[RESPONSE_KEYS.plugins].length === 0) {
+                $tbody.append('<tr><td colspan="4">' + LABELS.noPluginsFound + '</td></tr>');
             } else {
-                response.plugins.forEach(function(plugin) {
-                    var isActive = plugin.status === 'active';
+                response[RESPONSE_KEYS.plugins].forEach(function(plugin) {
+                    var isActive = plugin.status === PLUGIN_STATUS.active;
                     var statusBadge = isActive 
-                        ? '<span class="status-badge status-connected">Active</span>'
-                        : '<span class="status-badge status-pending">Inactive</span>';
+                        ? '<span class="status-badge status-connected">' + LABELS.active + '</span>'
+                        : '<span class="status-badge status-pending">' + LABELS.inactive + '</span>';
                     
                     var row = '<tr data-slug="' + escapeHtml(plugin.slug) + '">' +
                         '<td><strong>' + escapeHtml(plugin.name) + '</strong><br><code>' + escapeHtml(plugin.slug) + '</code></td>' +
@@ -439,16 +500,16 @@ jQuery(document).ready(function($) {
                         '<td>' + statusBadge + '</td>' +
                         '<td>' +
                             (isActive 
-                                ? '<button type="button" class="button action-btn btn-plugin-disable">Disable</button>'
-                                : '<button type="button" class="button action-btn btn-plugin-enable">Enable</button>') +
-                            '<button type="button" class="button action-btn btn-plugin-delete" style="color:#dc3232;">Delete</button>' +
+                                ? '<button type="button" class="button action-btn btn-plugin-disable">' + LABELS.disable + '</button>'
+                                : '<button type="button" class="button action-btn btn-plugin-enable">' + LABELS.enable + '</button>') +
+                            '<button type="button" class="button action-btn btn-plugin-delete" style="color:#dc3232;">' + LABELS.deleteBtn + '</button>' +
                         '</td>' +
                     '</tr>';
                     $tbody.append(row);
                 });
             }
         }).fail(function(xhr) {
-            $('#plugins-tbody').html('<tr><td colspan="4">Failed to load plugins</td></tr>');
+            $('#plugins-tbody').html('<tr><td colspan="4">' + LABELS.failedLoadPlugins + '</td></tr>');
         }).always(function() {
             $('#plugins-loading').hide();
             $('#plugins-table').show();
@@ -463,23 +524,23 @@ jQuery(document).ready(function($) {
         var action = $btn.hasClass('btn-plugin-enable') ? 'enable' 
                    : $btn.hasClass('btn-plugin-disable') ? 'disable' : 'delete';
         
-        if (action === 'delete' && !confirm('Are you sure you want to delete this plugin from the remote site?')) {
+        if (action === 'delete' && !confirm(LABELS.confirmDeletePlugin)) {
             return;
         }
         
         $btn.prop('disabled', true);
         
-        apiRequest('POST', 'agents/' + currentAgentId + '/action', {
+        apiRequest('POST', ENDPOINTS.agents + '/' + currentAgentId + '/action', {
             action: action,
             slug: slug
         }).done(function(response) {
-            alert(response.message);
+            alert(response[RESPONSE_KEYS.message]);
             // Refresh plugin list
             $('.btn-plugins').filter(function() {
                 return $(this).closest('tr').data('id') === currentAgentId;
             }).click();
         }).fail(function(xhr) {
-            alert('Action failed: ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.actionFailed + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -494,14 +555,14 @@ jQuery(document).ready(function($) {
         $('#history-agent-name').text(name + ' - Action History');
         $('#agent-history-modal').show();
         
-        apiRequest('GET', 'agents/' + id + '/history').done(function(response) {
+        apiRequest('GET', ENDPOINTS.agents + '/' + id + '/history').done(function(response) {
             var $tbody = $('#history-tbody').empty();
             
-            if (!response.actions || response.actions.length === 0) {
-                $tbody.append('<tr><td colspan="4">No action history</td></tr>');
+            if (!response[RESPONSE_KEYS.actions] || response[RESPONSE_KEYS.actions].length === 0) {
+                $tbody.append('<tr><td colspan="4">' + LABELS.noActionHistory + '</td></tr>');
             } else {
-                response.actions.forEach(function(action) {
-                    var statusClass = action.status === 'Success' ? 'status-connected' : 'status-error';
+                response[RESPONSE_KEYS.actions].forEach(function(action) {
+                    var statusClass = action.status === STATUS.success ? 'status-connected' : 'status-error';
                     var time = new Date(action.created_at).toLocaleString();
                     
                     var row = '<tr>' +
@@ -514,7 +575,7 @@ jQuery(document).ready(function($) {
                 });
             }
         }).fail(function() {
-            $('#history-tbody').html('<tr><td colspan="4">Failed to load history</td></tr>');
+            $('#history-tbody').html('<tr><td colspan="4">' + LABELS.failedLoadHistory + '</td></tr>');
         });
     });
 
@@ -524,16 +585,16 @@ jQuery(document).ready(function($) {
         var id = $row.data('id');
         var name = $row.find('td:first strong').text();
         
-        if (!confirm('Remove agent site "' + name + '"? This cannot be undone.')) {
+        if (!confirm(LABELS.confirmRemoveAgent.replace('%s', name))) {
             return;
         }
         
         var $btn = $(this).prop('disabled', true);
         
-        apiRequest('DELETE', 'agents/' + id).done(function() {
+        apiRequest('DELETE', ENDPOINTS.agents + '/' + id).done(function() {
             loadAgents();
         }).fail(function(xhr) {
-            alert('Failed to remove: ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.failedToRemove + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
         }).always(function() {
             $btn.prop('disabled', false);
         });
