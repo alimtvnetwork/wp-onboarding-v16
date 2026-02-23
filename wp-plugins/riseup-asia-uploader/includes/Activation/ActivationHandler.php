@@ -51,6 +51,7 @@ class ActivationHandler
      */
     private static function runBootDiagnostics(): void {
         $isAutoloaderMissing = !class_exists('RiseupAsiaAutoloader', false);
+
         if ($isAutoloaderMissing) {
             InitHelpers::errorLogWithPrefix('ActivationHandler: autoloader class not available for diagnostics');
 
@@ -137,6 +138,7 @@ class ActivationHandler
 
     private static function writeStacktraceLog(string $logsDir, string $timestamp): void {
         $stacktraceFile = $logsDir . PathLogFileType::Stacktrace->value;
+
         if (PathHelper::isFileMissing($stacktraceFile)) {
             @file_put_contents($stacktraceFile, sprintf(
                 "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
