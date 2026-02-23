@@ -12,7 +12,7 @@ import (
 // Returns (T, error) tuples — the adapter unwraps Result types from the service layer.
 type PluginServiceInterface interface {
 	List(ctx context.Context) ([]models.Plugin, error)
-	GetByID(ctx context.Context, id int64) (*models.Plugin, error)
+	GetById(ctx context.Context, id int64) (*models.Plugin, error)
 	Create(ctx context.Context, input plugin.CreateInput) (*models.Plugin, error)
 	Update(ctx context.Context, id int64, input plugin.UpdateInput) (*models.Plugin, error)
 	Delete(ctx context.Context, id int64) error
@@ -41,8 +41,8 @@ func (a *PluginServiceAdapter) List(ctx context.Context) ([]models.Plugin, error
 	return result.Items(), nil
 }
 
-func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
-	result := a.Service.GetByID(ctx, id)
+func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
+	result := a.Service.GetById(ctx, id)
 	if result.HasError() {
 		return nil, result.Error()
 	}

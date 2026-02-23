@@ -34,7 +34,7 @@ func Health(w http.ResponseWriter, r *http.Request) {
 
 // APIIndex returns API metadata for the base /api/v1 endpoint
 func APIIndex(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, APIIndexResponse{
+	respondSuccess(w, ApiIndexResponse{
 		Name:    "WP Plugin Publish API",
 		Version: "v1",
 		Health:  "/api/v1/health",

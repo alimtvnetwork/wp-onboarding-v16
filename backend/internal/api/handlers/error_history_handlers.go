@@ -139,7 +139,7 @@ func GetErrorHistoryByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		// Try as errorId string
-		errHistory, err := Services.ErrorHistoryService.GetByErrorID(idStr)
+		errHistory, err := Services.ErrorHistoryService.GetByErrorId(idStr)
 		if err != nil {
 			respondError(
 				w,
@@ -156,7 +156,7 @@ func GetErrorHistoryByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errHistory, err := Services.ErrorHistoryService.GetByID(id)
+	errHistory, err := Services.ErrorHistoryService.GetById(id)
 	if err != nil {
 		respondError(
 			w,

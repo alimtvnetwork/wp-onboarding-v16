@@ -51,7 +51,7 @@ var GetPlugin = handleActionByID(
 	"plugin ID",
 	"E3003",
 	func(ctx context.Context, id int64) (any, error) {
-		return Services.PluginService.GetByID(ctx, id)
+		return Services.PluginService.GetById(ctx, id)
 	},
 )
 

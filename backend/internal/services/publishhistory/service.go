@@ -92,8 +92,8 @@ func (s *Service) List(limit, offset int, filters models.PublishHistoryFilters) 
 	return apperror.OK(PublishHistoryListResult{Items: entries, Total: total})
 }
 
-// GetByID returns a specific publish history entry
-func (s *Service) GetByID(id int64) apperror.Result[models.PublishHistory] {
+// GetById returns a specific publish history entry
+func (s *Service) GetById(id int64) apperror.Result[models.PublishHistory] {
 	var e models.PublishHistory
 	err := s.db.QueryRow("SELECT ID, PluginID, PluginName, SiteID, SiteName, SiteURL, SessionID, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs, CreatedAt FROM PublishHistory WHERE ID = ?", id).
 		Scan(&e.ID, &e.PluginID, &e.PluginName, &e.SiteID, &e.SiteName, &e.SiteURL, &e.SessionID, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt)

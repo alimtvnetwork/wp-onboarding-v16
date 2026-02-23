@@ -10,7 +10,7 @@ import (
 type Site struct {
 	Id                int64      `json:"id"`
 	Name              string     `json:"name"`
-	URL               string     `json:"url"`
+	Url               string     `json:"url"`
 	Username          string     `json:"username"`
 	PasswordEncrypted []byte     `json:"-"`
 	Category          string     `json:"category"`
@@ -45,7 +45,7 @@ type PluginMapping struct {
 	PluginId     int64      `json:"pluginId"`
 	SiteId       int64      `json:"siteId"`
 	SiteName     string     `json:"siteName,omitempty"`
-	SiteURL      string     `json:"siteUrl,omitempty"`
+	SiteUrl      string     `json:"siteUrl,omitempty"`
 	RemoteSlug   string     `json:"remoteSlug"`
 	SyncStatus   string     `json:"syncStatus"`
 	LastSyncAt   *time.Time `json:"lastSyncAt,omitempty"`

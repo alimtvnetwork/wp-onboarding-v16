@@ -13,7 +13,7 @@ import (
 // SiteCreateInput represents the request body for creating a site
 type SiteCreateInput struct {
 	Name     string `json:"name"`
-	URL      string `json:"url"`
+	Url      string `json:"url"`
 	Username string `json:"username"`
 	// Accept both legacy "password" and frontend "applicationPassword"
 	Password            string `json:"password,omitempty"`
@@ -23,7 +23,7 @@ type SiteCreateInput struct {
 // SiteUpdateInput represents the request body for updating a site
 type SiteUpdateInput struct {
 	Name     *string `json:"name,omitempty"`
-	URL      *string `json:"url,omitempty"`
+	Url      *string `json:"url,omitempty"`
 	Username *string `json:"username,omitempty"`
 	// Accept both legacy "password" and frontend "applicationPassword"
 	Password            *string `json:"password,omitempty"`
@@ -65,7 +65,7 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.URL == "" {
+	if input.Url == "" {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -121,7 +121,7 @@ var GetSite = handleActionByID(
 	"site ID",
 	"E9001",
 	func(ctx context.Context, id int64) (any, error) {
-		return Services.SiteService.GetByID(ctx, id)
+		return Services.SiteService.GetById(ctx, id)
 	},
 )
 
@@ -192,7 +192,7 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		URL      string `json:"url"`
+		Url      string `json:"url"`
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
@@ -202,7 +202,7 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.TestConnectionWithCredentials(
 		r.Context(),
-		input.URL,
+		input.Url,
 		input.Username,
 		input.Password,
 	)
@@ -294,7 +294,7 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	for _, siteId := range input.SiteIds {
 		result, err := Services.SiteService.BootstrapUploader(r.Context(), siteId, input.UploaderPath)
 		if err != nil {
-			siteInfo, _ := Services.SiteService.GetByID(r.Context(), siteId)
+			siteInfo, _ := Services.SiteService.GetById(r.Context(), siteId)
 			siteName := ""
 
 			if siteInfo != nil {
