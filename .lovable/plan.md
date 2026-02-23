@@ -1,90 +1,222 @@
-## Result Guard Rule — Mandatory `hasError()`/`isSafe()` Before Value Access
+## Eliminate Magic Strings in All Template Files
 
 ### Problem
 
-The codebase uses `DbResult`, `DbResultSet`, `DbExecResult` (PHP) and `apperror.Result[T]`, `ResultSlice[T]` (Go) as structured result wrappers. While the existing code largely follows best practices, there is **no formal spec rule** mandating that callers must check `hasError()` or `isSafe()` before calling `.value()` / `.Value()`. Without a codified rule, future code could silently swallow errors by accessing values from failed results.
+The JavaScript sections of the template files — particularly `admin-agents.php` and partially `admin-snapshots.php` — still contain hardcoded REST endpoint paths, status strings, response keys, and UI labels that should be driven by PHP enums. The PHP/HTML portions are generally well-enumified, but the inline `<script>` blocks were not fully refactored.
 
-### Audit Findings
+### Audit Summary
 
-**Good news:** The current codebase is well-guarded.
 
-- All PHP call sites in `AgentCrudReadTrait` and `AgentCrudWriteTrait` check `hasError()` before accessing `.value()`.
-- All Go call sites across 21+ files consistently check `HasError()` or `IsSafe()` before `.Value()`.
-- The `DbResult::empty()` static factory is a constructor (creates an empty record), not a boolean check — this is correct and requires no change.
+| Template              | PHP/HTML | JavaScript                                                                                                         | Verdict    |
+| --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
+| `admin-settings.php`  | Clean    | Clean (uses `AjaxActionType`, `NonceType`, `SnapshotFrequencyType`, etc.)                                          | OK         |
+| `admin-errors.php`    | Clean    | Deferred to partials (not in repo yet)                                                                             | OK         |
+| `admin-logs.php`      | Clean    | No inline JS                                                                                                       | OK         |
+| `admin-snapshots.php` | Clean    | Mostly clean (has `SNAP_STATUS`/`SNAP_MODE`/`SNAP_SCOPE`/`SNAP_FREQ` constants block) but REST paths are hardcoded | Needs work |
+| `admin-agents.php`    | Clean    | **Major offender** — all REST paths, status strings, response keys, and UI labels are hardcoded magic strings      | Needs work |
 
-**What needs to happen:**
 
-1. Add a formal **Result Guard Rule** to the master coding guidelines
-2. Add it to the error management spec for Go
-3. Add it to the PHP standards
+### Detailed Findings
 
-### Plan
+#### 1. `admin-agents.php` — JavaScript (lines 279-556)
 
-#### 1. Update `spec/01-coding-guidelines/00-master-coding-guidelines.md`
+**A. REST endpoint paths (hardcoded strings instead of `EndpointType` values):**
 
-Add a new section **"6.1 — Result Guard Rule (All Languages)"** under the existing "6. Error Handling" section:
 
+| Line(s) | Magic String                              | Should Use                                                                    |
+| ------- | ----------------------------------------- | ----------------------------------------------------------------------------- |
+| 312     | `'agents'`                                | `EndpointType::Agents->value`                                                 |
+| 366     | `'agents'` (POST)                         | `EndpointType::AgentsAdd->value` (or `EndpointType::Agents->value` with POST) |
+| 386     | `'agents/' + id + '/test'`                | Constructed from `EndpointType::AgentsTest->value` pattern                    |
+| 402     | `'agents/' + id + '/sync'`                | Constructed from `EndpointType::AgentsSync->value` pattern                    |
+| 424     | `'agents/' + id + '/sync'` (view plugins) | `EndpointType::AgentsSync->value`                                             |
+| 472     | `'agents/' + currentAgentId + '/action'`  | `EndpointType::AgentAction->value`                                            |
+| 497     | `'agents/' + id + '/history'`             | `EndpointType::AgentHistory->value`                                           |
+| 533     | `'agents/' + id` (DELETE)                 | `EndpointType::AgentsRemove->value` pattern                                   |
+
+
+**B. Status and UI label magic strings:**
+
+
+| Line(s) | Magic String                                        | Should Use                             |
+| ------- | --------------------------------------------------- | -------------------------------------- |
+| 315     | `'agents'` (response key)                           | `ResponseKeyType`                      |
+| 431     | `'active'` (status check)                           | `StatusType` or `AgentStatusType`      |
+| 433     | `'Active'`, `'Inactive'` (labels)                   | Localized JS constants from PHP `__()` |
+| 442     | `'Disable'`, `'Enable'`, `'Delete'` (button labels) | Localized JS constants                 |
+| 451     | `'Failed to load plugins'`                          | Localized JS constant                  |
+| 466     | `'Are you sure you want to delete...'`              | Localized JS constant                  |
+| 500     | `'actions'` (response key)                          | `ResponseKeyType`                      |
+| 501     | `'No action history'`                               | Localized JS constant                  |
+| 504     | `'Success'` (status check)                          | `StatusType::Success->value`           |
+| 517     | `'Failed to load history'`                          | Localized JS constant                  |
+| 527     | `'Remove agent site...'`                            | Localized JS constant                  |
+
+
+**C. Response JSON keys used directly:**
+
+- `response.agents` (line 315) -- should match `ResponseKeyType::Agents`
+- `response.count` (line 403)
+- `response.plugins` (line 427)
+- `response.actions` (line 500)
+- `action.status`, `action.action`, `action.target_plugin` (lines 504-510)
+
+#### 2. `admin-snapshots.php` — JavaScript (lines 553-1787)
+
+**A. REST endpoint paths (hardcoded in `$.ajax` URL constructions):**
+
+The snapshots template does NOT use a centralized `ENDPOINTS` constant block like it does for statuses/modes. All REST paths are inline:
+
+
+| Line(s) | Magic String                  | Should Use     |
+| ------- | ----------------------------- | -------------- |
+| 775     | `'/snapshots/progress'`       | `EndpointType` |
+| 854     | `'/snapshots/list?limit=...'` | `EndpointType` |
+| 1004    | `'/snapshots/settings'` (GET) | `EndpointType` |
+| 1048    | `'/snapshots/providers'`      | `EndpointType` |
+| 1105    | `'/snapshots/tables'`         | `EndpointType` |
+| 1137    | `'/snapshots/schedule'`       | `EndpointType` |
+| 1180    | `'/snapshots/incremental'`    | `EndpointType` |
+| 1231    | `'/snapshots/import'`         | `EndpointType` |
+| 1295    | `'/snapshots/restore'`        | `EndpointType` |
+| 1343    | `'/snapshots/download'`       | `EndpointType` |
+| 1474    | `'/snapshots/delete'`         | `EndpointType` |
+
+
+**B. Non-localized UI strings in JS:**
+
+
+| Line(s)   | Magic String                                                            |
+| --------- | ----------------------------------------------------------------------- |
+| 749       | `'Copied!'`                                                             |
+| 1055-1056 | `'Provider'`, `'Available'`, `'Priority'` (table headers)               |
+| 1225      | `'Importing...'`                                                        |
+| 1249      | `'Upload & Import'` (button restore text)                               |
+| 1292      | `'Restoring...'`                                                        |
+| 1320      | `'Restore Now'` (button restore text)                                   |
+| 1363      | `'Cached'`, `'Built'`                                                   |
+| 1424      | `'Copy Report'`                                                         |
+| 1448      | `'Are you sure you want to delete snapshot...'`                         |
+| 1648-1651 | Month names array (not localized)                                       |
+| 1734-1736 | `'Full backup'`, `'Incremental'`, `'Scheduled backup'` (tooltip titles) |
+
+
+**C. Response JSON keys used directly:**
+
+- `response.snapshots` (line 862)
+- `response.total` (line 922)
+- `response.job_id` (multiple lines)
+- `response.percent`, `response.status`, etc. (progress response)
+
+### Implementation Plan
+
+#### Step 1: Add `CONSTANTS` block to `admin-agents.php` JS
+
+Add a PHP-to-JS constants block at the top of the `<script>` section (after the existing variable declarations), similar to how `admin-snapshots.php` already has `SNAP_STATUS`, `SNAP_MODE`, etc.:
+
+```javascript
+// ENUM CONSTANTS (from PHP -- prevents magic strings in JS)
+var ENDPOINTS = {
+    agents:       '<?php echo esc_js(EndpointType::Agents->value); ?>',
+    agentsAdd:    '<?php echo esc_js(EndpointType::AgentsAdd->value); ?>',
+    agentsRemove: '<?php echo esc_js(EndpointType::AgentsRemove->value); ?>',
+    agentsTest:   '<?php echo esc_js(EndpointType::AgentsTest->value); ?>',
+    agentsSync:   '<?php echo esc_js(EndpointType::AgentsSync->value); ?>',
+    agentsPlugins:'<?php echo esc_js(EndpointType::AgentsPlugins->value); ?>',
+    agentAction:  '<?php echo esc_js(EndpointType::AgentAction->value); ?>',
+    agentHistory: '<?php echo esc_js(EndpointType::AgentHistory->value); ?>'
+};
+var AGENT_STATUS = {
+    pending:   '<?php echo esc_js(AgentStatusType::Pending->value); ?>',
+    connected: '<?php echo esc_js(AgentStatusType::Connected->value); ?>',
+    error:     '<?php echo esc_js(AgentStatusType::Error->value); ?>'
+};
+var STATUS = {
+    success: '<?php echo esc_js(StatusType::Success->value); ?>'
+};
+var LABELS = {
+    active:              '<?php echo esc_js(__("Active", "riseup-asia-uploader")); ?>',
+    inactive:            '<?php echo esc_js(__("Inactive", "riseup-asia-uploader")); ?>',
+    enable:              '<?php echo esc_js(__("Enable", "riseup-asia-uploader")); ?>',
+    disable:             '<?php echo esc_js(__("Disable", "riseup-asia-uploader")); ?>',
+    deleteBtn:           '<?php echo esc_js(__("Delete", "riseup-asia-uploader")); ?>',
+    noPluginsFound:      '<?php echo esc_js(__("No plugins found", "riseup-asia-uploader")); ?>',
+    failedLoadPlugins:   '<?php echo esc_js(__("Failed to load plugins", "riseup-asia-uploader")); ?>',
+    confirmDeletePlugin: '<?php echo esc_js(__("Are you sure you want to delete this plugin from the remote site?", "riseup-asia-uploader")); ?>',
+    noActionHistory:     '<?php echo esc_js(__("No action history", "riseup-asia-uploader")); ?>',
+    failedLoadHistory:   '<?php echo esc_js(__("Failed to load history", "riseup-asia-uploader")); ?>',
+    confirmRemoveAgent:  '<?php echo esc_js(__("Remove agent site \"%s\"? This cannot be undone.", "riseup-asia-uploader")); ?>',
+    connectionSuccess:   '<?php echo esc_js(__("Connection successful!", "riseup-asia-uploader")); ?>',
+    connectionFailed:    '<?php echo esc_js(__("Connection failed:", "riseup-asia-uploader")); ?>',
+    testFailed:          '<?php echo esc_js(__("Test failed:", "riseup-asia-uploader")); ?>',
+    synced:              '<?php echo esc_js(__("Synced %d plugins", "riseup-asia-uploader")); ?>',
+    syncFailed:          '<?php echo esc_js(__("Sync failed:", "riseup-asia-uploader")); ?>',
+    actionFailed:        '<?php echo esc_js(__("Action failed:", "riseup-asia-uploader")); ?>',
+    failedToRemove:      '<?php echo esc_js(__("Failed to remove:", "riseup-asia-uploader")); ?>'
+};
 ```
-### 6.1 — Result Guard Rule (Zero Silent Failures)
 
-Every Result/DbResult wrapper MUST have its error state checked before
-accessing the contained value. Accessing `.value()` / `.Value()` without
-a prior `hasError()` or `isSafe()` guard is a spec violation.
+Then replace all hardcoded strings in the JS body with these constants.
 
-**Principle:** No error may ever be swallowed. If a result carries an error,
-it must be explicitly handled — logged, returned, or propagated.
+Note: The agents template uses a pattern like `'agents/' + id + '/test'` for per-agent endpoints. Since `EndpointType` stores `'agents/test'`, we need a helper or we construct the URL as `ENDPOINTS.agents + '/' + id + '/test'`. We will keep the pattern but centralize the base segment.
 
-PHP:
-  $result = $query->queryOne(...);
-  // WRONG: $result->value()  (no guard)
-  // CORRECT:
-  if ($result->hasError()) {
-      $this->logger->logException($result->error(), 'context');
-      return null;
-  }
-  return $result->value();
+#### Step 2: Add `SNAP_ENDPOINTS` block to `admin-snapshots.php` JS
 
-Go:
-  result := dbutil.QueryOne[T](ctx, db, query, scanner, id)
-  // WRONG: result.Value()  (no guard)
-  // CORRECT:
-  if result.HasError() {
-      return apperror.Fail[T](result.Error())
-  }
-  return apperror.Ok(result.Value())
+Add an endpoints constant block alongside the existing `SNAP_STATUS`/`SNAP_MODE` blocks:
 
-TypeScript:
-  // If Result pattern is adopted in TS, same rule applies.
-  // Check .hasError before .value access.
+```javascript
+var SNAP_ENDPOINTS = {
+    list:        '<?php echo esc_js(EndpointType::SnapshotsList->value); ?>',
+    schedule:    '<?php echo esc_js(EndpointType::SnapshotsSchedule->value); ?>',
+    info:        '<?php echo esc_js(EndpointType::SnapshotsInfo->value); ?>',
+    delete_:     '<?php echo esc_js(EndpointType::SnapshotsDelete->value); ?>',
+    restore:     '<?php echo esc_js(EndpointType::SnapshotsRestore->value); ?>',
+    export_:     '<?php echo esc_js(EndpointType::SnapshotsExport->value); ?>',
+    settings:    '<?php echo esc_js(EndpointType::SnapshotsSettings->value); ?>',
+    providers:   '<?php echo esc_js(EndpointType::SnapshotsProviders->value); ?>',
+    tables:      '<?php echo esc_js(EndpointType::SnapshotsTables->value); ?>',
+    fullBackup:  '<?php echo esc_js(EndpointType::SnapshotsFullBackup->value); ?>',
+    incremental: '<?php echo esc_js(EndpointType::SnapshotsIncremental->value); ?>',
+    import_:     '<?php echo esc_js(EndpointType::SnapshotsImport->value); ?>',
+    cleanup:     '<?php echo esc_js(EndpointType::SnapshotsCleanup->value); ?>',
+    download:    '<?php echo esc_js(EndpointType::SnapshotsDownload->value); ?>',
+    progress:    '<?php echo esc_js(EndpointType::SnapshotsProgress->value); ?>'
+};
 ```
 
-I'm not sure what your result card is, but the idea of the result, uh, when we try to get the result, uh, it should log it, uh, immediately so that we can reduce the steps as much as possible. Okay? When we click on Get Value, um, it should already log that there is a error. Okay? And if it has any issues, then it will return empty. Okay, uh, but also, at the same time, it will log from the framework itself. That is the idea.
+in your plan, you did not plan to update the Riseup- hyphen ASIA hyphen uploader in magic string, which should be the crucial to update, and this should not be-- come as a magic string anywhere. So make sure that you update this. This is not in the plan, uh, as I can see that you have generated code, but it's not there. But make sure that everything is actually constant or enum.
 
   
   
-Also update the **Quick Checklist** at the bottom to add:
+Add `use RiseupAsia\Enums\EndpointType;` to the imports if missing, then replace all `restBase + '/snapshots/...'` calls with `restBase + '/' + SNAP_ENDPOINTS.xxx`.
 
-```
-[ ] Results: hasError()/isSafe() checked before .value()/.Value() — no swallowed errors
-```
+Also add a `SNAP_LABELS` block for the non-localized UI strings (month names, button text, confirmation messages, table headers).
 
-#### 2. Update `spec/05-error-manage/06-apperror-package/readme.md`
+#### Step 3: Add `EndpointType` import to `admin-snapshots.php`
 
-Add a subsection reinforcing the guard rule for Go result types, with explicit examples of correct and incorrect usage patterns.
-
-#### 3. Update `spec/01-coding-guidelines/boolean-principles.md` (clarification note)
-
-Add a note clarifying that `DbResult::empty()` and `DbResultSet::empty()` are **static factory constructors** (not boolean checks) and are exempt from the `is`/`has` prefix rule. Boolean query methods like `isEmpty()`, `isDefined()`, `hasError()`, `isSafe()` on the same class do follow P1 correctly.
-
-#### 4. No code changes needed
-
-The audit confirmed all existing call sites are already compliant. This is purely a spec/guideline update to prevent future regressions.
+The snapshots template does not currently import `EndpointType`. Add it to the `use` block at the top.
 
 ### Files to Modify
 
 
-| File                                                       | Change                                                       |
-| ---------------------------------------------------------- | ------------------------------------------------------------ |
-| `spec/01-coding-guidelines/00-master-coding-guidelines.md` | Add section 6.1 (Result Guard Rule) + update Quick Checklist |
-| `spec/05-error-manage/06-apperror-package/readme.md`       | Add guard rule subsection with Go examples                   |
-| `spec/01-coding-guidelines/boolean-principles.md`          | Add factory method exemption note for `::empty()`            |
+| File                  | Changes                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `admin-agents.php`    | Add `ENDPOINTS`, `AGENT_STATUS`, `STATUS`, `LABELS` JS constant blocks; replace ~30 hardcoded strings in JS with constants                       |
+| `admin-snapshots.php` | Add `use EndpointType;` import; add `SNAP_ENDPOINTS` and `SNAP_LABELS` JS constant blocks; replace ~15 endpoint strings and ~15 UI label strings |
+
+
+### Files NOT Needing Changes
+
+
+| File                 | Reason                                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin-settings.php` | Already fully enumified (PHP and JS both use `AjaxActionType`, `NonceType`, `SnapshotFrequencyType`, `RetentionType`, `StorageModeType`) |
+| `admin-errors.php`   | PHP section fully enumified; JS deferred to partials                                                                                     |
+| `admin-logs.php`     | Fully enumified with `LogColumnType`, `StatusType`, `TriggerSourceType`, etc.; no inline JS                                              |
+
+
+### Estimated Scope
+
+- ~45 magic string replacements across 2 files
+- No structural changes, no new enums needed (all required enums already exist)
+- Pattern follows the existing `SNAP_STATUS`/`SNAP_MODE` approach already proven in `admin-snapshots.php`
