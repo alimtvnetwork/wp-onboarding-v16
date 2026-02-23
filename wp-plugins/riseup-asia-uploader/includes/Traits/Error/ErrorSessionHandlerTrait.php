@@ -156,13 +156,13 @@ trait ErrorSessionHandlerTrait {
             return null;
         }
 
-        $func_part = $m[3];
+        $funcPart = $m[3];
         $class = '';
-        $function = $func_part;
-        if (strpos($func_part, '->') !== false) {
-            list($class, $function) = explode('->', $func_part, 2);
-        } elseif (strpos($func_part, '::') !== false) {
-            list($class, $function) = explode('::', $func_part, 2);
+        $function = $funcPart;
+        if (strpos($funcPart, '->') !== false) {
+            list($class, $function) = explode('->', $funcPart, 2);
+        } elseif (strpos($funcPart, '::') !== false) {
+            list($class, $function) = explode('::', $funcPart, 2);
         }
 
         return array(

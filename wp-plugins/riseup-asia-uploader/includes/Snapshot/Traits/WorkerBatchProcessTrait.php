@@ -21,11 +21,11 @@ use RiseupAsia\Helpers\PathHelper;
 
 trait WorkerBatchProcessTrait {
     public function processWorkerBatch(array $args): void {
-        $job_id = $args['job_id'] ?? 0;
-        $isJobIdMissing = ($job_id === 0);
+        $jobId = $args['jobId'] ?? 0;
+        $isJobIdMissing = ($jobId === 0);
 
         if ($isJobIdMissing) {
-            $this->log(LogLevelType::Error->value, 'Worker batch called without job_id');
+            $this->log(LogLevelType::Error->value, 'Worker batch called without jobId');
 
             return;
         }
@@ -40,24 +40,24 @@ trait WorkerBatchProcessTrait {
         }
 
         try {
-            $job = $this->getJob($pdo, $job_id);
+            $job = $this->getJob($pdo, $jobId);
             $isJobMissing = ($job === null || $job === false);
 
             if ($isJobMissing) {
-                $this->log(LogLevelType::Error->value, 'Job not found', array('job_id' => $job_id));
+                $this->log(LogLevelType::Error->value, 'Job not found', array('jobId' => $jobId));
 
                 return;
             }
 
-            $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Processing->value);
-            $this->processJobBatch($pdo, $job_id, $job);
+            $this->updateJobStatus($pdo, $jobId, SnapshotJobStatusType::Processing->value);
+            $this->processJobBatch($pdo, $jobId, $job);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Worker batch failed', array(
-                'job_id'                        => $job_id,
+                'jobId'                         => $jobId,
                 ResponseKeyType::Error->value   => $e->getMessage(),
                 'trace'                         => $e->getTraceAsString(),
             ));
-            $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Failed->value, $e->getMessage());
+            $this->updateJobStatus($pdo, $jobId, SnapshotJobStatusType::Failed->value, $e->getMessage());
         }
     }
 

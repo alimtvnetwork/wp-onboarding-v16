@@ -74,7 +74,7 @@ trait SnapshotImportStreamTrait {
         $filesize = filesize($filepath);
 
         $this->logger->logPluginAction(ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array('export_id' => $exportId, ResponseKeyType::Filename->value => $filename, ResponseKeyType::Size->value => $filesize, ResponseKeyType::Phase->value => 'streaming'));
+            array('exportId' => $exportId, ResponseKeyType::Filename->value => $filename, ResponseKeyType::Size->value => $filesize, ResponseKeyType::Phase->value => 'streaming'));
 
         $this->sendZipHeaders($filename, $filesize);
 
@@ -105,32 +105,32 @@ trait SnapshotImportStreamTrait {
                 return $this->errorResponse('No file uploaded', HttpStatusType::BadRequest->value);
             }
 
-            $tmp_file = $files['file']['tmp_name'];
-            $original_name = $files['file']['name'] ?? 'unknown';
+            $tmpFile = $files['file']['tmp_name'];
+            $originalName = $files['file']['name'] ?? 'unknown';
             $this->fileLogger->info('Importing snapshot from uploaded ZIP', array(
-                'originalName' => $original_name,
+                'originalName' => $originalName,
                 ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value],
             ));
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::Filename->value => $original_name, ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value], ResponseKeyType::Phase->value => 'initiated')
+                array(ResponseKeyType::Filename->value => $originalName, ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value], ResponseKeyType::Phase->value => 'initiated')
             );
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $importer = new SnapshotImport($this->fileLogger, $this->db, $manager);
-            $result = $importer->import($tmp_file);
+            $result = $importer->import($tmpFile);
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value,
                 $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-                array(ResponseKeyType::Filename->value => $original_name, ResponseKeyType::Phase->value => 'complete'),
+                array(ResponseKeyType::Filename->value => $originalName, ResponseKeyType::Phase->value => 'complete'),
                 $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Import failed')
             );
 
-            $status_code = $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value;
+            $statusCode = $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value;
 
-            return new WP_REST_Response($result, $status_code);
+            return new WP_REST_Response($result, $statusCode);
         }, 'import_snapshot');
     }
 }

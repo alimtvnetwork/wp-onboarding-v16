@@ -87,14 +87,14 @@ trait DetectorSettingsTrait {
             $providerId = $this->getPreferredProvider();
         }
 
-        if (isset($this->provider_instances[$providerId])) {
-            return $this->provider_instances[$providerId];
+        if (isset($this->providerInstances[$providerId])) {
+            return $this->providerInstances[$providerId];
         }
 
         $this->assertProviderAvailable($providerId);
 
         $instance = $this->instantiateProvider($providerId);
-        $this->provider_instances[$providerId] = $instance;
+        $this->providerInstances[$providerId] = $instance;
 
         return $instance;
     }

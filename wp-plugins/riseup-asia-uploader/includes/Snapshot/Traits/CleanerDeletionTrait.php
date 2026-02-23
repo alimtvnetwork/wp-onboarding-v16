@@ -23,21 +23,21 @@ use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait CleanerDeletionTrait {
     private function deleteSnapshot(array $snapshot): array {
-        $bytes_freed = 0;
+        $bytesFreed = 0;
         $filepath = $snapshot['Filepath'];
-        $is_directory = is_dir($filepath);
+        $isDirectory = is_dir($filepath);
 
-        if ($is_directory) {
-            $bytes_freed += $this->cascadeDeleteIncrementalDir($filepath, (int) $snapshot['Id']);
-            $dir_size = $this->getDirectorySize($filepath);
+        if ($isDirectory) {
+            $bytesFreed += $this->cascadeDeleteIncrementalDir($filepath, (int) $snapshot['Id']);
+            $dirSize = $this->getDirectorySize($filepath);
             $this->deleteDirectoryRecursive($filepath);
-            $bytes_freed += $dir_size;
+            $bytesFreed += $dirSize;
         } else {
-            $bytes_freed += $this->deleteSingleFileSnapshot($filepath);
+            $bytesFreed += $this->deleteSingleFileSnapshot($filepath);
 
-            if ($bytes_freed === -1) {
+            if ($bytesFreed === -1) {
                 return ResultHelper::failed(array(
-                    'bytes_freed' => 0,
+                    'bytesFreed' => 0,
                 ));
             }
         }
@@ -48,39 +48,39 @@ trait CleanerDeletionTrait {
         $this->log(LogLevelType::Debug->value, 'Deleted snapshot', array(
             'id'                             => $snapshot['Id'],
             ResponseKeyType::Filename->value => $snapshot['Filename'] ?? '',
-            'bytes_freed'                    => PathHelper::formatBytes($bytes_freed),
+            'bytesFreed'                     => PathHelper::formatBytes($bytesFreed),
         ));
 
         return ResultHelper::ok(array(
-            'bytes_freed' => $bytes_freed,
+            'bytesFreed' => $bytesFreed,
         ));
     }
 
     private function cascadeDeleteIncrementalDir(string $filepath, int $parentId): int {
-        $incremental_dir = $filepath . '/incremental';
+        $incrementalDir = $filepath . '/incremental';
 
-        if (PathHelper::isDirMissing($incremental_dir)) {
+        if (PathHelper::isDirMissing($incrementalDir)) {
             return 0;
         }
 
-        $inc_size = $this->getDirectorySize($incremental_dir);
-        $this->deleteDirectoryRecursive($incremental_dir);
+        $incSize = $this->getDirectorySize($incrementalDir);
+        $this->deleteDirectoryRecursive($incrementalDir);
         $this->cascadeDeleteIncrementalRecords($filepath);
 
         $this->log(LogLevelType::Info->value, 'Cascade-deleted incremental children', array(
-            'parent_id'   => $parentId,
-            'parent_dir'  => basename($filepath),
-            'bytes_freed' => PathHelper::formatBytes($inc_size),
+            'parentId'   => $parentId,
+            'parentDir'  => basename($filepath),
+            'bytesFreed' => PathHelper::formatBytes($incSize),
         ));
 
-        return $inc_size;
+        return $incSize;
     }
 
     private function deleteSingleFileSnapshot(string $filepath): int {
-        $bytes_freed = 0;
+        $bytesFreed = 0;
 
         if (PathHelper::fileExists($filepath)) {
-            $bytes_freed = filesize($filepath);
+            $bytesFreed = filesize($filepath);
             $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
 
             if ($isDeleteFailed) {
@@ -90,14 +90,14 @@ trait CleanerDeletionTrait {
             }
         }
 
-        $zip_path = $this->getZipPath($filepath);
+        $zipPath = $this->getZipPath($filepath);
 
-        if (PathHelper::fileExists($zip_path)) {
-            $bytes_freed += filesize($zip_path);
-            PathHelper::deleteFile($zip_path);
+        if (PathHelper::fileExists($zipPath)) {
+            $bytesFreed += filesize($zipPath);
+            PathHelper::deleteFile($zipPath);
         }
 
-        return $bytes_freed;
+        return $bytesFreed;
     }
 
     private function deleteSnapshotRecords(int $snapshotId): void {

@@ -52,7 +52,7 @@ trait NativeTableExportConvertTrait {
     }
 
     private function convertMysqlDataTypes(string $sql): string {
-        $type_map = array(
+        $typeMap = array(
             '/\bTINYINT\s*\(\d+\)/i'      => 'INTEGER',
             '/\bSMALLINT\s*\(\d+\)/i'     => 'INTEGER',
             '/\bMEDIUMINT\s*\(\d+\)/i'    => 'INTEGER',
@@ -81,7 +81,7 @@ trait NativeTableExportConvertTrait {
             '/\bBOOL\b/i'                 => 'INTEGER',
         );
 
-        foreach ($type_map as $pattern => $replacement) {
+        foreach ($typeMap as $pattern => $replacement) {
             $sql = preg_replace($pattern, $replacement, $sql);
         }
 

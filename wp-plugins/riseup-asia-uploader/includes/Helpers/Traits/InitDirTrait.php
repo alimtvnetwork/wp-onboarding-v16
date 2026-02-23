@@ -102,12 +102,12 @@ trait InitDirTrait {
             return dirname(__DIR__) . '/data';
         }
 
-        $upload_dir = wp_upload_dir();
+        $uploadDir = wp_upload_dir();
 
-        if (isset($upload_dir['error']) && $upload_dir['error']) {
+        if (isset($uploadDir['error']) && $uploadDir['error']) {
             return dirname(__DIR__) . '/data';
         }
 
-        return $upload_dir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value;
+        return $uploadDir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value;
     }
 }

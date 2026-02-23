@@ -99,11 +99,11 @@ trait CleanerRetentionTrait {
             return;
         }
 
-        $delete_result = $this->deleteSnapshot($snapshot);
+        $deleteResult = $this->deleteSnapshot($snapshot);
 
-        if ($delete_result[ResponseKeyType::Success->value]) {
+        if ($deleteResult[ResponseKeyType::Success->value]) {
             $result[ResponseKeyType::Deleted->value]++;
-            $result[ResponseKeyType::BytesFreed->value] += $delete_result[ResponseKeyType::BytesFreed->value];
+            $result[ResponseKeyType::BytesFreed->value] += $deleteResult[ResponseKeyType::BytesFreed->value];
         }
     }
 
@@ -136,24 +136,24 @@ trait CleanerRetentionTrait {
     }
 
     private function getSnapshotsBeyondCount(int $count): array {
-        $total_result = $this->db->querySingle(
+        $totalResult = $this->db->querySingle(
             'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE Status = ?',
             array(SnapshotStatusType::Complete->value)
         );
 
-        $isResultMissing = ($total_result === null || $total_result === false);
-        $isBelowThreshold = ($isResultMissing || $total_result['cnt'] <= $count);
+        $isResultMissing = ($totalResult === null || $totalResult === false);
+        $isBelowThreshold = ($isResultMissing || $totalResult['cnt'] <= $count);
 
         if ($isBelowThreshold) {
             return array();
         }
 
-        $to_delete = $total_result['cnt'] - $count;
+        $toDelete = $totalResult['cnt'] - $count;
 
         return $this->db->queryAll(
             'SELECT Id, Filepath, Filename, FileSize, Scope FROM ' . TableType::Snapshots->value .
             ' WHERE Status = ? ORDER BY CreatedAt ASC LIMIT ?',
-            array(SnapshotStatusType::Complete->value, $to_delete)
+            array(SnapshotStatusType::Complete->value, $toDelete)
         ) ?: array();
     }
 }

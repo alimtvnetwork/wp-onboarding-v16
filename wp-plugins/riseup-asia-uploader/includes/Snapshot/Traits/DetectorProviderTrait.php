@@ -48,9 +48,9 @@ trait DetectorProviderTrait {
         $isStillUnavailable = ($result['available'] === false);
 
         if ($isStillUnavailable) {
-            $plugin_file = 'wp-reset/wp-reset.php';
+            $pluginFile = 'wp-reset/wp-reset.php';
 
-            if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
+            if (is_plugin_active($pluginFile) || is_plugin_active_for_network($pluginFile)) {
                 $result['available'] = true;
                 $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
             }
@@ -108,14 +108,14 @@ trait DetectorProviderTrait {
         $isStillUnavailable = ($result['available'] === false);
 
         if ($isStillUnavailable) {
-            $plugin_files = array('updraftplus/updraftplus.php', 'updraftplus-premium/updraftplus.php');
+            $pluginFiles = array('updraftplus/updraftplus.php', 'updraftplus-premium/updraftplus.php');
 
-            foreach ($plugin_files as $plugin_file) {
-                if (is_plugin_active($plugin_file) || is_plugin_active_for_network($plugin_file)) {
+            foreach ($pluginFiles as $pluginFile) {
+                if (is_plugin_active($pluginFile) || is_plugin_active_for_network($pluginFile)) {
                     $result['available'] = true;
                     $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
 
-                    if (strpos($plugin_file, 'premium') !== false) {
+                    if (strpos($pluginFile, 'premium') !== false) {
                         $result['name'] = 'UpdraftPlus Premium';
                     }
 
@@ -129,12 +129,12 @@ trait DetectorProviderTrait {
                 $result['version'] = UPDRAFTPLUS_VERSION;
             }
 
-            $is_premium = strpos($result['name'], 'Premium') !== false;
+            $isPremium = strpos($result['name'], 'Premium') !== false;
 
             $result['capabilities'] = array(
                 'fullSite'     => true,
                 'databaseOnly' => true,
-                'selective'    => $is_premium,
+                'selective'    => $isPremium,
                 'scheduled'    => true,
                 'restore'      => true,
                 'export'       => true,
@@ -146,12 +146,12 @@ trait DetectorProviderTrait {
     }
 
     private function detectNative(): array {
-        $has_sqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
+        $hasSqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
 
         return array(
             'id'                                    => SnapshotProviderType::Native->value,
             'name'                                  => 'Native SQLite',
-            'available'                             => $has_sqlite,
+            'available'                             => $hasSqlite,
             'capabilities'                          => array(
                 'fullSite'     => false,
                 'databaseOnly' => true,
@@ -162,8 +162,8 @@ trait DetectorProviderTrait {
                 'import'       => true,
             ),
             'version'                               => PluginConfigType::Version->value,
-            ResponseKeyType::DetectionMethod->value => $has_sqlite ? 'extension_loaded' : 'extension_missing',
-            ResponseKeyType::SqliteVersion->value   => $has_sqlite ? $this->getSqliteVersion() : null,
+            ResponseKeyType::DetectionMethod->value => $hasSqlite ? 'extension_loaded' : 'extension_missing',
+            ResponseKeyType::SqliteVersion->value   => $hasSqlite ? $this->getSqliteVersion() : null,
         );
     }
 

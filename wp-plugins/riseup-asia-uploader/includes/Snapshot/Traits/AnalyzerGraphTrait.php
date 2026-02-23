@@ -19,11 +19,11 @@ trait AnalyzerGraphTrait {
     /** Build adjacency list from dependency edges. */
     private function buildAdjacencyList(array $dependencies, array $allTables): array {
         $graph = array();
-        $in_degree = array();
+        $inDegree = array();
 
         foreach ($allTables as $table) {
             $graph[$table] = array();
-            $in_degree[$table] = 0;
+            $inDegree[$table] = 0;
         }
 
         foreach ($dependencies as $dep) {
@@ -36,21 +36,21 @@ trait AnalyzerGraphTrait {
 
             if (isset($graph[$parent]) && isset($graph[$child])) {
                 $graph[$parent][] = $child;
-                $in_degree[$child]++;
+                $inDegree[$child]++;
             }
         }
 
-        return array('graph' => $graph, 'in_degree' => $in_degree);
+        return array('graph' => $graph, 'inDegree' => $inDegree);
     }
 
     /** Topological sort using Kahn's algorithm. */
     public function topologicalSort(array $allTables, array $dependencies): array {
         $adj = $this->buildAdjacencyList($dependencies, $allTables);
         $graph = $adj['graph'];
-        $in_degree = $adj['in_degree'];
+        $inDegree = $adj['inDegree'];
 
         $queue = array();
-        foreach ($in_degree as $table => $degree) {
+        foreach ($inDegree as $table => $degree) {
             if ($degree === 0) {
                 $queue[] = $table;
             }
@@ -67,8 +67,8 @@ trait AnalyzerGraphTrait {
                 $neighbors = $graph[$current];
                 sort($neighbors);
                 foreach ($neighbors as $neighbor) {
-                    $in_degree[$neighbor]--;
-                    if ($in_degree[$neighbor] === 0) {
+                    $inDegree[$neighbor]--;
+                    if ($inDegree[$neighbor] === 0) {
                         $queue[] = $neighbor;
                     }
                 }
@@ -78,9 +78,9 @@ trait AnalyzerGraphTrait {
         if (count($sorted) < count($allTables)) {
             $cycled = array_diff($allTables, $sorted);
             $this->log(LogLevelType::Warn->value, 'Cycle detected in table dependencies', array(
-                'cycled_tables' => array_values($cycled),
-                'sorted_count'  => count($sorted),
-                'total_count'   => count($allTables),
+                'cycledTables' => array_values($cycled),
+                'sortedCount'  => count($sorted),
+                'totalCount'   => count($allTables),
             ));
 
             foreach ($cycled as $table) {
@@ -89,7 +89,7 @@ trait AnalyzerGraphTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Topological sort complete', array(
-            'table_count' => count($sorted),
+            'tableCount' => count($sorted),
         ));
 
         return $sorted;

@@ -34,9 +34,9 @@ trait RestoreValidationTrait {
             );
         }
 
-        $root_path = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . '/a-root.db';
 
-        if (PathHelper::isFileMissing($root_path)) {
+        if (PathHelper::isFileMissing($rootPath)) {
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => 'Snapshot a-root.db not found at: ' . basename($snapshotDir),
@@ -48,19 +48,19 @@ trait RestoreValidationTrait {
 
     private function prepareRestoreOrder(PDO $rootPdo, array $options): array {
         $mode = $options['mode'] ?? RestoreModeType::Full->value;
-        $selected_tables = $options['tables'] ?? array();
+        $selectedTables = $options['tables'] ?? array();
 
-        $table_inventory = $this->getTableInventory($rootPdo);
-        $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
+        $tableInventory = $this->getTableInventory($rootPdo);
+        $restoreOrder = $this->getRestoreOrder($rootPdo, $tableInventory);
 
-        $isSelectiveWithTables = $mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($selected_tables);
+        $isSelectiveWithTables = $mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($selectedTables);
 
         if ($isSelectiveWithTables) {
-            $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
-                return in_array($t, $selected_tables);
+            $restoreOrder = array_values(array_filter($restoreOrder, function($t) use ($selectedTables) {
+                return in_array($t, $selectedTables);
             }));
 
-            if (empty($restore_order)) {
+            if (empty($restoreOrder)) {
                 return array(
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'None of the selected tables exist in the snapshot',
@@ -69,21 +69,21 @@ trait RestoreValidationTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Restore order determined', array(
-            'tables' => count($restore_order),
-            'order'  => array_slice($restore_order, 0, 10),
+            'tables' => count($restoreOrder),
+            'order'  => array_slice($restoreOrder, 0, 10),
         ));
 
         return array(
             ResponseKeyType::Success->value => true,
-            ResponseKeyType::Tables->value  => $restore_order,
-            'inventory'                     => $table_inventory,
+            ResponseKeyType::Tables->value  => $restoreOrder,
+            'inventory'                     => $tableInventory,
         );
     }
 
     private function createSafetyBackup(array $options): ?int {
-        $create_backup = $options['create_backup'] ?? true;
+        $createBackup = $options['create_backup'] ?? true;
 
-        $isBackupSkipped = ($create_backup === false) || ($this->orchestrator === null);
+        $isBackupSkipped = ($createBackup === false) || ($this->orchestrator === null);
 
         if ($isBackupSkipped) {
             return null;

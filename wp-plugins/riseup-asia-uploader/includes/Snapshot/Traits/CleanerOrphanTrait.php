@@ -30,22 +30,22 @@ trait CleanerOrphanTrait {
         );
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
-        $known_paths = array_map(function ($f) { return $f['Filepath']; }, $files);
-        $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $knownPaths = array_map(function ($f) { return $f['Filepath']; }, $files);
+        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
 
-        if (PathHelper::isDirMissing($scan_dir)) {
+        if (PathHelper::isDirMissing($scanDir)) {
             return $result;
         }
 
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($scan_dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            new RecursiveDirectoryIterator($scanDir, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
 
         foreach ($iterator as $item) {
             $path = str_replace('\\', '/', $item->getPathname());
 
-            if (in_array($path, $known_paths)) {
+            if (in_array($path, $knownPaths)) {
                 continue;
             }
 
@@ -85,15 +85,15 @@ trait CleanerOrphanTrait {
         );
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
-        $known_files = array_map(function ($f) { return $f['Filename']; }, $files);
-        $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $knownFiles = array_map(function ($f) { return $f['Filename']; }, $files);
+        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
 
-        if (PathHelper::isDirMissing($scan_dir)) {
+        if (PathHelper::isDirMissing($scanDir)) {
             return $result;
         }
 
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($scan_dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            new RecursiveDirectoryIterator($scanDir, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
 
@@ -105,7 +105,7 @@ trait CleanerOrphanTrait {
                 continue;
             }
 
-            if (in_array($filename, $known_files)) {
+            if (in_array($filename, $knownFiles)) {
                 continue;
             }
 
@@ -141,16 +141,16 @@ trait CleanerOrphanTrait {
         );
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
-        $known_paths = array_map(function ($f) { return dirname($f['Filepath']); }, $files);
-        $known_paths = array_unique($known_paths);
-        $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $knownPaths = array_map(function ($f) { return dirname($f['Filepath']); }, $files);
+        $knownPaths = array_unique($knownPaths);
+        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
 
-        if (PathHelper::isDirMissing($scan_dir)) {
+        if (PathHelper::isDirMissing($scanDir)) {
             return $result;
         }
 
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($scan_dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            new RecursiveDirectoryIterator($scanDir, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
 
@@ -165,7 +165,7 @@ trait CleanerOrphanTrait {
         $dirs = array_reverse($dirs);
 
         foreach ($dirs as $dir) {
-            if (in_array($dir, $known_paths)) {
+            if (in_array($dir, $knownPaths)) {
                 continue;
             }
 
@@ -202,8 +202,8 @@ trait CleanerOrphanTrait {
             ResponseKeyType::Ids->value     => array(),
         );
 
-        $stuck_hours = SnapshotConfigType::StuckHours->value;
-        $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
+        $stuckHours = SnapshotConfigType::StuckHours->value;
+        $cutoff = date('c', strtotime("-{$stuckHours} hours"));
 
         $stuck = $this->db->queryAll(
             'SELECT Id, Filepath, Filename, Status FROM ' . TableType::Snapshots->value .
@@ -225,7 +225,7 @@ trait CleanerOrphanTrait {
                     'UPDATE ' . TableType::Snapshots->value . ' SET Status = ?, Error = ? WHERE Id = ?',
                     array(
                         SnapshotStatusType::Failed->value,
-                        "Auto-cleaned: stuck for >{$stuck_hours} hours",
+                        "Auto-cleaned: stuck for >{$stuckHours} hours",
                         $snapshot['Id'],
                     )
                 );
