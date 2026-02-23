@@ -388,12 +388,26 @@ result := dbutil.QueryOne[T](ctx, db, query, scanner, id)
 // ❌ WRONG: No guard — error silently swallowed
 result.Value()
 
-// ✅ CORRECT: Guard before access
+// ❌ WRONG: Redundant re-wrapping — result.Error() is already *AppError
 if result.HasError() {
     return apperror.Fail[T](result.Error())
 }
 
+// ✅ CORRECT: Direct propagation — result is already Result[T]
+if result.HasError() {
+    return result
+}
+
 return apperror.Ok(result.Value())
+```
+
+```go
+// ✅ CORRECT: Cross-type propagation (Result[T] → Result[U])
+// When the return type differs, Fail re-wrapping IS needed:
+siteResult := siteSvc.GetByID(ctx, siteID)
+if siteResult.HasError() {
+    return apperror.Fail[PluginList](siteResult.Error())
+}
 ```
 
 ```go
