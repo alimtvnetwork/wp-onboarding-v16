@@ -17,7 +17,7 @@ import (
 
 // SnapshotRecord represents a database snapshot record from the WordPress plugin.
 type SnapshotRecord struct {
-	ID        int64  `json:"id"`
+	Id        int64  `json:"id"`
 	Sequence  int    `json:"sequence"`
 	Filename  string `json:"filename"`
 	Scope     string `json:"scope"`
@@ -46,7 +46,7 @@ type SnapshotSettings struct {
 
 // SnapshotProvider represents an available snapshot provider.
 type SnapshotProvider struct {
-	ID        string `json:"id"`
+	Id        string `json:"id"`
 	Name      string `json:"name"`
 	Available bool   `json:"available"`
 	Priority  int    `json:"priority"`
@@ -115,15 +115,15 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 	return result.Snapshots, nil
 }
 
-// SnapshotIDRequest holds a snapshot ID for POST endpoints.
-type SnapshotIDRequest struct {
-	ID int64 `json:"id"`
+// SnapshotIdRequest holds a snapshot Id for POST endpoints.
+type SnapshotIdRequest struct {
+	Id int64 `json:"id"`
 }
 
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).
-func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
+func (c *Client) GetSnapshot(snapshotId int64) (*SnapshotRecord, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsInfo)
-	reqBody := SnapshotIDRequest{ID: snapshotID}
+	reqBody := SnapshotIdRequest{Id: snapshotId}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot")
@@ -160,7 +160,7 @@ type SnapshotCreateOptions struct {
 // SnapshotCreateResult holds the result of a create snapshot request.
 type SnapshotCreateResult struct {
 	Success    bool   `json:"success"`
-	SnapshotID int64  `json:"snapshotId,omitempty"`
+	SnapshotId int64  `json:"snapshotId,omitempty"`
 	Message    string `json:"message,omitempty"`
 	Status     string `json:"status,omitempty"`
 }
@@ -195,9 +195,9 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResu
 }
 
 // DeleteSnapshot removes a snapshot from the remote site (ID in JSON body).
-func (c *Client) DeleteSnapshot(snapshotID int64) error {
+func (c *Client) DeleteSnapshot(snapshotId int64) error {
 	endpoint := snapshotEndpoint(ep.SnapshotsDelete)
-	reqBody := SnapshotIDRequest{ID: snapshotID}
+	reqBody := SnapshotIdRequest{Id: snapshotId}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to delete snapshot")
@@ -221,7 +221,7 @@ func (c *Client) DeleteSnapshot(snapshotID int64) error {
 
 // SnapshotRestoreOptions holds options for restoring a snapshot.
 type SnapshotRestoreOptions struct {
-	ID      int64 `json:"id"`
+	Id      int64 `json:"id"`
 	Confirm bool  `json:"confirm"`
 }
 
@@ -233,10 +233,10 @@ type SnapshotRestoreResult struct {
 }
 
 // RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
-func (c *Client) RestoreSnapshot(snapshotID int64) (*SnapshotRestoreResult, error) {
+func (c *Client) RestoreSnapshot(snapshotId int64) (*SnapshotRestoreResult, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsRestore)
 	reqBody := SnapshotRestoreOptions{
-		ID:      snapshotID,
+		Id:      snapshotId,
 		Confirm: true,
 	}
 	resp, err := c.request("POST", endpoint, reqBody)
@@ -325,9 +325,9 @@ func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSet
 
 // ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
 // The caller is responsible for closing the response body.
-func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
+func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsExport)
-	reqBody := SnapshotIDRequest{ID: snapshotID}
+	reqBody := SnapshotIdRequest{Id: snapshotId}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to export snapshot")
@@ -352,7 +352,7 @@ func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 // SnapshotDownloadResult holds the result of a snapshot download request.
 type SnapshotDownloadResult struct {
 	Success          bool   `json:"success"`
-	URL              string `json:"url"`
+	Url              string `json:"url"`
 	Filename         string `json:"filename"`
 	Size             int64  `json:"size"`
 	Cached           bool   `json:"cached"`
@@ -361,9 +361,9 @@ type SnapshotDownloadResult struct {
 }
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot via POST /snapshots/download.
-func (c *Client) DownloadSnapshotZip(snapshotID int64) (*SnapshotDownloadResult, error) {
+func (c *Client) DownloadSnapshotZip(snapshotId int64) (*SnapshotDownloadResult, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsDownload)
-	reqBody := SnapshotIDRequest{ID: snapshotID}
+	reqBody := SnapshotIdRequest{Id: snapshotId}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to request snapshot download")
@@ -488,7 +488,7 @@ type SnapshotBackupOptions struct {
 // SnapshotBackupResult holds the result of a backup operation.
 type SnapshotBackupResult struct {
 	Success    bool   `json:"success"`
-	SnapshotID int64  `json:"snapshotId,omitempty"`
+	SnapshotId int64  `json:"snapshotId,omitempty"`
 	Message    string `json:"message,omitempty"`
 	Status     string `json:"status,omitempty"`
 }
@@ -554,7 +554,7 @@ func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupR
 // SnapshotImportResult holds the result of an import operation.
 type SnapshotImportResult struct {
 	Success    bool   `json:"success"`
-	SnapshotID int64  `json:"snapshot_id,omitempty"`
+	SnapshotId int64  `json:"snapshot_id,omitempty"`
 	Message    string `json:"message,omitempty"`
 }
 
