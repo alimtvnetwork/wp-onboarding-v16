@@ -11,6 +11,7 @@
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
 
+*No open suggestions.*
 
 ---
 
@@ -38,18 +39,24 @@
 | S-018 | Remove Vestigial `pnpmVirtualStorePath` Config Key | 2026-02-09 | Removed from `powershell.json` |
 | S-019 | Fix Database/*.php R12 violations | 2026-02-22 | Fixed in Database.php, Orm.php, RootDb.php |
 | S-020 | Fix ErrorHandling/*.php formatting | 2026-02-22 | All 4 files verified compliant — no changes needed |
-| S-029 | Add ABSPATH guards to enum files | 2026-02-23 | Audit confirmed all 53 enum files already have guards — no changes needed |
-| S-030 | Add ABSPATH guards to Logging/ErrorHandling files | 2026-02-23 | Audit confirmed all 13 files already have guards — no changes needed |
-| S-021 | Fix R12 + formatting in Plugin.php, Admin.php, FileLogger.php | 2026-02-23 | Audit confirmed all 3 files already compliant — no changes needed |
-| S-031 | Fix ActivationHandler R12, R4, indentation | 2026-02-23 | Audit confirmed all violations already resolved — no changes needed |
-| S-032 | Remove dead loadDependencies() + redundant class_exists | 2026-02-23 | Audit confirmed both already removed — no changes needed |
-| S-024 | Deduplicate Database pagination constants | 2026-02-23 | Audit confirmed DEFAULT_LIMIT/MAX_LIMIT already removed; all consumers use PaginationConfigType |
-| S-025 | Audit old enum value comparisons | 2026-02-23 | Zero hardcoded old lowercase enum comparisons found — already resolved |
-| S-027 | Fix admin-errors.php template magic strings | 2026-02-23 | Template already uses LogLevelType, AdminTabType, AdminPageType, NonceType enums — no magic strings |
+| S-021 | Fix R12 + formatting in Plugin.php, Admin.php, FileLogger.php | 2026-02-23 | Audit confirmed all 3 files already compliant |
+| S-022 | Fix formatting in Templates/*.php | 2026-02-23 | All 5 templates audited — no formatting violations |
+| S-023 | Fix formatting in root files | 2026-02-23 | Both riseup-asia-uploader.php and Autoloader.php fully compliant |
+| S-024 | Deduplicate Database pagination constants | 2026-02-23 | All consumers already use PaginationConfigType |
+| S-025 | Audit old enum value comparisons | 2026-02-23 | Zero hardcoded old lowercase comparisons — already resolved |
+| S-026 | Update TS enum string values to PascalCase | 2026-02-23 | Converted ActivityType, BackupOperation, NotificationType + 8 files |
+| S-027 | Fix admin-errors.php template magic strings | 2026-02-23 | Template already uses LogLevelType, AdminTabType, AdminPageType, NonceType enums |
 | S-028 | Update core-enum-inventory with LogColumnType | 2026-02-23 | Added LogColumnType (16 cases) to inventory |
-| S-022 | Fix formatting in Templates/*.php | 2026-02-23 | All 5 templates audited — no formatting violations found |
-| S-023 | Fix formatting in root files | 2026-02-23 | Both riseup-asia-uploader.php and Autoloader.php audited — fully compliant |
-| S-026 | Update TS enum string values to PascalCase | 2026-02-23 | Converted ActivityType, BackupOperation, NotificationType + all consumers (8 files) |
+| S-029 | Add ABSPATH guards to enum files | 2026-02-23 | All 53 enum files already have guards |
+| S-030 | Add ABSPATH guards to Logging/ErrorHandling files | 2026-02-23 | All 13 files already have guards |
+| S-031 | Fix ActivationHandler R12, R4, indentation | 2026-02-23 | All violations already resolved |
+| S-032 | Remove dead loadDependencies() + redundant class_exists | 2026-02-23 | Both already removed |
+| S-033 | Expand DateHelper + replace raw date() calls | 2026-02-23 | Added 6 format constants, 6 helper methods; updated 21 files to use DateHelper |
+| S-034 | Rename snake_case vars in admin-logs.php to camelCase | 2026-02-23 | 19 variables renamed; controller vars synced |
+| S-035 | Replace magic string keys in Snapshot traits with ResponseKeyType | 2026-02-23 | Replaced `title`, `type`, `snapshot_type`, `settings`, `tables`, `inventory`, `error`, `total_size` across 8 files |
+| S-036 | Add SEPARATOR_WIDTH constant to AdminMailer | 2026-02-23 | Replaced 3 magic `50` values with `self::SEPARATOR_WIDTH` |
+| S-037 | Replace gmdate() in AgentRemoteActionTraitTest | 2026-02-23 | Done as part of S-033 |
+| S-038 | Add DateHelper::relativeDayKey() helper | 2026-02-23 | Extracted Today/Yesterday logic from admin-logs.php into reusable method |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -66,9 +73,9 @@
 | Metric | Count |
 |--------|-------|
 | Open | 0 |
-| Completed | 32 |
+| Completed | 38 |
 | Rejected | 0 |
-| **Total** | **32** |
+| **Total** | **38** |
 
 ---
 

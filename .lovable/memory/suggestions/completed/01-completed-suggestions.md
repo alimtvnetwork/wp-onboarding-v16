@@ -1,7 +1,7 @@
 # Completed Suggestions Archive
 
 > **Location:** `.lovable/memory/suggestions/completed/01-completed-suggestions.md`  
-> **Updated:** 2026-02-09
+> **Updated:** 2026-02-23
 
 ---
 
@@ -39,7 +39,7 @@
 | Field | Value |
 |-------|-------|
 | Completed | 2026-02-09 |
-| Resolution | 4 recovery strategies documented in `08-publish-service.md`: auto retry, selective retry, rollback all, post-deploy verification |
+| Resolution | 4 recovery strategies documented in `08-publish-service.md` |
 
 ---
 
@@ -48,12 +48,12 @@
 | Field | Value |
 |-------|-------|
 | Completed | 2026-02-09 |
-| Resolution | Broad invalidation of 9 React Query keys on reconnect; `hasConnectedBefore` + `disconnectedAt` tracking in `ws.ts`; spec at `05-websocket-reconnection-recovery.md` |
+| Resolution | Broad invalidation on reconnect; `hasConnectedBefore` + `disconnectedAt` tracking |
 | Implementation | `src/lib/ws.ts`, `src/hooks/useWebSocket.ts` |
 
 ---
 
-## S-006–S-009: Core Service Implementation ✅
+## S-006–S-012: Core Infrastructure ✅
 
 | ID | Title | Completed |
 |----|-------|-----------|
@@ -61,91 +61,57 @@
 | S-007 | Verify React frontend builds | 2026-02-05 |
 | S-008 | Implement Site Service | 2026-02-02 |
 | S-009 | Implement Publish Service | 2026-02-02 |
+| S-010 | WebSocket Real-time Sync | 2026-02-02 |
+| S-011 | E2E Testing Framework | 2026-02-02 |
+| S-012 | Error Detail Modal | 2026-02-02 |
 
 ---
 
-## S-010: WebSocket Real-time Sync ✅
+## S-013–S-018: DRY & Cleanup Phases ✅
 
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-02 |
-| Resolution | Broadcasting helpers added for real-time progress updates |
-
----
-
-## S-011: E2E Testing Framework ✅
-
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-02 |
-| Resolution | 20 test cases across 4 categories, Split DB integration, WebSocket progress |
-| Implementation | `backend/internal/services/e2e/`, `src/pages/Tests.tsx` |
+| ID | Title | Completed |
+|----|-------|-----------|
+| S-013 | DRY Phase 7 — PHP Snapshot Factory | 2026-02-09 |
+| S-014 | DRY Phase 8 — PHP Logger Consolidation | 2026-02-09 |
+| S-015 | DRY Phase 9 — GlobalErrorModal Decomposition | 2026-02-09 |
+| S-016 | DRY Phase 10 — Envelope Schema Alignment | 2026-02-09 |
+| S-017 | Post-Deploy Version Verification Pass | 2026-02-09 |
+| S-018 | Remove Vestigial pnpmVirtualStorePath | 2026-02-09 |
 
 ---
 
-## S-012: Error Detail Modal ✅
+## S-019–S-032: Formatting, Guards & Compliance Sweep ✅
 
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-02 |
-| Resolution | Multi-tab diagnostic modal with developer debug info and copy feature |
-| Implementation | `src/components/errors/ErrorDetailModal.tsx` |
-
----
-
-## S-013: DRY Phase 7 — PHP Snapshot Factory ✅
-
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-09 |
-| Resolution | `RiseupSnapshotFactory` with lazy singletons for centralized snapshot class management |
-
----
-
-## S-014: DRY Phase 8 — PHP Logger Consolidation ✅
-
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-09 |
-| Resolution | `prepare_context()` method for logger context consolidation |
+| ID | Title | Completed | Notes |
+|----|-------|-----------|-------|
+| S-019 | Fix Database/*.php R12 violations | 2026-02-22 | 3 files fixed |
+| S-020 | Fix ErrorHandling/*.php formatting | 2026-02-22 | Already compliant |
+| S-021 | Fix Plugin.php, Admin.php, FileLogger.php | 2026-02-23 | Already compliant |
+| S-022 | Fix Templates/*.php formatting | 2026-02-23 | Already compliant |
+| S-023 | Fix root files formatting | 2026-02-23 | Already compliant |
+| S-024 | Deduplicate pagination constants | 2026-02-23 | Already using PaginationConfigType |
+| S-025 | Audit old enum value comparisons | 2026-02-23 | Zero violations |
+| S-026 | TS enum string values to PascalCase | 2026-02-23 | 3 enums + 8 consumer files |
+| S-027 | admin-errors.php magic strings | 2026-02-23 | Already enum-ified |
+| S-028 | core-enum-inventory LogColumnType | 2026-02-23 | Added 16 cases |
+| S-029 | ABSPATH guards on enum files | 2026-02-23 | All 53 have guards |
+| S-030 | ABSPATH guards on Logging/ErrorHandling | 2026-02-23 | All 13 have guards |
+| S-031 | ActivationHandler R12/R4/indentation | 2026-02-23 | Already resolved |
+| S-032 | Dead loadDependencies() + class_exists | 2026-02-23 | Already removed |
 
 ---
 
-## S-015: DRY Phase 9 — GlobalErrorModal Decomposition ✅
+## S-033–S-038: DateHelper, AdminMailer & Snapshot Keys ✅
 
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-09 |
-| Resolution | Split monolithic GlobalErrorModal into 7 sub-components |
-
----
-
-## S-016: DRY Phase 10 — Envelope Schema Alignment ✅
-
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-09 |
-| Resolution | `envelope.schema.json` v1.0.0 established as cross-stack source of truth (Go, TypeScript, PHP) |
+| ID | Title | Completed | Notes |
+|----|-------|-----------|-------|
+| S-033 | Expand DateHelper + replace raw date() | 2026-02-23 | 6 format constants, 6 methods; 21 files updated |
+| S-034 | admin-logs.php snake_case → camelCase | 2026-02-23 | 19 vars renamed; controller synced |
+| S-035 | Magic string keys → ResponseKeyType | 2026-02-23 | 8 Snapshot files; `title`, `type`, `snapshot_type`, `settings`, `tables`, `inventory`, `error`, `total_size` |
+| S-036 | AdminMailer SEPARATOR_WIDTH constant | 2026-02-23 | 3 magic `50` values replaced |
+| S-037 | Test file gmdate → DateHelper | 2026-02-23 | Done with S-033 |
+| S-038 | DateHelper::relativeDayKey() | 2026-02-23 | Extracted Today/Yesterday logic from template |
 
 ---
 
-## S-017: Post-Deploy Version Verification Pass ✅
-
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-09 |
-| Resolution | `usePostDeployVerification.ts` — auto version drift detection after bulk publish via force-sync + `compareVersions` |
-| Implementation | `src/hooks/usePostDeployVerification.ts`, `src/hooks/useBulkQuickPublish.ts`, `src/hooks/useQuickPublish.ts` |
-
----
-
-## S-018: Remove Vestigial pnpmVirtualStorePath Config Key ✅
-
-| Field | Value |
-|-------|-------|
-| Completed | 2026-02-09 |
-| Resolution | `pnpmVirtualStorePath` removed from `powershell.json` — both scripts hardcode `.pnpm` in `Configure-PnpmStore` |
-
----
-
-*Archive for completed suggestions — reference only. All 18 suggestions resolved.*
+*Archive for completed suggestions — reference only. All 38 suggestions resolved.*
