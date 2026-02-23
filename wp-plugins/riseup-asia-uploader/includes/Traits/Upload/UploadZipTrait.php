@@ -25,86 +25,86 @@ use RiseupAsia\Helpers\BooleanHelpers;
 trait UploadZipTrait
 {
     /** Write ZIP content to temp file and validate its structure. */
-    private function validateAndWriteZip($zip_content, $slug) {
-        $temp_file = $this->writeZipToTemp($zip_content, $slug);
-        if ($temp_file instanceof WP_REST_Response) {
-            return $temp_file;
+    private function validateAndWriteZip($zipContent, $slug) {
+        $tempFile = $this->writeZipToTemp($zipContent, $slug);
+        if ($tempFile instanceof WP_REST_Response) {
+            return $tempFile;
         }
 
-        $detected_slug = $this->validateZipStructure($temp_file, $slug);
-        if ($detected_slug instanceof WP_REST_Response) {
-            return $detected_slug;
+        $detectedSlug = $this->validateZipStructure($tempFile, $slug);
+        if ($detectedSlug instanceof WP_REST_Response) {
+            return $detectedSlug;
         }
 
         $hasSlug = BooleanHelpers::hasValue($slug);
-        $final_slug = $hasSlug ? $slug : $detected_slug;
-        $this->fileLogger->info('Plugin slug determined', array('slug' => $final_slug));
+        $finalSlug = $hasSlug ? $slug : $detectedSlug;
+        $this->fileLogger->info('Plugin slug determined', array('slug' => $finalSlug));
 
-        return array(ResponseKeyType::TempFile->value => $temp_file, ResponseKeyType::Slug->value => $final_slug);
+        return array(ResponseKeyType::TempFile->value => $tempFile, ResponseKeyType::Slug->value => $finalSlug);
     }
 
     /** Write ZIP content to a temp file. */
-    private function writeZipToTemp(string $zip_content, string $slug) {
-        $temp_dir  = $this->getTempDir();
-        $temp_file = $temp_dir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
+    private function writeZipToTemp(string $zipContent, string $slug) {
+        $tempDir  = $this->getTempDir();
+        $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
-        $this->fileLogger->debug('Writing temp file', array('path' => $temp_file));
-        if (file_put_contents($temp_file, $zip_content) === false) {
+        $this->fileLogger->debug('Writing temp file', array('path' => $tempFile));
+        if (file_put_contents($tempFile, $zipContent) === false) {
             $this->fileLogger->error('Failed to write temp file');
             $this->logger->logUploadFailed($slug, 'Failed to write temp file');
 
             return $this->errorResponse(ResponseMessageType::UploadFailed->value, HttpStatusType::ServerError->value);
         }
 
-        return $temp_file;
+        return $tempFile;
     }
 
     /** Validate ZIP archive and detect plugin slug. */
-    private function validateZipStructure(string $temp_file, string $slug) {
+    private function validateZipStructure(string $tempFile, string $slug) {
         $this->fileLogger->debug('Validating ZIP archive');
         $zip = new ZipArchive();
-        if ($zip->open($temp_file) !== true) {
-            @unlink($temp_file);
+        if ($zip->open($tempFile) !== true) {
+            @unlink($tempFile);
             $this->fileLogger->error('Invalid ZIP archive');
             $this->logger->logUploadFailed($slug, 'Invalid ZIP archive');
 
             return $this->errorResponse('Invalid ZIP archive', HttpStatusType::BadRequest->value);
         }
 
-        $detected_slug = $this->detectPluginSlugFromZip($zip);
+        $detectedSlug = $this->detectPluginSlugFromZip($zip);
         $zip->close();
 
-        $isSlugMissing = ($detected_slug === null);
+        $isSlugMissing = ($detectedSlug === null);
         if ($isSlugMissing) {
-            @unlink($temp_file);
+            @unlink($tempFile);
             $this->fileLogger->error('Could not detect plugin in ZIP');
             $this->logger->logUploadFailed($slug, 'Could not detect plugin in ZIP');
 
             return $this->errorResponse('Could not detect plugin in ZIP', HttpStatusType::BadRequest->value);
         }
 
-        return $detected_slug;
+        return $detectedSlug;
     }
 
     /** Remove duplicate plugin folders that share the same slug or TextDomain. */
-    private function removeDuplicatePlugins($slug, $plugins_dir) {
+    private function removeDuplicatePlugins($slug, $pluginsDir) {
         if (BooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
-        $all_plugins = get_plugins();
-        $duplicates_removed = 0;
+        $allPlugins = get_plugins();
+        $duplicatesRemoved = 0;
 
-        foreach ($all_plugins as $pfile => $pdata) {
-            $removed = $this->removeSingleDuplicate($pfile, $pdata, $slug, $plugins_dir);
-            $duplicates_removed += $removed ? 1 : 0;
+        foreach ($allPlugins as $pfile => $pdata) {
+            $removed = $this->removeSingleDuplicate($pfile, $pdata, $slug, $pluginsDir);
+            $duplicatesRemoved += $removed ? 1 : 0;
         }
 
-        if ($duplicates_removed > 0) {
+        if ($duplicatesRemoved > 0) {
             wp_cache_delete('plugins', 'plugins');
         }
 
-        return $duplicates_removed;
+        return $duplicatesRemoved;
     }
 
     /** Check and remove a single duplicate plugin. Returns true if removed. */
@@ -112,7 +112,7 @@ trait UploadZipTrait
         string $pfile,
         array $pdata,
         string $slug,
-        string $plugins_dir,
+        string $pluginsDir,
     ): bool {
         $pdir = dirname($pfile);
         if ($pdir === '.' || $pdir === $slug) {
@@ -124,15 +124,15 @@ trait UploadZipTrait
             return false;
         }
 
-        $dup_dir = $plugins_dir . '/' . $pdir;
+        $dupDir = $pluginsDir . '/' . $pdir;
         $this->fileLogger->warn('Duplicate plugin folder detected', array('duplicate_dir' => $pdir, 'target_slug' => $slug));
 
         if (is_plugin_active($pfile)) {
             deactivate_plugins($pfile);
         }
 
-        if (is_dir($dup_dir)) {
-            $this->deleteDirectory($dup_dir);
+        if (is_dir($dupDir)) {
+            $this->deleteDirectory($dupDir);
 
             return true;
         }
@@ -155,22 +155,22 @@ trait UploadZipTrait
     /** Pre-log self-update activity before files are replaced. */
     private function preLogSelfUpdate(
         $slug,
-        $upload_source,
-        $client_version,
-        $file_size,
+        $uploadSource,
+        $clientVersion,
+        $fileSize,
     ) {
-        $old_version = PluginConfigType::Version->value;
-        $this->fileLogger->info('Self-update detected, pre-logging activity', array('old_version' => $old_version));
+        $oldVersion = PluginConfigType::Version->value;
+        $this->fileLogger->info('Self-update detected, pre-logging activity', array('old_version' => $oldVersion));
 
         $this->logger->logPluginAction(
             ActionType::Upload->value, $slug, StatusType::Success->value,
             array(
                 ResponseKeyType::IsUpdate->value => true, ResponseKeyType::IsSelfUpdate->value => true,
-                'old_version' => $old_version, 'new_version' => $client_version,
-                'file_size' => $file_size, 'note' => 'Pre-logged before self-update to ensure audit trail',
+                'old_version' => $oldVersion, 'new_version' => $clientVersion,
+                'file_size' => $fileSize, 'note' => 'Pre-logged before self-update to ensure audit trail',
             ),
             null,
-            array(ResponseKeyType::PluginVersion->value => $client_version ?: $old_version, 'upload_source' => $upload_source)
+            array(ResponseKeyType::PluginVersion->value => $clientVersion ?: $oldVersion, 'upload_source' => $uploadSource)
         );
     }
 }
