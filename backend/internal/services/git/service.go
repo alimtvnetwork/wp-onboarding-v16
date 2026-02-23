@@ -22,7 +22,7 @@ import (
 
 // PullResult represents the outcome of a git pull operation
 type PullResult struct {
-	PluginID     int64     `json:"pluginId"`
+	PluginId     int64     `json:"pluginId"`
 	PluginName   string    `json:"pluginName"`
 	Success      bool      `json:"success"`
 	Branch       string    `json:"branch"`
@@ -39,7 +39,7 @@ type PullResult struct {
 
 // BuildResult represents the outcome of a build command
 type BuildResult struct {
-	PluginID   int64     `json:"pluginId"`
+	PluginId   int64     `json:"pluginId"`
 	PluginName string    `json:"pluginName"`
 	Success    bool      `json:"success"`
 	Command    string    `json:"command"`
@@ -66,10 +66,10 @@ type PullAndBuildResult struct {
 
 // PluginGitConfig holds git configuration for a plugin
 type PluginGitConfig struct {
-	PluginID     int64  `json:"pluginId"`
+	PluginId     int64  `json:"pluginId"`
 	GitEnabled   bool   `json:"gitEnabled"`
 	Branch       string `json:"branch"`
-	GitRemoteURL string `json:"gitRemoteUrl"`
+	GitRemoteUrl string `json:"gitRemoteUrl"`
 	BuildEnabled bool   `json:"buildEnabled"`
 	BuildCommand string `json:"buildCommand"`
 }
@@ -115,27 +115,27 @@ func New(cfg Config) *Service {
 }
 
 // Pull performs a git pull for a single plugin
-func (s *Service) Pull(ctx context.Context, pluginID int64) apperror.Result[PullResult] {
+func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[PullResult] {
 	startTime := time.Now()
 
-	s.log.Info("Starting git pull", "pluginId", pluginID)
+	s.log.Info("Starting git pull", "pluginId", pluginId)
 
 	// Get plugin details
-	pResult := s.pluginService.GetByID(ctx, pluginID)
+	pResult := s.pluginService.GetById(ctx, pluginId)
 	if pResult.HasError() {
 		return apperror.Fail[PullResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
 	result := PullResult{
-		PluginID:   pluginID,
+		PluginId:   pluginId,
 		PluginName: p.Name,
 		PulledAt:   time.Now(),
 	}
 
 	// Broadcast pull started
 	ws.Broadcast(s.wsHub, ws.EventGitPullStarted, ws.GitPullStartedData{
-		PluginID:   pluginID,
+		PluginId:   pluginId,
 		PluginName: p.Name,
 	})
 
@@ -171,7 +171,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) apperror.Result[Pull
 		result.Error = err.Error()
 
 		ws.Broadcast(s.wsHub, ws.EventGitPullFailed, ws.GitPullFailedData{
-			PluginID: pluginID,
+			PluginId: pluginId,
 			Error:    result.Error,
 		})
 		return apperror.FailWrap[PullResult](err, apperror.ErrGitCommand, "git pull failed")
@@ -190,7 +190,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) apperror.Result[Pull
 
 	// Broadcast pull complete
 	ws.Broadcast(s.wsHub, ws.EventGitPullComplete, ws.GitPullCompleteData{
-		PluginID:     pluginID,
+		PluginId:     pluginId,
 		IsSuccess:    true,
 		FilesChanged: result.FilesChanged,
 		CommitHash:   result.CommitHash,
@@ -198,7 +198,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) apperror.Result[Pull
 
 	s.log.Info("Git pull complete",
 		"plugin", p.Name,
-		"pluginId", pluginID,
+		"pluginId", pluginId,
 		"filesChanged", result.FilesChanged,
 		"duration", result.Duration,
 	)
@@ -229,7 +229,7 @@ func (s *Service) PullAll(ctx context.Context) apperror.Result[BatchPullResult] 
 			continue
 		}
 
-		pullResult := s.Pull(ctx, p.ID)
+		pullResult := s.Pull(ctx, p.Id)
 		if pullResult.IsSafe() {
 			v := pullResult.Value()
 			batch.Results = append(batch.Results, v)
@@ -253,20 +253,20 @@ func (s *Service) PullAll(ctx context.Context) apperror.Result[BatchPullResult] 
 }
 
 // Build executes the build command for a plugin
-func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[BuildResult] {
+func (s *Service) Build(ctx context.Context, pluginId int64) apperror.Result[BuildResult] {
 	startTime := time.Now()
 
-	s.log.Info("Starting build", "pluginId", pluginID)
+	s.log.Info("Starting build", "pluginId", pluginId)
 
 	// Get plugin
-	pResult := s.pluginService.GetByID(ctx, pluginID)
+	pResult := s.pluginService.GetById(ctx, pluginId)
 	if pResult.HasError() {
 		return apperror.Fail[BuildResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
 	// Get git config
-	configResult := s.GetConfig(ctx, pluginID)
+	configResult := s.GetConfig(ctx, pluginId)
 	if configResult.HasError() {
 		return apperror.Fail[BuildResult](configResult.AppError())
 	}
@@ -277,7 +277,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[Bui
 	}
 
 	result := BuildResult{
-		PluginID:   pluginID,
+		PluginId:   pluginId,
 		PluginName: p.Name,
 		Command:    config.BuildCommand,
 		BuiltAt:    time.Now(),
@@ -285,7 +285,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[Bui
 
 	// Broadcast build started
 	ws.Broadcast(s.wsHub, ws.EventBuildStarted, ws.BuildStartedData{
-		PluginID:   pluginID,
+		PluginId:   pluginId,
 		PluginName: p.Name,
 		Command:    config.BuildCommand,
 	})
@@ -316,7 +316,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[Bui
 		}
 
 		ws.Broadcast(s.wsHub, ws.EventBuildFailed, ws.BuildFailedData{
-			PluginID: pluginID,
+			PluginId: pluginId,
 			Error:    result.Error,
 			ExitCode: result.ExitCode,
 		})
@@ -328,21 +328,21 @@ func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[Bui
 	result.ExitCode = 0
 
 	ws.Broadcast(s.wsHub, ws.EventBuildComplete, ws.BuildCompleteData{
-		PluginID:  pluginID,
+		PluginId:  pluginId,
 		IsSuccess: true,
 		Duration:  result.Duration,
 	})
 
-	s.log.Info("Build complete", "plugin", p.Name, "pluginId", pluginID, "duration", result.Duration)
+	s.log.Info("Build complete", "plugin", p.Name, "pluginId", pluginId, "duration", result.Duration)
 	return apperror.Ok(result)
 }
 
 // PullAndBuild performs git pull followed by build
-func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) apperror.Result[PullAndBuildResult] {
-	s.log.Info("Starting pull and build", "pluginId", pluginID)
+func (s *Service) PullAndBuild(ctx context.Context, pluginId int64) apperror.Result[PullAndBuildResult] {
+	s.log.Info("Starting pull and build", "pluginId", pluginId)
 
 	// First pull
-	pullResult := s.Pull(ctx, pluginID)
+	pullResult := s.Pull(ctx, pluginId)
 	if pullResult.HasError() {
 		return apperror.Fail[PullAndBuildResult](pullResult.AppError())
 	}
@@ -352,7 +352,7 @@ func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) apperror.Res
 
 	// Only build if pull was successful and there were changes
 	if pull.Success && pull.FilesChanged > 0 {
-		buildResult := s.Build(ctx, pluginID)
+		buildResult := s.Build(ctx, pluginId)
 		if buildResult.HasError() {
 			return apperror.Fail[PullAndBuildResult](buildResult.AppError())
 		}
@@ -364,15 +364,15 @@ func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) apperror.Res
 }
 
 // GetConfig returns git configuration for a plugin
-func (s *Service) GetConfig(ctx context.Context, pluginID int64) apperror.Result[PluginGitConfig] {
+func (s *Service) GetConfig(ctx context.Context, pluginId int64) apperror.Result[PluginGitConfig] {
 	var config PluginGitConfig
-	config.PluginID = pluginID
+	config.PluginId = pluginId
 
 	err := s.db.QueryRowContext(ctx, `
 		SELECT GitEnabled, GitBranch, GitRemoteUrl, BuildEnabled, BuildCommand
 		FROM PluginGitConfig
 		WHERE PluginId = ?
-	`, pluginID).Scan(&config.GitEnabled, &config.Branch, &config.GitRemoteURL, &config.BuildEnabled, &config.BuildCommand)
+	`, pluginId).Scan(&config.GitEnabled, &config.Branch, &config.GitRemoteUrl, &config.BuildEnabled, &config.BuildCommand)
 
 	if err != nil {
 		// Return default config (not an error — just absent row)
@@ -390,7 +390,7 @@ func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) erro
 	_, err := s.db.ExecContext(ctx, `
 		INSERT OR REPLACE INTO PluginGitConfig (PluginId, GitEnabled, GitBranch, GitRemoteUrl, BuildEnabled, BuildCommand, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-	`, config.PluginID, config.GitEnabled, config.Branch, config.GitRemoteURL, config.BuildEnabled, config.BuildCommand)
+	`, config.PluginId, config.GitEnabled, config.Branch, config.GitRemoteUrl, config.BuildEnabled, config.BuildCommand)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update git config")
 	}
@@ -400,7 +400,7 @@ func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) erro
 
 // StatusResult represents git status information
 type StatusResult struct {
-	PluginID   int64  `json:"pluginId"`
+	PluginId   int64  `json:"pluginId"`
 	Branch     string `json:"branch"`
 	Ahead      int    `json:"ahead"`
 	Behind     int    `json:"behind"`
@@ -472,21 +472,21 @@ func (s *Service) Status(ctx context.Context, pluginID int64) apperror.Result[St
 
 // CommitResult represents git commit result
 type CommitResult struct {
-	PluginID   int64  `json:"pluginId"`
+	PluginId   int64  `json:"pluginId"`
 	Success    bool   `json:"success"`
 	CommitHash string `json:"commitHash"`
 	Message    string `json:"message,omitempty"`
 }
 
 // Commit stages all changes and commits with the given message
-func (s *Service) Commit(ctx context.Context, pluginID int64, message string) apperror.Result[CommitResult] {
-	pResult := s.pluginService.GetByID(ctx, pluginID)
+func (s *Service) Commit(ctx context.Context, pluginId int64, message string) apperror.Result[CommitResult] {
+	pResult := s.pluginService.GetById(ctx, pluginId)
 	if pResult.HasError() {
 		return apperror.Fail[CommitResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
-	result := CommitResult{PluginID: pluginID}
+	result := CommitResult{PluginId: pluginId}
 
 	// Check if git repo
 	gitDir, err := pathutil.Join(p.Path, ".git")
@@ -518,32 +518,32 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) ap
 	result.Success = true
 
 	ws.Broadcast(s.wsHub, ws.EventGitCommitComplete, ws.GitCommitCompleteData{
-		PluginID:   pluginID,
+		PluginId:   pluginId,
 		IsSuccess:  true,
 		CommitHash: result.CommitHash,
 	})
 
-	s.log.Info("Git commit complete", "plugin", p.Name, "pluginId", pluginID, "hash", result.CommitHash)
+	s.log.Info("Git commit complete", "plugin", p.Name, "pluginId", pluginId, "hash", result.CommitHash)
 	return apperror.Ok(result)
 }
 
 // PushResult represents git push result
 type PushResult struct {
-	PluginID int64  `json:"pluginId"`
+	PluginId int64  `json:"pluginId"`
 	Success  bool   `json:"success"`
 	Pushed   int    `json:"pushed"`
 	Message  string `json:"message,omitempty"`
 }
 
 // Push pushes commits to remote
-func (s *Service) Push(ctx context.Context, pluginID int64) apperror.Result[PushResult] {
-	pResult := s.pluginService.GetByID(ctx, pluginID)
+func (s *Service) Push(ctx context.Context, pluginId int64) apperror.Result[PushResult] {
+	pResult := s.pluginService.GetById(ctx, pluginId)
 	if pResult.HasError() {
 		return apperror.Fail[PushResult](pResult.AppError())
 	}
 	p := pResult.Value()
 
-	result := PushResult{PluginID: pluginID}
+	result := PushResult{PluginId: pluginId}
 
 	// Check if git repo
 	gitDir, err := pathutil.Join(p.Path, ".git")
@@ -573,12 +573,12 @@ func (s *Service) Push(ctx context.Context, pluginID int64) apperror.Result[Push
 	result.Success = true
 
 	ws.Broadcast(s.wsHub, ws.EventGitPushComplete, ws.GitPushCompleteData{
-		PluginID:  pluginID,
+		PluginId:  pluginId,
 		IsSuccess: true,
 		Pushed:    result.Pushed,
 	})
 
-	s.log.Info("Git push complete", "plugin", p.Name, "pluginId", pluginID, "pushed", result.Pushed)
+	s.log.Info("Git push complete", "plugin", p.Name, "pluginId", pluginId, "pushed", result.Pushed)
 	return apperror.Ok(result)
 }
 

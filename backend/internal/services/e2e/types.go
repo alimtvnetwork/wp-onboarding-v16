@@ -8,7 +8,7 @@ import (
 
 // TestSuite represents a collection of related test cases
 type TestSuite struct {
-	ID             string    `json:"id"`
+	Id             string    `json:"id"`
 	Name           string    `json:"name"`
 	Category       string    `json:"category"` // plugin-crud, site-connections, sync-operations, publish-flow
 	Enabled        bool      `json:"enabled"`
@@ -19,8 +19,8 @@ type TestSuite struct {
 
 // TestCase represents a single test case
 type TestCase struct {
-	ID              string   `json:"id"`
-	SuiteID         string   `json:"suiteId"`
+	Id              string   `json:"id"`
+	SuiteId         string   `json:"suiteId"`
 	Name            string   `json:"name"`
 	Description     string   `json:"description"`
 	Preconditions   []string `json:"preconditions"`
@@ -33,7 +33,7 @@ type TestCase struct {
 
 // TestRun represents a test execution session
 type TestRun struct {
-	ID           string     `json:"id"`
+	Id           string     `json:"id"`
 	StartedAt    time.Time  `json:"startedAt"`
 	CompletedAt  *time.Time `json:"completedAt,omitempty"`
 	Status       string     `json:"status"` // running, passed, failed, aborted
@@ -46,10 +46,10 @@ type TestRun struct {
 
 // TestResult represents the result of a single test case execution
 type TestResult struct {
-	ID           string     `json:"id"`
-	RunID        string     `json:"runId"`
-	SuiteID      string     `json:"suiteId"`
-	CaseID       string     `json:"caseId"`
+	Id           string     `json:"id"`
+	RunId        string     `json:"runId"`
+	SuiteId      string     `json:"suiteId"`
+	CaseId       string     `json:"caseId"`
 	CaseName     string     `json:"caseName"`
 	Status       string     `json:"status"` // passed, failed, skipped, error
 	StartedAt    time.Time  `json:"startedAt"`
@@ -80,14 +80,14 @@ type Service interface {
 	// Suite management
 	ListSuites(ctx context.Context) ([]TestSuite, error)
 	GetSuite(ctx context.Context, id string) (*TestSuite, error)
-	GetCases(ctx context.Context, suiteID string) ([]TestCase, error)
+	GetCases(ctx context.Context, suiteId string) ([]TestCase, error)
 	
 	// Test execution
 	StartRun(ctx context.Context, opts RunOptions) (*TestRun, error)
-	AbortRun(ctx context.Context, runID string) error
+	AbortRun(ctx context.Context, runId string) error
 	
 	// Results
 	ListRuns(ctx context.Context, limit int) ([]TestRun, error)
-	GetRun(ctx context.Context, runID string) (*RunSummary, error)
-	DeleteRun(ctx context.Context, runID string) error
+	GetRun(ctx context.Context, runId string) (*RunSummary, error)
+	DeleteRun(ctx context.Context, runId string) error
 }

@@ -20,10 +20,10 @@ type ScheduleConfig struct {
 
 // ScheduledJob represents a scheduled publish operation
 type ScheduledJob struct {
-	ID          string          `json:"id"`
-	PluginID    int64           `json:"pluginId"`
+	Id          string          `json:"id"`
+	PluginId    int64           `json:"pluginId"`
 	PluginName  string          `json:"pluginName"`
-	SiteIDs     []int64         `json:"siteIds"`    // Target sites (empty = all mapped)
+	SiteIds     []int64         `json:"siteIds"`    // Target sites (empty = all mapped)
 	SiteNames   []string        `json:"siteNames"`
 	Schedule    ScheduleConfig  `json:"schedule"`
 	Options     PublishOptions  `json:"options"`
@@ -36,7 +36,7 @@ type ScheduledJob struct {
 
 // ScheduledJobResult captures the outcome of a scheduled run
 type ScheduledJobResult struct {
-	JobID       string    `json:"jobId"`
+	JobId       string    `json:"jobId"`
 	RunAt       time.Time `json:"runAt"`
 	TotalSites  int       `json:"totalSites"`
 	Succeeded   int       `json:"succeeded"`
@@ -77,7 +77,7 @@ func (s *PublishScheduler) AddJob(job ScheduledJob) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	job.ID = fmt.Sprintf("sj-%d-%d", job.PluginID, time.Now().UnixMilli())
+	job.Id = fmt.Sprintf("sj-%d-%d", job.PluginId, time.Now().UnixMilli())
 	job.CreatedAt = time.Now()
 	job.LastStatus = "never"
 	job.Enabled = true
@@ -89,24 +89,24 @@ func (s *PublishScheduler) AddJob(job ScheduledJob) (string, error) {
 	}
 	job.NextRunAt = &nextRun
 
-	s.jobs[job.ID] = &job
+	s.jobs[job.Id] = &job
 	s.scheduleTimer(&job)
 
 	s.broadcastJobUpdate()
-	return job.ID, nil
+	return job.Id, nil
 }
 
 // RemoveJob removes a scheduled job
-func (s *PublishScheduler) RemoveJob(jobID string) bool {
+func (s *PublishScheduler) RemoveJob(jobId string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if timer, ok := s.timers[jobID]; ok {
+	if timer, ok := s.timers[jobId]; ok {
 		timer.Stop()
-		delete(s.timers, jobID)
+		delete(s.timers, jobId)
 	}
-	if _, ok := s.jobs[jobID]; ok {
-		delete(s.jobs, jobID)
+	if _, ok := s.jobs[jobId]; ok {
+		delete(s.jobs, jobId)
 		s.broadcastJobUpdate()
 		return true
 	}
@@ -114,11 +114,11 @@ func (s *PublishScheduler) RemoveJob(jobID string) bool {
 }
 
 // ToggleJob enables or disables a scheduled job
-func (s *PublishScheduler) ToggleJob(jobID string, enabled bool) bool {
+func (s *PublishScheduler) ToggleJob(jobId string, enabled bool) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	job, ok := s.jobs[jobID]
+	job, ok := s.jobs[jobId]
 	if !ok {
 		return false
 	}
@@ -131,9 +131,9 @@ func (s *PublishScheduler) ToggleJob(jobID string, enabled bool) bool {
 			s.scheduleTimer(job)
 		}
 	} else {
-		if timer, ok := s.timers[jobID]; ok {
+		if timer, ok := s.timers[jobId]; ok {
 			timer.Stop()
-			delete(s.timers, jobID)
+			delete(s.timers, jobId)
 		}
 	}
 
@@ -154,10 +154,10 @@ func (s *PublishScheduler) ListJobs() []ScheduledJob {
 }
 
 // GetJob returns a specific job
-func (s *PublishScheduler) GetJob(jobID string) (*ScheduledJob, bool) {
+func (s *PublishScheduler) GetJob(jobId string) (*ScheduledJob, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	job, ok := s.jobs[jobID]
+	job, ok := s.jobs[jobId]
 	if !ok {
 		return nil, false
 	}
@@ -172,7 +172,7 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 	}
 
 	// Cancel existing timer
-	if timer, ok := s.timers[job.ID]; ok {
+	if timer, ok := s.timers[job.Id]; ok {
 		timer.Stop()
 	}
 
@@ -181,16 +181,16 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 		delay = 0
 	}
 
-	jobID := job.ID
-	s.timers[job.ID] = time.AfterFunc(delay, func() {
-		s.executeJob(jobID)
+	jobId := job.Id
+	s.timers[job.Id] = time.AfterFunc(delay, func() {
+		s.executeJob(jobId)
 	})
 }
 
 // executeJob runs a scheduled publish job
-func (s *PublishScheduler) executeJob(jobID string) {
+func (s *PublishScheduler) executeJob(jobId string) {
 	s.mu.Lock()
-	job, ok := s.jobs[jobID]
+	job, ok := s.jobs[jobId]
 	if !ok || !job.Enabled {
 		s.mu.Unlock()
 		return
@@ -203,23 +203,23 @@ func (s *PublishScheduler) executeJob(jobID string) {
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobStartedData{
 			Type:       "scheduled_job_started",
-			JobID:      jobID,
-			PluginID:   job.PluginID,
+			JobId:      jobId,
+			PluginId:   job.PluginId,
 			PluginName: job.PluginName,
 		})
 	}
 
 	// Enqueue publish operations for all target sites
 	items := make([]QueueItem, 0)
-	for i, siteID := range job.SiteIDs {
+	for i, siteId := range job.SiteIds {
 		siteName := ""
 		if i < len(job.SiteNames) {
 			siteName = job.SiteNames[i]
 		}
 		items = append(items, QueueItem{
-			PluginID:   job.PluginID,
+			PluginId:   job.PluginId,
 			PluginName: job.PluginName,
-			SiteID:     siteID,
+			SiteId:     siteId,
 			SiteName:   siteName,
 			Options:    job.Options,
 			Priority:   0, // Normal priority for scheduled jobs
@@ -250,8 +250,8 @@ func (s *PublishScheduler) executeJob(jobID string) {
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobCompleteData{
 			Type:       "scheduled_job_complete",
-			JobID:      jobID,
-			PluginID:   job.PluginID,
+			JobId:      jobId,
+			PluginId:   job.PluginId,
 			PluginName: job.PluginName,
 			DurationMs: duration,
 			NextRunAt:  job.NextRunAt,
@@ -274,10 +274,6 @@ func (s *PublishScheduler) calculateNextRun(cfg ScheduleConfig) (time.Time, erro
 
 	now := time.Now().In(loc)
 
-	// Parse simplified cron expression
-	// "daily:HH:MM" - Run daily at specified time
-	// "weekly:DAY:HH:MM" - Run weekly on specified day
-	// "interval:MINUTES" - Run every N minutes
 	var hour, minute int
 
 	switch {
@@ -357,8 +353,8 @@ func (s *PublishScheduler) broadcastJobUpdate() {
 	jobs := make([]ws.ScheduledJobSummary, 0, len(s.jobs))
 	for _, job := range s.jobs {
 		j := ws.ScheduledJobSummary{
-			ID:         job.ID,
-			PluginID:   job.PluginID,
+			Id:         job.Id,
+			PluginId:   job.PluginId,
 			PluginName: job.PluginName,
 			IsEnabled:  job.Enabled,
 			Schedule:   job.Schedule.CronExpr,

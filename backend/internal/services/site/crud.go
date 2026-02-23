@@ -76,7 +76,7 @@ type siteRaw struct {
 // scanSiteColumns scans columns into siteRaw (shared by Row and Rows scanners).
 func scanSiteColumns(dest *siteRaw, scan func(dest ...any) error) error {
 	return scan(
-		&dest.site.ID,
+		&dest.site.Id,
 		&dest.site.Name,
 		&dest.site.URL,
 		&dest.site.Username,
