@@ -86,7 +86,7 @@ class IncrementalBackup {
         $this->log(
             LogLevelType::Info->value,
             'Starting incremental backup',
-            array('master_dir' => basename($masterDir), ResponseKeyType::Title->value => $title),
+            array('masterDir' => basename($masterDir), ResponseKeyType::Title->value => $title),
         );
 
         return $this->executeIncrementalPipeline($rootPath, $title, $masterDir, $startTime);

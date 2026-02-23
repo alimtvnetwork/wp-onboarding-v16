@@ -68,7 +68,7 @@ trait AgentRemoteCoreTrait {
         $args = $this->buildAgentRequestArgs($agent, $method, $body);
 
         $this->fileLogger->debug('Agent API request', array(
-            'agent_id' => $agentId,
+            'agentId' => $agentId,
             'method' => $method,
             'url' => $url,
         ));

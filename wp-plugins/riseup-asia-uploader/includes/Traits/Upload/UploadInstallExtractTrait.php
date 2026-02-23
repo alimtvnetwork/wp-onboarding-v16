@@ -56,7 +56,7 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zipResult) {
         $context = $this->prepareExtractionContext($input, $zipResult);
 
-        $isPreviouslyActive = $this->deactivateIfUpdating($context[ResponseKeyType::Slug->value], $context[ResponseKeyType::IsUpdate->value], $context['target_dir']);
+        $isPreviouslyActive = $this->deactivateIfUpdating($context[ResponseKeyType::Slug->value], $context[ResponseKeyType::IsUpdate->value], $context['targetDir']);
 
         $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input);
         if ($stepResult instanceof WP_REST_Response) {
@@ -82,7 +82,7 @@ trait UploadInstallExtractTrait
         return array(
             ResponseKeyType::TempFile->value => $zipResult[ResponseKeyType::TempFile->value],
             ResponseKeyType::Slug->value => $slug,
-            'target_dir' => $targetDir,
+            'targetDir' => $targetDir,
             ResponseKeyType::IsUpdate->value => $isUpdate,
             ResponseKeyType::IsSelfUpdate->value => $isSelfUpdate,
         );
@@ -94,7 +94,7 @@ trait UploadInstallExtractTrait
         bool $isPreviouslyActive,
         array $input,
     ) {
-        $extractResult = $this->extractToPluginsDir($ctx[ResponseKeyType::TempFile->value], $ctx[ResponseKeyType::Slug->value], $ctx['target_dir']);
+        $extractResult = $this->extractToPluginsDir($ctx[ResponseKeyType::TempFile->value], $ctx[ResponseKeyType::Slug->value], $ctx['targetDir']);
         if ($extractResult instanceof WP_REST_Response) {
             return $extractResult;
         }

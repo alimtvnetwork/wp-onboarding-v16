@@ -45,7 +45,7 @@ trait PostCrudTrait {
                 return $this->handlePostError(ActionType::PostCreate->value, 0, $data['title'], $postId->get_error_message());
             }
 
-            $this->fileLogger->info('Post created', array('post_id' => $postId));
+            $this->fileLogger->info('Post created', array('postId' => $postId));
             $this->assignCategories($postId, $data['categories'] ?? array());
 
             $this->logger->logPostCreate($postId, array(
@@ -60,13 +60,13 @@ trait PostCrudTrait {
     }
 
     public function updatePost(int $postId, array $data): array {
-        $this->fileLogger->info('Updating post', array('post_id' => $postId));
+        $this->fileLogger->info('Updating post', array('postId' => $postId));
 
         try {
             $post = get_post($postId);
             $isPostMissing = ($post === null);
             if ($isPostMissing) {
-                $this->fileLogger->warn('Post not found', array('post_id' => $postId));
+                $this->fileLogger->warn('Post not found', array('postId' => $postId));
 
                 return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Post not found');
             }
@@ -80,7 +80,7 @@ trait PostCrudTrait {
 
             $this->assignCategories($postId, $data['categories'] ?? null);
             $this->logger->logPostUpdate($postId, $data);
-            $this->fileLogger->info('Post updated', array('post_id' => $postId));
+            $this->fileLogger->info('Post updated', array('postId' => $postId));
 
             $updatedPost = get_post($postId);
 
