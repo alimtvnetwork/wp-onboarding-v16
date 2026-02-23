@@ -85,8 +85,9 @@ func (r ResultSlice[T]) GetAt(index int) Result[T] {
 	return Ok(r.items[index])
 }
 
-// Error returns the underlying AppError, or nil.
-func (r ResultSlice[T]) Error() *AppError { return r.err }
+// AppError returns the underlying AppError, or nil.
+// Named AppError (not Error) to avoid confusion with Go's native error interface.
+func (r ResultSlice[T]) AppError() *AppError { return r.err }
 
 // Append adds items to the slice. No-op if in error state.
 func (r *ResultSlice[T]) Append(items ...T) {

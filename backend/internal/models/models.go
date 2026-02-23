@@ -8,7 +8,7 @@ import (
 
 // Site represents a WordPress site connection
 type Site struct {
-	ID                int64      `json:"id"`
+	Id                int64      `json:"id"`
 	Name              string     `json:"name"`
 	URL               string     `json:"url"`
 	Username          string     `json:"username"`
@@ -23,7 +23,7 @@ type Site struct {
 
 // Plugin represents a local plugin directory
 type Plugin struct {
-	ID              int64           `json:"id"`
+	Id              int64           `json:"id"`
 	Name            string          `json:"name"`
 	Path            string          `json:"path"`
 	Category        string          `json:"category"`
@@ -41,9 +41,9 @@ type Plugin struct {
 
 // PluginMapping represents the relationship between a plugin and a site
 type PluginMapping struct {
-	ID           int64      `json:"id"`
-	PluginID     int64      `json:"pluginId"`
-	SiteID       int64      `json:"siteId"`
+	Id           int64      `json:"id"`
+	PluginId     int64      `json:"pluginId"`
+	SiteId       int64      `json:"siteId"`
 	SiteName     string     `json:"siteName,omitempty"`
 	SiteURL      string     `json:"siteUrl,omitempty"`
 	RemoteSlug   string     `json:"remoteSlug"`
@@ -56,8 +56,8 @@ type PluginMapping struct {
 
 // FileChange represents a detected file modification
 type FileChange struct {
-	ID               int64      `json:"id"`
-	PluginID         int64      `json:"pluginId"`
+	Id               int64      `json:"id"`
+	PluginId         int64      `json:"pluginId"`
 	FilePath         string     `json:"path"`
 	ChangeType       string     `json:"status"`
 	LocalHash        string     `json:"localHash,omitempty"`
@@ -80,8 +80,8 @@ type FileStats struct {
 
 // SyncRecord represents a sync operation history entry
 type SyncRecord struct {
-	ID              int64      `json:"id"`
-	PluginMappingID int64      `json:"pluginMappingId"`
+	Id              int64      `json:"id"`
+	PluginMappingId int64      `json:"pluginMappingId"`
 	SyncType        string     `json:"syncType"`
 	Status          string     `json:"status"`
 	FilesChecked    int        `json:"filesChecked"`
@@ -94,8 +94,8 @@ type SyncRecord struct {
 
 // Backup represents a plugin backup record
 type Backup struct {
-	ID              int64      `json:"id"`
-	PluginMappingID int64      `json:"pluginMappingId"`
+	Id              int64      `json:"id"`
+	PluginMappingId int64      `json:"pluginMappingId"`
 	FilePath        string     `json:"filePath"`
 	FileSize        int64      `json:"fileSize"`
 	PluginVersion   string     `json:"pluginVersion,omitempty"`
@@ -105,9 +105,9 @@ type Backup struct {
 
 // PluginVersion represents a publish operation history entry for rollback support
 type PluginVersion struct {
-	ID            int64     `json:"id"`
-	PluginID      int64     `json:"pluginId"`
-	SiteID        int64     `json:"siteId"`
+	Id            int64     `json:"id"`
+	PluginId      int64     `json:"pluginId"`
+	SiteId        int64     `json:"siteId"`
 	SiteName      string    `json:"siteName,omitempty"`
 	Version       string    `json:"version"`
 	BackupPath    string    `json:"backupPath,omitempty"`
@@ -121,7 +121,7 @@ type PluginVersion struct {
 
 // ErrorLog represents an application error entry
 type ErrorLog struct {
-	ID         int64           `json:"id"`
+	Id         int64           `json:"id"`
 	Code       string          `json:"code"`
 	Level      string          `json:"level"`
 	Message    string          `json:"message"`

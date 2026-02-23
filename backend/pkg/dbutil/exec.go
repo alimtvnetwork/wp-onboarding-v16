@@ -9,7 +9,7 @@ import (
 // ExecResult holds the outcome of a non-query statement.
 type ExecResult struct {
 	AffectedRows int64
-	LastInsertID int64
+	LastInsertId int64
 	err          error
 	stackTrace   string
 }
@@ -40,5 +40,5 @@ func Exec(ctx context.Context, db *DB, query string, args ...any) ExecResult {
 	rows, _ := result.RowsAffected()
 	id, _ := result.LastInsertId()
 
-	return ExecResult{AffectedRows: rows, LastInsertID: id}
+	return ExecResult{AffectedRows: rows, LastInsertId: id}
 }

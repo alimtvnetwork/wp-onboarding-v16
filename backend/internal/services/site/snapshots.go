@@ -224,7 +224,7 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.Client, error) {
 	result := s.GetByID(ctx, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	site := result.Value()
 

@@ -102,7 +102,7 @@ func (s *Service) SetPublishService(ps PublishService) {
 func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
 	pResult := s.pluginService.GetByID(ctx, pluginID)
 	if pResult.HasError() {
-		return pResult.Error()
+		return pResult.AppError()
 	}
 	p := pResult.Value()
 

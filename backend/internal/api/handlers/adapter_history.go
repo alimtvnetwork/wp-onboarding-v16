@@ -37,7 +37,7 @@ type PublishHistoryServiceAdapter struct {
 func (a *PublishHistoryServiceAdapter) Record(entry models.PublishHistory) (*models.PublishHistory, error) {
 	result := a.Service.Record(entry)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -46,7 +46,7 @@ func (a *PublishHistoryServiceAdapter) Record(entry models.PublishHistory) (*mod
 func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error) {
 	result := a.Service.List(limit, offset, filters)
 	if result.HasError() {
-		return nil, 0, result.Error()
+		return nil, 0, result.AppError()
 	}
 	v := result.Value()
 	return v.Items, v.Total, nil
@@ -55,7 +55,7 @@ func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.Pu
 func (a *PublishHistoryServiceAdapter) GetByID(id int64) (*models.PublishHistory, error) {
 	result := a.Service.GetByID(id)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -64,7 +64,7 @@ func (a *PublishHistoryServiceAdapter) GetByID(id int64) (*models.PublishHistory
 func (a *PublishHistoryServiceAdapter) GetStats() (*models.PublishHistoryStats, error) {
 	result := a.Service.GetStats()
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -77,7 +77,7 @@ func (a *PublishHistoryServiceAdapter) Delete(id int64) error {
 func (a *PublishHistoryServiceAdapter) Clear() (int64, error) {
 	result := a.Service.Clear()
 	if result.HasError() {
-		return 0, result.Error()
+		return 0, result.AppError()
 	}
 	return result.Value(), nil
 }
@@ -90,7 +90,7 @@ type SiteHealthServiceAdapter struct {
 func (a *SiteHealthServiceAdapter) CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, error) {
 	result := a.Service.CheckSite(ctx, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -99,7 +99,7 @@ func (a *SiteHealthServiceAdapter) CheckSite(ctx context.Context, siteID int64) 
 func (a *SiteHealthServiceAdapter) CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, error) {
 	result := a.Service.CheckAllSites(ctx)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -107,7 +107,7 @@ func (a *SiteHealthServiceAdapter) CheckAllSites(ctx context.Context) ([]models.
 func (a *SiteHealthServiceAdapter) GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, error) {
 	result := a.Service.GetHistory(siteID, limit)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -115,7 +115,7 @@ func (a *SiteHealthServiceAdapter) GetHistory(siteID int64, limit int) ([]models
 func (a *SiteHealthServiceAdapter) GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, error) {
 	result := a.Service.GetSummaries(ctx)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -123,7 +123,7 @@ func (a *SiteHealthServiceAdapter) GetSummaries(ctx context.Context) ([]models.S
 func (a *SiteHealthServiceAdapter) GetStats(ctx context.Context) (*models.SiteHealthStats, error) {
 	result := a.Service.GetStats(ctx)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -132,7 +132,7 @@ func (a *SiteHealthServiceAdapter) GetStats(ctx context.Context) (*models.SiteHe
 func (a *SiteHealthServiceAdapter) ClearHistory(olderThanDays int) (int64, error) {
 	result := a.Service.ClearHistory(olderThanDays)
 	if result.HasError() {
-		return 0, result.Error()
+		return 0, result.AppError()
 	}
 	return result.Value(), nil
 }

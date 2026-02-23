@@ -140,7 +140,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	// Get plugin info
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
 	if plugResult.HasError() {
-		result.ErrorMessage = plugResult.Error().Error()
+		result.ErrorMessage = plugResult.AppError().Error()
 		return apperror.Ok(result)
 	}
 	plug := plugResult.Value()
@@ -235,7 +235,7 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperro
 	// Get plugin info
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
 	if plugResult.HasError() {
-		return apperror.Fail[BatchSyncResult](plugResult.Error())
+		return apperror.Fail[BatchSyncResult](plugResult.AppError())
 	}
 	plug := plugResult.Value()
 	result.PluginName = plug.Name
@@ -275,7 +275,7 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) apperror.ResultSlice[
 	// Get all plugins
 	pluginListResult := s.pluginService.List(ctx)
 	if pluginListResult.HasError() {
-		return apperror.FailSlice[SyncResult](pluginListResult.Error())
+		return apperror.FailSlice[SyncResult](pluginListResult.AppError())
 	}
 	pluginList := pluginListResult.Items()
 
@@ -303,7 +303,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	s.broadcastProgress(pluginID, siteID, "checking", 0, "Running sync comparison...")
 	syncResult := s.CheckSync(ctx, pluginID, siteID)
 	if syncResult.HasError() {
-		return apperror.FailWrap[PushSyncResult](syncResult.Error(), apperror.ErrInternal, "sync comparison failed")
+		return apperror.FailWrap[PushSyncResult](syncResult.AppError(), apperror.ErrInternal, "sync comparison failed")
 	}
 	sr := syncResult.Value()
 	if sr.ErrorMessage != "" {
@@ -320,7 +320,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	// 2. Get plugin info for reading local files
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
 	if plugResult.HasError() {
-		return apperror.FailWrap[PushSyncResult](plugResult.Error(), apperror.ErrDatabaseQuery, "failed to get plugin")
+		return apperror.FailWrap[PushSyncResult](plugResult.AppError(), apperror.ErrDatabaseQuery, "failed to get plugin")
 	}
 	plug := plugResult.Value()
 
