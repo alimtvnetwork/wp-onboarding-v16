@@ -45,7 +45,7 @@ trait AdminErrorAjaxTrait {
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('last_seen_error_id', '{$maxId}', '{$now}')");
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'All errors marked as seen', 'last_seen_id' => $maxId));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'All errors marked as seen', 'lastSeenId' => $maxId));
     }
 
     /** AJAX handler: Clear all error sessions. */
@@ -91,7 +91,7 @@ trait AdminErrorAjaxTrait {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
-        $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
+        $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : ''; // file_type: external POST param
         $path = $this->resolveLogFilePath($type);
 
         if ($path === false) {
@@ -138,7 +138,7 @@ trait AdminErrorAjaxTrait {
             wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
         }
 
-        $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
+        $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : ''; // file_type: external POST param
         $path = $this->resolveLogFilePath($type);
 
         if ($path === false) {
@@ -149,6 +149,6 @@ trait AdminErrorAjaxTrait {
             file_put_contents($path, '');
         }
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', 'file_type' => $type));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', 'fileType' => $type));
     }
 }

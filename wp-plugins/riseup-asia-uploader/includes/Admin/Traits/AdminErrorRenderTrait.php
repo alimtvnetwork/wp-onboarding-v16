@@ -30,7 +30,7 @@ trait AdminErrorRenderTrait {
             $result = $this->fetchErrorsForPage($defaults);
             extract($result);
         } catch (Throwable $e) {
-            $db_error_message = sprintf(
+            $dbErrorMessage = sprintf(
                 __('Database error: %s', 'riseup-asia-uploader'),
                 esc_html($e->getMessage())
             );
@@ -42,17 +42,17 @@ trait AdminErrorRenderTrait {
     /** Get safe default values for the error page. */
     private function getErrorPageDefaults(): array {
         return array(
-            'errors'           => array(),
-            'total'            => 0,
-            'total_pages'      => 1,
-            'page'             => 1,
-            'last_seen_id'     => 0,
-            'has_unseen'       => false,
-            'unseen_count'     => 0,
-            'latest_error_time' => '',
-            'filter_level'     => isset($_GET['filter_level']) ? sanitize_text_field($_GET['filter_level']) : '',
-            'filter_search'    => isset($_GET['filter_search']) ? sanitize_text_field($_GET['filter_search']) : '',
-            'db_error_message' => '',
+            'errors'          => array(),
+            'total'           => 0,
+            'totalPages'      => 1,
+            'page'            => 1,
+            'lastSeenId'      => 0,
+            'hasUnseen'       => false,
+            'unseenCount'     => 0,
+            'latestErrorTime' => '',
+            'filterLevel'     => isset($_GET['filter_level']) ? sanitize_text_field($_GET['filter_level']) : '',
+            'filterSearch'    => isset($_GET['filter_search']) ? sanitize_text_field($_GET['filter_search']) : '',
+            'dbErrorMessage'  => '',
         );
     }
 
@@ -63,7 +63,7 @@ trait AdminErrorRenderTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-            $defaults['db_error_message'] = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
+            $defaults['dbErrorMessage'] = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
 
             return $defaults;
         }
@@ -74,7 +74,7 @@ trait AdminErrorRenderTrait {
         $isTableMissing = ($tableExists === false || $tableExists === null);
 
         if ($isTableMissing) {
-            $defaults['db_error_message'] = __('The ErrorSessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
+            $defaults['dbErrorMessage'] = __('The ErrorSessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
 
             return $defaults;
         }
@@ -101,29 +101,29 @@ trait AdminErrorRenderTrait {
         $where = array();
         $params = array();
 
-        $hasLevelFilter = BooleanHelpers::hasValue($defaults['filter_level']);
+        $hasLevelFilter = BooleanHelpers::hasValue($defaults['filterLevel']);
 
         if ($hasLevelFilter) {
             $where[] = 'Level = ?';
-            $params[] = $defaults['filter_level'];
+            $params[] = $defaults['filterLevel'];
         }
 
-        $hasSearchFilter = BooleanHelpers::hasValue($defaults['filter_search']);
+        $hasSearchFilter = BooleanHelpers::hasValue($defaults['filterSearch']);
 
         if ($hasSearchFilter) {
             $where[] = 'Message LIKE ?';
-            $params[] = '%' . $defaults['filter_search'] . '%';
+            $params[] = '%' . $defaults['filterSearch'] . '%';
         }
 
         $hasWhereClause = BooleanHelpers::hasValue($where);
         $whereSql = $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        return array('where_sql' => $whereSql, 'params' => $params);
+        return array('whereSql' => $whereSql, 'params' => $params);
     }
 
     /** Count total filtered error sessions. */
     private function countFilteredErrors(PDO $pdo, array $filter): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$filter['where_sql']}");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$filter['whereSql']}");
         $stmt->execute($filter['params']);
 
         return (int) $stmt->fetchColumn();
@@ -136,7 +136,7 @@ trait AdminErrorRenderTrait {
         int $perPage,
         int $offset,
     ): array {
-        $stmt = $pdo->prepare("SELECT * FROM " . TableType::ErrorSessions->value . " {$filter['where_sql']} ORDER BY Id DESC LIMIT ? OFFSET ?");
+        $stmt = $pdo->prepare("SELECT * FROM " . TableType::ErrorSessions->value . " {$filter['whereSql']} ORDER BY Id DESC LIMIT ? OFFSET ?");
         $stmt->execute(array_merge($filter['params'], array($perPage, $offset)));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -156,17 +156,17 @@ trait AdminErrorRenderTrait {
         $latestErrorTime = $this->resolveLatestErrorTime($errors, $hasUnseen);
 
         return array(
-            'errors'            => $errors,
-            'total'             => $total,
-            'total_pages'       => $totalPages,
-            'page'              => $page,
-            'last_seen_id'      => $lastSeenId,
-            'has_unseen'        => $hasUnseen,
-            'unseen_count'      => $unseenCount,
-            'latest_error_time' => $latestErrorTime,
-            'filter_level'      => $defaults['filter_level'],
-            'filter_search'     => $defaults['filter_search'],
-            'db_error_message'  => '',
+            'errors'          => $errors,
+            'total'           => $total,
+            'totalPages'      => $totalPages,
+            'page'            => $page,
+            'lastSeenId'      => $lastSeenId,
+            'hasUnseen'       => $hasUnseen,
+            'unseenCount'     => $unseenCount,
+            'latestErrorTime' => $latestErrorTime,
+            'filterLevel'     => $defaults['filterLevel'],
+            'filterSearch'    => $defaults['filterSearch'],
+            'dbErrorMessage'  => '',
         );
     }
 
