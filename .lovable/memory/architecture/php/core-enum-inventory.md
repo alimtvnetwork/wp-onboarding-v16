@@ -1,5 +1,5 @@
 # Memory: architecture/php/core-enum-inventory
-Updated: 2026-02-21
+Updated: 2026-02-23
 
 Core enums in the `RiseupAsia\Enums` namespace include:
 
@@ -12,6 +12,7 @@ Core enums in the `RiseupAsia\Enums` namespace include:
 - **UpdateConfigType**: Cache and redirect limits (MaxRedirects, CacheDaysDefault).
 - **PaginationConfigType**: API result limits (LogRetrievalMaxLines, DefaultLimit).
 - **LogCategoryType**: Context for logPluginAction (Snapshot, Agent, Sync, Plugin, Update, Post).
+- **LogColumnType**: PascalCase database column names for the Logs table (16 cases: Id, Action, PluginSlug, PluginFile, PluginVersion, PostId, Status, Details, ErrorMsg, UserLogin, UserId, IpAddress, TriggeredBy, UploadSource, SourceMachine, CreatedAt). Includes `isEqual()`, `isOtherThan()`, `isAnyOf()`.
 - **StorageModeType** & **SnapshotWorkerModeType**: Storage and worker strategies (PerTable, Single, Legacy).
 - **SnapshotFrequencyType**: Snapshot schedule frequency values (Manual, Hourly, Daily, Weekly, Monthly).
 - **FilterKeyType**: Keys for array-based query filters (Status, Plugin, Action, User, TriggeredBy, UploadSource, From, To, SourceMachine).
