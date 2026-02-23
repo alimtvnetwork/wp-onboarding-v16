@@ -1,10 +1,9 @@
 <?php
+namespace RiseupAsia\ErrorHandling;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-namespace RiseupAsia\ErrorHandling;
 
 use Throwable;
 use RiseupAsia\Enums\ResponseKeyType;
