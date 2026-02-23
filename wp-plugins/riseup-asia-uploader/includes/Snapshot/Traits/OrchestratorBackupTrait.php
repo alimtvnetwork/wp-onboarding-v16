@@ -148,7 +148,7 @@ trait OrchestratorBackupTrait {
             ResponseKeyType::Tables->value     => $workerResult[ResponseKeyType::Tables->value],
             ResponseKeyType::TotalRows->value  => $workerResult[ResponseKeyType::TotalRows->value],
             ResponseKeyType::Plugins->value    => $pluginStats[ResponseKeyType::Count->value],
-            'zip_path'                         => $zipResult[ResponseKeyType::Path->value],
+            ResponseKeyType::ZipPath->value    => $zipResult[ResponseKeyType::Path->value],
             ResponseKeyType::ZipSize->value    => $zipResult[ResponseKeyType::Size->value],
             ResponseKeyType::ZipFailed->value  => $zipResult[ResponseKeyType::ZipFailed->value] ?? false,
         );

@@ -39,7 +39,7 @@ trait ManagerRestoreTrait {
         $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Filename->value => $snapshot[ResponseKeyType::Filename->value],
-            'create_backup' => $hasBackupOption,
+            'createBackup' => $hasBackupOption,
         ));
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);

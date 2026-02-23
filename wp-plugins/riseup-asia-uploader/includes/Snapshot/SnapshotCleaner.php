@@ -47,7 +47,7 @@ class SnapshotCleaner {
         $isDryRun = BooleanHelpers::hasValue($options[ResponseKeyType::DryRun->value] ?? null);
 
         $results = ResultHelper::ok(array(
-            ResponseKeyType::Retention->value => array(ResponseKeyType::Deleted->value => 0, 'skipped_master' => 0, 'details' => array()),
+            ResponseKeyType::Retention->value => array(ResponseKeyType::Deleted->value => 0, 'skippedMaster' => 0, 'details' => array()),
             ResponseKeyType::Orphans->value   => array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Files->value => array()),
             ResponseKeyType::Stuck->value     => array(ResponseKeyType::Cleaned->value => 0, ResponseKeyType::Ids->value => array()),
             ResponseKeyType::Errors->value    => array(),
@@ -69,8 +69,8 @@ class SnapshotCleaner {
             + $results[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value];
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
-            'deleted_total' => $totalDeleted,
-            'space_freed'   => PathHelper::formatBytes($results[ResponseKeyType::SpaceFreedBytes->value]),
+            'deletedTotal' => $totalDeleted,
+            'spaceFreed'   => PathHelper::formatBytes($results[ResponseKeyType::SpaceFreedBytes->value]),
             ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
             ResponseKeyType::DryRun->value   => $isDryRun,
         ));

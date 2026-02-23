@@ -121,8 +121,8 @@ trait WorkerExecuteTrait {
         if ($isOverLimit) {
             $sizeMb = round($estimatedBytes / 1024 / 1024, 1);
             $this->log(LogLevelType::Error->value, 'Pre-snapshot size validation failed', array(
-                'estimated_mb' => $sizeMb,
-                'max_mb'       => SnapshotConfigType::MaxSizeMb->value,
+                'estimatedMb' => $sizeMb,
+                'maxMb'       => SnapshotConfigType::MaxSizeMb->value,
             ));
 
             return ResultHelper::error(

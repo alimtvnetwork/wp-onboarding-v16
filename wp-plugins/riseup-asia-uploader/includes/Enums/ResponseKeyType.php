@@ -79,6 +79,7 @@ enum ResponseKeyType: string
     case TablesChanged   = 'tablesChanged';
     case TotalRows       = 'totalRows';
     case TotalNewRows    = 'totalNewRows';
+    case ZipPath         = 'zipPath';
     case ZipSize         = 'zipSize';
     case BackupId        = 'backupId';
     case ZipFailed       = 'zipFailed';
@@ -180,6 +181,7 @@ enum ResponseKeyType: string
     /** Snapshot progress and worker keys. */
     case CompletedAt         = 'completedAt';
     case ExportedAt          = 'exportedAt';
+    case Format               = 'format';
     case FormatVersion       = 'formatVersion';
     case JobId               = 'jobId';
     case TotalTables         = 'totalTables';
