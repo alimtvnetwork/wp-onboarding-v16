@@ -444,7 +444,7 @@ Boolean query methods on the **same classes** — such as `isEmpty()`, `isDefine
 
 ## Result Wrapper — Full Public API Reference
 
-> **Cross-language invariant:** The `.Error()` / `.error()` method on every result wrapper returns the **framework's structured error type**, never a raw string or generic exception. In Go this is `*apperror.AppError` (carrying stack trace, error code, and contextual values). In PHP this is `Throwable` (typically a framework exception with trace). This guarantees that propagated errors always preserve diagnostic context — callers can safely pass `.Error()` output to `Fail()`, `FailSlice()`, `FailMap()`, or log it with full traceability.
+> **Cross-language invariant:** The `.AppError()` (Go) / `.error()` (PHP) method on every result wrapper returns the **framework's structured error type**, never a raw string or generic exception. In Go this is `*apperror.AppError` (carrying stack trace, error code, and contextual values) — named `.AppError()` (not `.Error()`) to avoid confusion with Go's native `error` interface. In PHP this is `Throwable` (typically a framework exception with trace). This guarantees that propagated errors always preserve diagnostic context — callers can safely pass `.AppError()` output to `Fail()`, `FailSlice()`, `FailMap()`, or log it with full traceability.
 
 ### Go — `apperror.Result[T]`
 
@@ -460,7 +460,7 @@ Boolean query methods on the **same classes** — such as `isEmpty()`, `isDefine
 | `IsEmpty()` | `bool` | True when no value was set (absent, not an error) |
 | `Value()` | `T` | Returns value; **panics** if `HasError()` is true |
 | `ValueOr(fallback)` | `T` | Returns value if defined, otherwise fallback |
-| `Error()` | `*AppError` | Returns underlying error, or nil |
+| `AppError()` | `*AppError` | Returns underlying error, or nil. Named `AppError()` to avoid confusion with Go's `error` interface |
 | `Unwrap()` | `(T, error)` | Bridges to standard Go `(T, error)` pattern |
 
 ### Go — `apperror.ResultSlice[T]`
@@ -481,7 +481,7 @@ Boolean query methods on the **same classes** — such as `isEmpty()`, `isDefine
 | `Last()` | `Result[T]` | Last item as `Result[T]`, or empty |
 | `GetAt(index)` | `Result[T]` | Item at index as `Result[T]`, or empty |
 | `Append(items...)` | — | Adds items; no-op if in error state |
-| `Error()` | `*AppError` | Returns underlying error, or nil |
+| `AppError()` | `*AppError` | Returns underlying error, or nil |
 
 ### Go — `apperror.ResultMap[K, V]`
 
@@ -503,7 +503,7 @@ Boolean query methods on the **same classes** — such as `isEmpty()`, `isDefine
 | `Remove(key)` | — | Deletes key; no-op if error |
 | `Keys()` | `[]K` | All keys as slice |
 | `Values()` | `[]V` | All values as slice |
-| `Error()` | `*AppError` | Returns underlying error, or nil |
+| `AppError()` | `*AppError` | Returns underlying error, or nil |
 
 ### PHP — `DbResult<T>`
 

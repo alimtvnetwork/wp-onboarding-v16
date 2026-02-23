@@ -433,7 +433,7 @@ func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[P
 func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
     result := h.plugins.GetById(r.Context(), pluginId)
     if result.HasError() {
-        writeError(w, result.Error())
+        writeError(w, result.AppError())
         return
     }
 
@@ -484,7 +484,7 @@ type SiteServiceAdapter struct {
 func (a *SiteServiceAdapter) GetById(ctx context.Context, id int64) (*models.Site, error) {
     result := a.Service.GetById(ctx, id)  // returns apperror.Result[models.Site]
     if result.HasError() {
-        return nil, result.Error()
+        return nil, result.AppError()
     }
     v := result.Value()
     return &v, nil
@@ -494,7 +494,7 @@ func (a *SiteServiceAdapter) GetById(ctx context.Context, id int64) (*models.Sit
 func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, error) {
     result := a.Service.List(ctx)  // returns apperror.ResultSlice[models.Site]
     if result.HasError() {
-        return nil, result.Error()
+        return nil, result.AppError()
     }
     return result.Items(), nil
 }
@@ -518,7 +518,7 @@ When **Service A** holds a direct reference to **Service B** (not through the ad
 // sync service calls plugin service directly (not through adapter)
 plugResult := s.pluginService.GetById(ctx, pluginId)
 if plugResult.HasError() {
-    return apperror.FailWrap[PushSyncResult](plugResult.Error(), apperror.ErrDatabaseQuery, "failed to get plugin")
+    return apperror.FailWrap[PushSyncResult](plugResult.AppError(), apperror.ErrDatabaseQuery, "failed to get plugin")
 }
 plug := plugResult.Value()
 ```
@@ -704,6 +704,8 @@ Every call site that receives a `Result[T]`, `ResultSlice[T]`, or `ResultMap[K, 
 
 **Principle:** No error may ever be swallowed. If a result carries an error, it must be explicitly handled — logged, returned, or propagated. The framework-level accessor should log immediately when called on an errored result, reducing diagnostic steps.
 
+> **Important:** In Go, the method to retrieve the error is named `.AppError()` (not `.Error()`) to avoid confusion with Go's native `error` interface. `.AppError()` returns `*apperror.AppError` which carries the full stack trace, error code, and diagnostic context. In PHP, the equivalent method remains `.error()` returning `Throwable`.
+
 ### Go Examples
 
 #### ❌ WRONG — No Guard
@@ -731,17 +733,17 @@ plugin := result.Value()
 // When the return type differs, Fail re-wrapping IS needed:
 siteResult := siteSvc.GetById(ctx, siteId)
 if siteResult.HasError() {
-    return apperror.Fail[PluginList](siteResult.Error())
+    return apperror.Fail[PluginList](siteResult.AppError())
 }
 ```
 
 #### ❌ WRONG — Redundant Re-Wrapping (Same Type)
 
 ```go
-// result.Error() is already *AppError — no need to re-wrap into same Result[T]
+// result.AppError() is already *AppError — no need to re-wrap into same Result[T]
 result := svc.GetById(ctx, id)
 if result.HasError() {
-    return apperror.Fail[Plugin](result.Error()) // redundant
+    return apperror.Fail[Plugin](result.AppError()) // redundant
 }
 ```
 
@@ -761,14 +763,14 @@ func (s *Service) ListActive(ctx context.Context) apperror.ResultSlice[models.Si
 
 // ❌ WRONG — redundant FailSlice re-wrapping (same type)
 if result.HasError() {
-    return apperror.FailSlice[models.Site](result.Error()) // redundant
+    return apperror.FailSlice[models.Site](result.AppError()) // redundant
 }
 
 // ✅ Cross-type ResultSlice — FailSlice IS needed
 func (s *Service) CheckAll(ctx context.Context) apperror.ResultSlice[SyncResult] {
     plugins := s.pluginService.List(ctx) // returns ResultSlice[models.Plugin]
     if plugins.HasError() {
-        return apperror.FailSlice[SyncResult](plugins.Error()) // different T
+        return apperror.FailSlice[SyncResult](plugins.AppError()) // different T
     }
     // ...
 }
@@ -784,7 +786,7 @@ func (s *Service) GetCached(ctx context.Context) apperror.ResultMap[string, Conf
 
 // ✅ Cross-type ResultMap — FailMap IS needed
 if configResult.HasError() {
-    return apperror.FailMap[string, Summary](configResult.Error()) // different V
+    return apperror.FailMap[string, Summary](configResult.AppError()) // different V
 }
 ```
 
@@ -805,7 +807,7 @@ if result.IsSafe() {
 func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
     result := a.Service.GetById(ctx, id)
     if result.HasError() {
-        return nil, result.Error()
+        return nil, result.AppError()
     }
 
     v := result.Value()
@@ -867,7 +869,7 @@ return $execResult->affectedRows() > 0;
 
 ### Enforcement Checklist
 
-- [ ] Every `result.Value()` / `$result->value()` call is preceded by `HasError()` / `hasError()` or `IsSafe()` / `isSafe()`
+- [ ] Every `result.Value()` / `$result->value()` call is preceded by `HasError()` / `hasError()` or `IsSafe()` / `isSafe()`. In Go, use `.AppError()` (not `.Error()`) to retrieve the structured error.
 - [ ] Every `result.Items()` / `$results->items()` call is preceded by a guard
 - [ ] Every `result.Get(key)` on `ResultMap` is preceded by a guard
 - [ ] Every `$execResult->affectedRows()` on `DbExecResult` is preceded by a guard

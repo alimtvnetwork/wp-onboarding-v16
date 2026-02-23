@@ -35,6 +35,7 @@ This is the **master reference**. Every rule here is enforced across all languag
 | File name (Go) | snake_case.go | — | `snapshot_manager.go` | — |
 | Directory (Go pkg) | snake_case | — | `site_health/` | — |
 | Abbreviations | First letter only caps | `$postId`, `$fileUrl` | `postId`, `fileUrl` | `postId`, `fileUrl` |
+| JSON / API keys | PascalCase | `"PluginSlug"` | `"PluginSlug"` | `"PluginSlug"` |
 
 ### 1.2 — Abbreviation Standard (ALL LANGUAGES)
 
@@ -383,7 +384,8 @@ return $execResult->affectedRows() > 0;
 
 ```go
 // Go — Propagation Rules (Result[T], ResultSlice[T], ResultMap[K,V])
-// .Error() returns *AppError — always preserves stack trace and context.
+// .AppError() returns *AppError — always preserves stack trace and context.
+// Named AppError() (not Error()) to avoid confusion with Go's native error interface.
 
 // ✅ Same-type → direct return (applies to Result, ResultSlice, ResultMap)
 result := svc.GetById(ctx, id)           // Result[Plugin]
@@ -393,11 +395,11 @@ plugin := result.Value()
 // ✅ Cross-type → Fail/FailSlice/FailMap IS needed
 plugins := s.pluginService.List(ctx)      // ResultSlice[Plugin]
 if plugins.HasError() {
-    return apperror.FailSlice[SyncResult](plugins.Error())
+    return apperror.FailSlice[SyncResult](plugins.AppError())
 }
 
 // ❌ WRONG — redundant (same type re-wrapped)
-if result.HasError() { return apperror.Fail[Plugin](result.Error()) }
+if result.HasError() { return apperror.Fail[Plugin](result.AppError()) }
 
 // ✅ Collection access — guard via IsSafe()
 if result.IsSafe() {
@@ -407,7 +409,7 @@ if result.IsSafe() {
 // ✅ Adapter unwrap — Result[T] → (*T, error)
 func (a *Adapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
     result := a.Service.GetById(ctx, id)
-    if result.HasError() { return nil, result.Error() }
+    if result.HasError() { return nil, result.AppError() }
     v := result.Value()
     return &v, nil
 }
@@ -556,13 +558,14 @@ Any modification to an enum must follow the [enum-consumer-checklist.md](../01-a
 
 ```
 [ ] Naming: camelCase variables, PascalCase classes/enums/DB columns
-[ ] Abbreviations: Id (not ID), Url (not URL), Md5 (not MD5)
+[ ] JSON/API keys: PascalCase (e.g., "PluginSlug", "SiteId" — never "SITE_ID" or "siteId")
+[ ] Abbreviations: Id (not ID), Url (not URL), Md5 (not MD5), Json (not JSON), Api (not API)
 [ ] Booleans: is/has prefix, no negative words, no raw ! on calls
 [ ] Enums: Type suffix, isEqual() not ===, PascalCase case names
 [ ] DB: PascalCase tables/columns, PascalCase array keys for inserts
 [ ] Formatting: braces always, zero nesting, blank before return, 15-line max
 [ ] Errors: apperror.Wrap (Go), Throwable imported (PHP), no fmt.Errorf
-[ ] Results: hasError()/isSafe() checked before .value()/.Value() — no swallowed errors
+[ ] Results: hasError()/isSafe() checked before .value()/.Value() — use .AppError() in Go (not .Error())
 [ ] No magic strings: all via enums/typed constants
 [ ] Log keys: camelCase in PHP context arrays
 [ ] Types: no any/interface{} (Go), native types + no redundant PHPDoc (PHP)
