@@ -76,7 +76,7 @@ trait UploadInstallExtractTrait
 
         $isSelfUpdate = ($slug === PluginConfigType::Slug->value && $isUpdate);
         if ($isSelfUpdate) {
-            $this->preLogSelfUpdate($slug, $input['upload_source'], $input['client_plugin_version'], strlen($input['zip_content']));
+            $this->preLogSelfUpdate($slug, $input['uploadSource'], $input['clientPluginVersion'], strlen($input['zipContent']));
         }
 
         return array(
@@ -109,7 +109,7 @@ trait UploadInstallExtractTrait
             return $activation;
         }
 
-        $versionInfo = $this->detectInstalledVersion($pluginFile, $ctx[ResponseKeyType::Slug->value], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['client_plugin_version']);
+        $versionInfo = $this->detectInstalledVersion($pluginFile, $ctx[ResponseKeyType::Slug->value], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['clientPluginVersion']);
 
         return array(
             ResponseKeyType::Slug->value => $ctx[ResponseKeyType::Slug->value],
