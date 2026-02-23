@@ -34,6 +34,8 @@ const (
 	SyncManifest
 	ErrorLogs
 	ErrorSessions
+	Openapi
+	OpcacheReset
 	SnapshotsList
 	SnapshotsSchedule
 	SnapshotsInfo
@@ -43,54 +45,78 @@ const (
 	SnapshotsSettings
 	SnapshotsProviders
 	SnapshotsTables
+	SnapshotsDependencies
+	SnapshotsExportPertable
 	SnapshotsFullBackup
 	SnapshotsIncremental
 	SnapshotsImport
 	SnapshotsCleanup
+	SnapshotsProgress
 	SnapshotsDownload
 	SnapshotsDownloadFile
+	Agents
+	AgentsAdd
+	AgentsRemove
+	AgentsTest
+	AgentsSync
+	AgentsPlugins
+	AgentAction
+	AgentHistory
 )
 
 var variantLabels = [...]string{
-	Invalid:               "invalid",
-	Status:                "/status",
-	Upload:                "/upload",
-	UploadActive:          "/upload-active",
-	Plugins:               "/plugins",
-	PluginInfo:            "/plugins/info",
-	PluginExists:          "/plugins/exists",
-	Enable:                "/plugins/enable",
-	Disable:               "/plugins/disable",
-	Delete:                "/plugins/delete",
-	Files:                 "/plugins/files",
-	File:                  "/plugins/file",
-	Sync:                  "/plugins/sync",
-	Logs:                  "/logs",
-	LogsStats:             "/logs/stats",
-	Posts:                 "/posts",
-	PostsById:             "/posts/%d",
-	Categories:            "/categories",
-	Media:                 "/media",
-	ExportSelf:            "/export-self",
-	ExportPlugin:          "/plugins/export",
-	SyncManifest:          "/plugins/sync-manifest",
-	ErrorLogs:             "/error-logs",
-	ErrorSessions:         "/error-sessions",
-	SnapshotsList:         "/snapshots/list",
-	SnapshotsSchedule:     "/snapshots/schedule",
-	SnapshotsInfo:         "/snapshots/info",
-	SnapshotsDelete:       "/snapshots/delete",
-	SnapshotsRestore:      "/snapshots/restore",
-	SnapshotsExport:       "/snapshots/export",
-	SnapshotsSettings:     "/snapshots/settings",
-	SnapshotsProviders:    "/snapshots/providers",
-	SnapshotsTables:       "/snapshots/tables",
-	SnapshotsFullBackup:   "/snapshots/full-backup",
-	SnapshotsIncremental:  "/snapshots/incremental",
-	SnapshotsImport:       "/snapshots/import",
-	SnapshotsCleanup:      "/snapshots/cleanup",
-	SnapshotsDownload:     "/snapshots/download",
-	SnapshotsDownloadFile: "/snapshots/download-file",
+	Invalid:                 "invalid",
+	Status:                  "/status",
+	Upload:                  "/upload",
+	UploadActive:            "/upload-active",
+	Plugins:                 "/plugins",
+	PluginInfo:              "/plugins/info",
+	PluginExists:            "/plugins/exists",
+	Enable:                  "/plugins/enable",
+	Disable:                 "/plugins/disable",
+	Delete:                  "/plugins/delete",
+	Files:                   "/plugins/files",
+	File:                    "/plugins/file",
+	Sync:                    "/plugins/sync",
+	Logs:                    "/logs",
+	LogsStats:               "/logs/stats",
+	Posts:                    "/posts",
+	PostsById:               "/posts/%d",
+	Categories:              "/categories",
+	Media:                   "/media",
+	ExportSelf:              "/export-self",
+	ExportPlugin:            "/plugins/export",
+	SyncManifest:            "/plugins/sync-manifest",
+	ErrorLogs:               "/error-logs",
+	ErrorSessions:           "/error-sessions",
+	Openapi:                 "/openapi",
+	OpcacheReset:            "/opcache-reset",
+	SnapshotsList:           "/snapshots/list",
+	SnapshotsSchedule:       "/snapshots/schedule",
+	SnapshotsInfo:           "/snapshots/info",
+	SnapshotsDelete:         "/snapshots/delete",
+	SnapshotsRestore:        "/snapshots/restore",
+	SnapshotsExport:         "/snapshots/export",
+	SnapshotsSettings:       "/snapshots/settings",
+	SnapshotsProviders:      "/snapshots/providers",
+	SnapshotsTables:         "/snapshots/tables",
+	SnapshotsDependencies:   "/snapshots/dependencies",
+	SnapshotsExportPertable: "/snapshots/export-pertable",
+	SnapshotsFullBackup:     "/snapshots/full-backup",
+	SnapshotsIncremental:    "/snapshots/incremental",
+	SnapshotsImport:         "/snapshots/import",
+	SnapshotsCleanup:        "/snapshots/cleanup",
+	SnapshotsProgress:       "/snapshots/progress",
+	SnapshotsDownload:       "/snapshots/download",
+	SnapshotsDownloadFile:   "/snapshots/download-file",
+	Agents:                  "/agents",
+	AgentsAdd:               "/agents/add",
+	AgentsRemove:            "/agents/remove",
+	AgentsTest:              "/agents/test",
+	AgentsSync:              "/agents/sync",
+	AgentsPlugins:           "/agents/plugins",
+	AgentAction:             "/agents/action",
+	AgentHistory:            "/agents/history",
 }
 
 func (v Variant) String() string {
@@ -129,6 +155,11 @@ func (v Variant) IsSnapshot() bool {
 // IsPlugin checks if this endpoint belongs to the plugin domain.
 func (v Variant) IsPlugin() bool {
 	return strings.HasPrefix(v.String(), "/plugins/")
+}
+
+// IsAgent checks if this endpoint belongs to the agent domain.
+func (v Variant) IsAgent() bool {
+	return strings.HasPrefix(v.String(), "/agents")
 }
 
 func All() []Variant {
