@@ -313,11 +313,19 @@ jQuery(document).ready(function($) {
         actions: '<?php echo esc_js(ResponseKeyType::Actions->value); ?>',
         plugins: '<?php echo esc_js(ResponseKeyType::Plugins->value); ?>',
         count:   '<?php echo esc_js(ResponseKeyType::Count->value); ?>',
-        message: '<?php echo esc_js(ResponseKeyType::Message->value); ?>'
+        message: '<?php echo esc_js(ResponseKeyType::Message->value); ?>',
+        success: '<?php echo esc_js(ResponseKeyType::Success->value); ?>',
+        error:   '<?php echo esc_js(ResponseKeyType::Error->value); ?>'
     };
 
     var PLUGIN_STATUS = {
         active: '<?php echo esc_js(__("active", "riseup-asia-uploader")); ?>'
+    };
+
+    var ACTIONS = {
+        enable:  'enable',
+        disable: 'disable',
+        delete_: 'delete'
     };
 
     var LABELS = {
@@ -340,8 +348,23 @@ jQuery(document).ready(function($) {
         actionFailed:        '<?php echo esc_js(__("Action failed:", "riseup-asia-uploader")); ?>',
         failedToRemove:      '<?php echo esc_js(__("Failed to remove:", "riseup-asia-uploader")); ?>',
         failedToLoadAgents:  '<?php echo esc_js(__("Failed to load agents:", "riseup-asia-uploader")); ?>',
-        failedToAddAgent:    '<?php echo esc_js(__("Failed to add agent", "riseup-asia-uploader")); ?>'
+        failedToAddAgent:    '<?php echo esc_js(__("Failed to add agent", "riseup-asia-uploader")); ?>',
+        unknownError:        '<?php echo esc_js(__("Unknown error", "riseup-asia-uploader")); ?>',
+        pluginsSuffix:       '<?php echo esc_js(__("Plugins", "riseup-asia-uploader")); ?>',
+        historySuffix:       '<?php echo esc_js(__("Action History", "riseup-asia-uploader")); ?>'
     };
+
+    // Helper: Build per-agent endpoint URL (agents/{id}/{suffix})
+    function buildAgentUrl(id, suffix) {
+        return ENDPOINTS.agents + '/' + id + (suffix ? '/' + suffix : '');
+    }
+
+    // Helper: Extract action suffix from endpoint value (e.g., 'agents/test' → 'test')
+    function endpointSuffix(endpointValue) {
+        var parts = endpointValue.split('/');
+
+        return parts[parts.length - 1];
+    }
 
     // Helper: AJAX request
     function apiRequest(method, endpoint, data) {
@@ -398,7 +421,7 @@ jQuery(document).ready(function($) {
                 });
             }
         }).fail(function(xhr) {
-            showStatus('#add-agent-status', LABELS.failedToLoadAgents + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'), true);
+            showStatus('#add-agent-status', LABELS.failedToLoadAgents + ' ' + (xhr.responseJSON?.error?.message || LABELS.unknownError), true);
         }).always(function() {
             $('#agents-loading').hide();
             $('#agents-table').show();
@@ -444,11 +467,11 @@ jQuery(document).ready(function($) {
         var id = $row.data('id');
         var $btn = $(this).prop('disabled', true);
         
-        apiRequest('POST', ENDPOINTS.agents + '/' + id + '/test').done(function(response) {
+        apiRequest('POST', buildAgentUrl(id, endpointSuffix(ENDPOINTS.agentsTest))).done(function(response) {
             alert(response[RESPONSE_KEYS.success] ? LABELS.connectionSuccess : LABELS.connectionFailed + ' ' + response[RESPONSE_KEYS.message]);
             loadAgents();
         }).fail(function(xhr) {
-            alert(LABELS.testFailed + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.testFailed + ' ' + (xhr.responseJSON?.error?.message || LABELS.unknownError));
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -460,11 +483,11 @@ jQuery(document).ready(function($) {
         var id = $row.data('id');
         var $btn = $(this).prop('disabled', true);
         
-        apiRequest('POST', ENDPOINTS.agents + '/' + id + '/sync').done(function(response) {
+        apiRequest('POST', buildAgentUrl(id, endpointSuffix(ENDPOINTS.agentsSync))).done(function(response) {
             alert(LABELS.synced.replace('%d', response[RESPONSE_KEYS.count]));
             loadAgents();
         }).fail(function(xhr) {
-            alert(LABELS.syncFailed + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.syncFailed + ' ' + (xhr.responseJSON?.error?.message || LABELS.unknownError));
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -477,12 +500,12 @@ jQuery(document).ready(function($) {
         var name = $row.find('td:first strong').text();
         
         currentAgentId = id;
-        $('#modal-agent-name').text(name + ' - Plugins');
+        $('#modal-agent-name').text(name + ' - ' + LABELS.pluginsSuffix);
         $('#plugins-loading').show();
         $('#plugins-table').hide();
         $('#agent-plugins-modal').show();
         
-        apiRequest('POST', ENDPOINTS.agents + '/' + id + '/sync').done(function(response) {
+        apiRequest('POST', buildAgentUrl(id, endpointSuffix(ENDPOINTS.agentsSync))).done(function(response) {
             var $tbody = $('#plugins-tbody').empty();
             
             if (!response[RESPONSE_KEYS.plugins] || response[RESPONSE_KEYS.plugins].length === 0) {
@@ -521,16 +544,16 @@ jQuery(document).ready(function($) {
         var $btn = $(this);
         var $row = $btn.closest('tr');
         var slug = $row.data('slug');
-        var action = $btn.hasClass('btn-plugin-enable') ? 'enable' 
-                   : $btn.hasClass('btn-plugin-disable') ? 'disable' : 'delete';
+        var action = $btn.hasClass('btn-plugin-enable') ? ACTIONS.enable 
+                   : $btn.hasClass('btn-plugin-disable') ? ACTIONS.disable : ACTIONS.delete_;
         
-        if (action === 'delete' && !confirm(LABELS.confirmDeletePlugin)) {
+        if (action === ACTIONS.delete_ && !confirm(LABELS.confirmDeletePlugin)) {
             return;
         }
         
         $btn.prop('disabled', true);
         
-        apiRequest('POST', ENDPOINTS.agents + '/' + currentAgentId + '/action', {
+        apiRequest('POST', buildAgentUrl(currentAgentId, endpointSuffix(ENDPOINTS.agentAction)), {
             action: action,
             slug: slug
         }).done(function(response) {
@@ -540,7 +563,7 @@ jQuery(document).ready(function($) {
                 return $(this).closest('tr').data('id') === currentAgentId;
             }).click();
         }).fail(function(xhr) {
-            alert(LABELS.actionFailed + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.actionFailed + ' ' + (xhr.responseJSON?.error?.message || LABELS.unknownError));
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -552,10 +575,10 @@ jQuery(document).ready(function($) {
         var id = $row.data('id');
         var name = $row.find('td:first strong').text();
         
-        $('#history-agent-name').text(name + ' - Action History');
+        $('#history-agent-name').text(name + ' - ' + LABELS.historySuffix);
         $('#agent-history-modal').show();
         
-        apiRequest('GET', ENDPOINTS.agents + '/' + id + '/history').done(function(response) {
+        apiRequest('GET', buildAgentUrl(id, endpointSuffix(ENDPOINTS.agentHistory))).done(function(response) {
             var $tbody = $('#history-tbody').empty();
             
             if (!response[RESPONSE_KEYS.actions] || response[RESPONSE_KEYS.actions].length === 0) {
@@ -591,10 +614,10 @@ jQuery(document).ready(function($) {
         
         var $btn = $(this).prop('disabled', true);
         
-        apiRequest('DELETE', ENDPOINTS.agents + '/' + id).done(function() {
+        apiRequest('DELETE', buildAgentUrl(id)).done(function() {
             loadAgents();
         }).fail(function(xhr) {
-            alert(LABELS.failedToRemove + ' ' + (xhr.responseJSON?.error?.message || 'Unknown error'));
+            alert(LABELS.failedToRemove + ' ' + (xhr.responseJSON?.error?.message || LABELS.unknownError));
         }).always(function() {
             $btn.prop('disabled', false);
         });
