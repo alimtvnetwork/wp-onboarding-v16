@@ -444,6 +444,8 @@ Boolean query methods on the **same classes** — such as `isEmpty()`, `isDefine
 
 ## Result Wrapper — Full Public API Reference
 
+> **Cross-language invariant:** The `.Error()` / `.error()` method on every result wrapper returns the **framework's structured error type**, never a raw string or generic exception. In Go this is `*apperror.AppError` (carrying stack trace, error code, and contextual values). In PHP this is `Throwable` (typically a framework exception with trace). This guarantees that propagated errors always preserve diagnostic context — callers can safely pass `.Error()` output to `Fail()`, `FailSlice()`, `FailMap()`, or log it with full traceability.
+
 ### Go — `apperror.Result[T]`
 
 | Method | Returns | Description |
