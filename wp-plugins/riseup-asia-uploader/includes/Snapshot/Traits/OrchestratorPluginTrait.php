@@ -28,8 +28,8 @@ use RiseupAsia\Helpers\ResultHelper;
 
 trait OrchestratorPluginTrait {
     private function snapshotPlugins(string $snapshotDir, string $selection = 'all'): array {
-        $plugins_dir = $snapshotDir . '/plugins';
-        $isDirCreationFailed = (PathHelper::makeDirectory($plugins_dir, true) === false);
+        $pluginsDir = $snapshotDir . '/plugins';
+        $isDirCreationFailed = (PathHelper::makeDirectory($pluginsDir, true) === false);
 
         if ($isDirCreationFailed) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
@@ -41,24 +41,24 @@ trait OrchestratorPluginTrait {
             );
         }
 
-        $plugins_to_snapshot = $this->collectPluginsToSnapshot($selection);
+        $pluginsToSnapshot = $this->collectPluginsToSnapshot($selection);
         $rootPdo = $this->openRootDbForPlugins($snapshotDir);
 
         $count = 0;
-        $total_size = 0;
-        $plugin_list = array();
+        $totalSize = 0;
+        $pluginList = array();
 
-        foreach ($plugins_to_snapshot as $plugin_file => $info) {
-            $result = $this->archiveSinglePlugin($info, $plugins_dir, $rootPdo);
+        foreach ($pluginsToSnapshot as $pluginFile => $info) {
+            $result = $this->archiveSinglePlugin($info, $pluginsDir, $rootPdo);
 
             if ($result === null) {
                 continue;
             }
 
             if ($result[ResponseKeyType::Success->value]) {
-                $total_size += $result[ResponseKeyType::Size->value];
+                $totalSize += $result[ResponseKeyType::Size->value];
                 $count++;
-                $plugin_list[] = $result[ResponseKeyType::Entry->value];
+                $pluginList[] = $result[ResponseKeyType::Entry->value];
             }
         }
 
@@ -66,8 +66,8 @@ trait OrchestratorPluginTrait {
 
         return array(
             ResponseKeyType::Count->value    => $count,
-            ResponseKeyType::TotalSize->value => $total_size,
-            ResponseKeyType::Plugins->value  => $plugin_list,
+            ResponseKeyType::TotalSize->value => $totalSize,
+            ResponseKeyType::Plugins->value  => $pluginList,
         );
     }
 
@@ -76,42 +76,42 @@ trait OrchestratorPluginTrait {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
-        $all_plugins = get_plugins();
-        $active_plugins = get_option(OptionNameType::ActivePlugins->value, array());
-        $plugins_to_snapshot = array();
+        $allPlugins = get_plugins();
+        $activePlugins = get_option(OptionNameType::ActivePlugins->value, array());
+        $pluginsToSnapshot = array();
 
-        foreach ($all_plugins as $plugin_file => $plugin_data) {
-            $slug = dirname($plugin_file);
+        foreach ($allPlugins as $pluginFile => $pluginData) {
+            $slug = dirname($pluginFile);
 
             if ($slug === '.') {
-                $slug = basename($plugin_file, '.php');
+                $slug = basename($pluginFile, '.php');
             }
 
             if ($slug === PluginConfigType::Slug->value) {
                 continue;
             }
 
-            $isEligible = ($selection === PluginSelectionType::All->value || in_array($plugin_file, $active_plugins));
+            $isEligible = ($selection === PluginSelectionType::All->value || in_array($pluginFile, $activePlugins));
             $isIneligible = ($isEligible === false);
 
             if ($isIneligible) {
                 continue;
             }
 
-            $plugins_to_snapshot[$plugin_file] = array(
+            $pluginsToSnapshot[$pluginFile] = array(
                 'slug'    => $slug,
-                'name'    => $plugin_data['Name'] ?? $slug,
-                'version' => $plugin_data['Version'] ?? '0.0.0',
+                'name'    => $pluginData['Name'] ?? $slug,
+                'version' => $pluginData['Version'] ?? '0.0.0',
             );
         }
 
         $this->log(LogLevelType::Info->value, 'Snapshotting plugins', array(
-            'total'     => count($all_plugins),
-            'selected'  => count($plugins_to_snapshot),
+            'total'     => count($allPlugins),
+            'selected'  => count($pluginsToSnapshot),
             'selection' => $selection,
         ));
 
-        return $plugins_to_snapshot;
+        return $pluginsToSnapshot;
     }
 
     private function archiveSinglePlugin(
@@ -120,21 +120,21 @@ trait OrchestratorPluginTrait {
         ?PDO $rootPdo,
     ): ?array {
         $slug = $info['slug'];
-        $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
+        $pluginPath = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (PathHelper::isDirMissing($plugin_path)) {
+        if (PathHelper::isDirMissing($pluginPath)) {
             $this->log(LogLevelType::Info->value, 'Skipping single-file plugin: ' . $slug);
 
             return null;
         }
 
-        $zip_filename = $slug . '.zip';
-        $zip_path = $pluginsDir . '/' . $zip_filename;
-        $zip_result = $this->createPluginZip($plugin_path, $zip_path, $slug);
-        $isZipFailed = BooleanHelpers::isResultFailed($zip_result);
+        $zipFilename = $slug . '.zip';
+        $zipPath = $pluginsDir . '/' . $zipFilename;
+        $zipResult = $this->createPluginZip($pluginPath, $zipPath, $slug);
+        $isZipFailed = BooleanHelpers::isResultFailed($zipResult);
 
         if ($isZipFailed) {
-            $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array(ResponseKeyType::Error->value => $zip_result[ResponseKeyType::Error->value]));
+            $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array(ResponseKeyType::Error->value => $zipResult[ResponseKeyType::Error->value]));
 
             return ResultHelper::failed();
         }
@@ -143,8 +143,8 @@ trait OrchestratorPluginTrait {
             'slug'                        => $info['slug'],
             'name'                        => $info['name'],
             'version'                     => $info['version'],
-            'zip'                         => $zip_filename,
-            ResponseKeyType::Size->value  => filesize($zip_path),
+            'zip'                         => $zipFilename,
+            ResponseKeyType::Size->value  => filesize($zipPath),
         );
 
         if ($rootPdo) {
@@ -152,9 +152,9 @@ trait OrchestratorPluginTrait {
                 ResponseKeyType::PluginSlug->value    => $info['slug'],
                 'pluginName'                          => $info['name'],
                 ResponseKeyType::PluginVersion->value => $info['version'],
-                'zipFile'                             => 'plugins/' . $zip_filename,
-                'fileSizeBytes'                       => filesize($zip_path),
-                'checksumMd5'                         => md5_file($zip_path),
+                'zipFile'                             => 'plugins/' . $zipFilename,
+                'fileSizeBytes'                       => filesize($zipPath),
+                'checksumMd5'                         => md5_file($zipPath),
             ));
         }
 
@@ -216,14 +216,14 @@ trait OrchestratorPluginTrait {
     }
 
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
-        $root_path = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . '/a-root.db';
 
-        if (PathHelper::isFileMissing($root_path)) {
+        if (PathHelper::isFileMissing($rootPath)) {
             return null;
         }
 
         try {
-            $pdo = new PDO('sqlite:' . $root_path);
+            $pdo = new PDO('sqlite:' . $rootPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             return $pdo;

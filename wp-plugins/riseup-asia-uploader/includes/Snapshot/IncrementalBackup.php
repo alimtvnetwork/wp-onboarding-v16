@@ -106,8 +106,8 @@ class IncrementalBackup {
             }
 
             $export = $this->exportChangedTables(
-                $prepared['master_tables'],
-                $prepared['incremental_dir'],
+                $prepared['masterTables'],
+                $prepared['incrementalDir'],
                 $prepared['rootPdo'],
                 $prepared['sequence'],
             );
@@ -118,10 +118,10 @@ class IncrementalBackup {
             return $this->finalizeIncremental(
                 $title,
                 $masterDir,
-                $prepared['folder_name'],
+                $prepared[ResponseKeyType::FolderName->value],
                 $prepared['sequence'],
                 $export,
-                $prepared['incremental_dir'],
+                $prepared['incrementalDir'],
                 $startTime,
             );
         } catch (Throwable $e) {
@@ -144,10 +144,10 @@ class IncrementalBackup {
     private function registerIncrementalInRoot(array $prepared, array $export): void {
         $this->rootDb->registerIncremental($prepared['rootPdo'], array(
             'sequenceNum'                          => $prepared['sequence'],
-            'folderName'                           => $prepared['folder_name'],
+            'folderName'                           => $prepared[ResponseKeyType::FolderName->value],
             ResponseKeyType::TablesChanged->value  => $export[ResponseKeyType::TablesChanged->value],
             ResponseKeyType::TotalNewRows->value   => $export[ResponseKeyType::TotalNewRows->value],
-            'relativePath'                         => 'incremental/' . $prepared['folderName'] . '/',
+            'relativePath'                         => 'incremental/' . $prepared[ResponseKeyType::FolderName->value] . '/',
         ));
     }
 

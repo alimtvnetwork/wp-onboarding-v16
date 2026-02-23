@@ -20,37 +20,37 @@ trait IncrementalCoreTrait {
         $rootPdo = new PDO('sqlite:' . $rootPath);
         $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $master_tables = $this->getMasterTableInventory($rootPdo);
-        if (empty($master_tables)) {
+        $masterTables = $this->getMasterTableInventory($rootPdo);
+        if (empty($masterTables)) {
             $rootPdo = null;
 
             return ResultHelper::error('No tables found in master snapshot');
         }
 
         $sequence = $this->getNextSequence($rootPdo);
-        $folder_name = sprintf('%02d_%s', $sequence, date('Y-m-d'));
-        $master_dir = dirname($rootPath);
-        $incremental_dir = $master_dir . '/incremental/' . $folder_name;
+        $folderName = sprintf('%02d_%s', $sequence, date('Y-m-d'));
+        $masterDir = dirname($rootPath);
+        $incrementalDir = $masterDir . '/incremental/' . $folderName;
 
-        $isDirCreationFailed = (PathHelper::makeDirectory($incremental_dir, true) === false);
+        $isDirCreationFailed = (PathHelper::makeDirectory($incrementalDir, true) === false);
 
         if ($isDirCreationFailed) {
             $rootPdo = null;
 
-            return ResultHelper::error('Failed to create incremental directory: ' . $folder_name);
+            return ResultHelper::error('Failed to create incremental directory: ' . $folderName);
         }
 
         $this->log(LogLevelType::Info->value, 'Incremental directory created', array(
             ResponseKeyType::Sequence->value => $sequence,
-            ResponseKeyType::FolderName->value => $folder_name,
+            ResponseKeyType::FolderName->value => $folderName,
         ));
 
         return ResultHelper::ok(array(
             'rootPdo'                            => $rootPdo,
-            'master_tables'                      => $master_tables,
+            'masterTables'                       => $masterTables,
             ResponseKeyType::Sequence->value     => $sequence,
-            ResponseKeyType::FolderName->value   => $folder_name,
-            'incremental_dir'                    => $incremental_dir,
+            ResponseKeyType::FolderName->value   => $folderName,
+            'incrementalDir'                     => $incrementalDir,
         ));
     }
 
@@ -60,30 +60,30 @@ trait IncrementalCoreTrait {
         PDO $rootPdo,
         int $sequence,
     ): array {
-        $tables_changed = 0;
-        $total_new_rows = 0;
+        $tablesChanged = 0;
+        $totalNewRows = 0;
         $errors = array();
-        $exported_tables = array();
+        $exportedTables = array();
 
-        foreach ($masterTables as $table_name => $info) {
-            $result = $this->exportTableDelta($table_name, $info, $incDir, $rootPdo, $sequence);
+        foreach ($masterTables as $tableName => $info) {
+            $result = $this->exportTableDelta($tableName, $info, $incDir, $rootPdo, $sequence);
 
             if ($result === null) {
 
             if ($result[ResponseKeyType::Success->value]) {
-                $tables_changed++;
-                $total_new_rows += $result[ResponseKeyType::Rows->value];
-                $exported_tables[] = $result[ResponseKeyType::Entry->value];
+                $tablesChanged++;
+                $totalNewRows += $result[ResponseKeyType::Rows->value];
+                $exportedTables[] = $result[ResponseKeyType::Entry->value];
             } else {
-                $errors[] = $table_name . ': ' . $result[ResponseKeyType::Error->value];
+                $errors[] = $tableName . ': ' . $result[ResponseKeyType::Error->value];
             }
         }
 
         return array(
-            ResponseKeyType::TablesChanged->value => $tables_changed,
-            ResponseKeyType::TotalNewRows->value  => $total_new_rows,
+            ResponseKeyType::TablesChanged->value => $tablesChanged,
+            ResponseKeyType::TotalNewRows->value  => $totalNewRows,
             ResponseKeyType::Errors->value        => $errors,
-            ResponseKeyType::ExportedTables->value => $exported_tables,
+            ResponseKeyType::ExportedTables->value => $exportedTables,
         );
     }
 
@@ -98,7 +98,7 @@ trait IncrementalCoreTrait {
     ): array {
         $duration = microtime(true) - $startTime;
 
-        $snapshot_id = $this->registerIncrementalSnapshot(
+        $snapshotId = $this->registerIncrementalSnapshot(
             $title,
             $masterDir,
             $folderName,
@@ -109,7 +109,7 @@ trait IncrementalCoreTrait {
         );
 
         $this->log(LogLevelType::Info->value, 'Incremental backup complete', array(
-            ResponseKeyType::SnapshotId->value     => $snapshot_id,
+            ResponseKeyType::SnapshotId->value     => $snapshotId,
             ResponseKeyType::Sequence->value       => $sequence,
             ResponseKeyType::TablesChanged->value   => $export[ResponseKeyType::TablesChanged->value],
             ResponseKeyType::TotalNewRows->value    => $export[ResponseKeyType::TotalNewRows->value],
@@ -120,7 +120,7 @@ trait IncrementalCoreTrait {
         $this->invalidateParentZipExport($masterDir);
 
         return ResultHelper::ok(array(
-            ResponseKeyType::SnapshotId->value     => $snapshot_id,
+            ResponseKeyType::SnapshotId->value     => $snapshotId,
             ResponseKeyType::Sequence->value       => $sequence,
             ResponseKeyType::FolderName->value     => $folderName,
             ResponseKeyType::Path->value           => $incrementalDir,
