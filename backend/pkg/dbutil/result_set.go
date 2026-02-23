@@ -35,8 +35,9 @@ func (r ResultSet[T]) IsSafe() bool { return r.err == nil }
 // Items returns the scanned items slice (nil if error).
 func (r ResultSet[T]) Items() []T { return r.items }
 
-// Error returns the underlying error, or nil.
-func (r ResultSet[T]) Error() error { return r.err }
+// AppError returns the underlying error, or nil.
+// Named AppError (not Error) to avoid confusion with Go's native error interface.
+func (r ResultSet[T]) AppError() error { return r.err }
 
 // StackTrace returns the captured stack trace if an error occurred.
 func (r ResultSet[T]) StackTrace() string { return r.stackTrace }
