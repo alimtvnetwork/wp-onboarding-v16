@@ -324,6 +324,50 @@ func ProcessUpload(ctx context.Context, req Request) error {
 - Service methods return `apperror.Result[T]`, not raw `(T, error)`
 - Error codes follow `E{category}xxx` convention
 
+### 6.1 — Result Guard Rule (Zero Silent Failures)
+
+Every Result/DbResult wrapper **MUST** have its error state checked before accessing the contained value. Accessing `.value()` / `.Value()` without a prior `hasError()` or `isSafe()` guard is a **spec violation**.
+
+**Principle:** No error may ever be swallowed. If a result carries an error, it must be explicitly handled — logged, returned, or propagated. The framework-level `.value()` / `.Value()` accessor should log immediately when called on an errored result, reducing diagnostic steps. If an error exists, the accessor returns empty/zero and the framework logs the error automatically.
+
+```php
+// PHP — DbResult / DbResultSet / DbExecResult
+$result = $query->queryOne(...);
+
+// ❌ WRONG: No guard — error silently swallowed
+$result->value();
+
+// ✅ CORRECT: Guard before access
+if ($result->hasError()) {
+    $this->logger->logException($result->error(), 'context');
+
+    return null;
+}
+
+return $result->value();
+```
+
+```go
+// Go — apperror.Result[T] / ResultSlice[T] / ResultMap[K, V]
+result := dbutil.QueryOne[T](ctx, db, query, scanner, id)
+
+// ❌ WRONG: No guard — error silently swallowed
+result.Value()
+
+// ✅ CORRECT: Guard before access
+if result.HasError() {
+    return apperror.Fail[T](result.Error())
+}
+
+return apperror.Ok(result.Value())
+```
+
+```typescript
+// TypeScript — If Result pattern is adopted, same rule applies
+// ❌ WRONG: result.value()  (no guard)
+// ✅ CORRECT: Check .hasError() before .value() access
+```
+
 ### Common Mistakes
 
 ```go
@@ -462,6 +506,7 @@ Any modification to an enum must follow the [enum-consumer-checklist.md](../01-a
 [ ] DB: PascalCase tables/columns, PascalCase array keys for inserts
 [ ] Formatting: braces always, zero nesting, blank before return, 15-line max
 [ ] Errors: apperror.Wrap (Go), Throwable imported (PHP), no fmt.Errorf
+[ ] Results: hasError()/isSafe() checked before .value()/.Value() — no swallowed errors
 [ ] No magic strings: all via enums/typed constants
 [ ] Log keys: camelCase in PHP context arrays
 [ ] Types: no any/interface{} (Go), native types + no redundant PHPDoc (PHP)

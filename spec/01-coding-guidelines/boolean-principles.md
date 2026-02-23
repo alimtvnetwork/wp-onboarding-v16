@@ -425,6 +425,23 @@ These patterns are **exempt** from the no-negation rule in Go:
 
 ---
 
+## Static Factory Constructor Exemption
+
+Methods like `DbResult::empty()`, `DbResultSet::empty()`, and `ResultSlice::empty()` are **static factory constructors** — they create a new empty instance, not query boolean state. These are **exempt** from the `is`/`has` prefix requirement (P1).
+
+Boolean query methods on the **same classes** — such as `isEmpty()`, `isDefined()`, `hasError()`, `isSafe()`, `hasItems()` — **do** follow P1 correctly and must retain their prefixes.
+
+| Method | Type | P1 Applies? |
+|--------|------|-------------|
+| `DbResult::empty()` | Static factory constructor | ❌ Exempt |
+| `DbResultSet::empty()` | Static factory constructor | ❌ Exempt |
+| `$result->isEmpty()` | Boolean query | ✅ Yes |
+| `$result->hasError()` | Boolean query | ✅ Yes |
+| `$result->isDefined()` | Boolean query | ✅ Yes |
+| `result.IsSafe()` | Boolean query | ✅ Yes |
+
+---
+
 ## Cross-References
 
 - [No Raw Negations](./no-negatives.md) — Full guard function inventory
