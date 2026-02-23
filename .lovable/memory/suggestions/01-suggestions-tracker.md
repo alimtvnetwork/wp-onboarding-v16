@@ -2,7 +2,7 @@
 
 > **Location:** `.lovable/memory/suggestions/01-suggestions-tracker.md`  
 > **Purpose:** Track AI suggestions for improvements (consolidated single file)  
-> **Updated:** 2026-02-21
+> **Updated:** 2026-02-23
 
 ---
 
@@ -18,8 +18,6 @@
 | S-026 | 2026-02-21 | Low | Plan review | open | Update TypeScript frontend enum string values to PascalCase (Phase 3) |
 | S-027 | 2026-02-21 | Low | Plan review | open | Fix admin-errors.php template magic strings (Phase 7D — LogLevelType casing) |
 | S-028 | 2026-02-21 | Low | Memory review | open | Update core-enum-inventory memory to include LogColumnType enum (16 column cases) |
-| S-029 | 2026-02-22 | High | Deep scan | open | Add ABSPATH guards to ~16 enum files missing them (PluginConfigType, ResponseKeyType, etc.) |
-| S-030 | 2026-02-22 | High | Deep scan | open | Add ABSPATH guards to ErrorResponse, FrameBuilder, FileLogger, Logger, and 7 Logging Traits |
 | S-031 | 2026-02-22 | Medium | Deep scan | open | Fix ActivationHandler: R12, R4, indentation bug at line 105 |
 | S-032 | 2026-02-22 | Low | Deep scan | open | Remove dead loadDependencies() method and redundant class_exists check in ActivationHandler |
 
@@ -49,6 +47,8 @@
 | S-018 | Remove Vestigial `pnpmVirtualStorePath` Config Key | 2026-02-09 | Removed from `powershell.json` |
 | S-019 | Fix Database/*.php R12 violations | 2026-02-22 | Fixed in Database.php, Orm.php, RootDb.php |
 | S-020 | Fix ErrorHandling/*.php formatting | 2026-02-22 | All 4 files verified compliant — no changes needed |
+| S-029 | Add ABSPATH guards to enum files | 2026-02-23 | Audit confirmed all 53 enum files already have guards — no changes needed |
+| S-030 | Add ABSPATH guards to Logging/ErrorHandling files | 2026-02-23 | Audit confirmed all 13 files already have guards — no changes needed |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -64,10 +64,10 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 12 |
-| Completed | 20 |
+| Open | 10 |
+| Completed | 22 |
 | Rejected | 0 |
-| **Total** | **28** |
+| **Total** | **32** |
 
 ---
 
