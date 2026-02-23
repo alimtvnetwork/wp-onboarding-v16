@@ -701,7 +701,7 @@ func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteID int64) (
 	}, siteID)
 
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	if result.IsEmpty() {
 		return nil, nil // No cache or expired
@@ -731,7 +731,7 @@ func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins 
 		expiresAt.Format("2006-01-02 15:04:05"),
 	)
 	if res.HasError() {
-		return res.Error()
+		return res.AppError()
 	}
 	return nil
 }
@@ -753,7 +753,7 @@ func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteID int64
 		siteID,
 	)
 	if res.HasError() {
-		return res.Error()
+		return res.AppError()
 	}
 	s.log.Debug("Remote plugins cache invalidated", "siteId", siteID)
 	return nil

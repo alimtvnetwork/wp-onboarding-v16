@@ -130,7 +130,7 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 		scanSiteRows,
 	)
 	if set.HasError() {
-		return apperror.FailSlice[models.Site](set.Error())
+		return apperror.FailSlice[models.Site](set.AppError())
 	}
 
 	items := set.Items()
@@ -150,7 +150,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 		id,
 	)
 	if result.HasError() {
-		return apperror.FailWrap[models.Site](result.Error(), apperror.ErrDBRead, "failed to query site")
+		return apperror.FailWrap[models.Site](result.AppError(), apperror.ErrDBRead, "failed to query site")
 	}
 	if result.IsEmpty() {
 		return apperror.FailNew[models.Site](apperror.ErrNotFound, "site not found")
@@ -171,7 +171,7 @@ func (s *Service) GetByURL(ctx context.Context, siteURL string) apperror.Result[
 		normalizedURL,
 	)
 	if result.HasError() {
-		return apperror.FailWrap[models.Site](result.Error(), apperror.ErrDBRead, "failed to query site by URL")
+		return apperror.FailWrap[models.Site](result.AppError(), apperror.ErrDBRead, "failed to query site by URL")
 	}
 
 	// Not found is not an error for this method — return empty Result
@@ -213,7 +213,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		encryptedPassword,
 	)
 	if res.HasError() {
-		return apperror.Fail[models.Site](res.Error())
+		return apperror.Fail[models.Site](res.AppError())
 	}
 
 	s.log.Info("Site created", "id", res.LastInsertID, "name", input.Name, "url", normalizedURL)
@@ -239,7 +239,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 	query := fmt.Sprintf("UPDATE Sites SET %s WHERE Id = ?", strings.Join(updates, ", "))
 	res := dbutil.Exec(ctx, s.dbu, query, args...)
 	if res.HasError() {
-		return apperror.Fail[models.Site](res.Error())
+		return apperror.Fail[models.Site](res.AppError())
 	}
 
 	s.log.Info("Site updated", "id", id)
@@ -296,7 +296,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 		id,
 	)
 	if res.HasError() {
-		return res.Error()
+		return res.AppError()
 	}
 	if res.IsEmpty() {
 		return apperror.New(apperror.ErrNotFound, "site not found")
@@ -316,7 +316,7 @@ func (s *Service) updateConnectionStatus(ctx context.Context, id int64, status s
 		id,
 	)
 	if res.HasError() {
-		s.log.Error("Failed to update connection status", "id", id, "error", res.Error())
+		s.log.Error("Failed to update connection status", "id", id, "error", res.AppError())
 	}
 }
 
