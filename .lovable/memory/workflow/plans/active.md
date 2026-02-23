@@ -10,6 +10,7 @@ Updated: 2026-02-22
 
 ## Recently Completed
 
+- **S-009**: `WpErrorCodeType` already had PascalCase custom values — verified complete, no changes needed.
 - **S-010**: Migrated `FilterKeyType` query parameters to `camelCase`.
 - **S-011**: Migrated `OptionNameType` keys to PascalCase with `wp_options` data migration routine.
 - **S-016**: Scanned TypeScript/React files — zero R12/R13 violations found.
@@ -20,4 +21,4 @@ Updated: 2026-02-22
 
 ## Pending Tasks
 
-- **S-009**: Migrate `WpErrorCodeType` custom values to `PascalCase` (keeping `rest_forbidden` and `rest_disabled` as WordPress-bound exceptions) and update 11 consumer traits.
+- None — all tracked suggestions are complete.
