@@ -352,6 +352,9 @@ func FailMapNew[K comparable, V any](code, message string) ResultMap[K, V]
 | Mutate | `Set(key, value)` | — | Adds/updates entry; no-op if error state |
 | Mutate | `Remove(key)` | — | Deletes key; no-op if error state |
 
+> **📌 `.AppError()` Naming Convention:**
+> All result wrappers — `Result[T]`, `ResultSlice[T]`, and `ResultMap[K, V]` — expose the underlying error via `.AppError()` (returning `*AppError`), **not** `.Error()`. This avoids collision with Go's native `error` interface method `.Error() string` and ensures callers always receive the structured `*AppError` type for direct propagation via `Fail[T]()`, `FailSlice[T]()`, etc. without interface casts. The same convention applies to `dbutil` result types (`dbutil.Result[T]`, `dbutil.ResultSet[T]`, `dbutil.ExecResult`), which also store and return `*apperror.AppError` from their `.AppError()` method to enable bridge methods like `ToAppResult()` and `ToAppResultSlice()`.
+
 ---
 
 ## 6. Error Code Convention
