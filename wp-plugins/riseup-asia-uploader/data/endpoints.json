@@ -33,11 +33,27 @@
       "body": { "plugin_zip": "base64", "slug": "string", "activate": "boolean" }
     },
     {
+      "path": "upload-active",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Upload plugin and force-activate in one call",
+      "auth": true,
+      "body": { "plugin_zip": "base64", "slug": "string" }
+    },
+    {
       "path": "plugins",
       "methods": ["GET"],
       "category": "plugins",
       "description": "List all installed plugins",
       "auth": true
+    },
+    {
+      "path": "plugins/info",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Get detailed info for a single plugin by slug",
+      "auth": true,
+      "body": { "slug": "string" }
     },
     {
       "path": "plugins/enable",
