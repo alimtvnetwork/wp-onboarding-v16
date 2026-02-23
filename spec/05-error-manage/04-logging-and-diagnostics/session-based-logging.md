@@ -260,7 +260,7 @@ func respondErrorWithSession(
 	r *http.Request,
 	appErr *apperror.AppError,
 ) {
-    sessionId := extractSessionID(appErr, r)
+    sessionId := extractSessionId(appErr, r)
     envelope := buildErrorEnvelope(appErr)
 
     if sessionId != "" {
@@ -269,7 +269,7 @@ func respondErrorWithSession(
     // ... write response
 }
 
-func extractSessionID(appErr *apperror.AppError, r *http.Request) string {
+func extractSessionId(appErr *apperror.AppError, r *http.Request) string {
     if sid, ok := appErr.Context["sessionId"]; ok {
         return sid.(string)
     }

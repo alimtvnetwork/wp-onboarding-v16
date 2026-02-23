@@ -404,7 +404,7 @@ return apperror.Ok(result.Value())
 ```go
 // ✅ CORRECT: Cross-type propagation (Result[T] → Result[U])
 // When the return type differs, Fail re-wrapping IS needed:
-siteResult := siteSvc.GetByID(ctx, siteID)
+siteResult := siteSvc.GetById(ctx, siteId)
 if siteResult.HasError() {
     return apperror.Fail[PluginList](siteResult.Error())
 }
@@ -451,8 +451,8 @@ if result.IsSafe() {
 
 ```go
 // Go — Adapter Unwrap Pattern
-func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
-    result := a.Service.GetByID(ctx, id)
+func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
+    result := a.Service.GetById(ctx, id)
     if result.HasError() {
         return nil, result.Error()
     }

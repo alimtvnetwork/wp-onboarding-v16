@@ -40,7 +40,7 @@ Use **alias** (`=`) to preserve methods. Use **definition** (no `=`) when adding
 
 ```go
 type Student[TRights any, TKey comparable] struct {
-    ID        TKey    `json:"id"`
+    Id        TKey    `json:"id"`
     Rights    TRights `json:"rights"`
     Name      string  `json:"name"`
     EnrolledAt string `json:"enrolledAt"`
@@ -86,8 +86,8 @@ type ApiError struct {
 }
 
 type LogContext struct {
-    SiteID   int64  `json:"siteId,omitempty"`
-    PluginID int64  `json:"pluginId,omitempty"`
+    SiteId   int64  `json:"siteId,omitempty"`
+    PluginId int64  `json:"pluginId,omitempty"`
     Error    string `json:"error,omitempty"`
 }
 
@@ -101,8 +101,8 @@ Use **embedded structs** or **composition**, not `map[string]any`:
 ```go
 // Base fields shared by all operation details
 type OperationContext struct {
-    SiteID   int64  `json:"siteId,omitempty"`
-    PluginID int64  `json:"pluginId,omitempty"`
+    SiteId   int64  `json:"siteId,omitempty"`
+    PluginId int64  `json:"pluginId,omitempty"`
     Error    string `json:"error,omitempty"`
 }
 
@@ -203,9 +203,9 @@ func (e *AppError) WithContext(key string, value any) *AppError
 
 // ✅ Typed struct replaces the entire map
 type AppErrorContext struct {
-    SessionID string `json:"sessionId,omitempty"`
-    PluginID  int64  `json:"pluginId,omitempty"`
-    SiteID    int64  `json:"siteId,omitempty"`
+    SessionId string `json:"sessionId,omitempty"`
+    PluginId  int64  `json:"pluginId,omitempty"`
+    SiteId    int64  `json:"siteId,omitempty"`
     Endpoint  string `json:"endpoint,omitempty"`
 }
 
@@ -239,8 +239,8 @@ func (l *Logger) Info(msg string, keyvals ...any) { ... }
 
 // ✅ PREFERRED at call sites — typed context passed to typed methods
 type LogFields struct {
-    SiteID   int64  `json:"siteId,omitempty"`
-    PluginID int64  `json:"pluginId,omitempty"`
+    SiteId   int64  `json:"siteId,omitempty"`
+    PluginId int64  `json:"pluginId,omitempty"`
 }
 func (l *Logger) InfoCtx(msg string, fields LogFields) { ... }
 ```
