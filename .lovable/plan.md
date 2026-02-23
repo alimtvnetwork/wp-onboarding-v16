@@ -1384,7 +1384,7 @@ All value migrations to PascalCase are now complete:
 
 ---
 
-## Phase 8: Eliminate Hardcoded Plugin Identity Strings (2026-02-23)
+## ✅ COMPLETED — Phase 8: Eliminate Hardcoded Plugin Identity Strings (2026-02-23)
 
 > **Spec:** `spec/04-php-standards/forbidden-patterns.md` § 9
 
@@ -1414,8 +1414,21 @@ All value migrations to PascalCase are now complete:
 
 ### Acceptance Criteria
 
-- [ ] Zero hardcoded `'Riseup Asia'` or `'Riseup Asia Uploader'` in logic-level code (excluding Autoloader and doc blocks)
-- [ ] All occurrences derive from `PluginConfigType::LogPrefix` or `PluginConfigType::Name`
-- [ ] `AdminMailer::LOG_PREFIX` const replaced with `logPrefix()` static method
+- [x] Zero hardcoded `'Riseup Asia'` or `'Riseup Asia Uploader'` in logic-level code (excluding Autoloader and doc blocks)
+- [x] All occurrences derive from `PluginConfigType::LogPrefix` or `PluginConfigType::Name`
+- [x] `AdminMailer::LOG_PREFIX` const replaced with `logPrefix()` static method
 
-### Estimated Effort: 1 task (all 5 files in one batch)
+### ✅ Completed 2026-02-23 — All 5 files fixed in one batch.
+
+---
+
+## ✅ COMPLETED — S-033–S-038: Code Quality Improvements (2026-02-23)
+
+| ID | Description | Files Affected |
+|----|-------------|----------------|
+| S-033 | Expand DateHelper + replace all raw date()/gmdate() calls | 21 files |
+| S-034 | Rename snake_case vars in admin-logs.php to camelCase | 1 file (19 vars) |
+| S-035 | Replace magic string keys with ResponseKeyType enum | 8 Snapshot files |
+| S-036 | Add SEPARATOR_WIDTH constant to AdminMailer | 1 file |
+| S-037 | Replace gmdate() in test file | 1 file (done with S-033) |
+| S-038 | Add DateHelper::relativeDayKey() helper | 2 files |
