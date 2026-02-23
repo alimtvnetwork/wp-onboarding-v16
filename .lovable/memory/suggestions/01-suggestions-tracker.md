@@ -12,7 +12,6 @@
 |----|---------|----------|--------|--------|-------------|
 | S-022 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in Templates/*.php (admin templates) |
 | S-023 | 2026-02-21 | Low | Formatting sweep | open | Fix formatting violations in root files (riseup-asia-uploader.php, Autoloader.php) |
-| S-024 | 2026-02-21 | Medium | PHP-Go audit | open | Deduplicate Database::DEFAULT_LIMIT/MAX_LIMIT with PaginationConfigType enum values |
 | S-025 | 2026-02-21 | Low | Plan review | open | Audit PHP hardcoded string comparisons against old lowercase enum values (Phase 2.3) |
 | S-026 | 2026-02-21 | Low | Plan review | open | Update TypeScript frontend enum string values to PascalCase (Phase 3) |
 | S-027 | 2026-02-21 | Low | Plan review | open | Fix admin-errors.php template magic strings (Phase 7D — LogLevelType casing) |
@@ -50,6 +49,8 @@
 | S-031 | Fix ActivationHandler R12, R4, indentation | 2026-02-23 | Audit confirmed all violations already resolved — no changes needed |
 | S-032 | Remove dead loadDependencies() + redundant class_exists | 2026-02-23 | Audit confirmed both already removed — no changes needed |
 
+| S-024 | Deduplicate Database pagination constants | 2026-02-23 | Audit confirmed DEFAULT_LIMIT/MAX_LIMIT already removed; all consumers use PaginationConfigType |
+
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
 ---
@@ -64,8 +65,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 7 |
-| Completed | 25 |
+| Open | 6 |
+| Completed | 26 |
 | Rejected | 0 |
 | **Total** | **32** |
 
