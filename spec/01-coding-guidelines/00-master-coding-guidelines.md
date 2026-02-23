@@ -438,7 +438,7 @@ func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.P
 - [ ] Every `result.Get(key)` on `ResultMap` is preceded by a guard
 - [ ] Every `$execResult->affectedRows()` on `DbExecResult` is preceded by a guard
 - [ ] No error is silently discarded — all errors are logged, returned, or propagated
-- [ ] Cross-service callers guard results the same way
+- [ ] Cross-service callers (direct `*service.Service` refs) guard results the same way
 
 ### Common Mistakes
 
