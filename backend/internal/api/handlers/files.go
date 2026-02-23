@@ -74,7 +74,7 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get plugin to find its path — returns *models.Plugin with Path field
-	pluginData, err := Services.PluginService.GetByID(r.Context(), pluginID)
+	pluginData, err := Services.PluginService.GetById(r.Context(), pluginID)
 	if err != nil {
 		respondError(
 			w,

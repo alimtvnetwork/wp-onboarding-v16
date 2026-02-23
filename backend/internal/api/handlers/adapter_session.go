@@ -20,8 +20,8 @@ type SessionServiceInterface interface {
 type ErrorHistoryServiceInterface interface {
 	Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error)
 	List(limit, offset int, filters models.ErrorHistoryFilters) ([]models.ErrorHistory, int, error)
-	GetByID(id int64) (*models.ErrorHistory, error)
-	GetByErrorID(errorID string) (*models.ErrorHistory, error)
+	GetById(id int64) (*models.ErrorHistory, error)
+	GetByErrorId(errorId string) (*models.ErrorHistory, error)
 	Delete(id int64) error
 	Clear() (int64, error)
 	BulkExport(ids []int64) (string, error)
@@ -93,8 +93,8 @@ func (a *ErrorHistoryServiceAdapter) List(limit, offset int, filters models.Erro
 	return v.Items, v.Total, nil
 }
 
-func (a *ErrorHistoryServiceAdapter) GetByID(id int64) (*models.ErrorHistory, error) {
-	result := a.Service.GetByID(id)
+func (a *ErrorHistoryServiceAdapter) GetById(id int64) (*models.ErrorHistory, error) {
+	result := a.Service.GetById(id)
 	if result.HasError() {
 		return nil, result.Error()
 	}
@@ -102,8 +102,8 @@ func (a *ErrorHistoryServiceAdapter) GetByID(id int64) (*models.ErrorHistory, er
 	return &v, nil
 }
 
-func (a *ErrorHistoryServiceAdapter) GetByErrorID(errorID string) (*models.ErrorHistory, error) {
-	result := a.Service.GetByErrorID(errorID)
+func (a *ErrorHistoryServiceAdapter) GetByErrorId(errorId string) (*models.ErrorHistory, error) {
+	result := a.Service.GetByErrorId(errorId)
 	if result.HasError() {
 		return nil, result.Error()
 	}

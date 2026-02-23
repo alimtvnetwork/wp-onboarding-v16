@@ -13,7 +13,7 @@ import (
 type PublishHistoryServiceInterface interface {
 	Record(entry models.PublishHistory) (*models.PublishHistory, error)
 	List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error)
-	GetByID(id int64) (*models.PublishHistory, error)
+	GetById(id int64) (*models.PublishHistory, error)
 	GetStats() (*models.PublishHistoryStats, error)
 	Delete(id int64) error
 	Clear() (int64, error)
@@ -52,8 +52,8 @@ func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.Pu
 	return v.Items, v.Total, nil
 }
 
-func (a *PublishHistoryServiceAdapter) GetByID(id int64) (*models.PublishHistory, error) {
-	result := a.Service.GetByID(id)
+func (a *PublishHistoryServiceAdapter) GetById(id int64) (*models.PublishHistory, error) {
+	result := a.Service.GetById(id)
 	if result.HasError() {
 		return nil, result.AppError()
 	}

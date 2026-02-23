@@ -49,6 +49,8 @@ This is the **master reference**. Every rule here is enforced across all languag
 | `IP` | `Ip` |
 | `SQL` | `Sql` |
 
+> **Go Interface Exemptions:** `MarshalJSON()`, `UnmarshalJSON()`, and `Error() string` are required by Go's `encoding/json` and `error` interfaces respectively. These method names are **exempt** from the abbreviation rule — they MUST retain their standard library spelling. All other identifiers (struct fields, variables, function names, parameters) follow the table above.
+
 ### 1.3 — Zero Underscore Policy
 
 **Snake_case is prohibited** for all logic-level identifiers across PHP, Go, and TypeScript. This includes:

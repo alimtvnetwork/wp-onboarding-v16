@@ -58,8 +58,8 @@ type HealthResponse struct {
 	Timestamp string `json:"timestamp"`
 }
 
-// APIIndexResponse is the response shape for the API index endpoint.
-type APIIndexResponse struct {
+// ApiIndexResponse is the response shape for the API index endpoint.
+type ApiIndexResponse struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 	Health  string `json:"health"`

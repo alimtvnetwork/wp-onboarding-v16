@@ -172,8 +172,8 @@ func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ap
 	})
 }
 
-// GetByID returns a single error by ID
-func (s *Service) GetByID(id int64) apperror.Result[models.ErrorHistory] {
+// GetById returns a single error by ID
+func (s *Service) GetById(id int64) apperror.Result[models.ErrorHistory] {
 	query := `
 		SELECT Id, ErrorId, Code, Level, Message, Details, ContextJson,
 			StackTrace, Endpoint, Method, RequestBodyJson, ResponseStatus,
@@ -215,19 +215,19 @@ func (s *Service) GetByID(id int64) apperror.Result[models.ErrorHistory] {
 	return apperror.Ok(e)
 }
 
-// GetByErrorID returns a single error by its frontend-generated error ID
-func (s *Service) GetByErrorID(errorID string) apperror.Result[models.ErrorHistory] {
+// GetByErrorId returns a single error by its frontend-generated error ID
+func (s *Service) GetByErrorId(errorId string) apperror.Result[models.ErrorHistory] {
 	query := `SELECT Id FROM ErrorHistory WHERE ErrorId = ?`
 	var id int64
-	if err := s.db.QueryRow(query, errorID).Scan(&id); err != nil {
+	if err := s.db.QueryRow(query, errorId).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
 			return apperror.FailNew[models.ErrorHistory](apperror.ErrNotFound, "error not found").
-				WithValue("errorId", errorID)
+				WithValue("errorId", errorId)
 		}
 		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "query error by error ID").
-			WithValue("errorId", errorID)
+			WithValue("errorId", errorId)
 	}
-	return s.GetByID(id)
+	return s.GetById(id)
 }
 
 // Delete removes an error from history

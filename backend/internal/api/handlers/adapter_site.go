@@ -14,7 +14,7 @@ import (
 type SiteServiceInterface interface {
 	// Core CRUD — typed inputs and returns
 	List(ctx context.Context) ([]models.Site, error)
-	GetByID(ctx context.Context, id int64) (*models.Site, error)
+	GetById(ctx context.Context, id int64) (*models.Site, error)
 	Create(ctx context.Context, input SiteCreateInput) (*models.Site, error)
 	Update(ctx context.Context, id int64, input SiteUpdateInput) (*models.Site, error)
 	Delete(ctx context.Context, id int64) error
@@ -66,8 +66,8 @@ func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, error) {
 	return result.Items(), nil
 }
 
-func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Site, error) {
-	result := a.Service.GetByID(ctx, id)
+func (a *SiteServiceAdapter) GetById(ctx context.Context, id int64) (*models.Site, error) {
+	result := a.Service.GetById(ctx, id)
 	if result.HasError() {
 		return nil, result.Error()
 	}
@@ -78,7 +78,7 @@ func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Sit
 func (a *SiteServiceAdapter) Create(ctx context.Context, input SiteCreateInput) (*models.Site, error) {
 	siteInput := site.CreateInput{
 		Name:     input.Name,
-		URL:      input.URL,
+		Url:      input.Url,
 		Username: input.Username,
 		Password: input.Password,
 	}
@@ -93,7 +93,7 @@ func (a *SiteServiceAdapter) Create(ctx context.Context, input SiteCreateInput) 
 func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input SiteUpdateInput) (*models.Site, error) {
 	updateInput := site.UpdateInput{
 		Name:     input.Name,
-		URL:      input.URL,
+		Url:      input.Url,
 		Username: input.Username,
 		Password: input.Password,
 	}

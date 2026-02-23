@@ -221,8 +221,8 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 }
 
 // createWPClient is a helper that creates a WordPress client for a site.
-func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.Client, error) {
-	result := s.GetByID(ctx, siteID)
+func (s *Service) createWPClient(ctx context.Context, siteId int64) (*wordpress.Client, error) {
+	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -233,7 +233,7 @@ func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
-	return s.wpClientFactory(site.URL, site.Username, string(password), nil), nil
+	return s.wpClientFactory(site.Url, site.Username, string(password), nil), nil
 }
 
 // FullBackupRemoteSnapshot triggers an end-to-end full backup on a remote site.

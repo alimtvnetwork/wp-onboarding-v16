@@ -19,9 +19,9 @@ const siteSelectQuery = `
 	       LastTestedAt, LastSyncAt, CreatedAt, UpdatedAt
 	FROM Sites`
 
-const siteSelectByIDQuery = siteSelectQuery + ` WHERE Id = ?`
+const siteSelectByIdQuery = siteSelectQuery + ` WHERE Id = ?`
 
-const siteSelectByURLQuery = siteSelectQuery + ` WHERE Url = ?`
+const siteSelectByUrlQuery = siteSelectQuery + ` WHERE Url = ?`
 
 const siteListQuery = siteSelectQuery + ` ORDER BY Name ASC`
 
@@ -37,12 +37,12 @@ const siteUpdateConnectionStatusQuery = `
 	WHERE Id = ?`
 
 const cacheSelectQuery = `
-	SELECT PluginsJSON, ExpiresAt
+	SELECT PluginsJson, ExpiresAt
 	FROM RemotePluginsCache
 	WHERE SiteId = ? AND datetime(ExpiresAt) > datetime('now')`
 
 const cacheUpsertQuery = `
-	INSERT OR REPLACE INTO RemotePluginsCache (SiteId, PluginsJSON, CachedAt, ExpiresAt)
+	INSERT OR REPLACE INTO RemotePluginsCache (SiteId, PluginsJson, CachedAt, ExpiresAt)
 	VALUES (?, ?, datetime('now'), ?)`
 
 const cacheDeleteQuery = `DELETE FROM RemotePluginsCache WHERE SiteId = ?`
@@ -50,7 +50,7 @@ const cacheDeleteQuery = `DELETE FROM RemotePluginsCache WHERE SiteId = ?`
 // CreateInput holds the data needed to create a site.
 type CreateInput struct {
 	Name     string
-	URL      string
+	Url      string
 	Username string
 	Password string
 }
@@ -58,7 +58,7 @@ type CreateInput struct {
 // UpdateInput holds the data for updating a site.
 type UpdateInput struct {
 	Name     *string
-	URL      *string
+	Url      *string
 	Username *string
 	Password *string // Only updated if non-nil
 }
@@ -78,7 +78,7 @@ func scanSiteColumns(dest *siteRaw, scan func(dest ...any) error) error {
 	return scan(
 		&dest.site.Id,
 		&dest.site.Name,
-		&dest.site.URL,
+		&dest.site.Url,
 		&dest.site.Username,
 		&dest.site.PasswordEncrypted,
 		&dest.category,
@@ -140,12 +140,12 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 	return apperror.OkSlice(items)
 }
 
-// GetByID returns a site by its ID.
-func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Site] {
+// GetById returns a site by its ID.
+func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.Site] {
 	result := dbutil.QueryOne[models.Site](
 		ctx,
 		s.dbu,
-		siteSelectByIDQuery,
+		siteSelectByIdQuery,
 		scanSiteRow,
 		id,
 	)
@@ -159,27 +159,20 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 	return apperror.Ok(result.Value())
 }
 
-// GetByURL returns a site by its URL.
-func (s *Service) GetByURL(ctx context.Context, siteURL string) apperror.Result[models.Site] {
-	normalizedURL := normalizeURL(siteURL)
+// GetByUrl returns a site by its URL.
+// Uses ToAppResult() bridge — empty result (no rows) propagates as empty apperror.Result.
+func (s *Service) GetByUrl(ctx context.Context, siteUrl string) apperror.Result[models.Site] {
+	normalizedUrl := normalizeUrl(siteUrl)
 
 	result := dbutil.QueryOne[models.Site](
 		ctx,
 		s.dbu,
-		siteSelectByURLQuery,
+		siteSelectByUrlQuery,
 		scanSiteRow,
-		normalizedURL,
+		normalizedUrl,
 	)
-	if result.HasError() {
-		return apperror.Fail[models.Site](result.AppError())
-	}
 
-	// Not found is not an error for this method — return empty Result
-	if result.IsEmpty() {
-		return apperror.Result[models.Site]{}
-	}
-
-	return apperror.Ok(result.Value())
+	return result.ToAppResult()
 }
 
 // Create adds a new WordPress site.
@@ -188,9 +181,9 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		return apperror.FailWrap[models.Site](err, apperror.ErrValidation, "invalid site input")
 	}
 
-	normalizedURL := normalizeURL(input.URL)
+	normalizedUrl := normalizeUrl(input.Url)
 
-	existing := s.GetByURL(ctx, normalizedURL)
+	existing := s.GetByUrl(ctx, normalizedUrl)
 	if existing.HasError() {
 		return existing
 	}
@@ -208,7 +201,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		s.dbu,
 		siteInsertQuery,
 		input.Name,
-		normalizedURL,
+		normalizedUrl,
 		input.Username,
 		encryptedPassword,
 	)
@@ -217,13 +210,13 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 	}
 
 
-	s.log.Info("Site created", "id", res.LastInsertID, "name", input.Name, "url", normalizedURL)
-	return s.GetByID(ctx, res.LastInsertID)
+	s.log.Info("Site created", "id", res.LastInsertId, "name", input.Name, "url", normalizedUrl)
+	return s.GetById(ctx, res.LastInsertId)
 }
 
 // Update modifies an existing site.
 func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apperror.Result[models.Site] {
-	existingResult := s.GetByID(ctx, id)
+	existingResult := s.GetById(ctx, id)
 	if existingResult.HasError() {
 		return existingResult
 	}
@@ -245,7 +238,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 
 
 	s.log.Info("Site updated", "id", id)
-	return s.GetByID(ctx, id)
+	return s.GetById(ctx, id)
 }
 
 // buildUpdateFields constructs SET clauses and args from non-nil input fields.
@@ -258,12 +251,12 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 		args = append(args, *input.Name)
 	}
 
-	if input.URL != nil && *input.URL != "" {
-		normalizedURL := normalizeURL(*input.URL)
-		if normalizedURL != existing.URL {
+	if input.Url != nil && *input.Url != "" {
+		normalizedUrl := normalizeUrl(*input.Url)
+		if normalizedUrl != existing.Url {
 			// URL conflict check is done by caller; trust normalized value here
 			updates = append(updates, "Url = ?")
-			args = append(args, normalizedURL)
+			args = append(args, normalizedUrl)
 		}
 	}
 
@@ -286,7 +279,7 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 
 // Delete removes a site and its mappings (cascaded by FK).
 func (s *Service) Delete(ctx context.Context, id int64) error {
-	result := s.GetByID(ctx, id)
+	result := s.GetById(ctx, id)
 	if result.HasError() {
 		return result.AppError()
 	}
@@ -327,7 +320,7 @@ func (s *Service) validateInput(input CreateInput) error {
 	if input.Name == "" {
 		return apperror.New(apperror.ErrValidation, "name is required")
 	}
-	if input.URL == "" {
+	if input.Url == "" {
 		return apperror.New(apperror.ErrValidation, "URL is required")
 	}
 	if input.Username == "" {
@@ -336,7 +329,7 @@ func (s *Service) validateInput(input CreateInput) error {
 	if input.Password == "" {
 		return apperror.New(apperror.ErrValidation, "application password is required")
 	}
-	if _, err := url.Parse(input.URL); err != nil {
+	if _, err := url.Parse(input.Url); err != nil {
 		return apperror.New(apperror.ErrValidation, "invalid URL format")
 	}
 	return nil

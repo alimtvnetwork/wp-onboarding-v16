@@ -89,7 +89,7 @@ func GetPublishHistoryByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entry, err := Services.PublishHistoryService.GetByID(id)
+	entry, err := Services.PublishHistoryService.GetById(id)
 	if err != nil {
 		respondError(
 			w,
