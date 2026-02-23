@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Trigger source labels for display
-$trigger_labels = array(
+$triggerLabels = array(
     TriggerSourceType::Api->value       => __('API', 'riseup-asia-uploader'),
     TriggerSourceType::Dashboard->value => __('Dashboard', 'riseup-asia-uploader'),
     TriggerSourceType::Agent->value     => __('Agent Push', 'riseup-asia-uploader'),
@@ -31,7 +31,7 @@ $trigger_labels = array(
 );
 
 // Trigger source CSS classes for color coding
-$trigger_classes = array(
+$triggerClasses = array(
     TriggerSourceType::Api->value       => 'trigger-api',
     TriggerSourceType::Dashboard->value => 'trigger-dashboard',
     TriggerSourceType::Agent->value     => 'trigger-agent',
@@ -40,7 +40,7 @@ $trigger_classes = array(
 );
 
 // Upload source labels for display
-$upload_source_labels = array(
+$uploadSourceLabels = array(
     UploadSourceType::Script->value  => __('Upload Script', 'riseup-asia-uploader'),
     UploadSourceType::RestApi->value => __('REST API', 'riseup-asia-uploader'),
     UploadSourceType::AdminUi->value => __('Admin UI', 'riseup-asia-uploader'),
@@ -48,7 +48,7 @@ $upload_source_labels = array(
 );
 
 // Upload source CSS classes for color coding
-$upload_source_classes = array(
+$uploadSourceClasses = array(
     UploadSourceType::Script->value  => 'source-script',
     UploadSourceType::RestApi->value => 'source-api',
     UploadSourceType::AdminUi->value => 'source-admin',
@@ -76,7 +76,7 @@ $upload_source_classes = array(
                     <span><?php esc_html_e('Action:', 'riseup-asia-uploader'); ?></span>
                     <select name="filter_action">
                         <option value=""><?php esc_html_e('All Actions', 'riseup-asia-uploader'); ?></option>
-                        <?php foreach ($action_labels as $key => $label): ?>
+                        <?php foreach ($actionLabels as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected($filters['action'], $key); ?>>
                                 <?php echo esc_html($label); ?>
                             </option>
@@ -97,7 +97,7 @@ $upload_source_classes = array(
                     <span><?php esc_html_e('Trigger:', 'riseup-asia-uploader'); ?></span>
                     <select name="filter_triggered_by">
                         <option value=""><?php esc_html_e('All Sources', 'riseup-asia-uploader'); ?></option>
-                        <?php foreach ($trigger_labels as $key => $label): ?>
+                        <?php foreach ($triggerLabels as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected(isset($filters['triggered_by']) ? $filters['triggered_by'] : '', $key); ?>>
                                 <?php echo esc_html($label); ?>
                             </option>
@@ -109,7 +109,7 @@ $upload_source_classes = array(
                     <span><?php esc_html_e('Upload Via:', 'riseup-asia-uploader'); ?></span>
                     <select name="filter_upload_source">
                         <option value=""><?php esc_html_e('All Methods', 'riseup-asia-uploader'); ?></option>
-                        <?php foreach ($upload_source_labels as $key => $label): ?>
+                        <?php foreach ($uploadSourceLabels as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected(isset($filters['upload_source']) ? $filters['upload_source'] : '', $key); ?>>
                                 <?php echo esc_html($label); ?>
                             </option>
@@ -156,10 +156,10 @@ $upload_source_classes = array(
             <strong><?php echo esc_html($total); ?></strong>
             <?php esc_html_e('total records', 'riseup-asia-uploader'); ?>
         </span>
-        <?php if ($page > 1 || $page < $total_pages): ?>
+        <?php if ($page > 1 || $page < $totalPages): ?>
             <span class="stat-item">
                 <?php esc_html_e('Page', 'riseup-asia-uploader'); ?> <?php echo esc_html($page); ?> 
-                <?php esc_html_e('of', 'riseup-asia-uploader'); ?> <?php echo esc_html($total_pages); ?>
+                <?php esc_html_e('of', 'riseup-asia-uploader'); ?> <?php echo esc_html($totalPages); ?>
             </span>
         <?php endif; ?>
     </div>
@@ -188,16 +188,16 @@ $upload_source_classes = array(
                 </tr>
             <?php else: ?>
                 <?php 
-                $current_date_group = '';
+                $currentDateGroup = '';
                 foreach ($logs as $log): 
-                    $triggered_by = $this->logString($log, LogColumnType::TriggeredBy);
-                    $source_machine = $this->logString($log, LogColumnType::SourceMachine);
-                    $plugin_version = $this->logString($log, LogColumnType::PluginVersion);
-                    $upload_source = $this->logString($log, LogColumnType::UploadSource);
-                    $trigger_class = isset($trigger_classes[$triggered_by]) ? $trigger_classes[$triggered_by] : 'trigger-unknown';
-                    $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
-                    $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';
-                    $upload_source_label = isset($upload_source_labels[$upload_source]) ? $upload_source_labels[$upload_source] : ($upload_source ?: '—');
+                    $triggeredBy = $this->logString($log, LogColumnType::TriggeredBy);
+                    $sourceMachine = $this->logString($log, LogColumnType::SourceMachine);
+                    $pluginVersion = $this->logString($log, LogColumnType::PluginVersion);
+                    $uploadSource = $this->logString($log, LogColumnType::UploadSource);
+                    $triggerClass = isset($triggerClasses[$triggeredBy]) ? $triggerClasses[$triggeredBy] : 'trigger-unknown';
+                    $triggerLabel = isset($triggerLabels[$triggeredBy]) ? $triggerLabels[$triggeredBy] : ($triggeredBy ?: '—');
+                    $uploadSourceClass = isset($uploadSourceClasses[$uploadSource]) ? $uploadSourceClasses[$uploadSource] : 'source-unknown';
+                    $uploadSourceLabel = isset($uploadSourceLabels[$uploadSource]) ? $uploadSourceLabels[$uploadSource] : ($uploadSource ?: '—');
 
                     // Extract named booleans for P3 compliance
                     $hasLogDetails = BooleanHelpers::hasValue($log[LogColumnType::Details->value] ?? null);
@@ -206,36 +206,36 @@ $upload_source_classes = array(
                     $hasPluginSlug = BooleanHelpers::hasValue($log[LogColumnType::PluginSlug->value] ?? null);
                     $hasPluginFile = BooleanHelpers::hasValue($log[LogColumnType::PluginFile->value] ?? null) && ($log[LogColumnType::PluginFile->value] ?? '') !== ($log[LogColumnType::PluginSlug->value] ?? '');
                     $hasPostId = BooleanHelpers::hasValue($log[LogColumnType::PostId->value] ?? null);
-                    $hasPluginVersion = BooleanHelpers::hasValue($plugin_version);
-                    $hasTriggeredBy = BooleanHelpers::hasValue($triggered_by);
-                    $hasUploadSource = BooleanHelpers::hasValue($upload_source);
-                    $hasSourceMachine = BooleanHelpers::hasValue($source_machine);
+                    $hasPluginVersion = BooleanHelpers::hasValue($pluginVersion);
+                    $hasTriggeredBy = BooleanHelpers::hasValue($triggeredBy);
+                    $hasUploadSource = BooleanHelpers::hasValue($uploadSource);
+                    $hasSourceMachine = BooleanHelpers::hasValue($sourceMachine);
                     $hasIpAddress = BooleanHelpers::hasValue($log[LogColumnType::IpAddress->value] ?? null) && ($log[LogColumnType::IpAddress->value] ?? '') !== '0.0.0.0';
                     $hasUserId = BooleanHelpers::hasValue($log[LogColumnType::UserId->value] ?? null);
                     
                     // Date grouping
-                    $log_timestamp = strtotime($log[LogColumnType::CreatedAt->value]);
-                    $log_date = DateHelper::formatDateOnly($log_timestamp);
-                    $log_date_display = DateHelper::formatDisplayDate($log_timestamp);
-                    $log_time_display = DateHelper::formatDisplayTime($log_timestamp);
+                    $logTimestamp = strtotime($log[LogColumnType::CreatedAt->value]);
+                    $logDate = DateHelper::formatDateOnly($logTimestamp);
+                    $logDateDisplay = DateHelper::formatDisplayDate($logTimestamp);
+                    $logTimeDisplay = DateHelper::formatDisplayTime($logTimestamp);
                     
                     // Insert date group header when date changes
-                    if ($log_date !== $current_date_group):
-                        $current_date_group = $log_date;
+                    if ($logDate !== $currentDateGroup):
+                        $currentDateGroup = $logDate;
                         // Check if today/yesterday
                         $today = DateHelper::nowDateOnly();
                         $yesterday = DateHelper::formatDateOnly(strtotime('-1 day'));
-                        if ($log_date === $today) {
-                            $date_label = __('Today', 'riseup-asia-uploader') . ' — ' . $log_date_display;
-                        } elseif ($log_date === $yesterday) {
-                            $date_label = __('Yesterday', 'riseup-asia-uploader') . ' — ' . $log_date_display;
+                        if ($logDate === $today) {
+                            $dateLabel = __('Today', 'riseup-asia-uploader') . ' — ' . $logDateDisplay;
+                        } elseif ($logDate === $yesterday) {
+                            $dateLabel = __('Yesterday', 'riseup-asia-uploader') . ' — ' . $logDateDisplay;
                         } else {
-                            $date_label = $log_date_display;
+                            $dateLabel = $logDateDisplay;
                         }
                 ?>
                     <tr class="date-group-header">
                         <td colspan="11">
-                            <span class="date-group-label"><?php echo esc_html($date_label); ?></span>
+                            <span class="date-group-label"><?php echo esc_html($dateLabel); ?></span>
                         </td>
                     </tr>
                 <?php endif; ?>
@@ -248,12 +248,12 @@ $upload_source_classes = array(
                         <td class="column-id"><?php echo esc_html($log[LogColumnType::Id->value]); ?></td>
                         <td class="column-timestamp">
                             <span class="timestamp" title="<?php echo esc_attr($log[LogColumnType::CreatedAt->value]); ?>">
-                                <?php echo esc_html($log_time_display); ?>
+                                <?php echo esc_html($logTimeDisplay); ?>
                             </span>
                         </td>
                         <td class="column-action">
                             <span class="action-badge action-<?php echo esc_attr($log[LogColumnType::Action->value]); ?>">
-                                <?php echo esc_html($action_labels[$log[LogColumnType::Action->value]] ?? $log[LogColumnType::Action->value]); ?>
+                                <?php echo esc_html($actionLabels[$log[LogColumnType::Action->value]] ?? $log[LogColumnType::Action->value]); ?>
                             </span>
                         </td>
                         <td class="column-plugin">
@@ -270,11 +270,11 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-version">
                             <?php if ($hasPluginVersion): ?>
-                                <?php $isCurrentVersion = ($plugin_version === PluginConfigType::Version->value); ?>
+                                <?php $isCurrentVersion = ($pluginVersion === PluginConfigType::Version->value); ?>
                                 <?php if ($isCurrentVersion): ?>
-                                    <code class="version-badge version-current">v<?php echo esc_html($plugin_version); ?></code>
+                                    <code class="version-badge version-current">v<?php echo esc_html($pluginVersion); ?></code>
                                 <?php else: ?>
-                                    <code class="version-badge version-old">v<?php echo esc_html($plugin_version); ?></code>
+                                    <code class="version-badge version-old">v<?php echo esc_html($pluginVersion); ?></code>
                                 <?php endif; ?>
                             <?php else: ?>
                                 <span class="na">—</span>
@@ -282,8 +282,8 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-trigger">
                             <?php if ($hasTriggeredBy): ?>
-                                <span class="trigger-badge <?php echo esc_attr($trigger_class); ?>" title="<?php echo esc_attr($triggered_by); ?>">
-                                    <?php echo esc_html($trigger_label); ?>
+                                <span class="trigger-badge <?php echo esc_attr($triggerClass); ?>" title="<?php echo esc_attr($triggeredBy); ?>">
+                                    <?php echo esc_html($triggerLabel); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="na">—</span>
@@ -291,8 +291,8 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-upload-source">
                             <?php if ($hasUploadSource): ?>
-                                <span class="upload-source-badge <?php echo esc_attr($upload_source_class); ?>" title="<?php echo esc_attr($upload_source); ?>">
-                                    <?php echo esc_html($upload_source_label); ?>
+                                <span class="upload-source-badge <?php echo esc_attr($uploadSourceClass); ?>" title="<?php echo esc_attr($uploadSource); ?>">
+                                    <?php echo esc_html($uploadSourceLabel); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="na">—</span>
@@ -301,7 +301,7 @@ $upload_source_classes = array(
                         <td class="column-source">
                             <?php if ($hasSourceMachine): ?>
                                 <span class="source-badge" title="<?php esc_attr_e('Management Server Hostname', 'riseup-asia-uploader'); ?>">
-                                    <?php echo esc_html($source_machine); ?>
+                                    <?php echo esc_html($sourceMachine); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="na">—</span>
@@ -343,19 +343,19 @@ $upload_source_classes = array(
     </table>
 
     <!-- Pagination -->
-    <?php if ($total_pages > 1): ?>
+    <?php if ($totalPages > 1): ?>
         <div class="tablenav bottom">
             <div class="tablenav-pages">
                 <?php
-                $pagination_args = array(
+                $paginationArgs = array(
                     'base'      => add_query_arg('paged', '%#%'),
                     'format'    => '',
                     'prev_text' => '&laquo;',
                     'next_text' => '&raquo;',
-                    'total'     => $total_pages,
+                    'total'     => $totalPages,
                     'current'   => $page,
                 );
-                echo paginate_links($pagination_args);
+                echo paginate_links($paginationArgs);
                 ?>
             </div>
         </div>
