@@ -468,6 +468,30 @@ export const ResponseKeyType = {
   TempFile: "tempFile",
   Stmt: "stmt",
   Columns: "columns",
+
+  // Temporal keys
+  CreatedAt: "createdAt",
+  UpdatedAt: "updatedAt",
+
+  // Analysis and dependency keys
+  ParentTable: "parentTable",
+  ChildTable: "childTable",
+  FkColumn: "fkColumn",
+  RefColumn: "refColumn",
+  SeedOrder: "seedOrder",
+  TableCount: "tableCount",
+  DepCount: "depCount",
+
+  // Domain collection keys (extended)
+  Settings: "settings",
+  Providers: "providers",
+  Dependencies: "dependencies",
+
+  // General-purpose entity keys
+  Slug: "slug",
+  Title: "title",
+  Type: "type",
+  PluginFile: "pluginFile",
 } as const;
 
 export type ResponseKeyType = (typeof ResponseKeyType)[keyof typeof ResponseKeyType];

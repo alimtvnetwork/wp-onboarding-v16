@@ -164,6 +164,13 @@ const (
 	PluginCount
 	DurationMs
 	TableCounts
+	Settings
+	Providers
+	Dependencies
+	Slug
+	Title
+	Type
+	PluginFile
 )
 
 var variantLabels = [...]string{
@@ -321,6 +328,13 @@ var variantLabels = [...]string{
 	PluginCount:           "pluginCount",
 	DurationMs:            "durationMs",
 	TableCounts:           "tableCounts",
+	Settings:              "settings",
+	Providers:             "providers",
+	Dependencies:          "dependencies",
+	Slug:                  "slug",
+	Title:                 "title",
+	Type:                  "type",
+	PluginFile:            "pluginFile",
 }
 
 func (v Variant) String() string {

@@ -38,11 +38,11 @@ trait PluginLifecycleEnableTrait {
             return $resolved;
         }
 
-        if (is_plugin_active($resolved['plugin_file'])) {
-            return $this->buildAlreadyActiveResponse($resolved['slug']);
+        if (is_plugin_active($resolved[ResponseKeyType::PluginFile->value])) {
+            return $this->buildAlreadyActiveResponse($resolved[ResponseKeyType::Slug->value]);
         }
 
-        return $this->tryActivatePlugin($resolved['slug'], $resolved['plugin_file']);
+        return $this->tryActivatePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
     }
 
     /** Handle disable (deactivate) plugin request. */
@@ -57,12 +57,12 @@ trait PluginLifecycleEnableTrait {
             return $resolved;
         }
 
-        $isPluginInactive = (is_plugin_active($resolved['plugin_file']) === false);
+        $isPluginInactive = (is_plugin_active($resolved[ResponseKeyType::PluginFile->value]) === false);
         if ($isPluginInactive) {
-            return $this->buildAlreadyInactiveResponse($resolved['slug']);
+            return $this->buildAlreadyInactiveResponse($resolved[ResponseKeyType::Slug->value]);
         }
 
-        return $this->tryDeactivatePlugin($resolved['slug'], $resolved['plugin_file']);
+        return $this->tryDeactivatePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
     }
 
     /** Build response for already-active plugin. */

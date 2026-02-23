@@ -49,7 +49,7 @@ trait SnapshotBackupExecTrait {
                 return $master_dir;
             }
             $incremental = $this->createIncrementalBackup();
-            $result = $incremental->execute($master_dir, array('title' => $body['title'] ?? null));
+            $result = $incremental->execute($master_dir, array(ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null));
             $this->logIncrementalComplete($result);
             return $this->buildIncrementalResponse($result);
         }, 'incremental_backup');
@@ -57,7 +57,11 @@ trait SnapshotBackupExecTrait {
 
     private function logBackupInitiated(string $action, array $body) {
         $this->logger->logPluginAction($action, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array('title' => $body['title'] ?? null, ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null, ResponseKeyType::Phase->value => 'initiated'));
+            array(
+                ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null,
+                ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null,
+                ResponseKeyType::Phase->value => 'initiated',
+            ));
     }
 
     private function createFullBackupOrchestrator(): SnapshotOrchestrator {
@@ -67,11 +71,11 @@ trait SnapshotBackupExecTrait {
 
     private function extractFullBackupOptions(array $body): array {
         return array(
-            'title'            => $body['title'] ?? null,
+            ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null,
             ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null,
-            'include_plugins'  => $body['include_plugins'] ?? null,
+            'include_plugins' => $body['include_plugins'] ?? null,
             'plugin_selection' => $body['plugin_selection'] ?? null,
-            'compression'      => $body['compression'] ?? null,
+            'compression' => $body['compression'] ?? null,
         );
     }
 

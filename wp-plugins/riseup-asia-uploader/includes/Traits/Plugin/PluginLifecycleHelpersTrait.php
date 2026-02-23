@@ -19,6 +19,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -56,7 +57,7 @@ trait PluginLifecycleHelpersTrait
             );
         }
 
-        return ['slug' => $slug, 'plugin_file' => $pluginFile];
+        return [ResponseKeyType::Slug->value => $slug, ResponseKeyType::PluginFile->value => $pluginFile];
     }
 
     /**

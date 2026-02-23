@@ -27,7 +27,7 @@ trait ErrorLogHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error logs endpoint called');
             $settings = $this->resolveLogSettings($request);
-            $result = array('version' => PluginConfigType::Version->value, 'settings' => $settings);
+            $result = array('version' => PluginConfigType::Version->value, ResponseKeyType::Settings->value => $settings);
 
             if ($settings['include_error_log']) {
                 $result[ResponseKeyType::ErrorLog->value] = $this->readLogTail($this->fileLogger->getErrorFile(), $settings['max_lines']);

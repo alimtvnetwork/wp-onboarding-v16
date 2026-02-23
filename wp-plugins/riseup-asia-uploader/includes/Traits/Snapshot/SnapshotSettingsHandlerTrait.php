@@ -31,7 +31,7 @@ trait SnapshotSettingsHandlerTrait {
             return new WP_REST_Response(
                 array(
                     ResponseKeyType::Success->value => true,
-                    'settings' => $manager->getSettings(),
+                    ResponseKeyType::Settings->value => $manager->getSettings(),
                 ),
                 HttpStatusType::Ok->value,
             );
@@ -50,7 +50,7 @@ trait SnapshotSettingsHandlerTrait {
             return new WP_REST_Response(
                 array(
                     ResponseKeyType::Success->value => true,
-                    'settings' => $updated,
+                    ResponseKeyType::Settings->value => $updated,
                 ),
                 HttpStatusType::Ok->value,
             );
@@ -65,7 +65,7 @@ trait SnapshotSettingsHandlerTrait {
             return new WP_REST_Response(
                 array(
                     ResponseKeyType::Success->value => true,
-                    'providers' => $manager->getProviders(),
+                    ResponseKeyType::Providers->value => $manager->getProviders(),
                 ),
                 HttpStatusType::Ok->value,
             );
@@ -99,7 +99,7 @@ trait SnapshotSettingsHandlerTrait {
                 array(
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Tables->value => $analysis[ResponseKeyType::Tables->value],
-                    'dependencies' => $analysis['dependencies'],
+                    ResponseKeyType::Dependencies->value => $analysis[ResponseKeyType::Dependencies->value],
                     ResponseKeyType::SeedOrder->value => $analysis[ResponseKeyType::SeedOrder->value],
                     ResponseKeyType::TableCount->value => $analysis[ResponseKeyType::TableCount->value],
                     ResponseKeyType::DepCount->value => $analysis[ResponseKeyType::DepCount->value],

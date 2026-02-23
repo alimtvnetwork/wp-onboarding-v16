@@ -121,11 +121,11 @@ trait AnalyzerQueryTrait {
         $sorted = $this->topologicalSort($tables, $scoped_deps);
 
         return array(
-            'tables'       => $tables,
-            'dependencies' => $scoped_deps,
-            ResponseKeyType::SeedOrder->value  => $sorted,
-            ResponseKeyType::TableCount->value => count($tables),
-            ResponseKeyType::DepCount->value   => count($scoped_deps),
+            ResponseKeyType::Tables->value       => $tables,
+            ResponseKeyType::Dependencies->value  => $scoped_deps,
+            ResponseKeyType::SeedOrder->value     => $sorted,
+            ResponseKeyType::TableCount->value    => count($tables),
+            ResponseKeyType::DepCount->value      => count($scoped_deps),
         );
     }
 
