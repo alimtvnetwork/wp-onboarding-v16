@@ -347,6 +347,40 @@ if ($result->hasError()) {
 return $result->value();
 ```
 
+```php
+// PHP — DbResultSet (collection access)
+$results = $query->queryAll(...);
+
+// ❌ WRONG: No guard — iterating potentially empty/errored set
+foreach ($results->items() as $row) { ... }
+
+// ✅ CORRECT: Guard before iteration
+if ($results->hasError()) {
+    $this->logger->logException($results->error(), 'query failed');
+
+    return [];
+}
+
+return $results->items();
+```
+
+```php
+// PHP — DbExecResult (write operations)
+$execResult = $query->execute(...);
+
+// ❌ WRONG: No guard — assuming success
+$execResult->affectedRows();
+
+// ✅ CORRECT: Guard before access
+if ($execResult->hasError()) {
+    $this->logger->logException($execResult->error(), 'execute failed');
+
+    return false;
+}
+
+return $execResult->affectedRows() > 0;
+```
+
 ```go
 // Go — apperror.Result[T] / ResultSlice[T] / ResultMap[K, V]
 result := dbutil.QueryOne[T](ctx, db, query, scanner, id)
@@ -362,11 +396,49 @@ if result.HasError() {
 return apperror.Ok(result.Value())
 ```
 
+```go
+// Go — ResultSlice (collection access)
+result := svc.List(ctx)
+
+// ❌ WRONG: No guard — iterating potentially errored slice
+for _, item := range result.Items() { ... }
+
+// ✅ CORRECT: Guard via IsSafe()
+if result.IsSafe() {
+    for _, item := range result.Items() {
+        process(item)
+    }
+}
+```
+
+```go
+// Go — Adapter Unwrap Pattern
+func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
+    result := a.Service.GetByID(ctx, id)
+    if result.HasError() {
+        return nil, result.Error()
+    }
+
+    v := result.Value()
+
+    return &v, nil
+}
+```
+
 ```typescript
 // TypeScript — If Result pattern is adopted, same rule applies
 // ❌ WRONG: result.value()  (no guard)
 // ✅ CORRECT: Check .hasError() before .value() access
 ```
+
+#### Enforcement Checklist
+
+- [ ] Every `result.Value()` / `$result->value()` call is preceded by `HasError()` / `hasError()` or `IsSafe()` / `isSafe()`
+- [ ] Every `result.Items()` / `$results->items()` call is preceded by a guard
+- [ ] Every `result.Get(key)` on `ResultMap` is preceded by a guard
+- [ ] Every `$execResult->affectedRows()` on `DbExecResult` is preceded by a guard
+- [ ] No error is silently discarded — all errors are logged, returned, or propagated
+- [ ] Cross-service callers guard results the same way
 
 ### Common Mistakes
 
