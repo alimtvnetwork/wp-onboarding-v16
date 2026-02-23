@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait PathHelperDirTrait {
     // ── Directory Guards (moved from BooleanDomainTrait) ──
@@ -134,7 +135,7 @@ trait PathHelperDirTrait {
         $htaccessPath = self::join($path, '.htaccess');
 
         if (self::isFileMissing($htaccessPath)) {
-            $content = "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n";
+            $content = '# ' . PluginConfigType::Name->value . " - Security\nOrder Deny,Allow\nDeny from all\n";
 
             if (@file_put_contents($htaccessPath, $content) === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create .htaccess', array('path' => $htaccessPath));

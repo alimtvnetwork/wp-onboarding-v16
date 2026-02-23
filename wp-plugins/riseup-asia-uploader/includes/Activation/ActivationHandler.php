@@ -141,7 +141,7 @@ class ActivationHandler
 
         if (PathHelper::isFileMissing($stacktraceFile)) {
             @file_put_contents($stacktraceFile, sprintf(
-                "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
+                '# ' . PluginConfigType::Name->value . " - Stack Trace Log (initialized %s)\n\n",
                 $timestamp
             ));
         }
