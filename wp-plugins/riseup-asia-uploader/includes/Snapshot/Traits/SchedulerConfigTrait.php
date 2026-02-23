@@ -46,7 +46,7 @@ trait SchedulerConfigTrait {
         if (BooleanHelpers::isWpScheduleMissing(HookType::CronSnapshotCleanup->value)) {
             $timestamp = strtotime('tomorrow 04:00:00');
             wp_schedule_event($timestamp, 'daily', HookType::CronSnapshotCleanup->value);
-            $this->logger->info('[SCHEDULER] Cleanup cron scheduled', array('next_run' => date('c', $timestamp)));
+            $this->logger->info('[SCHEDULER] Cleanup cron scheduled', array('nextRun' => date('c', $timestamp)));
         }
     }
 
@@ -82,7 +82,7 @@ trait SchedulerConfigTrait {
         if ($result) {
             $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
                 'frequency'  => $settings['schedule_frequency'],
-                'next_run'   => date('c', $next_run),
+                'nextRun'    => date('c', $next_run),
                 'recurrence' => $recurrence,
             ));
         } else {

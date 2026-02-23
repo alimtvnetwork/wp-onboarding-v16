@@ -186,7 +186,7 @@ trait LoggerActionsTrait {
         string $filePath,
         array $details = array(),
     ) {
-        $details['file_path'] = $filePath;
+        $details['filePath'] = $filePath;
 
         return $this->logPluginAction(
             ActionType::FileReplace->value,
@@ -202,7 +202,7 @@ trait LoggerActionsTrait {
         string $filePath,
         array $details = array(),
     ) {
-        $details['file_path'] = $filePath;
+        $details['filePath'] = $filePath;
 
         return $this->logPluginAction(
             ActionType::FileDelete->value,

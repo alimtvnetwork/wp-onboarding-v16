@@ -75,27 +75,27 @@ trait PluginListTrait
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
-            $all_plugins    = get_plugins();
-            $active_plugins = get_option(OptionNameType::ActivePlugins->value, array());
+            $allPlugins    = get_plugins();
+            $activePlugins = get_option(OptionNameType::ActivePlugins->value, array());
 
-            foreach ($all_plugins as $plugin_file => $plugin_data) {
-                $plugin_slug = dirname($plugin_file);
-                if ($plugin_slug === '.') {
-                    $plugin_slug = basename($plugin_file, '.php');
+            foreach ($allPlugins as $pluginFile => $pluginData) {
+                $pluginSlug = dirname($pluginFile);
+                if ($pluginSlug === '.') {
+                    $pluginSlug = basename($pluginFile, '.php');
                 }
 
-                if ($plugin_slug === $slug) {
+                if ($pluginSlug === $slug) {
 
                     return EnvelopeBuilder::success()
                         ->autoDetectRequestedAt()
                         ->setSingleResult(array(
-                            'slug'        => $plugin_slug,
-                            'name'        => $plugin_data['Name'],
-                            'version'     => $plugin_data['Version'],
-                            'author'      => $plugin_data['Author'],
-                            'description' => $plugin_data['Description'],
-                            'active'      => in_array($plugin_file, $active_plugins, true),
-                            'plugin_file' => $plugin_file,
+                            'slug'        => $pluginSlug,
+                            'name'        => $pluginData['Name'],
+                            'version'     => $pluginData['Version'],
+                            'author'      => $pluginData['Author'],
+                            'description' => $pluginData['Description'],
+                            'active'      => in_array($pluginFile, $activePlugins, true),
+                            'pluginFile'  => $pluginFile,
                         ))
                         ->toResponse();
                 }
@@ -110,24 +110,24 @@ trait PluginListTrait
      * @return array Plugin list.
      */
     private function collectPluginList(): array {
-        $all_plugins    = get_plugins();
-        $active_plugins = get_option(OptionNameType::ActivePlugins->value, array());
-        $plugins        = array();
+        $allPlugins    = get_plugins();
+        $activePlugins = get_option(OptionNameType::ActivePlugins->value, array());
+        $plugins       = array();
 
-        foreach ($all_plugins as $plugin_file => $plugin_data) {
-            $slug = dirname($plugin_file);
+        foreach ($allPlugins as $pluginFile => $pluginData) {
+            $slug = dirname($pluginFile);
             if ($slug === '.') {
-                $slug = basename($plugin_file, '.php');
+                $slug = basename($pluginFile, '.php');
             }
 
             $plugins[] = array(
                 'slug'        => $slug,
-                'name'        => $plugin_data['Name'],
-                'version'     => $plugin_data['Version'],
-                'author'      => $plugin_data['Author'],
-                'description' => $plugin_data['Description'],
-                'active'      => in_array($plugin_file, $active_plugins, true),
-                'plugin_file' => $plugin_file,
+                'name'        => $pluginData['Name'],
+                'version'     => $pluginData['Version'],
+                'author'      => $pluginData['Author'],
+                'description' => $pluginData['Description'],
+                'active'      => in_array($pluginFile, $activePlugins, true),
+                'pluginFile'  => $pluginFile,
             );
         }
 
@@ -168,15 +168,15 @@ trait PluginListTrait
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
-        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (PathHelper::isDirMissing($plugin_dir)) {
+        $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+        if (PathHelper::isDirMissing($pluginDir)) {
 
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        $ignore = UploadIgnore::fromDirectory($plugin_dir);
+        $ignore = UploadIgnore::fromDirectory($pluginDir);
         $fileCache = FileCache::getInstance($this->fileLogger, $this->db);
-        $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
+        $result = $fileCache->getManifest($slug, $pluginDir, $ignore);
 
         return new WP_REST_Response(array(
             ResponseKeyType::Success->value => true,
@@ -201,15 +201,15 @@ trait PluginListTrait
         }
 
         try {
-            $file_path = isset($json[ResponseKeyType::Path->value]) ? $json[ResponseKeyType::Path->value] : null;
+            $filePath = isset($json[ResponseKeyType::Path->value]) ? $json[ResponseKeyType::Path->value] : null;
 
-            $validation = $this->validateFilePath($file_path, $slug);
+            $validation = $this->validateFilePath($filePath, $slug);
             if ($validation instanceof WP_REST_Response) {
 
                 return $validation;
             }
 
-            return $this->readAndReturnFile($validation['real_path'], $validation['file_path']);
+            return $this->readAndReturnFile($validation['realPath'], $validation['filePath']);
         } catch (Throwable $e) {
 
             return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
@@ -219,42 +219,42 @@ trait PluginListTrait
     /**
      * Validate and resolve a plugin file path.
      *
-     * @param string|null $file_path Relative file path.
-     * @param string      $slug      Plugin slug.
-     * @return array{real_path: string, file_path: string}|WP_REST_Response
+     * @param string|null $filePath Relative file path.
+     * @param string      $slug     Plugin slug.
+     * @return array{realPath: string, filePath: string}|WP_REST_Response
      */
-    private function validateFilePath($file_path, string $slug) {
-        if (empty($file_path)) {
+    private function validateFilePath($filePath, string $slug) {
+        if (empty($filePath)) {
 
             return $this->errorResponse('File path is required', HttpStatusType::BadRequest->value);
         }
 
-        $file_path = ltrim($file_path, '/\\');
-        if (strpos($file_path, '..') !== false) {
+        $filePath = ltrim($filePath, '/\\');
+        if (strpos($filePath, '..') !== false) {
 
             return $this->errorResponse('Invalid file path', HttpStatusType::BadRequest->value);
         }
 
-        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (PathHelper::isDirMissing($plugin_dir)) {
+        $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+        if (PathHelper::isDirMissing($pluginDir)) {
 
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        $real_plugin_dir = realpath($plugin_dir);
-        $real_file_path = realpath($plugin_dir . '/' . $file_path);
+        $realPluginDir = realpath($pluginDir);
+        $realFilePath = realpath($pluginDir . '/' . $filePath);
 
-        if ($real_file_path === false || strpos($real_file_path, $real_plugin_dir) !== 0) {
+        if ($realFilePath === false || strpos($realFilePath, $realPluginDir) !== 0) {
 
             return $this->errorResponse('File not found or invalid path', HttpStatusType::NotFound->value);
         }
 
-        if (BooleanHelpers::isIrregularPath($real_file_path)) {
+        if (BooleanHelpers::isIrregularPath($realFilePath)) {
 
             return $this->errorResponse('File not found', HttpStatusType::NotFound->value);
         }
 
-        return array('real_path' => $real_file_path, 'file_path' => $file_path);
+        return array('realPath' => $realFilePath, 'filePath' => $filePath);
     }
 
     /**
@@ -264,8 +264,8 @@ trait PluginListTrait
      * @param string $rel_path  Relative file path.
      * @return WP_REST_Response
      */
-    private function readAndReturnFile(string $real_path, string $rel_path) {
-        $content = @file_get_contents($real_path);
+    private function readAndReturnFile(string $realPath, string $relPath) {
+        $content = @file_get_contents($realPath);
         if ($content === false) {
 
             return $this->errorResponse('Failed to read file', HttpStatusType::ServerError->value);
@@ -273,7 +273,7 @@ trait PluginListTrait
 
         return new WP_REST_Response(array(
             ResponseKeyType::Success->value => true,
-            ResponseKeyType::Path->value    => $rel_path,
+            ResponseKeyType::Path->value    => $relPath,
             ResponseKeyType::Content->value => $content,
         ), HttpStatusType::Ok->value);
     }

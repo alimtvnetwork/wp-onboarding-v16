@@ -27,7 +27,7 @@ trait LifecycleHooksTrait
      */
     public function onPluginActivated(string $plugin, bool $networkWide = false): void {
         $this->logLifecycleEvent(ActionType::Enable->value, $plugin, 'activated_plugin', array(
-            'network_wide' => $networkWide,
+            'networkWide' => $networkWide,
         ));
     }
 
@@ -36,7 +36,7 @@ trait LifecycleHooksTrait
      */
     public function onPluginDeactivated(string $plugin, bool $networkDeactivating = false): void {
         $this->logLifecycleEvent(ActionType::Disable->value, $plugin, 'deactivated_plugin', array(
-            'network_deactivating' => $networkDeactivating,
+            'networkDeactivating' => $networkDeactivating,
         ));
     }
 
@@ -70,16 +70,16 @@ trait LifecycleHooksTrait
             $triggeredBy = $this->detectTriggerSource();
 
             $this->fileLogger->info('WordPress hook: Plugin lifecycle event', array(
-                'action'       => $action,
-                'plugin'       => $plugin,
-                'slug'         => $slug,
-                'triggered_by' => $triggeredBy,
+                'action'      => $action,
+                'plugin'      => $plugin,
+                'slug'        => $slug,
+                'triggeredBy' => $triggeredBy,
             ));
 
             $details = array_merge($extra, array(
-                'plugin_file'  => $plugin,
-                'triggered_by' => $triggeredBy,
-                'hook_source'  => $hookSource,
+                'pluginFile'  => $plugin,
+                'triggeredBy' => $triggeredBy,
+                'hookSource'  => $hookSource,
             ));
 
             $this->logger->logPluginAction($action, $slug, StatusType::Success->value, $details);
