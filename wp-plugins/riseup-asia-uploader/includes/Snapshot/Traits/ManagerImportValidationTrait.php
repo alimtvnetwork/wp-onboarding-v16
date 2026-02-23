@@ -33,7 +33,11 @@ trait ManagerImportValidationTrait {
             }
         }
 
-        $snapshotRequired = array('filename', 'tables', 'scope');
+        $snapshotRequired = array(
+            'filename',
+            'tables',
+            'scope',
+        );
 
         foreach ($snapshotRequired as $field) {
             $isSnapshotFieldMissing = BooleanHelpers::isKeyMissing($manifest['snapshot'], $field);
