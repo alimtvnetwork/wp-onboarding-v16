@@ -29,9 +29,9 @@ trait AgentHandlerActionTrait {
             $this->fileLogger->info('Testing agent connection', array('id' => $id));
             $manager = AgentManager::getInstance();
             $result = $manager->testConnection($id);
-            $status_code = $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value;
+            $statusCode = $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value;
 
-            return new WP_REST_Response($result, $status_code);
+            return new WP_REST_Response($result, $statusCode);
         }, 'test_agent');
     }
 
@@ -70,14 +70,14 @@ trait AgentHandlerActionTrait {
                 'slug'   => $slug,
             ));
 
-            $allowed_actions = array(
+            $allowedActions = array(
                 ActionType::Enable->value,
                 ActionType::Disable->value,
                 ActionType::Delete->value,
             );
 
-            if (BooleanHelpers::isAbsentFromList($action, $allowed_actions)) {
-                return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowed_actions), HttpStatusType::BadRequest->value);
+            if (BooleanHelpers::isAbsentFromList($action, $allowedActions)) {
+                return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowedActions), HttpStatusType::BadRequest->value);
             }
 
             if (empty($slug)) {

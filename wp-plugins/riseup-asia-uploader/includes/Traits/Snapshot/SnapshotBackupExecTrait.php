@@ -44,12 +44,12 @@ trait SnapshotBackupExecTrait {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $this->logBackupInitiated(ActionType::SnapshotIncremental->value, $body);
-            $master_dir = $this->resolveIncrementalMasterDir($body);
-            if ($master_dir instanceof WP_REST_Response) {
-                return $master_dir;
+            $masterDir = $this->resolveIncrementalMasterDir($body);
+            if ($masterDir instanceof WP_REST_Response) {
+                return $masterDir;
             }
             $incremental = $this->createIncrementalBackup();
-            $result = $incremental->execute($master_dir, array(ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null));
+            $result = $incremental->execute($masterDir, array(ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null));
             $this->logIncrementalComplete($result);
             return $this->buildIncrementalResponse($result);
         }, 'incremental_backup');
@@ -110,19 +110,19 @@ trait SnapshotBackupExecTrait {
 
     private function resolveIncrementalMasterDir(array $body): string|WP_REST_Response {
         $incremental = $this->createIncrementalBackup();
-        $master_dir = $body['master_dir'] ?? null;
-        $isMasterDirEmpty = ($master_dir === null || $master_dir === '');
+        $masterDir = $body['master_dir'] ?? null;
+        $isMasterDirEmpty = ($masterDir === null || $masterDir === '');
         if ($isMasterDirEmpty) {
-            $master_dir = $incremental->findLatestMasterSnapshot();
+            $masterDir = $incremental->findLatestMasterSnapshot();
         }
-        $isMasterDirInvalid = ($master_dir === null || $master_dir === '' || PathHelper::isDirMissing($master_dir));
+        $isMasterDirInvalid = ($masterDir === null || $masterDir === '' || PathHelper::isDirMissing($masterDir));
         if ($isMasterDirInvalid) {
             return new WP_REST_Response(
                 ResultHelper::error('No master (full) snapshot found. Create a full backup first.'),
                 HttpStatusType::BadRequest->value,
             );
         }
-        return $master_dir;
+        return $masterDir;
     }
 
     private function createIncrementalBackup(): IncrementalBackup {

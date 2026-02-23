@@ -28,12 +28,12 @@ trait StatusPayloadTrait {
     public function handleStatus(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Status endpoint called');
 
-        $live_version = $this->detectLiveVersion();
-        $db_available = $this->db !== null;
+        $liveVersion = $this->detectLiveVersion();
+        $dbAvailable = $this->db !== null;
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value)
-            ->setSingleResult($this->buildStatusPayload($live_version, $db_available))
+            ->setSingleResult($this->buildStatusPayload($liveVersion, $dbAvailable))
             ->toResponse();
     }
 
@@ -41,28 +41,28 @@ trait StatusPayloadTrait {
      * Detect the live plugin version from the file header on disk.
      */
     private function detectLiveVersion(): string {
-        $main_plugin_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/' . PluginConfigType::Slug->value . '.php';
-        clearstatcache(true, $main_plugin_file);
+        $mainPluginFile = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/' . PluginConfigType::Slug->value . '.php';
+        clearstatcache(true, $mainPluginFile);
 
-        if (PathHelper::isFileMissing($main_plugin_file)) {
+        if (PathHelper::isFileMissing($mainPluginFile)) {
             return PluginConfigType::Version->value;
         }
 
-        $this->invalidateVersionCaches($main_plugin_file);
+        $this->invalidateVersionCaches($mainPluginFile);
 
-        return $this->parseVersionFromHeader($main_plugin_file);
+        return $this->parseVersionFromHeader($mainPluginFile);
     }
 
     /** Invalidate OPcache for plugin file and constants. */
-    private function invalidateVersionCaches(string $main_plugin_file) {
+    private function invalidateVersionCaches(string $mainPluginFile) {
         if (BooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return;
         }
 
-        opcache_invalidate($main_plugin_file, true);
-        $constants_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/includes/constants.php';
-        if (file_exists($constants_file)) {
-            opcache_invalidate($constants_file, true);
+        opcache_invalidate($mainPluginFile, true);
+        $constantsFile = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/includes/constants.php';
+        if (file_exists($constantsFile)) {
+            opcache_invalidate($constantsFile, true);
         }
     }
 
@@ -81,10 +81,10 @@ trait StatusPayloadTrait {
      */
     private function collectRegisteredRoutes(): array {
         $routes = array();
-        $ns_prefix = '/' . PluginConfigType::apiFullNamespace();
+        $nsPrefix = '/' . PluginConfigType::apiFullNamespace();
 
         foreach (rest_get_server()->get_routes() as $route => $handlers) {
-            if (strpos($route, $ns_prefix) !== 0) {
+            if (strpos($route, $nsPrefix) !== 0) {
                 continue;
             }
 

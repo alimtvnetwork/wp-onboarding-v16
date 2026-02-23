@@ -24,14 +24,14 @@ use RiseupAsia\Logging\FileLogger;
 class SnapshotProviderWPReset extends SnapshotProviderInterface {
     protected string $provider_id = SnapshotProviderType::WpReset->value;
     protected string $provider_name = 'WP Reset';
-    private mixed $wp_reset = null;
+    private mixed $wpReset = null;
 
     public function __construct(FileLogger $logger, Database $db) {
         parent::__construct($logger, $db);
 
         if (class_exists('WP_Reset')) {
             global $wp_reset;
-            $this->wp_reset = $wp_reset;
+            $this->wpReset = $wp_reset;
         }
     }
 
@@ -40,13 +40,13 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     }
 
     public function getCapabilities(): array {
-        $is_pro = class_exists('WP_Reset_Pro');
+        $isPro = class_exists('WP_Reset_Pro');
 
         return array(
             'fullSite' => true,
             'databaseOnly' => true,
             'selective' => true,
-            'scheduled' => $is_pro,
+            'scheduled' => $isPro,
             'restore' => true,
             'export' => true,
             'import' => true,
@@ -141,14 +141,14 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function getAvailableTables(): array {
         global $wpdb;
         $tables = array();
-        $all_tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
+        $allTables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
 
-        foreach ($all_tables as $table_info) {
+        foreach ($allTables as $tableInfo) {
             $tables[] = array(
-                'name' => $table_info['Name'],
-                ResponseKeyType::Rows->value => (int) $table_info['Rows'],
-                ResponseKeyType::Size->value => (int) $table_info['Data_length'] + (int) $table_info['Index_length'],
-                'is_core' => strpos($table_info['Name'], $wpdb->prefix) === 0,
+                'name' => $tableInfo['Name'],
+                ResponseKeyType::Rows->value => (int) $tableInfo['Rows'],
+                ResponseKeyType::Size->value => (int) $tableInfo['Data_length'] + (int) $tableInfo['Index_length'],
+                'isCore' => strpos($tableInfo['Name'], $wpdb->prefix) === 0,
             );
         }
 

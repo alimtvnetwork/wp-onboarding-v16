@@ -35,9 +35,9 @@ trait RestoreSqliteValidationTrait {
             );
         }
 
-        $column_names = $this->getSqliteColumnNames($sqlite, $table);
+        $columnNames = $this->getSqliteColumnNames($sqlite, $table);
 
-        if (empty($column_names)) {
+        if (empty($columnNames)) {
             $sqlite = null;
 
             return ResultHelper::error(
@@ -46,12 +46,12 @@ trait RestoreSqliteValidationTrait {
             );
         }
 
-        $row_count = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
+        $rowCount = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
 
         return ResultHelper::ok(array(
             'sqlite'                         => $sqlite,
-            ResponseKeyType::Columns->value  => $column_names,
-            ResponseKeyType::RowCount->value => $row_count,
+            ResponseKeyType::Columns->value  => $columnNames,
+            ResponseKeyType::RowCount->value => $rowCount,
         ));
     }
 
@@ -83,14 +83,14 @@ trait RestoreSqliteValidationTrait {
                 $this->wpdb->query("TRUNCATE TABLE `{$table}`");
             }
 
-            $sql_template = $this->buildInsertTemplate($table, $columns, $strategy);
-            $total_rows = $this->insertAllBatches($sqlite, $table, $columns, $sql_template, $rowCount);
+            $sqlTemplate = $this->buildInsertTemplate($table, $columns, $strategy);
+            $totalRows = $this->insertAllBatches($sqlite, $table, $columns, $sqlTemplate, $rowCount);
 
             $this->wpdb->query("COMMIT");
             $sqlite = null;
 
             return ResultHelper::ok(array(
-                ResponseKeyType::Rows->value => $total_rows,
+                ResponseKeyType::Rows->value => $totalRows,
             ));
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
@@ -104,11 +104,11 @@ trait RestoreSqliteValidationTrait {
         array $columns,
         string $strategy,
     ): string {
-        $columns_sql = '`' . implode('`, `', $columns) . '`';
+        $columnsSql = '`' . implode('`, `', $columns) . '`';
         $placeholders = implode(', ', array_fill(0, count($columns), '%s'));
         $verb = ($strategy === RestoreStrategyType::Merge->value) ? 'REPLACE' : 'INSERT';
 
-        return "{$verb} INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders})";
+        return "{$verb} INTO `{$table}` ({$columnsSql}) VALUES ({$placeholders})";
     }
 
     private function insertAllBatches(
@@ -118,18 +118,18 @@ trait RestoreSqliteValidationTrait {
         string $sqlTemplate,
         int $rowCount,
     ): int {
-        $total_rows = 0;
+        $totalRows = 0;
         $offset = 0;
 
         while ($offset < $rowCount) {
             $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$this->batchSize} OFFSET {$offset}")
                 ->fetchAll(PDO::FETCH_ASSOC);
 
-            $total_rows += $this->insertRowBatch($rows, $columns, $sqlTemplate);
+            $totalRows += $this->insertRowBatch($rows, $columns, $sqlTemplate);
             $offset += $this->batchSize;
         }
 
-        return $total_rows;
+        return $totalRows;
     }
 
     private function insertRowBatch(

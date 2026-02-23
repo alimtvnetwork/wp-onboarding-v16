@@ -22,22 +22,22 @@ use RiseupAsia\Enums\ResponseKeyType;
 trait OrchestratorZipTrait {
     private function createZipExport(string $snapshotDir, string $title): array {
         try {
-            $zip_filename = sanitize_title($title) . '_' . date('Y-m-d_His') . '.zip';
-            $zip_path = dirname($snapshotDir) . '/' . $zip_filename;
+            $zipFilename = sanitize_title($title) . '_' . date('Y-m-d_His') . '.zip';
+            $zipPath = dirname($snapshotDir) . '/' . $zipFilename;
 
             $zip = new ZipArchive();
 
-            if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
                 return array(
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Failed to create ZIP',
                 );
             }
 
-            $file_count = $this->addDirectoryToZip($zip, $snapshotDir);
+            $fileCount = $this->addDirectoryToZip($zip, $snapshotDir);
             $zip->close();
 
-            return $this->validateZipExport($zip_path, $zip_filename, $file_count);
+            return $this->validateZipExport($zipPath, $zipFilename, $fileCount);
         } catch (Throwable $e) {
             return array(
                 ResponseKeyType::Success->value => false,
