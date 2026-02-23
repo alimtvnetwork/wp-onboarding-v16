@@ -42,21 +42,21 @@ func New(cfg Config) *Service {
 }
 
 // Record saves a new publish history entry
-func (s *Service) Record(entry models.PublishHistory) apperror.Result[models.PublishHistory] {
+func (s *Service) Record(entry models.PublishHistory) (*models.PublishHistory, error) {
 	result, err := s.db.Exec(`
-		INSERT INTO PublishHistory (PluginID, PluginName, SiteID, SiteName, SiteURL, SessionID, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs)
+		INSERT INTO PublishHistory (PluginId, PluginName, SiteId, SiteName, SiteUrl, SessionId, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		entry.PluginID, entry.PluginName, entry.SiteID, entry.SiteName, entry.SiteURL,
-		entry.SessionID, entry.Status, entry.Mode, entry.FilesUpdated,
+		entry.PluginId, entry.PluginName, entry.SiteId, entry.SiteName, entry.SiteUrl,
+		entry.SessionId, entry.Status, entry.Mode, entry.FilesUpdated,
 		entry.ActivationStatus, entry.RollbackStatus, entry.RollbackMessage,
 		entry.ErrorMessage, entry.DurationMs,
 	)
 	if err != nil {
-		return apperror.FailWrap[models.PublishHistory](err, errDBWrite, "failed to record publish history")
+		return nil, apperror.Wrap(err, errDBWrite, "failed to record publish history")
 	}
 	id, _ := result.LastInsertId()
-	entry.ID = id
-	return apperror.OK(entry)
+	entry.Id = id
+	return &entry, nil
 }
 
 // List returns paginated publish history with optional filters
@@ -71,7 +71,7 @@ func (s *Service) List(limit, offset int, filters models.PublishHistoryFilters) 
 	}
 
 	// Fetch page
-	query := "SELECT ID, PluginID, PluginName, SiteID, SiteName, SiteURL, SessionID, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs, CreatedAt FROM PublishHistory" + where + " ORDER BY CreatedAt DESC LIMIT ? OFFSET ?"
+	query := "SELECT Id, PluginId, PluginName, SiteId, SiteName, SiteUrl, SessionId, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs, CreatedAt FROM PublishHistory" + where + " ORDER BY CreatedAt DESC LIMIT ? OFFSET ?"
 	allArgs := append(args, limit, offset)
 
 	rows, err := s.db.Query(query, allArgs...)
@@ -83,24 +83,24 @@ func (s *Service) List(limit, offset int, filters models.PublishHistoryFilters) 
 	var entries []models.PublishHistory
 	for rows.Next() {
 		var e models.PublishHistory
-		if err := rows.Scan(&e.ID, &e.PluginID, &e.PluginName, &e.SiteID, &e.SiteName, &e.SiteURL, &e.SessionID, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.Id, &e.PluginId, &e.PluginName, &e.SiteId, &e.SiteName, &e.SiteUrl, &e.SessionId, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt); err != nil {
 			s.log.Warn("Failed to scan publish history row", "error", err)
 			continue
 		}
 		entries = append(entries, e)
 	}
-	return apperror.OK(PublishHistoryListResult{Items: entries, Total: total})
+	return apperror.Ok(PublishHistoryListResult{Items: entries, Total: total})
 }
 
 // GetById returns a specific publish history entry
 func (s *Service) GetById(id int64) apperror.Result[models.PublishHistory] {
 	var e models.PublishHistory
-	err := s.db.QueryRow("SELECT ID, PluginID, PluginName, SiteID, SiteName, SiteURL, SessionID, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs, CreatedAt FROM PublishHistory WHERE ID = ?", id).
-		Scan(&e.ID, &e.PluginID, &e.PluginName, &e.SiteID, &e.SiteName, &e.SiteURL, &e.SessionID, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt)
+	err := s.db.QueryRow("SELECT Id, PluginId, PluginName, SiteId, SiteName, SiteUrl, SessionId, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs, CreatedAt FROM PublishHistory WHERE Id = ?", id).
+		Scan(&e.Id, &e.PluginId, &e.PluginName, &e.SiteId, &e.SiteName, &e.SiteUrl, &e.SessionId, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt)
 	if err != nil {
 		return apperror.FailWrap[models.PublishHistory](err, errDBRead, "publish history entry not found")
 	}
-	return apperror.OK(e)
+	return apperror.Ok(e)
 }
 
 // GetStats returns aggregate publish statistics
@@ -120,12 +120,12 @@ func (s *Service) GetStats() apperror.Result[models.PublishHistoryStats] {
 	if err != nil {
 		return apperror.FailWrap[models.PublishHistoryStats](err, errDBRead, "failed to get publish history stats")
 	}
-	return apperror.OK(stats)
+	return apperror.Ok(stats)
 }
 
 // Delete removes a publish history entry
 func (s *Service) Delete(id int64) error {
-	_, err := s.db.Exec("DELETE FROM PublishHistory WHERE ID = ?", id)
+	_, err := s.db.Exec("DELETE FROM PublishHistory WHERE Id = ?", id)
 	if err != nil {
 		return apperror.Wrap(err, errDBDel, "failed to delete publish history")
 	}
@@ -139,20 +139,20 @@ func (s *Service) Clear() apperror.Result[int64] {
 		return apperror.FailWrap[int64](err, errDBDel, "failed to clear publish history")
 	}
 	count, _ := result.RowsAffected()
-	return apperror.OK(count)
+	return apperror.Ok(count)
 }
 
 func buildWhereClause(f models.PublishHistoryFilters) (string, []any) {
 	var conditions []string
 	var args []any
 
-	if f.PluginID > 0 {
-		conditions = append(conditions, "PluginID = ?")
-		args = append(args, f.PluginID)
+	if f.PluginId > 0 {
+		conditions = append(conditions, "PluginId = ?")
+		args = append(args, f.PluginId)
 	}
-	if f.SiteID > 0 {
-		conditions = append(conditions, "SiteID = ?")
-		args = append(args, f.SiteID)
+	if f.SiteId > 0 {
+		conditions = append(conditions, "SiteId = ?")
+		args = append(args, f.SiteId)
 	}
 	if f.Status != "" {
 		conditions = append(conditions, "Status = ?")

@@ -30,10 +30,10 @@ func DefaultQueueConfig() QueueConfig {
 
 // QueueItem represents a pending publish operation
 type QueueItem struct {
-	ID         string
-	PluginID   int64
+	Id         string
+	PluginId   int64
 	PluginName string
-	SiteID     int64
+	SiteId     int64
 	SiteName   string
 	Options    PublishOptions
 	Priority   int // Higher = processed first
@@ -91,7 +91,7 @@ func (q *PublishQueue) Enqueue(item QueueItem) (string, error) {
 	}
 
 	// Generate ID
-	item.ID = fmt.Sprintf("pq-%d-%d-%d", item.PluginID, item.SiteID, time.Now().UnixMilli())
+	item.Id = fmt.Sprintf("pq-%d-%d-%d", item.PluginId, item.SiteId, time.Now().UnixMilli())
 	item.QueuedAt = time.Now()
 	item.Status = queuestatus.Queued
 
@@ -103,7 +103,7 @@ func (q *PublishQueue) Enqueue(item QueueItem) (string, error) {
 	// Try to process immediately
 	go q.processNext()
 
-	return item.ID, nil
+	return item.Id, nil
 }
 
 // EnqueueBatch adds multiple publish operations
@@ -120,12 +120,12 @@ func (q *PublishQueue) EnqueueBatch(items []QueueItem) ([]string, error) {
 }
 
 // Cancel cancels a queued (not yet running) item
-func (q *PublishQueue) Cancel(itemID string) bool {
+func (q *PublishQueue) Cancel(itemId string) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	for i, item := range q.items {
-		if item.ID == itemID && item.Status.IsQueued() {
+		if item.Id == itemId && item.Status.IsQueued() {
 			item.Status = queuestatus.Cancelled
 			q.completed = append(q.completed, item)
 			q.items = append(q.items[:i], q.items[i+1:]...)
@@ -194,7 +194,7 @@ func (q *PublishQueue) processNext() {
 	item := q.items[bestIdx]
 	q.items = append(q.items[:bestIdx], q.items[bestIdx+1:]...)
 	item.Status = queuestatus.Running
-	q.active[item.ID] = item
+	q.active[item.Id] = item
 	q.mu.Unlock()
 
 	// Acquire semaphore (blocks if at max concurrency)
@@ -211,10 +211,10 @@ func (q *PublishQueue) processNext() {
 		q.broadcastStatus()
 
 		// Execute the publish
-		publishResult := q.service.Publish(ctx, item.PluginID, item.SiteID, item.Options)
+		publishResult := q.service.Publish(ctx, item.PluginId, item.SiteId, item.Options)
 
 		q.mu.Lock()
-		delete(q.active, item.ID)
+		delete(q.active, item.Id)
 		if publishResult.HasError() || (publishResult.IsSafe() && !publishResult.Value().Success) {
 			item.Status = queuestatus.Failed
 		} else {

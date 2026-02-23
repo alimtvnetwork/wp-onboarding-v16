@@ -6,7 +6,7 @@ type ErrorDiagnostic struct {
 	File       string `json:"file,omitempty"`
 	DestPath   string `json:"destPath,omitempty"`
 	BackupDir  string `json:"backupDir,omitempty"`
-	URL        string `json:"url,omitempty"`
+	Url        string `json:"url,omitempty"`
 	Slug       string `json:"slug,omitempty"`
 	FilePath   string `json:"filePath,omitempty"`
 	PluginSlug string `json:"pluginSlug,omitempty"`
@@ -61,9 +61,9 @@ func (e *AppError) WithBackupDir(d string) *AppError {
 	return e
 }
 
-// WithURL sets the url diagnostic field.
-func (e *AppError) WithURL(u string) *AppError {
-	e.Diagnostic.URL = u
+// WithUrl sets the url diagnostic field.
+func (e *AppError) WithUrl(u string) *AppError {
+	e.Diagnostic.Url = u
 	return e
 }
 
