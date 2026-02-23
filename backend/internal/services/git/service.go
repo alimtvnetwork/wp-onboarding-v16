@@ -144,7 +144,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) apperror.Result[Pull
 	if err != nil {
 		return apperror.FailWrap[PullResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
-	if !pathutil.IsDir(gitDir) {
+	if pathutil.IsDirMissing(gitDir) {
 		result.Success = false
 		result.Error = "not a git repository"
 		result.Duration = time.Since(startTime).Milliseconds()
@@ -271,7 +271,8 @@ func (s *Service) Build(ctx context.Context, pluginID int64) apperror.Result[Bui
 		return apperror.Fail[BuildResult](configResult.Error())
 	}
 	config := configResult.Value()
-	if !config.BuildEnabled || config.BuildCommand == "" {
+	isBuildMissing := !config.BuildEnabled || config.BuildCommand == ""
+	if isBuildMissing {
 		return apperror.FailNew[BuildResult](apperror.ErrBuildNotConfigured, "build not configured for this plugin")
 	}
 
@@ -425,7 +426,7 @@ func (s *Service) Status(ctx context.Context, pluginID int64) apperror.Result[St
 	if err != nil {
 		return apperror.FailWrap[StatusResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
-	if !pathutil.IsDir(gitDir) {
+	if pathutil.IsDirMissing(gitDir) {
 		return apperror.FailNew[StatusResult](apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
@@ -492,7 +493,7 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) ap
 	if err != nil {
 		return apperror.FailWrap[CommitResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
-	if !pathutil.IsDir(gitDir) {
+	if pathutil.IsDirMissing(gitDir) {
 		return apperror.FailNew[CommitResult](apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
@@ -549,7 +550,7 @@ func (s *Service) Push(ctx context.Context, pluginID int64) apperror.Result[Push
 	if err != nil {
 		return apperror.FailWrap[PushResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
-	if !pathutil.IsDir(gitDir) {
+	if pathutil.IsDirMissing(gitDir) {
 		return apperror.FailNew[PushResult](apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
