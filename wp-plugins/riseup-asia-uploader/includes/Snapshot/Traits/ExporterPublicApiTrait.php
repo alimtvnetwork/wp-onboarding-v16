@@ -33,7 +33,7 @@ trait ExporterPublicApiTrait {
      * @return array {success: bool, export?: array, error?: string}
      */
     public function getOrBuildZip(int $fullSnapshotId): array {
-        $this->log(LogLevelType::Info->value, 'getOrBuildZip called', array('snapshot_id' => $fullSnapshotId));
+        $this->log(LogLevelType::Info->value, 'getOrBuildZip called', array(ResponseKeyType::SnapshotId->value => $fullSnapshotId));
 
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
@@ -48,7 +48,7 @@ trait ExporterPublicApiTrait {
         $existing = $this->getValidExport($fullSnapshotId);
         if ($existing && file_exists($existing['ZipPath'])) {
             $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array(
-                'export_id' => $existing['Id'],
+                'exportId' => $existing['Id'],
                 'filename' => $existing['ZipFilename'],
             ));
 
@@ -69,9 +69,9 @@ trait ExporterPublicApiTrait {
      * Invalidate (expire) the cached ZIP for a full snapshot.
      */
     public function invalidateZip(int $fullSnapshotId): bool {
-        $this->log(LogLevelType::Info->value, 'Invalidating ZIP export', array('snapshot_id' => $fullSnapshotId));
+        $this->log(LogLevelType::Info->value, 'Invalidating ZIP export', array(ResponseKeyType::SnapshotId->value => $fullSnapshotId));
 
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
@@ -103,7 +103,7 @@ trait ExporterPublicApiTrait {
      * Remove all export records and files for a full snapshot.
      */
     public function removeExports(int $fullSnapshotId): void {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
@@ -126,7 +126,7 @@ trait ExporterPublicApiTrait {
         $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE SnapshotId = ?');
         $stmt->execute(array($fullSnapshotId));
 
-        $this->log(LogLevelType::Info->value, 'Removed all exports for snapshot', array('snapshot_id' => $fullSnapshotId, 'count' => count($exports)));
+        $this->log(LogLevelType::Info->value, 'Removed all exports for snapshot', array(ResponseKeyType::SnapshotId->value => $fullSnapshotId, ResponseKeyType::Count->value => count($exports)));
     }
 
     /**
@@ -154,7 +154,7 @@ trait ExporterPublicApiTrait {
         $isTokenInvalid = ($valid === false);
 
         if ($isTokenInvalid) {
-            $this->log(LogLevelType::Warn->value, 'Invalid download token', array('export_id' => $exportId));
+            $this->log(LogLevelType::Warn->value, 'Invalid download token', array('exportId' => $exportId));
             return null;
         }
 
@@ -162,7 +162,7 @@ trait ExporterPublicApiTrait {
         $isExportMissing = ($export === null || $export === false);
 
         if ($isExportMissing) {
-            $this->log(LogLevelType::Warn->value, 'Export not found for download', array('export_id' => $exportId));
+            $this->log(LogLevelType::Warn->value, 'Export not found for download', array('exportId' => $exportId));
             return null;
         }
 
@@ -170,7 +170,7 @@ trait ExporterPublicApiTrait {
         $isExportNotValid = ($exportStatus === null || $exportStatus->isOtherThan(SnapshotExportStatusType::Valid));
 
         if ($isExportNotValid) {
-            $this->log(LogLevelType::Warn->value, 'Export is not valid', array('export_id' => $exportId, 'status' => $export['Status']));
+            $this->log(LogLevelType::Warn->value, 'Export is not valid', array('exportId' => $exportId, 'status' => $export['Status']));
             return null;
         }
 
@@ -186,7 +186,7 @@ trait ExporterPublicApiTrait {
      * Get export status for a full snapshot.
      */
     public function getExportStatus(int $fullSnapshotId): ?array {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {

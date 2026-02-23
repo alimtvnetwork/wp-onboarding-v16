@@ -111,8 +111,8 @@ trait SnapshotBackupOpsTrait {
 
         $this->logger->logPluginAction(ActionType::SnapshotCleanup->value, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array('retention_removed' => $result[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value] ?? 0, 'orphans_removed' => $result[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value] ?? 0,
-                'stuck_marked' => $result[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0),
+            array('retentionRemoved' => $result[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value] ?? 0, 'orphansRemoved' => $result[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value] ?? 0,
+                'stuckMarked' => $result[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value] ?? 0, ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0),
             $result[ResponseKeyType::Success->value] ? null : 'Cleanup encountered errors');
     }
 
