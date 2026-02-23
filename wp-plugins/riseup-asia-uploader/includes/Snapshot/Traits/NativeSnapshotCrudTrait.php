@@ -42,10 +42,10 @@ trait NativeSnapshotCrudTrait {
             }
         }
 
-        $zip_path = str_replace('.sqlite', '.zip', $filepath);
+        $zipPath = str_replace('.sqlite', '.zip', $filepath);
 
-        if (PathHelper::fileExists($zip_path)) {
-            PathHelper::deleteFile($zip_path);
+        if (PathHelper::fileExists($zipPath)) {
+            PathHelper::deleteFile($zipPath);
         }
 
         $this->db->delete(
@@ -79,10 +79,10 @@ trait NativeSnapshotCrudTrait {
         string $filepath,
         array $snapshot,
     ): array {
-        $zip_path = str_replace('.sqlite', '.zip', $filepath);
+        $zipPath = str_replace('.sqlite', '.zip', $filepath);
 
         $zip = new ZipArchive();
-        if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return ResultHelper::error(ResponseMessageType::ZipCreateFailed->value);
         }
 
@@ -94,9 +94,9 @@ trait NativeSnapshotCrudTrait {
         $zip->close();
 
         return ResultHelper::ok(array(
-            'filepath'                    => $zip_path,
-            ResponseKeyType::Filename->value => basename($zip_path),
-            ResponseKeyType::Size->value     => filesize($zip_path),
+            'filepath'                    => $zipPath,
+            ResponseKeyType::Filename->value => basename($zipPath),
+            ResponseKeyType::Size->value     => filesize($zipPath),
         ));
     }
 
@@ -151,13 +151,13 @@ trait NativeSnapshotCrudTrait {
 
     public function getAvailableTables(): array {
         $tables = array();
-        $all_tables = $this->wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
-        foreach ($all_tables as $table_info) {
+        $allTables = $this->wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
+        foreach ($allTables as $tableInfo) {
             $tables[] = array(
-                'name'                        => $table_info['Name'],
-                ResponseKeyType::Rows->value  => (int)$table_info['Rows'],
-                ResponseKeyType::Size->value  => (int)$table_info['Data_length'] + (int)$table_info['Index_length'],
-                'is_core'                     => strpos($table_info['Name'], $this->wpdb->prefix) === 0,
+                'name'                        => $tableInfo['Name'],
+                ResponseKeyType::Rows->value  => (int)$tableInfo['Rows'],
+                ResponseKeyType::Size->value  => (int)$tableInfo['Data_length'] + (int)$tableInfo['Index_length'],
+                'isCore'                      => strpos($tableInfo['Name'], $this->wpdb->prefix) === 0,
             );
         }
 

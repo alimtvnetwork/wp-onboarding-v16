@@ -123,7 +123,7 @@ trait PluginRouteRegistrationTrait {
      * Register agent management routes.
      */
     private function registerAgentRoutes(callable $safeRegister, int &$failed): void {
-        $agent_routes = array(
+        $agentRoutes = array(
             array('endpoint' => EndpointType::Agents,        'method' => HttpMethodType::Get,  'handler' => 'handleListAgents'),
             array('endpoint' => EndpointType::AgentsAdd,     'method' => HttpMethodType::Post, 'handler' => 'handleAddAgent'),
             array('endpoint' => EndpointType::AgentsRemove,  'method' => HttpMethodType::Post, 'handler' => 'handleRemoveAgent'),
@@ -134,7 +134,7 @@ trait PluginRouteRegistrationTrait {
             array('endpoint' => EndpointType::AgentHistory,  'method' => HttpMethodType::Get,  'handler' => 'handleAgentHistory'),
         );
 
-        foreach ($agent_routes as $route) {
+        foreach ($agentRoutes as $route) {
             try {
                 $safeRegister($route['endpoint']->route(), array(
                     'methods'             => $route['method']->value,

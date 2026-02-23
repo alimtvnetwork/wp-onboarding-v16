@@ -56,14 +56,14 @@ trait WorkerTableExportTrait {
         $sqlite->exec('PRAGMA journal_mode = WAL');
         $sqlite->exec('PRAGMA synchronous = OFF');
 
-        $create_sql = $this->getCreateTableSql($table);
-        $isCreateSqlMissing = ($create_sql === null);
+        $createSql = $this->getCreateTableSql($table);
+        $isCreateSqlMissing = ($createSql === null);
 
         if ($isCreateSqlMissing) {
             throw new Exception('Failed to get table structure for ' . $table);
         }
 
-        $sqlite->exec(SqliteSchemaConverter::convert($create_sql, $table));
+        $sqlite->exec(SqliteSchemaConverter::convert($createSql, $table));
 
         return $sqlite;
     }
@@ -74,8 +74,8 @@ trait WorkerTableExportTrait {
         int $count,
     ): int {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
-        $column_names = array_column($columns, 'Field');
-        $stmt = $this->prepareExportInsert($sqlite, $table, $column_names);
+        $columnNames = array_column($columns, 'Field');
+        $stmt = $this->prepareExportInsert($sqlite, $table, $columnNames);
 
         $sqlite->beginTransaction();
         $exported = $this->exportRowsInBatches($stmt, $table, $count);

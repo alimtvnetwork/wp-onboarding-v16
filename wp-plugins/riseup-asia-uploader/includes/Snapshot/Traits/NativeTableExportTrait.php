@@ -29,15 +29,15 @@ trait NativeTableExportTrait {
         int $snapshotId,
     ): array {
         try {
-            $create_sql = $this->getCreateTableSql($table);
-            $isCreateSqlMissing = ($create_sql === null || $create_sql === false);
+            $createSql = $this->getCreateTableSql($table);
+            $isCreateSqlMissing = ($createSql === null || $createSql === false);
 
             if ($isCreateSqlMissing) {
                 throw new Exception('Failed to get table structure');
             }
 
-            $sqlite_create = $this->convertCreateStatement($create_sql, $table);
-            $sqlite->exec($sqlite_create);
+            $sqliteCreate = $this->convertCreateStatement($createSql, $table);
+            $sqlite->exec($sqliteCreate);
 
             $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
 
@@ -84,11 +84,11 @@ trait NativeTableExportTrait {
 
     private function prepareInsertStatement(PDO $sqlite, string $table): array {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
-        $column_names = array_column($columns, 'Field');
-        $placeholders = implode(', ', array_fill(0, count($column_names), '?'));
-        $column_list = implode(', ', array_map(function($c) { return "`{$c}`"; }, $column_names));
+        $columnNames = array_column($columns, 'Field');
+        $placeholders = implode(', ', array_fill(0, count($columnNames), '?'));
+        $columnList = implode(', ', array_map(function($c) { return "`{$c}`"; }, $columnNames));
 
-        $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$column_list}) VALUES ({$placeholders})");
+        $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
 
         return array(ResponseKeyType::Stmt->value => $stmt);
     }
@@ -98,14 +98,14 @@ trait NativeTableExportTrait {
         string $table,
         int $count,
     ): array {
-        $batch_size = SnapshotConfigType::BatchSize->value;
+        $batchSize = SnapshotConfigType::BatchSize->value;
         $offset = 0;
         $exported = 0;
         $bytes = 0;
 
         while ($offset < $count) {
             $rows = $this->wpdb->get_results(
-                $this->wpdb->prepare("SELECT * FROM `{$table}` LIMIT %d OFFSET %d", $batch_size, $offset),
+                $this->wpdb->prepare("SELECT * FROM `{$table}` LIMIT %d OFFSET %d", $batchSize, $offset),
                 ARRAY_N
             );
 
@@ -115,8 +115,8 @@ trait NativeTableExportTrait {
                 $bytes += strlen(implode('', array_map('strval', $row)));
             }
 
-            $offset += $batch_size;
-            $this->logExportProgress($table, $offset, $count, $batch_size);
+            $offset += $batchSize;
+            $this->logExportProgress($table, $offset, $count, $batchSize);
         }
 
         return array(

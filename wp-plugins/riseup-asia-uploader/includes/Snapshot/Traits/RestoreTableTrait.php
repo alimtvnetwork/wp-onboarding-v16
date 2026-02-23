@@ -32,8 +32,8 @@ trait RestoreTableTrait {
         string $snapshotDir,
         array $options,
     ): array {
-        $tables_restored = 0;
-        $total_rows = 0;
+        $tablesRestored = 0;
+        $totalRows = 0;
         $errors = array();
 
         foreach ($restoreOrder as $table) {
@@ -45,8 +45,8 @@ trait RestoreTableTrait {
             }
 
             if ($result[ResponseKeyType::Success->value]) {
-                $tables_restored++;
-                $total_rows += $result[ResponseKeyType::Rows->value];
+                $tablesRestored++;
+                $totalRows += $result[ResponseKeyType::Rows->value];
                 $this->log(LogLevelType::Info->value, sprintf('Restored: %s (%d rows)', $table, $result[ResponseKeyType::Rows->value]));
                 continue;
             }
@@ -62,8 +62,8 @@ trait RestoreTableTrait {
         }
 
         return array(
-            ResponseKeyType::TablesRestored->value => $tables_restored,
-            ResponseKeyType::TotalRows->value      => $total_rows,
+            ResponseKeyType::TablesRestored->value => $tablesRestored,
+            ResponseKeyType::TotalRows->value      => $totalRows,
             ResponseKeyType::Errors->value         => $errors,
         );
     }
@@ -73,8 +73,8 @@ trait RestoreTableTrait {
         array $tableInventory,
         string $snapshotDir,
     ): ?array {
-        $table_info = $tableInventory[$table] ?? null;
-        $isTableInfoMissing = ($table_info === null);
+        $tableInfo = $tableInventory[$table] ?? null;
+        $isTableInfoMissing = ($tableInfo === null);
 
         if ($isTableInfoMissing) {
             return ResultHelper::error(
@@ -83,21 +83,21 @@ trait RestoreTableTrait {
             );
         }
 
-        $sqlite_path = $snapshotDir . '/' . $table_info['sqlite_file'];
+        $sqlitePath = $snapshotDir . '/' . $tableInfo['sqlite_file'];
 
-        if (PathHelper::isFileMissing($sqlite_path)) {
+        if (PathHelper::isFileMissing($sqlitePath)) {
             $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array(
                 'table' => $table,
-                'file'  => $table_info['sqlite_file'],
+                'file'  => $tableInfo['sqlite_file'],
             ));
 
             return ResultHelper::error(
-                'SQLite file missing (' . $table_info['sqlite_file'] . ')',
+                'SQLite file missing (' . $tableInfo['sqlite_file'] . ')',
                 array(ResponseKeyType::Rows->value => 0),
             );
         }
 
-        return $this->restoreTableFromFile($sqlite_path, $table, RestoreStrategyType::Truncate->value);
+        return $this->restoreTableFromFile($sqlitePath, $table, RestoreStrategyType::Truncate->value);
     }
 
     private function restoreTableFromFile(
@@ -118,7 +118,7 @@ trait RestoreTableTrait {
                 $table,
                 $validated[ResponseKeyType::Columns->value],
                 $strategy,
-                $validated['row_count'],
+                $validated[ResponseKeyType::RowCount->value],
             );
         } catch (Throwable $e) {
             return ResultHelper::errorFromException(

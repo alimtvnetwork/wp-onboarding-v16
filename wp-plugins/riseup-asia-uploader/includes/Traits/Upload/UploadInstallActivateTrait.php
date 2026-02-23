@@ -29,33 +29,33 @@ trait UploadInstallActivateTrait
             opcache_reset();
         }
 
-        $plugin_file = $this->findPluginFile($slug);
-        $hasPluginFile = BooleanHelpers::hasValue($plugin_file);
+        $pluginFile = $this->findPluginFile($slug);
+        $hasPluginFile = BooleanHelpers::hasValue($pluginFile);
         if ($hasPluginFile) {
-            $this->invalidatePluginCache($plugin_file, $slug);
+            $this->invalidatePluginCache($pluginFile, $slug);
         }
 
-        $isPluginFileMissing = ($plugin_file === null || $plugin_file === '' || $plugin_file === false);
+        $isPluginFileMissing = ($pluginFile === null || $pluginFile === '' || $pluginFile === false);
         if ($isPluginFileMissing) {
             $this->logger->logUploadFailed($slug, 'Could not find plugin file after extraction');
 
             return $this->errorResponse('Could not find plugin file after extraction', HttpStatusType::ServerError->value);
         }
 
-        return $plugin_file;
+        return $pluginFile;
     }
 
     /** Invalidate OPcache entries and WP plugin cache for the given plugin. */
-    private function invalidatePluginCache(string $plugin_file, string $slug): void {
-        $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+    private function invalidatePluginCache(string $pluginFile, string $slug): void {
+        $fullPluginPath = WP_PLUGIN_DIR . '/' . $pluginFile;
         if (function_exists('opcache_invalidate')) {
-            opcache_invalidate($full_plugin_path, true);
+            opcache_invalidate($fullPluginPath, true);
         }
 
-        $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
-        $shouldInvalidateConstants = file_exists($constants_file) && function_exists('opcache_invalidate');
+        $constantsFile = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
+        $shouldInvalidateConstants = file_exists($constantsFile) && function_exists('opcache_invalidate');
         if ($shouldInvalidateConstants) {
-            opcache_invalidate($constants_file, true);
+            opcache_invalidate($constantsFile, true);
         }
 
         wp_cache_delete('plugins', 'plugins');
@@ -85,16 +85,16 @@ trait UploadInstallActivateTrait
     /** Build response for failed activation after upload. */
     private function buildActivationFailureResponse(
         string $slug,
-        bool $is_update,
-        string $error_msg,
+        bool $isUpdate,
+        string $errorMsg,
     ): WP_REST_Response {
-        $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $error_msg);
+        $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $errorMsg);
 
         return EnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Upload->value)
             ->setSingleResult(array(
-                'plugin_slug' => $slug, 'is_update' => $is_update,
-                'activated' => false, 'activation_error' => $error_msg,
+                'pluginSlug' => $slug, 'isUpdate' => $isUpdate,
+                'activated' => false, 'activationError' => $errorMsg,
             ))
             ->toResponse();
     }
@@ -106,29 +106,29 @@ trait UploadInstallActivateTrait
         bool $isSelfUpdate,
         string $clientVersion,
     ): array {
-        $installed_version = $this->readVersionFromFile($pluginFile);
+        $installedVersion = $this->readVersionFromFile($pluginFile);
 
-        if (empty($installed_version)) {
-            $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $pluginFile, false, false);
-            $installed_version = $plugin_data['Version'] ?? '';
+        if (empty($installedVersion)) {
+            $pluginData = get_plugin_data(WP_PLUGIN_DIR . '/' . $pluginFile, false, false);
+            $installedVersion = $pluginData['Version'] ?? '';
         }
 
-        $version = $this->resolveEffectiveVersion($installed_version, $clientVersion, $isSelfUpdate);
+        $version = $this->resolveEffectiveVersion($installedVersion, $clientVersion, $isSelfUpdate);
 
         return array('version' => $version);
     }
 
     /** Read the version header from a plugin's main PHP file. */
-    private function readVersionFromFile(string $plugin_file): string {
-        $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
-        clearstatcache(true, $full_path);
+    private function readVersionFromFile(string $pluginFile): string {
+        $fullPath = WP_PLUGIN_DIR . '/' . $pluginFile;
+        clearstatcache(true, $fullPath);
 
-        if (PathHelper::isFileMissing($full_path)) {
+        if (PathHelper::isFileMissing($fullPath)) {
             return '';
         }
 
-        $file_contents = file_get_contents($full_path, false, null, 0, 8192);
-        if ($file_contents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $file_contents, $matches)) {
+        $fileContents = file_get_contents($fullPath, false, null, 0, 8192);
+        if ($fileContents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $fileContents, $matches)) {
             return $matches[1];
         }
 
@@ -139,9 +139,9 @@ trait UploadInstallActivateTrait
     private function resolveEffectiveVersion(
         string $installed,
         string $client,
-        bool $is_self_update,
+        bool $isSelfUpdate,
     ): string {
-        if ($is_self_update) {
+        if ($isSelfUpdate) {
             return $client ?: ($installed ?: PluginConfigType::Version->value);
         }
 
