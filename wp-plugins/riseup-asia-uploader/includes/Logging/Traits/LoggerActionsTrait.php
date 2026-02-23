@@ -60,7 +60,7 @@ trait LoggerActionsTrait {
         $status = $status ?: StatusType::Success->value;
         $this->fileLogger->info('Logging post action', array(
             'action' => $action,
-            'post_id' => $postId,
+            'postId' => $postId,
             'status' => $status,
         ));
 
