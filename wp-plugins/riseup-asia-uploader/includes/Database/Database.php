@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Database\Traits\DatabaseConnectionTrait;
+use RiseupAsia\Database\Traits\DatabaseConvenienceTrait;
 use RiseupAsia\Database\Traits\DatabaseMigrationsEarlyTrait;
 use RiseupAsia\Database\Traits\DatabaseMigrationsLateTrait;
 use RiseupAsia\Database\Traits\DatabaseQueryTrait;
@@ -29,6 +30,7 @@ use RiseupAsia\Logging\FileLogger;
  */
 class Database {
     use DatabaseConnectionTrait;
+    use DatabaseConvenienceTrait;
     use DatabaseMigrationsEarlyTrait;
     use DatabaseMigrationsLateTrait;
     use DatabaseQueryTrait;
