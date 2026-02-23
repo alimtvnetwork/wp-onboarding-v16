@@ -28,7 +28,13 @@ trait SnapshotSettingsHandlerTrait {
         return $this->safeExecute(function() {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
 
-            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, 'settings' => $manager->getSettings()), HttpStatusType::Ok->value);
+            return new WP_REST_Response(
+                array(
+                    ResponseKeyType::Success->value => true,
+                    'settings' => $manager->getSettings(),
+                ),
+                HttpStatusType::Ok->value,
+            );
         }, 'get_snapshot_settings');
     }
 
@@ -41,7 +47,13 @@ trait SnapshotSettingsHandlerTrait {
             $updated = $manager->updateSettings($body);
             $this->logger->logPluginAction(ActionType::SnapshotSettingsUpdate->value, LogCategoryType::Snapshot->value, StatusType::Success->value, array('keys' => array_keys($body)));
 
-            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, 'settings' => $updated), HttpStatusType::Ok->value);
+            return new WP_REST_Response(
+                array(
+                    ResponseKeyType::Success->value => true,
+                    'settings' => $updated,
+                ),
+                HttpStatusType::Ok->value,
+            );
         }, 'update_snapshot_settings');
     }
 
@@ -50,7 +62,13 @@ trait SnapshotSettingsHandlerTrait {
         return $this->safeExecute(function() {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
 
-            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, 'providers' => $manager->getProviders()), HttpStatusType::Ok->value);
+            return new WP_REST_Response(
+                array(
+                    ResponseKeyType::Success->value => true,
+                    'providers' => $manager->getProviders(),
+                ),
+                HttpStatusType::Ok->value,
+            );
         }, 'list_snapshot_providers');
     }
 
@@ -59,7 +77,13 @@ trait SnapshotSettingsHandlerTrait {
         return $this->safeExecute(function() {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
 
-            return new WP_REST_Response(array(ResponseKeyType::Success->value => true, ResponseKeyType::Tables->value => $manager->getAvailableTables()), HttpStatusType::Ok->value);
+            return new WP_REST_Response(
+                array(
+                    ResponseKeyType::Success->value => true,
+                    ResponseKeyType::Tables->value => $manager->getAvailableTables(),
+                ),
+                HttpStatusType::Ok->value,
+            );
         }, 'list_snapshot_tables');
     }
 
@@ -71,10 +95,17 @@ trait SnapshotSettingsHandlerTrait {
             $analyzer = DependencyAnalyzer::getInstance($this->fileLogger);
             $analysis = $analyzer->analyze($scope);
 
-            return new WP_REST_Response(array(
-                ResponseKeyType::Success->value => true, ResponseKeyType::Tables->value => $analysis[ResponseKeyType::Tables->value], 'dependencies' => $analysis['dependencies'],
-                ResponseKeyType::SeedOrder->value => $analysis[ResponseKeyType::SeedOrder->value], ResponseKeyType::TableCount->value => $analysis[ResponseKeyType::TableCount->value], ResponseKeyType::DepCount->value => $analysis[ResponseKeyType::DepCount->value],
-            ), HttpStatusType::Ok->value);
+            return new WP_REST_Response(
+                array(
+                    ResponseKeyType::Success->value => true,
+                    ResponseKeyType::Tables->value => $analysis[ResponseKeyType::Tables->value],
+                    'dependencies' => $analysis['dependencies'],
+                    ResponseKeyType::SeedOrder->value => $analysis[ResponseKeyType::SeedOrder->value],
+                    ResponseKeyType::TableCount->value => $analysis[ResponseKeyType::TableCount->value],
+                    ResponseKeyType::DepCount->value => $analysis[ResponseKeyType::DepCount->value],
+                ),
+                HttpStatusType::Ok->value,
+            );
         }, 'analyze_dependencies');
     }
 }

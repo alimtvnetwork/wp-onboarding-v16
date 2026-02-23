@@ -80,8 +80,10 @@ trait UploadInstallExtractTrait
         }
 
         return array(
-            ResponseKeyType::TempFile->value => $zip_result[ResponseKeyType::TempFile->value], 'slug' => $slug,
-            'target_dir' => $target_dir, ResponseKeyType::IsUpdate->value => $is_update,
+            ResponseKeyType::TempFile->value => $zip_result[ResponseKeyType::TempFile->value],
+            'slug' => $slug,
+            'target_dir' => $target_dir,
+            ResponseKeyType::IsUpdate->value => $is_update,
             ResponseKeyType::IsSelfUpdate->value => $is_self_update,
         );
     }
@@ -110,8 +112,11 @@ trait UploadInstallExtractTrait
         $version_info = $this->detectInstalledVersion($plugin_file, $ctx['slug'], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['client_plugin_version']);
 
         return array(
-            'slug' => $ctx['slug'], ResponseKeyType::IsUpdate->value => $ctx[ResponseKeyType::IsUpdate->value], ResponseKeyType::Activated->value => $activation[ResponseKeyType::Activated->value],
-            ResponseKeyType::PluginVersion->value => $version_info['version'], ResponseKeyType::IsSelfUpdate->value => $ctx[ResponseKeyType::IsSelfUpdate->value],
+            'slug' => $ctx['slug'],
+            ResponseKeyType::IsUpdate->value => $ctx[ResponseKeyType::IsUpdate->value],
+            ResponseKeyType::Activated->value => $activation[ResponseKeyType::Activated->value],
+            ResponseKeyType::PluginVersion->value => $version_info['version'],
+            ResponseKeyType::IsSelfUpdate->value => $ctx[ResponseKeyType::IsSelfUpdate->value],
         );
     }
 

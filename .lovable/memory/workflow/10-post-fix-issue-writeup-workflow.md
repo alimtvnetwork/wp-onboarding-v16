@@ -32,3 +32,4 @@ Every time a mistake is identified and fixed, the following steps are **mandator
 | When adding a new enum case, update ALL consumers in the same changeset (validation, UI, JS constants, switch statements, cron, migration helper, memory). | `01-hourly-frequency-missing-from-consumers` | `/spec/01-app/enum-consumer-checklist.md` |
 | PHP array literals with >2 items must be written line-by-line (R9c). | `02-r9c-array-literal-formatting` | `/spec/01-app/formatting-rules-reference.md` |
 | Blank line mandatory before `if`/`foreach`/`switch`/`match` after assignments (R10). | `03-r10-activation-handler-formatting` | `/spec/01-app/formatting-rules-reference.md` |
+| Arrays/calls with >2 items must be one item per line with trailing comma (R9). Applies to all files retroactively. | `04-r9-multi-file-array-formatting` | `/spec/01-app/formatting-rules-reference.md` |
