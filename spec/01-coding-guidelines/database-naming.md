@@ -237,10 +237,74 @@ A 5-phase migration plan converts all existing snake_case tables and columns to 
 
 ---
 
+## Common Mistakes — Database Naming
+
+These are real violations found and fixed. Use as a reference to avoid repeating them.
+
+### Mistake 1: Mixed Casing in PHP Insert Arrays
+
+```php
+// ❌ WRONG — mixed casing causes NULL values in the database
+$record = array(
+    'sequence'       => $seq,          // lowercase — won't match 'Sequence' column
+    'filename'       => $name,         // lowercase — won't match 'Filename' column
+    'totalRows'      => $rows,         // camelCase — won't match 'TotalRows' column
+    'triggerSource'  => $trigger,      // camelCase — won't match 'TriggerSource' column
+);
+
+// ✅ CORRECT — every key must be PascalCase
+$record = array(
+    'Sequence'       => $seq,
+    'Filename'       => $name,
+    'TotalRows'      => $rows,
+    'TriggerSource'  => $trigger,
+);
+```
+
+**Impact:** SQLite silently ignores unrecognized column names, resulting in NULL values in the database with no error.
+
+### Mistake 2: snake_case in SQL Queries After Migration
+
+```php
+// ❌ WRONG — using old column names
+$sql = "SELECT plugin_slug, created_at FROM transactions WHERE status = ?";
+
+// ✅ CORRECT — PascalCase post-migration
+$sql = "SELECT PluginSlug, CreatedAt FROM Transactions WHERE Status = ?";
+```
+
+### Mistake 3: Uppercase Abbreviations in Column Names
+
+```sql
+-- ❌ WRONG
+CREATE TABLE Projects (ID INTEGER, ProjectID TEXT, URL TEXT);
+
+-- ✅ CORRECT
+CREATE TABLE Projects (Id INTEGER, ProjectId TEXT, Url TEXT);
+```
+
+### Mistake 4: Go Struct Tags Not Matching Schema
+
+```go
+// ❌ WRONG — tags use Go field casing, not schema casing
+type Project struct {
+    ID        int64  `db:"id"          json:"id"`
+    Name      string `db:"name"        json:"name"`
+}
+
+// ✅ CORRECT — tags match PascalCase schema
+type Project struct {
+    Id        int64  `db:"Id"          json:"Id"`
+    Name      string `db:"Name"        json:"Name"`
+}
+```
+
+---
+
 ## Cross-Reference
 
 - [Cross-Language Code Style](code-style.md) — Formatting rules
-- [PHP Naming Conventions](../04-php-standards/readme.md) — PHP-specific naming
+- [PHP Naming Conventions](../04-php-standards/naming-conventions.md) — PHP-specific naming
 - [Go Coding Standards](../03-golang-standards/readme.md) — Go-specific naming
-- [Enum Standard](../../.lovable/memory/architecture/coding-standards/enums-standard) — Enum casing rules
-- [Database Migration Plan](../../.lovable/plan.md) — Full phase-by-phase migration details
+- [Master Coding Guidelines](./00-master-coding-guidelines.md) — Consolidated cross-language reference
+- [Issues & Fixes Log](./01-issues-and-fixes-log.md) — Full historical fixes

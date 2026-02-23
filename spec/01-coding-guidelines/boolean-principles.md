@@ -352,14 +352,89 @@ if (isUnauthorized) {
 
 ---
 
+## Common Mistakes — Boolean Logic
+
+### Mistake 1: Missing `is`/`has` Prefix (P1)
+
+```php
+// ❌ WRONG
+$active = true;        // What is active? No semantic meaning.
+$loaded = false;       // Ambiguous.
+
+// ✅ CORRECT
+$isActive = true;
+$isLoaded = false;
+```
+
+### Mistake 2: Negative Word in Name (P2)
+
+```go
+// ❌ WRONG — "not" in the name
+isNotReady := order.Status != "ready"
+hasNoPermission := !user.HasPermission("admin")
+
+// ✅ CORRECT — positive semantic synonym
+isPending := order.Status != "ready"
+isUnauthorized := !user.HasPermission("admin")
+```
+
+### Mistake 3: Raw `!` on Function Call (P3)
+
+```php
+// ❌ WRONG
+if (!$order->isValid()) { return; }
+if (!file_exists($path)) { return; }
+
+// ✅ CORRECT
+if ($order->isInvalid()) { return; }
+if (PathHelper::isFileMissing($path)) { return; }
+```
+
+```go
+// ❌ WRONG
+if !v.IsValid() { return variantLabels[Invalid] }
+if !pathutil.IsDir(gitDir) { return err }
+
+// ✅ CORRECT
+if v.IsInvalid() { return variantLabels[Invalid] }
+if pathutil.IsDirMissing(gitDir) { return err }
+```
+
+### Mistake 4: Mixed Polarity in Condition (P6)
+
+```typescript
+// ❌ WRONG — positive + negative in same if
+if (isLoggedIn && !hasPermission) {
+    redirect('/unauthorized');
+}
+
+// ✅ CORRECT — extract to single-intent name
+const isUnauthorized = isLoggedIn && !hasPermission;
+if (isUnauthorized) {
+    redirect('/unauthorized');
+}
+```
+
+### Go-Specific Exemptions
+
+These patterns are **exempt** from the no-negation rule in Go:
+- `if !ok` — idiomatic comma-ok pattern
+- `if !requireService(w, svc, "name")` — handler guard returns
+- `if err != nil` — idiomatic error check
+- `if !strings.HasPrefix(...)` — stdlib calls (extract if repeated 3+ times)
+
+---
+
 ## Cross-References
 
 - [No Raw Negations](./no-negatives.md) — Full guard function inventory
 - [Code Style — Rule 3](./code-style.md) — Complex condition extraction
 - [Function Naming](./function-naming.md) — No boolean flag parameters
 - [PHP Boolean Guard Inventory](../04-php-standards/readme.md) — PHP-specific helpers
-- [Strict Typing](./strict-typing.md) — Type-safe boolean handling
+- [Go Boolean Standards](../03-golang-standards/02-boolean-standards.md) — Go-specific rules and exemptions
+- [Master Coding Guidelines](./00-master-coding-guidelines.md) — Consolidated reference
+- [Issues & Fixes Log](./01-issues-and-fixes-log.md) — Historical fixes
 
 ---
 
-*Boolean principles specification v2.0.0 — 2026-02-17*
+*Boolean principles specification v2.2.0 — 2026-02-23*

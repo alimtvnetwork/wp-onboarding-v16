@@ -1,7 +1,7 @@
 # Golang Coding Standards
 
-> **Version:** 3.0.0  
-> **Updated:** 2026-02-20  
+> **Version:** 3.3.0
+> **Updated:** 2026-02-23
 > **Applies to:** All Go backend code
 
 ---
@@ -577,6 +577,123 @@ import (
 
 ---
 
+## Common Mistakes — Go
+
+These are real violations found and fixed. Reference to avoid repeating.
+
+### Mistake 1: snake_case in `variantLabels`
+
+```go
+// ❌ WRONG — snake_case labels
+var variantLabels = [...]string{
+    Invalid:  "invalid",
+    PerTable: "per_table",
+}
+
+// ✅ CORRECT — PascalCase labels
+var variantLabels = [...]string{
+    Invalid:  "Invalid",
+    PerTable: "PerTable",
+}
+```
+
+### Mistake 2: `!v.IsValid()` Instead of `v.IsInvalid()`
+
+```go
+// ❌ WRONG — raw negation
+func (v Variant) String() string {
+    if !v.IsValid() {
+        return variantLabels[Invalid]
+    }
+    return variantLabels[v]
+}
+
+// ✅ CORRECT — positive counterpart
+func (v Variant) String() string {
+    if v.IsInvalid() {
+        return variantLabels[Invalid]
+    }
+    return variantLabels[v]
+}
+```
+
+### Mistake 3: `!pathutil.IsDir()` Without Counterpart
+
+```go
+// ❌ WRONG — raw negation on utility
+if !pathutil.IsDir(gitDir) {
+    return apperror.FailNew[StatusResult](apperror.ErrGitNotRepo, "not a git repo")
+}
+
+// ✅ CORRECT — use IsDirMissing()
+if pathutil.IsDirMissing(gitDir) {
+    return apperror.FailNew[StatusResult](apperror.ErrGitNotRepo, "not a git repo")
+}
+```
+
+### Mistake 4: `fmt.Errorf()` for Service Errors
+
+```go
+// ❌ WRONG — no stack trace, no error code
+return fmt.Errorf("failed to upload: %w", err)
+
+// ✅ CORRECT — apperror with automatic stack trace
+return apperror.Wrap(err, apperror.ErrUploadFailed, "failed to upload plugin")
+```
+
+### Mistake 5: Raw `(T, error)` from Service Methods
+
+```go
+// ❌ WRONG — raw tuple, no semantic methods
+func (s *PluginService) GetByID(ctx context.Context, id int64) (*Plugin, error) { ... }
+
+// ✅ CORRECT — typed result wrapper
+func (s *PluginService) GetByID(ctx context.Context, id int64) apperror.Result[Plugin] { ... }
+```
+
+### Mistake 6: `interface{}` / `any` in Business Logic
+
+```go
+// ❌ WRONG — type erasure
+func ProcessData(data interface{}) interface{} { ... }
+
+// ✅ CORRECT — concrete types
+func ProcessData(data PluginDetails) (PluginSummary, error) { ... }
+```
+
+### Mistake 7: snake_case in SQL / Struct Tags After Migration
+
+```go
+// ❌ WRONG — old snake_case
+const query = `SELECT plugin_slug FROM transactions`
+type Tx struct {
+    PluginSlug string `db:"plugin_slug"`
+}
+
+// ✅ CORRECT — PascalCase
+const query = `SELECT PluginSlug FROM Transactions`
+type Tx struct {
+    PluginSlug string `db:"PluginSlug"`
+}
+```
+
+### Mistake 8: Compound Negation Without Named Boolean
+
+```go
+// ❌ WRONG — inline negated compound
+if !config.BuildEnabled || config.BuildCommand == "" {
+    return apperror.FailNew[BuildResult](apperror.ErrBuildNotConfigured, "build not configured")
+}
+
+// ✅ CORRECT — named boolean
+isBuildMissing := !config.BuildEnabled || config.BuildCommand == ""
+if isBuildMissing {
+    return apperror.FailNew[BuildResult](apperror.ErrBuildNotConfigured, "build not configured")
+}
+```
+
+---
+
 ## Cross-References
 
 - [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
@@ -584,10 +701,12 @@ import (
 - [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters
 - [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
+- [Boolean Standards](02-boolean-standards.md) — Go-specific positive logic rules and exemptions
 - [apperror Package Spec](../05-error-manage/06-apperror-package/readme.md) — Full StackTrace, AppError, Result types specification
-
 - [Enum Specification](01-enum-specification/00-overview.md) — Byte-based enum pattern, required methods, folder structure
+- [Master Coding Guidelines](../01-coding-guidelines/00-master-coding-guidelines.md) — Consolidated cross-language reference
+- [Issues & Fixes Log](../01-coding-guidelines/01-issues-and-fixes-log.md) — Full historical fixes
 
 ---
 
-*Golang standards specification v3.2.0 — 2026-02-21*
+*Golang standards specification v3.3.0 — 2026-02-23*
