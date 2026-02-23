@@ -909,19 +909,21 @@ Updated 24 internal-domain PHP enum `->value` properties to PascalCase:
 - [ ] Verify frontend correctly handles PascalCase values in API responses
 - [ ] Update any switch/if-else blocks comparing enum strings
 
-## 🔄 Phase 4: Spec Updates
+## ✅ COMPLETED — Phase 4: Spec Updates (2026-02-23)
 
 ### 4.1 Enum Specification
-- [ ] Update `02-required-methods.md` examples to PascalCase labels
-- [ ] Update complete example in same file
-- [ ] Document PascalCase label convention as mandatory rule
+- [x] Updated `02-required-methods.md` examples to PascalCase labels (v4.1.0)
+- [x] Added PascalCase label convention as mandatory rule
+- [x] Documented protocol-driven exemptions
 
 ### 4.2 PHP Standards
-- [ ] Update PHP enum spec to reflect PascalCase `->value` properties
-- [ ] Update `response-key-type-inventory.md` if any response keys changed
+- [x] Updated PHP enum spec to reflect PascalCase `TableType` values with full expansion (v7.1.0)
+- [x] Added `LogColumnType` enum documentation
+- [x] Added log context array keys camelCase rule
+- [x] Updated naming-conventions.md with array key conventions section (v1.1.0)
 
 ### 4.3 Cross-Language Audit
-- [ ] Update `php-go-consistency-audit.md` to reflect new enum value format
+- [x] Created `php-go-consistency-audit.md` — comprehensive 7-section audit covering DB naming, enums, identifiers, API keys, HTTP status, migrations, and exemptions
 
 ## Migration Safety
 

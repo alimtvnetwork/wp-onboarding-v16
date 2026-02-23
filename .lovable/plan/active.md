@@ -82,11 +82,12 @@ All sub-phases 7A–7G complete.
 - Phase 3D: ✅ Updated all PHP code references (9 files fixed — Issue #07)
 - Phase 3E: ✅ Batch F camelCase refactor — internal array keys in enhanced fields
 
-### PascalCase Spec Documentation Updates (Phase 4)
+### ✅ COMPLETED — PascalCase Spec Documentation Updates (Phase 4) (2026-02-23)
 
-- Update `02-required-methods.md` examples to PascalCase labels
-- Update PHP enum spec to reflect PascalCase `->value` properties
-- Update `php-go-consistency-audit.md`
+- ✅ Updated `02-required-methods.md` with PascalCase label convention (v4.1.0)
+- ✅ Updated PHP `enums.md` with full `TableType`, `LogColumnType`, log context keys rule (v7.1.0)
+- ✅ Updated `naming-conventions.md` with array key conventions section (v1.1.0)
+- ✅ Created `php-go-consistency-audit.md` — 7-section cross-language audit
 
 ### Phase 5: Licensing System Architecture
 
