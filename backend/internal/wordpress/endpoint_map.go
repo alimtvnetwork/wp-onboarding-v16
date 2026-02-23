@@ -48,7 +48,9 @@ const (
 	EPSnapshotDelete       WPEndpointName = "SnapshotDelete"
 	EPSnapshotRestore      WPEndpointName = "SnapshotRestore"
 	EPSnapshotExport       WPEndpointName = "SnapshotExport"
-	EPSnapshotSettings     WPEndpointName = "SnapshotSettings"
+	EPSnapshotSettings       WPEndpointName = "SnapshotSettings"
+	EPSnapshotSettingsUpdate WPEndpointName = "SnapshotSettingsUpdate"
+	EPSnapshotSettingsPut    WPEndpointName = "SnapshotSettingsPut"
 	EPSnapshotProviders    WPEndpointName = "SnapshotProviders"
 	EPSnapshotTables       WPEndpointName = "SnapshotTables"
 	EPSnapshotFullBackup   WPEndpointName = "SnapshotFullBackup"
@@ -102,7 +104,9 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPSnapshotDelete:       {Method: "POST", Pattern: "/api/v1/sites/{id}/snapshots/delete"},
 	EPSnapshotRestore:      {Method: "POST", Pattern: "/api/v1/sites/{id}/snapshots/restore"},
 	EPSnapshotExport:       {Method: "POST", Pattern: "/api/v1/sites/{id}/snapshots/export"},
-	EPSnapshotSettings:     {Method: "GET", Pattern: "/api/v1/sites/{id}/snapshots/settings"},
+	EPSnapshotSettings:       {Method: "GET", Pattern: "/api/v1/sites/{id}/snapshots/settings"},
+	EPSnapshotSettingsUpdate: {Method: "POST", Pattern: "/api/v1/sites/{id}/snapshots/settings"},
+	EPSnapshotSettingsPut:    {Method: "PUT", Pattern: "/api/v1/sites/{id}/snapshots/settings"},
 	EPSnapshotProviders:    {Method: "GET", Pattern: "/api/v1/sites/{id}/snapshots/providers"},
 	EPSnapshotTables:       {Method: "GET", Pattern: "/api/v1/sites/{id}/snapshots/tables"},
 	EPSnapshotFullBackup:   {Method: "POST", Pattern: "/api/v1/sites/{id}/snapshots/full-backup"},
@@ -144,7 +148,9 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPSnapshotDelete:       {Method: "POST", Endpoint: ep.SnapshotsDelete},
 	EPSnapshotRestore:      {Method: "POST", Endpoint: ep.SnapshotsRestore},
 	EPSnapshotExport:       {Method: "POST", Endpoint: ep.SnapshotsExport},
-	EPSnapshotSettings:     {Method: "GET", Endpoint: ep.SnapshotsSettings},
+	EPSnapshotSettings:       {Method: "GET", Endpoint: ep.SnapshotsSettings},
+	EPSnapshotSettingsUpdate: {Method: "POST", Endpoint: ep.SnapshotsSettings},
+	EPSnapshotSettingsPut:    {Method: "PUT", Endpoint: ep.SnapshotsSettings},
 	EPSnapshotProviders:    {Method: "GET", Endpoint: ep.SnapshotsProviders},
 	EPSnapshotTables:       {Method: "GET", Endpoint: ep.SnapshotsTables},
 	EPSnapshotFullBackup:   {Method: "POST", Endpoint: ep.SnapshotsFullBackup},
