@@ -119,7 +119,7 @@ trait FileSystemPluginTrait {
         $mainFile = $pluginDir . '/' . $slug . '.php';
         if (file_exists($mainFile)) {
             $this->fileLogger->info('findDirPlugin: Found directory plugin', array(
-                'plugin_file' => $slug . '/' . $slug . '.php',
+                'pluginFile' => $slug . '/' . $slug . '.php',
             ));
 
             return $slug . '/' . $slug . '.php';
@@ -140,7 +140,7 @@ trait FileSystemPluginTrait {
             if ($header !== false && stripos($header, 'Plugin Name:') !== false) {
                 $relative = $slug . '/' . basename($file);
                 $this->fileLogger->info('scanDirForPluginHeader: Found plugin via header scan', array(
-                    'plugin_file' => $relative,
+                    'pluginFile' => $relative,
             ));
 
                 return $relative;
@@ -154,7 +154,7 @@ trait FileSystemPluginTrait {
         $singleFile = WP_PLUGIN_DIR . '/' . $slug . '.php';
         if (file_exists($singleFile)) {
             $this->fileLogger->info('findSingleFilePlugin: Found single-file plugin', array(
-                'plugin_file' => $slug . '.php',
+                'pluginFile' => $slug . '.php',
             ));
 
             return $slug . '.php';

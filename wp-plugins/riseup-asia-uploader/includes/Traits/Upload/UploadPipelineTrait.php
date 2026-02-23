@@ -82,8 +82,8 @@ trait UploadPipelineTrait
             'clientVersion'  => $input['clientPluginVersion'],
             'fileSize'       => strlen($input['zipContent']),
         ), array(
-            'plugin_version' => $input['clientPluginVersion'] ?: PluginConfigType::Version->value,
-            'upload_source'  => $input['uploadSource'],
+            'pluginVersion' => $input['clientPluginVersion'] ?: PluginConfigType::Version->value,
+            'uploadSource'  => $input['uploadSource'],
         ));
     }
 
@@ -103,7 +103,7 @@ trait UploadPipelineTrait
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
             ), array(
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
-                'upload_source' => $input['uploadSource'],
+                'uploadSource' => $input['uploadSource'],
             ));
         }
 

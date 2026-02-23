@@ -116,28 +116,28 @@ trait SnapshotExportHandlerTrait {
         }
 
         $export = $result[ResponseKeyType::Export->value];
-        $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
+        $downloadUrl = $exporter->getDownloadUrl((int) $export['Id']);
 
         $this->logger->logPluginAction(
             ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
             array(
                 ResponseKeyType::SnapshotId->value => $snapshotId,
                 ResponseKeyType::Cached->value     => $result[ResponseKeyType::Cached->value] ?? false,
-                ResponseKeyType::Size->value       => $export['zip_size'] ?? 0,
-                ResponseKeyType::Filename->value   => $export['zip_filename'] ?? '',
+                ResponseKeyType::Size->value       => $export['ZipSize'] ?? 0,
+                ResponseKeyType::Filename->value   => $export['ZipFilename'] ?? '',
             )
         );
 
         return EnvelopeBuilder::success()
             ->setResults(array(array(
                 'url'               => $downloadUrl,
-                ResponseKeyType::Filename->value => $export['zip_filename'],
-                ResponseKeyType::Size->value     => (int) $export['zip_size'],
+                ResponseKeyType::Filename->value => $export['ZipFilename'],
+                ResponseKeyType::Size->value     => (int) $export['ZipSize'],
                 ResponseKeyType::Cached->value   => $result[ResponseKeyType::Cached->value] ?? false,
-                ResponseKeyType::IncludedIds->value      => json_decode($export['included_ids'] ?? '[]', true),
-                ResponseKeyType::IncrementalCount->value => (int) ($export['incremental_count'] ?? 0),
-                ResponseKeyType::CreatedAt->value        => $export['created_at'] ?? '',
-                'status'            => $export['status'] ?? 'valid',
+                ResponseKeyType::IncludedIds->value      => json_decode($export['IncludedIds'] ?? '[]', true),
+                ResponseKeyType::IncrementalCount->value => (int) ($export['IncrementalCount'] ?? 0),
+                ResponseKeyType::CreatedAt->value        => $export['CreatedAt'] ?? '',
+                'status'                                 => $export['Status'] ?? 'valid',
             )))
             ->setRequestedAt('/' . EndpointType::SnapshotDownload->value)
             ->toResponse();

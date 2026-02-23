@@ -84,12 +84,13 @@ trait LoggerContextTrait {
         $sourceMachine = $this->getSourceMachine();
 
         if ($sourceMachine) {
-            $enhanced['source_machine'] = $sourceMachine;
+            $enhanced['sourceMachine'] = $sourceMachine;
         }
 
-        if (empty($enhanced['plugin_version'])) {
-            $enhanced['plugin_version'] = PluginConfigType::Version->value;
+        if (empty($enhanced['pluginVersion'])) {
+            $enhanced['pluginVersion'] = PluginConfigType::Version->value;
         }
+
         $hasExtraEnhanced = BooleanHelpers::hasValue($extraEnhanced);
 
         if ($hasExtraEnhanced) {

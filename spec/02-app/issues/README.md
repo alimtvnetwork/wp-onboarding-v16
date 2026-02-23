@@ -44,3 +44,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 04 | r9-multi-file-array-formatting | Code Style | Arrays/calls with >2 items must be one-per-line across all files |
 | 05 | response-key-type-expansion | Enum/Consumer Sync | Added 7 missing ResponseKeyType cases and migrated ~15 PHP consumers |
 | 06 | i18n-text-domain-literal-requirement | i18n / WordPress Tooling | Text domain in i18n calls must be literal string — never enum/constant |
+| 07 | snake-case-db-column-references-after-v13 | Database / Naming Convention | PHP code used snake_case column names after V13 PascalCase migration |

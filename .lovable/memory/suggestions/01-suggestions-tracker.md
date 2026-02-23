@@ -10,8 +10,8 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-
-*No open suggestions.*
+| S-039 | 2026-02-23 | Low | Audit | open | Fix FrameBuilder.php: remove empty line after `<?php` (Rule 13) and move namespace before ABSPATH guard |
+| S-040 | 2026-02-23 | Low | Audit | open | Replace Autoloader LOG_PREFIX hardcoded string with PluginConfigType::LogPrefix->value |
 
 ---
 
@@ -72,10 +72,10 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 0 |
+| Open | 2 |
 | Completed | 38 |
 | Rejected | 0 |
-| **Total** | **38** |
+| **Total** | **40** |
 
 ---
 
