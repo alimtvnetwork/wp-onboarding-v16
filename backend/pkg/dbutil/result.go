@@ -33,8 +33,9 @@ func (r Result[T]) IsSafe() bool { return r.defined && r.err == nil }
 // Value returns the scanned value (zero-value if not defined).
 func (r Result[T]) Value() T { return r.value }
 
-// Error returns the underlying error, or nil.
-func (r Result[T]) Error() error { return r.err }
+// AppError returns the underlying error, or nil.
+// Named AppError (not Error) to avoid confusion with Go's native error interface.
+func (r Result[T]) AppError() error { return r.err }
 
 // StackTrace returns the captured stack trace if an error occurred.
 func (r Result[T]) StackTrace() string { return r.stackTrace }

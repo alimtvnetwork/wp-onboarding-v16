@@ -20,8 +20,9 @@ func (r ExecResult) HasError() bool { return r.err != nil }
 // IsSafe returns true when there is no error.
 func (r ExecResult) IsSafe() bool { return r.err == nil }
 
-// Error returns the underlying error, or nil.
-func (r ExecResult) Error() error { return r.err }
+// AppError returns the underlying error, or nil.
+// Named AppError (not Error) to avoid confusion with Go's native error interface.
+func (r ExecResult) AppError() error { return r.err }
 
 // StackTrace returns the captured stack trace if an error occurred.
 func (r ExecResult) StackTrace() string { return r.stackTrace }
