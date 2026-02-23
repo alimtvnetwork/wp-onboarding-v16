@@ -1,7 +1,7 @@
 # Issue Write-Ups
 
 > **Purpose:** Permanent record of every mistake, its root cause, fix, and prevention rule.
-> **Updated:** 2026-02-22
+> **Updated:** 2026-02-23
 
 ## Why This Exists
 
@@ -42,3 +42,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 02 | r9c-array-literal-formatting | Code Style | PHP arrays with >2 items must be line-by-line |
 | 03 | r10-activation-handler-formatting | Code Style | Blank line required before control structures after assignments |
 | 04 | r9-multi-file-array-formatting | Code Style | Arrays/calls with >2 items must be one-per-line across all files |
+| 05 | response-key-type-expansion | Enum/Consumer Sync | Added 7 missing ResponseKeyType cases and migrated ~15 PHP consumers |

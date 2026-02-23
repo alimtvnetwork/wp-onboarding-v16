@@ -56,7 +56,7 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zip_result) {
         $context = $this->prepareExtractionContext($input, $zip_result);
 
-        $isPreviouslyActive = $this->deactivateIfUpdating($context['slug'], $context[ResponseKeyType::IsUpdate->value], $context['target_dir']);
+        $isPreviouslyActive = $this->deactivateIfUpdating($context[ResponseKeyType::Slug->value], $context[ResponseKeyType::IsUpdate->value], $context['target_dir']);
 
         $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input);
         if ($stepResult instanceof WP_REST_Response) {
@@ -68,7 +68,7 @@ trait UploadInstallExtractTrait
 
     /** Prepare extraction context from input and ZIP result. */
     private function prepareExtractionContext(array $input, array $zip_result): array {
-        $slug       = $zip_result['slug'];
+        $slug       = $zip_result[ResponseKeyType::Slug->value];
         $target_dir = WP_PLUGIN_DIR . '/' . $slug;
         $is_update  = is_dir($target_dir);
 
@@ -81,7 +81,7 @@ trait UploadInstallExtractTrait
 
         return array(
             ResponseKeyType::TempFile->value => $zip_result[ResponseKeyType::TempFile->value],
-            'slug' => $slug,
+            ResponseKeyType::Slug->value => $slug,
             'target_dir' => $target_dir,
             ResponseKeyType::IsUpdate->value => $is_update,
             ResponseKeyType::IsSelfUpdate->value => $is_self_update,
@@ -94,25 +94,25 @@ trait UploadInstallExtractTrait
         bool $isPreviouslyActive,
         array $input,
     ) {
-        $extract_result = $this->extractToPluginsDir($ctx[ResponseKeyType::TempFile->value], $ctx['slug'], $ctx['target_dir']);
+        $extract_result = $this->extractToPluginsDir($ctx[ResponseKeyType::TempFile->value], $ctx[ResponseKeyType::Slug->value], $ctx['target_dir']);
         if ($extract_result instanceof WP_REST_Response) {
             return $extract_result;
         }
 
-        $plugin_file = $this->resetOpcacheAndFindPlugin($ctx['slug']);
+        $plugin_file = $this->resetOpcacheAndFindPlugin($ctx[ResponseKeyType::Slug->value]);
         if ($plugin_file instanceof WP_REST_Response) {
             return $plugin_file;
         }
 
-        $activation = $this->activateIfNeeded($plugin_file, $ctx['slug'], $input['activate'], $isPreviouslyActive, $ctx[ResponseKeyType::IsUpdate->value]);
+        $activation = $this->activateIfNeeded($plugin_file, $ctx[ResponseKeyType::Slug->value], $input['activate'], $isPreviouslyActive, $ctx[ResponseKeyType::IsUpdate->value]);
         if ($activation instanceof WP_REST_Response) {
             return $activation;
         }
 
-        $version_info = $this->detectInstalledVersion($plugin_file, $ctx['slug'], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['client_plugin_version']);
+        $version_info = $this->detectInstalledVersion($plugin_file, $ctx[ResponseKeyType::Slug->value], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['client_plugin_version']);
 
         return array(
-            'slug' => $ctx['slug'],
+            ResponseKeyType::Slug->value => $ctx[ResponseKeyType::Slug->value],
             ResponseKeyType::IsUpdate->value => $ctx[ResponseKeyType::IsUpdate->value],
             ResponseKeyType::Activated->value => $activation[ResponseKeyType::Activated->value],
             ResponseKeyType::PluginVersion->value => $version_info['version'],

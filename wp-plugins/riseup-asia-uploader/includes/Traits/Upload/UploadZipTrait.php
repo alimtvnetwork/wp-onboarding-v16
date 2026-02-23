@@ -40,7 +40,7 @@ trait UploadZipTrait
         $final_slug = $hasSlug ? $slug : $detected_slug;
         $this->fileLogger->info('Plugin slug determined', array('slug' => $final_slug));
 
-        return array(ResponseKeyType::TempFile->value => $temp_file, 'slug' => $final_slug);
+        return array(ResponseKeyType::TempFile->value => $temp_file, ResponseKeyType::Slug->value => $final_slug);
     }
 
     /** Write ZIP content to a temp file. */

@@ -20,6 +20,7 @@ use Throwable;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 
@@ -93,24 +94,24 @@ trait UploadPipelineTrait
     }
 
     private function logUploadResult(array $result, array $input): void {
-        $isExternalUpload = ($result['is_self_update'] === false);
+        $isExternalUpload = ($result[ResponseKeyType::IsSelfUpdate->value] === false);
         if ($isExternalUpload) {
-            $this->logger->logUpload($result['slug'], array(
-                'is_update' => $result['is_update'],
-                'activated' => $result['activated'],
+            $this->logger->logUpload($result[ResponseKeyType::Slug->value], array(
+                ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
+                ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
                 'file_size' => strlen($input['zip_content']),
-                'plugin_version' => $result['plugin_version'],
+                ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
             ), array(
-                'plugin_version' => $result['plugin_version'],
+                ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
                 'upload_source' => $input['upload_source'],
             ));
         }
 
         $this->fileLogger->info('Upload complete', array(
-            'slug' => $result['slug'],
-            'is_update' => $result['is_update'],
-            'activated' => $result['activated'],
-            'plugin_version' => $result['plugin_version'],
+            ResponseKeyType::Slug->value => $result[ResponseKeyType::Slug->value],
+            ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
+            ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
+            ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
             'upload_source' => $input['upload_source'],
         ));
     }
@@ -119,11 +120,11 @@ trait UploadPipelineTrait
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route())
             ->setSingleResult(array(
-                'plugin_slug'    => $result['slug'],
-                'is_update'      => $result['is_update'],
-                'activated'      => $result['activated'],
-                'plugin_version' => $result['plugin_version'],
-                'upload_source'  => $input['upload_source'],
+                ResponseKeyType::PluginSlug->value => $result[ResponseKeyType::Slug->value],
+                ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
+                ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
+                ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
+                'upload_source' => $input['upload_source'],
             ))
             ->toResponse();
     }

@@ -26,16 +26,19 @@ enum ResponseKeyType: string
     case Reason   = 'reason';
 
     /** Domain collection keys. */
-    case Total     = 'total';
-    case Agents    = 'agents';
-    case Actions   = 'actions';
-    case Logs      = 'logs';
-    case Snapshots = 'snapshots';
-    case Sql       = 'sql';
-    case Params    = 'params';
-    case Sets      = 'sets';
-    case Plugins   = 'plugins';
-    case Tables    = 'tables';
+    case Total        = 'total';
+    case Agents       = 'agents';
+    case Actions      = 'actions';
+    case Logs         = 'logs';
+    case Snapshots    = 'snapshots';
+    case Sql          = 'sql';
+    case Params       = 'params';
+    case Sets         = 'sets';
+    case Plugins      = 'plugins';
+    case Tables       = 'tables';
+    case Settings     = 'settings';
+    case Providers    = 'providers';
+    case Dependencies = 'dependencies';
 
     /** File and size keys. */
     case Rows      = 'rows';
@@ -103,6 +106,12 @@ enum ResponseKeyType: string
     case PluginVersion   = 'pluginVersion';
     case ActivationError = 'activationError';
     case Inventory       = 'inventory';
+    case PluginFile      = 'pluginFile';
+
+    /** General-purpose entity keys. */
+    case Slug  = 'slug';
+    case Title = 'title';
+    case Type  = 'type';
 
     /** Log/diagnostic keys. */
     case ErrorLog      = 'errorLog';

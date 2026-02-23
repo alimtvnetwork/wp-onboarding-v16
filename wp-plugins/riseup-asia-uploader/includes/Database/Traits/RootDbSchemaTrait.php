@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
@@ -181,18 +182,18 @@ trait RootDbSchemaTrait {
             VALUES (1, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
 
         $stmt->execute(array(
-            $config['title'] ?? SnapshotConfigType::UntitledTitle,
-            $config['type'] ?? SnapshotModeType::Full->value,
+            $config[ResponseKeyType::Title->value] ?? SnapshotConfigType::UntitledTitle,
+            $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
             DateHelper::nowIso(),
             gethostname() ?: php_uname('n'),
             $mysqlVersion,
             $wpVersion,
             PluginConfigType::Version->value,
-            isset($config['settings']) ? json_encode($config['settings']) : null,
+            isset($config[ResponseKeyType::Settings->value]) ? json_encode($config[ResponseKeyType::Settings->value]) : null,
         ));
 
         $this->log(LogLevelType::Info->value, 'Metadata populated', array(
-            'title' => $config['title'] ?? 'Untitled',
+            ResponseKeyType::Title->value => $config[ResponseKeyType::Title->value] ?? 'Untitled',
             'mysql_version' => $mysqlVersion,
             'wp_version' => $wpVersion,
         ));
@@ -206,7 +207,7 @@ trait RootDbSchemaTrait {
 
         $pdo->beginTransaction();
 
-        foreach ($analysis['dependencies'] as $dep) {
+        foreach ($analysis[ResponseKeyType::Dependencies->value] as $dep) {
             $stmt->execute(array(
                 $dep['parent_table'],
                 $dep['child_table'],
@@ -217,8 +218,8 @@ trait RootDbSchemaTrait {
         $pdo->commit();
 
         $this->log(LogLevelType::Info->value, 'Dependencies populated', array(
-            'edges' => count($analysis['dependencies']),
-            'tables' => count($analysis['tables']),
+            'edges' => count($analysis[ResponseKeyType::Dependencies->value]),
+            ResponseKeyType::Tables->value => count($analysis[ResponseKeyType::Tables->value]),
         ));
 
         return $analysis;

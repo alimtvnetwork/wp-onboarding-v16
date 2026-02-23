@@ -24,21 +24,21 @@ use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerSetupTrait {
     private function prepareSnapshotDir(array $config): array {
-        $title = $config['title'] ?? (SnapshotConfigType::DefaultTitle . ' ' . date('Y-m-d H:i'));
+        $title = $config[ResponseKeyType::Title->value] ?? (SnapshotConfigType::DefaultTitle . ' ' . date('Y-m-d H:i'));
         $scope = $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value;
-        $type  = $config['type'] ?? SnapshotModeType::Full->value;
+        $type  = $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value;
 
-        $hasPoolSize = BooleanHelpers::hasValue($config['settings']['worker_pool_size'] ?? null);
+        $hasPoolSize = BooleanHelpers::hasValue($config[ResponseKeyType::Settings->value]['worker_pool_size'] ?? null);
 
         if ($hasPoolSize) {
-            $this->setPoolSize($config['settings']['worker_pool_size']);
+            $this->setPoolSize($config[ResponseKeyType::Settings->value]['worker_pool_size']);
         }
 
         $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
-            'title'                           => $title,
-            ResponseKeyType::Scope->value     => $scope,
-            'type'                            => $type,
-            'pool_size'                       => $this->poolSize,
+            ResponseKeyType::Title->value         => $title,
+            ResponseKeyType::Scope->value         => $scope,
+            ResponseKeyType::Type->value          => $type,
+            ResponseKeyType::PoolSize->value      => $this->poolSize,
         ));
 
         $base_dir = $this->getSnapshotsBaseDir();
@@ -54,18 +54,18 @@ trait WorkerSetupTrait {
         return ResultHelper::ok(array(
             ResponseKeyType::SnapshotDir->value => $snapshot_dir,
             ResponseKeyType::DirName->value     => $dir_name,
-            'title'                             => $title,
+            ResponseKeyType::Title->value       => $title,
             ResponseKeyType::Scope->value       => $scope,
-            'type'                              => $type,
+            ResponseKeyType::Type->value        => $type,
         ));
     }
 
     private function initRootDb(string $snapshotDir, array $config): PDO {
         $rootPdo = $this->rootDb->create($snapshotDir . '/' . SnapshotConfigType::RootDbFilename);
         $this->rootDb->populateMetadata($rootPdo, array(
-            'title'    => $config['title'] ?? SnapshotConfigType::DefaultTitle,
-            'type'     => $config['type'] ?? SnapshotModeType::Full->value,
-            'settings' => $config['settings'] ?? null,
+            ResponseKeyType::Title->value    => $config[ResponseKeyType::Title->value] ?? SnapshotConfigType::DefaultTitle,
+            ResponseKeyType::Type->value     => $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
+            ResponseKeyType::Settings->value => $config[ResponseKeyType::Settings->value] ?? null,
         ));
 
         return $rootPdo;
@@ -74,11 +74,11 @@ trait WorkerSetupTrait {
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value);
         $this->log(LogLevelType::Info->value, 'Export order determined', array(
-            ResponseKeyType::Tables->value => count($analysis['seed_order']),
-            'pool_size'                    => $this->poolSize,
+            ResponseKeyType::Tables->value => count($analysis[ResponseKeyType::SeedOrder->value]),
+            ResponseKeyType::PoolSize->value => $this->poolSize,
         ));
 
-        return $analysis['seed_order'];
+        return $analysis[ResponseKeyType::SeedOrder->value];
     }
 
     private function getSnapshotsBaseDir(): string {

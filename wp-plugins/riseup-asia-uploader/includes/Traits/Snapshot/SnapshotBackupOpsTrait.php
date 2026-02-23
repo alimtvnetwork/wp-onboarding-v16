@@ -36,8 +36,10 @@ trait SnapshotBackupOpsTrait {
             $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
 
             $result = $worker->execute(array(
-                'title' => $body['title'] ?? null, ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
-                'type' => $body['type'] ?? SnapshotModeType::Full->value, 'settings' => $body['settings'] ?? null,
+                ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null,
+                ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
+                ResponseKeyType::Type->value => $body[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
+                ResponseKeyType::Settings->value => $body[ResponseKeyType::Settings->value] ?? null,
             ));
 
             return $this->buildExportResponse($result);

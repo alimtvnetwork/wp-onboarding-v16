@@ -37,12 +37,12 @@ trait PluginLifecycleDeleteTrait {
             return $resolved;
         }
 
-        $deactivation = $this->deactivateBeforeDelete($resolved['slug'], $resolved['plugin_file']);
+        $deactivation = $this->deactivateBeforeDelete($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
         if ($deactivation instanceof WP_REST_Response) {
             return $deactivation;
         }
 
-        return $this->tryDeletePlugin($resolved['slug'], $resolved['plugin_file']);
+        return $this->tryDeletePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
     }
 
     private function deactivateBeforeDelete(string $slug, string $pluginFile): bool|WP_REST_Response {

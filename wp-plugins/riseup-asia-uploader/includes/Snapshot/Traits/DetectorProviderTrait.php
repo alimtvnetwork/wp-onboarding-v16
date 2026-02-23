@@ -193,7 +193,7 @@ trait DetectorProviderTrait {
         $this->logger->info('[SNAPSHOT] Provider detection complete', array(
             'total'     => count($providers),
             'available' => count($available),
-            'providers' => array_map(function($p) {
+            ResponseKeyType::Providers->value => array_map(function($p) {
                 return array(
                     'id'        => $p['id'],
                     'available' => $p['available'],
