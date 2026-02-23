@@ -94,7 +94,7 @@ var variantLabels = [...]string{
 }
 
 func (v Variant) String() string {
-	if !v.IsValid() {
+	if v.IsInvalid() {
 		return variantLabels[Invalid]
 	}
 	return variantLabels[v]

@@ -488,43 +488,33 @@ All three enums follow the standard `byte`-based pattern with `Invalid` zero-val
 
 ---
 
-## Go Phase 4: Positive Logic & Boolean Standards
+## ✅ COMPLETED — Go Phase 4: Positive Logic & Boolean Standards (2026-02-23)
 
-### 4.1 — Positive Boolean Naming
+### 4.1 — Boolean Standards Spec ✅
 
-```go
-// ❌ Negative naming
-func IsNotValid() bool
-func HasNoPermission() bool
-if !user.IsDisabled() { ... }
+Created `spec/03-golang-standards/02-boolean-standards.md` (v1.0.0):
+- Rule P1: Positive boolean naming (`Is`/`Has` prefixes mandatory)
+- Rule P2: Negation elimination with named variables and positive counterpart methods
+- Go-specific exemptions: comma-ok pattern, handler guards, error-nil checks, stdlib returns
+- Cross-language alignment with PHP Boolean Guard System (P1–P6)
 
-// ✅ Positive naming
-func IsValid() bool
-func HasPermission() bool
-if user.IsActive() { ... }
-```
+### 4.2 — Lint Script ✅
 
-### 4.2 — Negation Elimination
+Created `scripts/lint-negative.sh`:
+- Flags `IsNot*`, `HasNo*` function declarations
+- Exempts enum variant checkers (e.g., `IsNotFound` for `NotFound` variant)
+- Supports `--dir`, `--include-tests`, `--verbose` flags
+- Matches existing lint script patterns (`lint-file-size.sh`, `lint-func-size.sh`)
 
-- Replace `!isX` with positive counterpart method
-- `IsOtherThan(val)` instead of `!= val` (mirrors PHP enum pattern)
-- Named boolean variables for compound conditions:
+### 4.3 — Code Fixes ✅
 
-```go
-// ❌ Inline negation
-if !user.IsAdmin() && !request.IsInternal() { ... }
+| Category | Files Changed | Fix Applied |
+|----------|--------------|-------------|
+| Enum `String()` methods | 21 enum packages | `if !v.IsValid()` → `if v.IsInvalid()` |
+| `pathutil` package | `pathutil.go` | Added `IsDirMissing()` counterpart |
+| `git/service.go` | 4 call sites | `!pathutil.IsDir()` → `pathutil.IsDirMissing()` |
+| `git/service.go` | 1 compound condition | `!config.BuildEnabled || ...` → `isBuildMissing` named variable |
 
-// ✅ Named positive logic
-isExternalNonAdmin := user.IsRegular() && request.IsExternal()
-if isExternalNonAdmin { ... }
-```
-
-### 4.3 — Lint Rule
-
-- `scripts/lint-negative.sh` — flag `IsNot*`, `HasNo*` function names
-- Manual review for `!` negation in boolean expressions
-
-### Estimated Effort: 2 tasks
 
 ---
 

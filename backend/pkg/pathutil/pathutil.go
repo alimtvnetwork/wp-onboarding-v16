@@ -94,6 +94,9 @@ func IsDir(path string) bool {
 	return info.IsDir()
 }
 
+// IsDirMissing returns true when the path does not exist or is not a directory.
+func IsDirMissing(path string) bool { return !IsDir(path) }
+
 // ForDisplay returns a path suitable for display in logs (absolute, forward slashes).
 func ForDisplay(path string) string {
 	abs, err := ToAbsolute(path)
