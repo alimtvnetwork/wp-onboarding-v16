@@ -67,16 +67,16 @@ trait SchedulerTriggerTrait {
 
         try {
             $settings = $this->detector->getSettings();
-            $snapshotType = $options['snapshot_type'] ?? SnapshotModeType::Full->value;
-            $title = $options['title'] ?? ($snapshotType === SnapshotModeType::Incremental->value
+            $snapshotType = $options[ResponseKeyType::SnapshotType->value] ?? SnapshotModeType::Full->value;
+            $title = $options[ResponseKeyType::Title->value] ?? ($snapshotType === SnapshotModeType::Incremental->value
                 ? 'Incremental Backup ' . DateHelper::nowCompactDatetime()
                 : 'Manual Backup ' . DateHelper::nowCompactDatetime());
 
             $cronArgs = array(
-                'snapshot_type'                     => $snapshotType,
-                'title'                             => $title,
-                ResponseKeyType::Scope->value       => $options[ResponseKeyType::Scope->value] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
-                'master_snapshot_id'                => $options['master_snapshot_id'] ?? null,
+                ResponseKeyType::SnapshotType->value => $snapshotType,
+                ResponseKeyType::Title->value        => $title,
+                ResponseKeyType::Scope->value        => $options[ResponseKeyType::Scope->value] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
+                'master_snapshot_id'                 => $options['master_snapshot_id'] ?? null,
             );
 
             $scheduled = wp_schedule_single_event(
@@ -92,14 +92,14 @@ trait SchedulerTriggerTrait {
             }
 
             $this->logger->info('[SCHEDULER] Snapshot Now scheduled as background cron job', array(
-                'type'  => $snapshotType,
-                'title' => $title,
+                ResponseKeyType::Type->value  => $snapshotType,
+                ResponseKeyType::Title->value => $title,
             ));
 
             return ResultHelper::ok(array(
                 'scheduled'                          => true,
                 ResponseKeyType::SnapshotType->value => $snapshotType,
-                'title'                              => $title,
+                ResponseKeyType::Title->value        => $title,
                 ResponseKeyType::Message->value      => 'Snapshot has been scheduled and will run in the background.',
             ));
         } catch (Throwable $e) {

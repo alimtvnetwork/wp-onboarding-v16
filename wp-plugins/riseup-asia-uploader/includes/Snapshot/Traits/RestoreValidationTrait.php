@@ -70,14 +70,14 @@ trait RestoreValidationTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Restore order determined', array(
-            'tables' => count($restoreOrder),
-            'order'  => array_slice($restoreOrder, 0, 10),
+            ResponseKeyType::Tables->value => count($restoreOrder),
+            'order'                        => array_slice($restoreOrder, 0, 10),
         ));
 
         return array(
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Tables->value  => $restoreOrder,
-            'inventory'                     => $tableInventory,
+            ResponseKeyType::Inventory->value => $tableInventory,
         );
     }
 
@@ -93,9 +93,9 @@ trait RestoreValidationTrait {
         $this->log(LogLevelType::Info->value, 'Creating pre-restore safety backup');
 
         $result = $this->orchestrator->executeFullBackup(array(
-            'title'           => 'Pre-Restore Safety Backup ' . DateHelper::nowCompactDatetime(),
-            'compression'     => false,
-            'include_plugins' => false,
+            ResponseKeyType::Title->value => 'Pre-Restore Safety Backup ' . DateHelper::nowCompactDatetime(),
+            'compression'                 => false,
+            'include_plugins'             => false,
         ));
 
         if ($result[ResponseKeyType::Success->value]) {
@@ -107,7 +107,7 @@ trait RestoreValidationTrait {
         }
 
         $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array(
-            'error' => $result[ResponseKeyType::Error->value] ?? 'Unknown',
+            ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? 'Unknown',
         ));
 
         $isBackupRequired = BooleanHelpers::hasValue($options['require_backup'] ?? null);

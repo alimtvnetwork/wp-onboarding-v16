@@ -23,6 +23,7 @@ class AdminMailer {
 
     private const THROTTLE_TRANSIENT = 'riseup_last_error_email';
     private const DEFAULT_THROTTLE_MINUTES = 60;
+    private const SEPARATOR_WIDTH = 50;
     private static function logPrefix(): string { return PluginConfigType::LogPrefix->value . ' AdminMailer: '; }
 
     /**
@@ -121,7 +122,7 @@ class AdminMailer {
     private function buildBody(array $errors): string {
         $lines = [];
         $lines[] = PluginConfigType::Name->value . ' — Boot Error Report';
-        $lines[] = str_repeat('=', 50);
+        $lines[] = str_repeat('=', self::SEPARATOR_WIDTH);
         $lines[] = '';
         $lines[] = 'Site URL:       ' . get_site_url();
         $lines[] = 'Plugin Version: ' . PluginConfigType::Version->value;
@@ -130,7 +131,7 @@ class AdminMailer {
         $lines[] = 'Timestamp:      ' . DateHelper::nowUtc();
         $lines[] = '';
         $lines[] = 'Errors (' . count($errors) . '):';
-        $lines[] = str_repeat('-', 50);
+        $lines[] = str_repeat('-', self::SEPARATOR_WIDTH);
 
         foreach ($errors as $index => $error) {
             $num = $index + 1;
@@ -141,7 +142,7 @@ class AdminMailer {
         }
 
         $lines[] = '';
-        $lines[] = str_repeat('-', 50);
+        $lines[] = str_repeat('-', self::SEPARATOR_WIDTH);
         $lines[] = 'This is an automated message from the ' . PluginConfigType::Name->value . ' plugin.';
         $lines[] = 'To disable these notifications, update the error notification settings in your plugin configuration.';
 
