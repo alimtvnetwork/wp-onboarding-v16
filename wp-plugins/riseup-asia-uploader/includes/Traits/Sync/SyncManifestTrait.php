@@ -26,9 +26,6 @@ use RiseupAsia\Helpers\DateHelper;
 
 trait SyncManifestTrait
 {
-    /**
-     * Handle sync manifest endpoint.
-     */
     public function handleSyncManifest(WP_REST_Request $request): WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
@@ -43,20 +40,19 @@ trait SyncManifestTrait
         }
     }
 
-    /** Generate a sync manifest for a plugin. */
     private function generateSyncManifest(string $slug): WP_REST_Response {
         if (BooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
-        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (PathHelper::isDirMissing($plugin_dir)) {
+        $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+        if (PathHelper::isDirMissing($pluginDir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        $ignore = UploadIgnore::fromDirectory($plugin_dir);
+        $ignore = UploadIgnore::fromDirectory($pluginDir);
         $fileCache = FileCache::getInstance($this->fileLogger, $this->db);
-        $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
+        $result = $fileCache->getManifest($slug, $pluginDir, $ignore);
 
         return new WP_REST_Response(array(
             ResponseKeyType::Success->value => true,
@@ -69,7 +65,6 @@ trait SyncManifestTrait
         ), HttpStatusType::Ok->value);
     }
 
-    /** Recursively scan a directory and collect file info with hashes. */
     private function scanDirectoryForFiles(
         string $baseDir,
         string $dir,
@@ -86,28 +81,27 @@ trait SyncManifestTrait
                 continue;
             }
 
-            $full_path = $dir . '/' . $item;
-            $rel_path  = ltrim(str_replace($baseDir, '', $full_path), '/\\');
+            $fullPath = $dir . '/' . $item;
+            $relPath  = ltrim(str_replace($baseDir, '', $fullPath), '/\\');
 
-            if ($ignore->shouldIgnore($rel_path)) {
+            if ($ignore->shouldIgnore($relPath)) {
                 continue;
             }
 
-            if (is_dir($full_path)) {
-                $this->scanDirectoryForFiles($baseDir, $full_path, $ignore, $files);
+            if (is_dir($fullPath)) {
+                $this->scanDirectoryForFiles($baseDir, $fullPath, $ignore, $files);
             } else {
-                $files[] = $this->buildFileEntry($rel_path, $full_path);
+                $files[] = $this->buildFileEntry($relPath, $fullPath);
             }
         }
     }
 
-    /** Build a file entry for the manifest. */
-    private function buildFileEntry(string $rel_path, string $full_path): array {
+    private function buildFileEntry(string $relPath, string $fullPath): array {
         return array(
-            'path' => str_replace('\\', '/', $rel_path),
-            'hash' => @md5_file($full_path) ?: '',
-            'size' => @filesize($full_path) ?: 0,
-            'modifiedAt' => ($mtime = @filemtime($full_path)) ? DateHelper::formatIso($mtime) : null,
+            'path' => str_replace('\\', '/', $relPath),
+            'hash' => @md5_file($fullPath) ?: '',
+            'size' => @filesize($fullPath) ?: 0,
+            'modifiedAt' => ($mtime = @filemtime($fullPath)) ? DateHelper::formatIso($mtime) : null,
         );
     }
 }

@@ -33,28 +33,28 @@ trait WorkerJobProgressTrait {
             return null;
         }
 
-        $all_tables = json_decode($job['TablesJson'], true);
-        $total_tables = count($all_tables);
-        $pool_size = (int) $job['PoolSize'];
-        $total_batches = (int) ceil($total_tables / $pool_size);
+        $allTables = json_decode($job['TablesJson'], true);
+        $totalTables = count($allTables);
+        $poolSize = (int) $job['PoolSize'];
+        $totalBatches = (int) ceil($totalTables / $poolSize);
 
-        $table_progress = $this->loadTableProgress($pdo);
+        $tableProgress = $this->loadTableProgress($pdo);
 
         return array(
             ResponseKeyType::JobId->value => (int) $job['Id'],
             'status' => $job['Status'],
-            ResponseKeyType::TotalTables->value => $total_tables,
+            ResponseKeyType::TotalTables->value => $totalTables,
             ResponseKeyType::TablesExported->value => (int) $job['TablesExported'],
             ResponseKeyType::TotalRows->value => (int) $job['TotalRows'],
-            ResponseKeyType::PoolSize->value => $pool_size,
-            ResponseKeyType::TotalBatches->value => $total_batches,
+            ResponseKeyType::PoolSize->value => $poolSize,
+            ResponseKeyType::TotalBatches->value => $totalBatches,
             ResponseKeyType::CurrentBatch->value => (int) $job['CurrentBatch'],
             ResponseKeyType::Errors->value => json_decode($job['ErrorsJson'] ?? '[]', true),
             ResponseKeyType::CreatedAt->value => $job['CreatedAt'],
             ResponseKeyType::UpdatedAt->value => $job['UpdatedAt'],
             ResponseKeyType::CompletedAt->value => $job['CompletedAt'],
-            ResponseKeyType::TableProgress->value => $table_progress,
-            'percent' => $total_tables > 0 ? round(((int) $job['TablesExported'] / $total_tables) * 100, 1) : 0,
+            ResponseKeyType::TableProgress->value => $tableProgress,
+            'percent' => $totalTables > 0 ? round(((int) $job['TablesExported'] / $totalTables) * 100, 1) : 0,
         );
     }
 

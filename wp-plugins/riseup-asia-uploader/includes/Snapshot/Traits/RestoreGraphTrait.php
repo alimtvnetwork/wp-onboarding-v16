@@ -45,9 +45,9 @@ trait RestoreGraphTrait {
         foreach ($rows as $row) {
             $name = $row[$tableNameCol];
             $inventory[$name] = array(
-                'sqlite_file'  => $row[$sqliteFileCol],
-                'row_count'    => (int) $row[$rowCountCol],
-                'checksum_md5' => $row[$checksumCol],
+                'sqliteFile'  => $row[$sqliteFileCol],
+                'rowCount'    => (int) $row[$rowCountCol],
+                'checksumMd5' => $row[$checksumCol],
             );
         }
 
@@ -55,39 +55,39 @@ trait RestoreGraphTrait {
     }
 
     private function getRestoreOrder(PDO $rootPdo, array $tableInventory): array {
-        $all_tables = array_keys($tableInventory);
+        $allTables = array_keys($tableInventory);
 
         $depsTable = $this->resolveRootTable($rootPdo, 'TableDependencies', 'table_dependencies');
         $parentCol = $this->resolveRootCol($rootPdo, $depsTable, 'ParentTable', 'parent_table');
         $childCol = $this->resolveRootCol($rootPdo, $depsTable, 'ChildTable', 'child_table');
 
         $deps = $rootPdo->query(
-            "SELECT {$parentCol} AS parent_table, {$childCol} AS child_table FROM {$depsTable}"
+            "SELECT {$parentCol} AS parentTable, {$childCol} AS childTable FROM {$depsTable}"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($deps)) {
-            sort($all_tables);
+            sort($allTables);
 
-            return $all_tables;
+            return $allTables;
         }
 
-        $graph = $this->buildDependencyGraph($all_tables, $deps);
+        $graph = $this->buildDependencyGraph($allTables, $deps);
 
-        return $this->topologicalSort($graph['adjacency'], $graph['in_degree'], $all_tables);
+        return $this->topologicalSort($graph['adjacency'], $graph['inDegree'], $allTables);
     }
 
     private function buildDependencyGraph(array $allTables, array $deps): array {
         $graph = array();
-        $in_degree = array();
+        $inDegree = array();
 
         foreach ($allTables as $t) {
             $graph[$t] = array();
-            $in_degree[$t] = 0;
+            $inDegree[$t] = 0;
         }
 
         foreach ($deps as $dep) {
-            $parent = $dep['parent_table'];
-            $child = $dep['child_table'];
+            $parent = $dep['parentTable'];
+            $child = $dep['childTable'];
 
             $isParentOrChildMissing = (BooleanHelpers::isKeyMissing($graph, $parent) || BooleanHelpers::isKeyMissing($graph, $child));
 
@@ -96,12 +96,12 @@ trait RestoreGraphTrait {
             }
 
             $graph[$parent][] = $child;
-            $in_degree[$child]++;
+            $inDegree[$child]++;
         }
 
         return array(
             'adjacency' => $graph,
-            'in_degree' => $in_degree,
+            'inDegree'  => $inDegree,
         );
     }
 

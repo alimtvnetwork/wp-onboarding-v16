@@ -38,12 +38,12 @@ trait StatusOpsTrait {
     }
 
     private function loadOpenApiSpec(): array|WP_REST_Response {
-        $spec_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/openapi.json';
-        if (PathHelper::isFileMissing($spec_file)) {
-            return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
+        $specFile = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/openapi.json';
+        if (PathHelper::isFileMissing($specFile)) {
+            return $this->buildSpecError('OpenAPI specification file not found', $specFile);
         }
 
-        return $this->parseSpecFile($spec_file);
+        return $this->parseSpecFile($specFile);
     }
 
     private function buildSpecError(string $message, string $path): WP_REST_Response {
@@ -55,9 +55,9 @@ trait StatusOpsTrait {
         );
     }
 
-    private function parseSpecFile(string $spec_file): array|WP_REST_Response {
-        $spec_content = file_get_contents($spec_file);
-        if ($spec_content === false) {
+    private function parseSpecFile(string $specFile): array|WP_REST_Response {
+        $specContent = file_get_contents($specFile);
+        if ($specContent === false) {
             $this->fileLogger->error('Failed to read OpenAPI spec file');
 
             return new WP_REST_Response(
@@ -66,7 +66,7 @@ trait StatusOpsTrait {
             );
         }
 
-        $spec = json_decode($spec_content, true);
+        $spec = json_decode($specContent, true);
         if ($spec === null) {
             $this->fileLogger->error('Invalid JSON in OpenAPI spec file');
 
@@ -82,7 +82,7 @@ trait StatusOpsTrait {
     public function handleOpcacheReset(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('OPcache reset endpoint called');
         $result = $this->buildOpcacheResult();
-        $result['files_invalidated'] = $this->invalidatePluginFiles();
+        $result['filesInvalidated'] = $this->invalidatePluginFiles();
         wp_cache_delete('plugins', 'plugins');
 
         return EnvelopeBuilder::success('OPcache reset complete')
@@ -93,15 +93,15 @@ trait StatusOpsTrait {
 
     private function buildOpcacheResult(): array {
         $result = ResultHelper::ok(array(
-            'opcache_available' => function_exists('opcache_reset'),
-            'opcache_reset'     => false,
-            'files_invalidated' => 0,
-            'timestamp'         => DateHelper::nowIso(),
+            'opcacheAvailable' => function_exists('opcache_reset'),
+            'opcacheReset'     => false,
+            'filesInvalidated' => 0,
+            'timestamp'        => DateHelper::nowIso(),
         ));
 
         if (function_exists('opcache_reset')) {
-            $result['opcache_reset'] = opcache_reset();
-            $this->fileLogger->info('OPcache reset executed', array('result' => $result['opcache_reset']));
+            $result['opcacheReset'] = opcache_reset();
+            $this->fileLogger->info('OPcache reset executed', array('result' => $result['opcacheReset']));
         }
 
         return $result;
@@ -111,13 +111,13 @@ trait StatusOpsTrait {
         if (BooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return 0;
         }
-        $plugin_dir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
-        $files_to_invalidate = array(
-            $plugin_dir . '/' . PluginConfigType::Slug->value . '.php',
-            $plugin_dir . '/includes/constants.php',
+        $pluginDir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
+        $filesToInvalidate = array(
+            $pluginDir . '/' . PluginConfigType::Slug->value . '.php',
+            $pluginDir . '/includes/constants.php',
         );
         $invalidated = 0;
-        foreach ($files_to_invalidate as $file) {
+        foreach ($filesToInvalidate as $file) {
             if (file_exists($file)) {
                 clearstatcache(true, $file);
                 opcache_invalidate($file, true);

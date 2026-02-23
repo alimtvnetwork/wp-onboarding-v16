@@ -30,35 +30,35 @@ trait InitStartupTrait {
             BootErrorCollector::getInstance()->addError('component_init:' . $name, $error);
         }
 
-        $elapsed_ms = round((microtime(true) - $start) * 1000, 2);
+        $elapsedMs = round((microtime(true) - $start) * 1000, 2);
 
-        self::$startup_results[] = array(
+        self::$startupResults[] = array(
             'name'                          => $name,
             ResponseKeyType::Success->value => $error === null,
             ResponseKeyType::Error->value   => $error,
-            'time_ms'                       => $elapsed_ms,
+            'timeMs'                        => $elapsedMs,
         );
 
         return $result;
     }
 
-    public static function getStartupResults(): array { return self::$startup_results; }
+    public static function getStartupResults(): array { return self::$startupResults; }
 
     public static function getFailedStartups(): array {
-        return array_filter(self::$startup_results, function (array $r): bool { $isStartupFailed = ($r[ResponseKeyType::Success->value] === false); return $isStartupFailed; });
+        return array_filter(self::$startupResults, function (array $r): bool { $isStartupFailed = ($r[ResponseKeyType::Success->value] === false); return $isStartupFailed; });
     }
 
     public static function allStartupsSucceeded(): bool { return empty(self::getFailedStartups()); }
 
     public static function getTotalStartupTime(): float {
         $total = 0;
-        foreach (self::$startup_results as $r) { $total += $r['time_ms']; }
+        foreach (self::$startupResults as $r) { $total += $r['timeMs']; }
 
         return round($total, 2);
     }
 
     public static function logStartupSummary(FileLogger $logger): void {
-        $total = count(self::$startup_results);
+        $total = count(self::$startupResults);
         $failed = count(self::getFailedStartups());
         $time = self::getTotalStartupTime();
 
@@ -66,7 +66,7 @@ trait InitStartupTrait {
             $logger->warn('[INIT] Startup complete with failures', array(
                 'total'    => $total,
                 'failed'   => $failed,
-                'time_ms'  => $time,
+                'timeMs'   => $time,
                 'failures' => array_map(function (array $r): string {
                     return $r['name'] . ': ' . $r[ResponseKeyType::Error->value];
                 }, self::getFailedStartups()),
@@ -75,6 +75,6 @@ trait InitStartupTrait {
             return;
         }
 
-        $logger->info('[INIT] All components started successfully', array('total' => $total, 'time_ms' => $time));
+        $logger->info('[INIT] All components started successfully', array('total' => $total, 'timeMs' => $time));
     }
 }

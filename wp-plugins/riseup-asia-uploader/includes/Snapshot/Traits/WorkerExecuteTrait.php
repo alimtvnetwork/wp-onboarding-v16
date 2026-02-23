@@ -22,7 +22,7 @@ use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerExecuteTrait {
     public function execute(array $config): array {
-        $start_time = microtime(true);
+        $startTime = microtime(true);
 
         $sizeCheck = $this->validatePreSnapshotSize();
 
@@ -39,12 +39,12 @@ trait WorkerExecuteTrait {
 
         try {
             $rootPdo = $this->initRootDb($prepared[ResponseKeyType::SnapshotDir->value], $config);
-            $seed_order = $this->populateAndGetSeedOrder($rootPdo, $config);
+            $seedOrder = $this->populateAndGetSeedOrder($rootPdo, $config);
             $rootPdo = null;
 
-            $this->initProgressRecords($seed_order);
-            $job_id = $this->createJob($prepared[ResponseKeyType::SnapshotDir->value], $seed_order, $config);
-            $isJobCreationFailed = ($job_id === null || $job_id === false || $job_id === 0);
+            $this->initProgressRecords($seedOrder);
+            $jobId = $this->createJob($prepared[ResponseKeyType::SnapshotDir->value], $seedOrder, $config);
+            $isJobCreationFailed = ($jobId === null || $jobId === false || $jobId === 0);
 
             if ($isJobCreationFailed) {
                 $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
@@ -52,9 +52,9 @@ trait WorkerExecuteTrait {
                 return ResultHelper::error('Failed to create snapshot job');
             }
 
-            $this->scheduleNextBatch($job_id);
+            $this->scheduleNextBatch($jobId);
 
-            return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
+            return $this->buildAsyncSnapshotResult($prepared, $seedOrder, $jobId, $startTime);
         } catch (Throwable $e) {
             $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
             $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array(
@@ -67,7 +67,7 @@ trait WorkerExecuteTrait {
     }
 
     public function executeSynchronous(array $config): array {
-        $start_time = microtime(true);
+        $startTime = microtime(true);
 
         $sizeCheck = $this->validatePreSnapshotSize();
 
@@ -84,14 +84,14 @@ trait WorkerExecuteTrait {
 
         try {
             $rootPdo = $this->initRootDb($prepared[ResponseKeyType::SnapshotDir->value], $config);
-            $seed_order = $this->populateAndGetSeedOrder($rootPdo, $config);
-            $this->initProgressRecords($seed_order);
+            $seedOrder = $this->populateAndGetSeedOrder($rootPdo, $config);
+            $this->initProgressRecords($seedOrder);
 
-            $export = $this->exportBatchesSynchronously($seed_order, $prepared[ResponseKeyType::SnapshotDir->value], $rootPdo);
+            $export = $this->exportBatchesSynchronously($seedOrder, $prepared[ResponseKeyType::SnapshotDir->value], $rootPdo);
             $this->rootDb->updateStats($rootPdo, $export[ResponseKeyType::ExportedTables->value], $export[ResponseKeyType::TotalRows->value]);
             $rootPdo = null;
 
-            return $this->buildSyncSnapshotResult($prepared, $export, $start_time);
+            return $this->buildSyncSnapshotResult($prepared, $export, $startTime);
         } catch (Throwable $e) {
             $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
             $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array(
@@ -133,9 +133,6 @@ trait WorkerExecuteTrait {
         return null;
     }
 
-    /**
-     * Remove an orphaned snapshot directory after a failed operation.
-     */
     private function cleanupOrphanedDir(string $dir): void {
         $isDirExisting = PathHelper::dirExists($dir);
 

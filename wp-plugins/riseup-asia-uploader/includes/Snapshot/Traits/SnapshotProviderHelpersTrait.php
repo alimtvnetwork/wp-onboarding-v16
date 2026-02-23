@@ -65,9 +65,9 @@ trait SnapshotProviderHelpersTrait {
     }
 
     protected function generateSnapshotFilename(int $sequence): string {
-        $sequence_padded = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+        $sequencePadded = str_pad($sequence, 3, '0', STR_PAD_LEFT);
 
-        return sprintf('%s_%s', $sequence_padded, date('Y-m-d_His'));
+        return sprintf('%s_%s', $sequencePadded, date('Y-m-d_His'));
     }
 
     protected function getNextSequence(): int {

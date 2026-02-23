@@ -66,12 +66,12 @@ trait WorkerBatchProcessTrait {
         int $jobId,
         array $job,
     ): void {
-        $all_tables  = json_decode($job['TablesJson'], true);
-        $pool_size   = (int) $job['PoolSize'];
-        $batch_index = (int) $job['CurrentBatch'];
-        $batches     = array_chunk($all_tables, $pool_size);
+        $allTables  = json_decode($job['TablesJson'], true);
+        $poolSize   = (int) $job['PoolSize'];
+        $batchIndex = (int) $job['CurrentBatch'];
+        $batches    = array_chunk($allTables, $poolSize);
 
-        if ($batch_index >= count($batches)) {
+        if ($batchIndex >= count($batches)) {
             $this->finalizeJob($pdo, $jobId, $job['SnapshotDir']);
 
             return;
@@ -79,43 +79,43 @@ trait WorkerBatchProcessTrait {
 
         $this->log(LogLevelType::Info->value, sprintf(
             'Batch %d/%d: exporting %d tables',
-            $batch_index + 1,
+            $batchIndex + 1,
             count($batches),
-            count($batches[$batch_index]),
+            count($batches[$batchIndex]),
         ));
 
         $rootPdo = $this->openRootDbForBatch($job['SnapshotDir']);
-        $result = $this->exportBatchTables($batches[$batch_index], $job['SnapshotDir'], $rootPdo);
+        $result = $this->exportBatchTables($batches[$batchIndex], $job['SnapshotDir'], $rootPdo);
         $rootPdo = null;
 
         $this->updateJobBatchProgress(
             $pdo,
             $jobId,
-            $batch_index + 1,
+            $batchIndex + 1,
             $result[ResponseKeyType::Exported->value],
             $result[ResponseKeyType::Rows->value],
             $result[ResponseKeyType::Errors->value],
         );
 
-        $next_batch = $batch_index + 1;
+        $nextBatch = $batchIndex + 1;
 
-        if ($next_batch < count($batches)) {
+        if ($nextBatch < count($batches)) {
             $this->scheduleNextBatch($jobId);
-            $this->log(LogLevelType::Info->value, sprintf('Next batch scheduled (%d/%d)', $next_batch + 1, count($batches)));
+            $this->log(LogLevelType::Info->value, sprintf('Next batch scheduled (%d/%d)', $nextBatch + 1, count($batches)));
         } else {
             $this->finalizeJob($pdo, $jobId, $job['SnapshotDir']);
         }
     }
 
     private function openRootDbForBatch(string $snapshotDir): ?PDO {
-        $root_path = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . '/a-root.db';
 
-        if (PathHelper::isFileMissing($root_path)) {
+        if (PathHelper::isFileMissing($rootPath)) {
 
             return null;
         }
 
-        $rootPdo = new PDO('sqlite:' . $root_path);
+        $rootPdo = new PDO('sqlite:' . $rootPath);
         $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         return $rootPdo;

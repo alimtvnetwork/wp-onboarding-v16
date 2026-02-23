@@ -65,14 +65,14 @@ trait IncrementalDeltaTrait {
         }
 
         $newCount = (int) $this->wpdb->get_var(
-            $this->wpdb->prepare("SELECT COUNT(*) FROM `{$tableName}` WHERE `{$info['pk_column']}` > %d", $lastMaxId)
+            $this->wpdb->prepare("SELECT COUNT(*) FROM `{$tableName}` WHERE `{$info['pkColumn']}` > %d", $lastMaxId)
         );
 
         if ($newCount === 0) {
             return null;
         }
 
-        $result = $this->exportDeltaRows($incDir, $tableName, $info['pk_column'], $lastMaxId, $newCount);
+        $result = $this->exportDeltaRows($incDir, $tableName, $info['pkColumn'], $lastMaxId, $newCount);
 
         if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Info->value, sprintf(
@@ -111,8 +111,8 @@ trait IncrementalDeltaTrait {
             $sqlite->exec('PRAGMA journal_mode = WAL');
             $sqlite->exec('PRAGMA synchronous = OFF');
 
-            $create_sql = $this->getCreateTableSql($table);
-            $sqlite->exec($create_sql);
+            $createSql = $this->getCreateTableSql($table);
+            $sqlite->exec($createSql);
 
             $offset = 0;
             $exported = 0;
@@ -157,15 +157,15 @@ trait IncrementalDeltaTrait {
         PDO $rootPdo,
         int $sequence,
     ): ?int {
-        if ($info['pk_column'] === null) {
+        if ($info['pkColumn'] === null) {
             return null;
         }
 
         if ($sequence === 1) {
-            return $this->getMaxIdFromMasterSqlite($rootPdo, $tableName, $info['pk_column'], $info);
+            return $this->getMaxIdFromMasterSqlite($rootPdo, $tableName, $info['pkColumn'], $info);
         }
 
-        return $this->getMaxIdFromPreviousIncremental($rootPdo, $tableName, $info['pk_column'], $sequence, $info);
+        return $this->getMaxIdFromPreviousIncremental($rootPdo, $tableName, $info['pkColumn'], $sequence, $info);
     }
 
     private function getMaxIdFromMasterSqlite(
@@ -178,7 +178,7 @@ trait IncrementalDeltaTrait {
         $isSqliteFileMissing = ($sqliteFile === null);
 
         if ($isSqliteFileMissing) {
-            return (int) $info['row_count'];
+            return (int) $info['rowCount'];
         }
 
         try {
@@ -194,7 +194,7 @@ trait IncrementalDeltaTrait {
                 ResponseKeyType::Error->value => $e->getMessage(),
             ));
 
-            return (int) $info['row_count'];
+            return (int) $info['rowCount'];
         }
     }
 

@@ -24,9 +24,9 @@ class InitHelpers {
     use InitStartupTrait;
 
     /** @var array<string, bool> */
-    private static $ensured_dirs = array();
+    private static $ensuredDirs = array();
     private static $isPdoWarningLogged = false;
-    private static $startup_results = array();
+    private static $startupResults = array();
 
     public static function initSqliteConnection(string $dbPath, FileLogger $logger): ?PDO {
         $prereqError = self::checkSqlitePrerequisites($dbPath, $logger);
@@ -94,8 +94,8 @@ class InitHelpers {
     }
 
     public static function reset(): void {
-        self::$ensured_dirs = array();
-        self::$startup_results = array();
+        self::$ensuredDirs = array();
+        self::$startupResults = array();
         self::$isPdoWarningLogged = false;
     }
 }

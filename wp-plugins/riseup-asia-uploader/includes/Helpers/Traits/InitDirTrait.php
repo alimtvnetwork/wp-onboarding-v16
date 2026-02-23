@@ -20,19 +20,19 @@ trait InitDirTrait {
     public static function makeDirectory(string $path, bool $secure = false): bool {
         $normalized = str_replace('\\', '/', $path);
 
-        if (isset(self::$ensured_dirs[$normalized])) {
-            return self::$ensured_dirs[$normalized];
+        if (isset(self::$ensuredDirs[$normalized])) {
+            return self::$ensuredDirs[$normalized];
         }
 
         if (BooleanHelpers::isClassExists(PathHelper::class)) {
             $result = PathHelper::makeDirectory($path, $secure);
-            self::$ensured_dirs[$normalized] = $result;
+            self::$ensuredDirs[$normalized] = $result;
 
             return $result;
         }
 
         $result = self::makeDirectoryNative($path, $secure);
-        self::$ensured_dirs[$normalized] = $result;
+        self::$ensuredDirs[$normalized] = $result;
 
         return $result;
     }
