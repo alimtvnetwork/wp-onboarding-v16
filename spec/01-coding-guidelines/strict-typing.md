@@ -276,6 +276,24 @@ siteResult := siteSvc.GetByID(ctx, siteID)
 if siteResult.HasError() {
     return apperror.Fail[PluginList](siteResult.Error())
 }
+
+// ✅ Same-type ResultSlice — direct return
+result := s.List(ctx) // returns ResultSlice[models.Site]
+if result.HasError() {
+    return result // no FailSlice needed
+}
+
+// ❌ WRONG: Redundant FailSlice (same type)
+if result.HasError() {
+    return apperror.FailSlice[models.Site](result.Error()) // redundant
+}
+
+// ✅ Cross-type ResultSlice — FailSlice IS needed
+plugins := s.pluginService.List(ctx) // ResultSlice[Plugin]
+if plugins.HasError() {
+    return apperror.FailSlice[SyncResult](plugins.Error())
+}
+// Same rule applies to FailMap for ResultMap[K, V].
 ```
 
 ```go

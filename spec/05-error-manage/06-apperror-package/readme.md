@@ -745,6 +745,49 @@ if result.HasError() {
 }
 ```
 
+#### Same-Type vs Cross-Type — ResultSlice and ResultMap
+
+The same rule applies to `FailSlice` and `FailMap`:
+
+```go
+// ✅ Same-type ResultSlice — direct return
+func (s *Service) ListActive(ctx context.Context) apperror.ResultSlice[models.Site] {
+    result := s.List(ctx) // returns ResultSlice[models.Site]
+    if result.HasError() {
+        return result // same type — direct return
+    }
+    return apperror.OkSlice(filterActive(result.Items()))
+}
+
+// ❌ WRONG — redundant FailSlice re-wrapping (same type)
+if result.HasError() {
+    return apperror.FailSlice[models.Site](result.Error()) // redundant
+}
+
+// ✅ Cross-type ResultSlice — FailSlice IS needed
+func (s *Service) CheckAll(ctx context.Context) apperror.ResultSlice[SyncResult] {
+    plugins := s.pluginService.List(ctx) // returns ResultSlice[models.Plugin]
+    if plugins.HasError() {
+        return apperror.FailSlice[SyncResult](plugins.Error()) // different T
+    }
+    // ...
+}
+
+// ✅ Same-type ResultMap — direct return
+func (s *Service) GetCached(ctx context.Context) apperror.ResultMap[string, Config] {
+    result := s.loadAll(ctx) // returns ResultMap[string, Config]
+    if result.HasError() {
+        return result // same type — direct return
+    }
+    // ...
+}
+
+// ✅ Cross-type ResultMap — FailMap IS needed
+if configResult.HasError() {
+    return apperror.FailMap[string, Summary](configResult.Error()) // different V
+}
+```
+
 #### ✅ CORRECT — Using IsSafe()
 
 ```go
