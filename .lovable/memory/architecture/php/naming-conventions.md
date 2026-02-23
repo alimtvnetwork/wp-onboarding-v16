@@ -52,3 +52,9 @@ public static function getInstance() {
 ## Enum Encapsulation
 
 Native PHP 8.1 backed enums should encapsulate related helper/check methods within the enum body itself (e.g., `LogLevelType` contains `isError()`, `isWarn()`, `isErrorOrWarn()`). This keeps type-checking logic co-located with the enum definition.
+
+## Cross-References
+- **Persistence naming exemptions:** `.lovable/memory/architecture/coding-standards/persistence-naming-exemptions.md`
+- **Plugin identity standard:** `.lovable/memory/architecture/php/plugin-identity-standard.md`
+- **Enum naming standard:** System memory `architecture/coding-standards/enums-standard`
+- **Global type syntax:** `.lovable/memory/architecture/php/global-type-syntax-standard.md`
