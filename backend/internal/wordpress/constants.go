@@ -72,6 +72,6 @@ const (
 	// WPCorePosts is the endpoint for posts.
 	WPCorePosts = "/wp/v2/posts"
 
-	// WPCorePostByID is the endpoint for a specific post (format: /wp/v2/posts/%d).
-	WPCorePostByID = "/wp/v2/posts/%d"
+	// WPCorePostById is the endpoint for a specific post (format: /wp/v2/posts/%d).
+	WPCorePostById = "/wp/v2/posts/%d"
 )

@@ -7,9 +7,9 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// ToJSON marshals a typed struct into json.RawMessage for use as log/error details.
+// ToJson marshals a typed struct into json.RawMessage for use as log/error details.
 // This generic helper avoids map[string]any at call sites.
-func ToJSON[T any](v T) json.RawMessage {
+func ToJson[T any](v T) json.RawMessage {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return nil
@@ -20,44 +20,44 @@ func ToJSON[T any](v T) json.RawMessage {
 // ServiceInterface defines the session service contract
 type ServiceInterface interface {
 	// StartSession creates a new session and returns its ID
-	StartSession(sessionType SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
+	StartSession(sessionType SessionType, pluginId, siteId int64, pluginName, siteName string) (string, error)
 
 	// Log writes a log entry to the session
-	Log(sessionID, level, step, message string, details json.RawMessage)
+	Log(sessionId, level, step, message string, details json.RawMessage)
 
 	// LogStageStart writes a stage header to the session log
-	LogStageStart(sessionID, stageName string)
+	LogStageStart(sessionId, stageName string)
 
 	// LogStageEnd writes a stage completion marker
-	LogStageEnd(sessionID, stageName, status string, durationMs int64)
+	LogStageEnd(sessionId, stageName, status string, durationMs int64)
 
 	// EndSession marks a session as complete
-	EndSession(sessionID, status, errorMsg string)
+	EndSession(sessionId, status, errorMsg string)
 
 	// GetSession returns session info
-	GetSession(sessionID string) apperror.Result[*Session]
+	GetSession(sessionId string) apperror.Result[*Session]
 
 	// GetSessionLogs returns the full log content for a session
-	GetSessionLogs(sessionID string) apperror.Result[string]
+	GetSessionLogs(sessionId string) apperror.Result[string]
 
 	// GetSessionDiagnostics returns structured request/response/stackTrace for a session
-	GetSessionDiagnostics(sessionID string) apperror.Result[SessionDiagnostics]
+	GetSessionDiagnostics(sessionId string) apperror.Result[SessionDiagnostics]
 
 	// ListSessions returns recent sessions
 	ListSessions(limit int) apperror.ResultSlice[*SessionSummary]
 
 	// DeleteSession removes a session's log file
-	DeleteSession(sessionID string) error
+	DeleteSession(sessionId string) error
 
 	// SetMetadata sets a key-value pair on a session's metadata JSON object
-	SetMetadata(sessionID, key string, value json.RawMessage)
+	SetMetadata(sessionId, key string, value json.RawMessage)
 
 	// SaveRequest persists the inbound request as request.json
-	SaveRequest(sessionID string, req *SessionRequest)
+	SaveRequest(sessionId string, req *SessionRequest)
 
 	// SaveResponse persists the delegated response as response.json
-	SaveResponse(sessionID string, resp *SessionResponse)
+	SaveResponse(sessionId string, resp *SessionResponse)
 
 	// SaveError persists error details and stack traces as error.log
-	SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details json.RawMessage)
+	SaveError(sessionId string, stackTrace *SessionStackTrace, errorMsg string, details json.RawMessage)
 }

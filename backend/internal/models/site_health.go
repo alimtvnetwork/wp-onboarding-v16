@@ -8,14 +8,14 @@ type SiteHealthCheck struct {
 	Id           int64     `json:"id"`
 	SiteId       int64     `json:"siteId"`
 	SiteName     string    `json:"siteName"`
-	SiteURL      string    `json:"siteUrl"`
+	SiteUrl      string    `json:"siteUrl"`
 	Status       string    `json:"status"`       // healthy, degraded, down, unknown
 	ResponseMs   int64     `json:"responseMs"`
 	StatusCode   int       `json:"statusCode"`
 	ErrorMessage string    `json:"errorMessage,omitempty"`
 	UploaderOk   bool      `json:"uploaderOk"`
 	WPVersion    string    `json:"wpVersion,omitempty"`
-	PHPVersion   string    `json:"phpVersion,omitempty"`
+	PhpVersion   string    `json:"phpVersion,omitempty"`
 	CreatedAt    time.Time `json:"createdAt"`
 }
 
@@ -23,7 +23,7 @@ type SiteHealthCheck struct {
 type SiteHealthSummary struct {
 	SiteId          int64   `json:"siteId"`
 	SiteName        string  `json:"siteName"`
-	SiteURL         string  `json:"siteUrl"`
+	SiteUrl         string  `json:"siteUrl"`
 	CurrentStatus   string  `json:"currentStatus"`
 	LastCheckedAt   *string `json:"lastCheckedAt,omitempty"`
 	AvgResponseMs   float64 `json:"avgResponseMs"`
