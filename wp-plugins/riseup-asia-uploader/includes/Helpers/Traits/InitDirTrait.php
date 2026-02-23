@@ -64,7 +64,7 @@ trait InitDirTrait {
         $htaccess = $path . '/.htaccess';
 
         if (PathHelper::isFileMissing($htaccess)) {
-            if (@file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n") === false) {
+            if (@file_put_contents($htaccess, '# ' . PluginConfigType::Name->value . " - Security\nOrder Deny,Allow\nDeny from all\n") === false) {
                 $isSecured = false;
             }
         }

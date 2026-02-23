@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\AdminPageType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\TableType;
 
 trait AdminErrorStateTrait {
@@ -84,7 +85,7 @@ trait AdminErrorStateTrait {
 
         return sprintf(
             '<div class="notice notice-error is-dismissible" style="border-left-color: #dc3545;">
-                <p><strong>⚠️ Riseup Asia Uploader:</strong> %s <a href="%s" style="font-weight:600;">%s →</a></p>
+                <p><strong>⚠️ ' . esc_html(PluginConfigType::Name->value) . ':</strong> %s <a href="%s" style="font-weight:600;">%s →</a></p>
             </div>',
             esc_html(sprintf(
                 _n('%d new error detected.', '%d new errors detected.', $unseen, 'riseup-asia-uploader'),

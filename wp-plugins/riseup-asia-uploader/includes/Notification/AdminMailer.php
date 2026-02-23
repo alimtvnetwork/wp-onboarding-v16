@@ -23,7 +23,7 @@ class AdminMailer {
 
     private const THROTTLE_TRANSIENT = 'riseup_last_error_email';
     private const DEFAULT_THROTTLE_MINUTES = 60;
-    private const LOG_PREFIX = '[Riseup Asia] AdminMailer: ';
+    private static function logPrefix(): string { return PluginConfigType::LogPrefix->value . ' AdminMailer: '; }
 
     /**
      * Send a boot error report email to the site admin.
@@ -110,7 +110,7 @@ class AdminMailer {
     private function buildSubject(): string {
         $siteName = get_bloginfo('name');
 
-        return '[Riseup Asia] Plugin Boot Errors on ' . $siteName;
+        return PluginConfigType::LogPrefix->value . ' Plugin Boot Errors on ' . $siteName;
     }
 
     /**
@@ -120,7 +120,7 @@ class AdminMailer {
      */
     private function buildBody(array $errors): string {
         $lines = [];
-        $lines[] = 'Riseup Asia Uploader — Boot Error Report';
+        $lines[] = PluginConfigType::Name->value . ' — Boot Error Report';
         $lines[] = str_repeat('=', 50);
         $lines[] = '';
         $lines[] = 'Site URL:       ' . get_site_url();
@@ -142,7 +142,7 @@ class AdminMailer {
 
         $lines[] = '';
         $lines[] = str_repeat('-', 50);
-        $lines[] = 'This is an automated message from the Riseup Asia Uploader plugin.';
+        $lines[] = 'This is an automated message from the ' . PluginConfigType::Name->value . ' plugin.';
         $lines[] = 'To disable these notifications, update the error notification settings in your plugin configuration.';
 
         return implode("\n", $lines);
