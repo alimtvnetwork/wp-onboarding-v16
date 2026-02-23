@@ -7,8 +7,10 @@
  */
 
 use RiseupAsia\Enums\AgentStatusType;
+use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\StatusType;
 
 if (!defined('ABSPATH')) {
     exit;
