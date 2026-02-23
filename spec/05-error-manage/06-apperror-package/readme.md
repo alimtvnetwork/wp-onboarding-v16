@@ -700,11 +700,13 @@ func truncateData(data []byte, maxLen int) string {
 
 ## 12. Result Guard Rule — Mandatory Error Check Before Value Access
 
-Every call site that receives a `Result[T]`, `ResultSlice[T]`, or `ResultMap[K, V]` **MUST** check `HasError()` or `IsSafe()` before calling `.Value()`, `.Items()`, or `.Get()`. Accessing the contained value without a guard is a **spec violation**.
+Every call site that receives a `Result[T]`, `ResultSlice[T]`, or `ResultMap[K, V]` (Go) or `DbResult`, `DbResultSet`, `DbExecResult` (PHP) **MUST** check `HasError()` / `hasError()` or `IsSafe()` / `isSafe()` before calling `.Value()` / `.value()`, `.Items()` / `.items()`, or `.Get()`. Accessing the contained value without a guard is a **spec violation**.
 
-**Principle:** No error may ever be swallowed. If a result carries an error, it must be explicitly handled — logged, returned, or propagated.
+**Principle:** No error may ever be swallowed. If a result carries an error, it must be explicitly handled — logged, returned, or propagated. The framework-level accessor should log immediately when called on an errored result, reducing diagnostic steps.
 
-### ❌ WRONG — No Guard
+### Go Examples
+
+#### ❌ WRONG — No Guard
 
 ```go
 // Silent failure: if result has an error, Value() panics or returns zero
@@ -712,7 +714,7 @@ result := svc.GetByID(ctx, id)
 plugin := result.Value()
 ```
 
-### ✅ CORRECT — Guard Before Access
+#### ✅ CORRECT — Guard Before Access
 
 ```go
 result := svc.GetByID(ctx, id)
@@ -722,7 +724,7 @@ if result.HasError() {
 plugin := result.Value()
 ```
 
-### ✅ CORRECT — Using IsSafe()
+#### ✅ CORRECT — Using IsSafe()
 
 ```go
 result := svc.List(ctx)
@@ -733,7 +735,7 @@ if result.IsSafe() {
 }
 ```
 
-### ✅ CORRECT — Adapter Unwrap Pattern
+#### ✅ CORRECT — Adapter Unwrap Pattern
 
 ```go
 func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
@@ -748,11 +750,63 @@ func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.P
 }
 ```
 
+### PHP Examples
+
+#### ❌ WRONG — No Guard (DbResult)
+
+```php
+$result = $query->queryOne(...);
+$result->value(); // error silently swallowed
+```
+
+#### ✅ CORRECT — Guard Before Access (DbResult)
+
+```php
+$result = $query->queryOne(...);
+
+if ($result->hasError()) {
+    $this->logger->logException($result->error(), 'context');
+
+    return null;
+}
+
+return $result->value();
+```
+
+#### ✅ CORRECT — Guard Before Iteration (DbResultSet)
+
+```php
+$results = $query->queryAll(...);
+
+if ($results->hasError()) {
+    $this->logger->logException($results->error(), 'query failed');
+
+    return [];
+}
+
+return $results->items();
+```
+
+#### ✅ CORRECT — Guard Before Write Result (DbExecResult)
+
+```php
+$execResult = $query->execute(...);
+
+if ($execResult->hasError()) {
+    $this->logger->logException($execResult->error(), 'execute failed');
+
+    return false;
+}
+
+return $execResult->affectedRows() > 0;
+```
+
 ### Enforcement Checklist
 
-- [ ] Every `result.Value()` call is preceded by `result.HasError()` or `result.IsSafe()`
-- [ ] Every `result.Items()` call is preceded by `result.HasError()` or `result.IsSafe()`
+- [ ] Every `result.Value()` / `$result->value()` call is preceded by `HasError()` / `hasError()` or `IsSafe()` / `isSafe()`
+- [ ] Every `result.Items()` / `$results->items()` call is preceded by a guard
 - [ ] Every `result.Get(key)` on `ResultMap` is preceded by a guard
+- [ ] Every `$execResult->affectedRows()` on `DbExecResult` is preceded by a guard
 - [ ] No error is silently discarded — all errors are logged, returned, or propagated
 - [ ] Cross-service callers (direct `*service.Service` refs) guard results the same way
 
@@ -766,4 +820,4 @@ func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.P
 
 ---
 
-*apperror package specification v1.3.0 — 2026-02-21*
+*apperror package specification v1.4.0 — 2026-02-23*

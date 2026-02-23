@@ -192,6 +192,123 @@ func CreateUser(params CreateUserParams) (User, error) { ... }
 
 ---
 
+## Result Guard Rule (Zero Silent Failures)
+
+Every typed Result wrapper — `apperror.Result[T]` / `ResultSlice[T]` / `ResultMap[K, V]` (Go) or `DbResult` / `DbResultSet` / `DbExecResult` (PHP) — **MUST** have its error state checked before accessing the contained value. Accessing `.value()` / `.Value()` without a prior `hasError()` / `HasError()` or `isSafe()` / `IsSafe()` guard is a **spec violation**.
+
+**Principle:** No error may ever be swallowed. If a result carries an error, it must be explicitly handled — logged, returned, or propagated.
+
+### PHP — DbResult / DbResultSet / DbExecResult
+
+```php
+// ❌ WRONG: No guard — error silently swallowed
+$result = $query->queryOne(...);
+$result->value();
+
+// ✅ CORRECT: Guard before access
+$result = $query->queryOne(...);
+
+if ($result->hasError()) {
+    $this->logger->logException($result->error(), 'context');
+
+    return null;
+}
+
+return $result->value();
+```
+
+```php
+// ❌ WRONG: No guard on collection
+$results = $query->queryAll(...);
+foreach ($results->items() as $row) { ... }
+
+// ✅ CORRECT: Guard before iteration
+$results = $query->queryAll(...);
+
+if ($results->hasError()) {
+    $this->logger->logException($results->error(), 'query failed');
+
+    return [];
+}
+
+return $results->items();
+```
+
+```php
+// ❌ WRONG: No guard on write result
+$execResult = $query->execute(...);
+$execResult->affectedRows();
+
+// ✅ CORRECT: Guard before access
+$execResult = $query->execute(...);
+
+if ($execResult->hasError()) {
+    $this->logger->logException($execResult->error(), 'execute failed');
+
+    return false;
+}
+
+return $execResult->affectedRows() > 0;
+```
+
+### Go — apperror.Result[T] / ResultSlice[T] / ResultMap[K, V]
+
+```go
+// ❌ WRONG: No guard
+result := svc.GetByID(ctx, id)
+plugin := result.Value()
+
+// ✅ CORRECT: Guard before access
+result := svc.GetByID(ctx, id)
+if result.HasError() {
+    return apperror.Fail[Plugin](result.Error())
+}
+plugin := result.Value()
+```
+
+```go
+// ✅ CORRECT: IsSafe() for collection iteration
+result := svc.List(ctx)
+if result.IsSafe() {
+    for _, item := range result.Items() {
+        process(item)
+    }
+}
+```
+
+```go
+// ✅ CORRECT: Adapter unwrap pattern
+func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
+    result := a.Service.GetByID(ctx, id)
+    if result.HasError() {
+        return nil, result.Error()
+    }
+
+    v := result.Value()
+
+    return &v, nil
+}
+```
+
+### TypeScript
+
+```typescript
+// If Result pattern is adopted, same rule applies
+// ❌ WRONG: result.value()  (no guard)
+// ✅ CORRECT: Check .hasError() before .value() access
+```
+
+### Enforcement Checklist
+
+- [ ] Every `result.Value()` / `$result->value()` call is preceded by `HasError()` / `hasError()` or `IsSafe()` / `isSafe()`
+- [ ] Every `result.Items()` / `$results->items()` call is preceded by a guard
+- [ ] Every `result.Get(key)` on `ResultMap` is preceded by a guard
+- [ ] Every `$execResult->affectedRows()` on `DbExecResult` is preceded by a guard
+- [ ] No error is silently discarded — all errors are logged, returned, or propagated
+- [ ] Cross-service callers guard results the same way
+
+---
+
 ## Cross-References
 
 - [PHP Standards](../04-php-standards/readme.md)
@@ -199,7 +316,9 @@ func CreateUser(params CreateUserParams) (User, error) { ... }
 - [Go Standards](../03-golang-standards/readme.md)
 - [Function Naming](./function-naming.md)
 - [Generic Enforce](../12-generic-enforce/readme.md)
+- [apperror Package — Result Guard Rule](../05-error-manage/06-apperror-package/readme.md#12-result-guard-rule--mandatory-error-check-before-value-access)
+- [Master Guidelines — Section 6.1](./00-master-coding-guidelines.md#61--result-guard-rule-zero-silent-failures)
 
 ---
 
-*Strict typing specification v1.0.0 — 2026-02-14*
+*Strict typing specification v1.1.0 — 2026-02-23*
