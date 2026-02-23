@@ -40,12 +40,12 @@ trait OrchestratorBackupTrait {
         $this->worker->setPoolSize($settings['worker_pool_size'] ?? SnapshotConfigType::WorkerPoolDefault->value);
 
         return array(
-            'title'            => $options['title'] ?? ('Full Backup ' . DateHelper::nowCompactDatetime()),
+            ResponseKeyType::Title->value => $options[ResponseKeyType::Title->value] ?? ('Full Backup ' . DateHelper::nowCompactDatetime()),
             ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? $settings[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             'include_plugins'  => $options['include_plugins'] ?? $settings['include_plugins'] ?? true,
             'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? PluginSelectionType::All->value,
             'compression'      => $options['compression'] ?? $settings['compression'] ?? true,
-            'settings'         => $settings,
+            ResponseKeyType::Settings->value => $settings,
         );
     }
 
@@ -66,7 +66,7 @@ trait OrchestratorBackupTrait {
             ));
 
             $snapshotId = $this->registerSnapshot(
-                $resolved['title'],
+                $resolved[ResponseKeyType::Title->value],
                 $resolved[ResponseKeyType::Scope->value],
                 $workerResult,
                 array(
@@ -121,11 +121,11 @@ trait OrchestratorBackupTrait {
             ? $this->snapshotPlugins($snapshotDir, $resolved['plugin_selection'])
             : array(
                 ResponseKeyType::Count->value    => 0,
-                'total_size'                     => 0,
+                ResponseKeyType::TotalSize->value => 0,
             );
 
         $snapshotId = $this->registerSnapshot(
-            $resolved['title'],
+            $resolved[ResponseKeyType::Title->value],
             $resolved[ResponseKeyType::Scope->value],
             $workerResult,
             $pluginStats,
@@ -156,17 +156,17 @@ trait OrchestratorBackupTrait {
 
     private function runWorkerExport(array $resolved, bool $async): array {
         $config = array(
-            'title'                       => $resolved['title'],
-            ResponseKeyType::Scope->value => $resolved[ResponseKeyType::Scope->value],
-            'type'                        => SnapshotModeType::Full->value,
-            'settings'                    => $resolved['settings'],
+            ResponseKeyType::Title->value    => $resolved[ResponseKeyType::Title->value],
+            ResponseKeyType::Scope->value    => $resolved[ResponseKeyType::Scope->value],
+            ResponseKeyType::Type->value     => SnapshotModeType::Full->value,
+            ResponseKeyType::Settings->value => $resolved[ResponseKeyType::Settings->value],
         );
 
         return $async ? $this->worker->execute($config) : $this->worker->executeSynchronous($config);
     }
 
     private function executeZipPhase(string $snapshotDir, array $resolved): array {
-        $zipResult = $this->createZipExport($snapshotDir, $resolved['title']);
+        $zipResult = $this->createZipExport($snapshotDir, $resolved[ResponseKeyType::Title->value]);
 
         if ($zipResult[ResponseKeyType::Success->value]) {
             return array(

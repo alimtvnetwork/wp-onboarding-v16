@@ -140,4 +140,23 @@ class DateHelper {
     public static function formatDatetime(int $timestamp): string {
         return gmdate(self::DATETIME, $timestamp);
     }
+
+    /**
+     * Determine if a timestamp is today or yesterday.
+     *
+     * @return string|null 'today', 'yesterday', or null for older dates.
+     */
+    public static function relativeDayKey(int $timestamp): ?string {
+        $date = self::formatDateOnly($timestamp);
+
+        if ($date === self::nowDateOnly()) {
+            return 'today';
+        }
+
+        if ($date === self::formatDateOnly(strtotime('-1 day'))) {
+            return 'yesterday';
+        }
+
+        return null;
+    }
 }

@@ -222,12 +222,10 @@ $uploadSourceClasses = array(
                     // Insert date group header when date changes
                     if ($logDate !== $currentDateGroup):
                         $currentDateGroup = $logDate;
-                        // Check if today/yesterday
-                        $today = DateHelper::nowDateOnly();
-                        $yesterday = DateHelper::formatDateOnly(strtotime('-1 day'));
-                        if ($logDate === $today) {
+                        $relativeDayKey = DateHelper::relativeDayKey($logTimestamp);
+                        if ($relativeDayKey === 'today') {
                             $dateLabel = __('Today', 'riseup-asia-uploader') . ' — ' . $logDateDisplay;
-                        } elseif ($logDate === $yesterday) {
+                        } elseif ($relativeDayKey === 'yesterday') {
                             $dateLabel = __('Yesterday', 'riseup-asia-uploader') . ' — ' . $logDateDisplay;
                         } else {
                             $dateLabel = $logDateDisplay;

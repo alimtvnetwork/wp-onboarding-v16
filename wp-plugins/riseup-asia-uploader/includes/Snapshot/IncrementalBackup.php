@@ -75,7 +75,7 @@ class IncrementalBackup {
 
     public function execute(string $masterDir, array $options = array()): array {
         $startTime = microtime(true);
-        $title = $options['title'] ?? ('Incremental ' . DateHelper::nowCompactDatetime());
+        $title = $options[ResponseKeyType::Title->value] ?? ('Incremental ' . DateHelper::nowCompactDatetime());
 
         $rootPath = $masterDir . '/a-root.db';
 
@@ -86,7 +86,7 @@ class IncrementalBackup {
         $this->log(
             LogLevelType::Info->value,
             'Starting incremental backup',
-            array('master_dir' => basename($masterDir), 'title' => $title),
+            array('master_dir' => basename($masterDir), ResponseKeyType::Title->value => $title),
         );
 
         return $this->executeIncrementalPipeline($rootPath, $title, $masterDir, $startTime);

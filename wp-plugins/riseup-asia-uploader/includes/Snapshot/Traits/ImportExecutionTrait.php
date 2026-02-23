@@ -118,7 +118,7 @@ trait ImportExecutionTrait {
             throw new Exception('Failed to create snapshots directory');
         }
 
-        $title = $metadata['title'] ?? 'imported';
+        $title = $metadata[ResponseKeyType::Title->value] ?? 'imported';
         $folderName = DateHelper::nowDateOnly() . '_imported_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $title);
         $destDir = $this->resolveUniqueDest(PathHelper::join($snapshotsDir, $folderName), $snapshotsDir, $folderName);
 

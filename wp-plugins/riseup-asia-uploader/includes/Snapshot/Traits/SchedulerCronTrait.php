@@ -128,18 +128,18 @@ trait SchedulerCronTrait {
      * @return array Raw orchestrator result.
      */
     private function invokeBackup(object $orchestrator, array $args): array {
-        $snapshotType = $args['snapshot_type'] ?? SnapshotModeType::Full->value;
+        $snapshotType = $args[ResponseKeyType::SnapshotType->value] ?? SnapshotModeType::Full->value;
 
         if ($snapshotType === SnapshotModeType::Incremental->value) {
 
             return $orchestrator->executeIncrementalBackup(array(
-                'title'              => $args['title'] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
-                'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
+                ResponseKeyType::Title->value => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
+                'master_snapshot_id'          => $args['master_snapshot_id'] ?? null,
             ));
         }
 
         return $orchestrator->executeFullBackup(array(
-            'title'                           => $args['title'] ?? 'Manual Backup ' . DateHelper::nowCompactDatetime(),
+            ResponseKeyType::Title->value     => $args[ResponseKeyType::Title->value] ?? 'Manual Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::Scope->value     => $args[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             'trigger'                         => SnapshotTriggerType::Manual->value,
             'async'                           => true,

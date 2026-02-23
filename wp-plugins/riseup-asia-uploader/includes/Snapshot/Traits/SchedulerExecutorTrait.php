@@ -34,7 +34,7 @@ trait SchedulerExecutorTrait {
         $result = $orchestrator->executeFullBackup(array(
             ResponseKeyType::Scope->value => $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
             'trigger'                     => SnapshotTriggerType::Cron->value,
-            'title'                       => 'Scheduled Backup ' . DateHelper::nowCompactDatetime(),
+            ResponseKeyType::Title->value => 'Scheduled Backup ' . DateHelper::nowCompactDatetime(),
             'async'                       => true,
         ));
 
@@ -52,7 +52,7 @@ trait SchedulerExecutorTrait {
 
     private function runImmediateSnapshot(array $args): array {
         list(, $orchestrator) = $this->createOrchestrator();
-        $snapshotType = $args['snapshot_type'] ?? SnapshotModeType::Full->value;
+        $snapshotType = $args[ResponseKeyType::SnapshotType->value] ?? SnapshotModeType::Full->value;
         $result = $this->invokeBackup($orchestrator, $args);
         $action = ($snapshotType === SnapshotModeType::Incremental->value) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
 
@@ -63,7 +63,7 @@ trait SchedulerExecutorTrait {
             array(
                 'trigger'                          => SnapshotTriggerType::Manual->value,
                 ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
-                'type'                             => $snapshotType,
+                ResponseKeyType::Type->value       => $snapshotType,
             ),
         );
     }
@@ -99,8 +99,8 @@ trait SchedulerExecutorTrait {
         list(, $orchestrator) = $this->createOrchestrator();
 
         $result = $orchestrator->executeIncrementalBackup(array(
-            'title'              => $args['title'] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
-            'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
+            ResponseKeyType::Title->value => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
+            'master_snapshot_id'          => $args['master_snapshot_id'] ?? null,
         ));
 
         return $this->buildCronResult(
