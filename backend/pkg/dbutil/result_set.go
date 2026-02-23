@@ -1,9 +1,11 @@
 package dbutil
 
+import "wp-plugin-publish/pkg/apperror"
+
 // ResultSet wraps a multi-row query outcome with error and stack trace.
 type ResultSet[T any] struct {
 	items      []T
-	err        error
+	err        *apperror.AppError
 	stackTrace string
 }
 
@@ -13,7 +15,7 @@ func NewResultSet[T any](items []T) ResultSet[T] {
 }
 
 // NewResultSetError constructs an error result set with a captured stack trace.
-func NewResultSetError[T any](err error, stack string) ResultSet[T] {
+func NewResultSetError[T any](err *apperror.AppError, stack string) ResultSet[T] {
 	return ResultSet[T]{err: err, stackTrace: stack}
 }
 
@@ -35,9 +37,9 @@ func (r ResultSet[T]) IsSafe() bool { return r.err == nil }
 // Items returns the scanned items slice (nil if error).
 func (r ResultSet[T]) Items() []T { return r.items }
 
-// AppError returns the underlying error, or nil.
+// AppError returns the underlying *AppError, or nil.
 // Named AppError (not Error) to avoid confusion with Go's native error interface.
-func (r ResultSet[T]) AppError() error { return r.err }
+func (r ResultSet[T]) AppError() *apperror.AppError { return r.err }
 
 // StackTrace returns the captured stack trace if an error occurred.
 func (r ResultSet[T]) StackTrace() string { return r.stackTrace }
@@ -52,4 +54,17 @@ func (r ResultSet[T]) First() Result[T] {
 		return Result[T]{}
 	}
 	return NewResult(r.items[0])
+}
+
+// ToAppResultSlice converts a dbutil.ResultSet[T] directly to an apperror.ResultSlice[T].
+// Normalizes nil items to empty slice. Eliminates redundant unwrap+rewrap.
+func (r ResultSet[T]) ToAppResultSlice() apperror.ResultSlice[T] {
+	if r.err != nil {
+		return apperror.FailSlice[T](r.err)
+	}
+	items := r.items
+	if items == nil {
+		items = []T{}
+	}
+	return apperror.OkSlice(items)
 }
