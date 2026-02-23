@@ -62,8 +62,8 @@ func scanFileChangeRows(rows *sql.Rows) (models.FileChange, error) {
 	var localModifiedAt, detectedAt, syncedAt string
 
 	err := rows.Scan(
-		&change.ID,
-		&change.PluginID,
+		&change.Id,
+		&change.PluginId,
 		&change.FilePath,
 		&change.ChangeType,
 		&change.LocalHash,
@@ -80,9 +80,9 @@ func scanMappingRow(row *sql.Row) (models.PluginMapping, error) {
 	var m models.PluginMapping
 	var syncStatus string
 	err := row.Scan(
-		&m.ID,
-		&m.PluginID,
-		&m.SiteID,
+		&m.Id,
+		&m.PluginId,
+		&m.SiteId,
 		&m.RemoteSlug,
 		&syncStatus,
 		&m.SiteName,
@@ -98,9 +98,9 @@ func scanMappingRows(rows *sql.Rows) (models.PluginMapping, error) {
 	var lastSyncAt, lastBackupAt, createdAt, updatedAt string
 
 	err := rows.Scan(
-		&m.ID,
-		&m.PluginID,
-		&m.SiteID,
+		&m.Id,
+		&m.PluginId,
+		&m.SiteId,
 		&m.RemoteSlug,
 		&m.SyncStatus,
 		&lastSyncAt,
@@ -146,7 +146,7 @@ func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileC
 		ctx,
 		s.dbu,
 		fileChangesInsertQuery,
-		change.PluginID,
+		change.PluginId,
 		change.FilePath,
 		change.ChangeType,
 		change.LocalHash,
@@ -156,7 +156,7 @@ func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileC
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastFileChange(change.PluginID, change.FilePath, change.ChangeType)
+		s.wsHub.BroadcastFileChange(change.PluginId, change.FilePath, change.ChangeType)
 	}
 	return nil
 }
