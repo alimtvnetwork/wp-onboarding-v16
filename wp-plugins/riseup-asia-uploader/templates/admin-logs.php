@@ -8,6 +8,7 @@
  */
 
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\LogColumnType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -214,16 +215,16 @@ $upload_source_classes = array(
                     
                     // Date grouping
                     $log_timestamp = strtotime($log[LogColumnType::CreatedAt->value]);
-                    $log_date = date('Y-m-d', $log_timestamp);
-                    $log_date_display = date('F j, Y', $log_timestamp); // e.g., "February 10, 2026"
-                    $log_time_display = date('g:i A', $log_timestamp);  // e.g., "2:30 PM"
+                    $log_date = DateHelper::formatDateOnly($log_timestamp);
+                    $log_date_display = DateHelper::formatDisplayDate($log_timestamp);
+                    $log_time_display = DateHelper::formatDisplayTime($log_timestamp);
                     
                     // Insert date group header when date changes
                     if ($log_date !== $current_date_group):
                         $current_date_group = $log_date;
                         // Check if today/yesterday
-                        $today = date('Y-m-d');
-                        $yesterday = date('Y-m-d', strtotime('-1 day'));
+                        $today = DateHelper::nowDateOnly();
+                        $yesterday = DateHelper::formatDateOnly(strtotime('-1 day'));
                         if ($log_date === $today) {
                             $date_label = __('Today', 'riseup-asia-uploader') . ' — ' . $log_date_display;
                         } elseif ($log_date === $yesterday) {

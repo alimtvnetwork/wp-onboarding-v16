@@ -21,6 +21,7 @@ use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TriggerSourceType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
@@ -33,7 +34,7 @@ trait SchedulerExecutorTrait {
         $result = $orchestrator->executeFullBackup(array(
             ResponseKeyType::Scope->value => $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
             'trigger'                     => SnapshotTriggerType::Cron->value,
-            'title'                       => 'Scheduled Backup ' . date('Y-m-d H:i'),
+            'title'                       => 'Scheduled Backup ' . DateHelper::nowCompactDatetime(),
             'async'                       => true,
         ));
 
@@ -98,7 +99,7 @@ trait SchedulerExecutorTrait {
         list(, $orchestrator) = $this->createOrchestrator();
 
         $result = $orchestrator->executeIncrementalBackup(array(
-            'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
+            'title'              => $args['title'] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
             'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
         ));
 

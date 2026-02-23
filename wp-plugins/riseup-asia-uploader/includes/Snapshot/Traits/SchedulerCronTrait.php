@@ -20,6 +20,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\SnapshotOrchestrator;
@@ -132,13 +133,13 @@ trait SchedulerCronTrait {
         if ($snapshotType === SnapshotModeType::Incremental->value) {
 
             return $orchestrator->executeIncrementalBackup(array(
-                'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
+                'title'              => $args['title'] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
                 'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
             ));
         }
 
         return $orchestrator->executeFullBackup(array(
-            'title'                           => $args['title'] ?? 'Manual Backup ' . date('Y-m-d H:i'),
+            'title'                           => $args['title'] ?? 'Manual Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::Scope->value     => $args[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             'trigger'                         => SnapshotTriggerType::Manual->value,
             'async'                           => true,

@@ -24,6 +24,7 @@ use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 use Exception;
@@ -118,7 +119,7 @@ trait ImportExecutionTrait {
         }
 
         $title = $metadata['title'] ?? 'imported';
-        $folderName = date('Y-m-d') . '_imported_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $title);
+        $folderName = DateHelper::nowDateOnly() . '_imported_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $title);
         $destDir = $this->resolveUniqueDest(PathHelper::join($snapshotsDir, $folderName), $snapshotsDir, $folderName);
 
         $this->copyDirectory($snapshotRoot, $destDir);
@@ -181,8 +182,8 @@ trait ImportExecutionTrait {
             'fileSize'                          => $this->getDirectorySize($destDir),
             'triggerSource'                     => SnapshotTriggerType::Api->value,
             'status'                            => SnapshotStatusType::Complete->value,
-            ResponseKeyType::CreatedAt->value   => date('c'),
-            ResponseKeyType::CompletedAt->value => date('c'),
+            ResponseKeyType::CreatedAt->value   => DateHelper::nowIso(),
+            ResponseKeyType::CompletedAt->value => DateHelper::nowIso(),
             'importSource'                      => json_encode($this->buildImportSourceMeta(
                 $metadata,
                 $tables,

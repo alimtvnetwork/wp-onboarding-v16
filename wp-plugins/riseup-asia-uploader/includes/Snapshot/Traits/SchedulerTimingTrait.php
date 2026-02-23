@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait SchedulerTimingTrait {
     private function calculateNextRunTime(
@@ -58,7 +59,7 @@ trait SchedulerTimingTrait {
         $dayName = $this->getDayName($day);
         $next = strtotime("next {$dayName} {$hour}:{$minute}:00");
 
-        if (date('N') == $day) {
+        if (DateHelper::format(time(), 'N') == $day) {
             $today = strtotime("today {$hour}:{$minute}:00");
 
             if ($today > $now) {
@@ -77,11 +78,11 @@ trait SchedulerTimingTrait {
     ): int {
         $now = current_time('timestamp');
         $day = min(28, max(1, $day));
-        $currentMonth = date('Y-m');
+        $currentMonth = DateHelper::format(time(), 'Y-m');
         $next = strtotime("{$currentMonth}-{$day} {$hour}:{$minute}:00");
 
         if ($next <= $now) {
-            $nextMonth = date('Y-m', strtotime('+1 month'));
+            $nextMonth = DateHelper::format(strtotime('+1 month'), 'Y-m');
             $next = strtotime("{$nextMonth}-{$day} {$hour}:{$minute}:00");
         }
 

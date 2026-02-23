@@ -10,6 +10,7 @@ namespace RiseupAsia\Snapshot\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 use PDO;
@@ -28,7 +29,7 @@ trait IncrementalCoreTrait {
         }
 
         $sequence = $this->getNextSequence($rootPdo);
-        $folderName = sprintf('%02d_%s', $sequence, date('Y-m-d'));
+        $folderName = sprintf('%02d_%s', $sequence, DateHelper::nowDateOnly());
         $masterDir = dirname($rootPath);
         $incrementalDir = $masterDir . '/incremental/' . $folderName;
 

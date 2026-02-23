@@ -18,6 +18,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
@@ -103,7 +104,7 @@ trait NativeSnapshotCrudTrait {
     private function buildExportManifest(int $snapshotId, array $snapshot): array {
         return array(
             'version'                           => PluginConfigType::Version->value,
-            ResponseKeyType::CreatedAt->value   => date('c'),
+            ResponseKeyType::CreatedAt->value   => DateHelper::nowIso(),
             ResponseKeyType::SnapshotId->value  => $snapshotId,
             ResponseKeyType::Filename->value    => $snapshot['Filename'],
             ResponseKeyType::Scope->value       => $snapshot['Scope'],

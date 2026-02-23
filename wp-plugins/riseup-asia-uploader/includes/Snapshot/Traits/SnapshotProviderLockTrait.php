@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 
 trait SnapshotProviderLockTrait {
@@ -94,7 +95,7 @@ trait SnapshotProviderLockTrait {
     private function writeLockFile(): bool {
         $lockFile = PathHelper::join($this->getSnapshotsDir(), '.lock');
         $lockData = json_encode(array(
-            'lockedAt' => date('c'),
+            'lockedAt' => DateHelper::nowIso(),
             'lockedBy' => $this->providerId,
             'pid' => getmypid(),
         ));

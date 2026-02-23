@@ -21,6 +21,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -92,7 +93,7 @@ trait RestoreValidationTrait {
         $this->log(LogLevelType::Info->value, 'Creating pre-restore safety backup');
 
         $result = $this->orchestrator->executeFullBackup(array(
-            'title'           => 'Pre-Restore Safety Backup ' . date('Y-m-d H:i'),
+            'title'           => 'Pre-Restore Safety Backup ' . DateHelper::nowCompactDatetime(),
             'compression'     => false,
             'include_plugins' => false,
         ));

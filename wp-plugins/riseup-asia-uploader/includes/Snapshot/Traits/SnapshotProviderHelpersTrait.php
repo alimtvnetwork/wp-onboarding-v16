@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -67,7 +68,7 @@ trait SnapshotProviderHelpersTrait {
     protected function generateSnapshotFilename(int $sequence): string {
         $sequencePadded = str_pad($sequence, 3, '0', STR_PAD_LEFT);
 
-        return sprintf('%s_%s', $sequencePadded, date('Y-m-d_His'));
+        return sprintf('%s_%s', $sequencePadded, DateHelper::nowFilenameDatetime());
     }
 
     protected function getNextSequence(): int {

@@ -19,6 +19,7 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
@@ -53,8 +54,8 @@ trait SchedulerTriggerTrait {
             'frequency'                                   => $settings['schedule_frequency'],
             'time'                                        => $settings['schedule_time'],
             'day'                                         => $settings['schedule_day'],
-            ResponseKeyType::NextScheduledSnapshot->value => $scheduledNext ? date('c', $scheduledNext) : null,
-            ResponseKeyType::NextCleanup->value           => $cleanupNext ? date('c', $cleanupNext) : null,
+            ResponseKeyType::NextScheduledSnapshot->value => $scheduledNext ? DateHelper::formatIso($scheduledNext) : null,
+            ResponseKeyType::NextCleanup->value           => $cleanupNext ? DateHelper::formatIso($cleanupNext) : null,
             ResponseKeyType::RetentionType->value         => $settings['retention_type'],
             ResponseKeyType::RetentionDays->value         => $settings['retention_days'],
             ResponseKeyType::RetentionCount->value        => $settings['retention_count'],
@@ -68,8 +69,8 @@ trait SchedulerTriggerTrait {
             $settings = $this->detector->getSettings();
             $snapshotType = $options['snapshot_type'] ?? SnapshotModeType::Full->value;
             $title = $options['title'] ?? ($snapshotType === SnapshotModeType::Incremental->value
-                ? 'Incremental Backup ' . date('Y-m-d H:i')
-                : 'Manual Backup ' . date('Y-m-d H:i'));
+                ? 'Incremental Backup ' . DateHelper::nowCompactDatetime()
+                : 'Manual Backup ' . DateHelper::nowCompactDatetime());
 
             $cronArgs = array(
                 'snapshot_type'                     => $snapshotType,

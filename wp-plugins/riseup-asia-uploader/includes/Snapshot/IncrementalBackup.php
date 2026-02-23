@@ -21,6 +21,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\ResultHelper;
 use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
@@ -74,7 +75,7 @@ class IncrementalBackup {
 
     public function execute(string $masterDir, array $options = array()): array {
         $startTime = microtime(true);
-        $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
+        $title = $options['title'] ?? ('Incremental ' . DateHelper::nowCompactDatetime());
 
         $rootPath = $masterDir . '/a-root.db';
 
