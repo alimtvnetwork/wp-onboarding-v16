@@ -149,12 +149,12 @@ trait OrchestratorPluginTrait {
 
         if ($rootPdo) {
             $this->rootDb->registerPluginSnapshot($rootPdo, array(
-                'plugin_slug'    => $info['slug'],
-                'plugin_name'    => $info['name'],
-                'plugin_version' => $info['version'],
-                'zip_file'       => 'plugins/' . $zip_filename,
-                'file_size_bytes' => filesize($zip_path),
-                'checksum_md5'   => md5_file($zip_path),
+                ResponseKeyType::PluginSlug->value    => $info['slug'],
+                'pluginName'                          => $info['name'],
+                ResponseKeyType::PluginVersion->value => $info['version'],
+                'zipFile'                             => 'plugins/' . $zip_filename,
+                'fileSizeBytes'                       => filesize($zip_path),
+                'checksumMd5'                         => md5_file($zip_path),
             ));
         }
 
