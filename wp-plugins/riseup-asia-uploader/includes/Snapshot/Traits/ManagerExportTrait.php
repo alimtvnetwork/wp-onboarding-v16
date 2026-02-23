@@ -18,6 +18,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
@@ -85,8 +86,8 @@ trait ManagerExportTrait {
         return array(
             'version' => PluginConfigType::Version->value,
             ResponseKeyType::FormatVersion->value => '1.0',
-            ResponseKeyType::CreatedAt->value => date('c'),
-            ResponseKeyType::ExportedAt->value => date('c'),
+            ResponseKeyType::CreatedAt->value => DateHelper::nowIso(),
+            ResponseKeyType::ExportedAt->value => DateHelper::nowIso(),
             'snapshot' => array(
                 'id' => $snapshot['Id'],
                 ResponseKeyType::Sequence->value => $snapshot['Sequence'],

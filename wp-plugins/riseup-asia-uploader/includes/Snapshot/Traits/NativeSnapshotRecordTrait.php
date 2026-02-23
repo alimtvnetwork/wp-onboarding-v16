@@ -19,6 +19,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 
 trait NativeSnapshotRecordTrait {
@@ -70,7 +71,7 @@ trait NativeSnapshotRecordTrait {
 
     private function insertSnapshotMeta(PDO $pdo): void {
         $meta = array(
-            'created_at'     => date('c'),
+            'created_at'     => DateHelper::nowIso(),
             'wp_version'     => get_bloginfo('version'),
             'site_url'       => get_site_url(),
             'php_version'    => PHP_VERSION,
@@ -102,7 +103,7 @@ trait NativeSnapshotRecordTrait {
             'TablesJson'    => json_encode($tables),
             'TriggerSource' => $trigger,
             'Status'        => SnapshotStatusType::Pending->value,
-            'CreatedAt'     => date('c'),
+            'CreatedAt'     => DateHelper::nowIso(),
         ));
 
         return $result ? $this->db->lastInsertId() : false;
@@ -115,7 +116,7 @@ trait NativeSnapshotRecordTrait {
     ): void {
         $data = array(
             'Status'    => $status,
-            'UpdatedAt' => date('c'),
+            'UpdatedAt' => DateHelper::nowIso(),
         );
 
         if ($error) {
@@ -123,7 +124,7 @@ trait NativeSnapshotRecordTrait {
         }
 
         if ($status === SnapshotStatusType::Running->value) {
-            $data['StartedAt'] = date('c');
+            $data['StartedAt'] = DateHelper::nowIso();
         }
 
         $this->db->update(
@@ -140,8 +141,8 @@ trait NativeSnapshotRecordTrait {
             'TotalRows'       => $details[ResponseKeyType::TotalRows->value],
             'TableCountsJson' => json_encode($details[ResponseKeyType::TableCounts->value]),
             'DurationMs'      => $details[ResponseKeyType::DurationMs->value],
-            'CompletedAt'     => date('c'),
-            'UpdatedAt'       => date('c'),
+            'CompletedAt'     => DateHelper::nowIso(),
+            'UpdatedAt'       => DateHelper::nowIso(),
         ), array('Id' => $snapshotId));
     }
 }

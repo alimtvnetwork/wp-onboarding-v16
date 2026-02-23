@@ -18,11 +18,12 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait OrchestratorZipTrait {
     private function createZipExport(string $snapshotDir, string $title): array {
         try {
-            $zipFilename = sanitize_title($title) . '_' . date('Y-m-d_His') . '.zip';
+            $zipFilename = sanitize_title($title) . '_' . DateHelper::nowFilenameDatetime() . '.zip';
             $zipPath = dirname($snapshotDir) . '/' . $zipFilename;
 
             $zip = new ZipArchive();

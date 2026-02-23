@@ -22,6 +22,7 @@ use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Snapshot\IncrementalBackup;
 
 trait OrchestratorBackupTrait {
@@ -39,7 +40,7 @@ trait OrchestratorBackupTrait {
         $this->worker->setPoolSize($settings['worker_pool_size'] ?? SnapshotConfigType::WorkerPoolDefault->value);
 
         return array(
-            'title'            => $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i')),
+            'title'            => $options['title'] ?? ('Full Backup ' . DateHelper::nowCompactDatetime()),
             ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? $settings[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             'include_plugins'  => $options['include_plugins'] ?? $settings['include_plugins'] ?? true,
             'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? PluginSelectionType::All->value,

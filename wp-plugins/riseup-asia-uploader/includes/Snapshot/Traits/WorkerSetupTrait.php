@@ -18,13 +18,14 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerSetupTrait {
     private function prepareSnapshotDir(array $config): array {
-        $title = $config[ResponseKeyType::Title->value] ?? (SnapshotConfigType::DefaultTitle . ' ' . date('Y-m-d H:i'));
+        $title = $config[ResponseKeyType::Title->value] ?? (SnapshotConfigType::DefaultTitle . ' ' . DateHelper::nowCompactDatetime());
         $scope = $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value;
         $type  = $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value;
 
@@ -42,7 +43,7 @@ trait WorkerSetupTrait {
         ));
 
         $baseDir = $this->getSnapshotsBaseDir();
-        $dirName = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
+        $dirName = DateHelper::nowDateOnly() . '_' . $type . '_' . sanitize_title($title);
         $snapshotDir = $baseDir . '/' . $dirName;
 
         $isDirCreateFailed = (PathHelper::makeDirectory($snapshotDir, true) === false);

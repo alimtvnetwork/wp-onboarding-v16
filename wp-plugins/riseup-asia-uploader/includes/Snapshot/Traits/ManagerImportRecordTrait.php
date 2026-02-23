@@ -16,6 +16,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\DateHelper;
 
 trait ManagerImportRecordTrait {
     private function getNextImportSequence(): int {
@@ -54,8 +55,8 @@ trait ManagerImportRecordTrait {
             'FileSize' => filesize($filepath),
             'TriggerSource' => 'import',
             'Status' => SnapshotStatusType::Complete->value,
-            'CreatedAt' => date('c'),
-            'CompletedAt' => date('c'),
+            'CreatedAt' => DateHelper::nowIso(),
+            'CompletedAt' => DateHelper::nowIso(),
             'ImportSource' => json_encode(array(
                 ResponseKeyType::OriginalId->value => $snapshotData['id'] ?? null,
                 ResponseKeyType::OriginalCreatedAt->value => $snapshotData['created_at'] ?? null,

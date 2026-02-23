@@ -7,6 +7,7 @@ namespace RiseupAsia\Tests\Unit\Agent\Traits;
 use PHPUnit\Framework\TestCase;
 use RiseupAsia\Agent\AgentSite;
 use RiseupAsia\Agent\Traits\AgentRemoteActionTrait;
+use RiseupAsia\Helpers\DateHelper;
 
 /**
  * Exposes isRedirectCacheValid for testing typed property access.
@@ -58,7 +59,7 @@ final class AgentRemoteActionTraitTest extends TestCase {
     public function testRedirectCacheValidWhenRecent(): void {
         $agent = $this->makeAgent([
             'redirect_resolved'    => 'https://resolved.example.com',
-            'redirect_resolved_at' => gmdate('Y-m-d\TH:i:s\Z', time() - 3600), // 1 hour ago
+            'redirect_resolved_at' => DateHelper::formatUtc(time() - 3600), // 1 hour ago
         ]);
 
         $this->assertTrue($this->stub->exposeIsRedirectCacheValid($agent));
@@ -67,7 +68,7 @@ final class AgentRemoteActionTraitTest extends TestCase {
     public function testRedirectCacheInvalidWhenExpired(): void {
         $agent = $this->makeAgent([
             'redirect_resolved'    => 'https://resolved.example.com',
-            'redirect_resolved_at' => gmdate('Y-m-d\TH:i:s\Z', time() - (365 * DAY_IN_SECONDS)), // 1 year ago
+            'redirect_resolved_at' => DateHelper::formatUtc(time() - (365 * DAY_IN_SECONDS)), // 1 year ago
         ]);
 
         $this->assertFalse($this->stub->exposeIsRedirectCacheValid($agent));

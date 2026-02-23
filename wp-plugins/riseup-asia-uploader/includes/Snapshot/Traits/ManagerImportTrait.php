@@ -19,6 +19,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
@@ -143,7 +144,7 @@ trait ManagerImportTrait {
         }
 
         $sequence = $this->getNextImportSequence();
-        $newFilename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
+        $newFilename = sprintf('%03d_%s', $sequence, DateHelper::nowFilenameDatetime()) . '.sqlite';
         $destPath = PathHelper::join($snapshotsDir, $newFilename);
 
         if (PathHelper::isCopyFailed($sqlitePath, $destPath)) {

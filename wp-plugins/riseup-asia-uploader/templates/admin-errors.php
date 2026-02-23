@@ -20,6 +20,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\DateHelper;
 
 $levelColors = array(
     LogLevelType::Error->value => '#dc3545',
@@ -185,7 +186,7 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                                 <?php endif; ?>
                             </td>
                             <td class="column-timestamp">
-                                <span class="timestamp"><?php echo esc_html(date('Y-m-d H:i:s', strtotime($error['CreatedAt']))); ?></span>
+                                <span class="timestamp"><?php echo esc_html(DateHelper::formatDatetime(strtotime($error['CreatedAt']))); ?></span>
                             </td>
                             <td class="column-level">
                                 <span class="level-badge" style="background: <?php echo esc_attr($color); ?>;">
@@ -210,7 +211,7 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
                                         data-level="<?php echo esc_attr($level); ?>"
                                         data-message="<?php echo esc_attr($error['Message']); ?>"
                                         data-source="<?php echo esc_attr($sourceDisplay); ?>"
-                                        data-timestamp="<?php echo esc_attr(date('Y-m-d H:i:s', strtotime($error['CreatedAt']))); ?>">
+                                        data-timestamp="<?php echo esc_attr(DateHelper::formatDatetime(strtotime($error['CreatedAt']))); ?>">
                                         <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
                                     </button>
                                 <?php else: ?>

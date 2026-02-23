@@ -9,6 +9,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Helpers\DateHelper;
 
 /**
  * Detects fatal PHP errors during REST requests and emits structured JSON responses.
@@ -99,7 +100,7 @@ class FatalErrorHandler
     private static function logToFile(array $error): void {
         $logEntry = sprintf(
             "[%s] FATAL ERROR in %s:%d - %s (type: %s)\n",
-            date('Y-m-d H:i:s'),
+            DateHelper::nowDatetime(),
             $error['file'],
             $error['line'],
             $error['message'],
