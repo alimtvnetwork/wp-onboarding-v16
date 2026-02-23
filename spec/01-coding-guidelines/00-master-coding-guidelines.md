@@ -411,6 +411,30 @@ if siteResult.HasError() {
 ```
 
 ```go
+// Go — ResultSlice: Same-type vs Cross-type propagation
+// ✅ Same-type — direct return (no FailSlice needed)
+result := s.List(ctx) // returns ResultSlice[models.Site]
+if result.HasError() {
+    return result
+}
+
+// ❌ WRONG — redundant FailSlice (same type)
+if result.HasError() {
+    return apperror.FailSlice[models.Site](result.Error()) // redundant
+}
+
+// ✅ Cross-type — FailSlice IS needed (ResultSlice[T] → ResultSlice[U])
+plugins := s.pluginService.List(ctx) // returns ResultSlice[models.Plugin]
+if plugins.HasError() {
+    return apperror.FailSlice[SyncResult](plugins.Error())
+}
+
+// Same rule applies to ResultMap:
+// ✅ Same-type → direct return
+// ✅ Cross-type → apperror.FailMap[K2, V2](result.Error())
+```
+
+```go
 // Go — ResultSlice (collection access)
 result := svc.List(ctx)
 
