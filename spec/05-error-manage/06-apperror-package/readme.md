@@ -698,6 +698,66 @@ func truncateData(data []byte, maxLen int) string {
 
 ---
 
+## 12. Result Guard Rule — Mandatory Error Check Before Value Access
+
+Every call site that receives a `Result[T]`, `ResultSlice[T]`, or `ResultMap[K, V]` **MUST** check `HasError()` or `IsSafe()` before calling `.Value()`, `.Items()`, or `.Get()`. Accessing the contained value without a guard is a **spec violation**.
+
+**Principle:** No error may ever be swallowed. If a result carries an error, it must be explicitly handled — logged, returned, or propagated.
+
+### ❌ WRONG — No Guard
+
+```go
+// Silent failure: if result has an error, Value() panics or returns zero
+result := svc.GetByID(ctx, id)
+plugin := result.Value()
+```
+
+### ✅ CORRECT — Guard Before Access
+
+```go
+result := svc.GetByID(ctx, id)
+if result.HasError() {
+    return apperror.Fail[Plugin](result.Error())
+}
+plugin := result.Value()
+```
+
+### ✅ CORRECT — Using IsSafe()
+
+```go
+result := svc.List(ctx)
+if result.IsSafe() {
+    for _, item := range result.Items() {
+        process(item)
+    }
+}
+```
+
+### ✅ CORRECT — Adapter Unwrap Pattern
+
+```go
+func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
+    result := a.Service.GetByID(ctx, id)
+    if result.HasError() {
+        return nil, result.Error()
+    }
+
+    v := result.Value()
+
+    return &v, nil
+}
+```
+
+### Enforcement Checklist
+
+- [ ] Every `result.Value()` call is preceded by `result.HasError()` or `result.IsSafe()`
+- [ ] Every `result.Items()` call is preceded by `result.HasError()` or `result.IsSafe()`
+- [ ] Every `result.Get(key)` on `ResultMap` is preceded by a guard
+- [ ] No error is silently discarded — all errors are logged, returned, or propagated
+- [ ] Cross-service callers (direct `*service.Service` refs) guard results the same way
+
+---
+
 ## Cross-References
 
 - [Golang Coding Standards](../../03-golang-standards/readme.md) — File size, function size, type safety, file naming
