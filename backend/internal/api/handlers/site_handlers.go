@@ -302,7 +302,7 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 			}
 
 			results = append(results, BulkBootstrapSiteResult{
-				SiteID:   siteId,
+				SiteId:   siteId,
 				SiteName: siteName,
 				Success:  false,
 				Message:  "Deployment failed",
@@ -310,7 +310,7 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 			})
 		} else {
 			results = append(results, BulkBootstrapSiteResult{
-				SiteID:    result.SiteId,
+				SiteId:    result.SiteId,
 				SiteName:  result.SiteName,
 				Success:   result.Success,
 				Message:   result.Message,
@@ -347,15 +347,15 @@ func parseRemotePluginInput(r *http.Request) (int64, string, error) {
 
 // GetRemotePlugins returns all plugins installed on a remote WordPress site
 var GetRemotePlugins = handleSiteActionByID("E3004",
-	func(ctx context.Context, siteID int64) (any, error) {
-		return Services.SiteService.GetRemotePlugins(ctx, siteID)
+	func(ctx context.Context, siteId int64) (any, error) {
+		return Services.SiteService.GetRemotePlugins(ctx, siteId)
 	},
 )
 
 // ForceSyncRemotePlugins clears cache and fetches fresh plugin data
 var ForceSyncRemotePlugins = handleSiteActionByID("E3004",
-	func(ctx context.Context, siteID int64) (any, error) {
-		return Services.SiteService.ForceSyncRemotePlugins(ctx, siteID)
+	func(ctx context.Context, siteId int64) (any, error) {
+		return Services.SiteService.ForceSyncRemotePlugins(ctx, siteId)
 	},
 )
 
@@ -381,7 +381,7 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Cleared: true, SiteID: id})
+	respondSuccess(w, ActionResponse{Cleared: true, SiteId: id})
 }
 
 // CheckRemotePluginExists performs a lightweight pre-flight check to verify plugin existence

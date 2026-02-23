@@ -19,8 +19,8 @@ import (
 
 // GetRemoteSnapshots returns all snapshots from a remote WordPress site
 var GetRemoteSnapshots = handleSiteActionByID("E3020",
-	func(ctx context.Context, siteID int64) (any, error) {
-		return Services.SiteService.GetRemoteSnapshots(ctx, siteID)
+	func(ctx context.Context, siteId int64) (any, error) {
+		return Services.SiteService.GetRemoteSnapshots(ctx, siteId)
 	},
 )
 
@@ -37,7 +37,7 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -49,7 +49,7 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshotID, err := getSnapshotIDParam(r)
+	snapshotId, err := getSnapshotIdParam(r)
 	if err != nil {
 		respondError(
 			w,
@@ -61,7 +61,7 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshot, err := Services.SiteService.GetRemoteSnapshot(r.Context(), siteID, snapshotID)
+	snapshot, err := Services.SiteService.GetRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if err != nil {
 		respondError(
 			w,
@@ -89,7 +89,7 @@ func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -104,7 +104,7 @@ func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	var opts wordpress.SnapshotCreateOptions
 	_ = decodeJSONSilent(r, &opts)
 
-	result, err := Services.SiteService.CreateRemoteSnapshot(r.Context(), siteID, opts)
+	result, err := Services.SiteService.CreateRemoteSnapshot(r.Context(), siteId, opts)
 	if err != nil {
 		respondError(
 			w,
@@ -132,7 +132,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -144,7 +144,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshotID, err := getSnapshotIDParam(r)
+	snapshotId, err := getSnapshotIdParam(r)
 	if err != nil {
 		respondError(
 			w,
@@ -156,7 +156,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := Services.SiteService.DeleteRemoteSnapshot(r.Context(), siteID, snapshotID); err != nil {
+	if err := Services.SiteService.DeleteRemoteSnapshot(r.Context(), siteId, snapshotId); err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
@@ -167,7 +167,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, SnapshotDeleteResponse{Deleted: true, SnapshotID: snapshotID})
+	respondSuccess(w, SnapshotDeleteResponse{Deleted: true, SnapshotId: snapshotId})
 }
 
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote WordPress site
@@ -183,7 +183,7 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -195,7 +195,7 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshotID, err := getSnapshotIDParam(r)
+	snapshotId, err := getSnapshotIdParam(r)
 	if err != nil {
 		respondError(
 			w,
@@ -207,7 +207,7 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := Services.SiteService.RestoreRemoteSnapshot(r.Context(), siteID, snapshotID)
+	result, err := Services.SiteService.RestoreRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if err != nil {
 		respondError(
 			w,
@@ -224,8 +224,8 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // GetRemoteSnapshotSettings fetches snapshot settings from a remote WordPress site
 var GetRemoteSnapshotSettings = handleSiteActionByID("E3025",
-	func(ctx context.Context, siteID int64) (any, error) {
-		return Services.SiteService.GetRemoteSnapshotSettings(ctx, siteID)
+	func(ctx context.Context, siteId int64) (any, error) {
+		return Services.SiteService.GetRemoteSnapshotSettings(ctx, siteId)
 	},
 )
 
@@ -242,7 +242,7 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -266,7 +266,7 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := Services.SiteService.UpdateRemoteSnapshotSettings(r.Context(), siteID, settings)
+	result, err := Services.SiteService.UpdateRemoteSnapshotSettings(r.Context(), siteId, settings)
 	if err != nil {
 		respondError(
 			w,
@@ -283,8 +283,8 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 
 // GetRemoteSnapshotProviders returns available snapshot providers on a remote WordPress site
 var GetRemoteSnapshotProviders = handleSiteActionByID("E3027",
-	func(ctx context.Context, siteID int64) (any, error) {
-		return Services.SiteService.GetRemoteSnapshotProviders(ctx, siteID)
+	func(ctx context.Context, siteId int64) (any, error) {
+		return Services.SiteService.GetRemoteSnapshotProviders(ctx, siteId)
 	},
 )
 
@@ -301,7 +301,7 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -313,7 +313,7 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshotID, err := getSnapshotIDParam(r)
+	snapshotId, err := getSnapshotIdParam(r)
 	if err != nil {
 		respondError(
 			w,
@@ -325,7 +325,7 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := Services.SiteService.ExportRemoteSnapshot(r.Context(), siteID, snapshotID)
+	resp, err := Services.SiteService.ExportRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if err != nil {
 		respondError(
 			w,
@@ -348,7 +348,7 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if cd := resp.Header.Get("Content-Disposition"); cd != "" {
 		w.Header().Set("Content-Disposition", cd)
 	} else {
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=snapshot-%d.zip", snapshotID))
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=snapshot-%d.zip", snapshotId))
 	}
 
 	if cl := resp.Header.Get("Content-Length"); cl != "" {
@@ -372,7 +372,7 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -386,9 +386,9 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 
 	// Read snapshotId from POST body
 	var body struct {
-		SnapshotID int64 `json:"snapshotId"`
+		SnapshotId int64 `json:"snapshotId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotID <= 0 {
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotId <= 0 {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -399,7 +399,7 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zipResp, meta, err := Services.SiteService.DownloadSnapshotZip(r.Context(), siteID, body.SnapshotID)
+	zipResp, meta, err := Services.SiteService.DownloadSnapshotZip(r.Context(), siteId, body.SnapshotId)
 	if err != nil {
 		respondError(
 			w,
@@ -415,7 +415,7 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 	// Set download headers
 	filename := meta.Filename
 	if filename == "" {
-		filename = fmt.Sprintf("snapshot-%d.zip", body.SnapshotID)
+		filename = fmt.Sprintf("snapshot-%d.zip", body.SnapshotId)
 	}
 
 	if ct := zipResp.Header.Get("Content-Type"); ct != "" {
@@ -447,13 +447,13 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting
 var GetRemoteAvailableTables = handleSiteActionByID("E3029",
-	func(ctx context.Context, siteID int64) (any, error) {
-		return Services.SiteService.GetRemoteAvailableTables(ctx, siteID)
+	func(ctx context.Context, siteId int64) (any, error) {
+		return Services.SiteService.GetRemoteAvailableTables(ctx, siteId)
 	},
 )
 
-// getSnapshotIDParam extracts the snapshot ID from URL parameters
-func getSnapshotIDParam(r *http.Request) (int64, error) {
+// getSnapshotIdParam extracts the snapshot ID from URL parameters
+func getSnapshotIdParam(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)
 
 	return strconv.ParseInt(vars["snapshotId"], 10, 64)
@@ -472,7 +472,7 @@ func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -487,7 +487,7 @@ func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	var opts wordpress.SnapshotBackupOptions
 	_ = decodeJSONSilent(r, &opts)
 
-	result, err := Services.SiteService.FullBackupRemoteSnapshot(r.Context(), siteID, opts)
+	result, err := Services.SiteService.FullBackupRemoteSnapshot(r.Context(), siteId, opts)
 	if err != nil {
 		respondError(
 			w,
@@ -515,7 +515,7 @@ func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -530,7 +530,7 @@ func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	var opts wordpress.SnapshotBackupOptions
 	_ = decodeJSONSilent(r, &opts)
 
-	result, err := Services.SiteService.IncrementalBackupRemoteSnapshot(r.Context(), siteID, opts)
+	result, err := Services.SiteService.IncrementalBackupRemoteSnapshot(r.Context(), siteId, opts)
 	if err != nil {
 		respondError(
 			w,
@@ -558,7 +558,7 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -624,7 +624,7 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	_ = header // used for logging if needed
 
-	result, err := Services.SiteService.ImportRemoteSnapshot(r.Context(), siteID, tempFile.Name())
+	result, err := Services.SiteService.ImportRemoteSnapshot(r.Context(), siteId, tempFile.Name())
 	if err != nil {
 		respondError(
 			w,
@@ -652,7 +652,7 @@ func CleanupRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := getIDParam(r, "id")
+	siteId, err := getIDParam(r, "id")
 	if err != nil {
 		respondError(
 			w,
@@ -667,7 +667,7 @@ func CleanupRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
 	var opts wordpress.SnapshotCleanupOptions
 	_ = decodeJSONSilent(r, &opts)
 
-	result, err := Services.SiteService.CleanupRemoteSnapshots(r.Context(), siteID, opts)
+	result, err := Services.SiteService.CleanupRemoteSnapshots(r.Context(), siteId, opts)
 	if err != nil {
 		respondError(
 			w,
