@@ -57,12 +57,12 @@ trait RootDbRegistrationTrait {
         $stmt = $pdo->prepare("INSERT INTO IncrementalBackups
             (SequenceNum, FolderName, CreatedAt, TablesChanged, TotalNewRows, RelativePath) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
-            $info['sequence_num'],
-            $info['folder_name'],
+            $info['sequenceNum'],
+            $info['folderName'],
             DateHelper::nowIso(),
-            $info['tables_changed'] ?? 0,
-            $info['total_new_rows'] ?? 0,
-            $info['relative_path'],
+            $info[ResponseKeyType::TablesChanged->value] ?? 0,
+            $info[ResponseKeyType::TotalNewRows->value] ?? 0,
+            $info['relativePath'],
         ));
     }
 
@@ -71,12 +71,12 @@ trait RootDbRegistrationTrait {
         $stmt = $pdo->prepare("INSERT INTO PluginSnapshots
             (PluginSlug, PluginName, PluginVersion, ZipFile, FileSizeBytes, ChecksumMd5) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
-            $info['plugin_slug'],
-            $info['plugin_name'] ?? '',
-            $info['plugin_version'] ?? '',
-            $info['zip_file'],
-            $info['file_size_bytes'] ?? 0,
-            $info['checksum_md5'] ?? '',
+            $info[ResponseKeyType::PluginSlug->value],
+            $info['pluginName'] ?? '',
+            $info[ResponseKeyType::PluginVersion->value] ?? '',
+            $info['zipFile'],
+            $info['fileSizeBytes'] ?? 0,
+            $info['checksumMd5'] ?? '',
         ));
     }
 

@@ -143,11 +143,11 @@ class IncrementalBackup {
 
     private function registerIncrementalInRoot(array $prepared, array $export): void {
         $this->rootDb->registerIncremental($prepared['rootPdo'], array(
-            'sequence_num'                         => $prepared['sequence'],
-            'folder_name'                          => $prepared['folder_name'],
+            'sequenceNum'                          => $prepared['sequence'],
+            'folderName'                           => $prepared['folder_name'],
             ResponseKeyType::TablesChanged->value  => $export[ResponseKeyType::TablesChanged->value],
             ResponseKeyType::TotalNewRows->value   => $export[ResponseKeyType::TotalNewRows->value],
-            'relative_path'                        => 'incremental/' . $prepared['folder_name'] . '/',
+            'relativePath'                         => 'incremental/' . $prepared['folderName'] . '/',
         ));
     }
 
