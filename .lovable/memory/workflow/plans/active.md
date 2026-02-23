@@ -26,11 +26,12 @@ Updated: 2026-02-23
 - **Phase 8**: Plugin identity hardcoded strings replaced with `PluginConfigType` enum (2026-02-23).
 - **Memory review**: Cross-references audited and fixed across all architecture docs (2026-02-23).
 
-## Pending Tasks (7 open suggestions)
+- **S-024**: Database pagination constants — audit confirmed already deduplicated (2026-02-23).
+
+## Pending Tasks (6 open suggestions)
 
 | ID | Priority | Description |
 |----|----------|-------------|
-| S-024 | Medium | Deduplicate Database DEFAULT_LIMIT/MAX_LIMIT with PaginationConfigType |
 | S-022 | Low | Fix formatting in Templates/*.php |
 | S-023 | Low | Fix formatting in root files |
 | S-025 | Low | Audit PHP hardcoded string comparisons vs old enum values |
