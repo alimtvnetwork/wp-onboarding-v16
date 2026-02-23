@@ -31,20 +31,20 @@ trait PluginExportTrait
         $this->fileLogger->info('Export-self endpoint called');
 
         try {
-            $plugin_dir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
-            $ignore = UploadIgnore::fromDirectory($plugin_dir);
-            $zip_content = $this->createPluginZip($plugin_dir, PluginConfigType::Slug->value, $ignore);
+            $pluginDir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
+            $ignore = UploadIgnore::fromDirectory($pluginDir);
+            $zipContent = $this->createPluginZip($pluginDir, PluginConfigType::Slug->value, $ignore);
 
-            if ($zip_content === null) {
+            if ($zipContent === null) {
                 return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
             }
 
             $this->logger->logPluginAction(ActionType::ExportSelf->value, PluginConfigType::Slug->value, StatusType::Success->value, array(
-                'size' => strlen($zip_content),
+                'size' => strlen($zipContent),
             ));
 
             return new WP_REST_Response(ResultHelper::ok(array(
-                ResponseKeyType::PluginZip->value => base64_encode($zip_content),
+                ResponseKeyType::PluginZip->value => base64_encode($zipContent),
                 'slug'       => PluginConfigType::Slug->value,
                 'version'    => PluginConfigType::Version->value,
             )), HttpStatusType::Ok->value);
@@ -68,54 +68,54 @@ trait PluginExportTrait
     }
 
     private function createPluginZip(
-        string $plugin_dir,
+        string $pluginDir,
         string $slug,
         \RiseupUploadIgnore $ignore,
     ): ?string {
-        $temp_dir = $this->get_temp_dir();
-        $zip_file = $temp_dir . '/' . $slug . '.zip';
+        $tempDir = $this->getTempDir();
+        $zipFile = $tempDir . '/' . $slug . '.zip';
 
         $zip = new ZipArchive();
-        if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return null;
         }
 
-        $this->add_dir_to_zip($zip, $plugin_dir, $slug, $ignore);
+        $this->addDirToZip($zip, $pluginDir, $slug, $ignore);
         $zip->close();
 
-        $zip_content = file_get_contents($zip_file);
-        @unlink($zip_file);
+        $zipContent = file_get_contents($zipFile);
+        @unlink($zipFile);
 
-        return ($zip_content !== false) ? $zip_content : null;
+        return ($zipContent !== false) ? $zipContent : null;
     }
 
     private function exportPluginBySlug(string $slug) {
-        $plugins_dir = WP_PLUGIN_DIR;
-        $plugin_dir  = PathHelper::join($plugins_dir, $slug);
+        $pluginsDir = WP_PLUGIN_DIR;
+        $pluginDir  = PathHelper::join($pluginsDir, $slug);
 
-        if (PathHelper::isDirMissing($plugin_dir)) {
+        if (PathHelper::isDirMissing($pluginDir)) {
             return $this->errorResponse('Plugin not found: ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        if (PathHelper::isPathMissing($plugin_dir, $plugins_dir)) {
+        if (PathHelper::isPathMissing($pluginDir, $pluginsDir)) {
             return $this->errorResponse('Invalid plugin slug', HttpStatusType::BadRequest->value);
         }
 
-        $ignore = UploadIgnore::fromDirectory($plugin_dir);
-        $zip_content = $this->createPluginZip($plugin_dir, $slug . '-backup', $ignore);
+        $ignore = UploadIgnore::fromDirectory($pluginDir);
+        $zipContent = $this->createPluginZip($pluginDir, $slug . '-backup', $ignore);
 
-        if ($zip_content === null) {
+        if ($zipContent === null) {
             return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
         }
 
         $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, StatusType::Success->value, array(
-            'size' => strlen($zip_content),
+            'size' => strlen($zipContent),
         ));
 
         return new WP_REST_Response(ResultHelper::ok(array(
-            ResponseKeyType::PluginZip->value => base64_encode($zip_content),
+            ResponseKeyType::PluginZip->value => base64_encode($zipContent),
             'slug'       => $slug,
-            'size'       => strlen($zip_content),
+            'size'       => strlen($zipContent),
         )), HttpStatusType::Ok->value);
     }
 }
