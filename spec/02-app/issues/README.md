@@ -16,10 +16,6 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 - `{NN}` — zero-padded sequential number (01, 02, 03…)
 - `{issue-slug-name}` — lowercase, hyphen-separated, short, descriptive, stable. No spaces or special characters.
 
-Examples:
-- `01-hourly-frequency-missing-from-consumers.md`
-- `02-option-name-migration-flag-collision.md`
-
 ## Required Sections (in this exact order)
 
 1. **Issue Summary** — What happened, where, symptoms, impact, how discovered.
@@ -42,4 +38,6 @@ Examples:
 
 | # | Slug | Category | Summary |
 |---|------|----------|---------|
-| — | — | — | No issues recorded yet. |
+| 01 | hourly-frequency-missing-from-consumers | Enum/Consumer Sync | New enum case requires updating all consumers simultaneously |
+| 02 | r9c-array-literal-formatting | Code Style | PHP arrays with >2 items must be line-by-line |
+| 03 | r10-activation-handler-formatting | Code Style | Blank line required before control structures after assignments |
