@@ -714,14 +714,35 @@ result := svc.GetByID(ctx, id)
 plugin := result.Value()
 ```
 
-#### ✅ CORRECT — Guard Before Access
+#### ✅ CORRECT — Direct Propagation (Same Type)
 
 ```go
+// result is already Result[T] with the error — just return it
 result := svc.GetByID(ctx, id)
 if result.HasError() {
-    return apperror.Fail[Plugin](result.Error())
+    return result
 }
 plugin := result.Value()
+```
+
+#### ✅ CORRECT — Cross-Type Propagation (Result[T] → Result[U])
+
+```go
+// When the return type differs, Fail re-wrapping IS needed:
+siteResult := siteSvc.GetByID(ctx, siteID)
+if siteResult.HasError() {
+    return apperror.Fail[PluginList](siteResult.Error())
+}
+```
+
+#### ❌ WRONG — Redundant Re-Wrapping (Same Type)
+
+```go
+// result.Error() is already *AppError — no need to re-wrap into same Result[T]
+result := svc.GetByID(ctx, id)
+if result.HasError() {
+    return apperror.Fail[Plugin](result.Error()) // redundant
+}
 ```
 
 #### ✅ CORRECT — Using IsSafe()

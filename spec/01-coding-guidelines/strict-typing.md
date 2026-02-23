@@ -258,12 +258,24 @@ return $execResult->affectedRows() > 0;
 result := svc.GetByID(ctx, id)
 plugin := result.Value()
 
-// ✅ CORRECT: Guard before access
+// ❌ WRONG: Redundant re-wrapping — result is already Result[T]
 result := svc.GetByID(ctx, id)
 if result.HasError() {
-    return apperror.Fail[Plugin](result.Error())
+    return apperror.Fail[Plugin](result.Error()) // redundant
+}
+
+// ✅ CORRECT: Direct propagation (same type)
+result := svc.GetByID(ctx, id)
+if result.HasError() {
+    return result
 }
 plugin := result.Value()
+
+// ✅ CORRECT: Cross-type propagation (Result[T] → Result[U])
+siteResult := siteSvc.GetByID(ctx, siteID)
+if siteResult.HasError() {
+    return apperror.Fail[PluginList](siteResult.Error())
+}
 ```
 
 ```go
