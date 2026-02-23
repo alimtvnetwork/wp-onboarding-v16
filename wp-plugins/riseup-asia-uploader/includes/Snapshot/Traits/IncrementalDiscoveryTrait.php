@@ -91,15 +91,15 @@ trait IncrementalDiscoveryTrait {
         $tableNameCol = $this->resolveRootCol($rootPdo, $table, 'TableName', 'table_name');
         $rowCountCol = $this->resolveRootCol($rootPdo, $table, 'RowCount', 'row_count');
 
-        $rows = $rootPdo->query("SELECT {$tableNameCol} AS table_name, {$rowCountCol} AS row_count FROM {$table} ORDER BY {$tableNameCol}")->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $rootPdo->query("SELECT {$tableNameCol} AS tableName, {$rowCountCol} AS rowCount FROM {$table} ORDER BY {$tableNameCol}")->fetchAll(PDO::FETCH_ASSOC);
 
         $inventory = array();
 
         foreach ($rows as $row) {
-            $pk = $this->detectPrimaryKey($row['table_name']);
-            $inventory[$row['table_name']] = array(
-                'row_count' => (int) $row['row_count'],
-                'pk_column' => $pk,
+            $pk = $this->detectPrimaryKey($row['tableName']);
+            $inventory[$row['tableName']] = array(
+                'rowCount' => (int) $row['rowCount'],
+                'pkColumn' => $pk,
             );
         }
 

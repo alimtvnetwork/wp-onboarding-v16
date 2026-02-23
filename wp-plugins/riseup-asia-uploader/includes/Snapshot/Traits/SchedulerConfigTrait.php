@@ -67,14 +67,14 @@ trait SchedulerConfigTrait {
             return;
         }
 
-        $next_run = $this->calculateNextRunTime(
+        $nextRun = $this->calculateNextRunTime(
             $settings['schedule_frequency'],
             $settings['schedule_time'],
             $settings['schedule_day'],
         );
         $recurrence = $this->mapFrequencyToRecurrence($settings['schedule_frequency']);
         $result = wp_schedule_event(
-            $next_run,
+            $nextRun,
             $recurrence,
             HookType::CronSnapshotScheduled->value,
         );
@@ -82,7 +82,7 @@ trait SchedulerConfigTrait {
         if ($result) {
             $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
                 'frequency'  => $settings['schedule_frequency'],
-                'nextRun'    => date('c', $next_run),
+                'nextRun'    => date('c', $nextRun),
                 'recurrence' => $recurrence,
             ));
         } else {

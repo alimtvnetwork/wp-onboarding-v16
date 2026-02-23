@@ -61,14 +61,14 @@ trait SnapshotBackupOpsTrait {
     public function handleSnapshotProgress(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $job_id = $body['job_id'] ?? null;
+            $jobId = $body['job_id'] ?? null;
 
-            if (empty($job_id)) {
+            if (empty($jobId)) {
 
                 return $this->buildProgressError('Missing required field: job_id', HttpStatusType::BadRequest->value);
             }
 
-            $progress = $this->fetchJobProgress((int) $job_id);
+            $progress = $this->fetchJobProgress((int) $jobId);
             $isProgressMissing = ($progress === null || $progress === false);
 
             if ($isProgressMissing) {

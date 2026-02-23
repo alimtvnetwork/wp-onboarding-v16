@@ -45,11 +45,11 @@ trait IncrementalRegistrationTrait {
         }
 
         try {
-            $snap_sequence = $this->getNextTrackingSequence($pdo);
-            $tables_json = $this->buildIncrementalMetaJson($masterDir, $folderName, $sequence, $tablesChanged, $totalNewRows);
-            $dir_size = $this->calculateDirectorySize($incrementalDir);
+            $snapSequence = $this->getNextTrackingSequence($pdo);
+            $tablesJson = $this->buildIncrementalMetaJson($masterDir, $folderName, $sequence, $tablesChanged, $totalNewRows);
+            $dirSize = $this->calculateDirectorySize($incrementalDir);
 
-            return $this->insertIncrementalRecord($pdo, $snap_sequence, $folderName, $incrementalDir, $tables_json, $totalNewRows, $dir_size);
+            return $this->insertIncrementalRecord($pdo, $snapSequence, $folderName, $incrementalDir, $tablesJson, $totalNewRows, $dirSize);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to register incremental snapshot', array('error' => $e->getMessage()));
 

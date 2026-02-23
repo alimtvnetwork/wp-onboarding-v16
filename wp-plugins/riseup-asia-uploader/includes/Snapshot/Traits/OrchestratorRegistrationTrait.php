@@ -39,17 +39,17 @@ trait OrchestratorRegistrationTrait {
 
         try {
             $sequence = $this->getNextSnapshotSequence($pdo);
-            $tables_json = $this->buildSnapshotTablesJson($workerResult, $pluginStats);
-            $dir_size = $this->getDirectorySize($snapshotDir);
+            $tablesJson = $this->buildSnapshotTablesJson($workerResult, $pluginStats);
+            $dirSize = $this->getDirectorySize($snapshotDir);
 
             return $this->insertSnapshotRecord(
                 $pdo,
                 $sequence,
                 $snapshotDir,
                 $scope,
-                $tables_json,
+                $tablesJson,
                 $workerResult,
-                $dir_size,
+                $dirSize,
             );
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array(ResponseKeyType::Error->value => $e->getMessage()));

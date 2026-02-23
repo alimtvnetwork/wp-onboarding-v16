@@ -23,19 +23,19 @@ use ZipArchive;
 trait ImportExecutionFileTrait {
     private function validateTableFiles(string $snapshotRoot, array $tables): void {
         foreach ($tables as $table) {
-            $sqlitePath = PathHelper::join($snapshotRoot, $table['sqlite_file']);
+            $sqlitePath = PathHelper::join($snapshotRoot, $table['sqliteFile']);
 
             if (PathHelper::isFileMissing($sqlitePath)) {
-                throw new Exception("Missing table file: {$table['sqlite_file']}");
+                throw new Exception("Missing table file: {$table['sqliteFile']}");
             }
-            if (BooleanHelpers::hasValue($table['checksum_md5'])) {
+            if (BooleanHelpers::hasValue($table['checksumMd5'])) {
                 $actualMd5 = md5_file($sqlitePath);
 
-                if ($actualMd5 !== $table['checksum_md5']) {
-                    throw new Exception("Checksum mismatch for {$table['sqlite_file']}: expected {$table['checksum_md5']}, got {$actualMd5}");
+                if ($actualMd5 !== $table['checksumMd5']) {
+                    throw new Exception("Checksum mismatch for {$table['sqliteFile']}: expected {$table['checksumMd5']}, got {$actualMd5}");
                 }
             }
-            $this->validateSqliteFile($sqlitePath, $table['sqlite_file']);
+            $this->validateSqliteFile($sqlitePath, $table['sqliteFile']);
         }
     }
 
@@ -62,11 +62,11 @@ trait ImportExecutionFileTrait {
                 $this->log(LogLevelType::Warn->value, 'Plugin archive missing, skipping', array('plugin' => $plugin['plugin_slug']));
                 continue;
             }
-            if (BooleanHelpers::hasValue($plugin['checksum_md5'])) {
+            if (BooleanHelpers::hasValue($plugin['checksumMd5'])) {
                 $actualMd5 = md5_file($zipPath);
 
-                if ($actualMd5 !== $plugin['checksum_md5']) {
-                    throw new Exception("Plugin checksum mismatch for {$plugin['plugin_slug']}");
+                if ($actualMd5 !== $plugin['checksumMd5']) {
+                    throw new Exception("Plugin checksum mismatch for {$plugin['pluginSlug']}");
                 }
             }
         }

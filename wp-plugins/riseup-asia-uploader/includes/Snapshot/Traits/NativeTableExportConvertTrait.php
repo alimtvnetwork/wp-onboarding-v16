@@ -89,25 +89,25 @@ trait NativeTableExportConvertTrait {
     }
 
     private function getTablesForScope(string $scope, array $custom = array()): array {
-        $all_tables = $this->wpdb->get_col("SHOW TABLES");
+        $allTables = $this->wpdb->get_col("SHOW TABLES");
         $prefix = $this->wpdb->prefix;
 
         switch ($scope) {
             case SnapshotScopeType::All->value:
-                return $all_tables;
+                return $allTables;
             case SnapshotScopeType::WordPress->value:
-                return array_filter($all_tables, function($table) use ($prefix) { return strpos($table, $prefix) === 0; });
+                return array_filter($allTables, function($table) use ($prefix) { return strpos($table, $prefix) === 0; });
             case SnapshotScopeType::Content->value:
-                return $this->getContentTables($all_tables, $prefix);
+                return $this->getContentTables($allTables, $prefix);
             case SnapshotScopeType::Custom->value:
-                return array_filter($all_tables, function($table) use ($custom) { return in_array($table, $custom); });
+                return array_filter($allTables, function($table) use ($custom) { return in_array($table, $custom); });
             default:
                 return array();
         }
     }
 
     private function getContentTables(array $allTables, string $prefix): array {
-        $content_tables = array(
+        $contentTables = array(
             $prefix . 'posts',
             $prefix . 'postmeta',
             $prefix . 'comments',
@@ -118,6 +118,6 @@ trait NativeTableExportConvertTrait {
             $prefix . 'term_relationships',
         );
 
-        return array_filter($all_tables, function($table) use ($content_tables) { return in_array($table, $content_tables); });
+        return array_filter($allTables, function($table) use ($contentTables) { return in_array($table, $contentTables); });
     }
 }

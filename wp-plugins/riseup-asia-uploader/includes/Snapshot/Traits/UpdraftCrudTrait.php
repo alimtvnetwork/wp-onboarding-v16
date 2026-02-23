@@ -89,7 +89,7 @@ trait UpdraftCrudTrait {
 
     public function getAvailableTables(): array {
         global $wpdb;
-        $all_tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
+        $allTables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
 
         return array_map(function($info) use ($wpdb) {
             return array(
@@ -98,6 +98,6 @@ trait UpdraftCrudTrait {
                 ResponseKeyType::Size->value => (int)$info['Data_length'] + (int)$info['Index_length'],
                 ResponseKeyType::IsCore->value => strpos($info['Name'], $wpdb->prefix) === 0,
             );
-        }, $all_tables);
+        }, $allTables);
     }
 }
