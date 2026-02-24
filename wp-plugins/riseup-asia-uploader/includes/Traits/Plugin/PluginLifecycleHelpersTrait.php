@@ -114,9 +114,9 @@ trait PluginLifecycleHelpersTrait
     {
         $entry = array_merge(
             [
-                'action'      => $action,
-                'plugin_slug' => $slug,
-                'status'      => $status,
+                'action'     => $action,
+                'pluginSlug' => $slug,
+                'status'     => $status,
             ],
             $context
         );

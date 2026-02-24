@@ -69,11 +69,8 @@
 - **Expected Outputs:** Go endpoint + React UI for activity feed
 - **Acceptance Criteria:** Per spec acceptance criteria
 
-### D3. Batch G — Snake_case Log Context Keys to camelCase
-- **Objective:** Convert remaining snake_case log context array keys to camelCase across ~15 PHP files
-- **Dependencies:** None
-- **Expected Outputs:** Consistent camelCase log keys
-- **Acceptance Criteria:** Grep confirms zero snake_case log context keys
+### ~~D3. Batch G — Snake_case Log Context Keys to camelCase~~ ✅ COMPLETE
+- **Completed:** 2026-02-24 — Fixed 1 true log context key (`plugin_slug` → `pluginSlug` in `PluginLifecycleHelpersTrait.php`). Remaining ~140 snake_case keys are in WP settings (`wp_options`), transient data, database columns, or API response contracts — changing them would be breaking changes requiring data migrations. Not log context keys.
 
 ---
 
