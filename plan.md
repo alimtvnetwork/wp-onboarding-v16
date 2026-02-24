@@ -34,12 +34,8 @@
 
 ## Phase B: Template Magic String Elimination
 
-### B1. admin-agents.php JS Constants Block
-- **Objective:** Add `ENDPOINTS`, `AGENT_STATUS`, `STATUS`, `LABELS` JS constant blocks; replace ~30 hardcoded strings
-- **Dependencies:** All required PHP enums exist (✅ done)
-- **Expected Outputs:** Fully enumified inline JS in `admin-agents.php`
-- **Acceptance Criteria:** Zero magic strings in `<script>` section; all AJAX calls use constants
-- **Detailed Plan:** See `.lovable/plan.md` (the old magic string plan)
+### ~~B1. admin-agents.php JS Constants Block~~ ✅ ALREADY COMPLETE
+- **Verified:** 2026-02-24 — All constant blocks (`ENDPOINTS`, `AGENT_STATUS`, `STATUS`, `RESPONSE_KEYS`, `PLUGIN_STATUS`, `ACTIONS`, `LABELS`) present at lines 290–355; zero magic strings in JS body
 
 ### B2. admin-snapshots.php SNAP_ENDPOINTS + SNAP_LABELS
 - **Objective:** Add `SNAP_ENDPOINTS` and `SNAP_LABELS` JS constant blocks; replace ~30 strings
@@ -112,7 +108,7 @@ These require user decisions before implementation:
 
 **Ready to implement now (no blockers):**
 
-1. **B1 — admin-agents.php Magic Strings** — Detailed plan exists in `.lovable/plan.md`; ~30 string replacements
+1. ~~**B1 — admin-agents.php Magic Strings**~~ ✅ Already complete
 2. **B2 — admin-snapshots.php Magic Strings** — ~30 endpoint + label replacements
 3. **A3 — Go interface{} Type Safety** — Large but independent; 2,680 instances
 4. **C1 — Go Positive Logic** — Small, self-contained; 2 tasks
