@@ -8,23 +8,11 @@
 
 ## Phase A: Code Quality & Migration (Current Priority)
 
-### A1. Define() Alias Caller Migration
-- **Objective:** Replace ~785 `define()` alias references across ~60 PHP files with direct `PluginConfigType` / other enum references
-- **Dependencies:** All enum types must exist (✅ done)
-- **Expected Outputs:** Updated PHP files using enum constants directly; removal of `define()` aliases from `constants.php`
-- **Acceptance Criteria:**
-  - Zero `define()` aliases remain in `constants.php`
-  - All 60 files use typed enum references
-  - Plugin activates and functions correctly on WordPress 5.9+
-  - No PHP notices or warnings
-- **Risk:** High — 785 references, no automated PHP test suite in Lovable
-- **Estimated Effort:** 4–6 tasks
+### ~~A1. Define() Alias Caller Migration~~ ✅ ALREADY COMPLETE
+- **Verified:** 2026-02-24 — No `constants.php` or `constants-compat.php` exists; all 53 enums in active use (354 ActionType refs, 285 EndpointType refs across 23+ files)
 
-### A2. Remove Define() Aliases from constants.php
-- **Objective:** After A1, delete all legacy `define()` calls from `constants.php`
-- **Dependencies:** A1 complete
-- **Expected Outputs:** Clean `constants.php` with only essential non-enum constants
-- **Acceptance Criteria:** Plugin boots without errors; grep confirms zero old constant usage
+### ~~A2. Remove Define() Aliases from constants.php~~ ✅ ALREADY COMPLETE
+- **Verified:** 2026-02-24 — File already deleted; no `require` references remain
 
 ### A3. Go Backend interface{} Type Safety
 - **Objective:** Replace ~2,680 `interface{}` instances across 58 Go files with proper generics or typed parameters
@@ -124,10 +112,11 @@ These require user decisions before implementation:
 
 **Ready to implement now (no blockers):**
 
-1. **A1 — Define() Alias Caller Migration** — Highest impact code quality improvement; 785 references to modernize
-2. **B1 — admin-agents.php Magic Strings** — Detailed plan already exists in `.lovable/plan.md`; ~30 string replacements
-3. **C1 — Go Positive Logic** — Small, self-contained; 2 tasks
-4. **D3 — Snake_case Log Keys** — Small, ~15 files; no dependencies
+1. **B1 — admin-agents.php Magic Strings** — Detailed plan exists in `.lovable/plan.md`; ~30 string replacements
+2. **B2 — admin-snapshots.php Magic Strings** — ~30 endpoint + label replacements
+3. **A3 — Go interface{} Type Safety** — Large but independent; 2,680 instances
+4. **C1 — Go Positive Logic** — Small, self-contained; 2 tasks
+5. **D3 — Snake_case Log Keys** — Small, ~15 files; no dependencies
 
 **Requires user decision first:**
 - D1 — Licensing (needs build-vs-buy decision)
