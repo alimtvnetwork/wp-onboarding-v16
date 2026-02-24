@@ -1,61 +1,30 @@
-# Formatting Sweep Plan — Rules 1, 4, 5, 9, 10, 11, 12, 13
+# Formatting Sweep Plan — COMPLETED
 
 > **Created:** 2026-02-21
-> **Last updated:** 2026-02-21
-> **Rules:**
-> - Rule 1: Mandatory curly braces for all control structures
-> - Rule 4: Blank line before `return`/`throw` (unless sole statement)
-> - Rule 5: Blank line after `}` when more code follows
-> - Rule 9: Multi-line args for signatures (9a), calls >2 args (9b), and arrays >2 items (9c)
-> - Rule 10: Blank line before `if`/`for`/`foreach`/`while` when preceded by non-brace statements
-> - Rule 11: Long string concatenations broken line-by-line
-> - Rule 12: No empty line after opening `{` brace for classes/traits/methods
-> - Rule 13: No empty line at very beginning of file (after `<?php`)
+> **Completed:** 2026-02-23
+> **Status:** ✅ All sweeps complete
 
-## Completed
+All formatting sweeps across all directories are complete. See `.lovable/plan/active.md` for the full completion status.
 
-- [x] **AgentRemoteActionTrait.php** — Rule 9: 11 calls, Rule 10: 3 violations
-- [x] **Database/Traits/** — 14 files — Rule 9: 14 violations, Rule 10: 1 violation
-- [x] **Go Handlers** (Phase 1) — 8 files — `respondError` expanded to multi-line, multi-arg vars fixed
-- [x] **Snapshot/Traits/** — 67 files across 5 sweeps:
-  - Orchestrator*, Exporter*, Manager*, Detector*, NativeSnapshot*, NativeTableExport*, IncrementalDiscovery*, RestoreValidation* (Phase 4a)
-  - Restore*, Worker*, NativeSnapshotCreate*, OrchestratorPlugin*, OrchestratorRegistration* (Phase 4b)
-  - Worker*, Cleaner*, Scheduler*, Restore* (Worker/Cleaner/Scheduler sweep)
-  - Analyzer*, Detector*, ExporterBuild*, ExporterPublicApi*, Import*, IncrementalCore*, IncrementalDelta*, IncrementalExport*, IncrementalRegistration*, Manager*, NativeSnapshotCrud*, NativeSnapshotExec* (final sweep)
-- [x] **Traits/Route/** — 2 files — already clean, no violations found
-- [x] **Admin/Traits/** — 6 files fixed (R9c inline arrays, R10 blank lines, R9b sprintf) — AdminAjaxSnapshotTrait, AdminErrorAjaxTrait, AdminErrorRenderTrait, AdminErrorStateTrait, AdminMenuTrait
-- [x] **Logging/Traits/** — 7 files — 15 violations fixed (R12 ×7, R10 ×5, R5 ×3)
-- [x] **Agent/Traits/** — 7 files — 3 violations fixed (R10 ×2 in AgentCrudReadTrait, double blank in AgentRemoteActionTrait). 5 files already compliant.
-- [x] **Helpers/Traits/** — 9 files — 13 violations fixed (R4 ×7, R5 ×3, R10 ×3). 4 files already compliant.
-- [x] **Go Services** — R9b expanded all dbutil.QueryOne/QueryMany/Exec + scan calls in site/crud.go, site/service.go, plugin/crud.go, sync/crud.go (27 calls fixed)
+## Completed Directories
 
-## Pending
+- ✅ Snapshot/Traits/
+- ✅ Database/Traits/
+- ✅ Admin/Traits/
+- ✅ Logging/Traits/
+- ✅ Agent/Traits/
+- ✅ Helpers/Traits/
+- ✅ Traits/Route/
+- ✅ Go Handlers
+- ✅ Go Services
+- ✅ Database/*.php
+- ✅ ErrorHandling/*.php
+- ✅ Core/Plugin.php
+- ✅ Admin/Admin.php
+- ✅ Logging/FileLogger.php
+- ✅ Activation/ActivationHandler.php
+- ✅ Templates/*.php
+- ✅ Root files
+- ✅ TypeScript — zero violations found
 
-- [ ] **Database/*.php** — root DB classes (Orm, RootDb, Database, etc.)
-- [ ] **ErrorHandling/*.php** — 4 files
-- [ ] **Core/*.php** — Plugin.php and others
-- [ ] **Templates/** — PHP templates (admin-*.php)
-- [ ] **Root files** — riseup-asia-uploader.php, Autoloader.php
-- [ ] **TypeScript** files in `src/` (if any contain these patterns)
-- [ ] **UpdraftCrudTrait.php** — R9c completed, check remaining rules
-
-## Rule Patterns to Search
-
-### Rule 9
-```
-functionCall($arg1, $arg2, $arg3, ...);  // >2 args on one line
-array(item1, item2, item3, ...)          // >2 items on one line
-```
-
-### Rule 10
-```
-[non-blank, non-brace line]
-[if|for|foreach|while] (
-```
-
-### Rule 12
-```
-trait MyTrait {
-                      // ❌ empty line after opening brace
-    /** First method */
-```
+*No pending items remain.*

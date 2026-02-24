@@ -8,7 +8,7 @@
 
 ## 🎯 Start Here
 
-This file provides essential context for AI agents working on this codebase. For comprehensive training, see the full training package in `.lovable/memories/training/`.
+This file provides essential context for AI agents working on this codebase. For comprehensive details, see `.lovable/memory/` and the spec folders.
 
 ---
 
@@ -139,27 +139,25 @@ THEN seed the value
 
 | Path | Purpose |
 |------|---------|
-| `.lovable/memories/` | AI memory index and feature specs |
-| `.lovable/memories/training/` | Complete AI training package |
-| `.lovable/memories/architecture/` | System architecture patterns |
-| `.lovable/memories/patterns/` | Reusable implementation patterns |
-| `.lovable/memories/features/` | Feature-specific documentation |
-| `spec/spec-management-software/` | Product specifications |
+| `.lovable/memory/` | AI memory index and feature specs |
+| `.lovable/memory/architecture/` | System architecture patterns |
+| `.lovable/memory/features/` | Feature-specific documentation |
+| `.lovable/memory/suggestions/` | Improvement tracking |
+| `.lovable/memory/workflow/` | Workflow plans and conventions |
+| `spec/` | Product specifications |
 
 ---
 
 ## 🧠 Memory Quick Links
 
 ### Architecture
-- [Split Database System](.lovable/memories/architecture/split-database-system.md)
+- [Split Database System](.lovable/memory/architecture/split-database-system.md) (if applicable to Spec Builder v3)
 
-### Patterns
-- [Seedable Configuration](.lovable/memories/patterns/seedable-configuration.md)
-
-### Features
-- [Resilient Execution System](.lovable/memories/features/resilient-execution-system.md)
-- [Escalation Notifications](.lovable/memories/features/escalation-notifications.md)
-- [Telemetry Dashboard](.lovable/memories/features/telemetry-dashboard.md)
+### Key References
+- [Project Context](.lovable/memory/02-project-context.md)
+- [Workflow Guidelines](.lovable/memory/01-workflow.md)
+- [Suggestions Tracker](.lovable/memory/suggestions/01-suggestions-tracker.md)
+- [Reliability Risk Report](.lovable/memory/03-reliability-risk-report.md)
 
 ---
 
@@ -176,14 +174,15 @@ THEN seed the value
 
 To train an external AI model on this project:
 
-1. **Minimum:** Feed `CONTEXT-FOR-AI.md` (this file)
-2. **Complete:** Feed entire `.lovable/memories/training/` folder
-3. **Architecture Deep-Dive:** Add `.lovable/memories/architecture/` and `.lovable/memories/patterns/`
+1. **Minimum:** Feed `CONTEXT-FOR-AI.md` (this file) + `.lovable/memory/02-project-context.md`
+2. **Complete:** Feed entire `.lovable/memory/` folder + `spec/` folder
+3. **Roadmap:** Feed `plan.md` (repo root) for future work
 
 ---
 
 ## Cross-Reference
 
-- Full training: `.lovable/memories/training/00-onboarding.md`
-- Memory index: `.lovable/memories/README.md`
-- Master spec index: `spec/spec-management-software/00-master-index.md`
+- Memory index: `.lovable/memory/01-workflow.md`
+- Master spec index: `spec/readme.md`
+- Future work roadmap: `plan.md` (repo root)
+- Risk report: `.lovable/memory/03-reliability-risk-report.md`
