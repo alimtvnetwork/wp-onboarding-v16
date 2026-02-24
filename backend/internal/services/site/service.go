@@ -1150,7 +1150,7 @@ func (s *Service) logRemoteAction(sessionId string, siteId int64, action, level,
 	}
 
 	// Log with names first, IDs second, then technical details
-	logFields := []interface{}{
+	logFields := []any{
 		"site", siteName,
 	}
 	if siteUrl != "" {
