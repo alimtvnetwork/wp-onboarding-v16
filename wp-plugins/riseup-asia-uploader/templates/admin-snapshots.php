@@ -640,7 +640,32 @@ jQuery(document).ready(function($) {
         confirmDeleteSnap:   '<?php echo esc_js(__("Are you sure you want to delete snapshot \"%s\"? This cannot be undone.", "riseup-asia-uploader")); ?>',
         fullBackup:          '<?php echo esc_js(__("Full backup", "riseup-asia-uploader")); ?>',
         incrementalBackup:   '<?php echo esc_js(__("Incremental", "riseup-asia-uploader")); ?>',
-        scheduledBackup:     '<?php echo esc_js(__("Scheduled backup", "riseup-asia-uploader")); ?>'
+        scheduledBackup:     '<?php echo esc_js(__("Scheduled backup", "riseup-asia-uploader")); ?>',
+        snapshotCompleted:   '<?php echo esc_js(__("Snapshot completed successfully", "riseup-asia-uploader")); ?>',
+        snapshotJobFailed:   '<?php echo esc_js(__("Snapshot job failed", "riseup-asia-uploader")); ?>',
+        failedLoadSnapshots: '<?php echo esc_js(__("Failed to load snapshots", "riseup-asia-uploader")); ?>',
+        snapshotQueued:      '<?php echo esc_js(__("Snapshot job queued — running in background", "riseup-asia-uploader")); ?>',
+        snapshotCreateFailed:'<?php echo esc_js(__("Snapshot creation failed", "riseup-asia-uploader")); ?>',
+        noFullSnapshot:      '<?php echo esc_js(__("No full snapshot found — create a full snapshot first", "riseup-asia-uploader")); ?>',
+        incrementalQueued:   '<?php echo esc_js(__("Incremental backup queued", "riseup-asia-uploader")); ?>',
+        incrementalFailed:   '<?php echo esc_js(__("Incremental backup failed", "riseup-asia-uploader")); ?>',
+        importSuccess:       '<?php echo esc_js(__("Snapshot imported successfully", "riseup-asia-uploader")); ?>',
+        importFailed:        '<?php echo esc_js(__("Import failed", "riseup-asia-uploader")); ?>',
+        restoreQueued:       '<?php echo esc_js(__("Restore queued — running in background", "riseup-asia-uploader")); ?>',
+        restoreFailed:       '<?php echo esc_js(__("Restore failed", "riseup-asia-uploader")); ?>',
+        noDownloadUrl:       '<?php echo esc_js(__("No download URL returned", "riseup-asia-uploader")); ?>',
+        snapshotDeleted:     '<?php echo esc_js(__("Snapshot deleted", "riseup-asia-uploader")); ?>',
+        deleteFailed:        '<?php echo esc_js(__("Delete failed", "riseup-asia-uploader")); ?>',
+        cascadeWarning:      '<?php echo esc_js(__("This full snapshot has %d incremental backup(s). Deleting it will also permanently remove all %d incremental snapshot(s).", "riseup-asia-uploader")); ?>',
+        settingsSaved:       '<?php echo esc_js(__("Settings saved", "riseup-asia-uploader")); ?>',
+        saveFailed:          '<?php echo esc_js(__("Save failed", "riseup-asia-uploader")); ?>',
+        networkError:        '<?php echo esc_js(__("Network error", "riseup-asia-uploader")); ?>',
+        failedLoadSettings:  '<?php echo esc_js(__("Failed to load settings.", "riseup-asia-uploader")); ?>',
+        noProvidersDetected: '<?php echo esc_js(__("No providers detected yet.", "riseup-asia-uploader")); ?>',
+        failedDetectProviders:'<?php echo esc_js(__("Failed to detect providers.", "riseup-asia-uploader")); ?>',
+        checkLogs:           '<?php echo esc_js(__("Check Logs", "riseup-asia-uploader")); ?>',
+        incrementalSuffix:   '<?php echo esc_js(__("incremental", "riseup-asia-uploader")); ?>',
+        incrementalsSuffix:  '<?php echo esc_js(__("incrementals", "riseup-asia-uploader")); ?>'
     };
 
     var MONTH_NAMES = [
@@ -790,10 +815,10 @@ jQuery(document).ready(function($) {
         var label = contextLabel ? contextLabel + ': ' : '';
         var html = '<span style="color:#d63638;">✗ ' + label + err.message + '</span>';
         html += ' <button type="button" class="button button-small btn-copy-error" title="Copy diagnostic to clipboard" style="margin-left:6px;">';
-        html += '<span class="dashicons dashicons-clipboard" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Copy</button>';
+        html += '<span class="dashicons dashicons-clipboard" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> ' + SNAP_LABELS.copy + '</button>';
         if (err.logHint) {
             html += ' <a href="<?php echo esc_url(AdminPageType::Logs->adminUrl()); ?>" class="button button-small" style="margin-left:4px;" title="' + err.logHint + '">';
-            html += '<span class="dashicons dashicons-list-view" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Check Logs</a>';
+            html += '<span class="dashicons dashicons-list-view" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> ' + SNAP_LABELS.checkLogs + '</a>';
         }
         $el.html(html).show();
         $el.data('diagnostic', err.diagnostic);
@@ -873,9 +898,9 @@ jQuery(document).ready(function($) {
                 if (response.status === SNAP_STATUS.complete || response.status === SNAP_STATUS.failed) {
                     activeJobId = null;
                     if (response.status === SNAP_STATUS.complete) {
-                        showStatus($status, '✓ Snapshot completed successfully', false);
+                        showStatus($status, '✓ ' + SNAP_LABELS.snapshotCompleted, false);
                     } else {
-                        showStatus($status, '✗ Snapshot job failed', true);
+                        showStatus($status, '✗ ' + SNAP_LABELS.snapshotJobFailed, true);
                     }
                     setTimeout(function() {
                         $('#progress_panel').slideUp();
@@ -1005,7 +1030,7 @@ jQuery(document).ready(function($) {
                     $('#snapshots_empty').show();
                     return;
                 }
-                showErrorStatus($status, xhr, 'Failed to load snapshots');
+                showErrorStatus($status, xhr, SNAP_LABELS.failedLoadSnapshots);
             }
         });
     }
@@ -1027,7 +1052,7 @@ jQuery(document).ready(function($) {
             html += ' <span class="riseup-badge" style="background:#f3e5f5;color:#7b1fa2;font-size:10px;padding:1px 5px;">' + SNAP_MODE.incremental + '</span>';
         }
         if (incrCount > 0) {
-            html += ' <span class="riseup-badge" style="background:#e3f2fd;color:#1565c0;font-size:10px;padding:1px 5px;">' + incrCount + ' incremental' + (incrCount > 1 ? 's' : '') + '</span>';
+            html += ' <span class="riseup-badge" style="background:#e3f2fd;color:#1565c0;font-size:10px;padding:1px 5px;">' + incrCount + ' ' + (incrCount > 1 ? SNAP_LABELS.incrementalsSuffix : SNAP_LABELS.incrementalSuffix) + '</span>';
         }
         html += '</td>';
         html += '<td>' + scopeBadge(s.scope) + '</td>';
@@ -1100,7 +1125,7 @@ jQuery(document).ready(function($) {
                     $('#settings_form').show();
                     return;
                 }
-                $('#settings_loading').html('<em>Failed to load settings.</em>');
+                $('#settings_loading').html('<em>' + SNAP_LABELS.failedLoadSettings + '</em>');
             }
         });
     }
@@ -1132,10 +1157,10 @@ jQuery(document).ready(function($) {
             },
             error: function(xhr) {
                 if (isInitialLoad || xhr.status === 404) {
-                    $('#providers_loading').html('<em>No providers detected yet.</em>');
+                    $('#providers_loading').html('<em>' + SNAP_LABELS.noProvidersDetected + '</em>');
                     return;
                 }
-                $('#providers_loading').html('<em>Failed to detect providers.</em>');
+                $('#providers_loading').html('<em>' + SNAP_LABELS.failedDetectProviders + '</em>');
             }
         });
     }
@@ -1205,7 +1230,7 @@ jQuery(document).ready(function($) {
                 xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
-                showStatus($status, '✓ Snapshot job queued — running in background', false);
+                showStatus($status, '✓ ' + SNAP_LABELS.snapshotQueued, false);
                 $('#snapshot_options').slideUp();
                 // Start progress polling if job_id returned
                 if (response.job_id) {
@@ -1215,7 +1240,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr) {
-                showErrorStatus($status, xhr, 'Snapshot creation failed');
+                showErrorStatus($status, xhr, SNAP_LABELS.snapshotCreateFailed);
             },
             complete: function() {
                 $btn.prop('disabled', false);
@@ -1234,7 +1259,7 @@ jQuery(document).ready(function($) {
             return (s.snapshot_type === SNAP_MODE.full || (!s.snapshot_type && !s.parent_id)) && s.status === SNAP_STATUS.complete;
         });
         if (!latestFull) {
-            showStatus($status, '✗ No full snapshot found — create a full snapshot first', true);
+            showStatus($status, '✗ ' + SNAP_LABELS.noFullSnapshot, true);
             return;
         }
 
@@ -1248,7 +1273,7 @@ jQuery(document).ready(function($) {
                 xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
-                showStatus($status, '✓ Incremental backup queued', false);
+                showStatus($status, '✓ ' + SNAP_LABELS.incrementalQueued, false);
                 if (response.job_id) {
                     startProgressPolling(response.job_id);
                 } else {
@@ -1256,7 +1281,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr) {
-                showErrorStatus($status, xhr, 'Incremental backup failed');
+                showErrorStatus($status, xhr, SNAP_LABELS.incrementalFailed);
             },
             complete: function() {
                 $btn.prop('disabled', false);
@@ -1300,13 +1325,13 @@ jQuery(document).ready(function($) {
                 xhr.setRequestHeader('X-WP-Nonce', restNonce);
             },
             success: function(response) {
-                showStatus($status, '✓ Snapshot imported successfully', false);
+                showStatus($status, '✓ ' + SNAP_LABELS.importSuccess, false);
                 $('#import_form').slideUp();
                 $('#import_file').val('');
                 loadSnapshots(1);
             },
             error: function(xhr) {
-                showErrorStatus($status, xhr, 'Import failed');
+                showErrorStatus($status, xhr, SNAP_LABELS.importFailed);
             },
             complete: function() {
                 $btn.prop('disabled', false).html('<span class="dashicons dashicons-upload"></span> ' + SNAP_LABELS.uploadImport);
@@ -1369,7 +1394,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 $('#restore_modal').hide();
-                showStatus($status, '✓ Restore queued — running in background', false);
+                showStatus($status, '✓ ' + SNAP_LABELS.restoreQueued, false);
                 if (response.job_id) {
                     startProgressPolling(response.job_id);
                 } else {
@@ -1377,7 +1402,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr) {
-                showErrorStatus($status, xhr, 'Restore failed');
+                showErrorStatus($status, xhr, SNAP_LABELS.restoreFailed);
             },
             complete: function() {
                 $btn.prop('disabled', false).html('<span class="dashicons dashicons-database-import"></span> ' + SNAP_LABELS.restoreNow);
@@ -1417,7 +1442,7 @@ jQuery(document).ready(function($) {
                 var size = response.size || (response.data && response.data.size) || 0;
 
                 if (!downloadUrl) {
-                    showStatus($status, '✗ No download URL returned', true);
+                    showStatus($status, '✗ ' + SNAP_LABELS.noDownloadUrl, true);
                     return;
                 }
 
@@ -1512,8 +1537,7 @@ jQuery(document).ready(function($) {
 
         if (type !== SNAP_MODE.incremental && incrCount > 0) {
             $('#delete_cascade_text').text(
-                'This full snapshot has ' + incrCount + ' incremental backup' + (incrCount > 1 ? 's' : '') +
-                '. Deleting it will also permanently remove all ' + incrCount + ' incremental snapshot' + (incrCount > 1 ? 's' : '') + '.'
+                SNAP_LABELS.cascadeWarning.replace('%d', incrCount).replace('%d', incrCount)
             );
             $('#delete_cascade_warning').show();
         } else {
@@ -1543,11 +1567,11 @@ jQuery(document).ready(function($) {
             },
             success: function() {
                 $('#delete_modal').hide();
-                showStatus($status, '✓ Snapshot deleted', false);
+                showStatus($status, '✓ ' + SNAP_LABELS.snapshotDeleted, false);
                 loadSnapshots(currentPage);
             },
             error: function(xhr) {
-                showErrorStatus($status, xhr, 'Delete failed');
+                showErrorStatus($status, xhr, SNAP_LABELS.deleteFailed);
             },
             complete: function() {
                 $btn.prop('disabled', false);
@@ -1608,13 +1632,13 @@ jQuery(document).ready(function($) {
 
         $.post(ajaxurl, data, function(response) {
             if (response.success) {
-                showStatus($('#settings_status'), '✓ Settings saved', false);
+                showStatus($('#settings_status'), '✓ ' + SNAP_LABELS.settingsSaved, false);
             } else {
-                showStatus($('#settings_status'), '✗ ' + (response.data && response.data.message || 'Save failed'), true);
+                showStatus($('#settings_status'), '✗ ' + (response.data && response.data.message || SNAP_LABELS.saveFailed), true);
             }
             $btn.prop('disabled', false);
         }).fail(function() {
-            showStatus($('#settings_status'), '✗ Network error', true);
+            showStatus($('#settings_status'), '✗ ' + SNAP_LABELS.networkError, true);
             $btn.prop('disabled', false);
         });
     });

@@ -37,11 +37,8 @@
 ### ~~B1. admin-agents.php JS Constants Block~~ ✅ ALREADY COMPLETE
 - **Verified:** 2026-02-24 — All constant blocks (`ENDPOINTS`, `AGENT_STATUS`, `STATUS`, `RESPONSE_KEYS`, `PLUGIN_STATUS`, `ACTIONS`, `LABELS`) present at lines 290–355; zero magic strings in JS body
 
-### B2. admin-snapshots.php SNAP_ENDPOINTS + SNAP_LABELS
-- **Objective:** Add `SNAP_ENDPOINTS` and `SNAP_LABELS` JS constant blocks; replace ~30 strings
-- **Dependencies:** `EndpointType` import added
-- **Expected Outputs:** Fully enumified inline JS in `admin-snapshots.php`
-- **Acceptance Criteria:** Zero hardcoded REST paths or UI labels in `<script>` section
+### ~~B2. admin-snapshots.php SNAP_ENDPOINTS + SNAP_LABELS~~ ✅ COMPLETE
+- **Completed:** 2026-02-24 — Added 26 new labels to `SNAP_LABELS`; replaced all ~20 inline status/error strings with constants; all endpoints, response keys, and UI labels now use constant blocks
 
 ---
 
@@ -109,7 +106,7 @@ These require user decisions before implementation:
 **Ready to implement now (no blockers):**
 
 1. ~~**B1 — admin-agents.php Magic Strings**~~ ✅ Already complete
-2. **B2 — admin-snapshots.php Magic Strings** — ~30 endpoint + label replacements
+2. ~~**B2 — admin-snapshots.php Magic Strings**~~ ✅ Complete
 3. **A3 — Go interface{} Type Safety** — Large but independent; 2,680 instances
 4. **C1 — Go Positive Logic** — Small, self-contained; 2 tasks
 5. **D3 — Snake_case Log Keys** — Small, ~15 files; no dependencies
