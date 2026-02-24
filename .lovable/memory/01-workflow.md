@@ -1,7 +1,7 @@
 # Workflow Guidelines
 
 > **Location:** `.lovable/memory/01-workflow.md`  
-> **Updated:** 2026-02-09
+> **Updated:** 2026-02-24
 
 ---
 
@@ -9,7 +9,7 @@
 
 ### Plan Files
 
-The `.lovable/plan.md` serves as the DRY refactoring roadmap (complete). All other plans are archived in `.lovable/plan/completed/`.
+The `.lovable/plan.md` served as the DRY refactoring roadmap (complete). The root `plan.md` is the future work roadmap (Deliverable 3, created 2026-02-24). All completed plans are archived in `.lovable/plan/completed/`.
 
 **Status overview:** `.lovable/plan/active.md` — All tracks complete, 0 open suggestions  
 
@@ -35,7 +35,7 @@ All suggestions are tracked in a single file: `.lovable/memory/suggestions/01-su
 
 Completed suggestions are detailed in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`.
 
-**Current stats:** 0 open, 18 completed, 0 rejected.
+**Current stats:** 0 open, 39 completed, 1 N/A, 0 rejected.
 
 ---
 
