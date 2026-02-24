@@ -93,6 +93,27 @@ public function resolve(string $url): string|WP_Error {}
  */
 ```
 
+### WordPress Version Compatibility Matrix
+
+| WordPress Version | Support Level | REST API | Notes |
+|-------------------|--------------|----------|-------|
+| 5.6 | ✅ Minimum supported | Full REST API + Application Passwords | Minimum baseline |
+| 5.9 | ✅ Tested | Full | Block Editor 2.0 |
+| 6.0–6.3 | ✅ Tested | Full | Stable, widely deployed |
+| 6.4–6.5 | ✅ Tested | Full | Current LTS range |
+| 6.6+ | ✅ Expected compatible | Full | Future versions; test before certifying |
+
+**Known WordPress REST API Behavior Differences:**
+
+| WP Version | Behavior | Impact |
+|------------|----------|--------|
+| < 5.6 | No Application Passwords | Cannot authenticate via REST; unsupported |
+| 5.6–5.8 | Application Passwords available but no auto-updates UI | Manual plugin updates only |
+| 5.9+ | Full auto-update support | Can use `auto_update_plugin` filter |
+| 6.0+ | REST API batch endpoint available | Can batch multiple API calls |
+| Any | Security plugins (Wordfence, iThemes) may block REST API | 401/403 errors; need IP whitelisting |
+| Any | Hosting WAFs may block large uploads | HTTP 413; need upload size config |
+
 ### WordPress 5.6+ Features
 
 - **Application Passwords** — Native REST API authentication
@@ -189,6 +210,65 @@ $seconds = (int) floor($now);
 $milliseconds = (int) round(($now - $seconds) * 1000);
 $createdAt = gmdate('Y-m-d\TH:i:s', $seconds) . sprintf('.%03dZ', $milliseconds);
 ```
+
+## PHP Memory and Timeout Requirements
+
+### Minimum Server Requirements
+
+| Resource | Minimum | Recommended | Purpose |
+|----------|---------|-------------|---------|
+| `memory_limit` | 128M | 256M | Plugin operations, ZIP handling |
+| `max_execution_time` | 60s | 120s | Large plugin uploads, snapshot operations |
+| `upload_max_filesize` | 10M | 50M | Plugin ZIP file uploads |
+| `post_max_size` | 10M | 50M | Must be ≥ `upload_max_filesize` |
+| `max_input_vars` | 1000 | 3000 | Large forms, bulk operations |
+
+### Critical Operations and Memory
+
+| Operation | Memory Impact | Timeout Risk | Mitigation |
+|-----------|-------------|-------------|------------|
+| Plugin ZIP upload | High (entire file in memory) | Medium | Chunked upload for files > 20MB |
+| Snapshot full backup | High (all tables serialized) | High | Incremental backup mode |
+| Snapshot restore | High (full DB replacement) | High | Transaction-based with rollback |
+| Plugin activation | Low | Low | Standard WP activation hook |
+| REST API listing | Low | Low | Paginated responses |
+| File browser (remote) | Medium (directory tree) | Low | Lazy loading, depth limit |
+
+### Detection and Graceful Degradation
+
+```php
+// Check memory before heavy operations
+$memoryLimit = wp_convert_hr_to_bytes(ini_get('memory_limit'));
+$memoryUsed  = memory_get_usage(true);
+$memoryFree  = $memoryLimit - $memoryUsed;
+
+if ($memoryFree < 32 * 1024 * 1024) { // < 32MB free
+    return new WP_Error(
+        'insufficient_memory',
+        'Not enough memory for this operation. Free: ' . size_format($memoryFree),
+    );
+}
+
+// Check max execution time before long operations
+$maxTime     = (int) ini_get('max_execution_time');
+$elapsedTime = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
+
+if ($maxTime > 0 && ($maxTime - $elapsedTime) < 10) {
+    return new WP_Error(
+        'timeout_risk',
+        'Not enough execution time remaining',
+    );
+}
+```
+
+### Hosting Compatibility Notes
+
+| Hosting Type | Common Limits | Notes |
+|-------------|--------------|-------|
+| Shared (GoDaddy, Bluehost) | 128M memory, 30s timeout | May need manual php.ini overrides |
+| Managed WP (WP Engine, Kinsta) | 256M memory, 60s timeout | Usually sufficient; WAF may block REST |
+| VPS/Dedicated | Configurable | Best compatibility |
+| Docker/Local | Configurable | Development environment |
 
 ## Testing Across Versions
 

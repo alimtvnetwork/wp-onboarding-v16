@@ -116,13 +116,47 @@ All sub-phases 7A–7G complete.
 
 ---
 
-## Open Questions
+## Open Questions (with Decision Criteria)
 
-1. **Remote Plugin Backups**: Store on WP site or download locally?
-2. **Bulk Quick Publish**: Add "Quick Publish Selected" for multiple plugins?
-3. **True Diff Comparison**: Compare with remote files for accurate modified/deleted counts?
-4. **Licensing Build vs Buy**: Custom Go backend vs Keygen.sh vs LemonSqueezy?
+### 1. Remote Plugin Backups — Store on WP site or download locally?
+
+| Option | Pros | Cons | Best When |
+|--------|------|------|-----------|
+| **WP Site** | No local storage needed; accessible from any machine | Depends on WP site being up; storage limits | Managing many plugins across many sites |
+| **Local** | Fast restore; offline access; full control | Disk usage; not portable across machines | Single developer, local workflow |
+| **Both** (recommended) | Redundancy; best of both | Sync complexity | Production-critical plugins |
+
+**Decision Criteria:** How many sites do you manage? Is offline access important? Is storage a concern on WP hosts?
+
+### 2. Bulk Quick Publish — Add "Quick Publish Selected" for multiple plugins?
+
+| Option | Pros | Cons | Best When |
+|--------|------|------|-----------|
+| **Yes** | Fast batch deployment; fewer clicks | Error recovery more complex; UI needs multi-select | Frequently deploying 3+ plugins together |
+| **No** | Simpler UX; sequential publish is predictable | Slower for batch deploys | Deploying plugins individually most of the time |
+
+**Decision Criteria:** How often do you deploy multiple plugins simultaneously? Is the current one-by-one publish workflow a bottleneck?
+
+### 3. True Diff Comparison — Compare with remote files for accurate counts?
+
+| Option | Pros | Cons | Best When |
+|--------|------|------|-----------|
+| **Yes** | Accurate modified/deleted counts; better sync confidence | Slower (needs to fetch remote file hashes); more API calls | Sync accuracy is critical; sites have reliable connections |
+| **No** | Faster; less API traffic; current MD5 hash comparison works | May miss deleted files; counts are approximate | Speed matters more than precision |
+
+**Decision Criteria:** Do you need exact file counts for audit purposes? Is sync accuracy currently causing issues?
+
+### 4. Licensing — Build custom or use third-party?
+
+| Option | Cost | Control | Effort | Best When |
+|--------|------|---------|--------|-----------|
+| **Custom Go backend** | Hosting costs only | Full control, custom features | 8–10 tasks | You want full ownership and custom license types |
+| **Keygen.sh** | $49+/mo | Good API, managed | 3–4 tasks (integration) | You want a polished, managed solution |
+| **LemonSqueezy** | % of revenue | Payments + licensing bundled | 2–3 tasks | You want payments and licensing together |
+| **EDD Software Licensing** | $99/yr | WordPress-native | 4–5 tasks | You're already using EDD for sales |
+
+**Decision Criteria:** Budget? How many license types needed? Do you need payment processing bundled? How important is full data ownership?
 
 ---
 
-*Master plan details in `plan.md`. Suggestions tracked in `.lovable/memory/suggestions/01-suggestions-tracker.md`. Issues tracked in `/spec/02-app/issues/README.md`.*
+*Master plan details in `plan.md` (repo root). Suggestions tracked in `.lovable/memory/suggestions/01-suggestions-tracker.md`. Issues tracked in `/spec/02-app/issues/README.md`.*
