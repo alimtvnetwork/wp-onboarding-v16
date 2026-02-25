@@ -3,7 +3,7 @@ package handlers
 
 import (
 	"wp-plugin-publish/internal/models"
-	"wp-plugin-publish/internal/services/errorhistory"
+	"wp-plugin-publish/internal/services/error_history"
 	"wp-plugin-publish/internal/services/session"
 )
 

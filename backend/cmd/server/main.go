@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	
 	"fmt"
 	"io"
 	"os"
@@ -25,14 +24,14 @@ import (
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/services/backup"
 	"wp-plugin-publish/internal/services/e2e"
-	"wp-plugin-publish/internal/services/errorhistory"
+	"wp-plugin-publish/internal/services/error_history"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
-	"wp-plugin-publish/internal/services/publishhistory"
-	"wp-plugin-publish/internal/services/requestsession"
+	"wp-plugin-publish/internal/services/publish_history"
+	"wp-plugin-publish/internal/services/request_session"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/site"
-	"wp-plugin-publish/internal/services/sitehealth"
+	"wp-plugin-publish/internal/services/site_health"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
 	"wp-plugin-publish/internal/version"

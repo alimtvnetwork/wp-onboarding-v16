@@ -40,11 +40,8 @@
 ### ~~C1. Go Phase 4 — Positive Logic & Boolean Standards~~ ✅ ALREADY COMPLIANT
 - **Verified:** 2026-02-24 — Full audit found zero violations. `IsInvalid()` across 21 enum files is positive structure (checks `v == Invalid`). `IsNotFound()` names an error variant. All `!` negations are standard Go idioms. `DisableRemotePlugin` is a domain action. No `lint-negative.sh` needed — codebase is clean.
 
-### C2. Go Phase 5 — Code Organization Standards
-- **Objective:** Package restructuring, file naming, import organization
-- **Dependencies:** C1 (preferred but not blocking)
-- **Expected Outputs:** Clean package structure
-- **Estimated Effort:** 3 tasks
+### ~~C2. Go Phase 5 — Code Organization Standards~~ ✅ COMPLETE
+- **Completed:** 2026-02-25 — Renamed 4 service packages to snake_case directories (`sitehealth`→`site_health`, `errorhistory`→`error_history`, `publishhistory`→`publish_history`, `requestsession`→`request_session`). Updated all import paths across 4 files. Fixed import grouping in `main.go`. **Note:** `publish/service.go` (1,883 lines) exceeds 400-line limit — splitting deferred to separate task.
 
 ### C3. Go Phase 6 — CI Lint Scripts & Integration
 - **Objective:** Complete lint script suite (5 scripts) + CI pipeline integration
