@@ -19,6 +19,7 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\PluginSelectionType;
 use RiseupAsia\Enums\ResponseKeyType;
@@ -216,7 +217,7 @@ trait OrchestratorPluginTrait {
     }
 
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
-        $rootPath = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . PathDatabaseType::Root->value;
 
         if (PathHelper::isFileMissing($rootPath)) {
             return null;

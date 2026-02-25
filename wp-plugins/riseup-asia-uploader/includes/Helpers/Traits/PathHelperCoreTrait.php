@@ -92,4 +92,19 @@ trait PathHelperCoreTrait {
     public static function getSnapshotsDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Snapshots->value); }
     public static function getTempDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Temp->value); }
     public static function getDbPath(): string { return self::join(self::getBaseDir(), PathDatabaseType::Plugin->value); }
+
+    /** Plugin install directory (WP_PLUGIN_DIR/{slug}). */
+    public static function getPluginDir(): string { return WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value; }
+
+    /** Plugin main file path ({pluginDir}/{slug}.php). */
+    public static function getPluginMainFile(): string { return self::getPluginDir() . '/' . PluginConfigType::Slug->value . '.php'; }
+
+    /** Constants file path ({pluginDir}/includes/constants.php). */
+    public static function getConstantsFile(): string { return self::getPluginDir() . '/includes/constants.php'; }
+
+    /** Endpoints reference JSON ({pluginDir}/data/endpoints.json). */
+    public static function getEndpointsJsonPath(): string { return self::getPluginDir() . '/data/endpoints.json'; }
+
+    /** OpenAPI spec JSON ({pluginDir}/data/openapi.json). */
+    public static function getOpenApiJsonPath(): string { return self::getPluginDir() . '/data/openapi.json'; }
 }

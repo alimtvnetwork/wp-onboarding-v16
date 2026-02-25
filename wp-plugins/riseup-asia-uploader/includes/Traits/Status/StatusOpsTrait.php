@@ -38,7 +38,7 @@ trait StatusOpsTrait {
     }
 
     private function loadOpenApiSpec(): array|WP_REST_Response {
-        $specFile = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/openapi.json';
+        $specFile = PathHelper::getOpenApiJsonPath();
         if (PathHelper::isFileMissing($specFile)) {
             return $this->buildSpecError('OpenAPI specification file not found', $specFile);
         }
@@ -111,10 +111,9 @@ trait StatusOpsTrait {
         if (BooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return 0;
         }
-        $pluginDir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
         $filesToInvalidate = array(
-            $pluginDir . '/' . PluginConfigType::Slug->value . '.php',
-            $pluginDir . '/includes/constants.php',
+            PathHelper::getPluginMainFile(),
+            PathHelper::getConstantsFile(),
         );
         $invalidated = 0;
         foreach ($filesToInvalidate as $file) {

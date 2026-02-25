@@ -17,11 +17,8 @@
 ### ~~A3. Go Backend interface{} Type Safety~~ ✅ ALREADY COMPLETE
 - **Verified:** 2026-02-24 — Only 1 remaining `interface{}` in `site/service.go` (log fields slice) fixed to `[]any`. All other ~2,680 instances were already migrated per memory files (phases 1–5 completed 2026-02-14). Zero `interface{}` in production Go code.
 
-### A4. Naming Convention Phases 5-6
-- **Objective:** Hook/path compliance and cleanup for PHP naming conventions
-- **Dependencies:** None
-- **Expected Outputs:** Consistent hook names and file paths
-- **Acceptance Criteria:** Lint scripts pass; grep confirms zero violations
+### ~~A4. Naming Convention Phases 5-6~~ ✅ COMPLETE
+- **Completed:** 2026-02-25 — **Hooks:** riseup-asia-uploader already 100% compliant (all hooks use `HookType` enum). **Paths:** Replaced `/a-root.db` magic string with `PathDatabaseType::Root->value` across 8 snapshot files (7 traits + 1 engine). Created 5 new `PathHelper` typed accessors (`getPluginDir`, `getPluginMainFile`, `getConstantsFile`, `getEndpointsJsonPath`, `getOpenApiJsonPath`) and migrated 4 inline `WP_PLUGIN_DIR`/`plugin_dir_path()` concatenations in `StatusPayloadTrait` and `StatusOpsTrait`. `plugins-onboard` uses magic hook strings but is a separate legacy plugin outside riseup-asia spec scope.
 
 ---
 

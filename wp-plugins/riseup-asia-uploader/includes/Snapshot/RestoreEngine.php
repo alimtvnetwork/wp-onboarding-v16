@@ -19,6 +19,7 @@ use PDO;
 use Throwable;
 use wpdb;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotConfigType;
@@ -139,7 +140,7 @@ class RestoreEngine {
     }
 
     private function openRootPdo(string $snapshotDir): PDO {
-        $pdo = new PDO('sqlite:' . $snapshotDir . '/a-root.db');
+        $pdo = new PDO('sqlite:' . $snapshotDir . PathDatabaseType::Root->value);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         return $pdo;
