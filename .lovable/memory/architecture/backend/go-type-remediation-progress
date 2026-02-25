@@ -1,7 +1,7 @@
 # Memory: architecture/backend/go-type-remediation-progress
-Updated: 2026-02-14
+Updated: 2026-02-25
 
-The Go backend remediation (Feature F) is now COMPLETE across all packages:
+The Go backend remediation (Feature F) is now COMPLETE across all packages with ZERO remaining exceptions:
 
 ## Completed Packages
 1. **handlers** (~999 instances) — Typed response structs in `response_types.go`, `any` alias throughout
@@ -14,8 +14,18 @@ The Go backend remediation (Feature F) is now COMPLETE across all packages:
 8. **dbops** — `ContextFields` type alias for `map[string]any`, `any` in all Exec/Find/Create signatures
 9. **logger** — `interface{}` → `any` in all variadic log methods
 10. **apperror** — `ErrorContext` type alias, `any` in WithContext
-11. **wordpress/client** — `any` in request body parameter
-12. **cmd/server/main** — `any` in E2E adapter signatures, broadcast callback, progress callback
+11. **wordpress/client** — `ProgressDetails` changed from `map[string]any` to `json.RawMessage` type alias
+12. **wordpress** — All `map[string]string{}` request body literals replaced with typed structs (`PluginSlugRequest`, `PluginFileRequest`, `PluginFileDeleteRequest`, `PluginFileReplaceRequest`, `SyncRequestBody`)
+13. **cmd/server/main** — `any` in E2E adapter signatures, broadcast callback, progress callback
+
+## ProgressDetails Migration (2026-02-25)
+The final `map[string]any` exception (`ProgressDetails //nolint:ge2`) has been eliminated:
+- `ProgressDetails` is now a type alias for `json.RawMessage`
+- 18 typed progress detail structs created in `progress_details.go`: `URLProgress`, `URLErrorProgress`, `URLStatusProgress`, `SiteNameProgress`, `AuthInitProgress`, `AuthHintProgress`, `AuthBodyProgress`, `UserAuthProgress`, `UserRolesProgress`, `WriteTestProgress`, `UploadInitProgress`, `UploadBodyProgress`, `ResponseProgress`, `TokenProgress`, `ZipUploadProgress`, `SyncInitProgress`
+- 5 typed request body structs created in `request_types.go`: `PluginSlugRequest`, `PluginFileRequest`, `PluginFileDeleteRequest`, `PluginFileReplaceRequest`, `SyncRequestBody`
+- All ~30 call sites in `client.go`, `uploader.go`, `uploader_files.go`, `remote_files.go` updated to use `toProgress()` with typed structs
+- All `map[string]string{}` literals across `uploader_lifecycle.go`, `uploader_export.go`, `uploader_files.go`, `remote_files.go` replaced with typed request structs
+- Callback consumers in `site/service.go` and `site/service_bootstrap.go` simplified (no redundant `json.Marshal`)
 
 ## Remaining (test files only — acceptable per GE-5)
 - `envelope_test.go` — 3 instances (type assertions in test assertions)

@@ -132,8 +132,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 
 	s.broadcastProgress(id, "connect", stagestatus.Running.String(), fmt.Sprintf("Connecting to %s...", site.Url), nil)
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
-		raw, _ := json.Marshal(details)
-		s.broadcastProgress(id, step, status, message, raw)
+		s.broadcastProgress(id, step, status, message, details)
 	}
 	client := s.wpClientFactory(site.Url, site.Username, string(password), progressCallback)
 
@@ -170,8 +169,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteUrl, us
 	s.broadcastProgress(0, "normalize", stagestatus.Completed.String(), fmt.Sprintf("Normalized URL: %s", normalizedUrl), toJson(UrlNormalizeDetails{OriginalUrl: siteUrl, NormalizedUrl: normalizedUrl}))
 
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
-		raw, _ := json.Marshal(details)
-		s.broadcastProgress(0, step, status, message, raw)
+		s.broadcastProgress(0, step, status, message, details)
 	}
 	client := s.wpClientFactory(normalizedUrl, username, password, progressCallback)
 

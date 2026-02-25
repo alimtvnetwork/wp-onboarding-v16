@@ -38,7 +38,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	normalizedSlug := normalizePluginSlug(input.Slug)
 
 	endpoint := "/" + namespace + input.Endpoint.String()
-	reqBody := map[string]string{"plugin": normalizedSlug}
+	reqBody := PluginSlugRequest{Plugin: normalizedSlug}
 	reqBodyJSON, _ := json.Marshal(reqBody)
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
-	reqBody := map[string]string{"plugin": normalizedSlug}
+	reqBody := PluginSlugRequest{Plugin: normalizedSlug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return false, "", "", apperror.Wrap(err, apperror.ErrWPConnection, "check plugin exists request failed").
@@ -187,7 +187,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 	namespace := c.resolveNamespace()
 
 	endpoint := "/" + namespace + ep.Files.String()
-	reqBody := map[string]string{"plugin": slug}
+	reqBody := PluginSlugRequest{Plugin: slug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, err

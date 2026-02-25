@@ -25,10 +25,10 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	// Always use base64 encoding for RiseupAsia Uploader
 	contentStr := base64.StdEncoding.EncodeToString(content)
 
-	body := map[string]string{
-		"plugin":  slug,
-		"path":    relPath,
-		"content": contentStr,
+	body := PluginFileReplaceRequest{
+		Plugin:  slug,
+		Path:    relPath,
+		Content: contentStr,
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -74,7 +74,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 
 	endpoint := "/" + namespace + ep.Files.String()
 
-	body := map[string]string{"plugin": slug, "path": relPath, "action": "delete"}
+	body := PluginFileDeleteRequest{Plugin: slug, Path: relPath, Action: "delete"}
 	jsonBody, _ := json.Marshal(body)
 
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
@@ -142,17 +142,17 @@ type SyncResult struct {
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
 	namespace := c.resolveNamespace()
 
-	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Syncing %d files to %s...", len(files), slug), ProgressDetails{
-		"slug":      slug,
-		"fileCount": len(files),
-		"namespace": namespace,
-	})
+	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Syncing %d files to %s...", len(files), slug), toProgress(SyncInitProgress{
+		Slug:      slug,
+		FileCount: len(files),
+		Namespace: namespace,
+	}))
 
 	endpoint := "/" + namespace + ep.Sync.String()
 
-	body := ProgressDetails{
-		"plugin": slug,
-		"files":  files,
+	body := SyncRequestBody{
+		Plugin: slug,
+		Files:  files,
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -179,10 +179,10 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Sync response: %d", resp.StatusCode), ProgressDetails{
-		"status": resp.StatusCode,
-		"body":   truncateBody(respBody, 500),
-	})
+	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Sync response: %d", resp.StatusCode), toProgress(ResponseProgress{
+		Status: resp.StatusCode,
+		Body:   truncateBody(respBody, 500),
+	}))
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &APIError{
