@@ -2,13 +2,10 @@
 package wordpress
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -18,7 +15,6 @@ import (
 	stagestatus "wp-plugin-publish/internal/enums/stage_status"
 	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/pkg/apperror"
-	"wp-plugin-publish/pkg/pathutil"
 )
 
 // Note: RiseUpUploaderNamespace is defined in constants.go
@@ -159,116 +155,26 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 // Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
 // uploadSource identifies how the upload was triggered (e.g., uploadsource.RestAPI).
 func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource uploadsource.Variant) (*UploaderUploadResult, error) {
-	// CRITICAL: Always resolve to absolute path before any file operations
-	absZipPath, err := pathutil.ToAbsolute(zipPath)
+	uc, err := c.prepareUploadContext(zipPath, slug)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "resolve zip path").
-			WithPath(zipPath)
+		return nil, err
 	}
+	defer uc.ZipFile.Close()
 
-	// Validate slug - must be provided and not include .zip extension
-	if slug == "" {
-		slug = strings.TrimSuffix(filepath.Base(absZipPath), ".zip")
-	}
-	slug = strings.TrimSuffix(slug, ".zip")
-
-	// Open the ZIP file for streaming (no full memory load)
-	zipFile, err := os.Open(absZipPath)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip file").
-			WithPath(pathutil.ForDisplay(absZipPath))
-	}
-	defer zipFile.Close()
-
-	// Get file size for progress reporting
-	fileInfo, err := zipFile.Stat()
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stat zip file").
-			WithPath(pathutil.ForDisplay(absZipPath))
-	}
-	zipSize := fileInfo.Size()
-
-	namespace := c.resolveNamespace()
-	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, ep.Upload)
-	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
-
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), toProgress(UploadInitProgress{
-		ZipSize:   zipSize,
-		ZipPath:   absZipPath,
-		Namespace: namespace,
-		Endpoint:  uploadEndpoint,
-		URL:       uploadURL,
-		Method:    "multipart/form-data",
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(uc.AbsZipPath), uc.ZipSize, uc.UploadURL), toProgress(UploadInitProgress{
+		ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, URL: uc.UploadURL, Method: "multipart/form-data",
 	}))
 
-	// Build multipart form body — stream the ZIP file directly
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	// Add the ZIP file as a form file field
-	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(absZipPath))
+	body, contentType, err := buildMultipartBody(uc, activate, uploadSource)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "create multipart form file")
-	}
-	if _, err := io.Copy(part, zipFile); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stream zip to multipart")
+		return nil, err
 	}
 
-	// Add form fields
-	_ = writer.WriteField("slug", slug)
-	if activate {
-		_ = writer.WriteField("activate", "1")
-	} else {
-		_ = writer.WriteField("activate", "0")
-	}
-	_ = writer.WriteField("upload_source", uploadSource.String())
-
-	if err := writer.Close(); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
-	}
-
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), toProgress(UploadBodyProgress{
-		Slug:     slug,
-		Activate: activate,
-		ZipSize:  zipSize,
-		BodySize: requestBody.Len(),
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, activate, uc.ZipSize, body.Len()), toProgress(UploadBodyProgress{
+		Slug: uc.Slug, Activate: activate, ZipSize: uc.ZipSize, BodySize: body.Len(),
 	}))
 
-	req, err := http.NewRequest("POST", uploadURL, &requestBody)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "create upload HTTP request").
-			WithURL(uploadURL)
-	}
-
-	c.setStandardHeaders(req, writer.FormDataContentType())
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").
-			WithURL(uploadURL)
-	}
-	defer resp.Body.Close()
-
-	respBytes, _ := io.ReadAll(resp.Body)
-	respBody := string(respBytes)
-
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), toProgress(ResponseProgress{
-		URL:    uploadURL,
-		Status: resp.StatusCode,
-		Body:   truncateBody(respBody, 2000),
-	}))
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, buildUploadAPIError(absZipPath, uploadURL, uploadEndpoint, resp.StatusCode, respBytes, respBody, c.stackTraceDepth)
-	}
-
-	var result UploaderUploadResult
-	if err := json.Unmarshal(respBytes, &result); err != nil {
-		result.Success = true
-		result.Message = "Upload completed"
-	}
-
-	return &result, nil
+	return c.executeUploadHTTP(uc, body, contentType)
 }
 
 // buildUploadAPIError constructs a detailed APIError for upload failures.

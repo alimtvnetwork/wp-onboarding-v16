@@ -23,146 +23,127 @@ import (
 // Publish publishes plugin changes to a WordPress site
 func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts PublishOptions) apperror.Result[PublishResult] {
 	startTime := time.Now()
-	options := opts
+	result := &PublishResult{Success: false, ActivationStatus: healthstatus.Unknown.DBValue(), Stages: []Stage{}}
 
-	result := &PublishResult{
-		Success:          false,
-		ActivationStatus: healthstatus.Unknown.DBValue(),
-		Stages:           []Stage{},
+	pluginInfo, siteInfo, password, sessionID, err := s.initPublishContext(ctx, pluginID, siteID, result)
+	if err != nil {
+		return apperror.Ok(*result)
+	}
+	result.SessionID = sessionID
+
+	s.broadcastProgressWithSession(pluginID, siteID, sessionID, stagestatus.Started.String(), 0, "Starting publish...")
+	s.sessionLog(sessionID, loglevel.Info.String(), "init", fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name), nil)
+
+	if err := s.runPublishPipeline(ctx, pluginID, siteID, sessionID, pluginInfo, siteInfo, password, opts, result); err != nil {
+		return apperror.Ok(*result)
 	}
 
-	// Get plugin info early to have name for session
+	s.finalizePublishResult(pluginID, siteID, pluginInfo, siteInfo, opts, result, startTime)
+	return apperror.Ok(*result)
+}
+
+// initPublishContext loads plugin, site, credentials, and starts a session.
+func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64, result *PublishResult) (models.Plugin, *models.Site, string, string, error) {
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
 		result.ErrorMessage = pluginResult.AppError().Error()
 		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 0, pluginResult.AppError().Error())
-		return apperror.Ok(*result)
+		return models.Plugin{}, nil, "", "", pluginResult.AppError()
 	}
 	pluginInfo := pluginResult.Value()
 
-	// Get site info early to have name for session
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
 		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 0, err.Error())
-		return apperror.Ok(*result)
+		return models.Plugin{}, nil, "", "", err
 	}
 
-	// Start session for this publish operation
-	sessionID, err := s.startPublishSession(pluginID, siteID, pluginInfo, siteInfo)
-	if err == nil {
-		result.SessionID = sessionID
-	}
+	sessionID, _ := s.startPublishSession(pluginID, siteID, pluginInfo, siteInfo)
+	return pluginInfo, siteInfo, password, sessionID, nil
+}
 
-	// Broadcast start event with session ID
-	s.broadcastProgressWithSession(pluginID, siteID, sessionID, stagestatus.Started.String(), 0, "Starting publish...")
-	s.sessionLog(sessionID, loglevel.Info.String(), "init", fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name), nil)
-
-	// Get mapping to find remote slug and site info
+// runPublishPipeline executes the backup → package → upload → activate → cleanup pipeline.
+func (s *Service) runPublishPipeline(ctx context.Context, pluginID, siteID int64, sessionID string, pluginInfo models.Plugin, siteInfo *models.Site, password string, options PublishOptions, result *PublishResult) error {
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
 		s.sessionLog(sessionID, loglevel.Error.String(), "init", fmt.Sprintf("Failed to get mapping: %s", err.Error()), nil)
 		s.endSession(sessionID, loglevel.Error.String(), err.Error())
 		s.broadcastProgressWithSession(pluginID, siteID, sessionID, stagestatus.Failed.String(), 0, err.Error())
-		return apperror.Ok(*result)
+		return err
 	}
 
-	// Create WordPress client
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
-	s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), toDetails(ConnectDetails{
-		SiteURL:  siteInfo.URL,
-		Username: siteInfo.Username,
-	}))
+	s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), toDetails(ConnectDetails{SiteURL: siteInfo.URL, Username: siteInfo.Username}))
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 
-	// Stage 1: Create backup (optional)
 	if options.CreateBackup {
 		stage := s.executeBackupStage(pluginID, siteID, mapping)
 		result.Stages = append(result.Stages, stage)
 		if stage.Status.IsFailed() {
 			result.ErrorMessage = stage.Message
 			s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 10, stage.Message)
-			return apperror.Ok(*result)
+			return fmt.Errorf("%s", stage.Message)
 		}
 	}
 
-	// Stage 2: Build package
+	return s.runUploadAndActivate(ctx, pluginID, siteID, sessionID, wpClient, pluginInfo, siteInfo, mapping, options, result)
+}
+
+// runUploadAndActivate handles package, upload, activate, and cleanup stages.
+func (s *Service) runUploadAndActivate(ctx context.Context, pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, pluginInfo models.Plugin, siteInfo *models.Site, mapping *models.PluginMapping, options PublishOptions, result *PublishResult) error {
 	zipPath, fileCount, stage := s.executePackageStage(pluginID, siteID, pluginInfo, options)
 	result.Stages = append(result.Stages, stage)
 	if stage.Status.IsFailed() {
 		result.ErrorMessage = stage.Message
 		s.broadcastDetailedLog(pluginID, siteID, loglevel.Error.String(), "package", fmt.Sprintf("Package failed: %s", stage.Message), nil)
 		s.broadcastProgress(pluginID, siteID, "failed", 30, stage.Message)
-		return apperror.Ok(*result)
+		return fmt.Errorf("%s", stage.Message)
 	}
 
-	// Track whether publish succeeded or failed for cleanup decisions
 	publishFailed := false
-
-	// Pre-upload backup for rollback
 	preUploadBackupZip := s.createPreUploadBackup(ctx, pluginID, siteID, sessionID, wpClient, mapping, options)
 	if preUploadBackupZip != "" {
 		defer os.Remove(preUploadBackupZip)
 	}
-
-	// Ensure ZIP cleanup
 	defer s.cleanupZip(pluginID, siteID, zipPath, publishFailed, options.KeepZipFiles)
 
-	// Stage 3: Upload to WordPress
-	alreadyActivated, stage := s.executeUploadStage(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo)
-	result.Stages = append(result.Stages, stage)
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status.String(), stage.Duration, toDetails(UploadStageDetails{
-		RemoteSlug: mapping.RemoteSlug,
-		Activated:  alreadyActivated,
-	}))
-	if stage.Status.IsFailed() {
-		result.ErrorMessage = stage.Message
-		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 60, stage.Message)
+	alreadyActivated, uploadStage := s.executeUploadStage(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo)
+	result.Stages = append(result.Stages, uploadStage)
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", uploadStage.Status.String(), uploadStage.Duration, toDetails(UploadStageDetails{RemoteSlug: mapping.RemoteSlug, Activated: alreadyActivated}))
+	if uploadStage.Status.IsFailed() {
+		result.ErrorMessage = uploadStage.Message
+		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 60, uploadStage.Message)
 		publishFailed = true
-		return apperror.Ok(*result)
+		return fmt.Errorf("%s", uploadStage.Message)
 	}
 
-	// Stage 4: Activate plugin
-	stage = s.executeActivateStage(pluginID, siteID, sessionID, wpClient, mapping, siteInfo, alreadyActivated)
-	result.Stages = append(result.Stages, stage)
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status.String(), stage.Duration, toDetails(ActivateSkipDetails{
-		RemoteSlug: mapping.RemoteSlug,
-		Skipped:    alreadyActivated,
-	}))
-	if stage.Status.IsFailed() {
+	activateStage := s.executeActivateStage(pluginID, siteID, sessionID, wpClient, mapping, siteInfo, alreadyActivated)
+	result.Stages = append(result.Stages, activateStage)
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", activateStage.Status.String(), activateStage.Duration, toDetails(ActivateSkipDetails{RemoteSlug: mapping.RemoteSlug, Skipped: alreadyActivated}))
+	if activateStage.Status.IsFailed() {
 		result.ActivationStatus = loglevel.Error.String()
-		result.ErrorMessage = stage.Message
-		s.handleRollback(pluginID, siteID, sessionID, ctx, wpClient, mapping, siteInfo, preUploadBackupZip, options, stage, result)
+		result.ErrorMessage = activateStage.Message
+		s.handleRollback(pluginID, siteID, sessionID, ctx, wpClient, mapping, siteInfo, preUploadBackupZip, options, activateStage, result)
 	} else {
 		result.ActivationStatus = pluginstatus.Active.String()
 	}
 
-	// Stage 5: Mark files as synced
-	stage = s.executeCleanupStage(ctx, pluginID, siteID, options)
-	result.Stages = append(result.Stages, stage)
-
-	// Finalize result
-	result.IsSuccess = result.ActivationStatus == pluginstatus.Active.String() || result.ActivationStatus == pluginstatus.Inactive.String()
-	publishFailed = !result.IsSuccess
-	result.Duration = time.Since(startTime).Milliseconds()
+	cleanupStage := s.executeCleanupStage(ctx, pluginID, siteID, options)
+	result.Stages = append(result.Stages, cleanupStage)
 	result.FilesUpdated = s.countFilesUpdated(options, pluginInfo, fileCount)
+	return nil
+}
 
-	// Broadcast completion
+// finalizePublishResult computes final metrics, broadcasts completion, and records history.
+func (s *Service) finalizePublishResult(pluginID, siteID int64, pluginInfo models.Plugin, siteInfo *models.Site, options PublishOptions, result *PublishResult, startTime time.Time) {
+	result.IsSuccess = result.ActivationStatus == pluginstatus.Active.String() || result.ActivationStatus == pluginstatus.Inactive.String()
+	result.Duration = time.Since(startTime).Milliseconds()
+
 	s.broadcastCompletion(pluginID, siteID, result)
-
-	s.log.Info("Plugin published",
-		"pluginId", pluginID,
-		"siteId", siteID,
-		"mode", options.Mode,
-		"files", result.FilesUpdated,
-		"duration", result.Duration,
-		"success", result.IsSuccess)
-
-	// Record publish history
+	s.log.Info("Plugin published", "pluginId", pluginID, "siteId", siteID, "mode", options.Mode, "files", result.FilesUpdated, "duration", result.Duration, "success", result.IsSuccess)
 	s.recordHistory(pluginInfo, siteInfo, options, result)
-
-	return apperror.Ok(*result)
 }
 
 // PublishFiles publishes specific files to a WordPress site
