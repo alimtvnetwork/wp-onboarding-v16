@@ -2,6 +2,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 
 	"wp-plugin-publish/internal/logger"
@@ -391,33 +392,38 @@ func applySingleMigration(db *DB, log *logger.Logger, m Migration) error {
 
 	tx, err := db.Begin()
 	if err != nil {
-		log.Error("Failed to begin transaction", "version", m.Version, "error", err)
-		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to begin transaction").
-			WithDetails(fmt.Sprintf("version=%d", m.Version))
+		return wrapMigrationError(err, "failed to begin transaction", m.Version)
 	}
 
-	if _, err := tx.Exec(m.SQL); err != nil {
+	if err := executeMigrationTx(tx, m); err != nil {
 		tx.Rollback()
-		log.Error("Migration SQL failed", "version", m.Version, "description", m.Description, "error", err)
-		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to apply migration SQL").
-			WithDetails(fmt.Sprintf("version=%d, description=%s", m.Version, m.Description))
-	}
-
-	if _, err := tx.Exec("INSERT INTO _migrations (Version, Description) VALUES (?, ?)", m.Version, m.Description); err != nil {
-		tx.Rollback()
-		log.Error("Failed to record migration", "version", m.Version, "error", err)
-		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to record migration").
-			WithDetails(fmt.Sprintf("version=%d", m.Version))
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Error("Failed to commit migration", "version", m.Version, "error", err)
-		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to commit migration").
-			WithDetails(fmt.Sprintf("version=%d", m.Version))
+		return wrapMigrationError(err, "failed to commit migration", m.Version)
 	}
 
 	log.Info("Migration completed", "version", m.Version)
 	return nil
+}
+
+// executeMigrationTx runs the SQL and records the migration within a transaction.
+func executeMigrationTx(tx *sql.Tx, m Migration) error {
+	if _, err := tx.Exec(m.SQL); err != nil {
+		return wrapMigrationError(err, "failed to apply migration SQL", m.Version).
+			WithDetails(fmt.Sprintf("description=%s", m.Description))
+	}
+	if _, err := tx.Exec("INSERT INTO _migrations (Version, Description) VALUES (?, ?)", m.Version, m.Description); err != nil {
+		return wrapMigrationError(err, "failed to record migration", m.Version)
+	}
+	return nil
+}
+
+// wrapMigrationError wraps an error with migration context.
+func wrapMigrationError(err error, message string, version int) *apperror.AppError {
+	return apperror.Wrap(err, apperror.ErrDatabaseMigrate, message).
+		WithDetails(fmt.Sprintf("version=%d", version))
 }
 
 // logMigrationSummary logs the final migration result.
