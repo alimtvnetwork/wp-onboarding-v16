@@ -1,7 +1,7 @@
 # Issue Write-Ups
 
 > **Purpose:** Permanent record of every mistake, its root cause, fix, and prevention rule.
-> **Updated:** 2026-02-23
+> **Updated:** 2026-02-25
 
 ## Why This Exists
 

@@ -1,7 +1,7 @@
 # Formatting Rules Reference
 
 > **Purpose:** Canonical specification for all project-wide formatting rules (PHP, Go, TypeScript).
-> **Updated:** 2026-02-22
+> **Updated:** 2026-02-25
 
 ## Rules
 

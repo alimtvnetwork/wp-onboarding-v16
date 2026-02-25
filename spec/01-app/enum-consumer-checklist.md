@@ -1,7 +1,7 @@
 # Enum Consumer Checklist
 
 > **Purpose:** Mandatory checklist when adding or modifying any enum case.
-> **Updated:** 2026-02-22
+> **Updated:** 2026-02-25
 
 ## Rule
 
