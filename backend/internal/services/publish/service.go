@@ -149,12 +149,11 @@ type FileDiffResult struct {
 }
 
 // StageContext provides structured what/why/where/result context for logging.
-// InnerData uses map[string]any internally for dynamic construction, but is always
-// marshaled to json.RawMessage before crossing the WSHub boundary.
+// Details carries typed structured data serialized to json.RawMessage.
 type StageContext struct {
-	What      string         // What is being done
-	Why       string         `json:",omitempty"` // Why it's being done
-	Where     string         `json:",omitempty"` // Target URL/path
-	Result    string         `json:",omitempty"` // Outcome description
-	InnerData map[string]any `json:",omitempty"` // HTTP status, response snippets, etc.
+	What    string          // What is being done
+	Why     string          `json:",omitempty"` // Why it's being done
+	Where   string          `json:",omitempty"` // Target URL/path
+	Result  string          `json:",omitempty"` // Outcome description
+	Details json.RawMessage `json:",omitempty"` // Typed structured data (use toDetails)
 }

@@ -4,7 +4,6 @@ package backup
 import (
 	"archive/zip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -60,29 +59,17 @@ func New(cfg Config) *Service {
 }
 
 // broadcastLog sends a log entry via WebSocket if hub is available
-func (s *Service) broadcastLog(pluginID int64, level, step, message string, details json.RawMessage) {
+func (s *Service) broadcastLog(pluginID int64, level, step, message string, details []byte) {
 	if s.wsHub != nil {
 		s.wsHub.BroadcastBackupLog(pluginID, level, step, message, details)
 	}
 }
 
-// marshalDetails converts a map to json.RawMessage for WS broadcast boundaries.
-func marshalBackupDetails(m map[string]any) json.RawMessage {
-	if m == nil {
-		return nil
-	}
-	data, err := json.Marshal(m)
-	if err != nil {
-		return nil
-	}
-	return data
-}
-
 // Create downloads the current remote plugin and saves as a backup
 func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[models.Backup] {
 	s.log.Info("Creating backup", "mappingId", mappingID)
-	s.broadcastLog(mappingID, loglevel.Info.Lower(), "init", "Starting backup creation", marshalBackupDetails(map[string]any{
-		"mappingId": mappingID,
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "init", "Starting backup creation", toDetails(InitDetails{
+		MappingID: mappingID,
 	}))
 
 	// Generate backup filename with timestamp
@@ -104,8 +91,8 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	}
 	file.Close()
 
-	s.broadcastLog(mappingID, loglevel.Info.Lower(), "write", "Backup file created successfully", marshalBackupDetails(map[string]any{
-		"path": backupPath,
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "write", "Backup file created successfully", toDetails(PathDetails{
+		Path: backupPath,
 	}))
 
 	// Get file info for size
@@ -125,9 +112,9 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	// TODO: Record in database
 
 	// Enforce retention
-	s.broadcastLog(mappingID, loglevel.Info.Lower(), "retention", "Enforcing retention policy", marshalBackupDetails(map[string]any{
-		"maxPerPlugin":  s.maxPerPlugin,
-		"retentionDays": s.retentionDays,
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "retention", "Enforcing retention policy", toDetails(RetentionDetails{
+		MaxPerPlugin:  s.maxPerPlugin,
+		RetentionDays: s.retentionDays,
 	}))
 	if err := s.enforceRetention(ctx, mappingID); err != nil {
 		s.log.Warn("Failed to enforce retention", "error", err)
@@ -135,9 +122,9 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	}
 
 	s.log.Info("Backup created", "mappingId", mappingID, "path", backupPath)
-	s.broadcastLog(mappingID, loglevel.Info.Lower(), "complete", "Backup created successfully", marshalBackupDetails(map[string]any{
-		"path":     backupPath,
-		"fileSize": size,
+	s.broadcastLog(mappingID, loglevel.Info.Lower(), "complete", "Backup created successfully", toDetails(BackupCompleteDetails{
+		Path:     backupPath,
+		FileSize: size,
 	}))
 
 	return apperror.Ok(backup)
@@ -158,8 +145,8 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 // Restore uploads a backup to WordPress
 func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[RestoreResult] {
 	s.log.Info("Restoring backup", "backupId", backupID)
-	s.broadcastLog(backupID, loglevel.Info.Lower(), "init", "Starting backup restore", marshalBackupDetails(map[string]any{
-		"backupId": backupID,
+	s.broadcastLog(backupID, loglevel.Info.Lower(), "init", "Starting backup restore", toDetails(InitDetails{
+		BackupID: backupID,
 	}))
 
 	// TODO: Implement restore:
@@ -180,8 +167,8 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 // Delete removes a backup file and database record
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	s.log.Info("Deleting backup", "id", id)
-	s.broadcastLog(id, loglevel.Info.Lower(), "delete", "Deleting backup", marshalBackupDetails(map[string]any{
-		"backupId": id,
+	s.broadcastLog(id, loglevel.Info.Lower(), "delete", "Deleting backup", toDetails(InitDetails{
+		BackupID: id,
 	}))
 
 	// TODO: Get backup path from database
@@ -195,8 +182,8 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 // Cleanup removes expired backups
 func (s *Service) Cleanup(ctx context.Context) error {
 	s.log.Info("Running backup cleanup")
-	s.broadcastLog(0, loglevel.Info.Lower(), "init", "Starting backup cleanup", marshalBackupDetails(map[string]any{
-		"retentionDays": s.retentionDays,
+	s.broadcastLog(0, loglevel.Info.Lower(), "init", "Starting backup cleanup", toDetails(CleanupInitDetails{
+		RetentionDays: s.retentionDays,
 	}))
 
 	cutoff := time.Now().AddDate(0, 0, -s.retentionDays)
@@ -210,8 +197,8 @@ func (s *Service) Cleanup(ctx context.Context) error {
 
 		if info.ModTime().Before(cutoff) {
 			s.log.Debug("Removing expired backup", "path", path, "modified", info.ModTime())
-			s.broadcastLog(0, loglevel.Debug.Lower(), "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), marshalBackupDetails(map[string]any{
-				"modifiedAt": info.ModTime().Format(time.RFC3339),
+			s.broadcastLog(0, loglevel.Debug.Lower(), "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), toDetails(ExpiredBackupDetails{
+				ModifiedAt: info.ModTime().Format(time.RFC3339),
 			}))
 			if err := os.Remove(path); err == nil {
 				removedCount++
@@ -229,8 +216,8 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	}
 
 	s.log.Info("Backup cleanup complete")
-	s.broadcastLog(0, loglevel.Info.Lower(), "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), marshalBackupDetails(map[string]any{
-		"removedCount": removedCount,
+	s.broadcastLog(0, loglevel.Info.Lower(), "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), toDetails(CleanupCompleteDetails{
+		RemovedCount: removedCount,
 	}))
 
 	return nil
@@ -247,8 +234,8 @@ func (s *Service) enforceRetention(ctx context.Context, mappingID int64) error {
 func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) apperror.Result[ExportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
-	s.broadcastLog(0, loglevel.Info.Lower(), "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), marshalBackupDetails(map[string]any{
-		"sourceCount": len(sourcePaths),
+	s.broadcastLog(0, loglevel.Info.Lower(), "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), toDetails(ExportInitDetails{
+		SourceCount: len(sourcePaths),
 	}))
 
 	// Ensure output directory exists
@@ -276,8 +263,8 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		info, err := os.Stat(sourcePath)
 		if err != nil {
 			s.log.Warn("Skipping source", "path", sourcePath, "error", err)
-			s.broadcastLog(0, loglevel.Warn.Lower(), "skip", fmt.Sprintf("Skipping source: %s", sourcePath), marshalBackupDetails(map[string]any{
-				"error": err.Error(),
+			s.broadcastLog(0, loglevel.Warn.Lower(), "skip", fmt.Sprintf("Skipping source: %s", sourcePath), toDetails(ExportErrorDetails{
+				Error: err.Error(),
 			}))
 			continue
 		}
@@ -327,10 +314,10 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		"total_bytes", totalBytes,
 		"duration_ms", duration.Milliseconds(),
 	)
-	s.broadcastLog(0, loglevel.Info.Lower(), "complete", fmt.Sprintf("Export complete: %d files, %d bytes", filesCount, totalBytes), marshalBackupDetails(map[string]any{
-		"filesCount": filesCount,
-		"totalBytes": totalBytes,
-		"durationMs": duration.Milliseconds(),
+	s.broadcastLog(0, loglevel.Info.Lower(), "complete", fmt.Sprintf("Export complete: %d files, %d bytes", filesCount, totalBytes), toDetails(ExportCompleteDetails{
+		FilesCount: filesCount,
+		TotalBytes: totalBytes,
+		DurationMs: duration.Milliseconds(),
 	}))
 
 	return apperror.Ok(ExportResult{
@@ -372,9 +359,9 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, overwrite bool) apperror.Result[ImportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", overwrite)
-	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), marshalBackupDetails(map[string]any{
-		"destination": destDir,
-		"overwrite":   overwrite,
+	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), toDetails(ImportInitDetails{
+		Destination: destDir,
+		Overwrite:   overwrite,
 	}))
 
 	// Open zip file
@@ -446,10 +433,10 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		"total_bytes", totalBytes,
 		"duration_ms", duration.Milliseconds(),
 	)
-	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Import complete: %d files, %d bytes", filesCount, totalBytes), marshalBackupDetails(map[string]any{
-		"filesCount": filesCount,
-		"totalBytes": totalBytes,
-		"durationMs": duration.Milliseconds(),
+	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Import complete: %d files, %d bytes", filesCount, totalBytes), toDetails(ImportCompleteDetails{
+		FilesCount: filesCount,
+		TotalBytes: totalBytes,
+		DurationMs: duration.Milliseconds(),
 	}))
 
 	return apperror.Ok(ImportResult{
