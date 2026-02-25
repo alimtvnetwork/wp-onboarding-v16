@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	"wp-plugin-publish/internal/enums/log_level"
+	"wp-plugin-publish/internal/enums/stage_status"
 	enumstatus "wp-plugin-publish/internal/enums/status"
 	"wp-plugin-publish/internal/ws"
 )

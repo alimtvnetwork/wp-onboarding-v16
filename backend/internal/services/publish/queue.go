@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	queuestatus "wp-plugin-publish/internal/enums/queue_status"
+	"wp-plugin-publish/internal/enums/queue_status"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )

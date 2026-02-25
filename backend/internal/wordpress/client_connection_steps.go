@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 
-	connectionstep "wp-plugin-publish/internal/enums/connection_step"
-	poststatus "wp-plugin-publish/internal/enums/post_status"
-	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	"wp-plugin-publish/internal/enums/connection_step"
+	"wp-plugin-publish/internal/enums/post_status"
+	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/pkg/apperror"
 )
 

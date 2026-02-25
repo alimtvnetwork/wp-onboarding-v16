@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	teststatus "wp-plugin-publish/internal/enums/test_status"
+	"wp-plugin-publish/internal/enums/test_status"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	contenttype "wp-plugin-publish/internal/enums/content_type"
+	"wp-plugin-publish/internal/enums/content_type"
 	"wp-plugin-publish/internal/enums/header"
 	"wp-plugin-publish/pkg/apperror"
 )

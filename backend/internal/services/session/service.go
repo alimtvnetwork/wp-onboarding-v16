@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	"wp-plugin-publish/internal/enums/log_level"
+	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"

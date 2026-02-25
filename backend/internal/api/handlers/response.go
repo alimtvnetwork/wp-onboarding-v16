@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	responsemessage "wp-plugin-publish/internal/enums/response_message"
+	"wp-plugin-publish/internal/enums/response_message"
 	"wp-plugin-publish/internal/envelope"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"

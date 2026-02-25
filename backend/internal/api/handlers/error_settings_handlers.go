@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
+	"wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/ziputil"

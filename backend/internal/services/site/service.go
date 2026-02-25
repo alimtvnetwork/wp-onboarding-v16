@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
-	connectionstatus "wp-plugin-publish/internal/enums/connection_status"
-	connectionstep "wp-plugin-publish/internal/enums/connection_step"
-	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	"wp-plugin-publish/internal/enums/connection_status"
+	"wp-plugin-publish/internal/enums/connection_step"
+	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"

@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database/dbops"
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	uploadsource "wp-plugin-publish/internal/enums/upload_source"
+	"wp-plugin-publish/internal/enums/log_level"
+	"wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"

@@ -10,7 +10,7 @@ import (
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/enums/endpoint"
-	healthstatus "wp-plugin-publish/internal/enums/health_status"
+	"wp-plugin-publish/internal/enums/health_status"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
