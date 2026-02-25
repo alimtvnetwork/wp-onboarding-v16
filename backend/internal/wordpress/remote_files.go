@@ -17,6 +17,7 @@ import (
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
 	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -328,7 +329,7 @@ func (c *Client) CheckOnboardAvailable() (bool, error) {
 // Deprecated: Delegates to UploadPluginViaUploader.
 func (c *Client) UploadPluginViaOnboard(zipPath string, activate bool) (*UploaderUploadResult, error) {
 	slug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
-	return c.UploadPluginViaUploader(zipPath, slug, activate, UploadSourceRestAPI)
+	return c.UploadPluginViaUploader(zipPath, slug, activate, uploadsource.RestAPI)
 }
 
 // truncateBody truncates a string to maxLen for error messages.
