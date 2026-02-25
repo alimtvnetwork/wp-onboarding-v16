@@ -7,13 +7,13 @@ import (
 
 // appErrorJSON is an alias used to prevent infinite recursion during JSON marshaling.
 type appErrorJSON struct {
-	Code       ErrorCode         `json:"code"`
-	Message    string            `json:"message"`
-	Details    string            `json:"details,omitempty"`
-	Values     map[string]string `json:"values,omitempty"`
-	Diagnostic ErrorDiagnostic   `json:"diagnostic,omitempty"`
-	Stack      StackTrace        `json:"stack"`
-	Cause      string            `json:"cause,omitempty"`
+	Code       ErrorCode
+	Message    string
+	Details    string            `json:",omitempty"`
+	Values     map[string]string `json:",omitempty"`
+	Diagnostic ErrorDiagnostic   `json:",omitempty"`
+	Stack      StackTrace
+	Cause      string `json:",omitempty"`
 }
 
 // MarshalJSON serializes AppError to JSON, converting Cause to a string message.

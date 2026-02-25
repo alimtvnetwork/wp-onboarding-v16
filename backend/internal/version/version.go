@@ -10,12 +10,12 @@ import (
 
 // Info holds version information from version.json
 type Info struct {
-	AppName       string `json:"appName"`
-	Version       string `json:"version"`
-	ReleaseDate   string `json:"releaseDate"`
-	GitCommit     string `json:"gitCommit,omitempty"`
-	BuildTime     string `json:"buildTime,omitempty"`
-	ScriptVersion string `json:"scriptVersion,omitempty"`
+	AppName       string `json:"appName"`       // external key (version.json)
+	Version       string `json:"version"`       // external key (version.json)
+	ReleaseDate   string `json:"releaseDate"`   // external key (version.json)
+	GitCommit     string `json:"gitCommit,omitempty"`     // external key (version.json)
+	BuildTime     string `json:"buildTime,omitempty"`     // external key (version.json)
+	ScriptVersion string `json:"scriptVersion,omitempty"` // external key (version.json)
 }
 
 // Default returns fallback version info if version.json cannot be loaded

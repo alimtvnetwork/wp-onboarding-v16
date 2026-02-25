@@ -20,190 +20,190 @@ func toJson(v any) json.RawMessage {
 
 // ErrorDetail carries a single error message for broadcast context.
 type ErrorDetail struct {
-	Error string `json:"error"`
+	Error string
 }
 
 // ConnectionFailureDetails carries context for a failed connection attempt.
 type ConnectionFailureDetails struct {
-	Url      string `json:"url"`
-	Username string `json:"username"`
+	Url      string
+	Username string
 }
 
 // ConnectionSuccessDetails carries context for a successful connection.
 type ConnectionSuccessDetails struct {
-	WPVersion string `json:"wpVersion"`
+	WPVersion string
 }
 
 // UrlNormalizeDetails carries URL normalization context.
 type UrlNormalizeDetails struct {
-	OriginalUrl   string `json:"originalUrl"`
-	NormalizedUrl string `json:"normalizedUrl"`
+	OriginalUrl   string
+	NormalizedUrl string
 }
 
 // --- Bootstrap/uploader detail structs ---
 
 // SiteContextDetails carries site identification context for broadcast logs.
 type SiteContextDetails struct {
-	SiteId   int64  `json:"siteId"`
-	SiteName string `json:"siteName,omitempty"`
-	SiteUrl  string `json:"siteUrl,omitempty"`
+	SiteId   int64
+	SiteName string `json:",omitempty"`
+	SiteUrl  string `json:",omitempty"`
 }
 
 // SiteIdDetail carries a minimal site ID reference.
 type SiteIdDetail struct {
-	SiteId int64 `json:"siteId"`
+	SiteId int64
 }
 
 // BootstrapLogDetails carries bootstrap progress context with step info.
 type BootstrapLogDetails struct {
-	SiteId   int64           `json:"siteId"`
-	SiteName string          `json:"siteName,omitempty"`
-	Step     string          `json:"step,omitempty"`
-	Status   string          `json:"status,omitempty"`
-	Details  json.RawMessage `json:"details,omitempty"`
+	SiteId   int64
+	SiteName string          `json:",omitempty"`
+	Step     string          `json:",omitempty"`
+	Status   string          `json:",omitempty"`
+	Details  json.RawMessage `json:",omitempty"`
 }
 
 // ZipCreationDetails carries ZIP archive creation context.
 type ZipCreationDetails struct {
-	SiteId int64  `json:"siteId"`
-	Path   string `json:"path"`
+	SiteId int64
+	Path   string
 }
 
 // UploaderDeployDetails carries uploader deployment result context.
 type UploaderDeployDetails struct {
-	SiteId    int64  `json:"siteId"`
-	SiteName  string `json:"siteName"`
-	Activated bool   `json:"activated"`
+	SiteId    int64
+	SiteName  string
+	Activated bool
 }
 
 // --- Remote action detail structs ---
 
 // PhpErrorDetail carries context for a single remote PHP error entry.
 type PhpErrorDetail struct {
-	PhpFile    string `json:"phpFile"`
-	PhpLine    int    `json:"phpLine"`
-	PhpLevel   string `json:"phpLevel"`
-	PhpCreated string `json:"phpCreated"`
+	PhpFile    string
+	PhpLine    int
+	PhpLevel   string
+	PhpCreated string
 }
 
 // PhpErrorCountDetail carries the count of remote PHP errors.
 type PhpErrorCountDetail struct {
-	PhpErrorCount int `json:"phpErrorCount"`
+	PhpErrorCount int
 }
 
 // StackTraceLogDetails carries PHP stacktrace metadata.
 type StackTraceLogDetails struct {
-	Lines     int  `json:"lines"`
-	TotalSize int  `json:"totalSize"`
-	Truncated bool `json:"truncated"`
+	Lines     int
+	TotalSize int
+	Truncated bool
 }
 
 // StackTraceContentDetails carries full PHP stacktrace content for session persistence.
 type StackTraceContentDetails struct {
-	Content   string `json:"content"`
-	Lines     int    `json:"lines"`
-	Truncated bool   `json:"truncated"`
+	Content   string
+	Lines     int
+	Truncated bool
 }
 
 // RemoteActionContext carries context for remote plugin action logs.
 type RemoteActionContext struct {
-	SiteId     int64  `json:"siteId"`
-	SiteName   string `json:"siteName,omitempty"`
-	SiteUrl    string `json:"siteUrl,omitempty"`
-	PluginSlug string `json:"pluginSlug,omitempty"`
+	SiteId     int64
+	SiteName   string `json:",omitempty"`
+	SiteUrl    string `json:",omitempty"`
+	PluginSlug string `json:",omitempty"`
 }
 
 // RemoteActionExecDetails carries target context for a remote plugin action execution step.
 type RemoteActionExecDetails struct {
-	TargetUrl  string `json:"targetUrl"`
-	PluginSlug string `json:"pluginSlug"`
+	TargetUrl  string
+	PluginSlug string
 }
 
 // DurationDetail carries a duration in milliseconds.
 type DurationDetail struct {
-	DurationMs int64 `json:"durationMs"`
+	DurationMs int64
 }
 
 // RemoteActionStartedEvent is the BroadcastWithSession payload for "remote_plugin_action_started".
 type RemoteActionStartedEvent struct {
-	SiteId     int64  `json:"siteId"`
-	SiteName   string `json:"siteName"`
-	Action     string `json:"action"`
-	PluginSlug string `json:"pluginSlug"`
+	SiteId     int64
+	SiteName   string
+	Action     string
+	PluginSlug string
 }
 
 // RemoteActionCompleteEvent is the BroadcastWithSession payload for "remote_plugin_action_complete".
 type RemoteActionCompleteEvent struct {
-	SiteId       int64                  `json:"siteId"`
-	SiteName     string                 `json:"siteName,omitempty"`
-	Action       string                 `json:"action"`
-	PluginSlug   string                 `json:"pluginSlug"`
-	Success      bool                   `json:"success"`
-	Error        string                 `json:"error,omitempty"`
-	ErrorDetails *ExtractedErrorDetails `json:"errorDetails,omitempty"`
-	DurationMs   int64                  `json:"durationMs"`
+	SiteId       int64
+	SiteName     string `json:",omitempty"`
+	Action       string
+	PluginSlug   string
+	IsSuccess    bool
+	Error        string                 `json:",omitempty"`
+	ErrorDetails *ExtractedErrorDetails `json:",omitempty"`
+	DurationMs   int64
 }
 
 // RemoteActionRequestBody is the typed body for session SaveRequest in remote actions.
 type RemoteActionRequestBody struct {
-	SiteId     int64  `json:"siteId"`
-	PluginSlug string `json:"pluginSlug"`
-	Action     string `json:"action"`
+	SiteId     int64
+	PluginSlug string
+	Action     string
 }
 
 // RemoteActionSuccessBody is the typed body for session SaveResponse on success.
 type RemoteActionSuccessBody struct {
-	Success bool   `json:"success"`
-	Action  string `json:"action"`
-	Plugin  string `json:"plugin"`
+	IsSuccess bool
+	Action    string
+	Plugin    string
 }
 
 // --- Extracted error details ---
 
 // PhpStackFrame represents a single frame in a PHP stack trace.
 type PhpStackFrame struct {
-	Function string `json:"function"`
-	File     string `json:"file"`
-	Line     int    `json:"line"`
-	Class    string `json:"class,omitempty"`
+	Function string `json:"function"` // external key
+	File     string `json:"file"`     // external key
+	Line     int    `json:"line"`     // external key
+	Class    string `json:"class,omitempty"` // external key
 }
 
 // PhpErrorEntry represents a PHP error entry from the remote WordPress site.
 type PhpErrorEntry struct {
-	Id               int             `json:"id"`
-	Level            string          `json:"level"`
-	Message          string          `json:"message"`
-	File             string          `json:"file"`
-	Line             int             `json:"line"`
-	CreatedAt        string          `json:"createdAt"`
-	StackTraceFrames json.RawMessage `json:"stackTraceFrames,omitempty"`
+	Id               int             `json:"id"`                          // external key
+	Level            string          `json:"level"`                       // external key
+	Message          string          `json:"message"`                     // external key
+	File             string          `json:"file"`                        // external key
+	Line             int             `json:"line"`                        // external key
+	CreatedAt        string          `json:"createdAt"`                   // external key
+	StackTraceFrames json.RawMessage `json:"stackTraceFrames,omitempty"` // external key
 }
 
 // ExtractedErrorDetails carries structured error context extracted from WordPress API errors.
 // This replaces the legacy map[string]any return from extractErrorDetails.
 type ExtractedErrorDetails struct {
-	Error                      string          `json:"error"`
-	Method                     string          `json:"method,omitempty"`
-	Endpoint                   string          `json:"endpoint,omitempty"`
-	Url                        string          `json:"url,omitempty"`
-	StatusCode                 int             `json:"statusCode,omitempty"`
-	RequestBody                string          `json:"requestBody,omitempty"`
-	ResponseBody               string          `json:"responseBody,omitempty"`
-	StackTrace                 string          `json:"stackTrace,omitempty"`
-	PluginSlugIn               string          `json:"pluginSlugIn,omitempty"`
-	PluginIdUsed               string          `json:"pluginIdUsed,omitempty"`
-	ErrorMessage               string          `json:"errorMessage,omitempty"`
-	DelegatedServiceErrorStack []string        `json:"delegatedServiceErrorStack,omitempty"`
-	PhpBackendStack            json.RawMessage `json:"phpBackendStack,omitempty"`
-	StackTraceFrames           []PhpStackFrame `json:"stackTraceFrames,omitempty"`
-	ErrorFile                  string          `json:"errorFile,omitempty"`
-	ErrorLine                  int             `json:"errorLine,omitempty"`
+	Error                      string
+	Method                     string `json:",omitempty"`
+	Endpoint                   string `json:",omitempty"`
+	Url                        string `json:",omitempty"`
+	StatusCode                 int    `json:",omitempty"`
+	RequestBody                string `json:",omitempty"`
+	ResponseBody               string `json:",omitempty"`
+	StackTrace                 string `json:",omitempty"`
+	PluginSlugIn               string `json:",omitempty"`
+	PluginIdUsed               string `json:",omitempty"`
+	ErrorMessage               string `json:",omitempty"`
+	DelegatedServiceErrorStack []string        `json:",omitempty"`
+	PhpBackendStack            json.RawMessage `json:",omitempty"`
+	StackTraceFrames           []PhpStackFrame `json:",omitempty"`
+	ErrorFile                  string          `json:",omitempty"`
+	ErrorLine                  int             `json:",omitempty"`
 	// Enriched by fetchAndAttachRemotePhpErrors
-	RemotePhpErrors          []PhpErrorEntry `json:"remotePHPErrors,omitempty"`
-	RemotePhpErrorCount      int             `json:"remotePHPErrorCount,omitempty"`
-	RemotePhpFlashUnseen     int             `json:"remotePHPFlashUnseen,omitempty"`
-	RemotePhpStackTrace      string          `json:"remotePHPStackTrace,omitempty"`
-	RemotePhpStackTraceLines int             `json:"remotePHPStackTraceLines,omitempty"`
+	RemotePhpErrors          []PhpErrorEntry `json:",omitempty"`
+	RemotePhpErrorCount      int             `json:",omitempty"`
+	RemotePhpFlashUnseen     int             `json:",omitempty"`
+	RemotePhpStackTrace      string          `json:",omitempty"`
+	RemotePhpStackTraceLines int             `json:",omitempty"`
 }
 
 // --- Typed structs for error response parsing (replaces map[string]any in extractErrorDetails) ---
@@ -211,41 +211,41 @@ type ExtractedErrorDetails struct {
 // errorResponseEnvelope is the typed structure for parsing WordPress API error responses.
 // Covers both the modern Errors envelope and the legacy error.details format.
 type errorResponseEnvelope struct {
-	Errors      errorEnvelopeErrors `json:"Errors"`
-	ErrorLegacy errorLegacyBlock    `json:"error"`
+	Errors      errorEnvelopeErrors `json:"Errors"`      // external key (WordPress envelope)
+	ErrorLegacy errorLegacyBlock    `json:"error"`        // external key (legacy format)
 }
 
 // errorEnvelopeErrors holds the modern error envelope fields.
 type errorEnvelopeErrors struct {
-	BackendMessage             string          `json:"BackendMessage"`
-	DelegatedServiceErrorStack []string        `json:"DelegatedServiceErrorStack"`
-	Backend                    json.RawMessage `json:"Backend"`
+	BackendMessage             string          `json:"BackendMessage"`             // external key
+	DelegatedServiceErrorStack []string        `json:"DelegatedServiceErrorStack"` // external key
+	Backend                    json.RawMessage `json:"Backend"`                    // external key
 }
 
 // errorLegacyBlock holds the legacy "error" top-level object.
 type errorLegacyBlock struct {
-	Details errorLegacyDetails `json:"details"`
+	Details errorLegacyDetails `json:"details"` // external key
 }
 
 // errorLegacyDetails holds legacy error detail fields.
 type errorLegacyDetails struct {
-	StackTraceFrames []legacyStackFrame `json:"stackTraceFrames"`
-	FileFull         string             `json:"fileFull"`
-	Line             int                `json:"line"`
+	StackTraceFrames []legacyStackFrame `json:"stackTraceFrames"` // external key
+	FileFull         string             `json:"fileFull"`         // external key
+	Line             int                `json:"line"`             // external key
 }
 
 // legacyStackFrame is a single frame from the legacy PHP stack trace format.
 type legacyStackFrame struct {
-	Function string `json:"function"`
-	File     string `json:"file"`
-	Line     int    `json:"line"`
-	Class    string `json:"class"`
+	Function string `json:"function"` // external key
+	File     string `json:"file"`     // external key
+	Line     int    `json:"line"`     // external key
+	Class    string `json:"class"`    // external key
 }
 
 // remoteActionLogContext holds typed fields extracted from log details JSON
 // for name resolution in logRemoteAction. Replaces map[string]any parsing.
 type remoteActionLogContext struct {
-	SiteName   string `json:"siteName"`
-	SiteUrl    string `json:"siteUrl"`
-	PluginSlug string `json:"pluginSlug"`
+	SiteName   string
+	SiteUrl    string
+	PluginSlug string
 }

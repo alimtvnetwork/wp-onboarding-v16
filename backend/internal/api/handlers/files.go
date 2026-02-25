@@ -19,7 +19,7 @@ import (
 
 // FileContentRequest is the request body for file content endpoints
 type FileContentRequest struct {
-	Path string `json:"path"`
+	Path string
 }
 
 // GetLocalFileContent returns the content of a local file in a plugin

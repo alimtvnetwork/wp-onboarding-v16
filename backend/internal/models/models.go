@@ -8,171 +8,171 @@ import (
 
 // Site represents a WordPress site connection
 type Site struct {
-	Id                int64      `json:"id"`
-	Name              string     `json:"name"`
-	Url               string     `json:"url"`
-	Username          string     `json:"username"`
+	Id                int64
+	Name              string
+	Url               string
+	Username          string
 	PasswordEncrypted []byte     `json:"-"`
-	Category          string     `json:"category"`
-	ConnectionStatus  string     `json:"connectionStatus"`
-	LastTestedAt      *time.Time `json:"lastTestedAt,omitempty"`
-	LastSyncAt        *time.Time `json:"lastSyncAt,omitempty"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         time.Time  `json:"updatedAt"`
+	Category          string
+	ConnectionStatus  string
+	LastTestedAt      *time.Time `json:",omitempty"`
+	LastSyncAt        *time.Time `json:",omitempty"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 // Plugin represents a local plugin directory
 type Plugin struct {
-	Id              int64           `json:"id"`
-	Name            string          `json:"name"`
-	Path            string          `json:"path"`
-	Category        string          `json:"category"`
-	WatchEnabled    bool            `json:"watchEnabled"`
-	AutoPublish     bool            `json:"autoPublish"`
-	ExcludePatterns []string        `json:"excludePatterns"`
-	FileCount       int             `json:"fileCount"`
-	ModifiedCount   int             `json:"modifiedCount,omitempty"`
-	LastScannedAt   *time.Time      `json:"lastScannedAt,omitempty"`
-	Mappings        []PluginMapping `json:"mappings,omitempty"`
-	GitEnabled      bool            `json:"gitEnabled"`
-	CreatedAt       time.Time       `json:"createdAt"`
-	UpdatedAt       time.Time       `json:"updatedAt"`
+	Id              int64
+	Name            string
+	Path            string
+	Category        string
+	WatchEnabled    bool
+	AutoPublish     bool
+	ExcludePatterns []string
+	FileCount       int
+	ModifiedCount   int             `json:",omitempty"`
+	LastScannedAt   *time.Time      `json:",omitempty"`
+	Mappings        []PluginMapping `json:",omitempty"`
+	GitEnabled      bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // PluginMapping represents the relationship between a plugin and a site
 type PluginMapping struct {
-	Id           int64      `json:"id"`
-	PluginId     int64      `json:"pluginId"`
-	SiteId       int64      `json:"siteId"`
-	SiteName     string     `json:"siteName,omitempty"`
-	SiteUrl      string     `json:"siteUrl,omitempty"`
-	RemoteSlug   string     `json:"remoteSlug"`
-	SyncStatus   string     `json:"syncStatus"`
-	LastSyncAt   *time.Time `json:"lastSyncAt,omitempty"`
-	LastBackupAt *time.Time `json:"lastBackupAt,omitempty"`
-	CreatedAt    time.Time  `json:"createdAt"`
-	UpdatedAt    time.Time  `json:"updatedAt"`
+	Id           int64
+	PluginId     int64
+	SiteId       int64
+	SiteName     string     `json:",omitempty"`
+	SiteUrl      string     `json:",omitempty"`
+	RemoteSlug   string
+	SyncStatus   string
+	LastSyncAt   *time.Time `json:",omitempty"`
+	LastBackupAt *time.Time `json:",omitempty"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // FileChange represents a detected file modification
 type FileChange struct {
-	Id               int64      `json:"id"`
-	PluginId         int64      `json:"pluginId"`
-	FilePath         string     `json:"path"`
-	ChangeType       string     `json:"status"`
-	LocalHash        string     `json:"localHash,omitempty"`
-	RemoteHash       string     `json:"remoteHash,omitempty"`
-	LocalModifiedAt  *time.Time `json:"localModifiedAt,omitempty"`
-	RemoteModifiedAt *time.Time `json:"remoteModifiedAt,omitempty"`
-	LocalSize        int64      `json:"localSize,omitempty"`
-	RemoteSize       int64      `json:"remoteSize,omitempty"`
-	Direction        string     `json:"direction,omitempty"`
-	DetectedAt       time.Time  `json:"detectedAt"`
-	SyncedAt         *time.Time `json:"syncedAt,omitempty"`
-	Stats            *FileStats `json:"stats,omitempty"`
+	Id               int64
+	PluginId         int64
+	FilePath         string
+	ChangeType       string
+	LocalHash        string     `json:",omitempty"`
+	RemoteHash       string     `json:",omitempty"`
+	LocalModifiedAt  *time.Time `json:",omitempty"`
+	RemoteModifiedAt *time.Time `json:",omitempty"`
+	LocalSize        int64      `json:",omitempty"`
+	RemoteSize       int64      `json:",omitempty"`
+	Direction        string     `json:",omitempty"`
+	DetectedAt       time.Time
+	SyncedAt         *time.Time `json:",omitempty"`
+	Stats            *FileStats `json:",omitempty"`
 }
 
 // FileStats holds diff statistics for a file
 type FileStats struct {
-	Additions int `json:"additions"`
-	Deletions int `json:"deletions"`
+	Additions int
+	Deletions int
 }
 
 // SyncRecord represents a sync operation history entry
 type SyncRecord struct {
-	Id              int64      `json:"id"`
-	PluginMappingId int64      `json:"pluginMappingId"`
-	SyncType        string     `json:"syncType"`
-	Status          string     `json:"status"`
-	FilesChecked    int        `json:"filesChecked"`
-	FilesChanged    int        `json:"filesChanged"`
-	FilesUploaded   int        `json:"filesUploaded"`
-	ErrorMessage    string     `json:"errorMessage,omitempty"`
-	StartedAt       time.Time  `json:"startedAt"`
-	CompletedAt     *time.Time `json:"completedAt,omitempty"`
+	Id              int64
+	PluginMappingId int64
+	SyncType        string
+	Status          string
+	FilesChecked    int
+	FilesChanged    int
+	FilesUploaded   int
+	ErrorMessage    string     `json:",omitempty"`
+	StartedAt       time.Time
+	CompletedAt     *time.Time `json:",omitempty"`
 }
 
 // Backup represents a plugin backup record
 type Backup struct {
-	Id              int64      `json:"id"`
-	PluginMappingId int64      `json:"pluginMappingId"`
-	FilePath        string     `json:"filePath"`
-	FileSize        int64      `json:"fileSize"`
-	PluginVersion   string     `json:"pluginVersion,omitempty"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
+	Id              int64
+	PluginMappingId int64
+	FilePath        string
+	FileSize        int64
+	PluginVersion   string     `json:",omitempty"`
+	CreatedAt       time.Time
+	ExpiresAt       *time.Time `json:",omitempty"`
 }
 
 // PluginVersion represents a publish operation history entry for rollback support
 type PluginVersion struct {
-	Id            int64     `json:"id"`
-	PluginId      int64     `json:"pluginId"`
-	SiteId        int64     `json:"siteId"`
-	SiteName      string    `json:"siteName,omitempty"`
-	Version       string    `json:"version"`
-	BackupPath    string    `json:"backupPath,omitempty"`
-	FilesUpdated  int       `json:"filesUpdated"`
-	GitCommitHash string    `json:"gitCommitHash,omitempty"`
-	PublishType   string    `json:"publishType"`
-	Status        string    `json:"status"`
-	Notes         string    `json:"notes,omitempty"`
-	CreatedAt     time.Time `json:"createdAt"`
+	Id            int64
+	PluginId      int64
+	SiteId        int64
+	SiteName      string `json:",omitempty"`
+	Version       string
+	BackupPath    string `json:",omitempty"`
+	FilesUpdated  int
+	GitCommitHash string `json:",omitempty"`
+	PublishType   string
+	Status        string
+	Notes         string `json:",omitempty"`
+	CreatedAt     time.Time
 }
 
 // ErrorLog represents an application error entry
 type ErrorLog struct {
-	Id         int64           `json:"id"`
-	Code       string          `json:"code"`
-	Level      string          `json:"level"`
-	Message    string          `json:"message"`
-	Details    string          `json:"details,omitempty"`
-	Context    json.RawMessage `json:"context,omitempty"`
-	File       string          `json:"file,omitempty"`
-	Line       int             `json:"line,omitempty"`
-	Function   string          `json:"function,omitempty"`
-	StackTrace string          `json:"stackTrace,omitempty"`
-	CreatedAt  time.Time       `json:"createdAt"`
+	Id         int64
+	Code       string
+	Level      string
+	Message    string
+	Details    string          `json:",omitempty"`
+	Context    json.RawMessage `json:",omitempty"`
+	File       string          `json:",omitempty"`
+	Line       int             `json:",omitempty"`
+	Function   string          `json:",omitempty"`
+	StackTrace string          `json:",omitempty"`
+	CreatedAt  time.Time
 }
 
 // Settings represents application settings
 type Settings struct {
-	Watcher    WatcherSettings    `json:"watcher"`
-	Backup     BackupSettings     `json:"backup"`
-	Logging    LoggingSettings    `json:"logging"`
-	Appearance AppearanceSettings `json:"appearance"`
-	Server     ServerSettings     `json:"server"`
+	Watcher    WatcherSettings
+	Backup     BackupSettings
+	Logging    LoggingSettings
+	Appearance AppearanceSettings
+	Server     ServerSettings
 }
 
 // WatcherSettings holds file watcher configuration
 type WatcherSettings struct {
-	PollIntervalMs         int      `json:"pollIntervalMs"`
-	DebounceMs             int      `json:"debounceMs"`
-	DefaultExcludePatterns []string `json:"defaultExcludePatterns"`
+	PollIntervalMs         int
+	DebounceMs             int
+	DefaultExcludePatterns []string
 }
 
 // BackupSettings holds backup configuration
 type BackupSettings struct {
-	AutoBackupBeforePublish bool   `json:"autoBackupBeforePublish"`
-	RetentionDays           int    `json:"retentionDays"`
-	MaxBackupsPerPlugin     int    `json:"maxBackupsPerPlugin"`
-	Location                string `json:"location"`
+	AutoBackupBeforePublish bool
+	RetentionDays           int
+	MaxBackupsPerPlugin     int
+	Location                string
 }
 
 // LoggingSettings holds logging configuration
 type LoggingSettings struct {
-	Level         string `json:"level"`
-	RetentionDays int    `json:"retentionDays"`
-	DebugMode     bool   `json:"debugMode"`
+	Level         string
+	RetentionDays int
+	DebugMode     bool
 }
 
 // AppearanceSettings holds UI configuration
 type AppearanceSettings struct {
-	Theme       string `json:"theme"`
-	CompactMode bool   `json:"compactMode"`
+	Theme       string
+	CompactMode bool
 }
 
 // ServerSettings holds server configuration
 type ServerSettings struct {
-	Port               int `json:"port"`
-	WSReconnectDelayMs int `json:"wsReconnectDelayMs"`
+	Port               int
+	WSReconnectDelayMs int
 }

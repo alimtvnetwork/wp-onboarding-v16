@@ -19,27 +19,27 @@ type SessionContextKey struct{}
 
 // RequestSession contains session data for a single API request
 type RequestSession struct {
-	ID            string                 `json:"id"`
-	Method        string                 `json:"method"`
-	Path          string                 `json:"path"`
-	Query         string                 `json:"query,omitempty"`
-	RequestBody   string                 `json:"requestBody,omitempty"`
-	ResponseBody  string                 `json:"responseBody,omitempty"`
-	StatusCode    int                    `json:"statusCode"`
-	StartedAt     time.Time              `json:"startedAt"`
-	EndedAt       time.Time              `json:"endedAt"`
-	DurationMs    int64                  `json:"durationMs"`
-	Error         string                 `json:"error,omitempty"`
-	Logs          []SessionLogEntry      `json:"logs"`
-	Headers       map[string]string      `json:"headers,omitempty"`
+	ID            string
+	Method        string
+	Path          string
+	Query         string              `json:",omitempty"`
+	RequestBody   string              `json:",omitempty"`
+	ResponseBody  string              `json:",omitempty"`
+	StatusCode    int
+	StartedAt     time.Time
+	EndedAt       time.Time
+	DurationMs    int64
+	Error         string              `json:",omitempty"`
+	Logs          []SessionLogEntry
+	Headers       map[string]string   `json:",omitempty"`
 }
 
 // SessionLogEntry is a single log entry within a request session
 type SessionLogEntry struct {
-	Timestamp string          `json:"timestamp"`
-	Level     string          `json:"level"`
-	Message   string          `json:"message"`
-	Details   json.RawMessage `json:"details,omitempty"`
+	Timestamp string
+	Level     string
+	Message   string
+	Details   json.RawMessage `json:",omitempty"`
 }
 
 // SessionStore interface for persisting request sessions
@@ -191,9 +191,9 @@ func truncateBody(body string, maxLen int) string {
 func extractErrorFromResponse(body string) string {
 	var response struct {
 		Error struct {
-			Message string `json:"message"`
-			Code    string `json:"code"`
-		} `json:"error"`
+			Message string `json:"message"` // external key (our own envelope format)
+			Code    string `json:"code"`    // external key
+		} `json:"error"` // external key
 	}
 	if err := json.Unmarshal([]byte(body), &response); err == nil && response.Error.Message != "" {
 		if response.Error.Code != "" {

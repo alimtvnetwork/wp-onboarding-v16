@@ -13,35 +13,35 @@ import (
 
 // ScheduleConfig holds scheduling settings
 type ScheduleConfig struct {
-	Enabled   bool   `json:"enabled"`
-	CronExpr  string `json:"cronExpr"`  // Simplified: "daily:HH:MM", "weekly:DAY:HH:MM"
-	Timezone  string `json:"timezone"`
+	IsEnabled bool   // Simplified: "daily:HH:MM", "weekly:DAY:HH:MM"
+	CronExpr  string
+	Timezone  string
 }
 
 // ScheduledJob represents a scheduled publish operation
 type ScheduledJob struct {
-	Id          string          `json:"id"`
-	PluginId    int64           `json:"pluginId"`
-	PluginName  string          `json:"pluginName"`
-	SiteIds     []int64         `json:"siteIds"`    // Target sites (empty = all mapped)
-	SiteNames   []string        `json:"siteNames"`
-	Schedule    ScheduleConfig  `json:"schedule"`
-	Options     PublishOptions  `json:"options"`
-	CreatedAt   time.Time       `json:"createdAt"`
-	LastRunAt   *time.Time      `json:"lastRunAt,omitempty"`
-	NextRunAt   *time.Time      `json:"nextRunAt,omitempty"`
-	LastStatus  string          `json:"lastStatus"` // "success", "partial", "failed", "never"
-	Enabled     bool            `json:"enabled"`
+	Id         string
+	PluginId   int64
+	PluginName string
+	SiteIds    []int64 // Target sites (empty = all mapped)
+	SiteNames  []string
+	Schedule   ScheduleConfig
+	Options    PublishOptions
+	CreatedAt  time.Time
+	LastRunAt  *time.Time `json:",omitempty"`
+	NextRunAt  *time.Time `json:",omitempty"`
+	LastStatus string     // "success", "partial", "failed", "never"
+	IsEnabled  bool
 }
 
 // ScheduledJobResult captures the outcome of a scheduled run
 type ScheduledJobResult struct {
-	JobId       string    `json:"jobId"`
-	RunAt       time.Time `json:"runAt"`
-	TotalSites  int       `json:"totalSites"`
-	Succeeded   int       `json:"succeeded"`
-	Failed      int       `json:"failed"`
-	Duration    int64     `json:"durationMs"`
+	JobId      string
+	RunAt      time.Time
+	TotalSites int
+	Succeeded  int
+	Failed     int
+	DurationMs int64
 }
 
 // PublishScheduler manages scheduled publish operations

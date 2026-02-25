@@ -156,7 +156,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	result := &ConnectionResult{}
 	connInfo, err := client.TestConnection()
 	if err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Message = err.Error()
 		s.broadcastProgress(id, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJson(ConnectionFailureDetails{
 			Url:      site.Url,
@@ -170,7 +170,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 		return result, nil
 	}
 
-	result.Success = true
+	result.IsSuccess = true
 	result.WPVersion = connInfo.WPVersion
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
@@ -183,7 +183,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	s.updateConnectionStatus(ctx, id, connectionstatus.Connected.DBValue())
 	s.broadcastProgress(id, connectionstep.Complete.String(), stagestatus.Completed.String(), "Connection test completed successfully", nil)
 
-	s.log.Info("Site connection tested", "id", id, "success", result.Success)
+	s.log.Info("Site connection tested", "id", id, "success", result.IsSuccess)
 
 	return result, nil
 }
@@ -209,7 +209,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteUrl, us
 	result := &ConnectionResult{}
 	connInfo, err := client.TestConnection()
 	if err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Message = err.Error()
 		s.broadcastProgress(0, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJson(ConnectionFailureDetails{
 			Url:      normalizedUrl,
@@ -219,7 +219,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteUrl, us
 		return result, nil
 	}
 
-	result.Success = true
+	result.IsSuccess = true
 	result.WPVersion = connInfo.WPVersion
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
@@ -261,10 +261,10 @@ func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, e
 
 // ConnectionResult represents the result of a connection test
 type ConnectionResult struct {
-	Success         bool   `json:"success"`
-	WPVersion       string `json:"wpVersion,omitempty"`
-	PluginsEndpoint bool   `json:"pluginsEndpoint"`
-	Message         string `json:"message,omitempty"`
+	IsSuccess       bool
+	WPVersion       string `json:",omitempty"`
+	PluginsEndpoint bool
+	Message         string `json:",omitempty"`
 }
 
 // normalizeUrl normalizes a URL for consistent storage
@@ -431,7 +431,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		"siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", uploadResult.Activated)
 
 	return &BootstrapResult{
-		Success:   true,
+		IsSuccess: true,
 		SiteId:    id,
 		SiteName:  site.Name,
 		Message:   "Riseup Asia Uploader deployed successfully",
@@ -447,11 +447,11 @@ func (s *Service) checkOnboardAvailable(client *wordpress.Client) bool {
 
 // BootstrapResult represents the result of bootstrapping the uploader to a site
 type BootstrapResult struct {
-	Success   bool   `json:"success"`
-	SiteId    int64  `json:"siteId"`
-	SiteName  string `json:"siteName"`
-	Message   string `json:"message"`
-	Activated bool   `json:"activated"`
+	IsSuccess bool
+	SiteId    int64
+	SiteName  string
+	Message   string
+	Activated bool
 }
 
 // createUploaderZip creates a ZIP file of the uploader plugin
@@ -573,23 +573,23 @@ func shouldSkipFile(relPath string) bool {
 
 // RemotePlugin represents a plugin installed on a remote WordPress site
 type RemotePlugin struct {
-	Plugin      string `json:"plugin"`
-	Slug        string `json:"slug"`
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	Status      string `json:"status"`
-	Author      string `json:"author"`
-	Description string `json:"description"`
-	PluginURI   string `json:"pluginUri"`
-	TextDomain  string `json:"textDomain"`
+	Plugin      string `json:"plugin"`      // external key (WordPress REST API)
+	Slug        string `json:"slug"`        // external key
+	Name        string `json:"name"`        // external key
+	Version     string `json:"version"`     // external key
+	Status      string `json:"status"`      // external key
+	Author      string `json:"author"`      // external key
+	Description string `json:"description"` // external key
+	PluginURI   string `json:"pluginUri"`   // external key
+	TextDomain  string `json:"textDomain"`  // external key
 }
 
 // RemotePluginsResult wraps remote plugins with cache metadata
 type RemotePluginsResult struct {
-	Plugins  []RemotePlugin `json:"plugins"`
-	FromCache bool           `json:"fromCache"`
-	CachedAt  *time.Time     `json:"cachedAt,omitempty"`
-	ExpiresAt *time.Time     `json:"expiresAt,omitempty"`
+	Plugins   []RemotePlugin
+	FromCache bool
+	CachedAt  *time.Time `json:",omitempty"`
+	ExpiresAt *time.Time `json:",omitempty"`
 }
 
 // GetRemotePlugins fetches all plugins installed on a remote WordPress site (with caching)
@@ -1426,9 +1426,9 @@ func (s *Service) logToErrorFile(action string, siteId int64, pluginSlug, siteNa
 
 // SiteCredentials holds decrypted credentials for API access
 type SiteCredentials struct {
-	Url         string `json:"url"`
-	Username    string `json:"username"`
-	AppPassword string `json:"appPassword"`
+	Url         string
+	Username    string
+	AppPassword string
 }
 
 // GetCredentials returns the decrypted credentials for a site (for API Explorer)
@@ -1459,17 +1459,17 @@ func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCreden
 
 // RemotePluginFile represents a file in a remote plugin
 type RemotePluginFile struct {
-	Path       string    `json:"path"`
-	Hash       string    `json:"hash"`
-	Size       int64     `json:"size"`
-	ModifiedAt time.Time `json:"modifiedAt,omitempty"`
+	Path       string    `json:"path"`       // external key (Riseup Asia Uploader API)
+	Hash       string    `json:"hash"`       // external key
+	Size       int64     `json:"size"`       // external key
+	ModifiedAt time.Time `json:"modifiedAt,omitempty"` // external key
 }
 
 // RemotePluginFilesResult wraps the file list result
 type RemotePluginFilesResult struct {
-	PluginSlug string             `json:"pluginSlug"`
-	TotalFiles int                `json:"totalFiles"`
-	Files      []RemotePluginFile `json:"files"`
+	PluginSlug string             `json:"pluginSlug"` // external key
+	TotalFiles int                `json:"totalFiles"` // external key
+	Files      []RemotePluginFile `json:"files"`      // external key
 }
 
 // GetRemotePluginFiles fetches the file list for a remote plugin via Riseup Asia Uploader
