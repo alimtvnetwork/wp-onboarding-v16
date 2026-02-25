@@ -81,32 +81,22 @@ func snapshotEndpoint(path ep.Variant) string {
 // GetSnapshots lists all snapshots on the remote site.
 func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsList)
-	resp, err := c.request("GET", endpoint, nil)
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "get snapshots",
+	})
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshots")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "get snapshots",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
+		return nil, err
 	}
 
 	var result struct {
 		Snapshots []SnapshotRecord `json:"snapshots"` // external key
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		var snapshots []SnapshotRecord
+	if err := json.Unmarshal(data, &result); err != nil {
+		// Retry with plain array fallback
 		resp2, _ := c.request("GET", endpoint, nil)
 		if resp2 != nil {
 			defer resp2.Body.Close()
+			var snapshots []SnapshotRecord
 			if err2 := json.NewDecoder(resp2.Body).Decode(&snapshots); err2 == nil {
 				return snapshots, nil
 			}
@@ -119,175 +109,51 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).
 func (c *Client) GetSnapshot(snapshotId int64) (*SnapshotRecord, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsInfo)
-	reqBody := SnapshotIdRequest{Id: snapshotId}
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "get snapshot",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var snapshot SnapshotRecord
-	if err := json.NewDecoder(resp.Body).Decode(&snapshot); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode snapshot response")
-	}
-
-	return &snapshot, nil
+	return doAPICall[SnapshotRecord](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsInfo),
+		Body: SnapshotIdRequest{Id: snapshotId}, Operation: "get snapshot",
+	})
 }
 
 // CreateSnapshot triggers a new snapshot on the remote site.
 func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResult, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsSchedule)
-	resp, err := c.request("POST", endpoint, opts)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create snapshot")
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
-		return nil, &APIError{
-			Operation:    "create snapshot",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var result SnapshotCreateResult
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode create snapshot response")
-	}
-
-	return &result, nil
+	return doAPICall[SnapshotCreateResult](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsSchedule),
+		Body: opts, Operation: "create snapshot",
+		OkStatuses: []int{http.StatusOK, http.StatusCreated},
+	})
 }
 
 // DeleteSnapshot removes a snapshot from the remote site (ID in JSON body).
 func (c *Client) DeleteSnapshot(snapshotId int64) error {
-	endpoint := snapshotEndpoint(ep.SnapshotsDelete)
-	reqBody := SnapshotIdRequest{Id: snapshotId}
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrInternal, "failed to delete snapshot")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusNoContent.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return &APIError{
-			Operation:    "delete snapshot",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	return nil
+	_, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsDelete),
+		Body: SnapshotIdRequest{Id: snapshotId}, Operation: "delete snapshot",
+		OkStatuses: []int{http.StatusOK, http.StatusNoContent},
+	})
+	return err
 }
 
 // RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
 func (c *Client) RestoreSnapshot(snapshotId int64) (*SnapshotRestoreResult, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsRestore)
-	reqBody := SnapshotRestoreOptions{
-		Id:      snapshotId,
-		Confirm: true,
-	}
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to restore snapshot")
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != HttpStatusOk.Int() {
-		return nil, &APIError{
-			Operation:    "restore snapshot",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var result SnapshotRestoreResult
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode restore response")
-	}
-
-	return &result, nil
+	return doAPICall[SnapshotRestoreResult](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsRestore),
+		Body: SnapshotRestoreOptions{Id: snapshotId, Confirm: true}, Operation: "restore snapshot",
+	})
 }
 
 // GetSnapshotSettings fetches snapshot settings from the remote site.
 func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsSettings)
-	resp, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot settings")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "get snapshot settings",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var settings SnapshotSettings
-	if err := json.NewDecoder(resp.Body).Decode(&settings); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode snapshot settings")
-	}
-
-	return &settings, nil
+	return doAPICall[SnapshotSettings](c, apiCallInput{
+		Method: "GET", Endpoint: snapshotEndpoint(ep.SnapshotsSettings),
+		Operation: "get snapshot settings",
+	})
 }
 
 // UpdateSnapshotSettings updates snapshot settings on the remote site.
 func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSettings, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsSettings)
-	resp, err := c.request("POST", endpoint, settings)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to update snapshot settings")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "update snapshot settings",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var result SnapshotSettings
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode updated settings")
-	}
-
-	return &result, nil
+	return doAPICall[SnapshotSettings](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsSettings),
+		Body: settings, Operation: "update snapshot settings",
+	})
 }

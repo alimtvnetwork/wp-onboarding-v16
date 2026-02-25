@@ -2,9 +2,9 @@ package wordpress
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -28,60 +28,20 @@ type SnapshotBackupResult struct {
 
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
 func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsFullBackup)
-	resp, err := c.request("POST", endpoint, opts)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger full backup")
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
-		return nil, &APIError{
-			Operation:    "full backup",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var result SnapshotBackupResult
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode full backup response")
-	}
-
-	return &result, nil
+	return doAPICall[SnapshotBackupResult](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsFullBackup),
+		Body: opts, Operation: "full backup",
+		OkStatuses: []int{http.StatusOK, http.StatusCreated},
+	})
 }
 
 // IncrementalBackup triggers an incremental backup against the latest master snapshot.
 func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsIncremental)
-	resp, err := c.request("POST", endpoint, opts)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger incremental backup")
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
-		return nil, &APIError{
-			Operation:    "incremental backup",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var result SnapshotBackupResult
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode incremental backup response")
-	}
-
-	return &result, nil
+	return doAPICall[SnapshotBackupResult](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsIncremental),
+		Body: opts, Operation: "incremental backup",
+		OkStatuses: []int{http.StatusOK, http.StatusCreated},
+	})
 }
 
 // SnapshotImportResult holds the result of an import operation.
@@ -122,23 +82,13 @@ func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
-		return nil, &APIError{
-			Operation:    "import snapshot",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
+	if !isOkStatus(resp.StatusCode, []int{http.StatusOK, http.StatusCreated}) {
+		return nil, c.buildCallError(apiCallInput{
+			Method: "POST", Endpoint: endpoint, Operation: "import snapshot",
+		}, resp.StatusCode, bodyBytes)
 	}
 
-	var result SnapshotImportResult
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode import response")
-	}
-
-	return &result, nil
+	return decodeAPIResponse[SnapshotImportResult](bodyBytes, "import snapshot")
 }
 
 // SnapshotCleanupOptions holds options for snapshot cleanup.
@@ -156,29 +106,8 @@ type SnapshotCleanupResult struct {
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
 func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanupResult, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsCleanup)
-	resp, err := c.request("POST", endpoint, opts)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger snapshot cleanup")
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != HttpStatusOk.Int() {
-		return nil, &APIError{
-			Operation:    "snapshot cleanup",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var result SnapshotCleanupResult
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode cleanup response")
-	}
-
-	return &result, nil
+	return doAPICall[SnapshotCleanupResult](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsCleanup),
+		Body: opts, Operation: "snapshot cleanup",
+	})
 }
