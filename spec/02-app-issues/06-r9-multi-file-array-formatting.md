@@ -29,12 +29,12 @@
 1. **Prevention rule:** Every array literal, function signature, and function call with >2 items must have one item per line with a trailing comma (R9).
 2. **Acceptance criteria:** No PHP array or call with >2 items should have multiple items on a single line.
 3. **Guardrails:** Manual review during all PRs; future linting automation recommended.
-4. **Spec references:** `/spec/01-app/formatting-rules-reference.md` (R9a, R9b, R9c).
+4. **Spec references:** `../01-app/formatting-rules-reference.md` (R9a, R9b, R9c).
 
 ## Done Checklist
 
-- [x] Spec already covers this under `/spec/01-app/formatting-rules-reference.md`
-- [x] Issue write-up created under `/spec/02-app-issues/06-r9-multi-file-array-formatting.md`
+- [x] Spec already covers this under `../01-app/formatting-rules-reference.md`
+- [x] Issue write-up created under `./06-r9-multi-file-array-formatting.md`
 - [x] Memory updated with prevention rule
 - [x] Acceptance criteria documented above
 - [ ] Iterations: not applicable (single-pass fix)

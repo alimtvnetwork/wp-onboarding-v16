@@ -39,7 +39,7 @@
 1. **Prevention rule**: When a database migration renames columns, ALL consumer code reading from those tables must be updated in the same commit. Use `grep -r "old_column_name"` to find all references.
 2. **Acceptance criteria**: Search for any snake_case string matching a known DB column name in PHP code outside of migration files and backward-compat maps — zero results expected.
 3. **Guardrails**: Add a CI grep check: `grep -rn "'[a-z_]*_[a-z]'" --include="*.php" includes/ | grep -v "Migration\|RootDb\|V1[0-9]\|_snapshot_meta\|__(\|esc_html"` should return only persistence-exempt keys.
-4. **Spec references**: `/spec/01-app/enum-consumer-checklist.md` (updated to include DB column reference rule).
+4. **Spec references**: `../01-app/enum-consumer-checklist.md` (updated to include DB column reference rule).
 
 ## TODO and Follow-Ups
 
@@ -48,8 +48,8 @@
 
 ## Done Checklist
 
-- [x] Spec updated under /spec/01-app/
-- [x] Issue write-up created under /spec/02-app-issues/
+- [x] Spec updated under ../01-app/
+- [x] Issue write-up created under ./
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [x] Iterations recorded if applicable (N/A — single pass)

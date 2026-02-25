@@ -23,7 +23,7 @@
 
 ## Fix Description
 
-1. **What was changed in the spec:** `/spec/01-app/formatting-rules-reference.md` created as the canonical spec for all formatting rules, including R9c.
+1. **What was changed in the spec:** `../01-app/formatting-rules-reference.md` created as the canonical spec for all formatting rules, including R9c.
 2. **New rules or constraints added:** R9c explicitly states: PHP array literals with more than 2 items must be written line-by-line with one item per line and a trailing comma.
 3. **Why the fix resolves the root cause:** Having the rule in a spec file (not just memory) makes it discoverable and enforceable.
 4. **Config changes or defaults affected:** None.
@@ -34,7 +34,7 @@
 1. **Prevention rule:** Before committing any PHP file, verify that no array literal has more than 2 items on a single line.
 2. **Acceptance criteria:** `grep -Pn 'array\(.*,.*,.*\)' --include='*.php'` returns zero matches in non-vendor files.
 3. **Guardrails or linting policies:** A future PHP-CS-Fixer rule could enforce this automatically.
-4. **References to updated spec sections:** `/spec/01-app/formatting-rules-reference.md`
+4. **References to updated spec sections:** `../01-app/formatting-rules-reference.md`
 
 ## TODO and Follow-Ups
 
@@ -42,8 +42,8 @@
 
 ## Done Checklist
 
-- [x] Spec updated under `/spec/01-app/`
-- [x] Issue write-up created under `/spec/02-app-issues/`
+- [x] Spec updated under `../01-app/`
+- [x] Issue write-up created under `./`
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable — N/A (single-pass fix)

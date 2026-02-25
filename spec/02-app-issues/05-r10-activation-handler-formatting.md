@@ -23,7 +23,7 @@
 
 ## Fix Description
 
-1. **What was changed in the spec:** `/spec/01-app/formatting-rules-reference.md` now explicitly lists R10 with examples.
+1. **What was changed in the spec:** `../01-app/formatting-rules-reference.md` now explicitly lists R10 with examples.
 2. **New rules or constraints added:** R10: A blank line is mandatory before control structures when preceded by statements like assignments or function calls.
 3. **Why the fix resolves the root cause:** The spec + completed sweep ensures all existing violations are fixed and future ones are prevented.
 4. **Config changes or defaults affected:** None.
@@ -34,7 +34,7 @@
 1. **Prevention rule:** Before committing any PHP file, verify that every `if`/`foreach`/`switch`/`match` preceded by an assignment has a blank line separator.
 2. **Acceptance criteria:** Visual inspection or grep-based pattern detection for `;\n    if (` (assignment immediately followed by control structure).
 3. **Guardrails or linting policies:** A future PHP-CS-Fixer custom rule could enforce R10.
-4. **References to updated spec sections:** `/spec/01-app/formatting-rules-reference.md`
+4. **References to updated spec sections:** `../01-app/formatting-rules-reference.md`
 
 ## TODO and Follow-Ups
 
@@ -42,8 +42,8 @@
 
 ## Done Checklist
 
-- [x] Spec updated under `/spec/01-app/`
-- [x] Issue write-up created under `/spec/02-app-issues/`
+- [x] Spec updated under `../01-app/`
+- [x] Issue write-up created under `./`
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable — N/A (single-pass fix)

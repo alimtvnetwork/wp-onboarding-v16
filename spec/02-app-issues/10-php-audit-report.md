@@ -3,7 +3,7 @@
 > **Date:** 2026-02-25
 > **Status:** All 4 phases resolved
 > **Scope:** `wp-plugins/riseup-asia-uploader/includes/` — all Enums, Classes, and Traits
-> **References:** `spec/01-app/formatting-rules-reference.md`, `.lovable/memory/architecture/php/naming-conventions.md`, `.lovable/memory/architecture/database/pascal-case-naming-convention.md`
+> **References:** `../01-app/formatting-rules-reference.md`, `.lovable/memory/architecture/php/naming-conventions.md`, `.lovable/memory/architecture/database/pascal-case-naming-convention.md`
 
 ---
 

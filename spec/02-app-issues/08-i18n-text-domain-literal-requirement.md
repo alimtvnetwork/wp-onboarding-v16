@@ -14,11 +14,11 @@
 1. **Direct cause:** The text domain string `'riseup-asia-uploader'` appears hundreds of times across template files, making it look like a magic string violation.
 2. **Contributing factors:** The project's strict "no hardcoded identity strings" policy (from `PluginConfigType` enum standard) creates an expectation that *all* repeated plugin-identity strings should use the enum. The i18n exemption was documented but not prominent enough.
 3. **Triggering conditions:** Any review or audit that flags repeated string literals without checking the exemption list.
-4. **Why the existing spec did not prevent it:** The exemption was listed in `.lovable/memory/architecture/php/plugin-identity-standard.md` under "Codebase Audit — Confirmed Clean" but was not called out as a top-level rule in the spec files under `/spec/01-app/`.
+4. **Why the existing spec did not prevent it:** The exemption was listed in `.lovable/memory/architecture/php/plugin-identity-standard.md` under "Codebase Audit — Confirmed Clean" but was not called out as a top-level rule in the spec files under `../01-app/`.
 
 ## Fix Description
 
-1. **Spec change:** Added explicit "WordPress i18n Text Domain Constraint" section to `/spec/01-app/enum-consumer-checklist.md` stating that i18n text domains are permanently exempt from enum replacement.
+1. **Spec change:** Added explicit "WordPress i18n Text Domain Constraint" section to `../01-app/enum-consumer-checklist.md` stating that i18n text domains are permanently exempt from enum replacement.
 2. **New rule:** `RULE-I18N-LITERAL`: WordPress i18n function calls (`__()`, `_e()`, `esc_html__()`, `esc_html_e()`, `esc_attr__()`, `esc_attr_e()`, `_n()`, `_x()`) **must** use a literal string for the text domain parameter. Constants, variables, or enum values are prohibited.
 3. **Why it resolves the root cause:** Makes the exemption a first-class, searchable rule rather than a footnote in an audit summary.
 4. **Config changes:** None.
@@ -30,7 +30,7 @@
 2. **Acceptance criteria:** All i18n calls across the codebase use the literal string `'riseup-asia-uploader'` as the text domain. Running `wp i18n make-pot` produces a `.pot` file containing all translatable strings.
 3. **Guardrails:** Any future audit or refactoring tool must skip i18n text domain parameters when flagging "magic strings."
 4. **Spec references:**
-   - `/spec/01-app/enum-consumer-checklist.md` — "WordPress i18n Text Domain Constraint" section
+   - `../01-app/enum-consumer-checklist.md` — "WordPress i18n Text Domain Constraint" section
    - `.lovable/memory/architecture/php/plugin-identity-standard.md` — existing exemption list
 
 ## TODO and Follow-Ups
@@ -39,8 +39,8 @@
 
 ## Done Checklist
 
-- [x] Spec updated under `/spec/01-app/`
-- [x] Issue write-up created under `/spec/02-app-issues/`
+- [x] Spec updated under `../01-app/`
+- [x] Issue write-up created under `./`
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable — N/A (single iteration, no fix needed)

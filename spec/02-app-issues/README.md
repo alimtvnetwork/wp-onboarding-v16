@@ -10,7 +10,7 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 ## File Naming
 
 ```
-/spec/02-app-issues/{NN}-{issue-slug-name}.md
+./{NN}-{issue-slug-name}.md
 ```
 
 - `{NN}` — zero-padded sequential number (01, 02, 03…)
@@ -28,8 +28,8 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 
 ## Post-Fix Checklist (mandatory after every fix)
 
-1. [ ] Spec updated under `/spec/01-app/`
-2. [ ] Issue write-up created under `/spec/02-app-issues/`
+1. [ ] Spec updated under `../01-app/`
+2. [ ] Issue write-up created under `./`
 3. [ ] Memory updated with summary and prevention rule
 4. [ ] Acceptance criteria updated or added
 5. [ ] Iterations recorded if applicable
