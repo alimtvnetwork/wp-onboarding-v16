@@ -13,208 +13,212 @@ import (
 	"wp-plugin-publish/pkg/ziputil"
 )
 
-// createFullZip creates a zip file of the entire plugin directory
-func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns []string) (string, error) {
+// zipContext holds resolved paths for zip creation.
+type zipContext struct {
+	AbsPluginPath string
+	AbsZipPath    string
+	Slug          string
+}
+
+// resolveZipContext resolves temp dir, plugin path, and zip file path.
+func (s *Service) resolveZipContext(pluginPath, pluginName, suffix string) (*zipContext, error) {
 	absTempDir, err := pathutil.ToAbsolute(s.tempDir)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
 	}
 	if err := os.MkdirAll(absTempDir, 0755); err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
 	}
 
 	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
-
-	absZipPath, err := pathutil.Join(absTempDir, fmt.Sprintf("%s.zip", slug))
+	absZipPath, err := pathutil.Join(absTempDir, fmt.Sprintf("%s%s.zip", slug, suffix))
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve zip path")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve zip path")
 	}
-	zipFile, err := os.Create(absZipPath)
+
+	return &zipContext{AbsPluginPath: absPluginPath, AbsZipPath: absZipPath, Slug: slug}, nil
+}
+
+// createZipFile creates the zip file and returns the os.File handle.
+func createZipFile(absZipPath string) (*os.File, error) {
+	f, err := os.Create(absZipPath)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
+	}
+	return f, nil
+}
+
+// finalizeZip closes the zip writer and file, validates the result.
+func finalizeZip(zw *zip.Writer, zf *os.File, absZipPath string) error {
+	if err := zw.Close(); err != nil {
+		zf.Close()
+		os.Remove(absZipPath)
+		return apperror.Wrap(err, apperror.ErrFSZip, "failed to finalize zip archive")
+	}
+	if err := zf.Close(); err != nil {
+		os.Remove(absZipPath)
+		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to close zip file")
+	}
+	return validateZipFile(absZipPath)
+}
+
+// validateZipFile checks the zip file exists and is non-empty.
+func validateZipFile(absZipPath string) error {
+	info, err := os.Stat(absZipPath)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrFSRead, "zip file not found after creation")
+	}
+	if info.Size() == 0 {
+		os.Remove(absZipPath)
+		return apperror.New(apperror.ErrFSZip, "zip file is empty after creation")
+	}
+	return nil
+}
+
+// cleanupZipOnError removes the zip file and returns the wrapped error.
+func cleanupZipOnError(absZipPath string, zw *zip.Writer, zf *os.File, err error) (string, error) {
+	zw.Close()
+	zf.Close()
+	os.Remove(absZipPath)
+	return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip archive")
+}
+
+// createFullZip creates a zip file of the entire plugin directory
+func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns []string) (string, error) {
+	zc, err := s.resolveZipContext(pluginPath, pluginName, "")
+	if err != nil {
+		return "", err
+	}
+
+	zipFile, err := createZipFile(zc.AbsZipPath)
+	if err != nil {
+		return "", err
 	}
 
 	zipWriter := zip.NewWriter(zipFile)
 	ziputil.RegisterBestCompression(zipWriter)
 
-	err = filepath.Walk(absPluginPath, func(path string, info os.FileInfo, err error) error {
+	walkErr := filepath.Walk(zc.AbsPluginPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return apperror.Wrap(err, apperror.ErrFSRead, "failed to walk plugin directory").
-				WithFilePath(path)
+			return apperror.Wrap(err, apperror.ErrFSRead, "failed to walk plugin directory").WithFilePath(path)
 		}
-		if info.IsDir() {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(absPluginPath, path)
-		if err != nil {
-			return apperror.Wrap(err, apperror.ErrInternal, "failed to compute relative path").
-				WithFilePath(path)
-		}
-
-		// Check exclude patterns
-		for _, pattern := range excludePatterns {
-			if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
-				return nil
-			}
-			if strings.Contains(relPath, pattern) {
-				return nil
-			}
-		}
-
-		if s.shouldExclude(relPath) {
-			return nil
-		}
-
-		zipEntryPath := filepath.ToSlash(filepath.Join(slug, relPath))
-		writer, err := zipWriter.Create(zipEntryPath)
-		if err != nil {
-			return apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip entry").
-				WithFilePath(zipEntryPath)
-		}
-
-		file, err := os.Open(path)
-		if err != nil {
-			return apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for zipping").
-				WithFilePath(path)
-		}
-		defer file.Close()
-
-		_, err = io.Copy(writer, file)
-		if err != nil {
-			return apperror.Wrap(err, apperror.ErrFSZip, "failed to copy file into zip").
-				WithFilePath(relPath)
-		}
-		return nil
+		return s.addFullZipEntry(zipWriter, zc, path, info, excludePatterns)
 	})
+	if walkErr != nil {
+		return cleanupZipOnError(zc.AbsZipPath, zipWriter, zipFile, walkErr)
+	}
 
+	if err := finalizeZip(zipWriter, zipFile, zc.AbsZipPath); err != nil {
+		return "", err
+	}
+	return zc.AbsZipPath, nil
+}
+
+// addFullZipEntry adds a single file to the full zip, checking exclusions.
+func (s *Service) addFullZipEntry(zw *zip.Writer, zc *zipContext, path string, info os.FileInfo, excludePatterns []string) error {
+	if info.IsDir() {
+		return nil
+	}
+	relPath, err := filepath.Rel(zc.AbsPluginPath, path)
 	if err != nil {
-		zipWriter.Close()
-		zipFile.Close()
-		os.Remove(absZipPath)
-		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip archive")
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to compute relative path").WithFilePath(path)
 	}
+	if isExcludedByPatterns(relPath, path, excludePatterns) || s.shouldExclude(relPath) {
+		return nil
+	}
+	return addFileToZip(zw, path, filepath.ToSlash(filepath.Join(zc.Slug, relPath)))
+}
 
-	if err := zipWriter.Close(); err != nil {
-		zipFile.Close()
-		os.Remove(absZipPath)
-		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to finalize zip archive")
+// isExcludedByPatterns checks if a file matches any exclude pattern.
+func isExcludedByPatterns(relPath, fullPath string, patterns []string) bool {
+	for _, pattern := range patterns {
+		if matched, _ := filepath.Match(pattern, filepath.Base(fullPath)); matched {
+			return true
+		}
+		if strings.Contains(relPath, pattern) {
+			return true
+		}
 	}
-	if err := zipFile.Close(); err != nil {
-		os.Remove(absZipPath)
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to close zip file")
-	}
+	return false
+}
 
-	if info, statErr := os.Stat(absZipPath); statErr != nil {
-		return "", apperror.Wrap(statErr, apperror.ErrFSRead, "zip file not found after creation")
-	} else if info.Size() == 0 {
-		os.Remove(absZipPath)
-		return "", apperror.New(apperror.ErrFSZip, "zip file is empty after creation")
+// addFileToZip writes a single file into the zip archive at the given entry path.
+func addFileToZip(zw *zip.Writer, srcPath, zipEntryPath string) error {
+	writer, err := zw.Create(zipEntryPath)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip entry").WithFilePath(zipEntryPath)
 	}
+	file, err := os.Open(srcPath)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for zipping").WithFilePath(srcPath)
+	}
+	defer file.Close()
 
-	return absZipPath, nil
+	if _, err := io.Copy(writer, file); err != nil {
+		return apperror.Wrap(err, apperror.ErrFSZip, "failed to copy file into zip").WithFilePath(srcPath)
+	}
+	return nil
 }
 
 // createSelectiveZip creates a zip file with only selected files
 func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []string) (string, error) {
-	absTempDir, err := pathutil.ToAbsolute(s.tempDir)
+	zc, err := s.resolveZipContext(pluginPath, pluginName, "-patch")
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
-	}
-	if err := os.MkdirAll(absTempDir, 0755); err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
+		return "", err
 	}
 
-	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
+	zipFile, err := createZipFile(zc.AbsZipPath)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
-	}
-
-	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
-
-	absZipPath, err := pathutil.Join(absTempDir, fmt.Sprintf("%s-patch.zip", slug))
-	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve patch zip path")
-	}
-	zipFile, err := os.Create(absZipPath)
-	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
+		return "", err
 	}
 
 	zipWriter := zip.NewWriter(zipFile)
 	ziputil.RegisterBestCompression(zipWriter)
 
+	if err := s.writeSelectiveEntries(zipWriter, zc, files); err != nil {
+		return cleanupZipOnError(zc.AbsZipPath, zipWriter, zipFile, err)
+	}
+
+	if err := finalizeZip(zipWriter, zipFile, zc.AbsZipPath); err != nil {
+		return "", err
+	}
+	return zc.AbsZipPath, nil
+}
+
+// writeSelectiveEntries adds each selected file to the zip.
+func (s *Service) writeSelectiveEntries(zw *zip.Writer, zc *zipContext, files []string) error {
 	for _, relPath := range files {
-		fullPath, err := pathutil.Join(absPluginPath, relPath)
-		if err != nil {
-			return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve file path").WithFilePath(relPath)
-		}
-
-		info, err := os.Stat(fullPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to stat file for selective zip").
-				WithFilePath(relPath)
-		}
-		if info.IsDir() {
-			continue
-		}
-
-		zipFilePath := filepath.ToSlash(filepath.Join(slug, relPath))
-		writer, err := zipWriter.Create(zipFilePath)
-		if err != nil {
-			zipWriter.Close()
-			zipFile.Close()
-			os.Remove(absZipPath)
-			return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip entry").
-				WithFilePath(zipFilePath)
-		}
-
-		file, err := os.Open(fullPath)
-		if err != nil {
-			zipWriter.Close()
-			zipFile.Close()
-			os.Remove(absZipPath)
-			return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for selective zip").
-				WithFilePath(relPath)
-		}
-
-		_, copyErr := io.Copy(writer, file)
-		file.Close()
-		if copyErr != nil {
-			zipWriter.Close()
-			zipFile.Close()
-			os.Remove(absZipPath)
-			return "", apperror.Wrap(copyErr, apperror.ErrFSZip, "failed to copy file into selective zip").
-				WithFilePath(relPath)
+		if err := addSelectiveEntry(zw, zc, relPath); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	if err := zipWriter.Close(); err != nil {
-		zipFile.Close()
-		os.Remove(absZipPath)
-		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to finalize zip archive")
-	}
-	if err := zipFile.Close(); err != nil {
-		os.Remove(absZipPath)
-		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to close zip file")
-	}
-
-	if info, statErr := os.Stat(absZipPath); statErr != nil {
-		return "", apperror.Wrap(statErr, apperror.ErrFSRead, "zip file not found after creation")
-	} else if info.Size() == 0 {
-		os.Remove(absZipPath)
-		return "", apperror.New(apperror.ErrFSZip, "zip file is empty after creation")
+// addSelectiveEntry adds a single file to the selective zip, skipping missing/directory entries.
+func addSelectiveEntry(zw *zip.Writer, zc *zipContext, relPath string) error {
+	fullPath, err := pathutil.Join(zc.AbsPluginPath, relPath)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to resolve file path").WithFilePath(relPath)
 	}
 
-	return absZipPath, nil
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return apperror.Wrap(err, apperror.ErrFSRead, "failed to stat file for selective zip").WithFilePath(relPath)
+	}
+	if info.IsDir() {
+		return nil
+	}
+
+	return addFileToZip(zw, fullPath, filepath.ToSlash(filepath.Join(zc.Slug, relPath)))
 }
 
 // shouldExclude checks if a file should be excluded from the zip
