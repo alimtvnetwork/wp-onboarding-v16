@@ -25,16 +25,16 @@ GetRemotePluginFileContent(ctx, siteID, pluginSlug, filePath) (string, error)
 
 ```go
 type RemotePluginFile struct {
-    Path       string    `json:"path"`
-    Hash       string    `json:"hash"`
-    Size       int64     `json:"size"`
-    ModifiedAt time.Time `json:"modifiedAt,omitempty"`
+    Path       string    `json:"path"`       // external key
+    Hash       string    `json:"hash"`       // external key
+    Size       int64     `json:"size"`       // external key
+    ModifiedAt time.Time `json:"modifiedAt,omitempty"` // external key
 }
 
 type RemotePluginFilesResult struct {
-    PluginSlug string             `json:"pluginSlug"`
-    TotalFiles int                `json:"totalFiles"`
-    Files      []RemotePluginFile `json:"files"`
+    PluginSlug string             `json:"pluginSlug"`  // external key
+    TotalFiles int                `json:"totalFiles"`  // external key
+    Files      []RemotePluginFile `json:"files"`       // external key
 }
 ```
 
