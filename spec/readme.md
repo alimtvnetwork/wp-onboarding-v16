@@ -9,6 +9,8 @@
 
 | Folder | Description | Key Files |
 |--------|-------------|-----------|
+| [01-app/](./01-app/) | Application specs, feature definitions, behavioral requirements | `README.md` |
+| [02-app-issues/](./02-app-issues/) | Issue write-ups — root cause, fix, prevention for every mistake | `README.md` |
 | [01-coding-guidelines/](./01-coding-guidelines/) | DRY principles and general coding standards | `dry-principles.md` |
 | [02-typescript-standards/](./02-typescript-standards/) | TypeScript coding standards (no `any`/`unknown` in public APIs) | `readme.md` |
 | [03-golang-standards/](./03-golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `readme.md` |
