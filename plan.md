@@ -67,16 +67,45 @@
 
 ---
 
-## Phase E: Architecture Decisions (Open Questions)
+## Phase E: Architecture Decisions ✅ ALL DECIDED
 
-These require user decisions before implementation:
+| # | Question | Decision | Notes |
+|---|----------|----------|-------|
+| 1 | Remote Plugin Backups | **WP Site Only** | Store backups on the WordPress site via companion plugin. No local download needed. Simpler architecture, fewer storage concerns. |
+| 2 | Bulk Quick Publish | **Yes** | Add "Quick Publish Selected" for multiple plugins. Sequential publish to mapped sites. Needs UI (multi-select + action) and pipeline changes (queue/batch). |
+| 3 | True Diff Comparison | **Yes** | Compare local files against remote file hashes for accurate added/modified/deleted counts. Requires companion plugin endpoint for remote file listing with hashes. |
+| 4 | Licensing | **Custom Go Server** | Build in-house license server in Go. Full control, no vendor fees. Includes key generation, validation, activation/deactivation, feature gating. Estimated 8–10 tasks. |
 
-| # | Question | Options | Impact |
-|---|----------|---------|--------|
-| 1 | Remote Plugin Backups — store on WP site or download locally? | WP site / Local / Both | Backup service architecture |
-| 2 | Bulk Quick Publish — add "Quick Publish Selected" for multiple plugins? | Yes / No | UI + publish pipeline changes |
-| 3 | True Diff Comparison — compare with remote files for accurate counts? | Yes / No | Sync service enhancement |
-| 4 | Licensing — build custom or use third-party? | Custom Go / Keygen.sh / LemonSqueezy / EDD | Phase D1 architecture |
+---
+
+## Phase F: Newly Unblocked Work
+
+### F1. Backup Service — WP Site Storage
+- **Objective:** Implement backup creation/restore via WordPress companion plugin
+- **Decision:** Store on WP site only (no local download)
+- **Dependencies:** Companion plugin backup endpoints
+- **Expected Outputs:** Backup CRUD in Go, pre-publish backup integration, backup listing UI
+- **Estimated Effort:** 4–5 tasks
+
+### F2. Bulk Quick Publish
+- **Objective:** Add multi-select "Quick Publish Selected" for batch plugin publishing
+- **Dependencies:** Existing publish pipeline
+- **Expected Outputs:** Multi-select UI, sequential publish queue, aggregate result reporting
+- **Estimated Effort:** 3–4 tasks
+
+### F3. True Diff Comparison
+- **Objective:** Fetch remote file hashes and compare with local for accurate change counts
+- **Dependencies:** Companion plugin file-listing endpoint (already partially implemented via `GetPluginFilesViaRiseup`)
+- **Expected Outputs:** Enhanced sync service, accurate added/modified/deleted counts in preview
+- **Note:** PreviewPublish already has remote comparison logic — this task is to ensure reliability and fill gaps
+- **Estimated Effort:** 2–3 tasks
+
+### F4. Custom Licensing Server (Go)
+- **Objective:** License server + WP plugin client for commercial distribution
+- **Dependencies:** None (greenfield)
+- **Expected Outputs:** License key generation, validation endpoint, activation/deactivation, feature gating, WP plugin client
+- **Acceptance Criteria:** License can be issued, validated, activated, deactivated, and revoked; WP plugin checks license on activation
+- **Estimated Effort:** 8–10 tasks
 
 ---
 
@@ -84,15 +113,11 @@ These require user decisions before implementation:
 
 **Ready to implement now (no blockers):**
 
-1. ~~**B1 — admin-agents.php Magic Strings**~~ ✅ Already complete
-2. ~~**B2 — admin-snapshots.php Magic Strings**~~ ✅ Complete
-3. **A3 — Go interface{} Type Safety** — Large but independent; 2,680 instances
-4. **C1 — Go Positive Logic** — Small, self-contained; 2 tasks
-5. **D3 — Snake_case Log Keys** — Small, ~15 files; no dependencies
-
-**Requires user decision first:**
-- D1 — Licensing (needs build-vs-buy decision)
-- D2 — Activity Feed (needs priority confirmation)
+1. **F3 — True Diff Comparison** — Smallest unblocked task; enhances existing PreviewPublish logic (2–3 tasks)
+2. **F2 — Bulk Quick Publish** — Medium scope; UI + pipeline changes (3–4 tasks)
+3. **F1 — Backup Service** — Medium scope; requires companion plugin coordination (4–5 tasks)
+4. **D2 — Activity Feed** — Go endpoint + React UI for fleet-wide audit log
+5. **F4 — Licensing Server** — Largest scope; greenfield Go service (8–10 tasks)
 
 ---
 
