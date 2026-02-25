@@ -118,10 +118,14 @@ class ActivationHandler
         string $version,
     ): void {
         $logFile = $logsDir . PathLogFileType::Log->value;
-        @file_put_contents($logFile, sprintf(
+        $isWriteFailed = (file_put_contents($logFile, sprintf(
             "[%s] [INFO] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"version\":\"%s\",\"php\":\"%s\",\"wp\":\"%s\"}\n",
             $timestamp, $version, phpversion(), get_bloginfo('version')
-        ), FILE_APPEND | LOCK_EX);
+        ), FILE_APPEND | LOCK_EX) === false);
+
+        if ($isWriteFailed) {
+            InitHelpers::errorLogWithPrefix('Failed to write main log file: ' . $logFile);
+        }
     }
 
     private static function writeErrorLog(
@@ -130,20 +134,28 @@ class ActivationHandler
         string $version,
     ): void {
         $errorFile = $logsDir . PathLogFileType::Error->value;
-        @file_put_contents($errorFile, sprintf(
+        $isWriteFailed = (file_put_contents($errorFile, sprintf(
             "[%s] [INFO] Plugin activated — error log initialized (v%s)\n",
             $timestamp, $version
-        ), FILE_APPEND | LOCK_EX);
+        ), FILE_APPEND | LOCK_EX) === false);
+
+        if ($isWriteFailed) {
+            InitHelpers::errorLogWithPrefix('Failed to write error log file: ' . $errorFile);
+        }
     }
 
     private static function writeStacktraceLog(string $logsDir, string $timestamp): void {
         $stacktraceFile = $logsDir . PathLogFileType::Stacktrace->value;
 
         if (PathHelper::isFileMissing($stacktraceFile)) {
-            @file_put_contents($stacktraceFile, sprintf(
+            $isWriteFailed = (file_put_contents($stacktraceFile, sprintf(
                 '# ' . PluginConfigType::Name->value . " - Stack Trace Log (initialized %s)\n\n",
                 $timestamp
-            ));
+            )) === false);
+
+            if ($isWriteFailed) {
+                InitHelpers::errorLogWithPrefix('Failed to write stacktrace log file: ' . $stacktraceFile);
+            }
         }
     }
 

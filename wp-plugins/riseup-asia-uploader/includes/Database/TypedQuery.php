@@ -21,7 +21,6 @@ use PDOException;
 use Throwable;
 
 final class TypedQuery {
-
     public function __construct(
         private readonly PDO $pdo,
     ) {

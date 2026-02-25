@@ -15,9 +15,9 @@ if (!defined('ABSPATH')) {
 enum UploadSourceType: string
 {
     case Script  = 'Script';
-    case RestApi = 'RestAPI';
-    case AdminUi = 'AdminUI';
-    case WpCli   = 'WPCLI';
+    case RestApi = 'RestApi';
+    case AdminUi = 'AdminUi';
+    case WpCli   = 'WpCli';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

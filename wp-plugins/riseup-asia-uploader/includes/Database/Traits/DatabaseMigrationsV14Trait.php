@@ -38,9 +38,9 @@ trait DatabaseMigrationsV14Trait {
     private const V14_TRANSACTIONS_UPLOAD_SOURCE_QUERY = <<<'SQL'
         UPDATE %s SET UploadSource = CASE UploadSource
             WHEN 'upload_script' THEN 'Script'
-            WHEN 'rest_api'      THEN 'RestAPI'
-            WHEN 'admin_ui'      THEN 'AdminUI'
-            WHEN 'wp_cli'        THEN 'WPCLI'
+            WHEN 'rest_api'      THEN 'RestApi'
+            WHEN 'admin_ui'      THEN 'AdminUi'
+            WHEN 'wp_cli'        THEN 'WpCli'
         END
         WHERE UploadSource IN ('upload_script', 'rest_api', 'admin_ui', 'wp_cli')
     SQL;
