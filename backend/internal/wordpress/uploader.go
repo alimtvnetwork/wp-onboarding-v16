@@ -424,10 +424,10 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 
 	// Try envelope format
 	type existsResult struct {
-		PluginSlug string `json:"pluginSlug"`
-		Exists     bool   `json:"exists"`
-		Status     string `json:"status"`
-		PluginFile string `json:"pluginFile"`
+		PluginSlug string `json:"pluginSlug"` // external key (Riseup Asia Uploader API)
+		Exists     bool   `json:"exists"`     // external key
+		Status     string `json:"status"`     // external key
+		PluginFile string `json:"pluginFile"` // external key
 	}
 	if results, ok := UnwrapResults[existsResult](bodyBytes); ok && len(results) > 0 {
 		return results[0].Exists, results[0].Status, results[0].PluginFile, nil
@@ -435,9 +435,9 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 
 	// Legacy fallback
 	var legacy struct {
-		Exists     bool   `json:"exists"`
-		Status     string `json:"status"`
-		PluginFile string `json:"pluginFile"`
+		Exists     bool   `json:"exists"`     // external key (Riseup Asia Uploader API)
+		Status     string `json:"status"`     // external key
+		PluginFile string `json:"pluginFile"` // external key
 	}
 	if err := json.Unmarshal(bodyBytes, &legacy); err != nil {
 		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
@@ -492,9 +492,9 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	}
 
 	var response struct {
-		Success bool                 `json:"success"`
-		Count   int                  `json:"count"`
-		Plugins []UploaderPluginInfo `json:"plugins"`
+		Success bool                 `json:"success"` // external key (Riseup Asia Uploader API)
+		Count   int                  `json:"count"`   // external key
+		Plugins []UploaderPluginInfo `json:"plugins"` // external key
 	}
 
 	respBody, _ := io.ReadAll(resp.Body)
@@ -532,10 +532,10 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 	}
 
 	var response struct {
-		Success bool               `json:"success"`
-		Slug    string             `json:"slug"`
-		Count   int                `json:"count"`
-		Files   []UploaderFileInfo `json:"files"`
+		Success bool               `json:"success"` // external key (Riseup Asia Uploader API)
+		Slug    string             `json:"slug"`    // external key
+		Count   int                `json:"count"`   // external key
+		Files   []UploaderFileInfo `json:"files"`   // external key
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode files response")
@@ -645,27 +645,27 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 
 // SyncFile represents a single file in a sync request.
 type SyncFile struct {
-	Path    string `json:"path"`
-	Content string `json:"content,omitempty"` // base64 encoded
-	Action  string `json:"action"`            // "replace" or "delete"
+	Path    string `json:"path"`              // external key (Riseup Asia Uploader API)
+	Content string `json:"content,omitempty"` // external key (base64 encoded)
+	Action  string `json:"action"`            // external key ("replace" or "delete")
 }
 
 // SyncFileResult represents the result of syncing a single file.
 type SyncFileResult struct {
-	Path   string `json:"path"`
-	Action string `json:"action"`
-	Status string `json:"status"`
-	Reason string `json:"reason,omitempty"`
+	Path   string `json:"path"`             // external key (Riseup Asia Uploader API)
+	Action string `json:"action"`           // external key
+	Status string `json:"status"`           // external key
+	Reason string `json:"reason,omitempty"` // external key
 }
 
 // SyncResult represents the result of a delta sync operation.
 type SyncResult struct {
-	Success      bool             `json:"success"`
-	FilesUpdated int              `json:"files_updated"`
-	FilesDeleted int              `json:"files_deleted"`
-	FilesIgnored int              `json:"files_ignored"`
-	IgnoredFiles []string         `json:"ignored_files"`
-	Results      []SyncFileResult `json:"results"`
+	Success      bool             `json:"success"`       // external key (Riseup Asia Uploader API)
+	FilesUpdated int              `json:"files_updated"` // external key
+	FilesDeleted int              `json:"files_deleted"` // external key
+	FilesIgnored int              `json:"files_ignored"` // external key
+	IgnoredFiles []string         `json:"ignored_files"` // external key
+	Results      []SyncFileResult `json:"results"`       // external key
 }
 
 // SyncPluginFilesViaUploader performs a delta sync of multiple files to a plugin.
@@ -741,11 +741,11 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 
 // ExportPluginResult holds the response from the export-plugin endpoint.
 type ExportPluginResult struct {
-	Success   bool   `json:"success"`
-	PluginZip string `json:"plugin_zip"` // base64 encoded
-	Slug      string `json:"slug"`
-	FileCount int    `json:"file_count"`
-	Size      int    `json:"size"`
+	Success   bool   `json:"success"`    // external key (Riseup Asia Uploader API)
+	PluginZip string `json:"plugin_zip"` // external key (base64 encoded)
+	Slug      string `json:"slug"`       // external key
+	FileCount int    `json:"file_count"` // external key
+	Size      int    `json:"size"`       // external key
 }
 
 // ExportPlugin fetches an arbitrary plugin as a base64-encoded ZIP from the remote site.
@@ -790,13 +790,13 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 
 // ExportSelfResult represents the result of exporting the uploader plugin.
 type ExportSelfResult struct {
-	Success    bool   `json:"success"`
-	PluginName string `json:"pluginName"`
-	Version    string `json:"version"`
-	PluginSlug string `json:"pluginSlug"`
-	PluginZip  string `json:"pluginZip"` // base64 encoded
-	Checksum   string `json:"checksum"`
-	FileCount  int    `json:"fileCount"`
+	Success    bool   `json:"success"`    // external key (Riseup Asia Uploader API)
+	PluginName string `json:"pluginName"` // external key
+	Version    string `json:"version"`    // external key
+	PluginSlug string `json:"pluginSlug"` // external key
+	PluginZip  string `json:"pluginZip"`  // external key (base64 encoded)
+	Checksum   string `json:"checksum"`   // external key
+	FileCount  int    `json:"fileCount"`  // external key
 }
 
 // ExportSelfFromSite fetches the Riseup Asia Uploader plugin as a ZIP from a site.
@@ -842,25 +842,25 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 
 // RemoteLogFile represents a single log file returned by the error-logs endpoint.
 type RemoteLogFile struct {
-	Exists     bool   `json:"exists"`
-	File       string `json:"file"`
-	Path       string `json:"path"`
-	Content    string `json:"content"`
-	Lines      int    `json:"lines"`
-	TotalLines int    `json:"totalLines"`
-	TotalSize  int64  `json:"totalSize"`
-	Truncated  bool   `json:"truncated"`
+	Exists     bool   `json:"exists"`     // external key (Riseup Asia Uploader API)
+	File       string `json:"file"`       // external key
+	Path       string `json:"path"`       // external key
+	Content    string `json:"content"`    // external key
+	Lines      int    `json:"lines"`      // external key
+	TotalLines int    `json:"totalLines"` // external key
+	TotalSize  int64  `json:"totalSize"`  // external key
+	Truncated  bool   `json:"truncated"`  // external key
 }
 
 // RemoteErrorLogsResult represents the /error-logs endpoint response.
 type RemoteErrorLogsResult struct {
-	Success          bool                     `json:"success"`
-	Version          string                   `json:"version"`
-	Settings         ProgressDetails          `json:"settings"`
-	ErrorLog         *RemoteLogFile           `json:"errorLog,omitempty"`
-	FullLog          *RemoteLogFile           `json:"fullLog,omitempty"`
-	StackTraceLog    *RemoteLogFile           `json:"stacktraceLog,omitempty"`
-	StackTraceFrames []PHPStackTraceFrame     `json:"stackTraceFrames,omitempty"`
+	Success          bool                 `json:"success"`                    // external key (Riseup Asia Uploader API)
+	Version          string               `json:"version"`                    // external key
+	Settings         ProgressDetails      `json:"settings"`                   // external key
+	ErrorLog         *RemoteLogFile       `json:"errorLog,omitempty"`         // external key
+	FullLog          *RemoteLogFile       `json:"fullLog,omitempty"`          // external key
+	StackTraceLog    *RemoteLogFile       `json:"stacktraceLog,omitempty"`    // external key
+	StackTraceFrames []PHPStackTraceFrame `json:"stackTraceFrames,omitempty"` // external key
 }
 
 // FetchRemoteErrorLogs retrieves the PHP error and log files from the WordPress plugin.
@@ -902,36 +902,36 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 
 // RemoteErrorSessionEntry represents a single structured error from the plugin's SQLite DB.
 type RemoteErrorSessionEntry struct {
-	ID               int                    `json:"id"`
-	Level            string                 `json:"level"`
-	Message          string                 `json:"message"`
-	File             string                 `json:"file"`
-	FileBase         string                 `json:"fileBase"`
-	Line             *int                   `json:"line"`
-	StackTrace       string                 `json:"stackTrace,omitempty"`
-	StackTraceFrames []PHPStackTraceFrame   `json:"stackTraceFrames,omitempty"`
-	Context          json.RawMessage        `json:"context,omitempty"`
-	CreatedAt        string                 `json:"createdAt"`
+	ID               int                  `json:"id"`                        // external key (Riseup Asia Uploader API)
+	Level            string               `json:"level"`                     // external key
+	Message          string               `json:"message"`                   // external key
+	File             string               `json:"file"`                      // external key
+	FileBase         string               `json:"fileBase"`                  // external key
+	Line             *int                 `json:"line"`                      // external key
+	StackTrace       string               `json:"stackTrace,omitempty"`      // external key
+	StackTraceFrames []PHPStackTraceFrame `json:"stackTraceFrames,omitempty"` // external key
+	Context          json.RawMessage      `json:"context,omitempty"`         // external key
+	CreatedAt        string               `json:"createdAt"`                 // external key
 }
 
 // RemoteFlashState represents the flash notification state from the plugin.
 type RemoteFlashState struct {
-	LastSeenID  int  `json:"last_seen_id"`
-	HasUnseen   bool `json:"has_unseen"`
-	UnseenCount int  `json:"unseen_count"`
+	LastSeenID  int  `json:"last_seen_id"`  // external key (Riseup Asia Uploader API)
+	HasUnseen   bool `json:"has_unseen"`    // external key
+	UnseenCount int  `json:"unseen_count"`  // external key
 }
 
 // RemoteErrorSessionsResult represents the /error-sessions endpoint response.
 type RemoteErrorSessionsResult struct {
-	Success          bool                      `json:"success"`
-	Version          string                    `json:"version"`
-	Message          string                    `json:"message,omitempty"`
-	Entries          []RemoteErrorSessionEntry `json:"entries"`
-	Total            int                       `json:"total"`
-	Limit            int                       `json:"limit"`
-	Offset           int                       `json:"offset"`
-	Flash            RemoteFlashState          `json:"flash"`
-	StackTraceFrames []PHPStackTraceFrame      `json:"stackTraceFrames,omitempty"`
+	Success          bool                      `json:"success"`                    // external key (Riseup Asia Uploader API)
+	Version          string                    `json:"version"`                    // external key
+	Message          string                    `json:"message,omitempty"`          // external key
+	Entries          []RemoteErrorSessionEntry `json:"entries"`                    // external key
+	Total            int                       `json:"total"`                      // external key
+	Limit            int                       `json:"limit"`                      // external key
+	Offset           int                       `json:"offset"`                     // external key
+	Flash            RemoteFlashState          `json:"flash"`                      // external key
+	StackTraceFrames []PHPStackTraceFrame      `json:"stackTraceFrames,omitempty"` // external key
 }
 
 // FetchRemoteErrorSessions retrieves structured error entries from the WordPress plugin's
