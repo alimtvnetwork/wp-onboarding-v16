@@ -40,11 +40,10 @@
 ### ~~C2. Go Phase 5 — Code Organization Standards~~ ✅ COMPLETE
 - **Completed:** 2026-02-25 — Renamed 4 service packages to snake_case directories (`sitehealth`→`site_health`, `errorhistory`→`error_history`, `publishhistory`→`publish_history`, `requestsession`→`request_session`). Updated all import paths across 4 files. Fixed import grouping in `main.go`. **Note:** `publish/service.go` (1,883 lines) exceeds 400-line limit — splitting deferred to separate task.
 
-### C3. Go Phase 6 — CI Lint Scripts & Integration
-- **Objective:** Complete lint script suite (5 scripts) + CI pipeline integration
-- **Dependencies:** C1, C2
-- **Expected Outputs:** Automated CI quality gates
-- **Estimated Effort:** 2 tasks
+### ~~C3. Go Phase 6 — CI Lint Scripts & Integration~~ ✅ COMPLETE
+- **Completed:** 2026-02-25 — Created 5th lint script (`lint-imports.sh` for Go import grouping: stdlib → third-party → internal). Created GitHub Actions CI workflow (`.github/workflows/go-lint.yml`) running: go build, go vet, go test, plus all 5 custom lint scripts (file-size, func-size, negative-naming, import-grouping, generic-enforce) and OpenAPI validation. Added `lint-all` and individual lint targets to Makefile.
+- **Scripts:** `lint-file-size.sh`, `lint-func-size.sh`, `lint-negative.sh`, `lint-imports.sh`, `lint-ge.sh`
+- **CI triggers:** Push/PR to `main` when `backend/` or `scripts/` change
 
 ---
 
