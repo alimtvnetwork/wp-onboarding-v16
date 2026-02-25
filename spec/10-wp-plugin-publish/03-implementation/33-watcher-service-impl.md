@@ -93,7 +93,7 @@ type FileChange struct {
 
 // ScanResult contains the outcome of a directory scan
 type ScanResult struct {
-	PluginID     int64
+	PluginId     int64
 	Path         string
 	ScanTime     time.Time
 	DurationMs   int64
@@ -113,7 +113,7 @@ type fileInfo struct {
 
 // FileChangeEvent is broadcast when file changes are detected
 type FileChangeEvent struct {
-	PluginID int64
+	PluginId int64
 	Changes  []FileChange
 	Summary  FileChangeSummary
 }
@@ -127,7 +127,7 @@ type FileChangeSummary struct {
 
 // pluginScanCache stores the last known state of a plugin's files
 type pluginScanCache struct {
-	pluginID int64
+	pluginId int64
 	path     string
 	excludes []string
 	lastScan map[string]fileInfo
@@ -155,18 +155,18 @@ import (
 // Service interface for file scanning (no polling - event-driven)
 type Service interface {
 	// Manual scan - triggered by user clicking refresh
-	TriggerScan(ctx context.Context, pluginID int64) (*ScanResult, error)
+	TriggerScan(ctx context.Context, pluginId int64) (*ScanResult, error)
 	
 	// Git-triggered scan - called after successful git pull
-	ScanAfterGitPull(ctx context.Context, pluginID int64) (*ScanResult, error)
+	ScanAfterGitPull(ctx context.Context, pluginId int64) (*ScanResult, error)
 	
 	// Batch operations
 	ScanAll(ctx context.Context) ([]ScanResult, error)
 	
 	// Cache management
-	InitializeCache(ctx context.Context, pluginID int64) error
-	ClearCache(pluginID int64)
-	GetCachedPlugins() []int64
+	InitializeCache(ctx context.Context, pluginId int64) error
+	ClearCache(pluginId int64)
+	GetCachedPluginIds() []int64
 }
 
 // Config holds watcher configuration
@@ -202,55 +202,55 @@ func New(cfg Config) Service {
 
 // InitializeCache loads the current file state for a plugin
 // Call this on app startup or when adding a new plugin
-func (s *serviceImpl) InitializeCache(ctx context.Context, pluginID int64) error {
-	plugin, err := s.pluginService.GetByID(ctx, pluginID)
+func (s *serviceImpl) InitializeCache(ctx context.Context, pluginId int64) error {
+	plugin, err := s.pluginService.GetById(ctx, pluginId)
 	if err != nil {
 		return err
 	}
 
 	cache := s.buildNewCache(plugin)
 	s.populateCache(cache)
-	s.storeCache(pluginID, cache)
+	s.storeCache(pluginId, cache)
 
-	s.log.Info("Initialized file cache", "pluginId", pluginID, "files", len(cache.lastScan))
+	s.log.Info("Initialized file cache", "pluginId", pluginId, "files", len(cache.lastScan))
 
 	return nil
 }
 
 func (s *serviceImpl) buildNewCache(plugin *models.Plugin) *pluginScanCache {
 	return &pluginScanCache{
-		pluginID: plugin.ID,
+		pluginId: plugin.Id,
 		path:     plugin.Path,
 		excludes: plugin.ExcludePatterns,
 		lastScan: make(map[string]fileInfo),
 	}
 }
 
-func (s *serviceImpl) storeCache(pluginID int64, cache *pluginScanCache) {
+func (s *serviceImpl) storeCache(pluginId int64, cache *pluginScanCache) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cache[pluginID] = cache
+	s.cache[pluginId] = cache
 }
 
 // TriggerScan performs a manual scan (user clicked refresh)
-func (s *serviceImpl) TriggerScan(ctx context.Context, pluginID int64) (*ScanResult, error) {
-	return s.performScan(ctx, pluginID, "manual")
+func (s *serviceImpl) TriggerScan(ctx context.Context, pluginId int64) (*ScanResult, error) {
+	return s.performScan(ctx, pluginId, "manual")
 }
 
 // ScanAfterGitPull performs a scan after git pull (automatic)
-func (s *serviceImpl) ScanAfterGitPull(ctx context.Context, pluginID int64) (*ScanResult, error) {
-	return s.performScan(ctx, pluginID, "git_pull")
+func (s *serviceImpl) ScanAfterGitPull(ctx context.Context, pluginId int64) (*ScanResult, error) {
+	return s.performScan(ctx, pluginId, "git_pull")
 }
 
 // ScanAll scans all cached plugins
 func (s *serviceImpl) ScanAll(ctx context.Context) ([]ScanResult, error) {
-	pluginIDs := s.getCachedPluginIDs()
+	pluginIds := s.getCachedPluginIds()
 
-	return s.scanPlugins(ctx, pluginIDs), nil
+	return s.scanPlugins(ctx, pluginIds), nil
 }
 
-func (s *serviceImpl) getCachedPluginIDs() []int64 {
+func (s *serviceImpl) getCachedPluginIds() []int64 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -262,51 +262,51 @@ func (s *serviceImpl) getCachedPluginIDs() []int64 {
 	return ids
 }
 
-func (s *serviceImpl) scanPlugins(ctx context.Context, pluginIDs []int64) []ScanResult {
+func (s *serviceImpl) scanPlugins(ctx context.Context, pluginIds []int64) []ScanResult {
 	var results []ScanResult
-	for _, id := range pluginIDs {
+	for _, id := range pluginIds {
 		result, err := s.TriggerScan(ctx, id)
 		isScanFailed := err != nil || result == nil
-		if isScanFailed {
-			continue
+
+		if !isScanFailed {
+			results = append(results, *result)
 		}
-		results = append(results, *result)
 	}
 
 	return results
 }
 
-func (s *serviceImpl) ClearCache(pluginID int64) {
+func (s *serviceImpl) ClearCache(pluginId int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	delete(s.cache, pluginID)
-	s.log.Info("Cleared file cache", "pluginId", pluginID)
+	delete(s.cache, pluginId)
+	s.log.Info("Cleared file cache", "pluginId", pluginId)
 }
 
-func (s *serviceImpl) GetCachedPlugins() []int64 {
-	return s.getCachedPluginIDs()
+func (s *serviceImpl) GetCachedPluginIds() []int64 {
+	return s.getCachedPluginIds()
 }
 
 // --- Scan execution ---
 
 func (s *serviceImpl) performScan(
 	ctx context.Context,
-	pluginID int64,
+	pluginId int64,
 	triggerType string,
 ) (*ScanResult, error) {
-	s.log.Info("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
+	s.log.Info("Scanning plugin", "pluginId", pluginId, "trigger", triggerType)
 
-	cache, err := s.getOrInitCache(ctx, pluginID)
+	cache, err := s.getOrInitCache(ctx, pluginId)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.executeScan(cache, pluginID, triggerType), nil
+	return s.executeScan(cache, pluginId, triggerType), nil
 }
 
-func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*pluginScanCache, error) {
-	if cache := s.lookupCache(pluginID); cache != nil {
+func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginId int64) (*pluginScanCache, error) {
+	if cache := s.lookupCache(pluginId); cache != nil {
 		return cache, nil
 	}
 

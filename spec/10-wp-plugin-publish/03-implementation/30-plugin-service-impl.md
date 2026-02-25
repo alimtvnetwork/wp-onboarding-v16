@@ -51,8 +51,8 @@ type UpdateInput struct {
 
 // CreateMappingInput holds data for creating a plugin-site mapping
 type CreateMappingInput struct {
-	PluginID   int64  `validate:"required"`
-	SiteID     int64  `validate:"required"`
+	PluginId   int64  `validate:"required"`
+	SiteId     int64  `validate:"required"`
 	RemoteSlug string `validate:"required,max=255"`
 }
 

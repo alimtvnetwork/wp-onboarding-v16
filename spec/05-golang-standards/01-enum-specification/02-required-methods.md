@@ -1,8 +1,8 @@
 # Required Methods
 
-**Version:** 4.1.0  
+**Version:** 4.2.0  
 **Status:** Complete  
-**Updated:** 2026-02-23
+**Updated:** 2026-02-25
 
 ---
 
@@ -44,8 +44,8 @@ func (v Variant) Label() string {
 One method per variant for type checking. Enables clean conditional logic.
 
 ```go
-func (v Variant) IsSerpAPI() bool {
-    return v == SerpAPI
+func (v Variant) IsSerpApi() bool {
+    return v == SerpApi
 }
 
 func (v Variant) IsMapsScraper() bool {
@@ -64,12 +64,12 @@ func (v Variant) IsInvalid() bool {
 **Usage:**
 ```go
 // ✅ Clean
-if provider.IsSerpAPI() {
+if provider.IsSerpApi() {
     // ...
 }
 
 // ❌ Verbose
-if provider == provider.SerpAPI {
+if provider == provider.SerpApi {
     // ...
 }
 ```
@@ -83,7 +83,7 @@ Returns all valid variants (excludes Invalid).
 ```go
 func All() []Variant {
     return []Variant{
-        SerpAPI,
+        SerpApi,
         MapsScraper,
         Colly,
     }
@@ -114,7 +114,7 @@ func ByIndex(i int) Variant {
 
 **Usage:**
 ```go
-p := provider.ByIndex(1) // Returns SerpAPI
+p := provider.ByIndex(1) // Returns SerpApi
 ```
 
 ---
@@ -137,7 +137,7 @@ func Parse(s string) (Variant, error) {
 
 **Usage:**
 ```go
-p, err := provider.Parse("SerpAPI")
+p, err := provider.Parse("SerpApi")
 if err != nil {
     return err
 }
@@ -291,8 +291,8 @@ func (v Variant) SiteOperator() string {
     }
 }
 
-// BaseURL returns the platform's base URL
-func (v Variant) BaseURL() string {
+// BaseUrl returns the platform's base URL
+func (v Variant) BaseUrl() string {
     switch v {
     case YouTube:
         return "https://youtube.com"
@@ -307,10 +307,10 @@ func (v Variant) BaseURL() string {
 ### Provider Enum Example
 
 ```go
-// RequiresAPIKey returns true if the provider needs an API key
-func (v Variant) RequiresAPIKey() bool {
+// RequiresApiKey returns true if the provider needs an API key
+func (v Variant) RequiresApiKey() bool {
     switch v {
-    case SerpAPI:
+    case SerpApi:
         return true
     case MapsScraper, Colly:
         return false
@@ -322,7 +322,7 @@ func (v Variant) RequiresAPIKey() bool {
 // MaxConcurrent returns the max concurrent requests
 func (v Variant) MaxConcurrent() int {
     switch v {
-    case SerpAPI:
+    case SerpApi:
         return 5  // Rate limited
     case MapsScraper:
         return 10
@@ -351,14 +351,14 @@ type Variant byte
 
 const (
     Invalid Variant = iota
-    SerpAPI
+    SerpApi
     MapsScraper
     Colly
 )
 
 var variantLabels = [...]string{
     Invalid:     "Invalid",
-    SerpAPI:     "SerpAPI",
+    SerpApi:     "SerpApi",
     MapsScraper: "MapsScraper",
     Colly:       "Colly",
 }
@@ -378,7 +378,7 @@ func (v Variant) IsValid() bool {
     return v > Invalid && v < Variant(len(variantLabels))
 }
 
-func (v Variant) IsSerpAPI() bool     { return v == SerpAPI }
+func (v Variant) IsSerpApi() bool     { return v == SerpApi }
 func (v Variant) IsMapsScraper() bool { return v == MapsScraper }
 func (v Variant) IsColly() bool       { return v == Colly }
 func (v Variant) IsInvalid() bool     { return v == Invalid }
@@ -395,7 +395,7 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 }
 
 func All() []Variant {
-    return []Variant{SerpAPI, MapsScraper, Colly}
+    return []Variant{SerpApi, MapsScraper, Colly}
 }
 
 func ByIndex(i int) Variant {
@@ -451,8 +451,21 @@ func (v *Variant) UnmarshalJSON(data []byte) error {
 |-------------|-----------|
 | `"per_table"` | `"PerTable"` |
 | `"dns_check"` | `"DnsCheck"` |
-| `"application/json"` | `"JSON"` (label) + `"application/json"` (value) |
+| `"application/json"` | `"Json"` (label) + `"application/json"` (value) |
 | `"Operation completed successfully"` | `"Success"` (label) + sentence (value) |
+
+### Abbreviation Rule in Labels
+
+Acronyms in variant names AND labels follow the PascalCase abbreviation standard — only the first letter is capitalized:
+
+| ❌ Forbidden | ✅ Required |
+|-------------|-----------|
+| `SerpAPI: "SerpAPI"` | `SerpApi: "SerpApi"` |
+| `JSON: "JSON"` | `Json: "Json"` |
+| `BaseURL` | `BaseUrl` |
+| `GetByID` | `GetById` |
+
+> **Go Interface Exemption:** `MarshalJSON()`, `UnmarshalJSON()` are exempt — they MUST retain standard library spelling.
 
 ### Protocol / Wire-Value Enums
 
@@ -464,12 +477,12 @@ Enums whose variants carry a technical wire value (URL paths, MIME types, HTTP h
 ```go
 var variantLabels = [...]string{
     Invalid: "Invalid",
-    JSON:    "JSON",
+    Json:    "Json",
 }
 
 var variantValues = [...]string{
     Invalid: "invalid",
-    JSON:    "application/json",
+    Json:    "application/json",
 }
 
 func (v Variant) Value() string { return variantValues[v] }

@@ -26,8 +26,8 @@ import (
 type Service interface {
     // CRUD operations
     List(ctx context.Context) ([]models.Plugin, error)
-    ListBySite(ctx context.Context, siteID int64) ([]models.Plugin, error)
-    GetByID(ctx context.Context, id int64) (*models.Plugin, error)
+    ListBySite(ctx context.Context, siteId int64) ([]models.Plugin, error)
+    GetById(ctx context.Context, id int64) (*models.Plugin, error)
     Create(ctx context.Context, input CreateInput) (*models.Plugin, error)
     Update(ctx context.Context, id int64, input UpdateInput) (*models.Plugin, error)
     Delete(ctx context.Context, id int64) error
@@ -62,11 +62,11 @@ package models
 import "time"
 
 type Plugin struct {
-    ID              int64
+    Id              int64
     Name            string
     LocalPath       string
     RemoteSlug      string
-    SiteID          int64
+    SiteId          int64
     IsActive        bool
     IsWatching      bool
     LastPublishedAt *time.Time `json:",omitempty"`
@@ -100,7 +100,7 @@ type CreateInput struct {
     Name       string  `validate:"required,max=255"`
     LocalPath  string  `validate:"required,max=4096"`
     RemoteSlug string  `validate:"required,max=255,lowercase"`
-    SiteID     int64   `validate:"required"`
+    SiteId     int64   `validate:"required"`
 }
 
 type UpdateInput struct {
@@ -124,7 +124,7 @@ type DirectoryScan struct {
 type FileInfo struct {
     Path         string    // Relative path within plugin
     Size         int64
-    Hash         string    // MD5 or SHA256
+    Hash         string    // Md5 or Sha256
     ModifiedAt   time.Time
     IsDirectory  bool
 }
@@ -202,10 +202,10 @@ func (s *serviceImpl) List(ctx context.Context) ([]models.Plugin, error) {
     return s.scanPlugins(rows)
 }
 
-func (s *serviceImpl) ListBySite(ctx context.Context, siteID int64) ([]models.Plugin, error) {
-    s.log.Debug("Listing plugins by site", "site_id", siteID)
+func (s *serviceImpl) ListBySite(ctx context.Context, siteId int64) ([]models.Plugin, error) {
+    s.log.Debug("Listing plugins by site", "siteId", siteId)
 
-    rows, err := s.db.QueryContext(ctx, pluginSelectQuery+" WHERE p.SiteId = ? ORDER BY p.Name ASC", siteID)
+    rows, err := s.db.QueryContext(ctx, pluginSelectQuery+" WHERE p.SiteId = ? ORDER BY p.Name ASC", siteId)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list plugins by site")
     }
@@ -214,10 +214,10 @@ func (s *serviceImpl) ListBySite(ctx context.Context, siteID int64) ([]models.Pl
     return s.scanPlugins(rows)
 }
 
-func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
-    s.log.Debug("Getting plugin by ID", "plugin_id", id)
+func (s *serviceImpl) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
+    s.log.Debug("Getting plugin by ID", "pluginId", id)
 
-    raw, err := s.queryPluginByID(ctx, id)
+    raw, err := s.queryPluginById(ctx, id)
     if err != nil {
         return nil, err
     }
@@ -233,12 +233,12 @@ type pluginScanRow struct {
     lastHash      sql.NullString
 }
 
-func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*pluginScanRow, error) {
+func (s *serviceImpl) queryPluginById(ctx context.Context, id int64) (*pluginScanRow, error) {
     row := &pluginScanRow{}
     err := s.scanPluginRow(ctx, row, id)
 
     if err == sql.ErrNoRows {
-        return nil, apperror.New(apperror.ErrNotFound, "plugin not found").WithContext("plugin_id", id)
+        return nil, apperror.New(apperror.ErrNotFound, "plugin not found").WithContext("pluginId", id)
     }
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
@@ -253,10 +253,10 @@ func (s *serviceImpl) scanPluginRow(
     id int64,
 ) error {
     return s.db.QueryRowContext(ctx, pluginSelectQuery+" WHERE p.Id = ?", id).Scan(
-        &row.plugin.ID, &row.plugin.Name, &row.plugin.LocalPath, &row.plugin.RemoteSlug,
-        &row.plugin.SiteID, &row.plugin.IsActive, &row.plugin.IsWatching,
+        &row.plugin.Id, &row.plugin.Name, &row.plugin.LocalPath, &row.plugin.RemoteSlug,
+        &row.plugin.SiteId, &row.plugin.IsActive, &row.plugin.IsWatching,
         &row.lastPublished, &row.lastHash, &row.plugin.CreatedAt, &row.plugin.UpdatedAt,
-        &row.site.ID, &row.site.Name, &row.site.URL,
+        &row.site.Id, &row.site.Name, &row.site.Url,
     )
 }
 
@@ -291,19 +291,19 @@ func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Pl
 }
 
 func (s *serviceImpl) checkDuplicatePlugin(ctx context.Context, input CreateInput) error {
-    if _, err := s.siteService.GetByID(ctx, input.SiteID); err != nil {
+    if _, err := s.siteService.GetById(ctx, input.SiteId); err != nil {
         return err
     }
 
     var exists int
     err := s.db.QueryRowContext(ctx,
         "SELECT 1 FROM Plugins WHERE LocalPath = ? AND SiteId = ?",
-        input.LocalPath, input.SiteID,
+        input.LocalPath, input.SiteId,
     ).Scan(&exists)
 
     if err != sql.ErrNoRows {
         return apperror.New(apperror.ErrDuplicate, "plugin already registered for this site").
-            WithContext("path", input.LocalPath).WithContext("site_id", input.SiteID)
+            WithContext("path", input.LocalPath).WithContext("siteId", input.SiteId)
     }
 
     return nil
@@ -315,21 +315,21 @@ func (s *serviceImpl) insertPlugin(ctx context.Context, input CreateInput) (*mod
     result, err := s.db.ExecContext(ctx, `
         INSERT INTO Plugins (Name, LocalPath, RemoteSlug, SiteId, IsActive, IsWatching, LastHash, CreatedAt, UpdatedAt)
         VALUES (?, ?, ?, ?, 1, 0, ?, datetime('now'), datetime('now'))
-    `, input.Name, input.LocalPath, strings.ToLower(input.RemoteSlug), input.SiteID, hash)
+    `, input.Name, input.LocalPath, strings.ToLower(input.RemoteSlug), input.SiteId, hash)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create plugin")
     }
 
     id, _ := result.LastInsertId()
-    s.log.Info("Plugin created", "plugin_id", id, "name", input.Name)
+    s.log.Info("Plugin created", "pluginId", id, "name", input.Name)
 
-    return s.GetByID(ctx, id)
+    return s.GetById(ctx, id)
 }
 
 func (s *serviceImpl) Delete(ctx context.Context, id int64) error {
-    s.log.Info("Deleting plugin", "plugin_id", id)
+    s.log.Info("Deleting plugin", "pluginId", id)
 
-    if _, err := s.GetByID(ctx, id); err != nil {
+    if _, err := s.GetById(ctx, id); err != nil {
         return err
     }
 
@@ -338,7 +338,7 @@ func (s *serviceImpl) Delete(ctx context.Context, id int64) error {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to delete plugin")
     }
 
-    s.log.Info("Plugin deleted", "plugin_id", id)
+    s.log.Info("Plugin deleted", "pluginId", id)
 
     return nil
 }
@@ -582,7 +582,7 @@ import (
 )
 
 func (s *serviceImpl) CalculateHash(ctx context.Context, id int64) (string, error) {
-    plugin, err := s.GetByID(ctx, id)
+    plugin, err := s.GetById(ctx, id)
     if err != nil {
         return "", err
     }
@@ -693,7 +693,7 @@ func (s *serviceImpl) SetWatching(
 	id int64,
 	watching bool,
 ) error {
-    s.log.Info("Setting plugin watching status", "plugin_id", id, "watching", watching)
+    s.log.Info("Setting plugin watching status", "pluginId", id, "watching", watching)
 
     watchingInt := boolToInt(watching)
 

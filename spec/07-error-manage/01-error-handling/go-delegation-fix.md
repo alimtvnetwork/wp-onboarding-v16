@@ -12,7 +12,7 @@ The **full URL** of the downstream endpoint that was called.
 
 ```go
 // Example: in the handler that proxies to WordPress
-envelope.Attributes.RequestDelegatedAt = delegatedURL
+envelope.Attributes.RequestDelegatedAt = delegatedUrl
 // e.g. "https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/providers"
 ```
 
@@ -26,13 +26,13 @@ Structured error details from the downstream server. **Required when `IsFailed=t
 
 ```go
 type DelegatedRequestServer struct {
-    DelegatedEndpoint  string                                       // Full URL
-    Method             string                                       // HTTP method used
-    StatusCode         int                                          // Response status code
-    RequestBody        json.RawMessage `json:",omitempty"`           // Request body sent (null for GET)
-    Response           json.RawMessage                               // Full response body (parsed JSON if possible)
-    StackTrace         []string                                      // PHP/Node/etc stack trace lines
-    AdditionalMessages string                                        // Human-readable diagnostic hint
+    DelegatedEndpoint  string
+    Method             string
+    StatusCode         int
+    RequestBody        json.RawMessage `json:",omitempty"`
+    Response           json.RawMessage
+    StackTrace         []string
+    AdditionalMessages string
 }
 ```
 
@@ -48,27 +48,27 @@ func (s *Service) fetchFromDelegatedServer(
 	site *models.Site,
 	path string,
 ) (*Envelope, error) {
-    delegatedURL := fmt.Sprintf("%s/wp-json/%s", site.URL, path)
+    delegatedUrl := fmt.Sprintf("%s/wp-json/%s", site.Url, path)
 
-    resp, bodyBytes, err := s.executeDelegatedRequest(ctx, delegatedURL)
+    resp, bodyBytes, err := s.executeDelegatedRequest(ctx, delegatedUrl)
     if err != nil {
         return nil, err
     }
     defer resp.Body.Close()
 
-    return s.buildDelegatedEnvelope(delegatedURL, path, resp.StatusCode, bodyBytes)
+    return s.buildDelegatedEnvelope(delegatedUrl, path, resp.StatusCode, bodyBytes)
 }
 
 func (s *Service) buildDelegatedEnvelope(
-    delegatedURL, path string,
+    delegatedUrl, path string,
     statusCode int,
     bodyBytes []byte,
 ) (*Envelope, error) {
     envelope := NewEnvelope()
-    envelope.Attributes.RequestDelegatedAt = delegatedURL
+    envelope.Attributes.RequestDelegatedAt = delegatedUrl
 
     if statusCode >= 400 {
-        return s.buildDelegatedErrorEnvelope(envelope, delegatedURL, path, statusCode, bodyBytes)
+        return s.buildDelegatedErrorEnvelope(envelope, delegatedUrl, path, statusCode, bodyBytes)
     }
 
     // Success path — RequestDelegatedAt is still set so frontend knows a hop occurred
@@ -95,7 +95,7 @@ func (s *Service) executeDelegatedRequest(ctx context.Context, url string) (*htt
 
 func (s *Service) buildDelegatedErrorEnvelope(
     envelope *Envelope,
-    delegatedURL, path string,
+    delegatedUrl, path string,
     statusCode int,
     bodyBytes []byte,
 ) (*Envelope, error) {
@@ -104,7 +104,7 @@ func (s *Service) buildDelegatedErrorEnvelope(
 
     envelope.Errors = &EnvelopeErrors{
         BackendMessage:         s.formatDelegatedError(path, statusCode),
-        DelegatedRequestServer: s.newDelegatedServer(delegatedURL, statusCode, bodyBytes, &parsed),
+        DelegatedRequestServer: s.newDelegatedServer(delegatedUrl, statusCode, bodyBytes, &parsed),
     }
 
     return envelope, apperror.New("E3001", fmt.Sprintf("delegated request failed with status %d", statusCode))
@@ -116,13 +116,13 @@ func (s *Service) formatDelegatedError(path string, statusCode int) string {
 }
 
 func (s *Service) newDelegatedServer(
-    delegatedURL string,
+    delegatedUrl string,
     statusCode int,
     bodyBytes []byte,
     parsed *DelegatedResponseBody,
 ) *DelegatedRequestServer {
     return &DelegatedRequestServer{
-        DelegatedEndpoint:  delegatedURL,
+        DelegatedEndpoint:  delegatedUrl,
         Method:             http.MethodGet,
         StatusCode:         statusCode,
         RequestBody:        nil,

@@ -1,8 +1,8 @@
 # Enum Pattern
 
-**Version:** 2.0.0  
+**Version:** 2.1.0  
 **Status:** Complete  
-**Updated:** 2026-02-11
+**Updated:** 2026-02-25
 
 ---
 
@@ -22,8 +22,8 @@ const (
     // Invalid is the zero value (always first)
     Invalid Variant = iota
     
-    // SerpAPI is the SerpAPI provider
-    SerpAPI
+    // SerpApi is the SerpApi provider
+    SerpApi
     
     // MapsScraper is the gosom maps scraper
     MapsScraper
@@ -77,21 +77,34 @@ const (
 )
 ```
 
-### 4. PascalCase for Variant Names
+### 4. PascalCase for Variant Names (Abbreviation Rule)
+
+Acronyms/abbreviations are treated as regular words — only the first letter is capitalized:
 
 ```go
 // ✅ Correct
 const (
-    SerpAPI     Variant = iota
+    SerpApi     Variant = iota
     MapsScraper
 )
 
-// ❌ Wrong
+// ❌ Wrong — all-caps acronyms
 const (
-    SERP_API     Variant = iota
-    maps_scraper
+    SerpAPI      Variant = iota  // Wrong: API → Api
+    SERP_API     Variant = iota  // Wrong: snake_case
+    maps_scraper                  // Wrong: snake_case
 )
 ```
+
+| ❌ Forbidden | ✅ Required |
+|-------------|-----------|
+| `SerpAPI` | `SerpApi` |
+| `GetByID` | `GetById` |
+| `BaseURL` | `BaseUrl` |
+| `ParseJSON` | `ParseJson` |
+| `ToYAML` | `ToYaml` |
+
+> **Go Interface Exemption:** `MarshalJSON()`, `UnmarshalJSON()` retain standard library spelling.
 
 ### 5. Document Each Variant
 
@@ -100,8 +113,8 @@ const (
     // Invalid represents an unspecified provider
     Invalid Variant = iota
     
-    // SerpAPI uses the commercial SerpAPI service
-    SerpAPI
+    // SerpApi uses the commercial SerpApi service
+    SerpApi
     
     // MapsScraper uses gosom/google-maps-scraper
     MapsScraper
@@ -117,7 +130,7 @@ Use a single unexported array for all lookups, serialization, and display:
 ```go
 var variantLabels = [...]string{
     Invalid:     "invalid",
-    SerpAPI:     "serpapi",
+    SerpApi:     "serpapi",
     MapsScraper: "maps_scraper",
     Colly:       "colly",
 }
@@ -148,7 +161,7 @@ var variantLabels = [...]string{
 type Provider string
 
 const (
-    SerpAPI Provider = "serpapi"
+    SerpApi Provider = "serpapi"
 )
 ```
 
@@ -159,7 +172,7 @@ const (
 if provider == "serpapi" { ... }
 
 // DO THIS
-if provider.IsSerpAPI() { ... }
+if provider.IsSerpApi() { ... }
 ```
 
 ### ❌ Switch Without Exhaustive Check
@@ -167,13 +180,13 @@ if provider.IsSerpAPI() { ... }
 ```go
 // DON'T DO THIS
 switch p {
-case SerpAPI:
+case SerpApi:
     // ...
 }
 
 // DO THIS
 switch p {
-case SerpAPI:
+case SerpApi:
     // ...
 case MapsScraper:
     // ...
