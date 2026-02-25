@@ -48,69 +48,39 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Normalize password field (frontend sends applicationPassword)
 	if input.Password == "" && input.ApplicationPassword != "" {
 		input.Password = input.ApplicationPassword
 	}
 
-	// Validate required fields
-	if input.Name == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E9002",
-			"Name is required",
-		)
-
-		return
-	}
-
-	if input.Url == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E9002",
-			"URL is required",
-		)
-
-		return
-	}
-
-	if input.Username == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E9002",
-			"Username is required",
-		)
-
-		return
-	}
-
-	if input.Password == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E9002",
-			"Application password is required",
-		)
-
+	if err := validateCreateSiteInput(input); err != "" {
+		respondError(w, wordpress.HttpStatusBadRequest, "E9002", err)
 		return
 	}
 
 	site, err := Services.SiteService.Create(r.Context(), input)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E2004",
-			err.Error(),
-		)
-
+		respondError(w, wordpress.HttpStatusBadRequest, "E2004", err.Error())
 		return
 	}
 
 	respondCreated(w, site)
+}
+
+// validateCreateSiteInput returns an error message if any required field is missing.
+func validateCreateSiteInput(input SiteCreateInput) string {
+	if input.Name == "" {
+		return "Name is required"
+	}
+	if input.Url == "" {
+		return "URL is required"
+	}
+	if input.Username == "" {
+		return "Username is required"
+	}
+	if input.Password == "" {
+		return "Application password is required"
+	}
+	return ""
 }
 
 // GetSite returns a specific site by ID

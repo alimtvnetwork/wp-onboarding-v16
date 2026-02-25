@@ -181,42 +181,44 @@ func (s *Service) getLocalPluginVersion(pluginPath string) string {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
 			continue
 		}
-
-		filePath, err := pathutil.Join(absPath, entry.Name())
-		if err != nil {
-			continue
-		}
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			continue
-		}
-
-		contentStr := string(content)
-		if !strings.Contains(contentStr, "Plugin Name:") {
-			continue
-		}
-
-		lines := strings.Split(contentStr, "\n")
-		for _, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if strings.HasPrefix(trimmed, "* Version:") || strings.HasPrefix(trimmed, "*Version:") {
-				version := strings.TrimPrefix(trimmed, "* Version:")
-				version = strings.TrimPrefix(version, "*Version:")
-				version = strings.TrimSpace(version)
-				if version != "" {
-					return version
-				}
-			}
-			if strings.HasPrefix(trimmed, "Version:") {
-				version := strings.TrimPrefix(trimmed, "Version:")
-				version = strings.TrimSpace(version)
-				if version != "" {
-					return version
-				}
-			}
+		if version := s.extractVersionFromPhpFile(absPath, entry.Name()); version != "" {
+			return version
 		}
 	}
 
+	return ""
+}
+
+// extractVersionFromPhpFile reads a PHP file and extracts the Version header if present.
+func (s *Service) extractVersionFromPhpFile(dirPath, fileName string) string {
+	filePath, err := pathutil.Join(dirPath, fileName)
+	if err != nil {
+		return ""
+	}
+	content, err := os.ReadFile(filePath)
+	if err != nil || !strings.Contains(string(content), "Plugin Name:") {
+		return ""
+	}
+
+	for _, line := range strings.Split(string(content), "\n") {
+		if version := parseVersionLine(strings.TrimSpace(line)); version != "" {
+			return version
+		}
+	}
+	return ""
+}
+
+// parseVersionLine extracts a version string from a PHP header comment line.
+func parseVersionLine(trimmed string) string {
+	prefixes := []string{"* Version:", "*Version:", "Version:"}
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(trimmed, prefix) {
+			version := strings.TrimSpace(strings.TrimPrefix(trimmed, prefix))
+			if version != "" {
+				return version
+			}
+		}
+	}
 	return ""
 }
 
