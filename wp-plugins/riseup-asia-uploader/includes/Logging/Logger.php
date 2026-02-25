@@ -8,11 +8,11 @@
  * @since   1.4.0
  */
 
+namespace RiseupAsia\Logging;
+
 if (!defined('ABSPATH')) {
     exit;
 }
-
-namespace RiseupAsia\Logging;
 
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\Traits\LoggerContextTrait;

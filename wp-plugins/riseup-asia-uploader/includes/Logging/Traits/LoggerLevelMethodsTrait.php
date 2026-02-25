@@ -6,11 +6,11 @@
  * @since   1.57.0
  */
 
+namespace RiseupAsia\Logging\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }
-
-namespace RiseupAsia\Logging\Traits;
 
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
