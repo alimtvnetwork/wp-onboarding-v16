@@ -4,13 +4,9 @@ package wordpress
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"path/filepath"
-	"strings"
 
 	"wp-plugin-publish/internal/enums/action"
-	"wp-plugin-publish/internal/enums/content_type"
 	ep "wp-plugin-publish/internal/enums/endpoint"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/enums/upload_source"
@@ -84,16 +80,18 @@ var uploaderNamespaces = []string{
 func (c *Client) CheckRiseupAsiaAvailable() (bool, string, error) {
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
-		resp, err := c.request("GET", endpoint, nil)
+		_, statusCode, err := c.doAPICallWithStatus(apiCallInput{
+			Method: "GET", Endpoint: endpoint, Operation: "check uploader namespace",
+		})
 		if err != nil {
 			return false, "", err
 		}
-		resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		if statusCode == HttpStatusOk.Int() || statusCode == HttpStatusUnauthorized.Int() || statusCode == HttpStatusForbidden.Int() {
 			return true, ns, nil
 		}
 	}
+
 	return false, "", nil
 }
 
@@ -111,44 +109,48 @@ func (c *Client) CheckUploaderHelperAvailable() (bool, error) {
 // GetUploaderStatus gets the Rise Up Uploader status.
 func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	namespace := c.resolveNamespace()
-
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Status)
-	resp, err := c.request("GET", endpoint, nil)
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: endpoint,
+		Operation: "get uploader status", ErrorCode: apperror.ErrWPConnection,
+	})
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, apperror.New(apperror.ErrWPConnection, "status request failed").
-			WithStatusCode(resp.StatusCode).
-			WithEndpoint(endpoint)
-	}
+	return parseUploaderStatus(data)
+}
 
-	respBody, _ := io.ReadAll(resp.Body)
+// parseUploaderStatus parses envelope or legacy flat format from raw response bytes.
+func parseUploaderStatus(data []byte) (*UploaderStatus, error) {
+	if status, ok := UnwrapSingleResult[UploaderStatus](data); ok {
+		normalizeUploaderEnvelopeFields(status)
 
-	// Try envelope format first
-	if status, ok := UnwrapSingleResult[UploaderStatus](respBody); ok {
-		// Normalize envelope fields to legacy fields for backward compat
-		if status.Version == "" && status.EnvVersion != "" {
-			status.Version = status.EnvVersion
-		}
-		if status.WordPressVersion == "" && status.EnvWp != "" {
-			status.WordPressVersion = status.EnvWp
-		}
-		if status.PHPVersion == "" && status.EnvPhp != "" {
-			status.PHPVersion = status.EnvPhp
-		}
 		return status, nil
 	}
 
-	// Fall back to legacy flat format
 	var status UploaderStatus
-	if err := json.Unmarshal(respBody, &status); err != nil {
+	if err := json.Unmarshal(data, &status); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode status response")
 	}
 
 	return &status, nil
+}
+
+// normalizeUploaderEnvelopeFields copies envelope PascalCase fields to legacy fields.
+func normalizeUploaderEnvelopeFields(status *UploaderStatus) {
+	if status.Version == "" && status.EnvVersion != "" {
+		status.Version = status.EnvVersion
+	}
+
+	if status.WordPressVersion == "" && status.EnvWp != "" {
+		status.WordPressVersion = status.EnvWp
+	}
+
+	if status.PHPVersion == "" && status.EnvPhp != "" {
+		status.PHPVersion = status.EnvPhp
+	}
 }
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.

@@ -4,7 +4,6 @@ package wordpress
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
@@ -92,15 +91,16 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 		Snapshots []SnapshotRecord `json:"snapshots"` // external key
 	}
 	if err := json.Unmarshal(data, &result); err != nil {
-		// Retry with plain array fallback
-		resp2, _ := c.request("GET", endpoint, nil)
-		if resp2 != nil {
-			defer resp2.Body.Close()
+		fallbackData, fallbackErr := c.doAPICallRaw(apiCallInput{
+			Method: "GET", Endpoint: endpoint, Operation: "get snapshots (array fallback)",
+		})
+		if fallbackErr == nil {
 			var snapshots []SnapshotRecord
-			if err2 := json.NewDecoder(resp2.Body).Decode(&snapshots); err2 == nil {
+			if err2 := json.Unmarshal(fallbackData, &snapshots); err2 == nil {
 				return snapshots, nil
 			}
 		}
+
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode snapshots response")
 	}
 

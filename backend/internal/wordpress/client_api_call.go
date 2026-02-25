@@ -3,6 +3,7 @@ package wordpress
 import (
 	"encoding/json"
 	"io"
+	"net/http"
 
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -18,22 +19,55 @@ type apiCallInput struct {
 	ErrorCode  string // optional: apperror wrap code (defaults to ErrInternal)
 }
 
-// doAPICallRaw sends the request, checks the status code, and returns raw body bytes on success.
-func (c *Client) doAPICallRaw(input apiCallInput) ([]byte, error) {
+// doAPICallWithStatus sends the request and returns raw body bytes + HTTP status code.
+// Unlike doAPICallRaw, it does NOT validate the status code — the caller decides how to handle it.
+// The error return is only for transport-level failures (DNS, timeout, request creation).
+func (c *Client) doAPICallWithStatus(input apiCallInput) ([]byte, int, error) {
 	resp, err := c.request(input.Method, input.Endpoint, input.Body)
 	if err != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
-		return nil, apperror.Wrap(err, code, input.Operation)
+
+		return nil, 0, apperror.Wrap(err, code, input.Operation)
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
+	return bodyBytes, resp.StatusCode, nil
+}
+
+// doAPICallRaw sends the request, checks the status code, and returns raw body bytes on success.
+func (c *Client) doAPICallRaw(input apiCallInput) ([]byte, error) {
+	body, statusCode, err := c.doAPICallWithStatus(input)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOkStatus(statusCode, input.OkStatuses) {
+		return nil, c.buildCallError(input, statusCode, body)
+	}
+
+	return body, nil
+}
+
+// doAPICallStream sends the request, validates the status code, and returns the raw HTTP response.
+// The caller is responsible for closing the response body. Use this for streaming responses (e.g. ZIP downloads).
+func (c *Client) doAPICallStream(input apiCallInput) (*http.Response, error) {
+	resp, err := c.request(input.Method, input.Endpoint, input.Body)
+	if err != nil {
+		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
+
+		return nil, apperror.Wrap(err, code, input.Operation)
+	}
+
 	if !isOkStatus(resp.StatusCode, input.OkStatuses) {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
 		return nil, c.buildCallError(input, resp.StatusCode, bodyBytes)
 	}
 
-	return bodyBytes, nil
+	return resp, nil
 }
 
 // buildCallError constructs an APIError from a failed API call.

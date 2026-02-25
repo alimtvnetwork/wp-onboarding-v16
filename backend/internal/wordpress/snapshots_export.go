@@ -41,22 +41,12 @@ type SnapshotDownloadResult struct {
 // ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsExport)
-	reqBody := SnapshotIdRequest{Id: snapshotId}
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to export snapshot")
-	}
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return nil, c.buildCallError(apiCallInput{
-			Method: "POST", Endpoint: endpoint, Operation: "export snapshot",
-		}, resp.StatusCode, bodyBytes)
-	}
-
-	return resp, nil
+	return c.doAPICallStream(apiCallInput{
+		Method:    "POST",
+		Endpoint:  snapshotEndpoint(ep.SnapshotsExport),
+		Body:      SnapshotIdRequest{Id: snapshotId},
+		Operation: "export snapshot",
+	})
 }
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
