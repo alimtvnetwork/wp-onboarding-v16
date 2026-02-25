@@ -23,6 +23,7 @@ trait UpdateResolverFetchTrait {
     public function fetchUpdateInfo(bool $forceCheck = false): array|WP_Error {
         $settings = $this->getSettings();
         $isDisabled = ($settings['enabled'] === false);
+
         if ($isDisabled) {
             return new WP_Error(WpErrorCodeType::Disabled->value, 'Auto-update is disabled');
         }
@@ -37,6 +38,7 @@ trait UpdateResolverFetchTrait {
         $statusCode = wp_remote_retrieve_response_code($response);
         $httpStatus = HttpStatusType::tryFrom($statusCode);
         $isStatusNotOk = ($httpStatus === null || $httpStatus->isOtherThan(HttpStatusType::Ok));
+
         if ($isStatusNotOk) {
             return $this->handleNon200Response($settings, $forceCheck, $statusCode);
         }
@@ -79,6 +81,7 @@ trait UpdateResolverFetchTrait {
         WP_Error $error,
     ) {
         $isRetryable = ($forceCheck === false) && BooleanHelpers::hasValue($settings['resolved_url'] ?? null);
+
         if ($isRetryable) {
             $this->fileLogger->info('Cached URL failed, resolving fresh');
             $this->clearCache();
@@ -100,6 +103,7 @@ trait UpdateResolverFetchTrait {
         $this->fileLogger->error('Update server error', array('status' => $statusCode));
 
         $isRetryable = ($forceCheck === false) && BooleanHelpers::hasValue($settings['resolved_url'] ?? null);
+
         if ($isRetryable) {
             $this->fileLogger->info('Cached URL returned error, resolving fresh');
             $this->clearCache();

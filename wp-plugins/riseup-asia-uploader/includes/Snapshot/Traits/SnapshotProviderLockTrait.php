@@ -33,6 +33,7 @@ trait SnapshotProviderLockTrait {
         $age = time() - $lockTime;
 
         $isStaleByAge = ($age > SnapshotConfigType::LockTimeoutSeconds->value);
+
         if ($isStaleByAge) {
             PathHelper::deleteFile($lockFile);
             $this->log(LogLevelType::Warn->value, 'Removed stale lock file (age exceeded)', array('ageMinutes' => round($age / 60)));
@@ -41,6 +42,7 @@ trait SnapshotProviderLockTrait {
         }
 
         $isStaleByPid = $this->isLockPidDead($lockFile);
+
         if ($isStaleByPid) {
             PathHelper::deleteFile($lockFile);
             $this->log(LogLevelType::Warn->value, 'Removed stale lock file (PID dead)', array('ageMinutes' => round($age / 60)));
@@ -63,6 +65,7 @@ trait SnapshotProviderLockTrait {
         $data = json_decode($contents, true);
         $pid = $data['pid'] ?? null;
         $isPidMissing = ($pid === null);
+
         if ($isPidMissing) {
             return false;
         }
@@ -83,6 +86,7 @@ trait SnapshotProviderLockTrait {
         }
 
         $isDirEnsureFailed = ($this->ensureSnapshotsDir() === false);
+
         if ($isDirEnsureFailed) {
             $this->log(LogLevelType::Error->value, 'Cannot acquire lock - directory creation failed');
 

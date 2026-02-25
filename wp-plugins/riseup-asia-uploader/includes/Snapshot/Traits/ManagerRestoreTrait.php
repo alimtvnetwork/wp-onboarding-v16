@@ -63,6 +63,7 @@ trait ManagerRestoreTrait {
 
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null || $provider === false);
+
         if ($isProviderMissing) {
             return ResultHelper::errorWithCode(
                 ResponseMessageType::SnapshotProviderMissing->value,
@@ -72,6 +73,7 @@ trait ManagerRestoreTrait {
 
         $snapshot = $provider->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
+
         if ($isSnapshotMissing) {
             return ResultHelper::errorWithCode(
                 ResponseMessageType::SnapshotNotFound->value,
@@ -117,6 +119,7 @@ trait ManagerRestoreTrait {
             $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             $tables = $this->getRestoreTables($snapshot, $options);
+
             if (empty($tables)) {
                 return ResultHelper::error('No tables to restore');
             }

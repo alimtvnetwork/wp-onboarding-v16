@@ -28,6 +28,7 @@ trait SnapshotProviderHelpersTrait {
         $fullMessage = $prefix . ' ' . $message;
 
         $hasContext = BooleanHelpers::hasValue($context);
+
         if ($hasContext) {
             $fullMessage .= ' ' . json_encode($context);
         }

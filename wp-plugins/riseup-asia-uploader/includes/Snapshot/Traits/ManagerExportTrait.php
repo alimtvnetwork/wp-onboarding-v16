@@ -42,6 +42,7 @@ trait ManagerExportTrait {
         }
 
         $filepath = $snapshot['Filepath'];
+
         if (PathHelper::isFileMissing($filepath)) {
             return ResultHelper::error(ResponseMessageType::SnapshotFileMissing->value);
         }
@@ -57,6 +58,7 @@ trait ManagerExportTrait {
         $zipPath = preg_replace('/\.sqlite$/', '.zip', $filepath);
 
         $zip = new ZipArchive();
+
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', array(ResponseKeyType::Path->value => $zipPath));
 

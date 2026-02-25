@@ -26,6 +26,7 @@ trait UpdateResolverWpHooksTrait {
 
         $settings = $this->getSettings();
         $isUpdateDisabled = (empty($settings['enabled']) || empty($settings['master_url']));
+
         if ($isUpdateDisabled) {
             return $transient;
         }
@@ -77,6 +78,7 @@ trait UpdateResolverWpHooksTrait {
         }
 
         $isSlugMismatch = (BooleanHelpers::isPropertyMissing($args, 'slug') || $args->slug !== PluginConfigType::Slug->value); // WP hook provides raw slug string; enum property default constraint applies
+
         if ($isSlugMismatch) {
             return $result;
         }
