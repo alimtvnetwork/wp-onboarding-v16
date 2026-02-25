@@ -6,11 +6,11 @@
  * @since   1.4.0
  */
 
+namespace RiseupAsia\Logging\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }
-
-namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;

@@ -9,11 +9,11 @@
  * @since   1.4.0
  */
 
+namespace RiseupAsia\Logging;
+
 if (!defined('ABSPATH')) {
     exit;
 }
-
-namespace RiseupAsia\Logging;
 
 use RiseupAsia\Logging\Traits\LoggerPathTrait;
 use RiseupAsia\Logging\Traits\LoggerFormatTrait;

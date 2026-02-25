@@ -6,11 +6,11 @@
  * @since   1.4.0
  */
 
+namespace RiseupAsia\Logging\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }
-
-namespace RiseupAsia\Logging\Traits;
 
 trait LoggerDedupTrait {
     /** Check if a log entry is a duplicate using MD5 hashing. */
