@@ -1,10 +1,8 @@
 package wordpress
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -142,32 +140,30 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	return response.Plugins, nil
 }
 
+// listFilesResult is the response shape from the files list endpoint.
+type listFilesResult struct {
+	Success bool               `json:"success"` // external key (Riseup Asia Uploader API)
+	Slug    string             `json:"slug"`    // external key
+	Count   int                `json:"count"`   // external key
+	Files   []UploaderFileInfo `json:"files"`   // external key
+}
+
 // ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
-	namespace := c.resolveNamespace()
-	endpoint := "/" + namespace + ep.Files.String()
+	endpoint := "/" + c.resolveNamespace() + ep.Files.String()
 
-	resp, err := c.request("POST", endpoint, PluginSlugRequest{Plugin: slug})
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body: PluginSlugRequest{Plugin: slug}, Operation: "list plugin files",
+		PluginSlug: slug, ErrorCode: apperror.ErrWPPluginGet,
+	})
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, apperror.New(apperror.ErrWPPluginGet, "list plugin files failed").
-			WithStatusCode(resp.StatusCode).
-			WithSlug(slug)
+	result, err := decodeAPIResponse[listFilesResult](data, "plugin files list")
+	if err != nil {
+		return nil, err
 	}
-
-	var response struct {
-		Success bool               `json:"success"` // external key (Riseup Asia Uploader API)
-		Slug    string             `json:"slug"`    // external key
-		Count   int                `json:"count"`   // external key
-		Files   []UploaderFileInfo `json:"files"`   // external key
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode files response")
-	}
-
-	return response.Files, nil
+	return result.Files, nil
 }
