@@ -29,7 +29,7 @@ func TestVariantsMatchPhpEndpointType(t *testing.T) {
 	// Build sets for comparison (normalise PHP values to Go format: prepend '/')
 	goSet := make(map[string]bool)
 	for _, v := range All() {
-		goSet[v.String()] = true
+		goSet[v.Value()] = true
 	}
 
 	phpSet := make(map[string]bool)
@@ -38,10 +38,6 @@ func TestVariantsMatchPhpEndpointType(t *testing.T) {
 	}
 
 	// Check PHP → Go
-	for raw, normalised := range map[string]string{} {
-		_ = raw
-		_ = normalised
-	}
 	for _, raw := range phpValues {
 		normalised := "/" + raw
 		if phpOnly[raw] {
@@ -54,12 +50,12 @@ func TestVariantsMatchPhpEndpointType(t *testing.T) {
 
 	// Check Go → PHP
 	for _, v := range All() {
-		label := v.String()
-		if goOnly[label] {
+		val := v.Value()
+		if goOnly[val] {
 			continue
 		}
-		if !phpSet[label] {
-			t.Errorf("Go Variant %q has no matching PHP EndpointType case", label)
+		if !phpSet[val] {
+			t.Errorf("Go Variant %q (value: %s) has no matching PHP EndpointType case", v.Label(), val)
 		}
 	}
 

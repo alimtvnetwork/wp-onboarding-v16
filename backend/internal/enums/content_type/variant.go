@@ -17,6 +17,13 @@ const (
 )
 
 var variantLabels = [...]string{
+	Invalid:        "Invalid",
+	JSON:           "JSON",
+	Multipart:      "Multipart",
+	FormURLEncoded: "FormURLEncoded",
+}
+
+var variantValues = [...]string{
 	Invalid:        "invalid",
 	JSON:           "application/json",
 	Multipart:      "multipart/form-data",
@@ -24,25 +31,34 @@ var variantLabels = [...]string{
 }
 
 func (v Variant) String() string {
-	if v.IsInvalid() {
-		return variantLabels[Invalid]
-	}
-	return variantLabels[v]
+	return v.Value()
 }
 
 func (v Variant) Label() string {
-	return v.String()
+	if v.IsInvalid() {
+		return variantLabels[Invalid]
+	}
+
+	return variantLabels[v]
+}
+
+func (v Variant) Value() string {
+	if v.IsInvalid() {
+		return variantValues[Invalid]
+	}
+
+	return variantValues[v]
 }
 
 func (v Variant) IsValid() bool {
 	return v > Invalid && v < Variant(len(variantLabels))
 }
 
-func (v Variant) IsJSON() bool          { return v == JSON }
-func (v Variant) IsMultipart() bool     { return v == Multipart }
-func (v Variant) IsFormURLEncoded() bool { return v == FormURLEncoded }
-func (v Variant) IsInvalid() bool         { return v == Invalid }
-func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsJSON() bool           { return v == JSON }
+func (v Variant) IsMultipart() bool      { return v == Multipart }
+func (v Variant) IsFormURLEncoded() bool  { return v == FormURLEncoded }
+func (v Variant) IsInvalid() bool        { return v == Invalid }
+func (v Variant) IsDefined() bool        { return v != Invalid }
 func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
@@ -53,6 +69,7 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -64,40 +81,57 @@ func ByIndex(i int) Variant {
 	if i < 0 || i >= len(variantLabels) {
 		return Invalid
 	}
+
 	return Variant(i)
 }
 
 func Parse(s string) (Variant, error) {
-	lower := strings.ToLower(strings.TrimSpace(s))
+	trimmed := strings.TrimSpace(s)
+
 	for i, str := range variantLabels {
+		if strings.EqualFold(str, trimmed) {
+			return Variant(i), nil
+		}
+	}
+
+	lower := strings.ToLower(trimmed)
+
+	for i, str := range variantValues {
 		if str == lower {
 			return Variant(i), nil
 		}
 	}
+
 	return Invalid, fmt.Errorf("invalid content type: %q", s)
 }
 
 func Values() []string {
 	result := make([]string, 0, len(variantLabels)-1)
+
 	for _, s := range variantLabels[1:] {
 		result = append(result, s)
 	}
+
 	return result
 }
 
 func (v Variant) MarshalJSON() ([]byte, error) {
-	return json.Marshal(v.String())
+	return json.Marshal(v.Value())
 }
 
 func (v *Variant) UnmarshalJSON(data []byte) error {
 	var s string
+
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
+
 	parsed, err := Parse(s)
 	if err != nil {
 		return err
 	}
+
 	*v = parsed
+
 	return nil
 }
