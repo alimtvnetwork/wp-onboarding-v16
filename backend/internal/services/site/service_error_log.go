@@ -18,42 +18,84 @@ import (
 
 // logToErrorFile writes error details to data/errors/error.log.txt
 func (s *Service) logToErrorFile(action string, siteId int64, pluginSlug, siteName, siteUrl string, details *ExtractedErrorDetails) {
+	if s.isDuplicateErrorLog(action, siteId, pluginSlug, details) {
+		return
+	}
+
+	f, err := s.openErrorLogFile()
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	logEntry := s.buildErrorLogEntry(action, siteId, pluginSlug, siteName, siteUrl, details)
+	f.WriteString(logEntry)
+}
+
+// isDuplicateErrorLog checks and registers the error hash to suppress duplicates.
+func (s *Service) isDuplicateErrorLog(action string, siteId int64, pluginSlug string, details *ExtractedErrorDetails) bool {
 	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteId, pluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
 	hashBytes := md5.Sum([]byte(hashInput))
 	hashHex := hex.EncodeToString(hashBytes[:])
 
 	s.errorLogHashesMu.Lock()
+	defer s.errorLogHashesMu.Unlock()
+
 	if _, exists := s.errorLogHashes[hashHex]; exists {
-		s.errorLogHashesMu.Unlock()
 		s.log.Debug("Duplicate error log entry suppressed", "action", action, "siteId", siteId, "plugin", pluginSlug, "hash", hashHex)
-		return
+		return true
 	}
 	s.errorLogHashes[hashHex] = struct{}{}
-	s.errorLogHashesMu.Unlock()
+	return false
+}
 
+// openErrorLogFile creates the errors directory and opens the log file for appending.
+func (s *Service) openErrorLogFile() (*os.File, error) {
 	errorsDir, err := pathutil.Join(filepath.Dir(s.db.Path()), "errors")
 	if err != nil {
 		s.log.Error("Failed to resolve errors directory path", "error", err)
-		return
+		return nil, err
 	}
 	errorLogPath, err := pathutil.Join(errorsDir, "error.log.txt")
 	if err != nil {
 		s.log.Error("Failed to resolve error log path", "error", err)
-		return
+		return nil, err
 	}
 
 	if err := os.MkdirAll(errorsDir, 0755); err != nil {
 		s.log.Error("Failed to create errors directory", "error", err)
-		return
+		return nil, err
 	}
 
 	f, err := os.OpenFile(errorLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		s.log.Error("Failed to open error log file", "error", err)
-		return
+		return nil, err
 	}
-	defer f.Close()
+	return f, nil
+}
 
+// buildErrorLogEntry formats the complete error log entry string.
+func (s *Service) buildErrorLogEntry(action string, siteId int64, pluginSlug, siteName, siteUrl string, details *ExtractedErrorDetails) string {
+	method, delegatedUrl := resolveMethodAndUrl(details, siteUrl)
+	pluginIdentifier := resolvePluginIdentifier(pluginSlug, details)
+	requestBody := resolveRequestBody(details, pluginIdentifier)
+
+	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
+	entry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
+	entry += fmt.Sprintf("  Site Request URL: %s\n  Site ID: %d\n  Site Name: %s\n  Site Base URL: %s\n", delegatedUrl, siteId, siteName, siteUrl)
+	entry += fmt.Sprintf("  Plugin Identifier: %s\n  Requested Action: %s\n", pluginIdentifier, action)
+	entry += fmt.Sprintf("  Delegated Request:\n    Method: %s\n    Endpoint: %s\n    Request Body:\n      %s\n", method, details.Endpoint, requestBody)
+	entry += formatResponseSection(details)
+	entry += formatGuardRailSection(action, siteUrl, details, method)
+	entry += formatStackTraceSection(details)
+	entry += formatPhpErrorsSection(details)
+	entry += "───────────────────────────────────────────────────────────────────────────────\n"
+	return entry
+}
+
+// resolveMethodAndUrl derives the HTTP method and delegated URL from error details.
+func resolveMethodAndUrl(details *ExtractedErrorDetails, siteUrl string) (string, string) {
 	method := details.Method
 	if method == "" {
 		method = "POST"
@@ -62,77 +104,93 @@ func (s *Service) logToErrorFile(action string, siteId int64, pluginSlug, siteNa
 	if delegatedUrl == "" && details.Endpoint != "" {
 		delegatedUrl = fmt.Sprintf("%s/wp-json%s", siteUrl, details.Endpoint)
 	}
+	return method, delegatedUrl
+}
 
-	isWPCoreMutation := false
-	blockedEndpoint := ""
-	requiredEndpoint := ""
-	if strings.Contains(details.Endpoint, "/wp/v2/plugins") && method != "GET" {
-		isWPCoreMutation = true
-		blockedEndpoint = details.Endpoint
-		switch action {
-		case "disable":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Disable.String())
-		case "enable":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Enable.String())
-		case "delete":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Delete.String())
-		default:
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteUrl, wordpress.RiseupAsiaNamespace, action)
-		}
-	}
-
-	pluginIdentifier := pluginSlug
+// resolvePluginIdentifier returns the best available plugin identifier.
+func resolvePluginIdentifier(pluginSlug string, details *ExtractedErrorDetails) string {
 	if details.PluginSlugIn != "" {
-		pluginIdentifier = details.PluginSlugIn
+		return details.PluginSlugIn
 	}
-	requestBody := details.RequestBody
-	if requestBody == "" {
-		requestBody = fmt.Sprintf(`{"plugin":"%s"}`, pluginIdentifier)
+	return pluginSlug
+}
+
+// resolveRequestBody returns the request body or a default.
+func resolveRequestBody(details *ExtractedErrorDetails, pluginIdentifier string) string {
+	if details.RequestBody != "" {
+		return details.RequestBody
 	}
+	return fmt.Sprintf(`{"plugin":"%s"}`, pluginIdentifier)
+}
 
-	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
-	logEntry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
-	logEntry += fmt.Sprintf("  Site Request URL: %s\n  Site ID: %d\n  Site Name: %s\n  Site Base URL: %s\n", delegatedUrl, siteId, siteName, siteUrl)
-	logEntry += fmt.Sprintf("  Plugin Identifier: %s\n  Requested Action: %s\n", pluginIdentifier, action)
-	logEntry += fmt.Sprintf("  Delegated Request:\n    Method: %s\n    Endpoint: %s\n    Request Body:\n      %s\n", method, details.Endpoint, requestBody)
-	logEntry += fmt.Sprintf("  Delegated Response:\n    Status Code: %d\n", details.StatusCode)
-
+// formatResponseSection formats the delegated response section of the log entry.
+func formatResponseSection(details *ExtractedErrorDetails) string {
+	entry := fmt.Sprintf("  Delegated Response:\n    Status Code: %d\n", details.StatusCode)
 	if len(details.ResponseBody) > 0 {
 		displayBody := details.ResponseBody
 		if len(displayBody) > 2000 {
 			displayBody = displayBody[:2000] + "... (truncated)"
 		}
-		logEntry += fmt.Sprintf("    Response Body:\n      %s\n", displayBody)
+		entry += fmt.Sprintf("    Response Body:\n      %s\n", displayBody)
+	}
+	entry += fmt.Sprintf("  Error Summary:\n    %s\n", details.Error)
+	return entry
+}
+
+// formatGuardRailSection formats the WP Core mutation guard rail section.
+func formatGuardRailSection(action, siteUrl string, details *ExtractedErrorDetails, method string) string {
+	if !strings.Contains(details.Endpoint, "/wp/v2/plugins") || method == "GET" {
+		return "    This request was correctly delegated through the Riseup Uploader endpoint.\n"
 	}
 
-	logEntry += fmt.Sprintf("  Error Summary:\n    %s\n", details.Error)
-	if isWPCoreMutation {
-		logEntry += "    WARNING: This request was sent to a WordPress Core endpoint instead of the Riseup Uploader.\n"
-		logEntry += fmt.Sprintf("  Guard Rail:\n    Blocked Direct WP Core Mutation: true\n    Blocked Endpoint: %s\n    Required Delegation Endpoint: %s\n", blockedEndpoint, requiredEndpoint)
-	} else {
-		logEntry += "    This request was correctly delegated through the Riseup Uploader endpoint.\n"
+	requiredEndpoint := resolveRequiredEndpoint(action, siteUrl)
+	entry := "    WARNING: This request was sent to a WordPress Core endpoint instead of the Riseup Uploader.\n"
+	entry += fmt.Sprintf("  Guard Rail:\n    Blocked Direct WP Core Mutation: true\n    Blocked Endpoint: %s\n    Required Delegation Endpoint: %s\n", details.Endpoint, requiredEndpoint)
+	return entry
+}
+
+// resolveRequiredEndpoint maps an action to its required Riseup delegation endpoint.
+func resolveRequiredEndpoint(action, siteUrl string) string {
+	switch action {
+	case "disable":
+		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Disable.String())
+	case "enable":
+		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Enable.String())
+	case "delete":
+		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Delete.String())
+	default:
+		return fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteUrl, wordpress.RiseupAsiaNamespace, action)
+	}
+}
+
+// formatStackTraceSection formats PHP stack trace frames for the log entry.
+func formatStackTraceSection(details *ExtractedErrorDetails) string {
+	if len(details.StackTraceFrames) == 0 {
+		return ""
 	}
 
-	if len(details.StackTraceFrames) > 0 {
-		logEntry += "  PHP Stack Trace Frames:\n"
-		for i, frame := range details.StackTraceFrames {
-			if frame.Class != "" {
-				logEntry += fmt.Sprintf("    #%d %s::%s() at %s:%d\n", i, frame.Class, frame.Function, frame.File, frame.Line)
-			} else {
-				logEntry += fmt.Sprintf("    #%d %s() at %s:%d\n", i, frame.Function, frame.File, frame.Line)
-			}
+	entry := "  PHP Stack Trace Frames:\n"
+	for i, frame := range details.StackTraceFrames {
+		if frame.Class != "" {
+			entry += fmt.Sprintf("    #%d %s::%s() at %s:%d\n", i, frame.Class, frame.Function, frame.File, frame.Line)
+		} else {
+			entry += fmt.Sprintf("    #%d %s() at %s:%d\n", i, frame.Function, frame.File, frame.Line)
 		}
 	}
+	return entry
+}
 
-	if len(details.RemotePhpErrors) > 0 {
-		logEntry += fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(details.RemotePhpErrors))
-		for i, phpErr := range details.RemotePhpErrors {
-			logEntry += fmt.Sprintf("    [%d] [%s] %s\n        File: %s  Line: %d  At: %s\n", i+1, strings.ToUpper(phpErr.Level), phpErr.Message, phpErr.File, phpErr.Line, phpErr.CreatedAt)
-		}
+// formatPhpErrorsSection formats remote PHP error sessions for the log entry.
+func formatPhpErrorsSection(details *ExtractedErrorDetails) string {
+	if len(details.RemotePhpErrors) == 0 {
+		return ""
 	}
 
-	logEntry += "───────────────────────────────────────────────────────────────────────────────\n"
-	f.WriteString(logEntry)
+	entry := fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(details.RemotePhpErrors))
+	for i, phpErr := range details.RemotePhpErrors {
+		entry += fmt.Sprintf("    [%d] [%s] %s\n        File: %s  Line: %d  At: %s\n", i+1, strings.ToUpper(phpErr.Level), phpErr.Message, phpErr.File, phpErr.Line, phpErr.CreatedAt)
+	}
+	return entry
 }
 
 // =============================================================================
