@@ -311,6 +311,32 @@ PHPDoc `@package` headers and file-level doc block comments (e.g., `* Riseup Asi
 
 ---
 
+## 10. Magic Date Format Strings — Use `DateHelper` Constants
+
+> **Added:** 2026-02-25 — Eliminates raw `gmdate()` calls with magic format strings.
+
+### Why This Matters
+
+Scattered `gmdate('c')`, `gmdate('Y-m-d H:i:s')`, and similar calls make it impossible to enforce a consistent date format across the codebase. `DateHelper` centralizes all date formats as named constants and provides static methods for common timestamp operations.
+
+### Forbidden Patterns
+
+| # | ❌ Forbidden | ✅ Required | Constant/Method |
+|---|-------------|------------|-----------------|
+| 10.1 | `gmdate('c')` | `DateHelper::nowIso()` | `DateHelper::ISO_8601` |
+| 10.2 | `gmdate('Y-m-d\TH:i:s\Z')` | `DateHelper::nowUtc()` | `DateHelper::ISO_8601_UTC` |
+| 10.3 | `gmdate('Y-m-d H:i:s')` | `DateHelper::nowDatetime()` | `DateHelper::DATETIME` |
+| 10.4 | `gmdate('Y-m-d')` | `DateHelper::nowDateOnly()` | `DateHelper::DATE_ONLY` |
+| 10.5 | `gmdate('Ymd-His')` | `DateHelper::nowCompact()` | `DateHelper::COMPACT` |
+| 10.6 | `gmdate('c', $ts)` | `DateHelper::formatIso($ts)` | `DateHelper::ISO_8601` |
+| 10.7 | `gmdate('Y-m-d H:i:s', $ts)` | `DateHelper::formatDatetime($ts)` | `DateHelper::DATETIME` |
+
+### Exception
+
+The `DateHelper` class itself is the sole place where raw `gmdate()` calls are permitted — it wraps them behind named methods and constants.
+
+---
+
 ## Checklist Summary (Copy for PRs)
 
 ```
@@ -347,6 +373,7 @@ PHPDoc `@package` headers and file-level doc block comments (e.g., `* Riseup Asi
 [ ] Cold activation tested after adding new trait compositions
 [ ] No magic string array keys matching ResponseKeyType cases — use enum->value
 [ ] Every new repeated key (3+ files) added to ResponseKeyType enum
+[ ] No raw gmdate() outside DateHelper — use DateHelper::now*() or DateHelper::format*()
 ```
 
 ---
@@ -362,4 +389,4 @@ PHPDoc `@package` headers and file-level doc block comments (e.g., `* Riseup Asi
 
 ---
 
-*Forbidden patterns checklist v4.0.0 — 2026-02-20*
+*Forbidden patterns checklist v5.0.0 — 2026-02-25*

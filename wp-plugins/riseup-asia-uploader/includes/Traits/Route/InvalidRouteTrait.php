@@ -161,8 +161,8 @@ trait InvalidRouteTrait
         if (BooleanHelpers::isKeyMissing($data, ResponseKeyType::PluginVersion->value)) {
             $data[ResponseKeyType::PluginVersion->value] = PluginConfigType::Version->value;
         }
-        if (BooleanHelpers::isKeyMissing($data, 'timestamp')) {
-            $data['timestamp'] = DateHelper::nowIso();
+        if (BooleanHelpers::isKeyMissing($data, ResponseKeyType::Timestamp->value)) {
+            $data[ResponseKeyType::Timestamp->value] = DateHelper::nowIso();
         }
         if (BooleanHelpers::isKeyMissing($data, ResponseKeyType::LogHint->value)) {
             $data[ResponseKeyType::LogHint->value] = 'Check the plugin error logs or the Activity Logs page for details.';
