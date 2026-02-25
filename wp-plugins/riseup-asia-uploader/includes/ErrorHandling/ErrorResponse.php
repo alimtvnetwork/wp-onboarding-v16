@@ -6,11 +6,11 @@
  * @since   1.60.0
  */
 
+namespace RiseupAsia\ErrorHandling;
+
 if (!defined('ABSPATH')) {
     exit;
 }
-
-namespace RiseupAsia\ErrorHandling;
 
 use Throwable;
 use WP_Error;

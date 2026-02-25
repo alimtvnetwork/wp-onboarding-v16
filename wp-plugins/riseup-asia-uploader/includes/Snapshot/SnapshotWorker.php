@@ -1,7 +1,18 @@
 <?php
+/**
+ * SnapshotWorker — Background snapshot export worker with batched table processing.
+ *
+ * Shell class — logic delegated to domain-specific traits.
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   2.0.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use LogicException;
 use wpdb;
