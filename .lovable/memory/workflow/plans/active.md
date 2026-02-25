@@ -6,7 +6,7 @@ Updated: 2026-02-23
 
 - **Code Quality & Standards**: Ongoing enforcement of formatting rules and code consistency.
 - **Refactoring & Modernization**: Strategic refactoring for improved maintainability and adherence to architectural patterns.
-- **Issue Documentation**: Every fix now requires a write-up under `/spec/02-app/issues/` per the post-fix workflow.
+- **Issue Documentation**: Every fix now requires a write-up under `/spec/02-app-issues/` per the post-fix workflow.
 
 ## Recently Completed
 

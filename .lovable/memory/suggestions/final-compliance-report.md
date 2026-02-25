@@ -155,12 +155,12 @@ Over a multi-week refactoring campaign, 40 improvement suggestions were identifi
 | Enum files audited | 53 PHP + 8 TS |
 | Template files audited | 5 PHP |
 | Languages covered | PHP, Go, TypeScript/React |
-| Issues documented | 7 (at `/spec/02-app/issues/`) |
+| Issues documented | 9 (at `/spec/02-app-issues/`) |
 
 ---
 
 ## Conclusion
 
-The codebase has achieved full compliance with all formatting rules, naming conventions, and cross-language enum standards. The suggestion tracker is at **0 open / 39 completed / 1 N/A / 0 rejected**. Future work should continue following the established patterns documented in `.lovable/memory/architecture/` and the post-fix issue tracking workflow in `/spec/02-app/issues/`.
+The codebase has achieved full compliance with all formatting rules, naming conventions, and cross-language enum standards. The suggestion tracker is at **0 open / 39 completed / 1 N/A / 0 rejected**. Future work should continue following the established patterns documented in `.lovable/memory/architecture/` and the post-fix issue tracking workflow in `/spec/02-app-issues/`.
 
 The next improvement frontier is **Batch G** — converting remaining snake_case log context array keys to camelCase across ~15 PHP files.
