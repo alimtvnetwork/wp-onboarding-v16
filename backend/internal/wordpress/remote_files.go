@@ -209,97 +209,131 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 		TokenLength: len(mutationToken),
 	}))
 
-	// Open the ZIP file
-	file, err := os.Open(zipPath)
+	reqBody, contentType, fileSize, err := c.buildZipMultipartForm(zipPath, pluginSlug)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to open zip file for upload").
-			WithValue("zipPath", zipPath)
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
+	return c.executeZipUpload(endpoint, reqBody, contentType, fileSize, zipPath, pluginSlug)
+}
+
+// buildZipMultipartForm opens the ZIP file and builds the multipart form body.
+func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*bytes.Buffer, string, int64, error) {
+	file, stat, err := openAndStatFile(zipPath)
+	if err != nil {
+		return nil, "", 0, err
 	}
 	defer file.Close()
 
-	stat, err := file.Stat()
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to stat zip file").
-			WithValue("zipPath", zipPath)
-	}
-
-	// Create multipart form
 	var reqBody bytes.Buffer
 	writer := multipart.NewWriter(&reqBody)
 
-	// Add the ZIP file part
-	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(zipPath))
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create form file for upload")
-	}
-
-	if _, err := io.Copy(part, file); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to copy file to multipart form")
-	}
-
-	// Add plugin slug field
-	if err := writer.WriteField("pluginSlug", pluginSlug); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write pluginSlug field")
-	}
-
-	// Add overwrite=true to replace existing
-	if err := writer.WriteField("overwrite", "true"); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write overwrite field")
+	if err := writeZipFormFields(writer, file, zipPath, pluginSlug); err != nil {
+		return nil, "", 0, err
 	}
 
 	if err := writer.Close(); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to close multipart writer")
+		return nil, "", 0, apperror.Wrap(err, apperror.ErrInternal, "failed to close multipart writer")
 	}
 
-	// Build the upload URL
-	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
+	return &reqBody, writer.FormDataContentType(), stat.Size(), nil
+}
+
+// openAndStatFile opens a file and returns it with its FileInfo.
+func openAndStatFile(path string) (*os.File, os.FileInfo, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to open zip file for upload").
+			WithValue("zipPath", path)
+	}
+
+	stat, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return nil, nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to stat zip file").
+			WithValue("zipPath", path)
+	}
+
+	return file, stat, nil
+}
+
+// writeZipFormFields writes the ZIP file and metadata fields to the multipart writer.
+func writeZipFormFields(writer *multipart.Writer, file *os.File, zipPath, pluginSlug string) error {
+	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(zipPath))
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file for upload")
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to copy file to multipart form")
+	}
+
+	if err := writer.WriteField("pluginSlug", pluginSlug); err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to write pluginSlug field")
+	}
+
+	return writer.WriteField("overwrite", "true")
+}
+
+// executeZipUpload sends the multipart upload request and parses the response.
+func (c *Client) executeZipUpload(endpoint string, reqBody *bytes.Buffer, contentType string, fileSize int64, zipPath, pluginSlug string) (*OnboardUploadResult, error) {
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), toProgress(ZipUploadProgress{
-		ZipSize:  stat.Size(),
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("POSTing %d bytes to %s", fileSize, url), toProgress(ZipUploadProgress{
+		ZipSize:  fileSize,
 		ZipFile:  filepath.Base(zipPath),
 		Endpoint: endpoint,
 	}))
 
-	req, err := http.NewRequest("POST", url, &reqBody)
+	resp, respBody, err := c.doMultipartRequest(url, reqBody, contentType)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").
-			WithURL(url)
+		return nil, err
 	}
-
-	// Set standard headers with multipart content type
-	c.setStandardHeaders(req, writer.FormDataContentType())
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").
-			WithURL(url)
-	}
-	defer resp.Body.Close()
-
-	respBytes, _ := io.ReadAll(resp.Body)
-	respBody := string(respBytes)
 
 	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Upload response: %d", resp.StatusCode), toProgress(ResponseProgress{
 		Status: resp.StatusCode,
 		Body:   truncateBody(respBody, 500),
 	}))
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	return c.parseZipUploadResponse(resp.StatusCode, respBody, endpoint, url, pluginSlug)
+}
+
+// doMultipartRequest sends a POST with multipart body and returns status + body.
+func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType string) (*http.Response, string, error) {
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").WithURL(url)
+	}
+
+	c.setStandardHeaders(req, contentType)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, "", apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").WithURL(url)
+	}
+	defer resp.Body.Close()
+
+	respBytes, _ := io.ReadAll(resp.Body)
+	return resp, string(respBytes), nil
+}
+
+// parseZipUploadResponse validates the status code and unmarshals the result.
+func (c *Client) parseZipUploadResponse(statusCode int, respBody, endpoint, url, pluginSlug string) (*OnboardUploadResult, error) {
+	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
 		return nil, &APIError{
 			Operation:    "upload plugin zip",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			Url:          url,
-			StatusCode:   resp.StatusCode,
+			StatusCode:   statusCode,
 			ResponseBody: truncateBody(respBody, 8192),
 			PluginSlugIn: pluginSlug,
 		}
 	}
 
 	var result OnboardUploadResult
-	if err := json.Unmarshal(respBytes, &result); err != nil {
-		// If JSON parsing fails but status was OK, treat as success
+	if err := json.Unmarshal([]byte(respBody), &result); err != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}
