@@ -1,7 +1,15 @@
 <?php
+/**
+ * SqliteSchemaConverter — Converts MySQL schema definitions to SQLite equivalents.
+ *
+ * @package RiseupAsia\Snapshot
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 class SqliteSchemaConverter {
     private static $typeMap = array(

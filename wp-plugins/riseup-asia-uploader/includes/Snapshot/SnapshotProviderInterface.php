@@ -1,7 +1,15 @@
 <?php
+/**
+ * SnapshotProviderInterface — Contract for snapshot provider implementations.
+ *
+ * @package RiseupAsia\Snapshot
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use RiseupAsia\Snapshot\Traits\SnapshotProviderHelpersTrait;
 use RiseupAsia\Snapshot\Traits\SnapshotProviderLockTrait;
