@@ -315,6 +315,27 @@ func parseRemotePluginInput(r *http.Request) (int64, string, error) {
 	return id, input.Plugin, nil
 }
 
+// parseRemotePluginInputOrFail parses site ID + plugin slug, writing error responses on failure.
+// Returns (siteID, pluginSlug, ok). Callers should return immediately when ok is false.
+func parseRemotePluginInputOrFail(w http.ResponseWriter, r *http.Request) (int64, string, bool) {
+	if !requireService(w, Services.SiteService, "Site service") {
+		return 0, "", false
+	}
+
+	id, pluginSlug, err := parseRemotePluginInput(r)
+	if err != nil {
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request: "+err.Error())
+		return 0, "", false
+	}
+
+	if pluginSlug == "" {
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Plugin slug is required in JSON body")
+		return 0, "", false
+	}
+
+	return id, pluginSlug, true
+}
+
 // GetRemotePlugins returns all plugins installed on a remote WordPress site
 var GetRemotePlugins = handleSiteActionByID("E3004",
 	func(ctx context.Context, siteId int64) (any, error) {
@@ -356,98 +377,29 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 
 // CheckRemotePluginExists performs a lightweight pre-flight check to verify plugin existence
 func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	id, pluginSlug, ok := parseRemotePluginInputOrFail(w, r)
+	if !ok {
 		return
 	}
 
-	id, pluginSlug, err := parseRemotePluginInput(r)
+	exists, status, pluginFile, err := Services.SiteService.CheckRemotePluginExists(r.Context(), id, pluginSlug)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Invalid request: "+err.Error(),
-		)
-
+		respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), "E3010", err.Error(), err)
 		return
 	}
 
-	if pluginSlug == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Plugin slug is required in JSON body",
-		)
-
-		return
-	}
-
-	exists, status, pluginFile, err := Services.SiteService.CheckRemotePluginExists(
-		r.Context(),
-		id,
-		pluginSlug,
-	)
-	if err != nil {
-		statusCode := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(
-			w,
-			statusCode,
-			"E3010",
-			err.Error(),
-			err,
-		)
-
-		return
-	}
-
-	respondSuccess(w, PluginExistsResponse{
-		IsExists:   exists,
-		Status:     status,
-		PluginFile: pluginFile,
-		Plugin:     pluginSlug,
-	})
+	respondSuccess(w, PluginExistsResponse{IsExists: exists, Status: status, PluginFile: pluginFile, Plugin: pluginSlug})
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, pluginSlug, err := parseRemotePluginInput(r)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Invalid request: "+err.Error(),
-		)
-
-		return
-	}
-
-	if pluginSlug == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Plugin slug is required in JSON body",
-		)
-
+	id, pluginSlug, ok := parseRemotePluginInputOrFail(w, r)
+	if !ok {
 		return
 	}
 
 	if err := Services.SiteService.EnableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
-		status := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(
-			w,
-			status,
-			"E3007",
-			err.Error(),
-			err,
-		)
-
+		respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), "E3007", err.Error(), err)
 		return
 	}
 
@@ -456,43 +408,13 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
 func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, pluginSlug, err := parseRemotePluginInput(r)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Invalid request: "+err.Error(),
-		)
-
-		return
-	}
-
-	if pluginSlug == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Plugin slug is required in JSON body",
-		)
-
+	id, pluginSlug, ok := parseRemotePluginInputOrFail(w, r)
+	if !ok {
 		return
 	}
 
 	if err := Services.SiteService.DisableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
-		status := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(
-			w,
-			status,
-			"E3007",
-			err.Error(),
-			err,
-		)
-
+		respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), "E3007", err.Error(), err)
 		return
 	}
 
@@ -501,43 +423,13 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 
 // DeleteRemotePlugin removes a plugin from a remote WordPress site (POST with JSON body)
 func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, pluginSlug, err := parseRemotePluginInput(r)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Invalid request: "+err.Error(),
-		)
-
-		return
-	}
-
-	if pluginSlug == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Plugin slug is required in JSON body",
-		)
-
+	id, pluginSlug, ok := parseRemotePluginInputOrFail(w, r)
+	if !ok {
 		return
 	}
 
 	if err := Services.SiteService.DeleteRemotePlugin(r.Context(), id, pluginSlug); err != nil {
-		status := resolveHTTPStatus(err, wordpress.HttpStatusServerError)
-		respondErrorWithSession(
-			w,
-			status,
-			"E3010",
-			err.Error(),
-			err,
-		)
-
+		respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), "E3010", err.Error(), err)
 		return
 	}
 
@@ -546,42 +438,14 @@ func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 
 // GetRemotePluginFiles returns the file list for a remote plugin
 func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, pluginSlug, err := parseRemotePluginInput(r)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Invalid request: "+err.Error(),
-		)
-
-		return
-	}
-
-	if pluginSlug == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Plugin slug is required in JSON body",
-		)
-
+	id, pluginSlug, ok := parseRemotePluginInputOrFail(w, r)
+	if !ok {
 		return
 	}
 
 	files, err := Services.SiteService.GetRemotePluginFiles(r.Context(), id, pluginSlug)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			"E3011",
-			err.Error(),
-		)
-
+		respondError(w, wordpress.HttpStatusServerError, "E3011", err.Error())
 		return
 	}
 
