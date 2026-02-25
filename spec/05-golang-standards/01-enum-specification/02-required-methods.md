@@ -445,17 +445,38 @@ func (v *Variant) UnmarshalJSON(data []byte) error {
 
 ## PascalCase Label Convention
 
-**Mandatory rule (since v4.1.0):** All `variantLabels` entries MUST use **PascalCase** strings matching the constant name. This aligns Go enum serialization with the cross-language standard (PHP, TypeScript).
+**Mandatory rule (since v4.2.0):** All `variantLabels` entries MUST use **PascalCase** strings matching the constant name. This applies to **every** enum — no exceptions.
 
 | ❌ Forbidden | ✅ Required |
 |-------------|-----------|
 | `"per_table"` | `"PerTable"` |
-| `"serpapi"` | `"SerpAPI"` |
-| `"maps_scraper"` | `"MapsScraper"` |
+| `"dns_check"` | `"DnsCheck"` |
+| `"application/json"` | `"JSON"` (label) + `"application/json"` (value) |
+| `"Operation completed successfully"` | `"Success"` (label) + sentence (value) |
 
-**Exception:** Protocol-driven enums (`content_type`, `endpoint`, `header`, `response_key`, `response_message`) preserve their functional values (e.g., `"application/json"`, `"X-Riseup-Auth"`).
+### Protocol / Wire-Value Enums
 
-**Parse() compatibility:** `Parse()` uses `strings.EqualFold()`, so it accepts both old snake_case and new PascalCase inputs during migration.
+Enums whose variants carry a technical wire value (URL paths, MIME types, HTTP headers, JSON keys, display messages) MUST separate **identity** from **wire format**:
+
+- `variantLabels` — PascalCase identity string (used by `String()`, `Label()`, `Parse()`)
+- `variantValues` — technical wire string (used by `Value()`, `MarshalJSON()`)
+
+```go
+var variantLabels = [...]string{
+    Invalid: "Invalid",
+    JSON:    "JSON",
+}
+
+var variantValues = [...]string{
+    Invalid: "invalid",
+    JSON:    "application/json",
+}
+
+func (v Variant) Value() string { return variantValues[v] }
+```
+
+`MarshalJSON()` MUST call `Value()` (not `String()`) to preserve wire compatibility.
+`Parse()` MUST check **both** `variantLabels` (EqualFold) and `variantValues` (exact match) for backwards compatibility.
 
 ---
 

@@ -174,6 +174,170 @@ const (
 )
 
 var variantLabels = [...]string{
+	Invalid:               "Invalid",
+	Success:               "Success",
+	Error:                 "Error",
+	Message:               "Message",
+	Data:                  "Data",
+	Code:                  "Code",
+	Valid:                 "Valid",
+	Errors:                "Errors",
+	Cached:                "Cached",
+	Phase:                 "Phase",
+	Reason:                "Reason",
+	Total:                 "Total",
+	Agents:                "Agents",
+	Actions:               "Actions",
+	Logs:                  "Logs",
+	Snapshots:             "Snapshots",
+	Sql:                   "Sql",
+	Params:                "Params",
+	Sets:                  "Sets",
+	Plugins:               "Plugins",
+	Tables:                "Tables",
+	Rows:                  "Rows",
+	Bytes:                 "Bytes",
+	Size:                  "Size",
+	FileSize:              "FileSize",
+	Path:                  "Path",
+	Filename:              "Filename",
+	Checksum:              "Checksum",
+	Duration:              "Duration",
+	Count:                 "Count",
+	Files:                 "Files",
+	Directory:             "Directory",
+	Scope:                 "Scope",
+	Exported:              "Exported",
+	Entry:                 "Entry",
+	Computed:              "Computed",
+	Removed:               "Removed",
+	Limit:                 "Limit",
+	Offset:                "Offset",
+	Posts:                  "Posts",
+	Categories:            "Categories",
+	Category:              "Category",
+	Export:                 "Export",
+	Incrementals:          "Incrementals",
+	TotalSize:             "TotalSize",
+	Applied:               "Applied",
+	Folder:                "Folder",
+	SnapshotId:            "SnapshotId",
+	Sequence:              "Sequence",
+	FolderName:            "FolderName",
+	TablesChanged:         "TablesChanged",
+	TotalRows:             "TotalRows",
+	TotalNewRows:          "TotalNewRows",
+	ZipSize:               "ZipSize",
+	BackupId:              "BackupId",
+	ZipFailed:             "ZipFailed",
+	SkipAudit:             "SkipAudit",
+	TablesRestored:        "TablesRestored",
+	DeletedByPolicy:       "DeletedByPolicy",
+	DeletedOrphans:        "DeletedOrphans",
+	DeletedFailed:         "DeletedFailed",
+	SpaceFreedBytes:       "SpaceFreedBytes",
+	Retention:             "Retention",
+	Orphans:               "Orphans",
+	Stuck:                 "Stuck",
+	DryRun:                "DryRun",
+	BytesFreed:            "BytesFreed",
+	Deleted:               "Deleted",
+	Cleaned:               "Cleaned",
+	Activated:             "Activated",
+	PluginSlug:            "PluginSlug",
+	IsUpdate:              "IsUpdate",
+	IsSelfUpdate:          "IsSelfUpdate",
+	PluginVersion:         "PluginVersion",
+	ActivationError:       "ActivationError",
+	Inventory:             "Inventory",
+	ErrorLog:              "ErrorLog",
+	FullLog:               "FullLog",
+	StacktraceLog:         "StacktraceLog",
+	Exists:                "Exists",
+	Content:               "Content",
+	Truncated:             "Truncated",
+	Lines:                 "Lines",
+	TotalLines:            "TotalLines",
+	Ids:                   "Ids",
+	TotalSnapshots:        "TotalSnapshots",
+	TotalSizeBytes:        "TotalSizeBytes",
+	TempFile:              "TempFile",
+	Stmt:                  "Stmt",
+	Columns:               "Columns",
+	CreatedAt:             "CreatedAt",
+	UpdatedAt:             "UpdatedAt",
+	ParentTable:           "ParentTable",
+	ChildTable:            "ChildTable",
+	FkColumn:              "FkColumn",
+	RefColumn:             "RefColumn",
+	SeedOrder:             "SeedOrder",
+	TableCount:            "TableCount",
+	DepCount:              "DepCount",
+	NewRows:               "NewRows",
+	PluginDetails:         "PluginDetails",
+	IncludedIds:           "IncludedIds",
+	IncrementalCount:      "IncrementalCount",
+	DetectionMethod:       "DetectionMethod",
+	SqliteVersion:         "SqliteVersion",
+	IsCore:                "IsCore",
+	ScheduleEnabled:       "ScheduleEnabled",
+	NextScheduledSnapshot: "NextScheduledSnapshot",
+	NextCleanup:           "NextCleanup",
+	RetentionType:         "RetentionType",
+	RetentionDays:         "RetentionDays",
+	RetentionCount:        "RetentionCount",
+	SnapshotType:          "SnapshotType",
+	ErrorCategory:         "ErrorCategory",
+	LogHint:               "LogHint",
+	FilesUpdated:          "FilesUpdated",
+	FilesDeleted:          "FilesDeleted",
+	FilesIgnored:          "FilesIgnored",
+	IgnoredFiles:          "IgnoredFiles",
+	PluginZip:             "PluginZip",
+	ResolvedUrl:           "ResolvedUrl",
+	TraceLines:            "TraceLines",
+	CompletedAt:           "CompletedAt",
+	ExportedAt:            "ExportedAt",
+	FormatVersion:         "FormatVersion",
+	JobId:                 "JobId",
+	TotalTables:           "TotalTables",
+	TablesExported:        "TablesExported",
+	PoolSize:              "PoolSize",
+	TotalBatches:          "TotalBatches",
+	CurrentBatch:          "CurrentBatch",
+	TableProgress:         "TableProgress",
+	IncrementalsApplied:   "IncrementalsApplied",
+	SkippedMaster:         "SkippedMaster",
+	ExportedTables:        "ExportedTables",
+	SnapshotDir:           "SnapshotDir",
+	DirName:               "DirName",
+	RowCount:              "RowCount",
+	TriggeredBy:           "TriggeredBy",
+	AuditData:             "AuditData",
+	LogDataKey:            "LogDataKey",
+	OriginalId:            "OriginalId",
+	OriginalCreatedAt:     "OriginalCreatedAt",
+	SourceSite:            "SourceSite",
+	OriginalTitle:         "OriginalTitle",
+	OriginalType:          "OriginalType",
+	WpVersion:             "WpVersion",
+	PhpVersion:            "PhpVersion",
+	MysqlVersion:          "MysqlVersion",
+	SiteUrl:               "SiteUrl",
+	DbPrefix:              "DbPrefix",
+	PluginCount:           "PluginCount",
+	DurationMs:            "DurationMs",
+	TableCounts:           "TableCounts",
+	Settings:              "Settings",
+	Providers:             "Providers",
+	Dependencies:          "Dependencies",
+	Slug:                  "Slug",
+	Title:                 "Title",
+	Type:                  "Type",
+	PluginFile:            "PluginFile",
+}
+
+var variantValues = [...]string{
 	Invalid:               "invalid",
 	Success:               "success",
 	Error:                 "error",
@@ -338,14 +502,23 @@ var variantLabels = [...]string{
 }
 
 func (v Variant) String() string {
-	if v.IsInvalid() {
-		return variantLabels[Invalid]
-	}
-	return variantLabels[v]
+	return v.Value()
 }
 
 func (v Variant) Label() string {
-	return v.String()
+	if v.IsInvalid() {
+		return variantLabels[Invalid]
+	}
+
+	return variantLabels[v]
+}
+
+func (v Variant) Value() string {
+	if v.IsInvalid() {
+		return variantValues[Invalid]
+	}
+
+	return variantValues[v]
 }
 
 func (v Variant) IsValid() bool {
@@ -366,14 +539,17 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func All() []Variant {
 	all := make([]Variant, 0, len(variantLabels)-1)
+
 	for i := 1; i < len(variantLabels); i++ {
 		all = append(all, Variant(i))
 	}
+
 	return all
 }
 
@@ -381,40 +557,55 @@ func ByIndex(i int) Variant {
 	if i < 0 || i >= len(variantLabels) {
 		return Invalid
 	}
+
 	return Variant(i)
 }
 
 func Parse(s string) (Variant, error) {
 	trimmed := strings.TrimSpace(s)
+
 	for i, str := range variantLabels {
 		if strings.EqualFold(str, trimmed) {
 			return Variant(i), nil
 		}
 	}
+
+	for i, str := range variantValues {
+		if strings.EqualFold(str, trimmed) {
+			return Variant(i), nil
+		}
+	}
+
 	return Invalid, fmt.Errorf("invalid response key: %q", s)
 }
 
 func Values() []string {
 	result := make([]string, 0, len(variantLabels)-1)
+
 	for _, s := range variantLabels[1:] {
 		result = append(result, s)
 	}
+
 	return result
 }
 
 func (v Variant) MarshalJSON() ([]byte, error) {
-	return json.Marshal(v.String())
+	return json.Marshal(v.Value())
 }
 
 func (v *Variant) UnmarshalJSON(data []byte) error {
 	var s string
+
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
+
 	parsed, err := Parse(s)
 	if err != nil {
 		return err
 	}
+
 	*v = parsed
+
 	return nil
 }
