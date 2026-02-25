@@ -21,7 +21,7 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 
-class SnapshotProviderWPReset extends SnapshotProviderInterface {
+class SnapshotProviderWpReset extends SnapshotProviderInterface {
     protected string $providerId = SnapshotProviderType::WpReset->value;
     protected string $providerName = 'WP Reset';
     private mixed $wpReset = null;
