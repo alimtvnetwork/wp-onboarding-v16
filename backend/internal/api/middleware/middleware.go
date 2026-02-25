@@ -86,25 +86,25 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 // Only the fields needed for error log enrichment are included.
 type envelopeForParsing struct {
 	Status struct {
-		Code    int    `json:"Code"`
-		Message string `json:"Message"`
-	} `json:"Status"`
+		Code    int    `json:"Code"`    // external key (WordPress envelope)
+		Message string `json:"Message"` // external key
+	} `json:"Status"` // external key
 	Errors *struct {
-		BackendMessage             string   `json:"BackendMessage"`
-		DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack"`
-		Backend                    []string `json:"Backend"`
-	} `json:"Errors"`
+		BackendMessage             string   `json:"BackendMessage"`             // external key
+		DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack"` // external key
+		Backend                    []string `json:"Backend"`                    // external key
+	} `json:"Errors"` // external key
 	MethodsStack *struct {
 		Backend []struct {
-			Method     string `json:"Method"`
-			File       string `json:"File"`
-			LineNumber int    `json:"LineNumber"`
-		} `json:"Backend"`
-	} `json:"MethodsStack"`
+			Method     string `json:"Method"`     // external key
+			File       string `json:"File"`       // external key
+			LineNumber int    `json:"LineNumber"` // external key
+		} `json:"Backend"` // external key
+	} `json:"MethodsStack"` // external key
 	Attributes *struct {
-		RequestedAt      string `json:"RequestedAt"`
-		RequestDelegatedAt string `json:"RequestDelegatedAt"`
-	} `json:"Attributes"`
+		RequestedAt        string `json:"RequestedAt"`        // external key
+		RequestDelegatedAt string `json:"RequestDelegatedAt"` // external key
+	} `json:"Attributes"` // external key
 }
 
 // appendToErrorLog writes a structured error entry to data/errors/error.log.txt

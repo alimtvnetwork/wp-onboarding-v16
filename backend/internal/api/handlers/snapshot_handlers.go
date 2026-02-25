@@ -167,7 +167,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, SnapshotDeleteResponse{Deleted: true, SnapshotId: snapshotId})
+	respondSuccess(w, SnapshotDeleteResponse{IsDeleted: true, SnapshotId: snapshotId})
 }
 
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote WordPress site

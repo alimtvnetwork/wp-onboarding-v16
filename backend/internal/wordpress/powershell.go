@@ -16,25 +16,25 @@ import (
 
 // PowerShellConfig holds configuration for the PowerShell uploader script.
 type PowerShellConfig struct {
-	PluginFolderPath     string `json:"pluginFolderPath"`
-	WordPressSiteURL     string `json:"wordPressSiteURL"`
-	Username             string `json:"username"`
-	AppPassword          string `json:"appPassword"`
-	PluginSlug           string `json:"pluginSlug,omitempty"`
-	OutputZipPath        string `json:"outputZipPath,omitempty"`
-	ActivateAfterInstall bool   `json:"activateAfterInstall"`
-	DeleteZipAfterUpload bool   `json:"deleteZipAfterUpload"`
+	PluginFolderPath     string `json:"pluginFolderPath"`     // external key (PowerShell script config)
+	WordPressSiteURL     string `json:"wordPressSiteURL"`     // external key
+	Username             string `json:"username"`             // external key
+	AppPassword          string `json:"appPassword"`          // external key
+	PluginSlug           string `json:"pluginSlug,omitempty"` // external key
+	OutputZipPath        string `json:"outputZipPath,omitempty"` // external key
+	ActivateAfterInstall bool   `json:"activateAfterInstall"` // external key
+	DeleteZipAfterUpload bool   `json:"deleteZipAfterUpload"` // external key
 }
 
 // PowerShellResult holds the result of a PowerShell upload execution.
 type PowerShellResult struct {
-	Success      bool   `json:"success"`
-	ExitCode     int    `json:"exitCode"`
-	Stdout       string `json:"stdout"`
-	Stderr       string `json:"stderr"`
-	ErrorMessage string `json:"errorMessage,omitempty"`
-	Plugin       string `json:"plugin,omitempty"`
-	Activated    bool   `json:"activated,omitempty"`
+	IsSuccess    bool
+	ExitCode     int
+	Stdout       string
+	Stderr       string
+	ErrorMessage string `json:",omitempty"`
+	Plugin       string `json:",omitempty"`
+	IsActivated  bool   `json:",omitempty"`
 }
 
 // RunPowerShellUpload executes the upload-plugin.ps1 script with the given configuration.
@@ -92,15 +92,15 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 	// Parse JSON output from quiet mode
 	if result.Stdout != "" {
 		var jsonResult struct {
-			Success   bool   `json:"success"`
-			Plugin    string `json:"plugin"`
-			Activated bool   `json:"activated"`
-			Error     string `json:"error"`
+			Success   bool   `json:"success"`   // external key (PowerShell JSON output)
+			Plugin    string `json:"plugin"`     // external key
+			Activated bool   `json:"activated"`  // external key
+			Error     string `json:"error"`      // external key
 		}
 		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
-			result.Success = jsonResult.Success
+			result.IsSuccess = jsonResult.Success
 			result.Plugin = jsonResult.Plugin
-			result.Activated = jsonResult.Activated
+			result.IsActivated = jsonResult.Activated
 			result.ErrorMessage = jsonResult.Error
 		}
 	}
@@ -120,7 +120,7 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 	}
 
 	if result.ExitCode == 0 && result.ErrorMessage == "" {
-		result.Success = true
+		result.IsSuccess = true
 	}
 
 	return result, nil
@@ -181,15 +181,15 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 	// Parse JSON output
 	if result.Stdout != "" {
 		var jsonResult struct {
-			Success   bool   `json:"success"`
-			Plugin    string `json:"plugin"`
-			Activated bool   `json:"activated"`
-			Error     string `json:"error"`
+			Success   bool   `json:"success"`   // external key (PowerShell JSON output)
+			Plugin    string `json:"plugin"`     // external key
+			Activated bool   `json:"activated"`  // external key
+			Error     string `json:"error"`      // external key
 		}
 		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
-			result.Success = jsonResult.Success
+			result.IsSuccess = jsonResult.Success
 			result.Plugin = jsonResult.Plugin
-			result.Activated = jsonResult.Activated
+			result.IsActivated = jsonResult.Activated
 			result.ErrorMessage = jsonResult.Error
 		}
 	}
@@ -199,7 +199,7 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 	}
 
 	if result.ExitCode == 0 && result.ErrorMessage == "" {
-		result.Success = true
+		result.IsSuccess = true
 	}
 
 	return result, nil

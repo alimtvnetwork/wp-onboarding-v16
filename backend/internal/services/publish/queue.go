@@ -215,7 +215,7 @@ func (q *PublishQueue) processNext() {
 
 		q.mu.Lock()
 		delete(q.active, item.Id)
-		if publishResult.HasError() || (publishResult.IsSafe() && !publishResult.Value().Success) {
+		if publishResult.HasError() || (publishResult.IsSafe() && !publishResult.Value().IsSuccess) {
 			item.Status = queuestatus.Failed
 		} else {
 			item.Status = queuestatus.Completed

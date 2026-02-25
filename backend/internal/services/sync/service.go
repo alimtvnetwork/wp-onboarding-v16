@@ -26,14 +26,14 @@ import (
 
 // PushSyncResult represents the result of a sync push operation
 type PushSyncResult struct {
-	PluginID     int64  `json:"pluginId"`
-	SiteID       int64  `json:"siteId"`
-	FilesUpdated int    `json:"filesUpdated"`
-	FilesDeleted int    `json:"filesDeleted"`
-	FilesIgnored int    `json:"filesIgnored"`
-	TotalChanges int    `json:"totalChanges"`
-	Success      bool   `json:"success"`
-	ErrorMessage string `json:"errorMessage,omitempty"`
+	PluginID     int64
+	SiteID       int64
+	FilesUpdated int
+	FilesDeleted int
+	FilesIgnored int
+	TotalChanges int
+	IsSuccess    bool
+	ErrorMessage string `json:",omitempty"`
 }
 
 // Service interface for sync operations
@@ -55,37 +55,37 @@ type Service interface {
 
 // FileEntry represents a file with its hash, modification time, and size
 type FileEntry struct {
-	Path       string    `json:"path"`
-	Hash       string    `json:"hash"`
-	ModifiedAt time.Time `json:"modifiedAt"`
-	Size       int64     `json:"size"`
+	Path       string
+	Hash       string
+	ModifiedAt time.Time
+	Size       int64
 }
 
 // SyncResult represents the result of a sync check
 type SyncResult struct {
-	PluginID     int64               `json:"pluginId"`
-	SiteID       int64               `json:"siteId"`
-	SiteName     string              `json:"siteName,omitempty"`
-	InSync       bool                `json:"inSync"`
-	LocalFiles   int                 `json:"localFiles"`
-	RemoteFiles  int                 `json:"remoteFiles"`
-	Added        int                 `json:"added"`
-	Modified     int                 `json:"modified"`
-	Deleted      int                 `json:"deleted"`
-	Changes      []models.FileChange `json:"changes,omitempty"`
-	CheckedAt    time.Time           `json:"checkedAt"`
-	ErrorMessage string              `json:"errorMessage,omitempty"`
+	PluginID     int64
+	SiteID       int64
+	SiteName     string              `json:",omitempty"`
+	InSync       bool
+	LocalFiles   int
+	RemoteFiles  int
+	Added        int
+	Modified     int
+	Deleted      int
+	Changes      []models.FileChange `json:",omitempty"`
+	CheckedAt    time.Time
+	ErrorMessage string              `json:",omitempty"`
 }
 
 // BatchSyncResult represents sync results for multiple sites
 type BatchSyncResult struct {
-	PluginID   int64        `json:"pluginId"`
-	PluginName string       `json:"pluginName"`
-	Results    []SyncResult `json:"results"`
-	TotalSites int          `json:"totalSites"`
-	InSync     int          `json:"inSync"`
-	OutOfSync  int          `json:"outOfSync"`
-	Errors     int          `json:"errors"`
+	PluginID   int64
+	PluginName string
+	Results    []SyncResult
+	TotalSites int
+	InSync     int
+	OutOfSync  int
+	Errors     int
 }
 
 // SitePasswordDecryptor interface for getting decrypted site passwords
@@ -313,7 +313,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	if sr.InSync {
-		result.Success = true
+		result.IsSuccess = true
 		s.broadcastProgress(pluginID, siteID, "complete", 100, "Already in sync, nothing to push")
 		return apperror.Ok(result)
 	}
@@ -380,7 +380,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	if len(syncFiles) == 0 {
-		result.Success = true
+		result.IsSuccess = true
 		s.broadcastProgress(pluginID, siteID, "complete", 100, "No pushable changes found")
 		return apperror.Ok(result)
 	}
@@ -409,10 +409,10 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	result.FilesUpdated = syncPushResult.FilesUpdated
 	result.FilesDeleted = syncPushResult.FilesDeleted
 	result.FilesIgnored = syncPushResult.FilesIgnored
-	result.Success = syncPushResult.Success
+	result.IsSuccess = syncPushResult.IsSuccess
 
 	// 7. Update sync status
-	if result.Success {
+	if result.IsSuccess {
 		s.updateMappingSyncStatus(ctx, pluginID, siteID, true)
 	}
 

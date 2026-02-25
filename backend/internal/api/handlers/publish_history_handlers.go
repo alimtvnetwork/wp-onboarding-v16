@@ -168,7 +168,7 @@ func DeletePublishHistoryEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Deleted: true})
+	respondSuccess(w, ActionResponse{IsDeleted: true})
 }
 
 // ClearPublishHistory removes all entries
@@ -186,7 +186,7 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 
 	// Require confirmation in body
 	var input struct {
-		Confirm bool `json:"confirm"`
+		Confirm bool `json:"confirm"` // external key (frontend request body)
 	}
 	_ = json.NewDecoder(r.Body).Decode(&input)
 
@@ -213,5 +213,5 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Cleared: true, Count: int(count)})
+	respondSuccess(w, ActionResponse{IsCleared: true, Count: int(count)})
 }

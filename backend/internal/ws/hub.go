@@ -57,90 +57,90 @@ type Client struct {
 
 // Message represents a WebSocket message
 type Message struct {
-	Type      string `json:"type"`
-	Data      any    `json:"data"`
-	Timestamp string `json:"timestamp"`
-	SessionId string `json:"sessionId,omitempty"`
+	Type      string
+	Data      any
+	Timestamp string
+	SessionId string `json:",omitempty"`
 }
 
 // --- Typed broadcast data structs (GE pattern: no raw map[string]any in business logic) ---
 
 // SyncProgressData holds sync progress broadcast payload.
 type SyncProgressData struct {
-	PluginId int64  `json:"pluginId"`
-	SiteId   int64  `json:"siteId"`
-	Progress int    `json:"progress"`
-	Total    int    `json:"total"`
-	Message  string `json:"message"`
+	PluginId int64
+	SiteId   int64
+	Progress int
+	Total    int
+	Message  string
 }
 
 // ScanProgressData holds scan progress broadcast payload.
 type ScanProgressData struct {
-	PluginId     int64  `json:"pluginId"`
-	FilesScanned int    `json:"filesScanned"`
-	TotalFiles   int    `json:"totalFiles"`
-	CurrentFile  string `json:"currentFile"`
+	PluginId     int64
+	FilesScanned int
+	TotalFiles   int
+	CurrentFile  string
 }
 
 // PublishProgressData holds publish progress broadcast payload.
 type PublishProgressData struct {
-	PluginId int64  `json:"pluginId"`
-	SiteId   int64  `json:"siteId"`
-	Stage    string `json:"stage"`
-	Progress int    `json:"progress"`
-	Message  string `json:"message"`
+	PluginId int64
+	SiteId   int64
+	Stage    string
+	Progress int
+	Message  string
 }
 
 // FileChangeData holds file change broadcast payload.
 type FileChangeData struct {
-	PluginId   int64  `json:"pluginId"`
-	FilePath   string `json:"filePath"`
-	ChangeType string `json:"changeType"`
+	PluginId   int64
+	FilePath   string
+	ChangeType string
 }
 
 // ErrorData holds error broadcast payload.
 type ErrorData struct {
-	Code    string          `json:"code"`
-	Message string          `json:"message"`
-	Context json.RawMessage `json:"context,omitempty"`
+	Code    string
+	Message string
+	Context json.RawMessage `json:",omitempty"`
 }
 
 // ConnectionTestProgressData holds connection test progress broadcast payload.
 type ConnectionTestProgressData struct {
-	SiteId  int64           `json:"siteId"`
-	Step    string          `json:"step"`
-	Status  string          `json:"status"`
-	Message string          `json:"message"`
-	Details json.RawMessage `json:"details,omitempty"`
+	SiteId  int64
+	Step    string
+	Status  string
+	Message string
+	Details json.RawMessage `json:",omitempty"`
 }
 
 // LogData holds log broadcast payload.
 type LogData struct {
-	Level   string          `json:"level"`
-	Message string          `json:"message"`
-	Context json.RawMessage `json:"context,omitempty"`
+	Level   string
+	Message string
+	Context json.RawMessage `json:",omitempty"`
 }
 
 // OperationLogData holds operation log broadcast payload.
 type OperationLogData struct {
-	OperationType string            `json:"operationType"`
-	PluginId      int64             `json:"pluginId"`
-	SiteId        int64             `json:"siteId"`
-	SessionId     string            `json:"sessionId,omitempty"`
-	Log           OperationLogEntry `json:"log"`
+	OperationType string
+	PluginId      int64
+	SiteId        int64
+	SessionId     string            `json:",omitempty"`
+	Log           OperationLogEntry
 }
 
 // ConnectionConfirmation holds connection confirmation broadcast payload.
 type ConnectionConfirmation struct {
-	Status   string `json:"status"`
-	ClientId string `json:"clientId"`
+	Status   string
+	ClientId string
 }
 
 // IncomingMessage represents a parsed incoming WebSocket message.
 // Data is kept as json.RawMessage (parse boundary) to be narrowed per msg.Type.
 type IncomingMessage struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data"`
+	Type string          `json:"type"` // external key (WebSocket client JSON)
+	Data json.RawMessage `json:"data"` // external key
 }
 
 // Event types for WebSocket messages
@@ -343,13 +343,13 @@ func (h *Hub) BroadcastLog(level string, message string, context json.RawMessage
 
 // OperationLogEntry represents a single log entry for an operation
 type OperationLogEntry struct {
-	Timestamp string          `json:"timestamp"` // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
-	Level     string          `json:"level"`  // debug, info, warn, error
-	Step      string          `json:"step"`   // backup, package, upload, activate, etc.
-	Message   string          `json:"message"`
-	Details   json.RawMessage `json:"details,omitempty"`
-	File      string          `json:"file,omitempty"`  // Source file path
-	Line      int             `json:"line,omitempty"`  // Source line number
+	Timestamp string          // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
+	Level     string          // debug, info, warn, error
+	Step      string          // backup, package, upload, activate, etc.
+	Message   string
+	Details   json.RawMessage `json:",omitempty"`
+	File      string          `json:",omitempty"` // Source file path
+	Line      int             `json:",omitempty"` // Source line number
 }
 
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup

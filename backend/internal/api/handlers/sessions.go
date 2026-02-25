@@ -175,7 +175,7 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Deleted: true})
+	respondSuccess(w, ActionResponse{IsDeleted: true})
 }
 
 // GetSessionDiagnostics returns structured request/response/stackTrace for a session

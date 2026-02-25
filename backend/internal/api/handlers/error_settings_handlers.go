@@ -93,7 +93,7 @@ func ClearErrors(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondSuccess(w, ActionResponse{
-		Cleared: true,
+		IsCleared: true,
 		Message: "Log files cleared",
 	})
 }
@@ -227,7 +227,7 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	report := ""
 	if r.Method == http.MethodPost {
 		var payload struct {
-			Report string `json:"report"`
+			Report string `json:"report"` // external key (frontend request body)
 		}
 		bodyBytes, _ := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
 
@@ -281,8 +281,8 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	manifest := struct {
-		GeneratedAt string   `json:"generatedAt"`
-		Files       []string `json:"files"`
+		GeneratedAt string   `json:"generatedAt"` // external key (export manifest JSON file)
+		Files       []string `json:"files"`       // external key
 	}{
 		GeneratedAt: time.Now().Format(time.RFC3339),
 		Files:       []string{},
@@ -357,25 +357,25 @@ func addFileToZip(
 func GetSettings(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, SettingsResponse{
 		Watcher: WatcherSettings{
-			PollingEnabled:         false,
-			ScanAfterGitPull:       true,
+			IsPollingEnabled:       false,
+			IsScanAfterGitPull:     true,
 			DebounceMs:             500,
 			DefaultExcludePatterns: []string{".git", "node_modules", ".DS_Store"},
 		},
 		Backup: BackupSettings{
-			AutoBackupBeforePublish: true,
-			RetentionDays:           30,
-			MaxBackupsPerPlugin:     10,
-			Location:                "backups",
+			IsAutoBackupBeforePublish: true,
+			RetentionDays:             30,
+			MaxBackupsPerPlugin:       10,
+			Location:                  "backups",
 		},
 		Logging: LoggingSettings{
 			Level:         loglevel.Info.String(),
 			RetentionDays: 7,
-			DebugMode:     false,
+			IsDebugMode:   false,
 		},
 		Appearance: AppearanceSettings{
-			Theme:       "system",
-			CompactMode: false,
+			Theme:         "system",
+			IsCompactMode: false,
 		},
 		Server: ServerSettings{
 			Port:               8080,

@@ -20,8 +20,8 @@ const (
 
 // PublishHistoryListResult wraps paginated list results
 type PublishHistoryListResult struct {
-	Items []models.PublishHistory `json:"items"`
-	Total int                    `json:"total"`
+	Items []models.PublishHistory
+	Total int
 }
 
 // Config holds configuration for the publish history service

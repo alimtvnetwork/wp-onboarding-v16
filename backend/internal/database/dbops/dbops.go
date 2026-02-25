@@ -50,29 +50,29 @@ type Result struct {
 // OperationFields holds typed metadata for database operation logging (GE pattern).
 type OperationFields struct {
 	// Domain context (set by callers)
-	SiteID     int64  `json:"siteId,omitempty"`
-	PluginID   int64  `json:"pluginId,omitempty"`
-	MappingID  int64  `json:"mappingId,omitempty"`
-	URL        string `json:"url,omitempty"`
-	Path       string `json:"path,omitempty"`
-	RemoteSlug string `json:"remoteSlug,omitempty"`
-	PluginName string `json:"pluginName,omitempty"`
-	SiteName   string `json:"siteName,omitempty"`
-	Version    string `json:"version,omitempty"`
-	Category   string `json:"category,omitempty"`
+	SiteID     int64  `json:",omitempty"`
+	PluginID   int64  `json:",omitempty"`
+	MappingID  int64  `json:",omitempty"`
+	URL        string `json:",omitempty"`
+	Path       string `json:",omitempty"`
+	RemoteSlug string `json:",omitempty"`
+	PluginName string `json:",omitempty"`
+	SiteName   string `json:",omitempty"`
+	Version    string `json:",omitempty"`
+	Category   string `json:",omitempty"`
 
 	// Operation context (set internally by dbops)
-	Table        string `json:"table,omitempty"`
-	Operation    string `json:"operation,omitempty"`
-	AffectedRows int64  `json:"affectedRows,omitempty"`
-	Caller       string `json:"caller,omitempty"`
-	Error        string `json:"error,omitempty"`
-	StackTrace   string `json:"stackTrace,omitempty"`
-	ID           int64  `json:"id,omitempty"`
-	Created      bool   `json:"created,omitempty"`
-	Exists       bool   `json:"exists,omitempty"`
-	LastInsertID int64  `json:"lastInsertId,omitempty"`
-	Note         string `json:"note,omitempty"`
+	Table        string `json:",omitempty"`
+	Operation    string `json:",omitempty"`
+	AffectedRows int64  `json:",omitempty"`
+	Caller       string `json:",omitempty"`
+	Error        string `json:",omitempty"`
+	StackTrace   string `json:",omitempty"`
+	ID           int64  `json:",omitempty"`
+	IsCreated    bool   `json:",omitempty"`
+	IsExists     bool   `json:",omitempty"`
+	LastInsertID int64  `json:",omitempty"`
+	Note         string `json:",omitempty"`
 }
 
 // toKeyvals converts the struct to a flat key-value slice for the logger.
@@ -244,11 +244,11 @@ func mergeFields(base, extra OperationFields) OperationFields {
 	if extra.ID != 0 {
 		result.ID = extra.ID
 	}
-	if extra.Created {
-		result.Created = extra.Created
+	if extra.IsCreated {
+		result.IsCreated = extra.IsCreated
 	}
-	if extra.Exists {
-		result.Exists = extra.Exists
+	if extra.IsExists {
+		result.IsExists = extra.IsExists
 	}
 	if extra.LastInsertID != 0 {
 		result.LastInsertID = extra.LastInsertID
@@ -473,11 +473,11 @@ func logSuccess(ctx Context, res *Result, query string, args []any) {
 	if res.LastInsertID > 0 {
 		fields.LastInsertID = res.LastInsertID
 	}
-	if res.Created {
-		fields.Created = true
+	if res.IsCreated {
+		fields.IsCreated = true
 	}
-	if res.Exists {
-		fields.Exists = true
+	if res.IsExists {
+		fields.IsExists = true
 	}
 
 	ctx.Logger.Debug(fmt.Sprintf("DB %s on %s", ctx.Operation, ctx.Table), fields.toKeyvals()...)

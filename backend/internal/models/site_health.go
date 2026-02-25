@@ -5,52 +5,52 @@ import "time"
 
 // SiteHealthCheck represents a single health check result
 type SiteHealthCheck struct {
-	Id           int64     `json:"id"`
-	SiteId       int64     `json:"siteId"`
-	SiteName     string    `json:"siteName"`
-	SiteUrl      string    `json:"siteUrl"`
-	Status       string    `json:"status"`       // healthy, degraded, down, unknown
-	ResponseMs   int64     `json:"responseMs"`
-	StatusCode   int       `json:"statusCode"`
-	ErrorMessage string    `json:"errorMessage,omitempty"`
-	UploaderOk   bool      `json:"uploaderOk"`
-	WPVersion    string    `json:"wpVersion,omitempty"`
-	PhpVersion   string    `json:"phpVersion,omitempty"`
-	CreatedAt    time.Time `json:"createdAt"`
+	Id           int64
+	SiteId       int64
+	SiteName     string
+	SiteUrl      string
+	Status       string    // healthy, degraded, down, unknown
+	ResponseMs   int64
+	StatusCode   int
+	ErrorMessage string    `json:",omitempty"`
+	UploaderOk   bool
+	WPVersion    string    `json:",omitempty"`
+	PhpVersion   string    `json:",omitempty"`
+	CreatedAt    time.Time
 }
 
 // SiteHealthSummary provides aggregated health data for a site
 type SiteHealthSummary struct {
-	SiteId          int64   `json:"siteId"`
-	SiteName        string  `json:"siteName"`
-	SiteUrl         string  `json:"siteUrl"`
-	CurrentStatus   string  `json:"currentStatus"`
-	LastCheckedAt   *string `json:"lastCheckedAt,omitempty"`
-	AvgResponseMs   float64 `json:"avgResponseMs"`
-	UptimePercent   float64 `json:"uptimePercent"`
-	TotalChecks     int     `json:"totalChecks"`
-	HealthyChecks   int     `json:"healthyChecks"`
-	DownChecks      int     `json:"downChecks"`
-	LastErrorAt     *string `json:"lastErrorAt,omitempty"`
-	LastError       string  `json:"lastError,omitempty"`
-	ConsecutiveDown int     `json:"consecutiveDown"`
+	SiteId          int64
+	SiteName        string
+	SiteUrl         string
+	CurrentStatus   string
+	LastCheckedAt   *string `json:",omitempty"`
+	AvgResponseMs   float64
+	UptimePercent   float64
+	TotalChecks     int
+	HealthyChecks   int
+	DownChecks      int
+	LastErrorAt     *string `json:",omitempty"`
+	LastError       string  `json:",omitempty"`
+	ConsecutiveDown int
 }
 
 // SiteHealthStats provides overall health statistics
 type SiteHealthStats struct {
-	TotalSites    int     `json:"totalSites"`
-	HealthySites  int     `json:"healthySites"`
-	DegradedSites int     `json:"degradedSites"`
-	DownSites     int     `json:"downSites"`
-	UnknownSites  int     `json:"unknownSites"`
-	AvgResponseMs float64 `json:"avgResponseMs"`
-	AvgUptime     float64 `json:"avgUptime"`
+	TotalSites    int
+	HealthySites  int
+	DegradedSites int
+	DownSites     int
+	UnknownSites  int
+	AvgResponseMs float64
+	AvgUptime     float64
 }
 
 // SiteHealthFilters for querying health checks
 type SiteHealthFilters struct {
-	SiteId    int64  `json:"siteId,omitempty"`
-	Status    string `json:"status,omitempty"`
-	StartDate string `json:"startDate,omitempty"`
-	EndDate   string `json:"endDate,omitempty"`
+	SiteId    int64  `json:",omitempty"`
+	Status    string `json:",omitempty"`
+	StartDate string `json:",omitempty"`
+	EndDate   string `json:",omitempty"`
 }

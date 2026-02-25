@@ -95,7 +95,7 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Message string `json:"message"`
+		Message string `json:"message"` // external key (frontend request body)
 	}
 	if !decodeJSON(w, r, &input) {
 		return

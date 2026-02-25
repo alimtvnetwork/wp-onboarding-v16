@@ -423,7 +423,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		s.wsHub.BroadcastLog(loglevel.Info.Lower(), "Riseup Asia Uploader deployed successfully", toJson(UploaderDeployDetails{
 			SiteId:    id,
 			SiteName:  site.Name,
-			Activated: uploadResult.Activated,
+			IsActivated: uploadResult.Activated,
 		}))
 	}
 
@@ -431,11 +431,11 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		"siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", uploadResult.Activated)
 
 	return &BootstrapResult{
-		IsSuccess: true,
-		SiteId:    id,
-		SiteName:  site.Name,
-		Message:   "Riseup Asia Uploader deployed successfully",
-		Activated: uploadResult.Activated,
+		IsSuccess:   true,
+		SiteId:      id,
+		SiteName:    site.Name,
+		Message:     "Riseup Asia Uploader deployed successfully",
+		IsActivated: uploadResult.Activated,
 	}, nil
 }
 
@@ -447,11 +447,11 @@ func (s *Service) checkOnboardAvailable(client *wordpress.Client) bool {
 
 // BootstrapResult represents the result of bootstrapping the uploader to a site
 type BootstrapResult struct {
-	IsSuccess bool
-	SiteId    int64
-	SiteName  string
-	Message   string
-	Activated bool
+	IsSuccess   bool
+	SiteId      int64
+	SiteName    string
+	Message     string
+	IsActivated bool
 }
 
 // createUploaderZip creates a ZIP file of the uploader plugin

@@ -143,8 +143,8 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	result.Stages = append(result.Stages, stage)
 
 	// Finalize result
-	result.Success = result.ActivationStatus == pluginstatus.Active.String() || result.ActivationStatus == pluginstatus.Inactive.String()
-	publishFailed = !result.Success
+	result.IsSuccess = result.ActivationStatus == pluginstatus.Active.String() || result.ActivationStatus == pluginstatus.Inactive.String()
+	publishFailed = !result.IsSuccess
 	result.Duration = time.Since(startTime).Milliseconds()
 	result.FilesUpdated = s.countFilesUpdated(options, pluginInfo, fileCount)
 
@@ -157,7 +157,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		"mode", options.Mode,
 		"files", result.FilesUpdated,
 		"duration", result.Duration,
-		"success", result.Success)
+		"success", result.IsSuccess)
 
 	// Record publish history
 	s.recordHistory(pluginInfo, siteInfo, options, result)
@@ -483,7 +483,7 @@ func (s *Service) countFilesUpdated(options PublishOptions, pluginInfo models.Pl
 func (s *Service) broadcastCompletion(pluginID, siteID int64, result *PublishResult) {
 	completionStep := stagestatus.Completed.String()
 	completionMessage := fmt.Sprintf("Published %d files in %dms", result.FilesUpdated, result.Duration)
-	if !result.Success {
+	if !result.IsSuccess {
 		completionStep = stagestatus.Failed.String()
 		completionMessage = result.ErrorMessage
 		if completionMessage == "" {
@@ -492,12 +492,12 @@ func (s *Service) broadcastCompletion(pluginID, siteID int64, result *PublishRes
 	}
 
 	logLevel := loglevel.Info.String()
-	if !result.Success {
+	if !result.IsSuccess {
 		logLevel = loglevel.Error.String()
 	}
 
 	s.broadcastDetailedLog(pluginID, siteID, logLevel, "complete", completionMessage, marshalDetails(map[string]any{
-		"success":      result.Success,
+		"success":      result.IsSuccess,
 		"filesUpdated": result.FilesUpdated,
 		"durationMs":   result.Duration,
 	}))
@@ -511,7 +511,7 @@ func (s *Service) recordHistory(pluginInfo models.Plugin, siteInfo *models.Site,
 	}
 
 	historyStatus := enumstatus.Success.String()
-	if !result.Success {
+	if !result.IsSuccess {
 		historyStatus = enumstatus.Failed.String()
 	}
 

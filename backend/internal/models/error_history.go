@@ -8,86 +8,86 @@ import (
 
 // ErrorHistory represents a captured error/notification for persistent storage
 type ErrorHistory struct {
-	Id                  int64           `json:"id"`
-	ErrorId             string          `json:"errorId"`
-	Code                string          `json:"code"`
-	Level               string          `json:"level"`
-	Message             string          `json:"message"`
-	Details             string          `json:"details,omitempty"`
+	Id                  int64
+	ErrorId             string
+	Code                string
+	Level               string
+	Message             string
+	Details             string          `json:",omitempty"`
 	ContextJSON         string          `json:"-"`
-	Context             json.RawMessage `json:"context,omitempty"`
-	StackTrace          string          `json:"stackTrace,omitempty"`
-	Endpoint            string          `json:"endpoint,omitempty"`
-	Method              string          `json:"method,omitempty"`
+	Context             json.RawMessage `json:",omitempty"`
+	StackTrace          string          `json:",omitempty"`
+	Endpoint            string          `json:",omitempty"`
+	Method              string          `json:",omitempty"`
 	RequestBodyJSON     string          `json:"-"`
-	RequestBody         json.RawMessage `json:"requestBody,omitempty"`
-	ResponseStatus      int             `json:"responseStatus,omitempty"`
-	SessionId           string          `json:"sessionId,omitempty"`
-	SessionType         string          `json:"sessionType,omitempty"`
+	RequestBody         json.RawMessage `json:",omitempty"`
+	ResponseStatus      int             `json:",omitempty"`
+	SessionId           string          `json:",omitempty"`
+	SessionType         string          `json:",omitempty"`
 	PhpStackFramesJson  string          `json:"-"`
-	PhpStackFrames      []PhpStackFrame `json:"phpStackFrames,omitempty"`
+	PhpStackFrames      []PhpStackFrame `json:",omitempty"`
 	BackendLogsJSON     string          `json:"-"`
-	BackendLogs         []string        `json:"backendLogs,omitempty"`
-	BackendStackTrace   string          `json:"backendStackTrace,omitempty"`
-	SiteUrl             string          `json:"siteUrl,omitempty"`
-	TriggerComponent    string          `json:"triggerComponent,omitempty"`
-	TriggerAction       string          `json:"triggerAction,omitempty"`
+	BackendLogs         []string        `json:",omitempty"`
+	BackendStackTrace   string          `json:",omitempty"`
+	SiteUrl             string          `json:",omitempty"`
+	TriggerComponent    string          `json:",omitempty"`
+	TriggerAction       string          `json:",omitempty"`
 	InvocationChainJSON string          `json:"-"`
-	InvocationChain     []string        `json:"invocationChain,omitempty"`
-	UIClickPath         string          `json:"uiClickPath,omitempty"`
-	MarkdownReport      string          `json:"markdownReport,omitempty"`
-	CreatedAt           time.Time       `json:"createdAt"`
+	InvocationChain     []string        `json:",omitempty"`
+	UIClickPath         string          `json:",omitempty"`
+	MarkdownReport      string          `json:",omitempty"`
+	CreatedAt           time.Time
 }
 
 // PhpStackFrame represents a single PHP stack trace frame
 type PhpStackFrame struct {
-	File     string `json:"file,omitempty"`
-	FileBase string `json:"fileBase,omitempty"`
-	Line     int    `json:"line,omitempty"`
-	Function string `json:"function,omitempty"`
-	Class    string `json:"class,omitempty"`
+	File     string `json:",omitempty"`
+	FileBase string `json:",omitempty"`
+	Line     int    `json:",omitempty"`
+	Function string `json:",omitempty"`
+	Class    string `json:",omitempty"`
 }
 
 // ErrorHistoryInput represents the input for creating an error history entry
 type ErrorHistoryInput struct {
-	ErrorId            string          `json:"errorId"`
-	Code               string          `json:"code"`
-	Level              string          `json:"level"`
-	Message            string          `json:"message"`
-	Details            string          `json:"details,omitempty"`
-	Context            json.RawMessage `json:"context,omitempty"`
-	StackTrace         string          `json:"stackTrace,omitempty"`
-	Endpoint           string          `json:"endpoint,omitempty"`
-	Method             string          `json:"method,omitempty"`
-	RequestBody        json.RawMessage `json:"requestBody,omitempty"`
-	ResponseStatus     int             `json:"responseStatus,omitempty"`
-	SessionId          string          `json:"sessionId,omitempty"`
-	SessionType        string          `json:"sessionType,omitempty"`
-	PhpStackFrames     []PhpStackFrame `json:"phpStackFrames,omitempty"`
-	BackendLogs        []string        `json:"backendLogs,omitempty"`
-	BackendStackTrace  string          `json:"backendStackTrace,omitempty"`
-	SiteUrl            string          `json:"siteUrl,omitempty"`
-	TriggerComponent   string          `json:"triggerComponent,omitempty"`
-	TriggerAction      string          `json:"triggerAction,omitempty"`
-	InvocationChain    []string        `json:"invocationChain,omitempty"`
-	UIClickPath        string          `json:"uiClickPath,omitempty"`
-	MarkdownReport     string          `json:"markdownReport,omitempty"`
+	ErrorId            string
+	Code               string
+	Level              string
+	Message            string
+	Details            string          `json:",omitempty"`
+	Context            json.RawMessage `json:",omitempty"`
+	StackTrace         string          `json:",omitempty"`
+	Endpoint           string          `json:",omitempty"`
+	Method             string          `json:",omitempty"`
+	RequestBody        json.RawMessage `json:",omitempty"`
+	ResponseStatus     int             `json:",omitempty"`
+	SessionId          string          `json:",omitempty"`
+	SessionType        string          `json:",omitempty"`
+	PhpStackFrames     []PhpStackFrame `json:",omitempty"`
+	BackendLogs        []string        `json:",omitempty"`
+	BackendStackTrace  string          `json:",omitempty"`
+	SiteUrl            string          `json:",omitempty"`
+	TriggerComponent   string          `json:",omitempty"`
+	TriggerAction      string          `json:",omitempty"`
+	InvocationChain    []string        `json:",omitempty"`
+	UIClickPath        string          `json:",omitempty"`
+	MarkdownReport     string          `json:",omitempty"`
 }
 
 // ErrorHistoryStats contains aggregated error history statistics
 type ErrorHistoryStats struct {
-	Total   int            `json:"total"`
-	ByLevel map[string]int `json:"byLevel"`
-	ByCode  map[string]int `json:"byCode"`
+	Total   int
+	ByLevel map[string]int
+	ByCode  map[string]int
 }
 
 // ErrorHistoryFilters for querying error history
 type ErrorHistoryFilters struct {
-	Code      string `json:"code,omitempty"`
-	Level     string `json:"level,omitempty"`
-	StartDate string `json:"startDate,omitempty"`
-	EndDate   string `json:"endDate,omitempty"`
-	Search    string `json:"search,omitempty"`
+	Code      string `json:",omitempty"`
+	Level     string `json:",omitempty"`
+	StartDate string `json:",omitempty"`
+	EndDate   string `json:",omitempty"`
+	Search    string `json:",omitempty"`
 }
 
 // ParseJsonFields parses the JSON string fields into their structured counterparts
