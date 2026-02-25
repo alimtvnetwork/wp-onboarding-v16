@@ -35,11 +35,13 @@ trait AuthPermissionTrait
     private function buildPermissionCallback(string $endpoint, callable $authCheck): callable {
         return function(WP_REST_Request $request) use ($endpoint, $authCheck) {
             $isEndpointDisabled = ($this->isEndpointEnabled($endpoint) === false);
+
             if ($isEndpointDisabled) {
                 return new WP_Error(WpErrorCodeType::RestDisabled->value, 'This endpoint is disabled', array('status' => HttpStatusType::Forbidden->value));
             }
 
             $isAuthOptional = ($this->isAuthRequired($endpoint) === false);
+
             if ($isAuthOptional) {
                 return true;
             }

@@ -29,6 +29,7 @@ trait SyncManifestTrait
     public function handleSyncManifest(WP_REST_Request $request): WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+
         if (empty($slug)) {
             return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
@@ -46,6 +47,7 @@ trait SyncManifestTrait
         }
 
         $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+
         if (PathHelper::isDirMissing($pluginDir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }

@@ -27,11 +27,13 @@ trait UploadZipTrait
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip($zipContent, $slug) {
         $tempFile = $this->writeZipToTemp($zipContent, $slug);
+
         if ($tempFile instanceof WP_REST_Response) {
             return $tempFile;
         }
 
         $detectedSlug = $this->validateZipStructure($tempFile, $slug);
+
         if ($detectedSlug instanceof WP_REST_Response) {
             return $detectedSlug;
         }
@@ -63,6 +65,7 @@ trait UploadZipTrait
     private function validateZipStructure(string $tempFile, string $slug) {
         $this->fileLogger->debug('Validating ZIP archive');
         $zip = new ZipArchive();
+
         if ($zip->open($tempFile) !== true) {
             @unlink($tempFile);
             $this->fileLogger->error('Invalid ZIP archive');
@@ -75,6 +78,7 @@ trait UploadZipTrait
         $zip->close();
 
         $isSlugMissing = ($detectedSlug === null);
+
         if ($isSlugMissing) {
             @unlink($tempFile);
             $this->fileLogger->error('Could not detect plugin in ZIP');
@@ -120,6 +124,7 @@ trait UploadZipTrait
         }
 
         $isUniquePlugin = ($this->isDuplicatePlugin($pdata, $pfile, $slug) === false);
+
         if ($isUniquePlugin) {
             return false;
         }

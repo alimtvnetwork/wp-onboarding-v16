@@ -42,12 +42,14 @@ trait SyncPushTrait
         }
 
         $isFilesInvalid = (BooleanHelpers::isValueEmpty($files) || is_array($files) === false);
+
         if ($isFilesInvalid) {
             return $this->errorResponse('Files array is required', HttpStatusType::BadRequest->value);
         }
 
         try {
             $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+
             if (PathHelper::isDirMissing($pluginDir)) {
                 return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
@@ -96,6 +98,7 @@ trait SyncPushTrait
         $action = isset($file['action']) ? $file['action'] : '';
 
         $guardResult = $this->guardSyncFile($path, $action, $pluginDir, $ignore);
+
         if ($guardResult !== null) {
             return $guardResult;
         }
@@ -119,6 +122,7 @@ trait SyncPushTrait
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Ignored->value, ResponseKeyType::Reason->value => ResponseMessageType::FileIgnored->value);
         }
         $fullPath = $pluginDir . '/' . $path;
+
         if ($this->isSyncPathTraversal($fullPath, $pluginDir, $action)) {
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Path traversal detected');
         }
@@ -159,6 +163,7 @@ trait SyncPushTrait
     /** Replace (create/update) a file during sync. */
     private function syncReplaceFile(string $path, string $action, string $content, string $fullPath): array {
         $decoded = base64_decode($content, true);
+
         if ($decoded === false) {
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Invalid base64 content');
         }
@@ -167,6 +172,7 @@ trait SyncPushTrait
         $written = file_put_contents($fullPath, $decoded) !== false;
         $result = array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => $written ? SyncEntryStatusType::Success->value : SyncEntryStatusType::Error->value);
         $isWriteFailed = ($written === false);
+
         if ($isWriteFailed) { $result[ResponseKeyType::Reason->value] = 'Failed to write file'; }
 
         return $result;
@@ -181,6 +187,7 @@ trait SyncPushTrait
             $this->db->logTransaction(ActionType::SyncDelete->value, $slug, StatusType::Success->value, 'Deleted via sync: ' . $path, null, null, TriggerSourceType::Api->value);
         }
         $isDeleteFailed = (unlink($fullPath) === false);
+
         if ($isDeleteFailed) {
             return array(ResponseKeyType::Path->value => $path, 'action' => $action, 'status' => SyncEntryStatusType::Error->value, ResponseKeyType::Reason->value => 'Failed to delete file');
         }
@@ -201,8 +208,10 @@ trait SyncPushTrait
     /** Update sync counters based on a file result entry. */
     private function updateSyncCounters(array $entry, array &$counters, array &$ignored): void {
         $isIgnored = ($entry['status'] === SyncEntryStatusType::Ignored->value);
+
         if ($isIgnored) { $counters[ResponseKeyType::FilesIgnored->value]++; $ignored[] = $entry[ResponseKeyType::Path->value]; return; }
         $isStatusSuccess = ($entry['status'] === SyncEntryStatusType::Success->value);
+
         if ($isStatusSuccess) {
             if ($entry['action'] === SyncActionType::Replace->value) { $counters[ResponseKeyType::FilesUpdated->value]++; }
             if ($entry['action'] === SyncActionType::Delete->value)  { $counters[ResponseKeyType::FilesDeleted->value]++; }
@@ -212,6 +221,7 @@ trait SyncPushTrait
     /** Log the completion of a sync push operation. */
     private function logSyncCompletion(string $slug, array $counters): void {
         $isDbMissing = ($this->db === null);
+
         if ($isDbMissing) { return; }
         $this->db->logTransaction(
             ActionType::Sync->value, $slug, StatusType::Success->value,
