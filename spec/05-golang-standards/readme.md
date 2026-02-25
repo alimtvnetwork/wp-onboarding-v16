@@ -321,17 +321,17 @@ func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
 
 > **Canonical source:** [Database Naming Convention](../01-coding-guidelines/database-naming.md)
 
-All custom SQLite table names, column names, and index names MUST use **PascalCase**. Go struct `db` and `json` tags must match.
+All custom SQLite table names, column names, and index names MUST use **PascalCase**. Go struct `db` tags must match column names. JSON tags are only needed for `omitempty` — see [JSON Tags](#json-tags--pascalcase-convention).
 
 ```go
 // ✅ PascalCase table and column names
 const queryList = `SELECT Id, ProjectId, DisplayName, CreatedAt FROM Projects`
 
 type Project struct {
-    Id          int64  `db:"Id"          json:"Id"`
-    ProjectId   string `db:"ProjectId"   json:"ProjectId"`
-    DisplayName string `db:"DisplayName" json:"DisplayName"`
-    CreatedAt   string `db:"CreatedAt"   json:"CreatedAt"`
+    Id          int64  `db:"Id"`
+    ProjectId   string `db:"ProjectId"`
+    DisplayName string `db:"DisplayName"`
+    CreatedAt   string `db:"CreatedAt"`
 }
 ```
 
@@ -371,9 +371,24 @@ res := dbutil.Exec(ctx, db, query, args...)
 
 ### JSON Tags — PascalCase Convention
 
-All structs used in API responses must have explicit JSON tags with PascalCase keys:
+Go's `encoding/json` marshals exported fields using their Go name by default, which is already PascalCase. Therefore:
+
+- **Do NOT add `json:"FieldName"` tags** — they are redundant since the Go field name already matches.
+- **Only add a `json` tag when `omitempty` is needed**: use `json:",omitempty"` (note the leading comma, no field name).
+- This keeps structs clean and eliminates drift between field names and tags.
 
 ```go
+// ✅ Correct: no redundant json tags; omitempty uses leading comma
+type PluginDetails struct {
+    Id        int
+    Name      string
+    Slug      string
+    Version   string
+    IsActive  bool
+    UpdatedAt string `json:",omitempty"`
+}
+
+// ❌ Wrong: redundant json tags that just repeat the field name
 type PluginDetails struct {
     Id        int    `json:"Id"`
     Name      string `json:"Name"`

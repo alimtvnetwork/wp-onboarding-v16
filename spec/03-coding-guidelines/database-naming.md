@@ -23,7 +23,7 @@ All **custom** database table names and column names MUST use **PascalCase** acr
 | Custom SQLite index names | PascalCase with `Idx` prefix | `IdxTransactions_CreatedAt` |
 | WordPress core tables | snake_case (exempt) | `wp_posts`, `wp_options` |
 | WordPress core columns | snake_case (exempt) | `post_title`, `option_value` |
-| Go struct JSON tags | PascalCase | `` `json:"PluginSlug"` `` |
+| Go struct JSON output | PascalCase (implicit) | No `json` tag needed — Go marshals as field name |
 | PHP enum-backed table values | PascalCase | `TableType::AgentSites = 'AgentSites'` |
 
 ---
@@ -154,14 +154,14 @@ $orm->insert(['PluginSlug' => $slug, 'CreatedAt' => gmdate('Y-m-d H:i:s')]);
 
 ### Struct Tags
 
-Go struct `db` and `json` tags must use PascalCase:
+Go struct `db` tags must match PascalCase column names. `json` tags are NOT needed when the field name already matches — only add `json:",omitempty"` or `json:"-"` when required:
 
 ```go
 type Project struct {
-    Id          int64  `db:"Id"          json:"Id"`
-    ProjectId   string `db:"ProjectId"   json:"ProjectId"`
-    DisplayName string `db:"DisplayName" json:"DisplayName"`
-    CreatedAt   string `db:"CreatedAt"   json:"CreatedAt"`
+    Id          int64  `db:"Id"`
+    ProjectId   string `db:"ProjectId"`
+    DisplayName string `db:"DisplayName"`
+    CreatedAt   string `db:"CreatedAt"`
 }
 ```
 
@@ -286,16 +286,16 @@ CREATE TABLE Projects (Id INTEGER, ProjectId TEXT, Url TEXT);
 ### Mistake 4: Go Struct Tags Not Matching Schema
 
 ```go
-// ❌ WRONG — tags use Go field casing, not schema casing
+// ❌ WRONG — tags use lowercase, not PascalCase schema
 type Project struct {
-    ID        int64  `db:"id"          json:"id"`
-    Name      string `db:"name"        json:"name"`
+    ID        int64  `db:"id"`
+    Name      string `db:"name"`
 }
 
-// ✅ CORRECT — tags match PascalCase schema
+// ✅ CORRECT — db tags match PascalCase schema; no redundant json tags
 type Project struct {
-    Id        int64  `db:"Id"          json:"Id"`
-    Name      string `db:"Name"        json:"Name"`
+    Id        int64  `db:"Id"`
+    Name      string `db:"Name"`
 }
 ```
 

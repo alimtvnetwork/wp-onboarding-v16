@@ -112,34 +112,34 @@ import (
 )
 
 type SeedConfig struct {
-    Version  int            `json:"version"`
-    Settings Settings       `json:"settings"`
-    Sites    []SiteSeed     `json:"sites"`
-    Plugins  []PluginSeed   `json:"plugins"`
+    Version  int
+    Settings Settings
+    Sites    []SiteSeed
+    Plugins  []PluginSeed
 }
 
 type Settings struct {
-    Port                int    `json:"port"`
-    WatchDebounceMs     int    `json:"watchDebounceMs"`
-    BackupRetentionDays int    `json:"backupRetentionDays"`
-    MaxBackupsPerPlugin int    `json:"maxBackupsPerPlugin"`
-    TempDirectory       string `json:"tempDirectory"`
-    BackupDirectory     string `json:"backupDirectory"`
-    LogLevel            string `json:"logLevel"`
+    Port                int
+    WatchDebounceMs     int
+    BackupRetentionDays int
+    MaxBackupsPerPlugin int
+    TempDirectory       string
+    BackupDirectory     string
+    LogLevel            string
 }
 
 type SiteSeed struct {
-    Name        string `json:"name"`
-    URL         string `json:"url"`
-    Username    string `json:"username"`
-    AppPassword string `json:"appPassword"`
+    Name        string
+    URL         string
+    Username    string
+    AppPassword string
 }
 
 type PluginSeed struct {
-    Name       string `json:"name"`
-    LocalPath  string `json:"localPath"`
-    RemoteSlug string `json:"remoteSlug"`
-    SiteName   string `json:"siteName"`  // References site by name
+    Name       string
+    LocalPath  string
+    RemoteSlug string
+    SiteName   string  // References site by name
 }
 
 func SeedIfNeeded(db *sql.DB, configPath string) error {

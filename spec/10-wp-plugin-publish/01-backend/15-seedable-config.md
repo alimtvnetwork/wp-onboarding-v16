@@ -318,28 +318,28 @@ type configMetaUpdate struct {
 }
 
 type SeedConfig struct {
-    Version    string                       `json:"version"`
-    Changelog  string                       `json:"changelog"`
-    Categories map[string]CategoryConfig    `json:"categories"`
+    Version    string
+    Changelog  string
+    Categories map[string]CategoryConfig
 }
 
 type CategoryConfig struct {
-    DisplayName string                    `json:"displayName"`
-    Description string                    `json:"description"`
-    Version     string                    `json:"version,omitempty"`
-    AddedIn     string                    `json:"addedIn,omitempty"`
-    Settings    map[string]SettingConfig  `json:"settings"`
+    DisplayName string
+    Description string
+    Version     string                    `json:",omitempty"`
+    AddedIn     string                    `json:",omitempty"`
+    Settings    map[string]SettingConfig
 }
 
 type SettingConfig struct {
-    Type        string      `json:"type"`
-    Label       string      `json:"label"`
-    Description string      `json:"description,omitempty"`
-    Default     any         `json:"default"`
-    Min         *float64    `json:"min,omitempty"`
-    Max         *float64    `json:"max,omitempty"`
-    Options     []string    `json:"options,omitempty"`
-    AddedIn     string      `json:"addedIn,omitempty"`
+    Type        string
+    Label       string
+    Description string   `json:",omitempty"`
+    Default     any
+    Min         *float64 `json:",omitempty"`
+    Max         *float64 `json:",omitempty"`
+    Options     []string `json:",omitempty"`
+    AddedIn     string   `json:",omitempty"`
 }
 
 // SeedWithVersionCheck seeds config if version changed

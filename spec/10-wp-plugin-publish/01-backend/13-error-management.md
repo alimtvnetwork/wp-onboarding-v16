@@ -33,12 +33,12 @@ import (
 
 // ErrorContext holds structured context data for an AppError
 type ErrorContext struct {
-    PluginID   int64  `json:"pluginId,omitempty"`
-    PluginName string `json:"pluginName,omitempty"`
-    SiteID     int64  `json:"siteId,omitempty"`
-    SiteName   string `json:"siteName,omitempty"`
-    Endpoint   string `json:"endpoint,omitempty"`
-    Action     string `json:"action,omitempty"`
+    PluginID   int64  `json:",omitempty"`
+    PluginName string `json:",omitempty"`
+    SiteID     int64  `json:",omitempty"`
+    SiteName   string `json:",omitempty"`
+    Endpoint   string `json:",omitempty"`
+    Action     string `json:",omitempty"`
 }
 
 // AppError is the standard error type for the application
@@ -363,20 +363,20 @@ func (w *DBWriter) insertErrorLog(err *apperror.AppError, contextJSON string) er
 ```go
 // internal/api/handlers/errors.go
 type ErrorResponse struct {
-    Success bool   `json:"success"`
-    Error   Error  `json:"error"`
+    Success bool
+    Error   Error
 }
 
 type Error struct {
-    Code       string        `json:"code"`
-    Message    string        `json:"message"`
-    Details    string        `json:"details,omitempty"`
-    Context    ErrorContext   `json:"context,omitempty"`
-    File       string        `json:"file,omitempty"`
-    Line       int           `json:"line,omitempty"`
-    Function   string        `json:"function,omitempty"`
-    StackTrace string        `json:"stackTrace,omitempty"`
-    Timestamp  string        `json:"timestamp"`
+    Code       string
+    Message    string
+    Details    string        `json:",omitempty"`
+    Context    ErrorContext   `json:",omitempty"`
+    File       string        `json:",omitempty"`
+    Line       int           `json:",omitempty"`
+    Function   string        `json:",omitempty"`
+    StackTrace string        `json:",omitempty"`
+    Timestamp  string
 }
 
 func WriteError(w http.ResponseWriter, err error) {
@@ -534,16 +534,16 @@ curl -v \
 
 ```go
 type ConnectionInfo struct {
-    Connected        bool     `json:"connected"`
-    Username         string   `json:"username"`
-    WPVersion        string   `json:"wpVersion,omitempty"`
-    SiteName         string   `json:"siteName,omitempty"`
-    SiteDescription  string   `json:"siteDescription,omitempty"`
-    UserID           int      `json:"userId,omitempty"`
-    UserDisplayName  string   `json:"userDisplayName,omitempty"`
-    UserRoles        []string `json:"userRoles,omitempty"`
-    CanManagePlugins bool     `json:"canManagePlugins"`
-    CanWritePosts    bool     `json:"canWritePosts"`
+    Connected        bool
+    Username         string
+    WPVersion        string   `json:",omitempty"`
+    SiteName         string   `json:",omitempty"`
+    SiteDescription  string   `json:",omitempty"`
+    UserID           int      `json:",omitempty"`
+    UserDisplayName  string   `json:",omitempty"`
+    UserRoles        []string `json:",omitempty"`
+    CanManagePlugins bool
+    CanWritePosts    bool
 }
 ```
 

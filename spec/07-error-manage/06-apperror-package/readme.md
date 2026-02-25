@@ -33,9 +33,9 @@ The `apperror` package provides **structured application errors with mandatory s
 
 ```go
 type StackFrame struct {
-    Function string `json:"function"`
-    File     string `json:"file"`
-    Line     int    `json:"line"`
+    Function string
+    File     string
+    Line     int
 }
 ```
 
@@ -46,8 +46,8 @@ type StackFrame struct {
 
 ```go
 type StackTrace struct {
-    Frames        []StackFrame `json:"frames"`
-    PreviousTrace string       `json:"previousTrace,omitempty"`
+    Frames        []StackFrame
+    PreviousTrace string       `json:",omitempty"`
 }
 ```
 
@@ -106,12 +106,12 @@ wrapped := apperror.Wrap(original, "E5002", "upload failed")
 
 ```go
 type AppError struct {
-    Code       string            `json:"code"`
-    Message    string            `json:"message"`
-    Details    string            `json:"details,omitempty"`
-    Values     map[string]string `json:"values,omitempty"`
-    Diagnostic ErrorDiagnostic   `json:"diagnostic,omitempty"`
-    Stack      StackTrace        `json:"stack"`
+    Code       string
+    Message    string
+    Details    string            `json:",omitempty"`
+    Values     map[string]string `json:",omitempty"`
+    Diagnostic ErrorDiagnostic   `json:",omitempty"`
+    Stack      StackTrace
     Cause      error             `json:"-"`
 }
 ```
@@ -579,25 +579,28 @@ return apperror.New(apperror.ErrNotFound, "entry not found")
 
 ### 11.1 JSON Tag Convention
 
-**Rule:** Only add `json:"..."` tags when the JSON key **differs** from the Go field name OR when `omitempty` is needed. PascalCase field names serialize as PascalCase by default — redundant tags must be removed.
+**Rule:** Do NOT add `json:"FieldName"` tags when the JSON key matches the Go field name — it is redundant. Go's `encoding/json` already marshals exported fields using their PascalCase name. Only add a `json` tag for:
+
+1. **`omitempty`** — use `json:",omitempty"` (leading comma, no field name)
+2. **Exclusion** — use `json:"-"`
+3. **External API parsing** — when the incoming wire format differs from Go field names (e.g., parsing WordPress responses with `snake_case` keys)
 
 | Scenario | Tag Required? | Example |
 |----------|--------------|---------|
 | Field name matches JSON key | ❌ No | `Version string` (serializes as `"Version"`) |
-| JSON key differs (camelCase) | ✅ Yes | `SiteId int64 \`json:"siteId"\`` |
-| Field needs omitempty | ✅ Yes | `Details string \`json:"details,omitempty"\`` |
-| Both differ + omitempty | ✅ Yes | `PluginSlug string \`json:"pluginSlug,omitempty"\`` |
+| Field needs omitempty | ✅ Yes | `Details string \`json:",omitempty"\`` |
 | Excluded from JSON | ✅ Yes | `Cause error \`json:"-"\`` |
+| External API parsing | ✅ Yes | `StackTrace []string \`json:"stack_trace"\`` (comment: external key) |
 
 ### 11.2 Existing JSON Tags
 
-All core structs have JSON tags where needed:
+All core structs follow the no-redundant-tag convention:
 
-- `AppError` — `code`, `message`, `details`, `values`, `diagnostic`, `stack` (camelCase, required) ✅
-- `StackTrace` — `frames`, `previousTrace` (camelCase, required) ✅
-- `StackFrame` — `function`, `file`, `line` (lowercase, required) ✅
-- `ErrorDiagnostic` — all 15+ fields tagged with camelCase + omitempty ✅
-- `Cause` — uses `json:"-"` (excluded from default marshaling) ⚠️
+- `AppError` — no tags on `Code`, `Message`, `Stack`; `json:",omitempty"` on `Details`, `Values`, `Diagnostic`; `json:"-"` on `Cause` ✅
+- `StackTrace` — no tag on `Frames`; `json:",omitempty"` on `PreviousTrace` ✅
+- `StackFrame` — no tags (all fields serialize as PascalCase) ✅
+- `ErrorDiagnostic` — `json:",omitempty"` on all fields ✅
+- `Cause` — uses `json:"-"` (excluded from default marshaling) ✅
 
 ### 11.2 Custom MarshalJSON
 
@@ -611,7 +614,7 @@ func (e *AppError) MarshalJSON() ([]byte, error) {
 
     return json.Marshal(&struct {
         *alias
-        CauseMessage string `json:"cause,omitempty"`
+        CauseMessage string `json:",omitempty"` // marshals as "CauseMessage"
     }{
         alias:        (*alias)(e),
         CauseMessage: causeMessage(e),

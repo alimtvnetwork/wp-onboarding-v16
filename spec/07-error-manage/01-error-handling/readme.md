@@ -282,13 +282,13 @@ func (b *EnvelopeBuilder) injectDelegatedServer(ctx context.Context, resp *Respo
 
 ```go
 type DelegatedRequestServer struct {
-    DelegatedEndpoint  string      `json:"DelegatedEndpoint"`
-    Method             string      `json:"Method"`
-    StatusCode         int         `json:"StatusCode"`
-    RequestBody        interface{} `json:"RequestBody,omitempty"`
-    Response           interface{} `json:"Response,omitempty"`
-    StackTrace         []string    `json:"StackTrace,omitempty"`
-    AdditionalMessages string      `json:"AdditionalMessages,omitempty"`
+    DelegatedEndpoint  string
+    Method             string
+    StatusCode         int
+    RequestBody        interface{} `json:",omitempty"`
+    Response           interface{} `json:",omitempty"`
+    StackTrace         []string    `json:",omitempty"`
+    AdditionalMessages string      `json:",omitempty"`
 }
 ```
 

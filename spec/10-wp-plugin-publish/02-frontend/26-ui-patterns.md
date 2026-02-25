@@ -282,7 +282,7 @@ Allow users to save configuration even when validation fails (e.g., site connect
 ```go
 type CreateInput struct {
   // ... other fields
-  ForceCreate bool `json:"forceCreate"` // Skip validation errors
+  ForceCreate bool `json:",omitempty"` // Skip validation errors
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) {
