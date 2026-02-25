@@ -100,9 +100,9 @@ func (c *apiClient) do(method, path string, body any) (*apiResponse, error) {
 
 	// Parse JSON response into typed envelope
 	var envelope struct {
-		Success bool            `json:"success"`
-		Data    json.RawMessage `json:"data"`
-		Error   json.RawMessage `json:"error"`
+		Success bool            `json:"success"` // external key (our own API envelope)
+		Data    json.RawMessage `json:"data"`    // external key
+		Error   json.RawMessage `json:"error"`   // external key
 	}
 	if json.Unmarshal(rawBytes, &envelope) == nil {
 		result.Success = envelope.Success

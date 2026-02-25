@@ -613,15 +613,15 @@ func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 
 // SnapshotCleanupOptions holds options for snapshot cleanup.
 type SnapshotCleanupOptions struct {
-	DryRun bool `json:"dry_run,omitempty"`
+	DryRun bool `json:"dry_run,omitempty"` // external key (Riseup Asia Uploader API)
 }
 
 // SnapshotCleanupResult holds the result of a cleanup operation.
 type SnapshotCleanupResult struct {
-	Success        bool `json:"success"`
-	OrphansCleaned int  `json:"orphans_cleaned,omitempty"`
-	StuckCleaned   int  `json:"stuck_cleaned,omitempty"`
-	AgedCleaned    int  `json:"aged_cleaned,omitempty"`
+	Success        bool `json:"success"`                  // external key (Riseup Asia Uploader API)
+	OrphansCleaned int  `json:"orphans_cleaned,omitempty"` // external key
+	StuckCleaned   int  `json:"stuck_cleaned,omitempty"`   // external key
+	AgedCleaned    int  `json:"aged_cleaned,omitempty"`    // external key
 }
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
