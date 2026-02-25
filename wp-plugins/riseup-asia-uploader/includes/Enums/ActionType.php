@@ -39,21 +39,11 @@ enum ActionType: string
     case ExportSelf       = 'ExportSelf';
     case ExportPlugin     = 'ExportPlugin';
 
-    // Update actions
-    case UpdateCheck      = 'UpdateCheck';
-    case UpdateResolve    = 'UpdateResolve';
-    case UpdateDownload   = 'UpdateDownload';
-    case UpdateInstall    = 'UpdateInstall';
-
     // Agent actions
     case AgentAdd           = 'AgentAdd';
     case AgentRemove        = 'AgentRemove';
     case AgentTest          = 'AgentTest';
     case AgentSync          = 'AgentSync';
-    case AgentPluginEnable  = 'AgentPluginEnable';
-    case AgentPluginDisable = 'AgentPluginDisable';
-    case AgentPluginDelete  = 'AgentPluginDelete';
-    case AgentPluginUpdate  = 'AgentPluginUpdate';
     case AgentApiError      = 'AgentApiError';
 
     // Snapshot actions
@@ -65,8 +55,6 @@ enum ActionType: string
     case SnapshotCleanup         = 'SnapshotCleanup';
     case SnapshotFullBackup      = 'SnapshotFullBackup';
     case SnapshotIncremental     = 'SnapshotIncremental';
-    case SnapshotRestorePerTable = 'SnapshotRestorePerTable';
-    case SnapshotImportPerTable  = 'SnapshotImportPerTable';
     case SnapshotSettingsUpdate  = 'SnapshotSettingsUpdate';
     case SnapshotZipBuild        = 'SnapshotZipBuild';
     case SnapshotZipExpire       = 'SnapshotZipExpire';
@@ -78,7 +66,7 @@ enum ActionType: string
 
     public function isSnapshot(): bool { return str_starts_with($this->value, 'Snapshot'); }
     public function isAgent(): bool    { return str_starts_with($this->value, 'Agent'); }
-    public function isUpdate(): bool   { return str_starts_with($this->value, 'Update'); }
+    
 
     public function isLifecycle(): bool
     {

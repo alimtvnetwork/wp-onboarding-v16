@@ -1,7 +1,8 @@
 # Unused PHP Enum Cases Audit
 
 > **Created:** 2026-02-25  
-> **Status:** 🔍 Report — awaiting decision  
+> **Updated:** 2026-02-25  
+> **Status:** ✅ Resolved — 17 unused cases removed  
 
 ---
 
