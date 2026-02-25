@@ -97,6 +97,7 @@ trait FileSystemPluginTrait {
     private function findPluginFileFromFilesystem(string $slug): ?string {
         try {
             $dirResult = $this->findDirPlugin($slug);
+
             if ($dirResult !== null) {
                 return $dirResult;
             }
@@ -131,6 +132,7 @@ trait FileSystemPluginTrait {
     private function scanDirForPluginHeader(string $slug, string $pluginDir): ?string {
         $phpFiles = glob($pluginDir . '/*.php');
         $isPhpFilesMissing = ($phpFiles === false || empty($phpFiles));
+
         if ($isPhpFilesMissing) {
             return null;
         }

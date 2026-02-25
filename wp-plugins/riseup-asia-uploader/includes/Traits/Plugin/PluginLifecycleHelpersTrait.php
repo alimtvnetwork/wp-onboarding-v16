@@ -90,6 +90,7 @@ trait PluginLifecycleHelpersTrait
         }
 
         $isFileSystemNeeded = $includeFileSystem && BooleanHelpers::isFuncMissing('delete_plugins');
+
         if ($isFileSystemNeeded) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
         }

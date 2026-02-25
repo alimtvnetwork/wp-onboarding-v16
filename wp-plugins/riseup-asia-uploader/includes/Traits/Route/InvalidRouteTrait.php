@@ -100,6 +100,7 @@ trait InvalidRouteTrait
 
         $data = $response->get_data();
         $isDataInvalid = (is_array($data) === false);
+
         if ($isDataInvalid) {
 
             return $response;
@@ -185,6 +186,7 @@ trait InvalidRouteTrait
         );
 
         $isWarnLevel = ($errorCode !== null && ($errorCode->isAuthError() || $errorCode->isValidationError()));
+
         if ($isWarnLevel) {
             $this->fileLogger->warn('REST API error response', $context);
 
