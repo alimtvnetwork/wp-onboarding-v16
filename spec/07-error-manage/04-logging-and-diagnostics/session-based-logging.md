@@ -135,42 +135,42 @@ The session-based logging system provides complete request/response traceability
 ```go
 type RequestSession struct {
     // Identity
-    ID string `json:"id"` // UUID v4
+    ID string // UUID v4
     
     // Request Data
-    Method         string            `json:"method"`
-    Path           string            `json:"path"`
-    QueryString    string            `json:"queryString,omitempty"`
-    RequestHeaders map[string]string `json:"requestHeaders"`
-    RequestBody    string            `json:"requestBody,omitempty"`
+    Method         string
+    Path           string
+    QueryString    string            `json:",omitempty"`
+    RequestHeaders map[string]string
+    RequestBody    string            `json:",omitempty"`
     
     // Response Data
-    ResponseStatus int    `json:"responseStatus"`
-    ResponseBody   string `json:"responseBody,omitempty"`
+    ResponseStatus int
+    ResponseBody   string `json:",omitempty"`
     
     // Timing
-    StartTime  time.Time `json:"startTime"`
-    EndTime    time.Time `json:"endTime"`
-    DurationMs int64     `json:"durationMs"`
+    StartTime  time.Time
+    EndTime    time.Time
+    DurationMs int64
     
     // Error (extracted from response if status >= 400)
-    Error string `json:"error,omitempty"`
+    Error string `json:",omitempty"`
     
     // Delegated Request (v2.0.0) — captured when Go proxies to external service
-    DelegatedRequest *DelegatedRequestInfo `json:"delegatedRequest,omitempty"`
+    DelegatedRequest *DelegatedRequestInfo `json:",omitempty"`
 }
 
 // DelegatedRequestInfo captures the full context of a proxied request
 // to an external service (WordPress PHP, Chrome extension, etc.)
 type DelegatedRequestInfo struct {
-    DelegatedEndpoint  string          `json:"delegatedEndpoint"`            // Full URL of the delegated server endpoint
-    Method             string          `json:"method"`                       // HTTP method used (GET, POST, etc.)
-    StatusCode         int             `json:"statusCode"`                   // HTTP status code from delegated server
-    RequestBody        json.RawMessage `json:"requestBody,omitempty"`        // Request body sent to delegated server
-    Response           json.RawMessage `json:"response,omitempty"`           // Response body from delegated server
-    StackTrace         []string        `json:"stackTrace,omitempty"`         // Delegated server stack trace (if error)
-    AdditionalMessages string          `json:"additionalMessages,omitempty"` // Extra context/messages
-    DurationMs         int64           `json:"durationMs,omitempty"`         // Time spent on delegated request
+    DelegatedEndpoint  string                            // Full URL of the delegated server endpoint
+    Method             string                            // HTTP method used (GET, POST, etc.)
+    StatusCode         int                               // HTTP status code from delegated server
+    RequestBody        json.RawMessage `json:",omitempty"` // Request body sent to delegated server
+    Response           json.RawMessage `json:",omitempty"` // Response body from delegated server
+    StackTrace         []string        `json:",omitempty"` // Delegated server stack trace (if error)
+    AdditionalMessages string          `json:",omitempty"` // Extra context/messages
+    DurationMs         int64           `json:",omitempty"` // Time spent on delegated request
 }
 ```
 

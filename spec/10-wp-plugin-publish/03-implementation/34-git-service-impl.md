@@ -33,99 +33,99 @@ import "time"
 
 // PullResult represents the outcome of a git pull operation
 type PullResult struct {
-	PluginID    int64     `json:"pluginId"`
-	PluginName  string    `json:"pluginName"`
-	Success     bool      `json:"success"`
-	Branch      string    `json:"branch"`
-	CommitHash  string    `json:"commitHash,omitempty"`
-	CommitMsg   string    `json:"commitMsg,omitempty"`
-	FilesChanged int      `json:"filesChanged"`
-	Insertions  int       `json:"insertions"`
-	Deletions   int       `json:"deletions"`
-	Duration    int64     `json:"duration"` // milliseconds
-	Output      string    `json:"output,omitempty"`
-	Error       string    `json:"error,omitempty"`
-	PulledAt    time.Time `json:"pulledAt"`
+	PluginID     int64
+	PluginName   string
+	Success      bool
+	Branch       string
+	CommitHash   string    `json:",omitempty"`
+	CommitMsg    string    `json:",omitempty"`
+	FilesChanged int
+	Insertions   int
+	Deletions    int
+	Duration     int64     // milliseconds
+	Output       string    `json:",omitempty"`
+	Error        string    `json:",omitempty"`
+	PulledAt     time.Time
 }
 
 // BuildResult represents the outcome of a build command
 type BuildResult struct {
-	PluginID   int64     `json:"pluginId"`
-	PluginName string    `json:"pluginName"`
-	Success    bool      `json:"success"`
-	Command    string    `json:"command"`
-	ExitCode   int       `json:"exitCode"`
-	Output     string    `json:"output"`
-	Error      string    `json:"error,omitempty"`
-	Duration   int64     `json:"duration"` // milliseconds
-	BuiltAt    time.Time `json:"builtAt"`
+	PluginID   int64
+	PluginName string
+	Success    bool
+	Command    string
+	ExitCode   int
+	Output     string
+	Error      string    `json:",omitempty"`
+	Duration   int64     // milliseconds
+	BuiltAt    time.Time
 }
 
 // BatchPullResult holds results for multiple plugins
 type BatchPullResult struct {
-	Results   []PullResult `json:"results"`
-	Succeeded int          `json:"succeeded"`
-	Failed    int          `json:"failed"`
-	Duration  int64        `json:"duration"`
+	Results   []PullResult
+	Succeeded int
+	Failed    int
+	Duration  int64
 }
 
 // PluginGitConfig holds git configuration for a plugin
 type PluginGitConfig struct {
-	PluginID     int64  `json:"pluginId"`
-	GitEnabled   bool   `json:"gitEnabled"`
-	Branch       string `json:"branch"`
-	BuildEnabled bool   `json:"buildEnabled"`
-	BuildCommand string `json:"buildCommand"`
+	PluginID     int64
+	GitEnabled   bool
+	Branch       string
+	BuildEnabled bool
+	BuildCommand string
 }
 
 // --- Broadcast detail structs (broadcast_details.go) ---
 
 // GitPullStartedEvent is broadcast when a git pull begins
 type GitPullStartedEvent struct {
-	PluginID   int64  `json:"pluginId"`
-	PluginName string `json:"pluginName"`
+	PluginID   int64
+	PluginName string
 }
 
 // GitPullFailedEvent is broadcast when a git pull fails
 type GitPullFailedEvent struct {
-	PluginID int64  `json:"pluginId"`
-	Error    string `json:"error"`
+	PluginID int64
+	Error    string
 }
 
 // GitPullCompleteEvent is broadcast when a git pull succeeds
 type GitPullCompleteEvent struct {
-	PluginID     int64  `json:"pluginId"`
-	Success      bool   `json:"success"`
-	FilesChanged int    `json:"filesChanged"`
-	CommitHash   string `json:"commitHash"`
+	PluginID     int64
+	Success      bool
+	FilesChanged int
+	CommitHash   string
 }
 
 // GitPullAllCompleteEvent is broadcast when a batch pull finishes
 type GitPullAllCompleteEvent struct {
-	Succeeded int   `json:"succeeded"`
-	Failed    int   `json:"failed"`
-	Duration  int64 `json:"duration"`
+	Succeeded int
+	Failed    int
+	Duration  int64
 }
 
 // BuildStartedEvent is broadcast when a build begins
 type BuildStartedEvent struct {
-	PluginID   int64  `json:"pluginId"`
-	PluginName string `json:"pluginName"`
-	Command    string `json:"command"`
+	PluginID   int64
+	PluginName string
+	Command    string
 }
 
 // BuildFailedEvent is broadcast when a build fails
 type BuildFailedEvent struct {
-	PluginID int64  `json:"pluginId"`
-	Error    string `json:"error"`
-	ExitCode int    `json:"exitCode"`
+	PluginID int64
+	Error    string
+	ExitCode int
 }
 
 // BuildCompleteEvent is broadcast when a build succeeds
 type BuildCompleteEvent struct {
-	PluginID int64 `json:"pluginId"`
-	Success  bool  `json:"success"`
-	Duration int64 `json:"duration"`
+	PluginID int64
+	Success  bool
+	Duration int64
 }
 ```
 
@@ -165,14 +165,14 @@ type Service interface {
 
 // GitStatus represents current git repository status
 type GitStatus struct {
-	PluginID     int64  `json:"pluginId"`
-	IsRepo       bool   `json:"isRepo"`
-	Branch       string `json:"branch"`
-	CommitHash   string `json:"commitHash"`
-	CommitMsg    string `json:"commitMsg"`
-	HasChanges   bool   `json:"hasChanges"`
-	Ahead        int    `json:"ahead"`
-	Behind       int    `json:"behind"`
+	PluginID     int64
+	IsRepo       bool
+	Branch       string
+	CommitHash   string
+	CommitMsg    string
+	HasChanges   bool
+	Ahead        int
+	Behind       int
 }
 
 // Config holds git service configuration

@@ -60,50 +60,52 @@ const (
 	WPPluginStatusInactive WPPluginStatusType = "inactive"
 )
 
+// NOTE: These structs parse EXTERNAL WordPress REST API responses.
+// Tags are required because wire format uses snake_case/lowercase keys.
 type SiteInfo struct {
-    Name        string `json:"name"`
-    Description string `json:"description"`
-    URL         string `json:"url"`
-    Home        string `json:"home"`
-    GMTOffset   int    `json:"gmt_offset"`
-    Timezone    string `json:"timezone_string"`
+    Name        string `json:"name"`        // external key
+    Description string `json:"description"` // external key
+    URL         string `json:"url"`         // external key
+    Home        string `json:"home"`        // external key
+    GMTOffset   int    `json:"gmt_offset"`  // external key
+    Timezone    string `json:"timezone_string"` // external key
     Version     string `json:"version,omitempty"`
 }
 
 type Plugin struct {
-    Slug        string             `json:"slug,omitempty"`
-    Plugin      string             `json:"plugin"`
-    Status      WPPluginStatusType `json:"status"`
-    Name        string            `json:"name"`
-    PluginURI   string            `json:"plugin_uri"`
-    Author      string            `json:"author"`
-    AuthorURI   string            `json:"author_uri"`
-    Description Description       `json:"description"`
-    Version     string            `json:"version"`
-    NetworkOnly bool              `json:"network_only"`
-    RequiresWP  string            `json:"requires_wp"`
-    RequiresPHP string            `json:"requires_php"`
-    TextDomain  string            `json:"text_domain"`
+    Slug        string             `json:"slug,omitempty"`    // external key
+    Plugin      string             `json:"plugin"`            // external key
+    Status      WPPluginStatusType `json:"status"`            // external key
+    Name        string             `json:"name"`              // external key
+    PluginURI   string             `json:"plugin_uri"`        // external key
+    Author      string             `json:"author"`            // external key
+    AuthorURI   string             `json:"author_uri"`        // external key
+    Description Description        `json:"description"`       // external key
+    Version     string             `json:"version"`           // external key
+    NetworkOnly bool               `json:"network_only"`      // external key
+    RequiresWP  string             `json:"requires_wp"`       // external key
+    RequiresPHP string             `json:"requires_php"`      // external key
+    TextDomain  string             `json:"text_domain"`       // external key
 }
 
 type Description struct {
-    Raw      string `json:"raw"`
-    Rendered string `json:"rendered"`
+    Raw      string `json:"raw"`      // external key
+    Rendered string `json:"rendered"` // external key
 }
 
 type UploadResult struct {
-    Success     bool   `json:"success"`
-    PluginSlug  string `json:"pluginSlug,omitempty"`
-    Version     string `json:"version,omitempty"`
-    WasUpdated  bool   `json:"wasUpdated"`
-    Error       string `json:"error,omitempty"`
+    Success     bool
+    PluginSlug  string `json:",omitempty"`
+    Version     string `json:",omitempty"`
+    WasUpdated  bool
+    Error       string `json:",omitempty"`
 }
 
 type RemoteFile struct {
-    Path       string `json:"path"`
-    Size       int64  `json:"size"`
-    Hash       string `json:"hash"`
-    ModifiedAt string `json:"modifiedAt"`
+    Path       string
+    Size       int64
+    Hash       string
+    ModifiedAt string
 }
 ```
 
@@ -266,9 +268,10 @@ func (c *clientImpl) checkKnownStatusError(statusCode int) error {
 }
 
 func (c *clientImpl) parseWPError(statusCode int, body []byte) error {
+    // NOTE: Parsing external WordPress error response — tags required
     var wpErr struct {
-        Code    string `json:"code"`
-        Message string `json:"message"`
+        Code    string `json:"code"`    // external key
+        Message string `json:"message"` // external key
     }
 
     if json.Unmarshal(body, &wpErr) == nil && wpErr.Message != "" {
@@ -320,14 +323,15 @@ func (c *clientImpl) GetSiteInfo(
     return c.buildSiteInfo(indexResponse, version), nil
 }
 
+// NOTE: Parsing external WordPress REST API response — tags required
 type wpIndexResponse struct {
-    Name        string   `json:"name"`
-    Description string   `json:"description"`
-    URL         string   `json:"url"`
-    Home        string   `json:"home"`
-    GMTOffset   int      `json:"gmt_offset"`
-    Timezone    string   `json:"timezone_string"`
-    Namespaces  []string `json:"namespaces"`
+    Name        string   `json:"name"`        // external key
+    Description string   `json:"description"` // external key
+    URL         string   `json:"url"`         // external key
+    Home        string   `json:"home"`        // external key
+    GMTOffset   int      `json:"gmt_offset"`  // external key
+    Timezone    string   `json:"timezone_string"` // external key
+    Namespaces  []string `json:"namespaces"`  // external key
 }
 
 func (c *clientImpl) fetchWPIndex(
@@ -760,11 +764,12 @@ func (c *clientImpl) executeUpload(
 }
 
 func (c *clientImpl) parseUploadResponse(resp *http.Response) (*UploadResult, error) {
+    // NOTE: Parsing external WordPress upload response — tags required
     var uploadResp struct {
-        Plugin  string `json:"plugin"`
-        Status  string `json:"status"`
-        Name    string `json:"name"`
-        Version string `json:"version"`
+        Plugin  string `json:"plugin"`  // external key
+        Status  string `json:"status"`  // external key
+        Name    string `json:"name"`    // external key
+        Version string `json:"version"` // external key
     }
 
     if err := c.parseResponse(resp, &uploadResp); err != nil {

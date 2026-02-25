@@ -231,25 +231,25 @@ The middleware parses the response body as a Universal Response Envelope to extr
 ```go
 type envelopeForParsing struct {
     Status struct {
-        Code    int    `json:"Code"`
-        Message string `json:"Message"`
-    } `json:"Status"`
+        Code    int
+        Message string
+    }
     Errors *struct {
-        BackendMessage             string   `json:"BackendMessage"`
-        DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack"`
-        Backend                    []string `json:"Backend"`
-    } `json:"Errors"`
+        BackendMessage             string
+        DelegatedServiceErrorStack []string
+        Backend                    []string
+    }
     MethodsStack *struct {
         Backend []struct {
-            Method     string `json:"Method"`
-            File       string `json:"File"`
-            LineNumber int    `json:"LineNumber"`
-        } `json:"Backend"`
-    } `json:"MethodsStack"`
+            Method     string
+            File       string
+            LineNumber int
+        }
+    }
     Attributes *struct {
-        RequestedAt        string `json:"RequestedAt"`
-        RequestDelegatedAt string `json:"RequestDelegatedAt"`
-    } `json:"Attributes"`
+        RequestedAt        string
+        RequestDelegatedAt string
+    }
 }
 ```
 
@@ -368,10 +368,10 @@ type StageContext struct {
 
 // StageInnerData holds the typed fields for StageContext.InnerData
 type StageInnerData struct {
-    ZipPath    string `json:"zipPath,omitempty"`
-    FileCount  int    `json:"fileCount,omitempty"`
-    HTTPStatus int    `json:"httpStatus,omitempty"`
-    RemoteSlug string `json:"remoteSlug,omitempty"`
+    ZipPath    string `json:",omitempty"`
+    FileCount  int    `json:",omitempty"`
+    HTTPStatus int    `json:",omitempty"`
+    RemoteSlug string `json:",omitempty"`
 }
 ```
 

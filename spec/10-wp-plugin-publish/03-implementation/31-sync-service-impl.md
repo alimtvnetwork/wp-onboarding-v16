@@ -52,69 +52,69 @@ const (
 
 // SyncResult represents the result of a sync check
 type SyncResult struct {
-	PluginID      int64          `json:"pluginId"`
-	SiteID        int64          `json:"siteId"`
-	PluginName    string         `json:"pluginName"`
-	SiteName      string         `json:"siteName"`
-	Status        SyncStatusType `json:"status"`
-	TotalFiles    int            `json:"totalFiles"`
-	ChangedFiles  int            `json:"changedFiles"`
-	AddedFiles    int            `json:"addedFiles"`
-	ModifiedFiles int            `json:"modifiedFiles"`
-	DeletedFiles  int            `json:"deletedFiles"`
-	Changes       []FileChange   `json:"changes"`
-	CheckedAt     time.Time      `json:"checkedAt"`
-	Error         string         `json:"error,omitempty"`
+	PluginID      int64
+	SiteID        int64
+	PluginName    string
+	SiteName      string
+	Status        SyncStatusType
+	TotalFiles    int
+	ChangedFiles  int
+	AddedFiles    int
+	ModifiedFiles int
+	DeletedFiles  int
+	Changes       []FileChange
+	CheckedAt     time.Time
+	Error         string         `json:",omitempty"`
 }
 
 // FileChange represents a detected file difference
 type FileChange struct {
-	Path        string     `json:"path"`
-	ChangeType  ChangeType `json:"type"`
-	LocalHash   string     `json:"localHash,omitempty"`
-	RemoteHash  string     `json:"remoteHash,omitempty"`
-	LocalSize   int64      `json:"localSize,omitempty"`
-	RemoteSize  int64      `json:"remoteSize,omitempty"`
-	LocalMTime  time.Time  `json:"localMTime,omitempty"`
-	RemoteMTime time.Time  `json:"remoteMTime,omitempty"`
+	Path        string
+	ChangeType  ChangeType
+	LocalHash   string    `json:",omitempty"`
+	RemoteHash  string    `json:",omitempty"`
+	LocalSize   int64     `json:",omitempty"`
+	RemoteSize  int64     `json:",omitempty"`
+	LocalMTime  time.Time `json:",omitempty"`
+	RemoteMTime time.Time `json:",omitempty"`
 }
 
 // SyncOptions configures sync behavior
 type SyncOptions struct {
-	IncludeUntracked bool `json:"includeUntracked"`
-	ForceFullCheck   bool `json:"forceFullCheck"`
+	IncludeUntracked bool
+	ForceFullCheck   bool
 }
 
 // BatchSyncResult holds results for multiple sites
 type BatchSyncResult struct {
-	PluginID int64        `json:"pluginId"`
-	Results  []SyncResult `json:"results"`
-	Summary  SyncSummary  `json:"summary"`
+	PluginID int64
+	Results  []SyncResult
+	Summary  SyncSummary
 }
 
 // SyncSummary aggregates sync status across sites
 type SyncSummary struct {
-	TotalSites    int `json:"totalSites"`
-	SyncedSites   int `json:"syncedSites"`
-	PendingSites  int `json:"pendingSites"`
-	ErrorSites    int `json:"errorSites"`
-	TotalChanges  int `json:"totalChanges"`
+	TotalSites    int
+	SyncedSites   int
+	PendingSites  int
+	ErrorSites    int
+	TotalChanges  int
 }
 
 // --- Broadcast detail structs (broadcast_details.go) ---
 
 // SyncStartedEvent is broadcast when a sync check begins
 type SyncStartedEvent struct {
-	PluginID int64 `json:"pluginId"`
-	SiteID   int64 `json:"siteId"`
+	PluginID int64
+	SiteID   int64
 }
 
 // SyncCompleteEvent is broadcast when a sync check completes
 type SyncCompleteEvent struct {
-	PluginID     int64  `json:"pluginId"`
-	SiteID       int64  `json:"siteId"`
-	Status       string `json:"status"`
-	ChangedFiles int    `json:"changedFiles"`
+	PluginID     int64
+	SiteID       int64
+	Status       string
+	ChangedFiles int
 }
 ```
 

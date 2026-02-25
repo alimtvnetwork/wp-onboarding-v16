@@ -55,24 +55,24 @@ package models
 import "time"
 
 type Site struct {
-    ID           int64      `json:"id"`
-    Name         string     `json:"name"`
-    URL          string     `json:"url"`
-    Username     string     `json:"username"`
+    ID           int64
+    Name         string
+    URL          string
+    Username     string
     AppPassword  string     `json:"-"`  // Never exposed in JSON
-    IsActive     bool       `json:"isActive"`
-    LastSyncAt   *time.Time `json:"lastSyncAt,omitempty"`
-    CreatedAt    time.Time  `json:"createdAt"`
-    UpdatedAt    time.Time  `json:"updatedAt"`
+    IsActive     bool
+    LastSyncAt   *time.Time `json:",omitempty"`
+    CreatedAt    time.Time
+    UpdatedAt    time.Time
 }
 
 // SiteWithStatus includes connection status for UI display
 type SiteWithStatus struct {
     Site
-    IsConnected   bool   `json:"isConnected"`
-    WPVersion     string `json:"wpVersion,omitempty"`
-    PluginCount   int    `json:"pluginCount"`
-    LastError     string `json:"lastError,omitempty"`
+    IsConnected   bool
+    WPVersion     string `json:",omitempty"`
+    PluginCount   int
+    LastError     string `json:",omitempty"`
 }
 ```
 
@@ -83,27 +83,27 @@ type SiteWithStatus struct {
 package site
 
 type CreateInput struct {
-    Name        string `json:"name" validate:"required,max=255"`
-    URL         string `json:"url" validate:"required,url,max=2048"`
-    Username    string `json:"username" validate:"required,max=255"`
-    AppPassword string `json:"appPassword" validate:"required"`
+    Name        string  `validate:"required,max=255"`
+    URL         string  `validate:"required,url,max=2048"`
+    Username    string  `validate:"required,max=255"`
+    AppPassword string  `validate:"required"`
 }
 
 type UpdateInput struct {
-    Name        *string `json:"name,omitempty" validate:"omitempty,max=255"`
-    URL         *string `json:"url,omitempty" validate:"omitempty,url,max=2048"`
-    Username    *string `json:"username,omitempty" validate:"omitempty,max=255"`
-    AppPassword *string `json:"appPassword,omitempty"`
-    IsActive    *bool   `json:"isActive,omitempty"`
+    Name        *string `json:",omitempty" validate:"omitempty,max=255"`
+    URL         *string `json:",omitempty" validate:"omitempty,url,max=2048"`
+    Username    *string `json:",omitempty" validate:"omitempty,max=255"`
+    AppPassword *string `json:",omitempty"`
+    IsActive    *bool   `json:",omitempty"`
 }
 
 type ConnectionResult struct {
-    Success     bool   `json:"success"`
-    WPVersion   string `json:"wpVersion,omitempty"`
-    SiteName    string `json:"siteName,omitempty"`
-    PluginCount int    `json:"pluginCount,omitempty"`
-    Error       string `json:"error,omitempty"`
-    ErrorCode   string `json:"errorCode,omitempty"`
+    Success     bool
+    WPVersion   string `json:",omitempty"`
+    SiteName    string `json:",omitempty"`
+    PluginCount int    `json:",omitempty"`
+    Error       string `json:",omitempty"`
+    ErrorCode   string `json:",omitempty"`
 }
 ```
 

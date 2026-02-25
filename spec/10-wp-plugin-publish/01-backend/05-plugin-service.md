@@ -62,31 +62,31 @@ package models
 import "time"
 
 type Plugin struct {
-    ID              int64      `json:"id"`
-    Name            string     `json:"name"`
-    LocalPath       string     `json:"localPath"`
-    RemoteSlug      string     `json:"remoteSlug"`
-    SiteID          int64      `json:"siteId"`
-    IsActive        bool       `json:"isActive"`
-    IsWatching      bool       `json:"isWatching"`
-    LastPublishedAt *time.Time `json:"lastPublishedAt,omitempty"`
-    LastHash        string     `json:"lastHash,omitempty"`
-    CreatedAt       time.Time  `json:"createdAt"`
-    UpdatedAt       time.Time  `json:"updatedAt"`
+    ID              int64
+    Name            string
+    LocalPath       string
+    RemoteSlug      string
+    SiteID          int64
+    IsActive        bool
+    IsWatching      bool
+    LastPublishedAt *time.Time `json:",omitempty"`
+    LastHash        string     `json:",omitempty"`
+    CreatedAt       time.Time
+    UpdatedAt       time.Time
     
     // Joined data
-    Site            *Site      `json:"site,omitempty"`
+    Site            *Site      `json:",omitempty"`
 }
 
 // PluginWithStatus includes sync and file status
 type PluginWithStatus struct {
     Plugin
-    PendingChanges  int    `json:"pendingChanges"`
-    TotalFiles      int    `json:"totalFiles"`
-    TotalSize       int64  `json:"totalSize"`
-    RemoteVersion   string `json:"remoteVersion,omitempty"`
-    LocalVersion    string `json:"localVersion,omitempty"`
-    IsSynced        bool   `json:"isSynced"`
+    PendingChanges  int
+    TotalFiles      int
+    TotalSize       int64
+    RemoteVersion   string `json:",omitempty"`
+    LocalVersion    string `json:",omitempty"`
+    IsSynced        bool
 }
 ```
 
@@ -97,36 +97,36 @@ type PluginWithStatus struct {
 package plugin
 
 type CreateInput struct {
-    Name       string `json:"name" validate:"required,max=255"`
-    LocalPath  string `json:"localPath" validate:"required,max=4096"`
-    RemoteSlug string `json:"remoteSlug" validate:"required,max=255,lowercase"`
-    SiteID     int64  `json:"siteId" validate:"required"`
+    Name       string  `validate:"required,max=255"`
+    LocalPath  string  `validate:"required,max=4096"`
+    RemoteSlug string  `validate:"required,max=255,lowercase"`
+    SiteID     int64   `validate:"required"`
 }
 
 type UpdateInput struct {
-    Name       *string `json:"name,omitempty" validate:"omitempty,max=255"`
-    LocalPath  *string `json:"localPath,omitempty" validate:"omitempty,max=4096"`
-    RemoteSlug *string `json:"remoteSlug,omitempty" validate:"omitempty,max=255,lowercase"`
-    IsActive   *bool   `json:"isActive,omitempty"`
+    Name       *string `json:",omitempty" validate:"omitempty,max=255"`
+    LocalPath  *string `json:",omitempty" validate:"omitempty,max=4096"`
+    RemoteSlug *string `json:",omitempty" validate:"omitempty,max=255,lowercase"`
+    IsActive   *bool   `json:",omitempty"`
 }
 
 type DirectoryScan struct {
-    Path        string     `json:"path"`
-    IsValid     bool       `json:"isValid"`
-    PluginName  string     `json:"pluginName,omitempty"`
-    Version     string     `json:"version,omitempty"`
-    MainFile    string     `json:"mainFile,omitempty"`
-    Files       []FileInfo `json:"files"`
-    TotalSize   int64      `json:"totalSize"`
-    Error       string     `json:"error,omitempty"`
+    Path        string
+    IsValid     bool
+    PluginName  string     `json:",omitempty"`
+    Version     string     `json:",omitempty"`
+    MainFile    string     `json:",omitempty"`
+    Files       []FileInfo
+    TotalSize   int64
+    Error       string     `json:",omitempty"`
 }
 
 type FileInfo struct {
-    Path         string    `json:"path"`         // Relative path within plugin
-    Size         int64     `json:"size"`
-    Hash         string    `json:"hash"`         // MD5 or SHA256
-    ModifiedAt   time.Time `json:"modifiedAt"`
-    IsDirectory  bool      `json:"isDirectory"`
+    Path         string    // Relative path within plugin
+    Size         int64
+    Hash         string    // MD5 or SHA256
+    ModifiedAt   time.Time
+    IsDirectory  bool
 }
 ```
 

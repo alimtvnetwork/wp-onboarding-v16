@@ -32,7 +32,7 @@ A unified response contract was needed to eliminate these problems without break
 - The frontend consumes PascalCase directly via `parseEnvelope<T>()`, keeping the contract transparent end-to-end.
 
 **Alternatives considered:**
-- *camelCase* — natural for JavaScript but would require `json:"camelKey"` tags on every Go struct field.
+- *camelCase* — natural for JavaScript but would require `json:"camelKey"` tags on every Go struct field, adding redundant boilerplate.
 - *snake_case* — conventional in PHP/Ruby ecosystems but alien to both Go and TypeScript interfaces.
 
 ---

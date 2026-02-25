@@ -54,76 +54,76 @@ const (
 
 // PublishOptions configures the publish operation
 type PublishOptions struct {
-	Mode         string   `json:"mode"`         // "full" or "selected"
-	Files        []string `json:"files"`        // files to publish (for selected mode)
-	CreateBackup bool     `json:"createBackup"` // backup before publishing
-	Activate     bool     `json:"activate"`     // activate plugin after publish
-	DryRun       bool     `json:"dryRun"`       // validate without publishing
+	Mode         string   // "full" or "selected"
+	Files        []string // files to publish (for selected mode)
+	CreateBackup bool     // backup before publishing
+	Activate     bool     // activate plugin after publish
+	DryRun       bool     // validate without publishing
 }
 
 // PublishResult represents the outcome of a publish operation
 type PublishResult struct {
-	PublishID        string               `json:"publishId"`
-	Success          bool                 `json:"success"`
-	PluginID         int64                `json:"pluginId"`
-	SiteID           int64                `json:"siteId"`
-	FilesUploaded    int                  `json:"filesUploaded"`
-	BytesTransferred int64                `json:"bytesTransferred"`
-	BackupID         *int64               `json:"backupId,omitempty"`
-	ActivationStatus ActivationStatusType `json:"activationStatus"`
-	Duration         int64                `json:"duration"`
-	Stages           []StageResult        `json:"stages"`
-	Error            string               `json:"error,omitempty"`
+	PublishID        string
+	Success          bool
+	PluginID         int64
+	SiteID           int64
+	FilesUploaded    int
+	BytesTransferred int64
+	BackupID         *int64               `json:",omitempty"`
+	ActivationStatus ActivationStatusType
+	Duration         int64
+	Stages           []StageResult
+	Error            string               `json:",omitempty"`
 }
 
 // StageResult tracks individual pipeline stage outcomes
 type StageResult struct {
-	Name     string          `json:"name"`
-	Status   StageStatusType `json:"status"`
-	Duration int64           `json:"duration"`
-	Error    string          `json:"error,omitempty"`
+	Name     string
+	Status   StageStatusType
+	Duration int64
+	Error    string `json:",omitempty"`
 }
 
 // PackageInfo describes a created plugin package
 type PackageInfo struct {
-	Path      string    `json:"path"`
-	Size      int64     `json:"size"`
-	FileCount int       `json:"fileCount"`
-	Checksum  string    `json:"checksum"`
-	CreatedAt time.Time `json:"createdAt"`
+	Path      string
+	Size      int64
+	FileCount int
+	Checksum  string
+	CreatedAt time.Time
 }
 
 // --- Broadcast detail structs (broadcast_details.go) ---
 
 // PublishStartedEvent is broadcast when a publish operation begins
 type PublishStartedEvent struct {
-	PublishID string `json:"publishId"`
-	PluginID  int64  `json:"pluginId"`
-	SiteID    int64  `json:"siteId"`
-	Mode      string `json:"mode"`
+	PublishID string
+	PluginID  int64
+	SiteID    int64
+	Mode      string
 }
 
 // PublishCompleteEvent is broadcast when a publish operation completes
 type PublishCompleteEvent struct {
-	PublishID     string `json:"publishId"`
-	PluginID      int64  `json:"pluginId"`
-	SiteID        int64  `json:"siteId"`
-	Success       bool   `json:"success"`
-	FilesUploaded int    `json:"filesUploaded"`
+	PublishID     string
+	PluginID      int64
+	SiteID        int64
+	Success       bool
+	FilesUploaded int
 }
 
 // PublishProgressEvent is broadcast during publish stage transitions
 type PublishProgressEvent struct {
-	Stage    string          `json:"stage"`
-	Status   StageStatusType `json:"status"`
-	Duration int64           `json:"duration,omitempty"`
+	Stage    string
+	Status   StageStatusType
+	Duration int64 `json:",omitempty"`
 }
 
 // PublishFailedEvent is broadcast when a publish operation fails
 type PublishFailedEvent struct {
-	PublishID string `json:"publishId"`
-	Stage     string `json:"stage"`
-	Error     string `json:"error"`
+	PublishID string
+	Stage     string
+	Error     string
 }
 ```
 

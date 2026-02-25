@@ -50,30 +50,30 @@ All conditional sections use pointer types with `json:",omitempty"`:
 
 ```go
 type Response struct {
-    Status      Status           `json:"Status"`
-    Attributes  Attributes       `json:"Attributes"`
-    Results     json.RawMessage  `json:"Results"`
-    Navigation  *Navigation      `json:"Navigation,omitempty"`
-    Errors      *Errors          `json:"Errors,omitempty"`
-    MethodsStack *MethodsStack   `json:"MethodsStack,omitempty"`
+    Status      Status
+    Attributes  Attributes
+    Results     json.RawMessage
+    Navigation  *Navigation      `json:",omitempty"`
+    Errors      *Errors          `json:",omitempty"`
+    MethodsStack *MethodsStack   `json:",omitempty"`
 }
 
 type Errors struct {
-    BackendMessage            string                  `json:"BackendMessage"`
-    DelegatedServiceErrorStack []string               `json:"DelegatedServiceErrorStack,omitempty"`
-    Backend                   []string                `json:"Backend,omitempty"`
-    Frontend                  []string                `json:"Frontend,omitempty"`
-    DelegatedRequestServer    *DelegatedRequestServer `json:"DelegatedRequestServer,omitempty"`
+    BackendMessage            string
+    DelegatedServiceErrorStack []string               `json:",omitempty"`
+    Backend                   []string                `json:",omitempty"`
+    Frontend                  []string                `json:",omitempty"`
+    DelegatedRequestServer    *DelegatedRequestServer `json:",omitempty"`
 }
 
 type DelegatedRequestServer struct {
-    DelegatedEndpoint  string          `json:"DelegatedEndpoint"`
-    Method             string          `json:"Method"`
-    StatusCode         int             `json:"StatusCode"`
-    RequestBody        json.RawMessage `json:"RequestBody,omitempty"`
-    Response           json.RawMessage `json:"Response,omitempty"`
-    StackTrace         []string        `json:"StackTrace,omitempty"`
-    AdditionalMessages string          `json:"AdditionalMessages,omitempty"`
+    DelegatedEndpoint  string
+    Method             string
+    StatusCode         int
+    RequestBody        json.RawMessage `json:",omitempty"`
+    Response           json.RawMessage `json:",omitempty"`
+    StackTrace         []string        `json:",omitempty"`
+    AdditionalMessages string          `json:",omitempty"`
 }
 ```
 

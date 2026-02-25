@@ -107,7 +107,7 @@ type Tx struct {
 // ✅ CORRECT: PascalCase everywhere
 const query = `SELECT PluginSlug FROM Transactions`
 type Tx struct {
-    PluginSlug string `db:"PluginSlug" json:"PluginSlug"`
+    PluginSlug string `db:"PluginSlug"`
 }
 ```
 

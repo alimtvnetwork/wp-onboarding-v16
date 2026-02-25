@@ -61,8 +61,8 @@ func Health(w http.ResponseWriter, r *http.Request) {
 
 // After (standard envelope)
 type HealthStatus struct {
-    Status    string `json:"status"`
-    Timestamp string `json:"timestamp"`
+    Status    string
+    Timestamp string
 }
 
 func Health(w http.ResponseWriter, r *http.Request) {

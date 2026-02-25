@@ -52,17 +52,17 @@ Session management provides isolated, auditable logging for every backend operat
 
 ```go
 type Session struct {
-    ID          string                 `json:"id"`
-    Type        SessionType            `json:"type"`
-    PluginID    int64                  `json:"pluginId,omitempty"`
-    SiteID      int64                  `json:"siteId,omitempty"`
-    PluginName  string                 `json:"pluginName,omitempty"`
-    SiteName    string                 `json:"siteName,omitempty"`
-    Status      string                 `json:"status"`     // running, success, error
-    StartedAt   time.Time              `json:"startedAt"`
-    EndedAt     *time.Time             `json:"endedAt,omitempty"`
-    ErrorMsg    string                 `json:"errorMessage,omitempty"`
-    Metadata    json.RawMessage        `json:"metadata,omitempty"`
+    ID          string
+    Type        SessionType
+    PluginID    int64                  `json:",omitempty"`
+    SiteID      int64                  `json:",omitempty"`
+    PluginName  string                 `json:",omitempty"`
+    SiteName    string                 `json:",omitempty"`
+    Status      string                 // running, success, error
+    StartedAt   time.Time
+    EndedAt     *time.Time             `json:",omitempty"`
+    ErrorMsg    string                 `json:",omitempty"`
+    Metadata    json.RawMessage        `json:",omitempty"`
 }
 ```
 
@@ -70,11 +70,11 @@ type Session struct {
 
 ```go
 type LogEntry struct {
-    Timestamp string                 `json:"timestamp"`
-    Level     string                 `json:"level"`    // debug, info, warn, error
-    Step      string                 `json:"step"`     // backup, package, upload, activate
-    Message   string                 `json:"message"`
-    Details   json.RawMessage        `json:"details,omitempty"`
+    Timestamp string
+    Level     string                 // debug, info, warn, error
+    Step      string                 // backup, package, upload, activate
+    Message   string
+    Details   json.RawMessage        `json:",omitempty"`
 }
 ```
 
@@ -82,15 +82,15 @@ type LogEntry struct {
 
 ```go
 type SessionSummary struct {
-    ID         string      `json:"id"`
-    Type       SessionType `json:"type"`
-    PluginID   int64       `json:"pluginId,omitempty"`
-    SiteID     int64       `json:"siteId,omitempty"`
-    PluginName string      `json:"pluginName,omitempty"`
-    SiteName   string      `json:"siteName,omitempty"`
-    Status     string      `json:"status"`
-    StartedAt  time.Time   `json:"startedAt"`
-    EndedAt    *time.Time  `json:"endedAt,omitempty"`
+    ID         string
+    Type       SessionType
+    PluginID   int64       `json:",omitempty"`
+    SiteID     int64       `json:",omitempty"`
+    PluginName string      `json:",omitempty"`
+    SiteName   string      `json:",omitempty"`
+    Status     string
+    StartedAt  time.Time
+    EndedAt    *time.Time  `json:",omitempty"`
 }
 ```
 

@@ -83,23 +83,23 @@ const (
 
 // FileChange represents a detected file modification
 type FileChange struct {
-	Path       string            `json:"path"`
-	ChangeType WatcherChangeType `json:"type"`
-	OldPath    string            `json:"oldPath,omitempty"`
-	Hash       string            `json:"hash,omitempty"`
-	Size       int64             `json:"size,omitempty"`
-	ModTime    time.Time         `json:"modTime,omitempty"`
+	Path       string
+	ChangeType WatcherChangeType
+	OldPath    string    `json:",omitempty"`
+	Hash       string    `json:",omitempty"`
+	Size       int64     `json:",omitempty"`
+	ModTime    time.Time `json:",omitempty"`
 }
 
 // ScanResult contains the outcome of a directory scan
 type ScanResult struct {
-	PluginID     int64        `json:"pluginId"`
-	Path         string       `json:"path"`
-	ScanTime     time.Time    `json:"scanTime"`
-	DurationMs   int64        `json:"durationMs"`
-	FilesScanned int          `json:"filesScanned"`
-	Changes      []FileChange `json:"changes"`
-	TriggerType  string       `json:"triggerType"` // "git_pull" or "manual"
+	PluginID     int64
+	Path         string
+	ScanTime     time.Time
+	DurationMs   int64
+	FilesScanned int
+	Changes      []FileChange
+	TriggerType  string       // "git_pull" or "manual"
 }
 
 // fileInfo holds cached file metadata for change detection
@@ -113,16 +113,16 @@ type fileInfo struct {
 
 // FileChangeEvent is broadcast when file changes are detected
 type FileChangeEvent struct {
-	PluginID int64              `json:"pluginId"`
-	Changes  []FileChange       `json:"changes"`
-	Summary  FileChangeSummary  `json:"summary"`
+	PluginID int64
+	Changes  []FileChange
+	Summary  FileChangeSummary
 }
 
 // FileChangeSummary counts changes by type
 type FileChangeSummary struct {
-	Created  int `json:"created"`
-	Modified int `json:"modified"`
-	Deleted  int `json:"deleted"`
+	Created  int
+	Modified int
+	Deleted  int
 }
 
 // pluginScanCache stores the last known state of a plugin's files

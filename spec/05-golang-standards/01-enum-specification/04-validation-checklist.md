@@ -156,7 +156,7 @@ grep -rn 'Provider.*=' --include="*.go" .
 **Before:**
 ```go
 type SearchRequest struct {
-    Provider string `json:"provider"`
+    Provider string
 }
 ```
 
@@ -165,7 +165,7 @@ type SearchRequest struct {
 import "myapp/internal/enums/provider"
 
 type SearchRequest struct {
-    Provider provider.Variant `json:"Provider"`
+    Provider provider.Variant
 }
 ```
 

@@ -40,10 +40,10 @@ Use **alias** (`=`) to preserve methods. Use **definition** (no `=`) when adding
 
 ```go
 type Student[TRights any, TKey comparable] struct {
-    Id        TKey    `json:"id"`
-    Rights    TRights `json:"rights"`
-    Name      string  `json:"name"`
-    EnrolledAt string `json:"enrolledAt"`
+    Id        TKey
+    Rights    TRights
+    Name      string
+    EnrolledAt string
 }
 
 // Named instantiations
@@ -63,7 +63,7 @@ Every `map[string]any` in business logic MUST become a **typed struct**.
 ```go
 // ❌ PROHIBITED — type erasure, zero domain meaning
 type ApiError struct {
-    Context map[string]any `json:"context"`
+    Context map[string]any
 }
 
 func BroadcastLog(level, message string, context map[string]any) { ... }
@@ -162,20 +162,20 @@ The difference: `T` is compiler-checked at each call site. `any` discards all ty
 ```go
 // ❌ PROHIBITED — any in struct fields
 type Message struct {
-    Data any `json:"data"`
+    Data any
 }
 
 type PaginatedSessions struct {
-    Sessions any `json:"sessions"`
+    Sessions any
 }
 
 // ✅ REQUIRED — generic or concrete
 type Message[T any] struct {
-    Data T `json:"data"`
+    Data T
 }
 
 type PaginatedSessions struct {
-    Sessions []*SessionSummary `json:"sessions"`
+    Sessions []*SessionSummary
 }
 ```
 
@@ -260,12 +260,12 @@ type ContextFields = map[string]any
 
 // ✅ REQUIRED
 type OperationLogFields struct {
-    Table        string `json:"table"`
-    Operation    string `json:"operation"`
-    AffectedRows int64  `json:"affectedRows,omitempty"`
-    Error        string `json:"error,omitempty"`
-    Caller       string `json:"caller,omitempty"`
-    StackTrace   string `json:"stackTrace,omitempty"`
+    Table        string
+    Operation    string
+    AffectedRows int64  `json:",omitempty"`
+    Error        string `json:",omitempty"`
+    Caller       string `json:",omitempty"`
+    StackTrace   string `json:",omitempty"`
 }
 ```
 

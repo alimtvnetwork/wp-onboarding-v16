@@ -26,13 +26,13 @@ Structured error details from the downstream server. **Required when `IsFailed=t
 
 ```go
 type DelegatedRequestServer struct {
-    DelegatedEndpoint  string          `json:"DelegatedEndpoint"`   // Full URL
-    Method             string          `json:"Method"`              // HTTP method used
-    StatusCode         int             `json:"StatusCode"`          // Response status code
-    RequestBody        json.RawMessage `json:"RequestBody"`         // Request body sent (null for GET)
-    Response           json.RawMessage `json:"Response"`            // Full response body (parsed JSON if possible)
-    StackTrace         []string        `json:"StackTrace"`          // PHP/Node/etc stack trace lines
-    AdditionalMessages string          `json:"AdditionalMessages"`  // Human-readable diagnostic hint
+    DelegatedEndpoint  string                                       // Full URL
+    Method             string                                       // HTTP method used
+    StatusCode         int                                          // Response status code
+    RequestBody        json.RawMessage `json:",omitempty"`           // Request body sent (null for GET)
+    Response           json.RawMessage                               // Full response body (parsed JSON if possible)
+    StackTrace         []string                                      // PHP/Node/etc stack trace lines
+    AdditionalMessages string                                        // Human-readable diagnostic hint
 }
 ```
 
@@ -141,14 +141,16 @@ Instead of using `interface{}` and type assertions, define a concrete struct mat
 
 ```go
 // DelegatedResponseBody represents the parsed JSON structure from a WordPress-style error response.
+// NOTE: These structs parse EXTERNAL WordPress REST API responses.
+// Tags are required here because wire format differs from Go field names.
 type DelegatedResponseBody struct {
-    Data DelegatedResponseData `json:"data"`
+    Data DelegatedResponseData `json:"data"` // external key
 }
 
 // DelegatedResponseData holds the structured error details from a delegated server.
 type DelegatedResponseData struct {
-    StackTrace []string `json:"stack_trace"` // PHP stack trace lines
-    LogHint    string   `json:"log_hint"`    // Human-readable diagnostic hint
+    StackTrace []string `json:"stack_trace"` // external key — PHP stack trace lines
+    LogHint    string   `json:"log_hint"`    // external key — Human-readable diagnostic hint
 }
 ```
 
