@@ -45,3 +45,5 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 05 | response-key-type-expansion | Enum/Consumer Sync | Added 7 missing ResponseKeyType cases and migrated ~15 PHP consumers |
 | 06 | i18n-text-domain-literal-requirement | i18n / WordPress Tooling | Text domain in i18n calls must be literal string — never enum/constant |
 | 07 | snake-case-db-column-references-after-v13 | Database / Naming Convention | PHP code used snake_case column names after V13 PascalCase migration |
+| 08 | php-audit-report | Audit | PHP codebase audit report |
+| 09 | r10-audit-report | Audit | R10 blank-line-before-control-structure audit report |
