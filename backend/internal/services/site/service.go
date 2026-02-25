@@ -21,6 +21,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	action_enum "wp-plugin-publish/internal/enums/action"
 	connectionstatus "wp-plugin-publish/internal/enums/connection_status"
+	ep "wp-plugin-publish/internal/enums/endpoint"
 	connectionstep "wp-plugin-publish/internal/enums/connection_step"
 	loglevel "wp-plugin-publish/internal/enums/log_level"
 	stagestatus "wp-plugin-publish/internal/enums/stage_status"
@@ -1331,11 +1332,11 @@ func (s *Service) logToErrorFile(action string, siteId int64, pluginSlug, siteNa
 		// Determine the correct Riseup Uploader endpoint
 		switch action {
 		case "disable":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, wordpress.EndpointDisable)
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Disable.String())
 		case "enable":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, wordpress.EndpointEnable)
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Enable.String())
 		case "delete":
-			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, wordpress.EndpointDelete)
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Delete.String())
 		default:
 			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteUrl, wordpress.RiseupAsiaNamespace, action)
 		}
