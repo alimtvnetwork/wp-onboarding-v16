@@ -53,7 +53,7 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 // Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
-	reqBody := map[string]string{"plugin": slug}
+	reqBody := PluginSlugRequest{Plugin: slug}
 	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to get sync manifest").
@@ -103,7 +103,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 // Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
-	reqBody := map[string]string{"plugin": slug}
+	reqBody := PluginSlugRequest{Plugin: slug}
 	resp, err := c.request("POST", string(endpoint), reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to get plugin files via Riseup").
@@ -205,9 +205,9 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 		return nil, apperror.Wrap(err, apperror.ErrWPPluginUpload, "failed to get upload mutation token")
 	}
 
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), ProgressDetails{
-		"tokenLength": len(mutationToken),
-	})
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), toProgress(TokenProgress{
+		TokenLength: len(mutationToken),
+	}))
 
 	// Open the ZIP file
 	file, err := os.Open(zipPath)
@@ -255,11 +255,11 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), ProgressDetails{
-		"zipSize":  stat.Size(),
-		"zipFile":  filepath.Base(zipPath),
-		"endpoint": endpoint,
-	})
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), toProgress(ZipUploadProgress{
+		ZipSize:  stat.Size(),
+		ZipFile:  filepath.Base(zipPath),
+		Endpoint: endpoint,
+	}))
 
 	req, err := http.NewRequest("POST", url, &reqBody)
 	if err != nil {
@@ -280,10 +280,10 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Upload response: %d", resp.StatusCode), ProgressDetails{
-		"status": resp.StatusCode,
-		"body":   truncateBody(respBody, 500),
-	})
+	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Upload response: %d", resp.StatusCode), toProgress(ResponseProgress{
+		Status: resp.StatusCode,
+		Body:   truncateBody(respBody, 500),
+	}))
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &APIError{
@@ -346,13 +346,8 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 	// Use the Riseup Asia Uploader fixed endpoint
 	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
 
-	body := map[string]string{"plugin": pluginSlug, "path": filePath}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body for file content")
-	}
-
-	resp, err := c.request("POST", string(endpoint), bytes.NewReader(jsonBody))
+	body := PluginFileRequest{Plugin: pluginSlug, Path: filePath}
+	resp, err := c.request("POST", string(endpoint), body)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to get file content").
 			WithURL(c.fullURL(string(endpoint)))

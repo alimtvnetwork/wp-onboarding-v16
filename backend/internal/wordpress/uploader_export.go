@@ -34,7 +34,7 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 	}
 
 	endpoint := "/" + namespace + ep.ExportPlugin.String()
-	reqBody := map[string]string{"plugin": slug}
+	reqBody := PluginSlugRequest{Plugin: slug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "export-plugin request failed").

@@ -1,15 +1,16 @@
 # Memory: architecture/coding-standards/generic-enforce-pattern
-Updated: 2026-02-12
+Updated: 2026-02-25
 
 The Generic Enforce pattern (spec/12-generic-enforce/) requires that every concrete instantiation of a generic type with domain-meaningful parameters MUST produce a named type alias. This is a cross-language rule applying to TypeScript, Golang, C#, and Rust. Raw generic instantiations like `Record<string, unknown>`, `map[string]interface{}`, `Dictionary<string, object>`, and `serde_json::Value` are PROHIBITED in public APIs, props, function signatures, and struct/interface fields. The pattern follows the Student-Teacher model: `type TeacherBasicRights = Student<BasicRights, number>` rather than scattering `Student<BasicRights, number>` throughout the codebase. Exception: trivial generics with primitive params (`string[]`, `Record<string, string>`) don't require aliases unless used in 3+ places.
 
 ## GE-5: Framework vs Business Boundary
 Generic type parameters (`T`) are permitted ONLY at the **definition site** in framework/utility code (e.g., `retry<T>`, `Cache<T>`). In **business logic**, all resolved generics MUST be aliased (e.g., `type PluginResponse = ApiResponse<Plugin>`). Type erasure (`any`, `interface{}`, `unknown`, `object`, `dynamic`, `Box<dyn Any>`) is NEVER acceptable — even in framework code, `T` or constrained type params must be used instead.
 
-## Audit Status (2026-02-12)
-Full codebase audit COMPLETED with zero violations remaining:
+## Audit Status (2026-02-25)
+Full codebase audit COMPLETED with zero violations remaining (including the last `ProgressDetails` exception):
 - **23 files** remediated in the TypeScript frontend
 - Named domain types created: `HttpHeaders`, `ErrorDiagnosticContext`, `RequestPayload`, `LogEntryDetails`, `SessionOperationMetadata`, `ErrorCountMap`
 - All `any` type annotations replaced with proper types (`SessionStackFrame`, `SessionDiagnostics`, `EnvelopeMethodFrame`, `DashboardStats`)
 - `Record<string, unknown>` retained ONLY at parse boundaries (`envelope.ts`) and framework utilities (`useExecutionLogger.ts`) per GE-2/GE-5 exceptions
+- **Go backend**: `ProgressDetails` migrated from `map[string]any` to `json.RawMessage` with 18 typed progress structs and `toProgress[T]()` generic helper. All `map[string]string{}` request body literals replaced with 5 typed request structs.
 - Enforcement script: `scripts/lint-ge.sh` (grep-based CI check for TS/Go/C#/Rust)

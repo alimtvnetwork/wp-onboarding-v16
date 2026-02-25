@@ -192,14 +192,14 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, ep.Upload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), ProgressDetails{
-		"zipSize":   zipSize,
-		"zipPath":   absZipPath,
-		"namespace": namespace,
-		"endpoint":  uploadEndpoint,
-		"url":       uploadURL,
-		"method":    "multipart/form-data",
-	})
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), toProgress(UploadInitProgress{
+		ZipSize:   zipSize,
+		ZipPath:   absZipPath,
+		Namespace: namespace,
+		Endpoint:  uploadEndpoint,
+		URL:       uploadURL,
+		Method:    "multipart/form-data",
+	}))
 
 	// Build multipart form body — stream the ZIP file directly
 	var requestBody bytes.Buffer
@@ -227,12 +227,12 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
 	}
 
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), ProgressDetails{
-		"slug":     slug,
-		"activate": activate,
-		"zipSize":  zipSize,
-		"bodySize": requestBody.Len(),
-	})
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), toProgress(UploadBodyProgress{
+		Slug:     slug,
+		Activate: activate,
+		ZipSize:  zipSize,
+		BodySize: requestBody.Len(),
+	}))
 
 	req, err := http.NewRequest("POST", uploadURL, &requestBody)
 	if err != nil {
@@ -252,11 +252,11 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), ProgressDetails{
-		"status": resp.StatusCode,
-		"body":   truncateBody(respBody, 2000),
-		"url":    uploadURL,
-	})
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), toProgress(ResponseProgress{
+		URL:    uploadURL,
+		Status: resp.StatusCode,
+		Body:   truncateBody(respBody, 2000),
+	}))
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, buildUploadAPIError(absZipPath, uploadURL, uploadEndpoint, resp.StatusCode, respBytes, respBody, c.stackTraceDepth)

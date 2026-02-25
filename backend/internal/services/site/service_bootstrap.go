@@ -46,8 +46,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
 		if s.wsHub != nil {
-			raw, _ := json.Marshal(details)
-			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("[%s] %s", step, message), toJson(BootstrapLogDetails{SiteId: id, SiteName: site.Name, Step: step, Status: status, Details: raw}))
+			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("[%s] %s", step, message), toJson(BootstrapLogDetails{SiteId: id, SiteName: site.Name, Step: step, Status: status, Details: details}))
 		}
 	}
 	client := s.wpClientFactory(site.Url, site.Username, string(decrypted), progressCallback)
