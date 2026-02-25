@@ -47,3 +47,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 09 | snake-case-db-column-references-after-v13 | Database / Naming Convention | PHP code used snake_case column names after V13 PascalCase migration |
 | 10 | php-audit-report | Audit | PHP codebase audit report |
 | 11 | r10-audit-report | Audit | R10 blank-line-before-control-structure audit report |
+| 12 | namespace-before-abspath-fatal-error | PHP/Syntax | ABSPATH guard before namespace in 9 Logging files causes fatal ParseError |
