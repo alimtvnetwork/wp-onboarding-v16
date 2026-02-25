@@ -39,4 +39,4 @@ WordPress's `make-pot` CLI performs static analysis and cannot resolve constants
 
 | Issue | Reference |
 |-------|-----------|
-| i18n text domain must remain a literal string — never replace with enum/constant | `/spec/02-app/issues/06-i18n-text-domain-literal-requirement.md` |
+| i18n text domain must remain a literal string — never replace with enum/constant | `/spec/02-app-issues/08-i18n-text-domain-literal-requirement.md` |

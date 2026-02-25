@@ -53,5 +53,5 @@ Source files must not contain an empty line at the very beginning (e.g., immedia
 
 | Issue | Reference |
 |-------|-----------|
-| R9c array violations in Snapshot traits | `/spec/02-app/issues/02-r9c-array-literal-formatting.md` |
-| R10 missing blank lines in ActivationHandler | `/spec/02-app/issues/03-r10-activation-handler-formatting.md` |
+| R9c array violations in Snapshot traits | `/spec/02-app-issues/04-r9c-array-literal-formatting.md` |
+| R10 missing blank lines in ActivationHandler | `/spec/02-app-issues/05-r10-activation-handler-formatting.md` |

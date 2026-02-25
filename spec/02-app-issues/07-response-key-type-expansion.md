@@ -1,4 +1,4 @@
-# 05 — ResponseKeyType Enum Expansion
+# 07 — ResponseKeyType Enum Expansion
 
 > **Created:** 2026-02-23
 
@@ -34,7 +34,7 @@
 ## Done Checklist
 
 - [x] Spec updated — enum inventory expanded with 7 new cases
-- [x] Issue write-up created at `/spec/02-app/issues/05-response-key-type-expansion.md`
+- [x] Issue write-up created at `/spec/02-app-issues/07-response-key-type-expansion.md`
 - [x] Memory updated with prevention rule
 - [x] Acceptance criteria documented above
 - [x] Iterations: not applicable (single-pass fix)

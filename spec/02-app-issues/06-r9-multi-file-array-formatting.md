@@ -1,4 +1,4 @@
-# 04 — R9 Multi-File Array Formatting
+# 06 — R9 Multi-File Array Formatting
 
 > **Created:** 2026-02-23
 
@@ -34,7 +34,7 @@
 ## Done Checklist
 
 - [x] Spec already covers this under `/spec/01-app/formatting-rules-reference.md`
-- [x] Issue write-up created under `/spec/02-app/issues/04-r9-multi-file-array-formatting.md`
+- [x] Issue write-up created under `/spec/02-app-issues/06-r9-multi-file-array-formatting.md`
 - [x] Memory updated with prevention rule
 - [x] Acceptance criteria documented above
 - [ ] Iterations: not applicable (single-pass fix)
