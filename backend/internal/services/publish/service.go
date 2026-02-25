@@ -86,75 +86,75 @@ func New(cfg Config) *Service {
 
 // PublishOptions configures the publish operation
 type PublishOptions struct {
-	Mode              string   `json:"mode"`              // "selected" or "full"
-	Files             []string `json:"files"`             // files to publish (for "selected" mode)
-	CreateBackup      bool     `json:"createBackup"`      // create backup before publishing
-	KeepZipFiles      bool     `json:"keepZipFiles"`      // keep ZIP files after publish (for debugging)
-	RollbackOnFailure bool     `json:"rollbackOnFailure"` // auto-rollback if activation fails (default: true)
+	Mode              string   // "selected" or "full"
+	Files             []string // files to publish (for "selected" mode)
+	CreateBackup      bool     // create backup before publishing
+	KeepZipFiles      bool     // keep ZIP files after publish (for debugging)
+	RollbackOnFailure bool     // auto-rollback if activation fails (default: true)
 }
 
 // PublishResult represents the result of a publish operation
 type PublishResult struct {
-	Success          bool     `json:"success"`
-	SessionID        string   `json:"sessionId,omitempty"`
-	FilesUpdated     int      `json:"filesUpdated"`
-	BackupID         *int64   `json:"backupId,omitempty"`
-	ActivationStatus string   `json:"activationStatus"`          // active, inactive, error
-	RollbackStatus   string   `json:"rollbackStatus,omitempty"`  // "", "success", "failed", "skipped"
-	RollbackMessage  string   `json:"rollbackMessage,omitempty"` // details about rollback
-	Duration         int64    `json:"duration"`                  // milliseconds
-	ErrorMessage     string   `json:"errorMessage,omitempty"`
-	Stages           []Stage  `json:"stages"`
+	IsSuccess        bool
+	SessionID        string  `json:",omitempty"`
+	FilesUpdated     int
+	BackupID         *int64  `json:",omitempty"`
+	ActivationStatus string  // active, inactive, error
+	RollbackStatus   string  `json:",omitempty"` // "", "success", "failed", "skipped"
+	RollbackMessage  string  `json:",omitempty"` // details about rollback
+	Duration         int64   // milliseconds
+	ErrorMessage     string  `json:",omitempty"`
+	Stages           []Stage
 }
 
 // Stage represents a publish pipeline stage
 type Stage struct {
-	Name      string                `json:"name"`
-	Status    stagestatus.Variant   `json:"status"`
-	Duration  int64                 `json:"duration"`
-	Message   string                `json:"message,omitempty"`
+	Name      string
+	Status    stagestatus.Variant
+	Duration  int64
+	Message   string `json:",omitempty"`
 }
 
 // FilePreview represents a file that will change during publish
 type FilePreview struct {
-	Path       string `json:"path"`
-	ChangeType string `json:"changeType"` // added, modified, deleted
-	Size       int64  `json:"size"`
-	LocalHash  string `json:"localHash,omitempty"`
+	Path       string
+	ChangeType string // added, modified, deleted
+	Size       int64
+	LocalHash  string `json:",omitempty"`
 }
 
 // PublishPreviewResult shows what files will be published
 type PublishPreviewResult struct {
-	PluginID      int64         `json:"pluginId"`
-	PluginName    string        `json:"pluginName"`
-	LocalVersion  string        `json:"localVersion"`
-	RemoteVersion string        `json:"remoteVersion"`
-	SiteID        int64         `json:"siteId"`
-	SiteName      string        `json:"siteName"`
-	SiteURL       string        `json:"siteUrl"`
-	RemoteSlug    string        `json:"remoteSlug"`
-	TotalFiles    int           `json:"totalFiles"`
-	TotalSize     int64         `json:"totalSize"`
-	Added         int           `json:"added"`
-	Modified      int           `json:"modified"`
-	Deleted       int           `json:"deleted"`
-	Files         []FilePreview `json:"files"`
+	PluginID      int64
+	PluginName    string
+	LocalVersion  string
+	RemoteVersion string
+	SiteID        int64
+	SiteName      string
+	SiteURL       string
+	RemoteSlug    string
+	TotalFiles    int
+	TotalSize     int64
+	Added         int
+	Modified      int
+	Deleted       int
+	Files         []FilePreview
 }
 
 // FileDiffResult contains local and remote content for a single file
 type FileDiffResult struct {
-	Path          string `json:"path"`
-	LocalContent  string `json:"localContent"`
-	RemoteContent string `json:"remoteContent"`
+	Path          string
+	LocalContent  string
+	RemoteContent string
 }
 
 // StageContext provides structured what/why/where/result context for logging.
 // InnerData uses map[string]any internally for dynamic construction, but is always
 // marshaled to json.RawMessage before crossing the WSHub boundary.
 type StageContext struct {
-	What      string         `json:"what"`                // What is being done
-	Why       string         `json:"why,omitempty"`       // Why it's being done
-	Where     string         `json:"where,omitempty"`     // Target URL/path
-	Result    string         `json:"result,omitempty"`    // Outcome description
-	InnerData map[string]any `json:"innerData,omitempty"` // HTTP status, response snippets, etc.
+	What      string         // What is being done
+	Why       string         `json:",omitempty"` // Why it's being done
+	Where     string         `json:",omitempty"` // Target URL/path
+	Result    string         `json:",omitempty"` // Outcome description
+	InnerData map[string]any `json:",omitempty"` // HTTP status, response snippets, etc.
 }

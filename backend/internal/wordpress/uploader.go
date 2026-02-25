@@ -67,53 +67,53 @@ func captureStackTraceN(skip int, maxDepth int) string {
 // Supports both legacy flat format and envelope Results[0] format.
 type UploaderStatus struct {
 	// Legacy flat fields
-	Status           string            `json:"status"`
-	Message          string            `json:"message"`
-	Version          string            `json:"version"`
-	WordPressVersion string            `json:"wordpress_version"`
-	PHPVersion       string            `json:"php_version"`
-	Endpoints        map[string]string `json:"endpoints,omitempty"`
+	Status           string            `json:"status"`            // external key (Riseup Asia Uploader API)
+	Message          string            `json:"message"`           // external key
+	Version          string            `json:"version"`           // external key
+	WordPressVersion string            `json:"wordpress_version"` // external key
+	PHPVersion       string            `json:"php_version"`       // external key
+	Endpoints        map[string]string `json:"endpoints,omitempty"` // external key
 	// Envelope PascalCase fields (populated when parsing from envelope Results)
-	EnvVersion  string `json:"Version,omitempty"`
-	EnvPlugin   string `json:"Plugin,omitempty"`
-	EnvSlug     string `json:"Slug,omitempty"`
-	EnvWp       string `json:"Wp,omitempty"`
-	EnvPhp      string `json:"Php,omitempty"`
-	EnvIsActive bool   `json:"IsActive,omitempty"`
+	EnvVersion  string `json:"Version,omitempty"`  // external key (envelope format)
+	EnvPlugin   string `json:"Plugin,omitempty"`   // external key
+	EnvSlug     string `json:"Slug,omitempty"`     // external key
+	EnvWp       string `json:"Wp,omitempty"`       // external key
+	EnvPhp      string `json:"Php,omitempty"`      // external key
+	EnvIsActive bool   `json:"IsActive,omitempty"` // external key
 }
 
 // UploaderUploadResult represents the /upload endpoint response.
 type UploaderUploadResult struct {
-	Success       bool   `json:"success"`
-	Message       string `json:"message"`
-	Plugin        string `json:"plugin,omitempty"`
-	Activated     bool   `json:"activated"`
+	Success       bool   `json:"success"`                    // external key (Riseup Asia Uploader API)
+	Message       string `json:"message"`                    // external key
+	Plugin        string `json:"plugin,omitempty"`           // external key
+	Activated     bool   `json:"activated"`                  // external key
 	PluginDetails *struct {
-		Name        string `json:"name"`
-		Version     string `json:"version"`
-		Author      string `json:"author"`
-		Description string `json:"description"`
-	} `json:"plugin_details,omitempty"`
-	ActivationError string `json:"activation_error,omitempty"`
+		Name        string `json:"name"`        // external key
+		Version     string `json:"version"`     // external key
+		Author      string `json:"author"`      // external key
+		Description string `json:"description"` // external key
+	} `json:"plugin_details,omitempty"` // external key
+	ActivationError string `json:"activation_error,omitempty"` // external key
 }
 
 // UploaderPluginInfo represents plugin info from the list endpoint.
 type UploaderPluginInfo struct {
-	Slug        string `json:"slug"`
-	File        string `json:"file"`
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	Author      string `json:"author"`
-	Description string `json:"description"`
-	Active      bool   `json:"active"`
+	Slug        string `json:"slug"`        // external key (Riseup Asia Uploader API)
+	File        string `json:"file"`        // external key
+	Name        string `json:"name"`        // external key
+	Version     string `json:"version"`     // external key
+	Author      string `json:"author"`      // external key
+	Description string `json:"description"` // external key
+	Active      bool   `json:"active"`      // external key
 }
 
 // UploaderFileInfo represents file info from the files endpoint.
 type UploaderFileInfo struct {
-	Path     string `json:"path"`
-	Size     int64  `json:"size"`
-	Modified string `json:"modified"`
-	Hash     string `json:"hash"`
+	Path     string `json:"path"`     // external key (Riseup Asia Uploader API)
+	Size     int64  `json:"size"`     // external key
+	Modified string `json:"modified"` // external key
+	Hash     string `json:"hash"`     // external key
 }
 
 // uploaderNamespaces defines the namespace probe order: newest first, then legacy.

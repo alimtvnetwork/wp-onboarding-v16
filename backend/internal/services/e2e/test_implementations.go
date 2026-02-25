@@ -11,41 +11,41 @@ import (
 
 // pluginCreateBody is the request body for plugin creation.
 type pluginCreateBody struct {
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	ForceCreate bool   `json:"forceCreate,omitempty"`
+	Name        string
+	Path        string
+	ForceCreate bool `json:",omitempty"`
 }
 
 // pluginUpdateBody is the request body for plugin update.
 type pluginUpdateBody struct {
-	Name string `json:"name"`
+	Name string
 }
 
 // siteCreateBody is the request body for site registration.
 type siteCreateBody struct {
-	Name     string `json:"name"`
-	URL      string `json:"url"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Name     string
+	URL      string
+	Username string
+	Password string
 }
 
 // mappingCreateBody is the request body for plugin-site mapping.
 type mappingCreateBody struct {
-	SiteID     int64  `json:"siteId"`
-	RemoteSlug string `json:"remoteSlug"`
+	SiteID     int64
+	RemoteSlug string
 }
 
 // publishPreviewBody is the request body for publish preview.
 type publishPreviewBody struct {
-	PluginID int64 `json:"pluginId"`
-	SiteID   int64 `json:"siteId"`
+	PluginID int64
+	SiteID   int64
 }
 
 // credentialsTestBody is the request body for credentials testing.
 type credentialsTestBody struct {
-	URL      string `json:"url"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	URL      string
+	Username string
+	Password string
 }
 
 // --- Plugin CRUD Tests ---

@@ -5,79 +5,79 @@ import "time"
 
 // CreateInput holds data for creating a plugin
 type CreateInput struct {
-	Name            string   `json:"name" validate:"required,max=255"`
-	Path            string   `json:"path" validate:"required,max=4096"`
-	Category        string   `json:"category"`
-	WatchEnabled    bool     `json:"watchEnabled"`
-	AutoPublish     bool     `json:"autoPublish"`
-	ExcludePatterns []string `json:"excludePatterns"`
-	GitEnabled      bool     `json:"gitEnabled"`
-	GitRemoteURL    string   `json:"gitRemoteUrl"`
-	BuildCommand    string   `json:"buildCommand"`
-	ForceCreate     bool     `json:"forceCreate"` // Skip path validation errors
+	Name            string
+	Path            string
+	Category        string
+	WatchEnabled    bool
+	AutoPublish     bool
+	ExcludePatterns []string
+	GitEnabled      bool
+	GitRemoteURL    string
+	BuildCommand    string
+	ForceCreate     bool // Skip path validation errors
 }
 
 // UpdateInput holds data for updating a plugin
 type UpdateInput struct {
-	Name            *string   `json:"name,omitempty" validate:"omitempty,max=255"`
-	Path            *string   `json:"path,omitempty" validate:"omitempty,max=4096"`
-	Category        *string   `json:"category,omitempty"`
-	WatchEnabled    *bool     `json:"watchEnabled,omitempty"`
-	AutoPublish     *bool     `json:"autoPublish,omitempty"`
-	ExcludePatterns *[]string `json:"excludePatterns,omitempty"`
-	GitEnabled      *bool     `json:"gitEnabled,omitempty"`
-	GitRemoteURL    *string   `json:"gitRemoteUrl,omitempty"`
-	BuildCommand    *string   `json:"buildCommand,omitempty"`
+	Name            *string   `json:",omitempty"`
+	Path            *string   `json:",omitempty"`
+	Category        *string   `json:",omitempty"`
+	WatchEnabled    *bool     `json:",omitempty"`
+	AutoPublish     *bool     `json:",omitempty"`
+	ExcludePatterns *[]string `json:",omitempty"`
+	GitEnabled      *bool     `json:",omitempty"`
+	GitRemoteURL    *string   `json:",omitempty"`
+	BuildCommand    *string   `json:",omitempty"`
 }
 
 // CreateMappingInput holds data for creating a plugin-site mapping
 type CreateMappingInput struct {
-	PluginID   int64  `json:"pluginId" validate:"required"`
-	SiteID     int64  `json:"siteId" validate:"required"`
-	RemoteSlug string `json:"remoteSlug" validate:"required,max=255"`
+	PluginID   int64
+	SiteID     int64
+	RemoteSlug string
 }
 
 // ScanResult represents the result of a directory scan
 type ScanResult struct {
-	Path        string     `json:"path"`
-	IsValid     bool       `json:"isValid"`
-	PluginName  string     `json:"pluginName,omitempty"`
-	Version     string     `json:"version,omitempty"`
-	MainFile    string     `json:"mainFile,omitempty"`
-	Description string     `json:"description,omitempty"`
-	Author      string     `json:"author,omitempty"`
-	AuthorURI   string     `json:"authorUri,omitempty"`
-	PluginURI   string     `json:"pluginUri,omitempty"`
-	TextDomain  string     `json:"textDomain,omitempty"`
-	RequiresPHP string     `json:"requiresPHP,omitempty"`
-	RequiresWP  string     `json:"requiresWP,omitempty"`
-	FileCount   int        `json:"fileCount"`
-	TotalSize   int64      `json:"totalSize"`
-	Files       []FileInfo `json:"files,omitempty"`
-	Error       string     `json:"error,omitempty"`
+	Path        string
+	IsValid     bool
+	PluginName  string     `json:",omitempty"`
+	Version     string     `json:",omitempty"`
+	MainFile    string     `json:",omitempty"`
+	Description string     `json:",omitempty"`
+	Author      string     `json:",omitempty"`
+	AuthorURI   string     `json:",omitempty"`
+	PluginURI   string     `json:",omitempty"`
+	TextDomain  string     `json:",omitempty"`
+	RequiresPHP string     `json:",omitempty"`
+	RequiresWP  string     `json:",omitempty"`
+	FileCount   int
+	TotalSize   int64
+	Files       []FileInfo `json:",omitempty"`
+	Error       string     `json:",omitempty"`
 }
 
 // FileInfo holds metadata about a single file
 type FileInfo struct {
-	Path        string    `json:"path"`
-	Size        int64     `json:"size"`
-	Hash        string    `json:"hash"`
-	ModifiedAt  time.Time `json:"modifiedAt"`
-	IsDirectory bool      `json:"isDirectory"`
+	Path        string
+	Size        int64
+	Hash        string
+	ModifiedAt  time.Time
+	IsDirectory bool
 }
 
 // PluginDetected represents a detected WordPress plugin written to .plugin-detected.json
 type PluginDetected struct {
-	PluginName  string `json:"pluginName"`
-	Version     string `json:"version"`
-	Slug        string `json:"slug"`
-	MainFile    string `json:"mainFile"`
-	Description string `json:"description,omitempty"`
-	Author      string `json:"author,omitempty"`
-	AuthorURI   string `json:"authorUri,omitempty"`
-	PluginURI   string `json:"pluginUri,omitempty"`
-	TextDomain  string `json:"textDomain,omitempty"`
-	RequiresPHP string `json:"requiresPHP,omitempty"`
-	RequiresWP  string `json:"requiresWP,omitempty"`
-	DetectedAt  string `json:"detectedAt"`
+	PluginName  string `json:"pluginName"`            // external key (.plugin-detected.json)
+	Version     string `json:"version"`               // external key
+	Slug        string `json:"slug"`                  // external key
+	MainFile    string `json:"mainFile"`              // external key
+	Description string `json:"description,omitempty"` // external key
+	Author      string `json:"author,omitempty"`      // external key
+	AuthorURI   string `json:"authorUri,omitempty"`   // external key
+	PluginURI   string `json:"pluginUri,omitempty"`   // external key
+	TextDomain  string `json:"textDomain,omitempty"`  // external key
+	RequiresPHP string `json:"requiresPHP,omitempty"` // external key
+	RequiresWP  string `json:"requiresWP,omitempty"`  // external key
+	DetectedAt  string `json:"detectedAt"`            // external key
 }

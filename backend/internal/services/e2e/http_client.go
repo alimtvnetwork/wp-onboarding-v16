@@ -28,16 +28,16 @@ func newAPIClient(baseURL string) *apiClient {
 // apiResponse holds a parsed JSON API response
 type apiResponse struct {
 	StatusCode int
-	Success    bool              `json:"success"`
-	Data       json.RawMessage   `json:"data"`
-	Error      json.RawMessage   `json:"error"`
+	Success    bool            `json:"success"` // external key (our own API envelope)
+	Data       json.RawMessage `json:"data"`    // external key
+	Error      json.RawMessage `json:"error"`   // external key
 	RawBody    string
 }
 
 // apiErrorPayload is the typed structure for parsed error responses.
 type apiErrorPayload struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string `json:"code"`    // external key (our own API envelope)
+	Message string `json:"message"` // external key
 }
 
 // get performs a GET request

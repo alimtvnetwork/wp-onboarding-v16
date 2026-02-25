@@ -17,57 +17,57 @@ import (
 
 // SnapshotRecord represents a database snapshot record from the WordPress plugin.
 type SnapshotRecord struct {
-	Id        int64  `json:"id"`
-	Sequence  int    `json:"sequence"`
-	Filename  string `json:"filename"`
-	Scope     string `json:"scope"`
-	Provider  string `json:"provider"`
-	Status    string `json:"status"`
-	FileSize  int64  `json:"fileSize"`
-	TotalRows int    `json:"totalRows"`
-	Tables    string `json:"tables"`
-	CreatedAt string `json:"createdAt"`
-	Error     string `json:"error,omitempty"`
+	Id        int64  `json:"id"`        // external key (Riseup Asia snapshot API)
+	Sequence  int    `json:"sequence"`  // external key
+	Filename  string `json:"filename"`  // external key
+	Scope     string `json:"scope"`     // external key
+	Provider  string `json:"provider"`  // external key
+	Status    string `json:"status"`    // external key
+	FileSize  int64  `json:"fileSize"`  // external key
+	TotalRows int    `json:"totalRows"` // external key
+	Tables    string `json:"tables"`    // external key
+	CreatedAt string `json:"createdAt"` // external key
+	Error     string `json:"error,omitempty"` // external key
 }
 
 // SnapshotSettings represents snapshot configuration on the WordPress site.
 type SnapshotSettings struct {
-	Provider      string `json:"provider"`
-	Schedule      string `json:"schedule"`
-	ScheduleTime  string `json:"scheduleTime,omitempty"`
-	ScheduleDay   string `json:"scheduleDay,omitempty"`
-	Scope         string `json:"scope"`
-	RetentionType string `json:"retentionType"`
-	RetentionDays int    `json:"retentionDays,omitempty"`
-	RetentionMax  int    `json:"retentionMax,omitempty"`
-	PreRestore    bool   `json:"preRestoreBackup"`
-	BatchSize     int    `json:"batchSize,omitempty"`
+	Provider      string `json:"provider"`            // external key (Riseup Asia snapshot API)
+	Schedule      string `json:"schedule"`            // external key
+	ScheduleTime  string `json:"scheduleTime,omitempty"` // external key
+	ScheduleDay   string `json:"scheduleDay,omitempty"`  // external key
+	Scope         string `json:"scope"`               // external key
+	RetentionType string `json:"retentionType"`       // external key
+	RetentionDays int    `json:"retentionDays,omitempty"` // external key
+	RetentionMax  int    `json:"retentionMax,omitempty"`  // external key
+	PreRestore    bool   `json:"preRestoreBackup"`    // external key
+	BatchSize     int    `json:"batchSize,omitempty"` // external key
 }
 
 // SnapshotProvider represents an available snapshot provider.
 type SnapshotProvider struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	Available bool   `json:"available"`
-	Priority  int    `json:"priority"`
+	Id        string `json:"id"`        // external key (Riseup Asia snapshot API)
+	Name      string `json:"name"`      // external key
+	Available bool   `json:"available"` // external key
+	Priority  int    `json:"priority"`  // external key
 }
 
 // SnapshotStorageStats represents storage statistics.
 type SnapshotStorageStats struct {
-	TotalSnapshots int    `json:"totalSnapshots"`
-	TotalSize      int64  `json:"totalSize"`
-	TotalSizeHuman string `json:"totalSizeHuman"`
-	DiskFreeSpace  int64  `json:"diskFreeSpace"`
-	OldestAt       string `json:"oldestAt,omitempty"`
-	NewestAt       string `json:"newestAt,omitempty"`
+	TotalSnapshots int    `json:"totalSnapshots"` // external key (Riseup Asia snapshot API)
+	TotalSize      int64  `json:"totalSize"`      // external key
+	TotalSizeHuman string `json:"totalSizeHuman"` // external key
+	DiskFreeSpace  int64  `json:"diskFreeSpace"`  // external key
+	OldestAt       string `json:"oldestAt,omitempty"` // external key
+	NewestAt       string `json:"newestAt,omitempty"` // external key
 }
 
 // AvailableTable represents a database table available for snapshotting.
 type AvailableTable struct {
-	Name   string `json:"name"`
-	Rows   int    `json:"rows"`
-	Size   int64  `json:"size"`
-	IsCore bool   `json:"isCore"`
+	Name   string `json:"name"`   // external key (Riseup Asia snapshot API)
+	Rows   int    `json:"rows"`   // external key
+	Size   int64  `json:"size"`   // external key
+	IsCore bool   `json:"isCore"` // external key
 }
 
 // snapshotEndpoint builds the full endpoint path for snapshot operations using fixed paths.
@@ -97,7 +97,7 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 	}
 
 	var result struct {
-		Snapshots []SnapshotRecord `json:"snapshots"`
+		Snapshots []SnapshotRecord `json:"snapshots"` // external key
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		// Try decoding as plain array
@@ -117,7 +117,7 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 
 // SnapshotIdRequest holds a snapshot Id for POST endpoints.
 type SnapshotIdRequest struct {
-	Id int64 `json:"id"`
+	Id int64 `json:"id"` // external key (Riseup Asia snapshot API)
 }
 
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).
@@ -152,17 +152,17 @@ func (c *Client) GetSnapshot(snapshotId int64) (*SnapshotRecord, error) {
 
 // SnapshotCreateOptions holds options for creating a snapshot.
 type SnapshotCreateOptions struct {
-	Scope  string   `json:"scope,omitempty"`
-	Tables []string `json:"tables,omitempty"`
-	Type   string   `json:"type,omitempty"`
+	Scope  string   `json:"scope,omitempty"`  // external key (Riseup Asia snapshot API)
+	Tables []string `json:"tables,omitempty"` // external key
+	Type   string   `json:"type,omitempty"`   // external key
 }
 
 // SnapshotCreateResult holds the result of a create snapshot request.
 type SnapshotCreateResult struct {
-	Success    bool   `json:"success"`
-	SnapshotId int64  `json:"snapshotId,omitempty"`
-	Message    string `json:"message,omitempty"`
-	Status     string `json:"status,omitempty"`
+	Success    bool   `json:"success"`              // external key (Riseup Asia snapshot API)
+	SnapshotId int64  `json:"snapshotId,omitempty"` // external key
+	Message    string `json:"message,omitempty"`    // external key
+	Status     string `json:"status,omitempty"`     // external key
 }
 
 // CreateSnapshot triggers a new snapshot on the remote site.
@@ -221,15 +221,15 @@ func (c *Client) DeleteSnapshot(snapshotId int64) error {
 
 // SnapshotRestoreOptions holds options for restoring a snapshot.
 type SnapshotRestoreOptions struct {
-	Id      int64 `json:"id"`
-	Confirm bool  `json:"confirm"`
+	Id      int64 `json:"id"`      // external key (Riseup Asia snapshot API)
+	Confirm bool  `json:"confirm"` // external key
 }
 
 // SnapshotRestoreResult holds the result of a restore request.
 type SnapshotRestoreResult struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Status  string `json:"status,omitempty"`
+	Success bool   `json:"success"`           // external key (Riseup Asia snapshot API)
+	Message string `json:"message,omitempty"` // external key
+	Status  string `json:"status,omitempty"`  // external key
 }
 
 // RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
@@ -351,13 +351,13 @@ func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
 
 // SnapshotDownloadResult holds the result of a snapshot download request.
 type SnapshotDownloadResult struct {
-	Success          bool   `json:"success"`
-	Url              string `json:"url"`
-	Filename         string `json:"filename"`
-	Size             int64  `json:"size"`
-	Cached           bool   `json:"cached"`
-	IncludedIDs      []int  `json:"includedIds,omitempty"`
-	IncrementalCount int    `json:"incrementalCount,omitempty"`
+	Success          bool   `json:"success"`                    // external key (Riseup Asia snapshot API)
+	Url              string `json:"url"`                        // external key
+	Filename         string `json:"filename"`                   // external key
+	Size             int64  `json:"size"`                       // external key
+	Cached           bool   `json:"cached"`                     // external key
+	IncludedIDs      []int  `json:"includedIds,omitempty"`      // external key
+	IncrementalCount int    `json:"incrementalCount,omitempty"` // external key
 }
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot via POST /snapshots/download.
@@ -465,7 +465,7 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 
 	// Try {success: true, tables: [...]} wrapper
 	var wrapper struct {
-		Tables []AvailableTable `json:"tables"`
+		Tables []AvailableTable `json:"tables"` // external key
 	}
 	if err := json.Unmarshal(bodyBytes, &wrapper); err == nil && len(wrapper.Tables) > 0 {
 		return wrapper.Tables, nil
@@ -481,16 +481,16 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 
 // SnapshotBackupOptions holds options for full/incremental backup triggers.
 type SnapshotBackupOptions struct {
-	Scope  string   `json:"scope,omitempty"`
-	Tables []string `json:"tables,omitempty"`
+	Scope  string   `json:"scope,omitempty"`  // external key (Riseup Asia snapshot API)
+	Tables []string `json:"tables,omitempty"` // external key
 }
 
 // SnapshotBackupResult holds the result of a backup operation.
 type SnapshotBackupResult struct {
-	Success    bool   `json:"success"`
-	SnapshotId int64  `json:"snapshotId,omitempty"`
-	Message    string `json:"message,omitempty"`
-	Status     string `json:"status,omitempty"`
+	Success    bool   `json:"success"`              // external key (Riseup Asia snapshot API)
+	SnapshotId int64  `json:"snapshotId,omitempty"` // external key
+	Message    string `json:"message,omitempty"`    // external key
+	Status     string `json:"status,omitempty"`     // external key
 }
 
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
@@ -553,9 +553,9 @@ func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupR
 
 // SnapshotImportResult holds the result of an import operation.
 type SnapshotImportResult struct {
-	Success    bool   `json:"success"`
-	SnapshotId int64  `json:"snapshot_id,omitempty"`
-	Message    string `json:"message,omitempty"`
+	Success    bool   `json:"success"`                 // external key (Riseup Asia snapshot API)
+	SnapshotId int64  `json:"snapshot_id,omitempty"`   // external key
+	Message    string `json:"message,omitempty"`       // external key
 }
 
 // ImportSnapshot uploads a ZIP file to import as a snapshot on the remote site.
