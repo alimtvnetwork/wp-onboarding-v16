@@ -1,7 +1,18 @@
 <?php
+/**
+ * SnapshotScheduler — Cron scheduling, execution, and timing for snapshot backups.
+ *
+ * Shell class — logic delegated to domain-specific traits.
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.9.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Snapshot\Traits\SchedulerCronTrait;

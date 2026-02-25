@@ -10,11 +10,11 @@
 
 namespace RiseupAsia\Database;
 
-use Throwable;
-
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use Throwable;
 
 final class DbExecResult {
     private function __construct(

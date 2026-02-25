@@ -1,4 +1,11 @@
 <?php
+/**
+ * ErrorChecker — Fatal error detection, severity classification, and PDO validation.
+ *
+ * @package RiseupAsia\Helpers
+ * @since   1.19.0
+ */
+
 namespace RiseupAsia\Helpers;
 
 if (!defined('ABSPATH')) {

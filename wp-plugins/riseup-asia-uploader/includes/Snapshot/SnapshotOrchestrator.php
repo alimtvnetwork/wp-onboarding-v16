@@ -1,7 +1,18 @@
 <?php
+/**
+ * SnapshotOrchestrator — Coordinates full backup orchestration, ZIP packaging, and plugin snapshots.
+ *
+ * Shell class — logic delegated to domain-specific traits.
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.9.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use LogicException;
 use wpdb;
