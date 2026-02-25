@@ -25,6 +25,7 @@ import (
 	connectionstep "wp-plugin-publish/internal/enums/connection_step"
 	loglevel "wp-plugin-publish/internal/enums/log_level"
 	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/internal/logger"
 	
 	"wp-plugin-publish/internal/services/session"
@@ -388,7 +389,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		if s.wsHub != nil {
 			s.wsHub.BroadcastLog(loglevel.Info.Lower(), fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJson(SiteIdDetail{SiteId: id}))
 		}
-		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, wordpress.UploadSourceRestAPI)
+		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, uploadsource.RestAPI)
 	} else {
 		// First-time installation - use Onboard plugin or standard upload
 		if s.wsHub != nil {
