@@ -3,6 +3,7 @@
 import { resolveApiBase, resolveApiUrl, toAbsoluteUrl } from "@/lib/endpoints";
 import { request } from './client';
 import { isEnvelope, parseEnvelope, looksLikeJson } from './envelope';
+import { transformKeys } from './keyTransform';
 import type { SiteHealthSummary, SiteHealthStats } from '@/types/siteHealth';
 import type {
   ApiResponse,
@@ -208,11 +209,12 @@ export const api = {
         try {
           const json = JSON.parse(xhr.responseText);
           // Handle envelope format
-          if (json.Status) {
+            if (json.Status) {
             if (json.Status.IsSuccess) {
-              const data = json.Attributes?.IsSingle && Array.isArray(json.Results) && json.Results.length > 0
+              const raw = json.Attributes?.IsSingle && Array.isArray(json.Results) && json.Results.length > 0
                 ? json.Results[0]
                 : json.Results;
+              const data = transformKeys<PluginInstallResponse>(raw);
               resolve({ success: true, data });
             } else {
               resolve({
@@ -636,7 +638,7 @@ export const api = {
     if (isEnvelope(parsed)) {
       return parseEnvelope<SnapshotImportResult>(parsed);
     }
-    return parsed as ApiResponse<SnapshotImportResult>;
+    return transformKeys<ApiResponse<SnapshotImportResult>>(parsed);
   },
 
   // Snapshot cleanup

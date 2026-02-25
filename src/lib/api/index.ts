@@ -98,6 +98,9 @@ export type {
 export { isEnvelope, parseEnvelope, looksLikeJson } from './envelope';
 export type { RawEnvelope } from './envelope';
 
+// Key transformation
+export { pascalToCamel, transformKeys } from './keyTransform';
+
 // Client utilities
 export { ApiClientError, isApiClientError, requireSuccess, request, getApiDiagnostics } from './client';
 

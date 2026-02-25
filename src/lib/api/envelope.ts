@@ -1,5 +1,6 @@
 // Envelope detection and parsing utilities for the Universal Response Envelope.
 
+import { transformKeys } from './keyTransform';
 import type {
   ApiResponse,
   ApiError,
@@ -95,12 +96,13 @@ export function parseEnvelope<T>(env: RawEnvelope<unknown>): ApiResponse<T> {
     };
   }
 
-  // Success: extract data from Results
+  // Success: extract data from Results, transforming PascalCase keys → camelCase
   let data: unknown;
   if (env.Attributes.IsSingle) {
-    data = Array.isArray(env.Results) && env.Results.length > 0 ? env.Results[0] : env.Results;
+    const raw = Array.isArray(env.Results) && env.Results.length > 0 ? env.Results[0] : env.Results;
+    data = transformKeys(raw);
   } else {
-    data = env.Results;
+    data = transformKeys(env.Results);
   }
 
   return {
