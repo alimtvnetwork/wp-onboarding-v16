@@ -167,8 +167,8 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		SiteIDs    []int64 `json:"siteIds"`
-		RemoteSlug string  `json:"remoteSlug"`
+		SiteIDs    []int64 `json:"siteIds"`    // external key (frontend request body)
+		RemoteSlug string  `json:"remoteSlug"` // external key
 	}
 	if !decodeJSON(w, r, &input) {
 		return
@@ -214,7 +214,7 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		PluginIDs []int64 `json:"pluginIds"`
+		PluginIDs []int64 `json:"pluginIds"` // external key (frontend request body)
 	}
 	if !decodeJSON(w, r, &input) {
 		return
@@ -264,8 +264,8 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Path            string `json:"path"`
-		CreateDetection bool   `json:"createDetection"`
+		Path            string `json:"path"`            // external key (frontend request body)
+		CreateDetection bool   `json:"createDetection"` // external key
 	}
 	if !decodeJSON(w, r, &input) {
 		return
@@ -305,8 +305,8 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 		}
 
 		respondSuccess(w, ScanResultResponse{
-			Scan:             result,
-			DetectionCreated: true,
+			Scan:               result,
+			IsDetectionCreated: true,
 		})
 
 		return
@@ -322,8 +322,8 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Paths           []string `json:"paths"`
-		CreateDetection bool     `json:"createDetection"`
+		Paths           []string `json:"paths"`           // external key (frontend request body)
+		CreateDetection bool     `json:"createDetection"` // external key
 	}
 	if !decodeJSON(w, r, &input) {
 		return
@@ -360,7 +360,7 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 
 		if input.CreateDetection && isPlugin {
 			if err := Services.PluginService.WritePluginDetected(r.Context(), path); err == nil {
-				sr.DetectionCreated = true
+				sr.IsDetectionCreated = true
 			}
 		}
 

@@ -158,5 +158,5 @@ func ClearSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Deleted: true, Count: int(deleted)})
+	respondSuccess(w, ActionResponse{IsDeleted: true, Count: int(deleted)})
 }

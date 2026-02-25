@@ -208,7 +208,7 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Deleted: true, ID: strconv.FormatInt(id, 10)})
+	respondSuccess(w, ActionResponse{IsDeleted: true, ID: strconv.FormatInt(id, 10)})
 }
 
 // ClearErrorHistory removes all error history
@@ -236,7 +236,7 @@ func ClearErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Cleared: true, Count: int(deleted)})
+	respondSuccess(w, ActionResponse{IsCleared: true, Count: int(deleted)})
 }
 
 // BulkExportErrorHistory generates a combined markdown report
@@ -253,7 +253,7 @@ func BulkExportErrorHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		IDs []int64 `json:"ids"`
+		IDs []int64 `json:"ids"` // external key (frontend request body)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		respondError(

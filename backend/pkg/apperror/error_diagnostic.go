@@ -2,26 +2,26 @@ package apperror
 
 // ErrorDiagnostic holds typed diagnostic context for application errors.
 type ErrorDiagnostic struct {
-	Path       string `json:"path,omitempty"`
-	File       string `json:"file,omitempty"`
-	DestPath   string `json:"destPath,omitempty"`
-	BackupDir  string `json:"backupDir,omitempty"`
-	Url        string `json:"url,omitempty"`
-	Slug       string `json:"slug,omitempty"`
-	FilePath   string `json:"filePath,omitempty"`
-	PluginSlug string `json:"pluginSlug,omitempty"`
-	Plugin     string `json:"plugin,omitempty"`
-	SiteId     int64  `json:"siteId,omitempty"`
-	PluginId   int64  `json:"pluginId,omitempty"`
-	SnapshotId int64  `json:"snapshotId,omitempty"`
-	MappingId  int64  `json:"mappingId,omitempty"`
-	VersionId  int64  `json:"versionId,omitempty"`
-	SessionId  string `json:"sessionId,omitempty"`
-	RunId      string `json:"runId,omitempty"`
-	StatusCode int    `json:"statusCode,omitempty"`
-	Method     string `json:"method,omitempty"`
-	Endpoint   string `json:"endpoint,omitempty"`
-	Username   string `json:"username,omitempty"`
+	Path       string `json:",omitempty"`
+	File       string `json:",omitempty"`
+	DestPath   string `json:",omitempty"`
+	BackupDir  string `json:",omitempty"`
+	Url        string `json:",omitempty"`
+	Slug       string `json:",omitempty"`
+	FilePath   string `json:",omitempty"`
+	PluginSlug string `json:",omitempty"`
+	Plugin     string `json:",omitempty"`
+	SiteId     int64  `json:",omitempty"`
+	PluginId   int64  `json:",omitempty"`
+	SnapshotId int64  `json:",omitempty"`
+	MappingId  int64  `json:",omitempty"`
+	VersionId  int64  `json:",omitempty"`
+	SessionId  string `json:",omitempty"`
+	RunId      string `json:",omitempty"`
+	StatusCode int    `json:",omitempty"`
+	Method     string `json:",omitempty"`
+	Endpoint   string `json:",omitempty"`
+	Username   string `json:",omitempty"`
 }
 
 // HasFields returns true if any diagnostic field is populated.

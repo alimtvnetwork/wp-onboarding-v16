@@ -364,18 +364,18 @@ func (db *DB) CreatePluginVersion(pluginID, siteID int64, version, backupPath st
 
 // PluginVersionRow holds a single plugin version record from the database.
 type PluginVersionRow struct {
-	ID            int64  `json:"id"`
-	PluginID      int64  `json:"pluginId"`
-	SiteID        int64  `json:"siteId"`
-	SiteName      string `json:"siteName"`
-	Version       string `json:"version"`
-	BackupPath    string `json:"backupPath"`
-	FilesUpdated  int64  `json:"filesUpdated"`
-	GitCommitHash string `json:"gitCommitHash"`
-	PublishType   string `json:"publishType"`
-	Status        string `json:"status"`
-	Notes         string `json:"notes"`
-	CreatedAt     string `json:"createdAt"`
+	ID            int64
+	PluginID      int64
+	SiteID        int64
+	SiteName      string
+	Version       string
+	BackupPath    string
+	FilesUpdated  int64
+	GitCommitHash string
+	PublishType   string
+	Status        string
+	Notes         string
+	CreatedAt     string
 }
 
 // GetPluginVersions returns version history for a plugin, optionally filtered by site

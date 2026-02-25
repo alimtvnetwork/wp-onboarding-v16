@@ -302,19 +302,19 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 			}
 
 			results = append(results, BulkBootstrapSiteResult{
-				SiteId:   siteId,
-				SiteName: siteName,
-				Success:  false,
-				Message:  "Deployment failed",
-				Error:    err.Error(),
+				SiteId:    siteId,
+				SiteName:  siteName,
+				IsSuccess: false,
+				Message:   "Deployment failed",
+				Error:     err.Error(),
 			})
 		} else {
 			results = append(results, BulkBootstrapSiteResult{
-				SiteId:    result.SiteId,
-				SiteName:  result.SiteName,
-				Success:   result.Success,
-				Message:   result.Message,
-				Activated: result.Activated,
+				SiteId:      result.SiteId,
+				SiteName:    result.SiteName,
+				IsSuccess:   result.IsSuccess,
+				Message:     result.Message,
+				IsActivated: result.IsActivated,
 			})
 		}
 	}
@@ -381,7 +381,7 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Cleared: true, SiteId: id})
+	respondSuccess(w, ActionResponse{IsCleared: true, SiteId: id})
 }
 
 // CheckRemotePluginExists performs a lightweight pre-flight check to verify plugin existence
@@ -432,7 +432,7 @@ func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondSuccess(w, PluginExistsResponse{
-		Exists:     exists,
+		IsExists:   exists,
 		Status:     status,
 		PluginFile: pluginFile,
 		Plugin:     pluginSlug,
@@ -481,7 +481,7 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Enabled: true, Plugin: pluginSlug})
+	respondSuccess(w, ActionResponse{IsEnabled: true, Plugin: pluginSlug})
 }
 
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
@@ -526,7 +526,7 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Disabled: true, Plugin: pluginSlug})
+	respondSuccess(w, ActionResponse{IsDisabled: true, Plugin: pluginSlug})
 }
 
 // DeleteRemotePlugin removes a plugin from a remote WordPress site (POST with JSON body)
@@ -571,7 +571,7 @@ func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Deleted: true, Plugin: pluginSlug})
+	respondSuccess(w, ActionResponse{IsDeleted: true, Plugin: pluginSlug})
 }
 
 // GetRemotePluginFiles returns the file list for a remote plugin
@@ -680,7 +680,7 @@ func ClearErrorLogHashes(w http.ResponseWriter, r *http.Request) {
 
 	count := Services.SiteService.ClearErrorLogHashes()
 	respondSuccess(w, ActionResponse{
-		Cleared: true,
+		IsCleared: true,
 		Count:   count,
 		Message: fmt.Sprintf("Cleared %d error deduplication hashes", count),
 	})

@@ -17,79 +17,79 @@ import (
 // Every endpoint — success or error, single or list — returns this structure.
 // Optional sections use pointers with omitempty so they are absent from JSON when nil.
 type Response struct {
-	Status       Status        `json:"Status"`
-	Attributes   Attributes    `json:"Attributes"`
-	Results      any           `json:"Results"`
-	Navigation   *Navigation   `json:"Navigation,omitempty"`
-	Errors       *Errors       `json:"Errors,omitempty"`
-	MethodsStack *MethodsStack `json:"MethodsStack,omitempty"`
+	Status       Status
+	Attributes   Attributes
+	Results      any
+	Navigation   *Navigation   `json:",omitempty"`
+	Errors       *Errors       `json:",omitempty"`
+	MethodsStack *MethodsStack `json:",omitempty"`
 }
 
 // Status describes the outcome of the request.
 type Status struct {
-	IsSuccess bool   `json:"IsSuccess"`
-	IsFailed  bool   `json:"IsFailed"`
-	Code      int    `json:"Code"`
-	Message   string `json:"Message"`
-	Timestamp string `json:"Timestamp"`
+	IsSuccess bool
+	IsFailed  bool
+	Code      int
+	Message   string
+	Timestamp string
 }
 
 // Attributes describes the shape and size of the result set.
 type Attributes struct {
-	RequestedAt        string `json:"RequestedAt,omitempty"`
-	RequestDelegatedAt string `json:"RequestDelegatedAt,omitempty"`
-	SessionId          string `json:"SessionId,omitempty"`
-	HasAnyErrors       bool   `json:"HasAnyErrors"`
-	IsSingle           bool   `json:"IsSingle"`
-	IsMultiple         bool   `json:"IsMultiple"`
-	TotalRecords       int    `json:"TotalRecords,omitempty"`
-	PerPage            int    `json:"PerPage,omitempty"`
-	TotalPages         int    `json:"TotalPages,omitempty"`
-	CurrentPage        int    `json:"CurrentPage,omitempty"`
+	RequestedAt        string `json:",omitempty"`
+	RequestDelegatedAt string `json:",omitempty"`
+	SessionId          string `json:",omitempty"`
+	HasAnyErrors       bool
+	IsSingle           bool
+	IsMultiple         bool
+	TotalRecords       int    `json:",omitempty"`
+	PerPage            int    `json:",omitempty"`
+	TotalPages         int    `json:",omitempty"`
+	CurrentPage        int    `json:",omitempty"`
 }
 
 // Navigation provides pagination URL links for list responses.
 type Navigation struct {
-	NextPage    *string  `json:"NextPage"`
-	PrevPage    *string  `json:"PrevPage"`
-	CloserLinks []string `json:"CloserLinks"`
+	NextPage    *string
+	PrevPage    *string
+	CloserLinks []string
 }
 
 // Errors carries error information. Top-level, conditionally included.
 type Errors struct {
-	BackendMessage             string   `json:"BackendMessage"`
-	DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack,omitempty"`
-	Backend                    []string `json:"Backend,omitempty"`
-	Frontend                   []string `json:"Frontend,omitempty"`
+	BackendMessage             string
+	DelegatedServiceErrorStack []string `json:",omitempty"`
+	Backend                    []string `json:",omitempty"`
+	Frontend                   []string `json:",omitempty"`
 }
 
 // MethodsStack carries debug call-chain traces. Top-level, conditionally included.
 type MethodsStack struct {
-	Backend  []MethodFrame `json:"Backend"`
-	Frontend []MethodFrame `json:"Frontend"`
+	Backend  []MethodFrame
+	Frontend []MethodFrame
 }
 
 // MethodFrame represents a single frame in the methods stack.
 type MethodFrame struct {
-	Method     string `json:"Method"`
-	File       string `json:"File"`
-	LineNumber int    `json:"LineNumber"`
+	Method     string
+	File       string
+	LineNumber int
 }
 
 // StackFrame represents a single frame in a stack trace (used in Errors.Backend parsing).
 type StackFrame struct {
-	File     string `json:"File"`
-	Line     int    `json:"Line"`
-	Function string `json:"Function"`
-	Class    string `json:"Class,omitempty"`
+	File     string
+	Line     int
+	Function string
+	Class    string `json:",omitempty"`
 }
 
 // DebugConfig controls error and diagnostic verbosity in responses.
 type DebugConfig struct {
-	IncludeErrors       bool `json:"includeErrors"`
-	IncludeStackTrace   bool `json:"includeStackTrace"`
-	IncludeMethodsStack bool `json:"includeMethodsStack"`
-	MaxStackFrames      int  `json:"maxStackFrames"`
+	IncludeErrors       bool
+	IncludeStackTrace   bool
+	IncludeMethodsStack bool
+	MaxStackFrames      int
 }
 
 // DefaultDebugConfig returns a production-safe default.
@@ -312,9 +312,9 @@ func (r *Response) ensureErrors() {
 
 // Pagination holds the parameters for paginated queries.
 type Pagination struct {
-	Page         int `json:"page"`
-	PerPage      int `json:"perPage"`
-	TotalRecords int `json:"totalRecords"`
+	Page         int
+	PerPage      int
+	TotalRecords int
 }
 
 // DefaultPagination returns the default pagination (page 1, 20 per page).

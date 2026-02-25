@@ -159,7 +159,7 @@ func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Aborted: true})
+	respondSuccess(w, ActionResponse{IsAborted: true})
 }
 
 // DeleteE2ERun removes a test run

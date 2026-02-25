@@ -8,12 +8,12 @@ import (
 
 // AppError represents a structured application error with mandatory stack trace.
 type AppError struct {
-	Code       ErrorCode         `json:"code"`
-	Message    string            `json:"message"`
-	Details    string            `json:"details,omitempty"`
-	Values     map[string]string `json:"values,omitempty"`
-	Diagnostic ErrorDiagnostic   `json:"diagnostic,omitempty"`
-	Stack      StackTrace        `json:"stack"`
+	Code       ErrorCode
+	Message    string
+	Details    string            `json:",omitempty"`
+	Values     map[string]string `json:",omitempty"`
+	Diagnostic ErrorDiagnostic   `json:",omitempty"`
+	Stack      StackTrace
 	Cause      error             `json:"-"`
 }
 

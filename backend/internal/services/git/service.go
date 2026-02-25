@@ -145,7 +145,7 @@ func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[Pull
 		return apperror.FailWrap[PullResult](err, apperror.ErrInternal, "failed to resolve git directory path")
 	}
 	if pathutil.IsDirMissing(gitDir) {
-		result.Success = false
+		result.IsSuccess = false
 		result.Error = "not a git repository"
 		result.Duration = time.Since(startTime).Milliseconds()
 		return apperror.FailNew[PullResult](apperror.ErrGitNotRepo, "directory is not a git repository")
@@ -154,7 +154,7 @@ func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[Pull
 	// Get current branch
 	branch, err := s.runGitCommand(p.Path, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Error = err.Error()
 		result.Duration = time.Since(startTime).Milliseconds()
 		return apperror.FailWrap[PullResult](err, apperror.ErrGitCommand, "failed to get current branch")
@@ -167,7 +167,7 @@ func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[Pull
 	result.Duration = time.Since(startTime).Milliseconds()
 
 	if err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Error = err.Error()
 
 		ws.Broadcast(s.wsHub, ws.EventGitPullFailed, ws.GitPullFailedData{
@@ -178,7 +178,7 @@ func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[Pull
 	}
 
 	// Parse output for stats
-	result.Success = true
+	result.IsSuccess = true
 	s.parseGitOutput(output, &result)
 
 	// Get latest commit info
@@ -309,7 +309,7 @@ func (s *Service) Build(ctx context.Context, pluginId int64) apperror.Result[Bui
 	result.Output = stdout.String()
 
 	if err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Error = stderr.String()
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result.ExitCode = exitErr.ExitCode()
@@ -324,7 +324,7 @@ func (s *Service) Build(ctx context.Context, pluginId int64) apperror.Result[Bui
 		return apperror.FailWrap[BuildResult](err, apperror.ErrBuildFailed, result.Error)
 	}
 
-	result.Success = true
+	result.IsSuccess = true
 	result.ExitCode = 0
 
 	ws.Broadcast(s.wsHub, ws.EventBuildComplete, ws.BuildCompleteData{
@@ -499,7 +499,7 @@ func (s *Service) Commit(ctx context.Context, pluginId int64, message string) ap
 
 	// Stage all changes
 	if _, err := s.runGitCommand(p.Path, "add", "-A"); err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Message = "Failed to stage changes"
 		return apperror.FailWrap[CommitResult](err, apperror.ErrGitCommand, "failed to stage changes")
 	}
@@ -507,7 +507,7 @@ func (s *Service) Commit(ctx context.Context, pluginId int64, message string) ap
 	// Commit
 	output, err := s.runGitCommand(p.Path, "commit", "-m", message)
 	if err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Message = "Failed to commit: " + output
 		return apperror.FailWrap[CommitResult](err, apperror.ErrGitCommand, "failed to commit")
 	}
@@ -515,7 +515,7 @@ func (s *Service) Commit(ctx context.Context, pluginId int64, message string) ap
 	// Get commit hash
 	hash, _ := s.runGitCommand(p.Path, "rev-parse", "--short", "HEAD")
 	result.CommitHash = strings.TrimSpace(hash)
-	result.Success = true
+	result.IsSuccess = true
 
 	ws.Broadcast(s.wsHub, ws.EventGitCommitComplete, ws.GitCommitCompleteData{
 		PluginId:   pluginId,
@@ -565,12 +565,12 @@ func (s *Service) Push(ctx context.Context, pluginId int64) apperror.Result[Push
 	// Push
 	output, err := s.runGitCommand(p.Path, "push", "origin", branch)
 	if err != nil {
-		result.Success = false
+		result.IsSuccess = false
 		result.Message = "Failed to push: " + output
 		return apperror.FailWrap[PushResult](err, apperror.ErrGitCommand, "git push failed")
 	}
 
-	result.Success = true
+	result.IsSuccess = true
 
 	ws.Broadcast(s.wsHub, ws.EventGitPushComplete, ws.GitPushCompleteData{
 		PluginId:  pluginId,

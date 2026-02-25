@@ -35,67 +35,67 @@ const (
 
 // Session represents an active or completed operation session
 type Session struct {
-	ID         string                 `json:"id"`
-	Type       SessionType            `json:"type"`
-	PluginID   int64                  `json:"pluginId,omitempty"`
-	SiteID     int64                  `json:"siteId,omitempty"`
-	PluginName string                 `json:"pluginName,omitempty"`
-	SiteName   string                 `json:"siteName,omitempty"`
-	Status     string                 `json:"status"` // running, success, error
-	StartedAt  time.Time              `json:"startedAt"`
-	EndedAt    *time.Time             `json:"endedAt,omitempty"`
-	ErrorMsg   string                 `json:"errorMessage,omitempty"`
-	Metadata   json.RawMessage        `json:"metadata,omitempty"`
+	ID         string          `json:",omitempty"`
+	Type       SessionType
+	PluginID   int64           `json:",omitempty"`
+	SiteID     int64           `json:",omitempty"`
+	PluginName string          `json:",omitempty"`
+	SiteName   string          `json:",omitempty"`
+	Status     string          // running, success, error
+	StartedAt  time.Time
+	EndedAt    *time.Time      `json:",omitempty"`
+	ErrorMsg   string          `json:",omitempty"`
+	Metadata   json.RawMessage `json:",omitempty"`
 	logFile    *os.File
 	mu         sync.Mutex
 }
 
 // LogEntry represents a single log entry in a session
 type LogEntry struct {
-	Timestamp string          `json:"timestamp"`
-	Level     string          `json:"level"`  // debug, info, warn, error
-	Step      string          `json:"step"`   // backup, package, upload, activate, etc.
-	Message   string          `json:"message"`
-	Details   json.RawMessage `json:"details,omitempty"`
+	Timestamp string
+	Level     string          // debug, info, warn, error
+	Step      string          // backup, package, upload, activate, etc.
+	Message   string
+	Details   json.RawMessage `json:",omitempty"`
 }
 
 // SessionDiagnostics is the structured payload returned for error modal / session detail view
 type SessionDiagnostics struct {
-	Request           *SessionRequest    `json:"request,omitempty"`
-	Response          *SessionResponse   `json:"response,omitempty"`
-	StackTrace        *SessionStackTrace `json:"stackTrace,omitempty"`
-	PHPStackTraceLog  string             `json:"phpStackTraceLog,omitempty"`
+	Request           *SessionRequest    `json:",omitempty"`
+	Response          *SessionResponse   `json:",omitempty"`
+	StackTrace        *SessionStackTrace `json:",omitempty"`
+	PHPStackTraceLog  string             `json:",omitempty"`
 }
 
 // SessionRequest captures the original inbound request
 type SessionRequest struct {
-	URL     string            `json:"url"`
-	Method  string            `json:"method"`
-	Headers map[string]string `json:"headers,omitempty"`
-	Body    json.RawMessage   `json:"body,omitempty"`
+	URL     string
+	Method  string
+	Headers map[string]string `json:",omitempty"`
+	Body    json.RawMessage   `json:",omitempty"`
 }
 
 // SessionResponse captures the delegated response from WordPress
 type SessionResponse struct {
-	RequestURL  string            `json:"requestUrl"`
-	ResponseURL string            `json:"responseUrl"`
-	StatusCode  int               `json:"statusCode"`
-	Headers     map[string]string `json:"headers,omitempty"`
-	Body        json.RawMessage   `json:"body,omitempty"`
+	RequestURL  string
+	ResponseURL string
+	StatusCode  int
+	Headers     map[string]string `json:",omitempty"`
+	Body        json.RawMessage   `json:",omitempty"`
 }
 
 // SessionStackTrace holds dual Go + PHP stack traces
 type SessionStackTrace struct {
-	Golang []StackFrame `json:"golang,omitempty"`
-	PHP    []StackFrame `json:"php,omitempty"`
+	Golang []StackFrame `json:",omitempty"`
+	PHP    []StackFrame `json:",omitempty"`
 }
 
 // StackFrame represents a single frame in a stack trace
 type StackFrame struct {
-	Function string `json:"function"`
-	File     string `json:"file,omitempty"`
-	Line     int    `json:"line,omitempty"`
-	Class    string `json:"class,omitempty"`
+	Function string
+	File     string `json:",omitempty"`
+	Line     int    `json:",omitempty"`
+	Class    string `json:",omitempty"`
 }
 
 // Config holds session service configuration
@@ -434,10 +434,10 @@ func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
 
 // ErrorLogData is the typed structure persisted as error.log in session folders.
 type ErrorLogData struct {
-	Timestamp  string             `json:"timestamp"`
-	Error      string             `json:"error"`
-	StackTrace *SessionStackTrace `json:"stackTrace,omitempty"`
-	Details    json.RawMessage    `json:"details,omitempty"`
+	Timestamp  string             `json:"timestamp"`  // external key (error.log JSON file)
+	Error      string             `json:"error"`      // external key
+	StackTrace *SessionStackTrace `json:"stackTrace,omitempty"` // external key
+	Details    json.RawMessage    `json:"details,omitempty"`    // external key
 }
 
 // SaveError persists error details (including stack traces) as error.log in the session folder
@@ -580,7 +580,7 @@ func extractPHPStackTraceFromLogs(logs string) string {
 		// stackTraceContentContext is used to extract the "content" field from
 		// remote_php_stacktrace log lines serialised as JSON.
 		type stackTraceContentContext struct {
-			Content string `json:"content"`
+			Content string `json:"content"` // external key (session log JSON)
 		}
 		var ctx stackTraceContentContext
 		if json.Unmarshal([]byte(line[braceIdx:]), &ctx) == nil {
@@ -680,15 +680,15 @@ func (s *Service) ListSessions(limit int) apperror.ResultSlice[*SessionSummary] 
 
 // SessionSummary provides a brief overview of a session
 type SessionSummary struct {
-	ID         string      `json:"id"`
-	Type       SessionType `json:"type"`
-	PluginID   int64       `json:"pluginId,omitempty"`
-	SiteID     int64       `json:"siteId,omitempty"`
-	PluginName string      `json:"pluginName,omitempty"`
-	SiteName   string      `json:"siteName,omitempty"`
-	Status     string      `json:"status"`
-	StartedAt  time.Time   `json:"startedAt"`
-	EndedAt    *time.Time  `json:"endedAt,omitempty"`
+	ID         string
+	Type       SessionType
+	PluginID   int64      `json:",omitempty"`
+	SiteID     int64      `json:",omitempty"`
+	PluginName string     `json:",omitempty"`
+	SiteName   string     `json:",omitempty"`
+	Status     string
+	StartedAt  time.Time
+	EndedAt    *time.Time `json:",omitempty"`
 }
 
 // DeleteSession removes a session's directory (or legacy file)

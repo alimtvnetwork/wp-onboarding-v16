@@ -118,7 +118,7 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Restored: true})
+	respondSuccess(w, ActionResponse{IsRestored: true})
 }
 
 // DeleteBackup removes a backup file

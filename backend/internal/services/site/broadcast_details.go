@@ -71,9 +71,9 @@ type ZipCreationDetails struct {
 
 // UploaderDeployDetails carries uploader deployment result context.
 type UploaderDeployDetails struct {
-	SiteId    int64
-	SiteName  string
-	Activated bool
+	SiteId      int64
+	SiteName    string
+	IsActivated bool
 }
 
 // --- Remote action detail structs ---

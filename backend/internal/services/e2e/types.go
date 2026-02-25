@@ -8,71 +8,71 @@ import (
 
 // TestSuite represents a collection of related test cases
 type TestSuite struct {
-	Id             string    `json:"id"`
-	Name           string    `json:"name"`
-	Category       string    `json:"category"` // plugin-crud, site-connections, sync-operations, publish-flow
-	Enabled        bool      `json:"enabled"`
-	TimeoutSeconds int       `json:"timeoutSeconds"`
-	CaseCount      int       `json:"caseCount"`
-	CreatedAt      time.Time `json:"createdAt"`
+	Id             string
+	Name           string
+	Category       string // plugin-crud, site-connections, sync-operations, publish-flow
+	IsEnabled      bool
+	TimeoutSeconds int
+	CaseCount      int
+	CreatedAt      time.Time
 }
 
 // TestCase represents a single test case
 type TestCase struct {
-	Id              string   `json:"id"`
-	SuiteId         string   `json:"suiteId"`
-	Name            string   `json:"name"`
-	Description     string   `json:"description"`
-	Preconditions   []string `json:"preconditions"`
-	Steps           []string `json:"steps"`
-	ExpectedResult  string   `json:"expectedResult"`
-	TimeoutSeconds  int      `json:"timeoutSeconds"`
-	OrderIndex      int      `json:"orderIndex"`
-	Enabled         bool     `json:"enabled"`
+	Id              string
+	SuiteId         string
+	Name            string
+	Description     string
+	Preconditions   []string
+	Steps           []string
+	ExpectedResult  string
+	TimeoutSeconds  int
+	OrderIndex      int
+	IsEnabled       bool
 }
 
 // TestRun represents a test execution session
 type TestRun struct {
-	Id           string     `json:"id"`
-	StartedAt    time.Time  `json:"startedAt"`
-	CompletedAt  *time.Time `json:"completedAt,omitempty"`
-	Status       string     `json:"status"` // running, passed, failed, aborted
-	TotalTests   int        `json:"totalTests"`
-	PassedTests  int        `json:"passedTests"`
-	FailedTests  int        `json:"failedTests"`
-	SkippedTests int        `json:"skippedTests"`
-	DurationMs   int64      `json:"durationMs"`
+	Id           string
+	StartedAt    time.Time
+	CompletedAt  *time.Time `json:",omitempty"`
+	Status       string     // running, passed, failed, aborted
+	TotalTests   int
+	PassedTests  int
+	FailedTests  int
+	SkippedTests int
+	DurationMs   int64
 }
 
 // TestResult represents the result of a single test case execution
 type TestResult struct {
-	Id           string     `json:"id"`
-	RunId        string     `json:"runId"`
-	SuiteId      string     `json:"suiteId"`
-	CaseId       string     `json:"caseId"`
-	CaseName     string     `json:"caseName"`
-	Status       string     `json:"status"` // passed, failed, skipped, error
-	StartedAt    time.Time  `json:"startedAt"`
-	CompletedAt  *time.Time `json:"completedAt,omitempty"`
-	DurationMs   int64      `json:"durationMs"`
-	ErrorMessage string     `json:"errorMessage,omitempty"`
-	ErrorDetails string     `json:"errorDetails,omitempty"`
-	RequestData  string     `json:"requestData,omitempty"`
-	ResponseData string     `json:"responseData,omitempty"`
-	Logs         string     `json:"logs,omitempty"`
+	Id           string
+	RunId        string
+	SuiteId      string
+	CaseId       string
+	CaseName     string
+	Status       string     // passed, failed, skipped, error
+	StartedAt    time.Time
+	CompletedAt  *time.Time `json:",omitempty"`
+	DurationMs   int64
+	ErrorMessage string     `json:",omitempty"`
+	ErrorDetails string     `json:",omitempty"`
+	RequestData  string     `json:",omitempty"`
+	ResponseData string     `json:",omitempty"`
+	Logs         string     `json:",omitempty"`
 }
 
 // RunOptions configures a test run
 type RunOptions struct {
-	Suites        []string `json:"suites"`        // Empty = run all
-	Parallel      bool     `json:"parallel"`      // Run suites in parallel
-	StopOnFailure bool     `json:"stopOnFailure"` // Stop on first failure
+	Suites        []string // Empty = run all
+	IsParallel    bool     // Run suites in parallel
+	StopOnFailure bool     // Stop on first failure
 }
 
 // RunSummary provides summary of a completed test run
 type RunSummary struct {
-	Run     *TestRun      `json:"run"`
-	Results []TestResult  `json:"results"`
+	Run     *TestRun
+	Results []TestResult
 }
 
 // Service defines the E2E test service interface
