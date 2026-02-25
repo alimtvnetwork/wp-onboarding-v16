@@ -54,6 +54,7 @@ trait SchedulerExecutorTrait {
         list(, $orchestrator) = $this->createOrchestrator();
         $snapshotType = $args[ResponseKeyType::SnapshotType->value] ?? SnapshotModeType::Full->value;
         $result = $this->invokeBackup($orchestrator, $args);
+
         $action = ($snapshotType === SnapshotModeType::Incremental->value) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
 
         return $this->buildCronResult(

@@ -51,6 +51,7 @@ trait UploadZipTrait
         $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
         $this->fileLogger->debug('Writing temp file', array('path' => $tempFile));
+
         if (file_put_contents($tempFile, $zipContent) === false) {
             $this->fileLogger->error('Failed to write temp file');
             $this->logger->logUploadFailed($slug, 'Failed to write temp file');

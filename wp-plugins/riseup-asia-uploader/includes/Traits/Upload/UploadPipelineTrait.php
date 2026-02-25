@@ -52,6 +52,7 @@ trait UploadPipelineTrait
 
     private function executeUploadPipeline(WP_REST_Request $request): WP_REST_Response {
         $input = $this->parseUploadInput($request);
+
         if ($input instanceof WP_REST_Response) {
             return $input;
         }
@@ -59,11 +60,13 @@ trait UploadPipelineTrait
         $this->logUploadInitiated($input);
 
         $zipResult = $this->validateAndWriteZip($input['zipContent'], $input['slug']);
+
         if ($zipResult instanceof WP_REST_Response) {
             return $zipResult;
         }
 
         $result = $this->processUploadExtraction($input, $zipResult);
+
         if ($result instanceof WP_REST_Response) {
             return $result;
         }
@@ -95,6 +98,7 @@ trait UploadPipelineTrait
 
     private function logUploadResult(array $result, array $input): void {
         $isExternalUpload = ($result[ResponseKeyType::IsSelfUpdate->value] === false);
+
         if ($isExternalUpload) {
             $this->logger->logUpload($result[ResponseKeyType::Slug->value], array(
                 ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],

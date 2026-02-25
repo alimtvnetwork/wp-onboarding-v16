@@ -119,11 +119,13 @@ trait SnapshotCrudRestoreTrait {
 
     private function isPerTableSnapshot(array $snapshot): bool {
         $filepath = $snapshot['filepath'] ?? '';
+
         if (is_dir($filepath)) {
             return file_exists($filepath . '/' . SnapshotConfigType::RootDbFilename);
         }
         $dir = $snapshot['directory'] ?? '';
         $hasDirWithRootDb = BooleanHelpers::hasValue($dir) && is_dir($dir);
+
         if ($hasDirWithRootDb) {
             return file_exists($dir . '/' . SnapshotConfigType::RootDbFilename);
         }
@@ -133,15 +135,18 @@ trait SnapshotCrudRestoreTrait {
 
     private function resolveSnapshotDir(array $snapshot): ?string {
         $filepath = $snapshot['filepath'] ?? '';
+
         if (is_dir($filepath)) {
             return $filepath;
         }
         $dir = $snapshot['directory'] ?? '';
         $hasValidDir = BooleanHelpers::hasValue($dir) && is_dir($dir);
+
         if ($hasValidDir) {
             return $dir;
         }
         $hasFilepathWithRootDb = BooleanHelpers::hasValue($filepath) && file_exists(dirname($filepath) . '/' . SnapshotConfigType::RootDbFilename);
+
         if ($hasFilepathWithRootDb) {
             return dirname($filepath);
         }
