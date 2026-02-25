@@ -20,7 +20,7 @@ use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StorageModeType;
-use RiseupAsia\Snapshot\SnapshotProviderWPReset;
+use RiseupAsia\Snapshot\SnapshotProviderWpReset;
 use RiseupAsia\Snapshot\SnapshotProviderUpdraft;
 use RiseupAsia\Snapshot\SnapshotProviderNative;
 use RiseupAsia\Snapshot\SnapshotProviderInterface;
@@ -121,7 +121,7 @@ trait DetectorSettingsTrait {
     private function instantiateProvider(string $providerId): SnapshotProviderInterface {
         switch ($providerId) {
             case SnapshotProviderType::WpReset->value:
-                return new SnapshotProviderWPReset($this->logger, $this->db);
+                return new SnapshotProviderWpReset($this->logger, $this->db);
             case SnapshotProviderType::Updraft->value:
                 return new SnapshotProviderUpdraft($this->logger, $this->db);
             case SnapshotProviderType::Native->value:

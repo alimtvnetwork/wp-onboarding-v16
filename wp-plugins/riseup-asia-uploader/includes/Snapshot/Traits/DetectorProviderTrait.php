@@ -21,7 +21,7 @@ use RiseupAsia\Enums\SnapshotProviderType;
 trait DetectorProviderTrait {
     public function detectAvailableProviders(): array {
         $providers = array(
-            $this->detectWPReset(),
+            $this->detectWpReset(),
             $this->detectUpdraft(),
             $this->detectNative(),
         );
@@ -30,7 +30,7 @@ trait DetectorProviderTrait {
         return $providers;
     }
 
-    private function detectWPReset(): array {
+    private function detectWpReset(): array {
         $result = array(
             'id'                                  => SnapshotProviderType::WpReset->value,
             'name'                                => 'WP Reset',
