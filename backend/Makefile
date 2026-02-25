@@ -17,9 +17,29 @@ coverage:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
 
-# Run linter
+# Run golangci-lint
 lint:
 	golangci-lint run
+
+# Run all custom lint scripts
+lint-all: lint-file-size lint-func-size lint-negative lint-imports lint-ge
+	@echo "✅ All lint checks passed"
+
+# Individual lint targets
+lint-file-size:
+	bash ../scripts/lint-file-size.sh
+
+lint-func-size:
+	bash ../scripts/lint-func-size.sh
+
+lint-negative:
+	bash ../scripts/lint-negative.sh
+
+lint-imports:
+	bash ../scripts/lint-imports.sh
+
+lint-ge:
+	bash ../scripts/lint-ge.sh --go
 
 # Clean build artifacts
 clean:
