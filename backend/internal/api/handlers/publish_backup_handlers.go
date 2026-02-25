@@ -14,10 +14,10 @@ import (
 
 // PublishInput represents the request body for publishing
 type PublishInput struct {
-	Mode         string   `json:"mode"`         // "full" or "selected"
-	Files        []string `json:"files"`         // files to publish (for "selected" mode)
-	CreateBackup bool     `json:"createBackup"` // create backup before publish
-	KeepZipFiles bool     `json:"keepZipFiles"` // keep ZIP files after publish (for debugging)
+	Mode         string   `json:"mode"`         // external key (frontend request body)
+	Files        []string `json:"files"`         // external key
+	CreateBackup bool     `json:"createBackup"` // external key
+	KeepZipFiles bool     `json:"keepZipFiles"` // external key
 }
 
 // PublishPlugin publishes plugin changes to a site
