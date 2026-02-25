@@ -7,6 +7,7 @@ import { CircuitBreakerError } from "@/lib/errors/CircuitBreakerError";
 import { logApiCall } from "@/hooks/useExecutionLogger";
 import type { ApiResponse, ApiError, ApiMethod, ApiCallMeta, ErrorDiagnosticContext } from './types';
 import { isEnvelope, parseEnvelope, looksLikeJson } from './envelope';
+import { transformKeys } from './keyTransform';
 
 // Re-export looksLikeJson so methods.ts can use it
 export { looksLikeJson };
@@ -119,7 +120,8 @@ async function fetchRequest<T>(
       if (isEnvelope(parsed)) {
         return parseEnvelope<T>(parsed);
       }
-      return parsed as ApiResponse<T>;
+      // Non-envelope JSON: transform PascalCase keys → camelCase
+      return transformKeys<ApiResponse<T>>(parsed);
     }
 
     // HTML / SPA fallback detection
