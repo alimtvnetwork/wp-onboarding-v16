@@ -13,25 +13,25 @@ The application supports pre-configured seed data for sites and plugins, enablin
 
 ```json
 {
-  "seed": {
-    "enabled": true,
-    "sites": [
+  "Seed": {
+    "Enabled": true,
+    "Sites": [
       {
-        "name": "Demo Site",
-        "url": "https://example.com",
-        "username": "admin",
-        "applicationPassword": "BASE64_ENCODED_PASSWORD",
-        "category": "Development"
+        "Name": "Demo Site",
+        "Url": "https://example.com",
+        "Username": "admin",
+        "ApplicationPassword": "BASE64_ENCODED_PASSWORD",
+        "Category": "Development"
       }
     ],
-    "plugins": [
+    "Plugins": [
       {
-        "name": "My Plugin",
-        "path": "D:\\path\\to\\plugin",
-        "category": "Development",
-        "gitEnabled": true,
-        "autoPublish": false,
-        "siteNames": ["Demo Site"]
+        "Name": "My Plugin",
+        "Path": "D:\\path\\to\\plugin",
+        "Category": "Development",
+        "GitEnabled": true,
+        "AutoPublish": false,
+        "SiteNames": ["Demo Site"]
       }
     ]
   }

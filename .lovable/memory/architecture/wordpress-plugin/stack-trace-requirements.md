@@ -43,7 +43,7 @@ $error_data['error']['details'] = array(
 
 ### 4. Frame Structure
 
-Each frame contains:
+Each frame contains (external keys from PHP `debug_backtrace()`):
 ```json
 {
   "file": "/full/path/to/file.php",

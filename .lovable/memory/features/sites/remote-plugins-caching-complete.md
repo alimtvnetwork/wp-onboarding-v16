@@ -13,9 +13,9 @@ Located in `backend/config.json`:
 
 ```json
 {
-  "remotePlugins": {
-    "cacheEnabled": true,
-    "cacheTTLMinutes": 60
+  "RemotePlugins": {
+    "CacheEnabled": true,
+    "CacheTTLMinutes": 60
   }
 }
 ```

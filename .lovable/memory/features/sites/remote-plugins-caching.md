@@ -9,9 +9,9 @@ Remote plugin lists fetched from WordPress sites are cached in SQLite to reduce 
 
 In `config.json`:
 ```json
-"remotePlugins": {
-  "cacheEnabled": true,
-  "cacheTTLMinutes": 60
+"RemotePlugins": {
+  "CacheEnabled": true,
+  "CacheTTLMinutes": 60
 }
 ```
 

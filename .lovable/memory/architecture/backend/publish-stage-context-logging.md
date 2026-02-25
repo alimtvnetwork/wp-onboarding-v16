@@ -31,12 +31,12 @@ type StageContext struct {
 ───────────────────────────────────────────────────────────────────────────────
 [2026-02-05 14:30:00] [INFO] [upload] Uploading ZIP (143KB) to WordPress → Plugin uploaded and activated
     {
-      "what": "Upload ZIP (143KB)",
-      "why": "Deploy category-generator plugin update to production",
-      "where": "https://example.com/wp-json/riseup-asia-uploader/v1/upload",
-      "result": "SUCCESS - plugin uploaded and activated",
-      "durationMs": 4200,
-      "uploadResponse": { "success": true, "overwritten": true }
+      "What": "Upload ZIP (143KB)",
+      "Why": "Deploy category-generator plugin update to production",
+      "Where": "https://example.com/wp-json/riseup-asia-uploader/v1/upload",
+      "Result": "SUCCESS - plugin uploaded and activated",
+      "DurationMs": 4200,
+      "UploadResponse": { "Success": true, "Overwritten": true }  // external key values
     }
 
 ✓ STAGE UPLOAD completed (completed) in 4200ms
