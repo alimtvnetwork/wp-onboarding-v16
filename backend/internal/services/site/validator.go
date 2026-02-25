@@ -18,9 +18,9 @@ var (
 )
 
 // ValidateSiteURL validates a WordPress site URL
-func ValidateSiteURL(siteURL string) error {
+func ValidateSiteURL(siteURL string) *apperror.AppError {
 	siteURL = strings.TrimSpace(siteURL)
-	
+
 	if siteURL == "" {
 		return apperror.New(apperror.ErrValidation, "URL is required")
 	}
@@ -32,7 +32,7 @@ func ValidateSiteURL(siteURL string) error {
 
 	parsed, err := url.Parse(siteURL)
 	if err != nil {
-		return apperror.New(apperror.ErrValidation, "invalid URL format")
+		return apperror.Wrap(err, apperror.ErrValidation, "invalid URL format")
 	}
 
 	if parsed.Host == "" {
@@ -48,9 +48,9 @@ func ValidateSiteURL(siteURL string) error {
 }
 
 // ValidateUsername validates a WordPress username
-func ValidateUsername(username string) error {
+func ValidateUsername(username string) *apperror.AppError {
 	username = strings.TrimSpace(username)
-	
+
 	if username == "" {
 		return apperror.New(apperror.ErrValidation, "username is required")
 	}
@@ -63,10 +63,10 @@ func ValidateUsername(username string) error {
 }
 
 // ValidateApplicationPassword validates a WordPress application password
-func ValidateApplicationPassword(password string) error {
+func ValidateApplicationPassword(password string) *apperror.AppError {
 	// Remove spaces (WordPress displays app passwords with spaces)
 	password = strings.ReplaceAll(password, " ", "")
-	
+
 	if password == "" {
 		return apperror.New(apperror.ErrValidation, "application password is required")
 	}
@@ -79,9 +79,9 @@ func ValidateApplicationPassword(password string) error {
 }
 
 // ValidateSiteName validates a site display name
-func ValidateSiteName(name string) error {
+func ValidateSiteName(name string) *apperror.AppError {
 	name = strings.TrimSpace(name)
-	
+
 	if name == "" {
 		return apperror.New(apperror.ErrValidation, "name is required")
 	}

@@ -54,7 +54,7 @@ func createZipFile(absZipPath string) (*os.File, error) {
 }
 
 // finalizeZip closes the zip writer and file, validates the result.
-func finalizeZip(zw *zip.Writer, zf *os.File, absZipPath string) error {
+func finalizeZip(zw *zip.Writer, zf *os.File, absZipPath string) *apperror.AppError {
 	if err := zw.Close(); err != nil {
 		zf.Close()
 		os.Remove(absZipPath)
@@ -68,7 +68,7 @@ func finalizeZip(zw *zip.Writer, zf *os.File, absZipPath string) error {
 }
 
 // validateZipFile checks the zip file exists and is non-empty.
-func validateZipFile(absZipPath string) error {
+func validateZipFile(absZipPath string) *apperror.AppError {
 	info, err := os.Stat(absZipPath)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrFSRead, "zip file not found after creation")

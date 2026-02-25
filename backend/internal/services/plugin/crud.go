@@ -186,8 +186,8 @@ func parseDateTime(s string) time.Time {
 func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result[models.Plugin] {
 	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path, "forceCreate", input.ForceCreate)
 
-	if err := s.validateCreatePath(ctx, input); err != nil {
-		return apperror.FailWrap[models.Plugin](err, apperror.ErrValidation, "plugin path validation failed")
+	if appErr := s.validateCreatePath(ctx, input); appErr != nil {
+		return apperror.Fail[models.Plugin](appErr)
 	}
 
 	existing, done := s.checkDuplicatePath(ctx, input)
@@ -199,7 +199,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 }
 
 // validateCreatePath validates the path unless forceCreate is set.
-func (s *Service) validateCreatePath(ctx context.Context, input CreateInput) error {
+func (s *Service) validateCreatePath(ctx context.Context, input CreateInput) *apperror.AppError {
 	if input.ForceCreate {
 		return nil
 	}
@@ -332,7 +332,7 @@ func (s *Service) buildUpdateFields(ctx context.Context, input UpdateInput) ([]s
 		args = append(args, *input.Name)
 	}
 	if input.Path != nil {
-		if err := s.ValidatePath(ctx, *input.Path); err == nil {
+		if appErr := s.ValidatePath(ctx, *input.Path); appErr == nil {
 			updates = append(updates, "Path = ?")
 			args = append(args, *input.Path)
 		}
