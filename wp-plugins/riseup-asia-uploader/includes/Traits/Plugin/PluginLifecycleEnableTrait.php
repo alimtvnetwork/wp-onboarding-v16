@@ -29,11 +29,13 @@ trait PluginLifecycleEnableTrait {
     /** Handle enable (activate) plugin request. */
     public function handleEnablePlugin($request) {
         $loadError = $this->loadPluginFunctions();
+
         if ($loadError) {
             return $loadError;
         }
 
         $resolved = $this->resolvePluginFromRequest($request);
+
         if ($resolved instanceof WP_REST_Response) {
             return $resolved;
         }
@@ -48,16 +50,19 @@ trait PluginLifecycleEnableTrait {
     /** Handle disable (deactivate) plugin request. */
     public function handleDisablePlugin($request) {
         $loadError = $this->loadPluginFunctions();
+
         if ($loadError) {
             return $loadError;
         }
 
         $resolved = $this->resolvePluginFromRequest($request);
+
         if ($resolved instanceof WP_REST_Response) {
             return $resolved;
         }
 
         $isPluginInactive = (is_plugin_active($resolved[ResponseKeyType::PluginFile->value]) === false);
+
         if ($isPluginInactive) {
             return $this->buildAlreadyInactiveResponse($resolved[ResponseKeyType::Slug->value]);
         }
@@ -85,6 +90,7 @@ trait PluginLifecycleEnableTrait {
     private function tryActivatePlugin(string $slug, string $pluginFile) {
         try {
             $result = activate_plugin($pluginFile);
+
             if (is_wp_error($result)) {
                 $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, array('error' => $result->get_error_message()));
 

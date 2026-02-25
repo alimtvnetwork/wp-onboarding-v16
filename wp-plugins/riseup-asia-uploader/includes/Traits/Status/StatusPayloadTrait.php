@@ -69,6 +69,7 @@ trait StatusPayloadTrait {
     /** Parse the Version header from a plugin file. */
     private function parseVersionFromHeader(string $file): string {
         $header = file_get_contents($file, false, null, 0, 8192);
+
         if ($header !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $header, $m)) {
             return $m[1];
         }

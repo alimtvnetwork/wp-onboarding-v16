@@ -29,6 +29,7 @@ trait StatusOpsTrait {
     public function handleOpenapi(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('OpenAPI endpoint called');
         $spec = $this->loadOpenApiSpec();
+
         if ($spec instanceof WP_REST_Response) {
             return $spec;
         }
@@ -57,6 +58,7 @@ trait StatusOpsTrait {
 
     private function parseSpecFile(string $specFile): array|WP_REST_Response {
         $specContent = file_get_contents($specFile);
+
         if ($specContent === false) {
             $this->fileLogger->error('Failed to read OpenAPI spec file');
 
@@ -67,6 +69,7 @@ trait StatusOpsTrait {
         }
 
         $spec = json_decode($specContent, true);
+
         if ($spec === null) {
             $this->fileLogger->error('Invalid JSON in OpenAPI spec file');
 

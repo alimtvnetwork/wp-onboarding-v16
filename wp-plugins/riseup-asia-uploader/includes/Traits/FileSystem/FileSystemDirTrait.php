@@ -88,6 +88,7 @@ trait FileSystemDirTrait {
     ): void {
         $dir = opendir($srcDir);
         $isDirHandleMissing = ($dir === false);
+
         if ($isDirHandleMissing) {
             return;
         }

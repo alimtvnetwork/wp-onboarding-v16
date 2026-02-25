@@ -45,6 +45,7 @@ trait LifecycleHooksTrait
      */
     public function onPluginDeleted(string $plugin, bool $isDeleted = true): void {
         $isDeletionSkipped = ($isDeleted === false);
+
         if ($isDeletionSkipped) {
             return;
         }

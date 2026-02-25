@@ -78,6 +78,7 @@ trait ErrorLogHandlerTrait {
         );
 
         $isFileUnreadable = PathHelper::isFileUnreadable($filePath);
+
         if ($isFileUnreadable) {
             return $result;
         }
@@ -86,6 +87,7 @@ trait ErrorLogHandlerTrait {
         $result['total_size'] = filesize($filePath);
 
         $allLines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
         if ($allLines === false) {
             $result[ResponseKeyType::Content->value] = 'Failed to read file';
 

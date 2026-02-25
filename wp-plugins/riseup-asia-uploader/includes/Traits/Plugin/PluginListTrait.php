@@ -66,6 +66,7 @@ trait PluginListTrait
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $slug = isset($body['slug']) ? sanitize_text_field($body['slug']) : '';
+
             if (empty($slug)) {
 
                 return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
@@ -143,6 +144,7 @@ trait PluginListTrait
     public function handlePluginFiles($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+
         if (empty($slug)) {
 
             return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
@@ -169,6 +171,7 @@ trait PluginListTrait
         }
 
         $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+
         if (PathHelper::isDirMissing($pluginDir)) {
 
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);

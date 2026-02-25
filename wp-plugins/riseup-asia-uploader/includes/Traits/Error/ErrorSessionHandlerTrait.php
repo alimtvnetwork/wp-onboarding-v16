@@ -30,11 +30,13 @@ trait ErrorSessionHandlerTrait {
 
             $pdo = Database::getInstance()->getPdo();
             $isPdoMissing = ($pdo === null);
+
             if ($isPdoMissing) {
                 return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::ServerError->value);
             }
 
             $isTableMissing = ($this->isTableExists($pdo, 'error_sessions') === false);
+
             if ($isTableMissing) {
                 return EnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
                     ->autoDetectRequestedAt()->setResults(array())->toResponse();
