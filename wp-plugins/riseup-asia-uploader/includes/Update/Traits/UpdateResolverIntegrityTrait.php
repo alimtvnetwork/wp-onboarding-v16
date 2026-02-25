@@ -30,6 +30,7 @@ trait UpdateResolverIntegrityTrait {
         string $expectedHash,
     ): true|WP_Error {
         $isFileMissing = !file_exists($filePath);
+
         if ($isFileMissing) {
             $this->fileLogger->error('Checksum verification failed — file not found', array('file' => $filePath));
 
@@ -41,6 +42,7 @@ trait UpdateResolverIntegrityTrait {
 
         $actualHash = hash_file('sha256', $filePath);
         $isHashMismatch = !hash_equals(strtolower($expectedHash), strtolower($actualHash));
+
         if ($isHashMismatch) {
             $this->fileLogger->error('Checksum mismatch', array(
                 'expected' => $expectedHash,
@@ -82,6 +84,7 @@ trait UpdateResolverIntegrityTrait {
         }
 
         $isHashProvided = ($expectedHash !== null && $expectedHash !== '');
+
         if ($isHashProvided) {
             $verification = $this->verifyChecksum($tmpFile, $expectedHash);
             if (is_wp_error($verification)) {

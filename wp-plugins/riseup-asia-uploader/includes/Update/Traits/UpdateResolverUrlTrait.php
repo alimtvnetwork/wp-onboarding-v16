@@ -98,6 +98,7 @@ trait UpdateResolverUrlTrait {
         }
 
         $isCacheUsable = ($forceResolve === false && $this->isCacheValid($settings));
+
         if ($isCacheUsable) {
             $this->fileLogger->debug('Using cached resolved URL', array('url' => $settings['resolved_url']));
 

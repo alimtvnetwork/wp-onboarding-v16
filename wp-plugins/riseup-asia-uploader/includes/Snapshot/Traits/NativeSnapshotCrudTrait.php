@@ -83,6 +83,7 @@ trait NativeSnapshotCrudTrait {
         $zipPath = str_replace('.sqlite', '.zip', $filepath);
 
         $zip = new ZipArchive();
+
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return ResultHelper::error(ResponseMessageType::ZipCreateFailed->value);
         }

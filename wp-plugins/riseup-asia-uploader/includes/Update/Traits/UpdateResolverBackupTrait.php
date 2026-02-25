@@ -32,6 +32,7 @@ trait UpdateResolverBackupTrait {
     public function createPreUpdateBackup(): string|WP_Error {
         $pluginDir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
         $isPluginDirMissing = !is_dir($pluginDir);
+
         if ($isPluginDirMissing) {
             $this->fileLogger->error('Plugin directory not found for backup', array('dir' => $pluginDir));
 
@@ -43,6 +44,7 @@ trait UpdateResolverBackupTrait {
 
         $upgradeDir = WP_CONTENT_DIR . '/upgrade';
         $isUpgradeDirMissing = !is_dir($upgradeDir);
+
         if ($isUpgradeDirMissing) {
             wp_mkdir_p($upgradeDir);
         }
@@ -53,6 +55,7 @@ trait UpdateResolverBackupTrait {
         $this->fileLogger->info('Creating pre-update backup', array('source' => $pluginDir, 'backup' => $backupDir));
 
         $copied = $this->recursiveCopy($pluginDir, $backupDir);
+
         if ($copied === false) {
             $this->fileLogger->error('Backup copy failed');
 
@@ -76,6 +79,7 @@ trait UpdateResolverBackupTrait {
      */
     public function rollbackFromBackup(string $backupDir): true|WP_Error {
         $isBackupMissing = !is_dir($backupDir);
+
         if ($isBackupMissing) {
             $this->fileLogger->error('Backup directory not found for rollback', array('dir' => $backupDir));
 
@@ -94,6 +98,7 @@ trait UpdateResolverBackupTrait {
 
         // Restore from backup
         $restored = $this->recursiveCopy($backupDir, $pluginDir);
+
         if ($restored === false) {
             $this->fileLogger->error('Rollback restore failed — plugin may be in broken state');
 
@@ -116,6 +121,7 @@ trait UpdateResolverBackupTrait {
      */
     public function cleanupBackup(string $backupDir): void {
         $isBackupExists = is_dir($backupDir);
+
         if ($isBackupExists) {
             $this->recursiveDelete($backupDir);
             $this->fileLogger->info('Pre-update backup cleaned up', array('path' => $backupDir));
@@ -127,6 +133,7 @@ trait UpdateResolverBackupTrait {
         string $destination,
     ): bool {
         $isMkdirFailed = !wp_mkdir_p($destination);
+
         if ($isMkdirFailed) {
             return false;
         }
@@ -141,11 +148,13 @@ trait UpdateResolverBackupTrait {
 
             if ($item->isDir()) {
                 $isDirCreateFailed = !wp_mkdir_p($targetPath);
+
                 if ($isDirCreateFailed) {
                     return false;
                 }
             } else {
                 $isCopyFailed = !copy($item->getPathname(), $targetPath);
+
                 if ($isCopyFailed) {
                     return false;
                 }
@@ -157,6 +166,7 @@ trait UpdateResolverBackupTrait {
 
     private function recursiveDelete(string $dir): void {
         $isDirMissing = !is_dir($dir);
+
         if ($isDirMissing) {
             return;
         }

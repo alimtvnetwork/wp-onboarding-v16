@@ -22,6 +22,7 @@ trait IncrementalCoreTrait {
         $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $masterTables = $this->getMasterTableInventory($rootPdo);
+
         if (empty($masterTables)) {
             $rootPdo = null;
 

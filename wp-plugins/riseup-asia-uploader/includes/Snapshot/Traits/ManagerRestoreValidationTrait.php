@@ -94,6 +94,7 @@ trait ManagerRestoreValidationTrait {
         $mode = $options['mode'] ?? RestoreModeType::Full->value;
 
         $isSelective = ($mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($options['tables']));
+
         if ($isSelective) {
             return array_intersect($allTables, $options['tables']);
         }
