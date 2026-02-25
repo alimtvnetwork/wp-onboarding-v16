@@ -41,6 +41,7 @@ trait UploadInstallExtractTrait
 
         if ($pluginFile) {
             $isPreviouslyActive = is_plugin_active($pluginFile);
+
             if ($isPreviouslyActive) {
                 deactivate_plugins($pluginFile);
             }
@@ -60,6 +61,7 @@ trait UploadInstallExtractTrait
         $isPreviouslyActive = $this->deactivateIfUpdating($context[ResponseKeyType::Slug->value], $context[ResponseKeyType::IsUpdate->value], $context['targetDir']);
 
         $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input);
+
         if ($stepResult instanceof WP_REST_Response) {
             return $stepResult;
         }
@@ -76,6 +78,7 @@ trait UploadInstallExtractTrait
         $this->removeDuplicatePlugins($slug, WP_PLUGIN_DIR);
 
         $isSelfUpdate = ($slug === PluginConfigType::Slug->value && $isUpdate);
+
         if ($isSelfUpdate) {
             $this->preLogSelfUpdate($slug, $input['uploadSource'], $input['clientPluginVersion'], strlen($input['zipContent']));
         }

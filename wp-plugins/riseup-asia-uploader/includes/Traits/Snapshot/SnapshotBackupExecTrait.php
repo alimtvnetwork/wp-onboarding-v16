@@ -45,6 +45,7 @@ trait SnapshotBackupExecTrait {
             $body = $request->get_json_params();
             $this->logBackupInitiated(ActionType::SnapshotIncremental->value, $body);
             $masterDir = $this->resolveIncrementalMasterDir($body);
+
             if ($masterDir instanceof WP_REST_Response) {
                 return $masterDir;
             }
@@ -112,10 +113,12 @@ trait SnapshotBackupExecTrait {
         $incremental = $this->createIncrementalBackup();
         $masterDir = $body['master_dir'] ?? null;
         $isMasterDirEmpty = ($masterDir === null || $masterDir === '');
+
         if ($isMasterDirEmpty) {
             $masterDir = $incremental->findLatestMasterSnapshot();
         }
         $isMasterDirInvalid = ($masterDir === null || $masterDir === '' || PathHelper::isDirMissing($masterDir));
+
         if ($isMasterDirInvalid) {
             return new WP_REST_Response(
                 ResultHelper::error('No master (full) snapshot found. Create a full backup first.'),

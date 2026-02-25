@@ -134,6 +134,7 @@ trait NativeSnapshotExecTrait {
     ): array {
         $totalRows = 0;
         $totalBytes = 0;
+
         foreach ($tableCounts as $table => $result) {
             $totalRows += $result[ResponseKeyType::Rows->value];
             $totalBytes += $result[ResponseKeyType::Bytes->value];
