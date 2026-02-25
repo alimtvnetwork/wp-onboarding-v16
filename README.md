@@ -98,12 +98,12 @@ All coding standards, architecture decisions, and feature specifications are mai
 
 | Spec | Description |
 |------|-------------|
-| [Coding Guidelines](./spec/01-coding-guidelines/) | DRY principles, strict typing, no raw negations, function naming |
-| [TypeScript Standards](./spec/02-typescript-standards/readme.md) | Zero-`any` policy, catch block narrowing, generic envelopes |
-| [Go Standards](./spec/03-golang-standards/readme.md) | No `interface{}`, typed structs, error diagnostic pattern |
-| [PHP Standards](./spec/04-php-standards/readme.md) | PSR-4, backed enums, `Throwable`, forbidden patterns |
-| [Error System](./spec/05-error-manage/) | Cross-stack error handling, modal UI, response envelope |
-| [WP Plugin Dev](./spec/07-wordpress-plugin-development/00-overview.md) | Plugin development workflow, coding guidelines, Phase 7 report |
+| [Coding Guidelines](./spec/03-coding-guidelines/) | DRY principles, strict typing, no raw negations, function naming |
+| [TypeScript Standards](./spec/04-typescript-standards/readme.md) | Zero-`any` policy, catch block narrowing, generic envelopes |
+| [Go Standards](./spec/05-golang-standards/readme.md) | No `interface{}`, typed structs, error diagnostic pattern |
+| [PHP Standards](./spec/06-php-standards/readme.md) | PSR-4, backed enums, `Throwable`, forbidden patterns |
+| [Error System](./spec/07-error-manage/) | Cross-stack error handling, modal UI, response envelope |
+| [WP Plugin Dev](./spec/09-wordpress-plugin-development/00-overview.md) | Plugin development workflow, coding guidelines, Phase 7 report |
 
 ---
 

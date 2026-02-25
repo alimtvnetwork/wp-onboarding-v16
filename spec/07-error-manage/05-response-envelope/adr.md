@@ -116,7 +116,7 @@ A unified response contract was needed to eliminate these problems without break
 - *TypeScript as source, generate others* — would privilege one stack and require build-time codegen for Go/PHP.
 - *No formal schema, rely on spec README* — prose specifications cannot be machine-validated and are prone to interpretation drift.
 
-**Schema location:** `spec/05-error-manage/05-response-envelope/envelope.schema.json`  
+**Schema location:** `spec/07-error-manage/05-response-envelope/envelope.schema.json`  
 **Version:** v1.0.0  
 **Referenced by:**
 - Go: `backend/internal/wordpress/envelope.go`

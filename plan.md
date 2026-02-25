@@ -57,7 +57,7 @@
 - **Estimated Effort:** 8–10 tasks
 
 ### D2. E2 Activity Feed (Fleet-Wide Audit Log)
-- **Objective:** Implement the fleet-wide activity audit log per `spec/11-e2-activity-feed/`
+- **Objective:** Implement the fleet-wide activity audit log per `spec/13-e2-activity-feed/`
 - **Dependencies:** Go endpoint spec exists (e2.1)
 - **Expected Outputs:** Go endpoint + React UI for activity feed
 - **Acceptance Criteria:** Per spec acceptance criteria

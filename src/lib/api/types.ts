@@ -74,7 +74,7 @@ export interface EnvelopeMeta {
 
 // ---------------------------------------------------------------------------
 // GE-1 Named Domain Types (replacing Record<string, unknown> violations)
-// See spec/12-generic-enforce/README.md
+// See spec/14-generic-enforce/README.md
 // ---------------------------------------------------------------------------
 
 /** HTTP header map — named alias per GE-4 (used 3+ times across codebase) */

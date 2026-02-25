@@ -1,5 +1,5 @@
 // src/lib/constants.ts — Named constants and const enums for all status/action strings.
-// Spec: spec/02-typescript-standards/README.md v2.0.0
+// Spec: spec/04-typescript-standards/README.md v2.0.0
 // Rule: No magic strings or magic numbers — all identifiers come from here.
 // Phase 3: All enum string values use PascalCase to match Go/PHP backend enums.
 
