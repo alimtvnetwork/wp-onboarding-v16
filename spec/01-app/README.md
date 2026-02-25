@@ -1,7 +1,7 @@
 # Application Specifications
 
 > **Purpose:** Centralized home for all application-level specifications.
-> **Updated:** 2026-02-22
+> **Updated:** 2026-02-25
 
 All application specs, feature definitions, and behavioral requirements live here.
 
