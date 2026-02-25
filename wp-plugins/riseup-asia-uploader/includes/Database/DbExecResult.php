@@ -17,7 +17,6 @@ if (!defined('ABSPATH')) {
 }
 
 final class DbExecResult {
-
     private function __construct(
         private readonly int $affectedRows = 0,
         private readonly int $lastInsertId = 0,

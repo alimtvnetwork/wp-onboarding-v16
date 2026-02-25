@@ -1,7 +1,18 @@
 <?php
+/**
+ * SnapshotExporter — Snapshot export pipeline shell.
+ *
+ * Logic delegated to ExporterPublicApiTrait, ExporterBuildTrait, and ExporterHelpersTrait.
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.57.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use LogicException;
 use RiseupAsia\Snapshot\Traits\ExporterPublicApiTrait;
@@ -17,9 +28,9 @@ class SnapshotExporter {
 
     private FileLogger $logger;
     private Database $db;
-    private static ?SnapshotExporter $instance = null;
+    private static ?self $instance = null;
 
-    public static function getInstance(?FileLogger $logger = null, ?Database $db = null): static {
+    public static function getInstance(?FileLogger $logger = null, ?Database $db = null): self {
         $isReadyToInit = self::$instance === null && $logger && $db;
 
         if ($isReadyToInit) {

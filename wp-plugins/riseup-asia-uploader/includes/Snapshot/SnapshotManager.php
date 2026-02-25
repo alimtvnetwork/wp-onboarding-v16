@@ -1,7 +1,18 @@
 <?php
+/**
+ * SnapshotManager — Snapshot lifecycle management shell.
+ *
+ * Logic delegated to domain-specific traits for CRUD, restore, export, import, and settings.
+ *
+ * @package RiseupAsia\Snapshot
+ * @since   1.57.0
+ */
+
 namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) { exit; }
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use LogicException;
 use wpdb;

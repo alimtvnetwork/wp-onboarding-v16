@@ -35,27 +35,16 @@ class Database {
     use DatabaseMigrationsLateTrait;
     use DatabaseQueryTrait;
 
-    /** @var PDO|null */
-    private $pdo = null;
-
-    /** @var string */
-    private $dbPath;
-
-    /** @var FileLogger */
-    private $fileLogger;
-
-    /** @var Database|null */
-    private static $instance = null;
-
-    /** @var bool */
-    private $isInitAttempted = false;
+    private ?PDO $pdo = null;
+    private string $dbPath = '';
+    private FileLogger $fileLogger;
+    private static ?self $instance = null;
+    private bool $isInitAttempted = false;
 
     /**
      * Get singleton instance.
-     *
-     * @return Database
      */
-    public static function getInstance() {
+    public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
         }

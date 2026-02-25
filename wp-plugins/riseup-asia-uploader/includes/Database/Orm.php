@@ -20,6 +20,7 @@ use PDOException;
 use RiseupAsia\Database\Traits\OrmWhereTrait;
 use RiseupAsia\Database\Traits\OrmQueryTrait;
 use RiseupAsia\Database\Traits\OrmMutationTrait;
+use RiseupAsia\Logging\FileLogger;
 
 /**
  * Class Orm
@@ -31,47 +32,20 @@ class Orm {
     use OrmQueryTrait;
     use OrmMutationTrait;
 
-    /** @var PDO|null */
-    private static $pdo = null;
-
-    /** @var string */
-    private $tableName;
-
-    /** @var array */
-    private $data = array();
-
-    /** @var array */
-    private $whereClauses = array();
-
-    /** @var array */
-    private $whereParams = array();
-
-    /** @var array */
-    private $orderBy = array();
-
-    /** @var int|null */
-    private $limitValue = null;
-
-    /** @var int|null */
-    private $offsetValue = null;
-
-    /** @var array */
-    private $selectColumns = array('*');
-
-    /** @var array */
-    private $groupBy = array();
-
-    /** @var bool */
-    private $isNew = false;
-
-    /** @var mixed */
-    private $id = null;
-
-    /** @var string */
-    private $idColumn = 'Id';
-
-    /** @var int */
-    private static $paramCounter = 0;
+    private static ?PDO $pdo = null;
+    private string $tableName = '';
+    private array $data = array();
+    private array $whereClauses = array();
+    private array $whereParams = array();
+    private array $orderBy = array();
+    private ?int $limitValue = null;
+    private ?int $offsetValue = null;
+    private array $selectColumns = array('*');
+    private array $groupBy = array();
+    private bool $isNew = false;
+    private int|string|null $id = null;
+    private string $idColumn = 'Id';
+    private static int $paramCounter = 0;
 
     /**
      * Configure the ORM with a PDO instance.
@@ -108,6 +82,12 @@ class Orm {
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            $logger = FileLogger::getInstance();
+            $logger->error('Orm::rawExecute() failed', array(
+                'sql' => $sql,
+                'error' => $e->getMessage(),
+            ));
+
             return array();
         }
     }

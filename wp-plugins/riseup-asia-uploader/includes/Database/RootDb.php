@@ -83,12 +83,6 @@ class RootDb {
             $full .= ' ' . json_encode($context);
         }
 
-        $isLoggerAbsent = BooleanHelpers::isValueEmpty($this->logger);
-
-        if ($isLoggerAbsent) {
-            return;
-        }
-
         $method = strtolower($level);
 
         if (method_exists($this->logger, $method)) {
