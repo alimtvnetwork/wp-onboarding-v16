@@ -1,16 +1,10 @@
 package wordpress
 
 import (
-	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
 
 	"wp-plugin-publish/internal/enums/action"
-	"wp-plugin-publish/internal/enums/content_type"
 	ep "wp-plugin-publish/internal/enums/endpoint"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/pkg/apperror"
@@ -19,94 +13,30 @@ import (
 // ReplaceFileViaUploader replaces a single file in a plugin via the RiseupAsia Uploader.
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
 	namespace := c.resolveNamespace()
-
 	endpoint := "/" + namespace + ep.Files.String()
-
-	// Always use base64 encoding for RiseupAsia Uploader
 	contentStr := base64.StdEncoding.EncodeToString(content)
 
-	body := PluginFileReplaceRequest{
-		Plugin:  slug,
-		Path:    relPath,
-		Content: contentStr,
-	}
-
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrInternal, "marshal replace file body")
-	}
-
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrInternal, "create replace file request").
-			WithURL(url)
-	}
-
-	c.setStandardHeaders(req, contenttype.JSON.String())
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrWPConnection, "replace file request failed").
-			WithPath(relPath)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		respBytes, _ := io.ReadAll(resp.Body)
-		return &APIError{
-			Operation:    "replace file via RiseupAsia Uploader",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          url,
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(respBytes), 8192),
-			PluginSlugIn: slug,
-		}
-	}
-
-	return nil
+	_, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body:       PluginFileReplaceRequest{Plugin: slug, Path: relPath, Content: contentStr},
+		Operation:  "replace file via RiseupAsia Uploader",
+		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+	})
+	return err
 }
 
 // DeleteFileViaUploader deletes a single file from a plugin via the Riseup Asia Uploader.
 func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	namespace := c.resolveNamespace()
-
 	endpoint := "/" + namespace + ep.Files.String()
 
-	body := PluginFileDeleteRequest{Plugin: slug, Path: relPath, Action: "delete"}
-	jsonBody, _ := json.Marshal(body)
-
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrInternal, "create delete file request").
-			WithURL(url)
-	}
-
-	c.setStandardHeaders(req, contenttype.JSON.String())
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrWPConnection, "delete file request failed").
-			WithPath(relPath)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		respBytes, _ := io.ReadAll(resp.Body)
-		return &APIError{
-			Operation:    "delete file via Riseup Asia Uploader",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          url,
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(respBytes), 8192),
-			PluginSlugIn: slug,
-		}
-	}
-
-	return nil
+	_, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body:       PluginFileDeleteRequest{Plugin: slug, Path: relPath, Action: "delete"},
+		Operation:  "delete file via Riseup Asia Uploader",
+		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+	})
+	return err
 }
 
 // =============================================================================
@@ -141,65 +71,25 @@ type SyncResult struct {
 // SyncPluginFilesViaUploader performs a delta sync of multiple files to a plugin.
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
 	namespace := c.resolveNamespace()
-
-	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Syncing %d files to %s...", len(files), slug), toProgress(SyncInitProgress{
-		Slug:      slug,
-		FileCount: len(files),
-		Namespace: namespace,
-	}))
+	c.reportSyncStart(slug, len(files), namespace)
 
 	endpoint := "/" + namespace + ep.Sync.String()
-
-	body := SyncRequestBody{
-		Plugin: slug,
-		Files:  files,
-	}
-
-	jsonBody, err := json.Marshal(body)
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body:       SyncRequestBody{Plugin: slug, Files: files},
+		Operation:  "sync plugin files via Riseup Asia Uploader",
+		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+	})
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "marshal sync request")
+		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "create sync request").
-			WithURL(url)
-	}
+	return decodeAPIResponse[SyncResult](data, "sync result")
+}
 
-	c.setStandardHeaders(req, contenttype.JSON.String())
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "sync request failed").
-			WithSlug(slug)
-	}
-	defer resp.Body.Close()
-
-	respBytes, _ := io.ReadAll(resp.Body)
-	respBody := string(respBytes)
-
-	c.progress(action.Sync.String(), stagestatus.Running.String(), fmt.Sprintf("Sync response: %d", resp.StatusCode), toProgress(ResponseProgress{
-		Status: resp.StatusCode,
-		Body:   truncateBody(respBody, 500),
-	}))
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{
-			Operation:    "sync plugin files via Riseup Asia Uploader",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          url,
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(respBody, 8192),
-			PluginSlugIn: slug,
-		}
-	}
-
-	var result SyncResult
-	if err := json.Unmarshal(respBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode sync result")
-	}
-
-	return &result, nil
+// reportSyncStart emits a progress event for the start of a delta sync operation.
+func (c *Client) reportSyncStart(slug string, fileCount int, namespace string) {
+	c.progress(action.Sync.String(), stagestatus.Running.String(),
+		fmt.Sprintf("Syncing %d files to %s...", fileCount, slug),
+		toProgress(SyncInitProgress{Slug: slug, FileCount: fileCount, Namespace: namespace}))
 }
