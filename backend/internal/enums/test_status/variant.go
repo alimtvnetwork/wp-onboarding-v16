@@ -45,7 +45,9 @@ func (v Variant) IsPassed() bool  { return v == Passed }
 func (v Variant) IsFailed() bool  { return v == Failed }
 func (v Variant) IsSkipped() bool { return v == Skipped }
 func (v Variant) IsAborted() bool { return v == Aborted }
-func (v Variant) IsInvalid() bool { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 // IsTerminal returns true if the test has reached a final state.
 func (v Variant) IsTerminal() bool { return v == Passed || v == Failed || v == Skipped || v == Aborted }

@@ -38,7 +38,9 @@ func (v Variant) IsValid() bool {
 
 func (v Variant) IsActive() bool   { return v == Active }
 func (v Variant) IsInactive() bool { return v == Inactive }
-func (v Variant) IsInvalid() bool  { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

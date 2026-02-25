@@ -77,7 +77,9 @@ func (v Variant) IsMediaUpload() bool    { return v == MediaUpload }
 func (v Variant) IsAuthFailed() bool     { return v == AuthFailed }
 func (v Variant) IsExportSelf() bool     { return v == ExportSelf }
 func (v Variant) IsExportPlugin() bool   { return v == ExportPlugin }
-func (v Variant) IsInvalid() bool        { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 // IsOther returns true if the receiver is NOT the given variant.
 func (v Variant) IsOther(other Variant) bool { return v != other }

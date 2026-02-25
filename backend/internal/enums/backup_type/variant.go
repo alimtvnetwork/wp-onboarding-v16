@@ -36,7 +36,9 @@ func (v Variant) IsValid() bool {
 
 func (v Variant) IsIncremental() bool { return v == Incremental }
 func (v Variant) IsFull() bool        { return v == Full }
-func (v Variant) IsInvalid() bool     { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

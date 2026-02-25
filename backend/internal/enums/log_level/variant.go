@@ -45,7 +45,9 @@ func (v Variant) IsDebug() bool   { return v == Debug }
 func (v Variant) IsInfo() bool    { return v == Info }
 func (v Variant) IsWarn() bool    { return v == Warn }
 func (v Variant) IsError() bool   { return v == Error }
-func (v Variant) IsInvalid() bool { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

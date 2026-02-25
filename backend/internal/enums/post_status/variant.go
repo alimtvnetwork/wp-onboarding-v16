@@ -41,7 +41,9 @@ func (v Variant) IsValid() bool {
 func (v Variant) IsPublish() bool { return v == Publish }
 func (v Variant) IsDraft() bool   { return v == Draft }
 func (v Variant) IsPending() bool { return v == Pending }
-func (v Variant) IsInvalid() bool { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

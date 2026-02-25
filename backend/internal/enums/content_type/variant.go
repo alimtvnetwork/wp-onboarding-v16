@@ -41,7 +41,9 @@ func (v Variant) IsValid() bool {
 func (v Variant) IsJSON() bool          { return v == JSON }
 func (v Variant) IsMultipart() bool     { return v == Multipart }
 func (v Variant) IsFormURLEncoded() bool { return v == FormURLEncoded }
-func (v Variant) IsInvalid() bool       { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

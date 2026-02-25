@@ -47,7 +47,9 @@ func (v Variant) IsContentType() bool    { return v == ContentType }
 func (v Variant) IsUserAgent() bool      { return v == UserAgent }
 func (v Variant) IsSourceMachine() bool  { return v == SourceMachine }
 func (v Variant) IsUserAgentValue() bool { return v == UserAgentValue }
-func (v Variant) IsInvalid() bool        { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 
