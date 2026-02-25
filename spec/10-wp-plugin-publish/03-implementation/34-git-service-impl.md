@@ -245,17 +245,17 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, error) {
+func (s *serviceImpl) Pull(ctx context.Context, pluginId int64) (*PullResult, error) {
 	startTime := time.Now()
-	s.log.Info("Starting git pull", "pluginId", pluginID)
+	s.log.Info("Starting git pull", "pluginId", pluginId)
 
-	plugin, err := s.pluginService.GetByID(ctx, pluginID)
+	plugin, err := s.pluginService.GetById(ctx, pluginId)
 	if err != nil {
 		return nil, err
 	}
 
-	result := newPullResult(pluginID, plugin.Name)
-	s.broadcastPullStarted(pluginID, plugin.Name)
+	result := newPullResult(pluginId, plugin.Name)
+	s.broadcastPullStarted(pluginId, plugin.Name)
 
 	return s.executePullAndFinalize(ctx, plugin, result, startTime)
 }
@@ -470,17 +470,17 @@ func (s *serviceImpl) broadcastPullAllComplete(batch *BatchPullResult) {
 	})
 }
 
-func (s *serviceImpl) GetStatus(ctx context.Context, pluginID int64) (*GitStatus, error) {
-	plugin, err := s.pluginService.GetByID(ctx, pluginID)
+func (s *serviceImpl) GetStatus(ctx context.Context, pluginId int64) (*GitStatus, error) {
+	plugin, err := s.pluginService.GetById(ctx, pluginId)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.buildGitStatus(pluginID, plugin.Path), nil
+	return s.buildGitStatus(pluginId, plugin.Path), nil
 }
 
-func (s *serviceImpl) buildGitStatus(pluginID int64, path string) *GitStatus {
-	status := &GitStatus{PluginID: pluginID}
+func (s *serviceImpl) buildGitStatus(pluginId int64, path string) *GitStatus {
+	status := &GitStatus{PluginId: pluginId}
 
 	gitDir := filepath.Join(path, ".git")
 	if !dirExists(gitDir) {
@@ -625,28 +625,28 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) Build(ctx context.Context, pluginID int64) (*BuildResult, error) {
+func (s *serviceImpl) Build(ctx context.Context, pluginId int64) (*BuildResult, error) {
 	startTime := time.Now()
-	s.log.Info("Starting build", "pluginId", pluginID)
+	s.log.Info("Starting build", "pluginId", pluginId)
 
-	plugin, config, err := s.loadBuildContext(ctx, pluginID)
+	plugin, config, err := s.loadBuildContext(ctx, pluginId)
 	if err != nil {
 		return nil, err
 	}
 
-	result := s.newBuildResult(pluginID, plugin.Name, config.BuildCommand)
-	s.broadcastBuildStarted(pluginID, plugin.Name, config.BuildCommand)
+	result := s.newBuildResult(pluginId, plugin.Name, config.BuildCommand)
+	s.broadcastBuildStarted(pluginId, plugin.Name, config.BuildCommand)
 
 	return s.executeBuild(ctx, plugin, config, result, startTime)
 }
 
-func (s *serviceImpl) loadBuildContext(ctx context.Context, pluginID int64) (*Plugin, *PluginGitConfig, error) {
-	plugin, err := s.pluginService.GetByID(ctx, pluginID)
+func (s *serviceImpl) loadBuildContext(ctx context.Context, pluginId int64) (*Plugin, *PluginGitConfig, error) {
+	plugin, err := s.pluginService.GetById(ctx, pluginId)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	config, err := s.GetConfig(ctx, pluginID)
+	config, err := s.GetConfig(ctx, pluginId)
 	buildNotConfigured := err != nil || !config.BuildEnabled || config.BuildCommand == ""
 
 	if buildNotConfigured {
@@ -657,7 +657,7 @@ func (s *serviceImpl) loadBuildContext(ctx context.Context, pluginID int64) (*Pl
 }
 
 func (s *serviceImpl) newBuildResult(
-	pluginID int64,
+	pluginId int64,
 	pluginName, command string,
 ) *BuildResult {
 	return &BuildResult{

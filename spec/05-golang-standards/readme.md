@@ -137,7 +137,7 @@ err.ToClipboard() // markdown-formatted error report for AI paste
 ```go
 // ✅ Enriched error with diagnostic context
 return apperror.Wrap(err, "E5002", "remote site request failed").
-    WithURL(requestURL).
+    WithUrl(requestUrl).
     WithSlug(pluginSlug).
     WithStatusCode(resp.StatusCode).
     WithSiteId(siteId)
@@ -489,6 +489,7 @@ config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
 | Constants | PascalCase | `MaxRetryAttempts`, `DefaultTimeout` |
 | Error variables | `Err` prefix | `ErrPluginNotFound`, `ErrUploadFailed` |
 | Boolean functions | Positive naming only | `IsValid()`, `HasPermission()` |
+| Abbreviations | First letter only caps | `pluginId`, `siteUrl`, `apiKey`, `jsonData` |
 
 ---
 

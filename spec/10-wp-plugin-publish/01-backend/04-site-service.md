@@ -26,8 +26,8 @@ import (
 type Service interface {
     // CRUD operations
     List(ctx context.Context) ([]models.Site, error)
-    GetByID(ctx context.Context, id int64) (*models.Site, error)
-    GetByURL(ctx context.Context, url string) (*models.Site, error)
+    GetById(ctx context.Context, id int64) (*models.Site, error)
+    GetByUrl(ctx context.Context, url string) (*models.Site, error)
     Create(ctx context.Context, input CreateInput) (*models.Site, error)
     Update(ctx context.Context, id int64, input UpdateInput) (*models.Site, error)
     Delete(ctx context.Context, id int64) error
@@ -55,9 +55,9 @@ package models
 import "time"
 
 type Site struct {
-    ID           int64
+    Id           int64
     Name         string
-    URL          string
+    Url          string
     Username     string
     AppPassword  string     `json:"-"`  // Never exposed in JSON
     IsActive     bool
@@ -70,7 +70,7 @@ type Site struct {
 type SiteWithStatus struct {
     Site
     IsConnected   bool
-    WPVersion     string `json:",omitempty"`
+    WpVersion     string `json:",omitempty"`
     PluginCount   int
     LastError     string `json:",omitempty"`
 }
@@ -84,14 +84,14 @@ package site
 
 type CreateInput struct {
     Name        string  `validate:"required,max=255"`
-    URL         string  `validate:"required,url,max=2048"`
+    Url         string  `validate:"required,url,max=2048"`
     Username    string  `validate:"required,max=255"`
     AppPassword string  `validate:"required"`
 }
 
 type UpdateInput struct {
     Name        *string `json:",omitempty" validate:"omitempty,max=255"`
-    URL         *string `json:",omitempty" validate:"omitempty,url,max=2048"`
+    Url         *string `json:",omitempty" validate:"omitempty,url,max=2048"`
     Username    *string `json:",omitempty" validate:"omitempty,max=255"`
     AppPassword *string `json:",omitempty"`
     IsActive    *bool   `json:",omitempty"`
@@ -99,7 +99,7 @@ type UpdateInput struct {
 
 type ConnectionResult struct {
     Success     bool
-    WPVersion   string `json:",omitempty"`
+    WpVersion   string `json:",omitempty"`
     SiteName    string `json:",omitempty"`
     PluginCount int    `json:",omitempty"`
     Error       string `json:",omitempty"`
@@ -170,12 +170,12 @@ const siteListQuery = `
     ORDER BY Name ASC
 `
 
-const siteGetByIDQuery = `
+const siteGetByIdQuery = `
     SELECT Id, Name, Url, Username, AppPassword, IsActive, LastSyncAt, CreatedAt, UpdatedAt
     FROM Sites WHERE Id = ?
 `
 
-const siteGetByURLQuery = `
+const siteGetByUrlQuery = `
     SELECT Id, Name, Url, Username, AppPassword, IsActive, LastSyncAt, CreatedAt, UpdatedAt
     FROM Sites WHERE Url = ?
 `
@@ -233,7 +233,7 @@ func (s *serviceImpl) scanSiteColumns(rows *sql.Rows, site *models.Site) (string
     var lastSyncAt sql.NullString
 
     err := rows.Scan(
-        &site.ID, &site.Name, &site.URL, &site.Username,
+        &site.Id, &site.Name, &site.Url, &site.Username,
         &encryptedPassword, &site.IsActive, &lastSyncAt,
         &site.CreatedAt, &site.UpdatedAt,
     )
@@ -248,18 +248,18 @@ func (s *serviceImpl) parseSiteLastSync(site *models.Site, lastSyncAt sql.NullSt
     }
 }
 
-// --- GetByID ---
+// --- GetById ---
 
-func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Site, error) {
-    s.log.Debug("Getting site by ID", "site_id", id)
+func (s *serviceImpl) GetById(ctx context.Context, id int64) (*models.Site, error) {
+    s.log.Debug("Getting site by ID", "siteId", id)
 
-    return s.querySiteByID(ctx, id)
+    return s.querySiteById(ctx, id)
 }
 
-func (s *serviceImpl) querySiteByID(ctx context.Context, id int64) (*models.Site, error) {
-    site, encPwd, lastSync, err := s.scanSiteByID(ctx, id)
+func (s *serviceImpl) querySiteById(ctx context.Context, id int64) (*models.Site, error) {
+    site, encPwd, lastSync, err := s.scanSiteById(ctx, id)
     if err == sql.ErrNoRows {
-        return nil, apperror.New(apperror.ErrNotFound, "site not found").WithContext("site_id", id)
+        return nil, apperror.New(apperror.ErrNotFound, "site not found").WithContext("siteId", id)
     }
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site")
@@ -271,13 +271,13 @@ func (s *serviceImpl) querySiteByID(ctx context.Context, id int64) (*models.Site
     return &site, nil
 }
 
-func (s *serviceImpl) scanSiteByID(ctx context.Context, id int64) (models.Site, string, sql.NullString, error) {
+func (s *serviceImpl) scanSiteById(ctx context.Context, id int64) (models.Site, string, sql.NullString, error) {
     var site models.Site
     var encryptedPassword string
     var lastSyncAt sql.NullString
 
-    err := s.db.QueryRowContext(ctx, siteGetByIDQuery, id).Scan(
-        &site.ID, &site.Name, &site.URL, &site.Username,
+    err := s.db.QueryRowContext(ctx, siteGetByIdQuery, id).Scan(
+        &site.Id, &site.Name, &site.Url, &site.Username,
         &encryptedPassword, &site.IsActive, &lastSyncAt,
         &site.CreatedAt, &site.UpdatedAt,
     )
@@ -285,10 +285,10 @@ func (s *serviceImpl) scanSiteByID(ctx context.Context, id int64) (models.Site, 
     return site, encryptedPassword, lastSyncAt, err
 }
 
-// --- GetByURL ---
+// --- GetByUrl ---
 
-func (s *serviceImpl) GetByURL(ctx context.Context, url string) (*models.Site, error) {
-    site, encPwd, lastSync, err := s.scanSiteByURL(ctx, url)
+func (s *serviceImpl) GetByUrl(ctx context.Context, url string) (*models.Site, error) {
+    site, encPwd, lastSync, err := s.scanSiteByUrl(ctx, url)
     if err != nil {
         return nil, err
     }
@@ -299,13 +299,13 @@ func (s *serviceImpl) GetByURL(ctx context.Context, url string) (*models.Site, e
     return &site, nil
 }
 
-func (s *serviceImpl) scanSiteByURL(ctx context.Context, url string) (models.Site, string, sql.NullString, error) {
+func (s *serviceImpl) scanSiteByUrl(ctx context.Context, url string) (models.Site, string, sql.NullString, error) {
     var site models.Site
     var encryptedPassword string
     var lastSyncAt sql.NullString
 
-    err := s.db.QueryRowContext(ctx, siteGetByURLQuery, url).Scan(
-        &site.ID, &site.Name, &site.URL, &site.Username,
+    err := s.db.QueryRowContext(ctx, siteGetByUrlQuery, url).Scan(
+        &site.Id, &site.Name, &site.Url, &site.Username,
         &encryptedPassword, &site.IsActive, &lastSyncAt,
         &site.CreatedAt, &site.UpdatedAt,
     )
@@ -316,15 +316,15 @@ func (s *serviceImpl) scanSiteByURL(ctx context.Context, url string) (models.Sit
 // --- Create ---
 
 func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Site, error) {
-    s.log.Info("Creating site", "name", input.Name, "url", input.URL)
+    s.log.Info("Creating site", "name", input.Name, "url", input.Url)
 
     if err := s.validateCreateInput(input); err != nil {
         return nil, err
     }
 
-    url := strings.TrimSuffix(input.URL, "/")
+    url := strings.TrimSuffix(input.Url, "/")
 
-    if err := s.checkDuplicateURL(ctx, url); err != nil {
+    if err := s.checkDuplicateUrl(ctx, url); err != nil {
         return nil, err
     }
 
@@ -333,13 +333,13 @@ func (s *serviceImpl) Create(ctx context.Context, input CreateInput) (*models.Si
         return nil, err
     }
 
-    s.log.Info("Site created", "site_id", id, "name", input.Name)
+    s.log.Info("Site created", "siteId", id, "name", input.Name)
 
-    return s.GetByID(ctx, id)
+    return s.GetById(ctx, id)
 }
 
-func (s *serviceImpl) checkDuplicateURL(ctx context.Context, url string) error {
-    existing, _ := s.GetByURL(ctx, url)
+func (s *serviceImpl) checkDuplicateUrl(ctx context.Context, url string) error {
+    existing, _ := s.GetByUrl(ctx, url)
     if existing != nil {
         return apperror.New(apperror.ErrDuplicate, "site with this URL already exists").
             WithContext("url", url)
@@ -383,9 +383,9 @@ func (s *serviceImpl) Update(
 	id int64,
 	input UpdateInput,
 ) (*models.Site, error) {
-    s.log.Info("Updating site", "site_id", id)
+    s.log.Info("Updating site", "siteId", id)
     
-    existing, err := s.GetByID(ctx, id)
+    existing, err := s.GetById(ctx, id)
     if err != nil {
         return nil, err
     }
@@ -407,7 +407,7 @@ func (s *serviceImpl) buildSiteUpdateFields(input UpdateInput) ([]string, []any,
     var args []any
 
     s.appendSiteNameUpdate(input, &updates, &args)
-    s.appendSiteURLUpdate(input, &updates, &args)
+    s.appendSiteUrlUpdate(input, &updates, &args)
     s.appendSiteUsernameUpdate(input, &updates, &args)
 
     if err := s.appendSitePasswordUpdate(input, &updates, &args); err != nil {
@@ -432,16 +432,16 @@ func (s *serviceImpl) appendSiteNameUpdate(
     *args = append(*args, *input.Name)
 }
 
-func (s *serviceImpl) appendSiteURLUpdate(
+func (s *serviceImpl) appendSiteUrlUpdate(
     input UpdateInput,
     updates *[]string,
     args *[]any,
 ) {
-    if input.URL == nil {
+    if input.Url == nil {
         return
     }
 
-    url := strings.TrimSuffix(*input.URL, "/")
+    url := strings.TrimSuffix(*input.Url, "/")
     *updates = append(*updates, "Url = ?")
     *args = append(*args, url)
 }
@@ -513,17 +513,17 @@ func (s *serviceImpl) executeSiteUpdate(
         return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update site")
     }
     
-    s.log.Info("Site updated", "site_id", id)
+    s.log.Info("Site updated", "siteId", id)
 
-    return s.GetByID(ctx, id)
+    return s.GetById(ctx, id)
 }
 
 // --- Delete ---
 
 func (s *serviceImpl) Delete(ctx context.Context, id int64) error {
-    s.log.Info("Deleting site", "site_id", id)
+    s.log.Info("Deleting site", "siteId", id)
     
-    if _, err := s.GetByID(ctx, id); err != nil {
+    if _, err := s.GetById(ctx, id); err != nil {
         return err
     }
     
@@ -532,7 +532,7 @@ func (s *serviceImpl) Delete(ctx context.Context, id int64) error {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to delete site")
     }
     
-    s.log.Info("Site deleted", "site_id", id)
+    s.log.Info("Site deleted", "siteId", id)
 
     return nil
 }
@@ -551,14 +551,14 @@ import (
 )
 
 func (s *serviceImpl) TestConnection(ctx context.Context, id int64) (*ConnectionResult, error) {
-    s.log.Info("Testing connection", "site_id", id)
+    s.log.Info("Testing connection", "siteId", id)
     
-    site, err := s.GetByID(ctx, id)
+    site, err := s.GetById(ctx, id)
     if err != nil {
         return nil, err
     }
     
-    return s.TestCredentials(ctx, site.URL, site.Username, site.AppPassword)
+    return s.TestCredentials(ctx, site.Url, site.Username, site.AppPassword)
 }
 
 func (s *serviceImpl) TestCredentials(
@@ -586,11 +586,11 @@ func (s *serviceImpl) buildSuccessConnectionResult(
 ) *ConnectionResult {
     pluginCount := s.countRemotePlugins(ctx, url, username, password)
 
-    s.log.Info("Connection test successful", "url", url, "wp_version", info.Version, "site_name", info.Name)
+    s.log.Info("Connection test successful", "url", url, "wpVersion", info.Version, "siteName", info.Name)
 
     return &ConnectionResult{
         Success:     true,
-        WPVersion:   info.Version,
+        WpVersion:   info.Version,
         SiteName:    info.Name,
         PluginCount: pluginCount,
     }
@@ -679,7 +679,7 @@ func (s *serviceImpl) validateCreateInput(input CreateInput) error {
         return err
     }
 
-    if err := s.validateSiteURL(input.URL); err != nil {
+    if err := s.validateSiteUrl(input.Url); err != nil {
         return err
     }
 
@@ -698,26 +698,26 @@ func (s *serviceImpl) validateSiteName(name string) error {
     return nil
 }
 
-func (s *serviceImpl) validateSiteURL(rawURL string) error {
-    if strings.TrimSpace(rawURL) == "" {
+func (s *serviceImpl) validateSiteUrl(rawUrl string) error {
+    if strings.TrimSpace(rawUrl) == "" {
         return apperror.New(apperror.ErrValidationEmpty, "site URL is required")
     }
-    if err := validateURLScheme(rawURL); err != nil {
+    if err := validateUrlScheme(rawUrl); err != nil {
         return err
     }
-    if len(rawURL) > 2048 {
+    if len(rawUrl) > 2048 {
         return apperror.New(apperror.ErrValidationLength, "site URL must be 2048 characters or less")
     }
 
     return nil
 }
 
-func validateURLScheme(rawURL string) error {
-    parsedURL, err := url.Parse(rawURL)
-    isInvalidScheme := err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https")
+func validateUrlScheme(rawUrl string) error {
+    parsedUrl, err := url.Parse(rawUrl)
+    isInvalidScheme := err != nil || (parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https")
 
     if isInvalidScheme {
-        return apperror.New(apperror.ErrValidationURL, "invalid site URL format")
+        return apperror.New(apperror.ErrValidationUrl, "invalid site URL format")
     }
 
     return nil
@@ -764,7 +764,7 @@ import (
 )
 
 func EncryptPassword(plaintext string, key []byte) (string, error) {
-    gcm, err := createGCM(key)
+    gcm, err := createGcm(key)
     if err != nil {
         return "", err
     }
@@ -785,15 +785,15 @@ func DecryptPassword(ciphertext string, key []byte) (string, error) {
         return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decode ciphertext")
     }
 
-    gcm, err := createGCM(key)
+    gcm, err := createGcm(key)
     if err != nil {
         return "", err
     }
 
-    return decryptGCMPayload(gcm, data)
+    return decryptGcmPayload(gcm, data)
 }
 
-func createGCM(key []byte) (cipher.AEAD, error) {
+func createGcm(key []byte) (cipher.AEAD, error) {
     block, err := aes.NewCipher(key)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create cipher")
@@ -816,7 +816,7 @@ func generateNonce(size int) ([]byte, error) {
     return nonce, nil
 }
 
-func decryptGCMPayload(gcm cipher.AEAD, data []byte) (string, error) {
+func decryptGcmPayload(gcm cipher.AEAD, data []byte) (string, error) {
     if len(data) < gcm.NonceSize() {
         return "", apperror.New(apperror.ErrInternal, "ciphertext too short")
     }

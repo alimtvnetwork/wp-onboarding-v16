@@ -1,8 +1,8 @@
 # Folder Structure
 
-**Version:** 2.0.0  
+**Version:** 2.1.0  
 **Status:** Complete  
-**Updated:** 2026-02-11
+**Updated:** 2026-02-25
 
 ---
 
@@ -74,8 +74,8 @@ import (
 )
 
 func main() {
-    p := provider.SerpAPI
-    if p.IsSerpAPI() {
+    p := provider.SerpApi
+    if p.IsSerpApi() {
         // ...
     }
     
@@ -94,11 +94,11 @@ func main() {
 
 ```
 internal/enums/
-├── provider/           # SerpAPI, MapsScraper, Colly
+├── provider/           # SerpApi, MapsScraper, Colly
 ├── platform/           # YouTube, Reddit, LinkedIn, etc.
 ├── engine/             # Google, Bing, DuckDuckGo
 ├── search_mode/        # Sequential, Parallel, RoundRobin
-├── output_format/      # JSON, CSV, Table, Markdown
+├── output_format/      # Json, Csv, Table, Markdown
 ├── movie_provider/     # Tmdb, Omdb, Trakt, ImdbScraper
 ├── social_media/       # LinkedIn, Twitter, Instagram, etc.
 └── content_type/       # Web, Image, Video, News
@@ -118,7 +118,7 @@ internal/enums/
 
 ```
 internal/enums/
-├── model_provider/     # Ollama, OpenAI, Anthropic
+├── model_provider/     # Ollama, OpenAi, Anthropic
 ├── reasoning_mode/     # SinglePrompt, TwoStage, Research
 ├── step_type/          # Search, Fetch, Parse, Embed, etc.
 ├── execution_status/   # Pending, Running, Success, Failed
@@ -140,7 +140,7 @@ internal/enums/
 
 ```
 internal/enums/
-├── output_format/      # Markdown, JSON, YAML
+├── output_format/      # Markdown, Json, Yaml
 ├── parser_type/        # Go, TypeScript, Python
 └── extraction_mode/    # Full, Summary, Skeleton
 ```
@@ -159,10 +159,10 @@ internal/enums/
 
 ```
 internal/enums/
-├── audio_format/       # MP3, WAV, FLAC, OGG
-├── transcribe_provider/ # Whisper, DeepGram, AssemblyAI
-├── output_format/      # SRT, VTT, TXT, JSON
-└── language/           # EN, ES, FR, DE, etc.
+├── audio_format/       # Mp3, Wav, Flac, Ogg
+├── transcribe_provider/ # Whisper, DeepGram, AssemblyAi
+├── output_format/      # Srt, Vtt, Txt, Json
+└── language/           # En, Es, Fr, De, etc.
 ```
 
 ---
@@ -190,7 +190,7 @@ type (
 
 // Constants re-export
 const (
-    ProviderSerpAPI     = provider.SerpAPI
+    ProviderSerpApi     = provider.SerpApi
     ProviderMapsScraper = provider.MapsScraper
     ProviderColly       = provider.Colly
     
@@ -206,7 +206,7 @@ const (
 ```go
 import "myapp/internal/enums"
 
-p := enums.ProviderSerpAPI
+p := enums.ProviderSerpApi
 ```
 
 ---
