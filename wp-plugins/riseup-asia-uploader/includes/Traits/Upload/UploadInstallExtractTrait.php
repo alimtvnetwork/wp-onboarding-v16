@@ -31,6 +31,7 @@ trait UploadInstallExtractTrait
         $this->fileLogger->info($isUpdate ? 'Updating existing plugin' : 'Installing new plugin', array('slug' => $slug));
 
         $isFreshInstall = ($isUpdate === false);
+
         if ($isFreshInstall) {
             return false;
         }
@@ -95,16 +96,19 @@ trait UploadInstallExtractTrait
         array $input,
     ) {
         $extractResult = $this->extractToPluginsDir($ctx[ResponseKeyType::TempFile->value], $ctx[ResponseKeyType::Slug->value], $ctx['targetDir']);
+
         if ($extractResult instanceof WP_REST_Response) {
             return $extractResult;
         }
 
         $pluginFile = $this->resetOpcacheAndFindPlugin($ctx[ResponseKeyType::Slug->value]);
+
         if ($pluginFile instanceof WP_REST_Response) {
             return $pluginFile;
         }
 
         $activation = $this->activateIfNeeded($pluginFile, $ctx[ResponseKeyType::Slug->value], $input['activate'], $isPreviouslyActive, $ctx[ResponseKeyType::IsUpdate->value]);
+
         if ($activation instanceof WP_REST_Response) {
             return $activation;
         }
@@ -132,11 +136,13 @@ trait UploadInstallExtractTrait
         wp_mkdir_p($tempExtractDir);
 
         $extractError = $this->openAndExtractZip($tempFile, $tempExtractDir);
+
         if ($extractError) {
             return $extractError;
         }
 
         $extractedFolders = glob($tempExtractDir . '/*', GLOB_ONLYDIR);
+
         if (empty($extractedFolders)) {
             $this->deleteDirectory($tempExtractDir);
             $this->logger->logUploadFailed($slug, 'No folder found in extracted ZIP');
@@ -153,6 +159,7 @@ trait UploadInstallExtractTrait
     /** Open ZIP, extract to temp dir, and clean up the ZIP file. */
     private function openAndExtractZip(string $tempFile, string $tempExtractDir) {
         $zip = new ZipArchive();
+
         if ($zip->open($tempFile) !== true) {
             @unlink($tempFile);
             $this->deleteDirectory($tempExtractDir);

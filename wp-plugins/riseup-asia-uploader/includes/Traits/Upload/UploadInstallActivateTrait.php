@@ -31,11 +31,13 @@ trait UploadInstallActivateTrait
 
         $pluginFile = $this->findPluginFile($slug);
         $hasPluginFile = BooleanHelpers::hasValue($pluginFile);
+
         if ($hasPluginFile) {
             $this->invalidatePluginCache($pluginFile, $slug);
         }
 
         $isPluginFileMissing = ($pluginFile === null || $pluginFile === '' || $pluginFile === false);
+
         if ($isPluginFileMissing) {
             $this->logger->logUploadFailed($slug, 'Could not find plugin file after extraction');
 
@@ -48,12 +50,14 @@ trait UploadInstallActivateTrait
     /** Invalidate OPcache entries and WP plugin cache for the given plugin. */
     private function invalidatePluginCache(string $pluginFile, string $slug): void {
         $fullPluginPath = WP_PLUGIN_DIR . '/' . $pluginFile;
+
         if (function_exists('opcache_invalidate')) {
             opcache_invalidate($fullPluginPath, true);
         }
 
         $constantsFile = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
         $shouldInvalidateConstants = file_exists($constantsFile) && function_exists('opcache_invalidate');
+
         if ($shouldInvalidateConstants) {
             opcache_invalidate($constantsFile, true);
         }
@@ -70,11 +74,13 @@ trait UploadInstallActivateTrait
         bool $isUpdate,
     ): array|WP_REST_Response {
         $isActivationSkipped = ($activate === false) && ($wasActive === false);
+
         if ($isActivationSkipped) {
             return array('activated' => false);
         }
 
         $result = activate_plugin($pluginFile);
+
         if (is_wp_error($result)) {
             return $this->buildActivationFailureResponse($slug, $isUpdate, $result->get_error_message());
         }
@@ -128,6 +134,7 @@ trait UploadInstallActivateTrait
         }
 
         $fileContents = file_get_contents($fullPath, false, null, 0, 8192);
+
         if ($fileContents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $fileContents, $matches)) {
             return $matches[1];
         }

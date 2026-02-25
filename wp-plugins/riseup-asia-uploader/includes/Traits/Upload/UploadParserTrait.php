@@ -54,6 +54,7 @@ trait UploadParserTrait {
         }
 
         $zipContent = file_get_contents($upload['tmp_name']);
+
         if ($zipContent === false) {
             $this->fileLogger->error('Failed to read uploaded file');
             return $this->errorResponse('Failed to read uploaded file', HttpStatusType::ServerError->value);
@@ -80,6 +81,7 @@ trait UploadParserTrait {
 
         $this->fileLogger->info('Processing base64 JSON upload');
         $zipContent = base64_decode($data['plugin_zip']);
+
         if ($zipContent === false) {
             $this->fileLogger->error('Invalid base64 data');
             return $this->errorResponse('Invalid base64 data', HttpStatusType::BadRequest->value);

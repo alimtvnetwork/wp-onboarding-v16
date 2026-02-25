@@ -55,6 +55,7 @@ trait AuthCredentialTrait
 
     private function authenticateUser(string $authHeader): WP_User|WP_Error {
         $formatError = $this->validateAuthFormat($authHeader);
+
         if ($formatError) {
             return $formatError;
         }
@@ -62,6 +63,7 @@ trait AuthCredentialTrait
         $credentials = base64_decode(substr($authHeader, 6));
         $isCredentialsMissing = ($credentials === false);
         $isFormatInvalid = ($isCredentialsMissing || strpos($credentials, ':') === false);
+
         if ($isFormatInvalid) {
             return $this->buildAuthError('Invalid credentials format');
         }
@@ -70,6 +72,7 @@ trait AuthCredentialTrait
         $user = wp_authenticate_application_password(null, $username, $password);
 
         $isAuthFailed = (is_wp_error($user) || $user === false);
+
         if ($isAuthFailed) {
             return $this->buildAuthError('Invalid credentials', array('username' => $username));
         }
@@ -117,6 +120,7 @@ trait AuthCredentialTrait
     private function checkAuthenticatedCapability(WP_REST_Request $request, string $capability): true|WP_Error {
         try {
             $authResult = $this->resolveAndAuthenticate($request);
+
             if (is_wp_error($authResult) || $authResult === true) {
                 return $authResult;
             }
@@ -129,6 +133,7 @@ trait AuthCredentialTrait
 
     private function resolveAndAuthenticate(WP_REST_Request $request): WP_User|WP_Error {
         $authHeader = $this->resolveAuthHeader($request);
+
         if (empty($authHeader)) {
             return $this->buildMissingAuthError($request);
         }
