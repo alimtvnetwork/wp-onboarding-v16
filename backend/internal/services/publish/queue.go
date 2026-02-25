@@ -90,17 +90,12 @@ func (q *PublishQueue) Enqueue(item QueueItem) (string, error) {
 			WithValue("max", fmt.Sprintf("%d", q.config.MaxQueueSize))
 	}
 
-	// Generate ID
 	item.Id = fmt.Sprintf("pq-%d-%d-%d", item.PluginId, item.SiteId, time.Now().UnixMilli())
 	item.QueuedAt = time.Now()
 	item.Status = queuestatus.Queued
 
 	q.items = append(q.items, &item)
-
-	// Broadcast queue update
 	q.broadcastStatus()
-
-	// Try to process immediately
 	go q.processNext()
 
 	return item.Id, nil
@@ -142,41 +137,53 @@ func (q *PublishQueue) GetStatus() QueueStatus {
 	defer q.mu.Unlock()
 
 	status := QueueStatus{
-		Active:    len(q.active),
-		Queued:    len(q.items),
-		Items:     make([]QueueItem, 0),
+		Active: len(q.active),
+		Queued: len(q.items),
+		Items:  make([]QueueItem, 0),
 	}
+	status.Completed, status.Failed = q.countCompletedLocked()
 
-	// Count completed/failed
-	for _, item := range q.completed {
-		switch {
-		case item.Status.IsCompleted():
-			status.Completed++
-		case item.Status.IsFailed():
-			status.Failed++
-		}
-	}
-
-	// Include all items for visibility
 	for _, item := range q.items {
 		status.Items = append(status.Items, *item)
 	}
 	for _, item := range q.active {
 		status.Items = append(status.Items, *item)
 	}
-
 	return status
+}
+
+// countCompletedLocked counts completed and failed items. Must be called with mu held.
+func (q *PublishQueue) countCompletedLocked() (int, int) {
+	completed, failed := 0, 0
+	for _, item := range q.completed {
+		switch {
+		case item.Status.IsCompleted():
+			completed++
+		case item.Status.IsFailed():
+			failed++
+		}
+	}
+	return completed, failed
 }
 
 // processNext pulls the next queued item and executes it
 func (q *PublishQueue) processNext() {
-	q.mu.Lock()
-	if len(q.items) == 0 {
-		q.mu.Unlock()
+	item := q.dequeueHighestPriority()
+	if item == nil {
 		return
 	}
 
-	// Find highest priority queued item
+	q.sem <- struct{}{} // Acquire semaphore
+
+	q.wg.Add(1)
+	go q.executeQueueItem(item)
+}
+
+// dequeueHighestPriority finds and removes the highest-priority queued item.
+func (q *PublishQueue) dequeueHighestPriority() *QueueItem {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	bestIdx := -1
 	for i, item := range q.items {
 		if item.Status.IsQueued() {
@@ -185,54 +192,54 @@ func (q *PublishQueue) processNext() {
 			}
 		}
 	}
-
 	if bestIdx == -1 {
-		q.mu.Unlock()
-		return
+		return nil
 	}
 
 	item := q.items[bestIdx]
 	q.items = append(q.items[:bestIdx], q.items[bestIdx+1:]...)
 	item.Status = queuestatus.Running
 	q.active[item.Id] = item
-	q.mu.Unlock()
+	return item
+}
 
-	// Acquire semaphore (blocks if at max concurrency)
-	q.sem <- struct{}{}
-	
-	q.wg.Add(1)
-	go func() {
-		defer q.wg.Done()
-		defer func() { <-q.sem }() // Release semaphore
+// executeQueueItem runs a single publish operation and records the result.
+func (q *PublishQueue) executeQueueItem(item *QueueItem) {
+	defer q.wg.Done()
+	defer func() { <-q.sem }()
 
-		ctx, cancel := context.WithTimeout(context.Background(), q.config.OperationTimeout)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), q.config.OperationTimeout)
+	defer cancel()
 
-		q.broadcastStatus()
+	q.broadcastStatus()
 
-		// Execute the publish
-		publishResult := q.service.Publish(ctx, item.PluginId, item.SiteId, item.Options)
+	publishResult := q.service.Publish(ctx, item.PluginId, item.SiteId, item.Options)
+	q.recordResult(item, publishResult.HasError())
 
-		q.mu.Lock()
-		delete(q.active, item.Id)
-		if publishResult.HasError() {
-			item.Status = queuestatus.Failed
-		} else {
-			item.Status = queuestatus.Completed
-		}
-		q.completed = append(q.completed, item)
-		
-		// Trim completed list
-		if len(q.completed) > 100 {
-			q.completed = q.completed[len(q.completed)-100:]
-		}
-		q.mu.Unlock()
+	q.broadcastStatus()
+	q.processNext()
+}
 
-		q.broadcastStatus()
+// recordResult moves an item from active to completed with the appropriate status.
+func (q *PublishQueue) recordResult(item *QueueItem, hasError bool) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
 
-		// Process next in queue
-		q.processNext()
-	}()
+	delete(q.active, item.Id)
+	if hasError {
+		item.Status = queuestatus.Failed
+	} else {
+		item.Status = queuestatus.Completed
+	}
+	q.completed = append(q.completed, item)
+	q.trimCompletedLocked()
+}
+
+// trimCompletedLocked keeps the completed list at most 100 entries. Must be called with mu held.
+func (q *PublishQueue) trimCompletedLocked() {
+	if len(q.completed) > 100 {
+		q.completed = q.completed[len(q.completed)-100:]
+	}
 }
 
 // broadcastStatus sends queue status via WebSocket
@@ -240,18 +247,16 @@ func (q *PublishQueue) broadcastStatus() {
 	if q.wsHub == nil {
 		return
 	}
+	q.mu.Lock()
+	completed, failed := q.countCompletedLocked()
 	status := QueueStatus{
 		Active: len(q.active),
 		Queued: len(q.items),
+		Completed: completed,
+		Failed:    failed,
 	}
-	for _, item := range q.completed {
-		switch {
-		case item.Status.IsCompleted():
-			status.Completed++
-		case item.Status.IsFailed():
-			status.Failed++
-		}
-	}
+	q.mu.Unlock()
+
 	ws.Broadcast(q.wsHub, ws.EventPublishProgress, ws.QueueStatusData{
 		Type:      "queue_status",
 		Active:    status.Active,

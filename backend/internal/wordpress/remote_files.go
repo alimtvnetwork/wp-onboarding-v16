@@ -49,154 +49,152 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 	return c.GetPluginFilesViaRiseup(ctx, slug)
 }
 
+// syncManifestResult is the response shape from the sync-manifest endpoint.
+type syncManifestResult struct {
+	Success bool `json:"success"` // external key (Riseup Asia Uploader API)
+	Data    struct {
+		Plugin      string       `json:"plugin"`      // external key
+		FileCount   int          `json:"fileCount"`    // external key
+		GeneratedAt string       `json:"generatedAt"` // external key
+		Cached      bool         `json:"cached"`       // external key
+		Files       []RemoteFile `json:"files"`        // external key
+	} `json:"data"` // external key
+}
+
 // GetPluginSyncManifest retrieves the cached file manifest for a remote plugin via Riseup Asia Uploader.
-// Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
-	reqBody := PluginSlugRequest{Plugin: slug}
-	resp, err := c.request("POST", string(endpoint), reqBody)
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body: PluginSlugRequest{Plugin: slug}, Operation: "get sync manifest",
+		ErrorCode: apperror.ErrWPConnection,
+	})
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to get sync manifest").
-			WithURL(c.fullURL(string(endpoint)))
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	body := string(bodyBytes)
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		return nil, &APIError{
-			Operation:    "get sync manifest",
-			Method:       "POST",
-			Endpoint:     string(endpoint),
-			Url:          c.fullURL(string(endpoint)),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(body, 2000),
-		}
+		return nil, err
 	}
 
-	// The sync-manifest endpoint wraps files in {success, data: {files: [...]}}
-	var result struct {
-		Success bool `json:"success"` // external key (Riseup Asia Uploader API)
-		Data    struct {
-			Plugin      string       `json:"plugin"`      // external key
-			FileCount   int          `json:"fileCount"`   // external key
-			GeneratedAt string       `json:"generatedAt"` // external key
-			Cached      bool         `json:"cached"`      // external key
-			Files       []RemoteFile `json:"files"`       // external key
-		} `json:"data"` // external key
-	}
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode sync manifest").
-			WithValue("body", truncateBody(body, 500))
+	result, err := decodeAPIResponse[syncManifestResult](data, "sync manifest")
+	if err != nil {
+		return nil, err
 	}
 
-	if !result.Success {
-		return nil, apperror.New(apperror.ErrWPConnection, "remote API returned failure for sync manifest").
-			WithValue("slug", slug)
-	}
+	return validateSuccessAndReturn(result.Success, result.Data.Files, "sync manifest", slug)
+}
 
-	return result.Data.Files, nil
+// pluginFilesResult is the response shape from the files endpoint.
+type pluginFilesResult struct {
+	Success    bool         `json:"success"`    // external key (Riseup Asia Uploader API)
+	Plugin     string       `json:"plugin"`     // external key
+	TotalFiles int          `json:"totalFiles"` // external key
+	Files      []RemoteFile `json:"files"`      // external key
 }
 
 // GetPluginFilesViaRiseup retrieves the list of files for a remote plugin via Riseup Asia Uploader.
-// Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
-	reqBody := PluginSlugRequest{Plugin: slug}
-	resp, err := c.request("POST", string(endpoint), reqBody)
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body: PluginSlugRequest{Plugin: slug}, Operation: "get plugin files",
+		ErrorCode: apperror.ErrWPConnection,
+	})
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to get plugin files via Riseup").
-			WithURL(c.fullURL(string(endpoint)))
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	body := string(bodyBytes)
-
-	if resp.StatusCode == HttpStatusNotFound.Int() {
-		return nil, apperror.New(apperror.ErrNotFound, "plugin not found on remote").
-			WithValue("slug", slug)
+		return nil, mapNotFoundError(err, "plugin not found on remote", slug)
 	}
 
-	if resp.StatusCode != HttpStatusOk.Int() {
-		return nil, &APIError{
-			Operation:    "get plugin files",
-			Method:       "POST",
-			Endpoint:     string(endpoint),
-			Url:          c.fullURL(string(endpoint)),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(body, 2000),
-		}
+	result, err := decodeAPIResponse[pluginFilesResult](data, "plugin files")
+	if err != nil {
+		return nil, err
 	}
 
-	// Parse the response
-	var result struct {
-		Success    bool         `json:"success"`    // external key (Riseup Asia Uploader API)
-		Plugin     string       `json:"plugin"`     // external key
-		TotalFiles int          `json:"totalFiles"` // external key
-		Files      []RemoteFile `json:"files"`      // external key
-	}
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugin files").
-			WithValue("body", truncateBody(body, 500))
-	}
+	return validateSuccessAndReturn(result.Success, result.Files, "plugin files", slug)
+}
 
-	if !result.Success {
-		return nil, apperror.New(apperror.ErrWPConnection, "remote API returned failure for plugin files").
-			WithValue("slug", slug)
-	}
-
-	return result.Files, nil
+// mutationTokenResult is the response from the mutation token endpoint.
+type mutationTokenResult struct {
+	MutationToken string `json:"mutation_token"` // external key (Riseup Asia Uploader API)
+	ExpiresIn     int    `json:"expires_in"`     // external key
 }
 
 // RequestMutationToken requests a mutation token from the legacy Onboard companion plugin.
 // Deprecated: The Riseup Asia Uploader does not use mutation tokens.
-// Kept for backward compatibility; will be removed in a future version.
 func (c *Client) RequestMutationToken(action string) (string, error) {
 	endpoint := fmt.Sprintf("/%s/request-mutation?action=%s", OnboardNamespace, action)
-	resp, err := c.request("GET", endpoint, nil)
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "request mutation token",
+		ErrorCode: apperror.ErrWPConnection,
+	})
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrWPConnection, "request mutation token failed").
-			WithURL(c.fullURL(endpoint))
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	body := string(bodyBytes)
-
-	if resp.StatusCode != http.StatusOK {
-		return "", &APIError{
-			Operation:    "request mutation token",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(body, 8192),
-		}
+		return "", err
 	}
 
-	// Response format: { "mutation_token": "abc123", "expires_in": 1200 }
-	var result struct {
-		MutationToken string `json:"mutation_token"` // external key (Riseup Asia Uploader API)
-		ExpiresIn     int    `json:"expires_in"`     // external key
-	}
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to parse mutation token response").
-			WithValue("body", truncateBody(body, 500))
+	result, err := decodeAPIResponse[mutationTokenResult](data, "mutation token")
+	if err != nil {
+		return "", err
 	}
 
 	if result.MutationToken == "" {
-		return "", apperror.New(apperror.ErrWPConnection, "empty mutation token in response").
-			WithValue("body", truncateBody(body, 500))
+		return "", apperror.New(apperror.ErrWPConnection, "empty mutation token in response")
 	}
-
 	return result.MutationToken, nil
 }
 
+// fileContentResult is the response from the file content endpoint.
+type fileContentResult struct {
+	Success bool   `json:"success"` // external key (Riseup Asia Uploader API)
+	Path    string `json:"path"`    // external key
+	Content string `json:"content"` // external key
+}
+
+// GetPluginFileContent retrieves the content of a specific file from a remote plugin.
+func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
+	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body: PluginFileRequest{Plugin: pluginSlug, Path: filePath}, Operation: "get file content",
+		ErrorCode: apperror.ErrWPConnection,
+	})
+	if err != nil {
+		return "", mapNotFoundError(err, "file not found on remote", filePath)
+	}
+
+	result, err := decodeAPIResponse[fileContentResult](data, "file content")
+	if err != nil {
+		return "", err
+	}
+
+	if !result.Success {
+		return "", apperror.New(apperror.ErrWPConnection, "remote API returned failure for file content").
+			WithValue("filePath", filePath)
+	}
+	return result.Content, nil
+}
+
+// validateSuccessAndReturn checks the success flag and returns data or an error.
+func validateSuccessAndReturn[T any](success bool, data T, operation, slug string) (T, error) {
+	if !success {
+		var zero T
+		return zero, apperror.New(apperror.ErrWPConnection, "remote API returned failure for "+operation).
+			WithValue("slug", slug)
+	}
+	return data, nil
+}
+
+// mapNotFoundError checks if err is an APIError with 404 status and returns a typed not-found error.
+func mapNotFoundError(err error, message, identifier string) error {
+	if apiErr, ok := err.(*APIError); ok && apiErr.StatusCode == HttpStatusNotFound.Int() {
+		return apperror.New(apperror.ErrNotFound, message).WithValue("identifier", identifier)
+	}
+	return err
+}
+
+// --- Upload methods (legacy Onboard) ---
+
 // UploadPluginZip uploads a plugin ZIP file to WordPress via the legacy Onboard companion plugin.
 // Deprecated: Use UploadPluginViaUploader instead (Riseup Asia Uploader).
-// Kept for backward compatibility; will be removed in a future version.
 func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
 	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug), nil)
 
@@ -342,7 +340,6 @@ func (c *Client) parseZipUploadResponse(statusCode int, respBody, endpoint, url,
 }
 
 // EnablePlugin activates/enables a plugin on the remote WordPress site.
-// Delegates to EnablePluginViaUploader (Riseup Asia Uploader).
 func (c *Client) EnablePlugin(pluginSlug string) error {
 	return c.EnablePluginViaUploader(pluginSlug)
 }
@@ -372,54 +369,4 @@ func truncateBody(body string, maxLen int) string {
 		return body[:maxLen] + "..."
 	}
 	return body
-}
-
-// GetPluginFileContent retrieves the content of a specific file from a remote plugin.
-// Uses a fixed endpoint with slug and path in JSON body.
-func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
-	// Use the Riseup Asia Uploader fixed endpoint
-	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
-
-	body := PluginFileRequest{Plugin: pluginSlug, Path: filePath}
-	resp, err := c.request("POST", string(endpoint), body)
-	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to get file content").
-			WithURL(c.fullURL(string(endpoint)))
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode == HttpStatusNotFound.Int() {
-		return "", apperror.New(apperror.ErrNotFound, "file not found on remote").
-			WithValue("filePath", filePath)
-	}
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		return "", &APIError{
-			Operation:    "get file content",
-			Method:       "POST",
-			Endpoint:     string(endpoint),
-			Url:          c.fullURL(string(endpoint)),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 500),
-		}
-	}
-
-	// Parse the response
-	var result struct {
-		Success bool   `json:"success"` // external key (Riseup Asia Uploader API)
-		Path    string `json:"path"`    // external key
-		Content string `json:"content"` // external key
-	}
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decode file content response")
-	}
-
-	if !result.Success {
-		return "", apperror.New(apperror.ErrWPConnection, "remote API returned failure for file content").
-			WithValue("filePath", filePath)
-	}
-
-	return result.Content, nil
 }
