@@ -65,7 +65,9 @@ func (v Variant) IsIncrementalNoParent() bool { return v == IncrementalNoParent 
 func (v Variant) IsExportNotFound() bool      { return v == ExportNotFound }
 func (v Variant) IsExportBuildFailed() bool   { return v == ExportBuildFailed }
 func (v Variant) IsExportTokenInvalid() bool  { return v == ExportTokenInvalid }
-func (v Variant) IsInvalid() bool             { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

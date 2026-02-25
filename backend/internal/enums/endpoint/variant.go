@@ -134,7 +134,9 @@ func (v Variant) IsValid() bool {
 	return v > Invalid && v < Variant(len(variantLabels))
 }
 
-func (v Variant) IsInvalid() bool { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

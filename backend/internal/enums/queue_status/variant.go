@@ -45,7 +45,9 @@ func (v Variant) IsRunning() bool   { return v == Running }
 func (v Variant) IsCompleted() bool { return v == Completed }
 func (v Variant) IsFailed() bool    { return v == Failed }
 func (v Variant) IsCancelled() bool { return v == Cancelled }
-func (v Variant) IsInvalid() bool   { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 // IsTerminal returns true if the item has reached a final state.
 func (v Variant) IsTerminal() bool { return v == Completed || v == Failed || v == Cancelled }

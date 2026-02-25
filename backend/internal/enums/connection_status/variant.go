@@ -43,7 +43,9 @@ func (v Variant) IsValid() bool {
 
 func (v Variant) IsConnected() bool    { return v == Connected }
 func (v Variant) IsDisconnected() bool { return v == Disconnected }
-func (v Variant) IsInvalid() bool      { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

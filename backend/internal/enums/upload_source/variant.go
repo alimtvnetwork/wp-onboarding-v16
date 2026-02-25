@@ -44,7 +44,9 @@ func (v Variant) IsScript() bool  { return v == Script }
 func (v Variant) IsRestAPI() bool { return v == RestAPI }
 func (v Variant) IsAdminUI() bool { return v == AdminUI }
 func (v Variant) IsWPCLI() bool   { return v == WPCLI }
-func (v Variant) IsInvalid() bool { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 

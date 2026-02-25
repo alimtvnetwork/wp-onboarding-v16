@@ -49,7 +49,9 @@ func (v Variant) IsHealthy() bool  { return v == Healthy }
 func (v Variant) IsDegraded() bool { return v == Degraded }
 func (v Variant) IsDown() bool     { return v == Down }
 func (v Variant) IsUnknown() bool  { return v == Unknown }
-func (v Variant) IsInvalid() bool  { return v == Invalid }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 
