@@ -23,7 +23,7 @@
 
 ## Fix Description
 
-1. **What was changed in the spec:** Created `/spec/01-app/enum-consumer-checklist.md` — a mandatory 10-point checklist for adding any new enum case.
+1. **What was changed in the spec:** Created `../01-app/enum-consumer-checklist.md` — a mandatory 10-point checklist for adding any new enum case.
 2. **New rules or constraints added:** Every new enum case must update: enum file, validation allow-lists, UI selects, JS constant maps, switch/match statements, cron registration (if scheduling), timing helpers (if scheduling), migration helper, UI visibility logic, and memory/inventory docs.
 3. **Why the fix resolves the root cause:** The checklist explicitly enumerates every consumer type, preventing omission by oversight.
 4. **Config changes or defaults affected:** None.
@@ -31,10 +31,10 @@
 
 ## Prevention and Non-Regression
 
-1. **Prevention rule:** When adding a new enum case, apply the 10-point checklist at `/spec/01-app/enum-consumer-checklist.md` before marking the task complete.
+1. **Prevention rule:** When adding a new enum case, apply the 10-point checklist at `../01-app/enum-consumer-checklist.md` before marking the task complete.
 2. **Acceptance criteria:** Search for all references to the enum name across the codebase. Every file that references the enum must handle the new case. No `default` branch should silently swallow a new scheduling frequency.
 3. **Guardrails or linting policies:** `grep -r 'SnapshotFrequencyType' --include='*.php'` must return the new case in every match.
-4. **References to updated spec sections:** `/spec/01-app/enum-consumer-checklist.md`
+4. **References to updated spec sections:** `../01-app/enum-consumer-checklist.md`
 
 ## TODO and Follow-Ups
 
@@ -42,8 +42,8 @@
 
 ## Done Checklist
 
-- [x] Spec updated under `/spec/01-app/`
-- [x] Issue write-up created under `/spec/02-app-issues/`
+- [x] Spec updated under `../01-app/`
+- [x] Issue write-up created under `./`
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable — N/A (single-pass fix)

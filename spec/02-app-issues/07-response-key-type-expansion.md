@@ -29,12 +29,12 @@
 1. **Prevention rule:** Any new structured array key in PHP must first be added to `ResponseKeyType` before use. No raw string keys in response arrays, service results, or log contexts.
 2. **Acceptance criteria:** `grep -rn "'[a-z_]\{3,\}'" --include="*.php" includes/` should return zero hits for domain-level keys not covered by the enum (excluding API input reads, SQL heredocs, and Autoloader).
 3. **Guardrails:** Periodic audit; future linting automation recommended.
-4. **Spec references:** `/spec/01-app/enum-consumer-checklist.md`, `/spec/06-php-standards/response-key-type-inventory.md`.
+4. **Spec references:** `../01-app/enum-consumer-checklist.md`, `../06-php-standards/response-key-type-inventory.md`.
 
 ## Done Checklist
 
 - [x] Spec updated — enum inventory expanded with 7 new cases
-- [x] Issue write-up created at `/spec/02-app-issues/07-response-key-type-expansion.md`
+- [x] Issue write-up created at `./07-response-key-type-expansion.md`
 - [x] Memory updated with prevention rule
 - [x] Acceptance criteria documented above
 - [x] Iterations: not applicable (single-pass fix)
