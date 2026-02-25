@@ -31,8 +31,7 @@ This is the **master reference**. Every rule here is enforced across all languag
 | Method (exported) | camelCase (PHP) / PascalCase (Go) | `processUpload()` | `ProcessUpload()` | `processUpload()` |
 | Variable | camelCase | `$pluginSlug` | `pluginSlug` | `pluginSlug` |
 | Boolean variable | `is`/`has` + camelCase | `$isActive` | `isActive` | `isActive` |
-| File name (PHP) | PascalCase.php | `SnapshotManager.php` | — | — |
-| File name (Go) | snake_case.go | — | `snapshot_manager.go` | — |
+| File name (ALL) | PascalCase | `SnapshotManager.php` | `SnapshotManager.go` | `SnapshotManager.ts` |
 | Directory (Go pkg) | snake_case | — | `site_health/` | — |
 | Abbreviations | First letter only caps | `$postId`, `$fileUrl` | `postId`, `fileUrl` | `postId`, `fileUrl` |
 | JSON / API keys | PascalCase | `"PluginSlug"` | `"PluginSlug"` | `"PluginSlug"` |
@@ -492,6 +491,23 @@ All repeated strings must be captured in enums or typed constants:
 
 ## 9. File & Function Organization
 
+### 9.0 — File Naming (ALL Languages)
+
+**File names MUST use PascalCase matching the primary definition name**, regardless of language. This overrides Go's conventional `snake_case.go`.
+
+| Language | Convention | Example |
+|----------|-----------|---------|
+| Go | `PascalCase.go` | `ClientApiCall.go`, `UploaderLifecycle.go`, `SnapshotManager.go` |
+| PHP | `PascalCase.php` | `SnapshotManager.php`, `StatusType.php` |
+| TypeScript | `PascalCase.ts` / `PascalCase.tsx` | `RemotePluginFileBrowser.tsx`, `ApiClient.ts` |
+| PowerShell | `PascalCase.ps1` | `UploadPlugin.ps1` |
+
+**Rules:**
+- File name = primary type/class/component name defined in the file
+- If a file contains multiple helpers with no single primary type, use a descriptive PascalCase name (e.g., `ZipHelpers.go`)
+- Go package directories remain `snake_case` (e.g., `site_health/`) — only file names change
+- Test files: `PascalCase_test.go` (Go), `PascalCase.test.ts` (TS)
+
 ### PHP
 - PSR-4 autoloading: file name = class name
 - One class/enum per file
@@ -500,7 +516,7 @@ All repeated strings must be captured in enums or typed constants:
 ### Go
 - File target: 300 lines (hard limit 400)
 - Function body: max 15 lines
-- Split large files: `_crud.go`, `_helpers.go`, `_validation.go`
+- Split large files: `Crud.go`, `Helpers.go`, `Validation.go`
 - Import order: stdlib → internal → third-party (3 groups, blank-line separated)
 
 ---
