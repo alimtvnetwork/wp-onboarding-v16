@@ -1,6 +1,6 @@
 # Issue: Hourly Frequency Case Missing From All Consumers
 
-> **ID:** 01-hourly-frequency-missing-from-consumers
+> **ID:** 03-hourly-frequency-missing-from-consumers
 > **Date:** 2026-02-22
 > **Category:** Enum/Consumer Synchronization
 > **Status:** Resolved
@@ -43,7 +43,7 @@
 ## Done Checklist
 
 - [x] Spec updated under `/spec/01-app/`
-- [x] Issue write-up created under `/spec/02-app/issues/`
+- [x] Issue write-up created under `/spec/02-app-issues/`
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable — N/A (single-pass fix)

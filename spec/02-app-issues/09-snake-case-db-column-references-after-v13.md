@@ -1,4 +1,4 @@
-# Issue #07 — snake_case DB Column References After V13 Migration
+# Issue #09 — snake_case DB Column References After V13 Migration
 
 ## Issue Summary
 
@@ -49,7 +49,7 @@
 ## Done Checklist
 
 - [x] Spec updated under /spec/01-app/
-- [x] Issue write-up created under /spec/02-app/issues/
+- [x] Issue write-up created under /spec/02-app-issues/
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [x] Iterations recorded if applicable (N/A — single pass)

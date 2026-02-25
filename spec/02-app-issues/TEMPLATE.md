@@ -51,7 +51,7 @@
 ## Done Checklist
 
 - [ ] Spec updated under `/spec/01-app/`
-- [ ] Issue write-up created under `/spec/02-app/issues/`
+- [ ] Issue write-up created under `/spec/02-app-issues/`
 - [ ] Memory updated with summary and prevention rule
 - [ ] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable

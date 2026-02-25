@@ -38,12 +38,12 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 
 | # | Slug | Category | Summary |
 |---|------|----------|---------|
-| 01 | hourly-frequency-missing-from-consumers | Enum/Consumer Sync | New enum case requires updating all consumers simultaneously |
-| 02 | r9c-array-literal-formatting | Code Style | PHP arrays with >2 items must be line-by-line |
-| 03 | r10-activation-handler-formatting | Code Style | Blank line required before control structures after assignments |
-| 04 | r9-multi-file-array-formatting | Code Style | Arrays/calls with >2 items must be one-per-line across all files |
-| 05 | response-key-type-expansion | Enum/Consumer Sync | Added 7 missing ResponseKeyType cases and migrated ~15 PHP consumers |
-| 06 | i18n-text-domain-literal-requirement | i18n / WordPress Tooling | Text domain in i18n calls must be literal string — never enum/constant |
-| 07 | snake-case-db-column-references-after-v13 | Database / Naming Convention | PHP code used snake_case column names after V13 PascalCase migration |
-| 08 | php-audit-report | Audit | PHP codebase audit report |
-| 09 | r10-audit-report | Audit | R10 blank-line-before-control-structure audit report |
+| 03 | hourly-frequency-missing-from-consumers | Enum/Consumer Sync | New enum case requires updating all consumers simultaneously |
+| 04 | r9c-array-literal-formatting | Code Style | PHP arrays with >2 items must be line-by-line |
+| 05 | r10-activation-handler-formatting | Code Style | Blank line required before control structures after assignments |
+| 06 | r9-multi-file-array-formatting | Code Style | Arrays/calls with >2 items must be one-per-line across all files |
+| 07 | response-key-type-expansion | Enum/Consumer Sync | Added 7 missing ResponseKeyType cases and migrated ~15 PHP consumers |
+| 08 | i18n-text-domain-literal-requirement | i18n / WordPress Tooling | Text domain in i18n calls must be literal string — never enum/constant |
+| 09 | snake-case-db-column-references-after-v13 | Database / Naming Convention | PHP code used snake_case column names after V13 PascalCase migration |
+| 10 | php-audit-report | Audit | PHP codebase audit report |
+| 11 | r10-audit-report | Audit | R10 blank-line-before-control-structure audit report |

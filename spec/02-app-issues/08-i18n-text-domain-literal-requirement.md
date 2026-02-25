@@ -1,4 +1,4 @@
-# Issue 06 — i18n Text Domain Literal Requirement
+# Issue 08 — i18n Text Domain Literal Requirement
 
 > **Created:** 2026-02-23
 
@@ -40,7 +40,7 @@
 ## Done Checklist
 
 - [x] Spec updated under `/spec/01-app/`
-- [x] Issue write-up created under `/spec/02-app/issues/`
+- [x] Issue write-up created under `/spec/02-app-issues/`
 - [x] Memory updated with summary and prevention rule
 - [x] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable — N/A (single iteration, no fix needed)
