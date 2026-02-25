@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	uploadsource "wp-plugin-publish/internal/enums/upload_source"
+	"wp-plugin-publish/internal/enums/upload_source"
 )
 
 func TestCheckOnboardPluginAvailable_UsesOnboardNamespace(t *testing.T) {

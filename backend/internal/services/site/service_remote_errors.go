@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
+	"wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"
 )
