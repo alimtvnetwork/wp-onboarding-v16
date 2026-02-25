@@ -5,8 +5,8 @@ import (
 	"context"
 
 	"wp-plugin-publish/internal/models"
-	"wp-plugin-publish/internal/services/publishhistory"
-	"wp-plugin-publish/internal/services/sitehealth"
+	"wp-plugin-publish/internal/services/publish_history"
+	"wp-plugin-publish/internal/services/site_health"
 )
 
 // PublishHistoryServiceInterface defines publish history service methods
