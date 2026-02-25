@@ -23,15 +23,9 @@ enum ResponseMessageType: string
     case ActivationFailed   = 'Plugin activation failed';
     case DeactivationFailed = 'Plugin deactivation failed';
     case DeleteFailed       = 'Plugin deletion failed';
-    case PostCreateFailed   = 'Post creation failed';
-    case PostUpdateFailed   = 'Post update failed';
-    case CategoryCreateFailed = 'Category creation failed';
-    case MediaUploadFailed  = 'Media upload failed';
-    case DbError            = 'Database error';
     case FileIgnored        = 'File ignored by .uploadignore';
     case InvalidRequestBody = 'Invalid request body';
-    case ServiceNotAvailable      = 'Service not available';
-    case InvalidId                = 'Invalid ID';
+    case ConnectionSuccessful     = 'Connection successful';
     case ConnectionSuccessful     = 'Connection successful';
     case SnapshotNotFound         = 'Snapshot not found';
     case SnapshotProviderMissing  = 'No snapshot provider available';
