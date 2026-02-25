@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
@@ -144,7 +145,7 @@ trait WorkerJobLifecycleTrait {
         string $snapshotDir,
     ): void {
         $job = $this->getJob($pdo, $jobId);
-        $rootPath = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . PathDatabaseType::Root->value;
 
         if (file_exists($rootPath)) {
             try {

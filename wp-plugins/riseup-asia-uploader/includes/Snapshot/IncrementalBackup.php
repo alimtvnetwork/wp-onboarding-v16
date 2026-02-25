@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use wpdb;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
@@ -77,7 +78,7 @@ class IncrementalBackup {
         $startTime = microtime(true);
         $title = $options[ResponseKeyType::Title->value] ?? ('Incremental ' . DateHelper::nowCompactDatetime());
 
-        $rootPath = $masterDir . '/a-root.db';
+        $rootPath = $masterDir . PathDatabaseType::Root->value;
 
         if (PathHelper::isFileMissing($rootPath)) {
             return ResultHelper::error('Master snapshot a-root.db not found at: ' . $rootPath);

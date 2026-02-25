@@ -11,6 +11,7 @@
 namespace RiseupAsia\Snapshot\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
@@ -46,7 +47,7 @@ trait IncrementalDiscoveryTrait {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             $hasFilepath = $row && isset($row['Filepath']) && $row['Filepath'] !== '';
-            $isValidSnapshotDir = $hasFilepath && is_dir($row['Filepath']) && file_exists($row['Filepath'] . '/a-root.db');
+            $isValidSnapshotDir = $hasFilepath && is_dir($row['Filepath']) && file_exists($row['Filepath'] . PathDatabaseType::Root->value);
 
             if ($isValidSnapshotDir) {
                 return $row['Filepath'];
@@ -78,7 +79,7 @@ trait IncrementalDiscoveryTrait {
         rsort($dirs);
 
         foreach ($dirs as $dir) {
-            if (file_exists($dir . '/a-root.db')) {
+            if (file_exists($dir . PathDatabaseType::Root->value)) {
                 return $dir;
             }
         }

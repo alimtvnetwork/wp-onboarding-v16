@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Helpers\PathHelper;
@@ -108,7 +109,7 @@ trait WorkerBatchProcessTrait {
     }
 
     private function openRootDbForBatch(string $snapshotDir): ?PDO {
-        $rootPath = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . PathDatabaseType::Root->value;
 
         if (PathHelper::isFileMissing($rootPath)) {
 

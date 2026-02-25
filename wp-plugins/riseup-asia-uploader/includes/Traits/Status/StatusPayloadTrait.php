@@ -60,7 +60,7 @@ trait StatusPayloadTrait {
         }
 
         opcache_invalidate($mainPluginFile, true);
-        $constantsFile = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/includes/constants.php';
+        $constantsFile = PathHelper::getConstantsFile();
         if (file_exists($constantsFile)) {
             opcache_invalidate($constantsFile, true);
         }
@@ -113,12 +113,9 @@ trait StatusPayloadTrait {
      * Load the endpoints.json reference file.
      */
     private function loadEndpointsReference(): ?array {
-        $path = plugin_dir_path(__FILE__) . '../../data/endpoints.json';
+        $path = PathHelper::getEndpointsJsonPath();
         if (PathHelper::isFileMissing($path)) {
-            $path = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/endpoints.json';
-            if (PathHelper::isFileMissing($path)) {
-                return null;
-            }
+            return null;
         }
 
         $content = @file_get_contents($path);

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
@@ -40,7 +41,7 @@ trait ManagerRestoreValidationTrait {
         }
 
         $masterDir = dirname(dirname($snapshot['filepath']));
-        $isMasterMissing = PathHelper::isDirMissing($masterDir) || PathHelper::isFileMissing($masterDir . '/a-root.db');
+        $isMasterMissing = PathHelper::isDirMissing($masterDir) || PathHelper::isFileMissing($masterDir . PathDatabaseType::Root->value);
         $isMasterPresent = ($isMasterMissing === false);
 
         if ($isMasterPresent) {

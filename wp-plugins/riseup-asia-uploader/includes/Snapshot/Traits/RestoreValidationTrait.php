@@ -18,6 +18,7 @@ use PDO;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
@@ -35,7 +36,7 @@ trait RestoreValidationTrait {
             );
         }
 
-        $rootPath = $snapshotDir . '/a-root.db';
+        $rootPath = $snapshotDir . PathDatabaseType::Root->value;
 
         if (PathHelper::isFileMissing($rootPath)) {
             return array(
