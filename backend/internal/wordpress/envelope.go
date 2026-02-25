@@ -10,56 +10,55 @@ import "encoding/json"
 // NOTE: Navigation and MethodsStack are handled at the HTTP handler layer,
 // not in this parsing utility which focuses on WordPress ↔ Go communication.
 type Envelope struct {
-	// Envelope fields (PascalCase)
-	Status     *EnvelopeStatus     `json:"Status,omitempty"`
-	Attributes *EnvelopeAttributes `json:"Attributes,omitempty"`
-	Results    json.RawMessage     `json:"Results,omitempty"`
-	Errors     *EnvelopeErrors     `json:"Errors,omitempty"`
+	Status     *EnvelopeStatus     `json:",omitempty"` // external key (WordPress envelope)
+	Attributes *EnvelopeAttributes `json:",omitempty"` // external key
+	Results    json.RawMessage     `json:",omitempty"` // external key
+	Errors     *EnvelopeErrors     `json:",omitempty"` // external key
 }
 
 // TypedEnvelope is the generic version of Envelope where Results is a typed slice.
 type TypedEnvelope[T any] struct {
-	Status     *EnvelopeStatus     `json:"Status,omitempty"`
-	Attributes *EnvelopeAttributes `json:"Attributes,omitempty"`
-	Results    []T                 `json:"Results,omitempty"`
-	Errors     *EnvelopeErrors     `json:"Errors,omitempty"`
+	Status     *EnvelopeStatus     `json:",omitempty"` // external key
+	Attributes *EnvelopeAttributes `json:",omitempty"` // external key
+	Results    []T                 `json:",omitempty"` // external key
+	Errors     *EnvelopeErrors     `json:",omitempty"` // external key
 }
 
 // EnvelopeStatus represents the Status block.
 type EnvelopeStatus struct {
-	IsSuccess bool   `json:"IsSuccess"`
-	IsFailed  bool   `json:"IsFailed"`
-	Code      int    `json:"Code"`
-	Message   string `json:"Message"`
-	Timestamp string `json:"Timestamp"`
+	IsSuccess bool   // external key (WordPress envelope)
+	IsFailed  bool   // external key
+	Code      int    // external key
+	Message   string // external key
+	Timestamp string // external key
 }
 
 // EnvelopeAttributes represents the Attributes block.
 type EnvelopeAttributes struct {
-	RequestedAt        string `json:"RequestedAt"`
-	RequestDelegatedAt string `json:"RequestDelegatedAt"`
-	HasAnyErrors       bool   `json:"HasAnyErrors"`
-	IsSingle           bool   `json:"IsSingle"`
-	IsMultiple         bool   `json:"IsMultiple"`
-	TotalRecords       int    `json:"TotalRecords"`
-	PerPage            int    `json:"PerPage"`
-	TotalPages         int    `json:"TotalPages"`
-	CurrentPage        int    `json:"CurrentPage"`
+	RequestedAt        string // external key (WordPress envelope)
+	RequestDelegatedAt string // external key
+	HasAnyErrors       bool   // external key
+	IsSingle           bool   // external key
+	IsMultiple         bool   // external key
+	TotalRecords       int    // external key
+	PerPage            int    // external key
+	TotalPages         int    // external key
+	CurrentPage        int    // external key
 }
 
 // EnvelopeErrors represents the Errors block.
 type EnvelopeErrors struct {
-	BackendMessage             string   `json:"BackendMessage"`
-	DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack"`
-	Backend                    []string `json:"Backend"`
-	Frontend                   []string `json:"Frontend"`
+	BackendMessage             string   // external key (WordPress envelope)
+	DelegatedServiceErrorStack []string // external key
+	Backend                    []string // external key
+	Frontend                   []string // external key
 }
 
 // IsEnvelope checks if a raw JSON body uses the envelope format
 // by looking for the "Status" top-level key.
 func IsEnvelope(data []byte) bool {
 	var probe struct {
-		Status *json.RawMessage `json:"Status"`
+		Status *json.RawMessage
 	}
 	if json.Unmarshal(data, &probe) == nil && probe.Status != nil {
 		return true

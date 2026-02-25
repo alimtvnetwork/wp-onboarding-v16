@@ -25,22 +25,22 @@ import (
 
 // RemoteFile represents a file in a remote WordPress plugin
 type RemoteFile struct {
-	Path       string    `json:"path"`
-	Hash       string    `json:"hash"`
-	Size       int64     `json:"size"`
-	ModifiedAt time.Time `json:"modifiedAt"`
+	Path       string    `json:"path"`       // external key (Riseup Asia Uploader API)
+	Hash       string    `json:"hash"`       // external key
+	Size       int64     `json:"size"`       // external key
+	ModifiedAt time.Time `json:"modifiedAt"` // external key
 }
 
 // OnboardUploadResult represents the response from the upload endpoint.
 type OnboardUploadResult struct {
-	Success      bool   `json:"success"`
-	Message      string `json:"message"`
-	PluginSlug   string `json:"plugin_slug,omitempty"`
-	PluginName   string `json:"plugin_name,omitempty"`
-	Version      string `json:"version,omitempty"`
-	PreviousVer  string `json:"previous_version,omitempty"`
-	FilesUpdated int    `json:"files_updated,omitempty"`
-	Overwritten  bool   `json:"overwritten,omitempty"`
+	Success      bool   `json:"success"`                    // external key (Riseup Asia Uploader API)
+	Message      string `json:"message"`                    // external key
+	PluginSlug   string `json:"plugin_slug,omitempty"`      // external key
+	PluginName   string `json:"plugin_name,omitempty"`      // external key
+	Version      string `json:"version,omitempty"`          // external key
+	PreviousVer  string `json:"previous_version,omitempty"` // external key
+	FilesUpdated int    `json:"files_updated,omitempty"`    // external key
+	Overwritten  bool   `json:"overwritten,omitempty"`      // external key
 }
 
 // GetPluginFiles retrieves the list of files for a remote plugin.
@@ -77,14 +77,14 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 
 	// The sync-manifest endpoint wraps files in {success, data: {files: [...]}}
 	var result struct {
-		Success bool `json:"success"`
+		Success bool `json:"success"` // external key (Riseup Asia Uploader API)
 		Data    struct {
-			Plugin      string       `json:"plugin"`
-			FileCount   int          `json:"fileCount"`
-			GeneratedAt string       `json:"generatedAt"`
-			Cached      bool         `json:"cached"`
-			Files       []RemoteFile `json:"files"`
-		} `json:"data"`
+			Plugin      string       `json:"plugin"`      // external key
+			FileCount   int          `json:"fileCount"`   // external key
+			GeneratedAt string       `json:"generatedAt"` // external key
+			Cached      bool         `json:"cached"`      // external key
+			Files       []RemoteFile `json:"files"`       // external key
+		} `json:"data"` // external key
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode sync manifest").
@@ -132,10 +132,10 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 
 	// Parse the response
 	var result struct {
-		Success    bool         `json:"success"`
-		Plugin     string       `json:"plugin"`
-		TotalFiles int          `json:"totalFiles"`
-		Files      []RemoteFile `json:"files"`
+		Success    bool         `json:"success"`    // external key (Riseup Asia Uploader API)
+		Plugin     string       `json:"plugin"`     // external key
+		TotalFiles int          `json:"totalFiles"` // external key
+		Files      []RemoteFile `json:"files"`      // external key
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugin files").
@@ -178,8 +178,8 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 
 	// Response format: { "mutation_token": "abc123", "expires_in": 1200 }
 	var result struct {
-		MutationToken string `json:"mutation_token"`
-		ExpiresIn     int    `json:"expires_in"`
+		MutationToken string `json:"mutation_token"` // external key (Riseup Asia Uploader API)
+		ExpiresIn     int    `json:"expires_in"`     // external key
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to parse mutation token response").
@@ -379,9 +379,9 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 
 	// Parse the response
 	var result struct {
-		Success bool   `json:"success"`
-		Path    string `json:"path"`
-		Content string `json:"content"`
+		Success bool   `json:"success"` // external key (Riseup Asia Uploader API)
+		Path    string `json:"path"`    // external key
+		Content string `json:"content"` // external key
 	}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decode file content response")

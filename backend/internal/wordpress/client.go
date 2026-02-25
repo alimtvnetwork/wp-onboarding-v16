@@ -274,8 +274,8 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 
 	// Parse root response to get WordPress version
 	var rootInfo struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name        string `json:"name"`        // external key (WordPress REST API)
+		Description string `json:"description"` // external key
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&rootInfo); err == nil {
 		result.SiteName = rootInfo.Name
@@ -326,11 +326,11 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 
 	// Parse user info
 	var userInfo struct {
-		Id          int      `json:"id"`
-		Name        string   `json:"name"`
-		Slug        string   `json:"slug"`
-		Roles       []string `json:"roles"`
-		Capabilities map[string]bool `json:"capabilities"`
+		Id          int      `json:"id"`           // external key (WordPress REST API)
+		Name        string   `json:"name"`         // external key
+		Slug        string   `json:"slug"`         // external key
+		Roles       []string `json:"roles"`        // external key
+		Capabilities map[string]bool `json:"capabilities"` // external key
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err == nil {
 		result.UserId = userInfo.Id
@@ -379,9 +379,9 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		"url": c.baseURL,
 	})
 	testPost := struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-		Status  string `json:"status"`
+		Title   string `json:"title"`   // external key (WordPress REST API)
+		Content string `json:"content"` // external key
+		Status  string `json:"status"`  // external key
 	}{
 		Title:   "WP Plugin Publish Connection Test",
 		Content: "This draft was created to test API write permissions. You can safely delete it.",
@@ -395,8 +395,8 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		defer resp.Body.Close()
 	if resp.StatusCode == HttpStatusCreated.Int() {
 			// Successfully created - now delete it
-			var createdPost struct {
-				Id int `json:"id"`
+		var createdPost struct {
+				Id int `json:"id"` // external key (WordPress REST API)
 			}
 			if err := json.NewDecoder(resp.Body).Decode(&createdPost); err == nil && createdPost.Id > 0 {
 				// Delete the test post
@@ -417,7 +417,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		}
 	}
 
-	result.Connected = true
+	result.IsConnected = true
 	return result, nil
 }
 
@@ -495,35 +495,35 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 }
 
 
-// ConnectionInfo represents WordPress connection details
+// ConnectionInfo represents WordPress connection details (built internally, not parsed from external)
 type ConnectionInfo struct {
-	Connected        bool     `json:"connected"`
-	Username         string   `json:"username"`
-	WPVersion        string   `json:"wpVersion,omitempty"`
-	SiteName         string   `json:"siteName,omitempty"`
-	SiteDescription  string   `json:"siteDescription,omitempty"`
-	UserId           int      `json:"userId,omitempty"`
-	UserDisplayName  string   `json:"userDisplayName,omitempty"`
-	UserRoles        []string `json:"userRoles,omitempty"`
-	CanManagePlugins bool     `json:"canManagePlugins"`
-	CanWritePosts    bool     `json:"canWritePosts"`
+	IsConnected      bool
+	Username         string
+	WPVersion        string   `json:",omitempty"`
+	SiteName         string   `json:",omitempty"`
+	SiteDescription  string   `json:",omitempty"`
+	UserId           int      `json:",omitempty"`
+	UserDisplayName  string   `json:",omitempty"`
+	UserRoles        []string `json:",omitempty"`
+	CanManagePlugins bool
+	CanWritePosts    bool
 }
 
-// PluginInfo represents a WordPress plugin
+// PluginInfo represents a WordPress plugin (parsed from WordPress REST API)
 type PluginInfo struct {
-	Plugin      string `json:"plugin"`
-	Status      string `json:"status"`
-	Name        string `json:"name"`
-	PluginURI   string `json:"plugin_uri"`
-	Author      string `json:"author"`
-	AuthorURI   string `json:"author_uri"`
+	Plugin      string `json:"plugin"`       // external key (WordPress REST API)
+	Status      string `json:"status"`       // external key
+	Name        string `json:"name"`         // external key
+	PluginURI   string `json:"plugin_uri"`   // external key
+	Author      string `json:"author"`       // external key
+	AuthorURI   string `json:"author_uri"`   // external key
 	Description struct {
-		Raw      string `json:"raw"`
-		Rendered string `json:"rendered"`
-	} `json:"description"`
-	Version     string `json:"version"`
-	NetworkOnly bool   `json:"network_only"`
-	RequiresWP  string `json:"requires_wp"`
-	RequiresPHP string `json:"requires_php"`
-	TextDomain  string `json:"textdomain"`
+		Raw      string `json:"raw"`      // external key
+		Rendered string `json:"rendered"` // external key
+	} `json:"description"` // external key
+	Version     string `json:"version"`      // external key
+	NetworkOnly bool   `json:"network_only"` // external key
+	RequiresWP  string `json:"requires_wp"`  // external key
+	RequiresPHP string `json:"requires_php"` // external key
+	TextDomain  string `json:"textdomain"`   // external key
 }

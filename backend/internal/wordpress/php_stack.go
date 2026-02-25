@@ -7,27 +7,27 @@ import (
 
 // PHPStackTraceFrame represents a single frame from a WordPress PHP stack trace.
 type PHPStackTraceFrame struct {
-	File     string `json:"file"`
-	FileBase string `json:"fileBase"`
-	Line     int    `json:"line"`
-	Function string `json:"function"`
-	Class    string `json:"class"`
+	File     string `json:"file"`     // external key (WordPress PHP error response)
+	FileBase string `json:"fileBase"` // external key
+	Line     int    `json:"line"`     // external key
+	Function string `json:"function"` // external key
+	Class    string `json:"class"`    // external key
 }
 
 // phpErrorResponse is the expected structure of a WordPress error response
 // containing PHP stack trace diagnostics.
 type phpErrorResponse struct {
-	Success bool `json:"success"`
+	Success bool `json:"success"` // external key (WordPress PHP error response)
 	Error   struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
+		Code    string `json:"code"`    // external key
+		Message string `json:"message"` // external key
 		Details struct {
-			StackTrace       string               `json:"stackTrace"`
-			StackTraceFrames []PHPStackTraceFrame  `json:"stackTraceFrames"`
-			ExceptionClass   string                `json:"exceptionClass"`
-			PHPVersion       string                `json:"phpVersion"`
-		} `json:"details"`
-	} `json:"error"`
+			StackTrace       string               `json:"stackTrace"`       // external key
+			StackTraceFrames []PHPStackTraceFrame  `json:"stackTraceFrames"` // external key
+			ExceptionClass   string                `json:"exceptionClass"`   // external key
+			PHPVersion       string                `json:"phpVersion"`       // external key
+		} `json:"details"` // external key
+	} `json:"error"` // external key
 }
 
 // ExtractPHPStackTrace parses a WordPress error response body and returns a

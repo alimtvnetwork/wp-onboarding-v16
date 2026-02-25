@@ -22,56 +22,56 @@ import (
 
 // PullResult represents the outcome of a git pull operation
 type PullResult struct {
-	PluginId     int64     `json:"pluginId"`
-	PluginName   string    `json:"pluginName"`
-	Success      bool      `json:"success"`
-	Branch       string    `json:"branch"`
-	CommitHash   string    `json:"commitHash,omitempty"`
-	CommitMsg    string    `json:"commitMsg,omitempty"`
-	FilesChanged int       `json:"filesChanged"`
-	Insertions   int       `json:"insertions"`
-	Deletions    int       `json:"deletions"`
-	Duration     int64     `json:"duration"`
-	Output       string    `json:"output,omitempty"`
-	Error        string    `json:"error,omitempty"`
-	PulledAt     time.Time `json:"pulledAt"`
+	PluginId     int64
+	PluginName   string
+	IsSuccess    bool
+	Branch       string
+	CommitHash   string `json:",omitempty"`
+	CommitMsg    string `json:",omitempty"`
+	FilesChanged int
+	Insertions   int
+	Deletions    int
+	Duration     int64
+	Output       string    `json:",omitempty"`
+	Error        string    `json:",omitempty"`
+	PulledAt     time.Time
 }
 
 // BuildResult represents the outcome of a build command
 type BuildResult struct {
-	PluginId   int64     `json:"pluginId"`
-	PluginName string    `json:"pluginName"`
-	Success    bool      `json:"success"`
-	Command    string    `json:"command"`
-	ExitCode   int       `json:"exitCode"`
-	Output     string    `json:"output"`
-	Error      string    `json:"error,omitempty"`
-	Duration   int64     `json:"duration"`
-	BuiltAt    time.Time `json:"builtAt"`
+	PluginId   int64
+	PluginName string
+	IsSuccess  bool
+	Command    string
+	ExitCode   int
+	Output     string
+	Error      string    `json:",omitempty"`
+	Duration   int64
+	BuiltAt    time.Time
 }
 
 // BatchPullResult holds results for multiple plugins
 type BatchPullResult struct {
-	Results   []PullResult `json:"results"`
-	Succeeded int          `json:"succeeded"`
-	Failed    int          `json:"failed"`
-	Duration  int64        `json:"duration"`
+	Results   []PullResult
+	Succeeded int
+	Failed    int
+	Duration  int64
 }
 
 // PullAndBuildResult holds the combined outcome of a pull followed by an optional build
 type PullAndBuildResult struct {
-	Pull  PullResult   `json:"pull"`
-	Build *BuildResult `json:"build,omitempty"`
+	Pull  PullResult
+	Build *BuildResult `json:",omitempty"`
 }
 
 // PluginGitConfig holds git configuration for a plugin
 type PluginGitConfig struct {
-	PluginId     int64  `json:"pluginId"`
-	GitEnabled   bool   `json:"gitEnabled"`
-	Branch       string `json:"branch"`
-	GitRemoteUrl string `json:"gitRemoteUrl"`
-	BuildEnabled bool   `json:"buildEnabled"`
-	BuildCommand string `json:"buildCommand"`
+	PluginId     int64
+	GitEnabled   bool
+	Branch       string
+	GitRemoteUrl string
+	BuildEnabled bool
+	BuildCommand string
 }
 
 // Config holds git service configuration
@@ -400,15 +400,15 @@ func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) erro
 
 // StatusResult represents git status information
 type StatusResult struct {
-	PluginId   int64  `json:"pluginId"`
-	Branch     string `json:"branch"`
-	Ahead      int    `json:"ahead"`
-	Behind     int    `json:"behind"`
-	Staged     int    `json:"staged"`
-	Modified   int    `json:"modified"`
-	Untracked  int    `json:"untracked"`
-	HasChanges bool   `json:"hasChanges"`
-	LastCommit string `json:"lastCommit,omitempty"`
+	PluginId   int64
+	Branch     string
+	Ahead      int
+	Behind     int
+	Staged     int
+	Modified   int
+	Untracked  int
+	HasChanges bool
+	LastCommit string `json:",omitempty"`
 }
 
 // Status returns git status for a plugin
@@ -472,10 +472,10 @@ func (s *Service) Status(ctx context.Context, pluginID int64) apperror.Result[St
 
 // CommitResult represents git commit result
 type CommitResult struct {
-	PluginId   int64  `json:"pluginId"`
-	Success    bool   `json:"success"`
-	CommitHash string `json:"commitHash"`
-	Message    string `json:"message,omitempty"`
+	PluginId   int64
+	IsSuccess  bool
+	CommitHash string
+	Message    string `json:",omitempty"`
 }
 
 // Commit stages all changes and commits with the given message
@@ -529,10 +529,10 @@ func (s *Service) Commit(ctx context.Context, pluginId int64, message string) ap
 
 // PushResult represents git push result
 type PushResult struct {
-	PluginId int64  `json:"pluginId"`
-	Success  bool   `json:"success"`
-	Pushed   int    `json:"pushed"`
-	Message  string `json:"message,omitempty"`
+	PluginId  int64
+	IsSuccess bool
+	Pushed    int
+	Message   string `json:",omitempty"`
 }
 
 // Push pushes commits to remote

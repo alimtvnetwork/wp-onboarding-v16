@@ -16,8 +16,8 @@ import (
 
 // ErrorHistoryListResult wraps paginated results with total count
 type ErrorHistoryListResult struct {
-	Items []models.ErrorHistory `json:"items"`
-	Total int                   `json:"total"`
+	Items []models.ErrorHistory
+	Total int
 }
 
 // Config holds error history service configuration
