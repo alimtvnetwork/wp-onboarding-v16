@@ -48,8 +48,8 @@ type SiteServiceInterface interface {
 	GetRemoteAvailableTables(ctx context.Context, siteId int64) ([]wordpress.AvailableTable, error)
 	FullBackupRemoteSnapshot(ctx context.Context, siteId int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error)
 	IncrementalBackupRemoteSnapshot(ctx context.Context, siteId int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error)
-	ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (*wordpress.SnapshotImportResult, error)
-	CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, error)
+	ImportRemoteSnapshot(ctx context.Context, siteId int64, zipPath string) (*wordpress.SnapshotImportResult, error)
+	CleanupRemoteSnapshots(ctx context.Context, siteId int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, error)
 	ClearErrorLogHashes() int
 }
 
@@ -61,7 +61,7 @@ type SiteServiceAdapter struct {
 func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, error) {
 	result := a.Service.List(ctx)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -69,7 +69,7 @@ func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, error) {
 func (a *SiteServiceAdapter) GetById(ctx context.Context, id int64) (*models.Site, error) {
 	result := a.Service.GetById(ctx, id)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -84,7 +84,7 @@ func (a *SiteServiceAdapter) Create(ctx context.Context, input SiteCreateInput) 
 	}
 	result := a.Service.Create(ctx, siteInput)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -99,7 +99,7 @@ func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input SiteUpd
 	}
 	result := a.Service.Update(ctx, id, updateInput)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
