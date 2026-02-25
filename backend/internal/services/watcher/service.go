@@ -23,22 +23,22 @@ import (
 
 // FileChange represents a detected file modification
 type FileChange struct {
-	Path       string    `json:"path"`
-	ChangeType string    `json:"type"` // created, modified, deleted
-	Hash       string    `json:"hash,omitempty"`
-	Size       int64     `json:"size,omitempty"`
-	ModTime    time.Time `json:"modTime,omitempty"`
+	Path       string    `json:",omitempty"`
+	ChangeType string    // created, modified, deleted
+	Hash       string    `json:",omitempty"`
+	Size       int64     `json:",omitempty"`
+	ModTime    time.Time `json:",omitempty"`
 }
 
 // ScanResult contains the outcome of a directory scan
 type ScanResult struct {
-	PluginID     int64        `json:"pluginId"`
-	Path         string       `json:"path"`
-	ScanTime     time.Time    `json:"scanTime"`
-	DurationMs   int64        `json:"durationMs"`
-	FilesScanned int          `json:"filesScanned"`
-	Changes      []FileChange `json:"changes"`
-	TriggerType  string       `json:"triggerType"` // "git_pull" or "manual"
+	PluginID     int64
+	Path         string
+	ScanTime     time.Time
+	DurationMs   int64
+	FilesScanned int
+	Changes      []FileChange `json:",omitempty"`
+	TriggerType  string       // "git_pull" or "manual"
 }
 
 // fileInfo holds cached file metadata for change detection

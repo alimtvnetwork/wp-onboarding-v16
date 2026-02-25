@@ -174,7 +174,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 
 	s.broadcastLog(backupID, loglevel.Info.Lower(), "complete", "Backup restored successfully", nil)
 
-	return apperror.Ok(RestoreResult{Success: true})
+	return apperror.Ok(RestoreResult{IsSuccess: true})
 }
 
 // Delete removes a backup file and database record
@@ -479,22 +479,22 @@ func (s *Service) extractFile(file *zip.File, destPath string) (int64, error) {
 
 // RestoreResult represents the result of a restore operation
 type RestoreResult struct {
-	Success      bool   `json:"success"`
-	ErrorMessage string `json:"errorMessage,omitempty"`
+	IsSuccess    bool
+	ErrorMessage string `json:",omitempty"`
 }
 
 // ExportResult contains information about an export operation
 type ExportResult struct {
-	OutputPath string        `json:"outputPath"`
-	FilesCount int           `json:"filesCount"`
-	TotalBytes int64         `json:"totalBytes"`
-	Duration   time.Duration `json:"duration"`
+	OutputPath string
+	FilesCount int
+	TotalBytes int64
+	Duration   time.Duration
 }
 
 // ImportResult contains information about an import operation
 type ImportResult struct {
-	DestPath   string        `json:"destPath"`
-	FilesCount int           `json:"filesCount"`
-	TotalBytes int64         `json:"totalBytes"`
-	Duration   time.Duration `json:"duration"`
+	DestPath   string
+	FilesCount int
+	TotalBytes int64
+	Duration   time.Duration
 }
