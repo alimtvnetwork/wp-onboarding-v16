@@ -51,35 +51,41 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
 	log.Debug("Seeding default settings")
 
-	settings := map[string]any{
-		"watcher.pollIntervalMs":     cfg.Watcher.PollIntervalMs,
-		"watcher.debounceMs":         cfg.Watcher.DebounceMs,
-		"backup.retentionDays":       cfg.Backup.RetentionDays,
-		"backup.maxBackupsPerPlugin": cfg.Backup.MaxBackupsPerPlugin,
-		"backup.autoBackupOnPublish": cfg.Backup.AutoBackupOnPublish,
-		"logging.level":              cfg.Logging.Level,
-		"logging.retentionDays":      cfg.Logging.RetentionDays,
-		"logging.stackTraceDepth":    cfg.Logging.StackTraceDepth,
-		"logging.phpStackTraceDepth": cfg.Logging.PhpStackTraceDepth,
-		"responseDebug.includeStackTrace":     cfg.ResponseDebug.IncludeStackTrace,
-		"responseDebug.includeInternalErrors": cfg.ResponseDebug.IncludeInternalErrors,
-		"responseDebug.includeMethodsStack":   cfg.ResponseDebug.IncludeMethodsStack,
-		"responseDebug.maxStackFrames":        cfg.ResponseDebug.MaxStackFrames,
-		"snapshot.mode":            cfg.Snapshot.Mode,
-		"snapshot.backupType":      cfg.Snapshot.BackupType,
-		"snapshot.workerCount":     cfg.Snapshot.WorkerCount,
-		"snapshot.storagePath":     cfg.Snapshot.StoragePath,
-		"snapshot.includePlugins":  cfg.Snapshot.IncludePlugins,
-		"snapshot.pluginSelection": cfg.Snapshot.PluginSelection,
-		"snapshot.retentionDays":   cfg.Snapshot.RetentionDays,
-		"snapshot.retentionCount":  cfg.Snapshot.RetentionCount,
-		"snapshot.compression":     cfg.Snapshot.Compression,
-		"snapshot.batchSize":       cfg.Snapshot.BatchSize,
+	// seedSetting is a typed key-value pair for seeding settings.
+	type seedSetting struct {
+		Key   string
+		Value any // restricted to int/string/bool from config fields
 	}
 
-	for key, value := range settings {
-		if err := db.SetSettingIfNotExists(key, value); err != nil {
-			log.Warn("Failed to set setting", "key", key, "error", err)
+	settings := []seedSetting{
+		{"watcher.pollIntervalMs", cfg.Watcher.PollIntervalMs},
+		{"watcher.debounceMs", cfg.Watcher.DebounceMs},
+		{"backup.retentionDays", cfg.Backup.RetentionDays},
+		{"backup.maxBackupsPerPlugin", cfg.Backup.MaxBackupsPerPlugin},
+		{"backup.autoBackupOnPublish", cfg.Backup.AutoBackupOnPublish},
+		{"logging.level", cfg.Logging.Level},
+		{"logging.retentionDays", cfg.Logging.RetentionDays},
+		{"logging.stackTraceDepth", cfg.Logging.StackTraceDepth},
+		{"logging.phpStackTraceDepth", cfg.Logging.PhpStackTraceDepth},
+		{"responseDebug.includeStackTrace", cfg.ResponseDebug.IncludeStackTrace},
+		{"responseDebug.includeInternalErrors", cfg.ResponseDebug.IncludeInternalErrors},
+		{"responseDebug.includeMethodsStack", cfg.ResponseDebug.IncludeMethodsStack},
+		{"responseDebug.maxStackFrames", cfg.ResponseDebug.MaxStackFrames},
+		{"snapshot.mode", cfg.Snapshot.Mode},
+		{"snapshot.backupType", cfg.Snapshot.BackupType},
+		{"snapshot.workerCount", cfg.Snapshot.WorkerCount},
+		{"snapshot.storagePath", cfg.Snapshot.StoragePath},
+		{"snapshot.includePlugins", cfg.Snapshot.IncludePlugins},
+		{"snapshot.pluginSelection", cfg.Snapshot.PluginSelection},
+		{"snapshot.retentionDays", cfg.Snapshot.RetentionDays},
+		{"snapshot.retentionCount", cfg.Snapshot.RetentionCount},
+		{"snapshot.compression", cfg.Snapshot.Compression},
+		{"snapshot.batchSize", cfg.Snapshot.BatchSize},
+	}
+
+	for _, s := range settings {
+		if err := db.SetSettingIfNotExists(s.Key, s.Value); err != nil {
+			log.Warn("Failed to set setting", "key", s.Key, "error", err)
 		}
 	}
 

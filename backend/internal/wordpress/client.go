@@ -80,7 +80,9 @@ func (e *APIError) FullError() string {
 }
 
 // ProgressDetails holds structured metadata for progress callback reporting.
-type ProgressDetails map[string]any
+// GE-2 exception: this is a callback boundary type with ~30 ad-hoc call sites;
+// typed structs per call site would add excessive boilerplate for diagnostic-only data.
+type ProgressDetails map[string]any //nolint:ge2
 
 // ClientConfig holds WordPress client configuration
 type ClientConfig struct {

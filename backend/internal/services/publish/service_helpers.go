@@ -127,18 +127,6 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 	return true, onboardResult, result.Activated, nil
 }
 
-// marshalDetails converts a map to json.RawMessage for WS broadcast boundaries.
-func marshalDetails(m map[string]any) json.RawMessage {
-	if m == nil {
-		return nil
-	}
-	data, err := json.Marshal(m)
-	if err != nil {
-		return nil
-	}
-	return data
-}
-
 // formatBytes formats byte count as human-readable string
 func formatBytes(bytes int64) string {
 	const unit = 1024
@@ -239,21 +227,21 @@ func (s *Service) cleanupZip(pluginID, siteID int64, zipPath string, publishFail
 	}
 
 	if publishFailed {
-		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), marshalDetails(map[string]any{
-			"zipPath": zipPath, "reason": "publish_failed",
+		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), toDetails(CleanupDetails{
+			ZipPath: zipPath, Reason: "publish_failed",
 		}))
 		return
 	}
 
 	if keepZipFiles {
-		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), marshalDetails(map[string]any{
-			"zipPath": zipPath, "keepZipFiles": true,
+		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), toDetails(CleanupDetails{
+			ZipPath: zipPath, KeepZipFiles: true,
 		}))
 		return
 	}
 
-	s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), marshalDetails(map[string]any{
-		"keepZipFiles": keepZipFiles,
+	s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), toDetails(CleanupDetails{
+		KeepZipFiles: keepZipFiles,
 	}))
 	os.Remove(zipPath)
 }
@@ -266,8 +254,8 @@ func (s *Service) logZipCreated(pluginID, siteID int64, zipPath string, fileCoun
 	}
 
 	zipEntries := s.getZipStructure(zipPath)
-	s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), marshalDetails(map[string]any{
-		"zipPath": zipPath, "zipSize": info.Size(), "fileCount": fileCount, "zipStructure": zipEntries,
+	s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), toDetails(ZipCreatedDetails{
+		ZipPath: zipPath, ZipSize: info.Size(), FileCount: fileCount, ZipStructure: zipEntries,
 	}))
 
 	maxShow := 20
@@ -284,27 +272,27 @@ func (s *Service) logZipCreated(pluginID, siteID int64, zipPath string, fileCoun
 
 // logUploadError logs a structured upload error
 func (s *Service) logUploadError(pluginID, siteID int64, sessionID string, siteInfo *models.Site, mapping *models.PluginMapping, attempts int, err error) {
-	errorCtx := StageContext{
-		What:   fmt.Sprintf("Upload ZIP to %s", siteInfo.URL),
-		Result: fmt.Sprintf("FAILED: %s", err.Error()),
-		InnerData: map[string]any{
-			"remoteSlug": mapping.RemoteSlug,
-			"attempts":   attempts,
-		},
+	inner := UploadErrorInner{
+		RemoteSlug: mapping.RemoteSlug,
+		Attempts:   attempts,
 	}
 	if apiErr, ok := err.(*wordpress.APIError); ok {
-		errorCtx.InnerData["status"] = apiErr.StatusCode
-		errorCtx.InnerData["response"] = truncateString(apiErr.ResponseBody, 2000)
+		inner.Status = apiErr.StatusCode
+		inner.Response = truncateString(apiErr.ResponseBody, 2000)
 	} else if appErr, ok := err.(*apperror.AppError); ok {
-		errorCtx.InnerData["code"] = appErr.Code
+		inner.Code = appErr.Code
 		if cause := appErr.Unwrap(); cause != nil {
 			if apiErr, ok := cause.(*wordpress.APIError); ok {
-				errorCtx.InnerData["status"] = apiErr.StatusCode
-				errorCtx.InnerData["response"] = truncateString(apiErr.ResponseBody, 2000)
+				inner.Status = apiErr.StatusCode
+				inner.Response = truncateString(apiErr.ResponseBody, 2000)
 			}
 		}
 	}
-	s.broadcastStageLog(pluginID, siteID, sessionID, "error", "upload", errorCtx)
+	s.broadcastStageLog(pluginID, siteID, sessionID, "error", "upload", StageContext{
+		What:    fmt.Sprintf("Upload ZIP to %s", siteInfo.URL),
+		Result:  fmt.Sprintf("FAILED: %s", err.Error()),
+		Details: toDetails(inner),
+	})
 }
 
 // logUploadSuccess logs a structured upload success
@@ -313,42 +301,42 @@ func (s *Service) logUploadSuccess(pluginID, siteID int64, sessionID string, map
 	if activated {
 		resultMsg = "Plugin uploaded and activated"
 	}
-	successCtx := StageContext{
-		What:   fmt.Sprintf("Upload ZIP (%s)", formatBytes(zipSize)),
-		Result: resultMsg,
-		InnerData: map[string]any{
-			"remoteSlug": mapping.RemoteSlug,
-			"activated":  activated,
-			"durationMs": time.Since(startTime).Milliseconds(),
-			"attempts":   attempts,
-		},
+	inner := UploadSuccessInner{
+		RemoteSlug: mapping.RemoteSlug,
+		Activated:  activated,
+		DurationMs: time.Since(startTime).Milliseconds(),
+		Attempts:   attempts,
 	}
 	if uploadResult != nil {
-		successCtx.InnerData["version"] = uploadResult.Version
-		successCtx.InnerData["overwritten"] = uploadResult.Overwritten
+		inner.Version = uploadResult.Version
+		inner.Overwritten = uploadResult.Overwritten
 	}
-	s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", successCtx)
+	s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
+		What:    fmt.Sprintf("Upload ZIP (%s)", formatBytes(zipSize)),
+		Result:  resultMsg,
+		Details: toDetails(inner),
+	})
 }
 
 // logActivationError logs a structured activation error
 func (s *Service) logActivationError(pluginID, siteID int64, sessionID string, mapping *models.PluginMapping, endpointURL string, startTime time.Time, err error) {
-	errorCtx := StageContext{
-		What:   "Activate plugin via Riseup Asia Uploader",
-		Why:    "Enable plugin after upload",
-		Where:  endpointURL,
-		Result: fmt.Sprintf("FAILED: %s", err.Error()),
-		InnerData: map[string]any{
-			"remoteSlug": mapping.RemoteSlug,
-			"durationMs": time.Since(startTime).Milliseconds(),
-		},
+	inner := ActivateErrorInner{
+		RemoteSlug: mapping.RemoteSlug,
+		DurationMs: time.Since(startTime).Milliseconds(),
 	}
 	if apiErr, ok := err.(*wordpress.APIError); ok {
-		errorCtx.InnerData["request"] = map[string]any{
-			"method": apiErr.Method, "endpoint": apiErr.Endpoint, "url": apiErr.URL,
+		inner.Request = &ActivateRequestInfo{
+			Method: apiErr.Method, Endpoint: apiErr.Endpoint, URL: apiErr.URL,
 		}
-		errorCtx.InnerData["response"] = map[string]any{
-			"status": apiErr.StatusCode, "body": truncateString(apiErr.ResponseBody, 2000),
+		inner.Response = &ActivateResponseInfo{
+			Status: apiErr.StatusCode, Body: truncateString(apiErr.ResponseBody, 2000),
 		}
 	}
-	s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Error.String(), "activate", errorCtx)
+	s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Error.String(), "activate", StageContext{
+		What:    "Activate plugin via Riseup Asia Uploader",
+		Why:     "Enable plugin after upload",
+		Where:   endpointURL,
+		Result:  fmt.Sprintf("FAILED: %s", err.Error()),
+		Details: toDetails(inner),
+	})
 }

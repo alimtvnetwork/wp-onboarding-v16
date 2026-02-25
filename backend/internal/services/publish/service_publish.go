@@ -70,9 +70,9 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 
 	// Create WordPress client
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
-	s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), marshalDetails(map[string]any{
-		"siteUrl":  siteInfo.URL,
-		"username": siteInfo.Username,
+	s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), toDetails(ConnectDetails{
+		SiteURL:  siteInfo.URL,
+		Username: siteInfo.Username,
 	}))
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 
@@ -112,9 +112,9 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	// Stage 3: Upload to WordPress
 	alreadyActivated, stage := s.executeUploadStage(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo)
 	result.Stages = append(result.Stages, stage)
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status.String(), stage.Duration, marshalDetails(map[string]any{
-		"remoteSlug": mapping.RemoteSlug,
-		"activated":  alreadyActivated,
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status.String(), stage.Duration, toDetails(UploadStageDetails{
+		RemoteSlug: mapping.RemoteSlug,
+		Activated:  alreadyActivated,
 	}))
 	if stage.Status.IsFailed() {
 		result.ErrorMessage = stage.Message
@@ -126,9 +126,9 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	// Stage 4: Activate plugin
 	stage = s.executeActivateStage(pluginID, siteID, sessionID, wpClient, mapping, siteInfo, alreadyActivated)
 	result.Stages = append(result.Stages, stage)
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status.String(), stage.Duration, marshalDetails(map[string]any{
-		"remoteSlug": mapping.RemoteSlug,
-		"skipped":    alreadyActivated,
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status.String(), stage.Duration, toDetails(ActivateSkipDetails{
+		RemoteSlug: mapping.RemoteSlug,
+		Skipped:    alreadyActivated,
 	}))
 	if stage.Status.IsFailed() {
 		result.ActivationStatus = loglevel.Error.String()
@@ -191,9 +191,9 @@ func (s *Service) startPublishSession(pluginID, siteID int64, pluginInfo models.
 func (s *Service) executeBackupStage(pluginID, siteID int64, mapping *models.PluginMapping) Stage {
 	return s.runStage("backup", func() error {
 		s.broadcastProgress(pluginID, siteID, "backup", 10, "Creating backup...")
-		s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "backup", "Initiating remote plugin backup", marshalDetails(map[string]any{
-			"mappingId":  mapping.ID,
-			"remoteSlug": mapping.RemoteSlug,
+		s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "backup", "Initiating remote plugin backup", toDetails(BackupStageDetails{
+			MappingID:  mapping.ID,
+			RemoteSlug: mapping.RemoteSlug,
 		}))
 		// TODO: Implement backup creation via s.backupService
 		return nil
@@ -207,18 +207,18 @@ func (s *Service) executePackageStage(pluginID, siteID int64, pluginInfo models.
 
 	stage := s.runStage("package", func() error {
 		s.broadcastProgress(pluginID, siteID, "packaging", 30, "Building package...")
-		s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "package", fmt.Sprintf("Packaging plugin from: %s", pluginInfo.Path), marshalDetails(map[string]any{
-			"pluginPath":      pluginInfo.Path,
-			"pluginName":      pluginInfo.Name,
-			"mode":            options.Mode,
-			"excludePatterns": pluginInfo.ExcludePatterns,
+		s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "package", fmt.Sprintf("Packaging plugin from: %s", pluginInfo.Path), toDetails(PackageDetails{
+			PluginPath:      pluginInfo.Path,
+			PluginName:      pluginInfo.Name,
+			Mode:            options.Mode,
+			ExcludePatterns: pluginInfo.ExcludePatterns,
 		}))
 
 		var err error
 		if options.Mode == "selected" && len(options.Files) > 0 {
 			fileCount = len(options.Files)
-			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", fileCount), marshalDetails(map[string]any{
-				"selectedFiles": options.Files,
+			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", fileCount), toDetails(SelectedFilesDetails{
+				SelectedFiles: options.Files,
 			}))
 			zipPath, err = s.createSelectiveZip(pluginInfo.Path, pluginInfo.Name, options.Files)
 		} else {
@@ -339,10 +339,10 @@ func (s *Service) executeActivateStage(pluginID, siteID int64, sessionID string,
 				Why:    "Enable plugin functionality after upload",
 				Where:  siteInfo.URL,
 				Result: "SKIPPED - plugin activated during upload",
-				InnerData: map[string]any{
-					"remoteSlug": mapping.RemoteSlug,
-					"reason":     "already_activated_during_upload",
-				},
+				Details: toDetails(ActivateSkipDetails{
+					RemoteSlug: mapping.RemoteSlug,
+					Skipped:    true,
+				}),
 			})
 			return nil
 		}
@@ -368,10 +368,10 @@ func (s *Service) activateViaUploader(pluginID, siteID int64, sessionID string, 
 		What:  "Activate plugin via Riseup Asia Uploader",
 		Why:   "Enable plugin after successful upload",
 		Where: endpointURL,
-		InnerData: map[string]any{
-			"method":     "POST",
-			"remoteSlug": mapping.RemoteSlug,
-		},
+		Details: toDetails(ActivateRequestDetails{
+			Method:     "POST",
+			RemoteSlug: mapping.RemoteSlug,
+		}),
 	})
 
 	if err := wpClient.EnablePluginViaUploader(mapping.RemoteSlug); err != nil {
@@ -384,10 +384,10 @@ func (s *Service) activateViaUploader(pluginID, siteID int64, sessionID string, 
 		Why:    "Enable plugin after upload",
 		Where:  endpointURL,
 		Result: "SUCCESS - plugin is now active",
-		InnerData: map[string]any{
-			"remoteSlug": mapping.RemoteSlug,
-			"durationMs": time.Since(startTime).Milliseconds(),
-		},
+		Details: toDetails(ActivateSuccessDetails{
+			RemoteSlug: mapping.RemoteSlug,
+			DurationMs: time.Since(startTime).Milliseconds(),
+		}),
 	})
 	return nil
 }
@@ -496,10 +496,10 @@ func (s *Service) broadcastCompletion(pluginID, siteID int64, result *PublishRes
 		logLevel = loglevel.Error.String()
 	}
 
-	s.broadcastDetailedLog(pluginID, siteID, logLevel, "complete", completionMessage, marshalDetails(map[string]any{
-		"success":      result.IsSuccess,
-		"filesUpdated": result.FilesUpdated,
-		"durationMs":   result.Duration,
+	s.broadcastDetailedLog(pluginID, siteID, logLevel, "complete", completionMessage, toDetails(CompletionDetails{
+		IsSuccess:    result.IsSuccess,
+		FilesUpdated: result.FilesUpdated,
+		DurationMs:   result.Duration,
 	}))
 	s.broadcastProgress(pluginID, siteID, completionStep, 100, completionMessage)
 }

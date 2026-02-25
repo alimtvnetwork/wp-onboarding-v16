@@ -221,23 +221,19 @@ func (s *Service) broadcastStageComplete(pluginID, siteID int64, sessionID, stag
 
 // resolveNames looks up plugin/site names from details or DB
 func (s *Service) resolveNames(pluginID, siteID int64, details json.RawMessage) (string, string, string) {
-	var detailsMap map[string]any
+	// Parse details into a typed struct for name resolution
+	var parsed struct {
+		PluginName string `json:",omitempty"`
+		SiteName   string `json:",omitempty"`
+		SiteURL    string `json:",omitempty"`
+	}
 	if len(details) > 0 {
-		_ = json.Unmarshal(details, &detailsMap)
+		_ = json.Unmarshal(details, &parsed)
 	}
 
-	pluginName, siteName, siteURL := "", "", ""
-	if detailsMap != nil {
-		if v, ok := detailsMap["pluginName"].(string); ok {
-			pluginName = v
-		}
-		if v, ok := detailsMap["siteName"].(string); ok {
-			siteName = v
-		}
-		if v, ok := detailsMap["siteUrl"].(string); ok {
-			siteURL = v
-		}
-	}
+	pluginName := parsed.PluginName
+	siteName := parsed.SiteName
+	siteURL := parsed.SiteURL
 
 	if pluginName == "" && pluginID > 0 {
 		if pResult := s.pluginService.GetByID(context.Background(), pluginID); pResult.IsSafe() {
