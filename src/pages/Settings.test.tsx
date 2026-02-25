@@ -11,6 +11,11 @@ vi.mock("@/hooks/useSettings", () => ({
     isLoading: false,
     error: null,
   }),
+  useSaveSettings: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 // Test wrapper with providers
@@ -124,7 +129,7 @@ describe("Settings Page - Appearance", () => {
     fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
 
     expect(screen.getByText("Compact Mode")).toBeInTheDocument();
-    expect(screen.getByText("Reduce spacing for more content density")).toBeInTheDocument();
+    expect(screen.getByText(/Reduce padding and spacing/)).toBeInTheDocument();
   });
 });
 
