@@ -79,16 +79,16 @@ Settings are stored in WordPress options table under key `riseup_update_settings
 
 ```php
 array(
-    'enabled'        => bool,    // Feature enabled
-    'master_url'     => string,  // The 301 redirect URL
-    'resolved_url'   => string,  // Cached final URL
-    'resolved_at'    => string,  // ISO datetime of resolution
-    'cache_days'     => int,     // Cache validity (1-30)
-    'last_check'     => string,  // Last update check datetime
-    'last_error'     => string,  // Last error message
-    'package_url'    => string,  // ZIP download URL
-    'new_version'    => string,  // Available version
-    'update_info'    => array,   // Full update metadata
+    'Enabled'        => bool,    // Feature enabled
+    'MasterUrl'      => string,  // The 301 redirect URL
+    'ResolvedUrl'    => string,  // Cached final URL
+    'ResolvedAt'     => string,  // ISO datetime of resolution
+    'CacheDays'      => int,     // Cache validity (1-30)
+    'LastCheck'      => string,  // Last update check datetime
+    'LastError'      => string,  // Last error message
+    'PackageUrl'     => string,  // ZIP download URL
+    'NewVersion'     => string,  // Available version
+    'UpdateInfo'     => array,   // Full update metadata
 )
 ```
 
@@ -124,14 +124,14 @@ Returns current settings array with defaults applied.
 
 ```php
 $settings = $resolver->getSettings();
-// array('enabled' => false, 'master_url' => '', ...)
+// array('Enabled' => false, 'MasterUrl' => '', ...)
 ```
 
 #### saveSettings(array $settings)
 Saves settings, merging with existing values.
 
 ```php
-$resolver->saveSettings(array('enabled' => true));
+$resolver->saveSettings(array('Enabled' => true));
 ```
 
 #### resolveUrl(string $url, int $maxRedirects = 5)
@@ -173,7 +173,7 @@ Tests connection and returns result.
 
 ```php
 $result = $resolver->testConnection();
-// array('success' => true, 'message' => '...', 'resolved_url' => '...')
+// array('Success' => true, 'Message' => '...', 'ResolvedUrl' => '...')
 ```
 
 ---
@@ -195,7 +195,7 @@ The `checkForPluginUpdate()` method:
 ### Plugin Info Hook
 
 ```php
-add_filter('plugins_api', array($this, 'pluginInfo'), 10, 3);
+add_filter('plugins_api', array($this, 'pluginInfo'), 10, 3);  // WordPress hook — external key
 ```
 
 Provides detailed information for WordPress "View Details" modal.
@@ -260,15 +260,15 @@ All AJAX actions require `riseup_admin_nonce` and `manage_options` capability.
 
 1. If cached URL returns error → clear cache and re-resolve
 2. If resolution fails → log error and continue with master URL
-3. If master URL fails → update `last_error` and return error
+3. If master URL fails → update `LastError` and return error
 
 ### Error Storage
 
 Errors are stored in settings:
 ```php
 $resolver->saveSettings(array(
-    'last_error' => 'Connection timeout',
-    'last_check' => current_time('mysql', true),
+    'LastError' => 'Connection timeout',
+    'LastCheck' => current_time('mysql', true),
 ));
 ```
 
