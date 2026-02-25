@@ -102,6 +102,7 @@ const (
 	Columns
 	CreatedAt
 	UpdatedAt
+	Timestamp
 	ParentTable
 	ChildTable
 	FkColumn
@@ -266,6 +267,7 @@ var variantLabels = [...]string{
 	Columns:               "Columns",
 	CreatedAt:             "CreatedAt",
 	UpdatedAt:             "UpdatedAt",
+	Timestamp:             "Timestamp",
 	ParentTable:           "ParentTable",
 	ChildTable:            "ChildTable",
 	FkColumn:              "FkColumn",
@@ -430,6 +432,7 @@ var variantValues = [...]string{
 	Columns:               "columns",
 	CreatedAt:             "createdAt",
 	UpdatedAt:             "updatedAt",
+	Timestamp:             "timestamp",
 	ParentTable:           "parentTable",
 	ChildTable:            "childTable",
 	FkColumn:              "fkColumn",

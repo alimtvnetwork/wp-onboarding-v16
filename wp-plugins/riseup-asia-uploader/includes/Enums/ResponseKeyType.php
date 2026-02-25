@@ -133,8 +133,9 @@ enum ResponseKeyType: string
     case Columns        = 'columns';
 
     /** Temporal keys. */
-    case CreatedAt = 'createdAt';
-    case UpdatedAt = 'updatedAt';
+    case CreatedAt  = 'createdAt';
+    case UpdatedAt  = 'updatedAt';
+    case Timestamp  = 'timestamp';
 
     /** Analysis and dependency keys. */
     case ParentTable      = 'parentTable';

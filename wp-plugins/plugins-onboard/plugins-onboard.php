@@ -567,12 +567,12 @@ class PluginsOnboard {
             'invalid_route',
             "The endpoint '/{$path}' does not exist. Check the API documentation for available endpoints.",
             array(
-                'status'         => 404,
-                'plugin_version' => ONBOARD_PLUGIN_VERSION,
-                'timestamp'      => gmdate('c'),
-                'requested_path' => $path,
-                'method'         => $method,
-                'log_hint'       => 'Check the plugin error logs or the Activity Logs page for details.',
+                'status'        => 404,
+                'pluginVersion' => ONBOARD_PLUGIN_VERSION,
+                'timestamp'     => gmdate('c'),
+                'requestedPath' => $path,
+                'method'        => $method,
+                'logHint'       => 'Check the plugin error logs or the Activity Logs page for details.',
             )
         );
     }
@@ -603,10 +603,10 @@ class PluginsOnboard {
         $data = $response->get_data();
 
         // Add metadata if not already present.
-        if (is_array($data) && !isset($data['plugin_version'])) {
-            $data['plugin_version'] = ONBOARD_PLUGIN_VERSION;
+        if (is_array($data) && !isset($data['pluginVersion'])) {
+            $data['pluginVersion'] = ONBOARD_PLUGIN_VERSION;
             $data['timestamp'] = gmdate('c');
-            $data['log_hint'] = 'Check the plugin error logs or the Activity Logs page for details.';
+            $data['logHint'] = 'Check the plugin error logs or the Activity Logs page for details.';
             $response->set_data($data);
         }
 
