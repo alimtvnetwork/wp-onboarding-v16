@@ -323,7 +323,28 @@ var migrations = []Migration{
 func Migrate(db *DB, log *logger.Logger) error {
 	log.Info("Starting database migrations")
 
-	// Create migrations table if not exists
+	if err := ensureMigrationsTable(db, log); err != nil {
+		return err
+	}
+
+	currentVersion, err := getCurrentMigrationVersion(db, log)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("Current migration version", "version", currentVersion)
+
+	appliedCount, err := applyPendingMigrations(db, log, currentVersion)
+	if err != nil {
+		return err
+	}
+
+	logMigrationSummary(log, appliedCount, currentVersion)
+	return nil
+}
+
+// ensureMigrationsTable creates the migrations tracking table if it doesn't exist.
+func ensureMigrationsTable(db *DB, log *logger.Logger) error {
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS _migrations (
 			Version INTEGER PRIMARY KEY,
@@ -335,66 +356,75 @@ func Migrate(db *DB, log *logger.Logger) error {
 		log.Error("Failed to create migrations table", "error", err)
 		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to create migrations table")
 	}
+	return nil
+}
 
-	// Get current version
-	var currentVersion int
-	err = db.QueryRow("SELECT COALESCE(MAX(Version), 0) FROM _migrations").Scan(&currentVersion)
+// getCurrentMigrationVersion returns the highest applied migration version.
+func getCurrentMigrationVersion(db *DB, log *logger.Logger) (int, error) {
+	var version int
+	err := db.QueryRow("SELECT COALESCE(MAX(Version), 0) FROM _migrations").Scan(&version)
 	if err != nil {
 		log.Error("Failed to get current migration version", "error", err)
-		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to get current migration version")
+		return 0, apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to get current migration version")
 	}
+	return version, nil
+}
 
-	log.Debug("Current migration version", "version", currentVersion)
-
-	// Apply pending migrations
-	appliedCount := 0
+// applyPendingMigrations runs all migrations above currentVersion, returns count applied.
+func applyPendingMigrations(db *DB, log *logger.Logger, currentVersion int) (int, error) {
+	applied := 0
 	for _, m := range migrations {
 		if m.Version <= currentVersion {
 			continue
 		}
-
-		log.Info("Applying migration", "version", m.Version, "description", m.Description)
-
-		// Run migration in transaction
-		tx, err := db.Begin()
-		if err != nil {
-			log.Error("Failed to begin transaction", "version", m.Version, "error", err)
-			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to begin transaction").
-				WithDetails(fmt.Sprintf("version=%d", m.Version))
+		if err := applySingleMigration(db, log, m); err != nil {
+			return applied, err
 		}
+		applied++
+	}
+	return applied, nil
+}
 
-		if _, err := tx.Exec(m.SQL); err != nil {
-			tx.Rollback()
-			log.Error("Migration SQL failed", "version", m.Version, "description", m.Description, "error", err)
-			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to apply migration SQL").
-				WithDetails(fmt.Sprintf("version=%d, description=%s", m.Version, m.Description))
-		}
+// applySingleMigration runs one migration inside a transaction.
+func applySingleMigration(db *DB, log *logger.Logger, m Migration) error {
+	log.Info("Applying migration", "version", m.Version, "description", m.Description)
 
-		if _, err := tx.Exec(
-			"INSERT INTO _migrations (Version, Description) VALUES (?, ?)",
-			m.Version, m.Description,
-		); err != nil {
-			tx.Rollback()
-			log.Error("Failed to record migration", "version", m.Version, "error", err)
-			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to record migration").
-				WithDetails(fmt.Sprintf("version=%d", m.Version))
-		}
-
-		if err := tx.Commit(); err != nil {
-			log.Error("Failed to commit migration", "version", m.Version, "error", err)
-			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to commit migration").
-				WithDetails(fmt.Sprintf("version=%d", m.Version))
-		}
-
-		log.Info("Migration completed", "version", m.Version)
-		appliedCount++
+	tx, err := db.Begin()
+	if err != nil {
+		log.Error("Failed to begin transaction", "version", m.Version, "error", err)
+		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to begin transaction").
+			WithDetails(fmt.Sprintf("version=%d", m.Version))
 	}
 
+	if _, err := tx.Exec(m.SQL); err != nil {
+		tx.Rollback()
+		log.Error("Migration SQL failed", "version", m.Version, "description", m.Description, "error", err)
+		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to apply migration SQL").
+			WithDetails(fmt.Sprintf("version=%d, description=%s", m.Version, m.Description))
+	}
+
+	if _, err := tx.Exec("INSERT INTO _migrations (Version, Description) VALUES (?, ?)", m.Version, m.Description); err != nil {
+		tx.Rollback()
+		log.Error("Failed to record migration", "version", m.Version, "error", err)
+		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to record migration").
+			WithDetails(fmt.Sprintf("version=%d", m.Version))
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Error("Failed to commit migration", "version", m.Version, "error", err)
+		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to commit migration").
+			WithDetails(fmt.Sprintf("version=%d", m.Version))
+	}
+
+	log.Info("Migration completed", "version", m.Version)
+	return nil
+}
+
+// logMigrationSummary logs the final migration result.
+func logMigrationSummary(log *logger.Logger, appliedCount, currentVersion int) {
 	if appliedCount > 0 {
 		log.Info("Migrations applied", "count", appliedCount, "currentVersion", len(migrations))
 	} else {
 		log.Debug("No new migrations to apply", "currentVersion", currentVersion)
 	}
-
-	return nil
 }
