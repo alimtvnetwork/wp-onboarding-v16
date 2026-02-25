@@ -382,61 +382,72 @@ func (s *Service) handleRollback(pluginID, siteID int64, sessionID string, ctx c
 	}
 
 	rollbackStage := s.runStageWithSession(sessionID, "rollback", func() error {
-		s.broadcastProgress(pluginID, siteID, "rollback", 85, "Activation failed — rolling back...")
-		s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
-			What:  "Rolling back plugin after activation failure",
-			Why:   fmt.Sprintf("Activation failed: %s", activateStage.Message),
-			Where: siteInfo.URL,
-		})
-
-		// Step 1: Deactivate the broken plugin
-		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
-			What: "Deactivating broken plugin to stabilize site",
-		})
-		if disableErr := wpClient.DisablePluginViaUploader(mapping.RemoteSlug); disableErr != nil {
-			s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
-				What:   "Deactivation during rollback",
-				Result: fmt.Sprintf("Could not deactivate: %s (site may already be safe)", disableErr.Error()),
-			})
-		}
-
-		// Step 2: Re-upload pre-upload backup if available
-		if preUploadBackupZip != "" {
-			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
-				What: "Re-uploading pre-publish backup to restore previous version",
-			})
-			_, _, _, uploadErr := s.uploadPlugin(ctx, wpClient, preUploadBackupZip, mapping.RemoteSlug)
-			if uploadErr != nil {
-				return apperror.Wrap(uploadErr, apperror.ErrWPConnection, "rollback upload failed")
-			}
-			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
-				What:   "Rollback upload complete",
-				Result: "Previous plugin version restored successfully",
-			})
-		} else {
-			s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
-				What:   "No pre-upload backup available",
-				Result: "Plugin deactivated but files not restored. Manual intervention may be needed.",
-			})
-		}
-		return nil
+		return s.executeRollbackSteps(pluginID, siteID, sessionID, ctx, wpClient, mapping, siteInfo, preUploadBackupZip, activateStage)
 	})
 	result.Stages = append(result.Stages, rollbackStage)
+	s.reportRollbackOutcome(pluginID, siteID, sessionID, rollbackStage, result)
+}
 
+// executeRollbackSteps deactivates the broken plugin and optionally re-uploads the backup.
+func (s *Service) executeRollbackSteps(pluginID, siteID int64, sessionID string, ctx context.Context, wpClient *wordpress.Client, mapping *models.PluginMapping, siteInfo *models.Site, preUploadBackupZip string, activateStage Stage) error {
+	s.broadcastProgress(pluginID, siteID, "rollback", 85, "Activation failed — rolling back...")
+	s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
+		What:  "Rolling back plugin after activation failure",
+		Why:   fmt.Sprintf("Activation failed: %s", activateStage.Message),
+		Where: siteInfo.URL,
+	})
+
+	s.rollbackDeactivate(pluginID, siteID, sessionID, wpClient, mapping)
+	return s.rollbackRestore(pluginID, siteID, sessionID, ctx, wpClient, mapping, preUploadBackupZip)
+}
+
+// rollbackDeactivate deactivates the broken plugin during rollback.
+func (s *Service) rollbackDeactivate(pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, mapping *models.PluginMapping) {
+	s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+		What: "Deactivating broken plugin to stabilize site",
+	})
+	if disableErr := wpClient.DisablePluginViaUploader(mapping.RemoteSlug); disableErr != nil {
+		s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
+			What:   "Deactivation during rollback",
+			Result: fmt.Sprintf("Could not deactivate: %s (site may already be safe)", disableErr.Error()),
+		})
+	}
+}
+
+// rollbackRestore re-uploads the pre-upload backup if available.
+func (s *Service) rollbackRestore(pluginID, siteID int64, sessionID string, ctx context.Context, wpClient *wordpress.Client, mapping *models.PluginMapping, preUploadBackupZip string) error {
+	if preUploadBackupZip == "" {
+		s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
+			What:   "No pre-upload backup available",
+			Result: "Plugin deactivated but files not restored. Manual intervention may be needed.",
+		})
+		return nil
+	}
+
+	s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+		What: "Re-uploading pre-publish backup to restore previous version",
+	})
+	_, _, _, uploadErr := s.uploadPlugin(ctx, wpClient, preUploadBackupZip, mapping.RemoteSlug)
+	if uploadErr != nil {
+		return apperror.Wrap(uploadErr, apperror.ErrWPConnection, "rollback upload failed")
+	}
+	s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+		What:   "Rollback upload complete",
+		Result: "Previous plugin version restored successfully",
+	})
+	return nil
+}
+
+// reportRollbackOutcome logs and sets the final rollback status on the result.
+func (s *Service) reportRollbackOutcome(pluginID, siteID int64, sessionID string, rollbackStage Stage, result *PublishResult) {
 	if rollbackStage.Status.IsFailed() {
 		result.RollbackStatus = enumstatus.Failed.String()
 		result.RollbackMessage = rollbackStage.Message
-		s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Error.String(), "rollback", StageContext{
-			What:   "Rollback failed",
-			Result: rollbackStage.Message,
-		})
+		s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Error.String(), "rollback", StageContext{What: "Rollback failed", Result: rollbackStage.Message})
 	} else {
 		result.RollbackStatus = enumstatus.Success.String()
 		result.RollbackMessage = "Previous version restored"
-		s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Info.String(), "rollback", StageContext{
-			What:   "Rollback completed successfully",
-			Result: "Site should be stable with previous plugin version",
-		})
+		s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Info.String(), "rollback", StageContext{What: "Rollback completed successfully", Result: "Site should be stable with previous plugin version"})
 	}
 }
 

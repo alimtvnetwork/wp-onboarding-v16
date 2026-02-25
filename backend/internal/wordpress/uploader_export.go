@@ -221,7 +221,34 @@ func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID i
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
-	// Build query string
+	endpoint := buildErrorSessionsEndpoint(namespace, level, search, sinceID, limit, offset)
+
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "fetch remote error sessions")
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &APIError{
+			Operation: "fetch remote error sessions", Method: "GET", Endpoint: endpoint,
+			StatusCode: resp.StatusCode, ResponseBody: truncateBody(string(respBody), 4000),
+			StackTrace: captureStackTraceN(2, c.stackTraceDepth),
+		}
+	}
+
+	var result RemoteErrorSessionsResult
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode remote error sessions response")
+	}
+
+	return &result, nil
+}
+
+// buildErrorSessionsEndpoint constructs the endpoint URL with query parameters.
+func buildErrorSessionsEndpoint(namespace, level, search string, sinceID, limit, offset int) string {
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorSessions)
 	params := []string{}
 	if level != "" {
@@ -242,30 +269,5 @@ func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID i
 	if len(params) > 0 {
 		endpoint += "?" + strings.Join(params, "&")
 	}
-
-	resp, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "fetch remote error sessions")
-	}
-	defer resp.Body.Close()
-
-	respBody, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{
-			Operation:    "fetch remote error sessions",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(respBody), 4000),
-			StackTrace:   captureStackTraceN(2, c.stackTraceDepth),
-		}
-	}
-
-	var result RemoteErrorSessionsResult
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode remote error sessions response")
-	}
-
-	return &result, nil
+	return endpoint
 }
