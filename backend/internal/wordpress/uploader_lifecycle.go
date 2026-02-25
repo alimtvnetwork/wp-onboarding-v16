@@ -2,6 +2,7 @@ package wordpress
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -36,33 +37,14 @@ type pluginLifecycleInput struct {
 func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(input.Slug)
-
 	endpoint := "/" + namespace + input.Endpoint.String()
-	reqBody := PluginSlugRequest{Plugin: normalizedSlug}
-	reqBodyJSON, _ := json.Marshal(reqBody)
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return apperror.Wrap(err, input.ErrorCode, input.OperationName+" request failed").
-			WithSlug(normalizedSlug)
-	}
-	defer resp.Body.Close()
 
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return &APIError{
-			Operation:    input.OperationName + " via RiseupAsia Uploader",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			RequestBody:  string(reqBodyJSON),
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-			PluginSlugIn: normalizedSlug,
-		}
-	}
-
-	return nil
+	_, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body: PluginSlugRequest{Plugin: normalizedSlug}, Operation: input.OperationName + " via RiseupAsia Uploader",
+		PluginSlug: normalizedSlug, ErrorCode: input.ErrorCode,
+	})
+	return err
 }
 
 // CheckPluginExistsViaUploader checks if a plugin slug is installed on the remote site.
@@ -70,46 +52,37 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
-	reqBody := PluginSlugRequest{Plugin: normalizedSlug}
-	resp, err := c.request("POST", endpoint, reqBody)
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body: PluginSlugRequest{Plugin: normalizedSlug}, Operation: "check plugin exists via RiseupAsia Uploader",
+		PluginSlug: normalizedSlug, ErrorCode: apperror.ErrWPConnection,
+	})
 	if err != nil {
-		return false, "", "", apperror.Wrap(err, apperror.ErrWPConnection, "check plugin exists request failed").
-			WithSlug(normalizedSlug)
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return false, "", "", &APIError{
-			Operation:    "check plugin exists via RiseupAsia Uploader",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 4096),
-			PluginSlugIn: normalizedSlug,
-		}
+		return false, "", "", err
 	}
 
-	// Try envelope format
+	return parsePluginExistsResponse(data)
+}
+
+// parsePluginExistsResponse tries envelope format, then legacy flat format.
+func parsePluginExistsResponse(data []byte) (bool, string, string, error) {
 	type existsResult struct {
 		PluginSlug string `json:"pluginSlug"` // external key (Riseup Asia Uploader API)
 		Exists     bool   `json:"exists"`     // external key
 		Status     string `json:"status"`     // external key
 		PluginFile string `json:"pluginFile"` // external key
 	}
-	if results, ok := UnwrapResults[existsResult](bodyBytes); ok && len(results) > 0 {
+	if results, ok := UnwrapResults[existsResult](data); ok && len(results) > 0 {
 		return results[0].Exists, results[0].Status, results[0].PluginFile, nil
 	}
 
-	// Legacy fallback
 	var legacy struct {
 		Exists     bool   `json:"exists"`     // external key (Riseup Asia Uploader API)
 		Status     string `json:"status"`     // external key
 		PluginFile string `json:"pluginFile"` // external key
 	}
-	if err := json.Unmarshal(bodyBytes, &legacy); err != nil {
+	if err := json.Unmarshal(data, &legacy); err != nil {
 		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
 	}
 	return legacy.Exists, legacy.Status, legacy.PluginFile, nil
@@ -118,77 +91,63 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
 func (c *Client) EnablePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug:          slug,
-		Endpoint:      ep.Enable,
-		OperationName: "enable plugin",
-		ErrorCode:     apperror.ErrWPPluginActivate,
+		Slug: slug, Endpoint: ep.Enable,
+		OperationName: "enable plugin", ErrorCode: apperror.ErrWPPluginActivate,
 	})
 }
 
 // DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
 func (c *Client) DisablePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug:          slug,
-		Endpoint:      ep.Disable,
-		OperationName: "disable plugin",
-		ErrorCode:     apperror.ErrWPPluginActivate,
+		Slug: slug, Endpoint: ep.Disable,
+		OperationName: "disable plugin", ErrorCode: apperror.ErrWPPluginActivate,
 	})
 }
 
 // DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
 func (c *Client) DeletePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug:          slug,
-		Endpoint:      ep.Delete,
-		OperationName: "delete plugin",
-		ErrorCode:     apperror.ErrWPConnection,
+		Slug: slug, Endpoint: ep.Delete,
+		OperationName: "delete plugin", ErrorCode: apperror.ErrWPConnection,
 	})
 }
 
 // ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.
 func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	namespace := c.resolveNamespace()
-
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Plugins)
-	resp, err := c.request("GET", endpoint, nil)
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "list plugins",
+		ErrorCode: apperror.ErrWPPluginList,
+	})
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, apperror.New(apperror.ErrWPPluginList, "list plugins failed").
-			WithStatusCode(resp.StatusCode)
+	// Try envelope format first
+	if plugins, ok := UnwrapResults[UploaderPluginInfo](data); ok {
+		return plugins, nil
 	}
 
+	// Fall back to legacy flat format
 	var response struct {
 		Success bool                 `json:"success"` // external key (Riseup Asia Uploader API)
 		Count   int                  `json:"count"`   // external key
 		Plugins []UploaderPluginInfo `json:"plugins"` // external key
 	}
-
-	respBody, _ := io.ReadAll(resp.Body)
-
-	// Try envelope format first
-	if plugins, ok := UnwrapResults[UploaderPluginInfo](respBody); ok {
-		return plugins, nil
-	}
-
-	// Fall back to legacy flat format
-	if err := json.Unmarshal(respBody, &response); err != nil {
+	if err := json.Unmarshal(data, &response); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugins response")
 	}
-
 	return response.Plugins, nil
 }
 
 // ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
 	namespace := c.resolveNamespace()
-
 	endpoint := "/" + namespace + ep.Files.String()
-	reqBody := PluginSlugRequest{Plugin: slug}
-	resp, err := c.request("POST", endpoint, reqBody)
+
+	resp, err := c.request("POST", endpoint, PluginSlugRequest{Plugin: slug})
 	if err != nil {
 		return nil, err
 	}

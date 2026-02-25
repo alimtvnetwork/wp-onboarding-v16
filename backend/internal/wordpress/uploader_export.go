@@ -1,11 +1,7 @@
 package wordpress
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
 
 	"wp-plugin-publish/internal/enums/action"
 	ep "wp-plugin-publish/internal/enums/endpoint"
@@ -34,35 +30,11 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 	}
 
 	endpoint := "/" + namespace + ep.ExportPlugin.String()
-	reqBody := PluginSlugRequest{Plugin: slug}
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "export-plugin request failed").
-			WithSlug(slug)
-	}
-	defer resp.Body.Close()
-
-	respBytes, _ := io.ReadAll(resp.Body)
-	respBody := string(respBytes)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{
-			Operation:    "export plugin for rollback",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(respBody, 8192),
-			PluginSlugIn: slug,
-		}
-	}
-
-	var result ExportPluginResult
-	if err := json.Unmarshal(respBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode export-plugin result")
-	}
-
-	return &result, nil
+	return doAPICall[ExportPluginResult](c, apiCallInput{
+		Method: "POST", Endpoint: endpoint,
+		Body: PluginSlugRequest{Plugin: slug}, Operation: "export plugin for rollback",
+		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+	})
 }
 
 // ExportSelfResult represents the result of exporting the uploader plugin.
@@ -86,35 +58,16 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 	c.progress(action.ExportSelf.String(), stagestatus.Running.String(), "Exporting Riseup Asia Uploader plugin...", nil)
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ExportSelf)
-
-	resp, err := c.request("GET", endpoint, nil)
+	result, err := doAPICall[ExportSelfResult](c, apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "export self via Riseup Asia Uploader",
+		ErrorCode: apperror.ErrWPConnection,
+	})
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "export-self request failed")
-	}
-	defer resp.Body.Close()
-
-	respBytes, _ := io.ReadAll(resp.Body)
-	respBody := string(respBytes)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{
-			Operation:    "export self via Riseup Asia Uploader",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(respBody, 8192),
-		}
-	}
-
-	var result ExportSelfResult
-	if err := json.Unmarshal(respBytes, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode export-self result")
+		return nil, err
 	}
 
 	c.progress(action.ExportSelf.String(), stagestatus.Completed.String(), fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
-
-	return &result, nil
+	return result, nil
 }
 
 // =============================================================================
@@ -152,31 +105,10 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 	}
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorLogs)
-	resp, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "fetch remote error logs")
-	}
-	defer resp.Body.Close()
-
-	respBody, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{
-			Operation:    "fetch remote error logs",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(respBody), 4000),
-			StackTrace:   captureStackTraceN(2, c.stackTraceDepth),
-		}
-	}
-
-	var result RemoteErrorLogsResult
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode remote error logs response")
-	}
-
-	return &result, nil
+	return doAPICall[RemoteErrorLogsResult](c, apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "fetch remote error logs",
+		ErrorCode: apperror.ErrWPConnection,
+	})
 }
 
 // RemoteErrorSessionEntry represents a single structured error from the plugin's SQLite DB.
@@ -222,29 +154,10 @@ func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID i
 	}
 
 	endpoint := buildErrorSessionsEndpoint(namespace, level, search, sinceID, limit, offset)
-
-	resp, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "fetch remote error sessions")
-	}
-	defer resp.Body.Close()
-
-	respBody, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{
-			Operation: "fetch remote error sessions", Method: "GET", Endpoint: endpoint,
-			StatusCode: resp.StatusCode, ResponseBody: truncateBody(string(respBody), 4000),
-			StackTrace: captureStackTraceN(2, c.stackTraceDepth),
-		}
-	}
-
-	var result RemoteErrorSessionsResult
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode remote error sessions response")
-	}
-
-	return &result, nil
+	return doAPICall[RemoteErrorSessionsResult](c, apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "fetch remote error sessions",
+		ErrorCode: apperror.ErrWPConnection,
+	})
 }
 
 // buildErrorSessionsEndpoint constructs the endpoint URL with query parameters.

@@ -51,14 +51,9 @@ func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
 	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		return nil, &APIError{
-			Operation:    "export snapshot",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
+		return nil, c.buildCallError(apiCallInput{
+			Method: "POST", Endpoint: endpoint, Operation: "export snapshot",
+		}, resp.StatusCode, bodyBytes)
 	}
 
 	return resp, nil
@@ -66,31 +61,10 @@ func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
 func (c *Client) DownloadSnapshotZip(snapshotId int64) (*SnapshotDownloadResult, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsDownload)
-	reqBody := SnapshotIdRequest{Id: snapshotId}
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to request snapshot download")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "download snapshot zip",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	var result SnapshotDownloadResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode download response")
-	}
-	return &result, nil
+	return doAPICall[SnapshotDownloadResult](c, apiCallInput{
+		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsDownload),
+		Body: SnapshotIdRequest{Id: snapshotId}, Operation: "download snapshot zip",
+	})
 }
 
 // StreamSnapshotZip downloads the actual ZIP file from the WordPress download-file endpoint.
@@ -117,30 +91,18 @@ func (c *Client) StreamSnapshotZip(downloadURL string) (*http.Response, error) {
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsProviders)
-	resp, err := c.request("GET", endpoint, nil)
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: snapshotEndpoint(ep.SnapshotsProviders),
+		Operation: "get snapshot providers",
+	})
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot providers")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "get snapshot providers",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
+		return nil, err
 	}
 
 	var providers []SnapshotProvider
-	if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
+	if err := json.Unmarshal(data, &providers); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode providers response")
 	}
-
 	return providers, nil
 }
 
@@ -154,38 +116,25 @@ type AvailableTable struct {
 
 // GetAvailableTables returns the list of database tables available for snapshotting.
 func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
-	endpoint := snapshotEndpoint(ep.SnapshotsTables)
-	resp, err := c.request("GET", endpoint, nil)
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: snapshotEndpoint(ep.SnapshotsTables),
+		Operation: "get available tables",
+	})
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch available tables")
+		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "get available tables",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
 
 	// Try {success: true, tables: [...]} wrapper
 	var wrapper struct {
 		Tables []AvailableTable `json:"tables"` // external key
 	}
-	if err := json.Unmarshal(bodyBytes, &wrapper); err == nil && len(wrapper.Tables) > 0 {
+	if err := json.Unmarshal(data, &wrapper); err == nil && len(wrapper.Tables) > 0 {
 		return wrapper.Tables, nil
 	}
 
 	// Try plain array
 	var tables []AvailableTable
-	if err := json.Unmarshal(bodyBytes, &tables); err != nil {
+	if err := json.Unmarshal(data, &tables); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode tables response")
 	}
 	return tables, nil

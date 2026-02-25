@@ -3,7 +3,6 @@ package wordpress
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
 	"wp-plugin-publish/pkg/apperror"
@@ -11,74 +10,38 @@ import (
 
 // GetPlugins returns a list of installed plugins
 func (c *Client) GetPlugins() ([]PluginInfo, error) {
-	endpoint := WPCorePlugins
-	resp, err := c.request("GET", endpoint, nil)
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: WPCorePlugins, Operation: "get plugins list",
+	})
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "get plugins list",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
-	}
 
 	var plugins []PluginInfo
-	if err := json.NewDecoder(resp.Body).Decode(&plugins); err != nil {
+	if err := json.Unmarshal(data, &plugins); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugins response").
-			WithEndpoint(endpoint)
+			WithEndpoint(WPCorePlugins)
 	}
-
 	return plugins, nil
 }
 
 // GetPlugin returns information about a specific plugin
 func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(slug))
-	resp, err := c.request("GET", endpoint, nil)
+
+	data, err := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "get plugin",
+		PluginSlug: slug,
+	})
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == HttpStatusNotFound.Int() {
-		return nil, &APIError{
-			Operation:    "get plugin (not found)",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: "",
-			PluginSlugIn: slug,
-		}
-	}
-
-	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{
-			Operation:    "get plugin",
-			Method:       "GET",
-			Endpoint:     endpoint,
-			Url:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-			PluginSlugIn: slug,
-		}
-	}
 
 	var plugin PluginInfo
-	if err := json.NewDecoder(resp.Body).Decode(&plugin); err != nil {
+	if err := json.Unmarshal(data, &plugin); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugin response").
 			WithSlug(slug)
 	}
-
 	return &plugin, nil
 }
 
