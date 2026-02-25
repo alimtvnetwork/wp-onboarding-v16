@@ -73,18 +73,18 @@ data/request-sessions/
 
 ```go
 type RequestSession struct {
-    ID              string            `json:"id"`
-    Method          string            `json:"method"`
-    Path            string            `json:"path"`
-    QueryString     string            `json:"queryString,omitempty"`
-    RequestHeaders  map[string]string `json:"requestHeaders"`
-    RequestBody     string            `json:"requestBody,omitempty"`
-    ResponseStatus  int               `json:"responseStatus"`
-    ResponseBody    string            `json:"responseBody,omitempty"`
-    StartTime       time.Time         `json:"startTime"`
-    EndTime         time.Time         `json:"endTime"`
-    DurationMs      int64             `json:"durationMs"`
-    Error           string            `json:"error,omitempty"`
+    ID              string
+    Method          string
+    Path            string
+    QueryString     string            `json:",omitempty"`
+    RequestHeaders  map[string]string
+    RequestBody     string            `json:",omitempty"`
+    ResponseStatus  int
+    ResponseBody    string            `json:",omitempty"`
+    StartTime       time.Time
+    EndTime         time.Time
+    DurationMs      int64
+    Error           string            `json:",omitempty"`
 }
 ```
 

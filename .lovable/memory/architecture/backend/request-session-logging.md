@@ -44,18 +44,18 @@ data/request-sessions/
 
 ```go
 type RequestSession struct {
-    ID              string            `json:"id"`              // UUID
-    Method          string            `json:"method"`          // GET, POST, etc.
-    Path            string            `json:"path"`            // /api/v1/plugins
-    QueryString     string            `json:"queryString"`     // ?limit=10&offset=0
-    RequestHeaders  map[string]string `json:"requestHeaders"`  // Redacted sensitive
-    RequestBody     string            `json:"requestBody"`     // Truncated at 50KB
-    ResponseStatus  int               `json:"responseStatus"`  // 200, 404, 500, etc.
-    ResponseBody    string            `json:"responseBody"`    // Truncated at 50KB
-    StartTime       time.Time         `json:"startTime"`       // Request start
-    EndTime         time.Time         `json:"endTime"`         // Response complete
-    DurationMs      int64             `json:"durationMs"`      // Total duration
-    Error           string            `json:"error"`           // Extracted error message
+    ID              string                        // UUID
+    Method          string                        // GET, POST, etc.
+    Path            string                        // /api/v1/plugins
+    QueryString     string                        // ?limit=10&offset=0
+    RequestHeaders  map[string]string             // Redacted sensitive
+    RequestBody     string                        // Truncated at 50KB
+    ResponseStatus  int                           // 200, 404, 500, etc.
+    ResponseBody    string                        // Truncated at 50KB
+    StartTime       time.Time                     // Request start
+    EndTime         time.Time                     // Response complete
+    DurationMs      int64                         // Total duration
+    Error           string                        // Extracted error message
 }
 ```
 
@@ -162,8 +162,8 @@ When response status >= 400, the middleware attempts to extract error details:
 if status >= 400 && len(responseBody) > 0 {
     var errResp struct {
         Error struct {
-            Message string `json:"message"`
-        } `json:"error"`
+            Message string `json:"message"` // external key
+        } `json:"error"` // external key
     }
     if json.Unmarshal(responseBody, &errResp) == nil {
         session.Error = errResp.Error.Message
