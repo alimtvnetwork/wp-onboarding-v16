@@ -209,7 +209,7 @@ func (s *Service) readPluginDetected(path string) (*PluginDetected, error) {
 }
 
 // ValidatePath checks if a path is a valid WordPress plugin directory
-func (s *Service) ValidatePath(ctx context.Context, path string) error {
+func (s *Service) ValidatePath(ctx context.Context, path string) *apperror.AppError {
 	scan := s.ScanDirectory(ctx, path)
 	if scan.HasError() {
 		return scan.AppError()

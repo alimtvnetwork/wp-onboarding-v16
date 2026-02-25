@@ -11,5 +11,7 @@ Key rules:
 2. **Immediate wrapping**: When calling framework/external functions that return `error`, wrap the result into `*apperror.AppError` on the very next line — never pass raw `error` further up the call chain.
 3. **Positive guard checks**: Use `IsDefined()` (not `!IsInvalid()`) and `IsDefinedAndValid()` for enum/result validation. Never negate a negative method.
 4. **Result types**: All result wrappers (`dbutil.Result[T]`, `apperror.Result[T]`, etc.) store and return `*apperror.AppError` from `.AppError()`.
+5. **CompiledError()**: When `*apperror.AppError` must cross into the `error` interface boundary (e.g., final HTTP response, CLI output), use `appErr.CompiledError()` which returns a plain `error` containing the full diagnostic string (stack trace, values, cause chain). This is the ONLY sanctioned `AppError→error` conversion.
+6. **NormalizePluginSlug()**: Use `apperror.NormalizePluginSlug(slug)` for slug validation/normalization. Returns `(string, *apperror.AppError)`.
 
 This ensures stack traces, error codes, and diagnostic context are always preserved.
