@@ -1,7 +1,7 @@
 # Conventions
 
 > **Location:** `.lovable/memory/01-conventions.md`  
-> **Updated:** 2026-02-01
+> **Updated:** 2026-02-25
 
 ---
 
@@ -90,14 +90,18 @@ spec/wp-plugin/<plugin-name>/
 - **SQL columns:** PascalCase (`UserId`, `CreatedAt`, `IsEnabled`)
 - **ORM properties:** camelCase (`userId`, `createdAt`, `isEnabled`)
 
-### File Naming
-| Type | Convention | Example |
-|------|------------|---------|
-| Class file (non-namespaced) | `class-{kebab-case}.php` | `class-exam-manager.php` |
-| Enum/const file (namespaced, `Enums/`) | `{DefinitionName}Type.php` (PascalCase, PSR-4) | `PluginConfigType.php`, `OptionNameType.php` |
-| Template | `{template-name}.php` | `single-exam.php` |
+### File Naming (ALL Languages — PascalCase)
 
-> **Dual convention:** WordPress `class-kebab-case.php` applies to `includes/` classes. Namespaced types in `includes/Enums/` use PSR-4: file name = definition name, PascalCase, no prefix/hyphens/underscores.
+File names MUST use PascalCase matching the primary definition name. This applies to **all languages** (Go, PHP, TypeScript, PowerShell).
+
+| Language | Convention | Example |
+|----------|-----------|---------|
+| Go | `PascalCase.go` | `ClientApiCall.go`, `UploaderLifecycle.go` |
+| PHP (namespaced) | `PascalCase.php` | `StatusType.php`, `SnapshotManager.php` |
+| PHP (WP non-namespaced) | `class-{kebab-case}.php` | `class-exam-manager.php` |
+| TypeScript | `PascalCase.ts(x)` | `RemotePluginFileBrowser.tsx` |
+
+> **Go package directories** remain `snake_case` (e.g., `site_health/`). Only file names change.
 
 ### Class Naming
 | Type | Convention | Example |
