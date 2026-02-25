@@ -496,13 +496,15 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 func (s *serviceImpl) calculateFileHash(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", err
+		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for hashing").
+			WithFilePath(path)
 	}
 	defer file.Close()
 
 	hash := md5.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		return "", err
+		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to read file for hashing").
+			WithFilePath(path)
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil

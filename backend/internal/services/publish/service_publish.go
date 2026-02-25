@@ -182,7 +182,7 @@ func (s *Service) startPublishSession(pluginID, siteID int64, pluginInfo models.
 	sessionID, err := s.sessionService.StartSession(session.SessionTypePublish, pluginID, siteID, pluginInfo.Name, siteInfo.Name)
 	if err != nil {
 		s.log.Warn("Failed to start session", "error", err)
-		return "", err
+		return "", apperror.Wrap(err, apperror.ErrSessionInit, "failed to start publish session")
 	}
 	return sessionID, nil
 }

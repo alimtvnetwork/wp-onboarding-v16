@@ -36,7 +36,7 @@ type PluginServiceAdapter struct {
 func (a *PluginServiceAdapter) List(ctx context.Context) ([]models.Plugin, error) {
 	result := a.Service.List(ctx)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -44,7 +44,7 @@ func (a *PluginServiceAdapter) List(ctx context.Context) ([]models.Plugin, error
 func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.Plugin, error) {
 	result := a.Service.GetById(ctx, id)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -53,7 +53,7 @@ func (a *PluginServiceAdapter) GetById(ctx context.Context, id int64) (*models.P
 func (a *PluginServiceAdapter) Create(ctx context.Context, input plugin.CreateInput) (*models.Plugin, error) {
 	result := a.Service.Create(ctx, input)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -62,7 +62,7 @@ func (a *PluginServiceAdapter) Create(ctx context.Context, input plugin.CreateIn
 func (a *PluginServiceAdapter) Update(ctx context.Context, id int64, input plugin.UpdateInput) (*models.Plugin, error) {
 	result := a.Service.Update(ctx, id, input)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -75,7 +75,7 @@ func (a *PluginServiceAdapter) Delete(ctx context.Context, id int64) error {
 func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error) {
 	result := a.Service.GetMappings(ctx, pluginID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -83,7 +83,7 @@ func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) 
 func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginID int64, input plugin.CreateMappingInput) (*models.PluginMapping, error) {
 	result := a.Service.CreateMapping(ctx, input)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil
@@ -96,7 +96,7 @@ func (a *PluginServiceAdapter) DeleteMapping(ctx context.Context, id int64) erro
 func (a *PluginServiceAdapter) GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, error) {
 	result := a.Service.GetMappingsBySite(ctx, siteID)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	return result.Items(), nil
 }
@@ -112,7 +112,7 @@ func (a *PluginServiceAdapter) UpdateMappingsForSite(ctx context.Context, siteID
 func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (*plugin.ScanResult, error) {
 	result := a.Service.ScanDirectory(ctx, path)
 	if result.HasError() {
-		return nil, result.Error()
+		return nil, result.AppError()
 	}
 	v := result.Value()
 	return &v, nil

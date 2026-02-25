@@ -44,7 +44,8 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 
 	err = filepath.Walk(absPluginPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return apperror.Wrap(err, apperror.ErrFSRead, "failed to walk plugin directory").
+				WithFilePath(path)
 		}
 		if info.IsDir() {
 			return nil
@@ -52,7 +53,8 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 
 		relPath, err := filepath.Rel(absPluginPath, path)
 		if err != nil {
-			return err
+			return apperror.Wrap(err, apperror.ErrInternal, "failed to compute relative path").
+				WithFilePath(path)
 		}
 
 		// Check exclude patterns
@@ -72,17 +74,23 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 		zipEntryPath := filepath.ToSlash(filepath.Join(slug, relPath))
 		writer, err := zipWriter.Create(zipEntryPath)
 		if err != nil {
-			return err
+			return apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip entry").
+				WithFilePath(zipEntryPath)
 		}
 
 		file, err := os.Open(path)
 		if err != nil {
-			return err
+			return apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for zipping").
+				WithFilePath(path)
 		}
 		defer file.Close()
 
 		_, err = io.Copy(writer, file)
-		return err
+		if err != nil {
+			return apperror.Wrap(err, apperror.ErrFSZip, "failed to copy file into zip").
+				WithFilePath(relPath)
+		}
+		return nil
 	})
 
 	if err != nil {
@@ -152,7 +160,8 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 			if os.IsNotExist(err) {
 				continue
 			}
-			return "", err
+			return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to stat file for selective zip").
+				WithFilePath(relPath)
 		}
 		if info.IsDir() {
 			continue
@@ -164,7 +173,8 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 			zipWriter.Close()
 			zipFile.Close()
 			os.Remove(absZipPath)
-			return "", err
+			return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip entry").
+				WithFilePath(zipFilePath)
 		}
 
 		file, err := os.Open(fullPath)
@@ -172,7 +182,8 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 			zipWriter.Close()
 			zipFile.Close()
 			os.Remove(absZipPath)
-			return "", err
+			return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for selective zip").
+				WithFilePath(relPath)
 		}
 
 		_, copyErr := io.Copy(writer, file)
@@ -181,7 +192,8 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 			zipWriter.Close()
 			zipFile.Close()
 			os.Remove(absZipPath)
-			return "", copyErr
+			return "", apperror.Wrap(copyErr, apperror.ErrFSZip, "failed to copy file into selective zip").
+				WithFilePath(relPath)
 		}
 	}
 
