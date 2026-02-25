@@ -389,8 +389,8 @@ type pluginFileInput struct {
 	Path   string
 }
 
-// parsePluginFileInputOrFail parses site ID + plugin + path, writing error responses on failure.
-func parsePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (int64, pluginFileInput, bool) {
+// parseRemotePluginFileInputOrFail parses site ID + plugin slug + file path, writing error responses on failure.
+func parseRemotePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (int64, pluginFileInput, bool) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return 0, pluginFileInput{}, false
 	}
@@ -411,7 +411,7 @@ func parsePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (int64, 
 
 // GetRemotePluginFileContent returns the content of a specific file from a remote plugin
 func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
-	id, input, ok := parsePluginFileInputOrFail(w, r)
+	id, input, ok := parseRemotePluginFileInputOrFail(w, r)
 	if !ok {
 		return
 	}
