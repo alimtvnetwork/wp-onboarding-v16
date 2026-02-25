@@ -32,11 +32,11 @@ GET /wp-json/riseup-asia-uploader/v1/plugins/{slug}/files
 Returns:
 ```json
 {
-  "success": true,
-  "plugin": "my-plugin",
-  "totalFiles": 42,
-  "files": [
-    { "path": "includes/class-main.php", "hash": "abc123def456", "size": 4500, "modifiedAt": "2026-02-05T10:30:00Z" }
+  "Success": true,
+  "Plugin": "my-plugin",
+  "TotalFiles": 42,
+  "Files": [
+    { "Path": "includes/class-main.php", "Hash": "abc123def456", "Size": 4500, "ModifiedAt": "2026-02-05T10:30:00Z" }
   ]
 }
 ```
@@ -50,19 +50,19 @@ GET /api/v1/plugins/{id}/sites/{siteId}/preview
 Returns:
 ```json
 {
-  "pluginId": 3,
-  "pluginName": "My Plugin",
-  "siteId": 1,
-  "siteName": "Production",
-  "siteUrl": "https://example.com",
-  "remoteSlug": "my-plugin",
-  "totalFiles": 42,
-  "totalSize": 156789,
-  "added": 10,
-  "modified": 5,
-  "deleted": 2,
-  "files": [
-    { "path": "includes/class-main.php", "changeType": "modified", "size": 4500, "localHash": "abc123" }
+  "PluginId": 3,
+  "PluginName": "My Plugin",
+  "SiteId": 1,
+  "SiteName": "Production",
+  "SiteUrl": "https://example.com",
+  "RemoteSlug": "my-plugin",
+  "TotalFiles": 42,
+  "TotalSize": 156789,
+  "Added": 10,
+  "Modified": 5,
+  "Deleted": 2,
+  "Files": [
+    { "Path": "includes/class-main.php", "ChangeType": "modified", "Size": 4500, "LocalHash": "abc123" }
   ]
 }
 ```

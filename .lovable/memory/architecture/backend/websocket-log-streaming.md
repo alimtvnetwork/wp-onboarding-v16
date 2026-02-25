@@ -10,17 +10,17 @@ Backend operations broadcast detailed execution logs via WebSocket for real-time
 All log events use the `log` event type with this payload:
 ```json
 {
-  "type": "log",
-  "data": {
-    "operationType": "publish" | "sync" | "backup",
-    "pluginId": 123,
-    "siteId": 456,
-    "log": {
-      "timestamp": "2026-02-04T19:00:00Z",
-      "level": "debug" | "info" | "warn" | "error",
-      "step": "backup" | "package" | "upload" | "activate" | etc.,
-      "message": "Human-readable log message",
-      "details": { optional additional context }
+  "Type": "log",
+  "Data": {
+    "OperationType": "publish" | "sync" | "backup",
+    "PluginId": 123,
+    "SiteId": 456,
+    "Log": {
+      "Timestamp": "2026-02-04T19:00:00Z",
+      "Level": "debug" | "info" | "warn" | "error",
+      "Step": "backup" | "package" | "upload" | "activate" | etc.,
+      "Message": "Human-readable log message",
+      "Details": { optional additional context }
     }
   }
 }
@@ -33,16 +33,16 @@ All log events use the `log` event type with this payload:
 hub.BroadcastOperationLog(operationType string, pluginID, siteID int64, entry OperationLogEntry)
 
 // Convenience methods
-hub.BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details map[string]interface{})
-hub.BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details map[string]interface{})
-hub.BroadcastBackupLog(pluginID int64, level, step, message string, details map[string]interface{})
+hub.BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details map[string]any)
+hub.BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details map[string]any)
+hub.BroadcastBackupLog(pluginID int64, level, step, message string, details map[string]any)
 ```
 
 ### Frontend Consumption
 
 The frontend `PublishProgressDialog` and other live log components:
 1. Subscribe to `log` events via `wsClient.on(WS_EVENTS.LOG, handler)`
-2. Filter by `pluginId` and `siteId` to show only relevant logs
+2. Filter by `PluginId` and `SiteId` to show only relevant logs
 3. Store logs in state for display in collapsible log panel
 4. Pass logs to error store when errors occur for full report generation
 
@@ -54,9 +54,9 @@ Every long-running operation step should broadcast a log:
 s.wsHub.BroadcastPublishLog(pluginID, siteID, "info", "backup", "Creating backup...", nil)
 
 // On success
-s.wsHub.BroadcastPublishLog(pluginID, siteID, "info", "backup", "Backup created successfully", map[string]interface{}{
-  "backupId": backupID,
-  "size": fileSize,
+s.wsHub.BroadcastPublishLog(pluginID, siteID, "info", "backup", "Backup created successfully", map[string]any{
+  "BackupId": backupID,
+  "Size": fileSize,
 })
 
 // On error

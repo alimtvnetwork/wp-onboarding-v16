@@ -80,7 +80,7 @@ add_filter('plugins_api', array($this, 'plugin_info'), 10, 3);
 
 The update server can return either:
 
-1. **JSON metadata** (recommended):
+1. **JSON metadata** (recommended — external keys from WordPress update API):
 ```json
 {
     "version": "1.9.0",

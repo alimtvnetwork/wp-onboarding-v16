@@ -72,10 +72,10 @@ All file-related logs MUST include:
 ```go
 s.broadcastDetailedLog(pluginID, siteID, "info", "upload", 
     fmt.Sprintf("Uploading to %s", fullURL), 
-    map[string]interface{}{
-        "zipPath": absZipPath,      // Absolute path
-        "url":     fullURL,          // Full URL
-        "size":    fileInfo.Size(),  // Size in bytes
+    map[string]any{
+        "ZipPath": absZipPath,      // Absolute path
+        "Url":     fullURL,          // Full URL
+        "Size":    fileInfo.Size(),  // Size in bytes
     })
 ```
 

@@ -31,13 +31,13 @@ logs, err := sessionService.GetSessionLogs(sessionID)
 
 ## WebSocket Integration
 
-All WebSocket messages include `sessionId` for frontend correlation:
+All WebSocket messages include `SessionId` for frontend correlation:
 
 ```json
 {
-  "type": "publish_progress",
-  "sessionId": "abc-123-def-456",
-  "data": { "pluginId": 3, "stage": "upload" }
+  "Type": "publish_progress",
+  "SessionId": "abc-123-def-456",
+  "Data": { "PluginId": 3, "Stage": "upload" }
 }
 ```
 
