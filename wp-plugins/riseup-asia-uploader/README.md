@@ -160,11 +160,11 @@ Full development standards, coding guidelines, and architectural specifications 
 
 | Document | Path |
 |----------|------|
-| **Coding Guidelines** | [`spec/07-wordpress-plugin-development/11-coding-guidelines.md`](../../spec/07-wordpress-plugin-development/11-coding-guidelines.md) |
-| **Phase 7 Completion Report** | [`spec/07-wordpress-plugin-development/12-phase-7-completion-report.md`](../../spec/07-wordpress-plugin-development/12-phase-7-completion-report.md) |
-| **Plugin Development Spec** | [`spec/07-wordpress-plugin-development/00-overview.md`](../../spec/07-wordpress-plugin-development/00-overview.md) |
-| **PHP Standards** | [`spec/04-php-standards/readme.md`](../../spec/04-php-standards/readme.md) |
-| **Error Handling** | [`spec/05-error-manage/01-error-handling/readme.md`](../../spec/05-error-manage/01-error-handling/readme.md) |
+| **Coding Guidelines** | [`spec/09-wordpress-plugin-development/11-coding-guidelines.md`](../../spec/09-wordpress-plugin-development/11-coding-guidelines.md) |
+| **Phase 7 Completion Report** | [`spec/09-wordpress-plugin-development/12-phase-7-completion-report.md`](../../spec/09-wordpress-plugin-development/12-phase-7-completion-report.md) |
+| **Plugin Development Spec** | [`spec/09-wordpress-plugin-development/00-overview.md`](../../spec/09-wordpress-plugin-development/00-overview.md) |
+| **PHP Standards** | [`spec/06-php-standards/readme.md`](../../spec/06-php-standards/readme.md) |
+| **Error Handling** | [`spec/07-error-manage/01-error-handling/readme.md`](../../spec/07-error-manage/01-error-handling/readme.md) |
 
 ---
 

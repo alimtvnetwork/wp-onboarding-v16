@@ -1,6 +1,6 @@
 # Template vs Project-Specific Differences
 
-> **Location:** `spec/10-powershell-integration/01-template-vs-project-differences.md`  
+> **Location:** `spec/12-powershell-integration/01-template-vs-project-differences.md`  
 > **Updated:** 2026-02-09
 
 ---

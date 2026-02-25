@@ -2,7 +2,7 @@
 
 > **Created:** 2026-02-12  
 > **Priority:** CRITICAL  
-> **Spec Reference:** `spec/02-typescript-standards/readme.md` v2.0.0  
+> **Spec Reference:** `spec/04-typescript-standards/readme.md` v2.0.0  
 > **Goal:** Eliminate all `any`, untyped `unknown`, `Record<string, unknown>` in API signatures, and magic strings/numbers
 
 ---

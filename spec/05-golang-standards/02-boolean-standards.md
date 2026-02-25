@@ -145,4 +145,4 @@ if isNonApiRoute {
 
 ## 6. Cross-Language Alignment
 
-This standard mirrors the PHP Boolean Guard System (P1–P6) with Go-specific exemptions for idiomatic patterns (comma-ok, handler guards, error-nil checks). See `spec/04-php-standards/naming-conventions.md` for the PHP counterpart.
+This standard mirrors the PHP Boolean Guard System (P1–P6) with Go-specific exemptions for idiomatic patterns (comma-ok, handler guards, error-nil checks). See `spec/06-php-standards/naming-conventions.md` for the PHP counterpart.

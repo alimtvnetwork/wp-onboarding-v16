@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# GE-1 Enforcement Lint — Generic Enforce Pattern (spec/12-generic-enforce/)
+# GE-1 Enforcement Lint — Generic Enforce Pattern (spec/14-generic-enforce/)
 #
 # Flags violations of the zero-loose-types policy in non-framework code:
 #   - Record<string, unknown>  (TS)
