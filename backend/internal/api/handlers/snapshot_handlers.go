@@ -386,7 +386,7 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 
 	// Read snapshotId from POST body
 	var body struct {
-		SnapshotId int64 `json:"snapshotId"`
+		SnapshotId int64
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotId <= 0 {
 		respondError(

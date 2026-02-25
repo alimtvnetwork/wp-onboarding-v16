@@ -12,22 +12,22 @@ import (
 
 // SiteCreateInput represents the request body for creating a site
 type SiteCreateInput struct {
-	Name     string `json:"name"`
-	Url      string `json:"url"`
-	Username string `json:"username"`
+	Name     string
+	Url      string
+	Username string
 	// Accept both legacy "password" and frontend "applicationPassword"
-	Password            string `json:"password,omitempty"`
-	ApplicationPassword string `json:"applicationPassword,omitempty"`
+	Password            string `json:",omitempty"`
+	ApplicationPassword string `json:",omitempty"`
 }
 
 // SiteUpdateInput represents the request body for updating a site
 type SiteUpdateInput struct {
-	Name     *string `json:"name,omitempty"`
-	Url      *string `json:"url,omitempty"`
-	Username *string `json:"username,omitempty"`
+	Name     *string `json:",omitempty"`
+	Url      *string `json:",omitempty"`
+	Username *string `json:",omitempty"`
 	// Accept both legacy "password" and frontend "applicationPassword"
-	Password            *string `json:"password,omitempty"`
-	ApplicationPassword *string `json:"applicationPassword,omitempty"`
+	Password            *string `json:",omitempty"`
+	ApplicationPassword *string `json:",omitempty"`
 }
 
 // GetSites returns all registered WordPress sites
@@ -192,9 +192,9 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Url      string `json:"url"`
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Url      string
+		Username string
+		Password string
 	}
 	if !decodeJSON(w, r, &input) {
 		return
@@ -245,7 +245,7 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 
 	// Optional: allow specifying a custom uploader path in the request body
 	var input struct {
-		UploaderPath string `json:"uploaderPath,omitempty"`
+		UploaderPath string `json:",omitempty"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&input)
 
@@ -271,8 +271,8 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		SiteIds      []int64 `json:"siteIds"`
-		UploaderPath string  `json:"uploaderPath,omitempty"`
+		SiteIds      []int64
+		UploaderPath string `json:",omitempty"`
 	}
 	if !decodeJSON(w, r, &input) {
 		return
@@ -326,8 +326,8 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 
 // remotePluginInput is the JSON body struct for remote plugin actions
 type remotePluginInput struct {
-	Plugin string `json:"plugin"`
-	Path   string `json:"path,omitempty"`
+	Plugin string
+	Path   string `json:",omitempty"`
 }
 
 // parseRemotePluginInput reads and validates the plugin slug from JSON body
@@ -630,8 +630,8 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Plugin string `json:"plugin"`
-		Path   string `json:"path"`
+		Plugin string
+		Path   string
 	}
 	if !decodeJSON(w, r, &input) {
 		return

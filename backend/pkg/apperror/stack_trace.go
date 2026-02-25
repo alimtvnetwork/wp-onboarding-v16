@@ -12,9 +12,9 @@ const DefaultMaxFrames = 18
 
 // StackFrame represents a single frame in a captured stack trace.
 type StackFrame struct {
-	Function string `json:"function"`
-	File     string `json:"file"`
-	Line     int    `json:"line"`
+	Function string
+	File     string
+	Line     int
 }
 
 // String formats the frame as "function\n      file:line".
@@ -24,8 +24,8 @@ func (f StackFrame) String() string {
 
 // StackTrace holds captured frames and an optional previous trace from merging.
 type StackTrace struct {
-	Frames        []StackFrame `json:"frames"`
-	PreviousTrace string       `json:"previousTrace,omitempty"`
+	Frames        []StackFrame
+	PreviousTrace string `json:",omitempty"`
 }
 
 // CaptureStack captures a stack trace, skipping the given number of frames.

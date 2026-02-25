@@ -43,11 +43,11 @@ type QueueItem struct {
 
 // QueueStatus provides queue state overview
 type QueueStatus struct {
-	Active    int          `json:"active"`
-	Queued    int          `json:"queued"`
-	Completed int          `json:"completed"`
-	Failed    int          `json:"failed"`
-	Items     []QueueItem  `json:"items"`
+	Active    int
+	Queued    int
+	Completed int
+	Failed    int
+	Items     []QueueItem
 }
 
 // PublishQueue manages concurrent publish operations with rate limiting
