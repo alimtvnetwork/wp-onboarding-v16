@@ -494,7 +494,7 @@ func (s *Service) SaveError(input SaveErrorInput) {
 	}
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		if s.log != nil {
-			s.log.Error("Failed to write error.log", "sessionId", sessionID, "error", err)
+			s.log.Error("Failed to write error.log", "sessionId", input.SessionID, "error", err)
 		}
 	}
 }
