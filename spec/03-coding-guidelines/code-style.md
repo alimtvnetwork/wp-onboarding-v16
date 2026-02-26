@@ -709,13 +709,22 @@ function buildRecord(
 // ❌ FORBIDDEN (>2 params on one line)
 func BuildRecord(label string, path string, success bool, errMsg string) {
 
-// ✅ REQUIRED
+// ✅ REQUIRED — multi-line if you must keep individual params
 func BuildRecord(
 	label string,
 	path string,
 	success bool,
 	errMsg string,
 ) {
+
+// ✅✅ PREFERRED — use a struct (see go-function-parameters guideline)
+type BuildRecordInput struct {
+	Label   string
+	Path    string
+	Success bool
+	ErrMsg  string
+}
+func BuildRecord(input BuildRecordInput) {
 ```
 
 ### 9b: Function Calls (>2 Arguments)
@@ -764,13 +773,77 @@ const result = fetchData(url, options);
 // ❌ FORBIDDEN (>2 args on one line)
 result := buildRecord(label, path, true, errMsg)
 
-// ✅ REQUIRED
+// ✅ REQUIRED — multi-line call
 result := buildRecord(
 	label,
 	path,
 	true,
 	errMsg,
 )
+
+// ✅✅ PREFERRED — struct literal (self-documenting fields)
+result := buildRecord(BuildRecordInput{
+	Label:   label,
+	Path:    path,
+	Success: true,
+	ErrMsg:  errMsg,
+})
+```
+
+### 9d: Go Struct Input Pattern — Canonical Examples
+
+When a Go function exceeds 3 parameters (excluding `context.Context`), **always** use a struct input. This is the **preferred** approach over multi-line individual parameters.
+
+```go
+// ── ProgressEvent — WordPress client callbacks ──────────────
+type ProgressEvent struct {
+	Step    string
+	Status  string
+	Message string
+	Details ProgressDetails
+}
+func (c *Client) progress(event ProgressEvent)
+
+// ── OperationLogInput — WebSocket hub broadcasting ──────────
+type OperationLogInput struct {
+	PluginID  int64
+	SiteID    int64
+	SessionID string
+	Entry     OperationLogEntry
+}
+func (h *Hub) BroadcastPublishLog(input OperationLogInput)
+func (h *Hub) BroadcastPublishLogWithSession(input OperationLogInput)
+
+// ── ConnectionProgressInput — Site connection progress ──────
+type ConnectionProgressInput struct {
+	SiteID  int64
+	Step    string
+	Status  string
+	Message string
+	Details json.RawMessage
+}
+
+// ── publishContext — Pipeline-scoped context struct ──────────
+// For multi-stage pipelines where 3+ identifiers flow through every method
+type publishContext struct {
+	PluginID  int64
+	SiteID    int64
+	SessionID string
+	WPClient  *wordpress.Client
+	Mapping   *models.PluginMapping
+	SiteInfo  *models.Site
+}
+func (s *Service) executeUploadStage(ctx context.Context, pctx *publishContext, zipPath string) (bool, Stage)
+
+// ── ProcessErrorInput — Logger ──────────────────────────────
+type ProcessErrorInput struct {
+	ProcessName string
+	Command     string
+	Err         error
+	Stdout      string
+	Stderr      string
+}
+func (l *Logger) LogProcessError(input ProcessErrorInput)
 ```
 
 ### 9c: PHP Arrays — Each Item on Its Own Line
