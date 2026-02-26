@@ -54,7 +54,7 @@ func respondErrorWithSession(
 	err error,
 ) {
 	resp := envelope.ErrorWithStack(status.Int(), code, message)
-	if appErr, ok := err.(*apperror.AppError); ok {
+	if appErr := apperror.Extract(err); appErr != nil {
 		if appErr.Diagnostic.SessionId != "" {
 			resp = resp.WithSessionId(appErr.Diagnostic.SessionId)
 		}

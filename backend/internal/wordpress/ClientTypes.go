@@ -1,7 +1,35 @@
 package wordpress
 
-import "fmt"
-import "strings"
+import (
+	"fmt"
+	"os/exec"
+	"strings"
+)
+
+// ExtractAPIError returns the *APIError from an error, or nil if not an APIError.
+// This is the centralized extraction point — callers MUST use this instead of inline type assertions.
+func ExtractAPIError(err error) *APIError {
+	if err == nil {
+		return nil
+	}
+	apiErr, ok := err.(*APIError)
+	if !ok {
+		return nil
+	}
+	return apiErr
+}
+
+// ExtractExitError returns the *exec.ExitError from an error, or nil if not an ExitError.
+func ExtractExitError(err error) *exec.ExitError {
+	if err == nil {
+		return nil
+	}
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		return nil
+	}
+	return exitErr
+}
 
 // APIError contains rich request/response context for failed WordPress REST calls.
 // It intentionally keeps Error() short/stable (so user-facing messages remain readable)

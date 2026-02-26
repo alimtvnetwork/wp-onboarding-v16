@@ -311,7 +311,7 @@ func (s *Service) Build(ctx context.Context, pluginId int64) apperror.Result[Bui
 	if err != nil {
 		result.IsSuccess = false
 		result.Error = stderr.String()
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		if exitErr := wordpress.ExtractExitError(err); exitErr != nil {
 			result.ExitCode = exitErr.ExitCode()
 		}
 

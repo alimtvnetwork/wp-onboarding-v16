@@ -29,7 +29,7 @@ type SiteServiceInterface interface {
 	InvalidateRemotePluginsCache(ctx context.Context, siteId int64) error
 	EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error
 	DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error
-	CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (bool, string, string, error)
+	CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, error)
 	DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error
 	GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*site.RemotePluginFilesResult, error)
 	GetRemotePluginFileContent(ctx context.Context, siteId int64, pluginSlug, filePath string) (string, error)
@@ -141,7 +141,7 @@ func (a *SiteServiceAdapter) DisableRemotePlugin(ctx context.Context, siteId int
 	return a.Service.DisableRemotePlugin(ctx, siteId, pluginSlug)
 }
 
-func (a *SiteServiceAdapter) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (bool, string, string, error) {
+func (a *SiteServiceAdapter) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, error) {
 	return a.Service.CheckRemotePluginExists(ctx, siteId, pluginSlug)
 }
 

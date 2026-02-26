@@ -35,16 +35,14 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 	zipSize := getFileSize(zipPath)
 	s.broadcastProgress(pctx.progress(publishstep.Uploading, 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
 
-	type uploadOut struct {
-		isPerformed  bool
-		uploadResult *wordpress.OnboardUploadResult
-		isActivated  bool
-	}
 	retryCfg := DefaultRetryConfig()
-	uploadVal, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (uploadOut, *apperror.AppError) {
-		p, ur, a, e := s.uploadPlugin(ctx, pctx.WPClient, zipPath, pctx.Mapping.RemoteSlug)
+	uploadOutcome, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (UploadOutcome, *apperror.AppError) {
+		result := s.uploadPlugin(ctx, pctx.WPClient, zipPath, pctx.Mapping.RemoteSlug)
+		if result.HasError() {
+			return UploadOutcome{}, result.AppError()
+		}
 
-		return uploadOut{p, ur, a}, e
+		return result.Value(), nil
 	})
 
 	if retryResult.LastError != nil {
@@ -53,13 +51,13 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 		return false, apperror.Wrap(retryResult.LastError, apperror.ErrWPConnection, "plugin upload failed")
 	}
 
-	if uploadVal.isPerformed {
+	if uploadOutcome.IsPerformed {
 		successInput := logUploadSuccessInput{
 			ZipSize:      zipSize,
 			StartTime:    startTime,
-			IsActivated:  uploadVal.isActivated,
+			IsActivated:  uploadOutcome.IsActivated,
 			Attempts:     retryResult.Attempts,
-			UploadResult: uploadVal.uploadResult,
+			UploadResult: uploadOutcome.UploadResult,
 		}
 		s.logUploadSuccess(pctx, successInput)
 	} else {
@@ -71,7 +69,7 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 		s.broadcastStageLog(simLog)
 	}
 
-	return uploadVal.isActivated, nil
+	return uploadOutcome.IsActivated, nil
 }
 
 // getFileSize returns the file size or 0 on error.

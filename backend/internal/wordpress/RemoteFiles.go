@@ -186,7 +186,7 @@ func validateSuccessAndReturn[T any](isSuccess bool, data T, operation, slug str
 
 // mapNotFoundError checks if err is an APIError with 404 status and returns a typed not-found error.
 func mapNotFoundError(err error, message, identifier string) error {
-	if apiErr, ok := err.(*APIError); ok && apiErr.StatusCode == HttpStatusNotFound.Int() {
+	if apiErr := ExtractAPIError(err); apiErr != nil && apiErr.StatusCode == HttpStatusNotFound.Int() {
 		return apperror.New(apperror.ErrNotFound, message).WithValue("identifier", identifier)
 	}
 	return err

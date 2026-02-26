@@ -19,35 +19,45 @@ type apiCallInput struct {
 	ErrorCode  string // optional: apperror wrap code (defaults to ErrInternal)
 }
 
-// doAPICallWithStatus sends the request and returns raw body bytes + HTTP status code.
+// APICallResponse holds the raw body and status code from an API call.
+type APICallResponse struct {
+	Body       []byte
+	StatusCode int
+}
+
+// doAPICallWithStatus sends the request and returns the raw response.
 // Unlike doAPICallRaw, it does NOT validate the status code — the caller decides how to handle it.
 // The error return is only for transport-level failures (DNS, timeout, request creation).
-func (c *Client) doAPICallWithStatus(input apiCallInput) ([]byte, int, error) {
+func (c *Client) doAPICallWithStatus(input apiCallInput) (*APICallResponse, error) {
 	resp, err := c.request(input.Method, input.Endpoint, input.Body)
 	if err != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
-		return nil, 0, apperror.Wrap(err, code, input.Operation)
+		return nil, apperror.Wrap(err, code, input.Operation)
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
-	return bodyBytes, resp.StatusCode, nil
+	result := &APICallResponse{
+		Body:       bodyBytes,
+		StatusCode: resp.StatusCode,
+	}
+	return result, nil
 }
 
 // doAPICallRaw sends the request, checks the status code, and returns raw body bytes on success.
 func (c *Client) doAPICallRaw(input apiCallInput) ([]byte, error) {
-	body, statusCode, err := c.doAPICallWithStatus(input)
+	callResp, err := c.doAPICallWithStatus(input)
 	if err != nil {
 		return nil, err
 	}
 
-	if !isOkStatus(statusCode, input.OkStatuses) {
-		return nil, c.buildCallError(input, statusCode, body)
+	if !isOkStatus(callResp.StatusCode, input.OkStatuses) {
+		return nil, c.buildCallError(input, callResp.StatusCode, callResp.Body)
 	}
 
-	return body, nil
+	return callResp.Body, nil
 }
 
 // doAPICallStream sends the request, validates the status code, and returns the raw HTTP response.

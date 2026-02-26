@@ -24,8 +24,8 @@ func (s *Service) buildPhpStackFrames(details *ExtractedErrorDetails) []session.
 func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 	details := &ExtractedErrorDetails{Error: err.Error()}
 
-	apiErr, ok := err.(*wordpress.APIError)
-	if !ok {
+	apiErr := wordpress.ExtractAPIError(err)
+	if apiErr == nil {
 		return details
 	}
 
