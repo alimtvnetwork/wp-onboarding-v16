@@ -98,7 +98,7 @@ func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.
 		return nil, "", apperror.Wrap(err, apperror.ErrFSRead, "stream zip to multipart")
 	}
 
-	writeUploadFields(writer, uc.Slug, isActivate, source)
+	writeUploadFields(uploadFieldsInput{Writer: writer, Slug: uc.Slug, IsActivate: isActivate, Source: source})
 
 	if err := writer.Close(); err != nil {
 		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
@@ -107,15 +107,23 @@ func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.
 	return &requestBody, writer.FormDataContentType(), nil
 }
 
+// uploadFieldsInput bundles parameters for writeUploadFields.
+type uploadFieldsInput struct {
+	Writer     *multipart.Writer
+	Slug       string
+	IsActivate bool
+	Source     uploadsource.Variant
+}
+
 // writeUploadFields adds form fields to the multipart writer.
-func writeUploadFields(writer *multipart.Writer, slug string, isActivate bool, source uploadsource.Variant) {
-	_ = writer.WriteField("slug", slug)
-	if isActivate {
-		_ = writer.WriteField("activate", "1")
+func writeUploadFields(input uploadFieldsInput) {
+	_ = input.Writer.WriteField("slug", input.Slug)
+	if input.IsActivate {
+		_ = input.Writer.WriteField("activate", "1")
 	} else {
-		_ = writer.WriteField("activate", "0")
+		_ = input.Writer.WriteField("activate", "0")
 	}
-	_ = writer.WriteField("upload_source", source.String())
+	_ = input.Writer.WriteField("upload_source", input.Source.String())
 }
 
 // executeUploadHTTP sends the multipart upload request and parses the response.

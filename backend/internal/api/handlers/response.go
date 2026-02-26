@@ -128,7 +128,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 }
 
 // parseID extracts a URL path param as int64. Returns false and writes 400 on failure.
-func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (int64, bool) {
+func parseID(w http.ResponseWriter, r *http.Request, paramName string) (int64, bool) {
 	id, err := getIDParam(r, paramName)
 	if err != nil {
 		respondError(

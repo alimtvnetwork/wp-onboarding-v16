@@ -90,7 +90,7 @@ func buildImportMultipart(zipPath string) (*bytes.Buffer, string, error) {
 
 // executeImportRequest sends the multipart import and parses the response.
 func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, contentType string) (*SnapshotImportResult, error) {
-	resp, err := c.requestMultipart("POST", endpoint, body, contentType)
+	resp, err := c.requestMultipart(multipartInput{Method: "POST", Endpoint: endpoint, Body: body, ContentType: contentType})
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to import snapshot")
 	}

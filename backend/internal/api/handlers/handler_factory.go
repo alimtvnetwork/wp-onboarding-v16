@@ -14,22 +14,26 @@ import (
 
 // --- Generic Handler Factories ---
 
+// handlerIDConfig bundles parameters for single-ID handler factories.
+type handlerIDConfig struct {
+	GetService  func() any
+	ServiceName string
+	ParamName   string
+	ErrCode     string
+}
+
 // handleActionByID creates a handler: requireService → parseID → fn(ctx, id) → respondSuccess
 // Use for endpoints that take a single URL ID param and return (any, error).
 func handleActionByID(
-	getService func() any,
-	serviceName string,
-	paramName string,
-	paramLabel string,
-	errCode string,
+	cfg handlerIDConfig,
 	fn func(ctx context.Context, id int64) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, getService(), serviceName) {
+		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
-		id, ok := parseID(w, r, paramName, paramLabel)
+		id, ok := parseID(w, r, cfg.ParamName)
 		if !ok {
 			return
 		}
@@ -39,7 +43,7 @@ func handleActionByID(
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
-				errCode,
+				cfg.ErrCode,
 				err.Error(),
 			)
 
@@ -53,19 +57,15 @@ func handleActionByID(
 // handleDeleteByID creates a handler: requireService → parseID → fn(ctx, id) → respondDeleted
 // Use for endpoints that delete a resource by its URL ID param.
 func handleDeleteByID(
-	getService func() any,
-	serviceName string,
-	paramName string,
-	paramLabel string,
-	errCode string,
+	cfg handlerIDConfig,
 	fn func(ctx context.Context, id int64) error,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, getService(), serviceName) {
+		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
-		id, ok := parseID(w, r, paramName, paramLabel)
+		id, ok := parseID(w, r, cfg.ParamName)
 		if !ok {
 			return
 		}
@@ -74,7 +74,7 @@ func handleDeleteByID(
 			respondError(
 				w,
 				wordpress.HttpStatusBadRequest,
-				errCode,
+				cfg.ErrCode,
 				err.Error(),
 			)
 
@@ -162,16 +162,21 @@ func handleSiteActionByID(
 	}
 }
 
+// noArgsConfig bundles parameters for no-args handler factories.
+type noArgsConfig struct {
+	GetService  func() any
+	ServiceName string
+	ErrCode     string
+}
+
 // handleNoArgs creates a handler: requireService → fn(ctx) → respondSuccess
 // Use for endpoints with no parameters (e.g., check-all, pull-all).
 func handleNoArgs(
-	getService func() any,
-	serviceName string,
-	errCode string,
+	cfg noArgsConfig,
 	fn func(ctx context.Context) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, getService(), serviceName) {
+		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
@@ -180,7 +185,7 @@ func handleNoArgs(
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
-				errCode,
+				cfg.ErrCode,
 				err.Error(),
 			)
 
@@ -191,29 +196,32 @@ func handleNoArgs(
 	}
 }
 
+// twoIDConfig bundles parameters for two-ID handler factories.
+type twoIDConfig struct {
+	GetService  func() any
+	ServiceName string
+	Param1Name  string
+	Param2Name  string
+	ErrCode     string
+}
+
 // handleTwoIDs creates a handler: requireService → parseID(param1) → parseID(param2) → fn(ctx, id1, id2) → respondSuccess
 // Use for endpoints that take two URL ID params (e.g., pluginID + siteID).
 func handleTwoIDs(
-	getService func() any,
-	serviceName string,
-	param1Name string,
-	param1Label string,
-	param2Name string,
-	param2Label string,
-	errCode string,
+	cfg twoIDConfig,
 	fn func(ctx context.Context, id1, id2 int64) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, getService(), serviceName) {
+		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
-		id1, ok := parseID(w, r, param1Name, param1Label)
+		id1, ok := parseID(w, r, cfg.Param1Name)
 		if !ok {
 			return
 		}
 
-		id2, ok := parseID(w, r, param2Name, param2Label)
+		id2, ok := parseID(w, r, cfg.Param2Name)
 		if !ok {
 			return
 		}
@@ -223,7 +231,7 @@ func handleTwoIDs(
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
-				errCode,
+				cfg.ErrCode,
 				err.Error(),
 			)
 

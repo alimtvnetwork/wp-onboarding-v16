@@ -91,17 +91,25 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, er
 func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
 	available, namespace, _ := client.CheckRiseupAsiaAvailable()
 	if available && namespace != "" {
-		return s.bootstrapViaUploader(id, client, zipPath, namespace)
+		return s.bootstrapViaUploader(bootstrapUploaderInput{SiteID: id, Client: client, ZipPath: zipPath, Namespace: namespace})
 	}
 	return s.bootstrapViaOnboard(id, client, zipPath)
 }
 
+// bootstrapUploaderInput bundles parameters for bootstrapViaUploader.
+type bootstrapUploaderInput struct {
+	SiteID    int64
+	Client    *wordpress.Client
+	ZipPath   string
+	Namespace string
+}
+
 // bootstrapViaUploader updates via an existing Riseup Asia Uploader.
-func (s *Service) bootstrapViaUploader(id int64, client *wordpress.Client, zipPath, namespace string) (*wordpress.UploaderUploadResult, error) {
-	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), Details: toJson(SiteIdDetail{SiteId: id})})
-	result, err := client.UploadPluginViaUploader(wordpress.UploadInput{ZipPath: zipPath, Slug: "riseup-asia-uploader", IsActivate: true, UploadSource: uploadsource.RestAPI})
+func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress.UploaderUploadResult, error) {
+	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: input.SiteID, Message: fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", input.Namespace), Details: toJson(SiteIdDetail{SiteId: input.SiteID})})
+	result, err := input.Client.UploadPluginViaUploader(wordpress.UploadInput{ZipPath: input.ZipPath, Slug: "riseup-asia-uploader", IsActivate: true, UploadSource: uploadsource.RestAPI})
 	if err != nil {
-		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: fmt.Sprintf("Upload failed: %v", err), Details: toJson(SiteIdDetail{SiteId: id})})
+		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: input.SiteID, Message: fmt.Sprintf("Upload failed: %v", err), Details: toJson(SiteIdDetail{SiteId: input.SiteID})})
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 	return result, nil

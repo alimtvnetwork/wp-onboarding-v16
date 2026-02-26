@@ -76,7 +76,7 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 
 			// Persist error responses (>= 400) to error.log.txt
 			if wrapped.statusCode >= 400 && ErrorLogDir != "" {
-				appendToErrorLog(r, wrapped, duration, requestBodyBytes)
+				appendToErrorLog(errorLogInput{Request: r, Writer: wrapped, Duration: duration, RequestBody: requestBodyBytes})
 			}
 		})
 	}
@@ -107,9 +107,17 @@ type envelopeForParsing struct {
 	} `json:"Attributes"` // external key
 }
 
+// errorLogInput bundles parameters for appendToErrorLog.
+type errorLogInput struct {
+	Request     *http.Request
+	Writer      *responseWriter
+	Duration    time.Duration
+	RequestBody []byte
+}
+
 // appendToErrorLog writes a structured error entry to data/errors/error.log.txt
 // with full request/response context, envelope error blocks, and stack traces.
-func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duration, requestBody []byte) {
+func appendToErrorLog(input errorLogInput) {
 	logPath := filepath.Join(ErrorLogDir, "error.log.txt")
 
 	_ = os.MkdirAll(ErrorLogDir, 0755)
@@ -125,32 +133,32 @@ func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duratio
 	var sb strings.Builder
 
 	// ── Header ──
-	sb.WriteString(fmt.Sprintf("[%s] HTTP %d %s FAILED\n", now, rw.statusCode, r.Method))
+	sb.WriteString(fmt.Sprintf("[%s] HTTP %d %s FAILED\n", now, input.Writer.statusCode, input.Request.Method))
 
 	// ── Requested To (Go endpoint) ──
 	scheme := "http"
-	if r.TLS != nil {
+	if input.Request.TLS != nil {
 		scheme = "https"
 	}
-	host := r.Host
+	host := input.Request.Host
 	if host == "" {
-		host = r.URL.Host
+		host = input.Request.URL.Host
 	}
-	fullURL := fmt.Sprintf("%s://%s%s", scheme, host, r.URL.RequestURI())
-	sb.WriteString(fmt.Sprintf("  Requested To: %s %s\n", r.Method, fullURL))
+	fullURL := fmt.Sprintf("%s://%s%s", scheme, host, input.Request.URL.RequestURI())
+	sb.WriteString(fmt.Sprintf("  Requested To: %s %s\n", input.Request.Method, fullURL))
 
 	// ── Request Body & Params from React ──
-	if r.URL.RawQuery != "" {
-		sb.WriteString(fmt.Sprintf("  Query Params: %s\n", r.URL.RawQuery))
+	if input.Request.URL.RawQuery != "" {
+		sb.WriteString(fmt.Sprintf("  Query Params: %s\n", input.Request.URL.RawQuery))
 	}
-	if len(requestBody) > 0 {
-		bodyStr := string(requestBody)
+	if len(input.RequestBody) > 0 {
+		bodyStr := string(input.RequestBody)
 		if len(bodyStr) > 4096 {
 			bodyStr = bodyStr[:4096] + "... (truncated)"
 		}
 		// Pretty-print JSON if possible
 		var prettyBuf bytes.Buffer
-		if json.Indent(&prettyBuf, requestBody, "    ", "  ") == nil && prettyBuf.Len() > 0 {
+		if json.Indent(&prettyBuf, input.RequestBody, "    ", "  ") == nil && prettyBuf.Len() > 0 {
 			sb.WriteString("  Request Body:\n")
 			sb.WriteString(fmt.Sprintf("    %s\n", prettyBuf.String()))
 		} else {
@@ -158,13 +166,13 @@ func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duratio
 		}
 	}
 
-	sb.WriteString(fmt.Sprintf("  Duration: %s\n", duration.String()))
+	sb.WriteString(fmt.Sprintf("  Duration: %s\n", input.Duration.String()))
 
 	// ── Parse envelope from response body ──
 	var env envelopeForParsing
 	isEnvelopeParsed := false
-	if rw.body.Len() > 0 {
-		if json.Unmarshal(rw.body.Bytes(), &env) == nil && env.Status.Message != "" {
+	if input.Writer.body.Len() > 0 {
+		if json.Unmarshal(input.Writer.body.Bytes(), &env) == nil && env.Status.Message != "" {
 			isEnvelopeParsed = true
 		}
 	}
@@ -213,8 +221,8 @@ func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duratio
 	}
 
 	// ── Raw Response Body (always include for full transparency) ──
-	if rw.body.Len() > 0 {
-		body := rw.body.String()
+	if input.Writer.body.Len() > 0 {
+		body := input.Writer.body.String()
 		if len(body) > 4096 {
 			body = body[:4096] + "... (truncated)"
 		}

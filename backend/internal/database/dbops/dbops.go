@@ -265,7 +265,7 @@ func ExecInsert(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 
 	result, err := db.Exec(query, args...)
 	if err != nil {
-		logError(ctx, err, query, args)
+		logError(ctx, err)
 		return nil, err
 	}
 
@@ -279,7 +279,7 @@ func ExecInsert(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 		Exists:       rows == 0,
 	}
 
-	logSuccess(ctx, res, query, args)
+	logSuccess(ctx, res)
 	return res, nil
 }
 
@@ -289,7 +289,7 @@ func ExecUpdate(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 
 	result, err := db.Exec(query, args...)
 	if err != nil {
-		logError(ctx, err, query, args)
+		logError(ctx, err)
 		return nil, err
 	}
 
@@ -299,7 +299,7 @@ func ExecUpdate(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 		AffectedRows: rows,
 	}
 
-	logSuccess(ctx, res, query, args)
+	logSuccess(ctx, res)
 	return res, nil
 }
 
@@ -309,7 +309,7 @@ func ExecDelete(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 
 	result, err := db.Exec(query, args...)
 	if err != nil {
-		logError(ctx, err, query, args)
+		logError(ctx, err)
 		return nil, err
 	}
 
@@ -319,7 +319,7 @@ func ExecDelete(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 		AffectedRows: rows,
 	}
 
-	logSuccess(ctx, res, query, args)
+	logSuccess(ctx, res)
 	return res, nil
 }
 
@@ -351,14 +351,14 @@ func FindOrCreate(
 	}
 
 	if err != sql.ErrNoRows {
-		logError(ctx, err, selectQuery, selectArgs)
+		logError(ctx, err)
 		return 0, false, err
 	}
 
 	ctx.Operation = "INSERT"
 	result, err := db.Exec(insertQuery, insertArgs...)
 	if err != nil {
-		logError(ctx, err, insertQuery, insertArgs)
+		logError(ctx, err)
 		return 0, false, err
 	}
 
@@ -368,7 +368,7 @@ func FindOrCreate(
 	if rows == 0 {
 		err := db.QueryRow(selectQuery, selectArgs...).Scan(&id)
 		if err != nil {
-			logError(ctx, err, selectQuery, selectArgs)
+			logError(ctx, err)
 			return 0, false, err
 		}
 		if ctx.Logger != nil {
@@ -388,7 +388,7 @@ func FindOrCreate(
 		LastInsertID: id,
 		Created:      true,
 	}
-	logSuccess(ctx, res, insertQuery, insertArgs)
+	logSuccess(ctx, res)
 	return id, true, nil
 }
 
@@ -421,7 +421,7 @@ func CreateMapping(
 			return false, nil
 		}
 
-		logError(ctx, err, query, args)
+		logError(ctx, err)
 		return false, err
 	}
 
@@ -456,7 +456,7 @@ func CreateMapping(
 }
 
 // logSuccess logs a successful database operation
-func logSuccess(ctx Context, res *Result, query string, args []any) {
+func logSuccess(ctx Context, res *Result) {
 	if ctx.Logger == nil {
 		return
 	}
@@ -484,7 +484,7 @@ func logSuccess(ctx Context, res *Result, query string, args []any) {
 }
 
 // logError logs a failed database operation with stack trace
-func logError(ctx Context, err error, query string, args []any) {
+func logError(ctx Context, err error) {
 	if ctx.Logger == nil {
 		return
 	}

@@ -85,7 +85,7 @@ func validateCreateSiteInput(input SiteCreateInput) string {
 
 // GetSite returns a specific site by ID
 var GetSite = handleActionByID(
-	siteService, "Site service", "id", "site ID", "E9001",
+	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E9001"},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetById(ctx, id)
 	},
@@ -96,7 +96,7 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
-	id, ok := parseID(w, r, "id", "site ID")
+	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
@@ -123,7 +123,7 @@ func normalizeUpdateSitePassword(input *SiteUpdateInput) {
 
 // DeleteSite removes a site
 var DeleteSite = handleDeleteByID(
-	siteService, "Site service", "id", "site ID", "E2006",
+	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E2006"},
 	func(ctx context.Context, id int64) error {
 		return Services.SiteService.Delete(ctx, id)
 	},
@@ -131,7 +131,7 @@ var DeleteSite = handleDeleteByID(
 
 // TestSiteConnection tests the WordPress REST API connection
 var TestSiteConnection = handleActionByID(
-	siteService, "Site service", "id", "site ID", "E3001",
+	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E3001"},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.TestConnection(ctx, id)
 	},
@@ -164,7 +164,7 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 
 // GetSiteCredentials returns decrypted credentials for API Explorer
 var GetSiteCredentials = handleActionByID(
-	siteService, "Site service", "id", "site ID", "E2002",
+	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E2002"},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetCredentials(ctx, id)
 	},
@@ -180,7 +180,7 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
-	id, ok := parseID(w, r, "id", "site ID")
+	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
@@ -305,7 +305,7 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
-	id, ok := parseID(w, r, "id", "site ID")
+	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
@@ -394,7 +394,7 @@ func parseRemotePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (i
 	if !requireService(w, Services.SiteService, "Site service") {
 		return 0, pluginFileInput{}, false
 	}
-	id, ok := parseID(w, r, "id", "site ID")
+	id, ok := parseID(w, r, "id")
 	if !ok {
 		return 0, pluginFileInput{}, false
 	}

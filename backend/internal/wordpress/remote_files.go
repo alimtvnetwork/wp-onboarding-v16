@@ -218,7 +218,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	}
 
 	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
-	return c.executeZipUpload(endpoint, reqBody, contentType, fileSize, zipPath, pluginSlug)
+	return c.executeZipUpload(zipUploadInput{Endpoint: endpoint, Body: reqBody, ContentType: contentType, FileSize: fileSize, ZipPath: zipPath, PluginSlug: pluginSlug})
 }
 
 // buildZipMultipartForm opens the ZIP file and builds the multipart form body.
@@ -232,7 +232,7 @@ func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*bytes.Buffe
 	var reqBody bytes.Buffer
 	writer := multipart.NewWriter(&reqBody)
 
-	if err := writeZipFormFields(writer, file, zipPath, pluginSlug); err != nil {
+	if err := writeZipFormFields(zipFormInput{Writer: writer, File: file, ZipPath: zipPath, PluginSlug: pluginSlug}); err != nil {
 		return nil, "", 0, err
 	}
 
@@ -261,37 +261,55 @@ func openAndStatFile(path string) (*os.File, os.FileInfo, error) {
 	return file, stat, nil
 }
 
+// zipFormInput bundles parameters for writeZipFormFields.
+type zipFormInput struct {
+	Writer     *multipart.Writer
+	File       *os.File
+	ZipPath    string
+	PluginSlug string
+}
+
 // writeZipFormFields writes the ZIP file and metadata fields to the multipart writer.
-func writeZipFormFields(writer *multipart.Writer, file *os.File, zipPath, pluginSlug string) error {
-	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(zipPath))
+func writeZipFormFields(input zipFormInput) error {
+	part, err := input.Writer.CreateFormFile("plugin_zip", filepath.Base(input.ZipPath))
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file for upload")
 	}
 
-	if _, err := io.Copy(part, file); err != nil {
+	if _, err := io.Copy(part, input.File); err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to copy file to multipart form")
 	}
 
-	if err := writer.WriteField("pluginSlug", pluginSlug); err != nil {
+	if err := input.Writer.WriteField("pluginSlug", input.PluginSlug); err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to write pluginSlug field")
 	}
 
-	return writer.WriteField("overwrite", "true")
+	return input.Writer.WriteField("overwrite", "true")
+}
+
+// zipUploadInput bundles parameters for executeZipUpload.
+type zipUploadInput struct {
+	Endpoint    string
+	Body        *bytes.Buffer
+	ContentType string
+	FileSize    int64
+	ZipPath     string
+	PluginSlug  string
 }
 
 // executeZipUpload sends the multipart upload request and parses the response.
-func (c *Client) executeZipUpload(endpoint string, reqBody *bytes.Buffer, contentType string, fileSize int64, zipPath, pluginSlug string) (*OnboardUploadResult, error) {
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+func (c *Client) executeZipUpload(input zipUploadInput) (*OnboardUploadResult, error) {
+	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, input.Endpoint)
 
 	c.progress(ProgressEvent{
 		Step: "upload", Status: stagestatus.Running.String(),
-		Message: fmt.Sprintf("POSTing %d bytes to %s", fileSize, url),
+		Message: fmt.Sprintf("POSTing %d bytes to %s", input.FileSize, url),
 		Details: toProgress(ZipUploadProgress{
-			ZipSize: fileSize, ZipFile: filepath.Base(zipPath), Endpoint: endpoint,
+			ZipSize: input.FileSize, ZipFile: filepath.Base(input.ZipPath), Endpoint: input.Endpoint,
 		}),
 	})
 
-	resp, respBody, err := c.doMultipartRequest(url, reqBody, contentType)
+	resp, respBody, err := c.doMultipartRequest(url, input.Body, input.ContentType)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +320,7 @@ func (c *Client) executeZipUpload(endpoint string, reqBody *bytes.Buffer, conten
 		Details: toProgress(ResponseProgress{Status: resp.StatusCode, Body: truncateBody(respBody, 500)}),
 	})
 
-	return c.parseZipUploadResponse(resp.StatusCode, respBody, endpoint, url, pluginSlug)
+	return c.parseZipUploadResponse(zipUploadResponseInput{StatusCode: resp.StatusCode, Body: respBody, Endpoint: input.Endpoint, URL: url, PluginSlug: input.PluginSlug})
 }
 
 // doMultipartRequest sends a POST with multipart body and returns status + body.
@@ -324,22 +342,31 @@ func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType 
 	return resp, string(respBytes), nil
 }
 
+// zipUploadResponseInput bundles parameters for parseZipUploadResponse.
+type zipUploadResponseInput struct {
+	StatusCode int
+	Body       string
+	Endpoint   string
+	URL        string
+	PluginSlug string
+}
+
 // parseZipUploadResponse validates the status code and unmarshals the result.
-func (c *Client) parseZipUploadResponse(statusCode int, respBody, endpoint, url, pluginSlug string) (*OnboardUploadResult, error) {
-	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
+func (c *Client) parseZipUploadResponse(input zipUploadResponseInput) (*OnboardUploadResult, error) {
+	if input.StatusCode != http.StatusOK && input.StatusCode != http.StatusCreated {
 		return nil, &APIError{
 			Operation:    "upload plugin zip",
 			Method:       "POST",
-			Endpoint:     endpoint,
-			Url:          url,
-			StatusCode:   statusCode,
-			ResponseBody: truncateBody(respBody, 8192),
-			PluginSlugIn: pluginSlug,
+			Endpoint:     input.Endpoint,
+			Url:          input.URL,
+			StatusCode:   input.StatusCode,
+			ResponseBody: truncateBody(input.Body, 8192),
+			PluginSlugIn: input.PluginSlug,
 		}
 	}
 
 	var result OnboardUploadResult
-	if err := json.Unmarshal([]byte(respBody), &result); err != nil {
+	if err := json.Unmarshal([]byte(input.Body), &result); err != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}

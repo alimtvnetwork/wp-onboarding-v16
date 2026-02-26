@@ -79,7 +79,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	result.SessionID = sessionID
 
 	s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, SessionID: sessionID, Step: stagestatus.Started.String(), Progress: 0, Message: "Starting publish..."})
-	s.sessionLog(sessionID, loglevel.Info.String(), "init", fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name), nil)
+	s.sessionLog(sessionLogInput{SessionID: sessionID, Level: loglevel.Info.String(), Step: "init", Message: fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name)})
 
 	pctx := &publishContext{PluginID: pluginID, SiteID: siteID, SessionID: sessionID}
 
@@ -146,7 +146,7 @@ func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, 
 // failPipeline handles a pipeline init failure.
 func (s *Service) failPipeline(pctx *publishContext, err error, result *PublishResult) error {
 	result.ErrorMessage = err.Error()
-	s.sessionLog(pctx.SessionID, loglevel.Error.String(), "init", fmt.Sprintf("Failed to get mapping: %s", err.Error()), nil)
+	s.sessionLog(sessionLogInput{SessionID: pctx.SessionID, Level: loglevel.Error.String(), Step: "init", Message: fmt.Sprintf("Failed to get mapping: %s", err.Error())})
 	s.endSession(pctx.SessionID, loglevel.Error.String(), err.Error())
 	s.broadcastProgress(pctx.progress(stagestatus.Failed.String(), 0, err.Error()))
 
@@ -662,25 +662,33 @@ func (s *Service) recordHistory(pluginInfo models.Plugin, siteInfo *models.Site,
 		return
 	}
 
-	entry := buildHistoryEntry(pluginInfo, siteInfo, options, result)
+	entry := buildHistoryEntry(historyEntryInput{PluginInfo: pluginInfo, SiteInfo: siteInfo, Options: options, Result: result})
 	if _, err := s.historyService.Record(entry); err != nil {
 		s.log.Error("Failed to record publish history", "error", err)
 	}
 }
 
+// historyEntryInput bundles parameters for buildHistoryEntry.
+type historyEntryInput struct {
+	PluginInfo models.Plugin
+	SiteInfo   *models.Site
+	Options    PublishOptions
+	Result     *PublishResult
+}
+
 // buildHistoryEntry constructs a PublishHistory from the publish context.
-func buildHistoryEntry(pluginInfo models.Plugin, siteInfo *models.Site, options PublishOptions, result *PublishResult) models.PublishHistory {
+func buildHistoryEntry(input historyEntryInput) models.PublishHistory {
 	historyStatus := enumstatus.Success.String()
-	if !result.IsSuccess {
+	if !input.Result.IsSuccess {
 		historyStatus = enumstatus.Failed.String()
 	}
 
 	return models.PublishHistory{
-		PluginID: pluginInfo.ID, PluginName: pluginInfo.Name,
-		SiteID: siteInfo.ID, SiteName: siteInfo.Name, SiteURL: siteInfo.URL,
-		SessionID: result.SessionID, Status: historyStatus, Mode: options.Mode,
-		FilesUpdated: result.FilesUpdated, ActivationStatus: result.ActivationStatus,
-		RollbackStatus: result.RollbackStatus, RollbackMessage: result.RollbackMessage,
-		ErrorMessage: result.ErrorMessage, DurationMs: result.Duration,
+		PluginID: input.PluginInfo.ID, PluginName: input.PluginInfo.Name,
+		SiteID: input.SiteInfo.ID, SiteName: input.SiteInfo.Name, SiteURL: input.SiteInfo.URL,
+		SessionID: input.Result.SessionID, Status: historyStatus, Mode: input.Options.Mode,
+		FilesUpdated: input.Result.FilesUpdated, ActivationStatus: input.Result.ActivationStatus,
+		RollbackStatus: input.Result.RollbackStatus, RollbackMessage: input.Result.RollbackMessage,
+		ErrorMessage: input.Result.ErrorMessage, DurationMs: input.Result.Duration,
 	}
 }
