@@ -5,6 +5,7 @@ package wordpress
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"wp-plugin-publish/internal/enums/connection_step"
 	"wp-plugin-publish/internal/enums/post_status"
