@@ -123,12 +123,7 @@ func scanSiteRows(rows *sql.Rows) (models.Site, error) {
 
 // List returns all registered sites.
 func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
-	set := dbutil.QueryMany[models.Site](
-		ctx,
-		s.dbu,
-		siteListQuery,
-		scanSiteRows,
-	)
+	set := dbutil.QueryMany[models.Site](ctx, s.dbu, siteListQuery, scanSiteRows)
 	if set.HasError() {
 		return set.ToAppResultSlice()
 	}
@@ -142,13 +137,7 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 
 // GetById returns a site by its ID.
 func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.Site] {
-	result := dbutil.QueryOne[models.Site](
-		ctx,
-		s.dbu,
-		siteSelectByIdQuery,
-		scanSiteRow,
-		id,
-	)
+	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByIdQuery, scanSiteRow, id)
 	if result.HasError() {
 		return apperror.Fail[models.Site](result.AppError())
 	}
@@ -160,18 +149,9 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 }
 
 // GetByUrl returns a site by its URL.
-// Uses ToAppResult() bridge — empty result (no rows) propagates as empty apperror.Result.
 func (s *Service) GetByUrl(ctx context.Context, siteUrl string) apperror.Result[models.Site] {
 	normalizedUrl := normalizeUrl(siteUrl)
-
-	result := dbutil.QueryOne[models.Site](
-		ctx,
-		s.dbu,
-		siteSelectByUrlQuery,
-		scanSiteRow,
-		normalizedUrl,
-	)
-
+	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByUrlQuery, scanSiteRow, normalizedUrl)
 	return result.ToAppResult()
 }
 
@@ -182,13 +162,8 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 	}
 
 	normalizedUrl := normalizeUrl(input.Url)
-
-	existing := s.GetByUrl(ctx, normalizedUrl)
-	if existing.HasError() {
-		return existing
-	}
-	if existing.IsDefined() {
-		return apperror.FailNew[models.Site](apperror.ErrValidation, "site with this URL already exists")
+	if dupErr := s.checkDuplicateUrl(ctx, normalizedUrl); dupErr != nil {
+		return dupErr
 	}
 
 	encryptedPassword, err := encrypt([]byte(input.Password), s.encryptionKey)
@@ -196,19 +171,27 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		return apperror.FailWrap[models.Site](err, apperror.ErrInternal, "failed to encrypt password")
 	}
 
-	res := dbutil.Exec(
-		ctx,
-		s.dbu,
-		siteInsertQuery,
-		input.Name,
-		normalizedUrl,
-		input.Username,
-		encryptedPassword,
-	)
+	return s.insertSite(ctx, input, normalizedUrl, encryptedPassword)
+}
+
+// checkDuplicateUrl verifies no existing site has the same URL.
+func (s *Service) checkDuplicateUrl(ctx context.Context, normalizedUrl string) apperror.Result[models.Site] {
+	existing := s.GetByUrl(ctx, normalizedUrl)
+	if existing.HasError() {
+		return existing
+	}
+	if existing.IsDefined() {
+		return apperror.FailNew[models.Site](apperror.ErrValidation, "site with this URL already exists")
+	}
+	return apperror.Result[models.Site]{}
+}
+
+// insertSite executes the INSERT and returns the newly created site.
+func (s *Service) insertSite(ctx context.Context, input CreateInput, normalizedUrl, encryptedPassword string) apperror.Result[models.Site] {
+	res := dbutil.Exec(ctx, s.dbu, siteInsertQuery, input.Name, normalizedUrl, input.Username, encryptedPassword)
 	if res.HasError() {
 		return apperror.Fail[models.Site](res.AppError())
 	}
-
 
 	s.log.Info("Site created", "id", res.LastInsertId, "name", input.Name, "url", normalizedUrl)
 	return s.GetById(ctx, res.LastInsertId)
@@ -227,6 +210,11 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 		return existingResult
 	}
 
+	return s.executeUpdate(ctx, id, updates, args)
+}
+
+// executeUpdate runs the UPDATE query and returns the refreshed site.
+func (s *Service) executeUpdate(ctx context.Context, id int64, updates []string, args []any) apperror.Result[models.Site] {
 	updates = append(updates, "UpdatedAt = datetime('now')")
 	args = append(args, id)
 
@@ -235,7 +223,6 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 	if res.HasError() {
 		return apperror.Fail[models.Site](res.AppError())
 	}
-
 
 	s.log.Info("Site updated", "id", id)
 	return s.GetById(ctx, id)
@@ -246,35 +233,53 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 	var updates []string
 	var args []any
 
-	if input.Name != nil && *input.Name != "" {
-		updates = append(updates, "Name = ?")
-		args = append(args, *input.Name)
-	}
-
-	if input.Url != nil && *input.Url != "" {
-		normalizedUrl := normalizeUrl(*input.Url)
-		if normalizedUrl != existing.Url {
-			// URL conflict check is done by caller; trust normalized value here
-			updates = append(updates, "Url = ?")
-			args = append(args, normalizedUrl)
-		}
-	}
-
-	if input.Username != nil && *input.Username != "" {
-		updates = append(updates, "Username = ?")
-		args = append(args, *input.Username)
-	}
-
-	if input.Password != nil && *input.Password != "" {
-		encryptedPassword, err := encrypt([]byte(*input.Password), s.encryptionKey)
-		if err == nil {
-			updates = append(updates, "PasswordEncrypted = ?")
-			args = append(args, encryptedPassword)
-			updates = append(updates, "ConnectionStatus = 'unknown'")
-		}
-	}
+	appendNameUpdate(&updates, &args, input.Name)
+	appendUrlUpdate(&updates, &args, input.Url, existing.Url)
+	appendUsernameUpdate(&updates, &args, input.Username)
+	s.appendPasswordUpdate(&updates, &args, input.Password)
 
 	return updates, args
+}
+
+// appendNameUpdate adds a Name update if provided.
+func appendNameUpdate(updates *[]string, args *[]any, name *string) {
+	if name != nil && *name != "" {
+		*updates = append(*updates, "Name = ?")
+		*args = append(*args, *name)
+	}
+}
+
+// appendUrlUpdate adds a Url update if provided and changed.
+func appendUrlUpdate(updates *[]string, args *[]any, urlInput *string, existingUrl string) {
+	if urlInput == nil || *urlInput == "" {
+		return
+	}
+	normalizedUrl := normalizeUrl(*urlInput)
+	if normalizedUrl != existingUrl {
+		*updates = append(*updates, "Url = ?")
+		*args = append(*args, normalizedUrl)
+	}
+}
+
+// appendUsernameUpdate adds a Username update if provided.
+func appendUsernameUpdate(updates *[]string, args *[]any, username *string) {
+	if username != nil && *username != "" {
+		*updates = append(*updates, "Username = ?")
+		*args = append(*args, *username)
+	}
+}
+
+// appendPasswordUpdate adds a PasswordEncrypted update if provided.
+func (s *Service) appendPasswordUpdate(updates *[]string, args *[]any, password *string) {
+	if password == nil || *password == "" {
+		return
+	}
+	encryptedPassword, err := encrypt([]byte(*password), s.encryptionKey)
+	if err == nil {
+		*updates = append(*updates, "PasswordEncrypted = ?")
+		*args = append(*args, encryptedPassword)
+		*updates = append(*updates, "ConnectionStatus = 'unknown'")
+	}
 }
 
 // Delete removes a site and its mappings (cascaded by FK).
@@ -284,12 +289,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 		return result.AppError()
 	}
 
-	res := dbutil.Exec(
-		ctx,
-		s.dbu,
-		siteDeleteQuery,
-		id,
-	)
+	res := dbutil.Exec(ctx, s.dbu, siteDeleteQuery, id)
 	if res.HasError() {
 		return res.AppError()
 	}
@@ -303,13 +303,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 // updateConnectionStatus updates the connection status and last tested time.
 func (s *Service) updateConnectionStatus(ctx context.Context, id int64, status string) {
-	res := dbutil.Exec(
-		ctx,
-		s.dbu,
-		siteUpdateConnectionStatusQuery,
-		status,
-		id,
-	)
+	res := dbutil.Exec(ctx, s.dbu, siteUpdateConnectionStatusQuery, status, id)
 	if res.HasError() {
 		s.log.Error("Failed to update connection status", "id", id, "error", res.AppError())
 	}

@@ -114,41 +114,76 @@ type ConnectionResult struct {
 func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResult, error) {
 	s.broadcastProgress(id, "start", stagestatus.Running.String(), "Starting connection test...", nil)
 
-	siteResult := s.GetById(ctx, id)
-	if siteResult.HasError() {
-		s.broadcastProgress(id, "fetch_site", stagestatus.Failed.String(), "Failed to retrieve site info", toJson(ErrorDetail{Error: siteResult.AppError().Error()}))
-		return nil, siteResult.AppError()
-	}
-	site := siteResult.Value()
-	s.broadcastProgress(id, "fetch_site", stagestatus.Completed.String(), fmt.Sprintf("Retrieved site: %s", site.Name), nil)
-
-	s.broadcastProgress(id, "decrypt", stagestatus.Running.String(), "Decrypting credentials...", nil)
-	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	site, password, err := s.prepareConnectionTest(ctx, id)
 	if err != nil {
-		s.broadcastProgress(id, "decrypt", stagestatus.Failed.String(), "Failed to decrypt credentials", toJson(ErrorDetail{Error: err.Error()}))
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		return nil, err
 	}
-	s.broadcastProgress(id, "decrypt", stagestatus.Completed.String(), "Credentials decrypted", nil)
 
-	s.broadcastProgress(id, "connect", stagestatus.Running.String(), fmt.Sprintf("Connecting to %s...", site.Url), nil)
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
 		s.broadcastProgress(id, step, status, message, details)
 	}
 	client := s.wpClientFactory(site.Url, site.Username, string(password), progressCallback)
 
+	return s.executeConnectionTest(ctx, id, site, client)
+}
+
+// prepareConnectionTest loads the site and decrypts credentials.
+func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*models.Site, []byte, error) {
+	siteResult := s.GetById(ctx, id)
+	if siteResult.HasError() {
+		s.broadcastProgress(id, "fetch_site", stagestatus.Failed.String(), "Failed to retrieve site info", toJson(ErrorDetail{Error: siteResult.AppError().Error()}))
+		return nil, nil, siteResult.AppError()
+	}
+	site := siteResult.Value()
+	s.broadcastProgress(id, "fetch_site", stagestatus.Completed.String(), fmt.Sprintf("Retrieved site: %s", site.Name), nil)
+
+	password, err := s.decryptWithProgress(id, site.PasswordEncrypted)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &site, password, nil
+}
+
+// decryptWithProgress decrypts a password with broadcast progress updates.
+func (s *Service) decryptWithProgress(siteId int64, encrypted string) ([]byte, error) {
+	s.broadcastProgress(siteId, "decrypt", stagestatus.Running.String(), "Decrypting credentials...", nil)
+	password, err := decrypt(encrypted, s.encryptionKey)
+	if err != nil {
+		s.broadcastProgress(siteId, "decrypt", stagestatus.Failed.String(), "Failed to decrypt credentials", toJson(ErrorDetail{Error: err.Error()}))
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+	s.broadcastProgress(siteId, "decrypt", stagestatus.Completed.String(), "Credentials decrypted", nil)
+	return password, nil
+}
+
+// executeConnectionTest runs the connection test and processes the result.
+func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *models.Site, client *wordpress.Client) (*ConnectionResult, error) {
+	s.broadcastProgress(id, "connect", stagestatus.Running.String(), fmt.Sprintf("Connecting to %s...", site.Url), nil)
+
 	result := &ConnectionResult{}
 	connInfo, err := client.TestConnection()
 	if err != nil {
-		result.IsSuccess = false
-		result.Message = err.Error()
-		s.broadcastProgress(id, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJson(ConnectionFailureDetails{
-			Url: site.Url, Username: site.Username,
-		}))
-		s.updateConnectionStatus(ctx, id, connectionstatus.Disconnected.DBValue())
-		s.broadcastProgress(id, connectionstep.Complete.String(), stagestatus.Failed.String(), "Connection test failed", nil)
-		return result, nil
+		return s.handleConnectionFailure(ctx, id, site, result, err), nil
 	}
 
+	return s.handleConnectionSuccess(ctx, id, site, result, connInfo), nil
+}
+
+// handleConnectionFailure processes a failed connection test.
+func (s *Service) handleConnectionFailure(ctx context.Context, id int64, site *models.Site, result *ConnectionResult, err error) *ConnectionResult {
+	result.IsSuccess = false
+	result.Message = err.Error()
+	s.broadcastProgress(id, "api_test", stagestatus.Failed.String(), fmt.Sprintf("Connection failed: %s", err.Error()), toJson(ConnectionFailureDetails{
+		Url: site.Url, Username: site.Username,
+	}))
+	s.updateConnectionStatus(ctx, id, connectionstatus.Disconnected.DBValue())
+	s.broadcastProgress(id, connectionstep.Complete.String(), stagestatus.Failed.String(), "Connection test failed", nil)
+	return result
+}
+
+// handleConnectionSuccess processes a successful connection test.
+func (s *Service) handleConnectionSuccess(ctx context.Context, id int64, site *models.Site, result *ConnectionResult, connInfo *wordpress.ConnectionInfo) *ConnectionResult {
 	result.IsSuccess = true
 	result.WPVersion = connInfo.WPVersion
 	result.PluginsEndpoint = true
@@ -158,8 +193,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	s.updateConnectionStatus(ctx, id, connectionstatus.Connected.DBValue())
 	s.broadcastProgress(id, connectionstep.Complete.String(), stagestatus.Completed.String(), "Connection test completed successfully", nil)
 	s.log.Info("Site connection tested", "id", id, "success", result.IsSuccess)
-
-	return result, nil
+	return result
 }
 
 // TestConnectionWithCredentials tests a connection without saving
@@ -173,6 +207,11 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteUrl, us
 	}
 	client := s.wpClientFactory(normalizedUrl, username, password, progressCallback)
 
+	return s.executeCredentialsTest(client, normalizedUrl, username)
+}
+
+// executeCredentialsTest runs the connection test with provided credentials.
+func (s *Service) executeCredentialsTest(client *wordpress.Client, normalizedUrl, username string) (*ConnectionResult, error) {
 	result := &ConnectionResult{}
 	connInfo, err := client.TestConnection()
 	if err != nil {
@@ -183,14 +222,18 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteUrl, us
 		return result, nil
 	}
 
+	return s.buildCredentialsSuccess(result, connInfo), nil
+}
+
+// buildCredentialsSuccess builds a success result for a credentials test.
+func (s *Service) buildCredentialsSuccess(result *ConnectionResult, connInfo *wordpress.ConnectionInfo) *ConnectionResult {
 	result.IsSuccess = true
 	result.WPVersion = connInfo.WPVersion
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 	s.broadcastProgress(0, "api_test", stagestatus.Completed.String(), fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toJson(ConnectionSuccessDetails{WPVersion: connInfo.WPVersion}))
 	s.broadcastProgress(0, "complete", stagestatus.Completed.String(), "Connection test completed successfully", nil)
-
-	return result, nil
+	return result
 }
 
 // broadcastProgress sends connection test progress via WebSocket
@@ -225,22 +268,25 @@ func normalizeUrl(rawUrl string) string {
 	if err != nil {
 		return strings.TrimSuffix(rawUrl, "/")
 	}
-	pathsToStrip := []string{"/wp-admin/", "/wp-admin", "/wp-login.php", "/wp-json/", "/wp-json"}
-	path := parsed.Path
-	for _, p := range pathsToStrip {
-		if strings.HasPrefix(path, p) {
-			path = strings.TrimPrefix(path, strings.TrimSuffix(p, "/"))
-			break
-		}
-		if strings.HasSuffix(path, p) {
-			path = strings.TrimSuffix(path, p)
-			break
-		}
-	}
-	parsed.Path = strings.TrimSuffix(path, "/")
+
+	parsed.Path = stripWordPressPaths(parsed.Path)
 	parsed.RawQuery = ""
 	parsed.Fragment = ""
 	return parsed.String()
+}
+
+// stripWordPressPaths removes common WordPress path suffixes from a URL path.
+func stripWordPressPaths(path string) string {
+	pathsToStrip := []string{"/wp-admin/", "/wp-admin", "/wp-login.php", "/wp-json/", "/wp-json"}
+	for _, p := range pathsToStrip {
+		if strings.HasPrefix(path, p) {
+			return strings.TrimSuffix(strings.TrimPrefix(path, strings.TrimSuffix(p, "/")), "/")
+		}
+		if strings.HasSuffix(path, p) {
+			return strings.TrimSuffix(strings.TrimSuffix(path, p), "/")
+		}
+	}
+	return strings.TrimSuffix(path, "/")
 }
 
 // SiteCredentials holds decrypted credentials for API access

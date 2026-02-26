@@ -51,14 +51,8 @@ func (s *Service) isDuplicateErrorLog(action string, siteId int64, pluginSlug st
 
 // openErrorLogFile creates the errors directory and opens the log file for appending.
 func (s *Service) openErrorLogFile() (*os.File, error) {
-	errorsDir, err := pathutil.Join(filepath.Dir(s.db.Path()), "errors")
+	errorsDir, errorLogPath, err := s.resolveErrorLogPaths()
 	if err != nil {
-		s.log.Error("Failed to resolve errors directory path", "error", err)
-		return nil, err
-	}
-	errorLogPath, err := pathutil.Join(errorsDir, "error.log.txt")
-	if err != nil {
-		s.log.Error("Failed to resolve error log path", "error", err)
 		return nil, err
 	}
 
@@ -67,6 +61,26 @@ func (s *Service) openErrorLogFile() (*os.File, error) {
 		return nil, err
 	}
 
+	return s.openLogFileForAppend(errorLogPath)
+}
+
+// resolveErrorLogPaths resolves the errors directory and log file paths.
+func (s *Service) resolveErrorLogPaths() (string, string, error) {
+	errorsDir, err := pathutil.Join(filepath.Dir(s.db.Path()), "errors")
+	if err != nil {
+		s.log.Error("Failed to resolve errors directory path", "error", err)
+		return "", "", err
+	}
+	errorLogPath, err := pathutil.Join(errorsDir, "error.log.txt")
+	if err != nil {
+		s.log.Error("Failed to resolve error log path", "error", err)
+		return "", "", err
+	}
+	return errorsDir, errorLogPath, nil
+}
+
+// openLogFileForAppend opens the log file for appending.
+func (s *Service) openLogFileForAppend(errorLogPath string) (*os.File, error) {
 	f, err := os.OpenFile(errorLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		s.log.Error("Failed to open error log file", "error", err)
@@ -214,6 +228,31 @@ type RemotePluginFilesResult struct {
 
 // GetRemotePluginFiles fetches the file list for a remote plugin via Riseup Asia Uploader
 func (s *Service) GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*RemotePluginFilesResult, error) {
+	client, err := s.createClientForSite(ctx, siteId)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").WithSiteId(siteId).WithPluginSlug(pluginSlug)
+	}
+
+	return s.buildRemoteFilesResult(siteId, pluginSlug, files), nil
+}
+
+// buildRemoteFilesResult converts file info into the result struct.
+func (s *Service) buildRemoteFilesResult(siteId int64, pluginSlug string, files []wordpress.RemoteFileInfo) *RemotePluginFilesResult {
+	filesResult := &RemotePluginFilesResult{PluginSlug: pluginSlug, TotalFiles: len(files), Files: make([]RemotePluginFile, 0, len(files))}
+	for _, f := range files {
+		filesResult.Files = append(filesResult.Files, RemotePluginFile{Path: f.Path, Hash: f.Hash, Size: f.Size, ModifiedAt: f.ModifiedAt})
+	}
+	s.log.Debug("Remote plugin files fetched", "siteId", siteId, "pluginSlug", pluginSlug, "fileCount", len(filesResult.Files))
+	return filesResult
+}
+
+// createClientForSite creates a WordPress client for the given site.
+func (s *Service) createClientForSite(ctx context.Context, siteId int64) (*wordpress.Client, error) {
 	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -223,35 +262,16 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteId int64, plugin
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
-
-	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
-	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").WithSiteId(siteId).WithPluginSlug(pluginSlug)
-	}
-
-	filesResult := &RemotePluginFilesResult{PluginSlug: pluginSlug, TotalFiles: len(files), Files: make([]RemotePluginFile, 0, len(files))}
-	for _, f := range files {
-		filesResult.Files = append(filesResult.Files, RemotePluginFile{Path: f.Path, Hash: f.Hash, Size: f.Size, ModifiedAt: f.ModifiedAt})
-	}
-
-	s.log.Debug("Remote plugin files fetched", "siteId", siteId, "pluginSlug", pluginSlug, "fileCount", len(filesResult.Files))
-	return filesResult, nil
+	return s.wpClientFactory(site.Url, site.Username, string(password), nil), nil
 }
 
 // GetRemotePluginFileContent fetches the content of a specific file from a remote plugin
 func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteId int64, pluginSlug, filePath string) (string, error) {
-	result := s.GetById(ctx, siteId)
-	if result.HasError() {
-		return "", result.AppError()
-	}
-	site := result.Value()
-	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	client, err := s.createClientForSite(ctx, siteId)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		return "", err
 	}
 
-	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 	content, err := client.GetPluginFileContent(ctx, pluginSlug, filePath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").WithSiteId(siteId).WithPluginSlug(pluginSlug).WithFilePath(filePath)

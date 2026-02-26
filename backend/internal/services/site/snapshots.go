@@ -186,34 +186,42 @@ func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 }
 
 // DownloadSnapshotZip requests a cached ZIP build for a snapshot, then streams the ZIP file back.
-// The Go proxy fetches the download URL from WordPress and pipes the binary response to the caller.
 func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, *wordpress.SnapshotDownloadResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Step 1: Request cached ZIP metadata + download URL from WordPress
+	meta, err := s.requestSnapshotMeta(client, siteID, snapshotID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return s.streamSnapshotFromMeta(client, siteID, snapshotID, meta)
+}
+
+// requestSnapshotMeta fetches the cached ZIP metadata and download URL.
+func (s *Service) requestSnapshotMeta(client *wordpress.Client, siteID, snapshotID int64) (*wordpress.SnapshotDownloadResult, error) {
 	meta, err := client.DownloadSnapshotZip(snapshotID)
 	if err != nil {
-		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to request snapshot download").
-			WithSiteId(siteID).
-			WithSnapshotId(snapshotID)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to request snapshot download").
+			WithSiteId(siteID).WithSnapshotId(snapshotID)
 	}
 
 	if meta.URL == "" {
-		return nil, nil, apperror.New(apperror.ErrInternal, "no download URL in response").
-			WithSiteId(siteID).
-			WithSnapshotId(snapshotID)
+		return nil, apperror.New(apperror.ErrInternal, "no download URL in response").
+			WithSiteId(siteID).WithSnapshotId(snapshotID)
 	}
 
-	// Step 2: Stream the ZIP file from the download URL
+	return meta, nil
+}
+
+// streamSnapshotFromMeta streams the ZIP file from the download URL.
+func (s *Service) streamSnapshotFromMeta(client *wordpress.Client, siteID, snapshotID int64, meta *wordpress.SnapshotDownloadResult) (*http.Response, *wordpress.SnapshotDownloadResult, error) {
 	zipResp, err := client.StreamSnapshotZip(meta.URL)
 	if err != nil {
 		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
-			WithSiteId(siteID).
-			WithSnapshotId(snapshotID).
-			WithURL(meta.URL)
+			WithSiteId(siteID).WithSnapshotId(snapshotID).WithURL(meta.URL)
 	}
 
 	s.log.Info("Remote snapshot ZIP download started", "siteId", siteID, "snapshotId", snapshotID, "cached", meta.Cached)
