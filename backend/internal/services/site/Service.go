@@ -450,14 +450,8 @@ func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, e
 
 // normalizeUrl normalizes a URL for consistent storage
 func normalizeUrl(rawUrl string) string {
-	rawUrl = strings.TrimSpace(rawUrl)
-	hasHttpPrefix := strings.HasPrefix(rawUrl, "http://")
-	hasHttpsPrefix := strings.HasPrefix(rawUrl, "https://")
-	isMissingScheme := !hasHttpPrefix && !hasHttpsPrefix
+	rawUrl = ensureScheme(strings.TrimSpace(rawUrl))
 
-	if isMissingScheme {
-		rawUrl = "https://" + rawUrl
-	}
 	parsed, err := url.Parse(rawUrl)
 	if err != nil {
 		return strings.TrimSuffix(rawUrl, "/")
@@ -467,6 +461,18 @@ func normalizeUrl(rawUrl string) string {
 	parsed.RawQuery = ""
 	parsed.Fragment = ""
 	return parsed.String()
+}
+
+// ensureScheme prepends https:// if no scheme is present.
+func ensureScheme(rawUrl string) string {
+	hasHttpPrefix := strings.HasPrefix(rawUrl, "http://")
+	hasHttpsPrefix := strings.HasPrefix(rawUrl, "https://")
+	isMissingScheme := !hasHttpPrefix && !hasHttpsPrefix
+
+	if isMissingScheme {
+		return "https://" + rawUrl
+	}
+	return rawUrl
 }
 
 // stripWordPressPaths removes common WordPress path suffixes from a URL path.
