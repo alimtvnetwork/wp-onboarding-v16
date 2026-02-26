@@ -1,6 +1,6 @@
 <?php
 /**
- * ResponseKeyType — Standardized response array keys.
+ * ResponseKeyType — Standardized response array keys (PascalCase values).
  *
  * @package RiseupAsia\Enums
  */
@@ -14,209 +14,220 @@ if (!defined('ABSPATH')) {
 enum ResponseKeyType: string
 {
     /** Envelope keys — present in most response arrays. */
-    case Success  = 'success';
-    case Error    = 'error';
-    case Message  = 'message';
-    case Data     = 'data';
-    case Code     = 'code';
-    case Valid    = 'valid';
-    case Errors   = 'errors';
-    case Cached   = 'cached';
-    case Phase    = 'phase';
-    case Reason   = 'reason';
+    case Success  = 'Success';
+    case Error    = 'Error';
+    case Message  = 'Message';
+    case Data     = 'Data';
+    case Code     = 'Code';
+    case Valid    = 'Valid';
+    case Errors   = 'Errors';
+    case Cached   = 'Cached';
+    case Phase    = 'Phase';
+    case Reason   = 'Reason';
 
     /** Domain collection keys. */
-    case Total        = 'total';
-    case Agents       = 'agents';
-    case Actions      = 'actions';
-    case Logs         = 'logs';
-    case Snapshots    = 'snapshots';
-    case Sql          = 'sql';
-    case Params       = 'params';
-    case Sets         = 'sets';
-    case Plugins      = 'plugins';
-    case Tables       = 'tables';
-    case Settings     = 'settings';
-    case Providers    = 'providers';
-    case Dependencies = 'dependencies';
+    case Total        = 'Total';
+    case Agents       = 'Agents';
+    case Actions      = 'Actions';
+    case Logs         = 'Logs';
+    case Snapshots    = 'Snapshots';
+    case Sql          = 'Sql';
+    case Params       = 'Params';
+    case Sets         = 'Sets';
+    case Plugins      = 'Plugins';
+    case Tables       = 'Tables';
+    case Settings     = 'Settings';
+    case Providers    = 'Providers';
+    case Dependencies = 'Dependencies';
 
     /** File and size keys. */
-    case Rows      = 'rows';
-    case Bytes     = 'bytes';
-    case Size      = 'size';
-    case FileSize  = 'fileSize';
-    case Path      = 'path';
-    case Filename  = 'filename';
-    case Checksum  = 'checksum';
-    case Duration  = 'duration';
-    case Count     = 'count';
-    case Files     = 'files';
-    case Directory = 'directory';
-    case Scope     = 'scope';
-    case Exported  = 'exported';
-    case Entry     = 'entry';
-    case Computed  = 'computed';
-    case Removed   = 'removed';
+    case Rows      = 'Rows';
+    case Bytes     = 'Bytes';
+    case Size      = 'Size';
+    case FileSize  = 'FileSize';
+    case Path      = 'Path';
+    case Filename  = 'Filename';
+    case Checksum  = 'Checksum';
+    case Duration  = 'Duration';
+    case Count     = 'Count';
+    case Files     = 'Files';
+    case Directory = 'Directory';
+    case Scope     = 'Scope';
+    case Exported  = 'Exported';
+    case Entry     = 'Entry';
+    case Computed  = 'Computed';
+    case Removed   = 'Removed';
 
     /** Pagination keys. */
-    case Limit  = 'limit';
-    case Offset = 'offset';
+    case Limit  = 'Limit';
+    case Offset = 'Offset';
 
     /** Domain entity keys. */
-    case Posts          = 'posts';
-    case Categories    = 'categories';
-    case Category      = 'category';
-    case Export        = 'export';
-    case Incrementals  = 'incrementals';
-    case TotalSize     = 'totalSize';
-    case Applied       = 'applied';
-    case Folder        = 'folder';
+    case Posts          = 'Posts';
+    case Categories    = 'Categories';
+    case Category      = 'Category';
+    case Export        = 'Export';
+    case Incrementals  = 'Incrementals';
+    case TotalSize     = 'TotalSize';
+    case Applied       = 'Applied';
+    case Folder        = 'Folder';
 
     /** Snapshot-domain keys. */
-    case SnapshotId      = 'snapshotId';
-    case Sequence        = 'sequence';
-    case FolderName      = 'folderName';
-    case TablesChanged   = 'tablesChanged';
-    case TotalRows       = 'totalRows';
-    case TotalNewRows    = 'totalNewRows';
-    case ZipPath         = 'zipPath';
-    case ZipSize         = 'zipSize';
-    case BackupId        = 'backupId';
-    case ZipFailed       = 'zipFailed';
-    case SkipAudit       = 'skipAudit';
-    case TablesRestored  = 'tablesRestored';
+    case SnapshotId      = 'SnapshotId';
+    case Sequence        = 'Sequence';
+    case FolderName      = 'FolderName';
+    case TablesChanged   = 'TablesChanged';
+    case TotalRows       = 'TotalRows';
+    case TotalNewRows    = 'TotalNewRows';
+    case ZipPath         = 'ZipPath';
+    case ZipSize         = 'ZipSize';
+    case BackupId        = 'BackupId';
+    case ZipFailed       = 'ZipFailed';
+    case SkipAudit       = 'SkipAudit';
+    case TablesRestored  = 'TablesRestored';
 
     /** Cleanup-pipeline keys. */
-    case DeletedByPolicy = 'deletedByPolicy';
-    case DeletedOrphans  = 'deletedOrphans';
-    case DeletedFailed   = 'deletedFailed';
-    case SpaceFreedBytes = 'spaceFreedBytes';
-    case Retention       = 'retention';
-    case Orphans         = 'orphans';
-    case Stuck           = 'stuck';
-    case DryRun          = 'dryRun';
-    case BytesFreed      = 'bytesFreed';
-    case Deleted         = 'deleted';
-    case Cleaned         = 'cleaned';
+    case DeletedByPolicy = 'DeletedByPolicy';
+    case DeletedOrphans  = 'DeletedOrphans';
+    case DeletedFailed   = 'DeletedFailed';
+    case SpaceFreedBytes = 'SpaceFreedBytes';
+    case Retention       = 'Retention';
+    case Orphans         = 'Orphans';
+    case Stuck           = 'Stuck';
+    case DryRun          = 'DryRun';
+    case BytesFreed      = 'BytesFreed';
+    case Deleted         = 'Deleted';
+    case Cleaned         = 'Cleaned';
 
     /** Plugin lifecycle keys. */
-    case Activated       = 'activated';
-    case PluginSlug      = 'pluginSlug';
-    case IsUpdate        = 'isUpdate';
-    case IsSelfUpdate    = 'isSelfUpdate';
-    case PluginVersion   = 'pluginVersion';
-    case ActivationError = 'activationError';
-    case Inventory       = 'inventory';
-    case PluginFile      = 'pluginFile';
+    case Activated       = 'Activated';
+    case PluginSlug      = 'PluginSlug';
+    case IsUpdate        = 'IsUpdate';
+    case IsSelfUpdate    = 'IsSelfUpdate';
+    case PluginVersion   = 'PluginVersion';
+    case ActivationError = 'ActivationError';
+    case Inventory       = 'Inventory';
+    case PluginFile      = 'PluginFile';
 
     /** General-purpose entity keys. */
-    case Slug  = 'slug';
-    case Title = 'title';
-    case Type  = 'type';
+    case Slug    = 'Slug';
+    case Title   = 'Title';
+    case Type    = 'Type';
+    case Action  = 'Action';
+    case Status  = 'Status';
+    case Percent = 'Percent';
+    case Plugin  = 'Plugin';
 
     /** Log/diagnostic keys. */
-    case ErrorLog      = 'errorLog';
-    case FullLog       = 'fullLog';
-    case StacktraceLog = 'stacktraceLog';
-    case Exists        = 'exists';
-    case Content       = 'content';
-    case Truncated     = 'truncated';
-    case Lines         = 'lines';
-    case TotalLines    = 'totalLines';
+    case ErrorLog      = 'ErrorLog';
+    case FullLog       = 'FullLog';
+    case StacktraceLog = 'StacktraceLog';
+    case Exists        = 'Exists';
+    case Content       = 'Content';
+    case Truncated     = 'Truncated';
+    case Lines         = 'Lines';
+    case TotalLines    = 'TotalLines';
 
     /** Internal/domain-specific keys. */
-    case Ids            = 'ids';
-    case TotalSnapshots = 'totalSnapshots';
-    case TotalSizeBytes = 'totalSizeBytes';
-    case TempFile       = 'tempFile';
-    case Stmt           = 'stmt';
-    case Columns        = 'columns';
+    case Ids            = 'Ids';
+    case TotalSnapshots = 'TotalSnapshots';
+    case TotalSizeBytes = 'TotalSizeBytes';
+    case TempFile       = 'TempFile';
+    case Stmt           = 'Stmt';
+    case Columns        = 'Columns';
 
     /** Temporal keys. */
-    case CreatedAt  = 'createdAt';
-    case UpdatedAt  = 'updatedAt';
-    case Timestamp  = 'timestamp';
+    case CreatedAt  = 'CreatedAt';
+    case UpdatedAt  = 'UpdatedAt';
+    case Timestamp  = 'Timestamp';
 
     /** Analysis and dependency keys. */
-    case ParentTable      = 'parentTable';
-    case ChildTable       = 'childTable';
-    case FkColumn         = 'fkColumn';
-    case RefColumn        = 'refColumn';
-    case SeedOrder        = 'seedOrder';
-    case TableCount       = 'tableCount';
-    case DepCount         = 'depCount';
-    case NewRows          = 'newRows';
-    case PluginDetails    = 'pluginDetails';
-    case IncludedIds      = 'includedIds';
-    case IncrementalCount = 'incrementalCount';
+    case ParentTable      = 'ParentTable';
+    case ChildTable       = 'ChildTable';
+    case FkColumn         = 'FkColumn';
+    case RefColumn        = 'RefColumn';
+    case SeedOrder        = 'SeedOrder';
+    case TableCount       = 'TableCount';
+    case DepCount         = 'DepCount';
+    case NewRows          = 'NewRows';
+    case PluginDetails    = 'PluginDetails';
+    case IncludedIds      = 'IncludedIds';
+    case IncrementalCount = 'IncrementalCount';
 
     /** Detection and provider keys. */
-    case DetectionMethod = 'detectionMethod';
-    case SqliteVersion   = 'sqliteVersion';
-    case IsCore          = 'isCore';
+    case DetectionMethod = 'DetectionMethod';
+    case SqliteVersion   = 'SqliteVersion';
+    case IsCore          = 'IsCore';
 
     /** Scheduler keys. */
-    case ScheduleEnabled       = 'scheduleEnabled';
-    case NextScheduledSnapshot = 'nextScheduledSnapshot';
-    case NextCleanup           = 'nextCleanup';
-    case RetentionType         = 'retentionType';
-    case RetentionDays         = 'retentionDays';
-    case RetentionCount        = 'retentionCount';
-    case SnapshotType          = 'snapshotType';
+    case ScheduleEnabled       = 'ScheduleEnabled';
+    case NextScheduledSnapshot = 'NextScheduledSnapshot';
+    case NextCleanup           = 'NextCleanup';
+    case RetentionType         = 'RetentionType';
+    case RetentionDays         = 'RetentionDays';
+    case RetentionCount        = 'RetentionCount';
+    case SnapshotType          = 'SnapshotType';
 
     /** Error enrichment keys. */
-    case ErrorCategory = 'errorCategory';
-    case LogHint       = 'logHint';
+    case ErrorCategory = 'ErrorCategory';
+    case LogHint       = 'LogHint';
 
     /** Sync keys. */
-    case FilesUpdated = 'filesUpdated';
-    case FilesDeleted = 'filesDeleted';
-    case FilesIgnored = 'filesIgnored';
-    case IgnoredFiles = 'ignoredFiles';
+    case FilesUpdated = 'FilesUpdated';
+    case FilesDeleted = 'FilesDeleted';
+    case FilesIgnored = 'FilesIgnored';
+    case IgnoredFiles = 'IgnoredFiles';
 
     /** Export and plugin keys. */
-    case PluginZip   = 'pluginZip';
-    case ResolvedUrl = 'resolvedUrl';
-    case TraceLines  = 'traceLines';
+    case PluginZip   = 'PluginZip';
+    case ResolvedUrl = 'ResolvedUrl';
+    case TraceLines  = 'TraceLines';
 
     /** Snapshot progress and worker keys. */
-    case CompletedAt         = 'completedAt';
-    case ExportedAt          = 'exportedAt';
-    case Format               = 'format';
-    case FormatVersion       = 'formatVersion';
-    case JobId               = 'jobId';
-    case TotalTables         = 'totalTables';
-    case TablesExported      = 'tablesExported';
-    case PoolSize            = 'poolSize';
-    case TotalBatches        = 'totalBatches';
-    case CurrentBatch        = 'currentBatch';
-    case TableProgress       = 'tableProgress';
-    case IncrementalsApplied = 'incrementalsApplied';
-    case SkippedMaster       = 'skippedMaster';
-    case ExportedTables      = 'exportedTables';
-    case SnapshotDir         = 'snapshotDir';
-    case DirName             = 'dirName';
-    case RowCount            = 'rowCount';
+    case CompletedAt         = 'CompletedAt';
+    case ExportedAt          = 'ExportedAt';
+    case Format              = 'Format';
+    case FormatVersion       = 'FormatVersion';
+    case JobId               = 'JobId';
+    case TotalTables         = 'TotalTables';
+    case TablesExported      = 'TablesExported';
+    case PoolSize            = 'PoolSize';
+    case TotalBatches        = 'TotalBatches';
+    case CurrentBatch        = 'CurrentBatch';
+    case TableProgress       = 'TableProgress';
+    case IncrementalsApplied = 'IncrementalsApplied';
+    case SkippedMaster       = 'SkippedMaster';
+    case ExportedTables      = 'ExportedTables';
+    case SnapshotDir         = 'SnapshotDir';
+    case DirName             = 'DirName';
+    case RowCount            = 'RowCount';
 
     /** Cron and audit keys. */
-    case TriggeredBy = 'triggeredBy';
-    case AuditData   = 'auditData';
-    case LogDataKey  = 'logData';
+    case TriggeredBy = 'TriggeredBy';
+    case AuditData   = 'AuditData';
+    case LogDataKey  = 'LogData';
 
     /** Manifest and import metadata keys. */
-    case OriginalId        = 'originalId';
-    case OriginalCreatedAt = 'originalCreatedAt';
-    case SourceSite        = 'sourceSite';
-    case OriginalTitle     = 'originalTitle';
-    case OriginalType      = 'originalType';
-    case WpVersion         = 'wpVersion';
-    case PhpVersion        = 'phpVersion';
-    case MysqlVersion      = 'mysqlVersion';
-    case SiteUrl           = 'siteUrl';
-    case DbPrefix          = 'dbPrefix';
-    case PluginCount       = 'pluginCount';
-    case DurationMs        = 'durationMs';
-    case TableCounts       = 'tableCounts';
+    case OriginalId        = 'OriginalId';
+    case OriginalCreatedAt = 'OriginalCreatedAt';
+    case SourceSite        = 'SourceSite';
+    case OriginalTitle     = 'OriginalTitle';
+    case OriginalType      = 'OriginalType';
+    case WpVersion         = 'WpVersion';
+    case PhpVersion        = 'PhpVersion';
+    case MysqlVersion      = 'MysqlVersion';
+    case SiteUrl           = 'SiteUrl';
+    case DbPrefix          = 'DbPrefix';
+    case PluginCount       = 'PluginCount';
+    case DurationMs        = 'DurationMs';
+    case TableCounts       = 'TableCounts';
+
+    /** Sync manifest keys. */
+    case DownloadUrl = 'DownloadUrl';
+    case FileCount   = 'FileCount';
+    case GeneratedAt = 'GeneratedAt';
+    case CacheStats  = 'CacheStats';
+    case FromCache   = 'FromCache';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
