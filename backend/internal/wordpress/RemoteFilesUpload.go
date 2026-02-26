@@ -167,25 +167,25 @@ func (c *Client) executeZipUpload(input zipUploadInput) (*OnboardUploadResult, e
 		Details: toProgress(uploadProgress),
 	})
 
-	resp, respBody, err := c.doMultipartRequest(url, input.Body, input.ContentType)
+	mpResp, err := c.doMultipartRequest(url, input.Body, input.ContentType)
 	if err != nil {
 		return nil, err
 	}
 
 	responseProgress := ResponseProgress{
-		Status: resp.StatusCode,
-		Body:   truncateBody(respBody, 500),
+		Status: mpResp.StatusCode,
+		Body:   truncateBody(mpResp.Body, 500),
 	}
 	c.progress(ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatus.Running.String(),
-		Message: fmt.Sprintf("Upload response: %d", resp.StatusCode),
+		Message: fmt.Sprintf("Upload response: %d", mpResp.StatusCode),
 		Details: toProgress(responseProgress),
 	})
 
 	parseInput := zipUploadResponseInput{
-		StatusCode: resp.StatusCode,
-		Body:       respBody,
+		StatusCode: mpResp.StatusCode,
+		Body:       mpResp.Body,
 		Endpoint:   input.Endpoint,
 		URL:        url,
 		PluginSlug: input.PluginSlug,
@@ -193,23 +193,29 @@ func (c *Client) executeZipUpload(input zipUploadInput) (*OnboardUploadResult, e
 	return c.parseZipUploadResponse(parseInput)
 }
 
+// multipartResponse holds the result of a multipart HTTP request.
+type multipartResponse struct {
+	StatusCode int
+	Body       string
+}
+
 // doMultipartRequest sends a POST with multipart body and returns status + body.
-func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType string) (*http.Response, string, error) {
+func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType string) (*multipartResponse, error) {
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").WithURL(url)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").WithURL(url)
 	}
 
 	c.setStandardHeaders(req, contentType)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").WithURL(url)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").WithURL(url)
 	}
 	defer resp.Body.Close()
 
 	respBytes, _ := io.ReadAll(resp.Body)
-	return resp, string(respBytes), nil
+	return &multipartResponse{StatusCode: resp.StatusCode, Body: string(respBytes)}, nil
 }
 
 // zipUploadResponseInput bundles parameters for parseZipUploadResponse.

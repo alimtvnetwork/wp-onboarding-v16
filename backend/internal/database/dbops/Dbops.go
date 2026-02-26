@@ -323,6 +323,12 @@ func ExecDelete(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 	return res, nil
 }
 
+// FindOrCreateResult holds the outcome of a FindOrCreate operation.
+type FindOrCreateResult struct {
+	ID      int64
+	Created bool
+}
+
 // FindOrCreate attempts to find an existing record by key, or creates it if not found
 func FindOrCreate(
 	db interface {
@@ -334,7 +340,7 @@ func FindOrCreate(
 	selectArgs []any,
 	insertQuery string,
 	insertArgs []any,
-) (int64, bool, error) {
+) (*FindOrCreateResult, error) {
 	var id int64
 	err := db.QueryRow(selectQuery, selectArgs...).Scan(&id)
 	if err == nil {
@@ -347,19 +353,19 @@ func FindOrCreate(
 			})
 			ctx.Logger.Debug("Record found (exists)", fields.toKeyvals()...)
 		}
-		return id, false, nil
+		return &FindOrCreateResult{ID: id, Created: false}, nil
 	}
 
 	if err != sql.ErrNoRows {
 		logError(ctx, err)
-		return 0, false, err
+		return nil, err
 	}
 
 	ctx.Operation = "INSERT"
 	result, err := db.Exec(insertQuery, insertArgs...)
 	if err != nil {
 		logError(ctx, err)
-		return 0, false, err
+		return nil, err
 	}
 
 	rows, _ := result.RowsAffected()
@@ -369,7 +375,7 @@ func FindOrCreate(
 		err := db.QueryRow(selectQuery, selectArgs...).Scan(&id)
 		if err != nil {
 			logError(ctx, err)
-			return 0, false, err
+			return nil, err
 		}
 		if ctx.Logger != nil {
 			fields := mergeFields(ctx.Fields, OperationFields{
@@ -380,7 +386,7 @@ func FindOrCreate(
 			})
 			ctx.Logger.Debug("Record found after race condition", fields.toKeyvals()...)
 		}
-		return id, false, nil
+		return &FindOrCreateResult{ID: id, Created: false}, nil
 	}
 
 	res := &Result{
@@ -389,7 +395,7 @@ func FindOrCreate(
 		Created:      true,
 	}
 	logSuccess(ctx, res)
-	return id, true, nil
+	return &FindOrCreateResult{ID: id, Created: true}, nil
 }
 
 // CreateMapping creates a many-to-many relationship record with proper logging
