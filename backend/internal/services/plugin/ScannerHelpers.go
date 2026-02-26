@@ -51,7 +51,8 @@ func (s *Service) processWalkEntry(ws *walkState, filePath string, info os.FileI
 		return nil
 	}
 
-	if skipDir := shouldSkipEntry(filePath, info); skipDir != nil {
+	skipDir := shouldSkipEntry(filePath, info)
+	if skipDir != nil {
 		return *skipDir
 	}
 

@@ -462,9 +462,9 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	duration := time.Since(startTime)
 	s.log.Info("Export complete",
 		"output", outputPath,
-		"files_count", filesCount,
-		"total_bytes", totalBytes,
-		"duration_ms", duration.Milliseconds(),
+		"filesCount", filesCount,
+		"totalBytes", totalBytes,
+		"durationMs", duration.Milliseconds(),
 	)
 	exportCompleteDetails := toDetails(ExportCompleteDetails{
 		FilesCount: filesCount,
@@ -636,9 +636,9 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, is
 	duration := time.Since(startTime)
 	s.log.Info("Import complete",
 		"dest", destDir,
-		"files_count", filesCount,
-		"total_bytes", totalBytes,
-		"duration_ms", duration.Milliseconds(),
+		"filesCount", filesCount,
+		"totalBytes", totalBytes,
+		"durationMs", duration.Milliseconds(),
 	)
 	importCompleteDetails := toDetails(ImportCompleteDetails{
 		FilesCount: filesCount,

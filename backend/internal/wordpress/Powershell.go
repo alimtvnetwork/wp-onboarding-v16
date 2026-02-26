@@ -222,7 +222,8 @@ func FindUploadScript(backendDir string) string {
 	candidates := buildScriptCandidates(backendDir)
 
 	for _, path := range candidates {
-		if resolved := resolveScriptPath(path); resolved != "" {
+		resolved := resolveScriptPath(path)
+		if resolved != "" {
 			return resolved
 		}
 	}
