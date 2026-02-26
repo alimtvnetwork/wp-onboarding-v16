@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // SiteCreateInput represents the request body for creating a site
@@ -30,7 +31,9 @@ type SiteUpdateInput struct {
 }
 
 // GetSites returns all registered WordPress sites
-var GetSites = handleListNilSafe(siteService, "E2001",
+var GetSites = handleListNilSafe(
+	siteService,
+	apperror.ErrDatabaseConnect,
 	func(ctx context.Context) (any, error) {
 		return Services.SiteService.List(ctx)
 	},
@@ -52,13 +55,25 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := validateCreateSiteInput(input); err != "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E9002", err)
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrValidation,
+			err,
+		)
+
 		return
 	}
 
 	site, err := Services.SiteService.Create(r.Context(), input)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E2004", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrDatabaseInsert,
+			err.Error(),
+		)
+
 		return
 	}
 
@@ -70,15 +85,19 @@ func validateCreateSiteInput(input SiteCreateInput) string {
 	if input.Name == "" {
 		return "Name is required"
 	}
+
 	if input.Url == "" {
 		return "URL is required"
 	}
+
 	if input.Username == "" {
 		return "Username is required"
 	}
+
 	if input.Password == "" {
 		return "Application password is required"
 	}
+
 	return ""
 }
 
@@ -88,7 +107,7 @@ var GetSite = handleActionByID(
 		GetService:  siteService,
 		ServiceName: "Site service",
 		ParamName:   "id",
-		ErrCode:     "E9001",
+		ErrCode:     apperror.ErrNotFound,
 	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetById(ctx, id)
@@ -100,21 +119,31 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
+
 	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
+
 	var input SiteUpdateInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	normalizeUpdateSitePassword(&input)
 
 	site, err := Services.SiteService.Update(r.Context(), id, input)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E2005", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrDatabaseUpdate,
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, site)
 }
 
@@ -131,7 +160,7 @@ var DeleteSite = handleDeleteByID(
 		GetService:  siteService,
 		ServiceName: "Site service",
 		ParamName:   "id",
-		ErrCode:     "E2006",
+		ErrCode:     apperror.ErrDatabaseDelete,
 	},
 	func(ctx context.Context, id int64) error {
 		return Services.SiteService.Delete(ctx, id)
@@ -144,7 +173,7 @@ var TestSiteConnection = handleActionByID(
 		GetService:  siteService,
 		ServiceName: "Site service",
 		ParamName:   "id",
-		ErrCode:     "E3001",
+		ErrCode:     apperror.ErrWPConnection,
 	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.TestConnection(ctx, id)
@@ -163,6 +192,7 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
+
 	var input credentialsInput
 	if !decodeJSON(w, r, &input) {
 		return
@@ -170,15 +200,27 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.Url, input.Username, input.Password)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3001", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			apperror.ErrWPConnection,
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, result)
 }
 
 // GetSiteCredentials returns decrypted credentials for API Explorer
 var GetSiteCredentials = handleActionByID(
-	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E2002"},
+	handlerIDConfig{
+		GetService:  siteService,
+		ServiceName: "Site service",
+		ParamName:   "id",
+		ErrCode:     apperror.ErrDatabaseMigrate,
+	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetCredentials(ctx, id)
 	},
@@ -194,18 +236,27 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
+
 	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
+
 	var input bootstrapInput
 	_ = json.NewDecoder(r.Body).Decode(&input)
 
 	result, err := Services.SiteService.BootstrapUploader(r.Context(), id, input.UploaderPath)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E2010", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			apperror.ErrDatabaseBootstrap,
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, result)
 }
 
@@ -220,19 +271,29 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {
 		return
 	}
+
 	var input bulkBootstrapInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	if len(input.SiteIds) == 0 {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "At least one site ID is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrConfigParse,
+			"At least one site ID is required",
+		)
+
 		return
 	}
 
 	results := make([]BulkBootstrapSiteResult, 0, len(input.SiteIds))
+
 	for _, siteId := range input.SiteIds {
 		results = append(results, bootstrapSingleSite(r, siteId, input.UploaderPath))
 	}
+
 	respondSuccess(w, BulkBootstrapResponse{Results: results})
 }
 
@@ -242,21 +303,30 @@ func bootstrapSingleSite(r *http.Request, siteId int64, uploaderPath string) Bul
 	if err != nil {
 		return buildBootstrapFailure(r, siteId, err)
 	}
+
 	return BulkBootstrapSiteResult{
-		SiteId: result.SiteId, SiteName: result.SiteName,
-		IsSuccess: result.IsSuccess, Message: result.Message, IsActivated: result.IsActivated,
+		SiteId:      result.SiteId,
+		SiteName:    result.SiteName,
+		IsSuccess:   result.IsSuccess,
+		Message:     result.Message,
+		IsActivated: result.IsActivated,
 	}
 }
 
 // buildBootstrapFailure constructs a failure result for a single bootstrap attempt.
 func buildBootstrapFailure(r *http.Request, siteId int64, err error) BulkBootstrapSiteResult {
 	siteInfo, _ := Services.SiteService.GetById(r.Context(), siteId)
+
 	siteName := ""
 	if siteInfo != nil {
 		siteName = siteInfo.Name
 	}
+
 	return BulkBootstrapSiteResult{
-		SiteId: siteId, SiteName: siteName,
-		IsSuccess: false, Message: "Deployment failed", Error: err.Error(),
+		SiteId:    siteId,
+		SiteName:  siteName,
+		IsSuccess: false,
+		Message:   "Deployment failed",
+		Error:     err.Error(),
 	}
 }

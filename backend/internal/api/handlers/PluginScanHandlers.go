@@ -8,6 +8,7 @@ import (
 
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // --- Watcher/Scan Handlers ---
@@ -18,7 +19,7 @@ var ScanPlugin = handleActionByID(
 		GetService:  watcherService,
 		ServiceName: "Watcher service",
 		ParamName:   "id",
-		ErrCode:     "E6001",
+		ErrCode:     apperror.ErrBackupCreate,
 	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.WatcherService.TriggerScan(ctx, id)
@@ -30,7 +31,7 @@ var ScanAllPlugins = handleNoArgs(
 	noArgsConfig{
 		GetService:  watcherService,
 		ServiceName: "Watcher service",
-		ErrCode:     "E6002",
+		ErrCode:     apperror.ErrBackupRestore,
 	},
 	func(ctx context.Context) (any, error) {
 		return Services.WatcherService.ScanAll(ctx)
@@ -48,18 +49,32 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.PluginService, "Plugin service") {
 		return
 	}
+
 	var input scanPathInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	if input.Path == "" {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Path is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrConfigParse,
+			"Path is required",
+		)
+
 		return
 	}
 
 	result, err := Services.PluginService.ScanDirectory(r.Context(), input.Path)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E6003", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			apperror.ErrBackupDelete,
+			err.Error(),
+		)
+
 		return
 	}
 
@@ -67,6 +82,7 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 		Result: result,
 		Input:  input,
 	}
+
 	respondScanWithDetection(w, r, detection)
 }
 
@@ -74,20 +90,26 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult scanDetectionInput) {
 	if !scanResult.Input.CreateDetection {
 		respondSuccess(w, scanResult.Result)
+
 		return
 	}
+
 	if err := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path); err != nil {
 		errorResponse := ScanResultResponse{
 			Scan:           scanResult.Result,
 			DetectionError: err.Error(),
 		}
+
 		respondSuccess(w, errorResponse)
+
 		return
 	}
+
 	successResponse := ScanResultResponse{
 		Scan:               scanResult.Result,
 		IsDetectionCreated: true,
 	}
+
 	respondSuccess(w, successResponse)
 }
 
@@ -108,21 +130,31 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.PluginService, "Plugin service") {
 		return
 	}
+
 	var input scanPathsInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	if len(input.Paths) == 0 {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "At least one path is required")
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrConfigParse,
+			"At least one path is required",
+		)
+
 		return
 	}
 
 	results, detected := scanAllDirectories(r, input)
+
 	response := MultiScanResponse{
 		Scanned:  len(input.Paths),
 		Detected: detected,
 		Results:  results,
 	}
+
 	respondSuccess(w, response)
 }
 
@@ -130,13 +162,16 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 func scanAllDirectories(r *http.Request, input scanPathsInput) ([]DirectoryScanResult, int) {
 	results := make([]DirectoryScanResult, 0, len(input.Paths))
 	detected := 0
+
 	for _, path := range input.Paths {
 		sr := scanSingleDirectory(r, path, input.CreateDetection)
 		if sr.IsPlugin {
 			detected++
 		}
+
 		results = append(results, sr)
 	}
+
 	return results, detected
 }
 
@@ -150,17 +185,21 @@ func scanSingleDirectory(r *http.Request, path string, createDetection bool) Dir
 			Error:    err.Error(),
 		}
 	}
+
 	isPlugin := result != nil && result.IsValid
+
 	sr := DirectoryScanResult{
 		Path:     path,
 		IsPlugin: isPlugin,
 		Metadata: result,
 	}
+
 	if createDetection && isPlugin {
 		if err := Services.PluginService.WritePluginDetected(r.Context(), path); err == nil {
 			sr.IsDetectionCreated = true
 		}
 	}
+
 	return sr
 }
 
@@ -168,19 +207,29 @@ func scanSingleDirectory(r *http.Request, path string, createDetection bool) Dir
 func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SyncService == nil {
 		respondSuccess(w, []struct{}{})
+
 		return
 	}
+
 	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
+
 	siteID := parseSiteIDFromQuery(r)
 
 	changes, err := Services.SyncService.GetFileChanges(r.Context(), id, siteID)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E4001", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusServerError,
+			apperror.ErrFSRead,
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, changes)
 }
 
@@ -188,7 +237,9 @@ func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 func parseSiteIDFromQuery(r *http.Request) int64 {
 	if s := r.URL.Query().Get("siteId"); s != "" {
 		id, _ := strconv.ParseInt(s, 10, 64)
+
 		return id
 	}
+
 	return 0
 }
