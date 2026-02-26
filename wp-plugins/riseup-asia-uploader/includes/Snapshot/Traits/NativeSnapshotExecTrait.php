@@ -160,7 +160,7 @@ trait NativeSnapshotExecTrait {
             ResponseKeyType::Tables->value => count($tables),
             ResponseKeyType::Rows->value => $totalRows,
             ResponseKeyType::Bytes->value => $totalBytes,
-            'filepath' => $filepath,
+            ResponseKeyType::FilePath->value => $filepath,
         );
     }
 }

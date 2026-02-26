@@ -325,6 +325,11 @@ enum ResponseKeyType: string
     case ChecksumMd5    = 'ChecksumMd5';
     case PluginName     = 'PluginName';
 
+    /** Status payload keys. */
+    case Route   = 'Route';
+    case Methods = 'Methods';
+    case Result  = 'Result';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

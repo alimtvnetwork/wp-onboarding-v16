@@ -55,7 +55,7 @@ trait SnapshotExportHandlerTrait {
                 return $this->errorResponse($result[ResponseKeyType::Error->value], HttpStatusType::BadRequest->value);
             }
 
-            $filepath = $result['filepath'];
+            $filepath = $result[ResponseKeyType::FilePath->value];
             if (PathHelper::isFileMissing($filepath)) {
                 $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Failed->value,

@@ -149,12 +149,12 @@ trait AdminAjaxSnapshotTrait {
         wp_send_json_success(array(
             ResponseKeyType::Message->value => sprintf(
                 'Cleanup complete: %d by policy, %d orphans, %d failed removed. Freed %s.',
-                $result['deleted_by_policy'],
-                $result['deleted_orphans'],
-                $result['deleted_failed'],
-                PathHelper::formatBytes($result['space_freed_bytes']),
+                $result[ResponseKeyType::DeletedByPolicy->value],
+                $result[ResponseKeyType::DeletedOrphans->value],
+                $result[ResponseKeyType::DeletedFailed->value],
+                PathHelper::formatBytes($result[ResponseKeyType::SpaceFreedBytes->value]),
             ),
-            'result' => $result,
+            ResponseKeyType::Result->value => $result,
         ));
     }
 
