@@ -272,35 +272,18 @@ func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionId str
 }
 
 // BroadcastSyncProgress sends a sync progress update
-func (h *Hub) BroadcastSyncProgress(pluginId, siteId int64, progress int, total int, message string) {
-	Broadcast(h, EventSyncProgress, SyncProgressData{
-		PluginId: pluginId,
-		SiteId:   siteId,
-		Progress: progress,
-		Total:    total,
-		Message:  message,
-	})
+func (h *Hub) BroadcastSyncProgress(data SyncProgressData) {
+	Broadcast(h, EventSyncProgress, data)
 }
 
 // BroadcastScanProgress sends a scan progress update
-func (h *Hub) BroadcastScanProgress(pluginId int64, filesScanned int, totalFiles int, currentFile string) {
-	Broadcast(h, EventScanProgress, ScanProgressData{
-		PluginId:     pluginId,
-		FilesScanned: filesScanned,
-		TotalFiles:   totalFiles,
-		CurrentFile:  currentFile,
-	})
+func (h *Hub) BroadcastScanProgress(data ScanProgressData) {
+	Broadcast(h, EventScanProgress, data)
 }
 
 // BroadcastPublishProgress sends a publish progress update
-func (h *Hub) BroadcastPublishProgress(pluginId, siteId int64, stage string, progress int, message string) {
-	Broadcast(h, EventPublishProgress, PublishProgressData{
-		PluginId: pluginId,
-		SiteId:   siteId,
-		Stage:    stage,
-		Progress: progress,
-		Message:  message,
-	})
+func (h *Hub) BroadcastPublishProgress(data PublishProgressData) {
+	Broadcast(h, EventPublishProgress, data)
 }
 
 // BroadcastFileChange notifies clients of a file change

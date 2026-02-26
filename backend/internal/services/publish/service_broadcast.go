@@ -68,7 +68,10 @@ func (s *Service) emitProgressLog(pluginID, siteID int64, step, stage, message s
 	if step == stagestatus.Failed.String() {
 		logLevel = loglevel.Error.String()
 	}
-	s.wsHub.BroadcastPublishLog(pluginID, siteID, logLevel, stage, message, nil)
+	s.wsHub.BroadcastPublishLog(ws.OperationLogInput{
+		PluginID: pluginID, SiteID: siteID,
+		Entry: ws.OperationLogEntry{Level: logLevel, Step: stage, Message: message},
+	})
 	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "step", step, "stage", stage, "progress", progress, "message", message)
 }
 
@@ -96,7 +99,10 @@ func (s *Service) emitSessionProgressLog(pluginID, siteID int64, sessionID, step
 	if step == stagestatus.Failed.String() {
 		logLevel = loglevel.Error.String()
 	}
-	s.wsHub.BroadcastPublishLogWithSession(pluginID, siteID, sessionID, logLevel, stage, message, nil)
+	s.wsHub.BroadcastPublishLogWithSession(ws.OperationLogInput{
+		PluginID: pluginID, SiteID: siteID, SessionID: sessionID,
+		Entry: ws.OperationLogEntry{Level: logLevel, Step: stage, Message: message},
+	})
 	s.sessionLog(sessionID, logLevel, stage, message, nil)
 	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "sessionId", sessionID, "step", step, "stage", stage, "progress", progress, "message", message)
 }
@@ -128,7 +134,10 @@ func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage, status str
 	if status == loglevel.Error.String() {
 		level = loglevel.Error.String()
 	}
-	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, stage, message, details)
+	s.wsHub.BroadcastPublishLog(ws.OperationLogInput{
+		PluginID: pluginID, SiteID: siteID,
+		Entry: ws.OperationLogEntry{Level: level, Step: stage, Message: message, Details: details},
+	})
 }
 
 // broadcastStageLog sends a detailed log entry with structured context
@@ -148,7 +157,10 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	if s.wsHub == nil {
 		return
 	}
-	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, step, message, details)
+	s.wsHub.BroadcastPublishLog(ws.OperationLogInput{
+		PluginID: pluginID, SiteID: siteID,
+		Entry: ws.OperationLogEntry{Level: level, Step: step, Message: message, Details: details},
+	})
 
 	pluginName, siteName, siteURL := s.resolveNames(pluginID, siteID, details)
 	s.logWithLevel(level, message, pluginName, siteName, siteURL, pluginID, siteID, step)

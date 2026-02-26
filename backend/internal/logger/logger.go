@@ -250,12 +250,21 @@ func (l *Logger) LogProcessOutput(processName string, stdout, stderr string) {
 	}
 }
 
-// LogProcessError logs a process execution error with full context
-func (l *Logger) LogProcessError(processName string, cmd string, err error, stdout, stderr string) {
-	l.Error(fmt.Sprintf("[%s] execution failed", processName),
-		"command", cmd,
-		"error", err,
-		"stdout", stdout,
-		"stderr", stderr,
+// ProcessErrorInput holds parameters for logging process execution errors.
+type ProcessErrorInput struct {
+	ProcessName string
+	Command     string
+	Err         error
+	Stdout      string
+	Stderr      string
+}
+
+// LogProcessError logs a process execution error with full context.
+func (l *Logger) LogProcessError(input ProcessErrorInput) {
+	l.Error(fmt.Sprintf("[%s] execution failed", input.ProcessName),
+		"command", input.Command,
+		"error", input.Err,
+		"stdout", input.Stdout,
+		"stderr", input.Stderr,
 	)
 }

@@ -19,7 +19,6 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
-	"wp-plugin-publish/pkg/pathutil"
 )
 
 // getMapping retrieves the plugin-site mapping
@@ -292,10 +291,10 @@ func (s *Service) logZipEntries(pluginID, siteID int64, entries []string) {
 }
 
 // logUploadError logs a structured upload error
-func (s *Service) logUploadError(pluginID, siteID int64, sessionID string, siteInfo *models.Site, mapping *models.PluginMapping, attempts int, err error) {
-	inner := buildUploadErrorInner(mapping.RemoteSlug, attempts, err)
-	s.broadcastStageLog(pluginID, siteID, sessionID, "error", "upload", StageContext{
-		What: fmt.Sprintf("Upload ZIP to %s", siteInfo.URL), Result: fmt.Sprintf("FAILED: %s", err.Error()), Details: toDetails(inner),
+func (s *Service) logUploadError(pctx *publishContext, attempts int, err error) {
+	inner := buildUploadErrorInner(pctx.Mapping.RemoteSlug, attempts, err)
+	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "error", "upload", StageContext{
+		What: fmt.Sprintf("Upload ZIP to %s", pctx.SiteInfo.URL), Result: fmt.Sprintf("FAILED: %s", err.Error()), Details: toDetails(inner),
 	})
 }
 
@@ -318,13 +317,13 @@ func buildUploadErrorInner(slug string, attempts int, err error) UploadErrorInne
 }
 
 // logUploadSuccess logs a structured upload success
-func (s *Service) logUploadSuccess(pluginID, siteID int64, sessionID string, mapping *models.PluginMapping, zipSize int64, startTime time.Time, isActivated bool, attempts int, uploadResult *wordpress.OnboardUploadResult) {
+func (s *Service) logUploadSuccess(pctx *publishContext, zipSize int64, startTime time.Time, isActivated bool, attempts int, uploadResult *wordpress.OnboardUploadResult) {
 	resultMsg := "Plugin uploaded successfully"
 	if isActivated {
 		resultMsg = "Plugin uploaded and activated"
 	}
-	inner := buildUploadSuccessInner(mapping.RemoteSlug, isActivated, startTime, attempts, uploadResult)
-	s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
+	inner := buildUploadSuccessInner(pctx.Mapping.RemoteSlug, isActivated, startTime, attempts, uploadResult)
+	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "upload", StageContext{
 		What: fmt.Sprintf("Upload ZIP (%s)", formatBytes(zipSize)), Result: resultMsg, Details: toDetails(inner),
 	})
 }
@@ -342,9 +341,9 @@ func buildUploadSuccessInner(slug string, isActivated bool, startTime time.Time,
 }
 
 // logActivationError logs a structured activation error
-func (s *Service) logActivationError(pluginID, siteID int64, sessionID string, mapping *models.PluginMapping, endpointURL string, startTime time.Time, err error) {
-	inner := buildActivateErrorInner(mapping.RemoteSlug, startTime, err)
-	s.broadcastStageLog(pluginID, siteID, sessionID, loglevel.Error.String(), "activate", StageContext{
+func (s *Service) logActivationError(pctx *publishContext, endpointURL string, startTime time.Time, err error) {
+	inner := buildActivateErrorInner(pctx.Mapping.RemoteSlug, startTime, err)
+	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, loglevel.Error.String(), "activate", StageContext{
 		What: "Activate plugin via Riseup Asia Uploader", Why: "Enable plugin after upload",
 		Where: endpointURL, Result: fmt.Sprintf("FAILED: %s", err.Error()), Details: toDetails(inner),
 	})
