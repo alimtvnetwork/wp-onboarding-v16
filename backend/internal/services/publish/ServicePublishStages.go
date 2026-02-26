@@ -45,8 +45,15 @@ func (s *Service) executeBackupStage(pctx *publishContext) Stage {
 	})
 }
 
-// executePackageStage builds the ZIP package and returns the path, file count, and stage result
-func (s *Service) executePackageStage(pctx *publishContext) (string, int, Stage) {
+// PackageStageResult holds the output of the package stage.
+type PackageStageResult struct {
+	ZipPath   string
+	FileCount int
+	Stage     Stage
+}
+
+// executePackageStage builds the ZIP package and returns the result
+func (s *Service) executePackageStage(pctx *publishContext) PackageStageResult {
 	var zipPath string
 	var fileCount int
 
@@ -61,16 +68,31 @@ func (s *Service) executePackageStage(pctx *publishContext) (string, int, Stage)
 		s.broadcastProgress(pkgProgress)
 
 		var err error
-		zipPath, fileCount, err = s.buildPluginPackage(pctx)
+		buildResult, err := s.buildPluginPackage(pctx)
+		if err != nil {
+			return err
+		}
+		zipPath = buildResult.ZipPath
+		fileCount = buildResult.FileCount
 
-		return err
+		return nil
 	})
 
-	return zipPath, fileCount, stage
+	return PackageStageResult{
+		ZipPath:   zipPath,
+		FileCount: fileCount,
+		Stage:     stage,
+	}
+}
+
+// PackageBuildResult holds the output of building a plugin package.
+type PackageBuildResult struct {
+	ZipPath   string
+	FileCount int
 }
 
 // buildPluginPackage creates the ZIP for full or selective mode.
-func (s *Service) buildPluginPackage(pctx *publishContext) (string, int, error) {
+func (s *Service) buildPluginPackage(pctx *publishContext) (*PackageBuildResult, error) {
 	pkgDetails := toDetails(PackageDetails{
 		PluginPath:      pctx.PluginInfo.Path,
 		PluginName:      pctx.PluginInfo.Name,
@@ -87,26 +109,26 @@ func (s *Service) buildPluginPackage(pctx *publishContext) (string, int, error) 
 	}
 	s.broadcastDetailedLog(pkgLog)
 
-	zipPath, fileCount, err := s.buildZip(pctx)
+	buildResult, err := s.buildZip(pctx)
 	if err != nil {
-		return "", 0, apperror.Wrap(err, apperror.ErrInternal, "failed to create plugin ZIP package")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create plugin ZIP package")
 	}
 
-	if zipPath != "" {
+	if buildResult.ZipPath != "" {
 		zipInput := logZipInput{
 			PluginId:  pctx.PluginId,
 			SiteId:    pctx.SiteId,
-			ZipPath:   zipPath,
-			FileCount: fileCount,
+			ZipPath:   buildResult.ZipPath,
+			FileCount: buildResult.FileCount,
 		}
 		s.logZipCreated(zipInput)
 	}
 
-	return zipPath, fileCount, nil
+	return buildResult, nil
 }
 
 // buildZip delegates to selective or full zip creation.
-func (s *Service) buildZip(pctx *publishContext) (string, int, error) {
+func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, error) {
 	if pctx.Options.Mode.IsSelected() && len(pctx.Options.Files) > 0 {
 		selectDetails := toDetails(SelectedFilesDetails{
 			SelectedFiles: pctx.Options.Files,
@@ -122,8 +144,15 @@ func (s *Service) buildZip(pctx *publishContext) (string, int, error) {
 		s.broadcastDetailedLog(selectLog)
 
 		path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
+		if err != nil {
+			return nil, err
+		}
 
-		return path, len(pctx.Options.Files), err
+		result := &PackageBuildResult{
+			ZipPath:   path,
+			FileCount: len(pctx.Options.Files),
+		}
+		return result, nil
 	}
 
 	fullLog := DetailedLogInput{
@@ -136,8 +165,15 @@ func (s *Service) buildZip(pctx *publishContext) (string, int, error) {
 	s.broadcastDetailedLog(fullLog)
 
 	path, err := s.createFullZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.PluginInfo.ExcludePatterns)
+	if err != nil {
+		return nil, err
+	}
 
-	return path, pctx.PluginInfo.FileCount, err
+	result := &PackageBuildResult{
+		ZipPath:   path,
+		FileCount: pctx.PluginInfo.FileCount,
+	}
+	return result, nil
 }
 
 // ─── Pre-Upload Backup ──────────────────────────────────────────────────────

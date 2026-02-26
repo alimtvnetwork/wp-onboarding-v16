@@ -113,11 +113,11 @@ func isTransientAppError(appErr *apperror.AppError) bool {
 		return isTransientMessage(appErr.Error())
 	}
 
-	if _, ok := cause.(net.Error); ok {
+	if netErr, ok := cause.(net.Error); ok && netErr != nil {
 		return true
 	}
 
-	if apiErr, ok := cause.(*wordpress.APIError); ok {
+	if apiErr := wordpress.ExtractAPIError(cause); apiErr != nil {
 		return wordpress.HttpStatusType(apiErr.StatusCode).IsRetryable()
 	}
 

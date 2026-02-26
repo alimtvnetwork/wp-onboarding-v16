@@ -85,12 +85,12 @@ func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	exists, status, pluginFile, err := Services.SiteService.CheckRemotePluginExists(r.Context(), id, pluginSlug)
+	result, err := Services.SiteService.CheckRemotePluginExists(r.Context(), id, pluginSlug)
 	if err != nil {
 		respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), "E3010", err.Error(), err)
 		return
 	}
-	respondSuccess(w, PluginExistsResponse{IsExists: exists, Status: status, PluginFile: pluginFile, Plugin: pluginSlug})
+	respondSuccess(w, PluginExistsResponse{IsExists: result.Exists, Status: result.Status, PluginFile: result.PluginFile, Plugin: pluginSlug})
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site

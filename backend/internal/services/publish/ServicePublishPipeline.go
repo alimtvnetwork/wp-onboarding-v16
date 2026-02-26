@@ -99,11 +99,11 @@ func (s *Service) runBackupStage(pctx *publishContext) error {
 
 // runUploadAndActivate handles package, upload, activate, and cleanup stages.
 func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext) error {
-	zipPath, fileCount, stage := s.executePackageStage(pctx)
-	pctx.Result.Stages = append(pctx.Result.Stages, stage)
+	pkgResult := s.executePackageStage(pctx)
+	pctx.Result.Stages = append(pctx.Result.Stages, pkgResult.Stage)
 
-	if stage.Status.IsFailed() {
-		return s.failStage(pctx, publishstep.Package, stage)
+	if pkgResult.Stage.Status.IsFailed() {
+		return s.failStage(pctx, publishstep.Package, pkgResult.Stage)
 	}
 
 	isPublishFailed := false
@@ -116,19 +116,19 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 	cleanupInput := cleanupZipInput{
 		PluginId:        pctx.PluginId,
 		SiteId:          pctx.SiteId,
-		ZipPath:         zipPath,
+		ZipPath:         pkgResult.ZipPath,
 		IsPublishFailed: isPublishFailed,
 		IsKeepZipFiles:  pctx.Options.IsKeepZipFiles,
 	}
 	defer s.cleanupZip(cleanupInput)
 
-	if err := s.runUploadStage(ctx, pctx, zipPath, preUploadBackupZip); err != nil {
+	if err := s.runUploadStage(ctx, pctx, pkgResult.ZipPath, preUploadBackupZip); err != nil {
 		isPublishFailed = true
 
 		return err
 	}
 
-	pctx.Result.FilesUpdated = s.countFilesUpdated(pctx.Options, pctx.PluginInfo, fileCount)
+	pctx.Result.FilesUpdated = s.countFilesUpdated(pctx.Options, pctx.PluginInfo, pkgResult.FileCount)
 
 	return nil
 }

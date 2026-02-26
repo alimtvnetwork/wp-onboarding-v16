@@ -200,44 +200,63 @@ func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteId int64
 	return nil
 }
 
+// CacheStatus holds the result of a cache status check.
+type CacheStatus struct {
+	IsValid   bool
+	CachedAt  *time.Time
+	ExpiresAt *time.Time
+}
+
+// cacheTimestampStrings holds raw timestamp strings from the database.
+type cacheTimestampStrings struct {
+	CachedAt  string
+	ExpiresAt string
+}
+
 // GetRemotePluginsCacheStatus returns cache status for a site
-func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64) (bool, *time.Time, *time.Time, error) {
-	cachedAtStr, expiresAtStr, err := s.queryCacheTimestamps(ctx, siteId)
+func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64) (*CacheStatus, error) {
+	timestamps, err := s.queryCacheTimestamps(ctx, siteId)
 	if err != nil {
-		return false, nil, nil, err
+		return nil, err
 	}
-	if cachedAtStr == "" {
-		return false, nil, nil, nil
+	if timestamps.CachedAt == "" {
+		result := &CacheStatus{}
+		return result, nil
 	}
 
-	return parseCacheTimestamps(cachedAtStr, expiresAtStr)
+	return parseCacheTimestamps(timestamps), nil
 }
 
 // queryCacheTimestamps fetches raw cache timestamps from the database.
-func (s *Service) queryCacheTimestamps(ctx context.Context, siteId int64) (string, string, error) {
+func (s *Service) queryCacheTimestamps(ctx context.Context, siteId int64) (*cacheTimestampStrings, error) {
 	query := `SELECT CachedAt, ExpiresAt FROM RemotePluginsCache WHERE SiteId = ?`
 	var cachedAtStr, expiresAtStr string
 	err := s.db.QueryRowContext(ctx, query, siteId).Scan(&cachedAtStr, &expiresAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", "", nil
+			return &cacheTimestampStrings{}, nil
 		}
-		return "", "", err
+		return nil, err
 	}
-	return cachedAtStr, expiresAtStr, nil
+
+	result := &cacheTimestampStrings{
+		CachedAt:  cachedAtStr,
+		ExpiresAt: expiresAtStr,
+	}
+	return result, nil
 }
 
-// parseCacheTimestamps converts timestamp strings to time pointers and validity.
-func parseCacheTimestamps(cachedAtStr, expiresAtStr string) (bool, *time.Time, *time.Time, error) {
-	cachedAtVal := parseTime(cachedAtStr)
-	expiresAtVal := parseTime(expiresAtStr)
+// parseCacheTimestamps converts timestamp strings to cache status.
+func parseCacheTimestamps(timestamps *cacheTimestampStrings) *CacheStatus {
+	cachedAtVal := parseTime(timestamps.CachedAt)
+	expiresAtVal := parseTime(timestamps.ExpiresAt)
 	isExpired := expiresAtVal.IsZero() || expiresAtVal.Before(time.Now())
-	isValid := !isExpired
 
-	cachedAtPtr := timeToPtr(cachedAtVal)
-	expiresAtPtr := timeToPtr(expiresAtVal)
-
-	return isValid, cachedAtPtr, expiresAtPtr, nil
+	return &CacheStatus{
+		IsValid:   !isExpired,
+		CachedAt:  timeToPtr(cachedAtVal),
+		ExpiresAt: timeToPtr(expiresAtVal),
+	}
 }
 
 // timeToPtr returns a pointer to the time value, or nil if zero.

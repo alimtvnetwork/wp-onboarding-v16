@@ -53,18 +53,29 @@ func scanMapping(row *sql.Row) (*models.PluginMapping, error) {
 	return &m, nil
 }
 
+// SiteCredentialsResult holds a site and its decrypted password.
+type SiteCredentialsResult struct {
+	Site     *models.Site
+	Password string
+}
+
 // getSiteCredentials retrieves site info and decrypted password
-func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) (*models.Site, string, error) {
+func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) (*SiteCredentialsResult, error) {
 	site, err := s.querySite(ctx, siteID)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	password, err := s.decryptSitePassword(ctx, siteID)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return site, password, nil
+
+	result := &SiteCredentialsResult{
+		Site:     site,
+		Password: password,
+	}
+	return result, nil
 }
 
 // querySite fetches a site by ID.
@@ -108,8 +119,15 @@ func (s *Service) decryptSitePassword(ctx context.Context, siteID int64) (string
 	return password, nil
 }
 
+// UploadOutcome holds the result of an upload attempt.
+type UploadOutcome struct {
+	IsPerformed  bool
+	UploadResult *wordpress.OnboardUploadResult
+	IsActivated  bool
+}
+
 // uploadPlugin uploads a plugin ZIP via the Riseup Asia Uploader.
-func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, *apperror.AppError) {
+func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) apperror.Result[UploadOutcome] {
 	uploaderAvailable, _, _ := wpClient.CheckRiseupAsiaAvailable()
 	if !uploaderAvailable {
 		return s.simulateUpload(zipPath, slug)
@@ -119,17 +137,17 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 }
 
 // simulateUpload logs a simulated upload when no uploader is available.
-func (s *Service) simulateUpload(zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, *apperror.AppError) {
+func (s *Service) simulateUpload(zipPath, slug string) apperror.Result[UploadOutcome] {
 	s.log.Warn("Riseup Asia Uploader not available; upload simulated", "slug", slug)
 	if fi, appErr := pathutil.StatFile(zipPath); appErr == nil {
 		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", fi.Info.Size())
 	}
 
-	return false, nil, false, nil
+	return apperror.Ok(UploadOutcome{})
 }
 
 // performRealUpload uploads via the Riseup Asia Uploader.
-func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, *apperror.AppError) {
+func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug string) apperror.Result[UploadOutcome] {
 	s.log.Info("Using Riseup Asia Uploader for upload", "slug", slug)
 
 	uploadInput := wordpress.UploadInput{
@@ -140,7 +158,7 @@ func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug st
 	}
 	result, err := wpClient.UploadPluginViaUploader(uploadInput)
 	if err != nil {
-		return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
+		return apperror.Fail[UploadOutcome](apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper"))
 	}
 
 	onboardResult := buildOnboardResult(slug, result)
@@ -151,7 +169,12 @@ func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug st
 		"activated", result.Activated,
 	)
 
-	return true, onboardResult, result.Activated, nil
+	outcome := UploadOutcome{
+		IsPerformed:  true,
+		UploadResult: onboardResult,
+		IsActivated:  result.Activated,
+	}
+	return apperror.Ok(outcome)
 }
 
 // buildOnboardResult converts uploader result to OnboardUploadResult.
@@ -403,7 +426,7 @@ func buildUploadErrorInner(slug string, attempts int, appErr *apperror.AppError)
 	}
 
 	if cause := appErr.Unwrap(); cause != nil {
-		if apiErr, ok := cause.(*wordpress.APIError); ok {
+		if apiErr := wordpress.ExtractAPIError(cause); apiErr != nil {
 			inner.Status = apiErr.StatusCode
 			inner.Response = truncateString(apiErr.ResponseBody, 2000)
 		}
@@ -485,7 +508,7 @@ func buildActivateErrorInner(slug string, startTime time.Time, appErr *apperror.
 	}
 
 	if cause := appErr.Unwrap(); cause != nil {
-		if apiErr, ok := cause.(*wordpress.APIError); ok {
+		if apiErr := wordpress.ExtractAPIError(cause); apiErr != nil {
 			inner.Request = &ActivateRequestInfo{
 				Method:   apiErr.Method,
 				Endpoint: apiErr.Endpoint,

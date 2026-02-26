@@ -67,6 +67,14 @@ func (p *publishContext) stageComplete(stageName publishstep.Variant, status str
 
 // ─── Publish Entry Points ────────────────────────────────────────────────────
 
+// publishInitResult holds the result of publish initialization.
+type publishInitResult struct {
+	PluginInfo models.Plugin
+	SiteInfo   *models.Site
+	Password   string
+	SessionID  string
+}
+
 // Publish publishes plugin changes to a WordPress site
 func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts PublishOptions) apperror.Result[PublishResult] {
 	result := &PublishResult{
@@ -74,16 +82,16 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		Stages:           []Stage{},
 	}
 
-	pluginInfo, siteInfo, password, sessionID, err := s.initPublishContext(ctx, pluginID, siteID, result)
+	initResult, err := s.initPublishContext(ctx, pluginID, siteID, result)
 	if err != nil {
 		return apperror.Ok(*result)
 	}
-	result.SessionId = sessionID
+	result.SessionId = initResult.SessionID
 
 	startProgress := ProgressInput{
 		PluginId:  pluginID,
 		SiteId:    siteID,
-		SessionId: sessionID,
+		SessionId: initResult.SessionID,
 		Step:      publishstep.Started,
 		Progress:  0,
 		Message:   "Starting publish...",
@@ -91,24 +99,24 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	s.broadcastProgress(startProgress)
 
 	initLog := sessionLogInput{
-		SessionId: sessionID,
+		SessionId: initResult.SessionID,
 		Level:     loglevel.Info,
 		Step:      publishstep.Init,
-		Message:   fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name),
+		Message:   fmt.Sprintf("Starting publish for %s to %s", initResult.PluginInfo.Name, initResult.SiteInfo.Name),
 	}
 	s.sessionLog(initLog)
 
 	pctx := &publishContext{
 		PluginId:   pluginID,
 		SiteId:     siteID,
-		SessionId:  sessionID,
-		PluginInfo: pluginInfo,
+		SessionId:  initResult.SessionID,
+		PluginInfo: initResult.PluginInfo,
 		Options:    opts,
 		Result:     result,
 		StartTime:  time.Now(),
 	}
 
-	if err := s.runPublishPipeline(ctx, pctx, siteInfo, password); err != nil {
+	if err := s.runPublishPipeline(ctx, pctx, initResult.SiteInfo, initResult.Password); err != nil {
 		return apperror.Ok(*result)
 	}
 
@@ -118,25 +126,33 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 }
 
 // initPublishContext loads plugin, site, credentials, and starts a session.
-func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64, result *PublishResult) (models.Plugin, *models.Site, string, string, error) {
+func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64, result *PublishResult) (*publishInitResult, error) {
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
-		return s.failInit(pluginID, siteID, pluginResult.AppError(), result)
+		s.failInit(pluginID, siteID, pluginResult.AppError(), result)
+		return nil, pluginResult.AppError()
 	}
 
-	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
+	creds, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
-		return s.failInit(pluginID, siteID, err, result)
+		s.failInit(pluginID, siteID, err, result)
+		return nil, err
 	}
 
 	pluginInfo := pluginResult.Value()
-	sessionID, _ := s.startPublishSession(pluginID, siteID, pluginInfo, siteInfo)
+	sessionID, _ := s.startPublishSession(pluginID, siteID, pluginInfo, creds.Site)
 
-	return pluginInfo, siteInfo, password, sessionID, nil
+	initResult := &publishInitResult{
+		PluginInfo: pluginInfo,
+		SiteInfo:   creds.Site,
+		Password:   creds.Password,
+		SessionID:  sessionID,
+	}
+	return initResult, nil
 }
 
 // failInit records error and broadcasts failure for init context.
-func (s *Service) failInit(pluginID, siteID int64, err error, result *PublishResult) (models.Plugin, *models.Site, string, string, error) {
+func (s *Service) failInit(pluginID, siteID int64, err error, result *PublishResult) {
 	result.ErrorMessage = err.Error()
 
 	failProgress := ProgressInput{
@@ -147,8 +163,6 @@ func (s *Service) failInit(pluginID, siteID int64, err error, result *PublishRes
 		Message:  err.Error(),
 	}
 	s.broadcastProgress(failProgress)
-
-	return models.Plugin{}, nil, "", "", err
 }
 
 // PublishFiles publishes specific files to a WordPress site

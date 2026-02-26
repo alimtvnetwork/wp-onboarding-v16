@@ -25,15 +25,15 @@ type remoteActionRef struct {
 }
 
 // CheckRemotePluginExists performs a lightweight pre-flight check
-func (s *Service) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (bool, string, string, error) {
+func (s *Service) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, error) {
 	result := s.GetById(ctx, siteId)
 	if result.HasError() {
-		return false, "", "", apperror.Wrap(result.AppError(), apperror.ErrNotFound, "site not found")
+		return nil, apperror.Wrap(result.AppError(), apperror.ErrNotFound, "site not found")
 	}
 	site := result.Value()
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 
@@ -76,7 +76,7 @@ func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSl
 		Action:     "delete",
 		ExecFn: func(client *wordpress.Client) error {
 			if disableErr := client.DisablePluginViaUploader(pluginSlug); disableErr != nil {
-				if apiErr, ok := disableErr.(*wordpress.APIError); ok && apiErr.StatusCode == http.StatusNotFound {
+				if apiErr := wordpress.ExtractAPIError(disableErr); apiErr != nil && apiErr.StatusCode == http.StatusNotFound {
 					s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
 				} else {
 					s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())

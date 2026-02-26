@@ -49,8 +49,15 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	return err
 }
 
+// PluginExistsResult holds the result of a plugin existence check.
+type PluginExistsResult struct {
+	Exists     bool
+	Status     string
+	PluginFile string
+}
+
 // CheckPluginExistsViaUploader checks if a plugin slug is installed on the remote site.
-func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string, error) {
+func (c *Client) CheckPluginExistsViaUploader(slug string) (*PluginExistsResult, error) {
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
@@ -65,7 +72,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 	}
 	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
-		return false, "", "", err
+		return nil, err
 	}
 
 	return parsePluginExistsResponse(data)
@@ -80,22 +87,32 @@ type pluginExistsResult struct {
 }
 
 // parsePluginExistsResponse tries envelope format, then legacy flat format.
-func parsePluginExistsResponse(data []byte) (bool, string, string, error) {
+func parsePluginExistsResponse(data []byte) (*PluginExistsResult, error) {
 	if results, ok := UnwrapResults[pluginExistsResult](data); ok && len(results) > 0 {
-		return results[0].Exists, results[0].Status, results[0].PluginFile, nil
+		result := &PluginExistsResult{
+			Exists:     results[0].Exists,
+			Status:     results[0].Status,
+			PluginFile: results[0].PluginFile,
+		}
+		return result, nil
 	}
 
 	return parsePluginExistsLegacy(data)
 }
 
 // parsePluginExistsLegacy decodes the legacy flat format for plugin-exists.
-func parsePluginExistsLegacy(data []byte) (bool, string, string, error) {
+func parsePluginExistsLegacy(data []byte) (*PluginExistsResult, error) {
 	var legacy pluginExistsResult
 	if err := json.Unmarshal(data, &legacy); err != nil {
-		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
 	}
 
-	return legacy.Exists, legacy.Status, legacy.PluginFile, nil
+	result := &PluginExistsResult{
+		Exists:     legacy.Exists,
+		Status:     legacy.Status,
+		PluginFile: legacy.PluginFile,
+	}
+	return result, nil
 }
 
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.

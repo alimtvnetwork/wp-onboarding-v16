@@ -80,14 +80,14 @@ var uploaderNamespaces = []string{
 func (c *Client) CheckRiseupAsiaAvailable() (bool, string, error) {
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
-		_, statusCode, err := c.doAPICallWithStatus(apiCallInput{
+		callResp, err := c.doAPICallWithStatus(apiCallInput{
 			Method: "GET", Endpoint: endpoint, Operation: "check uploader namespace",
 		})
 		if err != nil {
 			return false, "", err
 		}
 
-		if statusCode == HttpStatusOk.Int() || statusCode == HttpStatusUnauthorized.Int() || statusCode == HttpStatusForbidden.Int() {
+		if callResp.StatusCode == HttpStatusOk.Int() || callResp.StatusCode == HttpStatusUnauthorized.Int() || callResp.StatusCode == HttpStatusForbidden.Int() {
 			return true, ns, nil
 		}
 	}

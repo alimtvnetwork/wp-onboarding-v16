@@ -142,7 +142,7 @@ func (c *Client) testAuthentication(result *ConnectionInfo) error {
 		Endpoint:  WPCoreUsersMe,
 		Operation: "authenticate user",
 	}
-	body, statusCode, err := c.doAPICallWithStatus(authInput)
+	authResp, err := c.doAPICallWithStatus(authInput)
 	if err != nil {
 		c.progress(ProgressEvent{
 			Step:    connectionstep.AuthCheck.Value(),
@@ -156,11 +156,11 @@ func (c *Client) testAuthentication(result *ConnectionInfo) error {
 			WithUsername(c.username)
 	}
 
-	if authErr := c.checkAuthStatus(statusCode, body); authErr != nil {
+	if authErr := c.checkAuthStatus(authResp.StatusCode, authResp.Body); authErr != nil {
 		return authErr
 	}
 
-	c.parseUserInfoFromBytes(body, result)
+	c.parseUserInfoFromBytes(authResp.Body, result)
 	c.progress(ProgressEvent{
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Completed.String(),
@@ -241,7 +241,7 @@ func (c *Client) testPluginAccess(result *ConnectionInfo) error {
 		Endpoint:  WPCorePlugins,
 		Operation: "check plugin access",
 	}
-	_, statusCode, err := c.doAPICallWithStatus(pluginAccessInput)
+	pluginResp, err := c.doAPICallWithStatus(pluginAccessInput)
 	if err != nil {
 		c.progress(ProgressEvent{
 			Step:    connectionstep.PluginAccessCheck.Value(),
@@ -253,7 +253,7 @@ func (c *Client) testPluginAccess(result *ConnectionInfo) error {
 		return apperror.Wrap(err, apperror.ErrWPPluginList, "plugin endpoint not accessible").WithURL(c.baseURL)
 	}
 
-	if statusCode == HttpStatusUnauthorized.Int() || statusCode == HttpStatusForbidden.Int() {
+	if pluginResp.StatusCode == HttpStatusUnauthorized.Int() || pluginResp.StatusCode == HttpStatusForbidden.Int() {
 		c.progress(ProgressEvent{
 			Step:    connectionstep.PluginAccessCheck.Value(),
 			Status:  stagestatus.Failed.String(),
@@ -312,7 +312,7 @@ func (c *Client) testWritePermissions(result *ConnectionInfo) {
 		Body:      testPost,
 		Operation: "test write permissions",
 	}
-	body, statusCode, err := c.doAPICallWithStatus(writeTestInput)
+	writeResp, err := c.doAPICallWithStatus(writeTestInput)
 	if err != nil {
 		c.progress(ProgressEvent{
 			Step:    connectionstep.WriteTest.Value(),
@@ -324,7 +324,7 @@ func (c *Client) testWritePermissions(result *ConnectionInfo) {
 		return
 	}
 
-	c.evaluateWriteTestByStatus(statusCode, body, result)
+	c.evaluateWriteTestByStatus(writeResp.StatusCode, writeResp.Body, result)
 }
 
 // evaluateWriteTestByStatus handles the write test response based on status code.

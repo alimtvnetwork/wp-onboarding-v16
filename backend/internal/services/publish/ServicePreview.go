@@ -21,7 +21,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 		return apperror.Fail[PublishPreviewResult](err)
 	}
 
-	siteInfo, password, mapping, err := s.loadSiteForPreview(ctx, pluginID, siteID, result)
+	previewLoad, err := s.loadSiteForPreview(ctx, pluginID, siteID, result)
 	if err != nil {
 		return apperror.Fail[PublishPreviewResult](err)
 	}
@@ -31,17 +31,17 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 		return apperror.FailWrap[PublishPreviewResult](scanErr, apperror.ErrFSRead, "failed to scan plugin files")
 	}
 
-	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
-	result.RemoteVersion = s.fetchRemoteVersion(wpClient, mapping.RemoteSlug)
-	remoteFileMap, fetchFailed := s.fetchRemoteFileMap(ctx, wpClient, mapping.RemoteSlug)
+	wpClient := s.wpClientFactory(previewLoad.Site.URL, previewLoad.Site.Username, previewLoad.Password)
+	result.RemoteVersion = s.fetchRemoteVersion(wpClient, previewLoad.Mapping.RemoteSlug)
+	remoteFileMap, fetchFailed := s.fetchRemoteFileMap(ctx, wpClient, previewLoad.Mapping.RemoteSlug)
 
-	files, added, modified, deleted := s.compareFiles(localFiles, remoteFileMap, fetchFailed)
-	result.Files = files
-	result.TotalFiles = len(files)
+	diffSummary := s.compareFiles(localFiles, remoteFileMap, fetchFailed)
+	result.Files = diffSummary.Files
+	result.TotalFiles = len(diffSummary.Files)
 	result.TotalSize = totalSize
-	result.Added = added
-	result.Modified = modified
-	result.Deleted = deleted
+	result.Added = diffSummary.Added
+	result.Modified = diffSummary.Modified
+	result.Deleted = diffSummary.Deleted
 
 	return apperror.Ok(*result)
 }
@@ -70,30 +70,39 @@ type pluginPreviewInfo struct {
 	ExcludePatterns []string
 }
 
+// previewLoadResult holds the loaded site, password, and mapping for preview.
+type previewLoadResult struct {
+	Site     *sitePreviewInfo
+	Password string
+	Mapping  *mappingPreviewInfo
+}
+
 // loadSiteForPreview loads site, credentials, and mapping for preview.
-func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64, result *PublishPreviewResult) (*sitePreviewInfo, string, *mappingPreviewInfo, *apperror.AppError) {
-	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
+func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64, result *PublishPreviewResult) (*previewLoadResult, *apperror.AppError) {
+	creds, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
-		return nil, "", nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
+		return nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
-	result.SiteName = siteInfo.Name
-	result.SiteUrl = siteInfo.URL
+	result.SiteName = creds.Site.Name
+	result.SiteUrl = creds.Site.URL
 
 	mapping, mapErr := s.getMapping(ctx, pluginID, siteID)
 	if mapErr != nil {
-		return nil, "", nil, apperror.Wrap(mapErr, apperror.ErrNotFound, "plugin-site mapping not found")
+		return nil, apperror.Wrap(mapErr, apperror.ErrNotFound, "plugin-site mapping not found")
 	}
 	result.RemoteSlug = mapping.RemoteSlug
 
-	site := &sitePreviewInfo{
-		URL:      siteInfo.URL,
-		Username: siteInfo.Username,
+	loadResult := &previewLoadResult{
+		Site: &sitePreviewInfo{
+			URL:      creds.Site.URL,
+			Username: creds.Site.Username,
+		},
+		Password: creds.Password,
+		Mapping: &mappingPreviewInfo{
+			RemoteSlug: mapping.RemoteSlug,
+		},
 	}
-	mapInfo := &mappingPreviewInfo{
-		RemoteSlug: mapping.RemoteSlug,
-	}
-
-	return site, password, mapInfo, nil
+	return loadResult, nil
 }
 
 type sitePreviewInfo struct {
@@ -112,7 +121,7 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 		return apperror.Fail[FileDiffResult](apperror.Wrap(pluginResult.AppError(), apperror.ErrDatabaseQuery, "plugin not found"))
 	}
 
-	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
+	creds, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
 		return apperror.FailWrap[FileDiffResult](err, apperror.ErrDatabaseQuery, "site not found")
 	}
@@ -125,7 +134,7 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 	result := &FileDiffResult{Path: filePath}
 	result.LocalContent = s.readLocalFileContent(pluginResult.Value().Path, filePath)
 
-	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	wpClient := s.wpClientFactory(creds.Site.URL, creds.Site.Username, creds.Password)
 	result.RemoteContent = s.readRemoteFileContent(ctx, wpClient, mapping.RemoteSlug, filePath)
 
 	return apperror.Ok(*result)
@@ -278,8 +287,16 @@ func (s *Service) fetchRemoteFileMap(ctx context.Context, wpClient *wordpress.Cl
 	return remoteFileMap, false
 }
 
+// FileDiffSummary holds the comparison result between local and remote files.
+type FileDiffSummary struct {
+	Files    []FilePreview
+	Added    int
+	Modified int
+	Deleted  int
+}
+
 // compareFiles compares local and remote files and returns the diff
-func (s *Service) compareFiles(localFiles map[string]FilePreview, remoteFileMap map[string]string, fetchFailed bool) ([]FilePreview, int, int, int) {
+func (s *Service) compareFiles(localFiles map[string]FilePreview, remoteFileMap map[string]string, fetchFailed bool) FileDiffSummary {
 	if fetchFailed {
 		return markAllAsAdded(localFiles)
 	}
@@ -287,17 +304,20 @@ func (s *Service) compareFiles(localFiles map[string]FilePreview, remoteFileMap 
 }
 
 // markAllAsAdded returns all local files as "added".
-func markAllAsAdded(localFiles map[string]FilePreview) ([]FilePreview, int, int, int) {
+func markAllAsAdded(localFiles map[string]FilePreview) FileDiffSummary {
 	var files []FilePreview
 	for _, lf := range localFiles {
 		lf.ChangeType = "added"
 		files = append(files, lf)
 	}
-	return files, len(files), 0, 0
+	return FileDiffSummary{
+		Files: files,
+		Added: len(files),
+	}
 }
 
 // diffLocalRemote compares local files against remote hashes.
-func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string]string) ([]FilePreview, int, int, int) {
+func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string]string) FileDiffSummary {
 	var files []FilePreview
 	var added, modified, deleted int
 
@@ -325,5 +345,10 @@ func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string
 		deleted++
 	}
 
-	return files, added, modified, deleted
+	return FileDiffSummary{
+		Files:    files,
+		Added:    added,
+		Modified: modified,
+		Deleted:  deleted,
+	}
 }
