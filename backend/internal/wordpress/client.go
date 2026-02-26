@@ -111,17 +111,25 @@ func (c *Client) request(method, endpoint string, body any) (*http.Response, err
 	return c.httpClient.Do(req)
 }
 
+// multipartInput bundles parameters for requestMultipart.
+type multipartInput struct {
+	Method      string
+	Endpoint    string
+	Body        io.Reader
+	ContentType string
+}
+
 // requestMultipart sends a multipart HTTP request (for file uploads).
-func (c *Client) requestMultipart(method, endpoint string, body io.Reader, contentType string) (*http.Response, error) {
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest(method, url, body)
+func (c *Client) requestMultipart(input multipartInput) (*http.Response, error) {
+	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, input.Endpoint)
+	req, err := http.NewRequest(input.Method, url, input.Body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
 			WithURL(url).
-			WithMethod(method)
+			WithMethod(input.Method)
 	}
 
-	c.setStandardHeaders(req, contentType)
+	c.setStandardHeaders(req, input.ContentType)
 	return c.httpClient.Do(req)
 }
 

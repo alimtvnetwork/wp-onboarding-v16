@@ -186,48 +186,50 @@ func (s *Service) decryptWithProgress(siteId int64, encrypted string) ([]byte, e
 	return password, nil
 }
 
+// connTestRef holds shared context for connection test handling.
+type connTestRef struct {
+	ID   int64
+	Site *models.Site
+}
+
 // executeConnectionTest runs the connection test and processes the result.
 func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *models.Site, client *wordpress.Client) (*ConnectionResult, error) {
 	s.broadcastProgress(ConnectionProgressInput{SiteID: id, Step: "connect", Status: stagestatus.Running.String(), Message: fmt.Sprintf("Connecting to %s...", site.Url)})
 
-	result := &ConnectionResult{}
+	ref := connTestRef{ID: id, Site: site}
 	connInfo, err := client.TestConnection()
 	if err != nil {
-		return s.handleConnectionFailure(ctx, id, site, result, err), nil
+		return s.handleConnectionFailure(ctx, ref, err), nil
 	}
 
-	return s.handleConnectionSuccess(ctx, id, site, result, connInfo), nil
+	return s.handleConnectionSuccess(ctx, ref, connInfo), nil
 }
 
 // handleConnectionFailure processes a failed connection test.
-func (s *Service) handleConnectionFailure(ctx context.Context, id int64, site *models.Site, result *ConnectionResult, err error) *ConnectionResult {
-	result.IsSuccess = false
-	result.Message = err.Error()
+func (s *Service) handleConnectionFailure(ctx context.Context, ref connTestRef, err error) *ConnectionResult {
+	result := &ConnectionResult{IsSuccess: false, Message: err.Error()}
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID: id, Step: "api_test", Status: stagestatus.Failed.String(),
+		SiteID: ref.ID, Step: "api_test", Status: stagestatus.Failed.String(),
 		Message: fmt.Sprintf("Connection failed: %s", err.Error()),
-		Details: toJson(ConnectionFailureDetails{Url: site.Url, Username: site.Username}),
+		Details: toJson(ConnectionFailureDetails{Url: ref.Site.Url, Username: ref.Site.Username}),
 	})
-	s.updateConnectionStatus(ctx, id, connectionstatus.Disconnected.DBValue())
-	s.broadcastProgress(ConnectionProgressInput{SiteID: id, Step: connectionstep.Complete.String(), Status: stagestatus.Failed.String(), Message: "Connection test failed"})
+	s.updateConnectionStatus(ctx, ref.ID, connectionstatus.Disconnected.DBValue())
+	s.broadcastProgress(ConnectionProgressInput{SiteID: ref.ID, Step: connectionstep.Complete.String(), Status: stagestatus.Failed.String(), Message: "Connection test failed"})
 	return result
 }
 
 // handleConnectionSuccess processes a successful connection test.
-func (s *Service) handleConnectionSuccess(ctx context.Context, id int64, site *models.Site, result *ConnectionResult, connInfo *wordpress.ConnectionInfo) *ConnectionResult {
-	result.IsSuccess = true
-	result.WPVersion = connInfo.WPVersion
-	result.PluginsEndpoint = true
-	result.Message = "Connection successful"
+func (s *Service) handleConnectionSuccess(ctx context.Context, ref connTestRef, connInfo *wordpress.ConnectionInfo) *ConnectionResult {
+	result := &ConnectionResult{IsSuccess: true, WPVersion: connInfo.WPVersion, PluginsEndpoint: true, Message: "Connection successful"}
 
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID: id, Step: "api_test", Status: stagestatus.Completed.String(),
+		SiteID: ref.ID, Step: "api_test", Status: stagestatus.Completed.String(),
 		Message: fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion),
 		Details: toJson(ConnectionSuccessDetails{WPVersion: connInfo.WPVersion}),
 	})
-	s.updateConnectionStatus(ctx, id, connectionstatus.Connected.DBValue())
-	s.broadcastProgress(ConnectionProgressInput{SiteID: id, Step: connectionstep.Complete.String(), Status: stagestatus.Completed.String(), Message: "Connection test completed successfully"})
-	s.log.Info("Site connection tested", "id", id, "success", result.IsSuccess)
+	s.updateConnectionStatus(ctx, ref.ID, connectionstatus.Connected.DBValue())
+	s.broadcastProgress(ConnectionProgressInput{SiteID: ref.ID, Step: connectionstep.Complete.String(), Status: stagestatus.Completed.String(), Message: "Connection test completed successfully"})
+	s.log.Info("Site connection tested", "id", ref.ID, "success", result.IsSuccess)
 	return result
 }
 

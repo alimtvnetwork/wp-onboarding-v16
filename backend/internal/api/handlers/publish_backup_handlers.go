@@ -26,12 +26,12 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
+	pluginID, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
 
-	siteID, ok := parseID(w, r, "siteId", "site ID")
+	siteID, ok := parseID(w, r, "siteId")
 	if !ok {
 		return
 	}
@@ -68,13 +68,7 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 
 // PreviewPublish returns a preview of files that will be published
 var PreviewPublish = handleTwoIDs(
-	publishService,
-	"Publish service",
-	"id",
-	"plugin ID",
-	"siteId",
-	"site ID",
-	"E5007",
+	twoIDConfig{GetService: publishService, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5007"},
 	func(ctx context.Context, pluginID, siteID int64) (any, error) {
 		return Services.PublishService.PreviewPublish(ctx, pluginID, siteID)
 	},
@@ -86,11 +80,7 @@ var PreviewPublish = handleTwoIDs(
 
 // GetBackups returns backup history for a plugin
 var GetBackups = handleActionByID(
-	backupService,
-	"Backup service",
-	"id",
-	"plugin ID",
-	"E6001",
+	handlerIDConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6001"},
 	func(ctx context.Context, pluginID int64) (any, error) {
 		return Services.BackupService.List(ctx, pluginID)
 	},
@@ -102,7 +92,7 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	backupID, ok := parseID(w, r, "id", "backup ID")
+	backupID, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
@@ -123,11 +113,7 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 
 // DeleteBackup removes a backup file
 var DeleteBackup = handleDeleteByID(
-	backupService,
-	"Backup service",
-	"id",
-	"backup ID",
-	"E6003",
+	handlerIDConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6003"},
 	func(ctx context.Context, id int64) error {
 		return Services.BackupService.Delete(ctx, id)
 	},
@@ -154,7 +140,7 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
+	pluginID, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
@@ -192,11 +178,7 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 
 // GetPluginVersion returns a specific version entry
 var GetPluginVersion = handleActionByID(
-	versionServiceGetter,
-	"Version service",
-	"versionId",
-	"version ID",
-	"E8002",
+	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8002"},
 	func(ctx context.Context, id int64) (any, error) {
 		return VersionService.GetVersion(ctx, id)
 	},
@@ -204,11 +186,7 @@ var GetPluginVersion = handleActionByID(
 
 // RollbackPluginVersion restores a plugin to a previous version
 var RollbackPluginVersion = handleActionByID(
-	versionServiceGetter,
-	"Version service",
-	"versionId",
-	"version ID",
-	"E8003",
+	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8003"},
 	func(ctx context.Context, id int64) (any, error) {
 		return VersionService.Rollback(ctx, id)
 	},
@@ -216,11 +194,7 @@ var RollbackPluginVersion = handleActionByID(
 
 // DeletePluginVersion removes a version entry
 var DeletePluginVersion = handleDeleteByID(
-	versionServiceGetter,
-	"Version service",
-	"versionId",
-	"version ID",
-	"E8004",
+	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8004"},
 	func(ctx context.Context, id int64) error {
 		return VersionService.DeleteVersion(ctx, id)
 	},

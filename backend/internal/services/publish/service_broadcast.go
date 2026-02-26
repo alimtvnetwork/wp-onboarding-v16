@@ -95,7 +95,7 @@ func (s *Service) runStageWithSession(sessionID, name string, fn func() error) S
 	err := fn()
 	stage := buildStage(name, start, err)
 
-	s.sessionLogStageEnd(sessionID, strings.ToUpper(name), stage.Status, stage.Duration)
+	s.sessionLogStageEnd(sessionStageEndInput{SessionID: sessionID, StageName: strings.ToUpper(name), Status: stage.Status, DurationMs: stage.Duration})
 
 	return stage
 }
@@ -156,7 +156,7 @@ func (s *Service) emitSessionProgressLog(input ProgressInput, stage string) {
 		PluginID: input.PluginID, SiteID: input.SiteID, SessionID: input.SessionID,
 		Entry: ws.OperationLogEntry{Level: logLevel, Step: stage, Message: input.Message},
 	})
-	s.sessionLog(input.SessionID, logLevel, stage, input.Message, nil)
+	s.sessionLog(sessionLogInput{SessionID: input.SessionID, Level: logLevel, Step: stage, Message: input.Message})
 	s.log.Debug("Publish progress", "pluginId", input.PluginID, "siteId", input.SiteID, "sessionId", input.SessionID, "step", input.Step, "stage", stage, "progress", input.Progress, "message", input.Message)
 }
 
@@ -229,7 +229,7 @@ func (s *Service) broadcastStageLog(input StageLogInput) {
 		PluginID: input.PluginID, SiteID: input.SiteID,
 		Level: input.Level, Step: input.Stage, Message: message, Details: detailsJSON,
 	})
-	s.sessionLog(input.SessionID, input.Level, input.Stage, message, detailsJSON)
+	s.sessionLog(sessionLogInput{SessionID: input.SessionID, Level: input.Level, Step: input.Stage, Message: message, Details: detailsJSON})
 }
 
 // broadcastDetailedLog sends a detailed log entry with structured data
@@ -366,11 +366,20 @@ func mapStepToStatus(step string) string {
 
 // ─── Session Logging Helpers ─────────────────────────────────────────────────
 
-func (s *Service) sessionLog(sessionID, level, step, message string, details json.RawMessage) {
-	if s.sessionService == nil || sessionID == "" {
+// sessionLogInput bundles parameters for sessionLog.
+type sessionLogInput struct {
+	SessionID string
+	Level     string
+	Step      string
+	Message   string
+	Details   json.RawMessage
+}
+
+func (s *Service) sessionLog(input sessionLogInput) {
+	if s.sessionService == nil || input.SessionID == "" {
 		return
 	}
-	s.sessionService.Log(sessionID, level, step, message, details)
+	s.sessionService.Log(input.SessionID, input.Level, input.Step, input.Message, input.Details)
 }
 
 func (s *Service) sessionLogStageStart(sessionID, stageName string) {
@@ -380,11 +389,19 @@ func (s *Service) sessionLogStageStart(sessionID, stageName string) {
 	s.sessionService.LogStageStart(sessionID, stageName)
 }
 
-func (s *Service) sessionLogStageEnd(sessionID, stageName string, status stagestatus.Variant, durationMs int64) {
-	if s.sessionService == nil || sessionID == "" {
+// sessionStageEndInput bundles parameters for sessionLogStageEnd.
+type sessionStageEndInput struct {
+	SessionID  string
+	StageName  string
+	Status     stagestatus.Variant
+	DurationMs int64
+}
+
+func (s *Service) sessionLogStageEnd(input sessionStageEndInput) {
+	if s.sessionService == nil || input.SessionID == "" {
 		return
 	}
-	s.sessionService.LogStageEnd(sessionID, stageName, status.String(), durationMs)
+	s.sessionService.LogStageEnd(input.SessionID, input.StageName, input.Status.String(), input.DurationMs)
 }
 
 func (s *Service) endSession(sessionID, status, errorMsg string) {

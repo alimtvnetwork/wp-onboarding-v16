@@ -18,7 +18,7 @@ import (
 
 // logToErrorFile writes error details to data/errors/error.log.txt
 func (s *Service) logToErrorFile(ref *remoteActionRef, details *ExtractedErrorDetails) {
-	if s.isDuplicateErrorLog(ref.Action, ref.SiteID, ref.PluginSlug, details) {
+	if s.isDuplicateErrorLog(ref, details) {
 		return
 	}
 
@@ -33,8 +33,8 @@ func (s *Service) logToErrorFile(ref *remoteActionRef, details *ExtractedErrorDe
 }
 
 // isDuplicateErrorLog checks and registers the error hash to suppress duplicates.
-func (s *Service) isDuplicateErrorLog(action string, siteId int64, pluginSlug string, details *ExtractedErrorDetails) bool {
-	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteId, pluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
+func (s *Service) isDuplicateErrorLog(ref *remoteActionRef, details *ExtractedErrorDetails) bool {
+	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", ref.Action, ref.SiteID, ref.PluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
 	hashBytes := md5.Sum([]byte(hashInput))
 	hashHex := hex.EncodeToString(hashBytes[:])
 
@@ -42,7 +42,7 @@ func (s *Service) isDuplicateErrorLog(action string, siteId int64, pluginSlug st
 	defer s.errorLogHashesMu.Unlock()
 
 	if _, exists := s.errorLogHashes[hashHex]; exists {
-		s.log.Debug("Duplicate error log entry suppressed", "action", action, "siteId", siteId, "plugin", pluginSlug, "hash", hashHex)
+		s.log.Debug("Duplicate error log entry suppressed", "action", ref.Action, "siteId", ref.SiteID, "plugin", ref.PluginSlug, "hash", hashHex)
 		return true
 	}
 	s.errorLogHashes[hashHex] = struct{}{}

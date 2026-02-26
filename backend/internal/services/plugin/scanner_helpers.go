@@ -27,19 +27,26 @@ type pluginHeaderInfo struct {
 	RequiresWP  string
 }
 
+// walkState holds shared state for a directory walk.
+type walkState struct {
+	BasePath string
+	Scan     *ScanResult
+}
+
 // walkDirectory walks the directory tree and populates the scan result.
 func (s *Service) walkDirectory(path string, scan *ScanResult) error {
+	ws := &walkState{BasePath: path, Scan: scan}
 	return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
-		return s.processWalkEntry(path, filePath, info, scan)
+		return s.processWalkEntry(ws, filePath, info)
 	})
 }
 
 // processWalkEntry handles a single file system entry during directory walk.
-func (s *Service) processWalkEntry(basePath, filePath string, info os.FileInfo, scan *ScanResult) error {
-	relPath, _ := filepath.Rel(basePath, filePath)
+func (s *Service) processWalkEntry(ws *walkState, filePath string, info os.FileInfo) error {
+	relPath, _ := filepath.Rel(ws.BasePath, filePath)
 	if relPath == "." {
 		return nil
 	}
@@ -52,11 +59,11 @@ func (s *Service) processWalkEntry(basePath, filePath string, info os.FileInfo, 
 
 	if !info.IsDir() {
 		fileInfo.Hash, _ = s.calculateFileHash(filePath)
-		scan.TotalSize += info.Size()
-		scan.FileCount++
+		ws.Scan.TotalSize += info.Size()
+		ws.Scan.FileCount++
 	}
 
-	scan.Files = append(scan.Files, fileInfo)
+	ws.Scan.Files = append(ws.Scan.Files, fileInfo)
 	return nil
 }
 

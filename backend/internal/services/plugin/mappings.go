@@ -94,16 +94,24 @@ func scanMappingBySite(rows *sql.Rows) (models.PluginMapping, error) {
 		return m, err
 	}
 
-	applyMappingTimestamps(&m, lastSyncAt, lastBackupAt, createdAtStr, updatedAtStr)
+	applyMappingTimestamps(&m, mappingTimestamps{LastSync: lastSyncAt, LastBackup: lastBackupAt, Created: createdAtStr, Updated: updatedAtStr})
 	return m, nil
 }
 
+// mappingTimestamps bundles timestamp fields for applyMappingTimestamps.
+type mappingTimestamps struct {
+	LastSync   sql.NullString
+	LastBackup sql.NullString
+	Created    sql.NullString
+	Updated    sql.NullString
+}
+
 // applyMappingTimestamps parses and sets timestamp fields on a mapping.
-func applyMappingTimestamps(m *models.PluginMapping, lastSync, lastBackup, created, updated sql.NullString) {
-	m.LastSyncAt = dbops.ParseNullTime(lastSync)
-	m.LastBackupAt = dbops.ParseNullTime(lastBackup)
-	m.CreatedAt = dbops.ParseDateTime(created.String)
-	m.UpdatedAt = dbops.ParseDateTime(updated.String)
+func applyMappingTimestamps(m *models.PluginMapping, ts mappingTimestamps) {
+	m.LastSyncAt = dbops.ParseNullTime(ts.LastSync)
+	m.LastBackupAt = dbops.ParseNullTime(ts.LastBackup)
+	m.CreatedAt = dbops.ParseDateTime(ts.Created.String)
+	m.UpdatedAt = dbops.ParseDateTime(ts.Updated.String)
 }
 
 // GetMappingsBySite returns all mappings for a site.
