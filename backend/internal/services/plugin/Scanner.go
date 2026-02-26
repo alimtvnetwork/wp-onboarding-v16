@@ -113,7 +113,7 @@ func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
 	}
 
 	scanVal := scan.Value()
-	if !scanVal.IsValid {
+	if scanVal.IsInvalid() {
 		return apperror.New(apperror.ErrPathInvalid, scanVal.Error)
 	}
 
@@ -179,7 +179,7 @@ func (s *Service) ValidatePath(ctx context.Context, path string) *apperror.AppEr
 		return scan.AppError()
 	}
 	scanVal := scan.Value()
-	if !scanVal.IsValid {
+	if scanVal.IsInvalid() {
 		return apperror.New(apperror.ErrPathInvalid, scanVal.Error).WithPath(path)
 	}
 	return nil

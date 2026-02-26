@@ -43,7 +43,7 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mode, parseErr := publishtype.Parse(input.Mode)
-	isInvalidMode := parseErr != nil || !mode.IsDefined()
+	isInvalidMode := parseErr != nil || mode.IsUndefined()
 	if isInvalidMode {
 		mode = publishtype.Full
 	}

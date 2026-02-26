@@ -56,7 +56,7 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 	if err := expectSuccess(resp); err != nil {
 		return err
 	}
-	if !resp.hasDataField("id") {
+	if resp.isDataMissing("id") {
 		return fmt.Errorf("expected 'id' field in response data")
 	}
 

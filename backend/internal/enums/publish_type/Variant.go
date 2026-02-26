@@ -48,6 +48,7 @@ func (v Variant) Value() string {
 func (v Variant) IsValid() bool            { return v > Invalid && v < Variant(len(variantLabels)) }
 func (v Variant) IsInvalid() bool           { return v == Invalid }
 func (v Variant) IsDefined() bool           { return v != Invalid }
+func (v Variant) IsUndefined() bool         { return v == Invalid }
 func (v Variant) IsDefinedAndValid() bool   { return v.IsDefined() && v.IsValid() }
 func (v Variant) IsFull() bool              { return v == Full }
 func (v Variant) IsSelected() bool          { return v == Selected }

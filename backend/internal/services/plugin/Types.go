@@ -57,6 +57,9 @@ type ScanResult struct {
 	Error       string     `json:",omitempty"`
 }
 
+// IsInvalid returns true if the scan result does not represent a valid plugin.
+func (s *ScanResult) IsInvalid() bool { return !s.IsValid }
+
 // FileInfo holds metadata about a single file
 type FileInfo struct {
 	Path        string

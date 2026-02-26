@@ -25,7 +25,7 @@ func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) 
 	if err := expectSuccess(resp); err != nil {
 		return err
 	}
-	if !resp.hasDataField("id") {
+	if resp.isDataMissing("id") {
 		return fmt.Errorf("expected data object in response")
 	}
 
