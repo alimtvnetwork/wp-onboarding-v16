@@ -39,7 +39,7 @@ func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error
 
 		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
 		for _, siteId := range siteIds {
-			created, err := db.CreateSeedMapping(pluginId, siteId, remoteSlug, log)
+			created, err := db.CreateSeedMapping(database.SeedMappingInput{PluginID: pluginId, SiteID: siteId, RemoteSlug: remoteSlug, Logger: log})
 			if err != nil {
 				log.Warn("Mapping creation failed", "pluginId", pluginId, "siteId", siteId, "error", err)
 			} else if created {

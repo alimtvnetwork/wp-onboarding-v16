@@ -152,7 +152,7 @@ func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) (*U
 	})
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, buildUploadAPIError(uc.AbsZipPath, uc.UploadURL, uc.UploadEndpoint, resp.StatusCode, respBytes, respBody, c.stackTraceDepth)
+		return nil, buildUploadAPIError(uploadAPIErrorInput{AbsZipPath: uc.AbsZipPath, UploadURL: uc.UploadURL, UploadEndpoint: uc.UploadEndpoint, StatusCode: resp.StatusCode, RespBytes: respBytes, RespBody: respBody, StackTraceDepth: c.stackTraceDepth})
 	}
 
 	var result UploaderUploadResult

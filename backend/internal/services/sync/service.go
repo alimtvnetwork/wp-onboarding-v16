@@ -135,7 +135,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	}
 
 	// Broadcast start
-	s.broadcastProgress(pluginID, siteID, "checking", 0, "Starting sync check...")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "checking", Progress: 0, Message: "Starting sync check..."})
 
 	// Get plugin info
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
@@ -146,7 +146,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	plug := plugResult.Value()
 
 	// Scan local files
-	s.broadcastProgress(pluginID, siteID, "scanning", 20, "Scanning local files...")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "scanning", Progress: 20, Message: "Scanning local files..."})
 	localFiles, err := s.scanLocalFiles(plug.Path, plug.ExcludePatterns)
 	if err != nil {
 		result.ErrorMessage = err.Error()
@@ -158,28 +158,28 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
 		result.ErrorMessage = "No site mapping found: " + err.Error()
-		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: result.ErrorMessage})
 		return apperror.Ok(result)
 	}
 
 	// Get site info and decrypt credentials
-	s.broadcastProgress(pluginID, siteID, "comparing", 40, "Retrieving site credentials...")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 40, Message: "Retrieving site credentials..."})
 	siteInfo, err := s.getSiteInfo(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = "Failed to get site info: " + err.Error()
-		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: result.ErrorMessage})
 		return apperror.Ok(result)
 	}
 
 	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = "Failed to decrypt credentials: " + err.Error()
-		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: result.ErrorMessage})
 		return apperror.Ok(result)
 	}
 
 	// Fetch remote file manifest via WordPress sync-manifest endpoint
-	s.broadcastProgress(pluginID, siteID, "comparing", 50, "Fetching remote file manifest...")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 50, Message: "Fetching remote file manifest..."})
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 	remoteManifest, err := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
 
@@ -188,7 +188,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 		// Log warning but continue with empty remote (graceful degradation)
 		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
 			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", err)
-		s.broadcastProgress(pluginID, siteID, "comparing", 60, "Remote manifest unavailable, comparing local only...")
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
 	} else {
 		for _, rf := range remoteManifest {
 			remoteFiles[rf.Path] = FileEntry{
@@ -202,7 +202,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	result.RemoteFiles = len(remoteFiles)
 
 	// Compare files using enhanced comparison with timestamps
-	s.broadcastProgress(pluginID, siteID, "comparing", 70, "Comparing files...")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 70, Message: "Comparing files..."})
 	changes := s.compareFiles(localFiles, remoteFiles)
 	
 	result.Changes = changes
@@ -214,7 +214,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	// Update mapping sync status
 	s.updateMappingSyncStatus(ctx, pluginID, siteID, result.IsInSync)
 
-	s.broadcastProgress(pluginID, siteID, "complete", 100, "Sync check complete")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100, Message: "Sync check complete"})
 
 	s.log.Info("Sync check completed",
 		"pluginId", pluginID,
@@ -301,7 +301,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	// 1. Run comparison to get changes
-	s.broadcastProgress(pluginID, siteID, "checking", 0, "Running sync comparison...")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "checking", Progress: 0, Message: "Running sync comparison..."})
 	syncResult := s.CheckSync(ctx, pluginID, siteID)
 	if syncResult.HasError() {
 		return apperror.FailWrap[PushSyncResult](syncResult.AppError(), apperror.ErrInternal, "sync comparison failed")
@@ -314,7 +314,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 
 	if sr.IsInSync {
 		result.IsSuccess = true
-		s.broadcastProgress(pluginID, siteID, "complete", 100, "Already in sync, nothing to push")
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100, Message: "Already in sync, nothing to push"})
 		return apperror.Ok(result)
 	}
 
@@ -342,7 +342,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	// 5. Build SyncFile array from changes
-	s.broadcastProgress(pluginID, siteID, "packaging", 40, "Packaging file changes...")
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "packaging", Progress: 40, Message: "Packaging file changes..."})
 	var syncFiles []wordpress.SyncFile
 
 	absPluginPath, err := pathutil.ToAbsolute(plug.Path)
@@ -381,7 +381,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 
 	if len(syncFiles) == 0 {
 		result.IsSuccess = true
-		s.broadcastProgress(pluginID, siteID, "complete", 100, "No pushable changes found")
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100, Message: "No pushable changes found"})
 		return apperror.Ok(result)
 	}
 
@@ -395,14 +395,14 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	)
 
 	// 6. Push to remote via WordPress client
-	s.broadcastProgress(pluginID, siteID, "pushing", 60,
-		fmt.Sprintf("Pushing %d files to remote...", len(syncFiles)))
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "pushing", Progress: 60,
+		Message: fmt.Sprintf("Pushing %d files to remote...", len(syncFiles))})
 
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 	syncPushResult, err := wpClient.SyncPluginFilesViaUploader(mapping.RemoteSlug, syncFiles)
 	if err != nil {
 		result.ErrorMessage = err.Error()
-		s.broadcastProgress(pluginID, siteID, "error", 100, "Sync push failed: "+err.Error())
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: "Sync push failed: " + err.Error()})
 		return apperror.Ok(result)
 	}
 
@@ -416,9 +416,9 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 		s.updateMappingSyncStatus(ctx, pluginID, siteID, true)
 	}
 
-	s.broadcastProgress(pluginID, siteID, "complete", 100,
-		fmt.Sprintf("Sync complete: %d updated, %d deleted, %d ignored",
-			result.FilesUpdated, result.FilesDeleted, result.FilesIgnored))
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100,
+		Message: fmt.Sprintf("Sync complete: %d updated, %d deleted, %d ignored",
+			result.FilesUpdated, result.FilesDeleted, result.FilesIgnored)})
 
 	s.log.Info("Sync push completed",
 		"plugin", plug.Name,
@@ -566,25 +566,37 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 
 // getMappings, getSiteInfo, getMapping, updateMappingSyncStatus moved to crud.go.
 
+// SyncProgressInput bundles parameters for broadcastProgress.
+type SyncProgressInput struct {
+	PluginID int64
+	SiteID   int64
+	Step     string
+	Progress int
+	Message  string
+}
+
 // broadcastProgress sends sync progress via WebSocket with detailed step info
-func (s *serviceImpl) broadcastProgress(pluginID, siteID int64, step string, progress int, message string) {
+func (s *serviceImpl) broadcastProgress(input SyncProgressInput) {
 	if s.wsHub == nil {
 		return
 	}
 
 	ws.Broadcast(s.wsHub, ws.EventSyncProgress, ws.SyncStepProgressData{
-		PluginID: pluginID,
-		SiteID:   siteID,
-		Step:     step,
-		Progress: progress,
+		PluginID: input.PluginID,
+		SiteID:   input.SiteID,
+		Step:     input.Step,
+		Progress: input.Progress,
 		Total:    100,
-		Message:  message,
+		Message:  input.Message,
 	})
 	
 	// Also broadcast detailed log entry for frontend live log display
-	s.wsHub.BroadcastSyncLog(pluginID, siteID, "info", step, message, nil)
+	s.wsHub.BroadcastSyncLog(ws.OperationLogInput{
+		PluginID: input.PluginID, SiteID: input.SiteID,
+		Entry: ws.OperationLogEntry{Level: "info", Step: input.Step, Message: input.Message},
+	})
 	
-	s.log.Debug("Sync progress", "pluginId", pluginID, "siteId", siteID, "step", step, "progress", progress, "message", message)
+	s.log.Debug("Sync progress", "pluginId", input.PluginID, "siteId", input.SiteID, "step", input.Step, "progress", input.Progress, "message", input.Message)
 }
 
 // countByType counts changes by type

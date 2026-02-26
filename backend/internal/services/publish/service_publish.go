@@ -63,15 +63,7 @@ func (p *publishContext) stageComplete(stageName, status string, durationMs int6
 	}
 }
 
-// ─── Convenience for non-pctx callers ────────────────────────────────────────
-
-func progressFor(pluginID, siteID int64, step string, pct int, message string) ProgressInput {
-	return ProgressInput{PluginID: pluginID, SiteID: siteID, Step: step, Progress: pct, Message: message}
-}
-
-func detailedFor(pluginID, siteID int64, level, step, message string, details []byte) DetailedLogInput {
-	return DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: level, Step: step, Message: message, Details: details}
-}
+// ─── Direct struct construction is used instead of helper functions ───────────
 
 // ─── Publish Entry Points ────────────────────────────────────────────────────
 
@@ -121,7 +113,7 @@ func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64
 // failInit records error and broadcasts failure for init context.
 func (s *Service) failInit(pluginID, siteID int64, err error, result *PublishResult) (models.Plugin, *models.Site, string, string, error) {
 	result.ErrorMessage = err.Error()
-	s.broadcastProgress(progressFor(pluginID, siteID, stagestatus.Failed.String(), 0, err.Error()))
+	s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: stagestatus.Failed.String(), Progress: 0, Message: err.Error()})
 
 	return models.Plugin{}, nil, "", "", err
 }
@@ -164,7 +156,7 @@ func (s *Service) failPipeline(pctx *publishContext, err error, result *PublishR
 // logConnect broadcasts the WordPress connection attempt.
 func (s *Service) logConnect(pluginID, siteID int64, siteInfo *models.Site) {
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
-	s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), toDetails(ConnectDetails{SiteURL: siteInfo.URL, Username: siteInfo.Username})))
+	s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: loglevel.Info.String(), Step: "connect", Message: fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), Details: toDetails(ConnectDetails{SiteURL: siteInfo.URL, Username: siteInfo.Username})})
 }
 
 // runBackupStage runs backup and appends the stage result.
@@ -174,7 +166,7 @@ func (s *Service) runBackupStage(pluginID, siteID int64, mapping *models.PluginM
 
 	if stage.Status.IsFailed() {
 		result.ErrorMessage = stage.Message
-		s.broadcastProgress(progressFor(pluginID, siteID, stagestatus.Failed.String(), 10, stage.Message))
+		s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: stagestatus.Failed.String(), Progress: 10, Message: stage.Message})
 
 		return fmt.Errorf("%s", stage.Message)
 	}
@@ -213,8 +205,8 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 // failStage records a stage failure in the result.
 func (s *Service) failStage(pluginID, siteID int64, stageName string, stage Stage, result *PublishResult) error {
 	result.ErrorMessage = stage.Message
-	s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Error.String(), stageName, fmt.Sprintf("%s failed: %s", stageName, stage.Message), nil))
-	s.broadcastProgress(progressFor(pluginID, siteID, stagestatus.Failed.String(), 30, stage.Message))
+	s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: loglevel.Error.String(), Step: stageName, Message: fmt.Sprintf("%s failed: %s", stageName, stage.Message)})
+	s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: stagestatus.Failed.String(), Progress: 30, Message: stage.Message})
 
 	return fmt.Errorf("%s", stage.Message)
 }
@@ -293,10 +285,10 @@ func (s *Service) startPublishSession(pluginID, siteID int64, pluginInfo models.
 // executeBackupStage runs the backup stage of the publish pipeline
 func (s *Service) executeBackupStage(pluginID, siteID int64, mapping *models.PluginMapping) Stage {
 	return s.runStage("backup", func() error {
-		s.broadcastProgress(progressFor(pluginID, siteID, "backup", 10, "Creating backup..."))
-		s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Info.String(), "backup", "Initiating remote plugin backup", toDetails(BackupStageDetails{
+		s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: "backup", Progress: 10, Message: "Creating backup..."})
+		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: loglevel.Info.String(), Step: "backup", Message: "Initiating remote plugin backup", Details: toDetails(BackupStageDetails{
 			MappingID: mapping.ID, RemoteSlug: mapping.RemoteSlug,
-		})))
+		})})
 
 		return nil
 	})
@@ -308,7 +300,7 @@ func (s *Service) executePackageStage(pluginID, siteID int64, pluginInfo models.
 	var fileCount int
 
 	stage := s.runStage("package", func() error {
-		s.broadcastProgress(progressFor(pluginID, siteID, "packaging", 30, "Building package..."))
+		s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: "packaging", Progress: 30, Message: "Building package..."})
 		var err error
 		zipPath, fileCount, err = s.buildPluginPackage(pluginID, siteID, pluginInfo, options)
 
@@ -320,9 +312,9 @@ func (s *Service) executePackageStage(pluginID, siteID int64, pluginInfo models.
 
 // buildPluginPackage creates the ZIP for full or selective mode.
 func (s *Service) buildPluginPackage(pluginID, siteID int64, pluginInfo models.Plugin, options PublishOptions) (string, int, error) {
-	s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Info.String(), "package", fmt.Sprintf("Packaging plugin from: %s", pluginInfo.Path), toDetails(PackageDetails{
+	s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: loglevel.Info.String(), Step: "package", Message: fmt.Sprintf("Packaging plugin from: %s", pluginInfo.Path), Details: toDetails(PackageDetails{
 		PluginPath: pluginInfo.Path, PluginName: pluginInfo.Name, Mode: options.Mode, ExcludePatterns: pluginInfo.ExcludePatterns,
-	})))
+	})})
 
 	zipPath, fileCount, err := s.buildZip(pluginID, siteID, pluginInfo, options)
 	if err != nil {
@@ -339,13 +331,13 @@ func (s *Service) buildPluginPackage(pluginID, siteID int64, pluginInfo models.P
 // buildZip delegates to selective or full zip creation.
 func (s *Service) buildZip(pluginID, siteID int64, pluginInfo models.Plugin, options PublishOptions) (string, int, error) {
 	if options.Mode == "selected" && len(options.Files) > 0 {
-		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", len(options.Files)), toDetails(SelectedFilesDetails{SelectedFiles: options.Files})))
+		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "package", Message: fmt.Sprintf("Creating selective ZIP with %d files", len(options.Files)), Details: toDetails(SelectedFilesDetails{SelectedFiles: options.Files})})
 		path, err := s.createSelectiveZip(pluginInfo.Path, pluginInfo.Name, options.Files)
 
 		return path, len(options.Files), err
 	}
 
-	s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "package", fmt.Sprintf("Creating full ZIP with ~%d files", pluginInfo.FileCount), nil))
+	s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "package", Message: fmt.Sprintf("Creating full ZIP with ~%d files", pluginInfo.FileCount)})
 	path, err := s.createFullZip(pluginInfo.Path, pluginInfo.Name, pluginInfo.ExcludePatterns)
 
 	return path, pluginInfo.FileCount, err
@@ -613,8 +605,8 @@ func (s *Service) reportRollbackOutcome(pctx *publishContext, rollbackStage Stag
 // executeCleanupStage marks files as synced
 func (s *Service) executeCleanupStage(ctx context.Context, pluginID, siteID int64, options PublishOptions) Stage {
 	return s.runStage("cleanup", func() error {
-		s.broadcastProgress(progressFor(pluginID, siteID, "cleanup", 95, "Marking files as synced..."))
-		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "cleanup", "Updating local sync state", nil))
+		s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: "cleanup", Progress: 95, Message: "Marking files as synced..."})
+		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "cleanup", Message: "Updating local sync state"})
 
 		if options.Mode == "selected" && len(options.Files) > 0 {
 			return s.syncService.MarkSynced(ctx, pluginID, siteID, options.Files)
@@ -643,10 +635,10 @@ func (s *Service) broadcastCompletion(pluginID, siteID int64, result *PublishRes
 		logLevel = loglevel.Error.String()
 	}
 
-	s.broadcastDetailedLog(detailedFor(pluginID, siteID, logLevel, "complete", completionMessage, toDetails(CompletionDetails{
+	s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: logLevel, Step: "complete", Message: completionMessage, Details: toDetails(CompletionDetails{
 		IsSuccess: result.IsSuccess, FilesUpdated: result.FilesUpdated, DurationMs: result.Duration,
-	})))
-	s.broadcastProgress(progressFor(pluginID, siteID, completionStep, 100, completionMessage))
+	})})
+	s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: completionStep, Progress: 100, Message: completionMessage})
 }
 
 // resolveCompletionStatus returns step and message for completion broadcast.

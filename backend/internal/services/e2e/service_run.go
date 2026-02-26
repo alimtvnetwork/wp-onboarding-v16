@@ -147,17 +147,25 @@ func (s *serviceImpl) runSuiteCases(ctx context.Context, run *TestRun, suite Tes
 	}
 
 	for _, tc := range cases {
-		if shouldStop := s.runSingleCase(ctx, run, suite, tc, opts); shouldStop {
+		if shouldStop := s.runSingleCase(ctx, RunSingleCaseInput{Run: run, Suite: suite, Case: tc, Opts: opts}); shouldStop {
 			return true
 		}
 	}
 	return false
 }
 
+// RunSingleCaseInput bundles parameters for runSingleCase.
+type RunSingleCaseInput struct {
+	Run   *TestRun
+	Suite TestSuite
+	Case  TestCase
+	Opts  RunOptions
+}
+
 // runSingleCase executes one test case. Returns true if run should stop.
-func (s *serviceImpl) runSingleCase(ctx context.Context, run *TestRun, suite TestSuite, tc TestCase, opts RunOptions) bool {
-	if !tc.Enabled {
-		run.SkippedTests++
+func (s *serviceImpl) runSingleCase(ctx context.Context, input RunSingleCaseInput) bool {
+	if !input.Case.Enabled {
+		input.Run.SkippedTests++
 		return false
 	}
 
@@ -165,12 +173,12 @@ func (s *serviceImpl) runSingleCase(ctx context.Context, run *TestRun, suite Tes
 		return true
 	}
 
-	result := s.executeTest(ctx, run, suite, tc)
+	result := s.executeTest(ctx, input.Run, input.Suite, input.Case)
 	s.persistResult(result)
-	s.tallyResult(run, result)
-	s.broadcastTestResult(run.ID, tc.ID, result)
+	s.tallyResult(input.Run, result)
+	s.broadcastTestResult(input.Run.ID, input.Case.ID, result)
 
-	return opts.StopOnFailure && result.Status == teststatus.Failed.String()
+	return input.Opts.StopOnFailure && result.Status == teststatus.Failed.String()
 }
 
 // isRunAborted checks whether the active run has been aborted.

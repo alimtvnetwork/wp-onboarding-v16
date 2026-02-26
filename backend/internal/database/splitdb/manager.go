@@ -295,7 +295,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 
 	// Get or create database record
 	dbPath := m.buildDBPath(projectSlug, dbType, entityID)
-	dbRecord, err := m.getOrCreateDatabase(project.ID, dbType, entityID, dbPath)
+	dbRecord, err := m.getOrCreateDatabase(GetOrCreateDBInput{ProjectID: project.ID, DBType: dbType, EntityID: entityID, Path: dbPath})
 	if err != nil {
 		m.log.Error("Failed to get/create database record", "error", err)
 		return nil, err
@@ -385,15 +385,23 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 	return &project, nil
 }
 
+// GetOrCreateDBInput bundles parameters for getOrCreateDatabase.
+type GetOrCreateDBInput struct {
+	ProjectID string
+	DBType    string
+	EntityID  string
+	Path      string
+}
+
 // getOrCreateDatabase ensures a database record exists
-func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string) (*Database, error) {
+func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, error) {
 	var db Database
 
 	query := `SELECT Id, ProjectId, Type, EntityId, Path, SizeBytes, RecordCount, 
 	          Status, CreatedAt, UpdatedAt FROM Databases 
 	          WHERE ProjectId = ? AND Type = ? AND EntityId = ?`
 
-	err := m.rootDB.QueryRow(query, projectID, dbType, entityID).Scan(
+	err := m.rootDB.QueryRow(query, input.ProjectID, input.DBType, input.EntityID).Scan(
 		&db.ID, &db.ProjectID, &db.Type, &db.EntityID, &db.Path,
 		&db.SizeBytes, &db.RecordCount, &db.Status, &db.CreatedAt, &db.UpdatedAt,
 	)
@@ -401,10 +409,10 @@ func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string
 	if err == sql.ErrNoRows {
 		db = Database{
 			ID:          generateID(),
-			ProjectID:   projectID,
-			Type:        dbType,
-			EntityID:    entityID,
-			Path:        path,
+			ProjectID:   input.ProjectID,
+			Type:        input.DBType,
+			EntityID:    input.EntityID,
+			Path:        input.Path,
 			Status:      "active",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
@@ -417,7 +425,7 @@ func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string
 
 		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create database record").
-				WithDetails(fmt.Sprintf("type=%s, entityId=%s", dbType, entityID))
+				WithDetails(fmt.Sprintf("type=%s, entityId=%s", input.DBType, input.EntityID))
 		}
 	} else if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query database record").

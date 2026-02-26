@@ -177,10 +177,21 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) (*RemoteErro
 	})
 }
 
+// errorSessionsParams bundles query parameters for error sessions endpoint.
+type errorSessionsParams struct {
+	Namespace string
+	Level     string
+	Search    string
+	SinceID   int
+	Limit     int
+	Offset    int
+}
+
 // buildErrorSessionsEndpoint constructs the endpoint URL with query parameters.
 func buildErrorSessionsEndpoint(namespace, level, search string, sinceID, limit, offset int) string {
-	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorSessions)
-	params := collectErrorSessionParams(level, search, sinceID, limit, offset)
+	p := errorSessionsParams{Namespace: namespace, Level: level, Search: search, SinceID: sinceID, Limit: limit, Offset: offset}
+	endpoint := fmt.Sprintf("/%s%s", p.Namespace, ep.ErrorSessions)
+	params := collectErrorSessionParams(p)
 
 	if len(params) > 0 {
 		endpoint += "?" + strings.Join(params, "&")
@@ -190,27 +201,27 @@ func buildErrorSessionsEndpoint(namespace, level, search string, sinceID, limit,
 }
 
 // collectErrorSessionParams builds the query parameter list for error sessions.
-func collectErrorSessionParams(level, search string, sinceID, limit, offset int) []string {
+func collectErrorSessionParams(p errorSessionsParams) []string {
 	var params []string
 
-	if level != "" {
-		params = append(params, fmt.Sprintf("level=%s", level))
+	if p.Level != "" {
+		params = append(params, fmt.Sprintf("level=%s", p.Level))
 	}
 
-	if search != "" {
-		params = append(params, fmt.Sprintf("search=%s", search))
+	if p.Search != "" {
+		params = append(params, fmt.Sprintf("search=%s", p.Search))
 	}
 
-	if sinceID > 0 {
-		params = append(params, fmt.Sprintf("since_id=%d", sinceID))
+	if p.SinceID > 0 {
+		params = append(params, fmt.Sprintf("since_id=%d", p.SinceID))
 	}
 
-	if limit > 0 {
-		params = append(params, fmt.Sprintf("limit=%d", limit))
+	if p.Limit > 0 {
+		params = append(params, fmt.Sprintf("limit=%d", p.Limit))
 	}
 
-	if offset > 0 {
-		params = append(params, fmt.Sprintf("offset=%d", offset))
+	if p.Offset > 0 {
+		params = append(params, fmt.Sprintf("offset=%d", p.Offset))
 	}
 
 	return params
