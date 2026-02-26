@@ -108,7 +108,7 @@ func (s *Service) decryptSitePassword(ctx context.Context, siteID int64) (string
 }
 
 // uploadPlugin uploads a plugin ZIP via the Riseup Asia Uploader.
-func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, error) {
+func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, *apperror.AppError) {
 	uploaderAvailable, _, _ := wpClient.CheckRiseupAsiaAvailable()
 	if !uploaderAvailable {
 		return s.simulateUpload(zipPath, slug)
@@ -118,24 +118,38 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 }
 
 // simulateUpload logs a simulated upload when no uploader is available.
-func (s *Service) simulateUpload(zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, error) {
+func (s *Service) simulateUpload(zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, *apperror.AppError) {
 	s.log.Warn("Riseup Asia Uploader not available; upload simulated", "slug", slug)
 	if fi, appErr := pathutil.StatFile(zipPath); appErr == nil {
 		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", fi.Info.Size())
 	}
+
 	return false, nil, false, nil
 }
 
 // performRealUpload uploads via the Riseup Asia Uploader.
-func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, error) {
+func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, *apperror.AppError) {
 	s.log.Info("Using Riseup Asia Uploader for upload", "slug", slug)
-	result, err := wpClient.UploadPluginViaUploader(wordpress.UploadInput{ZipPath: zipPath, Slug: slug, IsActivate: true, UploadSource: uploadsource.RestAPI})
+
+	uploadInput := wordpress.UploadInput{
+		ZipPath:      zipPath,
+		Slug:         slug,
+		IsActivate:   true,
+		UploadSource: uploadsource.RestAPI,
+	}
+	result, err := wpClient.UploadPluginViaUploader(uploadInput)
 	if err != nil {
 		return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
 	}
 
 	onboardResult := buildOnboardResult(slug, result)
-	s.log.Info("Plugin uploaded via Riseup Asia Uploader", "slug", slug, "success", result.Success, "message", result.Message, "activated", result.Activated)
+	s.log.Info("Plugin uploaded via Riseup Asia Uploader",
+		"slug", slug,
+		"success", result.Success,
+		"message", result.Message,
+		"activated", result.Activated,
+	)
+
 	return true, onboardResult, result.Activated, nil
 }
 
@@ -308,28 +322,33 @@ func (s *Service) logZipEntries(pluginID, siteID int64, entries []string) {
 }
 
 // logUploadError logs a structured upload error
-func (s *Service) logUploadError(pctx *publishContext, attempts int, err error) {
-	inner := buildUploadErrorInner(pctx.Mapping.RemoteSlug, attempts, err)
-	s.broadcastStageLog(pctx.stageLog("error", "upload", StageContext{
-		What: fmt.Sprintf("Upload ZIP to %s", pctx.SiteInfo.URL), Result: fmt.Sprintf("FAILED: %s", err.Error()), Details: toDetails(inner),
-	}))
+func (s *Service) logUploadError(pctx *publishContext, attempts int, appErr *apperror.AppError) {
+	inner := buildUploadErrorInner(pctx.Mapping.RemoteSlug, attempts, appErr)
+
+	errCtx := StageContext{
+		What:    fmt.Sprintf("Upload ZIP to %s", pctx.SiteInfo.URL),
+		Result:  fmt.Sprintf("FAILED: %s", appErr.Error()),
+		Details: toDetails(inner),
+	}
+	errLog := pctx.stageLog("error", "upload", errCtx)
+	s.broadcastStageLog(errLog)
 }
 
-// buildUploadErrorInner extracts structured error info.
-func buildUploadErrorInner(slug string, attempts int, err error) UploadErrorInner {
-	inner := UploadErrorInner{RemoteSlug: slug, Attempts: attempts}
-	if apiErr, ok := err.(*wordpress.APIError); ok {
-		inner.Status = apiErr.StatusCode
-		inner.Response = truncateString(apiErr.ResponseBody, 2000)
-	} else if appErr, ok := err.(*apperror.AppError); ok {
-		inner.Code = appErr.Code
-		if cause := appErr.Unwrap(); cause != nil {
-			if apiErr, ok := cause.(*wordpress.APIError); ok {
-				inner.Status = apiErr.StatusCode
-				inner.Response = truncateString(apiErr.ResponseBody, 2000)
-			}
+// buildUploadErrorInner extracts structured error info from an AppError.
+func buildUploadErrorInner(slug string, attempts int, appErr *apperror.AppError) UploadErrorInner {
+	inner := UploadErrorInner{
+		RemoteSlug: slug,
+		Attempts:   attempts,
+		Code:       appErr.Code,
+	}
+
+	if cause := appErr.Unwrap(); cause != nil {
+		if apiErr, ok := cause.(*wordpress.APIError); ok {
+			inner.Status = apiErr.StatusCode
+			inner.Response = truncateString(apiErr.ResponseBody, 2000)
 		}
 	}
+
 	return inner
 }
 

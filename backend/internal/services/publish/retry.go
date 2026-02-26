@@ -10,14 +10,15 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // RetryConfig holds retry settings for transient failures
 type RetryConfig struct {
-	MaxAttempts     int           // Maximum number of attempts (including initial)
-	InitialDelay    time.Duration // Delay before first retry
-	MaxDelay        time.Duration // Maximum delay between retries
-	BackoffFactor   float64       // Multiplier for exponential backoff
+	MaxAttempts   int           // Maximum number of attempts (including initial)
+	InitialDelay  time.Duration // Delay before first retry
+	MaxDelay      time.Duration // Maximum delay between retries
+	BackoffFactor float64       // Multiplier for exponential backoff
 }
 
 // DefaultRetryConfig returns sensible defaults for publish retries
@@ -32,15 +33,15 @@ func DefaultRetryConfig() RetryConfig {
 
 // RetryResult captures the outcome of a retried operation
 type RetryResult struct {
-	Attempts    int
-	LastError   error
-	TotalDelay  time.Duration
-	Succeeded   bool
+	Attempts   int
+	LastError  *apperror.AppError
+	TotalDelay time.Duration
+	Succeeded  bool
 }
 
 // withRetry executes fn with exponential backoff retry for transient errors.
 // It returns the result of the last successful call, or the last error if all attempts fail.
-func withRetry[T any](ctx context.Context, cfg RetryConfig, operation string, fn func(attempt int) (T, error)) (T, RetryResult) {
+func withRetry[T any](ctx context.Context, cfg RetryConfig, operation string, fn func(attempt int) (T, *apperror.AppError)) (T, RetryResult) {
 	var zero T
 	result := RetryResult{}
 	startTime := time.Now()
@@ -48,40 +49,38 @@ func withRetry[T any](ctx context.Context, cfg RetryConfig, operation string, fn
 	for attempt := 1; attempt <= cfg.MaxAttempts; attempt++ {
 		result.Attempts = attempt
 
-		val, err := fn(attempt)
-		if err == nil {
+		val, appErr := fn(attempt)
+		if appErr == nil {
 			result.Succeeded = true
 			result.TotalDelay = time.Since(startTime)
+
 			return val, result
 		}
 
-		result.LastError = err
+		result.LastError = appErr
 
-		// Don't retry non-transient errors
-		if !isTransientError(err) {
+		if !isTransientAppError(appErr) {
 			result.TotalDelay = time.Since(startTime)
+
 			return zero, result
 		}
 
-		// Don't retry if this was the last attempt
 		if attempt >= cfg.MaxAttempts {
 			break
 		}
 
-		// Check context cancellation
 		if ctx.Err() != nil {
-			result.LastError = ctx.Err()
+			result.LastError = apperror.Wrap(ctx.Err(), apperror.ErrInternal, "context cancelled during retry")
 			break
 		}
 
-		// Calculate backoff delay
 		delay := calculateBackoff(cfg, attempt)
 
-		// Wait with context cancellation support
 		select {
 		case <-ctx.Done():
-			result.LastError = ctx.Err()
+			result.LastError = apperror.Wrap(ctx.Err(), apperror.ErrInternal, "context cancelled during retry backoff")
 			result.TotalDelay = time.Since(startTime)
+
 			return zero, result
 		case <-time.After(delay):
 			// Continue to next attempt
@@ -89,6 +88,7 @@ func withRetry[T any](ctx context.Context, cfg RetryConfig, operation string, fn
 	}
 
 	result.TotalDelay = time.Since(startTime)
+
 	return zero, result
 }
 
@@ -98,28 +98,34 @@ func calculateBackoff(cfg RetryConfig, attempt int) time.Duration {
 	if delay > float64(cfg.MaxDelay) {
 		delay = float64(cfg.MaxDelay)
 	}
+
 	return time.Duration(delay)
 }
 
-// isTransientError determines if an error is likely transient and worth retrying
-func isTransientError(err error) bool {
-	if err == nil {
+// isTransientAppError determines if an AppError wraps a transient cause worth retrying.
+func isTransientAppError(appErr *apperror.AppError) bool {
+	if appErr == nil {
 		return false
 	}
 
-	errMsg := err.Error()
+	cause := appErr.Unwrap()
+	if cause == nil {
+		return isTransientMessage(appErr.Error())
+	}
 
-	// Network errors
-	if _, ok := err.(net.Error); ok {
+	if _, ok := cause.(net.Error); ok {
 		return true
 	}
 
-	// WordPress API errors with retryable status codes
-	if apiErr, ok := err.(*wordpress.APIError); ok {
+	if apiErr, ok := cause.(*wordpress.APIError); ok {
 		return wordpress.HttpStatusType(apiErr.StatusCode).IsRetryable()
 	}
 
-	// Common transient error patterns
+	return isTransientMessage(cause.Error())
+}
+
+// isTransientMessage checks error text for common transient patterns.
+func isTransientMessage(msg string) bool {
 	transientPatterns := []string{
 		"connection refused",
 		"connection reset",
@@ -130,16 +136,16 @@ func isTransientError(err error) bool {
 		"service unavailable",
 		"bad gateway",
 		"gateway timeout",
-		"EOF",
+		"eof",
 		"broken pipe",
 		"no such host",
 		"i/o timeout",
-		"TLS handshake timeout",
+		"tls handshake timeout",
 	}
 
-	lower := strings.ToLower(errMsg)
+	lower := strings.ToLower(msg)
 	for _, pattern := range transientPatterns {
-		if strings.Contains(lower, strings.ToLower(pattern)) {
+		if strings.Contains(lower, pattern) {
 			return true
 		}
 	}
@@ -153,7 +159,9 @@ func retryDescription(result RetryResult) string {
 		if result.Attempts > 1 {
 			return fmt.Sprintf("Succeeded after %d attempts (%s total delay)", result.Attempts, result.TotalDelay.Round(time.Millisecond))
 		}
+
 		return "Succeeded on first attempt"
 	}
+
 	return fmt.Sprintf("Failed after %d attempts (%s total delay): %v", result.Attempts, result.TotalDelay.Round(time.Millisecond), result.LastError)
 }
