@@ -379,7 +379,7 @@ func (s *Service) sessionLog(input sessionLogInput) {
 	if s.sessionService == nil || input.SessionID == "" {
 		return
 	}
-	s.sessionService.Log(input.SessionID, input.Level, input.Step, input.Message, input.Details)
+	s.sessionService.Log(session.LogInput{SessionID: input.SessionID, Level: input.Level, Step: input.Step, Message: input.Message, Details: input.Details})
 }
 
 func (s *Service) sessionLogStageStart(sessionID, stageName string) {
@@ -401,7 +401,7 @@ func (s *Service) sessionLogStageEnd(input sessionStageEndInput) {
 	if s.sessionService == nil || input.SessionID == "" {
 		return
 	}
-	s.sessionService.LogStageEnd(input.SessionID, input.StageName, input.Status.String(), input.DurationMs)
+	s.sessionService.LogStageEnd(session.StageEndInput{SessionID: input.SessionID, StageName: input.StageName, Status: input.Status.String(), DurationMs: input.DurationMs})
 }
 
 func (s *Service) endSession(sessionID, status, errorMsg string) {

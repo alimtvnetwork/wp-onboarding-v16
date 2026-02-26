@@ -256,10 +256,19 @@ func (s *Service) StartSession(input StartSessionInput) (string, error) {
 	return sessionID, nil
 }
 
+// LogInput bundles parameters for Log.
+type LogInput struct {
+	SessionID string
+	Level     string
+	Step      string
+	Message   string
+	Details   json.RawMessage
+}
+
 // Log writes a log entry to the session
-func (s *Service) Log(sessionID, level, step, message string, details json.RawMessage) {
+func (s *Service) Log(input LogInput) {
 	s.mu.RLock()
-	session, exists := s.sessions[sessionID]
+	session, exists := s.sessions[input.SessionID]
 	s.mu.RUnlock()
 
 	if !exists {
@@ -274,22 +283,21 @@ func (s *Service) Log(sessionID, level, step, message string, details json.RawMe
 	}
 
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
-	parsed, parseErr := loglevel.Parse(level)
+	parsed, parseErr := loglevel.Parse(input.Level)
 	levelUpper := loglevel.Info.String()
 	if parseErr == nil {
 		levelUpper = strings.ToUpper(parsed.String())
 	}
 
 	// Format: [YYYY-MM-DD HH:MM:SS] [LEVEL] [step] Message
-	logLine := fmt.Sprintf("[%s] [%s] [%s] %s\n", timestamp, levelUpper, step, message)
+	logLine := fmt.Sprintf("[%s] [%s] [%s] %s\n", timestamp, levelUpper, input.Step, input.Message)
 	session.logFile.WriteString(logLine)
 
 	// Write details as indented JSON if present
-	if len(details) > 0 {
-		// Re-indent the raw JSON for readability
-		var parsed json.RawMessage
-		if json.Unmarshal(details, &parsed) == nil {
-			detailsJSON, _ := json.MarshalIndent(parsed, "    ", "  ")
+	if len(input.Details) > 0 {
+		var parsedJSON json.RawMessage
+		if json.Unmarshal(input.Details, &parsedJSON) == nil {
+			detailsJSON, _ := json.MarshalIndent(parsedJSON, "    ", "  ")
 			session.logFile.WriteString(fmt.Sprintf("    %s\n", string(detailsJSON)))
 		}
 	}
@@ -318,10 +326,18 @@ func (s *Service) LogStageStart(sessionID, stageName string) {
 	session.logFile.WriteString(header)
 }
 
+// StageEndInput bundles parameters for LogStageEnd.
+type StageEndInput struct {
+	SessionID  string
+	StageName  string
+	Status     string
+	DurationMs int64
+}
+
 // LogStageEnd writes a stage completion marker
-func (s *Service) LogStageEnd(sessionID, stageName, status string, durationMs int64) {
+func (s *Service) LogStageEnd(input StageEndInput) {
 	s.mu.RLock()
-	session, exists := s.sessions[sessionID]
+	session, exists := s.sessions[input.SessionID]
 	s.mu.RUnlock()
 
 	if !exists {
@@ -336,14 +352,14 @@ func (s *Service) LogStageEnd(sessionID, stageName, status string, durationMs in
 	}
 
 	statusIcon := "✓"
-	parsedStatus, _ := stagestatus.Parse(status)
+	parsedStatus, _ := stagestatus.Parse(input.Status)
 	if parsedStatus.IsFailed() {
 		statusIcon = "✗"
 	} else if parsedStatus.IsSkipped() {
 		statusIcon = "○"
 	}
 
-	footer := fmt.Sprintf("\n%s STAGE %s completed (%s) in %dms\n", statusIcon, stageName, status, durationMs)
+	footer := fmt.Sprintf("\n%s STAGE %s completed (%s) in %dms\n", statusIcon, input.StageName, input.Status, input.DurationMs)
 	session.logFile.WriteString(footer)
 }
 
@@ -445,26 +461,34 @@ type ErrorLogData struct {
 	Details    json.RawMessage    `json:"details,omitempty"`    // external key
 }
 
+// SaveErrorInput bundles parameters for SaveError.
+type SaveErrorInput struct {
+	SessionID  string
+	StackTrace *SessionStackTrace
+	ErrorMsg   string
+	Details    json.RawMessage
+}
+
 // SaveError persists error details (including stack traces) as error.log in the session folder
-func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details json.RawMessage) {
+func (s *Service) SaveError(input SaveErrorInput) {
 	errorData := ErrorLogData{
 		Timestamp:  time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
-		Error:      errorMsg,
-		StackTrace: stackTrace,
-		Details:    details,
+		Error:      input.ErrorMsg,
+		StackTrace: input.StackTrace,
+		Details:    input.Details,
 	}
 
 	data, err := json.MarshalIndent(errorData, "", "  ")
 	if err != nil {
 		if s.log != nil {
-			s.log.Error("Failed to marshal error data", "sessionId", sessionID, "error", err)
+			s.log.Error("Failed to marshal error data", "sessionId", input.SessionID, "error", err)
 		}
 		return
 	}
-	path, err := s.getErrorLogPath(sessionID)
+	path, err := s.getErrorLogPath(input.SessionID)
 	if err != nil {
 		if s.log != nil {
-			s.log.Error("Failed to resolve error log path", "sessionId", sessionID, "error", err)
+			s.log.Error("Failed to resolve error log path", "sessionId", input.SessionID, "error", err)
 		}
 		return
 	}

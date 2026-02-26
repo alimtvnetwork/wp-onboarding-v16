@@ -69,19 +69,27 @@ func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSl
 	})
 }
 
+// remoteActionInput bundles parameters for executeRemotePluginAction.
+type remoteActionInput struct {
+	SiteId     int64
+	PluginSlug string
+	Action     string
+	ExecFn     func(*wordpress.Client) error
+}
+
 // executeRemotePluginAction runs a remote plugin action with session logging
-func (s *Service) executeRemotePluginAction(ctx context.Context, siteId int64, pluginSlug, action string, execFn func(*wordpress.Client) error) error {
+func (s *Service) executeRemotePluginAction(ctx context.Context, input remoteActionInput) error {
 	startTime := time.Now()
 
-	site, err := s.resolveRemoteSite(ctx, siteId)
+	site, err := s.resolveRemoteSite(ctx, input.SiteId)
 	if err != nil {
 		return err
 	}
 
 	ref := &remoteActionRef{
-		SiteID:     siteId,
-		Action:     action,
-		PluginSlug: pluginSlug,
+		SiteID:     input.SiteId,
+		Action:     input.Action,
+		PluginSlug: input.PluginSlug,
 		Site:       &site,
 	}
 
@@ -94,7 +102,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteId int64, p
 	}
 	ref.Client = client
 
-	return s.runRemoteAction(ctx, ref, startTime, execFn)
+	return s.runRemoteAction(ctx, ref, startTime, input.ExecFn)
 }
 
 // runRemoteAction executes the action and handles success/failure.
@@ -199,13 +207,13 @@ func (s *Service) handleRemoteActionError(ctx context.Context, ref *remoteAction
 	s.logRemoteAction(ref, RemoteActionLogInput{Level: "error", Step: ref.Action, Message: fmt.Sprintf("Failed to %s plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(errDetails)})
 
 	if s.sessionService != nil && ref.SessionID != "" {
-		s.sessionService.LogStageEnd(ref.SessionID, ref.Action, "error", durationMs)
+		s.sessionService.LogStageEnd(session.StageEndInput{SessionID: ref.SessionID, StageName: ref.Action, Status: "error", DurationMs: durationMs})
 	}
 
 	s.fetchAndAttachRemotePhpErrors(ref, errDetails)
 	s.logToErrorFile(ref, errDetails)
 	s.endRemoteSession(ref.SessionID, "error", err.Error())
-	s.broadcastRemoteActionComplete(ref, false, err.Error(), durationMs)
+	s.broadcastRemoteActionComplete(remoteActionCompleteInput{Ref: ref, IsSuccess: false, ErrMsg: err.Error(), DurationMs: durationMs})
 }
 
 // saveRemoteErrorResponse saves the error response to the session.
@@ -219,7 +227,7 @@ func (s *Service) saveRemoteErrorResponse(sessionId string, errDetails *Extracte
 	s.sessionService.SaveResponse(sessionId, &session.SessionResponse{RequestURL: errDetails.Url, ResponseURL: errDetails.Url, StatusCode: errDetails.StatusCode, Body: bodyJson})
 	phpFrames := s.buildPhpStackFrames(errDetails)
 	goFrames := session.CaptureGoStack(2)
-	s.sessionService.SaveError(sessionId, &session.SessionStackTrace{Golang: goFrames, PHP: phpFrames}, err.Error(), session.ToJSON(errDetails))
+	s.sessionService.SaveError(session.SaveErrorInput{SessionID: sessionId, StackTrace: &session.SessionStackTrace{Golang: goFrames, PHP: phpFrames}, ErrorMsg: err.Error(), Details: session.ToJSON(errDetails)})
 }
 
 // buildErrorBodyJson converts a response body string to JSON.
@@ -242,7 +250,7 @@ func (s *Service) handleRemoteActionSuccess(ctx context.Context, ref *remoteActi
 	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: ref.Action, Message: fmt.Sprintf("Successfully %sd plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(DurationDetail{DurationMs: durationMs})})
 	_ = s.InvalidateRemotePluginsCache(ctx, ref.SiteID)
 	s.endRemoteSession(ref.SessionID, "success", "")
-	s.broadcastRemoteActionComplete(ref, true, "", durationMs)
+	s.broadcastRemoteActionComplete(remoteActionCompleteInput{Ref: ref, IsSuccess: true, DurationMs: durationMs})
 
 	s.log.Info(fmt.Sprintf("Remote plugin %sd", ref.Action), "siteId", ref.SiteID, "plugin", ref.PluginSlug)
 }
@@ -257,16 +265,24 @@ func (s *Service) saveRemoteSuccessResponse(ref *remoteActionRef, durationMs int
 		ResponseURL: ref.Site.Url, StatusCode: 200,
 		Body: toJson(RemoteActionSuccessBody{Success: true, Action: ref.Action, Plugin: ref.PluginSlug}),
 	})
-	s.sessionService.LogStageEnd(ref.SessionID, ref.Action, "success", durationMs)
+	s.sessionService.LogStageEnd(session.StageEndInput{SessionID: ref.SessionID, StageName: ref.Action, Status: "success", DurationMs: durationMs})
+}
+
+// remoteActionCompleteInput bundles parameters for broadcastRemoteActionComplete.
+type remoteActionCompleteInput struct {
+	Ref        *remoteActionRef
+	IsSuccess  bool
+	ErrMsg     string
+	DurationMs int64
 }
 
 // broadcastRemoteActionComplete sends a WebSocket broadcast for action completion.
-func (s *Service) broadcastRemoteActionComplete(ref *remoteActionRef, isSuccess bool, errMsg string, durationMs int64) {
+func (s *Service) broadcastRemoteActionComplete(input remoteActionCompleteInput) {
 	if s.wsHub == nil {
 		return
 	}
 	s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
-		SiteId: ref.SiteID, SiteName: ref.Site.Name, Action: ref.Action, PluginSlug: ref.PluginSlug,
-		IsSuccess: isSuccess, Error: errMsg, DurationMs: durationMs,
+		SiteId: input.Ref.SiteID, SiteName: input.Ref.Site.Name, Action: input.Ref.Action, PluginSlug: input.Ref.PluginSlug,
+		IsSuccess: input.IsSuccess, Error: input.ErrMsg, DurationMs: input.DurationMs,
 	}, ref.SessionID)
 }
