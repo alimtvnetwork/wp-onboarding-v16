@@ -52,8 +52,9 @@ trait PluginLifecycleDeleteTrait {
         try {
             if (is_plugin_active($pluginFile)) {
                 deactivate_plugins($pluginFile);
-            }
-            return true;
+        }
+
+        return true;
         } catch (Throwable $e) {
             return $this->errorResponse('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
@@ -76,6 +77,7 @@ trait PluginLifecycleDeleteTrait {
         }
 
         $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Success->value);
+
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDelete->route())
             ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deleted->value => true))
