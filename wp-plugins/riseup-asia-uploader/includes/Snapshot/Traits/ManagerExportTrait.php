@@ -78,7 +78,7 @@ trait ManagerExportTrait {
         ));
 
         return ResultHelper::ok(array(
-            'filepath'                       => $zipPath,
+            ResponseKeyType::FilePath->value => $zipPath,
             ResponseKeyType::Filename->value => basename($zipPath),
             ResponseKeyType::Size->value     => $size,
         ));
@@ -86,22 +86,22 @@ trait ManagerExportTrait {
 
     private function createExportManifest(array $snapshot): array {
         return array(
-            'version' => PluginConfigType::Version->value,
+            ResponseKeyType::Version->value => PluginConfigType::Version->value,
             ResponseKeyType::FormatVersion->value => '1.0',
             ResponseKeyType::CreatedAt->value => DateHelper::nowIso(),
             ResponseKeyType::ExportedAt->value => DateHelper::nowIso(),
-            'snapshot' => array(
-                'id' => $snapshot['Id'],
+            ResponseKeyType::Snapshot->value => array(
+                ResponseKeyType::Id->value => $snapshot['Id'],
                 ResponseKeyType::Sequence->value => $snapshot['Sequence'],
                 ResponseKeyType::Filename->value => $snapshot['Filename'],
                 ResponseKeyType::Scope->value => $snapshot['Scope'],
-                'provider' => $snapshot['Provider'],
+                ResponseKeyType::Provider->value => $snapshot['Provider'],
                 ResponseKeyType::Tables->value => json_decode($snapshot['TablesJson'], true),
                 ResponseKeyType::TotalRows->value => $snapshot['TotalRows'],
                 ResponseKeyType::FileSize->value => $snapshot['FileSize'],
                 ResponseKeyType::CreatedAt->value => $snapshot['CreatedAt'],
             ),
-            'source' => array(
+            ResponseKeyType::Source->value => array(
                 ResponseKeyType::WpVersion->value => get_bloginfo('version'),
                 ResponseKeyType::PhpVersion->value => PHP_VERSION,
                 ResponseKeyType::SiteUrl->value => get_site_url(),

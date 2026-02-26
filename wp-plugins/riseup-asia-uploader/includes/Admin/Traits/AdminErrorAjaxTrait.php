@@ -45,7 +45,7 @@ trait AdminErrorAjaxTrait {
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('last_seen_error_id', '{$maxId}', '{$now}')");
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'All errors marked as seen', 'lastSeenId' => $maxId));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'All errors marked as seen', ResponseKeyType::LastSeenId->value => $maxId));
     }
 
     /** AJAX handler: Clear all error sessions. */
@@ -149,6 +149,6 @@ trait AdminErrorAjaxTrait {
             file_put_contents($path, '');
         }
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', 'fileType' => $type));
+        wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', ResponseKeyType::FileType->value => $type));
     }
 }

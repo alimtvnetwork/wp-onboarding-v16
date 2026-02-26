@@ -32,51 +32,51 @@ trait DetectorProviderTrait {
 
     private function detectWpReset(): array {
         $result = array(
-            'id'                                  => SnapshotProviderType::WpReset->value,
-            'name'                                => 'WP Reset',
-            'available'                           => false,
-            'capabilities'                        => array(),
-            'version'                             => null,
-            ResponseKeyType::DetectionMethod->value => null,
+            ResponseKeyType::Id->value                 => SnapshotProviderType::WpReset->value,
+            ResponseKeyType::Name->value               => 'WP Reset',
+            ResponseKeyType::Available->value          => false,
+            ResponseKeyType::Capabilities->value       => array(),
+            ResponseKeyType::Version->value            => null,
+            ResponseKeyType::DetectionMethod->value    => null,
         );
 
         if (class_exists('WP_Reset')) {
-            $result['available'] = true;
+            $result[ResponseKeyType::Available->value] = true;
             $result[ResponseKeyType::DetectionMethod->value] = 'class_exists';
         }
 
-        $isStillUnavailable = ($result['available'] === false);
+        $isStillUnavailable = ($result[ResponseKeyType::Available->value] === false);
 
         if ($isStillUnavailable) {
             $pluginFile = 'wp-reset/wp-reset.php';
 
             if (is_plugin_active($pluginFile) || is_plugin_active_for_network($pluginFile)) {
-                $result['available'] = true;
+                $result[ResponseKeyType::Available->value] = true;
                 $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
             }
         }
 
-        $isStillUnavailableForPro = ($result['available'] === false) && class_exists('WP_Reset_Pro');
+        $isStillUnavailableForPro = ($result[ResponseKeyType::Available->value] === false) && class_exists('WP_Reset_Pro');
 
         if ($isStillUnavailableForPro) {
-            $result['available'] = true;
-            $result['name'] = 'WP Reset Pro';
+            $result[ResponseKeyType::Available->value] = true;
+            $result[ResponseKeyType::Name->value] = 'WP Reset Pro';
             $result[ResponseKeyType::DetectionMethod->value] = 'class_exists_pro';
         }
 
-        if ($result['available']) {
+        if ($result[ResponseKeyType::Available->value]) {
             if (defined('WP_RESET_VERSION')) {
-                $result['version'] = WP_RESET_VERSION;
+                $result[ResponseKeyType::Version->value] = WP_RESET_VERSION;
             }
 
-            $result['capabilities'] = array(
-                'fullSite'     => true,
-                'databaseOnly' => true,
-                'selective'    => true,
-                'scheduled'    => false,
-                'restore'      => true,
-                'export'       => true,
-                'import'       => true,
+            $result[ResponseKeyType::Capabilities->value] = array(
+                ResponseKeyType::FullSite->value     => true,
+                ResponseKeyType::DatabaseOnly->value => true,
+                ResponseKeyType::Selective->value    => true,
+                ResponseKeyType::Scheduled->value    => false,
+                ResponseKeyType::Restore->value      => true,
+                ResponseKeyType::Export->value       => true,
+                ResponseKeyType::Import->value       => true,
             );
         }
 
@@ -85,38 +85,38 @@ trait DetectorProviderTrait {
 
     private function detectUpdraft(): array {
         $result = array(
-            'id'                                  => SnapshotProviderType::Updraft->value,
-            'name'                                => 'UpdraftPlus',
-            'available'                           => false,
-            'capabilities'                        => array(),
-            'version'                             => null,
-            ResponseKeyType::DetectionMethod->value => null,
+            ResponseKeyType::Id->value                 => SnapshotProviderType::Updraft->value,
+            ResponseKeyType::Name->value               => 'UpdraftPlus',
+            ResponseKeyType::Available->value          => false,
+            ResponseKeyType::Capabilities->value       => array(),
+            ResponseKeyType::Version->value            => null,
+            ResponseKeyType::DetectionMethod->value    => null,
         );
 
         if (class_exists('UpdraftPlus')) {
-            $result['available'] = true;
+            $result[ResponseKeyType::Available->value] = true;
             $result[ResponseKeyType::DetectionMethod->value] = 'class_exists';
         }
 
-        $isStillUnavailableWithGlobal = ($result['available'] === false) && isset($GLOBALS['updraftplus']);
+        $isStillUnavailableWithGlobal = ($result[ResponseKeyType::Available->value] === false) && isset($GLOBALS['updraftplus']);
 
         if ($isStillUnavailableWithGlobal) {
-            $result['available'] = true;
+            $result[ResponseKeyType::Available->value] = true;
             $result[ResponseKeyType::DetectionMethod->value] = 'global_instance';
         }
 
-        $isStillUnavailable = ($result['available'] === false);
+        $isStillUnavailable = ($result[ResponseKeyType::Available->value] === false);
 
         if ($isStillUnavailable) {
             $pluginFiles = array('updraftplus/updraftplus.php', 'updraftplus-premium/updraftplus.php');
 
             foreach ($pluginFiles as $pluginFile) {
                 if (is_plugin_active($pluginFile) || is_plugin_active_for_network($pluginFile)) {
-                    $result['available'] = true;
+                    $result[ResponseKeyType::Available->value] = true;
                     $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
 
                     if (strpos($pluginFile, 'premium') !== false) {
-                        $result['name'] = 'UpdraftPlus Premium';
+                        $result[ResponseKeyType::Name->value] = 'UpdraftPlus Premium';
                     }
 
                     break;
@@ -124,21 +124,21 @@ trait DetectorProviderTrait {
             }
         }
 
-        if ($result['available']) {
+        if ($result[ResponseKeyType::Available->value]) {
             if (defined('UPDRAFTPLUS_VERSION')) {
-                $result['version'] = UPDRAFTPLUS_VERSION;
+                $result[ResponseKeyType::Version->value] = UPDRAFTPLUS_VERSION;
             }
 
-            $isPremium = strpos($result['name'], 'Premium') !== false;
+            $isPremium = strpos($result[ResponseKeyType::Name->value], 'Premium') !== false;
 
-            $result['capabilities'] = array(
-                'fullSite'     => true,
-                'databaseOnly' => true,
-                'selective'    => $isPremium,
-                'scheduled'    => true,
-                'restore'      => true,
-                'export'       => true,
-                'import'       => true,
+            $result[ResponseKeyType::Capabilities->value] = array(
+                ResponseKeyType::FullSite->value     => true,
+                ResponseKeyType::DatabaseOnly->value => true,
+                ResponseKeyType::Selective->value    => $isPremium,
+                ResponseKeyType::Scheduled->value    => true,
+                ResponseKeyType::Restore->value      => true,
+                ResponseKeyType::Export->value       => true,
+                ResponseKeyType::Import->value       => true,
             );
         }
 
@@ -149,21 +149,21 @@ trait DetectorProviderTrait {
         $hasSqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
 
         return array(
-            'id'                                    => SnapshotProviderType::Native->value,
-            'name'                                  => 'Native SQLite',
-            'available'                             => $hasSqlite,
-            'capabilities'                          => array(
-                'fullSite'     => false,
-                'databaseOnly' => true,
-                'selective'    => true,
-                'scheduled'    => true,
-                'restore'      => true,
-                'export'       => true,
-                'import'       => true,
+            ResponseKeyType::Id->value                 => SnapshotProviderType::Native->value,
+            ResponseKeyType::Name->value               => 'Native SQLite',
+            ResponseKeyType::Available->value          => $hasSqlite,
+            ResponseKeyType::Capabilities->value       => array(
+                ResponseKeyType::FullSite->value     => false,
+                ResponseKeyType::DatabaseOnly->value => true,
+                ResponseKeyType::Selective->value    => true,
+                ResponseKeyType::Scheduled->value    => true,
+                ResponseKeyType::Restore->value      => true,
+                ResponseKeyType::Export->value       => true,
+                ResponseKeyType::Import->value       => true,
             ),
-            'version'                               => PluginConfigType::Version->value,
-            ResponseKeyType::DetectionMethod->value => $hasSqlite ? 'extension_loaded' : 'extension_missing',
-            ResponseKeyType::SqliteVersion->value   => $hasSqlite ? $this->getSqliteVersion() : null,
+            ResponseKeyType::Version->value            => PluginConfigType::Version->value,
+            ResponseKeyType::DetectionMethod->value    => $hasSqlite ? 'extension_loaded' : 'extension_missing',
+            ResponseKeyType::SqliteVersion->value      => $hasSqlite ? $this->getSqliteVersion() : null,
         );
     }
 
@@ -188,16 +188,16 @@ trait DetectorProviderTrait {
     }
 
     private function logDetectionResults(array $providers): void {
-        $available = array_filter($providers, function($p) { return $p['available']; });
+        $available = array_filter($providers, function($p) { return $p[ResponseKeyType::Available->value]; });
 
         $this->logger->info('[SNAPSHOT] Provider detection complete', array(
             'total'     => count($providers),
             'available' => count($available),
             ResponseKeyType::Providers->value => array_map(function($p) {
                 return array(
-                    'id'        => $p['id'],
-                    'available' => $p['available'],
-                    'version'   => $p['version'],
+                    ResponseKeyType::Id->value        => $p[ResponseKeyType::Id->value],
+                    ResponseKeyType::Available->value => $p[ResponseKeyType::Available->value],
+                    ResponseKeyType::Version->value   => $p[ResponseKeyType::Version->value],
                 );
             }, $providers),
         ));

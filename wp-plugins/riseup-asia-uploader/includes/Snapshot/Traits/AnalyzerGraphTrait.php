@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AnalyzerGraphTrait {
@@ -40,14 +41,14 @@ trait AnalyzerGraphTrait {
             }
         }
 
-        return array('graph' => $graph, 'inDegree' => $inDegree);
+        return array(ResponseKeyType::Graph->value => $graph, ResponseKeyType::InDegree->value => $inDegree);
     }
 
     /** Topological sort using Kahn's algorithm. */
     public function topologicalSort(array $allTables, array $dependencies): array {
         $adj = $this->buildAdjacencyList($dependencies, $allTables);
-        $graph = $adj['graph'];
-        $inDegree = $adj['inDegree'];
+        $graph = $adj[ResponseKeyType::Graph->value];
+        $inDegree = $adj[ResponseKeyType::InDegree->value];
 
         $queue = array();
         foreach ($inDegree as $table => $degree) {

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotStatusType;
@@ -96,15 +97,15 @@ trait IncrementalDiscoveryTrait {
         $tableNameCol = $this->resolveRootCol($rootPdo, $table, 'TableName', 'table_name');
         $rowCountCol = $this->resolveRootCol($rootPdo, $table, 'RowCount', 'row_count');
 
-        $rows = $rootPdo->query("SELECT {$tableNameCol} AS tableName, {$rowCountCol} AS rowCount FROM {$table} ORDER BY {$tableNameCol}")->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $rootPdo->query("SELECT {$tableNameCol} AS TableName, {$rowCountCol} AS RowCount FROM {$table} ORDER BY {$tableNameCol}")->fetchAll(PDO::FETCH_ASSOC);
 
         $inventory = array();
 
         foreach ($rows as $row) {
-            $pk = $this->detectPrimaryKey($row['tableName']);
-            $inventory[$row['tableName']] = array(
-                'rowCount' => (int) $row['rowCount'],
-                'pkColumn' => $pk,
+            $pk = $this->detectPrimaryKey($row[ResponseKeyType::TableName->value]);
+            $inventory[$row[ResponseKeyType::TableName->value]] = array(
+                ResponseKeyType::RowCount->value  => (int) $row[ResponseKeyType::RowCount->value],
+                ResponseKeyType::PkColumn->value => $pk,
             );
         }
 

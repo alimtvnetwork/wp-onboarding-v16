@@ -52,7 +52,7 @@ trait ManagerImportTrait {
 
         try {
             $extracted = $this->extractAndValidateZip($uploadedPath, $tempDir);
-            $result = $this->moveAndRecordSnapshot($extracted['manifest'], $extracted['sqlite_path'], $tempDir);
+            $result = $this->moveAndRecordSnapshot($extracted[ResponseKeyType::Manifest->value], $extracted[ResponseKeyType::SqlitePath->value], $tempDir);
 
             $this->deleteDirectory($tempDir);
 
@@ -73,7 +73,7 @@ trait ManagerImportTrait {
         $manifest = $this->loadAndValidateManifest($tempDir);
         $sqlitePath = $this->validateSnapshotSqlite($manifest, $tempDir);
 
-        return array('manifest' => $manifest, 'sqlite_path' => $sqlitePath);
+        return array(ResponseKeyType::Manifest->value => $manifest, ResponseKeyType::SqlitePath->value => $sqlitePath);
     }
 
     private function extractZipToDir(string $uploadedPath, string $tempDir): void {
