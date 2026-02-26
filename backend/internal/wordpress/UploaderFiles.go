@@ -7,41 +7,44 @@ import (
 	"wp-plugin-publish/internal/enums/action"
 	ep "wp-plugin-publish/internal/enums/endpoint"
 	"wp-plugin-publish/internal/enums/http_method"
+	"wp-plugin-publish/internal/enums/operation"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/pkg/apperror"
 )
 
 // ReplaceFileViaUploader replaces a single file in a plugin via the RiseupAsia Uploader.
-func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
+func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) *apperror.AppError {
 	namespace := c.resolveNamespace()
 	endpoint := "/" + namespace + ep.Files.String()
 	contentStr := base64.StdEncoding.EncodeToString(content)
 
-	_, err := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginFileReplaceRequest{Plugin: slug, Path: relPath, Content: contentStr},
-		Operation:  "replace file via RiseupAsia Uploader",
+		Operation:  operation.ReplaceFile,
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPConnection,
 	})
-	return err
+
+	return rawResult.AppError()
 }
 
 // DeleteFileViaUploader deletes a single file from a plugin via the Riseup Asia Uploader.
-func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
+func (c *Client) DeleteFileViaUploader(slug, relPath string) *apperror.AppError {
 	namespace := c.resolveNamespace()
 	endpoint := "/" + namespace + ep.Files.String()
 
-	_, err := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginFileDeleteRequest{Plugin: slug, Path: relPath, Action: "delete"},
-		Operation:  "delete file via Riseup Asia Uploader",
+		Operation:  operation.DeleteFile,
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPConnection,
 	})
-	return err
+
+	return rawResult.AppError()
 }
 
 // =============================================================================
@@ -74,24 +77,25 @@ type SyncResult struct {
 }
 
 // SyncPluginFilesViaUploader performs a delta sync of multiple files to a plugin.
-func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
+func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) apperror.Result[SyncResult] {
 	namespace := c.resolveNamespace()
 	c.reportSyncStart(slug, len(files), namespace)
 
 	endpoint := "/" + namespace + ep.Sync.String()
-	data, err := c.doAPICallRaw(apiCallInput{
+
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       SyncRequestBody{Plugin: slug, Files: files},
-		Operation:  "sync plugin files via Riseup Asia Uploader",
+		Operation:  operation.SyncFiles,
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPConnection,
 	})
-	if err != nil {
-		return nil, err
+	if rawResult.HasError() {
+		return apperror.Fail[SyncResult](rawResult.AppError())
 	}
 
-	return decodeAPIResponse[SyncResult](data, "sync result")
+	return decodeAPIResponse[SyncResult](rawResult.Value(), operation.SyncFiles.Value())
 }
 
 // reportSyncStart emits a progress event for the start of a delta sync operation.

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"wp-plugin-publish/internal/enums/http_method"
+	"wp-plugin-publish/internal/enums/operation"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -14,7 +15,7 @@ type apiCallInput struct {
 	Method     httpmethod.Variant
 	Endpoint   string
 	Body       any
-	Operation  string
+	Operation  operation.Variant
 	OkStatuses []int  // defaults to [200] if empty
 	PluginSlug string // optional: populates APIError.PluginSlugIn
 	ErrorCode  string // optional: apperror wrap code (defaults to ErrInternal)
@@ -29,62 +30,63 @@ type APICallResponse struct {
 // doAPICallWithStatus sends the request and returns the raw response.
 // Unlike doAPICallRaw, it does NOT validate the status code — the caller decides how to handle it.
 // The error return is only for transport-level failures (DNS, timeout, request creation).
-func (c *Client) doAPICallWithStatus(input apiCallInput) (*APICallResponse, error) {
+func (c *Client) doAPICallWithStatus(input apiCallInput) apperror.Result[APICallResponse] {
 	resp, err := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if err != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
-		return nil, apperror.Wrap(err, code, input.Operation)
+		return apperror.FailWrap[APICallResponse](err, code, input.Operation.Value())
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
-	result := &APICallResponse{
+	return apperror.Ok(APICallResponse{
 		Body:       bodyBytes,
 		StatusCode: resp.StatusCode,
-	}
-	return result, nil
+	})
 }
 
 // doAPICallRaw sends the request, checks the status code, and returns raw body bytes on success.
-func (c *Client) doAPICallRaw(input apiCallInput) ([]byte, error) {
-	callResp, err := c.doAPICallWithStatus(input)
-	if err != nil {
-		return nil, err
+func (c *Client) doAPICallRaw(input apiCallInput) apperror.Result[[]byte] {
+	callResult := c.doAPICallWithStatus(input)
+	if callResult.HasError() {
+		return apperror.Fail[[]byte](callResult.AppError())
 	}
 
-	if isErrorStatus(callResp.StatusCode, input.OkStatuses) {
-		return nil, c.buildCallError(input, callResp.StatusCode, callResp.Body)
+	resp := callResult.Value()
+
+	if isErrorStatus(resp.StatusCode, input.OkStatuses) {
+		return apperror.Fail[[]byte](c.buildCallError(input, resp.StatusCode, resp.Body))
 	}
 
-	return callResp.Body, nil
+	return apperror.Ok(resp.Body)
 }
 
 // doAPICallStream sends the request, validates the status code, and returns the raw HTTP response.
 // The caller is responsible for closing the response body. Use this for streaming responses (e.g. ZIP downloads).
-func (c *Client) doAPICallStream(input apiCallInput) (*http.Response, error) {
+func (c *Client) doAPICallStream(input apiCallInput) apperror.Result[*http.Response] {
 	resp, err := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if err != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
-		return nil, apperror.Wrap(err, code, input.Operation)
+		return apperror.FailWrap[*http.Response](err, code, input.Operation.Value())
 	}
 
 	if isErrorStatus(resp.StatusCode, input.OkStatuses) {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 
-		return nil, c.buildCallError(input, resp.StatusCode, bodyBytes)
+		return apperror.Fail[*http.Response](c.buildCallError(input, resp.StatusCode, bodyBytes))
 	}
 
-	return resp, nil
+	return apperror.Ok(resp)
 }
 
-// buildCallError constructs an APIError from a failed API call.
-func (c *Client) buildCallError(input apiCallInput, statusCode int, body []byte) *APIError {
-	return &APIError{
-		Operation:    input.Operation,
+// buildCallError constructs an AppError from a failed API call, wrapping the structured APIError.
+func (c *Client) buildCallError(input apiCallInput, statusCode int, body []byte) *apperror.AppError {
+	apiErr := &APIError{
+		Operation:    input.Operation.Value(),
 		Method:       input.Method.Value(),
 		Endpoint:     input.Endpoint,
 		Url:          c.fullURL(input.Endpoint),
@@ -92,6 +94,10 @@ func (c *Client) buildCallError(input apiCallInput, statusCode int, body []byte)
 		ResponseBody: truncateBody(string(body), 8192),
 		PluginSlugIn: input.PluginSlug,
 	}
+
+	code := firstNonEmpty(input.ErrorCode, apperror.ErrWPConnection)
+
+	return apperror.Wrap(apiErr, code, input.Operation.Value())
 }
 
 // isOkStatus checks whether statusCode is in the accepted list (defaults to 200).
@@ -99,11 +105,13 @@ func isOkStatus(statusCode int, okStatuses []int) bool {
 	if len(okStatuses) == 0 {
 		return statusCode == HttpStatusOk.Int()
 	}
+
 	for _, ok := range okStatuses {
 		if statusCode == ok {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -113,21 +121,23 @@ func isErrorStatus(statusCode int, okStatuses []int) bool {
 }
 
 // doAPICall sends a request, checks status, and JSON-decodes the response into T.
-func doAPICall[T any](c *Client, input apiCallInput) (*T, error) {
-	data, err := c.doAPICallRaw(input)
-	if err != nil {
-		return nil, err
+func doAPICall[T any](c *Client, input apiCallInput) apperror.Result[T] {
+	rawResult := c.doAPICallRaw(input)
+	if rawResult.HasError() {
+		return apperror.Fail[T](rawResult.AppError())
 	}
-	return decodeAPIResponse[T](data, input.Operation)
+
+	return decodeAPIResponse[T](rawResult.Value(), input.Operation.Value())
 }
 
-// decodeAPIResponse unmarshals raw JSON bytes into *T.
-func decodeAPIResponse[T any](data []byte, operation string) (*T, error) {
+// decodeAPIResponse unmarshals raw JSON bytes into T.
+func decodeAPIResponse[T any](data []byte, operationDesc string) apperror.Result[T] {
 	var result T
 	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode "+operation)
+		return apperror.FailWrap[T](err, apperror.ErrInternal, "decode "+operationDesc)
 	}
-	return &result, nil
+
+	return apperror.Ok(result)
 }
 
 // firstNonEmpty returns the first non-empty string argument.
@@ -137,5 +147,6 @@ func firstNonEmpty(values ...string) string {
 			return v
 		}
 	}
+
 	return ""
 }

@@ -10,6 +10,7 @@ import (
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
 	"wp-plugin-publish/internal/enums/http_method"
+	"wp-plugin-publish/internal/enums/operation"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -28,27 +29,25 @@ type SnapshotBackupResult struct {
 }
 
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
-func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	callInput := apiCallInput{
+func (c *Client) FullBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
+	return doAPICall[SnapshotBackupResult](c, apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsFullBackup),
 		Body:       opts,
-		Operation:  "full backup",
+		Operation:  operation.FullBackup,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
-	}
-	return doAPICall[SnapshotBackupResult](c, callInput)
+	})
 }
 
 // IncrementalBackup triggers an incremental backup against the latest master snapshot.
-func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	callInput := apiCallInput{
+func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
+	return doAPICall[SnapshotBackupResult](c, apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsIncremental),
 		Body:       opts,
-		Operation:  "incremental backup",
+		Operation:  operation.IncrementalBackup,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
-	}
-	return doAPICall[SnapshotBackupResult](c, callInput)
+	})
 }
 
 // SnapshotImportResult holds the result of an import operation.
@@ -59,12 +58,12 @@ type SnapshotImportResult struct {
 }
 
 // ImportSnapshot uploads a ZIP file to import as a snapshot on the remote site.
-func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
+func (c *Client) ImportSnapshot(zipPath string) apperror.Result[SnapshotImportResult] {
 	endpoint := snapshotEndpoint(ep.SnapshotsImport)
 
 	mp, err := buildImportMultipart(zipPath)
 	if err != nil {
-		return nil, err
+		return apperror.FailWrap[SnapshotImportResult](err, apperror.ErrInternal, operation.ImportSnapshot.Value())
 	}
 
 	return c.executeImportRequest(endpoint, mp.Body, mp.ContentType)
@@ -96,7 +95,7 @@ func buildImportMultipart(zipPath string) (*multipartResult, error) {
 }
 
 // executeImportRequest sends the multipart import and parses the response.
-func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, contentType string) (*SnapshotImportResult, error) {
+func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, contentType string) apperror.Result[SnapshotImportResult] {
 	mpInput := multipartInput{
 		Method:      httpmethod.Post,
 		Endpoint:    endpoint,
@@ -106,7 +105,7 @@ func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, conte
 
 	resp, err := c.requestMultipart(mpInput)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to import snapshot")
+		return apperror.FailWrap[SnapshotImportResult](err, apperror.ErrInternal, "failed to import snapshot")
 	}
 
 	defer resp.Body.Close()
@@ -117,13 +116,13 @@ func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, conte
 		errorInput := apiCallInput{
 			Method:    httpmethod.Post,
 			Endpoint:  endpoint,
-			Operation: "import snapshot",
+			Operation: operation.ImportSnapshot,
 		}
 
-		return nil, c.buildCallError(errorInput, resp.StatusCode, bodyBytes)
+		return apperror.Fail[SnapshotImportResult](c.buildCallError(errorInput, resp.StatusCode, bodyBytes))
 	}
 
-	return decodeAPIResponse[SnapshotImportResult](bodyBytes, "import snapshot")
+	return decodeAPIResponse[SnapshotImportResult](bodyBytes, operation.ImportSnapshot.Value())
 }
 
 // SnapshotCleanupOptions holds options for snapshot cleanup.
@@ -165,12 +164,11 @@ type CleanupStuckResult struct {
 }
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
-func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanupResult, error) {
-	callInput := apiCallInput{
+func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) apperror.Result[SnapshotCleanupResult] {
+	return doAPICall[SnapshotCleanupResult](c, apiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsCleanup),
 		Body:      opts,
-		Operation: "snapshot cleanup",
-	}
-	return doAPICall[SnapshotCleanupResult](c, callInput)
+		Operation: operation.SnapshotCleanup,
+	})
 }

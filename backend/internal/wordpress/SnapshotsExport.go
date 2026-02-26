@@ -7,6 +7,7 @@ import (
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
 	"wp-plugin-publish/internal/enums/http_method"
+	"wp-plugin-publish/internal/enums/operation"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -41,71 +42,74 @@ type SnapshotDownloadResult struct {
 
 // ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
 // The caller is responsible for closing the response body.
-func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
+func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response] {
 	return c.doAPICallStream(apiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsExport),
 		Body:      SnapshotIdRequest{Id: snapshotId},
-		Operation: "export snapshot",
+		Operation: operation.ExportSnapshot,
 	})
 }
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
-func (c *Client) DownloadSnapshotZip(snapshotId int64) (*SnapshotDownloadResult, error) {
+func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotDownloadResult] {
 	return doAPICall[SnapshotDownloadResult](c, apiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsDownload),
 		Body:      SnapshotIdRequest{Id: snapshotId},
-		Operation: "download snapshot zip",
+		Operation: operation.DownloadSnapshotZip,
 	})
 }
 
 // StreamSnapshotZip downloads the actual ZIP file from the WordPress download-file endpoint.
 // Returns the raw HTTP response; caller must close the body.
-func (c *Client) StreamSnapshotZip(downloadURL string) (*http.Response, error) {
+func (c *Client) StreamSnapshotZip(downloadURL string) apperror.Result[*http.Response] {
 	resp, err := c.rawGet(downloadURL)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to stream snapshot ZIP")
+		return apperror.FailWrap[*http.Response](err, apperror.ErrInternal, operation.StreamSnapshotZip.Value())
 	}
 
 	if resp.StatusCode != HttpStatusOk.Int() {
-		return nil, buildStreamZipError(resp, downloadURL)
+		return apperror.Fail[*http.Response](buildStreamZipAppError(resp, downloadURL))
 	}
 
-	return resp, nil
+	return apperror.Ok(resp)
 }
 
-// buildStreamZipError reads the response body and constructs an APIError for a failed stream.
-func buildStreamZipError(resp *http.Response, downloadURL string) *APIError {
+// buildStreamZipAppError reads the response body and constructs an AppError for a failed stream.
+func buildStreamZipAppError(resp *http.Response, downloadURL string) *apperror.AppError {
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	return &APIError{
-		Operation:    "stream snapshot zip",
+	apiErr := &APIError{
+		Operation:    operation.StreamSnapshotZip.Value(),
 		Method:       httpmethod.Get.Value(),
 		Endpoint:     downloadURL,
 		Url:          downloadURL,
 		StatusCode:   resp.StatusCode,
 		ResponseBody: truncateBody(string(bodyBytes), 8192),
 	}
+
+	return apperror.Wrap(apiErr, apperror.ErrWPConnection, operation.StreamSnapshotZip.Value())
 }
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
-func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
-	data, err := c.doAPICallRaw(apiCallInput{
+func (c *Client) GetSnapshotProviders() apperror.Result[[]SnapshotProvider] {
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsProviders),
-		Operation: "get snapshot providers",
+		Operation: operation.GetSnapshotProviders,
 	})
-	if err != nil {
-		return nil, err
+	if rawResult.HasError() {
+		return apperror.Fail[[]SnapshotProvider](rawResult.AppError())
 	}
 
 	var providers []SnapshotProvider
-	if err := json.Unmarshal(data, &providers); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode providers response")
+	if err := json.Unmarshal(rawResult.Value(), &providers); err != nil {
+		return apperror.FailWrap[[]SnapshotProvider](err, apperror.ErrInternal, "failed to decode providers response")
 	}
-	return providers, nil
+
+	return apperror.Ok(providers)
 }
 
 // AvailableTable represents a database table available for snapshotting.
@@ -117,32 +121,32 @@ type AvailableTable struct {
 }
 
 // GetAvailableTables returns the list of database tables available for snapshotting.
-func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
-	data, err := c.doAPICallRaw(apiCallInput{
+func (c *Client) GetAvailableTables() apperror.Result[[]AvailableTable] {
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsTables),
-		Operation: "get available tables",
+		Operation: operation.GetAvailableTables,
 	})
-	if err != nil {
-		return nil, err
+	if rawResult.HasError() {
+		return apperror.Fail[[]AvailableTable](rawResult.AppError())
 	}
 
-	return parseAvailableTablesResponse(data)
+	return parseAvailableTablesResult(rawResult.Value())
 }
 
-// parseAvailableTablesResponse tries wrapped format, then plain array.
-func parseAvailableTablesResponse(data []byte) ([]AvailableTable, error) {
+// parseAvailableTablesResult tries wrapped format, then plain array.
+func parseAvailableTablesResult(data []byte) apperror.Result[[]AvailableTable] {
 	var wrapper struct {
 		Tables []AvailableTable `json:"tables"` // external key
 	}
 	if err := json.Unmarshal(data, &wrapper); err == nil && len(wrapper.Tables) > 0 {
-		return wrapper.Tables, nil
+		return apperror.Ok(wrapper.Tables)
 	}
 
 	var tables []AvailableTable
 	if err := json.Unmarshal(data, &tables); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode tables response")
+		return apperror.FailWrap[[]AvailableTable](err, apperror.ErrInternal, "failed to decode tables response")
 	}
 
-	return tables, nil
+	return apperror.Ok(tables)
 }
