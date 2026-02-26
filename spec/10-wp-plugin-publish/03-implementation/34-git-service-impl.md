@@ -598,8 +598,8 @@ func (s *serviceImpl) handleBuildFailure(
 }
 
 func extractExitCode(err error) int {
-	exitErr, ok := err.(*exec.ExitError)
-	if !ok {
+	exitErr := apperror.ExtractExitError(err)
+	if exitErr == nil {
 		return -1
 	}
 

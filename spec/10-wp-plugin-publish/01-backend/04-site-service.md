@@ -597,8 +597,8 @@ func (s *serviceImpl) buildSuccessConnectionResult(
 }
 
 func (s *serviceImpl) buildFailedConnectionResult(err error) *ConnectionResult {
-    appErr, ok := err.(*apperror.AppError)
-    if ok {
+    appErr := apperror.Extract(err)
+    if appErr != nil {
         return &ConnectionResult{
             Success:   false,
             Error:     appErr.Message,

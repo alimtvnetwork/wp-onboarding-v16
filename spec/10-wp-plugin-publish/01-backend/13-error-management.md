@@ -390,8 +390,8 @@ func WriteError(w http.ResponseWriter, err error) {
 }
 
 func toAppError(err error) *apperror.AppError {
-    appErr, ok := err.(*apperror.AppError)
-    if ok {
+    appErr := apperror.Extract(err)
+    if appErr != nil {
         return appErr
     }
 
