@@ -206,7 +206,7 @@ func (s *Service) fetchAndAttachRemotePhpErrors(ref *remoteActionRef, errDetails
 func (s *Service) fetchAndAttachPhpErrorSessions(ref *remoteActionRef, errDetails *ExtractedErrorDetails) {
 	s.logRemoteAction(ref, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
 
-	result, fetchErr := ref.Client.FetchRemoteErrorSessions("error", "", 0, 10, 0)
+	result, fetchErr := ref.Client.FetchRemoteErrorSessions(wordpress.ErrorSessionsInput{Level: "error", Limit: 10})
 	if fetchErr != nil {
 		s.logRemoteAction(ref, "warn", "fetch_php_errors", fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()), nil)
 

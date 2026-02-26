@@ -261,40 +261,58 @@ func (db *DB) GetPluginIdByPath(path string) (int64, error) {
 	return id, nil
 }
 
+// SeedSiteInput bundles parameters for CreateSeedSite.
+type SeedSiteInput struct {
+	Name              string
+	URL               string
+	Username          string
+	PasswordEncrypted []byte
+	Category          string
+}
+
 // CreateSeedSite creates a site for seeding (password must be pre-encrypted by caller)
 // Seeded sites default to ConnectionStatus = 'connected' for quick testing
-func (db *DB) CreateSeedSite(name, url, username string, passwordEncrypted []byte, category string) (int64, error) {
+func (db *DB) CreateSeedSite(input SeedSiteInput) (int64, error) {
 	result, err := db.Exec(`
 		INSERT INTO Sites (Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, 'connected', datetime('now'), datetime('now'))
-	`, name, url, username, passwordEncrypted, category)
+	`, input.Name, input.URL, input.Username, input.PasswordEncrypted, input.Category)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed site").
-			WithURL(url)
+			WithURL(input.URL)
 	}
 	return result.LastInsertId()
 }
 
+// SeedPluginInput bundles parameters for CreateSeedPlugin.
+type SeedPluginInput struct {
+	Name        string
+	Path        string
+	Category    string
+	GitEnabled  bool
+	AutoPublish bool
+}
+
 // CreateSeedPlugin creates a plugin for seeding
-func (db *DB) CreateSeedPlugin(name, path, category string, gitEnabled, autoPublish bool) (int64, error) {
+func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, error) {
 	autoPublishInt := 0
-	if autoPublish {
+	if input.AutoPublish {
 		autoPublishInt = 1
 	}
 
 	result, err := db.Exec(`
 		INSERT INTO Plugins (Name, Path, Category, WatchEnabled, AutoPublish, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, 1, ?, datetime('now'), datetime('now'))
-	`, name, path, category, autoPublishInt)
+	`, input.Name, input.Path, input.Category, autoPublishInt)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed plugin").
-			WithPath(path)
+			WithPath(input.Path)
 	}
 
 	pluginID, _ := result.LastInsertId()
 
 	// Create git config if enabled
-	if gitEnabled {
+	if input.GitEnabled {
 		_, _ = db.Exec(`
 			INSERT INTO PluginGitConfig (PluginId, GitEnabled, UpdatedAt)
 			VALUES (?, 1, datetime('now'))

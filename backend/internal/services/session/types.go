@@ -17,10 +17,19 @@ func ToJson[T any](v T) json.RawMessage {
 	return data
 }
 
+// StartSessionInput bundles parameters for StartSession.
+type StartSessionInput struct {
+	Type       SessionType
+	PluginID   int64
+	SiteID     int64
+	PluginName string
+	SiteName   string
+}
+
 // ServiceInterface defines the session service contract
 type ServiceInterface interface {
 	// StartSession creates a new session and returns its ID
-	StartSession(sessionType SessionType, pluginId, siteId int64, pluginName, siteName string) (string, error)
+	StartSession(input StartSessionInput) (string, error)
 
 	// Log writes a log entry to the session
 	Log(sessionId, level, step, message string, details json.RawMessage)

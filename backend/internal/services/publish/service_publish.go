@@ -278,7 +278,7 @@ func (s *Service) startPublishSession(pluginID, siteID int64, pluginInfo models.
 		return "", nil
 	}
 
-	sessionID, err := s.sessionService.StartSession(session.SessionTypePublish, pluginID, siteID, pluginInfo.Name, siteInfo.Name)
+	sessionID, err := s.sessionService.StartSession(session.StartSessionInput{Type: session.SessionTypePublish, PluginID: pluginID, SiteID: siteID, PluginName: pluginInfo.Name, SiteName: siteInfo.Name})
 	if err != nil {
 		s.log.Warn("Failed to start session", "error", err)
 

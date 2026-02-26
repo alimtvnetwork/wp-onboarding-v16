@@ -143,7 +143,7 @@ func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 		sessionType = session.SessionType("remote_plugin_action")
 	}
 
-	sessionId, _ := s.sessionService.StartSession(sessionType, 0, ref.SiteID, ref.PluginSlug, ref.Site.Name)
+	sessionId, _ := s.sessionService.StartSession(session.StartSessionInput{Type: sessionType, PluginID: 0, SiteID: ref.SiteID, PluginName: ref.PluginSlug, SiteName: ref.Site.Name})
 
 	return sessionId
 }

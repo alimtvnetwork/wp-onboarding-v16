@@ -51,15 +51,28 @@ func (s *Service) GetVersion(ctx context.Context, versionID int64) (*PluginVersi
 	return s.db.GetPluginVersionByID(versionID)
 }
 
+// RecordVersionInput bundles parameters for RecordVersion.
+type RecordVersionInput struct {
+	PluginID      int64
+	SiteID        int64
+	FilesUpdated  int
+	GitCommitHash string
+	PublishType   string
+	Notes         string
+	BackupPath    string
+}
+
 // RecordVersion saves a new version entry after a publish operation
-func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, filesUpdated int, gitCommitHash, publishType, notes string, backupPath string) (int64, error) {
+func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (int64, error) {
+	pluginID := input.PluginID
+	siteID := input.SiteID
 	// Generate version number
 	version, err := s.db.GetNextVersionNumber(pluginID, siteID)
 	if err != nil {
 		version = fmt.Sprintf("1.0.%d", time.Now().Unix())
 	}
 
-	versionID, err := s.db.CreatePluginVersion(pluginID, siteID, version, backupPath, filesUpdated, gitCommitHash, publishType, notes)
+	versionID, err := s.db.CreatePluginVersion(pluginID, siteID, version, input.BackupPath, input.FilesUpdated, input.GitCommitHash, input.PublishType, input.Notes)
 	if err != nil {
 		s.log.Error("Failed to record version",
 			"pluginId", pluginID,
@@ -83,8 +96,8 @@ func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, fil
 			Version:      version,
 			PluginID:     pluginID,
 			SiteID:       siteID,
-			FilesUpdated: filesUpdated,
-			PublishType:  publishType,
+			FilesUpdated: input.FilesUpdated,
+			PublishType:  input.PublishType,
 		})
 	}
 
