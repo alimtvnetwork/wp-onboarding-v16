@@ -100,9 +100,9 @@ trait OrchestratorPluginTrait {
             }
 
             $pluginsToSnapshot[$pluginFile] = array(
-                'slug'    => $slug,
-                'name'    => $pluginData['Name'] ?? $slug,
-                'version' => $pluginData['Version'] ?? '0.0.0',
+                ResponseKeyType::Slug->value    => $slug,
+                ResponseKeyType::Name->value    => $pluginData['Name'] ?? $slug,
+                ResponseKeyType::Version->value => $pluginData['Version'] ?? '0.0.0',
             );
         }
 
@@ -120,7 +120,7 @@ trait OrchestratorPluginTrait {
         string $pluginsDir,
         ?PDO $rootPdo,
     ): ?array {
-        $slug = $info['slug'];
+        $slug = $info[ResponseKeyType::Slug->value];
         $pluginPath = WP_PLUGIN_DIR . '/' . $slug;
 
         if (PathHelper::isDirMissing($pluginPath)) {
@@ -141,27 +141,27 @@ trait OrchestratorPluginTrait {
         }
 
         $entry = array(
-            'slug'                        => $info['slug'],
-            'name'                        => $info['name'],
-            'version'                     => $info['version'],
-            'zip'                         => $zipFilename,
-            ResponseKeyType::Size->value  => filesize($zipPath),
+            ResponseKeyType::Slug->value    => $info[ResponseKeyType::Slug->value],
+            ResponseKeyType::Name->value    => $info[ResponseKeyType::Name->value],
+            ResponseKeyType::Version->value => $info[ResponseKeyType::Version->value],
+            ResponseKeyType::Zip->value     => $zipFilename,
+            ResponseKeyType::Size->value    => filesize($zipPath),
         );
 
         if ($rootPdo) {
             $this->rootDb->registerPluginSnapshot($rootPdo, array(
-                ResponseKeyType::PluginSlug->value    => $info['slug'],
-                'pluginName'                          => $info['name'],
-                ResponseKeyType::PluginVersion->value => $info['version'],
-                'zipFile'                             => 'plugins/' . $zipFilename,
-                'fileSizeBytes'                       => filesize($zipPath),
-                'checksumMd5'                         => md5_file($zipPath),
+                ResponseKeyType::PluginSlug->value    => $info[ResponseKeyType::Slug->value],
+                ResponseKeyType::PluginName->value    => $info[ResponseKeyType::Name->value],
+                ResponseKeyType::PluginVersion->value => $info[ResponseKeyType::Version->value],
+                ResponseKeyType::ZipFile->value       => 'plugins/' . $zipFilename,
+                ResponseKeyType::FileSizeBytes->value  => filesize($zipPath),
+                ResponseKeyType::ChecksumMd5->value   => md5_file($zipPath),
             ));
         }
 
         $this->log(LogLevelType::Info->value, sprintf(
             'Plugin archived: %s (%s)',
-            $info['name'],
+            $info[ResponseKeyType::Name->value],
             $this->formatBytes($entry[ResponseKeyType::Size->value]),
         ));
 

@@ -313,6 +313,18 @@ enum ResponseKeyType: string
     case SqliteFile         = 'SqliteFile';
     case InternalMode       = '_Mode';
 
+    /** OPcache status keys. */
+    case OpcacheAvailable  = 'OpcacheAvailable';
+    case OpcacheReset      = 'OpcacheReset';
+    case FilesInvalidated  = 'FilesInvalidated';
+
+    /** Plugin archive keys. */
+    case Zip            = 'Zip';
+    case ZipFile        = 'ZipFile';
+    case FileSizeBytes  = 'FileSizeBytes';
+    case ChecksumMd5    = 'ChecksumMd5';
+    case PluginName     = 'PluginName';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

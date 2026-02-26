@@ -77,9 +77,9 @@ trait CleanerRetentionTrait {
             }
 
             $result[ResponseKeyType::Details->value][] = array(
-                'id'                             => $snapshot['Id'],
-                ResponseKeyType::Filename->value => $snapshot['Filename'] ?? '',
-                ResponseKeyType::Reason->value   => $reason,
+                ResponseKeyType::Id->value               => $snapshot['Id'],
+                ResponseKeyType::Filename->value         => $snapshot['Filename'] ?? '',
+                ResponseKeyType::Reason->value           => $reason,
             );
 
             $this->applyRetentionDelete($snapshot, $dryRun, $result);
