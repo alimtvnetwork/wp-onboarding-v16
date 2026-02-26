@@ -754,9 +754,12 @@ func (s *Service) DeleteSession(sessionID string) error {
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve legacy session path")
 	}
-	if err := os.Remove(legacyPath); err != nil && !os.IsNotExist(err) {
-		return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session log").
-			WithPath(legacyPath)
+	if err := os.Remove(legacyPath); err != nil {
+		isRealError := !os.IsNotExist(err)
+		if isRealError {
+			return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session log").
+				WithPath(legacyPath)
+		}
 	}
 	return nil
 }
@@ -872,8 +875,11 @@ func (s *Service) ClearAllSessions() error {
 		} else {
 			removeErr = os.Remove(fullPath)
 		}
-		if removeErr != nil && !os.IsNotExist(removeErr) {
-			removeErrors = append(removeErrors, removeErr)
+		if removeErr != nil {
+			isRealError := !os.IsNotExist(removeErr)
+			if isRealError {
+				removeErrors = append(removeErrors, removeErr)
+			}
 		}
 	}
 

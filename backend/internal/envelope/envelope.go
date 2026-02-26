@@ -262,7 +262,9 @@ func (r Response) WithSessionId(sessionId string) Response {
 // WithBackendTrace appends backend stack trace lines to the Errors block.
 // Only populated if IncludeStackTrace is enabled.
 func (r Response) WithBackendTrace(lines []string) Response {
-	if !globalDebug.IncludeStackTrace || len(lines) == 0 {
+	isTraceDisabled := !globalDebug.IncludeStackTrace
+	isEmpty := len(lines) == 0
+	if isTraceDisabled || isEmpty {
 		return r
 	}
 	if globalDebug.MaxStackFrames > 0 && len(lines) > globalDebug.MaxStackFrames {
@@ -276,7 +278,9 @@ func (r Response) WithBackendTrace(lines []string) Response {
 // WithDelegatedErrorStack attaches delegated service error stack lines.
 // Only populated if IncludeStackTrace is enabled.
 func (r Response) WithDelegatedErrorStack(lines []string) Response {
-	if !globalDebug.IncludeStackTrace || len(lines) == 0 {
+	isTraceDisabled := !globalDebug.IncludeStackTrace
+	isEmpty := len(lines) == 0
+	if isTraceDisabled || isEmpty {
 		return r
 	}
 	if globalDebug.MaxStackFrames > 0 && len(lines) > globalDebug.MaxStackFrames {
@@ -290,7 +294,9 @@ func (r Response) WithDelegatedErrorStack(lines []string) Response {
 // WithMethodsStack attaches the backend methods stack for diagnostics.
 // Only populated if IncludeMethodsStack is enabled.
 func (r Response) WithMethodsStack(frames []MethodFrame) Response {
-	if !globalDebug.IncludeMethodsStack || len(frames) == 0 {
+	isStackDisabled := !globalDebug.IncludeMethodsStack
+	isEmpty := len(frames) == 0
+	if isStackDisabled || isEmpty {
 		return r
 	}
 	r.MethodsStack = &MethodsStack{

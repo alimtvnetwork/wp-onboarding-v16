@@ -105,11 +105,17 @@ func main() {
 	// Clear logs on startup if configured
 	if cfg.Logging.ClearLogsOnStartup {
 		bootstrapLog.Info("Clearing logs on startup (clearLogsOnStartup=true)")
-		if err := os.Remove(allLogPath); err != nil && !os.IsNotExist(err) {
-			bootstrapLog.Error("Failed to clear log.txt", "error", err)
+		if err := os.Remove(allLogPath); err != nil {
+			isRealError := !os.IsNotExist(err)
+			if isRealError {
+				bootstrapLog.Error("Failed to clear log.txt", "error", err)
+			}
 		}
-		if err := os.Remove(errLogPath); err != nil && !os.IsNotExist(err) {
-			bootstrapLog.Error("Failed to clear error.log.txt", "error", err)
+		if err := os.Remove(errLogPath); err != nil {
+			isRealError := !os.IsNotExist(err)
+			if isRealError {
+				bootstrapLog.Error("Failed to clear error.log.txt", "error", err)
+			}
 		}
 	}
 
@@ -117,8 +123,11 @@ func main() {
 	if cfg.Logging.ClearSessionsOnStartup {
 		sessionsDir := filepath.Join(filepath.Dir(cfg.DatabasePath), "sessions")
 		bootstrapLog.Info("Clearing sessions on startup (clearSessionsOnStartup=true)", "path", sessionsDir)
-		if err := os.RemoveAll(sessionsDir); err != nil && !os.IsNotExist(err) {
-			bootstrapLog.Error("Failed to clear sessions directory", "error", err)
+		if err := os.RemoveAll(sessionsDir); err != nil {
+			isRealError := !os.IsNotExist(err)
+			if isRealError {
+				bootstrapLog.Error("Failed to clear sessions directory", "error", err)
+			}
 		}
 		// Recreate the empty directory
 		if err := os.MkdirAll(sessionsDir, 0755); err != nil {

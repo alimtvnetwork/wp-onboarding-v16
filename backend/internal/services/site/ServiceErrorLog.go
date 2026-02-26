@@ -169,7 +169,9 @@ type guardRailInput struct {
 
 // formatGuardRailSection formats the WP Core mutation guard rail section.
 func formatGuardRailSection(input guardRailInput) string {
-	if !strings.Contains(input.Details.Endpoint, "/wp/v2/plugins") || input.Method == "GET" {
+	isNonPluginEndpoint := !strings.Contains(input.Details.Endpoint, "/wp/v2/plugins")
+	isReadOnly := input.Method == "GET"
+	if isNonPluginEndpoint || isReadOnly {
 		return "    This request was correctly delegated through the Riseup Uploader endpoint.\n"
 	}
 
