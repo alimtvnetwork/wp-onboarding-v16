@@ -1,0 +1,268 @@
+// Package session — session lifecycle: start, log, stage markers, end.
+package session
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"wp-plugin-publish/internal/enums/log_level"
+	"wp-plugin-publish/internal/enums/stage_status"
+	"wp-plugin-publish/pkg/apperror"
+)
+
+// StartSession creates a new session directory and returns its ID
+func (s *Service) StartSession(input StartSessionInput) (string, error) {
+	sessionID := uuid.New().String()
+
+	session := buildNewSession(sessionID, input)
+
+	if err := s.initSessionDir(sessionID); err != nil {
+		return "", err
+	}
+
+	file, err := s.createSessionLogFile(sessionID)
+	if err != nil {
+		return "", err
+	}
+	session.logFile = file
+
+	writeSessionHeader(file, sessionID, input, session.StartedAt)
+
+	s.mu.Lock()
+	s.sessions[sessionID] = session
+	s.mu.Unlock()
+
+	if s.log != nil {
+		s.log.Info("Session started", "sessionId", sessionID, "type", input.Type)
+	}
+
+	return sessionID, nil
+}
+
+// buildNewSession constructs a new Session from the input.
+func buildNewSession(sessionID string, input StartSessionInput) *Session {
+	return &Session{
+		ID:         sessionID,
+		Type:       input.Type,
+		PluginID:   input.PluginID,
+		SiteID:     input.SiteID,
+		PluginName: input.PluginName,
+		SiteName:   input.SiteName,
+		Status:     stagestatus.Running.String(),
+		StartedAt:  time.Now().UTC(),
+		Metadata:   json.RawMessage(`{}`),
+	}
+}
+
+// initSessionDir creates the session directory on disk.
+func (s *Service) initSessionDir(sessionID string) error {
+	sessionDir, err := s.getSessionDir(sessionID)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrSessionInit, "resolve session directory")
+	}
+	if err := os.MkdirAll(sessionDir, 0755); err != nil {
+		return apperror.Wrap(err, apperror.ErrSessionInit, "create session directory").
+			WithPath(sessionDir)
+	}
+	return nil
+}
+
+// createSessionLogFile creates and returns the session.log file handle.
+func (s *Service) createSessionLogFile(sessionID string) (*os.File, error) {
+	logPath, err := s.getLogPath(sessionID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "resolve session log path")
+	}
+	file, err := os.Create(logPath)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrSessionStore, "create session log file").
+			WithPath(logPath)
+	}
+	return file, nil
+}
+
+// writeSessionHeader writes the formatted session header to the log file.
+func writeSessionHeader(file *os.File, sessionID string, input StartSessionInput, startedAt time.Time) {
+	header := "═══════════════════════════════════════════════════════════════════════════════\n"
+	header += fmt.Sprintf(" SESSION: %s\n", sessionID)
+	header += fmt.Sprintf(" TYPE: %s\n", input.Type)
+	header += fmt.Sprintf(" STARTED: %s\n", startedAt.Format("2006-01-02 15:04:05 UTC"))
+	if input.PluginName != "" {
+		header += fmt.Sprintf(" PLUGIN: %s (ID: %d)\n", input.PluginName, input.PluginID)
+	}
+	if input.SiteName != "" {
+		header += fmt.Sprintf(" SITE: %s (ID: %d)\n", input.SiteName, input.SiteID)
+	}
+	header += "═══════════════════════════════════════════════════════════════════════════════\n\n"
+	file.WriteString(header)
+}
+
+// LogInput bundles parameters for Log.
+type LogInput struct {
+	SessionID string
+	Level     string
+	Step      string
+	Message   string
+	Details   json.RawMessage
+}
+
+// Log writes a log entry to the session
+func (s *Service) Log(input LogInput) {
+	session := s.getActiveSession(input.SessionID)
+	if session == nil {
+		return
+	}
+
+	session.mu.Lock()
+	defer session.mu.Unlock()
+
+	if session.logFile == nil {
+		return
+	}
+
+	logLine := formatLogLine(input)
+	session.logFile.WriteString(logLine)
+	writeLogDetails(session.logFile, input.Details)
+}
+
+// getActiveSession returns the in-memory session or nil if not found.
+func (s *Service) getActiveSession(sessionID string) *Session {
+	s.mu.RLock()
+	session, exists := s.sessions[sessionID]
+	s.mu.RUnlock()
+	if !exists {
+		return nil
+	}
+	return session
+}
+
+// formatLogLine formats a timestamped log line string.
+func formatLogLine(input LogInput) string {
+	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
+	parsed, parseErr := loglevel.Parse(input.Level)
+	levelUpper := loglevel.Info.String()
+	if parseErr == nil {
+		levelUpper = strings.ToUpper(parsed.String())
+	}
+	return fmt.Sprintf("[%s] [%s] [%s] %s\n", timestamp, levelUpper, input.Step, input.Message)
+}
+
+// writeLogDetails writes indented JSON details to the log file if present.
+func writeLogDetails(file *os.File, details json.RawMessage) {
+	if len(details) == 0 {
+		return
+	}
+	var parsedJSON json.RawMessage
+	if json.Unmarshal(details, &parsedJSON) == nil {
+		detailsJSON, _ := json.MarshalIndent(parsedJSON, "    ", "  ")
+		file.WriteString(fmt.Sprintf("    %s\n", string(detailsJSON)))
+	}
+}
+
+// LogStageStart writes a stage header to the session log
+func (s *Service) LogStageStart(sessionID, stageName string) {
+	session := s.getActiveSession(sessionID)
+	if session == nil {
+		return
+	}
+
+	session.mu.Lock()
+	defer session.mu.Unlock()
+
+	if session.logFile == nil {
+		return
+	}
+
+	header := "\n───────────────────────────────────────────────────────────────────────────────\n"
+	header += fmt.Sprintf(" STAGE: %s\n", stageName)
+	header += "───────────────────────────────────────────────────────────────────────────────\n"
+	session.logFile.WriteString(header)
+}
+
+// StageEndInput bundles parameters for LogStageEnd.
+type StageEndInput struct {
+	SessionID  string
+	StageName  string
+	Status     string
+	DurationMs int64
+}
+
+// LogStageEnd writes a stage completion marker
+func (s *Service) LogStageEnd(input StageEndInput) {
+	session := s.getActiveSession(input.SessionID)
+	if session == nil {
+		return
+	}
+
+	session.mu.Lock()
+	defer session.mu.Unlock()
+
+	if session.logFile == nil {
+		return
+	}
+
+	statusIcon := resolveStageIcon(input.Status)
+	footer := fmt.Sprintf("\n%s STAGE %s completed (%s) in %dms\n", statusIcon, input.StageName, input.Status, input.DurationMs)
+	session.logFile.WriteString(footer)
+}
+
+// resolveStageIcon returns the icon character for a stage status.
+func resolveStageIcon(status string) string {
+	parsedStatus, _ := stagestatus.Parse(status)
+	if parsedStatus.IsFailed() {
+		return "✗"
+	}
+	if parsedStatus.IsSkipped() {
+		return "○"
+	}
+	return "✓"
+}
+
+// EndSession marks a session as complete
+func (s *Service) EndSession(sessionID, status, errorMsg string) {
+	s.mu.Lock()
+	session, exists := s.sessions[sessionID]
+	s.mu.Unlock()
+
+	if !exists {
+		return
+	}
+
+	session.mu.Lock()
+	defer session.mu.Unlock()
+
+	now := time.Now().UTC()
+	session.Status = status
+	session.EndedAt = &now
+	session.ErrorMsg = errorMsg
+
+	writeSessionFooter(session, now, status, errorMsg)
+
+	if s.log != nil {
+		s.log.Info("Session ended", "sessionId", sessionID, "status", status)
+	}
+}
+
+// writeSessionFooter writes the end-of-session footer and closes the log file.
+func writeSessionFooter(session *Session, now time.Time, status, errorMsg string) {
+	if session.logFile == nil {
+		return
+	}
+
+	duration := now.Sub(session.StartedAt)
+	footer := "\n═══════════════════════════════════════════════════════════════════════════════\n"
+	footer += fmt.Sprintf(" SESSION ENDED: %s\n", now.Format("2006-01-02 15:04:05 UTC"))
+	footer += fmt.Sprintf(" STATUS: %s\n", status)
+	footer += fmt.Sprintf(" DURATION: %v\n", duration.Round(time.Millisecond))
+	if errorMsg != "" {
+		footer += fmt.Sprintf(" ERROR: %s\n", errorMsg)
+	}
+	footer += "═══════════════════════════════════════════════════════════════════════════════\n"
+	session.logFile.WriteString(footer)
+	session.logFile.Close()
+	session.logFile = nil
+}
