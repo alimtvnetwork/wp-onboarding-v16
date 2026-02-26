@@ -176,7 +176,9 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 
 // validateSuccessAndReturn checks the success flag and returns data or an error.
 func validateSuccessAndReturn[T any](isSuccess bool, data T, operation, slug string) (T, error) {
-	if !isSuccess {
+	isFailure := !isSuccess
+
+	if isFailure {
 		var zero T
 		return zero, apperror.New(apperror.ErrWPConnection, "remote API returned failure for "+operation).
 			WithValue("slug", slug)

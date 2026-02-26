@@ -210,7 +210,9 @@ func (s *Store) DeleteRequestSession(id string) error {
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session")
 	}
 
-	if !isDeleted {
+	isSessionMissing := !isDeleted
+
+	if isSessionMissing {
 		return apperror.New(apperror.ErrSessionNotFound, "session not found: "+id)
 	}
 

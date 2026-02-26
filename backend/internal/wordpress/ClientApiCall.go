@@ -53,7 +53,7 @@ func (c *Client) doAPICallRaw(input apiCallInput) ([]byte, error) {
 		return nil, err
 	}
 
-	if !isOkStatus(callResp.StatusCode, input.OkStatuses) {
+	if isErrorStatus(callResp.StatusCode, input.OkStatuses) {
 		return nil, c.buildCallError(input, callResp.StatusCode, callResp.Body)
 	}
 
@@ -70,7 +70,7 @@ func (c *Client) doAPICallStream(input apiCallInput) (*http.Response, error) {
 		return nil, apperror.Wrap(err, code, input.Operation)
 	}
 
-	if !isOkStatus(resp.StatusCode, input.OkStatuses) {
+	if isErrorStatus(resp.StatusCode, input.OkStatuses) {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 
@@ -104,6 +104,11 @@ func isOkStatus(statusCode int, okStatuses []int) bool {
 		}
 	}
 	return false
+}
+
+// isErrorStatus checks whether statusCode is NOT in the accepted list.
+func isErrorStatus(statusCode int, okStatuses []int) bool {
+	return !isOkStatus(statusCode, okStatuses)
 }
 
 // doAPICall sends a request, checks status, and JSON-decodes the response into T.

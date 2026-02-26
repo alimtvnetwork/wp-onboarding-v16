@@ -40,7 +40,8 @@ func (s *Service) GetRemotePlugins(ctx context.Context, siteId int64) ([]RemoteP
 
 // GetRemotePluginsWithCache fetches remote plugins with optional cache bypass
 func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, isForceRefresh bool) ([]RemotePlugin, error) {
-	isCacheUsable := s.isCacheEnabled && !isForceRefresh
+	isUseCache := !isForceRefresh
+	isCacheUsable := s.isCacheEnabled && isUseCache
 
 	if isCacheUsable {
 		if cached, err := s.getRemotePluginsFromCache(ctx, siteId); err == nil && cached != nil {
@@ -251,9 +252,11 @@ func parseCacheTimestamps(timestamps *cacheTimestampStrings) *CacheStatus {
 	cachedAtVal := parseTime(timestamps.CachedAt)
 	expiresAtVal := parseTime(timestamps.ExpiresAt)
 	isExpired := expiresAtVal.IsZero() || expiresAtVal.Before(time.Now())
+	isStale := isExpired
+	isValid := !isStale
 
 	return &CacheStatus{
-		IsValid:   !isExpired,
+		IsValid:   isValid,
 		CachedAt:  timeToPtr(cachedAtVal),
 		ExpiresAt: timeToPtr(expiresAtVal),
 	}

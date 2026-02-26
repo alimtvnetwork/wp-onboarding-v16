@@ -16,7 +16,7 @@ import (
 // EnsurePortFree checks if the given port is in use and attempts to kill
 // the occupying process. Returns nil if the port is free (or was freed).
 func EnsurePortFree(port int) error {
-	if !isPortInUse(port) {
+	if isPortFree(port) {
 		return nil
 	}
 
@@ -39,7 +39,7 @@ func EnsurePortFree(port int) error {
 	// Wait briefly for the OS to release the port
 	for i := 0; i < 10; i++ {
 		time.Sleep(200 * time.Millisecond)
-		if !isPortInUse(port) {
+		if isPortFree(port) {
 			return nil
 		}
 	}
@@ -57,6 +57,9 @@ func isPortInUse(port int) bool {
 	ln.Close()
 	return false
 }
+
+// isPortFree returns true when the port is available for binding.
+func isPortFree(port int) bool { return !isPortInUse(port) }
 
 func findPIDOnPort(port int) (int, error) {
 	switch runtime.GOOS {

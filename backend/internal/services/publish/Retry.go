@@ -59,7 +59,7 @@ func withRetry[T any](ctx context.Context, cfg RetryConfig, operation string, fn
 
 		result.LastError = appErr
 
-		if !isTransientAppError(appErr) {
+		if isPermanentError(appErr) {
 			result.TotalDelay = time.Since(startTime)
 
 			return zero, result
@@ -122,6 +122,11 @@ func isTransientAppError(appErr *apperror.AppError) bool {
 	}
 
 	return isTransientMessage(cause.Error())
+}
+
+// isPermanentError returns true when the error is not transient and should not be retried.
+func isPermanentError(appErr *apperror.AppError) bool {
+	return !isTransientAppError(appErr)
 }
 
 // isTransientMessage checks error text for common transient patterns.
