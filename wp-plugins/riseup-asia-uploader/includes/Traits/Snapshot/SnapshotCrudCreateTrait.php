@@ -18,6 +18,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SnapshotPhaseType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
@@ -40,13 +41,13 @@ trait SnapshotCrudCreateTrait {
     public function handleCreateSnapshot($request) {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $scope = isset($body['scope']) ? sanitize_key($body['scope']) : SnapshotScopeType::All->value;
+            $scope = isset($body[ResponseKeyType::Scope->value]) ? sanitize_key($body[ResponseKeyType::Scope->value]) : SnapshotScopeType::All->value;
 
             $this->logger->logPluginAction(ActionType::SnapshotCreate->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::Scope->value => $scope, 'trigger' => 'api', ResponseKeyType::Phase->value => 'initiated'));
+                array(ResponseKeyType::Scope->value => $scope, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value));
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
-            $isPerTable = (($manager->getSettings()['mode'] ?? SnapshotWorkerModeType::PerTable->value) === SnapshotWorkerModeType::PerTable->value);
+            $isPerTable = (($manager->getSettings()[ResponseKeyType::Mode->value] ?? SnapshotWorkerModeType::PerTable->value) === SnapshotWorkerModeType::PerTable->value);
 
             $result = $isPerTable
                 ? $this->executePerTableSnapshot($body, $scope, $manager)
@@ -69,11 +70,11 @@ trait SnapshotCrudCreateTrait {
         $orchestrator = SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
 
         return $orchestrator->executeFullBackup(array(
-            'title'            => $body['title'] ?? null,
-            'scope'            => $scope,
-            'include_plugins'  => $body['include_plugins'] ?? null,
-            'plugin_selection' => $body['plugin_selection'] ?? null,
-            'compression'      => $body['compression'] ?? null,
+            ResponseKeyType::Title->value          => $body[ResponseKeyType::Title->value] ?? null,
+            ResponseKeyType::Scope->value          => $scope,
+            ResponseKeyType::IncludePlugins->value  => $body[ResponseKeyType::IncludePlugins->value] ?? null,
+            ResponseKeyType::PluginSelection->value => $body[ResponseKeyType::PluginSelection->value] ?? null,
+            ResponseKeyType::Compression->value     => $body[ResponseKeyType::Compression->value] ?? null,
         ));
     }
 
@@ -88,9 +89,9 @@ trait SnapshotCrudCreateTrait {
         $this->fileLogger->info('Creating snapshot via API (legacy mode)', array('scope' => $scope));
 
         return $manager->createSnapshot(array(
-            'scope'   => $scope,
-            'trigger' => SnapshotTriggerType::Api->value,
-            'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
+            ResponseKeyType::Scope->value   => $scope,
+            ResponseKeyType::Trigger->value => SnapshotTriggerType::Api->value,
+            ResponseKeyType::Tables->value  => isset($body[ResponseKeyType::Tables->value]) ? array_map('sanitize_text_field', (array) $body[ResponseKeyType::Tables->value]) : array(),
         ));
     }
 
@@ -106,7 +107,7 @@ trait SnapshotCrudCreateTrait {
         $this->logger->logPluginAction(
             $action, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array(ResponseKeyType::Scope->value => $scope, 'mode' => $mode, ResponseKeyType::Phase->value => 'complete'),
+            array(ResponseKeyType::Scope->value => $scope, ResponseKeyType::Mode->value => $mode, ResponseKeyType::Phase->value => SnapshotPhaseType::Complete->value),
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Unknown error')
         );
     }

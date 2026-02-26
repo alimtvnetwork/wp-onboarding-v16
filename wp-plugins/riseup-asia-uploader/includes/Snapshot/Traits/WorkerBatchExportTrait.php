@@ -128,7 +128,7 @@ trait WorkerBatchExportTrait {
             ResponseKeyType::TotalRows->value   => 0,
             ResponseKeyType::Errors->value      => array(),
             ResponseKeyType::Duration->value    => $duration,
-            'status'                            => SnapshotJobStatusType::Queued->value,
+            ResponseKeyType::Status->value              => SnapshotJobStatusType::Queued->value,
         ));
     }
 

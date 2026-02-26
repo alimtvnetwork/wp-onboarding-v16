@@ -54,7 +54,7 @@ trait RestoreTableTrait {
             $errors[] = $table . ': ' . $result[ResponseKeyType::Error->value];
             $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
 
-            $isStrictMode = BooleanHelpers::hasValue($options['strict'] ?? null);
+            $isStrictMode = BooleanHelpers::hasValue($options[ResponseKeyType::Strict->value] ?? null);
 
             if ($isStrictMode) {
                 throw new Exception('Strict mode: table restore failed for ' . $table);
@@ -83,16 +83,16 @@ trait RestoreTableTrait {
             );
         }
 
-        $sqlitePath = $snapshotDir . '/' . $tableInfo['sqliteFile'];
+        $sqlitePath = $snapshotDir . '/' . $tableInfo[ResponseKeyType::SqliteFile->value];
 
         if (PathHelper::isFileMissing($sqlitePath)) {
             $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array(
                 'table' => $table,
-                'file'  => $tableInfo['sqliteFile'],
+                'file'  => $tableInfo[ResponseKeyType::SqliteFile->value],
             ));
 
             return ResultHelper::error(
-                'SQLite file missing (' . $tableInfo['sqliteFile'] . ')',
+                'SQLite file missing (' . $tableInfo[ResponseKeyType::SqliteFile->value] . ')',
                 array(ResponseKeyType::Rows->value => 0),
             );
         }
@@ -114,7 +114,7 @@ trait RestoreTableTrait {
             }
 
             return $this->batchInsertToMysql(
-                $validated['sqlite'],
+                $validated[ResponseKeyType::Sqlite->value],
                 $table,
                 $validated[ResponseKeyType::Columns->value],
                 $strategy,

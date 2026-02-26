@@ -45,8 +45,8 @@ trait PluginExportTrait
 
             return new WP_REST_Response(ResultHelper::ok(array(
                 ResponseKeyType::PluginZip->value => base64_encode($zipContent),
-                'slug'       => PluginConfigType::Slug->value,
-                'version'    => PluginConfigType::Version->value,
+                ResponseKeyType::Slug->value      => PluginConfigType::Slug->value,
+                ResponseKeyType::Version->value   => PluginConfigType::Version->value,
             )), HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');
@@ -116,8 +116,8 @@ trait PluginExportTrait
 
         return new WP_REST_Response(ResultHelper::ok(array(
             ResponseKeyType::PluginZip->value => base64_encode($zipContent),
-            'slug'       => $slug,
-            'size'       => strlen($zipContent),
+            ResponseKeyType::Slug->value      => $slug,
+            ResponseKeyType::Size->value      => strlen($zipContent),
         )), HttpStatusType::Ok->value);
     }
 }
