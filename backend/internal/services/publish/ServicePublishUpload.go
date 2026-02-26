@@ -35,8 +35,22 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 	zipSize := getFileSize(zipPath)
 	s.broadcastProgress(pctx.progress(publishstep.Uploading, 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
 
+	uploadOutcome, retryResult := s.attemptUploadWithRetry(ctx, pctx, zipPath)
+
+	if retryResult.LastError != nil {
+		return false, s.handleUploadRetryFailure(pctx, retryResult)
+	}
+
+	s.logUploadOutcome(pctx, uploadOutcome, zipSize, startTime, retryResult.Attempts)
+
+	return uploadOutcome.IsActivated, nil
+}
+
+// attemptUploadWithRetry runs the upload with retry logic.
+func (s *Service) attemptUploadWithRetry(ctx context.Context, pctx *publishContext, zipPath string) (UploadOutcome, RetryResult[UploadOutcome]) {
 	retryCfg := DefaultRetryConfig()
-	uploadOutcome, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (UploadOutcome, *apperror.AppError) {
+
+	return withRetry(ctx, retryCfg, "upload", func(attempt int) (UploadOutcome, *apperror.AppError) {
 		result := s.uploadPlugin(ctx, pctx.WPClient, zipPath, pctx.Mapping.RemoteSlug)
 		if result.HasError() {
 			return UploadOutcome{}, result.AppError()
@@ -44,32 +58,36 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 
 		return result.Value(), nil
 	})
+}
 
-	if retryResult.LastError != nil {
-		s.logUploadError(pctx, retryResult.Attempts, retryResult.LastError)
+// handleUploadRetryFailure logs the error and returns an AppError.
+func (s *Service) handleUploadRetryFailure(pctx *publishContext, retryResult RetryResult[UploadOutcome]) error {
+	s.logUploadError(pctx, retryResult.Attempts, retryResult.LastError)
 
-		return false, apperror.Wrap(retryResult.LastError, apperror.ErrWPConnection, "plugin upload failed")
-	}
+	return apperror.Wrap(retryResult.LastError, apperror.ErrWPConnection, "plugin upload failed")
+}
 
-	if uploadOutcome.IsPerformed {
+// logUploadOutcome logs the upload result based on whether it was performed.
+func (s *Service) logUploadOutcome(pctx *publishContext, outcome UploadOutcome, zipSize int64, startTime time.Time, attempts int) {
+	if outcome.IsPerformed {
 		successInput := logUploadSuccessInput{
 			ZipSize:      zipSize,
 			StartTime:    startTime,
-			IsActivated:  uploadOutcome.IsActivated,
-			Attempts:     retryResult.Attempts,
-			UploadResult: uploadOutcome.UploadResult,
+			IsActivated:  outcome.IsActivated,
+			Attempts:     attempts,
+			UploadResult: outcome.UploadResult,
 		}
 		s.logUploadSuccess(pctx, successInput)
-	} else {
-		simCtx := StageContext{
-			What:   "Upload ZIP to WordPress",
-			Result: "SIMULATED - no companion plugin available",
-		}
-		simLog := pctx.stageLog(loglevel.Warn, publishstep.Upload, simCtx)
-		s.broadcastStageLog(simLog)
+
+		return
 	}
 
-	return uploadOutcome.IsActivated, nil
+	simCtx := StageContext{
+		What:   "Upload ZIP to WordPress",
+		Result: "SIMULATED - no companion plugin available",
+	}
+	simLog := pctx.stageLog(loglevel.Warn, publishstep.Upload, simCtx)
+	s.broadcastStageLog(simLog)
 }
 
 // getFileSize returns the file size or 0 on error.
@@ -116,13 +134,24 @@ func (s *Service) logActivateSkipped(pctx *publishContext) error {
 func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time) error {
 	availability, _ := pctx.WPClient.CheckRiseupAsiaAvailable()
 	isUploaderMissing := availability == nil || !availability.Available
+
 	if isUploaderMissing {
 		return s.failActivateNoUploader(pctx)
 	}
 
-	endpointURL := fmt.Sprintf("%s/wp-json/%s%s", pctx.SiteInfo.URL, wordpress.RiseupAsiaNamespace, endpoint.Enable)
+	endpointURL := buildActivateEndpointURL(pctx.SiteInfo.URL)
 	s.logActivateRequest(pctx, endpointURL)
 
+	return s.executeActivation(pctx, endpointURL, startTime)
+}
+
+// buildActivateEndpointURL constructs the activation endpoint URL.
+func buildActivateEndpointURL(siteURL string) string {
+	return fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, endpoint.Enable)
+}
+
+// executeActivation performs the actual plugin activation call.
+func (s *Service) executeActivation(pctx *publishContext, endpointURL string, startTime time.Time) error {
 	if err := pctx.WPClient.EnablePluginViaUploader(pctx.Mapping.RemoteSlug); err != nil {
 		activateErr := apperror.Wrap(err, apperror.ErrWPConnection, "plugin activation failed")
 
