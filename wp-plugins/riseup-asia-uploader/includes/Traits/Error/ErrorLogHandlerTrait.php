@@ -84,7 +84,7 @@ trait ErrorLogHandlerTrait {
         }
 
         $result[ResponseKeyType::Exists->value]     = true;
-        $result['total_size'] = filesize($filePath);
+        $result[ResponseKeyType::TotalSize->value] = filesize($filePath);
 
         $allLines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 

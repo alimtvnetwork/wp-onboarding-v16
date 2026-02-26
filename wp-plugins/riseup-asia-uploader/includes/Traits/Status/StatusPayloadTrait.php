@@ -89,7 +89,7 @@ trait StatusPayloadTrait {
                 continue;
             }
 
-            $routes[] = array('route' => $route, 'methods' => $this->extractRouteMethods($handlers));
+            $routes[] = array(ResponseKeyType::Route->value => $route, ResponseKeyType::Methods->value => $this->extractRouteMethods($handlers));
         }
 
         return $routes;

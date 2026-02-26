@@ -85,7 +85,7 @@ trait StatusOpsTrait {
     public function handleOpcacheReset(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('OPcache reset endpoint called');
         $result = $this->buildOpcacheResult();
-        $result['filesInvalidated'] = $this->invalidatePluginFiles();
+        $result[ResponseKeyType::FilesInvalidated->value] = $this->invalidatePluginFiles();
         wp_cache_delete('plugins', 'plugins');
 
         return EnvelopeBuilder::success('OPcache reset complete')
