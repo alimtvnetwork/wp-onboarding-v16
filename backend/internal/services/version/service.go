@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/enums/publish_type"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
@@ -39,103 +40,101 @@ func New(cfg Config) *Service {
 }
 
 // GetVersions returns version history for a plugin
-func (s *Service) GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) ([]PluginVersionRow, error) {
+func (s *Service) GetVersions(ctx context.Context, pluginId int64, siteId *int64, limit int) ([]PluginVersionRow, *apperror.AppError) {
 	if limit <= 0 {
 		limit = 50
 	}
-	return s.db.GetPluginVersions(pluginID, siteID, limit)
+	rows, err := s.db.GetPluginVersions(pluginId, siteId, limit)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin versions").
+			WithPluginId(pluginId)
+	}
+	return rows, nil
 }
 
 // GetVersion returns a specific version entry
-func (s *Service) GetVersion(ctx context.Context, versionID int64) (*PluginVersionRow, error) {
-	return s.db.GetPluginVersionByID(versionID)
+func (s *Service) GetVersion(ctx context.Context, versionId int64) (*PluginVersionRow, *apperror.AppError) {
+	row, err := s.db.GetPluginVersionByID(versionId)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
+			WithVersionId(versionId)
+	}
+	return row, nil
 }
 
 // RecordVersionInput bundles parameters for RecordVersion.
 type RecordVersionInput struct {
-	PluginID      int64
-	SiteID        int64
+	PluginId      int64
+	SiteId        int64
 	FilesUpdated  int
 	GitCommitHash string
-	PublishType   string
+	PublishType   publishtype.Variant
 	Notes         string
 	BackupPath    string
 }
 
 // RecordVersion saves a new version entry after a publish operation
-func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (int64, error) {
-	pluginID := input.PluginID
-	siteID := input.SiteID
-	// Generate version number
-	version, err := s.db.GetNextVersionNumber(pluginID, siteID)
+func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (int64, *apperror.AppError) {
+	version, err := s.db.GetNextVersionNumber(input.PluginId, input.SiteId)
 	if err != nil {
 		version = fmt.Sprintf("1.0.%d", time.Now().Unix())
 	}
 
-	versionID, err := s.db.CreatePluginVersion(database.PluginVersionInput{PluginID: pluginID, SiteID: siteID, Version: version, BackupPath: input.BackupPath, FilesUpdated: input.FilesUpdated, GitCommitHash: input.GitCommitHash, PublishType: input.PublishType, Notes: input.Notes})
+	versionId, err := s.db.CreatePluginVersion(database.PluginVersionInput{
+		PluginId:      input.PluginId,
+		SiteId:        input.SiteId,
+		Version:       version,
+		BackupPath:    input.BackupPath,
+		FilesUpdated:  input.FilesUpdated,
+		GitCommitHash: input.GitCommitHash,
+		PublishType:   input.PublishType.Value(),
+		Notes:         input.Notes,
+	})
 	if err != nil {
-		s.log.Error("Failed to record version",
-			"pluginId", pluginID,
-			"siteId", siteID,
-			"error", err,
-		)
-		return 0, err
+		appErr := apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to record version").
+			WithPluginId(input.PluginId).
+			WithSiteId(input.SiteId)
+		s.log.Error("Failed to record version", "pluginId", input.PluginId, "siteId", input.SiteId, "error", err)
+		return 0, appErr
 	}
 
-	s.log.Info("Version recorded",
-		"versionId", versionID,
-		"version", version,
-		"pluginId", pluginID,
-		"siteId", siteID,
-	)
+	s.log.Info("Version recorded", "versionId", versionId, "version", version, "pluginId", input.PluginId, "siteId", input.SiteId)
 
-	// Broadcast version created event
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventVersionCreated, ws.VersionCreatedData{
-			VersionID:    versionID,
+			VersionId:    versionId,
 			Version:      version,
-			PluginID:     pluginID,
-			SiteID:       siteID,
+			PluginId:     input.PluginId,
+			SiteId:       input.SiteId,
 			FilesUpdated: input.FilesUpdated,
 			PublishType:  input.PublishType,
 		})
 	}
 
-	return versionID, nil
+	return versionId, nil
 }
 
 // Rollback restores a plugin to a previous version
-func (s *Service) Rollback(ctx context.Context, versionID int64) (*ws.RollbackCompleteData, error) {
-	// Get version info
-	ver, err := s.db.GetPluginVersionByID(versionID)
+func (s *Service) Rollback(ctx context.Context, versionId int64) (*ws.RollbackCompleteData, *apperror.AppError) {
+	ver, err := s.db.GetPluginVersionByID(versionId)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
-			WithVersionId(versionID)
+			WithVersionId(versionId)
 	}
 
 	if ver.BackupPath == "" {
 		return nil, apperror.New(apperror.ErrVersionNoBackup, "no backup available for this version").
-			WithVersionId(versionID)
+			WithVersionId(versionId)
 	}
 
-	pluginID := ver.PluginID
-	siteID := ver.SiteID
-	versionStr := ver.Version
+	s.log.Info("Starting rollback", "versionId", versionId, "version", ver.Version, "pluginId", ver.PluginID, "siteId", ver.SiteID)
 
-	s.log.Info("Starting rollback",
-		"versionId", versionID,
-		"version", versionStr,
-		"pluginId", pluginID,
-		"siteId", siteID,
-	)
-
-	// Broadcast rollback started
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventRollbackStarted, ws.RollbackStartedData{
-			VersionID: versionID,
-			Version:   versionStr,
-			PluginID:  pluginID,
-			SiteID:    siteID,
+			VersionId: versionId,
+			Version:   ver.Version,
+			PluginId:  ver.PluginID,
+			SiteId:    ver.SiteID,
 		})
 	}
 
@@ -143,18 +142,16 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (*ws.RollbackCo
 	// 1. Read backup zip from backupPath
 	// 2. Upload to WordPress site
 	// 3. Activate plugin
-	// For now, return success with TODO note
 
 	result := &ws.RollbackCompleteData{
 		IsSuccess:      true,
-		VersionID:      versionID,
-		Version:        versionStr,
+		VersionId:      versionId,
+		Version:        ver.Version,
 		RolledBackAt:   time.Now().Format(time.RFC3339),
 		Implementation: "pending",
 		Message:        "Rollback initiated - backup restoration requires WordPress API integration",
 	}
 
-	// Broadcast rollback complete
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventRollbackComplete, *result)
 	}
@@ -163,7 +160,10 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (*ws.RollbackCo
 }
 
 // DeleteVersion removes a version entry
-func (s *Service) DeleteVersion(ctx context.Context, versionID int64) error {
-	// TODO: Also delete backup file if exists
-	return s.db.DeletePluginVersion(versionID)
+func (s *Service) DeleteVersion(ctx context.Context, versionId int64) *apperror.AppError {
+	if err := s.db.DeletePluginVersion(versionId); err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete version").
+			WithVersionId(versionId)
+	}
+	return nil
 }

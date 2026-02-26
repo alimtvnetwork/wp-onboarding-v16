@@ -3,9 +3,12 @@
 // instead of map[string]any literals, per the Generic Enforce Pattern (GE-1).
 package ws
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
 
-import "time"
+	"wp-plugin-publish/internal/enums/publish_type"
+)
 
 // --- Auto-publish events ---
 
@@ -230,7 +233,7 @@ type VersionCreatedData struct {
 	PluginId     int64
 	SiteId       int64
 	FilesUpdated int
-	PublishType  string
+	PublishType  publishtype.Variant
 }
 
 // RollbackStartedData is broadcast when a version rollback begins.

@@ -377,8 +377,8 @@ func (db *DB) SetDbVersion(version string) error {
 
 // PluginVersionInput bundles parameters for CreatePluginVersion.
 type PluginVersionInput struct {
-	PluginID      int64
-	SiteID        int64
+	PluginId      int64
+	SiteId        int64
 	Version       string
 	BackupPath    string
 	FilesUpdated  int
@@ -392,10 +392,10 @@ func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, error) {
 	result, err := db.Exec(`
 		INSERT INTO PluginVersions (PluginId, SiteId, Version, BackupPath, FilesUpdated, GitCommitHash, PublishType, Status, Notes, CreatedAt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, datetime('now'))
-	`, input.PluginID, input.SiteID, input.Version, input.BackupPath, input.FilesUpdated, input.GitCommitHash, input.PublishType, input.Notes)
+	`, input.PluginId, input.SiteId, input.Version, input.BackupPath, input.FilesUpdated, input.GitCommitHash, input.PublishType, input.Notes)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create plugin version").
-			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", input.PluginID, input.SiteID))
+			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", input.PluginId, input.SiteId))
 	}
 	return result.LastInsertId()
 }
