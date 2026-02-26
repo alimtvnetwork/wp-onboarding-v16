@@ -1,5 +1,5 @@
 # Memory: coding-standards/go-json-conventions
-Updated: 2026-02-25
+Updated: 2026-02-26
 
 ## Core Rule
 
@@ -51,18 +51,56 @@ No `json:"camelCase"` tags on config structs — Go unmarshals config.json case-
 
 ---
 
-## 3. External Key Annotation Requirement
+## 3. Internal vs External Key Classification
 
-When a struct parses JSON from an external source (WordPress REST API, PHP responses, version.json, etc.), the tags are **required** and each tagged field **must** have an `// external key` comment:
+### Internal APIs (NO JSON tags)
+
+The **Riseup Asia Uploader PHP plugin** is our own codebase. Its REST API responses use PascalCase keys (via `ResponseKeyType` enum). Go structs parsing these responses must use **matching PascalCase field names with no JSON tags** — they are NOT external keys.
 
 ```go
-// ✅ CORRECT — external API parsing with annotation
+// ✅ CORRECT — our own PHP plugin API, PascalCase matches ResponseKeyType
+type SnapshotCleanupResult struct {
+    IsSuccess bool
+    Retention CleanupRetentionResult
+    Orphans   CleanupOrphansResult
+    Duration  float64
+    Errors    []string
+}
+
+// ❌ WRONG — treating our own API as external with snake_case tags
+type SnapshotCleanupResult struct {
+    Success        bool `json:"success"`                   // NOT external!
+    OrphansCleaned int  `json:"orphans_cleaned,omitempty"` // NOT external!
+}
+```
+
+### External APIs (JSON tags required)
+
+Only truly external APIs (WordPress Core REST API, third-party services, version.json) use `// external key` annotations:
+
+```go
+// ✅ CORRECT — WordPress Core REST API is genuinely external
 type RemotePlugin struct {
     Plugin  string `json:"plugin"`  // external key (WordPress REST API)
     Slug    string `json:"slug"`    // external key
     Version string `json:"version"` // external key
 }
+```
 
+### Classification Guide
+
+| Source | Classification | JSON Tags? |
+|--------|---------------|------------|
+| Riseup Asia Uploader PHP API | **Internal** | No tags — PascalCase fields match |
+| WordPress Core REST API (`/wp/v2/`) | **External** | Required + `// external key` |
+| Third-party APIs | **External** | Required + `// external key` |
+| `version.json`, `config.json` | **External** | Required + `// external key` |
+
+### External Key Annotation Requirement
+
+When a struct parses JSON from an **external** source, the tags are **required** and each tagged field **must** have an `// external key` comment:
+
+```go
 // ❌ WRONG — external tags without annotation
 type RemotePlugin struct {
     Plugin  string `json:"plugin"`
@@ -111,6 +149,8 @@ Go's `json.Unmarshal` is **case-insensitive** for input, so the frontend can sen
 | `` `json:"FieldName"` `` (PascalCase tag matching field name) | Remove tag entirely (redundant) |
 | `map[string]interface{}` | `map[string]any` |
 | External parsing tag without comment | Add `// external key` comment |
+| Riseup Asia Uploader API tagged as `// external key` | Remove tags — it's internal, use PascalCase fields |
+| `json:"snake_case"` on Riseup Asia Uploader response struct | Remove tag, rename field to PascalCase |
 
 ---
 
