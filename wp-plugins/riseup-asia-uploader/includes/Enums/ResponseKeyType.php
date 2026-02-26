@@ -273,6 +273,39 @@ enum ResponseKeyType: string
     case Details = 'Details';
     case Order   = 'Order';
 
+    /** Internal passing keys. */
+    case Graph      = 'Graph';
+    case InDegree   = 'InDegree';
+    case Manifest   = 'Manifest';
+    case SqlitePath = 'SqlitePath';
+    case RealPath   = 'RealPath';
+    case FilePath   = 'FilePath';
+    case PkColumn   = 'PkColumn';
+    case TableName  = 'TableName';
+
+    /** Provider and plugin info keys. */
+    case Id           = 'Id';
+    case Name         = 'Name';
+    case Available    = 'Available';
+    case Capabilities = 'Capabilities';
+    case Version      = 'Version';
+    case Author       = 'Author';
+    case Description  = 'Description';
+    case Active       = 'Active';
+    case TotalFiles   = 'TotalFiles';
+    case LastSeenId   = 'LastSeenId';
+    case FileType     = 'FileType';
+    case Provider     = 'Provider';
+    case Snapshot     = 'Snapshot';
+    case Source       = 'Source';
+
+    /** Capability sub-keys. */
+    case FullSite     = 'FullSite';
+    case DatabaseOnly = 'DatabaseOnly';
+    case Selective    = 'Selective';
+    case Restore      = 'Restore';
+    case Import       = 'Import';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

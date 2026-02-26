@@ -136,7 +136,7 @@ trait NativeSnapshotRecordTrait {
 
     private function finalizeSnapshot(int $snapshotId, array $details): void {
         $this->db->update(TableType::Snapshots->value, array(
-            'Status'          => $details['status'],
+            'Status'          => $details[ResponseKeyType::Status->value],
             'FileSize'        => $details[ResponseKeyType::FileSize->value],
             'TotalRows'       => $details[ResponseKeyType::TotalRows->value],
             'TableCountsJson' => json_encode($details[ResponseKeyType::TableCounts->value]),

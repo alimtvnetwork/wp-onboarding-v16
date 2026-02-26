@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
@@ -22,6 +23,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait DetectorValidationTrait {
     private function validateSettings(array $settings): array {
+        $settings = SettingsKeyType::migrateArray($settings);
         $this->validateEnumFields($settings);
         $this->clampNumericFields($settings);
         $this->castBooleanFields($settings);
@@ -32,36 +34,36 @@ trait DetectorValidationTrait {
 
     private function validateEnumFields(array &$settings): void {
         $rules = array(
-            'preferred_provider' => array(
+            SettingsKeyType::PreferredProvider->value => array(
                 SnapshotProviderType::Auto->value,
                 SnapshotProviderType::WpReset->value,
                 SnapshotProviderType::Updraft->value,
                 SnapshotProviderType::Native->value,
             ),
-            'schedule_frequency' => array(
+            SettingsKeyType::ScheduleFrequency->value => array(
                 SnapshotFrequencyType::Manual->value,
                 SnapshotFrequencyType::Hourly->value,
                 SnapshotFrequencyType::Daily->value,
                 SnapshotFrequencyType::Weekly->value,
                 SnapshotFrequencyType::Monthly->value,
             ),
-            'default_scope'      => array(
+            SettingsKeyType::DefaultScope->value => array(
                 SnapshotScopeType::All->value,
                 SnapshotScopeType::WordPress->value,
                 SnapshotScopeType::Content->value,
                 SnapshotScopeType::Custom->value,
             ),
-            'retention_type'     => array(
+            SettingsKeyType::RetentionType->value => array(
                 RetentionType::Days->value,
                 RetentionType::Count->value,
                 RetentionType::None->value,
             ),
         );
         $defaults = array(
-            'preferred_provider' => SnapshotProviderType::Auto->value,
-            'schedule_frequency' => SnapshotFrequencyType::Daily->value,
-            'default_scope' => SnapshotScopeType::WordPress->value,
-            'retention_type' => RetentionType::Days->value,
+            SettingsKeyType::PreferredProvider->value  => SnapshotProviderType::Auto->value,
+            SettingsKeyType::ScheduleFrequency->value  => SnapshotFrequencyType::Daily->value,
+            SettingsKeyType::DefaultScope->value       => SnapshotScopeType::WordPress->value,
+            SettingsKeyType::RetentionType->value      => RetentionType::Days->value,
         );
 
         foreach ($rules as $key => $valid) {
@@ -72,37 +74,37 @@ trait DetectorValidationTrait {
     }
 
     private function clampNumericFields(array &$settings): void {
-        $settings['retention_days']      = max(1, min(365, intval($settings['retention_days'])));
-        $settings['retention_count']     = max(1, min(100, intval($settings['retention_count'])));
-        $settings['schedule_day']        = max(1, min(28, intval($settings['schedule_day'])));
-        $settings['max_snapshot_size_mb'] = max(50, min(2000, intval($settings['max_snapshot_size_mb'])));
-        $settings['batch_size']          = max(100, min(10000, intval($settings['batch_size'])));
-        $settings['worker_pool_size']    = max(SnapshotConfigType::WorkerPoolMin->value, min(SnapshotConfigType::WorkerPoolMax->value, intval($settings['worker_pool_size'] ?? SnapshotConfigType::WorkerPoolDefault->value)));
+        $settings[SettingsKeyType::RetentionDays->value]      = max(1, min(365, intval($settings[SettingsKeyType::RetentionDays->value])));
+        $settings[SettingsKeyType::RetentionCount->value]     = max(1, min(100, intval($settings[SettingsKeyType::RetentionCount->value])));
+        $settings[SettingsKeyType::ScheduleDay->value]        = max(1, min(28, intval($settings[SettingsKeyType::ScheduleDay->value])));
+        $settings[SettingsKeyType::MaxSnapshotSizeMb->value]  = max(50, min(2000, intval($settings[SettingsKeyType::MaxSnapshotSizeMb->value])));
+        $settings[SettingsKeyType::BatchSize->value]          = max(100, min(10000, intval($settings[SettingsKeyType::BatchSize->value])));
+        $settings[SettingsKeyType::WorkerPoolSize->value]     = max(SnapshotConfigType::WorkerPoolMin->value, min(SnapshotConfigType::WorkerPoolMax->value, intval($settings[SettingsKeyType::WorkerPoolSize->value] ?? SnapshotConfigType::WorkerPoolDefault->value)));
     }
 
     private function castBooleanFields(array &$settings): void {
-        $settings['schedule_enabled']        = (bool) $settings['schedule_enabled'];
-        $settings['pre_restore_backup']      = (bool) $settings['pre_restore_backup'];
-        $settings['require_restore_confirm'] = (bool) $settings['require_restore_confirm'];
+        $settings[SettingsKeyType::ScheduleEnabled->value]       = (bool) $settings[SettingsKeyType::ScheduleEnabled->value];
+        $settings[SettingsKeyType::PreRestoreBackup->value]      = (bool) $settings[SettingsKeyType::PreRestoreBackup->value];
+        $settings[SettingsKeyType::RequireRestoreConfirm->value] = (bool) $settings[SettingsKeyType::RequireRestoreConfirm->value];
     }
 
     private function validateMiscFields(array &$settings): void {
         $validStorage = StorageModeType::validValues();
 
-        if (BooleanHelpers::isAbsentFromList($settings['storage_mode'] ?? StorageModeType::PerTable->value, $validStorage)) {
-            $settings['storage_mode'] = StorageModeType::PerTable->value;
+        if (BooleanHelpers::isAbsentFromList($settings[SettingsKeyType::StorageMode->value] ?? StorageModeType::PerTable->value, $validStorage)) {
+            $settings[SettingsKeyType::StorageMode->value] = StorageModeType::PerTable->value;
         }
 
-        $isInvalidTime = (preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $settings['schedule_time']) === 0);
+        $isInvalidTime = (preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $settings[SettingsKeyType::ScheduleTime->value]) === 0);
 
         if ($isInvalidTime) {
-            $settings['schedule_time'] = '03:00';
+            $settings[SettingsKeyType::ScheduleTime->value] = '03:00';
         }
 
-        $isCustomTablesInvalid = (is_array($settings['custom_tables']) === false);
+        $isCustomTablesInvalid = (is_array($settings[SettingsKeyType::CustomTables->value]) === false);
 
         if ($isCustomTablesInvalid) {
-            $settings['custom_tables'] = array();
+            $settings[SettingsKeyType::CustomTables->value] = array();
         }
     }
 }

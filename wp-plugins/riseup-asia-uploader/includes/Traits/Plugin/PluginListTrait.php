@@ -90,13 +90,13 @@ trait PluginListTrait
                     return EnvelopeBuilder::success()
                         ->autoDetectRequestedAt()
                         ->setSingleResult(array(
-                            'slug'        => $pluginSlug,
-                            'name'        => $pluginData['Name'],
-                            'version'     => $pluginData['Version'],
-                            'author'      => $pluginData['Author'],
-                            'description' => $pluginData['Description'],
-                            'active'      => in_array($pluginFile, $activePlugins, true),
-                            'pluginFile'  => $pluginFile,
+                            ResponseKeyType::Slug->value        => $pluginSlug,
+                            ResponseKeyType::Name->value        => $pluginData['Name'],
+                            ResponseKeyType::Version->value     => $pluginData['Version'],
+                            ResponseKeyType::Author->value      => $pluginData['Author'],
+                            ResponseKeyType::Description->value => $pluginData['Description'],
+                            ResponseKeyType::Active->value      => in_array($pluginFile, $activePlugins, true),
+                            ResponseKeyType::PluginFile->value  => $pluginFile,
                         ))
                         ->toResponse();
                 }
@@ -122,13 +122,13 @@ trait PluginListTrait
             }
 
             $plugins[] = array(
-                'slug'        => $slug,
-                'name'        => $pluginData['Name'],
-                'version'     => $pluginData['Version'],
-                'author'      => $pluginData['Author'],
-                'description' => $pluginData['Description'],
-                'active'      => in_array($pluginFile, $activePlugins, true),
-                'pluginFile'  => $pluginFile,
+                ResponseKeyType::Slug->value        => $slug,
+                ResponseKeyType::Name->value        => $pluginData['Name'],
+                ResponseKeyType::Version->value     => $pluginData['Version'],
+                ResponseKeyType::Author->value      => $pluginData['Author'],
+                ResponseKeyType::Description->value => $pluginData['Description'],
+                ResponseKeyType::Active->value      => in_array($pluginFile, $activePlugins, true),
+                ResponseKeyType::PluginFile->value  => $pluginFile,
             );
         }
 
@@ -182,10 +182,10 @@ trait PluginListTrait
         $result = $fileCache->getManifest($slug, $pluginDir, $ignore);
 
         return new WP_REST_Response(array(
-            ResponseKeyType::Success->value => true,
-            'plugin'     => $slug,
-            'totalFiles' => count($result[ResponseKeyType::Files->value]),
-            ResponseKeyType::Files->value => $result[ResponseKeyType::Files->value],
+            ResponseKeyType::Success->value    => true,
+            ResponseKeyType::Plugin->value     => $slug,
+            ResponseKeyType::TotalFiles->value => count($result[ResponseKeyType::Files->value]),
+            ResponseKeyType::Files->value      => $result[ResponseKeyType::Files->value],
         ), HttpStatusType::Ok->value);
     }
 
@@ -212,7 +212,7 @@ trait PluginListTrait
                 return $validation;
             }
 
-            return $this->readAndReturnFile($validation['realPath'], $validation['filePath']);
+            return $this->readAndReturnFile($validation[ResponseKeyType::RealPath->value], $validation[ResponseKeyType::FilePath->value]);
         } catch (Throwable $e) {
 
             return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
@@ -257,7 +257,7 @@ trait PluginListTrait
             return $this->errorResponse('File not found', HttpStatusType::NotFound->value);
         }
 
-        return array('realPath' => $realFilePath, 'filePath' => $filePath);
+        return array(ResponseKeyType::RealPath->value => $realFilePath, ResponseKeyType::FilePath->value => $filePath);
     }
 
     /**

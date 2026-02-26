@@ -37,7 +37,7 @@ trait CleanerDeletionTrait {
 
             if ($bytesFreed === -1) {
                 return ResultHelper::failed(array(
-                    'bytesFreed' => 0,
+                    ResponseKeyType::BytesFreed->value => 0,
                 ));
             }
         }
@@ -52,7 +52,7 @@ trait CleanerDeletionTrait {
         ));
 
         return ResultHelper::ok(array(
-            'bytesFreed' => $bytesFreed,
+            ResponseKeyType::BytesFreed->value => $bytesFreed,
         ));
     }
 
