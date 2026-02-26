@@ -107,7 +107,7 @@ func (s *Service) convertSingleUploaderPlugin(siteId int64, p wordpress.Uploader
 	}
 
 	slug := resolvePluginSlug(p)
-	pluginFile := resolvePluginFile(s, siteId, p, slug)
+	pluginFile := s.resolvePluginFile(siteId, p, slug)
 
 	status := "inactive"
 	if p.Active {
@@ -132,7 +132,7 @@ func resolvePluginSlug(p wordpress.UploaderPluginInfo) string {
 }
 
 // resolvePluginFile derives the plugin file path from slug and info.
-func resolvePluginFile(s *Service, siteId int64, p wordpress.UploaderPluginInfo, slug string) string {
+func (s *Service) resolvePluginFile(siteId int64, p wordpress.UploaderPluginInfo, slug string) string {
 	if p.File != "" {
 		return p.File
 	}

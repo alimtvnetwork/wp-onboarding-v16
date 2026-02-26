@@ -189,7 +189,7 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 	if preUploadBackupZip != "" {
 		defer os.Remove(preUploadBackupZip)
 	}
-	defer s.cleanupZip(pctx.PluginID, pctx.SiteID, zipPath, isPublishFailed, options.IsKeepZipFiles)
+	defer s.cleanupZip(cleanupZipInput{PluginID: pctx.PluginID, SiteID: pctx.SiteID, ZipPath: zipPath, IsPublishFailed: isPublishFailed, IsKeepZipFiles: options.IsKeepZipFiles})
 
 	if err := s.runUploadStage(ctx, pctx, zipPath, options, preUploadBackupZip, result); err != nil {
 		isPublishFailed = true
@@ -322,7 +322,7 @@ func (s *Service) buildPluginPackage(pluginID, siteID int64, pluginInfo models.P
 	}
 
 	if zipPath != "" {
-		s.logZipCreated(pluginID, siteID, zipPath, fileCount)
+		s.logZipCreated(logZipInput{PluginID: pluginID, SiteID: siteID, ZipPath: zipPath, FileCount: fileCount})
 	}
 
 	return zipPath, fileCount, nil
@@ -432,7 +432,7 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 	}
 
 	if uploadVal.isPerformed {
-		s.logUploadSuccess(pctx, zipSize, startTime, uploadVal.isActivated, retryResult.Attempts, uploadVal.uploadResult)
+		s.logUploadSuccess(pctx, logUploadSuccessInput{ZipSize: zipSize, StartTime: startTime, IsActivated: uploadVal.isActivated, Attempts: retryResult.Attempts, UploadResult: uploadVal.uploadResult})
 	} else {
 		s.broadcastStageLog(pctx.stageLog("warn", "upload", StageContext{
 			What: "Upload ZIP to WordPress", Result: "SIMULATED - no companion plugin available",
@@ -485,7 +485,7 @@ func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time)
 	s.logActivateRequest(pctx, endpointURL)
 
 	if err := pctx.WPClient.EnablePluginViaUploader(pctx.Mapping.RemoteSlug); err != nil {
-		s.logActivationError(pctx, endpointURL, startTime, err)
+		s.logActivationError(pctx, activationErrorInput{EndpointURL: endpointURL, StartTime: startTime, Err: err})
 
 		return apperror.Wrap(err, apperror.ErrWPConnection, "plugin activation failed")
 	}

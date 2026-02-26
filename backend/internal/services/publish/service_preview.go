@@ -140,6 +140,14 @@ func (s *Service) readRemoteFileContent(ctx context.Context, wpClient *wordpress
 	return content
 }
 
+// scanContext holds the shared state for a file scanning walk.
+type scanContext struct {
+	AbsPath         string
+	ExcludePatterns []string
+	LocalFiles      map[string]FilePreview
+	TotalSize       *int64
+}
+
 // scanLocalFiles walks the plugin directory and returns file previews
 func (s *Service) scanLocalFiles(pluginPath string, excludePatterns []string) (map[string]FilePreview, int64, error) {
 	absPath, err := pathutil.ToAbsolute(pluginPath)
@@ -147,38 +155,43 @@ func (s *Service) scanLocalFiles(pluginPath string, excludePatterns []string) (m
 		return nil, 0, err
 	}
 
-	localFiles := make(map[string]FilePreview)
 	var totalSize int64
+	sc := &scanContext{
+		AbsPath:         absPath,
+		ExcludePatterns: excludePatterns,
+		LocalFiles:      make(map[string]FilePreview),
+		TotalSize:       &totalSize,
+	}
 
 	err = filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
-		return s.processScanEntry(absPath, path, info, excludePatterns, localFiles, &totalSize)
+		return s.processScanEntry(sc, path, info)
 	})
 
-	return localFiles, totalSize, err
+	return sc.LocalFiles, totalSize, err
 }
 
 // processScanEntry handles a single entry during local file scanning.
-func (s *Service) processScanEntry(absPath, path string, info os.FileInfo, excludePatterns []string, localFiles map[string]FilePreview, totalSize *int64) error {
+func (s *Service) processScanEntry(sc *scanContext, path string, info os.FileInfo) error {
 	if info.IsDir() {
-		return checkDirExclusion(path, excludePatterns)
+		return checkDirExclusion(path, sc.ExcludePatterns)
 	}
 
-	relPath, err := filepath.Rel(absPath, path)
+	relPath, err := filepath.Rel(sc.AbsPath, path)
 	if err != nil {
 		return nil
 	}
 
-	if isExcludedFile(path, relPath, excludePatterns) {
+	if isExcludedFile(path, relPath, sc.ExcludePatterns) {
 		return nil
 	}
 
 	hash, _ := s.calculateFileHash(path)
 	relPathSlash := filepath.ToSlash(relPath)
-	localFiles[relPathSlash] = FilePreview{Path: relPathSlash, Size: info.Size(), LocalHash: hash}
-	*totalSize += info.Size()
+	sc.LocalFiles[relPathSlash] = FilePreview{Path: relPathSlash, Size: info.Size(), LocalHash: hash}
+	*sc.TotalSize += info.Size()
 	return nil
 }
 

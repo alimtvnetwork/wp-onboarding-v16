@@ -101,7 +101,7 @@ func (s *Service) buildErrorLogEntry(ref *remoteActionRef, details *ExtractedErr
 	entry += fmt.Sprintf("  Plugin Identifier: %s\n  Requested Action: %s\n", pluginIdentifier, ref.Action)
 	entry += fmt.Sprintf("  Delegated Request:\n    Method: %s\n    Endpoint: %s\n    Request Body:\n      %s\n", method, details.Endpoint, requestBody)
 	entry += formatResponseSection(details)
-	entry += formatGuardRailSection(ref.Action, ref.Site.Url, details, method)
+	entry += formatGuardRailSection(guardRailInput{Action: ref.Action, SiteUrl: ref.Site.Url, Details: details, Method: method})
 	entry += formatStackTraceSection(details)
 	entry += formatPhpErrorsSection(details)
 	entry += "───────────────────────────────────────────────────────────────────────────────\n"
@@ -153,15 +153,23 @@ func formatResponseSection(details *ExtractedErrorDetails) string {
 	return entry
 }
 
+// guardRailInput bundles parameters for formatGuardRailSection.
+type guardRailInput struct {
+	Action  string
+	SiteUrl string
+	Details *ExtractedErrorDetails
+	Method  string
+}
+
 // formatGuardRailSection formats the WP Core mutation guard rail section.
-func formatGuardRailSection(action, siteUrl string, details *ExtractedErrorDetails, method string) string {
-	if !strings.Contains(details.Endpoint, "/wp/v2/plugins") || method == "GET" {
+func formatGuardRailSection(input guardRailInput) string {
+	if !strings.Contains(input.Details.Endpoint, "/wp/v2/plugins") || input.Method == "GET" {
 		return "    This request was correctly delegated through the Riseup Uploader endpoint.\n"
 	}
 
-	requiredEndpoint := resolveRequiredEndpoint(action, siteUrl)
+	requiredEndpoint := resolveRequiredEndpoint(input.Action, input.SiteUrl)
 	entry := "    WARNING: This request was sent to a WordPress Core endpoint instead of the Riseup Uploader.\n"
-	entry += fmt.Sprintf("  Guard Rail:\n    Blocked Direct WP Core Mutation: true\n    Blocked Endpoint: %s\n    Required Delegation Endpoint: %s\n", details.Endpoint, requiredEndpoint)
+	entry += fmt.Sprintf("  Guard Rail:\n    Blocked Direct WP Core Mutation: true\n    Blocked Endpoint: %s\n    Required Delegation Endpoint: %s\n", input.Details.Endpoint, requiredEndpoint)
 	return entry
 }
 

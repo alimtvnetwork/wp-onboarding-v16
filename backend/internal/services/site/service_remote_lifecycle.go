@@ -150,7 +150,7 @@ func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 
 // broadcastRemoteActionStarted sends session start logs and WS broadcast.
 func (s *Service) broadcastRemoteActionStarted(ref *remoteActionRef) {
-	s.logRemoteAction(ref, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", ref.Action, ref.PluginSlug), session.ToJSON(RemoteActionContext{SiteId: ref.SiteID, SiteName: ref.Site.Name, SiteUrl: ref.Site.Url, PluginSlug: ref.PluginSlug}))
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "start", Message: fmt.Sprintf("Starting %s action for plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(RemoteActionContext{SiteId: ref.SiteID, SiteName: ref.Site.Name, SiteUrl: ref.Site.Url, PluginSlug: ref.PluginSlug})})
 
 	if s.sessionService != nil && ref.SessionID != "" {
 		s.sessionService.SaveRequest(ref.SessionID, &session.SessionRequest{
@@ -167,18 +167,18 @@ func (s *Service) broadcastRemoteActionStarted(ref *remoteActionRef) {
 
 // connectForRemoteAction decrypts credentials and creates a WordPress client.
 func (s *Service) connectForRemoteAction(ref *remoteActionRef) (*wordpress.Client, error) {
-	s.logRemoteAction(ref, "info", "decrypt", "Decrypting site credentials...", nil)
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "decrypt", Message: "Decrypting site credentials..."})
 
 	password, err := decrypt(ref.Site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
 		errMsg := "failed to decrypt password"
-		s.logRemoteAction(ref, "error", "decrypt", errMsg, session.ToJSON(ErrorDetail{Error: err.Error()}))
+		s.logRemoteAction(ref, RemoteActionLogInput{Level: "error", Step: "decrypt", Message: errMsg, Details: session.ToJSON(ErrorDetail{Error: err.Error()})})
 		s.endRemoteSession(ref.SessionID, "error", errMsg)
 
 		return nil, apperror.Wrap(err, apperror.ErrInternal, errMsg)
 	}
 
-	s.logRemoteAction(ref, "info", "connect", fmt.Sprintf("Connecting to WordPress site: %s", ref.Site.Url), nil)
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "connect", Message: fmt.Sprintf("Connecting to WordPress site: %s", ref.Site.Url)})
 
 	return s.wpClientFactory(ref.Site.Url, ref.Site.Username, string(password), nil), nil
 }
@@ -188,7 +188,7 @@ func (s *Service) logRemoteStageStart(ref *remoteActionRef) {
 	if s.sessionService != nil && ref.SessionID != "" {
 		s.sessionService.LogStageStart(ref.SessionID, ref.Action)
 	}
-	s.logRemoteAction(ref, "info", ref.Action, fmt.Sprintf("Executing %s action on plugin: %s", ref.Action, ref.PluginSlug), session.ToJSON(RemoteActionExecDetails{TargetUrl: ref.Site.Url, PluginSlug: ref.PluginSlug}))
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: ref.Action, Message: fmt.Sprintf("Executing %s action on plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(RemoteActionExecDetails{TargetUrl: ref.Site.Url, PluginSlug: ref.PluginSlug})})
 }
 
 // handleRemoteActionError processes a failed remote action: logs, broadcasts, writes error file.
@@ -196,7 +196,7 @@ func (s *Service) handleRemoteActionError(ctx context.Context, ref *remoteAction
 	errDetails := s.extractErrorDetails(err)
 
 	s.saveRemoteErrorResponse(ref.SessionID, errDetails, err)
-	s.logRemoteAction(ref, "error", ref.Action, fmt.Sprintf("Failed to %s plugin: %s", ref.Action, ref.PluginSlug), session.ToJSON(errDetails))
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "error", Step: ref.Action, Message: fmt.Sprintf("Failed to %s plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(errDetails)})
 
 	if s.sessionService != nil && ref.SessionID != "" {
 		s.sessionService.LogStageEnd(ref.SessionID, ref.Action, "error", durationMs)
@@ -239,7 +239,7 @@ func buildErrorBodyJson(responseBody string) json.RawMessage {
 func (s *Service) handleRemoteActionSuccess(ctx context.Context, ref *remoteActionRef, durationMs int64) {
 	s.saveRemoteSuccessResponse(ref, durationMs)
 
-	s.logRemoteAction(ref, "info", ref.Action, fmt.Sprintf("Successfully %sd plugin: %s", ref.Action, ref.PluginSlug), session.ToJSON(DurationDetail{DurationMs: durationMs}))
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: ref.Action, Message: fmt.Sprintf("Successfully %sd plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(DurationDetail{DurationMs: durationMs})})
 	_ = s.InvalidateRemotePluginsCache(ctx, ref.SiteID)
 	s.endRemoteSession(ref.SessionID, "success", "")
 	s.broadcastRemoteActionComplete(ref, true, "", durationMs)

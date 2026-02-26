@@ -234,7 +234,7 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 	var args []any
 
 	appendNameUpdate(&updates, &args, input.Name)
-	appendUrlUpdate(&updates, &args, input.Url, existing.Url)
+	appendUrlUpdate(urlUpdateInput{Updates: &updates, Args: &args, UrlInput: input.Url, ExistingUrl: existing.Url})
 	appendUsernameUpdate(&updates, &args, input.Username)
 	s.appendPasswordUpdate(&updates, &args, input.Password)
 
@@ -249,15 +249,23 @@ func appendNameUpdate(updates *[]string, args *[]any, name *string) {
 	}
 }
 
+// urlUpdateInput bundles parameters for appendUrlUpdate.
+type urlUpdateInput struct {
+	Updates     *[]string
+	Args        *[]any
+	UrlInput    *string
+	ExistingUrl string
+}
+
 // appendUrlUpdate adds a Url update if provided and changed.
-func appendUrlUpdate(updates *[]string, args *[]any, urlInput *string, existingUrl string) {
-	if urlInput == nil || *urlInput == "" {
+func appendUrlUpdate(input urlUpdateInput) {
+	if input.UrlInput == nil || *input.UrlInput == "" {
 		return
 	}
-	normalizedUrl := normalizeUrl(*urlInput)
-	if normalizedUrl != existingUrl {
-		*updates = append(*updates, "Url = ?")
-		*args = append(*args, normalizedUrl)
+	normalizedUrl := normalizeUrl(*input.UrlInput)
+	if normalizedUrl != input.ExistingUrl {
+		*input.Updates = append(*input.Updates, "Url = ?")
+		*input.Args = append(*input.Args, normalizedUrl)
 	}
 }
 

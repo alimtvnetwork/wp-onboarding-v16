@@ -100,21 +100,21 @@ type RemoteActionLogInput struct {
 }
 
 // logRemoteAction logs a remote plugin action to session and WebSocket.
-func (s *Service) logRemoteAction(ref *remoteActionRef, level, step, message string, details json.RawMessage) {
-	s.emitRemoteActionToSession(ref, level, step, message, details)
-	logCtx := s.resolveRemoteActionLogContext(ref.SiteID, details)
-	s.emitRemoteActionToLogger(level, message, ref.SiteID, ref.Action, step, logCtx)
+func (s *Service) logRemoteAction(ref *remoteActionRef, input RemoteActionLogInput) {
+	s.emitRemoteActionToSession(ref, input)
+	logCtx := s.resolveRemoteActionLogContext(ref.SiteID, input.Details)
+	s.emitRemoteActionToLogger(loggerEmitInput{Level: input.Level, Message: input.Message, SiteID: ref.SiteID, Action: ref.Action, Step: input.Step, Ctx: logCtx})
 }
 
 // emitRemoteActionToSession sends logs to session service and WebSocket.
-func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, level, step, message string, details json.RawMessage) {
+func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, input RemoteActionLogInput) {
 	if s.sessionService != nil && ref.SessionID != "" {
-		s.sessionService.Log(ref.SessionID, level, step, message, details)
+		s.sessionService.Log(ref.SessionID, input.Level, input.Step, input.Message, input.Details)
 	}
 	if s.wsHub != nil {
 		s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
 			SiteID: ref.SiteID, Action: ref.Action, SessionID: ref.SessionID,
-			Level: level, Step: step, Message: message, Details: details,
+			Level: input.Level, Step: input.Step, Message: input.Message, Details: input.Details,
 		})
 	}
 }
@@ -164,26 +164,36 @@ func (s *Service) fillMissingSiteContext(siteId int64, ctx *remoteActionResolved
 	}
 }
 
-// emitRemoteActionToLogger writes the log entry at the appropriate level.
-func (s *Service) emitRemoteActionToLogger(level, message string, siteId int64, action, step string, ctx remoteActionResolvedContext) {
-	logFields := buildRemoteActionLogFields(siteId, action, step, ctx)
+// loggerEmitInput bundles parameters for emitRemoteActionToLogger.
+type loggerEmitInput struct {
+	Level   string
+	Message string
+	SiteID  int64
+	Action  string
+	Step    string
+	Ctx     remoteActionResolvedContext
+}
 
-	if level == loglevel.Error.String() {
-		s.log.Error(message, logFields...)
+// emitRemoteActionToLogger writes the log entry at the appropriate level.
+func (s *Service) emitRemoteActionToLogger(input loggerEmitInput) {
+	logFields := buildRemoteActionLogFields(input)
+
+	if input.Level == loglevel.Error.String() {
+		s.log.Error(input.Message, logFields...)
 	} else {
-		s.log.Debug(message, logFields...)
+		s.log.Debug(input.Message, logFields...)
 	}
 }
 
 // buildRemoteActionLogFields constructs the structured log fields.
-func buildRemoteActionLogFields(siteId int64, action, step string, ctx remoteActionResolvedContext) []any {
-	logFields := []any{"site", ctx.SiteName}
-	if ctx.SiteUrl != "" {
-		logFields = append(logFields, "siteUrl", ctx.SiteUrl)
+func buildRemoteActionLogFields(input loggerEmitInput) []any {
+	logFields := []any{"site", input.Ctx.SiteName}
+	if input.Ctx.SiteUrl != "" {
+		logFields = append(logFields, "siteUrl", input.Ctx.SiteUrl)
 	}
-	logFields = append(logFields, "siteId", siteId, "action", action, "step", step)
-	if ctx.PluginSlug != "" {
-		logFields = append(logFields, "pluginSlug", ctx.PluginSlug)
+	logFields = append(logFields, "siteId", input.SiteID, "action", input.Action, "step", input.Step)
+	if input.Ctx.PluginSlug != "" {
+		logFields = append(logFields, "pluginSlug", input.Ctx.PluginSlug)
 	}
 
 	return logFields
@@ -204,17 +214,17 @@ func (s *Service) fetchAndAttachRemotePhpErrors(ref *remoteActionRef, errDetails
 
 // fetchAndAttachPhpErrorSessions pulls recent PHP error entries from the remote site.
 func (s *Service) fetchAndAttachPhpErrorSessions(ref *remoteActionRef, errDetails *ExtractedErrorDetails) {
-	s.logRemoteAction(ref, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_errors", Message: "Pulling recent PHP error sessions from remote site..."})
 
 	result, fetchErr := ref.Client.FetchRemoteErrorSessions(wordpress.ErrorSessionsInput{Level: "error", Limit: 10})
 	if fetchErr != nil {
-		s.logRemoteAction(ref, "warn", "fetch_php_errors", fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()), nil)
+		s.logRemoteAction(ref, RemoteActionLogInput{Level: "warn", Step: "fetch_php_errors", Message: fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error())})
 
 		return
 	}
 
 	if result == nil || len(result.Entries) == 0 {
-		s.logRemoteAction(ref, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
+		s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_errors", Message: "No recent PHP error sessions found on remote site"})
 
 		return
 	}
@@ -231,7 +241,7 @@ func (s *Service) attachPhpErrorEntries(ref *remoteActionRef, result *wordpress.
 		errDetails.RemotePhpFlashUnseen = result.Flash.UnseenCount
 	}
 
-	s.logRemoteAction(ref, "info", "fetch_php_errors", fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)), session.ToJSON(PhpErrorCountDetail{PhpErrorCount: len(result.Entries)}))
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_errors", Message: fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)), Details: session.ToJSON(PhpErrorCountDetail{PhpErrorCount: len(result.Entries)})})
 	s.logPhpErrorsToSession(ref.SessionID, result.Entries)
 }
 
@@ -263,17 +273,17 @@ func (s *Service) logPhpErrorsToSession(sessionId string, entries []wordpress.Re
 
 // fetchAndAttachPhpStackTrace pulls the PHP stacktrace.txt from the remote site.
 func (s *Service) fetchAndAttachPhpStackTrace(ref *remoteActionRef, errDetails *ExtractedErrorDetails) {
-	s.logRemoteAction(ref, "info", "fetch_php_stacktrace", "Pulling PHP stacktrace.txt from remote site...", nil)
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_stacktrace", Message: "Pulling PHP stacktrace.txt from remote site..."})
 
 	logsResult, logsErr := ref.Client.FetchRemoteErrorLogs()
 	if logsErr != nil {
-		s.logRemoteAction(ref, "warn", "fetch_php_stacktrace", fmt.Sprintf("Could not fetch remote error logs: %s", logsErr.Error()), nil)
+		s.logRemoteAction(ref, RemoteActionLogInput{Level: "warn", Step: "fetch_php_stacktrace", Message: fmt.Sprintf("Could not fetch remote error logs: %s", logsErr.Error())})
 
 		return
 	}
 
 	if !hasStackTraceContent(logsResult) {
-		s.logRemoteAction(ref, "info", "fetch_php_stacktrace", "No stacktrace.txt content available on remote site", nil)
+		s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_stacktrace", Message: "No stacktrace.txt content available on remote site"})
 
 		return
 	}
@@ -292,9 +302,9 @@ func (s *Service) applyStackTraceContent(ref *remoteActionRef, logsResult *wordp
 	errDetails.RemotePhpStackTrace = stLog.Content
 	errDetails.RemotePhpStackTraceLines = stLog.Lines
 
-	s.logRemoteAction(ref, "info", "fetch_php_stacktrace",
-		fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", stLog.Lines, stLog.TotalSize),
-		session.ToJSON(StackTraceLogDetails{Lines: stLog.Lines, TotalSize: int(stLog.TotalSize), Truncated: stLog.Truncated}))
+	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_stacktrace",
+		Message: fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", stLog.Lines, stLog.TotalSize),
+		Details: session.ToJSON(StackTraceLogDetails{Lines: stLog.Lines, TotalSize: int(stLog.TotalSize), Truncated: stLog.Truncated})})
 
 	if s.sessionService != nil && ref.SessionID != "" {
 		s.sessionService.Log(ref.SessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site",
