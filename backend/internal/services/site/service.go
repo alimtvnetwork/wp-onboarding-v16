@@ -3,7 +3,6 @@ package site
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -16,6 +15,7 @@ import (
 	"wp-plugin-publish/internal/enums/connection_step"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -319,8 +319,3 @@ func derefInt(p *int) int {
 	return *p
 }
 
-// parseTime parses a datetime string in standard format.
-func parseTime(s string) time.Time {
-	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return t
-}
