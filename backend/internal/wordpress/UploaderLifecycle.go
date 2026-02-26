@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -38,7 +39,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	endpoint := "/" + namespace + input.Endpoint.String()
 
 	callInput := apiCallInput{
-		Method:     "POST",
+		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
 		Operation:  input.OperationName + " via RiseupAsia Uploader",
@@ -63,7 +64,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (*PluginExistsResult,
 	endpoint := "/" + namespace + ep.PluginExists.String()
 
 	callInput := apiCallInput{
-		Method:     "POST",
+		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
 		Operation:  "check plugin exists via RiseupAsia Uploader",
@@ -151,7 +152,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Plugins)
 
 	callInput := apiCallInput{
-		Method:    "GET",
+		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "list plugins",
 		ErrorCode: apperror.ErrWPPluginList,
@@ -195,7 +196,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 	endpoint := "/" + c.resolveNamespace() + ep.Files.String()
 
 	callInput := apiCallInput{
-		Method:     "POST",
+		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: slug},
 		Operation:  "list plugin files",

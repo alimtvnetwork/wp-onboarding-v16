@@ -6,6 +6,7 @@ import (
 
 	"wp-plugin-publish/internal/enums/action"
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -17,10 +18,12 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	contentStr := base64.StdEncoding.EncodeToString(content)
 
 	_, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
+		Method:     httpmethod.Post,
+		Endpoint:   endpoint,
 		Body:       PluginFileReplaceRequest{Plugin: slug, Path: relPath, Content: contentStr},
 		Operation:  "replace file via RiseupAsia Uploader",
-		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+		PluginSlug: slug,
+		ErrorCode:  apperror.ErrWPConnection,
 	})
 	return err
 }
@@ -31,10 +34,12 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	endpoint := "/" + namespace + ep.Files.String()
 
 	_, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
+		Method:     httpmethod.Post,
+		Endpoint:   endpoint,
 		Body:       PluginFileDeleteRequest{Plugin: slug, Path: relPath, Action: "delete"},
 		Operation:  "delete file via Riseup Asia Uploader",
-		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+		PluginSlug: slug,
+		ErrorCode:  apperror.ErrWPConnection,
 	})
 	return err
 }
@@ -75,10 +80,12 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 
 	endpoint := "/" + namespace + ep.Sync.String()
 	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
+		Method:     httpmethod.Post,
+		Endpoint:   endpoint,
 		Body:       SyncRequestBody{Plugin: slug, Files: files},
 		Operation:  "sync plugin files via Riseup Asia Uploader",
-		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+		PluginSlug: slug,
+		ErrorCode:  apperror.ErrWPConnection,
 	})
 	if err != nil {
 		return nil, err

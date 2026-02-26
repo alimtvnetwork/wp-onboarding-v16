@@ -15,6 +15,7 @@ import (
 
 	"wp-plugin-publish/internal/enums/content_type"
 	"wp-plugin-publish/internal/enums/header"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -113,7 +114,7 @@ func (c *Client) request(method, endpoint string, body any) (*http.Response, err
 
 // multipartInput bundles parameters for requestMultipart.
 type multipartInput struct {
-	Method      string
+	Method      httpmethod.Variant
 	Endpoint    string
 	Body        io.Reader
 	ContentType string
@@ -122,11 +123,11 @@ type multipartInput struct {
 // requestMultipart sends a multipart HTTP request (for file uploads).
 func (c *Client) requestMultipart(input multipartInput) (*http.Response, error) {
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, input.Endpoint)
-	req, err := http.NewRequest(input.Method, url, input.Body)
+	req, err := http.NewRequest(input.Method.Value(), url, input.Body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
 			WithURL(url).
-			WithMethod(input.Method)
+			WithMethod(input.Method.Value())
 	}
 
 	c.setStandardHeaders(req, input.ContentType)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -55,7 +56,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
 
 	callInput := apiCallInput{
-		Method:    "POST",
+		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginSlugRequest{Plugin: slug},
 		Operation: "get sync manifest",
@@ -87,7 +88,7 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
 
 	callInput := apiCallInput{
-		Method:    "POST",
+		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginSlugRequest{Plugin: slug},
 		Operation: "get plugin files",
@@ -118,7 +119,7 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 	endpoint := fmt.Sprintf("/%s/request-mutation?action=%s", OnboardNamespace, action)
 
 	callInput := apiCallInput{
-		Method:    "GET",
+		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "request mutation token",
 		ErrorCode: apperror.ErrWPConnection,
@@ -151,7 +152,7 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
 
 	callInput := apiCallInput{
-		Method:    "POST",
+		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginFileRequest{Plugin: pluginSlug, Path: filePath},
 		Operation: "get file content",

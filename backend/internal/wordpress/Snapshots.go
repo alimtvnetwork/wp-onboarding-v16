@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -81,7 +82,9 @@ func snapshotEndpoint(path ep.Variant) string {
 func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsList)
 	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "get snapshots",
+		Method:    httpmethod.Get,
+		Endpoint:  endpoint,
+		Operation: "get snapshots",
 	})
 	if err != nil {
 		return nil, err
@@ -105,7 +108,9 @@ func parseSnapshotsResponse(c *Client, endpoint string, data []byte) ([]Snapshot
 // trySnapshotArrayFallback re-fetches and tries to decode as a plain array.
 func trySnapshotArrayFallback(c *Client, endpoint string) ([]SnapshotRecord, error) {
 	fallbackData, fallbackErr := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "get snapshots (array fallback)",
+		Method:    httpmethod.Get,
+		Endpoint:  endpoint,
+		Operation: "get snapshots (array fallback)",
 	})
 	if fallbackErr != nil {
 		return nil, apperror.Wrap(fallbackErr, apperror.ErrInternal, "failed to decode snapshots response")
@@ -122,16 +127,20 @@ func trySnapshotArrayFallback(c *Client, endpoint string) ([]SnapshotRecord, err
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).
 func (c *Client) GetSnapshot(snapshotId int64) (*SnapshotRecord, error) {
 	return doAPICall[SnapshotRecord](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsInfo),
-		Body: SnapshotIdRequest{Id: snapshotId}, Operation: "get snapshot",
+		Method:    httpmethod.Post,
+		Endpoint:  snapshotEndpoint(ep.SnapshotsInfo),
+		Body:      SnapshotIdRequest{Id: snapshotId},
+		Operation: "get snapshot",
 	})
 }
 
 // CreateSnapshot triggers a new snapshot on the remote site.
 func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResult, error) {
 	return doAPICall[SnapshotCreateResult](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsSchedule),
-		Body: opts, Operation: "create snapshot",
+		Method:     httpmethod.Post,
+		Endpoint:   snapshotEndpoint(ep.SnapshotsSchedule),
+		Body:       opts,
+		Operation:  "create snapshot",
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
 	})
 }
@@ -139,8 +148,10 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResu
 // DeleteSnapshot removes a snapshot from the remote site (ID in JSON body).
 func (c *Client) DeleteSnapshot(snapshotId int64) error {
 	_, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsDelete),
-		Body: SnapshotIdRequest{Id: snapshotId}, Operation: "delete snapshot",
+		Method:     httpmethod.Post,
+		Endpoint:   snapshotEndpoint(ep.SnapshotsDelete),
+		Body:       SnapshotIdRequest{Id: snapshotId},
+		Operation:  "delete snapshot",
 		OkStatuses: []int{http.StatusOK, http.StatusNoContent},
 	})
 	return err
@@ -149,15 +160,18 @@ func (c *Client) DeleteSnapshot(snapshotId int64) error {
 // RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
 func (c *Client) RestoreSnapshot(snapshotId int64) (*SnapshotRestoreResult, error) {
 	return doAPICall[SnapshotRestoreResult](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsRestore),
-		Body: SnapshotRestoreOptions{Id: snapshotId, Confirm: true}, Operation: "restore snapshot",
+		Method:    httpmethod.Post,
+		Endpoint:  snapshotEndpoint(ep.SnapshotsRestore),
+		Body:      SnapshotRestoreOptions{Id: snapshotId, Confirm: true},
+		Operation: "restore snapshot",
 	})
 }
 
 // GetSnapshotSettings fetches snapshot settings from the remote site.
 func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
 	return doAPICall[SnapshotSettings](c, apiCallInput{
-		Method: "GET", Endpoint: snapshotEndpoint(ep.SnapshotsSettings),
+		Method:    httpmethod.Get,
+		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),
 		Operation: "get snapshot settings",
 	})
 }
@@ -165,7 +179,9 @@ func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
 // UpdateSnapshotSettings updates snapshot settings on the remote site.
 func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSettings, error) {
 	return doAPICall[SnapshotSettings](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsSettings),
-		Body: settings, Operation: "update snapshot settings",
+		Method:    httpmethod.Post,
+		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),
+		Body:      settings,
+		Operation: "update snapshot settings",
 	})
 }
