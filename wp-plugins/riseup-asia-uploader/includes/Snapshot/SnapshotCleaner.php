@@ -16,6 +16,7 @@ use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Snapshot\Traits\CleanerRetentionTrait;
 use RiseupAsia\Snapshot\Traits\CleanerDeletionTrait;
 use RiseupAsia\Snapshot\Traits\CleanerOrphanTrait;
@@ -47,11 +48,21 @@ class SnapshotCleaner {
         $isDryRun = BooleanHelpers::hasValue($options[ResponseKeyType::DryRun->value] ?? null);
 
         $results = ResultHelper::ok(array(
-            ResponseKeyType::Retention->value => array(ResponseKeyType::Deleted->value => 0, 'skippedMaster' => 0, 'details' => array()),
-            ResponseKeyType::Orphans->value   => array(ResponseKeyType::Removed->value => 0, ResponseKeyType::Files->value => array()),
-            ResponseKeyType::Stuck->value     => array(ResponseKeyType::Cleaned->value => 0, ResponseKeyType::Ids->value => array()),
-            ResponseKeyType::Errors->value    => array(),
-            ResponseKeyType::DryRun->value    => $isDryRun,
+            ResponseKeyType::Retention->value       => array(
+                ResponseKeyType::Deleted->value       => 0,
+                ResponseKeyType::SkippedMaster->value => 0,
+                ResponseKeyType::Details->value       => array(),
+            ),
+            ResponseKeyType::Orphans->value         => array(
+                ResponseKeyType::Removed->value => 0,
+                ResponseKeyType::Files->value   => array(),
+            ),
+            ResponseKeyType::Stuck->value           => array(
+                ResponseKeyType::Cleaned->value => 0,
+                ResponseKeyType::Ids->value     => array(),
+            ),
+            ResponseKeyType::Errors->value          => array(),
+            ResponseKeyType::DryRun->value          => $isDryRun,
             ResponseKeyType::SpaceFreedBytes->value => 0,
         ));
 
@@ -102,7 +113,7 @@ class SnapshotCleaner {
         array $results,
     ): array {
         try {
-            if ($settings['retention_type'] === RetentionType::None->value) {
+            if ($settings[SettingsKeyType::RetentionType->value] === RetentionType::None->value) {
                 $this->log(LogLevelType::Debug->value, 'Retention policy is "none" - skipping policy cleanup');
             } else {
                 $retention = $this->cleanByRetention($settings, $isDryRun);

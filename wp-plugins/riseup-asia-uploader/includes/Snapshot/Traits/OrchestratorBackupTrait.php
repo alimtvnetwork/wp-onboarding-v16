@@ -17,8 +17,10 @@ use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginSelectionType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotPhaseType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -30,22 +32,22 @@ trait OrchestratorBackupTrait {
         $resolved = $this->resolveBackupOptions($options);
         $this->log(LogLevelType::Info->value, 'Starting full backup orchestration', $resolved);
 
-        return ($options['async'] ?? true)
+        return ($options[ResponseKeyType::Async->value] ?? true)
             ? $this->executeAsyncBackup($resolved)
             : $this->executeSyncBackup($resolved);
     }
 
     private function resolveBackupOptions(array $options): array {
         $settings = $this->manager->getSettings();
-        $this->worker->setPoolSize($settings['worker_pool_size'] ?? SnapshotConfigType::WorkerPoolDefault->value);
+        $this->worker->setPoolSize($settings[SettingsKeyType::WorkerPoolSize->value] ?? SnapshotConfigType::WorkerPoolDefault->value);
 
         return array(
-            ResponseKeyType::Title->value => $options[ResponseKeyType::Title->value] ?? ('Full Backup ' . DateHelper::nowCompactDatetime()),
-            ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? $settings[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
-            'include_plugins'  => $options['include_plugins'] ?? $settings['include_plugins'] ?? true,
-            'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? PluginSelectionType::All->value,
-            'compression'      => $options['compression'] ?? $settings['compression'] ?? true,
-            ResponseKeyType::Settings->value => $settings,
+            ResponseKeyType::Title->value          => $options[ResponseKeyType::Title->value] ?? ('Full Backup ' . DateHelper::nowCompactDatetime()),
+            ResponseKeyType::Scope->value          => $options[ResponseKeyType::Scope->value] ?? $settings[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
+            ResponseKeyType::IncludePlugins->value  => $options[ResponseKeyType::IncludePlugins->value] ?? $settings[SettingsKeyType::IncludePlugins->value] ?? true,
+            ResponseKeyType::PluginSelection->value => $options[ResponseKeyType::PluginSelection->value] ?? $settings[SettingsKeyType::PluginSelection->value] ?? PluginSelectionType::All->value,
+            ResponseKeyType::Compression->value     => $options[ResponseKeyType::Compression->value] ?? $settings[SettingsKeyType::Compression->value] ?? true,
+            ResponseKeyType::Settings->value        => $settings,
         );
     }
 
@@ -55,7 +57,7 @@ trait OrchestratorBackupTrait {
             $isExportFailed = BooleanHelpers::isResultFailed($workerResult);
 
             if ($isExportFailed) {
-                return $this->buildPhaseError('table_export', $workerResult);
+                return $this->buildPhaseError(SnapshotPhaseType::TableExport->value, $workerResult);
             }
 
             $this->log(LogLevelType::Info->value, 'Async backup job created', array(
@@ -78,17 +80,17 @@ trait OrchestratorBackupTrait {
 
             return array(
                 ResponseKeyType::Success->value     => true,
-                'async'                             => true,
+                ResponseKeyType::Async->value       => true,
                 ResponseKeyType::JobId->value       => $workerResult[ResponseKeyType::JobId->value] ?? null,
                 ResponseKeyType::SnapshotId->value  => $snapshotId,
                 ResponseKeyType::Directory->value   => $workerResult[ResponseKeyType::Directory->value] ?? null,
                 ResponseKeyType::Path->value        => $workerResult[ResponseKeyType::Path->value],
                 ResponseKeyType::TotalTables->value => $workerResult[ResponseKeyType::TotalTables->value] ?? null,
                 ResponseKeyType::PoolSize->value    => $workerResult[ResponseKeyType::PoolSize->value] ?? null,
-                'status'                            => $workerResult['status'] ?? null,
+                ResponseKeyType::Status->value      => $workerResult[ResponseKeyType::Status->value] ?? null,
             );
         } catch (Throwable $e) {
-            return $this->buildExceptionResult($e, 'async_orchestration');
+            return $this->buildExceptionResult($e, SnapshotPhaseType::AsyncOrchestration->value);
         }
     }
 
@@ -100,7 +102,7 @@ trait OrchestratorBackupTrait {
             $isExportFailed = BooleanHelpers::isResultFailed($workerResult);
 
             if ($isExportFailed) {
-                return $this->buildPhaseError('table_export', $workerResult);
+                return $this->buildPhaseError(SnapshotPhaseType::TableExport->value, $workerResult);
             }
 
             $context = $this->finalizeSyncExport($resolved, $workerResult);
@@ -109,7 +111,7 @@ trait OrchestratorBackupTrait {
 
             return $context;
         } catch (Throwable $e) {
-            return $this->buildExceptionResult($e, 'sync_orchestration');
+            return $this->buildExceptionResult($e, SnapshotPhaseType::SyncOrchestration->value);
         }
     }
 
@@ -117,8 +119,8 @@ trait OrchestratorBackupTrait {
     private function finalizeSyncExport(array $resolved, array $workerResult): array {
         $snapshotDir = $workerResult[ResponseKeyType::Path->value];
 
-        $pluginStats = $resolved['include_plugins']
-            ? $this->snapshotPlugins($snapshotDir, $resolved['plugin_selection'])
+        $pluginStats = $resolved[ResponseKeyType::IncludePlugins->value]
+            ? $this->snapshotPlugins($snapshotDir, $resolved[ResponseKeyType::PluginSelection->value])
             : array(
                 ResponseKeyType::Count->value    => 0,
                 ResponseKeyType::TotalSize->value => 0,
@@ -132,7 +134,7 @@ trait OrchestratorBackupTrait {
             $snapshotDir,
         );
 
-        $zipResult = $resolved['compression']
+        $zipResult = $resolved[ResponseKeyType::Compression->value]
             ? $this->executeZipPhase($snapshotDir, $resolved)
             : array(
                 ResponseKeyType::Path->value      => null,
@@ -202,7 +204,7 @@ trait OrchestratorBackupTrait {
                 return array(
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'No full snapshot found. A full backup is required before creating an incremental.',
-                    ResponseKeyType::Phase->value   => 'incremental_lookup',
+                    ResponseKeyType::Phase->value   => SnapshotPhaseType::IncrementalLookup->value,
                 );
             }
 
@@ -215,19 +217,19 @@ trait OrchestratorBackupTrait {
 
             return $result;
         } catch (Throwable $e) {
-            return $this->buildExceptionResult($e, 'incremental_orchestration');
+            return $this->buildExceptionResult($e, SnapshotPhaseType::IncrementalOrchestration->value);
         }
     }
 
     private function resolveMasterDir(array $options, object $incremental): ?string {
-        $hasMasterSnapshotId = BooleanHelpers::hasValue($options['master_snapshot_id'] ?? null);
+        $hasMasterSnapshotId = BooleanHelpers::hasValue($options[ResponseKeyType::MasterSnapshotId->value] ?? null);
 
         if ($hasMasterSnapshotId) {
             $pdo = $this->db->getPdo();
 
             if ($pdo) {
                 $stmt = $pdo->prepare("SELECT Filepath FROM " . TableType::Snapshots->value . " WHERE Id = ?");
-                $stmt->execute(array($options['master_snapshot_id']));
+                $stmt->execute(array($options[ResponseKeyType::MasterSnapshotId->value]));
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($row && is_dir($row['Filepath'])) {

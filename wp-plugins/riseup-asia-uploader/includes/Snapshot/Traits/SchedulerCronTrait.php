@@ -43,7 +43,7 @@ trait SchedulerCronTrait {
         } catch (Throwable $e) {
             $this->logger->error("[SCHEDULER] Exception during {$label}", array(
                 ResponseKeyType::Error->value => $e->getMessage(),
-                'trace'                       => $e->getTraceAsString(),
+                ResponseKeyType::Trace->value => $e->getTraceAsString(),
             ));
         }
     }
@@ -67,7 +67,7 @@ trait SchedulerCronTrait {
         }
 
         $this->db->logTransaction(
-            $result['action'],
+            $result[ResponseKeyType::Action->value],
             LogCategoryType::Snapshot->value,
             null,
             '',
@@ -100,7 +100,7 @@ trait SchedulerCronTrait {
         return array(
             ResponseKeyType::Success->value     => $result[ResponseKeyType::Success->value] ?? false,
             ResponseKeyType::Error->value       => $result[ResponseKeyType::Error->value] ?? null,
-            'action'                            => $action,
+            ResponseKeyType::Action->value      => $action,
             ResponseKeyType::TriggeredBy->value => $triggeredBy,
             ResponseKeyType::AuditData->value   => $auditData,
             ResponseKeyType::LogDataKey->value  => $result,
@@ -133,16 +133,16 @@ trait SchedulerCronTrait {
         if ($snapshotType === SnapshotModeType::Incremental->value) {
 
             return $orchestrator->executeIncrementalBackup(array(
-                ResponseKeyType::Title->value => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
-                'master_snapshot_id'          => $args['master_snapshot_id'] ?? null,
+                ResponseKeyType::Title->value             => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
+                ResponseKeyType::MasterSnapshotId->value  => $args[ResponseKeyType::MasterSnapshotId->value] ?? null,
             ));
         }
 
         return $orchestrator->executeFullBackup(array(
-            ResponseKeyType::Title->value     => $args[ResponseKeyType::Title->value] ?? 'Manual Backup ' . DateHelper::nowCompactDatetime(),
-            ResponseKeyType::Scope->value     => $args[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
-            'trigger'                         => SnapshotTriggerType::Manual->value,
-            'async'                           => true,
+            ResponseKeyType::Title->value   => $args[ResponseKeyType::Title->value] ?? 'Manual Backup ' . DateHelper::nowCompactDatetime(),
+            ResponseKeyType::Scope->value   => $args[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
+            ResponseKeyType::Trigger->value => SnapshotTriggerType::Manual->value,
+            ResponseKeyType::Async->value   => true,
         ));
     }
 }

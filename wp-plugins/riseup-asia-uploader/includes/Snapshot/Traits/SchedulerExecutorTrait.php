@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
@@ -32,10 +33,10 @@ trait SchedulerExecutorTrait {
         list(, $orchestrator) = $this->createOrchestrator();
 
         $result = $orchestrator->executeFullBackup(array(
-            ResponseKeyType::Scope->value => $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
-            'trigger'                     => SnapshotTriggerType::Cron->value,
-            ResponseKeyType::Title->value => 'Scheduled Backup ' . DateHelper::nowCompactDatetime(),
-            'async'                       => true,
+            ResponseKeyType::Scope->value   => $settings[SettingsKeyType::DefaultScope->value] ?? SnapshotScopeType::WordPress->value,
+            ResponseKeyType::Trigger->value => SnapshotTriggerType::Cron->value,
+            ResponseKeyType::Title->value   => 'Scheduled Backup ' . DateHelper::nowCompactDatetime(),
+            ResponseKeyType::Async->value   => true,
         ));
 
         return $this->buildCronResult(
@@ -43,9 +44,9 @@ trait SchedulerExecutorTrait {
             ActionType::SnapshotCreate->value,
             TriggerSourceType::Cron->value,
             array(
-                'trigger'                          => 'cron',
-                ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
-                ResponseKeyType::JobId->value      => $result[ResponseKeyType::JobId->value] ?? null,
+                ResponseKeyType::Trigger->value        => SnapshotTriggerType::Cron->value,
+                ResponseKeyType::SnapshotId->value     => $result[ResponseKeyType::SnapshotId->value] ?? null,
+                ResponseKeyType::JobId->value          => $result[ResponseKeyType::JobId->value] ?? null,
             ),
         );
     }
@@ -62,26 +63,26 @@ trait SchedulerExecutorTrait {
             $action,
             TriggerSourceType::Dashboard->value,
             array(
-                'trigger'                          => SnapshotTriggerType::Manual->value,
-                ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
-                ResponseKeyType::Type->value       => $snapshotType,
+                ResponseKeyType::Trigger->value        => SnapshotTriggerType::Manual->value,
+                ResponseKeyType::SnapshotId->value     => $result[ResponseKeyType::SnapshotId->value] ?? null,
+                ResponseKeyType::Type->value           => $snapshotType,
             ),
         );
     }
 
     private function runCronRestore(array $args): array {
         if (empty($args[ResponseKeyType::SnapshotId->value])) {
-            $this->logger->error('[SCHEDULER] Missing snapshot_id for cron restore');
+            $this->logger->error('[SCHEDULER] Missing SnapshotId for cron restore');
 
             return ResultHelper::error(
-                'Missing snapshot_id',
+                'Missing SnapshotId',
                 array(ResponseKeyType::SkipAudit->value => true),
             );
         }
 
         $manager = SnapshotFactory::manager($this->logger, $this->db);
-        $restoreOptions = $args['options'] ?? array();
-        $restoreOptions['confirm'] = true;
+        $restoreOptions = $args[ResponseKeyType::Options->value] ?? array();
+        $restoreOptions[ResponseKeyType::Confirm->value] = true;
         $result = $manager->restoreSnapshot($args[ResponseKeyType::SnapshotId->value], $restoreOptions);
 
         return $this->buildCronResult(
@@ -100,8 +101,8 @@ trait SchedulerExecutorTrait {
         list(, $orchestrator) = $this->createOrchestrator();
 
         $result = $orchestrator->executeIncrementalBackup(array(
-            ResponseKeyType::Title->value => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
-            'master_snapshot_id'          => $args['master_snapshot_id'] ?? null,
+            ResponseKeyType::Title->value             => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
+            ResponseKeyType::MasterSnapshotId->value  => $args[ResponseKeyType::MasterSnapshotId->value] ?? null,
         ));
 
         return $this->buildCronResult(

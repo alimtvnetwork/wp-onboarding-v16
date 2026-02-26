@@ -21,6 +21,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotConfigType;
@@ -31,9 +32,9 @@ use RiseupAsia\Helpers\BooleanHelpers;
 trait CleanerHelperTrait {
     private function loadSettings(array $overrides): array {
         $defaults = array(
-            'retention_type'  => RetentionType::Days->value,
-            'retention_days'  => SnapshotConfigType::RetentionDaysDefault->value,
-            'retention_count' => SnapshotConfigType::RetentionCountDefault->value,
+            SettingsKeyType::RetentionType->value  => RetentionType::Days->value,
+            SettingsKeyType::RetentionDays->value  => SnapshotConfigType::RetentionDaysDefault->value,
+            SettingsKeyType::RetentionCount->value => SnapshotConfigType::RetentionCountDefault->value,
         );
 
         $saved = get_option(
@@ -42,6 +43,7 @@ trait CleanerHelperTrait {
         );
 
         if (is_array($saved)) {
+            $saved = SettingsKeyType::migrateArray($saved);
             $defaults = array_merge($defaults, $saved);
         }
 

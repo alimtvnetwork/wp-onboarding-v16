@@ -18,6 +18,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SnapshotPhaseType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
@@ -36,8 +37,9 @@ trait SnapshotBackupExecTrait {
             $orchestrator = $this->createFullBackupOrchestrator();
             $result = $orchestrator->executeFullBackup($this->extractFullBackupOptions($body));
             $this->logBackupComplete(ActionType::SnapshotFullBackup->value, $result);
+
             return $this->buildFullBackupResponse($result);
-        }, 'full_backup');
+        }, SnapshotPhaseType::FullBackup->value);
     }
 
     public function handleIncrementalBackup(WP_REST_Request $request): WP_REST_Response {
@@ -49,11 +51,13 @@ trait SnapshotBackupExecTrait {
             if ($masterDir instanceof WP_REST_Response) {
                 return $masterDir;
             }
+
             $incremental = $this->createIncrementalBackup();
             $result = $incremental->execute($masterDir, array(ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null));
             $this->logIncrementalComplete($result);
+
             return $this->buildIncrementalResponse($result);
-        }, 'incremental_backup');
+        }, SnapshotPhaseType::IncrementalBackup->value);
     }
 
     private function logBackupInitiated(string $action, array $body) {
@@ -61,22 +65,23 @@ trait SnapshotBackupExecTrait {
             array(
                 ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null,
                 ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null,
-                ResponseKeyType::Phase->value => 'initiated',
+                ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value,
             ));
     }
 
     private function createFullBackupOrchestrator(): SnapshotOrchestrator {
         $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
+
         return SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
     }
 
     private function extractFullBackupOptions(array $body): array {
         return array(
-            ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null,
-            ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null,
-            'include_plugins' => $body['include_plugins'] ?? null,
-            'plugin_selection' => $body['plugin_selection'] ?? null,
-            'compression' => $body['compression'] ?? null,
+            ResponseKeyType::Title->value          => $body[ResponseKeyType::Title->value] ?? null,
+            ResponseKeyType::Scope->value          => $body[ResponseKeyType::Scope->value] ?? null,
+            ResponseKeyType::IncludePlugins->value  => $body[ResponseKeyType::IncludePlugins->value] ?? null,
+            ResponseKeyType::PluginSelection->value => $body[ResponseKeyType::PluginSelection->value] ?? null,
+            ResponseKeyType::Compression->value     => $body[ResponseKeyType::Compression->value] ?? null,
         );
     }
 
@@ -88,7 +93,7 @@ trait SnapshotBackupExecTrait {
                 ResponseKeyType::Tables->value     => $result[ResponseKeyType::Tables->value] ?? 0,
                 ResponseKeyType::TotalRows->value  => $result[ResponseKeyType::TotalRows->value] ?? 0,
                 ResponseKeyType::Duration->value   => $result[ResponseKeyType::Duration->value] ?? 0,
-                ResponseKeyType::Phase->value      => 'complete',
+                ResponseKeyType::Phase->value      => SnapshotPhaseType::Complete->value,
             ),
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Backup failed'));
     }
@@ -111,12 +116,13 @@ trait SnapshotBackupExecTrait {
 
     private function resolveIncrementalMasterDir(array $body): string|WP_REST_Response {
         $incremental = $this->createIncrementalBackup();
-        $masterDir = $body['master_dir'] ?? null;
+        $masterDir = $body[ResponseKeyType::MasterDir->value] ?? null;
         $isMasterDirEmpty = ($masterDir === null || $masterDir === '');
 
         if ($isMasterDirEmpty) {
             $masterDir = $incremental->findLatestMasterSnapshot();
         }
+
         $isMasterDirInvalid = ($masterDir === null || $masterDir === '' || PathHelper::isDirMissing($masterDir));
 
         if ($isMasterDirInvalid) {
@@ -125,11 +131,13 @@ trait SnapshotBackupExecTrait {
                 HttpStatusType::BadRequest->value,
             );
         }
+
         return $masterDir;
     }
 
     private function createIncrementalBackup(): IncrementalBackup {
         $rootDb = RootDb::getInstance($this->fileLogger, DependencyAnalyzer::getInstance($this->fileLogger));
+
         return IncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
     }
 
@@ -141,7 +149,7 @@ trait SnapshotBackupExecTrait {
                 ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0,
                 ResponseKeyType::TotalNewRows->value  => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
                 ResponseKeyType::Duration->value      => $result[ResponseKeyType::Duration->value] ?? 0,
-                ResponseKeyType::Phase->value         => 'complete',
+                ResponseKeyType::Phase->value         => SnapshotPhaseType::Complete->value,
             ),
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Incremental backup failed'));
     }

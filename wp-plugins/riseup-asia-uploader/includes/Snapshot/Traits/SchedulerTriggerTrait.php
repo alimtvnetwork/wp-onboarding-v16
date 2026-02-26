@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\DateHelper;
@@ -50,15 +51,15 @@ trait SchedulerTriggerTrait {
         $cleanupNext = wp_next_scheduled(HookType::CronSnapshotCleanup->value);
 
         return array(
-            ResponseKeyType::ScheduleEnabled->value       => $settings['schedule_enabled'],
-            'frequency'                                   => $settings['schedule_frequency'],
-            'time'                                        => $settings['schedule_time'],
-            'day'                                         => $settings['schedule_day'],
+            ResponseKeyType::ScheduleEnabled->value       => $settings[SettingsKeyType::ScheduleEnabled->value],
+            ResponseKeyType::Frequency->value              => $settings[SettingsKeyType::ScheduleFrequency->value],
+            ResponseKeyType::Time->value                   => $settings[SettingsKeyType::ScheduleTime->value],
+            ResponseKeyType::Day->value                    => $settings[SettingsKeyType::ScheduleDay->value],
             ResponseKeyType::NextScheduledSnapshot->value => $scheduledNext ? DateHelper::formatIso($scheduledNext) : null,
             ResponseKeyType::NextCleanup->value           => $cleanupNext ? DateHelper::formatIso($cleanupNext) : null,
-            ResponseKeyType::RetentionType->value         => $settings['retention_type'],
-            ResponseKeyType::RetentionDays->value         => $settings['retention_days'],
-            ResponseKeyType::RetentionCount->value        => $settings['retention_count'],
+            ResponseKeyType::RetentionType->value         => $settings[SettingsKeyType::RetentionType->value],
+            ResponseKeyType::RetentionDays->value         => $settings[SettingsKeyType::RetentionDays->value],
+            ResponseKeyType::RetentionCount->value        => $settings[SettingsKeyType::RetentionCount->value],
         );
     }
 
@@ -73,10 +74,10 @@ trait SchedulerTriggerTrait {
                 : 'Manual Backup ' . DateHelper::nowCompactDatetime());
 
             $cronArgs = array(
-                ResponseKeyType::SnapshotType->value => $snapshotType,
-                ResponseKeyType::Title->value        => $title,
-                ResponseKeyType::Scope->value        => $options[ResponseKeyType::Scope->value] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
-                'master_snapshot_id'                 => $options['master_snapshot_id'] ?? null,
+                ResponseKeyType::SnapshotType->value      => $snapshotType,
+                ResponseKeyType::Title->value             => $title,
+                ResponseKeyType::Scope->value             => $options[ResponseKeyType::Scope->value] ?? $settings[SettingsKeyType::DefaultScope->value] ?? SnapshotScopeType::WordPress->value,
+                ResponseKeyType::MasterSnapshotId->value  => $options[ResponseKeyType::MasterSnapshotId->value] ?? null,
             );
 
             $scheduled = wp_schedule_single_event(
@@ -97,15 +98,15 @@ trait SchedulerTriggerTrait {
             ));
 
             return ResultHelper::ok(array(
-                'scheduled'                          => true,
-                ResponseKeyType::SnapshotType->value => $snapshotType,
-                ResponseKeyType::Title->value        => $title,
-                ResponseKeyType::Message->value      => 'Snapshot has been scheduled and will run in the background.',
+                ResponseKeyType::Scheduled->value        => true,
+                ResponseKeyType::SnapshotType->value     => $snapshotType,
+                ResponseKeyType::Title->value            => $title,
+                ResponseKeyType::Message->value          => 'Snapshot has been scheduled and will run in the background.',
             ));
         } catch (Throwable $e) {
             $this->logger->error('[SCHEDULER] Snapshot Now scheduling failed', array(
                 ResponseKeyType::Error->value => $e->getMessage(),
-                'trace'                       => $e->getTraceAsString(),
+                ResponseKeyType::Trace->value => $e->getTraceAsString(),
             ));
 
             return ResultHelper::errorFromException($e);
@@ -117,7 +118,7 @@ trait SchedulerTriggerTrait {
 
         $cronArgs = array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
-            'options'                          => $options,
+            ResponseKeyType::Options->value    => $options,
         );
 
         $scheduled = wp_schedule_single_event(
@@ -131,9 +132,9 @@ trait SchedulerTriggerTrait {
         }
 
         return ResultHelper::ok(array(
-            'scheduled'                        => true,
-            ResponseKeyType::SnapshotId->value => $snapshotId,
-            ResponseKeyType::Message->value    => 'Restore has been scheduled and will run in the background.',
+            ResponseKeyType::Scheduled->value      => true,
+            ResponseKeyType::SnapshotId->value     => $snapshotId,
+            ResponseKeyType::Message->value        => 'Restore has been scheduled and will run in the background.',
         ));
     }
 

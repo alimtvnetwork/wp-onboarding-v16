@@ -28,10 +28,10 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreValidationTrait {
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
-        if (empty($options['confirm']) || $options['confirm'] !== true) {
+        if (empty($options[ResponseKeyType::Confirm->value]) || $options[ResponseKeyType::Confirm->value] !== true) {
             return array(
                 ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => 'Restore requires explicit confirmation (confirm=true)',
+                ResponseKeyType::Error->value   => 'Restore requires explicit confirmation (Confirm=true)',
                 ResponseKeyType::Code->value    => SnapshotErrorType::RestoreNoConfirm->value,
             );
         }
@@ -49,8 +49,8 @@ trait RestoreValidationTrait {
     }
 
     private function prepareRestoreOrder(PDO $rootPdo, array $options): array {
-        $mode = $options['mode'] ?? RestoreModeType::Full->value;
-        $selectedTables = $options['tables'] ?? array();
+        $mode = $options[ResponseKeyType::Mode->value] ?? RestoreModeType::Full->value;
+        $selectedTables = $options[ResponseKeyType::Tables->value] ?? array();
 
         $tableInventory = $this->getTableInventory($rootPdo);
         $restoreOrder = $this->getRestoreOrder($rootPdo, $tableInventory);
@@ -72,18 +72,18 @@ trait RestoreValidationTrait {
 
         $this->log(LogLevelType::Info->value, 'Restore order determined', array(
             ResponseKeyType::Tables->value => count($restoreOrder),
-            'order'                        => array_slice($restoreOrder, 0, 10),
+            ResponseKeyType::Order->value  => array_slice($restoreOrder, 0, 10),
         ));
 
         return array(
-            ResponseKeyType::Success->value => true,
-            ResponseKeyType::Tables->value  => $restoreOrder,
+            ResponseKeyType::Success->value   => true,
+            ResponseKeyType::Tables->value    => $restoreOrder,
             ResponseKeyType::Inventory->value => $tableInventory,
         );
     }
 
     private function createSafetyBackup(array $options): ?int {
-        $createBackup = $options['create_backup'] ?? true;
+        $createBackup = $options[ResponseKeyType::CreateBackup->value] ?? true;
 
         $isBackupSkipped = ($createBackup === false) || ($this->orchestrator === null);
 
@@ -94,9 +94,9 @@ trait RestoreValidationTrait {
         $this->log(LogLevelType::Info->value, 'Creating pre-restore safety backup');
 
         $result = $this->orchestrator->executeFullBackup(array(
-            ResponseKeyType::Title->value => 'Pre-Restore Safety Backup ' . DateHelper::nowCompactDatetime(),
-            'compression'                 => false,
-            'include_plugins'             => false,
+            ResponseKeyType::Title->value          => 'Pre-Restore Safety Backup ' . DateHelper::nowCompactDatetime(),
+            ResponseKeyType::Compression->value     => false,
+            ResponseKeyType::IncludePlugins->value  => false,
         ));
 
         if ($result[ResponseKeyType::Success->value]) {
@@ -111,9 +111,10 @@ trait RestoreValidationTrait {
             ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? 'Unknown',
         ));
 
-        $isBackupRequired = BooleanHelpers::hasValue($options['require_backup'] ?? null);
+        $isBackupRequired = BooleanHelpers::hasValue($options[ResponseKeyType::RequireBackup->value] ?? null);
 
         if ($isBackupRequired) {
+
             throw new Exception('Pre-restore backup failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown'));
         }
 
