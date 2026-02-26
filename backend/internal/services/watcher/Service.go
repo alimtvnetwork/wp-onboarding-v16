@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/enums/scan_trigger"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/plugin"
@@ -126,12 +127,12 @@ func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
 
 // TriggerScan performs a manual scan (user clicked refresh)
 func (s *Service) TriggerScan(ctx context.Context, pluginID int64) apperror.Result[ScanResult] {
-	return s.performScan(ctx, pluginID, "manual")
+	return s.performScan(ctx, pluginID, scantrigger.Manual.Value())
 }
 
 // ScanAfterGitPull performs a scan after git pull (automatic)
 func (s *Service) ScanAfterGitPull(ctx context.Context, pluginID int64) apperror.Result[ScanResult] {
-	return s.performScan(ctx, pluginID, "git_pull")
+	return s.performScan(ctx, pluginID, scantrigger.GitPull.Value())
 }
 
 // ScanAll scans all cached plugins

@@ -14,6 +14,9 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/enums/change_type"
+	"wp-plugin-publish/internal/enums/sync_direction"
+	"wp-plugin-publish/internal/enums/sync_step"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/plugin"
@@ -135,7 +138,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	}
 
 	// Broadcast start
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "checking", Progress: 0, Message: "Starting sync check..."})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Starting sync check..."})
 
 	// Get plugin info
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
@@ -146,7 +149,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	plug := plugResult.Value()
 
 	// Scan local files
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "scanning", Progress: 20, Message: "Scanning local files..."})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Scanning.Value(), Progress: 20, Message: "Scanning local files..."})
 	localFiles, err := s.scanLocalFiles(plug.Path, plug.ExcludePatterns)
 	if err != nil {
 		result.ErrorMessage = err.Error()
@@ -158,28 +161,28 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
 		result.ErrorMessage = "No site mapping found: " + err.Error()
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: result.ErrorMessage})
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: result.ErrorMessage})
 		return apperror.Ok(result)
 	}
 
 	// Get site info and decrypt credentials
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 40, Message: "Retrieving site credentials..."})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 40, Message: "Retrieving site credentials..."})
 	siteInfo, err := s.getSiteInfo(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = "Failed to get site info: " + err.Error()
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: result.ErrorMessage})
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: result.ErrorMessage})
 		return apperror.Ok(result)
 	}
 
 	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = "Failed to decrypt credentials: " + err.Error()
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: result.ErrorMessage})
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: result.ErrorMessage})
 		return apperror.Ok(result)
 	}
 
 	// Fetch remote file manifest via WordPress sync-manifest endpoint
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 50, Message: "Fetching remote file manifest..."})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 	remoteManifest, err := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
 
@@ -188,7 +191,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 		// Log warning but continue with empty remote (graceful degradation)
 		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
 			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", err)
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
 	} else {
 		for _, rf := range remoteManifest {
 			remoteFiles[rf.Path] = FileEntry{
@@ -202,19 +205,19 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	result.RemoteFiles = len(remoteFiles)
 
 	// Compare files using enhanced comparison with timestamps
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "comparing", Progress: 70, Message: "Comparing files..."})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 70, Message: "Comparing files..."})
 	changes := s.compareFiles(localFiles, remoteFiles)
 	
 	result.Changes = changes
-	result.Added = countByType(changes, "added")
-	result.Modified = countByType(changes, "modified")
-	result.Deleted = countByType(changes, "deleted")
+	result.Added = countByType(changes, changetype.Added.Value())
+	result.Modified = countByType(changes, changetype.Modified.Value())
+	result.Deleted = countByType(changes, changetype.Deleted.Value())
 	result.IsInSync = len(changes) == 0
 
 	// Update mapping sync status
 	s.updateMappingSyncStatus(ctx, pluginID, siteID, result.IsInSync)
 
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100, Message: "Sync check complete"})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "Sync check complete"})
 
 	s.log.Info("Sync check completed",
 		"pluginId", pluginID,
@@ -301,7 +304,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	// 1. Run comparison to get changes
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "checking", Progress: 0, Message: "Running sync comparison..."})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Running sync comparison..."})
 	syncResult := s.CheckSync(ctx, pluginID, siteID)
 	if syncResult.HasError() {
 		return apperror.FailWrap[PushSyncResult](syncResult.AppError(), apperror.ErrInternal, "sync comparison failed")
@@ -314,7 +317,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 
 	if sr.IsInSync {
 		result.IsSuccess = true
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100, Message: "Already in sync, nothing to push"})
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "Already in sync, nothing to push"})
 		return apperror.Ok(result)
 	}
 
@@ -342,7 +345,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	// 5. Build SyncFile array from changes
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "packaging", Progress: 40, Message: "Packaging file changes..."})
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Packaging.Value(), Progress: 40, Message: "Packaging file changes..."})
 	var syncFiles []wordpress.SyncFile
 
 	absPluginPath, err := pathutil.ToAbsolute(plug.Path)
@@ -352,9 +355,9 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 
 	for _, change := range sr.Changes {
 		switch change.ChangeType {
-		case "added", "modified":
+		case changetype.Added.Value(), changetype.Modified.Value():
 			// Only push local-newer or local-only files
-			if change.Direction == "remote_newer" {
+			if change.Direction == syncdirection.RemoteNewer.Value() {
 				continue // skip remote-newer files (pull, not push)
 			}
 			localPath := filepath.Join(absPluginPath, filepath.FromSlash(change.FilePath))
@@ -370,7 +373,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 				Action:  "replace",
 			})
 
-		case "deleted":
+		case changetype.Deleted.Value():
 			// File exists on remote but not locally → send delete
 			syncFiles = append(syncFiles, wordpress.SyncFile{
 				Path:   change.FilePath,
@@ -381,7 +384,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 
 	if len(syncFiles) == 0 {
 		result.IsSuccess = true
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100, Message: "No pushable changes found"})
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "No pushable changes found"})
 		return apperror.Ok(result)
 	}
 
@@ -395,14 +398,14 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	)
 
 	// 6. Push to remote via WordPress client
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "pushing", Progress: 60,
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Pushing.Value(), Progress: 60,
 		Message: fmt.Sprintf("Pushing %d files to remote...", len(syncFiles))})
 
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 	syncPushResult, err := wpClient.SyncPluginFilesViaUploader(mapping.RemoteSlug, syncFiles)
 	if err != nil {
 		result.ErrorMessage = err.Error()
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "error", Progress: 100, Message: "Sync push failed: " + err.Error()})
+		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: "Sync push failed: " + err.Error()})
 		return apperror.Ok(result)
 	}
 
@@ -416,7 +419,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 		s.updateMappingSyncStatus(ctx, pluginID, siteID, true)
 	}
 
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: "complete", Progress: 100,
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Complete.Value(), Progress: 100,
 		Message: fmt.Sprintf("Sync complete: %d updated, %d deleted, %d ignored",
 			result.FilesUpdated, result.FilesDeleted, result.FilesIgnored)})
 
@@ -519,13 +522,13 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 		if remoteEntry, exists := remote[path]; exists {
 			if localEntry.Hash != remoteEntry.Hash {
 				remoteMod := remoteEntry.ModifiedAt
-				direction := "local_newer"
+			direction := syncdirection.LocalNewer.Value()
 				if remoteMod.After(localMod) {
-					direction = "remote_newer"
+					direction = syncdirection.RemoteNewer.Value()
 				}
 				changes = append(changes, models.FileChange{
 					FilePath:         path,
-					ChangeType:       "modified",
+					ChangeType:       changetype.Modified.Value(),
 					LocalHash:        localEntry.Hash,
 					RemoteHash:       remoteEntry.Hash,
 					LocalModifiedAt:  &localMod,
@@ -538,11 +541,11 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 		} else {
 			changes = append(changes, models.FileChange{
 				FilePath:        path,
-				ChangeType:      "added",
+				ChangeType:      changetype.Added.Value(),
 				LocalHash:       localEntry.Hash,
 				LocalModifiedAt: &localMod,
 				LocalSize:       localEntry.Size,
-				Direction:       "local_only",
+				Direction:       syncdirection.LocalOnly.Value(),
 			})
 		}
 	}
@@ -552,11 +555,11 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 			remoteMod := remoteEntry.ModifiedAt
 			changes = append(changes, models.FileChange{
 				FilePath:         path,
-				ChangeType:       "deleted",
+				ChangeType:       changetype.Deleted.Value(),
 				RemoteHash:       remoteEntry.Hash,
 				RemoteModifiedAt: &remoteMod,
 				RemoteSize:       remoteEntry.Size,
-				Direction:        "remote_only",
+				Direction:        syncdirection.RemoteOnly.Value(),
 			})
 		}
 	}
