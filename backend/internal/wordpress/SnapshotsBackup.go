@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -29,7 +30,7 @@ type SnapshotBackupResult struct {
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
 func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
 	callInput := apiCallInput{
-		Method:     "POST",
+		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsFullBackup),
 		Body:       opts,
 		Operation:  "full backup",
@@ -41,7 +42,7 @@ func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, 
 // IncrementalBackup triggers an incremental backup against the latest master snapshot.
 func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
 	callInput := apiCallInput{
-		Method:     "POST",
+		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsIncremental),
 		Body:       opts,
 		Operation:  "incremental backup",
@@ -97,25 +98,28 @@ func buildImportMultipart(zipPath string) (*multipartResult, error) {
 // executeImportRequest sends the multipart import and parses the response.
 func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, contentType string) (*SnapshotImportResult, error) {
 	mpInput := multipartInput{
-		Method:      "POST",
+		Method:      httpmethod.Post,
 		Endpoint:    endpoint,
 		Body:        body,
 		ContentType: contentType,
 	}
+
 	resp, err := c.requestMultipart(mpInput)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to import snapshot")
 	}
+
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
 	if isErrorStatus(resp.StatusCode, []int{http.StatusOK, http.StatusCreated}) {
 		errorInput := apiCallInput{
-			Method:    "POST",
+			Method:    httpmethod.Post,
 			Endpoint:  endpoint,
 			Operation: "import snapshot",
 		}
+
 		return nil, c.buildCallError(errorInput, resp.StatusCode, bodyBytes)
 	}
 
@@ -138,7 +142,7 @@ type SnapshotCleanupResult struct {
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
 func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanupResult, error) {
 	callInput := apiCallInput{
-		Method:    "POST",
+		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsCleanup),
 		Body:      opts,
 		Operation: "snapshot cleanup",

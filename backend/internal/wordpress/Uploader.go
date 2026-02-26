@@ -8,6 +8,7 @@ import (
 
 	"wp-plugin-publish/internal/enums/action"
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/pkg/apperror"
@@ -87,7 +88,7 @@ func (c *Client) CheckRiseupAsiaAvailable() (*UploaderAvailability, error) {
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
 		callResp, err := c.doAPICallWithStatus(apiCallInput{
-			Method: "GET", Endpoint: endpoint, Operation: "check uploader namespace",
+			Method: httpmethod.Get, Endpoint: endpoint, Operation: "check uploader namespace",
 		})
 		if err != nil {
 			return nil, err
@@ -117,7 +118,8 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Status)
 
 	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: endpoint,
+		Method:    httpmethod.Get,
+		Endpoint:  endpoint,
 		Operation: "get uploader status", ErrorCode: apperror.ErrWPConnection,
 	})
 	if err != nil {
@@ -220,7 +222,7 @@ func buildUploadAPIError(input uploadAPIErrorInput) *APIError {
 
 	return &APIError{
 		Operation:    "upload plugin via RiseupAsia Uploader",
-		Method:       "POST",
+		Method:       httpmethod.Post.Value(),
 		Endpoint:     input.UploadEndpoint,
 		Url:          input.UploadURL,
 		StatusCode:   input.StatusCode,

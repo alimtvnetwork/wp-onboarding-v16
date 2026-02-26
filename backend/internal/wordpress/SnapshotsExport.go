@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -42,7 +43,7 @@ type SnapshotDownloadResult struct {
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
 	return c.doAPICallStream(apiCallInput{
-		Method:    "POST",
+		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsExport),
 		Body:      SnapshotIdRequest{Id: snapshotId},
 		Operation: "export snapshot",
@@ -52,8 +53,10 @@ func (c *Client) ExportSnapshot(snapshotId int64) (*http.Response, error) {
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
 func (c *Client) DownloadSnapshotZip(snapshotId int64) (*SnapshotDownloadResult, error) {
 	return doAPICall[SnapshotDownloadResult](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsDownload),
-		Body: SnapshotIdRequest{Id: snapshotId}, Operation: "download snapshot zip",
+		Method:    httpmethod.Post,
+		Endpoint:  snapshotEndpoint(ep.SnapshotsDownload),
+		Body:      SnapshotIdRequest{Id: snapshotId},
+		Operation: "download snapshot zip",
 	})
 }
 
@@ -79,7 +82,7 @@ func buildStreamZipError(resp *http.Response, downloadURL string) *APIError {
 
 	return &APIError{
 		Operation:    "stream snapshot zip",
-		Method:       "GET",
+		Method:       httpmethod.Get.Value(),
 		Endpoint:     downloadURL,
 		Url:          downloadURL,
 		StatusCode:   resp.StatusCode,
@@ -90,7 +93,8 @@ func buildStreamZipError(resp *http.Response, downloadURL string) *APIError {
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: snapshotEndpoint(ep.SnapshotsProviders),
+		Method:    httpmethod.Get,
+		Endpoint:  snapshotEndpoint(ep.SnapshotsProviders),
 		Operation: "get snapshot providers",
 	})
 	if err != nil {
@@ -115,7 +119,8 @@ type AvailableTable struct {
 // GetAvailableTables returns the list of database tables available for snapshotting.
 func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: snapshotEndpoint(ep.SnapshotsTables),
+		Method:    httpmethod.Get,
+		Endpoint:  snapshotEndpoint(ep.SnapshotsTables),
 		Operation: "get available tables",
 	})
 	if err != nil {

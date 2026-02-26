@@ -5,9 +5,9 @@ package wordpress
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"wp-plugin-publish/internal/enums/connection_step"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/internal/enums/post_status"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/pkg/apperror"
@@ -40,49 +40,47 @@ type wpTestPost struct {
 	Status  string `json:"status"`  // external key
 }
 
-// testDnsReachability checks if the WordPress site is reachable (Step 1).
-func (c *Client) testDnsReachability(result *ConnectionInfo) error {
-	c.progress(ProgressEvent{
-		Step:    connectionstep.DnsCheck.Value(),
-		Status:  stagestatus.Running.String(),
-		Message: fmt.Sprintf("Resolving %s...", c.baseURL),
-		Details: toProgress(URLProgress{URL: c.baseURL}),
-	})
-
-	resp, err := c.httpClient.Get(c.baseURL)
-	if err != nil {
-		c.progress(ProgressEvent{
-			Step:    connectionstep.DnsCheck.Value(),
-			Status:  stagestatus.Failed.String(),
-			Message: fmt.Sprintf("Cannot reach site: %v", err),
-			Details: toProgress(URLErrorProgress{URL: c.baseURL, Error: err.Error()}),
-		})
-		return apperror.Wrap(err, apperror.ErrWPConnection, "cannot reach WordPress site").WithURL(c.baseURL)
+// TestConnection runs the full five-step connection test sequence:
+// 1. REST API probe   2. Auth check   3. Parse user info   4. Plugin access   5. Write test
+func (c *Client) TestConnection() (*ConnectionInfo, error) {
+	result := &ConnectionInfo{
+		URL: c.baseURL,
 	}
-	resp.Body.Close()
 
-	c.progress(ProgressEvent{
-		Step:    connectionstep.DnsCheck.Value(),
-		Status:  stagestatus.Completed.String(),
-		Message: "Site is reachable",
-		Details: toProgress(URLStatusProgress{URL: c.baseURL, Status: resp.StatusCode}),
-	})
-	return nil
+	// Step 1: Probe REST API
+	if err := c.probeRestAPI(result); err != nil {
+		return result, err
+	}
+
+	// Step 2 & 3: Auth + user info
+	if err := c.authenticateAndParseUser(result); err != nil {
+		return result, err
+	}
+
+	// Step 4: Plugin access check
+	if err := c.testPluginAccess(result); err != nil {
+		return result, err
+	}
+
+	// Step 5: Write test (optional)
+	c.testWritePermission(result)
+
+	return result, nil
 }
 
-// testRestApiAvailability checks WordPress REST API availability (Step 2).
-func (c *Client) testRestApiAvailability(result *ConnectionInfo) error {
+// probeRestAPI checks WordPress REST API availability (Step 1).
+func (c *Client) probeRestAPI(result *ConnectionInfo) error {
 	c.progress(ProgressEvent{
-		Step:    connectionstep.RestApiCheck.Value(),
+		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Running.String(),
-		Message: "Checking WordPress REST API...",
+		Message: "Checking WordPress REST API availability...",
 		Details: toProgress(URLProgress{URL: c.baseURL}),
 	})
 
 	resp, err := c.httpClient.Get(fmt.Sprintf("%s/wp-json/", c.baseURL))
 	if err != nil {
 		c.progress(ProgressEvent{
-			Step:    connectionstep.RestApiCheck.Value(),
+			Step:    connectionstep.DnsCheck.Value(),
 			Status:  stagestatus.Failed.String(),
 			Message: fmt.Sprintf("REST API not accessible: %v", err),
 			Details: toProgress(URLProgress{URL: c.baseURL}),
@@ -97,7 +95,7 @@ func (c *Client) testRestApiAvailability(result *ConnectionInfo) error {
 	}
 
 	c.progress(ProgressEvent{
-		Step:    connectionstep.RestApiCheck.Value(),
+		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Completed.String(),
 		Message: "REST API is available",
 		Details: toProgress(SiteNameProgress{URL: c.baseURL, SiteName: result.SiteName}),
@@ -110,7 +108,7 @@ func (c *Client) testRestApiAvailability(result *ConnectionInfo) error {
 func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionInfo) error {
 	if resp.StatusCode == HttpStatusNotFound.Int() {
 		c.progress(ProgressEvent{
-			Step:    connectionstep.RestApiCheck.Value(),
+			Step:    connectionstep.DnsCheck.Value(),
 			Status:  stagestatus.Failed.String(),
 			Message: "REST API not found - is permalink structure set?",
 			Details: toProgress(URLProgress{URL: c.baseURL}),
@@ -128,8 +126,8 @@ func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionIn
 	return nil
 }
 
-// testAuthentication verifies API credentials via users/me endpoint (Step 3).
-func (c *Client) testAuthentication(result *ConnectionInfo) error {
+// authenticateAndParseUser checks authentication (Step 2) and parses user info (Step 3).
+func (c *Client) authenticateAndParseUser(result *ConnectionInfo) error {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Running.String(),
@@ -138,7 +136,7 @@ func (c *Client) testAuthentication(result *ConnectionInfo) error {
 	})
 
 	authInput := apiCallInput{
-		Method:    "GET",
+		Method:    httpmethod.Get,
 		Endpoint:  WPCoreUsersMe,
 		Operation: "authenticate user",
 	}
@@ -238,7 +236,7 @@ func (c *Client) testPluginAccess(result *ConnectionInfo) error {
 	})
 
 	pluginAccessInput := apiCallInput{
-		Method:    "GET",
+		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
 		Operation: "check plugin access",
 	}
@@ -264,10 +262,10 @@ func (c *Client) testPluginAccess(result *ConnectionInfo) error {
 
 		return apperror.New(apperror.ErrWPAuth, "insufficient permissions: user cannot manage plugins (requires administrator role)").
 			WithURL(c.baseURL).
-			WithStatusCode(statusCode)
+			WithStatusCode(pluginResp.StatusCode)
 	}
 
-	c.reportPluginAccessByStatus(statusCode, result)
+	c.reportPluginAccessByStatus(pluginResp.StatusCode, result)
 
 	return nil
 }
@@ -292,8 +290,8 @@ func (c *Client) reportPluginAccessByStatus(statusCode int, result *ConnectionIn
 	}
 }
 
-// testWritePermissions creates and deletes a draft post to verify write access (Step 5).
-func (c *Client) testWritePermissions(result *ConnectionInfo) {
+// testWritePermission creates and deletes a draft post to verify write access (Step 5).
+func (c *Client) testWritePermission(result *ConnectionInfo) {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.WriteTest.Value(),
 		Status:  stagestatus.Running.String(),
@@ -308,7 +306,7 @@ func (c *Client) testWritePermissions(result *ConnectionInfo) {
 	}
 
 	writeTestInput := apiCallInput{
-		Method:    "POST",
+		Method:    httpmethod.Post,
 		Endpoint:  WPCorePosts,
 		Body:      testPost,
 		Operation: "test write permissions",
@@ -357,7 +355,7 @@ func (c *Client) handleWriteTestCleanup(body []byte, result *ConnectionInfo) {
 	}
 
 	deleteInput := apiCallInput{
-		Method:     "DELETE",
+		Method:     httpmethod.Delete,
 		Endpoint:   fmt.Sprintf(WPCorePostById+"?force=true", createdPost.Id),
 		Operation:  "delete test post",
 		OkStatuses: []int{HttpStatusOk.Int(), HttpStatusNoContent.Int()},

@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"strings"
 
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
 // GetPlugins returns a list of installed plugins
 func (c *Client) GetPlugins() ([]PluginInfo, error) {
 	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: WPCorePlugins, Operation: "get plugins list",
+		Method:    httpmethod.Get,
+		Endpoint:  WPCorePlugins,
+		Operation: "get plugins list",
 	})
 	if err != nil {
 		return nil, err
@@ -30,7 +33,9 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(slug))
 
 	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "get plugin",
+		Method:     httpmethod.Get,
+		Endpoint:   endpoint,
+		Operation:  "get plugin",
 		PluginSlug: slug,
 	})
 	if err != nil {

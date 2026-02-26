@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/pkg/apperror"
@@ -201,7 +202,7 @@ type multipartResponse struct {
 
 // doMultipartRequest sends a POST with multipart body and returns status + body.
 func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType string) (*multipartResponse, error) {
-	req, err := http.NewRequest("POST", url, body)
+	req, err := http.NewRequest(httpmethod.Post.Value(), url, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").WithURL(url)
 	}
@@ -232,7 +233,7 @@ func (c *Client) parseZipUploadResponse(input zipUploadResponseInput) (*OnboardU
 	if input.StatusCode != http.StatusOK && input.StatusCode != http.StatusCreated {
 		return nil, &APIError{
 			Operation:    "upload plugin zip",
-			Method:       "POST",
+			Method:       httpmethod.Post.Value(),
 			Endpoint:     input.Endpoint,
 			Url:          input.URL,
 			StatusCode:   input.StatusCode,

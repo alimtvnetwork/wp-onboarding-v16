@@ -5,12 +5,13 @@ import (
 	"io"
 	"net/http"
 
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/pkg/apperror"
 )
 
 // apiCallInput holds common parameters for a WordPress REST API call.
 type apiCallInput struct {
-	Method     string
+	Method     httpmethod.Variant
 	Endpoint   string
 	Body       any
 	Operation  string
@@ -29,7 +30,7 @@ type APICallResponse struct {
 // Unlike doAPICallRaw, it does NOT validate the status code — the caller decides how to handle it.
 // The error return is only for transport-level failures (DNS, timeout, request creation).
 func (c *Client) doAPICallWithStatus(input apiCallInput) (*APICallResponse, error) {
-	resp, err := c.request(input.Method, input.Endpoint, input.Body)
+	resp, err := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if err != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
@@ -63,7 +64,7 @@ func (c *Client) doAPICallRaw(input apiCallInput) ([]byte, error) {
 // doAPICallStream sends the request, validates the status code, and returns the raw HTTP response.
 // The caller is responsible for closing the response body. Use this for streaming responses (e.g. ZIP downloads).
 func (c *Client) doAPICallStream(input apiCallInput) (*http.Response, error) {
-	resp, err := c.request(input.Method, input.Endpoint, input.Body)
+	resp, err := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if err != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
@@ -84,7 +85,7 @@ func (c *Client) doAPICallStream(input apiCallInput) (*http.Response, error) {
 func (c *Client) buildCallError(input apiCallInput, statusCode int, body []byte) *APIError {
 	return &APIError{
 		Operation:    input.Operation,
-		Method:       input.Method,
+		Method:       input.Method.Value(),
 		Endpoint:     input.Endpoint,
 		Url:          c.fullURL(input.Endpoint),
 		StatusCode:   statusCode,

@@ -7,6 +7,7 @@ import (
 
 	"wp-plugin-publish/internal/enums/action"
 	ep "wp-plugin-publish/internal/enums/endpoint"
+	"wp-plugin-publish/internal/enums/http_method"
 	"wp-plugin-publish/internal/enums/stage_status"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -33,9 +34,12 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 
 	endpoint := "/" + namespace + ep.ExportPlugin.String()
 	return doAPICall[ExportPluginResult](c, apiCallInput{
-		Method: "POST", Endpoint: endpoint,
-		Body: PluginSlugRequest{Plugin: slug}, Operation: "export plugin for rollback",
-		PluginSlug: slug, ErrorCode: apperror.ErrWPConnection,
+		Method:     httpmethod.Post,
+		Endpoint:   endpoint,
+		Body:       PluginSlugRequest{Plugin: slug},
+		Operation:  "export plugin for rollback",
+		PluginSlug: slug,
+		ErrorCode:  apperror.ErrWPConnection,
 	})
 }
 
@@ -64,7 +68,9 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ExportSelf)
 	result, err := doAPICall[ExportSelfResult](c, apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "export self via Riseup Asia Uploader",
+		Method:    httpmethod.Get,
+		Endpoint:  endpoint,
+		Operation: "export self via Riseup Asia Uploader",
 		ErrorCode: apperror.ErrWPConnection,
 	})
 	if err != nil {
@@ -114,7 +120,9 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorLogs)
 	return doAPICall[RemoteErrorLogsResult](c, apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "fetch remote error logs",
+		Method:    httpmethod.Get,
+		Endpoint:  endpoint,
+		Operation: "fetch remote error logs",
 		ErrorCode: apperror.ErrWPConnection,
 	})
 }
@@ -170,9 +178,18 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) (*RemoteErro
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
-	endpoint := buildErrorSessionsEndpoint(errorSessionsParams{Namespace: namespace, Level: input.Level, Search: input.Search, SinceID: input.SinceID, Limit: input.Limit, Offset: input.Offset})
+	endpoint := buildErrorSessionsEndpoint(errorSessionsParams{
+		Namespace: namespace,
+		Level:     input.Level,
+		Search:    input.Search,
+		SinceID:   input.SinceID,
+		Limit:     input.Limit,
+		Offset:    input.Offset,
+	})
 	return doAPICall[RemoteErrorSessionsResult](c, apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "fetch remote error sessions",
+		Method:    httpmethod.Get,
+		Endpoint:  endpoint,
+		Operation: "fetch remote error sessions",
 		ErrorCode: apperror.ErrWPConnection,
 	})
 }
