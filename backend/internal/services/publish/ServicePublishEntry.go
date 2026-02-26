@@ -11,6 +11,7 @@ import (
 	publishtype "wp-plugin-publish/internal/enums/publish_type"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/session"
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -86,8 +87,17 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	if err != nil {
 		return apperror.Ok(*result)
 	}
-	result.SessionId = initResult.SessionID
 
+	result.SessionId = initResult.SessionID
+	s.broadcastPublishStart(pluginID, siteID, initResult)
+
+	pctx := s.buildPublishContext(pluginID, siteID, initResult, opts, result)
+
+	return s.executeAndFinalize(ctx, pctx, initResult)
+}
+
+// broadcastPublishStart sends the initial progress and session log.
+func (s *Service) broadcastPublishStart(pluginID, siteID int64, initResult *publishInitResult) {
 	startProgress := ProgressInput{
 		PluginId:  pluginID,
 		SiteId:    siteID,
@@ -105,8 +115,11 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		Message:   fmt.Sprintf("Starting publish for %s to %s", initResult.PluginInfo.Name, initResult.SiteInfo.Name),
 	}
 	s.sessionLog(initLog)
+}
 
-	pctx := &publishContext{
+// buildPublishContext constructs the publishContext struct.
+func (s *Service) buildPublishContext(pluginID, siteID int64, initResult *publishInitResult, opts PublishOptions, result *PublishResult) *publishContext {
+	return &publishContext{
 		PluginId:   pluginID,
 		SiteId:     siteID,
 		SessionId:  initResult.SessionID,
@@ -115,14 +128,17 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		Result:     result,
 		StartTime:  time.Now(),
 	}
+}
 
+// executeAndFinalize runs the pipeline and finalizes the result.
+func (s *Service) executeAndFinalize(ctx context.Context, pctx *publishContext, initResult *publishInitResult) apperror.Result[PublishResult] {
 	if err := s.runPublishPipeline(ctx, pctx, initResult.SiteInfo, initResult.Password); err != nil {
-		return apperror.Ok(*result)
+		return apperror.Ok(*pctx.Result)
 	}
 
 	s.finalizePublishResult(pctx)
 
-	return apperror.Ok(*result)
+	return apperror.Ok(*pctx.Result)
 }
 
 // initPublishContext loads plugin, site, credentials, and starts a session.
@@ -130,12 +146,14 @@ func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
 		s.failInit(pluginID, siteID, pluginResult.AppError(), result)
+
 		return nil, pluginResult.AppError()
 	}
 
 	creds, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
 		s.failInit(pluginID, siteID, err, result)
+
 		return nil, err
 	}
 
@@ -148,6 +166,7 @@ func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64
 		Password:   creds.Password,
 		SessionID:  sessionID,
 	}
+
 	return initResult, nil
 }
 

@@ -156,25 +156,4 @@ func escapePathSegmentPreservingPercent(s string) string {
 	return url.PathEscape(s)
 }
 
-// TestConnection verifies the API is accessible and credentials are valid
-// This performs multiple checks: site reachability, REST API availability, auth, and write permissions
-func (c *Client) TestConnection() (*ConnectionInfo, error) {
-	result := &ConnectionInfo{Connected: false, Username: c.username}
-
-	if err := c.testDnsReachability(result); err != nil {
-		return nil, err
-	}
-	if err := c.testRestApiAvailability(result); err != nil {
-		return nil, err
-	}
-	if err := c.testAuthentication(result); err != nil {
-		return nil, err
-	}
-	if err := c.testPluginAccess(result); err != nil {
-		return nil, err
-	}
-	c.testWritePermissions(result)
-
-	result.IsConnected = true
-	return result, nil
-}
+// TestConnection is implemented in ClientConnectionSteps.go

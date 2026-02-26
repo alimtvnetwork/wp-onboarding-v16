@@ -1,15 +1,10 @@
 package publish
 
 import (
-	"encoding/base64"
 	"fmt"
-	"os"
-	"path/filepath"
-	"time"
 
 	loglevel "wp-plugin-publish/internal/enums/log_level"
 	publishstep "wp-plugin-publish/internal/enums/publish_step"
-	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -18,31 +13,28 @@ import (
 // executeBackupStage runs the backup stage of the publish pipeline
 func (s *Service) executeBackupStage(pctx *publishContext) Stage {
 	return s.runStage("backup", func() error {
-		backupProgress := ProgressInput{
-			PluginId: pctx.PluginId,
-			SiteId:   pctx.SiteId,
-			Step:     publishstep.Backup,
-			Progress: 10,
-			Message:  "Creating backup...",
-		}
-		s.broadcastProgress(backupProgress)
-
-		backupDetails := toDetails(BackupStageDetails{
-			MappingID:  pctx.Mapping.ID,
-			RemoteSlug: pctx.Mapping.RemoteSlug,
-		})
-		backupLog := DetailedLogInput{
-			PluginId: pctx.PluginId,
-			SiteId:   pctx.SiteId,
-			Level:    loglevel.Info,
-			Step:     publishstep.Backup,
-			Message:  "Initiating remote plugin backup",
-			Details:  backupDetails,
-		}
-		s.broadcastDetailedLog(backupLog)
+		s.broadcastProgress(pctx.progress(publishstep.Backup, 10, "Creating backup..."))
+		s.broadcastBackupInitLog(pctx)
 
 		return nil
 	})
+}
+
+// broadcastBackupInitLog sends the backup initiation log.
+func (s *Service) broadcastBackupInitLog(pctx *publishContext) {
+	backupDetails := toDetails(BackupStageDetails{
+		MappingID:  pctx.Mapping.ID,
+		RemoteSlug: pctx.Mapping.RemoteSlug,
+	})
+	backupLog := DetailedLogInput{
+		PluginId: pctx.PluginId,
+		SiteId:   pctx.SiteId,
+		Level:    loglevel.Info,
+		Step:     publishstep.Backup,
+		Message:  "Initiating remote plugin backup",
+		Details:  backupDetails,
+	}
+	s.broadcastDetailedLog(backupLog)
 }
 
 // PackageStageResult holds the output of the package stage.
@@ -58,14 +50,7 @@ func (s *Service) executePackageStage(pctx *publishContext) PackageStageResult {
 	var fileCount int
 
 	stage := s.runStage("package", func() error {
-		pkgProgress := ProgressInput{
-			PluginId: pctx.PluginId,
-			SiteId:   pctx.SiteId,
-			Step:     publishstep.Packaging,
-			Progress: 30,
-			Message:  "Building package...",
-		}
-		s.broadcastProgress(pkgProgress)
+		s.broadcastProgress(pctx.progress(publishstep.Packaging, 30, "Building package..."))
 
 		var err error
 		buildResult, err := s.buildPluginPackage(pctx)
@@ -93,6 +78,20 @@ type PackageBuildResult struct {
 
 // buildPluginPackage creates the ZIP for full or selective mode.
 func (s *Service) buildPluginPackage(pctx *publishContext) (*PackageBuildResult, error) {
+	s.broadcastPackageStartLog(pctx)
+
+	buildResult, err := s.buildZip(pctx)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create plugin ZIP package")
+	}
+
+	s.logZipIfCreated(pctx, buildResult)
+
+	return buildResult, nil
+}
+
+// broadcastPackageStartLog sends the package initiation log.
+func (s *Service) broadcastPackageStartLog(pctx *publishContext) {
 	pkgDetails := toDetails(PackageDetails{
 		PluginPath:      pctx.PluginInfo.Path,
 		PluginName:      pctx.PluginInfo.Name,
@@ -108,53 +107,59 @@ func (s *Service) buildPluginPackage(pctx *publishContext) (*PackageBuildResult,
 		Details:  pkgDetails,
 	}
 	s.broadcastDetailedLog(pkgLog)
+}
 
-	buildResult, err := s.buildZip(pctx)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create plugin ZIP package")
+// logZipIfCreated logs ZIP creation details if a ZIP was produced.
+func (s *Service) logZipIfCreated(pctx *publishContext, buildResult *PackageBuildResult) {
+	if buildResult.ZipPath == "" {
+		return
 	}
 
-	if buildResult.ZipPath != "" {
-		zipInput := logZipInput{
-			PluginId:  pctx.PluginId,
-			SiteId:    pctx.SiteId,
-			ZipPath:   buildResult.ZipPath,
-			FileCount: buildResult.FileCount,
-		}
-		s.logZipCreated(zipInput)
+	zipInput := logZipInput{
+		PluginId:  pctx.PluginId,
+		SiteId:    pctx.SiteId,
+		ZipPath:   buildResult.ZipPath,
+		FileCount: buildResult.FileCount,
 	}
-
-	return buildResult, nil
+	s.logZipCreated(zipInput)
 }
 
 // buildZip delegates to selective or full zip creation.
 func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, error) {
-	if pctx.Options.Mode.IsSelected() && len(pctx.Options.Files) > 0 {
-		selectDetails := toDetails(SelectedFilesDetails{
-			SelectedFiles: pctx.Options.Files,
-		})
-		selectLog := DetailedLogInput{
-			PluginId: pctx.PluginId,
-			SiteId:   pctx.SiteId,
-			Level:    loglevel.Info,
-			Step:     publishstep.Package,
-			Message:  fmt.Sprintf("Creating selective ZIP with %d files", len(pctx.Options.Files)),
-			Details:  selectDetails,
-		}
-		s.broadcastDetailedLog(selectLog)
+	isSelectiveMode := pctx.Options.Mode.IsSelected() && len(pctx.Options.Files) > 0
 
-		path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
-		if err != nil {
-			return nil, err
-		}
-
-		result := &PackageBuildResult{
-			ZipPath:   path,
-			FileCount: len(pctx.Options.Files),
-		}
-		return result, nil
+	if isSelectiveMode {
+		return s.buildSelectiveZipResult(pctx)
 	}
 
+	return s.buildFullZipResult(pctx)
+}
+
+// buildSelectiveZipResult creates a selective ZIP with chosen files.
+func (s *Service) buildSelectiveZipResult(pctx *publishContext) (*PackageBuildResult, error) {
+	selectDetails := toDetails(SelectedFilesDetails{
+		SelectedFiles: pctx.Options.Files,
+	})
+	selectLog := DetailedLogInput{
+		PluginId: pctx.PluginId,
+		SiteId:   pctx.SiteId,
+		Level:    loglevel.Info,
+		Step:     publishstep.Package,
+		Message:  fmt.Sprintf("Creating selective ZIP with %d files", len(pctx.Options.Files)),
+		Details:  selectDetails,
+	}
+	s.broadcastDetailedLog(selectLog)
+
+	path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PackageBuildResult{ZipPath: path, FileCount: len(pctx.Options.Files)}, nil
+}
+
+// buildFullZipResult creates a full ZIP with all plugin files.
+func (s *Service) buildFullZipResult(pctx *publishContext) (*PackageBuildResult, error) {
 	fullLog := DetailedLogInput{
 		PluginId: pctx.PluginId,
 		SiteId:   pctx.SiteId,
@@ -169,11 +174,7 @@ func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, error) {
 		return nil, err
 	}
 
-	result := &PackageBuildResult{
-		ZipPath:   path,
-		FileCount: pctx.PluginInfo.FileCount,
-	}
-	return result, nil
+	return &PackageBuildResult{ZipPath: path, FileCount: pctx.PluginInfo.FileCount}, nil
 }
 
 // ─── Pre-Upload Backup ──────────────────────────────────────────────────────

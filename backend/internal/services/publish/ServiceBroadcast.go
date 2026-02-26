@@ -132,35 +132,56 @@ func (s *Service) broadcastProgress(input ProgressInput) {
 		return
 	}
 
-	eventType := resolveProgressEvent(input.Step)
-	stage := mapStepToStage(input.Step)
-	status := mapStepToStatus(input.Step)
+	data := buildProgressData(input)
 
-	data := ws.PublishStageProgressData{
+	if input.SessionId != "" {
+		s.broadcastSessionProgress(input, data)
+	} else {
+		s.broadcastNonSessionProgress(input, data)
+	}
+}
+
+// buildProgressData constructs the WebSocket progress event data.
+func buildProgressData(input ProgressInput) ws.PublishStageProgressData {
+	return ws.PublishStageProgressData{
 		PluginID: input.PluginId,
 		SiteID:   input.SiteId,
-		Stage:    stage,
+		Stage:    mapStepToStage(input.Step),
 		Step:     input.Step.Value(),
-		Status:   status,
+		Status:   mapStepToStatus(input.Step),
 		Progress: input.Progress,
 		Total:    100,
 		Message:  input.Message,
 	}
+}
 
-	if input.SessionId != "" {
-		ws.BroadcastWithSession(s.wsHub, eventType, data, input.SessionId)
-		s.emitSessionProgressLog(input, stage)
-	} else {
-		ws.Broadcast(s.wsHub, eventType, data)
-		s.emitProgressLog(input, stage)
-	}
+// broadcastSessionProgress sends progress with session context.
+func (s *Service) broadcastSessionProgress(input ProgressInput, data ws.PublishStageProgressData) {
+	eventType := resolveProgressEvent(input.Step)
+	ws.BroadcastWithSession(s.wsHub, eventType, data, input.SessionId)
+	s.emitSessionProgressLog(input, mapStepToStage(input.Step))
+}
+
+// broadcastNonSessionProgress sends progress without session context.
+func (s *Service) broadcastNonSessionProgress(input ProgressInput, data ws.PublishStageProgressData) {
+	eventType := resolveProgressEvent(input.Step)
+	ws.Broadcast(s.wsHub, eventType, data)
+	s.emitProgressLog(input, mapStepToStage(input.Step))
 }
 
 // emitProgressLog logs a non-session progress event.
 func (s *Service) emitProgressLog(input ProgressInput, stage string) {
 	logLevel := resolveStepLogLevel(input.Step)
 
-	logEntry := ws.OperationLogInput{
+	logEntry := buildProgressLogEntry(input, stage, logLevel)
+	s.wsHub.BroadcastPublishLog(logEntry)
+
+	s.logProgressDebug(input, stage)
+}
+
+// buildProgressLogEntry constructs a log entry for progress events.
+func buildProgressLogEntry(input ProgressInput, stage string, logLevel loglevel.Variant) ws.OperationLogInput {
+	return ws.OperationLogInput{
 		PluginID: input.PluginId,
 		SiteID:   input.SiteId,
 		Entry: ws.OperationLogEntry{
@@ -169,8 +190,10 @@ func (s *Service) emitProgressLog(input ProgressInput, stage string) {
 			Message: input.Message,
 		},
 	}
-	s.wsHub.BroadcastPublishLog(logEntry)
+}
 
+// logProgressDebug writes a debug log for progress events.
+func (s *Service) logProgressDebug(input ProgressInput, stage string) {
 	s.log.Debug("Publish progress",
 		"pluginId", input.PluginId,
 		"siteId", input.SiteId,
@@ -185,7 +208,15 @@ func (s *Service) emitProgressLog(input ProgressInput, stage string) {
 func (s *Service) emitSessionProgressLog(input ProgressInput, stage string) {
 	logLevel := resolveStepLogLevel(input.Step)
 
-	logEntry := ws.OperationLogInput{
+	logEntry := buildSessionProgressLogEntry(input, stage, logLevel)
+	s.wsHub.BroadcastPublishLogWithSession(logEntry)
+
+	s.emitSessionLogAndDebug(input, stage, logLevel)
+}
+
+// buildSessionProgressLogEntry constructs a session-scoped log entry.
+func buildSessionProgressLogEntry(input ProgressInput, stage string, logLevel loglevel.Variant) ws.OperationLogInput {
+	return ws.OperationLogInput{
 		PluginID:  input.PluginId,
 		SiteID:    input.SiteId,
 		SessionID: input.SessionId,
@@ -195,8 +226,10 @@ func (s *Service) emitSessionProgressLog(input ProgressInput, stage string) {
 			Message: input.Message,
 		},
 	}
-	s.wsHub.BroadcastPublishLogWithSession(logEntry)
+}
 
+// emitSessionLogAndDebug writes session log and debug output for progress.
+func (s *Service) emitSessionLogAndDebug(input ProgressInput, stage string, logLevel loglevel.Variant) {
 	sessionLog := sessionLogInput{
 		SessionId: input.SessionId,
 		Level:     logLevel,
@@ -245,7 +278,15 @@ func (s *Service) broadcastStageStatus(input StageStatusInput) {
 		return
 	}
 
-	stageData := ws.PublishStageStatusData{
+	stageData := buildStageStatusData(input)
+	ws.Broadcast(s.wsHub, ws.EventPublishProgress, stageData)
+
+	s.emitStageStatusLog(input)
+}
+
+// buildStageStatusData constructs the WebSocket stage status data.
+func buildStageStatusData(input StageStatusInput) ws.PublishStageStatusData {
+	return ws.PublishStageStatusData{
 		PluginID: input.PluginId,
 		SiteID:   input.SiteId,
 		Stage:    input.Stage.Value(),
@@ -256,8 +297,10 @@ func (s *Service) broadcastStageStatus(input StageStatusInput) {
 		Message:  input.Message,
 		Details:  input.Details,
 	}
-	ws.Broadcast(s.wsHub, ws.EventPublishProgress, stageData)
+}
 
+// emitStageStatusLog writes the operation log entry for stage status.
+func (s *Service) emitStageStatusLog(input StageStatusInput) {
 	level := loglevel.Info
 	if input.Status == loglevel.Error.Lower() {
 		level = loglevel.Error
@@ -299,31 +342,34 @@ func (s *Service) broadcastStageComplete(input StageCompleteInput) {
 
 // broadcastStageLog sends a detailed log entry with structured context
 func (s *Service) broadcastStageLog(input StageLogInput) {
-	message := input.Ctx.What
-	if input.Ctx.Result != "" {
-		message = fmt.Sprintf("%s → %s", input.Ctx.What, input.Ctx.Result)
-	}
-
+	message := resolveStageLogMessage(input.Ctx)
 	detailsJSON, _ := json.Marshal(input.Ctx)
 
-	detailedLog := DetailedLogInput{
+	s.broadcastDetailedLog(DetailedLogInput{
 		PluginId: input.PluginId,
 		SiteId:   input.SiteId,
 		Level:    input.Level,
 		Step:     input.Stage,
 		Message:  message,
 		Details:  detailsJSON,
-	}
-	s.broadcastDetailedLog(detailedLog)
+	})
 
-	sessionLog := sessionLogInput{
+	s.sessionLog(sessionLogInput{
 		SessionId: input.SessionId,
 		Level:     input.Level,
 		Step:      input.Stage,
 		Message:   message,
 		Details:   detailsJSON,
+	})
+}
+
+// resolveStageLogMessage builds the message string from stage context.
+func resolveStageLogMessage(ctx StageContext) string {
+	if ctx.Result != "" {
+		return fmt.Sprintf("%s → %s", ctx.What, ctx.Result)
 	}
-	s.sessionLog(sessionLog)
+
+	return ctx.What
 }
 
 // broadcastDetailedLog sends a detailed log entry with structured data
@@ -332,6 +378,12 @@ func (s *Service) broadcastDetailedLog(input DetailedLogInput) {
 		return
 	}
 
+	s.emitDetailedLogEntry(input)
+	s.emitDetailedLogToLogger(input)
+}
+
+// emitDetailedLogEntry broadcasts the log entry to WebSocket.
+func (s *Service) emitDetailedLogEntry(input DetailedLogInput) {
 	logEntry := ws.OperationLogInput{
 		PluginID: input.PluginId,
 		SiteID:   input.SiteId,
@@ -343,7 +395,10 @@ func (s *Service) broadcastDetailedLog(input DetailedLogInput) {
 		},
 	}
 	s.wsHub.BroadcastPublishLog(logEntry)
+}
 
+// emitDetailedLogToLogger writes the detailed log to the structured logger.
+func (s *Service) emitDetailedLogToLogger(input DetailedLogInput) {
 	names := s.resolveNames(input.PluginId, input.SiteId, input.Details)
 
 	ctx := logContext{

@@ -33,7 +33,14 @@ func (s *Service) handleRollback(ctx context.Context, pctx *publishContext, preU
 // executeRollbackSteps deactivates the broken plugin and optionally re-uploads the backup.
 func (s *Service) executeRollbackSteps(ctx context.Context, pctx *publishContext, preUploadBackupZip string, activateStage Stage) error {
 	s.broadcastProgress(pctx.progress(publishstep.Rollback, 85, "Activation failed — rolling back..."))
+	s.broadcastRollbackStartLog(pctx, activateStage)
+	s.rollbackDeactivate(pctx)
 
+	return s.rollbackRestore(ctx, pctx, preUploadBackupZip)
+}
+
+// broadcastRollbackStartLog sends the rollback initiation log.
+func (s *Service) broadcastRollbackStartLog(pctx *publishContext, activateStage Stage) {
 	rollbackCtx := StageContext{
 		What:  "Rolling back plugin after activation failure",
 		Why:   fmt.Sprintf("Activation failed: %s", activateStage.Message),
@@ -41,10 +48,6 @@ func (s *Service) executeRollbackSteps(ctx context.Context, pctx *publishContext
 	}
 	rollbackLog := pctx.stageLog(loglevel.Warn, publishstep.Rollback, rollbackCtx)
 	s.broadcastStageLog(rollbackLog)
-
-	s.rollbackDeactivate(pctx)
-
-	return s.rollbackRestore(ctx, pctx, preUploadBackupZip)
 }
 
 // rollbackDeactivate deactivates the broken plugin during rollback.
@@ -68,26 +71,35 @@ func (s *Service) rollbackDeactivate(pctx *publishContext) {
 // rollbackRestore re-uploads the pre-upload backup if available.
 func (s *Service) rollbackRestore(ctx context.Context, pctx *publishContext, preUploadBackupZip string) error {
 	if preUploadBackupZip == "" {
-		noBackupCtx := StageContext{
-			What:   "No pre-upload backup available",
-			Result: "Plugin deactivated but files not restored. Manual intervention may be needed.",
-		}
-		noBackupLog := pctx.stageLog(loglevel.Warn, publishstep.Rollback, noBackupCtx)
-		s.broadcastStageLog(noBackupLog)
-
-		return nil
+		return s.reportNoBackupAvailable(pctx)
 	}
 
+	return s.performRollbackUpload(ctx, pctx, preUploadBackupZip)
+}
+
+// reportNoBackupAvailable logs that no backup is available for rollback.
+func (s *Service) reportNoBackupAvailable(pctx *publishContext) error {
+	noBackupCtx := StageContext{
+		What:   "No pre-upload backup available",
+		Result: "Plugin deactivated but files not restored. Manual intervention may be needed.",
+	}
+	noBackupLog := pctx.stageLog(loglevel.Warn, publishstep.Rollback, noBackupCtx)
+	s.broadcastStageLog(noBackupLog)
+
+	return nil
+}
+
+// performRollbackUpload re-uploads the backup ZIP and logs the result.
+func (s *Service) performRollbackUpload(ctx context.Context, pctx *publishContext, preUploadBackupZip string) error {
 	restoreCtx := StageContext{
 		What: "Re-uploading pre-publish backup to restore previous version",
 	}
 	restoreLog := pctx.stageLog(loglevel.Info, publishstep.Rollback, restoreCtx)
 	s.broadcastStageLog(restoreLog)
 
-	_, _, _, uploadErr := s.uploadPlugin(ctx, pctx.WPClient, preUploadBackupZip, pctx.Mapping.RemoteSlug)
-
-	if uploadErr != nil {
-		return apperror.Wrap(uploadErr, apperror.ErrWPConnection, "rollback upload failed")
+	uploadResult := s.uploadPlugin(ctx, pctx.WPClient, preUploadBackupZip, pctx.Mapping.RemoteSlug)
+	if uploadResult.HasError() {
+		return apperror.Wrap(uploadResult.AppError(), apperror.ErrWPConnection, "rollback upload failed")
 	}
 
 	doneCtx := StageContext{
@@ -103,26 +115,36 @@ func (s *Service) rollbackRestore(ctx context.Context, pctx *publishContext, pre
 // reportRollbackOutcome logs and sets the final rollback status on the result.
 func (s *Service) reportRollbackOutcome(pctx *publishContext, rollbackStage Stage, result *PublishResult) {
 	if rollbackStage.Status.IsFailed() {
-		result.RollbackStatus = enumstatus.Failed.String()
-		result.RollbackMessage = rollbackStage.Message
-
-		failCtx := StageContext{
-			What:   "Rollback failed",
-			Result: rollbackStage.Message,
-		}
-		failLog := pctx.stageLog(loglevel.Error, publishstep.Rollback, failCtx)
-		s.broadcastStageLog(failLog)
+		s.reportRollbackFailed(pctx, rollbackStage, result)
 	} else {
-		result.RollbackStatus = enumstatus.Success.String()
-		result.RollbackMessage = "Previous version restored"
-
-		successCtx := StageContext{
-			What:   "Rollback completed successfully",
-			Result: "Site should be stable with previous plugin version",
-		}
-		successLog := pctx.stageLog(loglevel.Info, publishstep.Rollback, successCtx)
-		s.broadcastStageLog(successLog)
+		s.reportRollbackSuccess(pctx, result)
 	}
+}
+
+// reportRollbackFailed sets the failed rollback status and logs it.
+func (s *Service) reportRollbackFailed(pctx *publishContext, rollbackStage Stage, result *PublishResult) {
+	result.RollbackStatus = enumstatus.Failed.String()
+	result.RollbackMessage = rollbackStage.Message
+
+	failCtx := StageContext{
+		What:   "Rollback failed",
+		Result: rollbackStage.Message,
+	}
+	failLog := pctx.stageLog(loglevel.Error, publishstep.Rollback, failCtx)
+	s.broadcastStageLog(failLog)
+}
+
+// reportRollbackSuccess sets the successful rollback status and logs it.
+func (s *Service) reportRollbackSuccess(pctx *publishContext, result *PublishResult) {
+	result.RollbackStatus = enumstatus.Success.String()
+	result.RollbackMessage = "Previous version restored"
+
+	successCtx := StageContext{
+		What:   "Rollback completed successfully",
+		Result: "Site should be stable with previous plugin version",
+	}
+	successLog := pctx.stageLog(loglevel.Info, publishstep.Rollback, successCtx)
+	s.broadcastStageLog(successLog)
 }
 
 // ─── Cleanup ─────────────────────────────────────────────────────────────────
@@ -130,23 +152,7 @@ func (s *Service) reportRollbackOutcome(pctx *publishContext, rollbackStage Stag
 // executeCleanupStage marks files as synced
 func (s *Service) executeCleanupStage(ctx context.Context, pctx *publishContext) Stage {
 	return s.runStage("cleanup", func() error {
-		cleanProgress := ProgressInput{
-			PluginId: pctx.PluginId,
-			SiteId:   pctx.SiteId,
-			Step:     publishstep.Cleanup,
-			Progress: 95,
-			Message:  "Marking files as synced...",
-		}
-		s.broadcastProgress(cleanProgress)
-
-		cleanLog := DetailedLogInput{
-			PluginId: pctx.PluginId,
-			SiteId:   pctx.SiteId,
-			Level:    loglevel.Info,
-			Step:     publishstep.Cleanup,
-			Message:  "Updating local sync state",
-		}
-		s.broadcastDetailedLog(cleanLog)
+		s.broadcastCleanupProgress(pctx)
 
 		if pctx.Options.Mode.IsSelected() && len(pctx.Options.Files) > 0 {
 			return s.syncService.MarkSynced(ctx, pctx.PluginId, pctx.SiteId, pctx.Options.Files)
@@ -154,6 +160,20 @@ func (s *Service) executeCleanupStage(ctx context.Context, pctx *publishContext)
 
 		return s.syncService.ClearChanges(ctx, pctx.PluginId)
 	})
+}
+
+// broadcastCleanupProgress sends cleanup progress and log.
+func (s *Service) broadcastCleanupProgress(pctx *publishContext) {
+	s.broadcastProgress(pctx.progress(publishstep.Cleanup, 95, "Marking files as synced..."))
+
+	cleanLog := DetailedLogInput{
+		PluginId: pctx.PluginId,
+		SiteId:   pctx.SiteId,
+		Level:    loglevel.Info,
+		Step:     publishstep.Cleanup,
+		Message:  "Updating local sync state",
+	}
+	s.broadcastDetailedLog(cleanLog)
 }
 
 // countFilesUpdated returns the number of files updated based on publish mode
@@ -170,12 +190,23 @@ func (s *Service) countFilesUpdated(options PublishOptions, pluginInfo models.Pl
 // broadcastCompletion sends the final publish status broadcast
 func (s *Service) broadcastCompletion(pctx *publishContext) {
 	completionStep, completionMessage := resolveCompletionStatus(pctx.Result)
+	logLevel := resolveCompletionLogLevel(pctx.Result)
 
-	logLevel := loglevel.Info
-	if !pctx.Result.IsSuccess {
-		logLevel = loglevel.Error
+	s.broadcastCompletionLog(pctx, logLevel, completionMessage)
+	s.broadcastProgress(pctx.progress(completionStep, 100, completionMessage))
+}
+
+// resolveCompletionLogLevel returns the appropriate log level for completion.
+func resolveCompletionLogLevel(result *PublishResult) loglevel.Variant {
+	if !result.IsSuccess {
+		return loglevel.Error
 	}
 
+	return loglevel.Info
+}
+
+// broadcastCompletionLog sends the completion detailed log.
+func (s *Service) broadcastCompletionLog(pctx *publishContext, logLevel loglevel.Variant, message string) {
 	completionDetails := toDetails(CompletionDetails{
 		IsSuccess:    pctx.Result.IsSuccess,
 		FilesUpdated: pctx.Result.FilesUpdated,
@@ -186,19 +217,10 @@ func (s *Service) broadcastCompletion(pctx *publishContext) {
 		SiteId:   pctx.SiteId,
 		Level:    logLevel,
 		Step:     publishstep.Complete,
-		Message:  completionMessage,
+		Message:  message,
 		Details:  completionDetails,
 	}
 	s.broadcastDetailedLog(completionLog)
-
-	completionProgress := ProgressInput{
-		PluginId: pctx.PluginId,
-		SiteId:   pctx.SiteId,
-		Step:     completionStep,
-		Progress: 100,
-		Message:  completionMessage,
-	}
-	s.broadcastProgress(completionProgress)
 }
 
 // resolveCompletionStatus returns step and message for completion broadcast.

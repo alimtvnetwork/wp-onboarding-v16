@@ -22,12 +22,7 @@ func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, 
 		return s.failPipeline(pctx, err, pctx.Result)
 	}
 
-	s.logConnect(pctx.PluginId, pctx.SiteId, siteInfo)
-	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
-
-	pctx.WPClient = wpClient
-	pctx.Mapping = mapping
-	pctx.SiteInfo = siteInfo
+	s.initPipelineContext(pctx, siteInfo, password, mapping)
 
 	if pctx.Options.IsCreateBackup {
 		if err := s.runBackupStage(pctx); err != nil {
@@ -36,6 +31,16 @@ func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, 
 	}
 
 	return s.runUploadAndActivate(ctx, pctx)
+}
+
+// initPipelineContext sets up the WP client and context fields.
+func (s *Service) initPipelineContext(pctx *publishContext, siteInfo *models.Site, password string, mapping *models.PluginMapping) {
+	s.logConnect(pctx.PluginId, pctx.SiteId, siteInfo)
+	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+
+	pctx.WPClient = wpClient
+	pctx.Mapping = mapping
+	pctx.SiteInfo = siteInfo
 }
 
 // failPipeline handles a pipeline init failure.
@@ -80,21 +85,26 @@ func (s *Service) runBackupStage(pctx *publishContext) error {
 	pctx.Result.Stages = append(pctx.Result.Stages, stage)
 
 	if stage.Status.IsFailed() {
-		pctx.Result.ErrorMessage = stage.Message
-
-		failProgress := ProgressInput{
-			PluginId: pctx.PluginId,
-			SiteId:   pctx.SiteId,
-			Step:     publishstep.Failed,
-			Progress: 10,
-			Message:  stage.Message,
-		}
-		s.broadcastProgress(failProgress)
-
-		return fmt.Errorf("%s", stage.Message)
+		return s.reportBackupFailure(pctx, stage)
 	}
 
 	return nil
+}
+
+// reportBackupFailure records and broadcasts a backup stage failure.
+func (s *Service) reportBackupFailure(pctx *publishContext, stage Stage) error {
+	pctx.Result.ErrorMessage = stage.Message
+
+	failProgress := ProgressInput{
+		PluginId: pctx.PluginId,
+		SiteId:   pctx.SiteId,
+		Step:     publishstep.Failed,
+		Progress: 10,
+		Message:  stage.Message,
+	}
+	s.broadcastProgress(failProgress)
+
+	return fmt.Errorf("%s", stage.Message)
 }
 
 // runUploadAndActivate handles package, upload, activate, and cleanup stages.
@@ -106,6 +116,11 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 		return s.failStage(pctx, publishstep.Package, pkgResult.Stage)
 	}
 
+	return s.uploadActivateAndCleanup(ctx, pctx, pkgResult)
+}
+
+// uploadActivateAndCleanup handles the post-packaging stages.
+func (s *Service) uploadActivateAndCleanup(ctx context.Context, pctx *publishContext, pkgResult PackageStageResult) error {
 	isPublishFailed := false
 	preUploadBackupZip := s.createPreUploadBackup(ctx, pctx)
 
@@ -122,9 +137,12 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 	}
 	defer s.cleanupZip(cleanupInput)
 
-	if err := s.runUploadStage(ctx, pctx, pkgResult.ZipPath, preUploadBackupZip); err != nil {
-		isPublishFailed = true
+	return s.executeUploadAndFinish(ctx, pctx, pkgResult, preUploadBackupZip)
+}
 
+// executeUploadAndFinish runs upload stage and counts files updated.
+func (s *Service) executeUploadAndFinish(ctx context.Context, pctx *publishContext, pkgResult PackageStageResult, preUploadBackupZip string) error {
+	if err := s.runUploadStage(ctx, pctx, pkgResult.ZipPath, preUploadBackupZip); err != nil {
 		return err
 	}
 
@@ -145,15 +163,7 @@ func (s *Service) failStage(pctx *publishContext, step publishstep.Variant, stag
 		Message:  fmt.Sprintf("%s failed: %s", step.Value(), stage.Message),
 	}
 	s.broadcastDetailedLog(failLog)
-
-	failProgress := ProgressInput{
-		PluginId: pctx.PluginId,
-		SiteId:   pctx.SiteId,
-		Step:     publishstep.Failed,
-		Progress: 30,
-		Message:  stage.Message,
-	}
-	s.broadcastProgress(failProgress)
+	s.broadcastProgress(pctx.progress(publishstep.Failed, 30, stage.Message))
 
 	return fmt.Errorf("%s", stage.Message)
 }
@@ -163,6 +173,19 @@ func (s *Service) runUploadStage(ctx context.Context, pctx *publishContext, zipP
 	isAlreadyActivated, uploadStage := s.executeUploadStage(ctx, pctx, zipPath)
 	pctx.Result.Stages = append(pctx.Result.Stages, uploadStage)
 
+	s.broadcastUploadComplete(pctx, uploadStage, isAlreadyActivated)
+
+	if uploadStage.Status.IsFailed() {
+		return s.reportUploadFailure(pctx, uploadStage)
+	}
+
+	s.runActivateAndCleanup(ctx, pctx, isAlreadyActivated, preUploadBackupZip)
+
+	return nil
+}
+
+// broadcastUploadComplete sends the upload stage complete event.
+func (s *Service) broadcastUploadComplete(pctx *publishContext, uploadStage Stage, isAlreadyActivated bool) {
 	uploadDetails := toDetails(UploadStageDetails{
 		RemoteSlug: pctx.Mapping.RemoteSlug,
 		Activated:  isAlreadyActivated,
@@ -174,17 +197,14 @@ func (s *Service) runUploadStage(ctx context.Context, pctx *publishContext, zipP
 		uploadDetails,
 	)
 	s.broadcastStageComplete(uploadComplete)
+}
 
-	if uploadStage.Status.IsFailed() {
-		pctx.Result.ErrorMessage = uploadStage.Message
-		s.broadcastProgress(pctx.progress(publishstep.Failed, 60, uploadStage.Message))
+// reportUploadFailure records and broadcasts an upload failure.
+func (s *Service) reportUploadFailure(pctx *publishContext, uploadStage Stage) error {
+	pctx.Result.ErrorMessage = uploadStage.Message
+	s.broadcastProgress(pctx.progress(publishstep.Failed, 60, uploadStage.Message))
 
-		return fmt.Errorf("%s", uploadStage.Message)
-	}
-
-	s.runActivateAndCleanup(ctx, pctx, isAlreadyActivated, preUploadBackupZip)
-
-	return nil
+	return fmt.Errorf("%s", uploadStage.Message)
 }
 
 // runActivateAndCleanup handles the activate and cleanup stages.
@@ -192,6 +212,15 @@ func (s *Service) runActivateAndCleanup(ctx context.Context, pctx *publishContex
 	activateStage := s.executeActivateStage(pctx, isAlreadyActivated)
 	pctx.Result.Stages = append(pctx.Result.Stages, activateStage)
 
+	s.broadcastActivateComplete(pctx, activateStage, isAlreadyActivated)
+	s.handleActivateResult(ctx, pctx, activateStage, preUploadBackupZip)
+
+	cleanupStage := s.executeCleanupStage(ctx, pctx)
+	pctx.Result.Stages = append(pctx.Result.Stages, cleanupStage)
+}
+
+// broadcastActivateComplete sends the activate stage complete event.
+func (s *Service) broadcastActivateComplete(pctx *publishContext, activateStage Stage, isAlreadyActivated bool) {
 	activateDetails := toDetails(ActivateSkipDetails{
 		RemoteSlug: pctx.Mapping.RemoteSlug,
 		Skipped:    isAlreadyActivated,
@@ -203,7 +232,10 @@ func (s *Service) runActivateAndCleanup(ctx context.Context, pctx *publishContex
 		activateDetails,
 	)
 	s.broadcastStageComplete(activateComplete)
+}
 
+// handleActivateResult sets activation status and triggers rollback if needed.
+func (s *Service) handleActivateResult(ctx context.Context, pctx *publishContext, activateStage Stage, preUploadBackupZip string) {
 	if activateStage.Status.IsFailed() {
 		pctx.Result.ActivationStatus = loglevel.Error.Lower()
 		pctx.Result.ErrorMessage = activateStage.Message
@@ -211,9 +243,6 @@ func (s *Service) runActivateAndCleanup(ctx context.Context, pctx *publishContex
 	} else {
 		pctx.Result.ActivationStatus = pluginstatus.Active.String()
 	}
-
-	cleanupStage := s.executeCleanupStage(ctx, pctx)
-	pctx.Result.Stages = append(pctx.Result.Stages, cleanupStage)
 }
 
 // finalizePublishResult computes final metrics, broadcasts completion, and records history.
@@ -223,6 +252,12 @@ func (s *Service) finalizePublishResult(pctx *publishContext) {
 	pctx.Result.Duration = time.Since(pctx.StartTime).Milliseconds()
 
 	s.broadcastCompletion(pctx)
+	s.logPublishComplete(pctx)
+	s.recordHistory(pctx.PluginInfo, pctx.SiteInfo, pctx.Options, pctx.Result)
+}
+
+// logPublishComplete writes the final publish log entry.
+func (s *Service) logPublishComplete(pctx *publishContext) {
 	s.log.Info("Plugin published",
 		"pluginId", pctx.PluginId,
 		"siteId", pctx.SiteId,
@@ -231,5 +266,4 @@ func (s *Service) finalizePublishResult(pctx *publishContext) {
 		"duration", pctx.Result.Duration,
 		"success", pctx.Result.IsSuccess,
 	)
-	s.recordHistory(pctx.PluginInfo, pctx.SiteInfo, pctx.Options, pctx.Result)
 }
