@@ -40,7 +40,7 @@ type ClientConfig struct {
 	Password        string
 	Timeout         time.Duration
 	StackTraceDepth int
-	OnProgress      func(step, status, message string, details ProgressDetails)
+	OnProgress      func(event ProgressEvent)
 }
 
 // Client is a WordPress REST API client
@@ -50,7 +50,7 @@ type Client struct {
 	password        string
 	stackTraceDepth int
 	httpClient      *http.Client
-	onProgress      func(step, status, message string, details ProgressDetails)
+	onProgress      func(event ProgressEvent)
 }
 
 // NewClient creates a new WordPress API client
@@ -72,9 +72,9 @@ func NewClient(cfg ClientConfig) *Client {
 }
 
 // progress reports progress if a callback is set
-func (c *Client) progress(step, status, message string, details ProgressDetails) {
+func (c *Client) progress(event ProgressEvent) {
 	if c.onProgress != nil {
-		c.onProgress(step, status, message, details)
+		c.onProgress(event)
 	}
 }
 

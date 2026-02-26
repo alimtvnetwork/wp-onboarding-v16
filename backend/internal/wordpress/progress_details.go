@@ -9,6 +9,15 @@ import "encoding/json"
 // Call sites MUST use toProgress() with a typed struct — never construct raw JSON.
 type ProgressDetails = json.RawMessage
 
+// ProgressEvent bundles all progress callback parameters into a single struct.
+// This replaces the former 4-parameter progress(step, status, message, details) signature.
+type ProgressEvent struct {
+	Step    string
+	Status  string
+	Message string
+	Details ProgressDetails
+}
+
 // toProgress marshals a typed struct into ProgressDetails (json.RawMessage).
 func toProgress[T any](v T) ProgressDetails {
 	data, err := json.Marshal(v)

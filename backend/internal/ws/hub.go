@@ -322,14 +322,8 @@ func (h *Hub) BroadcastError(code, message string, context json.RawMessage) {
 }
 
 // BroadcastConnectionTestProgress sends a connection test progress update
-func (h *Hub) BroadcastConnectionTestProgress(siteId int64, step string, status string, message string, details json.RawMessage) {
-	Broadcast(h, EventConnectionTestProgress, ConnectionTestProgressData{
-		SiteId:  siteId,
-		Step:    step,
-		Status:  status,
-		Message: message,
-		Details: details,
-	})
+func (h *Hub) BroadcastConnectionTestProgress(data ConnectionTestProgressData) {
+	Broadcast(h, EventConnectionTestProgress, data)
 }
 
 // BroadcastLog sends a log message to all clients
@@ -352,92 +346,97 @@ type OperationLogEntry struct {
 	Line      int             `json:",omitempty"` // Source line number
 }
 
+// OperationLogInput holds parameters for operation log broadcasts.
+type OperationLogInput struct {
+	OperationType string
+	PluginID      int64
+	SiteID        int64
+	SessionID     string
+	Entry         OperationLogEntry
+}
+
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
-func (h *Hub) BroadcastOperationLog(operationType string, pluginId, siteId int64, entry OperationLogEntry) {
-	h.BroadcastOperationLogWithSession(operationType, pluginId, siteId, "", entry)
+func (h *Hub) BroadcastOperationLog(input OperationLogInput) {
+	input.SessionID = ""
+	h.BroadcastOperationLogWithSession(input)
 }
 
 // BroadcastOperationLogWithSession sends a detailed operation log entry with session ID
-func (h *Hub) BroadcastOperationLogWithSession(operationType string, pluginId, siteId int64, sessionId string, entry OperationLogEntry) {
-	if entry.Timestamp == "" {
-		entry.Timestamp = formatLogTimestamp()
+func (h *Hub) BroadcastOperationLogWithSession(input OperationLogInput) {
+	if input.Entry.Timestamp == "" {
+		input.Entry.Timestamp = formatLogTimestamp()
 	}
 	BroadcastWithSession(h, EventLog, OperationLogData{
-		OperationType: operationType,
-		PluginId:      pluginId,
-		SiteId:        siteId,
-		SessionId:     sessionId,
-		Log:           entry,
-	}, sessionId)
+		OperationType: input.OperationType,
+		PluginId:      input.PluginID,
+		SiteId:        input.SiteID,
+		SessionId:     input.SessionID,
+		Log:           input.Entry,
+	}, input.SessionID)
 }
 
 // BroadcastPublishLog is a convenience method for publish operation logs
-func (h *Hub) BroadcastPublishLog(pluginId, siteId int64, level, step, message string, details json.RawMessage) {
-	h.BroadcastPublishLogWithSession(pluginId, siteId, "", level, step, message, details)
+func (h *Hub) BroadcastPublishLog(input OperationLogInput) {
+	input.OperationType = "publish"
+	h.BroadcastOperationLog(input)
 }
 
 // BroadcastPublishLogWithSession is a convenience method for publish operation logs with session
-func (h *Hub) BroadcastPublishLogWithSession(pluginId, siteId int64, sessionId, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("publish", pluginId, siteId, sessionId, OperationLogEntry{
-		Level:   level,
-		Step:    step,
-		Message: message,
-		Details: details,
-	})
+func (h *Hub) BroadcastPublishLogWithSession(input OperationLogInput) {
+	input.OperationType = "publish"
+	h.BroadcastOperationLogWithSession(input)
 }
 
 // BroadcastSyncLog is a convenience method for sync operation logs
-func (h *Hub) BroadcastSyncLog(pluginId, siteId int64, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLog("sync", pluginId, siteId, OperationLogEntry{
-		Level:   level,
-		Step:    step,
-		Message: message,
-		Details: details,
-	})
+func (h *Hub) BroadcastSyncLog(input OperationLogInput) {
+	input.OperationType = "sync"
+	h.BroadcastOperationLog(input)
 }
 
 // BroadcastSyncLogWithSession is a convenience method for sync operation logs with session
-func (h *Hub) BroadcastSyncLogWithSession(pluginId, siteId int64, sessionId, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("sync", pluginId, siteId, sessionId, OperationLogEntry{
-		Level:   level,
-		Step:    step,
-		Message: message,
-		Details: details,
-	})
+func (h *Hub) BroadcastSyncLogWithSession(input OperationLogInput) {
+	input.OperationType = "sync"
+	h.BroadcastOperationLogWithSession(input)
 }
 
 // BroadcastBackupLog is a convenience method for backup operation logs
-func (h *Hub) BroadcastBackupLog(pluginId int64, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLog("backup", pluginId, 0, OperationLogEntry{
-		Level:   level,
-		Step:    step,
-		Message: message,
-		Details: details,
-	})
+func (h *Hub) BroadcastBackupLog(input OperationLogInput) {
+	input.OperationType = "backup"
+	h.BroadcastOperationLog(input)
 }
 
 // BroadcastBackupLogWithSession is a convenience method for backup operation logs with session
-func (h *Hub) BroadcastBackupLogWithSession(pluginId int64, sessionId, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("backup", pluginId, 0, sessionId, OperationLogEntry{
-		Level:   level,
-		Step:    step,
-		Message: message,
-		Details: details,
-	})
+func (h *Hub) BroadcastBackupLogWithSession(input OperationLogInput) {
+	input.OperationType = "backup"
+	h.BroadcastOperationLogWithSession(input)
+}
+
+// RemotePluginLogInput holds parameters for remote plugin log broadcasts.
+type RemotePluginLogInput struct {
+	SiteID    int64
+	Action    string
+	SessionID string
+	Level     string
+	Step      string
+	Message   string
+	Details   json.RawMessage
 }
 
 // BroadcastRemotePluginLog is a convenience method for remote plugin action logs
-func (h *Hub) BroadcastRemotePluginLog(siteId int64, action, level, step, message string, details json.RawMessage) {
-	h.BroadcastRemotePluginLogWithSession(siteId, action, "", level, step, message, details)
+func (h *Hub) BroadcastRemotePluginLog(input RemotePluginLogInput) {
+	input.SessionID = ""
+	h.BroadcastRemotePluginLogWithSession(input)
 }
 
 // BroadcastRemotePluginLogWithSession is a convenience method for remote plugin action logs with session
-func (h *Hub) BroadcastRemotePluginLogWithSession(siteId int64, action, sessionId, level, step, message string, details json.RawMessage) {
-	h.BroadcastOperationLogWithSession("remote_plugin_"+action, 0, siteId, sessionId, OperationLogEntry{
-		Level:   level,
-		Step:    step,
-		Message: message,
-		Details: details,
+func (h *Hub) BroadcastRemotePluginLogWithSession(input RemotePluginLogInput) {
+	h.BroadcastOperationLogWithSession(OperationLogInput{
+		OperationType: "remote_plugin_" + input.Action,
+		SiteID:        input.SiteID,
+		SessionID:     input.SessionID,
+		Entry: OperationLogEntry{
+			Level: input.Level, Step: input.Step, Message: input.Message, Details: input.Details,
+		},
 	})
 }
 

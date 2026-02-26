@@ -196,16 +196,21 @@ func mapNotFoundError(err error, message, identifier string) error {
 // UploadPluginZip uploads a plugin ZIP file to WordPress via the legacy Onboard companion plugin.
 // Deprecated: Use UploadPluginViaUploader instead (Riseup Asia Uploader).
 func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug), nil)
+	c.progress(ProgressEvent{
+		Step: "upload", Status: stagestatus.Running.String(),
+		Message: fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug),
+	})
 
 	mutationToken, err := c.RequestMutationToken("upload")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPPluginUpload, "failed to get upload mutation token")
 	}
 
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), toProgress(TokenProgress{
-		TokenLength: len(mutationToken),
-	}))
+	c.progress(ProgressEvent{
+		Step: "upload", Status: stagestatus.Running.String(),
+		Message: fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)),
+		Details: toProgress(TokenProgress{TokenLength: len(mutationToken)}),
+	})
 
 	reqBody, contentType, fileSize, err := c.buildZipMultipartForm(zipPath, pluginSlug)
 	if err != nil {
@@ -278,21 +283,24 @@ func writeZipFormFields(writer *multipart.Writer, file *os.File, zipPath, plugin
 func (c *Client) executeZipUpload(endpoint string, reqBody *bytes.Buffer, contentType string, fileSize int64, zipPath, pluginSlug string) (*OnboardUploadResult, error) {
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("POSTing %d bytes to %s", fileSize, url), toProgress(ZipUploadProgress{
-		ZipSize:  fileSize,
-		ZipFile:  filepath.Base(zipPath),
-		Endpoint: endpoint,
-	}))
+	c.progress(ProgressEvent{
+		Step: "upload", Status: stagestatus.Running.String(),
+		Message: fmt.Sprintf("POSTing %d bytes to %s", fileSize, url),
+		Details: toProgress(ZipUploadProgress{
+			ZipSize: fileSize, ZipFile: filepath.Base(zipPath), Endpoint: endpoint,
+		}),
+	})
 
 	resp, respBody, err := c.doMultipartRequest(url, reqBody, contentType)
 	if err != nil {
 		return nil, err
 	}
 
-	c.progress("upload", stagestatus.Running.String(), fmt.Sprintf("Upload response: %d", resp.StatusCode), toProgress(ResponseProgress{
-		Status: resp.StatusCode,
-		Body:   truncateBody(respBody, 500),
-	}))
+	c.progress(ProgressEvent{
+		Step: "upload", Status: stagestatus.Running.String(),
+		Message: fmt.Sprintf("Upload response: %d", resp.StatusCode),
+		Details: toProgress(ResponseProgress{Status: resp.StatusCode, Body: truncateBody(respBody, 500)}),
+	})
 
 	return c.parseZipUploadResponse(resp.StatusCode, respBody, endpoint, url, pluginSlug)
 }

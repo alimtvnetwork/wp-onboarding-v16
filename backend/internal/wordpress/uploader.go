@@ -163,18 +163,26 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, isActivate
 	}
 	defer uc.ZipFile.Close()
 
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(uc.AbsZipPath), uc.ZipSize, uc.UploadURL), toProgress(UploadInitProgress{
-		ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, URL: uc.UploadURL, Method: "multipart/form-data",
-	}))
+	c.progress(ProgressEvent{
+		Step: action.Upload.String(), Status: stagestatus.Running.String(),
+		Message: fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(uc.AbsZipPath), uc.ZipSize, uc.UploadURL),
+		Details: toProgress(UploadInitProgress{
+			ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, URL: uc.UploadURL, Method: "multipart/form-data",
+		}),
+	})
 
 	body, contentType, err := buildMultipartBody(uc, isActivate, uploadSource)
 	if err != nil {
 		return nil, err
 	}
 
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, isActivate, uc.ZipSize, body.Len()), toProgress(UploadBodyProgress{
-		Slug: uc.Slug, IsActivate: isActivate, ZipSize: uc.ZipSize, BodySize: body.Len(),
-	}))
+	c.progress(ProgressEvent{
+		Step: action.Upload.String(), Status: stagestatus.Running.String(),
+		Message: fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, isActivate, uc.ZipSize, body.Len()),
+		Details: toProgress(UploadBodyProgress{
+			Slug: uc.Slug, IsActivate: isActivate, ZipSize: uc.ZipSize, BodySize: body.Len(),
+		}),
+	})
 
 	return c.executeUploadHTTP(uc, body, contentType)
 }

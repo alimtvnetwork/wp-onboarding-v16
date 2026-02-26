@@ -141,11 +141,15 @@ func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) (*U
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uc.UploadURL), toProgress(ResponseProgress{
-		URL:    uc.UploadURL,
-		Status: resp.StatusCode,
-		Body:   truncateBody(respBody, 2000),
-	}))
+	c.progress(ProgressEvent{
+		Step: action.Upload.String(), Status: stagestatus.Running.String(),
+		Message: fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uc.UploadURL),
+		Details: toProgress(ResponseProgress{
+			URL:    uc.UploadURL,
+			Status: resp.StatusCode,
+			Body:   truncateBody(respBody, 2000),
+		}),
+	})
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, buildUploadAPIError(uc.AbsZipPath, uc.UploadURL, uc.UploadEndpoint, resp.StatusCode, respBytes, respBody, c.stackTraceDepth)

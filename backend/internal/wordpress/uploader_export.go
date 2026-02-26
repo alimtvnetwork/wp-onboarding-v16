@@ -57,7 +57,10 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
-	c.progress(action.ExportSelf.String(), stagestatus.Running.String(), "Exporting Riseup Asia Uploader plugin...", nil)
+	c.progress(ProgressEvent{
+		Step: action.ExportSelf.String(), Status: stagestatus.Running.String(),
+		Message: "Exporting Riseup Asia Uploader plugin...",
+	})
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ExportSelf)
 	result, err := doAPICall[ExportSelfResult](c, apiCallInput{
@@ -68,7 +71,10 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, err
 	}
 
-	c.progress(action.ExportSelf.String(), stagestatus.Completed.String(), fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
+	c.progress(ProgressEvent{
+		Step: action.ExportSelf.String(), Status: stagestatus.Completed.String(),
+		Message: fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount),
+	})
 	return result, nil
 }
 
