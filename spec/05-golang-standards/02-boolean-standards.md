@@ -63,6 +63,10 @@ The following counterparts exist in the codebase and **must** be used instead of
 | `wordpress` | `isErrorStatus(code, ok)` | `!isOkStatus(code, ok)` |
 | `wordpress` | `IsEnvelopeMissing(data)` | `!IsEnvelope(data)` |
 | `publish` | `isPermanentError(err)` | `!isTransientAppError(err)` |
+| `plugin` | `ScanResult.IsInvalid()` | `!ScanResult.IsValid` |
+| `publishtype` | `Variant.IsUndefined()` | `!Variant.IsDefined()` |
+| `e2e` | `apiResponse.isDataMissing(key)` | `!apiResponse.hasDataField(key)` |
+| `site` | `isStackTraceMissing(result)` | `!hasStackTraceContent(result)` |
 
 ### 2.3 — Enum Comparisons
 

@@ -283,7 +283,7 @@ func (s *Service) fetchAndAttachPhpStackTrace(ref *remoteActionRef, errDetails *
 		return
 	}
 
-	if !hasStackTraceContent(logsResult) {
+	if isStackTraceMissing(logsResult) {
 		s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_stacktrace", Message: "No stacktrace.txt content available on remote site"})
 
 		return
@@ -295,6 +295,11 @@ func (s *Service) fetchAndAttachPhpStackTrace(ref *remoteActionRef, errDetails *
 // hasStackTraceContent checks if the logs result contains a valid stack trace.
 func hasStackTraceContent(logsResult *wordpress.RemoteErrorLogsResult) bool {
 	return logsResult != nil && logsResult.StackTraceLog != nil && logsResult.StackTraceLog.Exists && logsResult.StackTraceLog.Content != ""
+}
+
+// isStackTraceMissing returns true if the logs result does NOT contain a valid stack trace.
+func isStackTraceMissing(logsResult *wordpress.RemoteErrorLogsResult) bool {
+	return !hasStackTraceContent(logsResult)
 }
 
 // applyStackTraceContent copies stack trace content to error details and logs it.
