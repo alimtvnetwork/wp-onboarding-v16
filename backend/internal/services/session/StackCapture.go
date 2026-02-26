@@ -18,15 +18,18 @@ func CaptureGoStack(skip int) []StackFrame {
 	if n == 0 {
 		return nil
 	}
-	pcs = pcs[:n]
 
+	return collectAppFrames(pcs[:n])
+}
+
+// collectAppFrames iterates over program counters and collects application frames.
+func collectAppFrames(pcs []uintptr) []StackFrame {
 	frames := runtime.CallersFrames(pcs)
 	var result []StackFrame
 
 	for {
 		frame, more := frames.Next()
 
-		// Filter out runtime internals and standard library
 		if isApplicationFrame(frame.Function) {
 			result = append(result, StackFrame{
 				Function: frame.Function,
@@ -43,41 +46,44 @@ func CaptureGoStack(skip int) []StackFrame {
 	return result
 }
 
+// excludedPrefixes lists function name prefixes that identify non-application frames.
+var excludedPrefixes = []string{
+	"runtime.",
+	"net/http.",
+	"net.",
+	"syscall.",
+	"internal/",
+	"reflect.",
+	"sync.",
+	"testing.",
+}
+
 // isApplicationFrame returns true if the function belongs to application code
 // (not Go runtime, standard library, or third-party middleware).
 func isApplicationFrame(funcName string) bool {
 	if funcName == "" {
 		return false
 	}
-
-	// Exclude Go runtime and standard library
-	excludePrefixes := []string{
-		"runtime.",
-		"net/http.",
-		"net.",
-		"syscall.",
-		"internal/",
-		"reflect.",
-		"sync.",
-		"testing.",
+	if hasExcludedPrefix(funcName) {
+		return false
 	}
+	return isOwnModule(funcName)
+}
 
-	for _, prefix := range excludePrefixes {
+// hasExcludedPrefix checks if the function name starts with any excluded prefix.
+func hasExcludedPrefix(funcName string) bool {
+	for _, prefix := range excludedPrefixes {
 		if strings.HasPrefix(funcName, prefix) {
-			return false
+			return true
 		}
 	}
+	return false
+}
 
-	// Include anything from our module
-	if strings.Contains(funcName, "wp-plugin-publish/") {
-		return true
-	}
-
-	// Exclude everything else (third-party packages not in our module)
-	// But include if it doesn't look like a standard library path
+// isOwnModule checks if the function belongs to our module.
+func isOwnModule(funcName string) bool {
 	if !strings.Contains(funcName, ".") {
 		return false
 	}
-
 	return strings.Contains(funcName, "wp-plugin-publish/")
 }

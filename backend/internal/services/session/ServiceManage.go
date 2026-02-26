@@ -194,6 +194,11 @@ func (s *Service) removeIfExpired(entry os.DirEntry, cutoff time.Time) {
 	if isNotExpired {
 		return
 	}
+	s.removeSessionEntry(entry)
+}
+
+// removeSessionEntry resolves the full path and removes the entry.
+func (s *Service) removeSessionEntry(entry os.DirEntry) {
 	fullPath, err := pathutil.Join(s.sessionsDir, entry.Name())
 	if err != nil {
 		return
@@ -215,12 +220,16 @@ func (s *Service) ClearAllSessions() error {
 			WithPath(s.sessionsDir)
 	}
 
+	return s.clearEntries(entries)
+}
+
+// clearEntries removes all entries and logs the result.
+func (s *Service) clearEntries(entries []os.DirEntry) error {
 	removeErrors := s.removeAllEntries(entries)
 	if len(removeErrors) > 0 {
 		return apperror.New(apperror.ErrSessionClear, "failed to remove session entries").
 			WithDetails(fmt.Sprintf("count=%d", len(removeErrors)))
 	}
-
 	if s.log != nil {
 		s.log.Info("All sessions cleared", "count", len(entries))
 	}
@@ -246,22 +255,30 @@ func (s *Service) closeAllSessions() {
 func (s *Service) removeAllEntries(entries []os.DirEntry) []error {
 	var errors []error
 	for _, entry := range entries {
-		fullPath, err := pathutil.Join(s.sessionsDir, entry.Name())
-		if err != nil {
-			continue
-		}
-		var removeErr error
-		if entry.IsDir() {
-			removeErr = os.RemoveAll(fullPath)
-		} else {
-			removeErr = os.Remove(fullPath)
-		}
-		if removeErr != nil {
-			isRealError := !os.IsNotExist(removeErr)
-			if isRealError {
-				errors = append(errors, removeErr)
-			}
+		if err := s.removeEntryByName(entry); err != nil {
+			errors = append(errors, err)
 		}
 	}
 	return errors
+}
+
+// removeEntryByName resolves and removes a single named entry.
+func (s *Service) removeEntryByName(entry os.DirEntry) error {
+	fullPath, err := pathutil.Join(s.sessionsDir, entry.Name())
+	if err != nil {
+		return nil
+	}
+	var removeErr error
+	if entry.IsDir() {
+		removeErr = os.RemoveAll(fullPath)
+	} else {
+		removeErr = os.Remove(fullPath)
+	}
+	if removeErr != nil {
+		isRealError := !os.IsNotExist(removeErr)
+		if isRealError {
+			return removeErr
+		}
+	}
+	return nil
 }
