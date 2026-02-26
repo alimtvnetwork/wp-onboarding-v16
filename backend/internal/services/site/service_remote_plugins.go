@@ -9,6 +9,7 @@ import (
 
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/dbutil"
+	"wp-plugin-publish/pkg/wordpress"
 )
 
 // RemotePlugin represents a plugin installed on a remote WordPress site
@@ -40,13 +41,17 @@ func (s *Service) GetRemotePlugins(ctx context.Context, siteId int64) ([]RemoteP
 // GetRemotePluginsWithCache fetches remote plugins with optional cache bypass
 func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, forceRefresh bool) ([]RemotePlugin, error) {
 	if s.cacheEnabled && !forceRefresh {
-		cached, err := s.getRemotePluginsFromCache(ctx, siteId)
-		if err == nil && cached != nil {
+		if cached, err := s.getRemotePluginsFromCache(ctx, siteId); err == nil && cached != nil {
 			s.log.Debug("Remote plugins loaded from cache", "siteId", siteId, "count", len(cached))
 			return cached, nil
 		}
 	}
 
+	return s.fetchAndCachePlugins(ctx, siteId)
+}
+
+// fetchAndCachePlugins fetches fresh plugins and stores them in cache.
+func (s *Service) fetchAndCachePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
 	plugins, err := s.fetchRemotePlugins(ctx, siteId)
 	if err != nil {
 		return nil, err
@@ -63,57 +68,75 @@ func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, f
 
 // fetchRemotePlugins fetches plugins directly from the remote WordPress site.
 func (s *Service) fetchRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
-	result := s.GetById(ctx, siteId)
-	if result.HasError() {
-		return nil, result.AppError()
-	}
-	site := result.Value()
-
-	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	client, err := s.createWPClient(ctx, siteId)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		return nil, err
 	}
-
-	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 
 	uploaderPlugins, uploaderErr := client.ListPluginsViaUploader()
-	if uploaderErr == nil {
-		plugins := make([]RemotePlugin, 0, len(uploaderPlugins))
-		for _, p := range uploaderPlugins {
-			if p.File == "" && p.Slug == "" {
-				s.log.Warn("Skipping remote plugin with empty file and slug", "name", p.Name, "siteId", siteId)
-				continue
-			}
-
-			slug := p.Slug
-			if slug == "" {
-				slug = p.File
-				if idx := strings.Index(p.File, "/"); idx > 0 {
-					slug = p.File[:idx]
-				}
-			}
-
-			pluginFile := p.File
-			if pluginFile == "" {
-				pluginFile = slug + "/" + slug + ".php"
-				s.log.Warn("Remote plugin missing file path, derived from slug", "slug", slug, "derivedFile", pluginFile, "siteId", siteId)
-			}
-
-			status := "inactive"
-			if p.Active {
-				status = "active"
-			}
-			plugins = append(plugins, RemotePlugin{
-				Plugin: pluginFile, Slug: slug, Name: p.Name, Version: p.Version,
-				Status: status, Author: p.Author, Description: p.Description,
-			})
-		}
-		s.log.Debug("Remote plugins fetched via Uploader API", "siteId", siteId, "count", len(plugins))
-		return plugins, nil
+	if uploaderErr != nil {
+		site, _ := s.resolveRemoteSite(ctx, siteId)
+		s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteId, "siteUrl", site.Url, "error", uploaderErr)
+		return nil, apperror.Wrap(uploaderErr, apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site.")
 	}
 
-	s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteId, "siteUrl", site.Url, "error", uploaderErr)
-	return nil, apperror.Wrap(uploaderErr, apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site.")
+	plugins := s.convertUploaderPlugins(siteId, uploaderPlugins)
+	s.log.Debug("Remote plugins fetched via Uploader API", "siteId", siteId, "count", len(plugins))
+	return plugins, nil
+}
+
+// convertUploaderPlugins converts uploader plugin info to RemotePlugin slice.
+func (s *Service) convertUploaderPlugins(siteId int64, uploaderPlugins []wordpress.UploaderPluginInfo) []RemotePlugin {
+	plugins := make([]RemotePlugin, 0, len(uploaderPlugins))
+	for _, p := range uploaderPlugins {
+		rp := s.convertSingleUploaderPlugin(siteId, p)
+		if rp != nil {
+			plugins = append(plugins, *rp)
+		}
+	}
+	return plugins
+}
+
+// convertSingleUploaderPlugin converts one UploaderPluginInfo to a RemotePlugin.
+func (s *Service) convertSingleUploaderPlugin(siteId int64, p wordpress.UploaderPluginInfo) *RemotePlugin {
+	if p.File == "" && p.Slug == "" {
+		s.log.Warn("Skipping remote plugin with empty file and slug", "name", p.Name, "siteId", siteId)
+		return nil
+	}
+
+	slug := resolvePluginSlug(p)
+	pluginFile := resolvePluginFile(s, siteId, p, slug)
+
+	status := "inactive"
+	if p.Active {
+		status = "active"
+	}
+
+	return &RemotePlugin{
+		Plugin: pluginFile, Slug: slug, Name: p.Name, Version: p.Version,
+		Status: status, Author: p.Author, Description: p.Description,
+	}
+}
+
+// resolvePluginSlug derives the slug from uploader plugin info.
+func resolvePluginSlug(p wordpress.UploaderPluginInfo) string {
+	if p.Slug != "" {
+		return p.Slug
+	}
+	if idx := strings.Index(p.File, "/"); idx > 0 {
+		return p.File[:idx]
+	}
+	return p.File
+}
+
+// resolvePluginFile derives the plugin file path from slug and info.
+func resolvePluginFile(s *Service, siteId int64, p wordpress.UploaderPluginInfo, slug string) string {
+	if p.File != "" {
+		return p.File
+	}
+	derived := slug + "/" + slug + ".php"
+	s.log.Warn("Remote plugin missing file path, derived from slug", "slug", slug, "derivedFile", derived, "siteId", siteId)
+	return derived
 }
 
 // getRemotePluginsFromCache retrieves cached plugins if not expired.
@@ -177,16 +200,33 @@ func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteId int64
 
 // GetRemotePluginsCacheStatus returns cache status for a site
 func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64) (bool, *time.Time, *time.Time, error) {
+	cachedAtStr, expiresAtStr, err := s.queryCacheTimestamps(ctx, siteId)
+	if err != nil {
+		return false, nil, nil, err
+	}
+	if cachedAtStr == "" {
+		return false, nil, nil, nil
+	}
+
+	return parseCacheTimestamps(cachedAtStr, expiresAtStr)
+}
+
+// queryCacheTimestamps fetches raw cache timestamps from the database.
+func (s *Service) queryCacheTimestamps(ctx context.Context, siteId int64) (string, string, error) {
 	query := `SELECT CachedAt, ExpiresAt FROM RemotePluginsCache WHERE SiteId = ?`
 	var cachedAtStr, expiresAtStr string
 	err := s.db.QueryRowContext(ctx, query, siteId).Scan(&cachedAtStr, &expiresAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, nil, nil, nil
+			return "", "", nil
 		}
-		return false, nil, nil, err
+		return "", "", err
 	}
+	return cachedAtStr, expiresAtStr, nil
+}
 
+// parseCacheTimestamps converts timestamp strings to time pointers and validity.
+func parseCacheTimestamps(cachedAtStr, expiresAtStr string) (bool, *time.Time, *time.Time, error) {
 	cachedAtVal := parseTime(cachedAtStr)
 	expiresAtVal := parseTime(expiresAtStr)
 	isValid := !expiresAtVal.IsZero() && expiresAtVal.After(time.Now())

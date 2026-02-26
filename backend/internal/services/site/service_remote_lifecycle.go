@@ -73,17 +73,22 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteId int64, p
 		return err
 	}
 
-	s.logRemoteStageStart(sessionId, siteId, action, pluginSlug, &site)
+	return s.runRemoteAction(ctx, client, sessionId, siteId, action, pluginSlug, &site, startTime, execFn)
+}
 
-	err = execFn(client)
+// runRemoteAction executes the action and handles success/failure.
+func (s *Service) runRemoteAction(ctx context.Context, client *wordpress.Client, sessionId string, siteId int64, action, pluginSlug string, site *models.Site, startTime time.Time, execFn func(*wordpress.Client) error) error {
+	s.logRemoteStageStart(sessionId, siteId, action, pluginSlug, site)
+
+	err := execFn(client)
 	durationMs := time.Since(startTime).Milliseconds()
 
 	if err != nil {
-		s.handleRemoteActionError(ctx, client, sessionId, siteId, action, pluginSlug, &site, err, durationMs)
+		s.handleRemoteActionError(ctx, client, sessionId, siteId, action, pluginSlug, site, err, durationMs)
 		return err
 	}
 
-	s.handleRemoteActionSuccess(ctx, sessionId, siteId, action, pluginSlug, &site, durationMs)
+	s.handleRemoteActionSuccess(ctx, sessionId, siteId, action, pluginSlug, site, durationMs)
 	return nil
 }
 
@@ -173,10 +178,7 @@ func (s *Service) handleRemoteActionError(ctx context.Context, client *wordpress
 	s.fetchAndAttachRemotePhpErrors(client, sessionId, siteId, action, pluginSlug, site.Name, site.Url, errDetails)
 	s.logToErrorFile(action, siteId, pluginSlug, site.Name, site.Url, errDetails)
 	s.endRemoteSession(sessionId, "error", err.Error())
-
-	if s.wsHub != nil {
-		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{SiteId: siteId, SiteName: site.Name, Action: action, PluginSlug: pluginSlug, Success: false, Error: err.Error(), DurationMs: durationMs}, sessionId)
-	}
+	s.broadcastRemoteActionComplete(siteId, site.Name, action, pluginSlug, sessionId, false, err.Error(), durationMs)
 }
 
 // saveRemoteErrorResponse saves the error response to the session.
@@ -185,14 +187,7 @@ func (s *Service) saveRemoteErrorResponse(sessionId string, errDetails *Extracte
 		return
 	}
 
-	var bodyJson json.RawMessage
-	if errDetails.ResponseBody != "" {
-		if json.Valid([]byte(errDetails.ResponseBody)) {
-			bodyJson = json.RawMessage(errDetails.ResponseBody)
-		} else {
-			bodyJson, _ = json.Marshal(errDetails.ResponseBody)
-		}
-	}
+	bodyJson := buildErrorBodyJson(errDetails.ResponseBody)
 
 	s.sessionService.SaveResponse(sessionId, &session.SessionResponse{RequestURL: errDetails.Url, ResponseURL: errDetails.Url, StatusCode: errDetails.StatusCode, Body: bodyJson})
 	phpFrames := s.buildPhpStackFrames(errDetails)
@@ -200,24 +195,50 @@ func (s *Service) saveRemoteErrorResponse(sessionId string, errDetails *Extracte
 	s.sessionService.SaveError(sessionId, &session.SessionStackTrace{Golang: goFrames, PHP: phpFrames}, err.Error(), session.ToJSON(errDetails))
 }
 
+// buildErrorBodyJson converts a response body string to JSON.
+func buildErrorBodyJson(responseBody string) json.RawMessage {
+	if responseBody == "" {
+		return nil
+	}
+	if json.Valid([]byte(responseBody)) {
+		return json.RawMessage(responseBody)
+	}
+	bodyJson, _ := json.Marshal(responseBody)
+	return bodyJson
+}
+
 // handleRemoteActionSuccess processes a successful remote action: logs, broadcasts, invalidates cache.
 func (s *Service) handleRemoteActionSuccess(ctx context.Context, sessionId string, siteId int64, action, pluginSlug string, site *models.Site, durationMs int64) {
-	if s.sessionService != nil && sessionId != "" {
-		s.sessionService.SaveResponse(sessionId, &session.SessionResponse{
-			RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.Url, action),
-			ResponseURL: site.Url, StatusCode: 200,
-			Body: toJson(RemoteActionSuccessBody{Success: true, Action: action, Plugin: pluginSlug}),
-		})
-		s.sessionService.LogStageEnd(sessionId, action, "success", durationMs)
-	}
+	s.saveRemoteSuccessResponse(sessionId, site, action, pluginSlug, durationMs)
 
 	s.logRemoteAction(sessionId, siteId, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), session.ToJSON(DurationDetail{DurationMs: durationMs}))
 	_ = s.InvalidateRemotePluginsCache(ctx, siteId)
 	s.endRemoteSession(sessionId, "success", "")
-
-	if s.wsHub != nil {
-		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{SiteId: siteId, SiteName: site.Name, Action: action, PluginSlug: pluginSlug, Success: true, DurationMs: durationMs}, sessionId)
-	}
+	s.broadcastRemoteActionComplete(siteId, site.Name, action, pluginSlug, sessionId, true, "", durationMs)
 
 	s.log.Info(fmt.Sprintf("Remote plugin %sd", action), "siteId", siteId, "plugin", pluginSlug)
+}
+
+// saveRemoteSuccessResponse records the success response in the session.
+func (s *Service) saveRemoteSuccessResponse(sessionId string, site *models.Site, action, pluginSlug string, durationMs int64) {
+	if s.sessionService == nil || sessionId == "" {
+		return
+	}
+	s.sessionService.SaveResponse(sessionId, &session.SessionResponse{
+		RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.Url, action),
+		ResponseURL: site.Url, StatusCode: 200,
+		Body: toJson(RemoteActionSuccessBody{Success: true, Action: action, Plugin: pluginSlug}),
+	})
+	s.sessionService.LogStageEnd(sessionId, action, "success", durationMs)
+}
+
+// broadcastRemoteActionComplete sends a WebSocket broadcast for action completion.
+func (s *Service) broadcastRemoteActionComplete(siteId int64, siteName, action, pluginSlug, sessionId string, success bool, errMsg string, durationMs int64) {
+	if s.wsHub == nil {
+		return
+	}
+	s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
+		SiteId: siteId, SiteName: siteName, Action: action, PluginSlug: pluginSlug,
+		Success: success, Error: errMsg, DurationMs: durationMs,
+	}, sessionId)
 }
