@@ -52,6 +52,7 @@ class UploadIgnore {
             }
 
             $lines = explode("\n", $content);
+
             foreach ($lines as $line) {
                 $line = trim($line);
 
@@ -87,6 +88,7 @@ class UploadIgnore {
         $path = ltrim($path, '/');
 
         $isIgnored = false;
+
         foreach ($this->patterns as $pattern) {
             if ($this->matchPattern($pattern, $path)) {
                 $isIgnored = true;

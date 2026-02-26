@@ -119,6 +119,7 @@ trait StatusOpsTrait {
             PathHelper::getConstantsFile(),
         );
         $invalidated = 0;
+
         foreach ($filesToInvalidate as $file) {
             if (file_exists($file)) {
                 clearstatcache(true, $file);

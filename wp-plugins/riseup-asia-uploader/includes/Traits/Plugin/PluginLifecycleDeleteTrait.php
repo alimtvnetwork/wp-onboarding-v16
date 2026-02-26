@@ -52,9 +52,9 @@ trait PluginLifecycleDeleteTrait {
         try {
             if (is_plugin_active($pluginFile)) {
                 deactivate_plugins($pluginFile);
-        }
+            }
 
-        return true;
+            return true;
         } catch (Throwable $e) {
             return $this->errorResponse('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }

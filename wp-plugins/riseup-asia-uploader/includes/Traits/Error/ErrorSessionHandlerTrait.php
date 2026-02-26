@@ -102,6 +102,7 @@ trait ErrorSessionHandlerTrait {
     /** Enrich raw error session rows with parsed context and stack trace frames. */
     private function enrichErrorEntries(array $rows): array {
         $entries = array();
+
         foreach ($rows as $row) {
             $entry = array(
                 'id' => (int) $row['Id'], 'level' => $row['Level'], 'message' => $row['Message'],

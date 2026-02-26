@@ -98,6 +98,7 @@ trait StatusPayloadTrait {
     /** Extract unique HTTP methods from route handlers. */
     private function extractRouteMethods(array $handlers): array {
         $methods = array();
+
         foreach ($handlers as $handler) {
             if (BooleanHelpers::isKeyMissing($handler, 'methods')) {
                 continue;

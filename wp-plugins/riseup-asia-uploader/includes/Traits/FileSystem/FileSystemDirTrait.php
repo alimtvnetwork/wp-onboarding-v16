@@ -45,6 +45,7 @@ trait FileSystemDirTrait {
         }
 
         $files = array_diff(scandir($dir), array('.', '..'));
+
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
             if (is_dir($path)) {
@@ -67,6 +68,7 @@ trait FileSystemDirTrait {
         }
 
         $files = array_diff(scandir($src), array('.', '..'));
+
         foreach ($files as $file) {
             $srcPath = $src . '/' . $file;
             $dstPath = $dst . '/' . $file;
