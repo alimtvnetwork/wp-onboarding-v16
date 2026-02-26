@@ -228,6 +228,15 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 	})
 }
 
+// errorBundleInput holds resolved paths and flags for writing the error bundle ZIP.
+type errorBundleInput struct {
+	LogFile     string
+	ErrorFile   string
+	LogExists   bool
+	ErrorExists bool
+	Report      string
+}
+
 // DownloadErrorBundle creates and serves a ZIP bundle of error logs
 func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	dataDir := "data/errors"
@@ -245,7 +254,14 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeErrorBundleZip(w, logFile, errorFile, logExists, errorExists, report)
+	input := errorBundleInput{
+		LogFile:     logFile,
+		ErrorFile:   errorFile,
+		LogExists:   logExists,
+		ErrorExists: errorExists,
+		Report:      report,
+	}
+	writeErrorBundleZip(w, input)
 }
 
 // extractReportFromBody reads the optional report field from a POST body.
@@ -264,17 +280,8 @@ func extractReportFromBody(r *http.Request) string {
 	return payload.Report
 }
 
-// errorBundleFiles holds the file paths and existence flags for the bundle.
-type errorBundleFiles struct {
-	LogFile     string
-	ErrorFile   string
-	LogExists   bool
-	ErrorExists bool
-	Report      string
-}
-
 // writeErrorBundleZip writes the ZIP response with log files and manifest.
-func writeErrorBundleZip(w http.ResponseWriter, logFile, errorFile string, logExists, errorExists bool, report string) {
+func writeErrorBundleZip(w http.ResponseWriter, input errorBundleInput) {
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", "attachment; filename=error-bundle-"+time.Now().Format("20060102-150405")+".zip")
 
@@ -282,18 +289,18 @@ func writeErrorBundleZip(w http.ResponseWriter, logFile, errorFile string, logEx
 	ziputil.RegisterBestCompression(zipWriter)
 	defer zipWriter.Close()
 
-	addBundleLogFiles(zipWriter, logFile, errorFile, logExists, errorExists)
-	addBundleReport(zipWriter, report)
-	addBundleManifest(zipWriter, logExists, errorExists, report)
+	addBundleLogFiles(zipWriter, input)
+	addBundleReport(zipWriter, input.Report)
+	addBundleManifest(zipWriter, input)
 }
 
 // addBundleLogFiles adds the log and error files to the ZIP.
-func addBundleLogFiles(zipWriter *zip.Writer, logFile, errorFile string, logExists, errorExists bool) {
-	if logExists {
-		_ = addFileToZip(zipWriter, logFile, "log.txt")
+func addBundleLogFiles(zipWriter *zip.Writer, input errorBundleInput) {
+	if input.LogExists {
+		_ = addFileToZip(zipWriter, input.LogFile, "log.txt")
 	}
-	if errorExists {
-		_ = addFileToZip(zipWriter, errorFile, "error.log.txt")
+	if input.ErrorExists {
+		_ = addFileToZip(zipWriter, input.ErrorFile, "error.log.txt")
 	}
 }
 
@@ -309,7 +316,7 @@ func addBundleReport(zipWriter *zip.Writer, report string) {
 }
 
 // addBundleManifest writes the manifest.json into the ZIP.
-func addBundleManifest(zipWriter *zip.Writer, logExists, errorExists bool, report string) {
+func addBundleManifest(zipWriter *zip.Writer, input errorBundleInput) {
 	manifest := struct {
 		GeneratedAt string   `json:"generatedAt"` // external key (export manifest JSON file)
 		Files       []string `json:"files"`       // external key
@@ -318,13 +325,13 @@ func addBundleManifest(zipWriter *zip.Writer, logExists, errorExists bool, repor
 		Files:       []string{},
 	}
 
-	if logExists {
+	if input.LogExists {
 		manifest.Files = append(manifest.Files, "log.txt")
 	}
-	if errorExists {
+	if input.ErrorExists {
 		manifest.Files = append(manifest.Files, "error.log.txt")
 	}
-	if report != "" {
+	if input.Report != "" {
 		manifest.Files = append(manifest.Files, "report.md")
 	}
 
