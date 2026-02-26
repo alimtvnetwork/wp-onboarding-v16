@@ -28,20 +28,26 @@ type SnapshotBackupResult struct {
 
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
 func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	return doAPICall[SnapshotBackupResult](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsFullBackup),
-		Body: opts, Operation: "full backup",
+	callInput := apiCallInput{
+		Method:     "POST",
+		Endpoint:   snapshotEndpoint(ep.SnapshotsFullBackup),
+		Body:       opts,
+		Operation:  "full backup",
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
-	})
+	}
+	return doAPICall[SnapshotBackupResult](c, callInput)
 }
 
 // IncrementalBackup triggers an incremental backup against the latest master snapshot.
 func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
-	return doAPICall[SnapshotBackupResult](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsIncremental),
-		Body: opts, Operation: "incremental backup",
+	callInput := apiCallInput{
+		Method:     "POST",
+		Endpoint:   snapshotEndpoint(ep.SnapshotsIncremental),
+		Body:       opts,
+		Operation:  "incremental backup",
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
-	})
+	}
+	return doAPICall[SnapshotBackupResult](c, callInput)
 }
 
 // SnapshotImportResult holds the result of an import operation.
@@ -90,7 +96,13 @@ func buildImportMultipart(zipPath string) (*bytes.Buffer, string, error) {
 
 // executeImportRequest sends the multipart import and parses the response.
 func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, contentType string) (*SnapshotImportResult, error) {
-	resp, err := c.requestMultipart(multipartInput{Method: "POST", Endpoint: endpoint, Body: body, ContentType: contentType})
+	mpInput := multipartInput{
+		Method:      "POST",
+		Endpoint:    endpoint,
+		Body:        body,
+		ContentType: contentType,
+	}
+	resp, err := c.requestMultipart(mpInput)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to import snapshot")
 	}
@@ -99,9 +111,12 @@ func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, conte
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
 	if !isOkStatus(resp.StatusCode, []int{http.StatusOK, http.StatusCreated}) {
-		return nil, c.buildCallError(apiCallInput{
-			Method: "POST", Endpoint: endpoint, Operation: "import snapshot",
-		}, resp.StatusCode, bodyBytes)
+		errorInput := apiCallInput{
+			Method:    "POST",
+			Endpoint:  endpoint,
+			Operation: "import snapshot",
+		}
+		return nil, c.buildCallError(errorInput, resp.StatusCode, bodyBytes)
 	}
 
 	return decodeAPIResponse[SnapshotImportResult](bodyBytes, "import snapshot")
@@ -122,8 +137,11 @@ type SnapshotCleanupResult struct {
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
 func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanupResult, error) {
-	return doAPICall[SnapshotCleanupResult](c, apiCallInput{
-		Method: "POST", Endpoint: snapshotEndpoint(ep.SnapshotsCleanup),
-		Body: opts, Operation: "snapshot cleanup",
-	})
+	callInput := apiCallInput{
+		Method:    "POST",
+		Endpoint:  snapshotEndpoint(ep.SnapshotsCleanup),
+		Body:      opts,
+		Operation: "snapshot cleanup",
+	}
+	return doAPICall[SnapshotCleanupResult](c, callInput)
 }

@@ -213,5 +213,9 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{IsCleared: true, Count: int(count)})
+	response := ActionResponse{
+		IsCleared: true,
+		Count:     int(count),
+	}
+	respondSuccess(w, response)
 }
