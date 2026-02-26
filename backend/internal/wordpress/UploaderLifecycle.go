@@ -37,11 +37,15 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	normalizedSlug := normalizePluginSlug(input.Slug)
 	endpoint := "/" + namespace + input.Endpoint.String()
 
-	_, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
-		Body: PluginSlugRequest{Plugin: normalizedSlug}, Operation: input.OperationName + " via RiseupAsia Uploader",
-		PluginSlug: normalizedSlug, ErrorCode: input.ErrorCode,
-	})
+	callInput := apiCallInput{
+		Method:     "POST",
+		Endpoint:   endpoint,
+		Body:       PluginSlugRequest{Plugin: normalizedSlug},
+		Operation:  input.OperationName + " via RiseupAsia Uploader",
+		PluginSlug: normalizedSlug,
+		ErrorCode:  input.ErrorCode,
+	}
+	_, err := c.doAPICallRaw(callInput)
 	return err
 }
 
@@ -51,11 +55,15 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
 
-	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
-		Body: PluginSlugRequest{Plugin: normalizedSlug}, Operation: "check plugin exists via RiseupAsia Uploader",
-		PluginSlug: normalizedSlug, ErrorCode: apperror.ErrWPConnection,
-	})
+	callInput := apiCallInput{
+		Method:     "POST",
+		Endpoint:   endpoint,
+		Body:       PluginSlugRequest{Plugin: normalizedSlug},
+		Operation:  "check plugin exists via RiseupAsia Uploader",
+		PluginSlug: normalizedSlug,
+		ErrorCode:  apperror.ErrWPConnection,
+	}
+	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
 		return false, "", "", err
 	}
@@ -93,24 +101,30 @@ func parsePluginExistsLegacy(data []byte) (bool, string, string, error) {
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
 func (c *Client) EnablePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug: slug, Endpoint: ep.Enable,
-		OperationName: "enable plugin", ErrorCode: apperror.ErrWPPluginActivate,
+		Slug:          slug,
+		Endpoint:      ep.Enable,
+		OperationName: "enable plugin",
+		ErrorCode:     apperror.ErrWPPluginActivate,
 	})
 }
 
 // DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
 func (c *Client) DisablePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug: slug, Endpoint: ep.Disable,
-		OperationName: "disable plugin", ErrorCode: apperror.ErrWPPluginActivate,
+		Slug:          slug,
+		Endpoint:      ep.Disable,
+		OperationName: "disable plugin",
+		ErrorCode:     apperror.ErrWPPluginActivate,
 	})
 }
 
 // DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
 func (c *Client) DeletePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug: slug, Endpoint: ep.Delete,
-		OperationName: "delete plugin", ErrorCode: apperror.ErrWPConnection,
+		Slug:          slug,
+		Endpoint:      ep.Delete,
+		OperationName: "delete plugin",
+		ErrorCode:     apperror.ErrWPConnection,
 	})
 }
 
@@ -119,10 +133,13 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	namespace := c.resolveNamespace()
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Plugins)
 
-	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "list plugins",
+	callInput := apiCallInput{
+		Method:    "GET",
+		Endpoint:  endpoint,
+		Operation: "list plugins",
 		ErrorCode: apperror.ErrWPPluginList,
-	})
+	}
+	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
 		return nil, err
 	}
@@ -160,11 +177,15 @@ type listFilesResult struct {
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
 	endpoint := "/" + c.resolveNamespace() + ep.Files.String()
 
-	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
-		Body: PluginSlugRequest{Plugin: slug}, Operation: "list plugin files",
-		PluginSlug: slug, ErrorCode: apperror.ErrWPPluginGet,
-	})
+	callInput := apiCallInput{
+		Method:     "POST",
+		Endpoint:   endpoint,
+		Body:       PluginSlugRequest{Plugin: slug},
+		Operation:  "list plugin files",
+		PluginSlug: slug,
+		ErrorCode:  apperror.ErrWPPluginGet,
+	}
+	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
 		return nil, err
 	}

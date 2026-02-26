@@ -65,11 +65,14 @@ type syncManifestResult struct {
 func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
 
-	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
-		Body: PluginSlugRequest{Plugin: slug}, Operation: "get sync manifest",
+	callInput := apiCallInput{
+		Method:    "POST",
+		Endpoint:  endpoint,
+		Body:      PluginSlugRequest{Plugin: slug},
+		Operation: "get sync manifest",
 		ErrorCode: apperror.ErrWPConnection,
-	})
+	}
+	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +97,14 @@ type pluginFilesResult struct {
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
 
-	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
-		Body: PluginSlugRequest{Plugin: slug}, Operation: "get plugin files",
+	callInput := apiCallInput{
+		Method:    "POST",
+		Endpoint:  endpoint,
+		Body:      PluginSlugRequest{Plugin: slug},
+		Operation: "get plugin files",
 		ErrorCode: apperror.ErrWPConnection,
-	})
+	}
+	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
 		return nil, mapNotFoundError(err, "plugin not found on remote", slug)
 	}
@@ -122,10 +128,13 @@ type mutationTokenResult struct {
 func (c *Client) RequestMutationToken(action string) (string, error) {
 	endpoint := fmt.Sprintf("/%s/request-mutation?action=%s", OnboardNamespace, action)
 
-	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "GET", Endpoint: endpoint, Operation: "request mutation token",
+	callInput := apiCallInput{
+		Method:    "GET",
+		Endpoint:  endpoint,
+		Operation: "request mutation token",
 		ErrorCode: apperror.ErrWPConnection,
-	})
+	}
+	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
 		return "", err
 	}
@@ -152,11 +161,14 @@ type fileContentResult struct {
 func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
 
-	data, err := c.doAPICallRaw(apiCallInput{
-		Method: "POST", Endpoint: endpoint,
-		Body: PluginFileRequest{Plugin: pluginSlug, Path: filePath}, Operation: "get file content",
+	callInput := apiCallInput{
+		Method:    "POST",
+		Endpoint:  endpoint,
+		Body:      PluginFileRequest{Plugin: pluginSlug, Path: filePath},
+		Operation: "get file content",
 		ErrorCode: apperror.ErrWPConnection,
-	})
+	}
+	data, err := c.doAPICallRaw(callInput)
 	if err != nil {
 		return "", mapNotFoundError(err, "file not found on remote", filePath)
 	}
@@ -197,7 +209,8 @@ func mapNotFoundError(err error, message, identifier string) error {
 // Deprecated: Use UploadPluginViaUploader instead (Riseup Asia Uploader).
 func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
 	c.progress(ProgressEvent{
-		Step: "upload", Status: stagestatus.Running.String(),
+		Step:    "upload",
+		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug),
 	})
 
@@ -207,7 +220,8 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	}
 
 	c.progress(ProgressEvent{
-		Step: "upload", Status: stagestatus.Running.String(),
+		Step:    "upload",
+		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)),
 		Details: toProgress(TokenProgress{TokenLength: len(mutationToken)}),
 	})
@@ -218,7 +232,15 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	}
 
 	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
-	return c.executeZipUpload(zipUploadInput{Endpoint: endpoint, Body: reqBody, ContentType: contentType, FileSize: fileSize, ZipPath: zipPath, PluginSlug: pluginSlug})
+	uploadInput := zipUploadInput{
+		Endpoint:    endpoint,
+		Body:        reqBody,
+		ContentType: contentType,
+		FileSize:    fileSize,
+		ZipPath:     zipPath,
+		PluginSlug:  pluginSlug,
+	}
+	return c.executeZipUpload(uploadInput)
 }
 
 // buildZipMultipartForm opens the ZIP file and builds the multipart form body.
@@ -232,7 +254,13 @@ func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*bytes.Buffe
 	var reqBody bytes.Buffer
 	writer := multipart.NewWriter(&reqBody)
 
-	if err := writeZipFormFields(zipFormInput{Writer: writer, File: file, ZipPath: zipPath, PluginSlug: pluginSlug}); err != nil {
+	formInput := zipFormInput{
+		Writer:     writer,
+		File:       file,
+		ZipPath:    zipPath,
+		PluginSlug: pluginSlug,
+	}
+	if err := writeZipFormFields(formInput); err != nil {
 		return nil, "", 0, err
 	}
 
@@ -301,12 +329,16 @@ type zipUploadInput struct {
 func (c *Client) executeZipUpload(input zipUploadInput) (*OnboardUploadResult, error) {
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, input.Endpoint)
 
+	uploadProgress := ZipUploadProgress{
+		ZipSize:  input.FileSize,
+		ZipFile:  filepath.Base(input.ZipPath),
+		Endpoint: input.Endpoint,
+	}
 	c.progress(ProgressEvent{
-		Step: "upload", Status: stagestatus.Running.String(),
+		Step:    "upload",
+		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("POSTing %d bytes to %s", input.FileSize, url),
-		Details: toProgress(ZipUploadProgress{
-			ZipSize: input.FileSize, ZipFile: filepath.Base(input.ZipPath), Endpoint: input.Endpoint,
-		}),
+		Details: toProgress(uploadProgress),
 	})
 
 	resp, respBody, err := c.doMultipartRequest(url, input.Body, input.ContentType)
@@ -314,13 +346,25 @@ func (c *Client) executeZipUpload(input zipUploadInput) (*OnboardUploadResult, e
 		return nil, err
 	}
 
+	responseProgress := ResponseProgress{
+		Status: resp.StatusCode,
+		Body:   truncateBody(respBody, 500),
+	}
 	c.progress(ProgressEvent{
-		Step: "upload", Status: stagestatus.Running.String(),
+		Step:    "upload",
+		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Upload response: %d", resp.StatusCode),
-		Details: toProgress(ResponseProgress{Status: resp.StatusCode, Body: truncateBody(respBody, 500)}),
+		Details: toProgress(responseProgress),
 	})
 
-	return c.parseZipUploadResponse(zipUploadResponseInput{StatusCode: resp.StatusCode, Body: respBody, Endpoint: input.Endpoint, URL: url, PluginSlug: input.PluginSlug})
+	parseInput := zipUploadResponseInput{
+		StatusCode: resp.StatusCode,
+		Body:       respBody,
+		Endpoint:   input.Endpoint,
+		URL:        url,
+		PluginSlug: input.PluginSlug,
+	}
+	return c.parseZipUploadResponse(parseInput)
 }
 
 // doMultipartRequest sends a POST with multipart body and returns status + body.
@@ -395,7 +439,13 @@ func (c *Client) CheckOnboardAvailable() (bool, error) {
 // Deprecated: Delegates to UploadPluginViaUploader.
 func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) (*UploaderUploadResult, error) {
 	slug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
-	return c.UploadPluginViaUploader(UploadInput{ZipPath: zipPath, Slug: slug, IsActivate: isActivate, UploadSource: uploadsource.RestAPI})
+	uploadInput := UploadInput{
+		ZipPath:      zipPath,
+		Slug:         slug,
+		IsActivate:   isActivate,
+		UploadSource: uploadsource.RestAPI,
+	}
+	return c.UploadPluginViaUploader(uploadInput)
 }
 
 // truncateBody truncates a string to maxLen for error messages.

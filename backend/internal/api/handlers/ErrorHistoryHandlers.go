@@ -99,6 +99,7 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 		Search:    r.URL.Query().Get("search"),
 	}
 
+
 	errors, total, err := Services.ErrorHistoryService.List(limit, offset, filters)
 	if err != nil {
 		respondError(
@@ -111,12 +112,13 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, PaginatedErrors{
+	response := PaginatedErrors{
 		Errors: errors,
 		Total:  total,
 		Limit:  limit,
 		Offset: offset,
-	})
+	}
+	respondSuccess(w, response)
 }
 
 // GetErrorHistoryByID returns a single error by database ID
@@ -208,7 +210,11 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{IsDeleted: true, ID: strconv.FormatInt(id, 10)})
+	response := ActionResponse{
+		IsDeleted: true,
+		ID:        strconv.FormatInt(id, 10),
+	}
+	respondSuccess(w, response)
 }
 
 // ClearErrorHistory removes all error history
@@ -236,7 +242,11 @@ func ClearErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{IsCleared: true, Count: int(deleted)})
+	response := ActionResponse{
+		IsCleared: true,
+		Count:     int(deleted),
+	}
+	respondSuccess(w, response)
 }
 
 // BulkExportErrorHistory generates a combined markdown report
@@ -289,10 +299,11 @@ func BulkExportErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ErrorReportResponse{
+	response := ErrorReportResponse{
 		Report: report,
 		Count:  len(input.IDs),
-	})
+	}
+	respondSuccess(w, response)
 }
 
 // GetErrorHistoryStats returns error statistics

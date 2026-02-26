@@ -85,7 +85,12 @@ func validateCreateSiteInput(input SiteCreateInput) string {
 
 // GetSite returns a specific site by ID
 var GetSite = handleActionByID(
-	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E9001"},
+	handlerIDConfig{
+		GetService:  siteService,
+		ServiceName: "Site service",
+		ParamName:   "id",
+		ErrCode:     "E9001",
+	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetById(ctx, id)
 	},
@@ -123,7 +128,12 @@ func normalizeUpdateSitePassword(input *SiteUpdateInput) {
 
 // DeleteSite removes a site
 var DeleteSite = handleDeleteByID(
-	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E2006"},
+	handlerIDConfig{
+		GetService:  siteService,
+		ServiceName: "Site service",
+		ParamName:   "id",
+		ErrCode:     "E2006",
+	},
 	func(ctx context.Context, id int64) error {
 		return Services.SiteService.Delete(ctx, id)
 	},
@@ -131,7 +141,12 @@ var DeleteSite = handleDeleteByID(
 
 // TestSiteConnection tests the WordPress REST API connection
 var TestSiteConnection = handleActionByID(
-	handlerIDConfig{GetService: siteService, ServiceName: "Site service", ParamName: "id", ErrCode: "E3001"},
+	handlerIDConfig{
+		GetService:  siteService,
+		ServiceName: "Site service",
+		ParamName:   "id",
+		ErrCode:     "E3001",
+	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.TestConnection(ctx, id)
 	},

@@ -36,7 +36,12 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 
 // GetPlugin returns a specific plugin by ID
 var GetPlugin = handleActionByID(
-	handlerIDConfig{GetService: pluginService, ServiceName: "Plugin service", ParamName: "id", ErrCode: "E3003"},
+	handlerIDConfig{
+		GetService:  pluginService,
+		ServiceName: "Plugin service",
+		ParamName:   "id",
+		ErrCode:     "E3003",
+	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetById(ctx, id)
 	},
@@ -65,7 +70,12 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 
 // DeletePlugin removes a plugin registration
 var DeletePlugin = handleDeleteByID(
-	handlerIDConfig{GetService: pluginService, ServiceName: "Plugin service", ParamName: "id", ErrCode: "E3005"},
+	handlerIDConfig{
+		GetService:  pluginService,
+		ServiceName: "Plugin service",
+		ParamName:   "id",
+		ErrCode:     "E3005",
+	},
 	func(ctx context.Context, id int64) error {
 		return Services.PluginService.Delete(ctx, id)
 	},
@@ -73,7 +83,12 @@ var DeletePlugin = handleDeleteByID(
 
 // GetPluginMappings returns plugin-site mappings
 var GetPluginMappings = handleActionByID(
-	handlerIDConfig{GetService: pluginService, ServiceName: "Plugin service", ParamName: "id", ErrCode: "E3006"},
+	handlerIDConfig{
+		GetService:  pluginService,
+		ServiceName: "Plugin service",
+		ParamName:   "id",
+		ErrCode:     "E3006",
+	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetMappings(ctx, id)
 	},
@@ -104,7 +119,12 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 
 // DeletePluginMapping removes a plugin-site mapping
 var DeletePluginMapping = handleDeleteByID(
-	handlerIDConfig{GetService: pluginService, ServiceName: "Plugin service", ParamName: "id", ErrCode: "E3008"},
+	handlerIDConfig{
+		GetService:  pluginService,
+		ServiceName: "Plugin service",
+		ParamName:   "id",
+		ErrCode:     "E3008",
+	},
 	func(ctx context.Context, id int64) error {
 		return Services.PluginService.DeleteMapping(ctx, id)
 	},
@@ -139,7 +159,12 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 
 // GetSiteMappings returns all plugin mappings for a site
 var GetSiteMappings = handleActionByID(
-	handlerIDConfig{GetService: pluginService, ServiceName: "Plugin service", ParamName: "id", ErrCode: "E3010"},
+	handlerIDConfig{
+		GetService:  pluginService,
+		ServiceName: "Plugin service",
+		ParamName:   "id",
+		ErrCode:     "E3010",
+	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetMappingsBySite(ctx, id)
 	},
@@ -175,14 +200,24 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 
 // ScanPlugin triggers a file scan for a specific plugin
 var ScanPlugin = handleActionByID(
-	handlerIDConfig{GetService: watcherService, ServiceName: "Watcher service", ParamName: "id", ErrCode: "E6001"},
+	handlerIDConfig{
+		GetService:  watcherService,
+		ServiceName: "Watcher service",
+		ParamName:   "id",
+		ErrCode:     "E6001",
+	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.WatcherService.TriggerScan(ctx, id)
 	},
 )
 
 // ScanAllPlugins triggers a file scan for all plugins
-var ScanAllPlugins = handleNoArgs(noArgsConfig{GetService: watcherService, ServiceName: "Watcher service", ErrCode: "E6002"},
+var ScanAllPlugins = handleNoArgs(
+	noArgsConfig{
+		GetService:  watcherService,
+		ServiceName: "Watcher service",
+		ErrCode:     "E6002",
+	},
 	func(ctx context.Context) (any, error) {
 		return Services.WatcherService.ScanAll(ctx)
 	},
@@ -214,7 +249,11 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondScanWithDetection(w, r, scanDetectionInput{Result: result, Input: input})
+	detection := scanDetectionInput{
+		Result: result,
+		Input:  input,
+	}
+	respondScanWithDetection(w, r, detection)
 }
 
 // respondScanWithDetection handles the detection file creation logic for ScanDirectoryPath.
@@ -224,10 +263,18 @@ func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult
 		return
 	}
 	if err := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path); err != nil {
-		respondSuccess(w, ScanResultResponse{Scan: scanResult.Result, DetectionError: err.Error()})
+		errorResponse := ScanResultResponse{
+			Scan:           scanResult.Result,
+			DetectionError: err.Error(),
+		}
+		respondSuccess(w, errorResponse)
 		return
 	}
-	respondSuccess(w, ScanResultResponse{Scan: scanResult.Result, IsDetectionCreated: true})
+	successResponse := ScanResultResponse{
+		Scan:               scanResult.Result,
+		IsDetectionCreated: true,
+	}
+	respondSuccess(w, successResponse)
 }
 
 // scanDetectionInput bundles parameters for respondScanWithDetection.
@@ -257,7 +304,12 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results, detected := scanAllDirectories(r, input)
-	respondSuccess(w, MultiScanResponse{Scanned: len(input.Paths), Detected: detected, Results: results})
+	response := MultiScanResponse{
+		Scanned:  len(input.Paths),
+		Detected: detected,
+		Results:  results,
+	}
+	respondSuccess(w, response)
 }
 
 // scanAllDirectories scans each path and returns results with detection count.
@@ -278,10 +330,18 @@ func scanAllDirectories(r *http.Request, input scanPathsInput) ([]DirectoryScanR
 func scanSingleDirectory(r *http.Request, path string, createDetection bool) DirectoryScanResult {
 	result, err := Services.PluginService.ScanDirectory(r.Context(), path)
 	if err != nil {
-		return DirectoryScanResult{Path: path, IsPlugin: false, Error: err.Error()}
+		return DirectoryScanResult{
+			Path:     path,
+			IsPlugin: false,
+			Error:    err.Error(),
+		}
 	}
 	isPlugin := result != nil && result.IsValid
-	sr := DirectoryScanResult{Path: path, IsPlugin: isPlugin, Metadata: result}
+	sr := DirectoryScanResult{
+		Path:     path,
+		IsPlugin: isPlugin,
+		Metadata: result,
+	}
 	if createDetection && isPlugin {
 		if err := Services.PluginService.WritePluginDetected(r.Context(), path); err == nil {
 			sr.IsDetectionCreated = true

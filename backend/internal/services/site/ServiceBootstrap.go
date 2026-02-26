@@ -57,7 +57,17 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 	}
 	site := result.Value()
 
-	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Starting Riseup Asia Uploader deployment", Details: toJson(SiteContextDetails{SiteId: id, SiteName: site.Name, SiteUrl: site.Url})})
+	contextDetails := toJson(SiteContextDetails{
+		SiteId:   id,
+		SiteName: site.Name,
+		SiteUrl:  site.Url,
+	})
+	s.broadcastBootstrapLog(bootstrapLogInput{
+		Level:   loglevel.Info,
+		SiteID:  id,
+		Message: "Starting Riseup Asia Uploader deployment",
+		Details: contextDetails,
+	})
 
 	decrypted, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
@@ -65,7 +75,19 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 	}
 
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
-		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: fmt.Sprintf("[%s] %s", step, message), Details: toJson(BootstrapLogDetails{SiteId: id, SiteName: site.Name, Step: step, Status: status, Details: details})})
+		logDetails := toJson(BootstrapLogDetails{
+			SiteId:   id,
+			SiteName: site.Name,
+			Step:     step,
+			Status:   status,
+			Details:  details,
+		})
+		s.broadcastBootstrapLog(bootstrapLogInput{
+			Level:   loglevel.Info,
+			SiteID:  id,
+			Message: fmt.Sprintf("[%s] %s", step, message),
+			Details: logDetails,
+		})
 	}
 	client := s.wpClientFactory(site.Url, site.Username, string(decrypted), progressCallback)
 	return site, client, nil
@@ -77,11 +99,25 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, er
 		uploaderPath = "plugins-uploader-helper"
 	}
 
-	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Creating plugin ZIP archive", Details: toJson(ZipCreationDetails{SiteId: id, Path: uploaderPath})})
+	zipDetails := toJson(ZipCreationDetails{
+		SiteId: id,
+		Path:   uploaderPath,
+	})
+	s.broadcastBootstrapLog(bootstrapLogInput{
+		Level:   loglevel.Info,
+		SiteID:  id,
+		Message: "Creating plugin ZIP archive",
+		Details: zipDetails,
+	})
 
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
-		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: fmt.Sprintf("Failed to create ZIP: %v", err), Details: toJson(SiteIdDetail{SiteId: id})})
+		s.broadcastBootstrapLog(bootstrapLogInput{
+			Level:   loglevel.Error,
+			SiteID:  id,
+			Message: fmt.Sprintf("Failed to create ZIP: %v", err),
+			Details: toJson(SiteIdDetail{SiteId: id}),
+		})
 		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
 	return zipPath, nil
@@ -91,7 +127,13 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, er
 func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
 	available, namespace, _ := client.CheckRiseupAsiaAvailable()
 	if available && namespace != "" {
-		return s.bootstrapViaUploader(bootstrapUploaderInput{SiteID: id, Client: client, ZipPath: zipPath, Namespace: namespace})
+		input := bootstrapUploaderInput{
+			SiteID:    id,
+			Client:    client,
+			ZipPath:   zipPath,
+			Namespace: namespace,
+		}
+		return s.bootstrapViaUploader(input)
 	}
 	return s.bootstrapViaOnboard(id, client, zipPath)
 }
@@ -106,10 +148,26 @@ type bootstrapUploaderInput struct {
 
 // bootstrapViaUploader updates via an existing Riseup Asia Uploader.
 func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress.UploaderUploadResult, error) {
-	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: input.SiteID, Message: fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", input.Namespace), Details: toJson(SiteIdDetail{SiteId: input.SiteID})})
-	result, err := input.Client.UploadPluginViaUploader(wordpress.UploadInput{ZipPath: input.ZipPath, Slug: "riseup-asia-uploader", IsActivate: true, UploadSource: uploadsource.RestAPI})
+	s.broadcastBootstrapLog(bootstrapLogInput{
+		Level:   loglevel.Info,
+		SiteID:  input.SiteID,
+		Message: fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", input.Namespace),
+		Details: toJson(SiteIdDetail{SiteId: input.SiteID}),
+	})
+	uploadInput := wordpress.UploadInput{
+		ZipPath:      input.ZipPath,
+		Slug:         "riseup-asia-uploader",
+		IsActivate:   true,
+		UploadSource: uploadsource.RestAPI,
+	}
+	result, err := input.Client.UploadPluginViaUploader(uploadInput)
 	if err != nil {
-		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: input.SiteID, Message: fmt.Sprintf("Upload failed: %v", err), Details: toJson(SiteIdDetail{SiteId: input.SiteID})})
+		s.broadcastBootstrapLog(bootstrapLogInput{
+			Level:   loglevel.Error,
+			SiteID:  input.SiteID,
+			Message: fmt.Sprintf("Upload failed: %v", err),
+			Details: toJson(SiteIdDetail{SiteId: input.SiteID}),
+		})
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 	return result, nil
@@ -117,16 +175,36 @@ func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress
 
 // bootstrapViaOnboard installs via the Onboard plugin for first-time setup.
 func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
-	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "First-time installation - checking for Onboard plugin", Details: toJson(SiteIdDetail{SiteId: id})})
+	s.broadcastBootstrapLog(bootstrapLogInput{
+		Level:   loglevel.Info,
+		SiteID:  id,
+		Message: "First-time installation - checking for Onboard plugin",
+		Details: toJson(SiteIdDetail{SiteId: id}),
+	})
 	if !s.checkOnboardAvailable(client) {
-		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: "No upload helper plugin found.", Details: toJson(SiteIdDetail{SiteId: id})})
+		s.broadcastBootstrapLog(bootstrapLogInput{
+			Level:   loglevel.Error,
+			SiteID:  id,
+			Message: "No upload helper plugin found.",
+			Details: toJson(SiteIdDetail{SiteId: id}),
+		})
 		return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site.")
 	}
 
-	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Using Onboard plugin for installation", Details: toJson(SiteIdDetail{SiteId: id})})
+	s.broadcastBootstrapLog(bootstrapLogInput{
+		Level:   loglevel.Info,
+		SiteID:  id,
+		Message: "Using Onboard plugin for installation",
+		Details: toJson(SiteIdDetail{SiteId: id}),
+	})
 	result, err := client.UploadPluginViaOnboard(zipPath, true)
 	if err != nil {
-		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: fmt.Sprintf("Upload failed: %v", err), Details: toJson(SiteIdDetail{SiteId: id})})
+		s.broadcastBootstrapLog(bootstrapLogInput{
+			Level:   loglevel.Error,
+			SiteID:  id,
+			Message: fmt.Sprintf("Upload failed: %v", err),
+			Details: toJson(SiteIdDetail{SiteId: id}),
+		})
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 	return result, nil
@@ -134,9 +212,26 @@ func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPat
 
 // finalizeBootstrap logs success and returns the result.
 func (s *Service) finalizeBootstrap(id int64, site models.Site, uploadResult *wordpress.UploaderUploadResult) (*BootstrapResult, error) {
-	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Riseup Asia Uploader deployed successfully", Details: toJson(UploaderDeployDetails{SiteId: id, SiteName: site.Name, IsActivated: uploadResult.Activated})})
+	deployDetails := toJson(UploaderDeployDetails{
+		SiteId:      id,
+		SiteName:    site.Name,
+		IsActivated: uploadResult.Activated,
+	})
+	s.broadcastBootstrapLog(bootstrapLogInput{
+		Level:   loglevel.Info,
+		SiteID:  id,
+		Message: "Riseup Asia Uploader deployed successfully",
+		Details: deployDetails,
+	})
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", "siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", uploadResult.Activated)
-	return &BootstrapResult{IsSuccess: true, SiteId: id, SiteName: site.Name, Message: "Riseup Asia Uploader deployed successfully", IsActivated: uploadResult.Activated}, nil
+	result := &BootstrapResult{
+		IsSuccess:   true,
+		SiteId:      id,
+		SiteName:    site.Name,
+		Message:     "Riseup Asia Uploader deployed successfully",
+		IsActivated: uploadResult.Activated,
+	}
+	return result, nil
 }
 
 // bootstrapLogInput bundles parameters for broadcastBootstrapLog.

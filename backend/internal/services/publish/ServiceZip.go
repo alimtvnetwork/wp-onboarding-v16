@@ -41,7 +41,12 @@ func (s *Service) resolveZipContext(pluginPath, pluginName, suffix string) (*zip
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve zip path")
 	}
 
-	return &zipContext{AbsPluginPath: absPluginPath, AbsZipPath: absZipPath, Slug: slug}, nil
+	zc := &zipContext{
+		AbsPluginPath: absPluginPath,
+		AbsZipPath:    absZipPath,
+		Slug:          slug,
+	}
+	return zc, nil
 }
 
 // resolveZipPaths resolves and ensures both the temp dir and plugin path exist.
@@ -72,7 +77,12 @@ func openZipSession(zc *zipContext) (*zipSession, error) {
 	w := zip.NewWriter(f)
 	ziputil.RegisterBestCompression(w)
 
-	return &zipSession{File: f, Writer: w, Ctx: zc}, nil
+	zs := &zipSession{
+		File:   f,
+		Writer: w,
+		Ctx:    zc,
+	}
+	return zs, nil
 }
 
 // Finalize closes the writer and file, then validates the zip.
