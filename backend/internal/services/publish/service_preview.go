@@ -55,7 +55,13 @@ func (s *Service) loadPluginForPreview(ctx context.Context, pluginID int64, resu
 	p := pluginResult.Value()
 	result.PluginName = p.Name
 	result.LocalVersion = s.getLocalPluginVersion(p.Path)
-	return &pluginPreviewInfo{Path: p.Path, ExcludePatterns: p.ExcludePatterns}, nil
+
+	info := &pluginPreviewInfo{
+		Path:            p.Path,
+		ExcludePatterns: p.ExcludePatterns,
+	}
+
+	return info, nil
 }
 
 // pluginPreviewInfo holds fields needed for preview after loading.
@@ -79,11 +85,25 @@ func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64
 	}
 	result.RemoteSlug = mapping.RemoteSlug
 
-	return &sitePreviewInfo{URL: siteInfo.URL, Username: siteInfo.Username}, password, &mappingPreviewInfo{RemoteSlug: mapping.RemoteSlug}, nil
+	site := &sitePreviewInfo{
+		URL:      siteInfo.URL,
+		Username: siteInfo.Username,
+	}
+	mapInfo := &mappingPreviewInfo{
+		RemoteSlug: mapping.RemoteSlug,
+	}
+
+	return site, password, mapInfo, nil
 }
 
-type sitePreviewInfo struct{ URL, Username string }
-type mappingPreviewInfo struct{ RemoteSlug string }
+type sitePreviewInfo struct {
+	URL      string
+	Username string
+}
+
+type mappingPreviewInfo struct {
+	RemoteSlug string
+}
 
 // GetFileDiff retrieves both local and remote content for a file to show differences
 func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) apperror.Result[FileDiffResult] {
@@ -190,7 +210,13 @@ func (s *Service) processScanEntry(sc *scanContext, path string, info os.FileInf
 
 	hash, _ := s.calculateFileHash(path)
 	relPathSlash := filepath.ToSlash(relPath)
-	sc.LocalFiles[relPathSlash] = FilePreview{Path: relPathSlash, Size: info.Size(), LocalHash: hash}
+
+	preview := FilePreview{
+		Path:      relPathSlash,
+		Size:      info.Size(),
+		LocalHash: hash,
+	}
+	sc.LocalFiles[relPathSlash] = preview
 	*sc.TotalSize += info.Size()
 	return nil
 }
@@ -291,7 +317,11 @@ func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string
 	}
 
 	for path := range remoteFileMap {
-		files = append(files, FilePreview{Path: path, ChangeType: "deleted"})
+		deletedFile := FilePreview{
+			Path:       path,
+			ChangeType: "deleted",
+		}
+		files = append(files, deletedFile)
 		deleted++
 	}
 

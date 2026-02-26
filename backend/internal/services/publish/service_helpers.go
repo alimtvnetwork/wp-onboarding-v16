@@ -157,12 +157,17 @@ func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug st
 // buildOnboardResult converts uploader result to OnboardUploadResult.
 func buildOnboardResult(slug string, result *wordpress.UploaderUploadResult) *wordpress.OnboardUploadResult {
 	r := &wordpress.OnboardUploadResult{
-		Success: result.Success, Message: result.Message, PluginSlug: slug, Overwritten: true,
+		Success:     result.Success,
+		Message:     result.Message,
+		PluginSlug:  slug,
+		Overwritten: true,
 	}
+
 	if result.PluginDetails != nil {
 		r.PluginName = result.PluginDetails.Name
 		r.Version = result.PluginDetails.Version
 	}
+
 	return r
 }
 
@@ -436,12 +441,17 @@ func (s *Service) logUploadSuccess(pctx *publishContext, input logUploadSuccessI
 // buildUploadSuccessInner constructs success detail struct.
 func buildUploadSuccessInner(slug string, input logUploadSuccessInput) UploadSuccessInner {
 	inner := UploadSuccessInner{
-		RemoteSlug: slug, Activated: input.IsActivated, DurationMs: time.Since(input.StartTime).Milliseconds(), Attempts: input.Attempts,
+		RemoteSlug: slug,
+		Activated:  input.IsActivated,
+		DurationMs: time.Since(input.StartTime).Milliseconds(),
+		Attempts:   input.Attempts,
 	}
+
 	if input.UploadResult != nil {
 		inner.Version = input.UploadResult.Version
 		inner.Overwritten = input.UploadResult.Overwritten
 	}
+
 	return inner
 }
 
