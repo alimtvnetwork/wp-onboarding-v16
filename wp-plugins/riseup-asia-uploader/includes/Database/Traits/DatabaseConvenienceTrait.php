@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use PDO;
+use PDOException;
 use PDOStatement;
 
 /**
@@ -139,7 +140,7 @@ trait DatabaseConvenienceTrait {
                 return $stmt;
             }
             return false;
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             $this->fileLogger->error('DB query failed', [
                 'sql'   => $sql,
                 'error' => $e->getMessage(),
