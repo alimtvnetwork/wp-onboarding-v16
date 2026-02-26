@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/enums/publish_type"
 	"wp-plugin-publish/internal/services/publish"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
@@ -41,12 +42,13 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Mode == "" {
-		input.Mode = "full"
+	mode, parseErr := publishtype.Parse(input.Mode)
+	if parseErr != nil || !mode.IsDefined() {
+		mode = publishtype.Full
 	}
 
 	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, publish.PublishOptions{
-		Mode:                input.Mode,
+		Mode:                mode,
 		Files:               input.Files,
 		IsCreateBackup:      input.CreateBackup,
 		IsKeepZipFiles:      input.KeepZipFiles,
@@ -161,13 +163,13 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	versions, err := VersionService.GetVersions(r.Context(), pluginID, siteID, limit)
-	if err != nil {
+	versions, appErr := VersionService.GetVersions(r.Context(), pluginID, siteID, limit)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E8001",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -180,7 +182,11 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 var GetPluginVersion = handleActionByID(
 	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8002"},
 	func(ctx context.Context, id int64) (any, error) {
-		return VersionService.GetVersion(ctx, id)
+		result, appErr := VersionService.GetVersion(ctx, id)
+		if appErr != nil {
+			return nil, appErr
+		}
+		return result, nil
 	},
 )
 
@@ -188,7 +194,11 @@ var GetPluginVersion = handleActionByID(
 var RollbackPluginVersion = handleActionByID(
 	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8003"},
 	func(ctx context.Context, id int64) (any, error) {
-		return VersionService.Rollback(ctx, id)
+		result, appErr := VersionService.Rollback(ctx, id)
+		if appErr != nil {
+			return nil, appErr
+		}
+		return result, nil
 	},
 )
 

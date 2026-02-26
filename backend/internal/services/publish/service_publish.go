@@ -12,6 +12,7 @@ import (
 	"wp-plugin-publish/internal/enums/health_status"
 	"wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/enums/plugin_status"
+	"wp-plugin-publish/internal/enums/publish_type"
 	"wp-plugin-publish/internal/enums/stage_status"
 	enumstatus "wp-plugin-publish/internal/enums/status"
 	"wp-plugin-publish/internal/models"
@@ -260,7 +261,7 @@ func (s *Service) finalizePublishResult(pluginID, siteID int64, pluginInfo model
 // PublishFiles publishes specific files to a WordPress site
 func (s *Service) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) apperror.Result[PublishResult] {
 	return s.Publish(ctx, pluginID, siteID, PublishOptions{
-		Mode: "selected", Files: files, IsCreateBackup: false,
+		Mode: publishtype.Selected, Files: files, IsCreateBackup: false,
 	})
 }
 
@@ -330,7 +331,7 @@ func (s *Service) buildPluginPackage(pluginID, siteID int64, pluginInfo models.P
 
 // buildZip delegates to selective or full zip creation.
 func (s *Service) buildZip(pluginID, siteID int64, pluginInfo models.Plugin, options PublishOptions) (string, int, error) {
-	if options.Mode == "selected" && len(options.Files) > 0 {
+	if options.Mode.IsSelected() && len(options.Files) > 0 {
 		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "package", Message: fmt.Sprintf("Creating selective ZIP with %d files", len(options.Files)), Details: toDetails(SelectedFilesDetails{SelectedFiles: options.Files})})
 		path, err := s.createSelectiveZip(pluginInfo.Path, pluginInfo.Name, options.Files)
 
@@ -608,7 +609,7 @@ func (s *Service) executeCleanupStage(ctx context.Context, pluginID, siteID int6
 		s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, Step: "cleanup", Progress: 95, Message: "Marking files as synced..."})
 		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "cleanup", Message: "Updating local sync state"})
 
-		if options.Mode == "selected" && len(options.Files) > 0 {
+		if options.Mode.IsSelected() && len(options.Files) > 0 {
 			return s.syncService.MarkSynced(ctx, pluginID, siteID, options.Files)
 		}
 
@@ -618,7 +619,7 @@ func (s *Service) executeCleanupStage(ctx context.Context, pluginID, siteID int6
 
 // countFilesUpdated returns the number of files updated based on publish mode
 func (s *Service) countFilesUpdated(options PublishOptions, pluginInfo models.Plugin, fileCount int) int {
-	if options.Mode == "selected" {
+	if options.Mode.IsSelected() {
 		return len(options.Files)
 	}
 
@@ -686,7 +687,7 @@ func buildHistoryEntry(input historyEntryInput) models.PublishHistory {
 	return models.PublishHistory{
 		PluginID: input.PluginInfo.ID, PluginName: input.PluginInfo.Name,
 		SiteID: input.SiteInfo.ID, SiteName: input.SiteInfo.Name, SiteURL: input.SiteInfo.URL,
-		SessionID: input.Result.SessionID, Status: historyStatus, Mode: input.Options.Mode,
+		SessionID: input.Result.SessionID, Status: historyStatus, Mode: input.Options.Mode.Value(),
 		FilesUpdated: input.Result.FilesUpdated, ActivationStatus: input.Result.ActivationStatus,
 		RollbackStatus: input.Result.RollbackStatus, RollbackMessage: input.Result.RollbackMessage,
 		ErrorMessage: input.Result.ErrorMessage, DurationMs: input.Result.Duration,

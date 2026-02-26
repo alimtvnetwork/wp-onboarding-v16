@@ -3,7 +3,11 @@
 // ensuring type safety per the Generic Enforce Pattern (GE-1).
 package publish
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"wp-plugin-publish/internal/enums/publish_type"
+)
 
 // toDetails marshals a typed struct into json.RawMessage for WS broadcast boundaries.
 func toDetails[T any](v T) json.RawMessage {
@@ -56,10 +60,10 @@ type BackupStageDetails struct {
 
 // PackageDetails carries packaging stage context.
 type PackageDetails struct {
-	PluginPath      string   `json:",omitempty"`
-	PluginName      string   `json:",omitempty"`
-	Mode            string   `json:",omitempty"`
-	ExcludePatterns []string `json:",omitempty"`
+	PluginPath      string                `json:",omitempty"`
+	PluginName      string                `json:",omitempty"`
+	Mode            publishtype.Variant   `json:",omitempty"`
+	ExcludePatterns []string              `json:",omitempty"`
 }
 
 // SelectedFilesDetails carries selected file publish context.
