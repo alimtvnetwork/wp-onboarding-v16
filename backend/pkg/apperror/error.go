@@ -176,6 +176,7 @@ func mergeIfAppError(stack StackTrace, cause error) StackTrace {
 
 	appErr, ok := cause.(*AppError)
 	isAppErrWithStack := ok && !appErr.Stack.IsEmpty()
+
 	if isAppErrWithStack {
 		stack.PreviousTrace = appErr.Stack.String()
 	}

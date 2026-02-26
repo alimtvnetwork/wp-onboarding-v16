@@ -421,6 +421,7 @@ These patterns are **exempt** from the no-negation rule in Go:
 - `if !ok` — idiomatic comma-ok pattern
 - `if !requireService(w, svc, "name")` — handler guard returns
 - `if err != nil` — idiomatic error check
+- `if err != nil && !os.IsNotExist(err)` — file-not-found guard (idiomatic cleanup)
 - `if !strings.HasPrefix(...)` — stdlib calls (extract if repeated 3+ times)
 
 ---

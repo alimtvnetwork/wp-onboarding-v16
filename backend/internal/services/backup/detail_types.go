@@ -72,7 +72,7 @@ type ExportCompleteDetails struct {
 // ImportInitDetails carries import init context.
 type ImportInitDetails struct {
 	Destination string `json:",omitempty"`
-	Overwrite   bool   `json:",omitempty"`
+	IsOverwrite bool   `json:",omitempty"`
 }
 
 // ImportCompleteDetails carries import completion context.
