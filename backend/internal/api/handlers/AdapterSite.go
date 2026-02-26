@@ -41,7 +41,7 @@ type SiteServiceInterface interface {
 	DeleteRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) error
 	RestoreRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) (*wordpress.SnapshotRestoreResult, error)
 	ExportRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) (*http.Response, error)
-	DownloadSnapshotZip(ctx context.Context, siteId, snapshotId int64) (*http.Response, *wordpress.SnapshotDownloadResult, error)
+	DownloadSnapshotZip(ctx context.Context, siteId, snapshotId int64) (*site.SnapshotZipDownload, error)
 	GetRemoteSnapshotSettings(ctx context.Context, siteId int64) (*wordpress.SnapshotSettings, error)
 	UpdateRemoteSnapshotSettings(ctx context.Context, siteId int64, settings wordpress.SnapshotSettings) (*wordpress.SnapshotSettings, error)
 	GetRemoteSnapshotProviders(ctx context.Context, siteId int64) ([]wordpress.SnapshotProvider, error)
@@ -185,7 +185,7 @@ func (a *SiteServiceAdapter) ExportRemoteSnapshot(ctx context.Context, siteId, s
 	return a.Service.ExportRemoteSnapshot(ctx, siteId, snapshotId)
 }
 
-func (a *SiteServiceAdapter) DownloadSnapshotZip(ctx context.Context, siteId, snapshotId int64) (*http.Response, *wordpress.SnapshotDownloadResult, error) {
+func (a *SiteServiceAdapter) DownloadSnapshotZip(ctx context.Context, siteId, snapshotId int64) (*site.SnapshotZipDownload, error) {
 	return a.Service.DownloadSnapshotZip(ctx, siteId, snapshotId)
 }
 

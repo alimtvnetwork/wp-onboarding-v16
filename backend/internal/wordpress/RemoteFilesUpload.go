@@ -39,7 +39,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 		Details: toProgress(TokenProgress{TokenLength: len(mutationToken)}),
 	})
 
-	reqBody, contentType, fileSize, err := c.buildZipMultipartForm(zipPath, pluginSlug)
+	form, err := c.buildZipMultipartForm(zipPath, pluginSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -47,59 +47,72 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
 	uploadInput := zipUploadInput{
 		Endpoint:    endpoint,
-		Body:        reqBody,
-		ContentType: contentType,
-		FileSize:    fileSize,
+		Body:        form.Body,
+		ContentType: form.ContentType,
+		FileSize:    form.FileSize,
 		ZipPath:     zipPath,
 		PluginSlug:  pluginSlug,
 	}
 	return c.executeZipUpload(uploadInput)
 }
 
+// zipMultipartForm holds the built multipart form and file metadata.
+type zipMultipartForm struct {
+	Body        *bytes.Buffer
+	ContentType string
+	FileSize    int64
+}
+
 // buildZipMultipartForm opens the ZIP file and builds the multipart form body.
-func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*bytes.Buffer, string, int64, error) {
-	file, stat, err := openAndStatFile(zipPath)
+func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*zipMultipartForm, error) {
+	opened, err := openAndStatFile(zipPath)
 	if err != nil {
-		return nil, "", 0, err
+		return nil, err
 	}
-	defer file.Close()
+	defer opened.File.Close()
 
 	var reqBody bytes.Buffer
 	writer := multipart.NewWriter(&reqBody)
 
 	formInput := zipFormInput{
 		Writer:     writer,
-		File:       file,
+		File:       opened.File,
 		ZipPath:    zipPath,
 		PluginSlug: pluginSlug,
 	}
 	if err := writeZipFormFields(formInput); err != nil {
-		return nil, "", 0, err
+		return nil, err
 	}
 
 	if err := writer.Close(); err != nil {
-		return nil, "", 0, apperror.Wrap(err, apperror.ErrInternal, "failed to close multipart writer")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to close multipart writer")
 	}
 
-	return &reqBody, writer.FormDataContentType(), stat.Size(), nil
+	return &zipMultipartForm{Body: &reqBody, ContentType: writer.FormDataContentType(), FileSize: opened.Info.Size()}, nil
+}
+
+// openedFile holds an open file and its stat info.
+type openedFile struct {
+	File *os.File
+	Info os.FileInfo
 }
 
 // openAndStatFile opens a file and returns it with its FileInfo.
-func openAndStatFile(path string) (*os.File, os.FileInfo, error) {
+func openAndStatFile(path string) (*openedFile, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to open zip file for upload").
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to open zip file for upload").
 			WithValue("zipPath", path)
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
 		file.Close()
-		return nil, nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to stat zip file").
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to stat zip file").
 			WithValue("zipPath", path)
 	}
 
-	return file, stat, nil
+	return &openedFile{File: file, Info: stat}, nil
 }
 
 // zipFormInput bundles parameters for writeZipFormFields.
@@ -240,13 +253,12 @@ func (c *Client) EnablePlugin(pluginSlug string) error {
 
 // CheckOnboardPluginAvailable checks if the companion plugin is installed and available.
 // Deprecated: Now checks for Riseup Asia Uploader availability instead.
-func (c *Client) CheckOnboardPluginAvailable() (bool, error) {
-	available, _, err := c.CheckRiseupAsiaAvailable()
-	return available, err
+func (c *Client) CheckOnboardPluginAvailable() (*UploaderAvailability, error) {
+	return c.CheckRiseupAsiaAvailable()
 }
 
 // CheckOnboardAvailable is an alias for CheckOnboardPluginAvailable
-func (c *Client) CheckOnboardAvailable() (bool, error) {
+func (c *Client) CheckOnboardAvailable() (*UploaderAvailability, error) {
 	return c.CheckOnboardPluginAvailable()
 }
 

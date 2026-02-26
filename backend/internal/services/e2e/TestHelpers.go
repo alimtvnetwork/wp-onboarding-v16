@@ -41,21 +41,21 @@ func extractID(resp *apiResponse, action string) (int64, error) {
 	return int64(id), nil
 }
 
-func (s *serviceImpl) createTestMapping() (int64, int64, error) {
-	pluginID, siteID, err := s.setupPluginAndSite()
+func (s *serviceImpl) createTestMapping() (*testIds, error) {
+	ids, err := s.setupPluginAndSite()
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 
-	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", pluginID), mappingCreateBody{
-		SiteID: siteID, RemoteSlug: "e2e-test-plugin",
+	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginID), mappingCreateBody{
+		SiteID: ids.SiteID, RemoteSlug: "e2e-test-plugin",
 	})
 	if err != nil {
-		s.cleanupPlugin(pluginID)
-		s.cleanupSite(siteID)
-		return 0, 0, fmt.Errorf("create mapping: %w", err)
+		s.cleanupPlugin(ids.PluginID)
+		s.cleanupSite(ids.SiteID)
+		return nil, fmt.Errorf("create mapping: %w", err)
 	}
-	return pluginID, siteID, nil
+	return ids, nil
 }
 
 func (s *serviceImpl) cleanupPlugin(id int64) {

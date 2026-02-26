@@ -26,7 +26,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 		return apperror.Fail[PublishPreviewResult](err)
 	}
 
-	localFiles, totalSize, scanErr := s.scanLocalFiles(pluginInfo.Path, pluginInfo.ExcludePatterns)
+	scanResult, scanErr := s.scanLocalFiles(pluginInfo.Path, pluginInfo.ExcludePatterns)
 	if scanErr != nil {
 		return apperror.FailWrap[PublishPreviewResult](scanErr, apperror.ErrFSRead, "failed to scan plugin files")
 	}
@@ -35,10 +35,10 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 	result.RemoteVersion = s.fetchRemoteVersion(wpClient, previewLoad.Mapping.RemoteSlug)
 	remoteFileMap, fetchFailed := s.fetchRemoteFileMap(ctx, wpClient, previewLoad.Mapping.RemoteSlug)
 
-	diffSummary := s.compareFiles(localFiles, remoteFileMap, fetchFailed)
+	diffSummary := s.compareFiles(scanResult.Files, remoteFileMap, fetchFailed)
 	result.Files = diffSummary.Files
 	result.TotalFiles = len(diffSummary.Files)
-	result.TotalSize = totalSize
+	result.TotalSize = scanResult.TotalSize
 	result.Added = diffSummary.Added
 	result.Modified = diffSummary.Modified
 	result.Deleted = diffSummary.Deleted
@@ -177,11 +177,17 @@ type scanContext struct {
 	TotalSize       *int64
 }
 
+// localScanResult holds the output of scanning local plugin files.
+type localScanResult struct {
+	Files     map[string]FilePreview
+	TotalSize int64
+}
+
 // scanLocalFiles walks the plugin directory and returns file previews
-func (s *Service) scanLocalFiles(pluginPath string, excludePatterns []string) (map[string]FilePreview, int64, error) {
+func (s *Service) scanLocalFiles(pluginPath string, excludePatterns []string) (*localScanResult, error) {
 	absPath, err := pathutil.ToAbsolute(pluginPath)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	var totalSize int64
@@ -199,7 +205,10 @@ func (s *Service) scanLocalFiles(pluginPath string, excludePatterns []string) (m
 		return s.processScanEntry(sc, path, info)
 	})
 
-	return sc.LocalFiles, totalSize, err
+	if err != nil {
+		return nil, err
+	}
+	return &localScanResult{Files: sc.LocalFiles, TotalSize: totalSize}, nil
 }
 
 // processScanEntry handles a single entry during local file scanning.

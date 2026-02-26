@@ -12,11 +12,17 @@ import (
 // PublishHistoryServiceInterface defines publish history service methods
 type PublishHistoryServiceInterface interface {
 	Record(entry models.PublishHistory) (*models.PublishHistory, error)
-	List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error)
+	List(limit, offset int, filters models.PublishHistoryFilters) (*PublishHistoryListResult, error)
 	GetById(id int64) (*models.PublishHistory, error)
 	GetStats() (*models.PublishHistoryStats, error)
 	Delete(id int64) error
 	Clear() (int64, error)
+}
+
+// PublishHistoryListResult holds paginated publish history results.
+type PublishHistoryListResult struct {
+	Items []models.PublishHistory
+	Total int
 }
 
 // SiteHealthServiceInterface defines health check service methods
@@ -43,13 +49,13 @@ func (a *PublishHistoryServiceAdapter) Record(entry models.PublishHistory) (*mod
 	return &v, nil
 }
 
-func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error) {
+func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.PublishHistoryFilters) (*PublishHistoryListResult, error) {
 	result := a.Service.List(limit, offset, filters)
 	if result.HasError() {
-		return nil, 0, result.AppError()
+		return nil, result.AppError()
 	}
 	v := result.Value()
-	return v.Items, v.Total, nil
+	return &PublishHistoryListResult{Items: v.Items, Total: v.Total}, nil
 }
 
 func (a *PublishHistoryServiceAdapter) GetById(id int64) (*models.PublishHistory, error) {

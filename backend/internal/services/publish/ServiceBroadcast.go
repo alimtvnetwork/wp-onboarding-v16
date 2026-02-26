@@ -344,12 +344,12 @@ func (s *Service) broadcastDetailedLog(input DetailedLogInput) {
 	}
 	s.wsHub.BroadcastPublishLog(logEntry)
 
-	pluginName, siteName, siteUrl := s.resolveNames(input.PluginId, input.SiteId, input.Details)
+	names := s.resolveNames(input.PluginId, input.SiteId, input.Details)
 
 	ctx := logContext{
-		PluginName: pluginName,
-		SiteName:   siteName,
-		SiteUrl:    siteUrl,
+		PluginName: names.PluginName,
+		SiteName:   names.SiteName,
+		SiteUrl:    names.SiteURL,
 		PluginId:   input.PluginId,
 		SiteId:     input.SiteId,
 		Step:       input.Step,
@@ -384,17 +384,24 @@ func buildLogFields(ctx logContext) []any {
 
 // ─── Name Resolution ─────────────────────────────────────────────────────────
 
-// resolveNames looks up plugin/site names from details or DB
-func (s *Service) resolveNames(pluginId, siteId int64, details json.RawMessage) (string, string, string) {
-	pluginName, siteName, siteUrl := parseNameDetails(details)
-	pluginName = s.resolvePluginName(pluginId, pluginName)
-	siteName, siteUrl = s.resolveSiteNames(siteId, siteName, siteUrl)
+// resolvedNames holds the resolved plugin, site name and URL.
+type resolvedNames struct {
+	PluginName string
+	SiteName   string
+	SiteURL    string
+}
 
-	return pluginName, siteName, siteUrl
+// resolveNames looks up plugin/site names from details or DB
+func (s *Service) resolveNames(pluginId, siteId int64, details json.RawMessage) *resolvedNames {
+	parsed := parseNameDetails(details)
+	pluginName := s.resolvePluginName(pluginId, parsed.PluginName)
+	siteName, siteUrl := s.resolveSiteNames(siteId, parsed.SiteName, parsed.SiteURL)
+
+	return &resolvedNames{PluginName: pluginName, SiteName: siteName, SiteURL: siteUrl}
 }
 
 // parseNameDetails extracts names from JSON details.
-func parseNameDetails(details json.RawMessage) (string, string, string) {
+func parseNameDetails(details json.RawMessage) *resolvedNames {
 	var parsed struct {
 		PluginName string `json:",omitempty"`
 		SiteName   string `json:",omitempty"`
@@ -404,7 +411,7 @@ func parseNameDetails(details json.RawMessage) (string, string, string) {
 		_ = json.Unmarshal(details, &parsed)
 	}
 
-	return parsed.PluginName, parsed.SiteName, parsed.SiteURL
+	return &resolvedNames{PluginName: parsed.PluginName, SiteName: parsed.SiteName, SiteURL: parsed.SiteURL}
 }
 
 // resolvePluginName fetches plugin name from DB if not provided.

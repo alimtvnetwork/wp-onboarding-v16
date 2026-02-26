@@ -140,28 +140,33 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	}
 	s.broadcastProgress(startProgress)
 
-	site, password, err := s.prepareConnectionTest(ctx, id)
+	prepared, err := s.prepareConnectionTest(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	progressCallback := func(event wordpress.ProgressEvent) {
-		progress := ConnectionProgressInput{
+	progressCallback := func(msg string) {
+		s.broadcastProgress(ConnectionProgressInput{
 			SiteID:  id,
-			Step:    event.Step,
-			Status:  event.Status,
-			Message: event.Message,
-			Details: event.Details,
-		}
-		s.broadcastProgress(progress)
+			Step:    "connecting",
+			Status:  stagestatus.Running.String(),
+			Message: msg,
+		})
 	}
-	client := s.wpClientFactory(site.Url, site.Username, string(password), progressCallback)
 
-	return s.executeConnectionTest(ctx, id, site, client)
+	client := s.wpClientFactory(prepared.Site.Url, prepared.Site.Username, string(prepared.Password), progressCallback)
+
+	return s.executeConnectionTest(ctx, id, *prepared.Site, client)
+}
+
+// connectionTestContext holds the site and decrypted password for a connection test.
+type connectionTestContext struct {
+	Site     *models.Site
+	Password []byte
 }
 
 // prepareConnectionTest loads the site and decrypts credentials.
-func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*models.Site, []byte, error) {
+func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*connectionTestContext, error) {
 	siteResult := s.GetById(ctx, id)
 	if siteResult.HasError() {
 		failProgress := ConnectionProgressInput{
@@ -172,7 +177,7 @@ func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*models.
 			Details: toJson(ErrorDetail{Error: siteResult.AppError().Error()}),
 		}
 		s.broadcastProgress(failProgress)
-		return nil, nil, siteResult.AppError()
+		return nil, siteResult.AppError()
 	}
 	site := siteResult.Value()
 	successProgress := ConnectionProgressInput{
@@ -185,10 +190,10 @@ func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*models.
 
 	password, err := s.decryptWithProgress(id, site.PasswordEncrypted)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &site, password, nil
+	return &connectionTestContext{Site: &site, Password: password}, nil
 }
 
 // decryptWithProgress decrypts a password with broadcast progress updates.

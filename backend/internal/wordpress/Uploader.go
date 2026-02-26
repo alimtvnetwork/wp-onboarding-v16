@@ -75,35 +75,40 @@ var uploaderNamespaces = []string{
 	PluginUploaderNamespace,
 }
 
+// UploaderAvailability holds the result of checking if the uploader plugin is available.
+type UploaderAvailability struct {
+	Available bool
+	Namespace string
+}
+
 // CheckRiseupAsiaAvailable checks if the Riseup Asia Uploader plugin is installed.
 // It tries namespaces in priority order (newest first) and returns the first match.
-func (c *Client) CheckRiseupAsiaAvailable() (bool, string, error) {
+func (c *Client) CheckRiseupAsiaAvailable() (*UploaderAvailability, error) {
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
 		callResp, err := c.doAPICallWithStatus(apiCallInput{
 			Method: "GET", Endpoint: endpoint, Operation: "check uploader namespace",
 		})
 		if err != nil {
-			return false, "", err
+			return nil, err
 		}
 
 		if callResp.StatusCode == HttpStatusOk.Int() || callResp.StatusCode == HttpStatusUnauthorized.Int() || callResp.StatusCode == HttpStatusForbidden.Int() {
-			return true, ns, nil
+			return &UploaderAvailability{Available: true, Namespace: ns}, nil
 		}
 	}
 
-	return false, "", nil
+	return &UploaderAvailability{Available: false}, nil
 }
 
 // CheckRiseUpUploaderAvailable is deprecated, use CheckRiseupAsiaAvailable.
-func (c *Client) CheckRiseUpUploaderAvailable() (bool, string, error) {
+func (c *Client) CheckRiseUpUploaderAvailable() (*UploaderAvailability, error) {
 	return c.CheckRiseupAsiaAvailable()
 }
 
 // CheckUploaderHelperAvailable is deprecated, use CheckRiseupAsiaAvailable.
-func (c *Client) CheckUploaderHelperAvailable() (bool, error) {
-	available, _, err := c.CheckRiseupAsiaAvailable()
-	return available, err
+func (c *Client) CheckUploaderHelperAvailable() (*UploaderAvailability, error) {
+	return c.CheckRiseupAsiaAvailable()
 }
 
 // GetUploaderStatus gets the Rise Up Uploader status.
@@ -178,20 +183,20 @@ func (c *Client) UploadPluginViaUploader(input UploadInput) (*UploaderUploadResu
 		}),
 	})
 
-	body, contentType, err := buildMultipartBody(uc, input.IsActivate, input.UploadSource)
+	mp, err := buildMultipartBody(uc, input.IsActivate, input.UploadSource)
 	if err != nil {
 		return nil, err
 	}
 
 	c.progress(ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
-		Message: fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, input.IsActivate, uc.ZipSize, body.Len()),
+		Message: fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, input.IsActivate, uc.ZipSize, mp.Body.Len()),
 		Details: toProgress(UploadBodyProgress{
-			Slug: uc.Slug, IsActivate: input.IsActivate, ZipSize: uc.ZipSize, BodySize: body.Len(),
+			Slug: uc.Slug, IsActivate: input.IsActivate, ZipSize: uc.ZipSize, BodySize: mp.Body.Len(),
 		}),
 	})
 
-	return c.executeUploadHTTP(uc, body, contentType)
+	return c.executeUploadHTTP(uc, mp.Body, mp.ContentType)
 }
 
 // uploadAPIErrorInput bundles parameters for buildUploadAPIError.

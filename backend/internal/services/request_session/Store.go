@@ -135,7 +135,7 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error)
 }
 
 // ListRequestSessions returns recent sessions with pagination
-func (s *Store) ListRequestSessions(limit, offset int) ([]*middleware.RequestSession, int, error) {
+func (s *Store) ListRequestSessions(limit, offset int) (*middleware.SessionListResult, error) {
 	if limit <= 0 {
 		limit = 100
 	}
@@ -165,7 +165,7 @@ func (s *Store) ListRequestSessions(limit, offset int) ([]*middleware.RequestSes
 	})
 
 	if err != nil {
-		return nil, 0, apperror.Wrap(err, apperror.ErrSessionList, "list sessions")
+		return nil, apperror.Wrap(err, apperror.ErrSessionList, "list sessions")
 	}
 
 	sort.Slice(allSessions, func(i, j int) bool {
@@ -175,7 +175,7 @@ func (s *Store) ListRequestSessions(limit, offset int) ([]*middleware.RequestSes
 	total := len(allSessions)
 
 	if offset >= len(allSessions) {
-		return []*middleware.RequestSession{}, total, nil
+		return &middleware.SessionListResult{Sessions: []*middleware.RequestSession{}, Total: total}, nil
 	}
 
 	end := offset + limit
@@ -183,7 +183,7 @@ func (s *Store) ListRequestSessions(limit, offset int) ([]*middleware.RequestSes
 		end = len(allSessions)
 	}
 
-	return allSessions[offset:end], total, nil
+	return &middleware.SessionListResult{Sessions: allSessions[offset:end], Total: total}, nil
 }
 
 // DeleteRequestSession removes a session

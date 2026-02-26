@@ -46,9 +46,15 @@ type SessionLogEntry struct {
 type SessionStore interface {
 	SaveRequestSession(session *RequestSession) error
 	GetRequestSession(id string) (*RequestSession, error)
-	ListRequestSessions(limit, offset int) ([]*RequestSession, int, error)
+	ListRequestSessions(limit, offset int) (*SessionListResult, error)
 	DeleteRequestSession(id string) error
 	ClearRequestSessions() error
+}
+
+// SessionListResult holds paginated session results.
+type SessionListResult struct {
+	Sessions []*RequestSession
+	Total    int
 }
 
 // SessionLogging creates middleware that logs all API requests with full details

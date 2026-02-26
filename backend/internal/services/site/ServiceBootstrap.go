@@ -28,9 +28,15 @@ type BootstrapResult struct {
 	IsActivated bool
 }
 
+// bootstrapContext holds the site and WordPress client for bootstrap operations.
+type bootstrapContext struct {
+	Site   models.Site
+	Client *wordpress.Client
+}
+
 // BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
 func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*BootstrapResult, error) {
-	site, client, err := s.initBootstrapContext(ctx, id, uploaderPath)
+	bctx, err := s.initBootstrapContext(ctx, id, uploaderPath)
 	if err != nil {
 		return nil, err
 	}
@@ -41,19 +47,19 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 	defer os.Remove(zipPath)
 
-	uploadResult, err := s.executeBootstrapUpload(id, client, zipPath)
+	uploadResult, err := s.executeBootstrapUpload(id, bctx.Client, zipPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.finalizeBootstrap(id, site, uploadResult)
+	return s.finalizeBootstrap(id, bctx.Site, uploadResult)
 }
 
 // initBootstrapContext loads the site, decrypts credentials, and creates a WordPress client.
-func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPath string) (models.Site, *wordpress.Client, error) {
+func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPath string) (*bootstrapContext, error) {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
-		return models.Site{}, nil, result.AppError()
+		return nil, result.AppError()
 	}
 	site := result.Value()
 
@@ -71,7 +77,7 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 
 	decrypted, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		return models.Site{}, nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
 	}
 
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
@@ -90,7 +96,7 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 		})
 	}
 	client := s.wpClientFactory(site.Url, site.Username, string(decrypted), progressCallback)
-	return site, client, nil
+	return &bootstrapContext{Site: site, Client: client}, nil
 }
 
 // prepareBootstrapZip creates the uploader ZIP archive.
@@ -125,13 +131,13 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, er
 
 // executeBootstrapUpload uploads the uploader plugin to the remote site.
 func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
-	available, namespace, _ := client.CheckRiseupAsiaAvailable()
-	if available && namespace != "" {
+	availability, _ := client.CheckRiseupAsiaAvailable()
+	if availability != nil && availability.Available && availability.Namespace != "" {
 		input := bootstrapUploaderInput{
 			SiteID:    id,
 			Client:    client,
 			ZipPath:   zipPath,
-			Namespace: namespace,
+			Namespace: availability.Namespace,
 		}
 		return s.bootstrapViaUploader(input)
 	}

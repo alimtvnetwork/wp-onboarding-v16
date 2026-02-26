@@ -61,19 +61,19 @@ type SnapshotImportResult struct {
 func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsImport)
 
-	body, contentType, err := buildImportMultipart(zipPath)
+	mp, err := buildImportMultipart(zipPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.executeImportRequest(endpoint, body, contentType)
+	return c.executeImportRequest(endpoint, mp.Body, mp.ContentType)
 }
 
 // buildImportMultipart creates the multipart body for a snapshot import.
-func buildImportMultipart(zipPath string) (*bytes.Buffer, string, error) {
+func buildImportMultipart(zipPath string) (*multipartResult, error) {
 	file, err := os.Open(zipPath)
 	if err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to open import ZIP file")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to open import ZIP file")
 	}
 	defer file.Close()
 
@@ -82,16 +82,16 @@ func buildImportMultipart(zipPath string) (*bytes.Buffer, string, error) {
 
 	part, err := writer.CreateFormFile("file", filepath.Base(zipPath))
 	if err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to create multipart form")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create multipart form")
 	}
 
 	if _, err := io.Copy(part, file); err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to write file to form")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write file to form")
 	}
 
 	writer.Close()
 
-	return body, writer.FormDataContentType(), nil
+	return &multipartResult{Body: body, ContentType: writer.FormDataContentType()}, nil
 }
 
 // executeImportRequest sends the multipart import and parses the response.

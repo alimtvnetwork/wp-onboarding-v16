@@ -100,7 +100,7 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 
-	errors, total, err := Services.ErrorHistoryService.List(limit, offset, filters)
+	listResult, err := Services.ErrorHistoryService.List(limit, offset, filters)
 	if err != nil {
 		respondError(
 			w,
@@ -113,8 +113,8 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := PaginatedErrors{
-		Errors: errors,
-		Total:  total,
+		Errors: listResult.Items,
+		Total:  listResult.Total,
 		Limit:  limit,
 		Offset: offset,
 	}

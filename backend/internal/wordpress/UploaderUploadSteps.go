@@ -41,7 +41,7 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, err
 
 	slug = normalizeUploadSlug(absZipPath, slug)
 
-	zipFile, zipSize, err := openAndStatZip(absZipPath)
+	zfh, err := openAndStatZip(absZipPath)
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, err
 	return &uploadContext{
 		AbsZipPath:     absZipPath,
 		Slug:           slug,
-		ZipSize:        zipSize,
+		ZipSize:        zfh.Size,
 		Namespace:      namespace,
 		UploadEndpoint: uploadEndpoint,
 		UploadURL:      uploadURL,
-		ZipFile:        zipFile,
+		ZipFile:        zfh.File,
 	}, nil
 }
 
@@ -69,42 +69,54 @@ func normalizeUploadSlug(absZipPath, slug string) string {
 	return strings.TrimSuffix(slug, ".zip")
 }
 
+// zipFileHandle holds an open ZIP file and its size.
+type zipFileHandle struct {
+	File *os.File
+	Size int64
+}
+
 // openAndStatZip opens a ZIP file and returns the handle and size.
-func openAndStatZip(absZipPath string) (*os.File, int64, error) {
+func openAndStatZip(absZipPath string) (*zipFileHandle, error) {
 	zipFile, err := os.Open(absZipPath)
 	if err != nil {
-		return nil, 0, apperror.Wrap(err, apperror.ErrFSRead, "open zip file").WithPath(pathutil.ForDisplay(absZipPath))
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip file").WithPath(pathutil.ForDisplay(absZipPath))
 	}
 
 	fileInfo, err := zipFile.Stat()
 	if err != nil {
 		zipFile.Close()
-		return nil, 0, apperror.Wrap(err, apperror.ErrFSRead, "stat zip file").WithPath(pathutil.ForDisplay(absZipPath))
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stat zip file").WithPath(pathutil.ForDisplay(absZipPath))
 	}
 
-	return zipFile, fileInfo.Size(), nil
+	return &zipFileHandle{File: zipFile, Size: fileInfo.Size()}, nil
+}
+
+// multipartResult holds the output of building a multipart request body.
+type multipartResult struct {
+	Body        *bytes.Buffer
+	ContentType string
 }
 
 // buildMultipartBody creates the multipart/form-data request body for plugin upload.
-func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.Variant) (*bytes.Buffer, string, error) {
+func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.Variant) (*multipartResult, error) {
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
 
 	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(uc.AbsZipPath))
 	if err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "create multipart form file")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "create multipart form file")
 	}
 	if _, err := io.Copy(part, uc.ZipFile); err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrFSRead, "stream zip to multipart")
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stream zip to multipart")
 	}
 
 	writeUploadFields(uploadFieldsInput{Writer: writer, Slug: uc.Slug, IsActivate: isActivate, Source: source})
 
 	if err := writer.Close(); err != nil {
-		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
 	}
 
-	return &requestBody, writer.FormDataContentType(), nil
+	return &multipartResult{Body: &requestBody, ContentType: writer.FormDataContentType()}, nil
 }
 
 // uploadFieldsInput bundles parameters for writeUploadFields.
