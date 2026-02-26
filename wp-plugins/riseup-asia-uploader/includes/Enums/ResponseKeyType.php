@@ -101,6 +101,7 @@ enum ResponseKeyType: string
 
     /** Plugin lifecycle keys. */
     case Activated       = 'Activated';
+    case Deactivated     = 'Deactivated';
     case PluginSlug      = 'PluginSlug';
     case IsUpdate        = 'IsUpdate';
     case IsSelfUpdate    = 'IsSelfUpdate';
@@ -277,6 +278,7 @@ enum ResponseKeyType: string
     case Graph      = 'Graph';
     case InDegree   = 'InDegree';
     case Manifest   = 'Manifest';
+    case Meta       = 'Meta';
     case SqlitePath = 'SqlitePath';
     case RealPath   = 'RealPath';
     case FilePath   = 'FilePath';

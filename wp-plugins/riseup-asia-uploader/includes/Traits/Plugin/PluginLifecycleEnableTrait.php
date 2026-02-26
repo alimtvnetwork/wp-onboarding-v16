@@ -82,7 +82,7 @@ trait PluginLifecycleEnableTrait {
     private function buildAlreadyInactiveResponse(string $slug): WP_REST_Response {
         return EnvelopeBuilder::success('Plugin was already inactive')
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
-            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, 'deactivated' => true))
+            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deactivated->value => true))
             ->toResponse();
     }
 
@@ -130,7 +130,7 @@ trait PluginLifecycleEnableTrait {
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
-            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, 'deactivated' => true))
+            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deactivated->value => true))
             ->toResponse();
     }
 }
