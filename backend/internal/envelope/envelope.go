@@ -6,10 +6,7 @@ package envelope
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
-	"runtime"
-	"strings"
 	"time"
 )
 
@@ -179,24 +176,29 @@ func Deleted() Response {
 // requestPath is the base URL path (e.g., "/api/v1/plugins") used to generate navigation URLs.
 func List[T any](data T, pg Pagination, requestPath string) Response {
 	nav := pg.NavigationURLs(requestPath)
+	resp := newListResponse(data, pg)
+	resp.Navigation = &nav
+	return resp
+}
+
+// newListResponse builds a list response with pagination attributes.
+func newListResponse[T any](data T, pg Pagination) Response {
 	return Response{
-		Status: Status{
-			IsSuccess: true,
-			IsFailed:  false,
-			Code:      http.StatusOK,
-			Message:   "OK",
-			Timestamp: now(),
-		},
-		Attributes: Attributes{
-			IsSingle:     false,
-			IsMultiple:   true,
-			TotalRecords: pg.TotalRecords,
-			PerPage:      pg.PerPage,
-			TotalPages:   pg.TotalPages(),
-			CurrentPage:  pg.Page,
-		},
+		Status:     successStatus(http.StatusOK, "OK"),
+		Attributes: listAttributes(pg),
 		Results:    data,
-		Navigation: &nav,
+	}
+}
+
+// listAttributes builds attributes for a paginated list.
+func listAttributes(pg Pagination) Attributes {
+	return Attributes{
+		IsSingle:     false,
+		IsMultiple:   true,
+		TotalRecords: pg.TotalRecords,
+		PerPage:      pg.PerPage,
+		TotalPages:   pg.TotalPages(),
+		CurrentPage:  pg.Page,
 	}
 }
 
@@ -204,13 +206,7 @@ func List[T any](data T, pg Pagination, requestPath string) Response {
 // Generic: callers get compile-time type checking on the data parameter.
 func ListUnpaginated[T any](data T, count int) Response {
 	return Response{
-		Status: Status{
-			IsSuccess: true,
-			IsFailed:  false,
-			Code:      http.StatusOK,
-			Message:   "OK",
-			Timestamp: now(),
-		},
+		Status: successStatus(http.StatusOK, "OK"),
 		Attributes: Attributes{
 			IsSingle:     false,
 			IsMultiple:   true,
@@ -224,17 +220,9 @@ func ListUnpaginated[T any](data T, count int) Response {
 // if error reporting is enabled in debug config.
 func Error(statusCode int, code, message string) Response {
 	resp := Response{
-		Status: Status{
-			IsSuccess: false,
-			IsFailed:  true,
-			Code:      statusCode,
-			Message:   message,
-			Timestamp: now(),
-		},
-		Attributes: Attributes{
-			HasAnyErrors: true,
-		},
-		Results: []struct{}{},
+		Status:     failureStatus(statusCode, message),
+		Attributes: Attributes{HasAnyErrors: true},
+		Results:    []struct{}{},
 	}
 	if globalDebug.IncludeErrors {
 		resp.Errors = &Errors{
@@ -242,6 +230,28 @@ func Error(statusCode int, code, message string) Response {
 		}
 	}
 	return resp
+}
+
+// successStatus builds a success Status.
+func successStatus(code int, message string) Status {
+	return Status{
+		IsSuccess: true,
+		IsFailed:  false,
+		Code:      code,
+		Message:   message,
+		Timestamp: now(),
+	}
+}
+
+// failureStatus builds a failure Status.
+func failureStatus(code int, message string) Status {
+	return Status{
+		IsSuccess: false,
+		IsFailed:  true,
+		Code:      code,
+		Message:   message,
+		Timestamp: now(),
+	}
 }
 
 // --- Fluent Modifiers ---
@@ -314,89 +324,6 @@ func (r *Response) ensureErrors() {
 	}
 }
 
-// --- Pagination ---
-
-// Pagination holds the parameters for paginated queries.
-type Pagination struct {
-	Page         int
-	PerPage      int
-	TotalRecords int
-}
-
-// DefaultPagination returns the default pagination (page 1, 20 per page).
-func DefaultPagination() Pagination {
-	return Pagination{Page: 1, PerPage: 20}
-}
-
-// NewPagination creates a Pagination with computed totals.
-func NewPagination(totalRecords, page, perPage int) Pagination {
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 {
-		perPage = 20
-	}
-	return Pagination{
-		Page:         page,
-		PerPage:      perPage,
-		TotalRecords: totalRecords,
-	}
-}
-
-// TotalPages computes the total number of pages.
-func (p Pagination) TotalPages() int {
-	if p.PerPage <= 0 {
-		return 0
-	}
-	return int(math.Ceil(float64(p.TotalRecords) / float64(p.PerPage)))
-}
-
-// Offset returns the SQL OFFSET for the current page.
-func (p Pagination) Offset() int {
-	return (p.Page - 1) * p.PerPage
-}
-
-// NavigationURLs computes the navigation block with URL string links.
-func (p Pagination) NavigationURLs(basePath string) Navigation {
-	total := p.TotalPages()
-	nav := Navigation{}
-
-	// Next page
-	if p.Page < total {
-		next := fmt.Sprintf("%s?page=%d&perPage=%d", basePath, p.Page+1, p.PerPage)
-		nav.NextPage = &next
-	}
-
-	// Previous page
-	if p.Page > 1 {
-		prev := fmt.Sprintf("%s?page=%d&perPage=%d", basePath, p.Page-1, p.PerPage)
-		nav.PrevPage = &prev
-	}
-
-	// 5-page sliding window centered on current page
-	windowSize := 5
-	start := p.Page - windowSize/2
-	if start < 1 {
-		start = 1
-	}
-	end := start + windowSize - 1
-	if end > total {
-		end = total
-		start = end - windowSize + 1
-		if start < 1 {
-			start = 1
-		}
-	}
-
-	links := make([]string, 0, windowSize)
-	for i := start; i <= end; i++ {
-		links = append(links, fmt.Sprintf("%s?page=%d&perPage=%d", basePath, i, p.PerPage))
-	}
-	nav.CloserLinks = links
-
-	return nav
-}
-
 // --- HTTP Writer ---
 
 // Write serializes and writes the response to the HTTP response writer.
@@ -410,102 +337,4 @@ func Write(w http.ResponseWriter, resp Response) {
 
 func now() string {
 	return time.Now().UTC().Format(time.RFC3339)
-}
-
-// CaptureMethodFrames captures the Go call stack as MethodFrame structs.
-// skip controls how many frames to skip (2 = skip this function + caller).
-// Only includes application frames (wp-plugin-publish/).
-func CaptureMethodFrames(skip int) []MethodFrame {
-	maxFrames := globalDebug.MaxStackFrames
-	if maxFrames <= 0 {
-		maxFrames = 20
-	}
-	pcs := make([]uintptr, 64)
-	n := runtime.Callers(skip+1, pcs)
-	if n == 0 {
-		return nil
-	}
-	pcs = pcs[:n]
-	frames := runtime.CallersFrames(pcs)
-	var result []MethodFrame
-	for {
-		frame, more := frames.Next()
-		// Only include application-specific frames
-		if strings.Contains(frame.Function, "wp-plugin-publish/") {
-			// Extract short file name
-			file := frame.File
-			idx := strings.Index(file, "wp-plugin-publish/")
-			if idx >= 0 {
-				file = file[idx+len("wp-plugin-publish/"):]
-			}
-			// Extract short function name
-			fn := frame.Function
-			fnIdx := strings.LastIndex(fn, "/")
-			if fnIdx >= 0 {
-				fn = fn[fnIdx+1:]
-			}
-			result = append(result, MethodFrame{
-				Method:     fn,
-				File:       file,
-				LineNumber: frame.Line,
-			})
-			if len(result) >= maxFrames {
-				break
-			}
-		}
-		if !more {
-			break
-		}
-	}
-	return result
-}
-
-// CaptureBackendTrace captures Go stack trace as string lines for Errors.Backend.
-// skip controls how many frames to skip (2 = skip this function + caller).
-func CaptureBackendTrace(skip int) []string {
-	maxFrames := globalDebug.MaxStackFrames
-	if maxFrames <= 0 {
-		maxFrames = 20
-	}
-	pcs := make([]uintptr, 64)
-	n := runtime.Callers(skip+1, pcs)
-	if n == 0 {
-		return nil
-	}
-	pcs = pcs[:n]
-	frames := runtime.CallersFrames(pcs)
-	var result []string
-	for {
-		frame, more := frames.Next()
-		if strings.Contains(frame.Function, "wp-plugin-publish/") {
-			file := frame.File
-			idx := strings.Index(file, "wp-plugin-publish/")
-			if idx >= 0 {
-				file = file[idx+len("wp-plugin-publish/"):]
-			}
-			fn := frame.Function
-			fnIdx := strings.LastIndex(fn, "/")
-			if fnIdx >= 0 {
-				fn = fn[fnIdx+1:]
-			}
-			result = append(result, fmt.Sprintf("%s:%d %s", file, frame.Line, fn))
-			if len(result) >= maxFrames {
-				break
-			}
-		}
-		if !more {
-			break
-		}
-	}
-	return result
-}
-
-// ErrorWithStack creates an error response with Go stack traces and methods stack auto-captured.
-func ErrorWithStack(statusCode int, code, message string) Response {
-	resp := Error(statusCode, code, message)
-	backendTrace := CaptureBackendTrace(3)
-	methodFrames := CaptureMethodFrames(3)
-	resp = resp.WithBackendTrace(backendTrace)
-	resp = resp.WithMethodsStack(methodFrames)
-	return resp
 }

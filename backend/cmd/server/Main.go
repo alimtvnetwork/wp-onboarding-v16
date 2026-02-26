@@ -18,26 +18,14 @@ import (
 
 	"wp-plugin-publish/internal/api"
 	"wp-plugin-publish/internal/api/handlers"
-	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/config"
 	"wp-plugin-publish/internal/database"
-	"wp-plugin-publish/internal/logger"
-	"wp-plugin-publish/internal/services/backup"
-	"wp-plugin-publish/internal/services/e2e"
-	"wp-plugin-publish/internal/services/error_history"
-	"wp-plugin-publish/internal/services/plugin"
-	"wp-plugin-publish/internal/services/publish"
-	"wp-plugin-publish/internal/services/publish_history"
-	"wp-plugin-publish/internal/services/request_session"
-	"wp-plugin-publish/internal/services/session"
-	"wp-plugin-publish/internal/services/site"
-	"wp-plugin-publish/internal/services/site_health"
-	"wp-plugin-publish/internal/services/sync"
-	"wp-plugin-publish/internal/services/watcher"
-	"wp-plugin-publish/internal/version"
-	"wp-plugin-publish/internal/wordpress"
-	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/internal/envelope"
+	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/internal/services/e2e"
+	"wp-plugin-publish/internal/services/request_session"
+	"wp-plugin-publish/internal/version"
+	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/portutil"
 )
 
@@ -48,7 +36,6 @@ type stripAnsiWriter struct{ w io.Writer }
 func (s stripAnsiWriter) Write(p []byte) (int, error) {
 	clean := ansiRegexp.ReplaceAll(p, nil)
 	_, err := s.w.Write(clean)
-	// Always report the original length so the upstream logger doesn't think it's a short write.
 	return len(p), err
 }
 
@@ -63,273 +50,227 @@ func (e errorOnlyWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// Services holds all application services
-type Services struct {
-	Site           *site.Service
-	Plugin         *plugin.Service
-	Watcher        *watcher.Service
-	Sync           sync.Service
-	Publish        *publish.Service
-	Backup         *backup.Service
-	Session        *session.Service
-	ErrorHistory   *errorhistory.Service
-	PublishHistory *publishhistory.Service
-	SiteHealth     *sitehealth.Service
-}
-
 func main() {
-	// Bootstrap logger (minimal, used only until config is loaded)
 	bootstrapLog := logger.New(logger.Config{Level: logger.LevelInfo})
 
-	// Load configuration FIRST so we can use logging.timeFormat
-	cfg, err := config.Load("config.json")
-	if err != nil {
-		bootstrapLog.Fatal("Failed to load config", "error", err)
-	}
-
-	// Load version info from version.json (frontend/dist or public/)
+	cfg := loadConfig(bootstrapLog)
 	versionInfo, _ := version.Load(cfg.Server.StaticDir)
 
-	// Ensure errors directory exists and set up paths
-	errorsDir := filepath.Join(filepath.Dir(cfg.DatabasePath), "errors")
-	if err := os.MkdirAll(errorsDir, 0755); err != nil {
-		bootstrapLog.Error("Failed to create errors dir", "path", errorsDir, "error", err)
+	paths := resolveLogPaths(cfg.DatabasePath, bootstrapLog)
+	applyStartupCleanup(cfg, paths, bootstrapLog)
+
+	logOutput, cleanupLogs := openLogFiles(paths, bootstrapLog)
+	defer cleanupLogs()
+
+	log := initLogger(cfg, versionInfo, logOutput)
+	initEnvelopeDebug(cfg)
+	log.Info("Starting application", "version", versionInfo.String())
+
+	db := initDatabase(cfg, log)
+	defer db.Close()
+
+	wsHub := initWebSocket(versionInfo)
+	services := initServices(InitServicesInput{DB: db, Cfg: cfg, WSHub: wsHub, Log: log})
+	initPluginCaches(services, log)
+
+	reqStore := initRequestSessionStore(cfg, log)
+	initE2EService(cfg, db, wsHub, log)
+
+	server := buildServer(cfg, services, wsHub, log, reqStore)
+	launchServer(server, cfg, log, versionInfo)
+	awaitShutdown(server, log)
+}
+
+// loadConfig loads the application configuration.
+func loadConfig(log *logger.Logger) *config.Config {
+	cfg, err := config.Load("config.json")
+	if err != nil {
+		log.Fatal("Failed to load config", "error", err)
 	}
+	return cfg
+}
 
-	// Enable middleware-level error logging to error.log.txt
-	middleware.ErrorLogDir = errorsDir
-
-	allLogPath := filepath.Join(errorsDir, "log.txt")
-	errLogPath := filepath.Join(errorsDir, "error.log.txt")
-
-	// Clear logs on startup if configured
+// applyStartupCleanup clears logs and sessions if configured.
+func applyStartupCleanup(cfg *config.Config, paths logPaths, log *logger.Logger) {
 	if cfg.Logging.ClearLogsOnStartup {
-		bootstrapLog.Info("Clearing logs on startup (clearLogsOnStartup=true)")
-		if err := os.Remove(allLogPath); err != nil {
-			isRealError := !os.IsNotExist(err)
-			if isRealError {
-				bootstrapLog.Error("Failed to clear log.txt", "error", err)
-			}
-		}
-		if err := os.Remove(errLogPath); err != nil {
-			isRealError := !os.IsNotExist(err)
-			if isRealError {
-				bootstrapLog.Error("Failed to clear error.log.txt", "error", err)
-			}
-		}
+		clearStartupLogs(paths, log)
 	}
-
-	// Clear sessions on startup if configured
 	if cfg.Logging.ClearSessionsOnStartup {
-		sessionsDir := filepath.Join(filepath.Dir(cfg.DatabasePath), "sessions")
-		bootstrapLog.Info("Clearing sessions on startup (clearSessionsOnStartup=true)", "path", sessionsDir)
-		if err := os.RemoveAll(sessionsDir); err != nil {
-			isRealError := !os.IsNotExist(err)
-			if isRealError {
-				bootstrapLog.Error("Failed to clear sessions directory", "error", err)
-			}
-		}
-		// Recreate the empty directory
-		if err := os.MkdirAll(sessionsDir, 0755); err != nil {
-			bootstrapLog.Error("Failed to recreate sessions directory", "error", err)
-		}
+		clearStartupSessions(cfg.DatabasePath, log)
 	}
+}
 
-	// Set up on-disk log files
-	logOutput := io.Writer(os.Stdout)
-	allFile, err1 := os.OpenFile(allLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	errFile, err2 := os.OpenFile(errLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err1 != nil || err2 != nil {
-		bootstrapLog.Error("Failed to open on-disk log files", "allLog", allLogPath, "errorLog", errLogPath, "err1", err1, "err2", err2)
-		if allFile != nil {
-			allFile.Close()
-		}
-		if errFile != nil {
-			errFile.Close()
-		}
-	} else {
-		defer allFile.Close()
-		defer errFile.Close()
-		logOutput = io.MultiWriter(
-			os.Stdout,
-			stripAnsiWriter{w: allFile},
-			errorOnlyWriter{w: stripAnsiWriter{w: errFile}},
-		)
-		bootstrapLog.Info("On-disk logs enabled", "log", allLogPath, "errorLog", errLogPath)
-	}
-
-	// Initialize the real logger with configured timeFormat (single source of truth)
-	log := logger.New(logger.Config{
+// initLogger creates the configured logger.
+func initLogger(cfg *config.Config, vi *version.Info, output io.Writer) *logger.Logger {
+	return logger.New(logger.Config{
 		Level:      parseLogLevel(cfg.Logging.Level),
-		Output:     logOutput,
+		Output:     output,
 		TimeFormat: cfg.Logging.TimeFormat,
-		AppName:    versionInfo.AppName,
-		AppVersion: versionInfo.Version,
+		AppName:    vi.AppName,
+		AppVersion: vi.Version,
 	})
+}
 
-	// Initialize envelope debug config from seedable config
+// initEnvelopeDebug sets the global envelope debug config.
+func initEnvelopeDebug(cfg *config.Config) {
 	envelope.SetDebugConfig(envelope.DebugConfig{
 		IncludeErrors:       cfg.ResponseDebug.IncludeInternalErrors,
 		IncludeStackTrace:   cfg.ResponseDebug.IncludeStackTrace,
 		IncludeMethodsStack: cfg.ResponseDebug.IncludeMethodsStack,
 		MaxStackFrames:      cfg.ResponseDebug.MaxStackFrames,
 	})
+}
 
-	log.Info("Starting application", "version", versionInfo.String())
-
-	// Initialize database
+// initDatabase opens and migrates the database.
+func initDatabase(cfg *config.Config, log *logger.Logger) *database.DB {
 	db, err := database.New(cfg.DatabasePath)
 	if err != nil {
 		log.Fatal("Failed to connect to database", "error", err)
 	}
-	defer db.Close()
-
-	// Run migrations (with logging)
 	if err := database.Migrate(db, log); err != nil {
 		log.Fatal("Failed to run migrations", "error", err)
 	}
-
-	// Seed from config if needed (with logging)
 	if err := config.SeedIfNeeded(db, cfg, log); err != nil {
 		log.Fatal("Failed to seed database", "error", err)
 	}
+	return db
+}
 
-	// Initialize WebSocket hub
+// initWebSocket initializes the WebSocket hub.
+func initWebSocket(vi *version.Info) *ws.Hub {
 	wsHub := ws.NewHub()
 	go wsHub.Run()
+	ws.SetAppVersion(vi.Version)
+	return wsHub
+}
 
-	// Set app version for WebSocket log formatting
-	ws.SetAppVersion(versionInfo.Version)
-
-	// Initialize services
-	services := initServices(InitServicesInput{DB: db, Cfg: cfg, WSHub: wsHub, Log: log})
-
-	// Initialize file caches for registered plugins
+// initPluginCaches initializes watcher caches for registered plugins.
+func initPluginCaches(services *Services, log *logger.Logger) {
 	ctx := context.Background()
 	pluginResult := services.Plugin.List(ctx)
-	if pluginResult.IsSafe() {
-		for _, p := range pluginResult.Items() {
-			if err := services.Watcher.InitializeCache(ctx, p.ID); err != nil {
-				log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", err)
-			}
+	if !pluginResult.IsSafe() {
+		return
+	}
+	for _, p := range pluginResult.Items() {
+		if err := services.Watcher.InitializeCache(ctx, p.ID); err != nil {
+			log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", err)
 		}
 	}
+}
 
-	// Initialize request session store for per-request logging
-	var reqSessionStore *requestsession.Store
-	if cfg.Logging.SessionLoggingEnabled {
-		var err error
-		reqSessionStore, err = requestsession.New(requestsession.Config{
-			DataDir:       filepath.Dir(cfg.DatabasePath),
-			Logger:        log,
-			RetentionDays: 1, // Keep request sessions for 1 day (high volume)
-		})
-		if err != nil {
-			log.Error("Failed to initialize request session store", "error", err)
-		} else {
-			log.Info("Request session logging enabled")
-		}
+// initRequestSessionStore creates the request session store if enabled.
+func initRequestSessionStore(cfg *config.Config, log *logger.Logger) *requestsession.Store {
+	if !cfg.Logging.SessionLoggingEnabled {
+		return nil
 	}
-
-	// Initialize E2E test service if enabled
-	if cfg.E2E.Enabled {
-		e2eSvc := e2e.New(e2e.Config{
-			DB:               db.DB,
-			Broadcast:        func(event string, data any) { ws.Broadcast(wsHub, event, data) },
-			BaseURL:          fmt.Sprintf("http://localhost:%d", cfg.Server.Port),
-			TestPluginPath:   cfg.E2E.TestPluginPath,
-			TestSiteURL:      cfg.E2E.TestSiteURL,
-			TestSiteUsername:  cfg.E2E.TestSiteUsername,
-			TestSitePassword: cfg.E2E.TestSitePassword,
-		})
-		handlers.E2EService = &E2EServiceAdapter{e2eSvc}
-		log.Info("E2E test service enabled")
+	store, err := requestsession.New(requestsession.Config{
+		DataDir:       filepath.Dir(cfg.DatabasePath),
+		Logger:        log,
+		RetentionDays: 1,
+	})
+	if err != nil {
+		log.Error("Failed to initialize request session store", "error", err)
+		return nil
 	}
+	log.Info("Request session logging enabled")
+	return store
+}
 
-	// Start HTTP server - use handlers.NewServiceRegistry to wrap services with adapters
-	serviceRegistry := handlers.NewServiceRegistry(
-		services.Site,
-		services.Plugin,
-		services.Sync,
-		nil, // TODO: Add git service when implemented
-		services.Watcher,
-		services.Publish,
-		services.Backup,
-		services.Session,
-		services.ErrorHistory,
-		services.PublishHistory,
-		services.SiteHealth,
+// initE2EService initializes the E2E test service if enabled.
+func initE2EService(cfg *config.Config, db *database.DB, wsHub *ws.Hub, log *logger.Logger) {
+	if !cfg.E2E.Enabled {
+		return
+	}
+	e2eSvc := e2e.New(e2e.Config{
+		DB:               db.DB,
+		Broadcast:        func(event string, data any) { ws.Broadcast(wsHub, event, data) },
+		BaseURL:          fmt.Sprintf("http://localhost:%d", cfg.Server.Port),
+		TestPluginPath:   cfg.E2E.TestPluginPath,
+		TestSiteURL:      cfg.E2E.TestSiteURL,
+		TestSiteUsername:  cfg.E2E.TestSiteUsername,
+		TestSitePassword: cfg.E2E.TestSitePassword,
+	})
+	handlers.E2EService = &E2EServiceAdapter{e2eSvc}
+	log.Info("E2E test service enabled")
+}
+
+// buildServer creates the HTTP server with all service handlers wired.
+func buildServer(cfg *config.Config, services *Services, wsHub *ws.Hub, log *logger.Logger, reqStore *requestsession.Store) *api.Server {
+	registry := handlers.NewServiceRegistry(
+		services.Site, services.Plugin, services.Sync, nil,
+		services.Watcher, services.Publish, services.Backup,
+		services.Session, services.ErrorHistory, services.PublishHistory, services.SiteHealth,
 	)
-	server := api.NewServer(api.ServerConfig{
+	return api.NewServer(api.ServerConfig{
 		Port:      cfg.Server.Port,
 		StaticDir: cfg.Server.StaticDir,
 		Services: &api.ServiceRegistry{
-			Site:           serviceRegistry.SiteService,
-			Plugin:         serviceRegistry.PluginService,
-			Sync:           serviceRegistry.SyncService,
-			Git:            serviceRegistry.GitService,
-			Watcher:        serviceRegistry.WatcherService,
-			Publish:        serviceRegistry.PublishService,
-			Backup:         serviceRegistry.BackupService,
-			Session:        serviceRegistry.SessionService,
-			ErrorHistory:   serviceRegistry.ErrorHistoryService,
-			PublishHistory: serviceRegistry.PublishHistoryService,
-			SiteHealth:     serviceRegistry.SiteHealthService,
+			Site: registry.SiteService, Plugin: registry.PluginService,
+			Sync: registry.SyncService, Git: registry.GitService,
+			Watcher: registry.WatcherService, Publish: registry.PublishService,
+			Backup: registry.BackupService, Session: registry.SessionService,
+			ErrorHistory: registry.ErrorHistoryService, PublishHistory: registry.PublishHistoryService,
+			SiteHealth: registry.SiteHealthService,
 		},
-		WSHub:                  wsHub,
-		Logger:                 log,
-		RequestSessionStore:    reqSessionStore,
-		SessionLoggingEnabled:  cfg.Logging.SessionLoggingEnabled,
+		WSHub: wsHub, Logger: log,
+		RequestSessionStore:   reqStore,
+		SessionLoggingEnabled: cfg.Logging.SessionLoggingEnabled,
 	})
-	// Auto-resolve port conflict
+}
+
+// launchServer starts the server and opens the browser.
+func launchServer(server *api.Server, cfg *config.Config, log *logger.Logger, vi *version.Info) {
 	if err := portutil.EnsurePortFree(cfg.Server.Port); err != nil {
 		log.Warn("Port conflict resolution", "port", cfg.Server.Port, "result", err.Error())
 	}
-
 	go func() {
 		if err := server.Start(); err != nil && err.Error() != "http: Server closed" {
 			log.Fatal("Server failed", "error", err)
 		}
 	}()
-
 	log.Info("Server started", "port", cfg.Server.Port)
-	localURL := fmt.Sprintf("http://localhost:%d", cfg.Server.Port)
-	fmt.Printf("\n  %s\n", versionInfo.String())
+	printStartupBanner(cfg.Server.Port, vi)
+	go openBrowser(cfg.Server.Port, log)
+}
+
+// printStartupBanner prints the server URL info.
+func printStartupBanner(port int, vi *version.Info) {
+	localURL := fmt.Sprintf("http://localhost:%d", port)
+	fmt.Printf("\n  %s\n", vi.String())
 	fmt.Printf("  Local:     %s\n", localURL)
-	fmt.Printf("  WebSocket: ws://localhost:%d/ws\n\n", cfg.Server.Port)
+	fmt.Printf("  WebSocket: ws://localhost:%d/ws\n\n", port)
+}
 
-	// Auto-open browser
-	go func() {
-		var cmd *exec.Cmd
-		switch runtime.GOOS {
-		case "windows":
-			cmd = exec.Command("cmd", "/c", "start", localURL)
-		case "darwin":
-			cmd = exec.Command("open", localURL)
-		default:
-			cmd = exec.Command("xdg-open", localURL)
-		}
-		if err := cmd.Run(); err != nil {
-			log.Warn("Could not open browser automatically", "error", err)
-		}
-	}()
+// openBrowser attempts to open the default browser.
+func openBrowser(port int, log *logger.Logger) {
+	localURL := fmt.Sprintf("http://localhost:%d", port)
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", localURL)
+	case "darwin":
+		cmd = exec.Command("open", localURL)
+	default:
+		cmd = exec.Command("xdg-open", localURL)
+	}
+	if err := cmd.Run(); err != nil {
+		log.Warn("Could not open browser automatically", "error", err)
+	}
+}
 
-	// Wait for shutdown signal
+// awaitShutdown waits for shutdown signal and gracefully stops.
+func awaitShutdown(server *api.Server, log *logger.Logger) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	// Graceful shutdown
 	log.Info("Shutting down...")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Watcher uses hybrid mode - no background polling to stop
 	if err := server.Shutdown(ctx); err != nil {
 		log.Error("Server shutdown error", "error", err)
 	}
-
 	log.Info("Application stopped")
 }
 
@@ -349,135 +290,4 @@ func parseLogLevel(level string) logger.Level {
 	default:
 		return logger.LevelInfo
 	}
-}
-
-// InitServicesInput holds dependencies for service initialization.
-type InitServicesInput struct {
-	DB    *database.DB
-	Cfg   *config.Config
-	WSHub *ws.Hub
-	Log   *logger.Logger
-}
-
-// initServices creates and wires all application services
-func initServices(input InitServicesInput) *Services {
-	// WordPress REST API client factory with progress callback support
-	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(event wordpress.ProgressEvent)) *wordpress.Client {
-		return wordpress.NewClient(wordpress.ClientConfig{
-			BaseURL:         siteURL,
-			Username:        username,
-			Password:        password,
-			Timeout:         time.Duration(input.Cfg.WordPress.TimeoutSeconds) * time.Second,
-			StackTraceDepth: input.Cfg.Logging.StackTraceDepth,
-			OnProgress:      onProgress,
-		})
-	}
-
-	// Simple client factory for services that don't need progress callbacks
-	wpClientFactory := func(siteURL, username, password string) *wordpress.Client {
-		return wordpress.NewClient(wordpress.ClientConfig{
-			BaseURL:         siteURL,
-			Username:        username,
-			Password:        password,
-			Timeout:         time.Duration(input.Cfg.WordPress.TimeoutSeconds) * time.Second,
-			StackTraceDepth: input.Cfg.Logging.StackTraceDepth,
-		})
-	}
-
-	// Initialize session service for operation logging (must be before siteService)
-	sessionService, err := session.New(session.Config{
-		DataDir:       filepath.Dir(input.Cfg.DatabasePath),
-		Logger:        input.Log,
-		RetentionDays: 7,
-	})
-	if err != nil {
-		input.Log.Error("Failed to initialize session service", "error", err)
-	}
-
-	siteWSHub := &SiteWSHubAdapter{hub: input.WSHub}
-
-	// Initialize services with dependencies
-	siteService := site.New(site.Config{
-		DB:              input.DB,
-		Logger:          input.Log,
-		EncryptionKey:   input.Cfg.Security.EncryptionKey,
-		WPClientFactory: wpClientFactoryWithProgress,
-		WSHub:           siteWSHub,
-		SessionService:  sessionService,
-		IsCacheEnabled:  input.Cfg.RemotePlugins.CacheEnabled,
-		CacheTTLMinutes: input.Cfg.RemotePlugins.CacheTTLMinutes,
-	})
-
-	pluginService := plugin.New(plugin.Config{DB: input.DB, Logger: input.Log})
-
-	backupService := backup.New(backup.Config{
-		DB: input.DB, Logger: input.Log, BackupDir: input.Cfg.Backup.Location,
-		RetentionDays: input.Cfg.Backup.RetentionDays, MaxPerPlugin: input.Cfg.Backup.MaxBackupsPerPlugin,
-	})
-
-	syncService := sync.New(sync.Config{
-		DB: input.DB, Logger: input.Log, PluginService: pluginService,
-		SitePasswordDecryptor: siteService, WPClientFactory: wpClientFactory, WSHub: input.WSHub,
-	})
-
-	publishHistoryService := publishhistory.New(publishhistory.Config{DB: input.DB, Logger: input.Log})
-	siteHealthService := sitehealth.New(sitehealth.Config{DB: input.DB, Logger: input.Log})
-
-	publishService := publish.New(publish.Config{
-		DB: input.DB, Logger: input.Log, PluginService: pluginService, BackupService: backupService,
-		SyncService: syncService, SitePasswordDecryptor: siteService, WPClientFactory: wpClientFactory,
-		TempDir: input.Cfg.TempDir, WSHub: input.WSHub, SessionService: sessionService, HistoryService: publishHistoryService,
-	})
-
-	watcherService := watcher.New(watcher.Config{
-		DB: input.DB, Logger: input.Log, PluginService: pluginService, WSHub: input.WSHub,
-	})
-
-	errorHistoryService := errorhistory.New(errorhistory.Config{DB: input.DB, Logger: input.Log})
-
-	return &Services{
-		Site:           siteService,
-		Plugin:         pluginService,
-		Watcher:        watcherService,
-		Sync:           syncService,
-		Publish:        publishService,
-		Backup:         backupService,
-		Session:        sessionService,
-		ErrorHistory:   errorHistoryService,
-		PublishHistory: publishHistoryService,
-		SiteHealth:     siteHealthService,
-	}
-}
-
-// E2EServiceAdapter wraps e2e.Service to implement handlers.E2EServiceInterface
-type E2EServiceAdapter struct {
-	svc e2e.Service
-}
-
-func (a *E2EServiceAdapter) ListSuites(ctx context.Context) ([]e2e.TestSuite, error) {
-	return a.svc.ListSuites(ctx)
-}
-
-func (a *E2EServiceAdapter) GetCases(ctx context.Context, suiteID string) ([]e2e.TestCase, error) {
-	return a.svc.GetCases(ctx, suiteID)
-}
-
-func (a *E2EServiceAdapter) StartRun(ctx context.Context, opts e2e.RunOptions) (*e2e.TestRun, error) {
-	return a.svc.StartRun(ctx, opts)
-}
-
-func (a *E2EServiceAdapter) AbortRun(ctx context.Context, runID string) error {
-	return a.svc.AbortRun(ctx, runID)
-}
-
-func (a *E2EServiceAdapter) ListRuns(ctx context.Context, limit int) ([]e2e.TestRun, error) {
-	return a.svc.ListRuns(ctx, limit)
-}
-
-func (a *E2EServiceAdapter) GetRun(ctx context.Context, runID string) (*e2e.RunSummary, error) {
-	return a.svc.GetRun(ctx, runID)
-}
-
-func (a *E2EServiceAdapter) DeleteRun(ctx context.Context, runID string) error {
-	return a.svc.DeleteRun(ctx, runID)
 }

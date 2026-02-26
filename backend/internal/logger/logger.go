@@ -74,112 +74,155 @@ func New(cfg Config) *Logger {
 	return &Logger{config: cfg, prefix: prefix}
 }
 
-// log is the internal logging method with new format:
-// [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
+// callerContext holds extracted caller info for log formatting.
+type callerContext struct {
+	funcName string
+	file     string
+	line     int
+}
+
+// log is the internal logging method.
 func (l *Logger) log(level Level, msg string, keyvals ...any) {
 	if level < l.config.Level {
 		return
 	}
 
-	// Get caller info
+	caller := l.captureCaller()
+	line := l.buildLogLine(level, msg, caller, keyvals)
+	fmt.Fprint(l.config.Output, line)
+}
+
+// captureCaller extracts function name, file, and line from the call stack.
+func (l *Logger) captureCaller() callerContext {
 	pc, file, line, ok := runtime.Caller(2)
-	funcName := "unknown"
-	if ok {
-		// Extract package name from function
-		fn := runtime.FuncForPC(pc)
-		if fn != nil {
-			fullName := fn.Name()
-			// Extract package name (e.g., "wp-plugin-publish/internal/services/publish" -> "publish")
-			parts := strings.Split(fullName, "/")
-			if len(parts) > 0 {
-				lastPart := parts[len(parts)-1]
-				// Split by "." to get package.function
-				funcParts := strings.Split(lastPart, ".")
-				if len(funcParts) > 0 {
-					funcName = funcParts[0]
-				}
-			}
-		}
-		// Keep full relative file path for better debugging
-		// Try to make it relative from "internal/" or "pkg/"
-		idx := strings.Index(file, "internal/")
-		if idx != -1 {
-			file = file[idx:]
-		} else if pkgIdx := strings.Index(file, "pkg/"); pkgIdx != -1 {
-			file = file[pkgIdx:]
-		} else {
-			file = filepath.Base(file)
-		}
-	} else {
-		file = "unknown"
-		line = 0
+	if !ok {
+		return callerContext{funcName: "unknown", file: "unknown", line: 0}
 	}
 
-	// Build log message with new format
-	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
-	levelStr := levelNames[level]
+	funcName := extractPackageName(pc)
+	file = shortenFilePath(file)
+	return callerContext{funcName: funcName, file: file, line: line}
+}
 
+// extractPackageName extracts the Go package name from a program counter.
+func extractPackageName(pc uintptr) string {
+	fn := runtime.FuncForPC(pc)
+	if fn == nil {
+		return "unknown"
+	}
+	fullName := fn.Name()
+	parts := strings.Split(fullName, "/")
+	if len(parts) == 0 {
+		return "unknown"
+	}
+	lastPart := parts[len(parts)-1]
+	funcParts := strings.Split(lastPart, ".")
+	if len(funcParts) == 0 {
+		return "unknown"
+	}
+	return funcParts[0]
+}
+
+// shortenFilePath makes a file path relative from "internal/" or "pkg/".
+func shortenFilePath(file string) string {
+	idx := strings.Index(file, "internal/")
+	if idx != -1 {
+		return file[idx:]
+	}
+	pkgIdx := strings.Index(file, "pkg/")
+	if pkgIdx != -1 {
+		return file[pkgIdx:]
+	}
+	return filepath.Base(file)
+}
+
+// buildLogLine assembles the complete log output string.
+func (l *Logger) buildLogLine(level Level, msg string, caller callerContext, keyvals []any) string {
 	var builder strings.Builder
 
-	// Add color if enabled
 	if !l.config.NoColor {
 		builder.WriteString(levelColors[level])
 	}
 
-	// Header line: [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
-	if l.prefix != "" {
-		builder.WriteString(fmt.Sprintf("%s %s] [%s] %s", l.prefix, timestamp, funcName, msg))
-	} else {
-		builder.WriteString(fmt.Sprintf("[%s] [%s] %s", timestamp, funcName, msg))
-	}
-
-	// Add level and location at the end in brackets
-	builder.WriteString(fmt.Sprintf(" [%s] [%s:%d]", levelStr, file, line))
-
-	// For ERROR/WARN: render key-value pairs on separate indented lines for readability
-	// For INFO/DEBUG: keep compact single-line format
-	if (level >= LevelWarn) && len(keyvals) >= 2 {
-		// Multi-line structured output
-		// Find max key length for alignment
-		maxKeyLen := 0
-		for i := 0; i < len(keyvals); i += 2 {
-			if i+1 < len(keyvals) {
-				keyStr := fmt.Sprintf("%v", keyvals[i])
-				if len(keyStr) > maxKeyLen {
-					maxKeyLen = len(keyStr)
-				}
-			}
-		}
-		for i := 0; i < len(keyvals); i += 2 {
-			if i+1 < len(keyvals) {
-				keyStr := fmt.Sprintf("%v", keyvals[i])
-				padding := strings.Repeat(" ", maxKeyLen-len(keyStr))
-				builder.WriteString(fmt.Sprintf("\n  %s%s = %v", keyStr, padding, keyvals[i+1]))
-			}
-		}
-	} else {
-		// Compact single-line for INFO/DEBUG
-		for i := 0; i < len(keyvals); i += 2 {
-			if i+1 < len(keyvals) {
-				builder.WriteString(fmt.Sprintf(" %v=%v", keyvals[i], keyvals[i+1]))
-			}
-		}
-	}
-
-	// For ERROR and FATAL levels, append full stack trace
-	if level >= LevelError {
-		stackTrace := CaptureStackTrace(3)
-		builder.WriteString("\n--- Stack Trace ---\n")
-		builder.WriteString(stackTrace)
-		builder.WriteString("--- End Stack Trace ---")
-	}
+	l.writeHeader(&builder, level, msg, caller)
+	writeKeyvals(&builder, level, keyvals)
+	appendStackIfError(&builder, level)
 
 	if !l.config.NoColor {
 		builder.WriteString(colorReset)
 	}
 	builder.WriteString("\n")
+	return builder.String()
+}
 
-	fmt.Fprint(l.config.Output, builder.String())
+// writeHeader writes the timestamp, package, message, level, and location.
+func (l *Logger) writeHeader(b *strings.Builder, level Level, msg string, caller callerContext) {
+	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
+	levelStr := levelNames[level]
+
+	if l.prefix != "" {
+		b.WriteString(fmt.Sprintf("%s %s] [%s] %s", l.prefix, timestamp, caller.funcName, msg))
+	} else {
+		b.WriteString(fmt.Sprintf("[%s] [%s] %s", timestamp, caller.funcName, msg))
+	}
+	b.WriteString(fmt.Sprintf(" [%s] [%s:%d]", levelStr, caller.file, caller.line))
+}
+
+// writeKeyvals writes key-value pairs in multi-line or compact format.
+func writeKeyvals(b *strings.Builder, level Level, keyvals []any) {
+	isHighSeverity := level >= LevelWarn
+	hasMultipleKVs := len(keyvals) >= 2
+	if isHighSeverity && hasMultipleKVs {
+		writeMultiLineKeyvals(b, keyvals)
+	} else {
+		writeCompactKeyvals(b, keyvals)
+	}
+}
+
+// writeMultiLineKeyvals renders key-value pairs on separate indented lines.
+func writeMultiLineKeyvals(b *strings.Builder, keyvals []any) {
+	maxKeyLen := findMaxKeyLen(keyvals)
+	for i := 0; i < len(keyvals); i += 2 {
+		if i+1 < len(keyvals) {
+			keyStr := fmt.Sprintf("%v", keyvals[i])
+			padding := strings.Repeat(" ", maxKeyLen-len(keyStr))
+			b.WriteString(fmt.Sprintf("\n  %s%s = %v", keyStr, padding, keyvals[i+1]))
+		}
+	}
+}
+
+// findMaxKeyLen finds the longest key string length for alignment.
+func findMaxKeyLen(keyvals []any) int {
+	maxKeyLen := 0
+	for i := 0; i < len(keyvals); i += 2 {
+		if i+1 < len(keyvals) {
+			keyStr := fmt.Sprintf("%v", keyvals[i])
+			if len(keyStr) > maxKeyLen {
+				maxKeyLen = len(keyStr)
+			}
+		}
+	}
+	return maxKeyLen
+}
+
+// writeCompactKeyvals renders key-value pairs on a single line.
+func writeCompactKeyvals(b *strings.Builder, keyvals []any) {
+	for i := 0; i < len(keyvals); i += 2 {
+		if i+1 < len(keyvals) {
+			b.WriteString(fmt.Sprintf(" %v=%v", keyvals[i], keyvals[i+1]))
+		}
+	}
+}
+
+// appendStackIfError appends a full stack trace for ERROR and FATAL levels.
+func appendStackIfError(b *strings.Builder, level Level) {
+	if level < LevelError {
+		return
+	}
+	stackTrace := CaptureStackTrace(3)
+	b.WriteString("\n--- Stack Trace ---\n")
+	b.WriteString(stackTrace)
+	b.WriteString("--- End Stack Trace ---")
 }
 
 // Debug logs a debug message
