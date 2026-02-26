@@ -174,8 +174,8 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 }
 
 // validateSuccessAndReturn checks the success flag and returns data or an error.
-func validateSuccessAndReturn[T any](success bool, data T, operation, slug string) (T, error) {
-	if !success {
+func validateSuccessAndReturn[T any](isSuccess bool, data T, operation, slug string) (T, error) {
+	if !isSuccess {
 		var zero T
 		return zero, apperror.New(apperror.ErrWPConnection, "remote API returned failure for "+operation).
 			WithValue("slug", slug)
@@ -358,9 +358,9 @@ func (c *Client) CheckOnboardAvailable() (bool, error) {
 
 // UploadPluginViaOnboard uploads a plugin via the Riseup Asia Uploader and returns UploaderUploadResult.
 // Deprecated: Delegates to UploadPluginViaUploader.
-func (c *Client) UploadPluginViaOnboard(zipPath string, activate bool) (*UploaderUploadResult, error) {
+func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) (*UploaderUploadResult, error) {
 	slug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
-	return c.UploadPluginViaUploader(zipPath, slug, activate, uploadsource.RestAPI)
+	return c.UploadPluginViaUploader(zipPath, slug, isActivate, uploadsource.RestAPI)
 }
 
 // truncateBody truncates a string to maxLen for error messages.

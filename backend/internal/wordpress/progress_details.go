@@ -94,10 +94,10 @@ type UploadInitProgress struct {
 
 // UploadBodyProgress carries multipart body ready progress context.
 type UploadBodyProgress struct {
-	Slug     string `json:",omitempty"`
-	Activate bool   `json:",omitempty"`
-	ZipSize  int64  `json:",omitempty"`
-	BodySize int    `json:",omitempty"`
+	Slug       string `json:",omitempty"`
+	IsActivate bool   `json:",omitempty"`
+	ZipSize    int64  `json:",omitempty"`
+	BodySize   int    `json:",omitempty"`
 }
 
 // ResponseProgress carries HTTP response progress context.

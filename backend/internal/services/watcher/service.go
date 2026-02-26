@@ -58,7 +58,7 @@ type pluginScanCache struct {
 
 // PublishService interface for triggering auto-publish
 type PublishService interface {
-	PublishPlugin(ctx context.Context, pluginID, siteID int64, mode string, createBackup bool) (int, error)
+	PublishPlugin(ctx context.Context, pluginID, siteID int64, mode string, isCreateBackup bool) (int, error)
 }
 
 // Config holds watcher configuration

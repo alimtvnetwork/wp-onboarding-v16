@@ -255,9 +255,9 @@ func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo,
 }
 
 // updateMappingSyncStatus updates the sync status of a mapping.
-func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginId, siteId int64, inSync bool) {
+func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginId, siteId int64, isInSync bool) {
 	status := "out_of_sync"
-	if inSync {
+	if isInSync {
 		status = "synced"
 	}
 	dbutil.Exec(

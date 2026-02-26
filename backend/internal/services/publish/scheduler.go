@@ -114,7 +114,7 @@ func (s *PublishScheduler) RemoveJob(jobId string) bool {
 }
 
 // ToggleJob enables or disables a scheduled job
-func (s *PublishScheduler) ToggleJob(jobId string, enabled bool) bool {
+func (s *PublishScheduler) ToggleJob(jobId string, isEnabled bool) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -123,8 +123,8 @@ func (s *PublishScheduler) ToggleJob(jobId string, enabled bool) bool {
 		return false
 	}
 
-	job.Enabled = enabled
-	if enabled {
+	job.IsEnabled = isEnabled
+	if isEnabled {
 		nextRun, err := s.calculateNextRun(job.Schedule)
 		if err == nil {
 			job.NextRunAt = &nextRun

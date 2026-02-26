@@ -233,12 +233,12 @@ func (s *Service) saveRemoteSuccessResponse(sessionId string, site *models.Site,
 }
 
 // broadcastRemoteActionComplete sends a WebSocket broadcast for action completion.
-func (s *Service) broadcastRemoteActionComplete(siteId int64, siteName, action, pluginSlug, sessionId string, success bool, errMsg string, durationMs int64) {
+func (s *Service) broadcastRemoteActionComplete(siteId int64, siteName, action, pluginSlug, sessionId string, isSuccess bool, errMsg string, durationMs int64) {
 	if s.wsHub == nil {
 		return
 	}
 	s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
 		SiteId: siteId, SiteName: siteName, Action: action, PluginSlug: pluginSlug,
-		Success: success, Error: errMsg, DurationMs: durationMs,
+		IsSuccess: isSuccess, Error: errMsg, DurationMs: durationMs,
 	}, sessionId)
 }
