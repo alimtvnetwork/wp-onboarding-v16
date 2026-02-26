@@ -42,31 +42,52 @@ func (s *Service) CheckRemotePluginExists(ctx context.Context, siteId int64, plu
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func (s *Service) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
-	return s.executeRemotePluginAction(ctx, siteId, pluginSlug, "enable", func(client *wordpress.Client) error {
-		return client.EnablePluginViaUploader(pluginSlug)
-	})
+	input := remoteActionInput{
+		SiteId:     siteId,
+		PluginSlug: pluginSlug,
+		Action:     "enable",
+		ExecFn: func(client *wordpress.Client) error {
+			return client.EnablePluginViaUploader(pluginSlug)
+		},
+	}
+
+	return s.executeRemotePluginAction(ctx, input)
 }
 
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
 func (s *Service) DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
-	return s.executeRemotePluginAction(ctx, siteId, pluginSlug, "disable", func(client *wordpress.Client) error {
-		return client.DisablePluginViaUploader(pluginSlug)
-	})
+	input := remoteActionInput{
+		SiteId:     siteId,
+		PluginSlug: pluginSlug,
+		Action:     "disable",
+		ExecFn: func(client *wordpress.Client) error {
+			return client.DisablePluginViaUploader(pluginSlug)
+		},
+	}
+
+	return s.executeRemotePluginAction(ctx, input)
 }
 
 // DeleteRemotePlugin removes a plugin from a remote WordPress site
 func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
-	return s.executeRemotePluginAction(ctx, siteId, pluginSlug, "delete", func(client *wordpress.Client) error {
-		if disableErr := client.DisablePluginViaUploader(pluginSlug); disableErr != nil {
-			if apiErr, ok := disableErr.(*wordpress.APIError); ok && apiErr.StatusCode == http.StatusNotFound {
-				s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
-			} else {
-				s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())
+	input := remoteActionInput{
+		SiteId:     siteId,
+		PluginSlug: pluginSlug,
+		Action:     "delete",
+		ExecFn: func(client *wordpress.Client) error {
+			if disableErr := client.DisablePluginViaUploader(pluginSlug); disableErr != nil {
+				if apiErr, ok := disableErr.(*wordpress.APIError); ok && apiErr.StatusCode == http.StatusNotFound {
+					s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
+				} else {
+					s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())
+				}
 			}
-		}
 
-		return client.DeletePluginViaUploader(pluginSlug)
-	})
+			return client.DeletePluginViaUploader(pluginSlug)
+		},
+	}
+
+	return s.executeRemotePluginAction(ctx, input)
 }
 
 // remoteActionInput bundles parameters for executeRemotePluginAction.
@@ -282,7 +303,12 @@ func (s *Service) broadcastRemoteActionComplete(input remoteActionCompleteInput)
 		return
 	}
 	s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
-		SiteId: input.Ref.SiteID, SiteName: input.Ref.Site.Name, Action: input.Ref.Action, PluginSlug: input.Ref.PluginSlug,
-		IsSuccess: input.IsSuccess, Error: input.ErrMsg, DurationMs: input.DurationMs,
-	}, ref.SessionID)
+		SiteId:     input.Ref.SiteID,
+		SiteName:   input.Ref.Site.Name,
+		Action:     input.Ref.Action,
+		PluginSlug: input.Ref.PluginSlug,
+		IsSuccess:  input.IsSuccess,
+		Error:      input.ErrMsg,
+		DurationMs: input.DurationMs,
+	}, input.Ref.SessionID)
 }

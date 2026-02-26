@@ -26,11 +26,11 @@ type SitePasswordDecryptor interface {
 
 // SessionLogger interface for session-based logging
 type SessionLogger interface {
-	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
-	Log(sessionID, level, step, message string, details json.RawMessage)
-	LogStageStart(sessionID, stageName string)
-	LogStageEnd(sessionID, stageName, status string, durationMs int64)
-	EndSession(sessionID, status, errorMsg string)
+	StartSession(input session.StartSessionInput) (string, error)
+	Log(input session.LogInput)
+	LogStageStart(sessionId, stageName string)
+	LogStageEnd(input session.StageEndInput)
+	EndSession(sessionId, status, errorMsg string)
 }
 
 // PublishHistoryRecorder records publish history entries
@@ -97,9 +97,9 @@ type PublishOptions struct {
 // PublishResult represents the result of a publish operation
 type PublishResult struct {
 	IsSuccess        bool
-	SessionID        string  `json:",omitempty"`
+	SessionId        string  `json:",omitempty"`
 	FilesUpdated     int
-	BackupID         *int64  `json:",omitempty"`
+	BackupId         *int64  `json:",omitempty"`
 	ActivationStatus string  // active, inactive, error
 	RollbackStatus   string  `json:",omitempty"` // "", "success", "failed", "skipped"
 	RollbackMessage  string  `json:",omitempty"` // details about rollback
@@ -110,10 +110,10 @@ type PublishResult struct {
 
 // Stage represents a publish pipeline stage
 type Stage struct {
-	Name      string
-	Status    stagestatus.Variant
-	Duration  int64
-	Message   string `json:",omitempty"`
+	Name     string
+	Status   stagestatus.Variant
+	Duration int64
+	Message  string `json:",omitempty"`
 }
 
 // FilePreview represents a file that will change during publish
@@ -126,13 +126,13 @@ type FilePreview struct {
 
 // PublishPreviewResult shows what files will be published
 type PublishPreviewResult struct {
-	PluginID      int64
+	PluginId      int64
 	PluginName    string
 	LocalVersion  string
 	RemoteVersion string
-	SiteID        int64
+	SiteId        int64
 	SiteName      string
-	SiteURL       string
+	SiteUrl       string
 	RemoteSlug    string
 	TotalFiles    int
 	TotalSize     int64
