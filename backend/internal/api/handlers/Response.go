@@ -38,10 +38,10 @@ func respondCreated[T any](w http.ResponseWriter, data T) {
 func respondError(
 	w http.ResponseWriter,
 	status wordpress.HttpStatusType,
-	code string,
+	code apperror.ErrorCode,
 	message string,
 ) {
-	envelope.Write(w, envelope.ErrorWithStack(status.Int(), code, message))
+	envelope.Write(w, envelope.ErrorWithStack(status.Int(), code.String(), message))
 }
 
 // respondErrorWithSession writes an error envelope with session ID and stack traces.
@@ -49,7 +49,7 @@ func respondError(
 func respondErrorWithSession(
 	w http.ResponseWriter,
 	status wordpress.HttpStatusType,
-	code string,
+	code apperror.ErrorCode,
 	message string,
 	err error,
 ) {
@@ -100,7 +100,7 @@ func requireService(w http.ResponseWriter, service any, name string) bool {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
-			"E9001",
+			apperror.ErrNotFound,
 			responsemessage.ServiceNotAvailable.String(),
 		)
 
@@ -117,7 +117,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
-			"E1001",
+			apperror.ErrConfigLoad,
 			responsemessage.InvalidRequestBody.String(),
 		)
 
@@ -134,7 +134,7 @@ func parseID(w http.ResponseWriter, r *http.Request, paramName string) (int64, b
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
-			"E1002",
+			apperror.ErrConfigParse,
 			responsemessage.InvalidId.String(),
 		)
 

@@ -32,15 +32,16 @@ const (
 
 // Database errors (E2xxx)
 const (
-	ErrDatabaseConnect ErrorCode = "E2001" // Failed to connect to database
-	ErrDatabaseMigrate ErrorCode = "E2002" // Failed to run migrations
-	ErrDatabaseQuery   ErrorCode = "E2003" // Query execution failed
-	ErrDatabaseInsert  ErrorCode = "E2004" // Insert operation failed
-	ErrDatabaseUpdate  ErrorCode = "E2005" // Update operation failed
-	ErrDatabaseDelete  ErrorCode = "E2006" // Delete operation failed
-	ErrDatabaseScan    ErrorCode = "E2007" // Failed to scan query result
-	ErrDatabaseExec    ErrorCode = "E2008" // Failed to execute statement
-	ErrDuplicate       ErrorCode = "E2009" // Duplicate entry exists
+	ErrDatabaseConnect   ErrorCode = "E2001" // Failed to connect to database
+	ErrDatabaseMigrate   ErrorCode = "E2002" // Failed to run migrations
+	ErrDatabaseQuery     ErrorCode = "E2003" // Query execution failed
+	ErrDatabaseInsert    ErrorCode = "E2004" // Insert operation failed
+	ErrDatabaseUpdate    ErrorCode = "E2005" // Update operation failed
+	ErrDatabaseDelete    ErrorCode = "E2006" // Delete operation failed
+	ErrDatabaseScan      ErrorCode = "E2007" // Failed to scan query result
+	ErrDatabaseExec      ErrorCode = "E2008" // Failed to execute statement
+	ErrDuplicate         ErrorCode = "E2009" // Duplicate entry exists
+	ErrDatabaseBootstrap ErrorCode = "E2010" // Failed to bootstrap operation
 )
 
 // WordPress API errors (E3xxx)
@@ -55,6 +56,8 @@ const (
 	ErrWPTimeout        ErrorCode = "E3008" // Request timed out
 	ErrWPUploadFailed   ErrorCode = "E3009" // Plugin upload to WordPress failed
 	ErrWPPluginDelete   ErrorCode = "E3010" // Failed to delete plugin
+	ErrWPPluginFiles    ErrorCode = "E3011" // Failed to get plugin files
+	ErrWPPluginContent  ErrorCode = "E3012" // Failed to get plugin file content
 )
 
 // File system errors (E4xxx)

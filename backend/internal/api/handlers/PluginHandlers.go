@@ -7,10 +7,13 @@ import (
 
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // GetPlugins returns all registered plugins
-var GetPlugins = handleListNilSafe(pluginService, "E3001",
+var GetPlugins = handleListNilSafe(
+	pluginService,
+	apperror.ErrWPConnection,
 	func(ctx context.Context) (any, error) {
 		return Services.PluginService.List(ctx)
 	},
@@ -21,15 +24,24 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.PluginService, "Plugin service") {
 		return
 	}
+
 	var input plugin.CreateInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	p, err := Services.PluginService.Create(r.Context(), input)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E3002", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrWPAuth,
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondCreated(w, p)
 }
 
@@ -39,7 +51,7 @@ var GetPlugin = handleActionByID(
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
-		ErrCode:     "E3003",
+		ErrCode:     apperror.ErrWPAPIDisabled,
 	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetById(ctx, id)
@@ -51,19 +63,29 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.PluginService, "Plugin service") {
 		return
 	}
+
 	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
+
 	var input plugin.UpdateInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	p, err := Services.PluginService.Update(r.Context(), id, input)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E3004", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrWPPluginList,
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondSuccess(w, p)
 }
 
@@ -73,7 +95,7 @@ var DeletePlugin = handleDeleteByID(
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
-		ErrCode:     "E3005",
+		ErrCode:     apperror.ErrWPPluginGet,
 	},
 	func(ctx context.Context, id int64) error {
 		return Services.PluginService.Delete(ctx, id)
@@ -86,7 +108,7 @@ var GetPluginMappings = handleActionByID(
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
-		ErrCode:     "E3006",
+		ErrCode:     apperror.ErrWPPluginUpload,
 	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetMappings(ctx, id)
@@ -98,21 +120,31 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.PluginService, "Plugin service") {
 		return
 	}
+
 	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
+
 	var input plugin.CreateMappingInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	input.PluginID = id
 
 	mapping, err := Services.PluginService.CreateMapping(r.Context(), id, input)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E3007", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrWPPluginActivate,
+			err.Error(),
+		)
+
 		return
 	}
+
 	respondCreated(w, mapping)
 }
 
@@ -122,7 +154,7 @@ var DeletePluginMapping = handleDeleteByID(
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
-		ErrCode:     "E3008",
+		ErrCode:     apperror.ErrWPTimeout,
 	},
 	func(ctx context.Context, id int64) error {
 		return Services.PluginService.DeleteMapping(ctx, id)
@@ -140,19 +172,30 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.PluginService, "Plugin service") {
 		return
 	}
+
 	id, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
+
 	var input pluginMappingsInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	if err := Services.PluginService.UpdateMappingsForPlugin(r.Context(), id, input.SiteIDs, input.RemoteSlug); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E3009", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrWPUploadFailed,
+			err.Error(),
+		)
+
 		return
 	}
+
 	mappings, _ := Services.PluginService.GetMappings(r.Context(), id)
+
 	respondSuccess(w, mappings)
 }
 
@@ -162,7 +205,7 @@ var GetSiteMappings = handleActionByID(
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
-		ErrCode:     "E3010",
+		ErrCode:     apperror.ErrWPPluginDelete,
 	},
 	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetMappingsBySite(ctx, id)
@@ -179,18 +222,29 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.PluginService, "Plugin service") {
 		return
 	}
+
 	siteID, ok := parseID(w, r, "id")
 	if !ok {
 		return
 	}
+
 	var input siteMappingsInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+
 	if err := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, input.PluginIDs); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E3011", err.Error())
+		respondError(
+			w,
+			wordpress.HttpStatusBadRequest,
+			apperror.ErrWPPluginFiles,
+			err.Error(),
+		)
+
 		return
 	}
+
 	mappings, _ := Services.PluginService.GetMappingsBySite(r.Context(), siteID)
+
 	respondSuccess(w, mappings)
 }

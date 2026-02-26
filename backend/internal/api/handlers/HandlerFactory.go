@@ -10,6 +10,7 @@ import (
 
 	"wp-plugin-publish/internal/enums/response_message"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // --- Generic Handler Factories ---
@@ -19,7 +20,7 @@ type handlerIDConfig struct {
 	GetService  func() any
 	ServiceName string
 	ParamName   string
-	ErrCode     string
+	ErrCode     apperror.ErrorCode
 }
 
 // handleActionByID creates a handler: requireService → parseID → fn(ctx, id) → respondSuccess
@@ -39,7 +40,13 @@ func handleActionByID(
 
 		result, err := fn(r.Context(), id)
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, cfg.ErrCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				cfg.ErrCode,
+				err.Error(),
+			)
+
 			return
 		}
 
@@ -63,7 +70,13 @@ func handleDeleteByID(
 		}
 
 		if err := fn(r.Context(), id); err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, cfg.ErrCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusBadRequest,
+				cfg.ErrCode,
+				err.Error(),
+			)
+
 			return
 		}
 
@@ -74,18 +87,25 @@ func handleDeleteByID(
 // handleListNilSafe creates a handler: nil-safe service check → fn(ctx) → respondSuccess
 func handleListNilSafe(
 	getService func() any,
-	errCode string,
+	errCode apperror.ErrorCode,
 	fn func(ctx context.Context) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if getService() == nil {
 			respondSuccess(w, []any{})
+
 			return
 		}
 
 		result, err := fn(r.Context())
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
 
@@ -95,24 +115,42 @@ func handleListNilSafe(
 
 // handleSiteActionByID creates a handler for site-scoped actions.
 func handleSiteActionByID(
-	errCode string,
+	errCode apperror.ErrorCode,
 	fn func(ctx context.Context, siteID int64) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if Services == nil || Services.SiteService == nil {
-			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
+			respondError(
+				w,
+				wordpress.HttpStatusServiceUnavailable,
+				apperror.ErrNotFound,
+				responsemessage.ServiceNotAvailable.String(),
+			)
+
 			return
 		}
 
 		siteID, err := getIDParam(r, "id")
 		if err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidId.String())
+			respondError(
+				w,
+				wordpress.HttpStatusBadRequest,
+				apperror.ErrConfigParse,
+				responsemessage.InvalidId.String(),
+			)
+
 			return
 		}
 
 		result, err := fn(r.Context(), siteID)
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				err.Error(),
+			)
+
 			return
 		}
 
@@ -124,7 +162,7 @@ func handleSiteActionByID(
 type noArgsConfig struct {
 	GetService  func() any
 	ServiceName string
-	ErrCode     string
+	ErrCode     apperror.ErrorCode
 }
 
 // handleNoArgs creates a handler: requireService → fn(ctx) → respondSuccess
@@ -139,7 +177,13 @@ func handleNoArgs(
 
 		result, err := fn(r.Context())
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, cfg.ErrCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				cfg.ErrCode,
+				err.Error(),
+			)
+
 			return
 		}
 
@@ -153,7 +197,7 @@ type twoIDConfig struct {
 	ServiceName string
 	Param1Name  string
 	Param2Name  string
-	ErrCode     string
+	ErrCode     apperror.ErrorCode
 }
 
 // handleTwoIDs creates a handler: requireService → parseID(param1) → parseID(param2) → fn(ctx, id1, id2) → respondSuccess
@@ -178,7 +222,13 @@ func handleTwoIDs(
 
 		result, err := fn(r.Context(), id1, id2)
 		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, cfg.ErrCode, err.Error())
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				cfg.ErrCode,
+				err.Error(),
+			)
+
 			return
 		}
 
