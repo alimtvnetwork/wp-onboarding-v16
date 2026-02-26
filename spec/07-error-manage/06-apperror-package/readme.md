@@ -1,7 +1,7 @@
 # Go `apperror` Package Specification
 
-> **Version:** 1.1.0  
-> **Updated:** 2026-02-20  
+> **Version:** 1.4.0  
+> **Updated:** 2026-02-23  
 > **Package:** `backend/pkg/apperror`
 
 ---
