@@ -182,18 +182,10 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 // buildUploadAPIError constructs a detailed APIError for upload failures.
 func buildUploadAPIError(absZipPath, uploadURL, uploadEndpoint string, statusCode int, respBytes []byte, respBody string, stackTraceDepth int) *APIError {
 	stackTrace := captureStackTraceN(3, stackTraceDepth)
-
-	diagnosticBody := truncateBody(respBody, 8192)
-	if diagnosticBody == "" {
-		diagnosticBody = "[EMPTY RESPONSE BODY - The WordPress server returned no content. " +
-			"This typically indicates a fatal PHP error that crashed before the error handler could respond. " +
-			"Check the WordPress debug.log, PHP error log, or wp-content/uploads/riseup-asia-uploader/fatal-errors.log for details.]"
-	}
+	diagnosticBody := buildUploadDiagnosticBody(respBody)
 
 	fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n",
 		uploadURL, absZipPath, statusCode, truncateBody(respBody, 4000), stackTrace)
-
-	phpStackInfo := ExtractPHPStackTrace(respBytes)
 
 	return &APIError{
 		Operation:    "upload plugin via RiseupAsia Uploader",
@@ -201,7 +193,19 @@ func buildUploadAPIError(absZipPath, uploadURL, uploadEndpoint string, statusCod
 		Endpoint:     uploadEndpoint,
 		Url:          uploadURL,
 		StatusCode:   statusCode,
-		ResponseBody: diagnosticBody + phpStackInfo,
+		ResponseBody: diagnosticBody + ExtractPHPStackTrace(respBytes),
 		StackTrace:   stackTrace,
 	}
+}
+
+// buildUploadDiagnosticBody returns a truncated response body or a descriptive empty-body message.
+func buildUploadDiagnosticBody(respBody string) string {
+	body := truncateBody(respBody, 8192)
+	if body != "" {
+		return body
+	}
+
+	return "[EMPTY RESPONSE BODY - The WordPress server returned no content. " +
+		"This typically indicates a fatal PHP error that crashed before the error handler could respond. " +
+		"Check the WordPress debug.log, PHP error log, or wp-content/uploads/riseup-asia-uploader/fatal-errors.log for details.]"
 }

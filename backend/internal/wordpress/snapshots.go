@@ -87,24 +87,36 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 		return nil, err
 	}
 
+	return parseSnapshotsResponse(c, endpoint, data)
+}
+
+// parseSnapshotsResponse tries wrapped format first, then array fallback.
+func parseSnapshotsResponse(c *Client, endpoint string, data []byte) ([]SnapshotRecord, error) {
 	var result struct {
 		Snapshots []SnapshotRecord `json:"snapshots"` // external key
 	}
-	if err := json.Unmarshal(data, &result); err != nil {
-		fallbackData, fallbackErr := c.doAPICallRaw(apiCallInput{
-			Method: "GET", Endpoint: endpoint, Operation: "get snapshots (array fallback)",
-		})
-		if fallbackErr == nil {
-			var snapshots []SnapshotRecord
-			if err2 := json.Unmarshal(fallbackData, &snapshots); err2 == nil {
-				return snapshots, nil
-			}
-		}
+	if err := json.Unmarshal(data, &result); err == nil {
+		return result.Snapshots, nil
+	}
 
+	return trySnapshotArrayFallback(c, endpoint)
+}
+
+// trySnapshotArrayFallback re-fetches and tries to decode as a plain array.
+func trySnapshotArrayFallback(c *Client, endpoint string) ([]SnapshotRecord, error) {
+	fallbackData, fallbackErr := c.doAPICallRaw(apiCallInput{
+		Method: "GET", Endpoint: endpoint, Operation: "get snapshots (array fallback)",
+	})
+	if fallbackErr != nil {
+		return nil, apperror.Wrap(fallbackErr, apperror.ErrInternal, "failed to decode snapshots response")
+	}
+
+	var snapshots []SnapshotRecord
+	if err := json.Unmarshal(fallbackData, &snapshots); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode snapshots response")
 	}
 
-	return result.Snapshots, nil
+	return snapshots, nil
 }
 
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).

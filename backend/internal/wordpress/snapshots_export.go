@@ -64,19 +64,27 @@ func (c *Client) StreamSnapshotZip(downloadURL string) (*http.Response, error) {
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to stream snapshot ZIP")
 	}
+
 	if resp.StatusCode != HttpStatusOk.Int() {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return nil, &APIError{
-			Operation:    "stream snapshot zip",
-			Method:       "GET",
-			Endpoint:     downloadURL,
-			Url:          downloadURL,
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-		}
+		return nil, buildStreamZipError(resp, downloadURL)
 	}
+
 	return resp, nil
+}
+
+// buildStreamZipError reads the response body and constructs an APIError for a failed stream.
+func buildStreamZipError(resp *http.Response, downloadURL string) *APIError {
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	return &APIError{
+		Operation:    "stream snapshot zip",
+		Method:       "GET",
+		Endpoint:     downloadURL,
+		Url:          downloadURL,
+		StatusCode:   resp.StatusCode,
+		ResponseBody: truncateBody(string(bodyBytes), 8192),
+	}
 }
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
@@ -114,7 +122,11 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 		return nil, err
 	}
 
-	// Try {success: true, tables: [...]} wrapper
+	return parseAvailableTablesResponse(data)
+}
+
+// parseAvailableTablesResponse tries wrapped format, then plain array.
+func parseAvailableTablesResponse(data []byte) ([]AvailableTable, error) {
 	var wrapper struct {
 		Tables []AvailableTable `json:"tables"` // external key
 	}
@@ -122,10 +134,10 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 		return wrapper.Tables, nil
 	}
 
-	// Try plain array
 	var tables []AvailableTable
 	if err := json.Unmarshal(data, &tables); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode tables response")
 	}
+
 	return tables, nil
 }

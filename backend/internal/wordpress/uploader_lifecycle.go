@@ -63,26 +63,30 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string
 	return parsePluginExistsResponse(data)
 }
 
+// pluginExistsResult is the typed struct for the plugin-exists envelope response.
+type pluginExistsResult struct {
+	PluginSlug string `json:"pluginSlug"` // external key (Riseup Asia Uploader API)
+	Exists     bool   `json:"exists"`     // external key
+	Status     string `json:"status"`     // external key
+	PluginFile string `json:"pluginFile"` // external key
+}
+
 // parsePluginExistsResponse tries envelope format, then legacy flat format.
 func parsePluginExistsResponse(data []byte) (bool, string, string, error) {
-	type existsResult struct {
-		PluginSlug string `json:"pluginSlug"` // external key (Riseup Asia Uploader API)
-		Exists     bool   `json:"exists"`     // external key
-		Status     string `json:"status"`     // external key
-		PluginFile string `json:"pluginFile"` // external key
-	}
-	if results, ok := UnwrapResults[existsResult](data); ok && len(results) > 0 {
+	if results, ok := UnwrapResults[pluginExistsResult](data); ok && len(results) > 0 {
 		return results[0].Exists, results[0].Status, results[0].PluginFile, nil
 	}
 
-	var legacy struct {
-		Exists     bool   `json:"exists"`     // external key (Riseup Asia Uploader API)
-		Status     string `json:"status"`     // external key
-		PluginFile string `json:"pluginFile"` // external key
-	}
+	return parsePluginExistsLegacy(data)
+}
+
+// parsePluginExistsLegacy decodes the legacy flat format for plugin-exists.
+func parsePluginExistsLegacy(data []byte) (bool, string, string, error) {
+	var legacy pluginExistsResult
 	if err := json.Unmarshal(data, &legacy); err != nil {
 		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
 	}
+
 	return legacy.Exists, legacy.Status, legacy.PluginFile, nil
 }
 
@@ -123,12 +127,15 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 		return nil, err
 	}
 
-	// Try envelope format first
+	return parsePluginListResponse(data)
+}
+
+// parsePluginListResponse tries envelope format, then legacy flat format.
+func parsePluginListResponse(data []byte) ([]UploaderPluginInfo, error) {
 	if plugins, ok := UnwrapResults[UploaderPluginInfo](data); ok {
 		return plugins, nil
 	}
 
-	// Fall back to legacy flat format
 	var response struct {
 		Success bool                 `json:"success"` // external key (Riseup Asia Uploader API)
 		Count   int                  `json:"count"`   // external key
@@ -137,6 +144,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	if err := json.Unmarshal(data, &response); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugins response")
 	}
+
 	return response.Plugins, nil
 }
 

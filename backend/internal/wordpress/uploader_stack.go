@@ -20,26 +20,36 @@ func captureStackTraceN(skip int, maxDepth int) string {
 	if maxDepth <= 0 {
 		maxDepth = DefaultStackTraceDepth
 	}
-	var builder strings.Builder
-	pcs := make([]uintptr, maxDepth+10) // extra buffer for runtime frames that get filtered
+
+	pcs := make([]uintptr, maxDepth+10)
 	n := runtime.Callers(skip+1, pcs)
 	frames := runtime.CallersFrames(pcs[:n])
 
+	return formatStackFrames(frames, maxDepth)
+}
+
+// formatStackFrames formats runtime frames into a readable stack trace string.
+func formatStackFrames(frames *runtime.Frames, maxDepth int) string {
+	var builder strings.Builder
 	frameNum := 0
+
 	for {
 		frame, more := frames.Next()
-		// Skip runtime internals
+
 		if strings.Contains(frame.Function, "runtime.") {
 			if !more {
 				break
 			}
 			continue
 		}
+
 		builder.WriteString(fmt.Sprintf("  #%d %s\n      %s:%d\n", frameNum, frame.Function, frame.File, frame.Line))
 		frameNum++
+
 		if !more || frameNum >= maxDepth {
 			break
 		}
 	}
+
 	return builder.String()
 }
