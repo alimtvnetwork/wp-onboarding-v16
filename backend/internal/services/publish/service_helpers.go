@@ -129,7 +129,7 @@ func (s *Service) simulateUpload(zipPath, slug string) (bool, *wordpress.Onboard
 // performRealUpload uploads via the Riseup Asia Uploader.
 func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, error) {
 	s.log.Info("Using Riseup Asia Uploader for upload", "slug", slug)
-	result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true, uploadsource.RestAPI)
+	result, err := wpClient.UploadPluginViaUploader(wordpress.UploadInput{ZipPath: zipPath, Slug: slug, IsActivate: true, UploadSource: uploadsource.RestAPI})
 	if err != nil {
 		return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
 	}
@@ -251,16 +251,16 @@ func (s *Service) cleanupZip(pluginID, siteID int64, zipPath string, isPublishFa
 	}
 
 	if isPublishFailed {
-		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), toDetails(CleanupDetails{ZipPath: zipPath, Reason: "publish_failed"})))
+		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "cleanup", Message: fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), Details: toDetails(CleanupDetails{ZipPath: zipPath, Reason: "publish_failed"})})
 		return
 	}
 
 	if isKeepZipFiles {
-		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), toDetails(CleanupDetails{ZipPath: zipPath, IsKeepZipFiles: true})))
+		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "cleanup", Message: fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), Details: toDetails(CleanupDetails{ZipPath: zipPath, IsKeepZipFiles: true})})
 		return
 	}
 
-	s.broadcastDetailedLog(detailedFor(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), toDetails(CleanupDetails{IsKeepZipFiles: isKeepZipFiles})))
+	s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "debug", Step: "cleanup", Message: fmt.Sprintf("Removing temp ZIP: %s", zipPath), Details: toDetails(CleanupDetails{IsKeepZipFiles: isKeepZipFiles})})
 	os.Remove(zipPath)
 }
 
@@ -272,7 +272,7 @@ func (s *Service) logZipCreated(pluginID, siteID int64, zipPath string, fileCoun
 	}
 
 	zipEntries := s.getZipStructure(zipPath)
-	s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), fi.Info.Size()), toDetails(ZipCreatedDetails{ZipPath: zipPath, ZipSize: fi.Info.Size(), FileCount: fileCount, ZipStructure: zipEntries})))
+	s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "info", Step: "package", Message: fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), fi.Info.Size()), Details: toDetails(ZipCreatedDetails{ZipPath: zipPath, ZipSize: fi.Info.Size(), FileCount: fileCount, ZipStructure: zipEntries})})
 	s.logZipEntries(pluginID, siteID, zipEntries)
 }
 
@@ -283,10 +283,10 @@ func (s *Service) logZipEntries(pluginID, siteID int64, entries []string) {
 		maxShow = len(entries)
 	}
 	for i := 0; i < maxShow; i++ {
-		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "debug", "package", fmt.Sprintf("  └─ %s", entries[i]), nil))
+		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "debug", Step: "package", Message: fmt.Sprintf("  └─ %s", entries[i])})
 	}
 	if len(entries) > 20 {
-		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "debug", "package", fmt.Sprintf("  ... and %d more files", len(entries)-20), nil))
+		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "debug", Step: "package", Message: fmt.Sprintf("  ... and %d more files", len(entries)-20)})
 	}
 }
 

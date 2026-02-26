@@ -322,23 +322,31 @@ func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, error) {
 	return pluginID, nil
 }
 
+// SeedMappingInput bundles parameters for CreateSeedMapping.
+type SeedMappingInput struct {
+	PluginID   int64
+	SiteID     int64
+	RemoteSlug string
+	Logger     *logger.Logger
+}
+
 // CreateSeedMapping creates a plugin-site mapping for seeding
 // Returns (created bool, error) - created is true only if a new row was inserted
-func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string, log *logger.Logger) (bool, error) {
+func (db *DB) CreateSeedMapping(input SeedMappingInput) (bool, error) {
 	ctx := dbops.Context{
 		Table:  "PluginMappings",
-		Logger: log,
+		Logger: input.Logger,
 		Fields: dbops.OperationFields{
-			PluginID:   pluginID,
-			SiteID:     siteID,
-			RemoteSlug: remoteSlug,
+			PluginID:   input.PluginID,
+			SiteID:     input.SiteID,
+			RemoteSlug: input.RemoteSlug,
 		},
 	}
 
 	return dbops.CreateMapping(db.DB, ctx, `
 		INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, datetime('now'), datetime('now'))
-	`, pluginID, siteID, remoteSlug)
+	`, input.PluginID, input.SiteID, input.RemoteSlug)
 }
 
 // GetDbVersion returns the stored database version for changelog comparison
@@ -367,15 +375,27 @@ func (db *DB) SetDbVersion(version string) error {
 	return nil
 }
 
+// PluginVersionInput bundles parameters for CreatePluginVersion.
+type PluginVersionInput struct {
+	PluginID      int64
+	SiteID        int64
+	Version       string
+	BackupPath    string
+	FilesUpdated  int
+	GitCommitHash string
+	PublishType   string
+	Notes         string
+}
+
 // CreatePluginVersion records a new version entry after a publish operation
-func (db *DB) CreatePluginVersion(pluginID, siteID int64, version, backupPath string, filesUpdated int, gitCommitHash, publishType, notes string) (int64, error) {
+func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, error) {
 	result, err := db.Exec(`
 		INSERT INTO PluginVersions (PluginId, SiteId, Version, BackupPath, FilesUpdated, GitCommitHash, PublishType, Status, Notes, CreatedAt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, datetime('now'))
-	`, pluginID, siteID, version, backupPath, filesUpdated, gitCommitHash, publishType, notes)
+	`, input.PluginID, input.SiteID, input.Version, input.BackupPath, input.FilesUpdated, input.GitCommitHash, input.PublishType, input.Notes)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create plugin version").
-			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", pluginID, siteID))
+			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", input.PluginID, input.SiteID))
 	}
 	return result.LastInsertId()
 }

@@ -72,7 +72,7 @@ func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (
 		version = fmt.Sprintf("1.0.%d", time.Now().Unix())
 	}
 
-	versionID, err := s.db.CreatePluginVersion(pluginID, siteID, version, input.BackupPath, input.FilesUpdated, input.GitCommitHash, input.PublishType, input.Notes)
+	versionID, err := s.db.CreatePluginVersion(database.PluginVersionInput{PluginID: pluginID, SiteID: siteID, Version: version, BackupPath: input.BackupPath, FilesUpdated: input.FilesUpdated, GitCommitHash: input.GitCommitHash, PublishType: input.PublishType, Notes: input.Notes})
 	if err != nil {
 		s.log.Error("Failed to record version",
 			"pluginId", pluginID,

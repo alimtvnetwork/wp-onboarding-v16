@@ -153,11 +153,18 @@ func normalizeUploaderEnvelopeFields(status *UploaderStatus) {
 	}
 }
 
+// UploadInput bundles parameters for UploadPluginViaUploader.
+type UploadInput struct {
+	ZipPath      string
+	Slug         string
+	IsActivate   bool
+	UploadSource uploadsource.Variant
+}
+
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
-// uploadSource identifies how the upload was triggered (e.g., uploadsource.RestAPI).
-func (c *Client) UploadPluginViaUploader(zipPath string, slug string, isActivate bool, uploadSource uploadsource.Variant) (*UploaderUploadResult, error) {
-	uc, err := c.prepareUploadContext(zipPath, slug)
+func (c *Client) UploadPluginViaUploader(input UploadInput) (*UploaderUploadResult, error) {
+	uc, err := c.prepareUploadContext(input.ZipPath, input.Slug)
 	if err != nil {
 		return nil, err
 	}
@@ -171,37 +178,48 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, isActivate
 		}),
 	})
 
-	body, contentType, err := buildMultipartBody(uc, isActivate, uploadSource)
+	body, contentType, err := buildMultipartBody(uc, input.IsActivate, input.UploadSource)
 	if err != nil {
 		return nil, err
 	}
 
 	c.progress(ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
-		Message: fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, isActivate, uc.ZipSize, body.Len()),
+		Message: fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, input.IsActivate, uc.ZipSize, body.Len()),
 		Details: toProgress(UploadBodyProgress{
-			Slug: uc.Slug, IsActivate: isActivate, ZipSize: uc.ZipSize, BodySize: body.Len(),
+			Slug: uc.Slug, IsActivate: input.IsActivate, ZipSize: uc.ZipSize, BodySize: body.Len(),
 		}),
 	})
 
 	return c.executeUploadHTTP(uc, body, contentType)
 }
 
+// uploadAPIErrorInput bundles parameters for buildUploadAPIError.
+type uploadAPIErrorInput struct {
+	AbsZipPath      string
+	UploadURL       string
+	UploadEndpoint  string
+	StatusCode      int
+	RespBytes       []byte
+	RespBody        string
+	StackTraceDepth int
+}
+
 // buildUploadAPIError constructs a detailed APIError for upload failures.
-func buildUploadAPIError(absZipPath, uploadURL, uploadEndpoint string, statusCode int, respBytes []byte, respBody string, stackTraceDepth int) *APIError {
-	stackTrace := captureStackTraceN(3, stackTraceDepth)
-	diagnosticBody := buildUploadDiagnosticBody(respBody)
+func buildUploadAPIError(input uploadAPIErrorInput) *APIError {
+	stackTrace := captureStackTraceN(3, input.StackTraceDepth)
+	diagnosticBody := buildUploadDiagnosticBody(input.RespBody)
 
 	fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n",
-		uploadURL, absZipPath, statusCode, truncateBody(respBody, 4000), stackTrace)
+		input.UploadURL, input.AbsZipPath, input.StatusCode, truncateBody(input.RespBody, 4000), stackTrace)
 
 	return &APIError{
 		Operation:    "upload plugin via RiseupAsia Uploader",
 		Method:       "POST",
-		Endpoint:     uploadEndpoint,
-		Url:          uploadURL,
-		StatusCode:   statusCode,
-		ResponseBody: diagnosticBody + ExtractPHPStackTrace(respBytes),
+		Endpoint:     input.UploadEndpoint,
+		Url:          input.UploadURL,
+		StatusCode:   input.StatusCode,
+		ResponseBody: diagnosticBody + ExtractPHPStackTrace(input.RespBytes),
 		StackTrace:   stackTrace,
 	}
 }

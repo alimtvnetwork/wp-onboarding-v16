@@ -99,7 +99,7 @@ func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zip
 // bootstrapViaUploader updates via an existing Riseup Asia Uploader.
 func (s *Service) bootstrapViaUploader(id int64, client *wordpress.Client, zipPath, namespace string) (*wordpress.UploaderUploadResult, error) {
 	s.broadcastBootstrapLog(loglevel.Info, id, fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJson(SiteIdDetail{SiteId: id}))
-	result, err := client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, uploadsource.RestAPI)
+	result, err := client.UploadPluginViaUploader(wordpress.UploadInput{ZipPath: zipPath, Slug: "riseup-asia-uploader", IsActivate: true, UploadSource: uploadsource.RestAPI})
 	if err != nil {
 		s.broadcastBootstrapLog(loglevel.Error, id, fmt.Sprintf("Upload failed: %v", err), toJson(SiteIdDetail{SiteId: id}))
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
