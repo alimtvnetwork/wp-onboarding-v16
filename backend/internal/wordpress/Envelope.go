@@ -66,10 +66,13 @@ func IsEnvelope(data []byte) bool {
 	return false
 }
 
+// IsEnvelopeMissing returns true when the data is not in envelope format.
+func IsEnvelopeMissing(data []byte) bool { return !IsEnvelope(data) }
+
 // ParseEnvelope attempts to parse the body as an untyped envelope.
 // Returns nil if it's not in envelope format.
 func ParseEnvelope(data []byte) *Envelope {
-	if !IsEnvelope(data) {
+	if IsEnvelopeMissing(data) {
 		return nil
 	}
 	var env Envelope
@@ -82,7 +85,7 @@ func ParseEnvelope(data []byte) *Envelope {
 // ParseTypedEnvelope parses the body as a fully typed envelope with Results []T.
 // Returns nil if it's not in envelope format or if Results cannot be decoded into []T.
 func ParseTypedEnvelope[T any](data []byte) *TypedEnvelope[T] {
-	if !IsEnvelope(data) {
+	if IsEnvelopeMissing(data) {
 		return nil
 	}
 	var env TypedEnvelope[T]

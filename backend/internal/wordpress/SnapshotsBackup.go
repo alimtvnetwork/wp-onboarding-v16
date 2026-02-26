@@ -110,7 +110,7 @@ func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, conte
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
-	if !isOkStatus(resp.StatusCode, []int{http.StatusOK, http.StatusCreated}) {
+	if isErrorStatus(resp.StatusCode, []int{http.StatusOK, http.StatusCreated}) {
 		errorInput := apiCallInput{
 			Method:    "POST",
 			Endpoint:  endpoint,

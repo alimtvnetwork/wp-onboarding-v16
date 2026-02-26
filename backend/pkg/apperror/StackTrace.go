@@ -78,7 +78,8 @@ func collectFrames(rawFrames *runtime.Frames, maxFrames int) []StackFrame {
 func isRuntimeFrame(fn string) bool {
 	isRuntime := strings.HasPrefix(fn, "runtime.")
 	isMain := fn == "runtime.main"
-	isRuntimeInternal := isRuntime && !isMain
+	isAuxiliary := !isMain
+	isRuntimeInternal := isRuntime && isAuxiliary
 
 	return isRuntimeInternal
 }
