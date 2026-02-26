@@ -19,7 +19,8 @@ Go struct JSON tags for our own API responses must use PascalCase (e.g., `json:"
 ## Migration Status
 
 - **ResponseKeyType enum**: All 130+ values migrated from camelCase to PascalCase (2026-02-26).
-- **Go backend JSON tags**: Pending — must be updated to match PascalCase values.
+- **Go backend JSON tags**: Riseup Asia Uploader API structs must remove JSON tags (internal API, PascalCase fields match). Only WordPress Core REST API structs keep `// external key` tags.
+- **Go SnapshotCleanupResult**: Fixed to match PHP `buildCleanupResponse()` PascalCase keys (2026-02-26).
 - **Frontend consumers**: Pending — must update key references to PascalCase.
 
 ## Cross-References

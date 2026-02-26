@@ -128,15 +128,40 @@ func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, conte
 
 // SnapshotCleanupOptions holds options for snapshot cleanup.
 type SnapshotCleanupOptions struct {
-	DryRun bool `json:"dry_run,omitempty"` // external key (Riseup Asia Uploader API)
+	DryRun bool `json:",omitempty"`
 }
 
 // SnapshotCleanupResult holds the result of a cleanup operation.
+// Matches PHP buildCleanupResponse() PascalCase keys from ResponseKeyType.
 type SnapshotCleanupResult struct {
-	Success        bool `json:"success"`                  // external key (Riseup Asia Uploader API)
-	OrphansCleaned int  `json:"orphans_cleaned,omitempty"` // external key
-	StuckCleaned   int  `json:"stuck_cleaned,omitempty"`   // external key
-	AgedCleaned    int  `json:"aged_cleaned,omitempty"`    // external key
+	IsSuccess bool
+	Retention CleanupRetentionResult
+	Orphans   CleanupOrphansResult
+	Stuck     CleanupStuckResult
+	Duration  float64
+	IsDryRun  bool
+	Errors    []string
+}
+
+// CleanupRetentionResult holds retention-phase cleanup details.
+type CleanupRetentionResult struct {
+	Deleted       int
+	SkippedMaster int
+	BytesFreed    int64
+	Details       []any
+}
+
+// CleanupOrphansResult holds orphan-phase cleanup details.
+type CleanupOrphansResult struct {
+	Removed    int
+	BytesFreed int64
+	Files      []string
+}
+
+// CleanupStuckResult holds stuck-phase cleanup details.
+type CleanupStuckResult struct {
+	Cleaned int
+	Ids     []int64
 }
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
