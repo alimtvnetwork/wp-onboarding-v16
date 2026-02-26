@@ -36,11 +36,13 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 		Search: r.URL.Query().Get("search"),
 	}
 
-	if pid := r.URL.Query().Get("pluginId"); pid != "" {
+	pid := r.URL.Query().Get("pluginId")
+	if pid != "" {
 		filters.PluginID, _ = strconv.ParseInt(pid, 10, 64)
 	}
 
-	if sid := r.URL.Query().Get("siteId"); sid != "" {
+	sid := r.URL.Query().Get("siteId")
+	if sid != "" {
 		filters.SiteID, _ = strconv.ParseInt(sid, 10, 64)
 	}
 

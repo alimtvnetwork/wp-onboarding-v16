@@ -168,7 +168,8 @@ func scanHeaderLines(file *os.File, filename string, patterns map[string]*regexp
 // matchHeaderLine matches a single line against all header patterns.
 func matchHeaderLine(info *pluginHeaderInfo, line string, patterns map[string]*regexp.Regexp) {
 	for key, pattern := range patterns {
-		if matches := pattern.FindStringSubmatch(line); len(matches) > 1 {
+		matches := pattern.FindStringSubmatch(line)
+		if len(matches) > 1 {
 			setHeaderField(info, key, strings.TrimSpace(matches[1]))
 		}
 	}

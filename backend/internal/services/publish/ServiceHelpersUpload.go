@@ -31,8 +31,10 @@ func buildUploadErrorInner(slug string, attempts int, appErr *apperror.AppError)
 		Code:       appErr.Code,
 	}
 
-	if cause := appErr.Unwrap(); cause != nil {
-		if apiErr := wordpress.ExtractAPIError(cause); apiErr != nil {
+	cause := appErr.Unwrap()
+	if cause != nil {
+		apiErr := wordpress.ExtractAPIError(cause)
+		if apiErr != nil {
 			inner.Status = apiErr.StatusCode
 			inner.Response = truncateString(apiErr.ResponseBody, 2000)
 		}
@@ -113,8 +115,10 @@ func buildActivateErrorInner(slug string, startTime time.Time, appErr *apperror.
 		DurationMs: time.Since(startTime).Milliseconds(),
 	}
 
-	if cause := appErr.Unwrap(); cause != nil {
-		if apiErr := wordpress.ExtractAPIError(cause); apiErr != nil {
+	cause := appErr.Unwrap()
+	if cause != nil {
+		apiErr := wordpress.ExtractAPIError(cause)
+		if apiErr != nil {
 			inner.Request = &ActivateRequestInfo{
 				Method:   apiErr.Method,
 				Endpoint: apiErr.Endpoint,
