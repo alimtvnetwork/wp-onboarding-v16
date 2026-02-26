@@ -103,6 +103,7 @@ trait PluginLifecycleEnableTrait {
         }
 
         $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Success->value);
+
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginEnable->route())
             ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Activated->value => true))
@@ -126,6 +127,7 @@ trait PluginLifecycleEnableTrait {
         }
 
         $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Success->value);
+
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
             ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, 'deactivated' => true))
