@@ -72,7 +72,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 		return nil, err
 	}
 
-	return validateSuccessAndReturn(result.Success, result.Data.Files, "sync manifest", slug)
+	return validateSuccessAndReturn(result.Success, result.Data.Files, successCheckContext{Operation: "sync manifest", Slug: slug})
 }
 
 // pluginFilesResult is the response shape from the files endpoint.
@@ -104,7 +104,7 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 		return nil, err
 	}
 
-	return validateSuccessAndReturn(result.Success, result.Files, "plugin files", slug)
+	return validateSuccessAndReturn(result.Success, result.Files, successCheckContext{Operation: "plugin files", Slug: slug})
 }
 
 // mutationTokenResult is the response from the mutation token endpoint.
@@ -175,14 +175,20 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 	return result.Content, nil
 }
 
+// successCheckContext bundles the context fields for validateSuccessAndReturn.
+type successCheckContext struct {
+	Operation string
+	Slug      string
+}
+
 // validateSuccessAndReturn checks the success flag and returns data or an error.
-func validateSuccessAndReturn[T any](isSuccess bool, data T, operation, slug string) (T, error) {
+func validateSuccessAndReturn[T any](isSuccess bool, data T, ctx successCheckContext) (T, error) {
 	isFailure := !isSuccess
 
 	if isFailure {
 		var zero T
-		return zero, apperror.New(apperror.ErrWPConnection, "remote API returned failure for "+operation).
-			WithValue("slug", slug)
+		return zero, apperror.New(apperror.ErrWPConnection, "remote API returned failure for "+ctx.Operation).
+			WithValue("slug", ctx.Slug)
 	}
 	return data, nil
 }
