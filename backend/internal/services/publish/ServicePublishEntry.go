@@ -91,7 +91,13 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	result.SessionId = initResult.SessionID
 	s.broadcastPublishStart(pluginID, siteID, initResult)
 
-	pctx := s.buildPublishContext(pluginID, siteID, initResult, opts, result)
+	pctx := s.buildPublishContext(buildPublishContextInput{
+		PluginID:   pluginID,
+		SiteID:     siteID,
+		InitResult: initResult,
+		Opts:       opts,
+		Result:     result,
+	})
 
 	return s.executeAndFinalize(ctx, pctx, initResult)
 }
@@ -126,15 +132,24 @@ func (s *Service) logPublishStartSession(initResult *publishInitResult) {
 	s.sessionLog(initLog)
 }
 
+// buildPublishContextInput bundles parameters for buildPublishContext.
+type buildPublishContextInput struct {
+	PluginID   int64
+	SiteID     int64
+	InitResult *publishInitResult
+	Opts       PublishOptions
+	Result     *PublishResult
+}
+
 // buildPublishContext constructs the publishContext struct.
-func (s *Service) buildPublishContext(pluginID, siteID int64, initResult *publishInitResult, opts PublishOptions, result *PublishResult) *publishContext {
+func (s *Service) buildPublishContext(input buildPublishContextInput) *publishContext {
 	return &publishContext{
-		PluginId:   pluginID,
-		SiteId:     siteID,
-		SessionId:  initResult.SessionID,
-		PluginInfo: initResult.PluginInfo,
-		Options:    opts,
-		Result:     result,
+		PluginId:   input.PluginID,
+		SiteId:     input.SiteID,
+		SessionId:  input.InitResult.SessionID,
+		PluginInfo: input.InitResult.PluginInfo,
+		Options:    input.Opts,
+		Result:     input.Result,
 		StartTime:  time.Now(),
 	}
 }
