@@ -8,86 +8,81 @@ import (
 
 // TestSuite represents a collection of related test cases
 type TestSuite struct {
-	Id             string
-	Name           string
-	Category       string // plugin-crud, site-connections, sync-operations, publish-flow
-	IsEnabled      bool
-	TimeoutSeconds int
-	CaseCount      int
-	CreatedAt      time.Time
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	Category       string    `json:"category"`
+	Enabled        bool      `json:"enabled"`
+	TimeoutSeconds int       `json:"timeoutSeconds"`
+	CaseCount      int       `json:"caseCount"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 // TestCase represents a single test case
 type TestCase struct {
-	Id              string
-	SuiteId         string
-	Name            string
-	Description     string
-	Preconditions   []string
-	Steps           []string
-	ExpectedResult  string
-	TimeoutSeconds  int
-	OrderIndex      int
-	IsEnabled       bool
+	ID             string   `json:"id"`
+	SuiteID        string   `json:"suiteId"`
+	Name           string   `json:"name"`
+	Description    string   `json:"description"`
+	Preconditions  []string `json:"preconditions"`
+	Steps          []string `json:"steps"`
+	ExpectedResult string   `json:"expectedResult"`
+	TimeoutSeconds int      `json:"timeoutSeconds"`
+	OrderIndex     int      `json:"orderIndex"`
+	Enabled        bool     `json:"enabled"`
 }
 
 // TestRun represents a test execution session
 type TestRun struct {
-	Id           string
-	StartedAt    time.Time
-	CompletedAt  *time.Time `json:",omitempty"`
-	Status       string     // running, passed, failed, aborted
-	TotalTests   int
-	PassedTests  int
-	FailedTests  int
-	SkippedTests int
-	DurationMs   int64
+	ID           string     `json:"id"`
+	StartedAt    time.Time  `json:"startedAt"`
+	CompletedAt  *time.Time `json:"completedAt,omitempty"`
+	Status       string     `json:"status"`
+	TotalTests   int        `json:"totalTests"`
+	PassedTests  int        `json:"passedTests"`
+	FailedTests  int        `json:"failedTests"`
+	SkippedTests int        `json:"skippedTests"`
+	DurationMs   int64      `json:"durationMs"`
 }
 
 // TestResult represents the result of a single test case execution
 type TestResult struct {
-	Id           string
-	RunId        string
-	SuiteId      string
-	CaseId       string
-	CaseName     string
-	Status       string     // passed, failed, skipped, error
-	StartedAt    time.Time
-	CompletedAt  *time.Time `json:",omitempty"`
-	DurationMs   int64
-	ErrorMessage string     `json:",omitempty"`
-	ErrorDetails string     `json:",omitempty"`
-	RequestData  string     `json:",omitempty"`
-	ResponseData string     `json:",omitempty"`
-	Logs         string     `json:",omitempty"`
+	ID           string     `json:"id"`
+	RunID        string     `json:"runId"`
+	SuiteID      string     `json:"suiteId"`
+	CaseID       string     `json:"caseId"`
+	CaseName     string     `json:"caseName"`
+	Status       string     `json:"status"`
+	StartedAt    time.Time  `json:"startedAt"`
+	CompletedAt  *time.Time `json:"completedAt,omitempty"`
+	DurationMs   int64      `json:"durationMs"`
+	ErrorMessage string     `json:"errorMessage,omitempty"`
+	ErrorDetails string     `json:"errorDetails,omitempty"`
+	RequestData  string     `json:"requestData,omitempty"`
+	ResponseData string     `json:"responseData,omitempty"`
+	Logs         string     `json:"logs,omitempty"`
 }
 
 // RunOptions configures a test run
 type RunOptions struct {
-	Suites        []string // Empty = run all
-	IsParallel    bool     // Run suites in parallel
-	StopOnFailure bool     // Stop on first failure
+	Suites        []string `json:"suites"`
+	IsParallel    bool     `json:"parallel"`
+	StopOnFailure bool     `json:"stopOnFailure"`
 }
 
 // RunSummary provides summary of a completed test run
 type RunSummary struct {
-	Run     *TestRun
-	Results []TestResult
+	Run     *TestRun     `json:"run"`
+	Results []TestResult `json:"results"`
 }
 
 // Service defines the E2E test service interface
 type Service interface {
-	// Suite management
 	ListSuites(ctx context.Context) ([]TestSuite, error)
 	GetSuite(ctx context.Context, id string) (*TestSuite, error)
-	GetCases(ctx context.Context, suiteId string) ([]TestCase, error)
-	
-	// Test execution
+	GetCases(ctx context.Context, suiteID string) ([]TestCase, error)
 	StartRun(ctx context.Context, opts RunOptions) (*TestRun, error)
-	AbortRun(ctx context.Context, runId string) error
-	
-	// Results
+	AbortRun(ctx context.Context, runID string) error
 	ListRuns(ctx context.Context, limit int) ([]TestRun, error)
-	GetRun(ctx context.Context, runId string) (*RunSummary, error)
-	DeleteRun(ctx context.Context, runId string) error
+	GetRun(ctx context.Context, runID string) (*RunSummary, error)
+	DeleteRun(ctx context.Context, runID string) error
 }

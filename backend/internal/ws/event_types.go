@@ -255,29 +255,29 @@ type RollbackCompleteData struct {
 
 // E2ERunStartedData is broadcast when an E2E test run begins.
 type E2ERunStartedData struct {
-	RunId      string
-	TotalTests int
+	RunID      string `json:"runId"`
+	TotalTests int    `json:"totalTests"`
 }
 
 // E2ETestStartedData is broadcast when an individual E2E test case begins.
 type E2ETestStartedData struct {
-	RunId    string
-	CaseId   string
-	CaseName string
+	RunID    string `json:"runId"`
+	CaseID   string `json:"caseId"`
+	CaseName string `json:"caseName"`
 }
 
 // E2ETestCompletedData is broadcast when an individual E2E test case finishes.
 type E2ETestCompletedData struct {
-	RunId      string
-	CaseId     string
-	Status     string
-	DurationMs int64
+	RunID      string `json:"runId"`
+	CaseID     string `json:"caseId"`
+	Status     string `json:"status"`
+	DurationMs int64  `json:"durationMs"`
 }
 
 // E2ERunCompletedData is broadcast when an E2E test run finishes.
 type E2ERunCompletedData struct {
-	RunId  string
-	Status string
-	Passed int `json:",omitempty"`
-	Failed int `json:",omitempty"`
+	RunID  string `json:"runId"`
+	Status string `json:"status"`
+	Passed int    `json:"passed,omitempty"`
+	Failed int    `json:"failed,omitempty"`
 }
