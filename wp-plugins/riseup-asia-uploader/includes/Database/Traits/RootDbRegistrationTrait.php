@@ -104,10 +104,10 @@ trait RootDbRegistrationTrait {
             $pdo = null;
 
             return array(
-                'meta' => $meta,
+                ResponseKeyType::Meta->value => $meta,
                 ResponseKeyType::Tables->value => $tables,
                 ResponseKeyType::Dependencies->value => $deps,
-                'incrementals' => $incrementals,
+                ResponseKeyType::Incrementals->value => $incrementals,
                 ResponseKeyType::Plugins->value => $plugins,
             );
         } catch (Throwable $e) {

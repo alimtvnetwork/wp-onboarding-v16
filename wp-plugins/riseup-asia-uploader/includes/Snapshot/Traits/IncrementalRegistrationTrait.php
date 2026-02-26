@@ -71,10 +71,10 @@ trait IncrementalRegistrationTrait {
         int $totalNewRows,
     ): string {
         return json_encode(array(
-            'type' => SnapshotModeType::Incremental->value,
+            ResponseKeyType::Type->value => SnapshotModeType::Incremental->value,
             'master' => basename($masterDir),
             'sequence' => $sequence,
-            'folder' => $folderName,
+            ResponseKeyType::Folder->value => $folderName,
             ResponseKeyType::TablesChanged->value => $tablesChanged,
             ResponseKeyType::TotalNewRows->value => $totalNewRows,
         ));

@@ -39,7 +39,7 @@ trait RestoreHelperTrait {
         $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
             ResponseKeyType::TablesRestored->value     => $masterResult[ResponseKeyType::TablesRestored->value],
             ResponseKeyType::TotalRows->value          => $totalRows,
-            ResponseKeyType::IncrementalsApplied->value => $incResult['applied'],
+            ResponseKeyType::IncrementalsApplied->value => $incResult[ResponseKeyType::Applied->value],
             ResponseKeyType::Errors->value             => count($errors),
             ResponseKeyType::BackupId->value           => $backupId,
             ResponseKeyType::Duration->value           => round($duration, 2) . 's',
@@ -48,11 +48,11 @@ trait RestoreHelperTrait {
         return ResultHelper::ok(array(
             ResponseKeyType::TablesRestored->value     => $masterResult[ResponseKeyType::TablesRestored->value],
             ResponseKeyType::TotalRows->value          => $totalRows,
-            ResponseKeyType::IncrementalsApplied->value => $incResult['applied'],
+            ResponseKeyType::IncrementalsApplied->value => $incResult[ResponseKeyType::Applied->value],
             ResponseKeyType::BackupId->value           => $backupId,
             ResponseKeyType::Errors->value             => $errors,
             ResponseKeyType::Duration->value           => $duration,
-            'meta'                                     => $meta,
+            ResponseKeyType::Meta->value                   => $meta,
         ));
     }
 
@@ -93,7 +93,7 @@ trait RestoreHelperTrait {
             ResponseKeyType::TablesRestored->value  => $tablesRestored,
             ResponseKeyType::TotalRows->value       => $totalRows,
             ResponseKeyType::Duration->value        => round($duration, 2),
-            'type'                                  => SnapshotWorkerModeType::PerTable->value,
+            ResponseKeyType::Type->value                => SnapshotWorkerModeType::PerTable->value,
         ));
     }
 

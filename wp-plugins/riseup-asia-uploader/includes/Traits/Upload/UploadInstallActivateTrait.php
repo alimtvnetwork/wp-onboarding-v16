@@ -121,7 +121,7 @@ trait UploadInstallActivateTrait
 
         $version = $this->resolveEffectiveVersion($installedVersion, $clientVersion, $isSelfUpdate);
 
-        return array('version' => $version);
+        return array(ResponseKeyType::Version->value => $version);
     }
 
     /** Read the version header from a plugin's main PHP file. */

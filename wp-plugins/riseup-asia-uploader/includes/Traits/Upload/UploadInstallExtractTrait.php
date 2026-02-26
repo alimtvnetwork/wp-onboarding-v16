@@ -122,7 +122,7 @@ trait UploadInstallExtractTrait
             ResponseKeyType::Slug->value => $ctx[ResponseKeyType::Slug->value],
             ResponseKeyType::IsUpdate->value => $ctx[ResponseKeyType::IsUpdate->value],
             ResponseKeyType::Activated->value => $activation[ResponseKeyType::Activated->value],
-            ResponseKeyType::PluginVersion->value => $versionInfo['version'],
+            ResponseKeyType::PluginVersion->value => $versionInfo[ResponseKeyType::Version->value],
             ResponseKeyType::IsSelfUpdate->value => $ctx[ResponseKeyType::IsSelfUpdate->value],
         );
     }
