@@ -27,51 +27,24 @@ type compiledPattern struct {
 	regex     *regexp.Regexp
 }
 
-// LoadUploadIgnore loads and parses an .uploadignore file from a plugin directory
+// LoadUploadIgnore loads and parses an .uploadignore file from a plugin directory.
 func LoadUploadIgnore(pluginDir string) (*UploadIgnore, error) {
 	ui := &UploadIgnore{
 		patterns:  make([]compiledPattern, 0),
 		negations: make([]compiledPattern, 0),
-		loaded:    false,
 	}
 
 	ignorePath := filepath.Join(pluginDir, UploadIgnoreFilename)
 	file, err := os.Open(ignorePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return ui, nil // Not an error, just no ignore file
+			return ui, nil
 		}
 		return nil, err
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		// Skip empty lines and comments
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		// Handle negation patterns
-		if strings.HasPrefix(line, "!") {
-			pattern := strings.TrimPrefix(line, "!")
-			compiled, err := compilePattern(pattern)
-			if err != nil {
-				continue // Skip invalid patterns
-			}
-			ui.negations = append(ui.negations, compiled)
-		} else {
-			compiled, err := compilePattern(line)
-			if err != nil {
-				continue // Skip invalid patterns
-			}
-			ui.patterns = append(ui.patterns, compiled)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
+	if err := parseIgnoreFile(file, ui); err != nil {
 		return nil, err
 	}
 
@@ -79,34 +52,58 @@ func LoadUploadIgnore(pluginDir string) (*UploadIgnore, error) {
 	return ui, nil
 }
 
-// ShouldIgnore checks if a relative path should be ignored
+// parseIgnoreFile reads lines from the file and populates patterns.
+func parseIgnoreFile(file *os.File, ui *UploadIgnore) error {
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		addIgnoreLine(ui, line)
+	}
+	return scanner.Err()
+}
+
+// addIgnoreLine compiles and appends a single ignore line.
+func addIgnoreLine(ui *UploadIgnore, line string) {
+	if strings.HasPrefix(line, "!") {
+		compiled, err := compilePattern(strings.TrimPrefix(line, "!"))
+		if err == nil {
+			ui.negations = append(ui.negations, compiled)
+		}
+	} else {
+		compiled, err := compilePattern(line)
+		if err == nil {
+			ui.patterns = append(ui.patterns, compiled)
+		}
+	}
+}
+
+// ShouldIgnore checks if a relative path should be ignored.
 func (u *UploadIgnore) ShouldIgnore(relPath string) bool {
-	// Normalize path separators
 	path := filepath.ToSlash(relPath)
 	path = strings.TrimPrefix(path, "/")
 
-	// Check if any pattern matches
-	ignored := false
-	for _, pattern := range u.patterns {
-		if matchPattern(pattern, path) {
-			ignored = true
-			break
-		}
-	}
+	ignored := matchesAny(u.patterns, path)
 
-	// If ignored, check for negation patterns
 	if ignored {
-		for _, pattern := range u.negations {
-			if matchPattern(pattern, path) {
-				return false // Negated, don't ignore
-			}
-		}
+		return !matchesAny(u.negations, path)
 	}
-
-	return ignored
+	return false
 }
 
-// GetPatterns returns all include patterns
+// matchesAny returns true if any pattern matches the path.
+func matchesAny(patterns []compiledPattern, path string) bool {
+	for _, p := range patterns {
+		if matchPattern(p, path) {
+			return true
+		}
+	}
+	return false
+}
+
+// GetPatterns returns all include patterns.
 func (u *UploadIgnore) GetPatterns() []string {
 	result := make([]string, len(u.patterns))
 	for i, p := range u.patterns {
@@ -115,7 +112,7 @@ func (u *UploadIgnore) GetPatterns() []string {
 	return result
 }
 
-// GetNegations returns all negation patterns
+// GetNegations returns all negation patterns.
 func (u *UploadIgnore) GetNegations() []string {
 	result := make([]string, len(u.negations))
 	for i, p := range u.negations {
@@ -124,52 +121,17 @@ func (u *UploadIgnore) GetNegations() []string {
 	return result
 }
 
-// IsLoaded returns whether an ignore file was successfully loaded
+// IsLoaded returns whether an ignore file was successfully loaded.
 func (u *UploadIgnore) IsLoaded() bool {
 	return u.loaded
 }
 
-// compilePattern compiles a gitignore-style pattern to regex
+// compilePattern compiles a gitignore-style pattern to regex.
 func compilePattern(pattern string) (compiledPattern, error) {
-	cp := compiledPattern{
-		original:  pattern,
-		anchored:  false,
-		directory: false,
-	}
+	cp := compiledPattern{original: pattern}
 
-	// Check if pattern is anchored to root
-	if strings.HasPrefix(pattern, "/") {
-		cp.anchored = true
-		pattern = strings.TrimPrefix(pattern, "/")
-	}
-
-	// Check if pattern is directory-only
-	if strings.HasSuffix(pattern, "/") {
-		cp.directory = true
-		pattern = strings.TrimSuffix(pattern, "/")
-	}
-
-	// Escape regex special characters
-	regexStr := regexp.QuoteMeta(pattern)
-
-	// Handle ** (match any path segments)
-	regexStr = strings.ReplaceAll(regexStr, `\*\*`, ".*")
-
-	// Handle * (match any characters except /)
-	regexStr = strings.ReplaceAll(regexStr, `\*`, "[^/]*")
-
-	// Handle ? (match single character except /)
-	regexStr = strings.ReplaceAll(regexStr, `\?`, "[^/]")
-
-	if cp.anchored {
-		regexStr = "^" + regexStr
-	} else {
-		// Pattern can match anywhere in path
-		regexStr = "(^|/)" + regexStr
-	}
-
-	// Match end of path or directory separator
-	regexStr = regexStr + "(/|$)"
+	pattern = parsePatternFlags(&cp, pattern)
+	regexStr := buildPatternRegex(cp, pattern)
 
 	regex, err := regexp.Compile("(?i)" + regexStr)
 	if err != nil {
@@ -180,7 +142,35 @@ func compilePattern(pattern string) (compiledPattern, error) {
 	return cp, nil
 }
 
-// matchPattern matches a compiled pattern against a path
+// parsePatternFlags extracts anchored/directory flags and returns the cleaned pattern.
+func parsePatternFlags(cp *compiledPattern, pattern string) string {
+	if strings.HasPrefix(pattern, "/") {
+		cp.anchored = true
+		pattern = strings.TrimPrefix(pattern, "/")
+	}
+	if strings.HasSuffix(pattern, "/") {
+		cp.directory = true
+		pattern = strings.TrimSuffix(pattern, "/")
+	}
+	return pattern
+}
+
+// buildPatternRegex converts a gitignore pattern to a regex string.
+func buildPatternRegex(cp compiledPattern, pattern string) string {
+	regexStr := regexp.QuoteMeta(pattern)
+	regexStr = strings.ReplaceAll(regexStr, `\*\*`, ".*")
+	regexStr = strings.ReplaceAll(regexStr, `\*`, "[^/]*")
+	regexStr = strings.ReplaceAll(regexStr, `\?`, "[^/]")
+
+	if cp.anchored {
+		regexStr = "^" + regexStr
+	} else {
+		regexStr = "(^|/)" + regexStr
+	}
+	return regexStr + "(/|$)"
+}
+
+// matchPattern matches a compiled pattern against a path.
 func matchPattern(pattern compiledPattern, path string) bool {
 	if pattern.regex == nil {
 		return false
@@ -188,7 +178,7 @@ func matchPattern(pattern compiledPattern, path string) bool {
 	return pattern.regex.MatchString(path)
 }
 
-// FilterFiles filters a list of file paths, returning only those not ignored
+// FilterFiles filters a list of file paths, returning only those not ignored.
 func (u *UploadIgnore) FilterFiles(files []string) []string {
 	result := make([]string, 0, len(files))
 	for _, f := range files {
@@ -199,7 +189,7 @@ func (u *UploadIgnore) FilterFiles(files []string) []string {
 	return result
 }
 
-// PartitionFiles partitions files into included and ignored lists
+// PartitionFiles partitions files into included and ignored lists.
 func (u *UploadIgnore) PartitionFiles(files []string) (included []string, ignored []string) {
 	included = make([]string, 0, len(files))
 	ignored = make([]string, 0)

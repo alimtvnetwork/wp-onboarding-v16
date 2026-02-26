@@ -145,13 +145,7 @@ func (s *Service) loadMappingsForAll(ctx context.Context, plugins []models.Plugi
 func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.Plugin] {
 	s.log.Debug("Getting plugin by Id", "pluginId", id)
 
-	result := dbutil.QueryOne[models.Plugin](
-		ctx,
-		s.dbu,
-		pluginSelectByIDQuery,
-		scanPluginRow,
-		id,
-	)
+	result := dbutil.QueryOne[models.Plugin](ctx, s.dbu, pluginSelectByIDQuery, scanPluginRow, id)
 	if result.HasError() {
 		return apperror.Fail[models.Plugin](result.AppError())
 	}
@@ -159,13 +153,16 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 		return apperror.FailNew[models.Plugin](apperror.ErrNotFound, "plugin not found")
 	}
 
-	p := result.Value()
+	return apperror.Ok(s.attachMappings(ctx, result.Value()))
+}
+
+// attachMappings loads and attaches mappings to a plugin.
+func (s *Service) attachMappings(ctx context.Context, p models.Plugin) models.Plugin {
 	mappings := s.GetMappings(ctx, p.Id)
 	if mappings.IsSafe() {
 		p.Mappings = mappings.Items()
 	}
-
-	return apperror.Ok(p)
+	return p
 }
 
 // parseDateTime parses SQLite datetime strings into time.Time.
@@ -241,34 +238,29 @@ func scanID(row *sql.Row) (int64, error) {
 
 // insertPlugin inserts a new plugin and optional git config.
 func (s *Service) insertPlugin(ctx context.Context, input CreateInput) apperror.Result[models.Plugin] {
-	scanResult := s.ScanDirectory(ctx, input.Path)
-	fileCount := 0
-	if scanResult.IsSafe() {
-		fileCount = scanResult.Value().FileCount
-	}
-
+	fileCount := s.scanFileCount(ctx, input.Path)
 	excludeJSON := s.encodeExcludePatterns(input.ExcludePatterns)
 
-	res := dbutil.Exec(
-		ctx,
-		s.dbu,
-		pluginInsertQuery,
-		input.Name,
-		input.Path,
-		input.Category,
-		input.WatchEnabled,
-		input.AutoPublish,
-		excludeJSON,
-		fileCount,
+	res := dbutil.Exec(ctx, s.dbu, pluginInsertQuery,
+		input.Name, input.Path, input.Category, input.WatchEnabled,
+		input.AutoPublish, excludeJSON, fileCount,
 	)
 	if res.HasError() {
 		return apperror.Fail[models.Plugin](res.AppError())
 	}
 
-
 	s.log.Info("Plugin created", "pluginId", res.LastInsertId, "name", input.Name)
 	s.insertGitConfig(ctx, res.LastInsertId, input)
 	return s.GetById(ctx, res.LastInsertId)
+}
+
+// scanFileCount returns the file count from a directory scan, or 0 on error.
+func (s *Service) scanFileCount(ctx context.Context, path string) int {
+	scanResult := s.ScanDirectory(ctx, path)
+	if scanResult.IsSafe() {
+		return scanResult.Value().FileCount
+	}
+	return 0
 }
 
 // encodeExcludePatterns marshals exclude patterns to JSON string.
@@ -376,40 +368,28 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 // deletePluginCascade removes all related records then the plugin itself.
 func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
-	res := dbutil.Exec(
-		ctx,
-		s.dbu,
-		"DELETE FROM PluginMappings WHERE PluginId = ?",
-		id,
-	)
-	if res.HasError() {
-		return res.AppError()
+	if err := s.deletePluginRelated(ctx, id); err != nil {
+		return err
 	}
 
-	dbutil.Exec(
-		ctx,
-		s.dbu,
-		"DELETE FROM PluginGitConfig WHERE PluginId = ?",
-		id,
-	)
-	dbutil.Exec(
-		ctx,
-		s.dbu,
-		"DELETE FROM FileChanges WHERE PluginId = ?",
-		id,
-	)
-
-	res = dbutil.Exec(
-		ctx,
-		s.dbu,
-		"DELETE FROM Plugins WHERE Id = ?",
-		id,
-	)
+	res := dbutil.Exec(ctx, s.dbu, "DELETE FROM Plugins WHERE Id = ?", id)
 	if res.HasError() {
 		return res.AppError()
 	}
 
 	s.log.Info("Plugin deleted", "pluginId", id)
+	return nil
+}
+
+// deletePluginRelated removes mappings, git config, and file changes.
+func (s *Service) deletePluginRelated(ctx context.Context, id int64) error {
+	res := dbutil.Exec(ctx, s.dbu, "DELETE FROM PluginMappings WHERE PluginId = ?", id)
+	if res.HasError() {
+		return res.AppError()
+	}
+
+	dbutil.Exec(ctx, s.dbu, "DELETE FROM PluginGitConfig WHERE PluginId = ?", id)
+	dbutil.Exec(ctx, s.dbu, "DELETE FROM FileChanges WHERE PluginId = ?", id)
 	return nil
 }
 
