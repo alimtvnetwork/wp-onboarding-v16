@@ -121,23 +121,26 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 
 // uploadActivateAndCleanup handles the post-packaging stages.
 func (s *Service) uploadActivateAndCleanup(ctx context.Context, pctx *publishContext, pkgResult PackageStageResult) error {
-	isPublishFailed := false
 	preUploadBackupZip := s.createPreUploadBackup(ctx, pctx)
-
 	if preUploadBackupZip != "" {
 		defer os.Remove(preUploadBackupZip)
 	}
 
+	defer s.deferCleanupZip(pctx, pkgResult.ZipPath)
+
+	return s.executeUploadAndFinish(ctx, pctx, pkgResult, preUploadBackupZip)
+}
+
+// deferCleanupZip builds the cleanup input and runs cleanup.
+func (s *Service) deferCleanupZip(pctx *publishContext, zipPath string) {
 	cleanupInput := cleanupZipInput{
 		PluginId:        pctx.PluginId,
 		SiteId:          pctx.SiteId,
-		ZipPath:         pkgResult.ZipPath,
-		IsPublishFailed: isPublishFailed,
+		ZipPath:         zipPath,
+		IsPublishFailed: false,
 		IsKeepZipFiles:  pctx.Options.IsKeepZipFiles,
 	}
-	defer s.cleanupZip(cleanupInput)
-
-	return s.executeUploadAndFinish(ctx, pctx, pkgResult, preUploadBackupZip)
+	s.cleanupZip(cleanupInput)
 }
 
 // executeUploadAndFinish runs upload stage and counts files updated.

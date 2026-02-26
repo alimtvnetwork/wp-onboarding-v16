@@ -98,6 +98,12 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 
 // broadcastPublishStart sends the initial progress and session log.
 func (s *Service) broadcastPublishStart(pluginID, siteID int64, initResult *publishInitResult) {
+	s.broadcastPublishStartProgress(pluginID, siteID, initResult)
+	s.logPublishStartSession(initResult)
+}
+
+// broadcastPublishStartProgress sends the started progress event.
+func (s *Service) broadcastPublishStartProgress(pluginID, siteID int64, initResult *publishInitResult) {
 	startProgress := ProgressInput{
 		PluginId:  pluginID,
 		SiteId:    siteID,
@@ -107,7 +113,10 @@ func (s *Service) broadcastPublishStart(pluginID, siteID int64, initResult *publ
 		Message:   "Starting publish...",
 	}
 	s.broadcastProgress(startProgress)
+}
 
+// logPublishStartSession writes the publish start session log.
+func (s *Service) logPublishStartSession(initResult *publishInitResult) {
 	initLog := sessionLogInput{
 		SessionId: initResult.SessionID,
 		Level:     loglevel.Info,
@@ -143,13 +152,35 @@ func (s *Service) executeAndFinalize(ctx context.Context, pctx *publishContext, 
 
 // initPublishContext loads plugin, site, credentials, and starts a session.
 func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64, result *PublishResult) (*publishInitResult, error) {
+	pluginInfo, err := s.loadPublishPlugin(ctx, pluginID, siteID, result)
+	if err != nil {
+		return nil, err
+	}
+
+	creds, err := s.loadPublishCredentials(ctx, pluginID, siteID, result)
+	if err != nil {
+		return nil, err
+	}
+
+	sessionID, _ := s.startPublishSession(pluginID, siteID, pluginInfo, creds.Site)
+
+	return &publishInitResult{PluginInfo: pluginInfo, SiteInfo: creds.Site, Password: creds.Password, SessionID: sessionID}, nil
+}
+
+// loadPublishPlugin loads the plugin and handles init failure.
+func (s *Service) loadPublishPlugin(ctx context.Context, pluginID, siteID int64, result *PublishResult) (models.Plugin, error) {
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
 		s.failInit(pluginID, siteID, pluginResult.AppError(), result)
 
-		return nil, pluginResult.AppError()
+		return models.Plugin{}, pluginResult.AppError()
 	}
 
+	return pluginResult.Value(), nil
+}
+
+// loadPublishCredentials loads site credentials and handles init failure.
+func (s *Service) loadPublishCredentials(ctx context.Context, pluginID, siteID int64, result *PublishResult) (*SiteCredentialsResult, error) {
 	creds, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
 		s.failInit(pluginID, siteID, err, result)
@@ -157,17 +188,7 @@ func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64
 		return nil, err
 	}
 
-	pluginInfo := pluginResult.Value()
-	sessionID, _ := s.startPublishSession(pluginID, siteID, pluginInfo, creds.Site)
-
-	initResult := &publishInitResult{
-		PluginInfo: pluginInfo,
-		SiteInfo:   creds.Site,
-		Password:   creds.Password,
-		SessionID:  sessionID,
-	}
-
-	return initResult, nil
+	return creds, nil
 }
 
 // failInit records error and broadcasts failure for init context.
@@ -208,6 +229,12 @@ func (s *Service) startPublishSession(pluginID, siteID int64, pluginInfo models.
 		PluginName: pluginInfo.Name,
 		SiteName:   siteInfo.Name,
 	}
+
+	return s.executeStartSession(startInput)
+}
+
+// executeStartSession starts the session and wraps errors.
+func (s *Service) executeStartSession(startInput session.StartSessionInput) (string, error) {
 	sessionID, err := s.sessionService.StartSession(startInput)
 	if err != nil {
 		s.log.Warn("Failed to start session", "error", err)

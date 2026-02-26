@@ -46,11 +46,16 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, err
 		return nil, err
 	}
 
+	return c.buildUploadContext(absZipPath, slug, zfh)
+}
+
+// buildUploadContext constructs the uploadContext from resolved inputs.
+func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle) (*uploadContext, error) {
 	namespace := c.resolveNamespace()
 	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, ep.Upload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	return &uploadContext{
+	uc := &uploadContext{
 		AbsZipPath:     absZipPath,
 		Slug:           slug,
 		ZipSize:        zfh.Size,
@@ -58,7 +63,9 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, err
 		UploadEndpoint: uploadEndpoint,
 		UploadURL:      uploadURL,
 		ZipFile:        zfh.File,
-	}, nil
+	}
+
+	return uc, nil
 }
 
 // normalizeUploadSlug ensures a valid slug for the upload, stripping .zip extensions.
@@ -161,24 +168,50 @@ func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) (*U
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
+	c.reportUploadResponseProgress(resp.StatusCode, respBody, uc.UploadURL)
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, c.buildUploadFailureError(uc, resp.StatusCode, respBytes, respBody)
+	}
+
+	return decodeUploadResult(respBytes)
+}
+
+// reportUploadResponseProgress logs the upload response progress.
+func (c *Client) reportUploadResponseProgress(statusCode int, respBody, uploadURL string) {
 	c.progress(ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
-		Message: fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uc.UploadURL),
+		Message: fmt.Sprintf("Upload response: %d from %s", statusCode, uploadURL),
 		Details: toProgress(ResponseProgress{
-			URL:    uc.UploadURL,
-			Status: resp.StatusCode,
+			URL:    uploadURL,
+			Status: statusCode,
 			Body:   truncateBody(respBody, 2000),
 		}),
 	})
+}
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, buildUploadAPIError(uploadAPIErrorInput{AbsZipPath: uc.AbsZipPath, UploadURL: uc.UploadURL, UploadEndpoint: uc.UploadEndpoint, StatusCode: resp.StatusCode, RespBytes: respBytes, RespBody: respBody, StackTraceDepth: c.stackTraceDepth})
+// buildUploadFailureError constructs the error for a failed upload response.
+func (c *Client) buildUploadFailureError(uc *uploadContext, statusCode int, respBytes []byte, respBody string) error {
+	errInput := uploadAPIErrorInput{
+		AbsZipPath:      uc.AbsZipPath,
+		UploadURL:       uc.UploadURL,
+		UploadEndpoint:  uc.UploadEndpoint,
+		StatusCode:      statusCode,
+		RespBytes:       respBytes,
+		RespBody:        respBody,
+		StackTraceDepth: c.stackTraceDepth,
 	}
 
+	return buildUploadAPIError(errInput)
+}
+
+// decodeUploadResult unmarshals the upload response or returns a default success.
+func decodeUploadResult(respBytes []byte) (*UploaderUploadResult, error) {
 	var result UploaderUploadResult
 	if err := json.Unmarshal(respBytes, &result); err != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}
+
 	return &result, nil
 }

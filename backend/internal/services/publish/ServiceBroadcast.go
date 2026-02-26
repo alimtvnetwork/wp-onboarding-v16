@@ -238,6 +238,11 @@ func (s *Service) emitSessionLogAndDebug(input ProgressInput, stage string, logL
 	}
 	s.sessionLog(sessionLog)
 
+	s.logSessionProgressDebug(input, stage)
+}
+
+// logSessionProgressDebug writes a debug log for session progress events.
+func (s *Service) logSessionProgressDebug(input ProgressInput, stage string) {
 	s.log.Debug("Publish progress",
 		"pluginId", input.PluginId,
 		"siteId", input.SiteId,
@@ -301,12 +306,24 @@ func buildStageStatusData(input StageStatusInput) ws.PublishStageStatusData {
 
 // emitStageStatusLog writes the operation log entry for stage status.
 func (s *Service) emitStageStatusLog(input StageStatusInput) {
-	level := loglevel.Info
-	if input.Status == loglevel.Error.Lower() {
-		level = loglevel.Error
+	level := resolveStageStatusLevel(input.Status)
+
+	logEntry := buildStageStatusLogEntry(input, level)
+	s.wsHub.BroadcastPublishLog(logEntry)
+}
+
+// resolveStageStatusLevel returns error level if status is error, info otherwise.
+func resolveStageStatusLevel(status string) loglevel.Variant {
+	if status == loglevel.Error.Lower() {
+		return loglevel.Error
 	}
 
-	logEntry := ws.OperationLogInput{
+	return loglevel.Info
+}
+
+// buildStageStatusLogEntry constructs an operation log entry for stage status.
+func buildStageStatusLogEntry(input StageStatusInput, level loglevel.Variant) ws.OperationLogInput {
+	return ws.OperationLogInput{
 		PluginID: input.PluginId,
 		SiteID:   input.SiteId,
 		Entry: ws.OperationLogEntry{
@@ -316,7 +333,6 @@ func (s *Service) emitStageStatusLog(input StageStatusInput) {
 			Details: input.Details,
 		},
 	}
-	s.wsHub.BroadcastPublishLog(logEntry)
 }
 
 // broadcastStageComplete sends a stage_complete event for frontend tracking
@@ -345,21 +361,30 @@ func (s *Service) broadcastStageLog(input StageLogInput) {
 	message := resolveStageLogMessage(input.Ctx)
 	detailsJSON, _ := json.Marshal(input.Ctx)
 
+	s.broadcastStageLogDetailed(input, message, detailsJSON)
+	s.broadcastStageLogSession(input, message, detailsJSON)
+}
+
+// broadcastStageLogDetailed sends the detailed log entry for a stage.
+func (s *Service) broadcastStageLogDetailed(input StageLogInput, message string, details json.RawMessage) {
 	s.broadcastDetailedLog(DetailedLogInput{
 		PluginId: input.PluginId,
 		SiteId:   input.SiteId,
 		Level:    input.Level,
 		Step:     input.Stage,
 		Message:  message,
-		Details:  detailsJSON,
+		Details:  details,
 	})
+}
 
+// broadcastStageLogSession sends the session log entry for a stage.
+func (s *Service) broadcastStageLogSession(input StageLogInput, message string, details json.RawMessage) {
 	s.sessionLog(sessionLogInput{
 		SessionId: input.SessionId,
 		Level:     input.Level,
 		Step:      input.Stage,
 		Message:   message,
-		Details:   detailsJSON,
+		Details:   details,
 	})
 }
 

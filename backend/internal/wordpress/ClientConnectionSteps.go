@@ -346,20 +346,30 @@ func (c *Client) reportInsufficientPluginPermissions(result *ConnectionInfo, sta
 func (c *Client) reportPluginAccessByStatus(statusCode int, result *ConnectionInfo) {
 	if statusCode == HttpStatusOk.Int() {
 		result.CanManagePlugins = true
-		c.progress(ProgressEvent{
-			Step:    connectionstep.PluginAccessCheck.Value(),
-			Status:  stagestatus.Completed.String(),
-			Message: "Plugin management access confirmed",
-			Details: toProgress(URLProgress{URL: c.baseURL}),
-		})
+		c.reportPluginAccessConfirmed()
 	} else {
-		c.progress(ProgressEvent{
-			Step:    connectionstep.PluginAccessCheck.Value(),
-			Status:  stagestatus.Warning.String(),
-			Message: fmt.Sprintf("Plugin endpoint returned %d", statusCode),
-			Details: toProgress(URLProgress{URL: c.baseURL}),
-		})
+		c.reportPluginAccessWarning(statusCode)
 	}
+}
+
+// reportPluginAccessConfirmed sends the plugin access confirmed event.
+func (c *Client) reportPluginAccessConfirmed() {
+	c.progress(ProgressEvent{
+		Step:    connectionstep.PluginAccessCheck.Value(),
+		Status:  stagestatus.Completed.String(),
+		Message: "Plugin management access confirmed",
+		Details: toProgress(URLProgress{URL: c.baseURL}),
+	})
+}
+
+// reportPluginAccessWarning sends the plugin access warning event.
+func (c *Client) reportPluginAccessWarning(statusCode int) {
+	c.progress(ProgressEvent{
+		Step:    connectionstep.PluginAccessCheck.Value(),
+		Status:  stagestatus.Warning.String(),
+		Message: fmt.Sprintf("Plugin endpoint returned %d", statusCode),
+		Details: toProgress(URLProgress{URL: c.baseURL}),
+	})
 }
 
 // testWritePermission creates and deletes a draft post to verify write access (Step 5).
