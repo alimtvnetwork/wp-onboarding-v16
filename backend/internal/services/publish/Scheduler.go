@@ -191,7 +191,8 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 func (s *PublishScheduler) executeJob(jobId string) {
 	s.mu.Lock()
 	job, ok := s.jobs[jobId]
-	if !ok || !job.Enabled {
+	isJobMissing := !ok || !job.Enabled
+	if isJobMissing {
 		s.mu.Unlock()
 		return
 	}

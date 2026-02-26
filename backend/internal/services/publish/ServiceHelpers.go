@@ -124,7 +124,8 @@ type UploadOutcome struct {
 // uploadPlugin uploads a plugin ZIP via the Riseup Asia Uploader.
 func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) apperror.Result[UploadOutcome] {
 	availability, _ := wpClient.CheckRiseupAsiaAvailable()
-	if availability == nil || !availability.Available {
+	isUploaderMissing := availability == nil || !availability.Available
+	if isUploaderMissing {
 		return s.simulateUpload(zipPath, slug)
 	}
 
@@ -239,7 +240,8 @@ func (s *Service) getLocalPluginVersion(pluginPath string) string {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
+		isSkippable := entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php")
+		if isSkippable {
 			continue
 		}
 		version := s.extractVersionFromPhpFile(absPath, entry.Name())
@@ -257,7 +259,8 @@ func (s *Service) extractVersionFromPhpFile(dirPath, fileName string) string {
 		return ""
 	}
 	content, err := os.ReadFile(filePath)
-	if err != nil || !strings.Contains(string(content), "Plugin Name:") {
+	isContentMissing := err != nil || !strings.Contains(string(content), "Plugin Name:")
+	if isContentMissing {
 		return ""
 	}
 

@@ -225,7 +225,8 @@ func (s *Service) PullAll(ctx context.Context) apperror.Result[BatchPullResult] 
 	for _, p := range plugins {
 		// Check if git directory exists
 		gitDir, err := pathutil.Join(p.Path, ".git")
-		if err != nil || !pathutil.IsDir(gitDir) {
+		isGitMissing := err != nil || !pathutil.IsDir(gitDir)
+		if isGitMissing {
 			continue
 		}
 

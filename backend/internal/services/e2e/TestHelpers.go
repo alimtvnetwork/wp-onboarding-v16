@@ -94,7 +94,8 @@ func (s *serviceImpl) runCleanup() {
 
 // expectSuccess returns an error if the response is not successful.
 func expectSuccess(resp *apiResponse) error {
-	if resp.StatusCode >= 400 || !resp.Success {
+	isFailure := resp.StatusCode >= 400 || !resp.Success
+	if isFailure {
 		return fmt.Errorf("expected success, got HTTP %d: %s", resp.StatusCode, resp.errorCode())
 	}
 	return nil

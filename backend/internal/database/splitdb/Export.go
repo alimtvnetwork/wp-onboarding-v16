@@ -76,7 +76,8 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 			return nil // Continue walking
 		}
 
-		if info.IsDir() || !strings.HasSuffix(path, ".db") {
+		isSkippable := info.IsDir() || !strings.HasSuffix(path, ".db")
+		if isSkippable {
 			return nil
 		}
 
@@ -277,7 +278,8 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 	}
 
 	return filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".db") {
+		isSkippable := err != nil || info.IsDir() || !strings.HasSuffix(path, ".db")
+		if isSkippable {
 			return nil
 		}
 
