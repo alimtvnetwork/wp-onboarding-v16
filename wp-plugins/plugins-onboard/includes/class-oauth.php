@@ -130,6 +130,7 @@ class OnboardOAuth {
         $params = array();
 
         $allowed = array('app_name', 'description', 'redirect_uri', 'status', 'scopes');
+
         foreach ($allowed as $field) {
             if (isset($data[$field])) {
                 $fields[] = "{$field} = ?";

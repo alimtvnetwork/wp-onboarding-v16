@@ -220,6 +220,7 @@ class OnboardSnapshot {
         // Look for any PHP file with plugin headers.
         if (!file_exists($plugin_file)) {
             $files = glob(WP_PLUGIN_DIR . '/' . $plugin_slug . '/*.php');
+
             foreach ($files as $file) {
                 $data = get_file_data($file, array(
                     'Name' => 'Plugin Name',

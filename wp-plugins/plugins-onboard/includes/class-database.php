@@ -486,6 +486,7 @@ class OnboardDatabase {
             }
 
             $result = $stmt->fetch();
+
             if ($result) {
                 $decoded = json_decode($result['setting_value'], true);
                 // If JSON decode failed, return raw value.
