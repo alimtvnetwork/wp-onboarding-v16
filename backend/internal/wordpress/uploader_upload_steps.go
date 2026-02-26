@@ -86,7 +86,7 @@ func openAndStatZip(absZipPath string) (*os.File, int64, error) {
 }
 
 // buildMultipartBody creates the multipart/form-data request body for plugin upload.
-func buildMultipartBody(uc *uploadContext, activate bool, source uploadsource.Variant) (*bytes.Buffer, string, error) {
+func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.Variant) (*bytes.Buffer, string, error) {
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
 
@@ -98,7 +98,7 @@ func buildMultipartBody(uc *uploadContext, activate bool, source uploadsource.Va
 		return nil, "", apperror.Wrap(err, apperror.ErrFSRead, "stream zip to multipart")
 	}
 
-	writeUploadFields(writer, uc.Slug, activate, source)
+	writeUploadFields(writer, uc.Slug, isActivate, source)
 
 	if err := writer.Close(); err != nil {
 		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
@@ -108,9 +108,9 @@ func buildMultipartBody(uc *uploadContext, activate bool, source uploadsource.Va
 }
 
 // writeUploadFields adds form fields to the multipart writer.
-func writeUploadFields(writer *multipart.Writer, slug string, activate bool, source uploadsource.Variant) {
+func writeUploadFields(writer *multipart.Writer, slug string, isActivate bool, source uploadsource.Variant) {
 	_ = writer.WriteField("slug", slug)
-	if activate {
+	if isActivate {
 		_ = writer.WriteField("activate", "1")
 	} else {
 		_ = writer.WriteField("activate", "0")

@@ -39,8 +39,10 @@ func (s *Service) GetRemotePlugins(ctx context.Context, siteId int64) ([]RemoteP
 }
 
 // GetRemotePluginsWithCache fetches remote plugins with optional cache bypass
-func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, forceRefresh bool) ([]RemotePlugin, error) {
-	if s.cacheEnabled && !forceRefresh {
+func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, isForceRefresh bool) ([]RemotePlugin, error) {
+	isCacheUsable := s.isCacheEnabled && !isForceRefresh
+
+	if isCacheUsable {
 		if cached, err := s.getRemotePluginsFromCache(ctx, siteId); err == nil && cached != nil {
 			s.log.Debug("Remote plugins loaded from cache", "siteId", siteId, "count", len(cached))
 			return cached, nil
@@ -57,7 +59,7 @@ func (s *Service) fetchAndCachePlugins(ctx context.Context, siteId int64) ([]Rem
 		return nil, err
 	}
 
-	if s.cacheEnabled {
+	if s.isCacheEnabled {
 		if err := s.cacheRemotePlugins(ctx, siteId, plugins); err != nil {
 			s.log.Warn("Failed to cache remote plugins", "siteId", siteId, "error", err)
 		}
@@ -229,15 +231,20 @@ func (s *Service) queryCacheTimestamps(ctx context.Context, siteId int64) (strin
 func parseCacheTimestamps(cachedAtStr, expiresAtStr string) (bool, *time.Time, *time.Time, error) {
 	cachedAtVal := parseTime(cachedAtStr)
 	expiresAtVal := parseTime(expiresAtStr)
-	isValid := !expiresAtVal.IsZero() && expiresAtVal.After(time.Now())
+	isExpired := expiresAtVal.IsZero() || expiresAtVal.Before(time.Now())
+	isValid := !isExpired
 
-	var cachedAtPtr, expiresAtPtr *time.Time
-	if !cachedAtVal.IsZero() {
-		cachedAtPtr = &cachedAtVal
-	}
-	if !expiresAtVal.IsZero() {
-		expiresAtPtr = &expiresAtVal
-	}
+	cachedAtPtr := timeToPtr(cachedAtVal)
+	expiresAtPtr := timeToPtr(expiresAtVal)
 
 	return isValid, cachedAtPtr, expiresAtPtr, nil
+}
+
+// timeToPtr returns a pointer to the time value, or nil if zero.
+func timeToPtr(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+
+	return &t
 }

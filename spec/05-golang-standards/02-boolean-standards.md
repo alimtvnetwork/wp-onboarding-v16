@@ -127,6 +127,17 @@ if isNonApiRoute {
 }
 ```
 
+### 3.5 — File-Not-Found Error Guard
+
+The `err != nil && !os.IsNotExist(err)` pattern is exempt because it's an idiomatic Go error-filtering pattern (ignore "file not found", act on real errors):
+
+```go
+// ✅ Exempt — idiomatic file cleanup guard
+if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+    log.Warn("Failed to remove file", "error", err)
+}
+```
+
 ## 4. Variable Naming Rules
 
 | Pattern | Example | Status |

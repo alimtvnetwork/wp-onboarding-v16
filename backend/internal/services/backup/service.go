@@ -356,12 +356,12 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 }
 
 // ImportFromZip extracts a zip archive to the specified directory
-func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, overwrite bool) apperror.Result[ImportResult] {
+func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, isOverwrite bool) apperror.Result[ImportResult] {
 	startTime := time.Now()
-	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", overwrite)
+	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", isOverwrite)
 	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), toDetails(ImportInitDetails{
 		Destination: destDir,
-		Overwrite:   overwrite,
+		IsOverwrite: isOverwrite,
 	}))
 
 	// Open zip file
@@ -373,7 +373,11 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 	defer reader.Close()
 
 	// Check if destination exists
-	if _, err := os.Stat(destDir); err == nil && !overwrite {
+	_, statErr := os.Stat(destDir)
+	isDestExists := statErr == nil
+	isConflict := isDestExists && !isOverwrite
+
+	if isConflict {
 		s.broadcastLog(0, "error", "check", "Destination exists, overwrite not enabled", nil)
 		return apperror.FailNew[ImportResult](apperror.ErrFSWrite, "destination exists, use overwrite=true to replace")
 	}

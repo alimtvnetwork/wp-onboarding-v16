@@ -78,8 +78,9 @@ func collectFrames(rawFrames *runtime.Frames, maxFrames int) []StackFrame {
 func isRuntimeFrame(fn string) bool {
 	isRuntime := strings.HasPrefix(fn, "runtime.")
 	isMain := fn == "runtime.main"
+	isRuntimeInternal := isRuntime && !isMain
 
-	return isRuntime && !isMain
+	return isRuntimeInternal
 }
 
 // String formats the full stack trace with numbered frames.

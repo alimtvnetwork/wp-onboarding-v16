@@ -30,8 +30,8 @@ type Config struct {
 	WPClientFactory      WPClientFactory
 	WSHub                WSHub           // Optional WebSocket hub for live logging
 	SessionService       SessionService  // Optional session service for logging
-	CacheEnabled         bool            // Enable remote plugins caching
-	CacheTTLMinutes      int             // Cache TTL in minutes (default: 60)
+	IsCacheEnabled   bool            // Enable remote plugins caching
+	CacheTTLMinutes  int             // Cache TTL in minutes (default: 60)
 }
 
 // WPClientFactory creates WordPress clients with optional progress callback
@@ -66,7 +66,7 @@ type Service struct {
 	wpClientFactory WPClientFactory
 	wsHub           WSHub
 	sessionService  SessionService
-	cacheEnabled    bool
+	isCacheEnabled  bool
 	cacheTTLMinutes int
 	errorLogHashes   map[string]struct{}
 	errorLogHashesMu sync.Mutex
@@ -96,7 +96,7 @@ func New(cfg Config) *Service {
 		wpClientFactory: cfg.WPClientFactory,
 		wsHub:           cfg.WSHub,
 		sessionService:  cfg.SessionService,
-		cacheEnabled:    cfg.CacheEnabled,
+		isCacheEnabled:  cfg.IsCacheEnabled,
 		cacheTTLMinutes: cacheTTL,
 		errorLogHashes:  make(map[string]struct{}),
 	}
@@ -261,7 +261,11 @@ func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, e
 // normalizeUrl normalizes a URL for consistent storage
 func normalizeUrl(rawUrl string) string {
 	rawUrl = strings.TrimSpace(rawUrl)
-	if !strings.HasPrefix(rawUrl, "http://") && !strings.HasPrefix(rawUrl, "https://") {
+	hasHttpPrefix := strings.HasPrefix(rawUrl, "http://")
+	hasHttpsPrefix := strings.HasPrefix(rawUrl, "https://")
+	isMissingScheme := !hasHttpPrefix && !hasHttpsPrefix
+
+	if isMissingScheme {
 		rawUrl = "https://" + rawUrl
 	}
 	parsed, err := url.Parse(rawUrl)

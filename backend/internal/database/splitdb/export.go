@@ -137,9 +137,9 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 }
 
 // ImportProjectFromZip imports databases from a zip file
-func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite bool) (*ImportResult, error) {
+func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, isOverwrite bool) (*ImportResult, error) {
 	startTime := time.Now()
-	m.log.Info("Starting import", "zip", zipPath, "project", projectSlug, "overwrite", overwrite)
+	m.log.Info("Starting import", "zip", zipPath, "project", projectSlug, "overwrite", isOverwrite)
 
 	// Open zip file
 	reader, err := zip.OpenReader(zipPath)
@@ -156,7 +156,11 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 	}
 
 	// Check if project exists
-	if _, err := os.Stat(projectDir); err == nil && !overwrite {
+	_, statErr := os.Stat(projectDir)
+	isProjectExists := statErr == nil
+	isConflict := isProjectExists && !isOverwrite
+
+	if isConflict {
 		return nil, apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace").
 			WithDetails(projectSlug)
 	}
@@ -167,7 +171,7 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 	m.mu.Unlock()
 
 	// Remove existing directory if overwriting
-	if overwrite {
+	if isOverwrite {
 		if err := os.RemoveAll(projectDir); err != nil {
 			m.log.Warn("Failed to remove existing project directory", "error", err)
 		}

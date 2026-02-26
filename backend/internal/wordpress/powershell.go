@@ -86,42 +86,54 @@ func emitPsStartLog(onOutput func(line string), pluginPath, siteURL string) {
 	onOutput(fmt.Sprintf("  Site: %s", siteURL))
 }
 
+// DirectUploadInput holds parameters for direct PowerShell upload invocation.
+type DirectUploadInput struct {
+	ScriptPath string
+	PluginPath string
+	SiteUrl    string
+	Username   string
+	Password   string
+	Slug       string
+	IsActivate bool
+	OnOutput   func(line string)
+}
+
 // RunPowerShellUploadDirect executes the upload script with direct command-line parameters.
 // This is simpler than JSON config and works well for programmatic invocation.
-func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, password, slug string, activate bool, onOutput func(line string)) (*PowerShellResult, error) {
+func RunPowerShellUploadDirect(input DirectUploadInput) (*PowerShellResult, error) {
 	if runtime.GOOS != "windows" {
 		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
 
-	args := buildPsDirectArgs(scriptPath, pluginPath, siteUrl, username, password, slug, activate)
+	args := buildPsDirectArgs(input)
 
-	if onOutput != nil {
-		onOutput("Executing PowerShell upload...")
+	if input.OnOutput != nil {
+		input.OnOutput("Executing PowerShell upload...")
 	}
 
-	return executePowerShellCommand(args, onOutput)
+	return executePowerShellCommand(args, input.OnOutput)
 }
 
 // buildPsDirectArgs constructs PowerShell arguments for direct parameter mode.
-func buildPsDirectArgs(scriptPath, pluginPath, siteUrl, username, password, slug string, activate bool) []string {
+func buildPsDirectArgs(input DirectUploadInput) []string {
 	args := []string{
 		"-ExecutionPolicy", "Bypass",
 		"-NoProfile",
 		"-NonInteractive",
-		"-File", scriptPath,
-		"-PluginPath", pluginPath,
-		"-SiteUrl", siteUrl,
-		"-User", username,
-		"-Password", password,
+		"-File", input.ScriptPath,
+		"-PluginPath", input.PluginPath,
+		"-SiteUrl", input.SiteUrl,
+		"-User", input.Username,
+		"-Password", input.Password,
 		"-Quiet",
 		"-DeleteZip",
 	}
 
-	if slug != "" {
-		args = append(args, "-Slug", slug)
+	if input.Slug != "" {
+		args = append(args, "-Slug", input.Slug)
 	}
 
-	if activate {
+	if input.IsActivate {
 		args = append(args, "-Activate")
 	}
 

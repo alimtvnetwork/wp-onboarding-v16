@@ -500,6 +500,21 @@ if err != nil {
 
 Every function/method body must be **15 lines or fewer** (excluding blank lines, comments, and the signature). If a function exceeds this limit, extract logic into small, well-named helper functions.
 
+### 6a — Error Wrapping Lines Are NOT Compressed
+
+Error wrapping chains (e.g., `apperror.Wrap(...).WithX(...).WithY(...)`) must be formatted with **one method call per line** for readability. Each `.WithX()` call occupies its own line. These lines **do count** toward the 15-line limit, but they must **never** be compressed onto a single line to game the limit. If a function exceeds 15 lines due to error wrapping, extract other logic into helpers — don't compress the error chain.
+
+```go
+// ❌ FORBIDDEN — Compressed error chain to save lines
+return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream").WithSiteId(siteID).WithSnapshotId(snapshotID).WithURL(meta.URL)
+
+// ✅ REQUIRED — One method per line
+return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream").
+    WithSiteId(siteID).
+    WithSnapshotId(snapshotID).
+    WithURL(meta.URL)
+```
+
 ### Why
 
 - Short functions are easier to read, test, and debug

@@ -235,7 +235,9 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteId int64, plugin
 
 	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").WithSiteId(siteId).WithPluginSlug(pluginSlug)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").
+			WithSiteId(siteId).
+			WithPluginSlug(pluginSlug)
 	}
 
 	return s.buildRemoteFilesResult(siteId, pluginSlug, files), nil
@@ -274,7 +276,10 @@ func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteId int64, 
 
 	content, err := client.GetPluginFileContent(ctx, pluginSlug, filePath)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").WithSiteId(siteId).WithPluginSlug(pluginSlug).WithFilePath(filePath)
+		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").
+			WithSiteId(siteId).
+			WithPluginSlug(pluginSlug).
+			WithFilePath(filePath)
 	}
 
 	s.log.Debug("Remote file content fetched", "siteId", siteId, "pluginSlug", pluginSlug, "filePath", filePath, "contentLen", len(content))

@@ -210,7 +210,8 @@ func (s *Service) requestSnapshotMeta(client *wordpress.Client, siteID, snapshot
 
 	if meta.URL == "" {
 		return nil, apperror.New(apperror.ErrInternal, "no download URL in response").
-			WithSiteId(siteID).WithSnapshotId(snapshotID)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID)
 	}
 
 	return meta, nil
@@ -221,7 +222,9 @@ func (s *Service) streamSnapshotFromMeta(client *wordpress.Client, siteID, snaps
 	zipResp, err := client.StreamSnapshotZip(meta.URL)
 	if err != nil {
 		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
-			WithSiteId(siteID).WithSnapshotId(snapshotID).WithURL(meta.URL)
+			WithSiteId(siteID).
+			WithSnapshotId(snapshotID).
+			WithURL(meta.URL)
 	}
 
 	s.log.Info("Remote snapshot ZIP download started", "siteId", siteID, "snapshotId", snapshotID, "cached", meta.Cached)

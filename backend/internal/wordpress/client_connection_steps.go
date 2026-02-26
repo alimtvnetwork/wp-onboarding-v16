@@ -103,7 +103,9 @@ func (c *Client) testAuthentication(result *ConnectionInfo) error {
 	if err != nil {
 		c.progress(connectionstep.AuthCheck.Value(), stagestatus.Failed.String(), fmt.Sprintf("Authentication request failed: %v", err), toProgress(URLProgress{URL: c.baseURL}))
 
-		return apperror.Wrap(err, apperror.ErrWPAuth, "authentication request failed").WithURL(c.baseURL).WithUsername(c.username)
+		return apperror.Wrap(err, apperror.ErrWPAuth, "authentication request failed").
+			WithURL(c.baseURL).
+			WithUsername(c.username)
 	}
 
 	if authErr := c.checkAuthStatus(statusCode, body); authErr != nil {
@@ -120,18 +122,25 @@ func (c *Client) testAuthentication(result *ConnectionInfo) error {
 func (c *Client) checkAuthStatus(statusCode int, body []byte) error {
 	if statusCode == HttpStatusUnauthorized.Int() {
 		return c.reportAuthFailure("Invalid username or application password",
-			apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").WithURL(c.baseURL).WithUsername(c.username))
+			apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").
+				WithURL(c.baseURL).
+				WithUsername(c.username))
 	}
 
 	if statusCode == HttpStatusForbidden.Int() {
 		return c.reportAuthFailure("Access forbidden - user lacks permissions",
-			apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").WithURL(c.baseURL).WithStatusCode(statusCode))
+			apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").
+				WithURL(c.baseURL).
+				WithStatusCode(statusCode))
 	}
 
 	if statusCode != HttpStatusOk.Int() {
 		c.progress(connectionstep.AuthCheck.Value(), stagestatus.Failed.String(), fmt.Sprintf("Unexpected response: %d", statusCode), toProgress(AuthBodyProgress{URL: c.baseURL, Body: string(body)}))
 
-		return apperror.New(apperror.ErrWPConnection, "unexpected authentication response").WithURL(c.baseURL).WithStatusCode(statusCode).WithDetails(string(body))
+		return apperror.New(apperror.ErrWPConnection, "unexpected authentication response").
+			WithURL(c.baseURL).
+			WithStatusCode(statusCode).
+			WithDetails(string(body))
 	}
 
 	return nil
@@ -171,7 +180,9 @@ func (c *Client) testPluginAccess(result *ConnectionInfo) error {
 	if statusCode == HttpStatusUnauthorized.Int() || statusCode == HttpStatusForbidden.Int() {
 		c.progress(connectionstep.PluginAccessCheck.Value(), stagestatus.Failed.String(), "User cannot manage plugins - requires administrator role", toProgress(UserRolesProgress{URL: c.baseURL, UserRoles: result.UserRoles}))
 
-		return apperror.New(apperror.ErrWPAuth, "insufficient permissions: user cannot manage plugins (requires administrator role)").WithURL(c.baseURL).WithStatusCode(statusCode)
+		return apperror.New(apperror.ErrWPAuth, "insufficient permissions: user cannot manage plugins (requires administrator role)").
+			WithURL(c.baseURL).
+			WithStatusCode(statusCode)
 	}
 
 	c.reportPluginAccessByStatus(statusCode, result)
