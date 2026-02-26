@@ -69,7 +69,7 @@ type SyncResult struct {
 	PluginID     int64
 	SiteID       int64
 	SiteName     string              `json:",omitempty"`
-	IsInSync     bool                `json:"InSync"`
+	IsInSync     bool
 	LocalFiles   int
 	RemoteFiles  int
 	Added        int
@@ -86,7 +86,7 @@ type BatchSyncResult struct {
 	PluginName string
 	Results    []SyncResult
 	TotalSites int
-	IsInSync   int                  `json:"InSync"`
+	IsInSync   int
 	OutOfSync  int
 	Errors     int
 }
