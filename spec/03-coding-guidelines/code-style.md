@@ -909,6 +909,95 @@ if err != nil {
 
 ---
 
+## Rule 11: No Inline Statements in `if` Conditions (Go)
+
+In Go, **never** use the `if init; condition {` short-statement form for `os.Stat`, function calls that produce multiple return values, or any call whose result is used after the `if` block. Separate the call from the condition.
+
+This rule applies to **all** languages where similar patterns exist. The goal: every `if` checks **one named boolean or error**, not an inline expression.
+
+```go
+// ── Go ───────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN — Inline os.Stat in if condition
+if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+    return apperror.New(apperror.ErrFSNotFound, "project not found")
+}
+
+// ❌ FORBIDDEN — Inline stat + mixed polarity
+if _, err := os.Stat(projectDir); err == nil && !isOverwrite {
+    return fmt.Errorf("project exists, use isOverwrite=true to replace")
+}
+
+// ✅ REQUIRED — Separate stat call, use pathutil, named booleans
+fi, statErr := pathutil.StatDir(projectDir)
+isProjectExists := statErr == nil
+isReadOnly := !isOverwrite
+isConflict := isProjectExists && isReadOnly
+
+if isConflict {
+    return apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace").
+        WithPath(projectDir)
+}
+```
+
+### Why
+
+- Inline `if init; cond {` hides variable scope and intent
+- `os.Stat` errors must be handled explicitly, not tested inline
+- Raw `os.Stat` must be wrapped in `pathutil` helpers that return `*apperror.AppError`
+- Mixed polarity (`err == nil && !isOverwrite`) violates P6
+
+---
+
+## Rule 12: No Raw `os.Stat` — Use `pathutil` Helpers
+
+Never call `os.Stat()` directly in application code. Always use the `pathutil` package which resolves paths to absolute and returns structured `*apperror.AppError`.
+
+```go
+// ❌ FORBIDDEN — Raw os.Stat
+info, err := os.Stat(path)
+if os.IsNotExist(err) {
+    return fmt.Errorf("not found")
+}
+
+// ❌ FORBIDDEN — Inline os.Stat for existence check
+if _, err := os.Stat(path); err == nil {
+    // exists
+}
+
+// ✅ REQUIRED — Use pathutil.StatFile or pathutil.StatDir
+fi, appErr := pathutil.StatFile(path)
+if appErr != nil {
+    return appErr
+}
+size := fi.Info.Size()
+
+// ✅ REQUIRED — Use pathutil.IsFileExists / IsFileMissing for simple checks
+if pathutil.IsFileMissing(path) {
+    return apperror.New(apperror.ErrFSNotFound, "file not found")
+}
+
+// ✅ REQUIRED — Use pathutil.FileSize for size-only checks
+size := pathutil.FileSize(zipPath)
+```
+
+### Available `pathutil` Helpers
+
+| Helper | Returns | Replaces |
+|--------|---------|----------|
+| `StatFile(path)` | `(*FileInfo, *AppError)` | `os.Stat(path)` |
+| `StatDir(path)` | `(*FileInfo, *AppError)` | `os.Stat(path)` + `IsDir()` check |
+| `IsFileExists(path)` | `bool` | `_, err := os.Stat(path); err == nil` |
+| `IsFileMissing(path)` | `bool` | `os.IsNotExist(err)` |
+| `FileSize(path)` | `int64` | `info, _ := os.Stat(path); info.Size()` |
+| `Exists(path)` | `bool` | `_, err := os.Stat(path); err == nil` |
+| `IsDir(path)` | `bool` | `info.IsDir()` |
+| `IsDirMissing(path)` | `bool` | `!IsDir(path)` |
+
+**Exception**: `os.Stat` is permitted inside `pathutil` itself and in test files.
+
+---
+
 ## Checklist Summary (Copy for PRs)
 
 ```
@@ -923,6 +1012,8 @@ if err != nil {
 [ ] Functions/calls with >2 args — one arg per line with trailing comma (signatures AND calls)
 [ ] PHP arrays with >2 items — each item on its own line with trailing comma
 [ ] Blank line before control structures (`if`/`for`/`foreach`/`while`) when preceded by statements
+[ ] No inline `if init; cond {` for os.Stat or multi-return calls (Go) — separate call from condition
+[ ] No raw `os.Stat` — use `pathutil.StatFile`, `pathutil.StatDir`, or boolean helpers
 ```
 
 ---
@@ -938,4 +1029,4 @@ if err != nil {
 
 ---
 
-*Cross-language code style specification v3.1.0 — 2026-02-21*
+*Cross-language code style specification v3.2.0 — 2026-02-26*

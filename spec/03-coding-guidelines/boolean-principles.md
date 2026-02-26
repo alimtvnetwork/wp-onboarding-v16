@@ -279,16 +279,49 @@ Combining a positive boolean with a negated boolean in the same `if` condition (
 **The fix:** Extract the combined condition into a single, positively named boolean that captures the **actual intent**.
 
 ```go
-// ❌ FORBIDDEN — Mixed polarity: positive + negative
+// ❌ FORBIDDEN — Mixed polarity: positive + negative in if
 if isProjectExists && !isOverwrite {
     return fmt.Errorf("conflict")
 }
 
 // ✅ REQUIRED — Extract to single-intent named boolean
-isConflict := isProjectExists && !isOverwrite
+isReadOnly := !isOverwrite
+isConflict := isProjectExists && isReadOnly
 
 if isConflict {
     return fmt.Errorf("conflict")
+}
+```
+
+### Full "Don't Do / Do Instead" Example (Go)
+
+This example shows **every** violation and its fix in a single realistic scenario:
+
+```go
+// ❌ DON'T DO THIS — Multiple violations:
+// 1. Raw os.Stat (should use pathutil)
+// 2. Inline if-init statement (if _, err := ...; cond)
+// 3. Mixed polarity (err == nil && !isOverwrite)
+// 4. No named booleans for intent
+isProjectConflict := err == nil && !isOverwrite
+
+if _, err := os.Stat(projectDir); isProjectConflict {
+    return fmt.Errorf("project exists, use isOverwrite=true to replace")
+}
+
+// ✅ DO THIS INSTEAD — Every step is explicit and readable:
+// 1. Use pathutil.StatDir (returns *apperror.AppError)
+// 2. Separate the stat call from the condition
+// 3. Derive isReadOnly from isOverwrite (no mixed polarity)
+// 4. Combine into a single-intent named boolean
+_, statErr := pathutil.StatDir(projectDir)
+isProjectExists := statErr == nil
+isReadOnly := !isOverwrite
+isConflict := isProjectExists && isReadOnly
+
+if isConflict {
+    return apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace").
+        WithPath(projectDir)
 }
 ```
 
@@ -325,14 +358,19 @@ if (isUnauthorized) {
 | Pattern | Problem | Fix |
 |---|---|---|
 | `isX && !y` | Reader must switch polarity mid-expression | Extract to `isConflict` / `isUnauthorized` / `isDenied` |
-| `isReady && !isOverwrite` | `!isOverwrite` lacks semantic meaning | Use `isFreshImport` or extract full condition |
+| `isReady && !isOverwrite` | `!isOverwrite` lacks semantic meaning | Derive `isReadOnly := !isOverwrite`, then combine |
 | `hasData && !isProcessed` | Two separate concerns crammed together | Extract to `isPendingProcessing` |
+| `err == nil && !flag` | Mixes error check with negated flag | Separate into `isExists` + `isReadOnly` + `isConflict` |
+| `if _, err := os.Stat(...); cond` | Hides stat call inside condition | Separate stat call, use pathutil |
 
 ### Rule Summary
 
 1. **Never combine `isX` with `!isY`** in the same `if` condition
 2. **Always extract** the combined condition into a named boolean with a positive semantic name
 3. The named boolean should express the **intent** (e.g., `isConflict`, `isAccessDenied`, `isPending`) — not just restate the logic
+4. **Derive positive counterparts** from negated booleans (`isReadOnly := !isOverwrite`) before combining
+5. **Never use raw `os.Stat`** — use `pathutil.StatFile` / `pathutil.StatDir` which return `*apperror.AppError`
+6. **Never use inline `if init; cond`** for stat calls — separate the call from the condition
 
 ---
 

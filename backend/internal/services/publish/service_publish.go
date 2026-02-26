@@ -18,6 +18,7 @@ import (
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // Publish publishes plugin changes to a WordPress site
@@ -358,10 +359,7 @@ func (s *Service) performUpload(ctx context.Context, pluginID, siteID int64, ses
 
 // getFileSize returns the file size or 0 on error.
 func getFileSize(path string) int64 {
-	if info, err := os.Stat(path); err == nil {
-		return info.Size()
-	}
-	return 0
+	return pathutil.FileSize(path)
 }
 
 // executeActivateStage activates the plugin on WordPress

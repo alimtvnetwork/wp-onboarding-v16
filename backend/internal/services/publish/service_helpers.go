@@ -19,6 +19,7 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // getMapping retrieves the plugin-site mapping
@@ -120,8 +121,8 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 // simulateUpload logs a simulated upload when no uploader is available.
 func (s *Service) simulateUpload(zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, error) {
 	s.log.Warn("Riseup Asia Uploader not available; upload simulated", "slug", slug)
-	if info, err := os.Stat(zipPath); err == nil {
-		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", info.Size())
+	if fi, appErr := pathutil.StatFile(zipPath); appErr == nil {
+		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", fi.Info.Size())
 	}
 	return false, nil, false, nil
 }
@@ -266,13 +267,13 @@ func (s *Service) cleanupZip(pluginID, siteID int64, zipPath string, isPublishFa
 
 // logZipCreated logs the ZIP file creation details
 func (s *Service) logZipCreated(pluginID, siteID int64, zipPath string, fileCount int) {
-	info, statErr := os.Stat(zipPath)
+	fi, statErr := pathutil.StatFile(zipPath)
 	if statErr != nil {
 		return
 	}
 
 	zipEntries := s.getZipStructure(zipPath)
-	s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), toDetails(ZipCreatedDetails{ZipPath: zipPath, ZipSize: info.Size(), FileCount: fileCount, ZipStructure: zipEntries}))
+	s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), fi.Info.Size()), toDetails(ZipCreatedDetails{ZipPath: zipPath, ZipSize: fi.Info.Size(), FileCount: fileCount, ZipStructure: zipEntries}))
 	s.logZipEntries(pluginID, siteID, zipEntries)
 }
 

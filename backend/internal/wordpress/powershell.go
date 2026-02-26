@@ -249,7 +249,7 @@ func buildScriptCandidates(backendDir string) []string {
 
 // resolveScriptPath checks if a path exists and returns its absolute form.
 func resolveScriptPath(path string) string {
-	if _, err := os.Stat(path); err != nil {
+	if pathutil.IsFileMissing(path) {
 		return ""
 	}
 

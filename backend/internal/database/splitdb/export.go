@@ -40,7 +40,10 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve project directory")
 	}
-	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+	_, statErr := pathutil.StatDir(projectDir)
+	isProjectMissing := statErr != nil
+
+	if isProjectMissing {
 		return nil, apperror.New(apperror.ErrNotFound, "project not found").
 			WithDetails(projectSlug)
 	}
@@ -156,9 +159,10 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, isOverwrit
 	}
 
 	// Check if project exists
-	_, statErr := os.Stat(projectDir)
+	_, statErr := pathutil.StatDir(projectDir)
 	isProjectExists := statErr == nil
-	isConflict := isProjectExists && !isOverwrite
+	isReadOnly := !isOverwrite
+	isConflict := isProjectExists && isReadOnly
 
 	if isConflict {
 		return nil, apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace").

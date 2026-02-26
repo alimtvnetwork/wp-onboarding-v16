@@ -103,14 +103,17 @@ func finalizeZip(zw *zip.Writer, zf *os.File, absZipPath string) *apperror.AppEr
 
 // validateZipFile checks the zip file exists and is non-empty.
 func validateZipFile(absZipPath string) *apperror.AppError {
-	info, err := os.Stat(absZipPath)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrFSRead, "zip file not found after creation")
+	fi, appErr := pathutil.StatFile(absZipPath)
+	if appErr != nil {
+		return apperror.Wrap(appErr, apperror.ErrFSRead, "zip file not found after creation")
 	}
-	if info.Size() == 0 {
+
+	if fi.Info.Size() == 0 {
 		os.Remove(absZipPath)
+
 		return apperror.New(apperror.ErrFSZip, "zip file is empty after creation")
 	}
+
 	return nil
 }
 
@@ -231,14 +234,17 @@ func addSelectiveEntry(zw *zip.Writer, zc *zipContext, relPath string) error {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to resolve file path").WithFilePath(relPath)
 	}
 
-	info, err := os.Stat(fullPath)
-	if err != nil {
-		if os.IsNotExist(err) {
+	fi, statErr := pathutil.StatFile(fullPath)
+	if statErr != nil {
+		if apperror.Is(statErr, apperror.ErrFSNotFound) {
 			return nil
 		}
-		return apperror.Wrap(err, apperror.ErrFSRead, "failed to stat file for selective zip").WithFilePath(relPath)
+
+		return apperror.Wrap(statErr, apperror.ErrFSRead, "failed to stat file for selective zip").
+			WithFilePath(relPath)
 	}
-	if info.IsDir() {
+
+	if fi.Info.IsDir() {
 		return nil
 	}
 
