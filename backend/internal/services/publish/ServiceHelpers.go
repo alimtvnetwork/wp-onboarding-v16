@@ -261,7 +261,8 @@ func (s *Service) extractVersionFromPhpFile(dirPath, fileName string) string {
 	}
 
 	for _, line := range strings.Split(string(content), "\n") {
-		if version := parseVersionLine(strings.TrimSpace(line)); version != "" {
+		version := parseVersionLine(strings.TrimSpace(line))
+		if version != "" {
 			return version
 		}
 	}

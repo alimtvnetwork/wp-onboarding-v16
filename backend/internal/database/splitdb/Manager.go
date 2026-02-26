@@ -282,7 +282,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 	// Check if already open
 	key := fmt.Sprintf("%s/%s/%s", projectSlug, dbType, entityID)
 	if db, ok := m.openDBs[key]; ok {
-		m.log.Debug("Database cached", "key", key, "duration_ms", time.Since(startTime).Milliseconds())
+		m.log.Debug("Database cached", "key", key, "durationMs", time.Since(startTime).Milliseconds())
 		return db, nil
 	}
 
@@ -335,7 +335,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 		"project", projectSlug,
 		"type", dbType,
 		"entity", entityID,
-		"duration_ms", time.Since(startTime).Milliseconds(),
+		"durationMs", time.Since(startTime).Milliseconds(),
 	)
 
 	return db, nil
@@ -450,7 +450,7 @@ func (m *DBManager) updateLastAccessed(dbID string) {
 		WHERE Id = ?
 	`, dbID)
 	if err != nil {
-		m.log.Warn("Failed to update LastAccessedAt", "error", err, "db_id", dbID)
+		m.log.Warn("Failed to update LastAccessedAt", "error", err, "dbId", dbID)
 	}
 }
 

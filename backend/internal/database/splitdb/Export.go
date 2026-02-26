@@ -126,9 +126,9 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	m.log.Info("Export complete",
 		"project", projectSlug,
 		"output", outputPath,
-		"files_count", filesCount,
-		"total_bytes", totalBytes,
-		"duration_ms", duration.Milliseconds(),
+		"filesCount", filesCount,
+		"totalBytes", totalBytes,
+		"durationMs", duration.Milliseconds(),
 	)
 
 	return &ExportResult{
@@ -229,9 +229,9 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, isOverwrit
 	duration := time.Since(startTime)
 	m.log.Info("Import complete",
 		"project", projectSlug,
-		"files_count", filesCount,
-		"total_bytes", totalBytes,
-		"duration_ms", duration.Milliseconds(),
+		"filesCount", filesCount,
+		"totalBytes", totalBytes,
+		"durationMs", duration.Milliseconds(),
 	)
 
 	return &ImportResult{

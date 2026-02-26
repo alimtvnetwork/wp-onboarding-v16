@@ -171,7 +171,7 @@ func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*connect
 	if siteResult.HasError() {
 		failProgress := ConnectionProgressInput{
 			SiteID:  id,
-			Step:    "fetch_site",
+			Step:    connectionstep.FetchSite.String(),
 			Status:  stagestatus.Failed.String(),
 			Message: "Failed to retrieve site info",
 			Details: toJson(ErrorDetail{Error: siteResult.AppError().Error()}),
@@ -182,7 +182,7 @@ func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*connect
 	site := siteResult.Value()
 	successProgress := ConnectionProgressInput{
 		SiteID:  id,
-		Step:    "fetch_site",
+		Step:    connectionstep.FetchSite.String(),
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("Retrieved site: %s", site.Name),
 	}
@@ -270,7 +270,7 @@ func (s *Service) handleConnectionFailure(ctx context.Context, ref connTestRef, 
 	})
 	failProgress := ConnectionProgressInput{
 		SiteID:  ref.ID,
-		Step:    "api_test",
+		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Failed.String(),
 		Message: fmt.Sprintf("Connection failed: %s", err.Error()),
 		Details: failDetails,
@@ -303,7 +303,7 @@ func (s *Service) handleConnectionSuccess(ctx context.Context, ref connTestRef, 
 	})
 	successProgress := ConnectionProgressInput{
 		SiteID:  ref.ID,
-		Step:    "api_test",
+		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion),
 		Details: successDetails,
@@ -377,7 +377,7 @@ func (s *Service) executeCredentialsTest(client *wordpress.Client, normalizedUrl
 		})
 		failProgress := ConnectionProgressInput{
 			SiteID:  0,
-			Step:    "api_test",
+			Step:    connectionstep.ApiTest.String(),
 			Status:  stagestatus.Failed.String(),
 			Message: fmt.Sprintf("Connection failed: %s", err.Error()),
 			Details: failDetails,
@@ -409,7 +409,7 @@ func (s *Service) buildCredentialsSuccess(result *ConnectionResult, connInfo *wo
 	})
 	successProgress := ConnectionProgressInput{
 		SiteID:  0,
-		Step:    "api_test",
+		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("WordPress %s detected", connInfo.WPVersion),
 		Details: successDetails,

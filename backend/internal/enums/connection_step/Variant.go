@@ -17,6 +17,8 @@ const (
 	PluginAccessCheck
 	WriteTest
 	Complete
+	FetchSite
+	ApiTest
 )
 
 var variantLabels = [...]string{
@@ -27,6 +29,8 @@ var variantLabels = [...]string{
 	PluginAccessCheck: "PluginAccessCheck",
 	WriteTest:         "WriteTest",
 	Complete:          "Complete",
+	FetchSite:         "FetchSite",
+	ApiTest:           "ApiTest",
 }
 
 var variantValues = [...]string{
@@ -37,6 +41,8 @@ var variantValues = [...]string{
 	PluginAccessCheck: "plugin_access_check",
 	WriteTest:         "write_test",
 	Complete:          "complete",
+	FetchSite:         "fetch_site",
+	ApiTest:           "api_test",
 }
 
 func (v Variant) String() string {
@@ -80,7 +86,7 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 }
 
 func All() []Variant {
-	return []Variant{DnsCheck, RestApiCheck, AuthCheck, PluginAccessCheck, WriteTest, Complete}
+	return []Variant{DnsCheck, RestApiCheck, AuthCheck, PluginAccessCheck, WriteTest, Complete, FetchSite, ApiTest}
 }
 
 func ByIndex(i int) Variant {
