@@ -264,8 +264,8 @@ func (b *EnvelopeBuilder) BuildErrorResponse(ctx context.Context, err error) *Re
 }
 
 func (b *EnvelopeBuilder) injectDelegatedServer(ctx context.Context, resp *Response) {
-    delegated, ok := ctx.Value(delegatedServerKey).(*DelegatedRequestServer)
-    if !ok {
+    delegated := apperror.ExtractFromContext[*DelegatedRequestServer](ctx, delegatedServerKey)
+    if delegated == nil {
         return
     }
 
