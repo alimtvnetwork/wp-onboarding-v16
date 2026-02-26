@@ -711,11 +711,12 @@ func (s *Service) DeleteSession(sessionID string) error {
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve session directory")
 	}
-	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
+	if pathutil.IsDir(sessionDir) {
 		if err := os.RemoveAll(sessionDir); err != nil {
 			return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session directory").
 				WithPath(sessionDir)
 		}
+
 		return nil
 	}
 
@@ -738,11 +739,12 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve session directory")
 	}
-	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
+	dirInfo, dirErr := pathutil.StatDir(sessionDir)
+	if dirErr == nil {
 		return &Session{
 			ID:        sessionID,
 			Status:    stagestatus.Completed.String(),
-			StartedAt: info.ModTime(),
+			StartedAt: dirInfo.Info.ModTime(),
 		}, nil
 	}
 
@@ -751,20 +753,21 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve legacy session path")
 	}
-	info, err := os.Stat(legacyPath)
-	if err != nil {
-		if os.IsNotExist(err) {
+	fi, statErr := pathutil.StatFile(legacyPath)
+	if statErr != nil {
+		if apperror.Is(statErr, apperror.ErrFSNotFound) {
 			return nil, apperror.New(apperror.ErrSessionNotFound, "session not found").
 				WithDetails(sessionID)
 		}
-		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "stat session file").
+
+		return nil, apperror.Wrap(statErr, apperror.ErrSessionNotFound, "stat session file").
 			WithPath(legacyPath)
 	}
 
 	return &Session{
 		ID:        sessionID,
 		Status:    stagestatus.Completed.String(),
-		StartedAt: info.ModTime(),
+		StartedAt: fi.Info.ModTime(),
 	}, nil
 }
 

@@ -45,21 +45,27 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) apperror.Resul
 
 // validateDirectoryExists checks the path exists and is a directory.
 func validateDirectoryExists(path string, scan *ScanResult) *apperror.Result[ScanResult] {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		scan.Error = "directory does not exist"
-		r := apperror.Ok(*scan)
+	fi, statErr := pathutil.StatFile(path)
+	if statErr != nil {
+		if apperror.Is(statErr, apperror.ErrFSNotFound) {
+			scan.Error = "directory does not exist"
+			r := apperror.Ok(*scan)
+
+			return &r
+		}
+
+		r := apperror.FailWrap[ScanResult](statErr, apperror.ErrDirRead, "failed to stat directory")
+
 		return &r
 	}
-	if err != nil {
-		r := apperror.FailWrap[ScanResult](err, apperror.ErrDirRead, "failed to stat directory")
-		return &r
-	}
-	if !info.IsDir() {
+
+	if !fi.Info.IsDir() {
 		scan.Error = "path is not a directory"
 		r := apperror.Ok(*scan)
+
 		return &r
 	}
+
 	return nil
 }
 
@@ -69,7 +75,7 @@ func (s *Service) tryLoadDetected(path string, scan *ScanResult) (apperror.Resul
 	if err != nil {
 		return apperror.Result[ScanResult]{}, false
 	}
-	if _, err := os.Stat(detectedPath); err != nil {
+	if pathutil.IsFileMissing(detectedPath) {
 		return apperror.Result[ScanResult]{}, false
 	}
 

@@ -14,6 +14,7 @@ import (
 	"wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 	"wp-plugin-publish/pkg/ziputil"
 )
 
@@ -33,8 +34,8 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 		logPath = "data/errors/error.log.txt"
 	}
 
-	info, err := os.Stat(logPath)
-	if os.IsNotExist(err) {
+	fi, statErr := pathutil.StatFile(logPath)
+	if statErr != nil {
 		respondSuccess(w, LogFileResponse{
 			Content: "",
 			Path:    logPath,
@@ -62,8 +63,8 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 		Path:       logPath,
 		Exists:     true,
 		LogType:    logType,
-		Size:       info.Size(),
-		ModifiedAt: info.ModTime().Format(time.RFC3339),
+		Size:       fi.Info.Size(),
+		ModifiedAt: fi.Info.ModTime().Format(time.RFC3339),
 	})
 }
 
@@ -120,7 +121,7 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 		logPath = "data/errors/log.txt"
 	}
 
-	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+	if pathutil.IsFileMissing(logPath) {
 		respondSuccess(w, LogLinesResponse{
 			Lines:   []string{},
 			Path:    logPath,
@@ -152,7 +153,14 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 		lines = allLines
 	}
 
-	info, _ := os.Stat(logPath)
+	fi, _ := pathutil.StatFile(logPath)
+
+	var fileSize int64
+	var modTime string
+	if fi != nil {
+		fileSize = fi.Info.Size()
+		modTime = fi.Info.ModTime().Format(time.RFC3339)
+	}
 
 	respondSuccess(w, LogLinesResponse{
 		Lines:      lines,
@@ -160,8 +168,8 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 		Path:       logPath,
 		Exists:     true,
 		LogType:    logType,
-		Size:       info.Size(),
-		ModifiedAt: info.ModTime().Format(time.RFC3339),
+		Size:       fileSize,
+		ModifiedAt: modTime,
 	})
 }
 
@@ -177,9 +185,9 @@ func GetBackendFullLog(w http.ResponseWriter, r *http.Request) {
 
 // readLogFile is a helper to read and return log file contents
 func readLogFile(w http.ResponseWriter, path string, filename string) {
-	info, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
+	fi, statErr := pathutil.StatFile(path)
+	if statErr != nil {
+		if apperror.Is(statErr, apperror.ErrFSNotFound) {
 			respondError(
 				w,
 				wordpress.HttpStatusNotFound,
@@ -194,7 +202,7 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 			w,
 			wordpress.HttpStatusServerError,
 			"E9002",
-			"Failed to read log file: "+err.Error(),
+			"Failed to read log file: "+statErr.Error(),
 		)
 
 		return
@@ -215,8 +223,8 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 	respondSuccess(w, LogFileResponse{
 		Content:    string(content),
 		Filename:   filename,
-		Size:       info.Size(),
-		ModifiedAt: info.ModTime().Format(time.RFC3339),
+		Size:       fi.Info.Size(),
+		ModifiedAt: fi.Info.ModTime().Format(time.RFC3339),
 	})
 }
 
@@ -324,9 +332,7 @@ func splitLines(content string) []string {
 }
 
 func fileExists(path string) bool {
-	_, err := os.Stat(path)
-
-	return err == nil
+	return pathutil.IsFileExists(path)
 }
 
 func addFileToZip(

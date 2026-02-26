@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -299,10 +298,11 @@ func resolveSpaStaticDir(dir string) string {
 	return dir
 }
 
-// fileExists checks if a file exists (used by SPA handler)
+// fileExists checks if a file exists and is not a directory (used by SPA handler)
 func fileExists(path string) bool {
-	fi, err := os.Stat(path)
-	return err == nil && !fi.IsDir()
+	fi, appErr := pathutil.StatFile(path)
+
+	return appErr == nil && !fi.Info.IsDir()
 }
 
 // spaHandler serves static files with SPA fallback for client-side routing
@@ -340,18 +340,15 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fi, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// Missing file (including client-side routes) -> SPA fallback
-			serveIndex()
-			return
-		}
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	fi, statErr := pathutil.StatFile(path)
+	if statErr != nil {
+		// Missing file (including client-side routes) -> SPA fallback
+		serveIndex()
+
 		return
 	}
 
-	if fi.IsDir() {
+	if fi.Info.IsDir() {
 		serveIndex()
 		return
 	}

@@ -96,11 +96,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	}))
 
 	// Get file info for size
-	info, _ := os.Stat(backupPath)
-	var size int64
-	if info != nil {
-		size = info.Size()
-	}
+	size := pathutil.FileSize(backupPath)
 
 	backup := models.Backup{
 		PluginMappingID: mappingID,
@@ -260,16 +256,16 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	var totalBytes int64
 
 	for _, sourcePath := range sourcePaths {
-		info, err := os.Stat(sourcePath)
-		if err != nil {
-			s.log.Warn("Skipping source", "path", sourcePath, "error", err)
+		fi, statErr := pathutil.StatFile(sourcePath)
+		if statErr != nil {
+			s.log.Warn("Skipping source", "path", sourcePath, "error", statErr)
 			s.broadcastLog(0, loglevel.Warn.Lower(), "skip", fmt.Sprintf("Skipping source: %s", sourcePath), toDetails(ExportErrorDetails{
-				Error: err.Error(),
+				Error: statErr.Error(),
 			}))
 			continue
 		}
 
-		if info.IsDir() {
+		if fi.Info.IsDir() {
 			// Walk directory
 			baseDir := filepath.Base(sourcePath)
 			s.broadcastLog(0, loglevel.Info.Lower(), "scan", fmt.Sprintf("Scanning directory: %s", baseDir), nil)
@@ -373,9 +369,10 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, is
 	defer reader.Close()
 
 	// Check if destination exists
-	_, statErr := os.Stat(destDir)
+	_, statErr := pathutil.StatDir(destDir)
 	isDestExists := statErr == nil
-	isConflict := isDestExists && !isOverwrite
+	isReadOnly := !isOverwrite
+	isConflict := isDestExists && isReadOnly
 
 	if isConflict {
 		s.broadcastLog(0, "error", "check", "Destination exists, overwrite not enabled", nil)
