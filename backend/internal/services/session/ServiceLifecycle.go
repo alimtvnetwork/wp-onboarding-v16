@@ -17,7 +17,6 @@ import (
 // StartSession creates a new session directory and returns its ID
 func (s *Service) StartSession(input StartSessionInput) (string, error) {
 	sessionID := uuid.New().String()
-
 	session := buildNewSession(sessionID, input)
 
 	if err := s.initSessionDir(sessionID); err != nil {
@@ -31,16 +30,20 @@ func (s *Service) StartSession(input StartSessionInput) (string, error) {
 	session.logFile = file
 
 	writeSessionHeader(file, sessionID, input, session.StartedAt)
+	s.registerSession(sessionID, session)
 
+	return sessionID, nil
+}
+
+// registerSession stores the session in the map and logs it.
+func (s *Service) registerSession(sessionID string, session *Session) {
 	s.mu.Lock()
 	s.sessions[sessionID] = session
 	s.mu.Unlock()
 
 	if s.log != nil {
-		s.log.Info("Session started", "sessionId", sessionID, "type", input.Type)
+		s.log.Info("Session started", "sessionId", sessionID, "type", session.Type)
 	}
-
-	return sessionID, nil
 }
 
 // buildNewSession constructs a new Session from the input.
@@ -177,10 +180,15 @@ func (s *Service) LogStageStart(sessionID, stageName string) {
 		return
 	}
 
+	session.logFile.WriteString(buildStageHeader(stageName))
+}
+
+// buildStageHeader formats a stage start header string.
+func buildStageHeader(stageName string) string {
 	header := "\n───────────────────────────────────────────────────────────────────────────────\n"
 	header += fmt.Sprintf(" STAGE: %s\n", stageName)
 	header += "───────────────────────────────────────────────────────────────────────────────\n"
-	session.logFile.WriteString(header)
+	return header
 }
 
 // StageEndInput bundles parameters for LogStageEnd.
@@ -235,13 +243,21 @@ func (s *Service) EndSession(sessionID, status, errorMsg string) {
 	session.mu.Lock()
 	defer session.mu.Unlock()
 
+	applyEndState(session, status, errorMsg)
+	s.logSessionEnd(sessionID, status)
+}
+
+// applyEndState updates the session fields and writes the footer.
+func applyEndState(session *Session, status, errorMsg string) {
 	now := time.Now().UTC()
 	session.Status = status
 	session.EndedAt = &now
 	session.ErrorMsg = errorMsg
-
 	writeSessionFooter(session, now, status, errorMsg)
+}
 
+// logSessionEnd logs session end if logger is available.
+func (s *Service) logSessionEnd(sessionID, status string) {
 	if s.log != nil {
 		s.log.Info("Session ended", "sessionId", sessionID, "status", status)
 	}
@@ -253,7 +269,15 @@ func writeSessionFooter(session *Session, now time.Time, status, errorMsg string
 		return
 	}
 
-	duration := now.Sub(session.StartedAt)
+	footer := buildFooterString(session.StartedAt, now, status, errorMsg)
+	session.logFile.WriteString(footer)
+	session.logFile.Close()
+	session.logFile = nil
+}
+
+// buildFooterString formats the session end footer.
+func buildFooterString(startedAt, now time.Time, status, errorMsg string) string {
+	duration := now.Sub(startedAt)
 	footer := "\n═══════════════════════════════════════════════════════════════════════════════\n"
 	footer += fmt.Sprintf(" SESSION ENDED: %s\n", now.Format("2006-01-02 15:04:05 UTC"))
 	footer += fmt.Sprintf(" STATUS: %s\n", status)
@@ -262,7 +286,5 @@ func writeSessionFooter(session *Session, now time.Time, status, errorMsg string
 		footer += fmt.Sprintf(" ERROR: %s\n", errorMsg)
 	}
 	footer += "═══════════════════════════════════════════════════════════════════════════════\n"
-	session.logFile.WriteString(footer)
-	session.logFile.Close()
-	session.logFile = nil
+	return footer
 }

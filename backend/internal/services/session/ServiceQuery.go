@@ -37,15 +37,18 @@ func (s *Service) GetSessionLogs(sessionID string) apperror.Result[string] {
 			WithValue("sessionId", sessionID)
 	}
 
+	return s.readLogFileOrLegacy(sessionID, logPath)
+}
+
+// readLogFileOrLegacy reads the log file, falling back to legacy format.
+func (s *Service) readLogFileOrLegacy(sessionID, logPath string) apperror.Result[string] {
 	data, err := os.ReadFile(logPath)
 	if err == nil {
 		return apperror.Ok(string(data))
 	}
-
 	if os.IsNotExist(err) {
 		return s.readLegacySessionLog(sessionID)
 	}
-
 	return apperror.FailWrap[string](err, apperror.ErrFSRead, "read session log").
 		WithValue("sessionId", sessionID)
 }
@@ -159,13 +162,17 @@ func extractPHPContentFromLine(line string) string {
 	if braceIdx < 0 {
 		return ""
 	}
+	return parsePHPContent(line[braceIdx:])
+}
 
+// parsePHPContent unmarshals the JSON fragment and returns the content field.
+func parsePHPContent(jsonFragment string) string {
 	// stackTraceContentContext extracts "content" from remote_php_stacktrace log JSON.
 	type stackTraceContentContext struct {
 		Content string `json:"content"` // external key (session log JSON)
 	}
 	var ctx stackTraceContentContext
-	if json.Unmarshal([]byte(line[braceIdx:]), &ctx) == nil {
+	if json.Unmarshal([]byte(jsonFragment), &ctx) == nil {
 		return ctx.Content
 	}
 	return ""
@@ -195,18 +202,28 @@ func (s *Service) loadLegacySession(sessionID string) (*Session, error) {
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve legacy session path")
 	}
+	return s.statLegacyFile(sessionID, legacyPath)
+}
+
+// statLegacyFile stats the legacy file and returns a Session or a typed error.
+func (s *Service) statLegacyFile(sessionID, legacyPath string) (*Session, error) {
 	fi, statErr := pathutil.StatFile(legacyPath)
 	if statErr != nil {
-		if apperror.Is(statErr, apperror.ErrFSNotFound) {
-			return nil, apperror.New(apperror.ErrSessionNotFound, "session not found").
-				WithDetails(sessionID)
-		}
-		return nil, apperror.Wrap(statErr, apperror.ErrSessionNotFound, "stat session file").
-			WithPath(legacyPath)
+		return nil, wrapLegacyStatError(statErr, sessionID, legacyPath)
 	}
 	return &Session{
 		ID:        sessionID,
 		Status:    stagestatus.Completed.String(),
 		StartedAt: fi.Info.ModTime(),
 	}, nil
+}
+
+// wrapLegacyStatError wraps the stat error with appropriate context.
+func wrapLegacyStatError(statErr error, sessionID, legacyPath string) error {
+	if apperror.Is(statErr, apperror.ErrFSNotFound) {
+		return apperror.New(apperror.ErrSessionNotFound, "session not found").
+			WithDetails(sessionID)
+	}
+	return apperror.Wrap(statErr, apperror.ErrSessionNotFound, "stat session file").
+		WithPath(legacyPath)
 }

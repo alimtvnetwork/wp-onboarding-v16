@@ -115,16 +115,29 @@ func New(cfg Config) (*Service, error) {
 		retentionDays = 7
 	}
 
-	sessionsDir, err := pathutil.Join(cfg.DataDir, "sessions")
+	sessionsDir, err := ensureSessionsDir(cfg.DataDir)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "resolve sessions directory")
+		return nil, err
 	}
 
+	return startService(cfg, sessionsDir, retentionDays), nil
+}
+
+// ensureSessionsDir resolves and creates the sessions directory.
+func ensureSessionsDir(dataDir string) (string, error) {
+	sessionsDir, err := pathutil.Join(dataDir, "sessions")
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrSessionInit, "resolve sessions directory")
+	}
 	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "create sessions directory").
+		return "", apperror.Wrap(err, apperror.ErrSessionInit, "create sessions directory").
 			WithPath(sessionsDir)
 	}
+	return sessionsDir, nil
+}
 
+// startService builds the Service and starts the background cleanup loop.
+func startService(cfg Config, sessionsDir string, retentionDays int) *Service {
 	s := &Service{
 		dataDir:       cfg.DataDir,
 		sessionsDir:   sessionsDir,
@@ -132,10 +145,8 @@ func New(cfg Config) (*Service, error) {
 		retentionDays: retentionDays,
 		sessions:      make(map[string]*Session),
 	}
-
 	go s.cleanupLoop()
-
-	return s, nil
+	return s
 }
 
 // getSessionDir returns the directory path for a session
