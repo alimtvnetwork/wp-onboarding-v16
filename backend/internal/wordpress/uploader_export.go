@@ -170,7 +170,7 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) (*RemoteErro
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
-	endpoint := buildErrorSessionsEndpoint(namespace, input.Level, input.Search, input.SinceID, input.Limit, input.Offset)
+	endpoint := buildErrorSessionsEndpoint(errorSessionsParams{Namespace: namespace, Level: input.Level, Search: input.Search, SinceID: input.SinceID, Limit: input.Limit, Offset: input.Offset})
 	return doAPICall[RemoteErrorSessionsResult](c, apiCallInput{
 		Method: "GET", Endpoint: endpoint, Operation: "fetch remote error sessions",
 		ErrorCode: apperror.ErrWPConnection,
@@ -188,8 +188,7 @@ type errorSessionsParams struct {
 }
 
 // buildErrorSessionsEndpoint constructs the endpoint URL with query parameters.
-func buildErrorSessionsEndpoint(namespace, level, search string, sinceID, limit, offset int) string {
-	p := errorSessionsParams{Namespace: namespace, Level: level, Search: search, SinceID: sinceID, Limit: limit, Offset: offset}
+func buildErrorSessionsEndpoint(p errorSessionsParams) string {
 	endpoint := fmt.Sprintf("/%s%s", p.Namespace, ep.ErrorSessions)
 	params := collectErrorSessionParams(p)
 

@@ -22,9 +22,10 @@ type zipContext struct {
 
 // zipSession holds an open zip file and writer for building archives.
 type zipSession struct {
-	File   *os.File
-	Writer *zip.Writer
-	Ctx    *zipContext
+	File            *os.File
+	Writer          *zip.Writer
+	Ctx             *zipContext
+	ExcludePatterns []string
 }
 
 // resolveZipContext resolves temp dir, plugin path, and zip file path.
@@ -129,7 +130,8 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 		return "", err
 	}
 
-	if walkErr := s.walkAndAddEntries(zs, excludePatterns); walkErr != nil {
+	zs.ExcludePatterns = excludePatterns
+	if walkErr := s.walkAndAddEntries(zs); walkErr != nil {
 		return zs.CleanupOnError(walkErr)
 	}
 
@@ -140,28 +142,28 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 }
 
 // walkAndAddEntries walks the plugin directory and adds matching files to the zip.
-func (s *Service) walkAndAddEntries(zs *zipSession, excludePatterns []string) error {
+func (s *Service) walkAndAddEntries(zs *zipSession) error {
 	return filepath.Walk(zs.Ctx.AbsPluginPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return apperror.Wrap(err, apperror.ErrFSRead, "failed to walk plugin directory").WithFilePath(path)
 		}
-		return s.addFullZipEntry(zs.Writer, zs.Ctx, path, info, excludePatterns)
+		return s.addFullZipEntry(zs, path, info)
 	})
 }
 
 // addFullZipEntry adds a single file to the full zip, checking exclusions.
-func (s *Service) addFullZipEntry(zw *zip.Writer, zc *zipContext, path string, info os.FileInfo, excludePatterns []string) error {
+func (s *Service) addFullZipEntry(zs *zipSession, path string, info os.FileInfo) error {
 	if info.IsDir() {
 		return nil
 	}
-	relPath, err := filepath.Rel(zc.AbsPluginPath, path)
+	relPath, err := filepath.Rel(zs.Ctx.AbsPluginPath, path)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to compute relative path").WithFilePath(path)
 	}
-	if isExcludedByPatterns(relPath, path, excludePatterns) || s.shouldExclude(relPath) {
+	if isExcludedByPatterns(relPath, path, zs.ExcludePatterns) || s.shouldExclude(relPath) {
 		return nil
 	}
-	return addFileToZip(zw, path, filepath.ToSlash(filepath.Join(zc.Slug, relPath)))
+	return addFileToZip(zs.Writer, path, filepath.ToSlash(filepath.Join(zs.Ctx.Slug, relPath)))
 }
 
 // isExcludedByPatterns checks if a file matches any exclude pattern.

@@ -57,7 +57,7 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 	}
 	site := result.Value()
 
-	s.broadcastBootstrapLog(loglevel.Info, id, "Starting Riseup Asia Uploader deployment", toJson(SiteContextDetails{SiteId: id, SiteName: site.Name, SiteUrl: site.Url}))
+	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Starting Riseup Asia Uploader deployment", Details: toJson(SiteContextDetails{SiteId: id, SiteName: site.Name, SiteUrl: site.Url})})
 
 	decrypted, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
@@ -65,7 +65,7 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 	}
 
 	progressCallback := func(step, status, message string, details wordpress.ProgressDetails) {
-		s.broadcastBootstrapLog(loglevel.Info, id, fmt.Sprintf("[%s] %s", step, message), toJson(BootstrapLogDetails{SiteId: id, SiteName: site.Name, Step: step, Status: status, Details: details}))
+		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: fmt.Sprintf("[%s] %s", step, message), Details: toJson(BootstrapLogDetails{SiteId: id, SiteName: site.Name, Step: step, Status: status, Details: details})})
 	}
 	client := s.wpClientFactory(site.Url, site.Username, string(decrypted), progressCallback)
 	return site, client, nil
@@ -77,11 +77,11 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, er
 		uploaderPath = "plugins-uploader-helper"
 	}
 
-	s.broadcastBootstrapLog(loglevel.Info, id, "Creating plugin ZIP archive", toJson(ZipCreationDetails{SiteId: id, Path: uploaderPath}))
+	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Creating plugin ZIP archive", Details: toJson(ZipCreationDetails{SiteId: id, Path: uploaderPath})})
 
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
-		s.broadcastBootstrapLog(loglevel.Error, id, fmt.Sprintf("Failed to create ZIP: %v", err), toJson(SiteIdDetail{SiteId: id}))
+		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: fmt.Sprintf("Failed to create ZIP: %v", err), Details: toJson(SiteIdDetail{SiteId: id})})
 		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
 	return zipPath, nil
@@ -98,10 +98,10 @@ func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zip
 
 // bootstrapViaUploader updates via an existing Riseup Asia Uploader.
 func (s *Service) bootstrapViaUploader(id int64, client *wordpress.Client, zipPath, namespace string) (*wordpress.UploaderUploadResult, error) {
-	s.broadcastBootstrapLog(loglevel.Info, id, fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJson(SiteIdDetail{SiteId: id}))
+	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), Details: toJson(SiteIdDetail{SiteId: id})})
 	result, err := client.UploadPluginViaUploader(wordpress.UploadInput{ZipPath: zipPath, Slug: "riseup-asia-uploader", IsActivate: true, UploadSource: uploadsource.RestAPI})
 	if err != nil {
-		s.broadcastBootstrapLog(loglevel.Error, id, fmt.Sprintf("Upload failed: %v", err), toJson(SiteIdDetail{SiteId: id}))
+		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: fmt.Sprintf("Upload failed: %v", err), Details: toJson(SiteIdDetail{SiteId: id})})
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 	return result, nil
@@ -109,16 +109,16 @@ func (s *Service) bootstrapViaUploader(id int64, client *wordpress.Client, zipPa
 
 // bootstrapViaOnboard installs via the Onboard plugin for first-time setup.
 func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
-	s.broadcastBootstrapLog(loglevel.Info, id, "First-time installation - checking for Onboard plugin", toJson(SiteIdDetail{SiteId: id}))
+	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "First-time installation - checking for Onboard plugin", Details: toJson(SiteIdDetail{SiteId: id})})
 	if !s.checkOnboardAvailable(client) {
-		s.broadcastBootstrapLog(loglevel.Error, id, "No upload helper plugin found.", toJson(SiteIdDetail{SiteId: id}))
+		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: "No upload helper plugin found.", Details: toJson(SiteIdDetail{SiteId: id})})
 		return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site.")
 	}
 
-	s.broadcastBootstrapLog(loglevel.Info, id, "Using Onboard plugin for installation", toJson(SiteIdDetail{SiteId: id}))
+	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Using Onboard plugin for installation", Details: toJson(SiteIdDetail{SiteId: id})})
 	result, err := client.UploadPluginViaOnboard(zipPath, true)
 	if err != nil {
-		s.broadcastBootstrapLog(loglevel.Error, id, fmt.Sprintf("Upload failed: %v", err), toJson(SiteIdDetail{SiteId: id}))
+		s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Error, SiteID: id, Message: fmt.Sprintf("Upload failed: %v", err), Details: toJson(SiteIdDetail{SiteId: id})})
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 	return result, nil
@@ -126,15 +126,23 @@ func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPat
 
 // finalizeBootstrap logs success and returns the result.
 func (s *Service) finalizeBootstrap(id int64, site models.Site, uploadResult *wordpress.UploaderUploadResult) (*BootstrapResult, error) {
-	s.broadcastBootstrapLog(loglevel.Info, id, "Riseup Asia Uploader deployed successfully", toJson(UploaderDeployDetails{SiteId: id, SiteName: site.Name, IsActivated: uploadResult.Activated}))
+	s.broadcastBootstrapLog(bootstrapLogInput{Level: loglevel.Info, SiteID: id, Message: "Riseup Asia Uploader deployed successfully", Details: toJson(UploaderDeployDetails{SiteId: id, SiteName: site.Name, IsActivated: uploadResult.Activated})})
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", "siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", uploadResult.Activated)
 	return &BootstrapResult{IsSuccess: true, SiteId: id, SiteName: site.Name, Message: "Riseup Asia Uploader deployed successfully", IsActivated: uploadResult.Activated}, nil
 }
 
+// bootstrapLogInput bundles parameters for broadcastBootstrapLog.
+type bootstrapLogInput struct {
+	Level   loglevel.Variant
+	SiteID  int64
+	Message string
+	Details json.RawMessage
+}
+
 // broadcastBootstrapLog sends a bootstrap log entry via WebSocket if hub is available.
-func (s *Service) broadcastBootstrapLog(level loglevel.Variant, siteId int64, message string, details json.RawMessage) {
+func (s *Service) broadcastBootstrapLog(input bootstrapLogInput) {
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog(level.Lower(), message, details)
+		s.wsHub.BroadcastLog(input.Level.Lower(), input.Message, input.Details)
 	}
 }
 
@@ -193,7 +201,7 @@ func writeUploaderZipContent(tempFile *os.File, absUploaderPath string) error {
 		if err != nil {
 			return err
 		}
-		return addFileToUploaderZip(zipWriter, absUploaderPath, baseName, path, info)
+		return addFileToUploaderZip(uploaderZipEntryInput{Writer: zipWriter, BaseDir: absUploaderPath, BaseName: baseName, Path: path, Info: info})
 	})
 
 	zipWriter.Close()
@@ -202,29 +210,38 @@ func writeUploaderZipContent(tempFile *os.File, absUploaderPath string) error {
 	return err
 }
 
+// uploaderZipEntryInput bundles parameters for addFileToUploaderZip.
+type uploaderZipEntryInput struct {
+	Writer   *zip.Writer
+	BaseDir  string
+	BaseName string
+	Path     string
+	Info     os.FileInfo
+}
+
 // addFileToUploaderZip adds a single file entry to the uploader ZIP archive.
-func addFileToUploaderZip(zw *zip.Writer, baseDir, baseName, path string, info os.FileInfo) error {
-	relPath, _ := filepath.Rel(baseDir, path)
+func addFileToUploaderZip(input uploaderZipEntryInput) error {
+	relPath, _ := filepath.Rel(input.BaseDir, input.Path)
 	if relPath == "." {
 		return nil
 	}
 	if shouldSkipFile(relPath) {
-		if info.IsDir() {
+		if input.Info.IsDir() {
 			return filepath.SkipDir
 		}
 		return nil
 	}
-	if info.IsDir() {
+	if input.Info.IsDir() {
 		return nil
 	}
 
-	zipPath := baseName + "/" + filepath.ToSlash(relPath)
-	writer, err := zw.Create(zipPath)
+	zipPath := input.BaseName + "/" + filepath.ToSlash(relPath)
+	writer, err := input.Writer.Create(zipPath)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Open(path)
+	file, err := os.Open(input.Path)
 	if err != nil {
 		return err
 	}
