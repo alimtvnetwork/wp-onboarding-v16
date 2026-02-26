@@ -622,7 +622,7 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 		isActivated  bool
 	}
 	retryCfg := DefaultRetryConfig()
-	uploadVal, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (uploadOut, error) {
+	uploadVal, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (uploadOut, *apperror.AppError) {
 		p, ur, a, e := s.uploadPlugin(ctx, pctx.WPClient, zipPath, pctx.Mapping.RemoteSlug)
 
 		return uploadOut{p, ur, a}, e
