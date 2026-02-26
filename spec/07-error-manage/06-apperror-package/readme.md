@@ -220,6 +220,44 @@ err.WithUsername(u string)
 // ... etc (see error_diagnostic.go for full list)
 ```
 
+### 2.8 Package-Level Helpers (`match.go`)
+
+These functions centralise all type assertions on `error` and `any` values. Callers MUST use these instead of inline `err.(*AppError)` assertions.
+
+```go
+// Is checks if the error is an *AppError matching a specific code.
+func Is(err error, code ErrorCode) bool
+
+// Extract returns the *AppError from an error, or nil if not an AppError.
+func Extract(err error) *AppError
+
+// Recover extracts an *AppError from a panic value (used with recover()).
+// Returns nil if the panic value is not an *AppError.
+func Recover(panicValue any) *AppError
+```
+
+**Rules:**
+- Never write `err.(*AppError)` outside these helpers — always call `apperror.Extract(err)` or `apperror.Is(err, code)`
+- Never write `panicValue.(*AppError)` — always call `apperror.Recover(panicValue)`
+
+### 2.9 Domain-Specific Extractors
+
+Packages that define their own error types MUST provide equivalent centralised extractors. These live alongside the type definition, not in `apperror`.
+
+```go
+// wordpress/ClientTypes.go
+
+// ExtractAPIError returns the *APIError from an error, or nil.
+func ExtractAPIError(err error) *APIError
+
+// ExtractExitError returns the *exec.ExitError from an error, or nil.
+func ExtractExitError(err error) *exec.ExitError
+```
+
+**Rules:**
+- Never write `err.(*APIError)` or `err.(*exec.ExitError)` inline — use the extractor
+- New domain error types must add a corresponding `Extract<TypeName>(err error)` function
+
 ---
 
 ## 3. Result[T] — Single Value Wrapper
