@@ -61,27 +61,44 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
+	c.reportExportSelfStart()
+
+	result, err := c.callExportSelf(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	c.reportExportSelfComplete(result)
+
+	return result, nil
+}
+
+// reportExportSelfStart logs the export self start progress.
+func (c *Client) reportExportSelfStart() {
 	c.progress(ProgressEvent{
 		Step: action.ExportSelf.String(), Status: stagestatus.Running.String(),
 		Message: "Exporting Riseup Asia Uploader plugin...",
 	})
+}
 
+// callExportSelf sends the export-self API call.
+func (c *Client) callExportSelf(namespace string) (*ExportSelfResult, error) {
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ExportSelf)
-	result, err := doAPICall[ExportSelfResult](c, apiCallInput{
+
+	return doAPICall[ExportSelfResult](c, apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "export self via Riseup Asia Uploader",
 		ErrorCode: apperror.ErrWPConnection,
 	})
-	if err != nil {
-		return nil, err
-	}
+}
 
+// reportExportSelfComplete logs the export self completion progress.
+func (c *Client) reportExportSelfComplete(result *ExportSelfResult) {
 	c.progress(ProgressEvent{
 		Step: action.ExportSelf.String(), Status: stagestatus.Completed.String(),
 		Message: fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount),
 	})
-	return result, nil
 }
 
 // =============================================================================

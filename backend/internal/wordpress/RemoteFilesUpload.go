@@ -22,6 +22,25 @@ import (
 // UploadPluginZip uploads a plugin ZIP file to WordPress via the legacy Onboard companion plugin.
 // Deprecated: Use UploadPluginViaUploader instead (Riseup Asia Uploader).
 func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
+	mutationToken, err := c.requestUploadMutationToken(pluginSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	c.reportMutationTokenObtained(zipPath, mutationToken)
+
+	form, err := c.buildZipMultipartForm(zipPath, pluginSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
+
+	return c.executeOnboardZipUpload(endpoint, form, zipPath, pluginSlug)
+}
+
+// requestUploadMutationToken requests and returns a mutation token for upload.
+func (c *Client) requestUploadMutationToken(pluginSlug string) (string, error) {
 	c.progress(ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatus.Running.String(),
@@ -30,31 +49,20 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 
 	mutationToken, err := c.RequestMutationToken("upload")
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPPluginUpload, "failed to get upload mutation token")
+		return "", apperror.Wrap(err, apperror.ErrWPPluginUpload, "failed to get upload mutation token")
 	}
 
+	return mutationToken, nil
+}
+
+// reportMutationTokenObtained logs that the mutation token was obtained.
+func (c *Client) reportMutationTokenObtained(zipPath, mutationToken string) {
 	c.progress(ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)),
 		Details: toProgress(TokenProgress{TokenLength: len(mutationToken)}),
 	})
-
-	form, err := c.buildZipMultipartForm(zipPath, pluginSlug)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
-	uploadInput := zipUploadInput{
-		Endpoint:    endpoint,
-		Body:        form.Body,
-		ContentType: form.ContentType,
-		FileSize:    form.FileSize,
-		ZipPath:     zipPath,
-		PluginSlug:  pluginSlug,
-	}
-	return c.executeZipUpload(uploadInput)
 }
 
 // zipMultipartForm holds the built multipart form and file metadata.
@@ -72,6 +80,11 @@ func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*zipMultipar
 	}
 	defer opened.File.Close()
 
+	return c.buildFormFromOpenedFile(opened, zipPath, pluginSlug)
+}
+
+// buildFormFromOpenedFile constructs the multipart form from an opened file.
+func (c *Client) buildFormFromOpenedFile(opened *openedFile, zipPath, pluginSlug string) (*zipMultipartForm, error) {
 	var reqBody bytes.Buffer
 	writer := multipart.NewWriter(&reqBody)
 
@@ -109,6 +122,7 @@ func openAndStatFile(path string) (*openedFile, error) {
 	stat, err := file.Stat()
 	if err != nil {
 		file.Close()
+
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to stat zip file").
 			WithValue("zipPath", path)
 	}
@@ -142,7 +156,7 @@ func writeZipFormFields(input zipFormInput) error {
 	return input.Writer.WriteField("overwrite", "true")
 }
 
-// zipUploadInput bundles parameters for executeZipUpload.
+// zipUploadInput bundles parameters for executeOnboardZipUpload.
 type zipUploadInput struct {
 	Endpoint    string
 	Body        *bytes.Buffer
@@ -152,27 +166,39 @@ type zipUploadInput struct {
 	PluginSlug  string
 }
 
-// executeZipUpload sends the multipart upload request and parses the response.
-func (c *Client) executeZipUpload(input zipUploadInput) (*OnboardUploadResult, error) {
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, input.Endpoint)
+// executeOnboardZipUpload sends the multipart upload and parses the response.
+func (c *Client) executeOnboardZipUpload(endpoint string, form *zipMultipartForm, zipPath, pluginSlug string) (*OnboardUploadResult, error) {
+	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 
-	uploadProgress := ZipUploadProgress{
-		ZipSize:  input.FileSize,
-		ZipFile:  filepath.Base(input.ZipPath),
-		Endpoint: input.Endpoint,
-	}
-	c.progress(ProgressEvent{
-		Step:    "upload",
-		Status:  stagestatus.Running.String(),
-		Message: fmt.Sprintf("POSTing %d bytes to %s", input.FileSize, url),
-		Details: toProgress(uploadProgress),
-	})
+	c.reportOnboardUploadStart(url, endpoint, form, zipPath)
 
-	mpResp, err := c.doMultipartRequest(url, input.Body, input.ContentType)
+	mpResp, err := c.doMultipartRequest(url, form.Body, form.ContentType)
 	if err != nil {
 		return nil, err
 	}
 
+	c.reportOnboardUploadResponse(mpResp)
+
+	return c.parseOnboardUploadResponse(mpResp, endpoint, url, pluginSlug)
+}
+
+// reportOnboardUploadStart logs the upload start progress.
+func (c *Client) reportOnboardUploadStart(url, endpoint string, form *zipMultipartForm, zipPath string) {
+	uploadProgress := ZipUploadProgress{
+		ZipSize:  form.FileSize,
+		ZipFile:  filepath.Base(zipPath),
+		Endpoint: endpoint,
+	}
+	c.progress(ProgressEvent{
+		Step:    "upload",
+		Status:  stagestatus.Running.String(),
+		Message: fmt.Sprintf("POSTing %d bytes to %s", form.FileSize, url),
+		Details: toProgress(uploadProgress),
+	})
+}
+
+// reportOnboardUploadResponse logs the upload response progress.
+func (c *Client) reportOnboardUploadResponse(mpResp *multipartResponse) {
 	responseProgress := ResponseProgress{
 		Status: mpResp.StatusCode,
 		Body:   truncateBody(mpResp.Body, 500),
@@ -183,15 +209,6 @@ func (c *Client) executeZipUpload(input zipUploadInput) (*OnboardUploadResult, e
 		Message: fmt.Sprintf("Upload response: %d", mpResp.StatusCode),
 		Details: toProgress(responseProgress),
 	})
-
-	parseInput := zipUploadResponseInput{
-		StatusCode: mpResp.StatusCode,
-		Body:       mpResp.Body,
-		Endpoint:   input.Endpoint,
-		URL:        url,
-		PluginSlug: input.PluginSlug,
-	}
-	return c.parseZipUploadResponse(parseInput)
 }
 
 // multipartResponse holds the result of a multipart HTTP request.
@@ -216,34 +233,26 @@ func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType 
 	defer resp.Body.Close()
 
 	respBytes, _ := io.ReadAll(resp.Body)
+
 	return &multipartResponse{StatusCode: resp.StatusCode, Body: string(respBytes)}, nil
 }
 
-// zipUploadResponseInput bundles parameters for parseZipUploadResponse.
-type zipUploadResponseInput struct {
-	StatusCode int
-	Body       string
-	Endpoint   string
-	URL        string
-	PluginSlug string
-}
-
-// parseZipUploadResponse validates the status code and unmarshals the result.
-func (c *Client) parseZipUploadResponse(input zipUploadResponseInput) (*OnboardUploadResult, error) {
-	if input.StatusCode != http.StatusOK && input.StatusCode != http.StatusCreated {
+// parseOnboardUploadResponse validates the status code and unmarshals the result.
+func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint, url, pluginSlug string) (*OnboardUploadResult, error) {
+	if mpResp.StatusCode != http.StatusOK && mpResp.StatusCode != http.StatusCreated {
 		return nil, &APIError{
 			Operation:    "upload plugin zip",
 			Method:       httpmethod.Post.Value(),
-			Endpoint:     input.Endpoint,
-			Url:          input.URL,
-			StatusCode:   input.StatusCode,
-			ResponseBody: truncateBody(input.Body, 8192),
-			PluginSlugIn: input.PluginSlug,
+			Endpoint:     endpoint,
+			Url:          url,
+			StatusCode:   mpResp.StatusCode,
+			ResponseBody: truncateBody(mpResp.Body, 8192),
+			PluginSlugIn: pluginSlug,
 		}
 	}
 
 	var result OnboardUploadResult
-	if err := json.Unmarshal([]byte(input.Body), &result); err != nil {
+	if err := json.Unmarshal([]byte(mpResp.Body), &result); err != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}
@@ -279,6 +288,7 @@ func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) (*Uploa
 		IsActivate:   isActivate,
 		UploadSource: uploadsource.RestAPI,
 	}
+
 	return c.UploadPluginViaUploader(uploadInput)
 }
 
@@ -287,5 +297,6 @@ func truncateBody(body string, maxLen int) string {
 	if len(body) > maxLen {
 		return body[:maxLen] + "..."
 	}
+
 	return body
 }

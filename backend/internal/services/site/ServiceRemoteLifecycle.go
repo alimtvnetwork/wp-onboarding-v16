@@ -102,9 +102,25 @@ type remoteActionInput struct {
 func (s *Service) executeRemotePluginAction(ctx context.Context, input remoteActionInput) error {
 	startTime := time.Now()
 
-	site, err := s.resolveRemoteSite(ctx, input.SiteId)
+	ref, err := s.setupRemoteActionRef(ctx, input)
 	if err != nil {
 		return err
+	}
+
+	client, err := s.connectForRemoteAction(ref)
+	if err != nil {
+		return err
+	}
+	ref.Client = client
+
+	return s.runRemoteAction(ctx, ref, startTime, input.ExecFn)
+}
+
+// setupRemoteActionRef resolves the site, creates the ref, and starts session.
+func (s *Service) setupRemoteActionRef(ctx context.Context, input remoteActionInput) (*remoteActionRef, error) {
+	site, err := s.resolveRemoteSite(ctx, input.SiteId)
+	if err != nil {
+		return nil, err
 	}
 
 	ref := &remoteActionRef{
@@ -117,13 +133,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, input remoteAct
 	ref.SessionID = s.initRemoteActionSession(ref)
 	s.broadcastRemoteActionStarted(ref)
 
-	client, err := s.connectForRemoteAction(ref)
-	if err != nil {
-		return err
-	}
-	ref.Client = client
-
-	return s.runRemoteAction(ctx, ref, startTime, input.ExecFn)
+	return ref, nil
 }
 
 // runRemoteAction executes the action and handles success/failure.
@@ -160,21 +170,29 @@ func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 		return ""
 	}
 
-	var sessionType session.SessionType
-	switch ref.Action {
-	case "enable":
-		sessionType = session.SessionTypeRemotePluginEnable
-	case "disable":
-		sessionType = session.SessionTypeRemotePluginDisable
-	case "delete":
-		sessionType = session.SessionTypeRemotePluginDelete
-	default:
-		sessionType = session.SessionType("remote_plugin_action")
-	}
+	sessionType := resolveRemoteSessionType(ref.Action)
 
-	sessionId, _ := s.sessionService.StartSession(session.StartSessionInput{Type: sessionType, PluginID: 0, SiteID: ref.SiteID, PluginName: ref.PluginSlug, SiteName: ref.Site.Name})
+	startInput := session.StartSessionInput{
+		Type: sessionType, PluginID: 0, SiteID: ref.SiteID,
+		PluginName: ref.PluginSlug, SiteName: ref.Site.Name,
+	}
+	sessionId, _ := s.sessionService.StartSession(startInput)
 
 	return sessionId
+}
+
+// resolveRemoteSessionType maps an action string to a session type.
+func resolveRemoteSessionType(action string) session.SessionType {
+	switch action {
+	case "enable":
+		return session.SessionTypeRemotePluginEnable
+	case "disable":
+		return session.SessionTypeRemotePluginDisable
+	case "delete":
+		return session.SessionTypeRemotePluginDelete
+	default:
+		return session.SessionType("remote_plugin_action")
+	}
 }
 
 // broadcastRemoteActionStarted sends session start logs and WS broadcast.

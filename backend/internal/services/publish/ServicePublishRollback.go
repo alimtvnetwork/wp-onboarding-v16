@@ -91,25 +91,35 @@ func (s *Service) reportNoBackupAvailable(pctx *publishContext) error {
 
 // performRollbackUpload re-uploads the backup ZIP and logs the result.
 func (s *Service) performRollbackUpload(ctx context.Context, pctx *publishContext, preUploadBackupZip string) error {
-	restoreCtx := StageContext{
-		What: "Re-uploading pre-publish backup to restore previous version",
-	}
-	restoreLog := pctx.stageLog(loglevel.Info, publishstep.Rollback, restoreCtx)
-	s.broadcastStageLog(restoreLog)
+	s.logRollbackRestoreStart(pctx)
 
 	uploadResult := s.uploadPlugin(ctx, pctx.WPClient, preUploadBackupZip, pctx.Mapping.RemoteSlug)
 	if uploadResult.HasError() {
 		return apperror.Wrap(uploadResult.AppError(), apperror.ErrWPConnection, "rollback upload failed")
 	}
 
+	s.logRollbackRestoreComplete(pctx)
+
+	return nil
+}
+
+// logRollbackRestoreStart logs the rollback restore start.
+func (s *Service) logRollbackRestoreStart(pctx *publishContext) {
+	restoreCtx := StageContext{
+		What: "Re-uploading pre-publish backup to restore previous version",
+	}
+	restoreLog := pctx.stageLog(loglevel.Info, publishstep.Rollback, restoreCtx)
+	s.broadcastStageLog(restoreLog)
+}
+
+// logRollbackRestoreComplete logs the rollback restore completion.
+func (s *Service) logRollbackRestoreComplete(pctx *publishContext) {
 	doneCtx := StageContext{
 		What:   "Rollback upload complete",
 		Result: "Previous plugin version restored successfully",
 	}
 	doneLog := pctx.stageLog(loglevel.Info, publishstep.Rollback, doneCtx)
 	s.broadcastStageLog(doneLog)
-
-	return nil
 }
 
 // reportRollbackOutcome logs and sets the final rollback status on the result.
@@ -266,25 +276,37 @@ type historyEntryInput struct {
 
 // buildHistoryEntry constructs a PublishHistory from the publish context.
 func buildHistoryEntry(input historyEntryInput) models.PublishHistory {
+	entry := buildHistoryBase(input)
+	applyHistoryResult(&entry, input.Result)
+
+	return entry
+}
+
+// buildHistoryBase constructs the base history entry from plugin/site/options.
+func buildHistoryBase(input historyEntryInput) models.PublishHistory {
 	historyStatus := enumstatus.Success.String()
 	if !input.Result.IsSuccess {
 		historyStatus = enumstatus.Failed.String()
 	}
 
 	return models.PublishHistory{
-		PluginId:         input.PluginInfo.ID,
-		PluginName:       input.PluginInfo.Name,
-		SiteId:           input.SiteInfo.ID,
-		SiteName:         input.SiteInfo.Name,
-		SiteUrl:          input.SiteInfo.URL,
-		SessionId:        input.Result.SessionId,
-		Status:           historyStatus,
-		Mode:             input.Options.Mode.Value(),
-		FilesUpdated:     input.Result.FilesUpdated,
-		ActivationStatus: input.Result.ActivationStatus,
-		RollbackStatus:   input.Result.RollbackStatus,
-		RollbackMessage:  input.Result.RollbackMessage,
-		ErrorMessage:     input.Result.ErrorMessage,
-		DurationMs:       input.Result.Duration,
+		PluginId:   input.PluginInfo.ID,
+		PluginName: input.PluginInfo.Name,
+		SiteId:     input.SiteInfo.ID,
+		SiteName:   input.SiteInfo.Name,
+		SiteUrl:    input.SiteInfo.URL,
+		Status:     historyStatus,
+		Mode:       input.Options.Mode.Value(),
 	}
+}
+
+// applyHistoryResult populates the result fields on a PublishHistory.
+func applyHistoryResult(entry *models.PublishHistory, result *PublishResult) {
+	entry.SessionId = result.SessionId
+	entry.FilesUpdated = result.FilesUpdated
+	entry.ActivationStatus = result.ActivationStatus
+	entry.RollbackStatus = result.RollbackStatus
+	entry.RollbackMessage = result.RollbackMessage
+	entry.ErrorMessage = result.ErrorMessage
+	entry.DurationMs = result.Duration
 }

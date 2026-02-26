@@ -89,19 +89,34 @@ func (c *Client) setStandardHeaders(req *http.Request, contentType string) {
 	req.Header.Set(header.SourceMachine.Value(), sourceMachineHostname)
 }
 
-// request makes an authenticated HTTP request to the WordPress API
-func (c *Client) request(method, endpoint string, body any) (*http.Response, error) {
-	var bodyReader io.Reader
-	if body != nil {
-		jsonBody, err := json.Marshal(body)
-		if err != nil {
-			return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body")
-		}
-		bodyReader = bytes.NewReader(jsonBody)
+// marshalBody encodes the body to JSON if non-nil.
+func marshalBody(body any) (io.Reader, error) {
+	if body == nil {
+		return nil, nil
 	}
 
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body")
+	}
+
+	return bytes.NewReader(jsonBody), nil
+}
+
+// request makes an authenticated HTTP request to the WordPress API
+func (c *Client) request(method, endpoint string, body any) (*http.Response, error) {
+	bodyReader, err := marshalBody(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.buildAndSendRequest(method, endpoint, bodyReader)
+}
+
+// buildAndSendRequest creates and sends an HTTP request with standard headers.
+func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*http.Response, error) {
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
 			WithURL(url).
@@ -109,6 +124,7 @@ func (c *Client) request(method, endpoint string, body any) (*http.Response, err
 	}
 
 	c.setStandardHeaders(req, contenttype.JSON.Value())
+
 	return c.httpClient.Do(req)
 }
 

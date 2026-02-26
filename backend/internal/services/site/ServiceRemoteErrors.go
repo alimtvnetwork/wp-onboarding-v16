@@ -61,17 +61,21 @@ func (s *Service) parseErrorResponseEnvelope(details *ExtractedErrorDetails, res
 		return
 	}
 
-	if envResp.Errors.BackendMessage != "" {
-		details.ErrorMessage = envResp.Errors.BackendMessage
-	}
-	if len(envResp.Errors.DelegatedServiceErrorStack) > 0 {
-		details.DelegatedServiceErrorStack = envResp.Errors.DelegatedServiceErrorStack
-	}
-	if len(envResp.Errors.Backend) > 0 {
-		details.PhpBackendStack = envResp.Errors.Backend
-	}
-
+	applyEnvelopeErrors(details, &envResp.Errors)
 	s.parseLegacyStackFrames(details, &envResp)
+}
+
+// applyEnvelopeErrors copies envelope error fields into the details struct.
+func applyEnvelopeErrors(details *ExtractedErrorDetails, errors *envelopeErrors) {
+	if errors.BackendMessage != "" {
+		details.ErrorMessage = errors.BackendMessage
+	}
+	if len(errors.DelegatedServiceErrorStack) > 0 {
+		details.DelegatedServiceErrorStack = errors.DelegatedServiceErrorStack
+	}
+	if len(errors.Backend) > 0 {
+		details.PhpBackendStack = errors.Backend
+	}
 }
 
 // parseLegacyStackFrames extracts PHP stack trace frames from the legacy error format.
@@ -128,16 +132,7 @@ type remoteActionResolvedContext struct {
 
 // resolveRemoteActionLogContext extracts and resolves log context from details JSON.
 func (s *Service) resolveRemoteActionLogContext(siteId int64, details json.RawMessage) remoteActionResolvedContext {
-	var logCtx remoteActionLogContext
-	if len(details) > 0 {
-		_ = json.Unmarshal(details, &logCtx)
-	}
-
-	resolved := remoteActionResolvedContext{
-		SiteName:   logCtx.SiteName,
-		SiteUrl:    logCtx.SiteUrl,
-		PluginSlug: logCtx.PluginSlug,
-	}
+	resolved := parseRemoteActionLogDetails(details)
 
 	s.fillMissingSiteContext(siteId, &resolved)
 
@@ -146,6 +141,20 @@ func (s *Service) resolveRemoteActionLogContext(siteId int64, details json.RawMe
 	}
 
 	return resolved
+}
+
+// parseRemoteActionLogDetails extracts context from JSON details.
+func parseRemoteActionLogDetails(details json.RawMessage) remoteActionResolvedContext {
+	var logCtx remoteActionLogContext
+	if len(details) > 0 {
+		_ = json.Unmarshal(details, &logCtx)
+	}
+
+	return remoteActionResolvedContext{
+		SiteName:   logCtx.SiteName,
+		SiteUrl:    logCtx.SiteUrl,
+		PluginSlug: logCtx.PluginSlug,
+	}
 }
 
 // fillMissingSiteContext loads site info from DB if name or URL is missing.
@@ -224,13 +233,22 @@ func (s *Service) fetchAndAttachPhpErrorSessions(ref *remoteActionRef, errDetail
 		return
 	}
 
-	if result == nil || len(result.Entries) == 0 {
-		s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_errors", Message: "No recent PHP error sessions found on remote site"})
-
+	if s.isPhpErrorResultEmpty(ref, result) {
 		return
 	}
 
 	s.attachPhpErrorEntries(ref, result, errDetails)
+}
+
+// isPhpErrorResultEmpty checks if the result is empty and logs if so.
+func (s *Service) isPhpErrorResultEmpty(ref *remoteActionRef, result *wordpress.RemoteErrorSessionsResult) bool {
+	if result == nil || len(result.Entries) == 0 {
+		s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_errors", Message: "No recent PHP error sessions found on remote site"})
+
+		return true
+	}
+
+	return false
 }
 
 // attachPhpErrorEntries collects and attaches PHP error entries to the error details.
@@ -283,6 +301,11 @@ func (s *Service) fetchAndAttachPhpStackTrace(ref *remoteActionRef, errDetails *
 		return
 	}
 
+	s.applyStackTraceIfPresent(ref, logsResult, errDetails)
+}
+
+// applyStackTraceIfPresent applies the stack trace if it exists, otherwise logs absence.
+func (s *Service) applyStackTraceIfPresent(ref *remoteActionRef, logsResult *wordpress.RemoteErrorLogsResult, errDetails *ExtractedErrorDetails) {
 	if isStackTraceMissing(logsResult) {
 		s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_stacktrace", Message: "No stacktrace.txt content available on remote site"})
 

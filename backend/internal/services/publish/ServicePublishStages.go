@@ -46,26 +46,29 @@ type PackageStageResult struct {
 
 // executePackageStage builds the ZIP package and returns the result
 func (s *Service) executePackageStage(pctx *publishContext) PackageStageResult {
-	var zipPath string
-	var fileCount int
+	var buildResult *PackageBuildResult
 
 	stage := s.runStage("package", func() error {
 		s.broadcastProgress(pctx.progress(publishstep.Packaging, 30, "Building package..."))
 
 		var err error
-		buildResult, err := s.buildPluginPackage(pctx)
-		if err != nil {
-			return err
-		}
-		zipPath = buildResult.ZipPath
-		fileCount = buildResult.FileCount
+		buildResult, err = s.buildPluginPackage(pctx)
 
-		return nil
+		return err
 	})
 
+	return buildPackageStageResult(buildResult, stage)
+}
+
+// buildPackageStageResult constructs the PackageStageResult from build output.
+func buildPackageStageResult(buildResult *PackageBuildResult, stage Stage) PackageStageResult {
+	if buildResult == nil {
+		return PackageStageResult{Stage: stage}
+	}
+
 	return PackageStageResult{
-		ZipPath:   zipPath,
-		FileCount: fileCount,
+		ZipPath:   buildResult.ZipPath,
+		FileCount: buildResult.FileCount,
 		Stage:     stage,
 	}
 }
@@ -137,6 +140,18 @@ func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, error) {
 
 // buildSelectiveZipResult creates a selective ZIP with chosen files.
 func (s *Service) buildSelectiveZipResult(pctx *publishContext) (*PackageBuildResult, error) {
+	s.broadcastSelectiveZipLog(pctx)
+
+	path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PackageBuildResult{ZipPath: path, FileCount: len(pctx.Options.Files)}, nil
+}
+
+// broadcastSelectiveZipLog sends the selective ZIP creation log.
+func (s *Service) broadcastSelectiveZipLog(pctx *publishContext) {
 	selectDetails := toDetails(SelectedFilesDetails{
 		SelectedFiles: pctx.Options.Files,
 	})
@@ -149,13 +164,6 @@ func (s *Service) buildSelectiveZipResult(pctx *publishContext) (*PackageBuildRe
 		Details:  selectDetails,
 	}
 	s.broadcastDetailedLog(selectLog)
-
-	path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
-	if err != nil {
-		return nil, err
-	}
-
-	return &PackageBuildResult{ZipPath: path, FileCount: len(pctx.Options.Files)}, nil
 }
 
 // buildFullZipResult creates a full ZIP with all plugin files.
@@ -214,17 +222,32 @@ func (s *Service) saveRollbackZip(pctx *publishContext, exportResult *wordpress.
 		return ""
 	}
 
-	backupPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-rollback-%d.zip", pctx.Mapping.RemoteSlug, time.Now().Unix()))
+	backupPath := s.writeRollbackZipToDisk(pctx.Mapping.RemoteSlug, zipData)
+	if backupPath == "" {
+		return ""
+	}
+
+	s.logRollbackZipSaved(pctx, zipData, exportResult.FileCount)
+
+	return backupPath
+}
+
+// writeRollbackZipToDisk writes the decoded zip data to a temp file.
+func (s *Service) writeRollbackZipToDisk(remoteSlug string, zipData []byte) string {
+	backupPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-rollback-%d.zip", remoteSlug, time.Now().Unix()))
 	if writeErr := os.WriteFile(backupPath, zipData, 0644); writeErr != nil {
 		return ""
 	}
 
+	return backupPath
+}
+
+// logRollbackZipSaved logs that the rollback zip was saved.
+func (s *Service) logRollbackZipSaved(pctx *publishContext, zipData []byte, fileCount int) {
 	savedCtx := StageContext{
 		What:   "Pre-upload backup created",
-		Result: fmt.Sprintf("Saved %s (%d files)", formatBytes(int64(len(zipData))), exportResult.FileCount),
+		Result: fmt.Sprintf("Saved %s (%d files)", formatBytes(int64(len(zipData))), fileCount),
 	}
 	savedLog := pctx.stageLog(loglevel.Info, publishstep.PreBackup, savedCtx)
 	s.broadcastStageLog(savedLog)
-
-	return backupPath
 }

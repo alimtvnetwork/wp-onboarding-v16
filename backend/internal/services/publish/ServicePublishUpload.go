@@ -70,18 +70,28 @@ func (s *Service) handleUploadRetryFailure(pctx *publishContext, retryResult Ret
 // logUploadOutcome logs the upload result based on whether it was performed.
 func (s *Service) logUploadOutcome(pctx *publishContext, outcome UploadOutcome, zipSize int64, startTime time.Time, attempts int) {
 	if outcome.IsPerformed {
-		successInput := logUploadSuccessInput{
-			ZipSize:      zipSize,
-			StartTime:    startTime,
-			IsActivated:  outcome.IsActivated,
-			Attempts:     attempts,
-			UploadResult: outcome.UploadResult,
-		}
-		s.logUploadSuccess(pctx, successInput)
+		s.logPerformedUpload(pctx, outcome, zipSize, startTime, attempts)
 
 		return
 	}
 
+	s.logSimulatedUpload(pctx)
+}
+
+// logPerformedUpload logs a real upload that was performed.
+func (s *Service) logPerformedUpload(pctx *publishContext, outcome UploadOutcome, zipSize int64, startTime time.Time, attempts int) {
+	successInput := logUploadSuccessInput{
+		ZipSize:      zipSize,
+		StartTime:    startTime,
+		IsActivated:  outcome.IsActivated,
+		Attempts:     attempts,
+		UploadResult: outcome.UploadResult,
+	}
+	s.logUploadSuccess(pctx, successInput)
+}
+
+// logSimulatedUpload logs a simulated upload when no companion plugin is available.
+func (s *Service) logSimulatedUpload(pctx *publishContext) {
 	simCtx := StageContext{
 		What:   "Upload ZIP to WordPress",
 		Result: "SIMULATED - no companion plugin available",

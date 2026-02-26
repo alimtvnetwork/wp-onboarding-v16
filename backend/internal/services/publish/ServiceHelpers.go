@@ -41,11 +41,17 @@ func scanMapping(row *sql.Row) (*models.PluginMapping, error) {
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "mapping not found")
 	}
 
+	applyMappingTimestamps(&m, lastSyncAt, lastBackupAt, createdAt, updatedAt)
+
+	return &m, nil
+}
+
+// applyMappingTimestamps parses and assigns timestamp fields on a PluginMapping.
+func applyMappingTimestamps(m *models.PluginMapping, lastSyncAt, lastBackupAt, createdAt, updatedAt sql.NullString) {
 	m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
 	m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
 	m.CreatedAt = dbops.ParseDateTime(createdAt.String)
 	m.UpdatedAt = dbops.ParseDateTime(updatedAt.String)
-	return &m, nil
 }
 
 // SiteCredentialsResult holds a site and its decrypted password.
@@ -82,6 +88,11 @@ func (s *Service) querySite(ctx context.Context, siteID int64) (*models.Site, er
 	`
 	row := s.db.QueryRowContext(ctx, query, siteID)
 
+	return scanSiteRow(row)
+}
+
+// scanSiteRow scans a site row into a models.Site.
+func scanSiteRow(row *sql.Row) (*models.Site, error) {
 	var site models.Site
 	var lastTestedAt, lastSyncAt, createdAt, updatedAt sql.NullString
 
@@ -94,11 +105,17 @@ func (s *Service) querySite(ctx context.Context, siteID int64) (*models.Site, er
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
 
+	applySiteTimestamps(&site, lastTestedAt, lastSyncAt, createdAt, updatedAt)
+
+	return &site, nil
+}
+
+// applySiteTimestamps parses and assigns timestamp fields on a Site.
+func applySiteTimestamps(site *models.Site, lastTestedAt, lastSyncAt, createdAt, updatedAt sql.NullString) {
 	site.LastTestedAt = dbops.ParseNullTime(lastTestedAt)
 	site.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
 	site.CreatedAt = dbops.ParseDateTime(createdAt.String)
 	site.UpdatedAt = dbops.ParseDateTime(updatedAt.String)
-	return &site, nil
 }
 
 // decryptSitePassword decrypts the site password via the decryptor.
@@ -146,31 +163,45 @@ func (s *Service) simulateUpload(zipPath, slug string) apperror.Result[UploadOut
 func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug string) apperror.Result[UploadOutcome] {
 	s.log.Info("Using Riseup Asia Uploader for upload", "slug", slug)
 
+	result, err := s.callUploaderUpload(wpClient, zipPath, slug)
+	if err != nil {
+		return apperror.Fail[UploadOutcome](apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper"))
+	}
+
+	s.logUploaderSuccess(slug, result)
+
+	return apperror.Ok(buildUploadOutcome(slug, result))
+}
+
+// callUploaderUpload sends the upload request to the uploader.
+func (s *Service) callUploaderUpload(wpClient *wordpress.Client, zipPath, slug string) (*wordpress.UploaderUploadResult, error) {
 	uploadInput := wordpress.UploadInput{
 		ZipPath:      zipPath,
 		Slug:         slug,
 		IsActivate:   true,
 		UploadSource: uploadsource.RestAPI,
 	}
-	result, err := wpClient.UploadPluginViaUploader(uploadInput)
-	if err != nil {
-		return apperror.Fail[UploadOutcome](apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper"))
-	}
 
-	onboardResult := buildOnboardResult(slug, result)
+	return wpClient.UploadPluginViaUploader(uploadInput)
+}
+
+// logUploaderSuccess logs the successful upload result.
+func (s *Service) logUploaderSuccess(slug string, result *wordpress.UploaderUploadResult) {
 	s.log.Info("Plugin uploaded via Riseup Asia Uploader",
 		"slug", slug,
 		"success", result.Success,
 		"message", result.Message,
 		"activated", result.Activated,
 	)
+}
 
-	outcome := UploadOutcome{
+// buildUploadOutcome constructs an UploadOutcome from the uploader result.
+func buildUploadOutcome(slug string, result *wordpress.UploaderUploadResult) UploadOutcome {
+	return UploadOutcome{
 		IsPerformed:  true,
-		UploadResult: onboardResult,
+		UploadResult: buildOnboardResult(slug, result),
 		IsActivated:  result.Activated,
 	}
-	return apperror.Ok(outcome)
 }
 
 // buildOnboardResult converts uploader result to OnboardUploadResult.
@@ -239,6 +270,11 @@ func (s *Service) getLocalPluginVersion(pluginPath string) string {
 		return ""
 	}
 
+	return s.findVersionInPhpFiles(absPath, entries)
+}
+
+// findVersionInPhpFiles scans PHP files for a version header.
+func (s *Service) findVersionInPhpFiles(absPath string, entries []os.DirEntry) string {
 	for _, entry := range entries {
 		isSkippable := entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php")
 		if isSkippable {
@@ -249,27 +285,44 @@ func (s *Service) getLocalPluginVersion(pluginPath string) string {
 			return version
 		}
 	}
+
 	return ""
 }
 
 // extractVersionFromPhpFile reads a PHP file and extracts the Version header.
 func (s *Service) extractVersionFromPhpFile(dirPath, fileName string) string {
-	filePath, err := pathutil.Join(dirPath, fileName)
+	content, err := readPluginPhpFile(dirPath, fileName)
 	if err != nil {
 		return ""
 	}
-	content, err := os.ReadFile(filePath)
-	isContentMissing := err != nil || !strings.Contains(string(content), "Plugin Name:")
-	if isContentMissing {
-		return ""
+
+	return scanVersionFromContent(string(content))
+}
+
+// readPluginPhpFile reads a PHP file and validates it contains a Plugin Name header.
+func readPluginPhpFile(dirPath, fileName string) ([]byte, error) {
+	filePath, err := pathutil.Join(dirPath, fileName)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, line := range strings.Split(string(content), "\n") {
+	content, err := os.ReadFile(filePath)
+	if err != nil || !strings.Contains(string(content), "Plugin Name:") {
+		return nil, fmt.Errorf("not a plugin file")
+	}
+
+	return content, nil
+}
+
+// scanVersionFromContent scans PHP content lines for a version header.
+func scanVersionFromContent(content string) string {
+	for _, line := range strings.Split(content, "\n") {
 		version := parseVersionLine(strings.TrimSpace(line))
 		if version != "" {
 			return version
 		}
 	}
+
 	return ""
 }
 
