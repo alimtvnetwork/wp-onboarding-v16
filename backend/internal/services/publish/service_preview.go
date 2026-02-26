@@ -14,7 +14,7 @@ import (
 
 // PreviewPublish returns a preview of what files will change during publish
 func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) apperror.Result[PublishPreviewResult] {
-	result := &PublishPreviewResult{PluginID: pluginID, SiteID: siteID, Files: []FilePreview{}}
+	result := &PublishPreviewResult{PluginId: pluginID, SiteId: siteID, Files: []FilePreview{}}
 
 	pluginInfo, err := s.loadPluginForPreview(ctx, pluginID, result)
 	if err != nil {
@@ -71,7 +71,7 @@ func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64
 		return nil, "", nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
 	result.SiteName = siteInfo.Name
-	result.SiteURL = siteInfo.URL
+	result.SiteUrl = siteInfo.URL
 
 	mapping, mapErr := s.getMapping(ctx, pluginID, siteID)
 	if mapErr != nil {

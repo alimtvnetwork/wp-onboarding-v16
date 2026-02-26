@@ -13,8 +13,9 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database/dbops"
-	"wp-plugin-publish/internal/enums/log_level"
-	"wp-plugin-publish/internal/enums/upload_source"
+	loglevel "wp-plugin-publish/internal/enums/log_level"
+	publishstep "wp-plugin-publish/internal/enums/publish_step"
+	uploadsource "wp-plugin-publish/internal/enums/upload_source"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -260,8 +261,8 @@ func parseVersionLine(trimmed string) string {
 
 // cleanupZipInput bundles parameters for cleanupZip.
 type cleanupZipInput struct {
-	PluginID        int64
-	SiteID          int64
+	PluginId        int64
+	SiteId          int64
 	ZipPath         string
 	IsPublishFailed bool
 	IsKeepZipFiles  bool
@@ -274,23 +275,49 @@ func (s *Service) cleanupZip(input cleanupZipInput) {
 	}
 
 	if input.IsPublishFailed {
-		s.broadcastDetailedLog(DetailedLogInput{PluginID: input.PluginID, SiteID: input.SiteID, Level: "info", Step: "cleanup", Message: fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", input.ZipPath), Details: toDetails(CleanupDetails{ZipPath: input.ZipPath, Reason: "publish_failed"})})
+		keepLog := DetailedLogInput{
+			PluginId: input.PluginId,
+			SiteId:   input.SiteId,
+			Level:    loglevel.Info,
+			Step:     publishstep.Cleanup,
+			Message:  fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", input.ZipPath),
+			Details:  toDetails(CleanupDetails{ZipPath: input.ZipPath, Reason: "publish_failed"}),
+		}
+		s.broadcastDetailedLog(keepLog)
+
 		return
 	}
 
 	if input.IsKeepZipFiles {
-		s.broadcastDetailedLog(DetailedLogInput{PluginID: input.PluginID, SiteID: input.SiteID, Level: "info", Step: "cleanup", Message: fmt.Sprintf("Keeping temp ZIP (user setting): %s", input.ZipPath), Details: toDetails(CleanupDetails{ZipPath: input.ZipPath, IsKeepZipFiles: true})})
+		keepLog := DetailedLogInput{
+			PluginId: input.PluginId,
+			SiteId:   input.SiteId,
+			Level:    loglevel.Info,
+			Step:     publishstep.Cleanup,
+			Message:  fmt.Sprintf("Keeping temp ZIP (user setting): %s", input.ZipPath),
+			Details:  toDetails(CleanupDetails{ZipPath: input.ZipPath, IsKeepZipFiles: true}),
+		}
+		s.broadcastDetailedLog(keepLog)
+
 		return
 	}
 
-	s.broadcastDetailedLog(DetailedLogInput{PluginID: input.PluginID, SiteID: input.SiteID, Level: "debug", Step: "cleanup", Message: fmt.Sprintf("Removing temp ZIP: %s", input.ZipPath), Details: toDetails(CleanupDetails{IsKeepZipFiles: input.IsKeepZipFiles})})
+	removeLog := DetailedLogInput{
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
+		Level:    loglevel.Debug,
+		Step:     publishstep.Cleanup,
+		Message:  fmt.Sprintf("Removing temp ZIP: %s", input.ZipPath),
+		Details:  toDetails(CleanupDetails{IsKeepZipFiles: input.IsKeepZipFiles}),
+	}
+	s.broadcastDetailedLog(removeLog)
 	os.Remove(input.ZipPath)
 }
 
 // logZipInput bundles parameters for logZipCreated.
 type logZipInput struct {
-	PluginID  int64
-	SiteID    int64
+	PluginId  int64
+	SiteId    int64
 	ZipPath   string
 	FileCount int
 }
@@ -303,21 +330,49 @@ func (s *Service) logZipCreated(input logZipInput) {
 	}
 
 	zipEntries := s.getZipStructure(input.ZipPath)
-	s.broadcastDetailedLog(DetailedLogInput{PluginID: input.PluginID, SiteID: input.SiteID, Level: "info", Step: "package", Message: fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(input.ZipPath), fi.Info.Size()), Details: toDetails(ZipCreatedDetails{ZipPath: input.ZipPath, ZipSize: fi.Info.Size(), FileCount: input.FileCount, ZipStructure: zipEntries})})
-	s.logZipEntries(input.PluginID, input.SiteID, zipEntries)
+
+	zipLog := DetailedLogInput{
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
+		Level:    loglevel.Info,
+		Step:     publishstep.Package,
+		Message:  fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(input.ZipPath), fi.Info.Size()),
+		Details: toDetails(ZipCreatedDetails{
+			ZipPath:      input.ZipPath,
+			ZipSize:      fi.Info.Size(),
+			FileCount:    input.FileCount,
+			ZipStructure: zipEntries,
+		}),
+	}
+	s.broadcastDetailedLog(zipLog)
+	s.logZipEntries(input.PluginId, input.SiteId, zipEntries)
 }
 
 // logZipEntries logs individual zip entries (up to 20).
-func (s *Service) logZipEntries(pluginID, siteID int64, entries []string) {
+func (s *Service) logZipEntries(pluginId, siteId int64, entries []string) {
 	maxShow := 20
 	if len(entries) < maxShow {
 		maxShow = len(entries)
 	}
 	for i := 0; i < maxShow; i++ {
-		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "debug", Step: "package", Message: fmt.Sprintf("  └─ %s", entries[i])})
+		entryLog := DetailedLogInput{
+			PluginId: pluginId,
+			SiteId:   siteId,
+			Level:    loglevel.Debug,
+			Step:     publishstep.Package,
+			Message:  fmt.Sprintf("  └─ %s", entries[i]),
+		}
+		s.broadcastDetailedLog(entryLog)
 	}
 	if len(entries) > 20 {
-		s.broadcastDetailedLog(DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: "debug", Step: "package", Message: fmt.Sprintf("  ... and %d more files", len(entries)-20)})
+		moreLog := DetailedLogInput{
+			PluginId: pluginId,
+			SiteId:   siteId,
+			Level:    loglevel.Debug,
+			Step:     publishstep.Package,
+			Message:  fmt.Sprintf("  ... and %d more files", len(entries)-20),
+		}
+		s.broadcastDetailedLog(moreLog)
 	}
 }
 
@@ -330,7 +385,7 @@ func (s *Service) logUploadError(pctx *publishContext, attempts int, appErr *app
 		Result:  fmt.Sprintf("FAILED: %s", appErr.Error()),
 		Details: toDetails(inner),
 	}
-	errLog := pctx.stageLog("error", "upload", errCtx)
+	errLog := pctx.stageLog(loglevel.Error, publishstep.Upload, errCtx)
 	s.broadcastStageLog(errLog)
 }
 
@@ -367,10 +422,15 @@ func (s *Service) logUploadSuccess(pctx *publishContext, input logUploadSuccessI
 	if input.IsActivated {
 		resultMsg = "Plugin uploaded and activated"
 	}
+
 	inner := buildUploadSuccessInner(pctx.Mapping.RemoteSlug, input)
-	s.broadcastStageLog(pctx.stageLog("info", "upload", StageContext{
-		What: fmt.Sprintf("Upload ZIP (%s)", formatBytes(input.ZipSize)), Result: resultMsg, Details: toDetails(inner),
-	}))
+	successCtx := StageContext{
+		What:    fmt.Sprintf("Upload ZIP (%s)", formatBytes(input.ZipSize)),
+		Result:  resultMsg,
+		Details: toDetails(inner),
+	}
+	successLog := pctx.stageLog(loglevel.Info, publishstep.Upload, successCtx)
+	s.broadcastStageLog(successLog)
 }
 
 // buildUploadSuccessInner constructs success detail struct.
@@ -389,24 +449,44 @@ func buildUploadSuccessInner(slug string, input logUploadSuccessInput) UploadSuc
 type activationErrorInput struct {
 	EndpointURL string
 	StartTime   time.Time
-	Err         error
+	Err         *apperror.AppError
 }
 
 // logActivationError logs a structured activation error
 func (s *Service) logActivationError(pctx *publishContext, input activationErrorInput) {
 	inner := buildActivateErrorInner(pctx.Mapping.RemoteSlug, input.StartTime, input.Err)
-	s.broadcastStageLog(pctx.stageLog(loglevel.Error.String(), "activate", StageContext{
-		What: "Activate plugin via Riseup Asia Uploader", Why: "Enable plugin after upload",
-		Where: input.EndpointURL, Result: fmt.Sprintf("FAILED: %s", input.Err.Error()), Details: toDetails(inner),
-	}))
+
+	errCtx := StageContext{
+		What:    "Activate plugin via Riseup Asia Uploader",
+		Why:     "Enable plugin after upload",
+		Where:   input.EndpointURL,
+		Result:  fmt.Sprintf("FAILED: %s", input.Err.Error()),
+		Details: toDetails(inner),
+	}
+	errLog := pctx.stageLog(loglevel.Error, publishstep.Activate, errCtx)
+	s.broadcastStageLog(errLog)
 }
 
 // buildActivateErrorInner constructs activation error details.
-func buildActivateErrorInner(slug string, startTime time.Time, err error) ActivateErrorInner {
-	inner := ActivateErrorInner{RemoteSlug: slug, DurationMs: time.Since(startTime).Milliseconds()}
-	if apiErr, ok := err.(*wordpress.APIError); ok {
-		inner.Request = &ActivateRequestInfo{Method: apiErr.Method, Endpoint: apiErr.Endpoint, URL: apiErr.URL}
-		inner.Response = &ActivateResponseInfo{Status: apiErr.StatusCode, Body: truncateString(apiErr.ResponseBody, 2000)}
+func buildActivateErrorInner(slug string, startTime time.Time, appErr *apperror.AppError) ActivateErrorInner {
+	inner := ActivateErrorInner{
+		RemoteSlug: slug,
+		DurationMs: time.Since(startTime).Milliseconds(),
 	}
+
+	if cause := appErr.Unwrap(); cause != nil {
+		if apiErr, ok := cause.(*wordpress.APIError); ok {
+			inner.Request = &ActivateRequestInfo{
+				Method:   apiErr.Method,
+				Endpoint: apiErr.Endpoint,
+				URL:      apiErr.URL,
+			}
+			inner.Response = &ActivateResponseInfo{
+				Status: apiErr.StatusCode,
+				Body:   truncateString(apiErr.ResponseBody, 2000),
+			}
+		}
+	}
+
 	return inner
 }
