@@ -129,7 +129,7 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 			continue
 		}
 
-		id, err := db.CreateSeedSite(site.Name, normalizedUrl, site.Username, encryptedPassword, site.Category)
+		id, err := db.CreateSeedSite(database.SeedSiteInput{Name: site.Name, URL: normalizedUrl, Username: site.Username, PasswordEncrypted: encryptedPassword, Category: site.Category})
 		if err != nil {
 			log.Error("Failed to create seed site", "name", site.Name, "error", err)
 			continue
@@ -151,7 +151,7 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 			log.Info("Plugin exists in DB", "id", existingId, "name", plugin.Name)
 			pluginId = existingId
 		} else {
-			pluginId, err = db.CreateSeedPlugin(plugin.Name, plugin.Path, plugin.Category, plugin.GitEnabled, plugin.AutoPublish)
+			pluginId, err = db.CreateSeedPlugin(database.SeedPluginInput{Name: plugin.Name, Path: plugin.Path, Category: plugin.Category, GitEnabled: plugin.GitEnabled, AutoPublish: plugin.AutoPublish})
 			if err != nil {
 				log.Error("Failed to create seed plugin", "name", plugin.Name, "path", plugin.Path, "error", err)
 				continue

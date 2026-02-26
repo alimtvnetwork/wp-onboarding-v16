@@ -153,15 +153,24 @@ type RemoteErrorSessionsResult struct {
 	StackTraceFrames []PHPStackTraceFrame      `json:"stackTraceFrames,omitempty"` // external key
 }
 
+// ErrorSessionsInput bundles parameters for FetchRemoteErrorSessions.
+type ErrorSessionsInput struct {
+	Level   string
+	Search  string
+	SinceID int
+	Limit   int
+	Offset  int
+}
+
 // FetchRemoteErrorSessions retrieves structured error entries from the WordPress plugin's
 // error_sessions SQLite table.
-func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID int, limit int, offset int) (*RemoteErrorSessionsResult, error) {
+func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) (*RemoteErrorSessionsResult, error) {
 	namespace := c.resolveNamespace()
 	if namespace == "" {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
-	endpoint := buildErrorSessionsEndpoint(namespace, level, search, sinceID, limit, offset)
+	endpoint := buildErrorSessionsEndpoint(namespace, input.Level, input.Search, input.SinceID, input.Limit, input.Offset)
 	return doAPICall[RemoteErrorSessionsResult](c, apiCallInput{
 		Method: "GET", Endpoint: endpoint, Operation: "fetch remote error sessions",
 		ErrorCode: apperror.ErrWPConnection,

@@ -189,7 +189,12 @@ func (s *Service) getErrorLogPath(sessionID string) (string, error) {
 }
 
 // StartSession creates a new session directory and returns its ID
-func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error) {
+func (s *Service) StartSession(input StartSessionInput) (string, error) {
+	sessionType := input.Type
+	pluginID := input.PluginID
+	siteID := input.SiteID
+	pluginName := input.PluginName
+	siteName := input.SiteName
 	sessionID := uuid.New().String()
 
 	session := &Session{
