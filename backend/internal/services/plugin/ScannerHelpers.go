@@ -71,7 +71,8 @@ func (s *Service) processWalkEntry(ws *walkState, filePath string, info os.FileI
 // shouldSkipEntry returns SkipDir for hidden/vendor dirs, nil otherwise.
 func shouldSkipEntry(filePath string, info os.FileInfo) *error {
 	base := filepath.Base(filePath)
-	if !strings.HasPrefix(base, ".") && base != "node_modules" && base != "vendor" {
+	isNormalEntry := !strings.HasPrefix(base, ".") && base != "node_modules" && base != "vendor"
+	if isNormalEntry {
 		return nil
 	}
 	if info.IsDir() {
@@ -116,7 +117,8 @@ func (s *Service) findMainPluginFile(path string) (*pluginHeaderInfo, error) {
 	patterns := headerPatterns()
 
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
+		isSkippable := entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php")
+		if isSkippable {
 			continue
 		}
 		info := s.parsePluginHeader(path, entry.Name(), patterns)

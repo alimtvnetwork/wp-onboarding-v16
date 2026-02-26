@@ -224,8 +224,9 @@ func CaptureStackTrace(skip int) string {
 	frameNum := 0
 	for {
 		frame, more := frames.Next()
-		// Skip runtime internals
-		if strings.Contains(frame.Function, "runtime.") && !strings.Contains(frame.Function, "runtime.main") {
+		// Skip runtime internals (but keep runtime.main)
+		isRuntimeInternal := strings.Contains(frame.Function, "runtime.") && !strings.Contains(frame.Function, "runtime.main")
+		if isRuntimeInternal {
 			if !more {
 				break
 			}
