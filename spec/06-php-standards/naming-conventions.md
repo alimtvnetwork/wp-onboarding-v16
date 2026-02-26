@@ -232,6 +232,34 @@ These are exceptions and should be minimal in modern architecture.
 
 ## Array Key Conventions
 
+### Response Array Keys — PascalCase (via `ResponseKeyType`)
+
+All keys in response arrays, service result arrays, and REST API response envelopes **must** use **PascalCase** via the `ResponseKeyType` enum. No bare camelCase or snake_case string keys are permitted.
+
+```php
+// ❌ WRONG — camelCase keys
+return array(
+    'postsMissingKeyword'    => count($this->findMissingFocusKeywords(array('post_types' => array('post')))),
+    'pagesMissingKeyword'    => count($this->findMissingFocusKeywords(array('post_types' => array('page')))),
+    'categoriesMissingKeyword' => count($this->findMissingCategoryKeywords()),
+    'oversizedDescriptions'  => count($this->findOversizedMetaDescriptions($maxLength)),
+);
+
+// ✅ CORRECT — PascalCase via ResponseKeyType enum
+return array(
+    ResponseKeyType::PostsMissingKeyword->value    => count($this->findMissingFocusKeywords(array('post_types' => array('post')))),
+    ResponseKeyType::PagesMissingKeyword->value    => count($this->findMissingFocusKeywords(array('post_types' => array('page')))),
+    ResponseKeyType::CategoriesMissingKeyword->value => count($this->findMissingCategoryKeywords()),
+    ResponseKeyType::OversizedDescriptions->value  => count($this->findOversizedMetaDescriptions($maxLength)),
+);
+```
+
+**Rules:**
+- Every response/result array key must be a `ResponseKeyType` case with a PascalCase value
+- If a key appears in **two or more** response arrays, it **must** be a `ResponseKeyType` case
+- If a key appears in a **client-facing API response** (even once), it **must** be a `ResponseKeyType` case
+- Values that represent reusable categories or types **must** use typed enums, not raw strings
+
 ### Log Context Keys — camelCase
 
 Internal log context array keys (passed to logger calls) MUST use **camelCase**:
@@ -254,7 +282,7 @@ $this->db->insert(TableType::Transactions->value, array('PluginSlug' => $slug, '
 
 ### Persistence-Level Keys — Exempt
 
-WordPress `wp_options` keys, SQLite `_snapshot_meta` keys, and external API response keys retain their native casing (typically snake_case). These are **not** subject to the camelCase rule.
+WordPress `wp_options` keys, SQLite `_snapshot_meta` keys, and external API response keys retain their native casing (typically snake_case). These are **not** subject to the PascalCase rule.
 
 ---
 

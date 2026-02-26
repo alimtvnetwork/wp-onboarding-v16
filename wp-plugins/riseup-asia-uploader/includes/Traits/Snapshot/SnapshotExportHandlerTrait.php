@@ -72,10 +72,10 @@ trait SnapshotExportHandlerTrait {
             );
 
             return new WP_REST_Response(array(
-                ResponseKeyType::Success->value  => true,
-                ResponseKeyType::Filename->value => $result[ResponseKeyType::Filename->value],
-                ResponseKeyType::Size->value     => $result[ResponseKeyType::Size->value],
-                'downloadUrl' => rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::SnapshotList->value . '/' . $id . '/download'),
+                ResponseKeyType::Success->value     => true,
+                ResponseKeyType::Filename->value    => $result[ResponseKeyType::Filename->value],
+                ResponseKeyType::Size->value        => $result[ResponseKeyType::Size->value],
+                ResponseKeyType::DownloadUrl->value => rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::SnapshotList->value . '/' . $id . '/download'),
             ), HttpStatusType::Ok->value);
         }, 'export_snapshot');
     }

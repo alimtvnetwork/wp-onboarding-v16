@@ -59,9 +59,15 @@ trait SyncManifestTrait
         return new WP_REST_Response(array(
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Data->value => array(
-                'plugin' => $slug, 'fileCount' => count($result[ResponseKeyType::Files->value]),
-                'generatedAt' => DateHelper::nowIso(), ResponseKeyType::Cached->value => $result[ResponseKeyType::Cached->value] > 0,
-                'cacheStats' => array('fromCache' => $result[ResponseKeyType::Cached->value], ResponseKeyType::Computed->value => $result[ResponseKeyType::Computed->value], ResponseKeyType::Removed->value => $result[ResponseKeyType::Removed->value]),
+                ResponseKeyType::Plugin->value    => $slug,
+                ResponseKeyType::FileCount->value => count($result[ResponseKeyType::Files->value]),
+                ResponseKeyType::GeneratedAt->value => DateHelper::nowIso(),
+                ResponseKeyType::Cached->value    => $result[ResponseKeyType::Cached->value] > 0,
+                ResponseKeyType::CacheStats->value => array(
+                    ResponseKeyType::FromCache->value => $result[ResponseKeyType::Cached->value],
+                    ResponseKeyType::Computed->value  => $result[ResponseKeyType::Computed->value],
+                    ResponseKeyType::Removed->value   => $result[ResponseKeyType::Removed->value],
+                ),
                 ResponseKeyType::Files->value => $result[ResponseKeyType::Files->value],
             ),
         ), HttpStatusType::Ok->value);

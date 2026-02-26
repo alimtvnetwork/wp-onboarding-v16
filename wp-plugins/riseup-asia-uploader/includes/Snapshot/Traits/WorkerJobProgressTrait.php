@@ -41,20 +41,20 @@ trait WorkerJobProgressTrait {
         $tableProgress = $this->loadTableProgress($pdo);
 
         return array(
-            ResponseKeyType::JobId->value => (int) $job['Id'],
-            'status' => $job['Status'],
-            ResponseKeyType::TotalTables->value => $totalTables,
+            ResponseKeyType::JobId->value          => (int) $job['Id'],
+            ResponseKeyType::Status->value         => $job['Status'],
+            ResponseKeyType::TotalTables->value    => $totalTables,
             ResponseKeyType::TablesExported->value => (int) $job['TablesExported'],
-            ResponseKeyType::TotalRows->value => (int) $job['TotalRows'],
-            ResponseKeyType::PoolSize->value => $poolSize,
-            ResponseKeyType::TotalBatches->value => $totalBatches,
-            ResponseKeyType::CurrentBatch->value => (int) $job['CurrentBatch'],
-            ResponseKeyType::Errors->value => json_decode($job['ErrorsJson'] ?? '[]', true),
-            ResponseKeyType::CreatedAt->value => $job['CreatedAt'],
-            ResponseKeyType::UpdatedAt->value => $job['UpdatedAt'],
-            ResponseKeyType::CompletedAt->value => $job['CompletedAt'],
-            ResponseKeyType::TableProgress->value => $tableProgress,
-            'percent' => $totalTables > 0 ? round(((int) $job['TablesExported'] / $totalTables) * 100, 1) : 0,
+            ResponseKeyType::TotalRows->value      => (int) $job['TotalRows'],
+            ResponseKeyType::PoolSize->value       => $poolSize,
+            ResponseKeyType::TotalBatches->value   => $totalBatches,
+            ResponseKeyType::CurrentBatch->value   => (int) $job['CurrentBatch'],
+            ResponseKeyType::Errors->value         => json_decode($job['ErrorsJson'] ?? '[]', true),
+            ResponseKeyType::CreatedAt->value      => $job['CreatedAt'],
+            ResponseKeyType::UpdatedAt->value      => $job['UpdatedAt'],
+            ResponseKeyType::CompletedAt->value    => $job['CompletedAt'],
+            ResponseKeyType::TableProgress->value  => $tableProgress,
+            ResponseKeyType::Percent->value        => $totalTables > 0 ? round(((int) $job['TablesExported'] / $totalTables) * 100, 1) : 0,
         );
     }
 
