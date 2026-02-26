@@ -525,7 +525,7 @@ func (m *DBManager) ArchiveStale(maxAge time.Duration) error {
 
 	affected, _ := result.RowsAffected()
 	if affected > 0 {
-		m.log.Info("Archived stale databases", "count", affected, "max_age", maxAge.String())
+		m.log.Info("Archived stale databases", "count", affected, "maxAge", maxAge.String())
 	}
 
 	return nil
