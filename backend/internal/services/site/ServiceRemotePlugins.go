@@ -126,7 +126,8 @@ func resolvePluginSlug(p wordpress.UploaderPluginInfo) string {
 	if p.Slug != "" {
 		return p.Slug
 	}
-	if idx := strings.Index(p.File, "/"); idx > 0 {
+	idx := strings.Index(p.File, "/")
+	if idx > 0 {
 		return p.File[:idx]
 	}
 	return p.File

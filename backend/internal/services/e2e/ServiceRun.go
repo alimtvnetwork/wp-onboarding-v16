@@ -147,7 +147,8 @@ func (s *serviceImpl) runSuiteCases(ctx context.Context, run *TestRun, suite Tes
 	}
 
 	for _, tc := range cases {
-		if shouldStop := s.runSingleCase(ctx, RunSingleCaseInput{Run: run, Suite: suite, Case: tc, Opts: opts}); shouldStop {
+		shouldStop := s.runSingleCase(ctx, RunSingleCaseInput{Run: run, Suite: suite, Case: tc, Opts: opts})
+		if shouldStop {
 			return true
 		}
 	}

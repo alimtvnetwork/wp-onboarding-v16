@@ -156,7 +156,8 @@ func (c *Client) testAuthentication(result *ConnectionInfo) error {
 			WithUsername(c.username)
 	}
 
-	if authErr := c.checkAuthStatus(authResp.StatusCode, authResp.Body); authErr != nil {
+	authErr := c.checkAuthStatus(authResp.StatusCode, authResp.Body)
+	if authErr != nil {
 		return authErr
 	}
 

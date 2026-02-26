@@ -242,7 +242,8 @@ func (s *Service) getLocalPluginVersion(pluginPath string) string {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
 			continue
 		}
-		if version := s.extractVersionFromPhpFile(absPath, entry.Name()); version != "" {
+		version := s.extractVersionFromPhpFile(absPath, entry.Name())
+		if version != "" {
 			return version
 		}
 	}

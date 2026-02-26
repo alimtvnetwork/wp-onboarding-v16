@@ -102,10 +102,11 @@ func (l *Logger) log(level Level, msg string, keyvals ...any) {
 		}
 		// Keep full relative file path for better debugging
 		// Try to make it relative from "internal/" or "pkg/"
-		if idx := strings.Index(file, "internal/"); idx != -1 {
+		idx := strings.Index(file, "internal/")
+		if idx != -1 {
 			file = file[idx:]
-		} else if idx := strings.Index(file, "pkg/"); idx != -1 {
-			file = file[idx:]
+		} else if pkgIdx := strings.Index(file, "pkg/"); pkgIdx != -1 {
+			file = file[pkgIdx:]
 		} else {
 			file = filepath.Base(file)
 		}

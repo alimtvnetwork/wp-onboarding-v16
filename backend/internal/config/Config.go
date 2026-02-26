@@ -121,11 +121,15 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if key := os.Getenv("WPP_ENCRYPTION_KEY"); key != "" {
+	key := os.Getenv("WPP_ENCRYPTION_KEY")
+	if key != "" {
 		cfg.Security.EncryptionKey = key
 	}
-	if port := os.Getenv("WPP_PORT"); port != "" {
-		if p, err := strconv.Atoi(port); err == nil {
+
+	port := os.Getenv("WPP_PORT")
+	if port != "" {
+		p, err := strconv.Atoi(port)
+		if err == nil {
 			cfg.Server.Port = p
 		}
 	}

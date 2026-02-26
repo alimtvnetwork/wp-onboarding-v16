@@ -153,7 +153,8 @@ func (s *Service) fillMissingSiteContext(siteId int64, ctx *remoteActionResolved
 	if (ctx.SiteName != "" && ctx.SiteUrl != "") || siteId <= 0 {
 		return
 	}
-	if siteResult := s.GetById(context.Background(), siteId); siteResult.IsSafe() {
+	siteResult := s.GetById(context.Background(), siteId)
+	if siteResult.IsSafe() {
 		site := siteResult.Value()
 		if ctx.SiteName == "" {
 			ctx.SiteName = site.Name

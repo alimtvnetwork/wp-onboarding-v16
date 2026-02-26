@@ -130,7 +130,8 @@ func (s *serviceImpl) verifyPluginName(id int64, expected string) error {
 	if err != nil {
 		return fmt.Errorf("GET /plugins/%d failed: %w", id, err)
 	}
-	if name := getResp.dataField("name"); name != expected {
+	name := getResp.dataField("name")
+	if name != expected {
 		return fmt.Errorf("expected name '%s', got '%s'", expected, name)
 	}
 	return nil

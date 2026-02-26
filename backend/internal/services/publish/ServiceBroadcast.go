@@ -417,7 +417,8 @@ func parseNameDetails(details json.RawMessage) *resolvedNames {
 // resolvePluginName fetches plugin name from DB if not provided.
 func (s *Service) resolvePluginName(pluginId int64, name string) string {
 	if name == "" && pluginId > 0 {
-		if pResult := s.pluginService.GetByID(context.Background(), pluginId); pResult.IsSafe() {
+		pResult := s.pluginService.GetByID(context.Background(), pluginId)
+		if pResult.IsSafe() {
 			return pResult.Value().Name
 		}
 	}

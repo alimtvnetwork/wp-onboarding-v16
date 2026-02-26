@@ -428,13 +428,15 @@ func CaptureMethodFrames(skip int) []MethodFrame {
 		if strings.Contains(frame.Function, "wp-plugin-publish/") {
 			// Extract short file name
 			file := frame.File
-			if idx := strings.Index(file, "wp-plugin-publish/"); idx >= 0 {
+			idx := strings.Index(file, "wp-plugin-publish/")
+			if idx >= 0 {
 				file = file[idx+len("wp-plugin-publish/"):]
 			}
 			// Extract short function name
 			fn := frame.Function
-			if idx := strings.LastIndex(fn, "/"); idx >= 0 {
-				fn = fn[idx+1:]
+			fnIdx := strings.LastIndex(fn, "/")
+			if fnIdx >= 0 {
+				fn = fn[fnIdx+1:]
 			}
 			result = append(result, MethodFrame{
 				Method:     fn,
@@ -471,12 +473,14 @@ func CaptureBackendTrace(skip int) []string {
 		frame, more := frames.Next()
 		if strings.Contains(frame.Function, "wp-plugin-publish/") {
 			file := frame.File
-			if idx := strings.Index(file, "wp-plugin-publish/"); idx >= 0 {
+			idx := strings.Index(file, "wp-plugin-publish/")
+			if idx >= 0 {
 				file = file[idx+len("wp-plugin-publish/"):]
 			}
 			fn := frame.Function
-			if idx := strings.LastIndex(fn, "/"); idx >= 0 {
-				fn = fn[idx+1:]
+			fnIdx := strings.LastIndex(fn, "/")
+			if fnIdx >= 0 {
+				fn = fn[fnIdx+1:]
 			}
 			result = append(result, fmt.Sprintf("%s:%d %s", file, frame.Line, fn))
 			if len(result) >= maxFrames {

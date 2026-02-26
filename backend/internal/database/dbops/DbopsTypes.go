@@ -163,12 +163,14 @@ func captureStackTrace(skip int) string {
 		fnName := "unknown"
 		if fn != nil {
 			fnName = fn.Name()
-			if idx := strings.LastIndex(fnName, "/"); idx != -1 {
+			idx := strings.LastIndex(fnName, "/")
+			if idx != -1 {
 				fnName = fnName[idx+1:]
 			}
 		}
-		if idx := strings.LastIndex(file, "/"); idx != -1 {
-			file = file[idx+1:]
+		fileIdx := strings.LastIndex(file, "/")
+		if fileIdx != -1 {
+			file = file[fileIdx+1:]
 		}
 		stack.WriteString(fmt.Sprintf("  at %s (%s:%d)\n", fnName, file, line))
 	}
@@ -181,7 +183,8 @@ func getCallerInfo(skip int) (file string, line int) {
 	if !ok {
 		return "unknown", 0
 	}
-	if idx := strings.LastIndex(file, "/"); idx != -1 {
+	idx := strings.LastIndex(file, "/")
+	if idx != -1 {
 		file = file[idx+1:]
 	}
 	return file, line
