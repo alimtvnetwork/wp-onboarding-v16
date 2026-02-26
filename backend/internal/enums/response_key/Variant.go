@@ -10,7 +10,9 @@ import (
 type Variant byte
 
 const (
-	Invalid        Variant = iota
+	Invalid Variant = iota
+
+	// Envelope keys.
 	Success
 	Error
 	Message
@@ -21,6 +23,8 @@ const (
 	Cached
 	Phase
 	Reason
+
+	// Domain collection keys.
 	Total
 	Agents
 	Actions
@@ -31,6 +35,11 @@ const (
 	Sets
 	Plugins
 	Tables
+	Settings
+	Providers
+	Dependencies
+
+	// File and size keys.
 	Rows
 	Bytes
 	Size
@@ -47,8 +56,12 @@ const (
 	Entry
 	Computed
 	Removed
+
+	// Pagination keys.
 	Limit
 	Offset
+
+	// Domain entity keys.
 	Posts
 	Categories
 	Category
@@ -57,17 +70,22 @@ const (
 	TotalSize
 	Applied
 	Folder
+
+	// Snapshot-domain keys.
 	SnapshotId
 	Sequence
 	FolderName
 	TablesChanged
 	TotalRows
 	TotalNewRows
+	ZipPath
 	ZipSize
 	BackupId
 	ZipFailed
 	SkipAudit
 	TablesRestored
+
+	// Cleanup-pipeline keys.
 	DeletedByPolicy
 	DeletedOrphans
 	DeletedFailed
@@ -79,6 +97,8 @@ const (
 	BytesFreed
 	Deleted
 	Cleaned
+
+	// Plugin lifecycle keys.
 	Activated
 	PluginSlug
 	IsUpdate
@@ -86,6 +106,18 @@ const (
 	PluginVersion
 	ActivationError
 	Inventory
+	PluginFile
+
+	// General-purpose entity keys.
+	Slug
+	Title
+	Type
+	Action
+	Status
+	Percent
+	Plugin
+
+	// Log/diagnostic keys.
 	ErrorLog
 	FullLog
 	StacktraceLog
@@ -94,15 +126,21 @@ const (
 	Truncated
 	Lines
 	TotalLines
+
+	// Internal/domain-specific keys.
 	Ids
 	TotalSnapshots
 	TotalSizeBytes
 	TempFile
 	Stmt
 	Columns
+
+	// Temporal keys.
 	CreatedAt
 	UpdatedAt
 	Timestamp
+
+	// Analysis and dependency keys.
 	ParentTable
 	ChildTable
 	FkColumn
@@ -114,9 +152,13 @@ const (
 	PluginDetails
 	IncludedIds
 	IncrementalCount
+
+	// Detection and provider keys.
 	DetectionMethod
 	SqliteVersion
 	IsCore
+
+	// Scheduler keys.
 	ScheduleEnabled
 	NextScheduledSnapshot
 	NextCleanup
@@ -124,17 +166,26 @@ const (
 	RetentionDays
 	RetentionCount
 	SnapshotType
+
+	// Error enrichment keys.
 	ErrorCategory
 	LogHint
+
+	// Sync keys.
 	FilesUpdated
 	FilesDeleted
 	FilesIgnored
 	IgnoredFiles
+
+	// Export and plugin keys.
 	PluginZip
 	ResolvedUrl
 	TraceLines
+
+	// Snapshot progress and worker keys.
 	CompletedAt
 	ExportedAt
+	Format
 	FormatVersion
 	JobId
 	TotalTables
@@ -149,9 +200,13 @@ const (
 	SnapshotDir
 	DirName
 	RowCount
+
+	// Cron and audit keys.
 	TriggeredBy
 	AuditData
 	LogDataKey
+
+	// Manifest and import metadata keys.
 	OriginalId
 	OriginalCreatedAt
 	SourceSite
@@ -165,13 +220,115 @@ const (
 	PluginCount
 	DurationMs
 	TableCounts
-	Settings
-	Providers
-	Dependencies
-	Slug
-	Title
-	Type
-	PluginFile
+
+	// Sync manifest keys.
+	DownloadUrl
+	FileCount
+	GeneratedAt
+	CacheStats
+	FromCache
+
+	// Statistics keys.
+	TotalTransactions
+	ByAction
+	ByStatus
+	Last24h
+
+	// Backup option keys.
+	IncludePlugins
+	PluginSelection
+	Compression
+	Async
+	Trigger
+	MasterSnapshotId
+	MasterDir
+	Confirm
+	CreateBackup
+	RequireBackup
+	Mode
+
+	// Scheduler response keys.
+	Frequency
+	Time
+	Day
+	Scheduled
+	Trace
+	Options
+
+	// Storage stats keys.
+	TotalSizeFormatted
+	OldestTimestamp
+	NewestTimestamp
+	DiskFreeBytes
+	DiskFreeFormatted
+	SnapshotsCount
+	BytesFormatted
+
+	// Progress envelope keys.
+	IsSuccess
+	HasAnyErrors
+
+	// Cleanup detail keys.
+	Details
+	Order
+
+	// Internal passing keys.
+	Graph
+	InDegree
+	Manifest
+	SqlitePath
+	RealPath
+	FilePath
+	PkColumn
+	TableName
+
+	// Provider and plugin info keys.
+	Id
+	Name
+	Available
+	Capabilities
+	Version
+	Author
+	Description
+	Active
+	TotalFiles
+	LastSeenId
+	FileType
+	Provider
+	Snapshot
+	Source
+
+	// Capability sub-keys.
+	FullSite
+	DatabaseOnly
+	Selective
+	Restore
+	Import
+
+	// Restore option keys.
+	Strict
+	ApplyIncrementals
+	Sqlite
+	SqliteFile
+	InternalMode
+
+	// OPcache status keys.
+	OpcacheAvailable
+	OpcacheReset
+	FilesInvalidated
+
+	// Plugin archive keys.
+	Zip
+	ZipFile
+	FileSizeBytes
+	ChecksumMd5
+	PluginName
+
+	// Status payload keys.
+	Route
+	Methods
+	Result
+	Results
 )
 
 var variantLabels = [...]string{
@@ -196,6 +353,9 @@ var variantLabels = [...]string{
 	Sets:                  "Sets",
 	Plugins:               "Plugins",
 	Tables:                "Tables",
+	Settings:              "Settings",
+	Providers:             "Providers",
+	Dependencies:          "Dependencies",
 	Rows:                  "Rows",
 	Bytes:                 "Bytes",
 	Size:                  "Size",
@@ -228,6 +388,7 @@ var variantLabels = [...]string{
 	TablesChanged:         "TablesChanged",
 	TotalRows:             "TotalRows",
 	TotalNewRows:          "TotalNewRows",
+	ZipPath:               "ZipPath",
 	ZipSize:               "ZipSize",
 	BackupId:              "BackupId",
 	ZipFailed:             "ZipFailed",
@@ -251,6 +412,14 @@ var variantLabels = [...]string{
 	PluginVersion:         "PluginVersion",
 	ActivationError:       "ActivationError",
 	Inventory:             "Inventory",
+	PluginFile:            "PluginFile",
+	Slug:                  "Slug",
+	Title:                 "Title",
+	Type:                  "Type",
+	Action:                "Action",
+	Status:                "Status",
+	Percent:               "Percent",
+	Plugin:                "Plugin",
 	ErrorLog:              "ErrorLog",
 	FullLog:               "FullLog",
 	StacktraceLog:         "StacktraceLog",
@@ -300,6 +469,7 @@ var variantLabels = [...]string{
 	TraceLines:            "TraceLines",
 	CompletedAt:           "CompletedAt",
 	ExportedAt:            "ExportedAt",
+	Format:                "Format",
 	FormatVersion:         "FormatVersion",
 	JobId:                 "JobId",
 	TotalTables:           "TotalTables",
@@ -330,178 +500,339 @@ var variantLabels = [...]string{
 	PluginCount:           "PluginCount",
 	DurationMs:            "DurationMs",
 	TableCounts:           "TableCounts",
-	Settings:              "Settings",
-	Providers:             "Providers",
-	Dependencies:          "Dependencies",
-	Slug:                  "Slug",
-	Title:                 "Title",
-	Type:                  "Type",
-	PluginFile:            "PluginFile",
+	DownloadUrl:           "DownloadUrl",
+	FileCount:             "FileCount",
+	GeneratedAt:           "GeneratedAt",
+	CacheStats:            "CacheStats",
+	FromCache:             "FromCache",
+	TotalTransactions:     "TotalTransactions",
+	ByAction:              "ByAction",
+	ByStatus:              "ByStatus",
+	Last24h:               "Last24h",
+	IncludePlugins:        "IncludePlugins",
+	PluginSelection:       "PluginSelection",
+	Compression:           "Compression",
+	Async:                 "Async",
+	Trigger:               "Trigger",
+	MasterSnapshotId:      "MasterSnapshotId",
+	MasterDir:             "MasterDir",
+	Confirm:               "Confirm",
+	CreateBackup:          "CreateBackup",
+	RequireBackup:         "RequireBackup",
+	Mode:                  "Mode",
+	Frequency:             "Frequency",
+	Time:                  "Time",
+	Day:                   "Day",
+	Scheduled:             "Scheduled",
+	Trace:                 "Trace",
+	Options:               "Options",
+	TotalSizeFormatted:    "TotalSizeFormatted",
+	OldestTimestamp:       "OldestTimestamp",
+	NewestTimestamp:       "NewestTimestamp",
+	DiskFreeBytes:         "DiskFreeBytes",
+	DiskFreeFormatted:     "DiskFreeFormatted",
+	SnapshotsCount:        "SnapshotsCount",
+	BytesFormatted:        "BytesFormatted",
+	IsSuccess:             "IsSuccess",
+	HasAnyErrors:          "HasAnyErrors",
+	Details:               "Details",
+	Order:                 "Order",
+	Graph:                 "Graph",
+	InDegree:              "InDegree",
+	Manifest:              "Manifest",
+	SqlitePath:            "SqlitePath",
+	RealPath:              "RealPath",
+	FilePath:              "FilePath",
+	PkColumn:              "PkColumn",
+	TableName:             "TableName",
+	Id:                    "Id",
+	Name:                  "Name",
+	Available:             "Available",
+	Capabilities:          "Capabilities",
+	Version:               "Version",
+	Author:                "Author",
+	Description:           "Description",
+	Active:                "Active",
+	TotalFiles:            "TotalFiles",
+	LastSeenId:            "LastSeenId",
+	FileType:              "FileType",
+	Provider:              "Provider",
+	Snapshot:              "Snapshot",
+	Source:                "Source",
+	FullSite:              "FullSite",
+	DatabaseOnly:          "DatabaseOnly",
+	Selective:             "Selective",
+	Restore:               "Restore",
+	Import:                "Import",
+	Strict:                "Strict",
+	ApplyIncrementals:     "ApplyIncrementals",
+	Sqlite:                "Sqlite",
+	SqliteFile:            "SqliteFile",
+	InternalMode:          "InternalMode",
+	OpcacheAvailable:      "OpcacheAvailable",
+	OpcacheReset:          "OpcacheReset",
+	FilesInvalidated:      "FilesInvalidated",
+	Zip:                   "Zip",
+	ZipFile:               "ZipFile",
+	FileSizeBytes:         "FileSizeBytes",
+	ChecksumMd5:           "ChecksumMd5",
+	PluginName:            "PluginName",
+	Route:                 "Route",
+	Methods:               "Methods",
+	Result:                "Result",
+	Results:               "Results",
 }
 
 var variantValues = [...]string{
 	Invalid:               "invalid",
-	Success:               "success",
-	Error:                 "error",
-	Message:               "message",
-	Data:                  "data",
-	Code:                  "code",
-	Valid:                 "valid",
-	Errors:                "errors",
-	Cached:                "cached",
-	Phase:                 "phase",
-	Reason:                "reason",
-	Total:                 "total",
-	Agents:                "agents",
-	Actions:               "actions",
-	Logs:                  "logs",
-	Snapshots:             "snapshots",
-	Sql:                   "sql",
-	Params:                "params",
-	Sets:                  "sets",
-	Plugins:               "plugins",
-	Tables:                "tables",
-	Rows:                  "rows",
-	Bytes:                 "bytes",
-	Size:                  "size",
-	FileSize:              "fileSize",
-	Path:                  "path",
-	Filename:              "filename",
-	Checksum:              "checksum",
-	Duration:              "duration",
-	Count:                 "count",
-	Files:                 "files",
-	Directory:             "directory",
-	Scope:                 "scope",
-	Exported:              "exported",
-	Entry:                 "entry",
-	Computed:              "computed",
-	Removed:               "removed",
-	Limit:                 "limit",
-	Offset:                "offset",
-	Posts:                  "posts",
-	Categories:            "categories",
-	Category:              "category",
-	Export:                 "export",
-	Incrementals:          "incrementals",
-	TotalSize:             "totalSize",
-	Applied:               "applied",
-	Folder:                "folder",
-	SnapshotId:            "snapshotId",
-	Sequence:              "sequence",
-	FolderName:            "folderName",
-	TablesChanged:         "tablesChanged",
-	TotalRows:             "totalRows",
-	TotalNewRows:          "totalNewRows",
-	ZipSize:               "zipSize",
-	BackupId:              "backupId",
-	ZipFailed:             "zipFailed",
-	SkipAudit:             "skipAudit",
-	TablesRestored:        "tablesRestored",
-	DeletedByPolicy:       "deletedByPolicy",
-	DeletedOrphans:        "deletedOrphans",
-	DeletedFailed:         "deletedFailed",
-	SpaceFreedBytes:       "spaceFreedBytes",
-	Retention:             "retention",
-	Orphans:               "orphans",
-	Stuck:                 "stuck",
-	DryRun:                "dryRun",
-	BytesFreed:            "bytesFreed",
-	Deleted:               "deleted",
-	Cleaned:               "cleaned",
-	Activated:             "activated",
-	PluginSlug:            "pluginSlug",
-	IsUpdate:              "isUpdate",
-	IsSelfUpdate:          "isSelfUpdate",
-	PluginVersion:         "pluginVersion",
-	ActivationError:       "activationError",
-	Inventory:             "inventory",
-	ErrorLog:              "errorLog",
-	FullLog:               "fullLog",
-	StacktraceLog:         "stacktraceLog",
-	Exists:                "exists",
-	Content:               "content",
-	Truncated:             "truncated",
-	Lines:                 "lines",
-	TotalLines:            "totalLines",
-	Ids:                   "ids",
-	TotalSnapshots:        "totalSnapshots",
-	TotalSizeBytes:        "totalSizeBytes",
-	TempFile:              "tempFile",
-	Stmt:                  "stmt",
-	Columns:               "columns",
-	CreatedAt:             "createdAt",
-	UpdatedAt:             "updatedAt",
-	Timestamp:             "timestamp",
-	ParentTable:           "parentTable",
-	ChildTable:            "childTable",
-	FkColumn:              "fkColumn",
-	RefColumn:             "refColumn",
-	SeedOrder:             "seedOrder",
-	TableCount:            "tableCount",
-	DepCount:              "depCount",
-	NewRows:               "newRows",
-	PluginDetails:         "pluginDetails",
-	IncludedIds:           "includedIds",
-	IncrementalCount:      "incrementalCount",
-	DetectionMethod:       "detectionMethod",
-	SqliteVersion:         "sqliteVersion",
-	IsCore:                "isCore",
-	ScheduleEnabled:       "scheduleEnabled",
-	NextScheduledSnapshot: "nextScheduledSnapshot",
-	NextCleanup:           "nextCleanup",
-	RetentionType:         "retentionType",
-	RetentionDays:         "retentionDays",
-	RetentionCount:        "retentionCount",
-	SnapshotType:          "snapshotType",
-	ErrorCategory:         "errorCategory",
-	LogHint:               "logHint",
-	FilesUpdated:          "filesUpdated",
-	FilesDeleted:          "filesDeleted",
-	FilesIgnored:          "filesIgnored",
-	IgnoredFiles:          "ignoredFiles",
-	PluginZip:             "pluginZip",
-	ResolvedUrl:           "resolvedUrl",
-	TraceLines:            "traceLines",
-	CompletedAt:           "completedAt",
-	ExportedAt:            "exportedAt",
-	FormatVersion:         "formatVersion",
-	JobId:                 "jobId",
-	TotalTables:           "totalTables",
-	TablesExported:        "tablesExported",
-	PoolSize:              "poolSize",
-	TotalBatches:          "totalBatches",
-	CurrentBatch:          "currentBatch",
-	TableProgress:         "tableProgress",
-	IncrementalsApplied:   "incrementalsApplied",
-	SkippedMaster:         "skippedMaster",
-	ExportedTables:        "exportedTables",
-	SnapshotDir:           "snapshotDir",
-	DirName:               "dirName",
-	RowCount:              "rowCount",
-	TriggeredBy:           "triggeredBy",
-	AuditData:             "auditData",
-	LogDataKey:            "logData",
-	OriginalId:            "originalId",
-	OriginalCreatedAt:     "originalCreatedAt",
-	SourceSite:            "sourceSite",
-	OriginalTitle:         "originalTitle",
-	OriginalType:          "originalType",
-	WpVersion:             "wpVersion",
-	PhpVersion:            "phpVersion",
-	MysqlVersion:          "mysqlVersion",
-	SiteUrl:               "siteUrl",
-	DbPrefix:              "dbPrefix",
-	PluginCount:           "pluginCount",
-	DurationMs:            "durationMs",
-	TableCounts:           "tableCounts",
-	Settings:              "settings",
-	Providers:             "providers",
-	Dependencies:          "dependencies",
-	Slug:                  "slug",
-	Title:                 "title",
-	Type:                  "type",
-	PluginFile:            "pluginFile",
+	Success:               "Success",
+	Error:                 "Error",
+	Message:               "Message",
+	Data:                  "Data",
+	Code:                  "Code",
+	Valid:                 "Valid",
+	Errors:                "Errors",
+	Cached:                "Cached",
+	Phase:                 "Phase",
+	Reason:                "Reason",
+	Total:                 "Total",
+	Agents:                "Agents",
+	Actions:               "Actions",
+	Logs:                  "Logs",
+	Snapshots:             "Snapshots",
+	Sql:                   "Sql",
+	Params:                "Params",
+	Sets:                  "Sets",
+	Plugins:               "Plugins",
+	Tables:                "Tables",
+	Settings:              "Settings",
+	Providers:             "Providers",
+	Dependencies:          "Dependencies",
+	Rows:                  "Rows",
+	Bytes:                 "Bytes",
+	Size:                  "Size",
+	FileSize:              "FileSize",
+	Path:                  "Path",
+	Filename:              "Filename",
+	Checksum:              "Checksum",
+	Duration:              "Duration",
+	Count:                 "Count",
+	Files:                 "Files",
+	Directory:             "Directory",
+	Scope:                 "Scope",
+	Exported:              "Exported",
+	Entry:                 "Entry",
+	Computed:              "Computed",
+	Removed:               "Removed",
+	Limit:                 "Limit",
+	Offset:                "Offset",
+	Posts:                  "Posts",
+	Categories:            "Categories",
+	Category:              "Category",
+	Export:                 "Export",
+	Incrementals:          "Incrementals",
+	TotalSize:             "TotalSize",
+	Applied:               "Applied",
+	Folder:                "Folder",
+	SnapshotId:            "SnapshotId",
+	Sequence:              "Sequence",
+	FolderName:            "FolderName",
+	TablesChanged:         "TablesChanged",
+	TotalRows:             "TotalRows",
+	TotalNewRows:          "TotalNewRows",
+	ZipPath:               "ZipPath",
+	ZipSize:               "ZipSize",
+	BackupId:              "BackupId",
+	ZipFailed:             "ZipFailed",
+	SkipAudit:             "SkipAudit",
+	TablesRestored:        "TablesRestored",
+	DeletedByPolicy:       "DeletedByPolicy",
+	DeletedOrphans:        "DeletedOrphans",
+	DeletedFailed:         "DeletedFailed",
+	SpaceFreedBytes:       "SpaceFreedBytes",
+	Retention:             "Retention",
+	Orphans:               "Orphans",
+	Stuck:                 "Stuck",
+	DryRun:                "DryRun",
+	BytesFreed:            "BytesFreed",
+	Deleted:               "Deleted",
+	Cleaned:               "Cleaned",
+	Activated:             "Activated",
+	PluginSlug:            "PluginSlug",
+	IsUpdate:              "IsUpdate",
+	IsSelfUpdate:          "IsSelfUpdate",
+	PluginVersion:         "PluginVersion",
+	ActivationError:       "ActivationError",
+	Inventory:             "Inventory",
+	PluginFile:            "PluginFile",
+	Slug:                  "Slug",
+	Title:                 "Title",
+	Type:                  "Type",
+	Action:                "Action",
+	Status:                "Status",
+	Percent:               "Percent",
+	Plugin:                "Plugin",
+	ErrorLog:              "ErrorLog",
+	FullLog:               "FullLog",
+	StacktraceLog:         "StacktraceLog",
+	Exists:                "Exists",
+	Content:               "Content",
+	Truncated:             "Truncated",
+	Lines:                 "Lines",
+	TotalLines:            "TotalLines",
+	Ids:                   "Ids",
+	TotalSnapshots:        "TotalSnapshots",
+	TotalSizeBytes:        "TotalSizeBytes",
+	TempFile:              "TempFile",
+	Stmt:                  "Stmt",
+	Columns:               "Columns",
+	CreatedAt:             "CreatedAt",
+	UpdatedAt:             "UpdatedAt",
+	Timestamp:             "Timestamp",
+	ParentTable:           "ParentTable",
+	ChildTable:            "ChildTable",
+	FkColumn:              "FkColumn",
+	RefColumn:             "RefColumn",
+	SeedOrder:             "SeedOrder",
+	TableCount:            "TableCount",
+	DepCount:              "DepCount",
+	NewRows:               "NewRows",
+	PluginDetails:         "PluginDetails",
+	IncludedIds:           "IncludedIds",
+	IncrementalCount:      "IncrementalCount",
+	DetectionMethod:       "DetectionMethod",
+	SqliteVersion:         "SqliteVersion",
+	IsCore:                "IsCore",
+	ScheduleEnabled:       "ScheduleEnabled",
+	NextScheduledSnapshot: "NextScheduledSnapshot",
+	NextCleanup:           "NextCleanup",
+	RetentionType:         "RetentionType",
+	RetentionDays:         "RetentionDays",
+	RetentionCount:        "RetentionCount",
+	SnapshotType:          "SnapshotType",
+	ErrorCategory:         "ErrorCategory",
+	LogHint:               "LogHint",
+	FilesUpdated:          "FilesUpdated",
+	FilesDeleted:          "FilesDeleted",
+	FilesIgnored:          "FilesIgnored",
+	IgnoredFiles:          "IgnoredFiles",
+	PluginZip:             "PluginZip",
+	ResolvedUrl:           "ResolvedUrl",
+	TraceLines:            "TraceLines",
+	CompletedAt:           "CompletedAt",
+	ExportedAt:            "ExportedAt",
+	Format:                "Format",
+	FormatVersion:         "FormatVersion",
+	JobId:                 "JobId",
+	TotalTables:           "TotalTables",
+	TablesExported:        "TablesExported",
+	PoolSize:              "PoolSize",
+	TotalBatches:          "TotalBatches",
+	CurrentBatch:          "CurrentBatch",
+	TableProgress:         "TableProgress",
+	IncrementalsApplied:   "IncrementalsApplied",
+	SkippedMaster:         "SkippedMaster",
+	ExportedTables:        "ExportedTables",
+	SnapshotDir:           "SnapshotDir",
+	DirName:               "DirName",
+	RowCount:              "RowCount",
+	TriggeredBy:           "TriggeredBy",
+	AuditData:             "AuditData",
+	LogDataKey:            "LogData",
+	OriginalId:            "OriginalId",
+	OriginalCreatedAt:     "OriginalCreatedAt",
+	SourceSite:            "SourceSite",
+	OriginalTitle:         "OriginalTitle",
+	OriginalType:          "OriginalType",
+	WpVersion:             "WpVersion",
+	PhpVersion:            "PhpVersion",
+	MysqlVersion:          "MysqlVersion",
+	SiteUrl:               "SiteUrl",
+	DbPrefix:              "DbPrefix",
+	PluginCount:           "PluginCount",
+	DurationMs:            "DurationMs",
+	TableCounts:           "TableCounts",
+	DownloadUrl:           "DownloadUrl",
+	FileCount:             "FileCount",
+	GeneratedAt:           "GeneratedAt",
+	CacheStats:            "CacheStats",
+	FromCache:             "FromCache",
+	TotalTransactions:     "TotalTransactions",
+	ByAction:              "ByAction",
+	ByStatus:              "ByStatus",
+	Last24h:               "Last24h",
+	IncludePlugins:        "IncludePlugins",
+	PluginSelection:       "PluginSelection",
+	Compression:           "Compression",
+	Async:                 "Async",
+	Trigger:               "Trigger",
+	MasterSnapshotId:      "MasterSnapshotId",
+	MasterDir:             "MasterDir",
+	Confirm:               "Confirm",
+	CreateBackup:          "CreateBackup",
+	RequireBackup:         "RequireBackup",
+	Mode:                  "Mode",
+	Frequency:             "Frequency",
+	Time:                  "Time",
+	Day:                   "Day",
+	Scheduled:             "Scheduled",
+	Trace:                 "Trace",
+	Options:               "Options",
+	TotalSizeFormatted:    "TotalSizeFormatted",
+	OldestTimestamp:       "OldestTimestamp",
+	NewestTimestamp:       "NewestTimestamp",
+	DiskFreeBytes:         "DiskFreeBytes",
+	DiskFreeFormatted:     "DiskFreeFormatted",
+	SnapshotsCount:        "SnapshotsCount",
+	BytesFormatted:        "BytesFormatted",
+	IsSuccess:             "IsSuccess",
+	HasAnyErrors:          "HasAnyErrors",
+	Details:               "Details",
+	Order:                 "Order",
+	Graph:                 "Graph",
+	InDegree:              "InDegree",
+	Manifest:              "Manifest",
+	SqlitePath:            "SqlitePath",
+	RealPath:              "RealPath",
+	FilePath:              "FilePath",
+	PkColumn:              "PkColumn",
+	TableName:             "TableName",
+	Id:                    "Id",
+	Name:                  "Name",
+	Available:             "Available",
+	Capabilities:          "Capabilities",
+	Version:               "Version",
+	Author:                "Author",
+	Description:           "Description",
+	Active:                "Active",
+	TotalFiles:            "TotalFiles",
+	LastSeenId:            "LastSeenId",
+	FileType:              "FileType",
+	Provider:              "Provider",
+	Snapshot:              "Snapshot",
+	Source:                "Source",
+	FullSite:              "FullSite",
+	DatabaseOnly:          "DatabaseOnly",
+	Selective:             "Selective",
+	Restore:               "Restore",
+	Import:                "Import",
+	Strict:                "Strict",
+	ApplyIncrementals:     "ApplyIncrementals",
+	Sqlite:                "Sqlite",
+	SqliteFile:            "SqliteFile",
+	InternalMode:          "_Mode",
+	OpcacheAvailable:      "OpcacheAvailable",
+	OpcacheReset:          "OpcacheReset",
+	FilesInvalidated:      "FilesInvalidated",
+	Zip:                   "Zip",
+	ZipFile:               "ZipFile",
+	FileSizeBytes:         "FileSizeBytes",
+	ChecksumMd5:           "ChecksumMd5",
+	PluginName:            "PluginName",
+	Route:                 "Route",
+	Methods:               "Methods",
+	Result:                "Result",
+	Results:               "Results",
 }
 
 func (v Variant) String() string {
