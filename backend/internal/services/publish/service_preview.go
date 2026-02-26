@@ -14,47 +14,28 @@ import (
 
 // PreviewPublish returns a preview of what files will change during publish
 func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) apperror.Result[PublishPreviewResult] {
-	result := &PublishPreviewResult{
-		PluginID: pluginID,
-		SiteID:   siteID,
-		Files:    []FilePreview{},
-	}
+	result := &PublishPreviewResult{PluginID: pluginID, SiteID: siteID, Files: []FilePreview{}}
 
-	pluginResult := s.pluginService.GetByID(ctx, pluginID)
-	if pluginResult.HasError() {
-		return apperror.Fail[PublishPreviewResult](apperror.Wrap(pluginResult.AppError(), apperror.ErrNotFound, "plugin not found"))
-	}
-	pluginInfo := pluginResult.Value()
-	result.PluginName = pluginInfo.Name
-	result.LocalVersion = s.getLocalPluginVersion(pluginInfo.Path)
-
-	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
+	pluginInfo, err := s.loadPluginForPreview(ctx, pluginID, result)
 	if err != nil {
-		return apperror.FailWrap[PublishPreviewResult](err, apperror.ErrNotFound, "site not found")
+		return apperror.Fail[PublishPreviewResult](err)
 	}
-	result.SiteName = siteInfo.Name
-	result.SiteURL = siteInfo.URL
 
-	mapping, err := s.getMapping(ctx, pluginID, siteID)
+	siteInfo, password, mapping, err := s.loadSiteForPreview(ctx, pluginID, siteID, result)
 	if err != nil {
-		return apperror.FailWrap[PublishPreviewResult](err, apperror.ErrNotFound, "plugin-site mapping not found")
-	}
-	result.RemoteSlug = mapping.RemoteSlug
-
-	// Scan local files
-	localFiles, totalSize, err := s.scanLocalFiles(pluginInfo.Path, pluginInfo.ExcludePatterns)
-	if err != nil {
-		return apperror.FailWrap[PublishPreviewResult](err, apperror.ErrFSRead, "failed to scan plugin files")
+		return apperror.Fail[PublishPreviewResult](err)
 	}
 
-	// Fetch remote files for diff
+	localFiles, totalSize, scanErr := s.scanLocalFiles(pluginInfo.Path, pluginInfo.ExcludePatterns)
+	if scanErr != nil {
+		return apperror.FailWrap[PublishPreviewResult](scanErr, apperror.ErrFSRead, "failed to scan plugin files")
+	}
+
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 	result.RemoteVersion = s.fetchRemoteVersion(wpClient, mapping.RemoteSlug)
 	remoteFileMap, fetchFailed := s.fetchRemoteFileMap(ctx, wpClient, mapping.RemoteSlug)
 
-	// Compare
 	files, added, modified, deleted := s.compareFiles(localFiles, remoteFileMap, fetchFailed)
-
 	result.Files = files
 	result.TotalFiles = len(files)
 	result.TotalSize = totalSize
@@ -65,13 +46,51 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 	return apperror.Ok(*result)
 }
 
+// loadPluginForPreview loads plugin info and populates preview result fields.
+func (s *Service) loadPluginForPreview(ctx context.Context, pluginID int64, result *PublishPreviewResult) (*pluginPreviewInfo, *apperror.AppError) {
+	pluginResult := s.pluginService.GetByID(ctx, pluginID)
+	if pluginResult.HasError() {
+		return nil, apperror.Wrap(pluginResult.AppError(), apperror.ErrNotFound, "plugin not found")
+	}
+	p := pluginResult.Value()
+	result.PluginName = p.Name
+	result.LocalVersion = s.getLocalPluginVersion(p.Path)
+	return &pluginPreviewInfo{Path: p.Path, ExcludePatterns: p.ExcludePatterns}, nil
+}
+
+// pluginPreviewInfo holds fields needed for preview after loading.
+type pluginPreviewInfo struct {
+	Path            string
+	ExcludePatterns []string
+}
+
+// loadSiteForPreview loads site, credentials, and mapping for preview.
+func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64, result *PublishPreviewResult) (*sitePreviewInfo, string, *mappingPreviewInfo, *apperror.AppError) {
+	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
+	if err != nil {
+		return nil, "", nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
+	}
+	result.SiteName = siteInfo.Name
+	result.SiteURL = siteInfo.URL
+
+	mapping, mapErr := s.getMapping(ctx, pluginID, siteID)
+	if mapErr != nil {
+		return nil, "", nil, apperror.Wrap(mapErr, apperror.ErrNotFound, "plugin-site mapping not found")
+	}
+	result.RemoteSlug = mapping.RemoteSlug
+
+	return &sitePreviewInfo{URL: siteInfo.URL, Username: siteInfo.Username}, password, &mappingPreviewInfo{RemoteSlug: mapping.RemoteSlug}, nil
+}
+
+type sitePreviewInfo struct{ URL, Username string }
+type mappingPreviewInfo struct{ RemoteSlug string }
+
 // GetFileDiff retrieves both local and remote content for a file to show differences
 func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) apperror.Result[FileDiffResult] {
 	pluginResult := s.pluginService.GetByID(ctx, pluginID)
 	if pluginResult.HasError() {
 		return apperror.Fail[FileDiffResult](apperror.Wrap(pluginResult.AppError(), apperror.ErrDatabaseQuery, "plugin not found"))
 	}
-	pluginInfo := pluginResult.Value()
 
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
@@ -84,38 +103,41 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 	}
 
 	result := &FileDiffResult{Path: filePath}
+	result.LocalContent = s.readLocalFileContent(pluginResult.Value().Path, filePath)
 
-	// Read local file
-	localPath, err := pathutil.Join(pluginInfo.Path, filePath)
-	if err != nil {
-		return apperror.Fail[FileDiffResult](apperror.Wrap(err, apperror.ErrInternal, "failed to resolve local file path").WithFilePath(filePath))
-	}
-	localFile, err := os.Open(localPath)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return apperror.FailWrap[FileDiffResult](err, apperror.ErrFSRead, "failed to read local file")
-		}
-		result.LocalContent = ""
-	} else {
-		defer localFile.Close()
-		content, err := io.ReadAll(localFile)
-		if err != nil {
-			return apperror.FailWrap[FileDiffResult](err, apperror.ErrFSRead, "failed to read local file content")
-		}
-		result.LocalContent = string(content)
-	}
-
-	// Fetch remote file
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
-	remoteContent, err := wpClient.GetPluginFileContent(ctx, mapping.RemoteSlug, filePath)
-	if err != nil {
-		s.log.Debug("Could not fetch remote file content", "path", filePath, "error", err)
-		result.RemoteContent = ""
-	} else {
-		result.RemoteContent = remoteContent
-	}
+	result.RemoteContent = s.readRemoteFileContent(ctx, wpClient, mapping.RemoteSlug, filePath)
 
 	return apperror.Ok(*result)
+}
+
+// readLocalFileContent reads a local file and returns its content or empty string.
+func (s *Service) readLocalFileContent(pluginPath, filePath string) string {
+	localPath, err := pathutil.Join(pluginPath, filePath)
+	if err != nil {
+		return ""
+	}
+	file, err := os.Open(localPath)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return ""
+	}
+	return string(content)
+}
+
+// readRemoteFileContent fetches remote file content or returns empty string.
+func (s *Service) readRemoteFileContent(ctx context.Context, wpClient *wordpress.Client, slug, filePath string) string {
+	content, err := wpClient.GetPluginFileContent(ctx, slug, filePath)
+	if err != nil {
+		s.log.Debug("Could not fetch remote file content", "path", filePath, "error", err)
+		return ""
+	}
+	return content
 }
 
 // scanLocalFiles walks the plugin directory and returns file previews
@@ -132,43 +154,52 @@ func (s *Service) scanLocalFiles(pluginPath string, excludePatterns []string) (m
 		if err != nil {
 			return nil
 		}
-		if info.IsDir() {
-			for _, pattern := range excludePatterns {
-				if strings.Contains(path, pattern) {
-					return filepath.SkipDir
-				}
-			}
-			return nil
-		}
-
-		relPath, err := filepath.Rel(absPath, path)
-		if err != nil {
-			return nil
-		}
-
-		for _, pattern := range excludePatterns {
-			if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
-				return nil
-			}
-		}
-
-		if strings.HasPrefix(filepath.Base(path), ".") {
-			return nil
-		}
-
-		hash, _ := s.calculateFileHash(path)
-		relPathSlash := filepath.ToSlash(relPath)
-
-		localFiles[relPathSlash] = FilePreview{
-			Path:      relPathSlash,
-			Size:      info.Size(),
-			LocalHash: hash,
-		}
-		totalSize += info.Size()
-		return nil
+		return s.processScanEntry(absPath, path, info, excludePatterns, localFiles, &totalSize)
 	})
 
 	return localFiles, totalSize, err
+}
+
+// processScanEntry handles a single entry during local file scanning.
+func (s *Service) processScanEntry(absPath, path string, info os.FileInfo, excludePatterns []string, localFiles map[string]FilePreview, totalSize *int64) error {
+	if info.IsDir() {
+		return checkDirExclusion(path, excludePatterns)
+	}
+
+	relPath, err := filepath.Rel(absPath, path)
+	if err != nil {
+		return nil
+	}
+
+	if isExcludedFile(path, relPath, excludePatterns) {
+		return nil
+	}
+
+	hash, _ := s.calculateFileHash(path)
+	relPathSlash := filepath.ToSlash(relPath)
+	localFiles[relPathSlash] = FilePreview{Path: relPathSlash, Size: info.Size(), LocalHash: hash}
+	*totalSize += info.Size()
+	return nil
+}
+
+// checkDirExclusion returns SkipDir if the directory matches an exclude pattern.
+func checkDirExclusion(path string, patterns []string) error {
+	for _, pattern := range patterns {
+		if strings.Contains(path, pattern) {
+			return filepath.SkipDir
+		}
+	}
+	return nil
+}
+
+// isExcludedFile checks if a file should be excluded from scanning.
+func isExcludedFile(path, relPath string, patterns []string) bool {
+	for _, pattern := range patterns {
+		if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
+			return true
+		}
+	}
+	return strings.HasPrefix(filepath.Base(path), ".")
 }
 
 // fetchRemoteVersion tries to get the remote plugin version
@@ -186,7 +217,6 @@ func (s *Service) fetchRemoteVersion(wpClient *wordpress.Client, remoteSlug stri
 	if err == nil && remotePluginInfo != nil {
 		return remotePluginInfo.Version
 	}
-
 	return ""
 }
 
@@ -211,40 +241,44 @@ func (s *Service) fetchRemoteFileMap(ctx context.Context, wpClient *wordpress.Cl
 
 // compareFiles compares local and remote files and returns the diff
 func (s *Service) compareFiles(localFiles map[string]FilePreview, remoteFileMap map[string]string, fetchFailed bool) ([]FilePreview, int, int, int) {
+	if fetchFailed {
+		return markAllAsAdded(localFiles)
+	}
+	return diffLocalRemote(localFiles, remoteFileMap)
+}
+
+// markAllAsAdded returns all local files as "added".
+func markAllAsAdded(localFiles map[string]FilePreview) ([]FilePreview, int, int, int) {
+	var files []FilePreview
+	for _, lf := range localFiles {
+		lf.ChangeType = "added"
+		files = append(files, lf)
+	}
+	return files, len(files), 0, 0
+}
+
+// diffLocalRemote compares local files against remote hashes.
+func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string]string) ([]FilePreview, int, int, int) {
 	var files []FilePreview
 	var added, modified, deleted int
 
-	if fetchFailed {
-		for _, localFile := range localFiles {
-			localFile.ChangeType = "added"
-			files = append(files, localFile)
-			added++
-		}
-		return files, added, modified, deleted
-	}
-
-	for path, localFile := range localFiles {
+	for path, lf := range localFiles {
 		if remoteHash, exists := remoteFileMap[path]; exists {
-			if localFile.LocalHash != remoteHash {
-				localFile.ChangeType = "modified"
+			if lf.LocalHash != remoteHash {
+				lf.ChangeType = "modified"
 				modified++
-			} else {
-				continue
+				files = append(files, lf)
 			}
 			delete(remoteFileMap, path)
 		} else {
-			localFile.ChangeType = "added"
+			lf.ChangeType = "added"
 			added++
+			files = append(files, lf)
 		}
-		files = append(files, localFile)
 	}
 
 	for path := range remoteFileMap {
-		files = append(files, FilePreview{
-			Path:       path,
-			ChangeType: "deleted",
-			Size:       0,
-		})
+		files = append(files, FilePreview{Path: path, ChangeType: "deleted"})
 		deleted++
 	}
 

@@ -16,50 +16,31 @@ import (
 // runStage executes a stage and captures timing/result
 func (s *Service) runStage(name string, fn func() error) Stage {
 	start := time.Now()
-	stage := Stage{
-		Name:   name,
-		Status: stagestatus.Running,
-	}
-
 	err := fn()
-	stage.Duration = time.Since(start).Milliseconds()
-
-	if err != nil {
-		stage.Status = stagestatus.Failed
-		stage.Message = err.Error()
-	} else {
-		stage.Status = stagestatus.Completed
-	}
-
-	return stage
+	return buildStage(name, start, err)
 }
 
 // runStageWithSession executes a stage with session logging and captures timing/result
 func (s *Service) runStageWithSession(sessionID, name string, fn func() error) Stage {
 	start := time.Now()
-	stage := Stage{
-		Name:   name,
-		Status: stagestatus.Running,
-	}
-
-	if s.sessionService != nil && sessionID != "" {
-		s.sessionService.LogStageStart(sessionID, strings.ToUpper(name))
-	}
+	s.sessionLogStageStart(sessionID, strings.ToUpper(name))
 
 	err := fn()
-	stage.Duration = time.Since(start).Milliseconds()
+	stage := buildStage(name, start, err)
 
+	s.sessionLogStageEnd(sessionID, strings.ToUpper(name), stage.Status, stage.Duration)
+	return stage
+}
+
+// buildStage creates a Stage from a name, start time, and error.
+func buildStage(name string, start time.Time, err error) Stage {
+	stage := Stage{Name: name, Duration: time.Since(start).Milliseconds()}
 	if err != nil {
 		stage.Status = stagestatus.Failed
 		stage.Message = err.Error()
 	} else {
 		stage.Status = stagestatus.Completed
 	}
-
-	if s.sessionService != nil && sessionID != "" {
-		s.sessionService.LogStageEnd(sessionID, strings.ToUpper(name), stage.Status, stage.Duration)
-	}
-
 	return stage
 }
 
@@ -69,27 +50,20 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 		return
 	}
 
-	eventType := ws.EventPublishProgress
-	if step == stagestatus.Started.String() {
-		eventType = ws.EventPublishStarted
-	} else if step == stagestatus.Completed.String() || step == stagestatus.Failed.String() {
-		eventType = ws.EventPublishComplete
-	}
-
+	eventType := resolveProgressEvent(step)
 	stage := mapStepToStage(step)
 	status := mapStepToStatus(step)
 
 	ws.Broadcast(s.wsHub, eventType, ws.PublishStageProgressData{
-		PluginID: pluginID,
-		SiteID:   siteID,
-		Stage:    stage,
-		Step:     step,
-		Status:   status,
-		Progress: progress,
-		Total:    100,
-		Message:  message,
+		PluginID: pluginID, SiteID: siteID, Stage: stage, Step: step,
+		Status: status, Progress: progress, Total: 100, Message: message,
 	})
 
+	s.emitProgressLog(pluginID, siteID, step, stage, message, progress)
+}
+
+// emitProgressLog logs the progress event.
+func (s *Service) emitProgressLog(pluginID, siteID int64, step, stage, message string, progress int) {
 	logLevel := loglevel.Info.String()
 	if step == stagestatus.Failed.String() {
 		logLevel = loglevel.Error.String()
@@ -104,27 +78,20 @@ func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID
 		return
 	}
 
-	eventType := ws.EventPublishProgress
-	if step == stagestatus.Started.String() {
-		eventType = ws.EventPublishStarted
-	} else if step == stagestatus.Completed.String() || step == stagestatus.Failed.String() {
-		eventType = ws.EventPublishComplete
-	}
-
+	eventType := resolveProgressEvent(step)
 	stage := mapStepToStage(step)
 	status := mapStepToStatus(step)
 
 	ws.BroadcastWithSession(s.wsHub, eventType, ws.PublishStageProgressData{
-		PluginID: pluginID,
-		SiteID:   siteID,
-		Stage:    stage,
-		Step:     step,
-		Status:   status,
-		Progress: progress,
-		Total:    100,
-		Message:  message,
+		PluginID: pluginID, SiteID: siteID, Stage: stage, Step: step,
+		Status: status, Progress: progress, Total: 100, Message: message,
 	}, sessionID)
 
+	s.emitSessionProgressLog(pluginID, siteID, sessionID, step, stage, message, progress)
+}
+
+// emitSessionProgressLog logs a session-scoped progress event.
+func (s *Service) emitSessionProgressLog(pluginID, siteID int64, sessionID, step, stage, message string, progress int) {
 	logLevel := loglevel.Info.String()
 	if step == stagestatus.Failed.String() {
 		logLevel = loglevel.Error.String()
@@ -134,22 +101,27 @@ func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID
 	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "sessionId", sessionID, "step", step, "stage", stage, "progress", progress, "message", message)
 }
 
+// resolveProgressEvent maps step to ws event type.
+func resolveProgressEvent(step string) string {
+	switch step {
+	case stagestatus.Started.String():
+		return ws.EventPublishStarted
+	case stagestatus.Completed.String(), stagestatus.Failed.String():
+		return ws.EventPublishComplete
+	default:
+		return ws.EventPublishProgress
+	}
+}
+
 // broadcastStageStatus explicitly marks a publish stage as success/error
-func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, status string, progress int, message string, details json.RawMessage) {
+func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage, status string, progress int, message string, details json.RawMessage) {
 	if s.wsHub == nil {
 		return
 	}
 
 	ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.PublishStageStatusData{
-		PluginID: pluginID,
-		SiteID:   siteID,
-		Stage:    stage,
-		Step:     stage,
-		Status:   status,
-		Progress: progress,
-		Total:    100,
-		Message:  message,
-		Details:  details,
+		PluginID: pluginID, SiteID: siteID, Stage: stage, Step: stage,
+		Status: status, Progress: progress, Total: 100, Message: message, Details: details,
 	})
 
 	level := loglevel.Info.String()
@@ -179,16 +151,12 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, step, message, details)
 
 	pluginName, siteName, siteURL := s.resolveNames(pluginID, siteID, details)
+	s.logWithLevel(level, message, pluginName, siteName, siteURL, pluginID, siteID, step)
+}
 
-	logFields := []any{
-		"plugin", pluginName,
-		"site", siteName,
-	}
-	if siteURL != "" {
-		logFields = append(logFields, "siteUrl", siteURL)
-	}
-	logFields = append(logFields, "pluginId", pluginID, "siteId", siteID, "step", step)
-
+// logWithLevel dispatches a log message at the appropriate level.
+func (s *Service) logWithLevel(level, message, pluginName, siteName, siteURL string, pluginID, siteID int64, step string) {
+	logFields := buildLogFields(pluginName, siteName, siteURL, pluginID, siteID, step)
 	switch level {
 	case "error":
 		s.log.Error(message, logFields...)
@@ -201,27 +169,36 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	}
 }
 
+// buildLogFields constructs log fields for detailed log messages.
+func buildLogFields(pluginName, siteName, siteURL string, pluginID, siteID int64, step string) []any {
+	fields := []any{"plugin", pluginName, "site", siteName}
+	if siteURL != "" {
+		fields = append(fields, "siteUrl", siteURL)
+	}
+	return append(fields, "pluginId", pluginID, "siteId", siteID, "step", step)
+}
+
 // broadcastStageComplete sends a stage_complete event for frontend tracking
 func (s *Service) broadcastStageComplete(pluginID, siteID int64, sessionID, stageName, status string, durationMs int64, details json.RawMessage) {
 	if s.wsHub == nil {
 		return
 	}
-
 	ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.PublishStageCompleteData{
-		Type:      "stage_complete",
-		SessionID: sessionID,
-		Stage:     stageName,
-		Status:    status,
-		Duration:  durationMs,
-		PluginID:  pluginID,
-		SiteID:    siteID,
-		Details:   details,
+		Type: "stage_complete", SessionID: sessionID, Stage: stageName,
+		Status: status, Duration: durationMs, PluginID: pluginID, SiteID: siteID, Details: details,
 	})
 }
 
 // resolveNames looks up plugin/site names from details or DB
 func (s *Service) resolveNames(pluginID, siteID int64, details json.RawMessage) (string, string, string) {
-	// Parse details into a typed struct for name resolution
+	pluginName, siteName, siteURL := parseNameDetails(details)
+	pluginName = s.resolvePluginName(pluginID, pluginName)
+	siteName, siteURL = s.resolveSiteNames(siteID, siteName, siteURL)
+	return pluginName, siteName, siteURL
+}
+
+// parseNameDetails extracts names from JSON details.
+func parseNameDetails(details json.RawMessage) (string, string, string) {
 	var parsed struct {
 		PluginName string `json:",omitempty"`
 		SiteName   string `json:",omitempty"`
@@ -230,35 +207,38 @@ func (s *Service) resolveNames(pluginID, siteID int64, details json.RawMessage) 
 	if len(details) > 0 {
 		_ = json.Unmarshal(details, &parsed)
 	}
+	return parsed.PluginName, parsed.SiteName, parsed.SiteURL
+}
 
-	pluginName := parsed.PluginName
-	siteName := parsed.SiteName
-	siteURL := parsed.SiteURL
-
-	if pluginName == "" && pluginID > 0 {
+// resolvePluginName fetches plugin name from DB if not provided.
+func (s *Service) resolvePluginName(pluginID int64, name string) string {
+	if name == "" && pluginID > 0 {
 		if pResult := s.pluginService.GetByID(context.Background(), pluginID); pResult.IsSafe() {
-			pluginName = pResult.Value().Name
+			return pResult.Value().Name
 		}
 	}
-	if pluginName == "" {
-		pluginName = fmt.Sprintf("plugin#%d", pluginID)
+	if name == "" {
+		return fmt.Sprintf("plugin#%d", pluginID)
 	}
+	return name
+}
 
-	if (siteName == "" || siteURL == "") && siteID > 0 {
+// resolveSiteNames fetches site name/URL from DB if not provided.
+func (s *Service) resolveSiteNames(siteID int64, name, url string) (string, string) {
+	if (name == "" || url == "") && siteID > 0 {
 		if siteInfo, _, err := s.getSiteCredentials(context.Background(), siteID); err == nil {
-			if siteName == "" {
-				siteName = siteInfo.Name
+			if name == "" {
+				name = siteInfo.Name
 			}
-			if siteURL == "" {
-				siteURL = siteInfo.URL
+			if url == "" {
+				url = siteInfo.URL
 			}
 		}
 	}
-	if siteName == "" {
-		siteName = fmt.Sprintf("site#%d", siteID)
+	if name == "" {
+		name = fmt.Sprintf("site#%d", siteID)
 	}
-
-	return pluginName, siteName, siteURL
+	return name, url
 }
 
 // mapStepToStage maps step names to stage names for frontend compatibility
@@ -293,7 +273,6 @@ func mapStepToStatus(step string) string {
 
 // Session logging helper methods
 
-// sessionLog writes a log entry to the session file
 func (s *Service) sessionLog(sessionID, level, step, message string, details json.RawMessage) {
 	if s.sessionService == nil || sessionID == "" {
 		return
@@ -301,7 +280,6 @@ func (s *Service) sessionLog(sessionID, level, step, message string, details jso
 	s.sessionService.Log(sessionID, level, step, message, details)
 }
 
-// sessionLogStageStart writes a stage header to the session log
 func (s *Service) sessionLogStageStart(sessionID, stageName string) {
 	if s.sessionService == nil || sessionID == "" {
 		return
@@ -309,15 +287,13 @@ func (s *Service) sessionLogStageStart(sessionID, stageName string) {
 	s.sessionService.LogStageStart(sessionID, stageName)
 }
 
-// sessionLogStageEnd writes a stage completion marker
-func (s *Service) sessionLogStageEnd(sessionID, stageName, status string, durationMs int64) {
+func (s *Service) sessionLogStageEnd(sessionID, stageName string, status stagestatus.Variant, durationMs int64) {
 	if s.sessionService == nil || sessionID == "" {
 		return
 	}
-	s.sessionService.LogStageEnd(sessionID, stageName, status, durationMs)
+	s.sessionService.LogStageEnd(sessionID, stageName, status.String(), durationMs)
 }
 
-// endSession marks a session as complete
 func (s *Service) endSession(sessionID, status, errorMsg string) {
 	if s.sessionService == nil || sessionID == "" {
 		return
