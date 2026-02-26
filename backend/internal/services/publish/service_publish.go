@@ -22,7 +22,6 @@ import (
 )
 
 // publishContext bundles the recurring identifiers and dependencies that flow through the publish pipeline.
-// This avoids passing pluginID, siteID, sessionID, wpClient, mapping, siteInfo as separate params.
 type publishContext struct {
 	PluginID  int64
 	SiteID    int64
@@ -31,6 +30,50 @@ type publishContext struct {
 	Mapping   *models.PluginMapping
 	SiteInfo  *models.Site
 }
+
+// stageLog builds a StageLogInput from the context fields.
+func (p *publishContext) stageLog(level, stage string, ctx StageContext) StageLogInput {
+	return StageLogInput{
+		PluginID: p.PluginID, SiteID: p.SiteID, SessionID: p.SessionID,
+		Level: level, Stage: stage, Ctx: ctx,
+	}
+}
+
+// progress builds a ProgressInput from the context fields.
+func (p *publishContext) progress(step string, pct int, message string) ProgressInput {
+	return ProgressInput{
+		PluginID: p.PluginID, SiteID: p.SiteID, SessionID: p.SessionID,
+		Step: step, Progress: pct, Message: message,
+	}
+}
+
+// detailed builds a DetailedLogInput from the context fields.
+func (p *publishContext) detailed(level, step, message string, details []byte) DetailedLogInput {
+	return DetailedLogInput{
+		PluginID: p.PluginID, SiteID: p.SiteID,
+		Level: level, Step: step, Message: message, Details: details,
+	}
+}
+
+// stageComplete builds a StageCompleteInput from the context fields.
+func (p *publishContext) stageComplete(stageName, status string, durationMs int64, details []byte) StageCompleteInput {
+	return StageCompleteInput{
+		PluginID: p.PluginID, SiteID: p.SiteID, SessionID: p.SessionID,
+		StageName: stageName, Status: status, DurationMs: durationMs, Details: details,
+	}
+}
+
+// ─── Convenience for non-pctx callers ────────────────────────────────────────
+
+func progressFor(pluginID, siteID int64, step string, pct int, message string) ProgressInput {
+	return ProgressInput{PluginID: pluginID, SiteID: siteID, Step: step, Progress: pct, Message: message}
+}
+
+func detailedFor(pluginID, siteID int64, level, step, message string, details []byte) DetailedLogInput {
+	return DetailedLogInput{PluginID: pluginID, SiteID: siteID, Level: level, Step: step, Message: message, Details: details}
+}
+
+// ─── Publish Entry Points ────────────────────────────────────────────────────
 
 // Publish publishes plugin changes to a WordPress site
 func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts PublishOptions) apperror.Result[PublishResult] {
@@ -43,7 +86,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	}
 	result.SessionID = sessionID
 
-	s.broadcastProgressWithSession(pluginID, siteID, sessionID, stagestatus.Started.String(), 0, "Starting publish...")
+	s.broadcastProgress(ProgressInput{PluginID: pluginID, SiteID: siteID, SessionID: sessionID, Step: stagestatus.Started.String(), Progress: 0, Message: "Starting publish..."})
 	s.sessionLog(sessionID, loglevel.Info.String(), "init", fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name), nil)
 
 	pctx := &publishContext{PluginID: pluginID, SiteID: siteID, SessionID: sessionID}
@@ -78,10 +121,12 @@ func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64
 // failInit records error and broadcasts failure for init context.
 func (s *Service) failInit(pluginID, siteID int64, err error, result *PublishResult) (models.Plugin, *models.Site, string, string, error) {
 	result.ErrorMessage = err.Error()
-	s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 0, err.Error())
+	s.broadcastProgress(progressFor(pluginID, siteID, stagestatus.Failed.String(), 0, err.Error()))
 
 	return models.Plugin{}, nil, "", "", err
 }
+
+// ─── Pipeline ────────────────────────────────────────────────────────────────
 
 // runPublishPipeline executes the backup → package → upload → activate → cleanup pipeline.
 func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, pluginInfo models.Plugin, siteInfo *models.Site, password string, options PublishOptions, result *PublishResult) error {
@@ -111,7 +156,7 @@ func (s *Service) failPipeline(pctx *publishContext, err error, result *PublishR
 	result.ErrorMessage = err.Error()
 	s.sessionLog(pctx.SessionID, loglevel.Error.String(), "init", fmt.Sprintf("Failed to get mapping: %s", err.Error()), nil)
 	s.endSession(pctx.SessionID, loglevel.Error.String(), err.Error())
-	s.broadcastProgressWithSession(pctx.PluginID, pctx.SiteID, pctx.SessionID, stagestatus.Failed.String(), 0, err.Error())
+	s.broadcastProgress(pctx.progress(stagestatus.Failed.String(), 0, err.Error()))
 
 	return err
 }
@@ -119,7 +164,7 @@ func (s *Service) failPipeline(pctx *publishContext, err error, result *PublishR
 // logConnect broadcasts the WordPress connection attempt.
 func (s *Service) logConnect(pluginID, siteID int64, siteInfo *models.Site) {
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
-	s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), toDetails(ConnectDetails{SiteURL: siteInfo.URL, Username: siteInfo.Username}))
+	s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Info.String(), "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), toDetails(ConnectDetails{SiteURL: siteInfo.URL, Username: siteInfo.Username})))
 }
 
 // runBackupStage runs backup and appends the stage result.
@@ -129,7 +174,7 @@ func (s *Service) runBackupStage(pluginID, siteID int64, mapping *models.PluginM
 
 	if stage.Status.IsFailed() {
 		result.ErrorMessage = stage.Message
-		s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 10, stage.Message)
+		s.broadcastProgress(progressFor(pluginID, siteID, stagestatus.Failed.String(), 10, stage.Message))
 
 		return fmt.Errorf("%s", stage.Message)
 	}
@@ -168,8 +213,8 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 // failStage records a stage failure in the result.
 func (s *Service) failStage(pluginID, siteID int64, stageName string, stage Stage, result *PublishResult) error {
 	result.ErrorMessage = stage.Message
-	s.broadcastDetailedLog(pluginID, siteID, loglevel.Error.String(), stageName, fmt.Sprintf("%s failed: %s", stageName, stage.Message), nil)
-	s.broadcastProgress(pluginID, siteID, stagestatus.Failed.String(), 30, stage.Message)
+	s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Error.String(), stageName, fmt.Sprintf("%s failed: %s", stageName, stage.Message), nil))
+	s.broadcastProgress(progressFor(pluginID, siteID, stagestatus.Failed.String(), 30, stage.Message))
 
 	return fmt.Errorf("%s", stage.Message)
 }
@@ -178,11 +223,11 @@ func (s *Service) failStage(pluginID, siteID int64, stageName string, stage Stag
 func (s *Service) runUploadStage(ctx context.Context, pctx *publishContext, zipPath string, options PublishOptions, preUploadBackupZip string, result *PublishResult) error {
 	isAlreadyActivated, uploadStage := s.executeUploadStage(ctx, pctx, zipPath)
 	result.Stages = append(result.Stages, uploadStage)
-	s.broadcastStageComplete(pctx.PluginID, pctx.SiteID, pctx.SessionID, "upload", uploadStage.Status.String(), uploadStage.Duration, toDetails(UploadStageDetails{RemoteSlug: pctx.Mapping.RemoteSlug, Activated: isAlreadyActivated}))
+	s.broadcastStageComplete(pctx.stageComplete("upload", uploadStage.Status.String(), uploadStage.Duration, toDetails(UploadStageDetails{RemoteSlug: pctx.Mapping.RemoteSlug, Activated: isAlreadyActivated})))
 
 	if uploadStage.Status.IsFailed() {
 		result.ErrorMessage = uploadStage.Message
-		s.broadcastProgress(pctx.PluginID, pctx.SiteID, stagestatus.Failed.String(), 60, uploadStage.Message)
+		s.broadcastProgress(pctx.progress(stagestatus.Failed.String(), 60, uploadStage.Message))
 
 		return fmt.Errorf("%s", uploadStage.Message)
 	}
@@ -196,7 +241,7 @@ func (s *Service) runUploadStage(ctx context.Context, pctx *publishContext, zipP
 func (s *Service) runActivateAndCleanup(ctx context.Context, pctx *publishContext, isAlreadyActivated bool, preUploadBackupZip string, options PublishOptions, result *PublishResult) {
 	activateStage := s.executeActivateStage(pctx, isAlreadyActivated)
 	result.Stages = append(result.Stages, activateStage)
-	s.broadcastStageComplete(pctx.PluginID, pctx.SiteID, pctx.SessionID, "activate", activateStage.Status.String(), activateStage.Duration, toDetails(ActivateSkipDetails{RemoteSlug: pctx.Mapping.RemoteSlug, Skipped: isAlreadyActivated}))
+	s.broadcastStageComplete(pctx.stageComplete("activate", activateStage.Status.String(), activateStage.Duration, toDetails(ActivateSkipDetails{RemoteSlug: pctx.Mapping.RemoteSlug, Skipped: isAlreadyActivated})))
 
 	if activateStage.Status.IsFailed() {
 		result.ActivationStatus = loglevel.Error.String()
@@ -243,13 +288,15 @@ func (s *Service) startPublishSession(pluginID, siteID int64, pluginInfo models.
 	return sessionID, nil
 }
 
+// ─── Stage Execution ─────────────────────────────────────────────────────────
+
 // executeBackupStage runs the backup stage of the publish pipeline
 func (s *Service) executeBackupStage(pluginID, siteID int64, mapping *models.PluginMapping) Stage {
 	return s.runStage("backup", func() error {
-		s.broadcastProgress(pluginID, siteID, "backup", 10, "Creating backup...")
-		s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "backup", "Initiating remote plugin backup", toDetails(BackupStageDetails{
+		s.broadcastProgress(progressFor(pluginID, siteID, "backup", 10, "Creating backup..."))
+		s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Info.String(), "backup", "Initiating remote plugin backup", toDetails(BackupStageDetails{
 			MappingID: mapping.ID, RemoteSlug: mapping.RemoteSlug,
-		}))
+		})))
 
 		return nil
 	})
@@ -261,7 +308,7 @@ func (s *Service) executePackageStage(pluginID, siteID int64, pluginInfo models.
 	var fileCount int
 
 	stage := s.runStage("package", func() error {
-		s.broadcastProgress(pluginID, siteID, "packaging", 30, "Building package...")
+		s.broadcastProgress(progressFor(pluginID, siteID, "packaging", 30, "Building package..."))
 		var err error
 		zipPath, fileCount, err = s.buildPluginPackage(pluginID, siteID, pluginInfo, options)
 
@@ -273,9 +320,9 @@ func (s *Service) executePackageStage(pluginID, siteID int64, pluginInfo models.
 
 // buildPluginPackage creates the ZIP for full or selective mode.
 func (s *Service) buildPluginPackage(pluginID, siteID int64, pluginInfo models.Plugin, options PublishOptions) (string, int, error) {
-	s.broadcastDetailedLog(pluginID, siteID, loglevel.Info.String(), "package", fmt.Sprintf("Packaging plugin from: %s", pluginInfo.Path), toDetails(PackageDetails{
+	s.broadcastDetailedLog(detailedFor(pluginID, siteID, loglevel.Info.String(), "package", fmt.Sprintf("Packaging plugin from: %s", pluginInfo.Path), toDetails(PackageDetails{
 		PluginPath: pluginInfo.Path, PluginName: pluginInfo.Name, Mode: options.Mode, ExcludePatterns: pluginInfo.ExcludePatterns,
-	}))
+	})))
 
 	zipPath, fileCount, err := s.buildZip(pluginID, siteID, pluginInfo, options)
 	if err != nil {
@@ -292,21 +339,23 @@ func (s *Service) buildPluginPackage(pluginID, siteID int64, pluginInfo models.P
 // buildZip delegates to selective or full zip creation.
 func (s *Service) buildZip(pluginID, siteID int64, pluginInfo models.Plugin, options PublishOptions) (string, int, error) {
 	if options.Mode == "selected" && len(options.Files) > 0 {
-		s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", len(options.Files)), toDetails(SelectedFilesDetails{SelectedFiles: options.Files}))
+		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", len(options.Files)), toDetails(SelectedFilesDetails{SelectedFiles: options.Files})))
 		path, err := s.createSelectiveZip(pluginInfo.Path, pluginInfo.Name, options.Files)
 
 		return path, len(options.Files), err
 	}
 
-	s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating full ZIP with ~%d files", pluginInfo.FileCount), nil)
+	s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "package", fmt.Sprintf("Creating full ZIP with ~%d files", pluginInfo.FileCount), nil))
 	path, err := s.createFullZip(pluginInfo.Path, pluginInfo.Name, pluginInfo.ExcludePatterns)
 
 	return path, pluginInfo.FileCount, err
 }
 
+// ─── Pre-Upload Backup ──────────────────────────────────────────────────────
+
 // createPreUploadBackup exports the remote plugin for rollback capability
 func (s *Service) createPreUploadBackup(ctx context.Context, pctx *publishContext) string {
-	s.broadcastProgress(pctx.PluginID, pctx.SiteID, "pre-backup", 45, "Creating pre-upload backup for rollback...")
+	s.broadcastProgress(pctx.progress("pre-backup", 45, "Creating pre-upload backup for rollback..."))
 
 	return s.exportRemoteForRollback(pctx)
 }
@@ -315,10 +364,10 @@ func (s *Service) createPreUploadBackup(ctx context.Context, pctx *publishContex
 func (s *Service) exportRemoteForRollback(pctx *publishContext) string {
 	exportResult, exportErr := pctx.WPClient.ExportPlugin(pctx.Mapping.RemoteSlug)
 	if exportErr != nil {
-		s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "warn", "pre-backup", StageContext{
+		s.broadcastStageLog(pctx.stageLog("warn", "pre-backup", StageContext{
 			What:   "Pre-upload backup for rollback",
 			Result: fmt.Sprintf("Skipped: %s (rollback won't be available)", exportErr.Error()),
-		})
+		}))
 
 		return ""
 	}
@@ -342,13 +391,15 @@ func (s *Service) saveRollbackZip(pctx *publishContext, exportResult *wordpress.
 		return ""
 	}
 
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "pre-backup", StageContext{
+	s.broadcastStageLog(pctx.stageLog("info", "pre-backup", StageContext{
 		What:   "Pre-upload backup created",
 		Result: fmt.Sprintf("Saved %s (%d files)", formatBytes(int64(len(zipData))), exportResult.FileCount),
-	})
+	}))
 
 	return backupPath
 }
+
+// ─── Upload ──────────────────────────────────────────────────────────────────
 
 // executeUploadStage uploads the plugin ZIP to WordPress
 func (s *Service) executeUploadStage(ctx context.Context, pctx *publishContext, zipPath string) (bool, Stage) {
@@ -368,7 +419,7 @@ func (s *Service) executeUploadStage(ctx context.Context, pctx *publishContext, 
 // performUpload handles the upload retry and result logging.
 func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPath string, startTime time.Time) (bool, error) {
 	zipSize := getFileSize(zipPath)
-	s.broadcastProgress(pctx.PluginID, pctx.SiteID, "uploading", 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize)))
+	s.broadcastProgress(pctx.progress("uploading", 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
 
 	type uploadOut struct {
 		isPerformed  bool
@@ -391,9 +442,9 @@ func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPa
 	if uploadVal.isPerformed {
 		s.logUploadSuccess(pctx, zipSize, startTime, uploadVal.isActivated, retryResult.Attempts, uploadVal.uploadResult)
 	} else {
-		s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "warn", "upload", StageContext{
+		s.broadcastStageLog(pctx.stageLog("warn", "upload", StageContext{
 			What: "Upload ZIP to WordPress", Result: "SIMULATED - no companion plugin available",
-		})
+		}))
 	}
 
 	return uploadVal.isActivated, nil
@@ -404,12 +455,14 @@ func getFileSize(path string) int64 {
 	return pathutil.FileSize(path)
 }
 
+// ─── Activate ────────────────────────────────────────────────────────────────
+
 // executeActivateStage activates the plugin on WordPress
 func (s *Service) executeActivateStage(pctx *publishContext, isAlreadyActivated bool) Stage {
 	activateStartTime := time.Now()
 
 	return s.runStageWithSession(pctx.SessionID, "activate", func() error {
-		s.broadcastProgress(pctx.PluginID, pctx.SiteID, "activating", 80, "Activating plugin...")
+		s.broadcastProgress(pctx.progress("activating", 80, "Activating plugin..."))
 
 		if isAlreadyActivated {
 			return s.logActivateSkipped(pctx)
@@ -421,11 +474,11 @@ func (s *Service) executeActivateStage(pctx *publishContext, isAlreadyActivated 
 
 // logActivateSkipped logs when activation was already done during upload.
 func (s *Service) logActivateSkipped(pctx *publishContext) error {
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "activate", StageContext{
+	s.broadcastStageLog(pctx.stageLog("info", "activate", StageContext{
 		What: "Activate plugin on WordPress", Why: "Enable plugin functionality after upload",
 		Where: pctx.SiteInfo.URL, Result: "SKIPPED - plugin activated during upload",
 		Details: toDetails(ActivateSkipDetails{RemoteSlug: pctx.Mapping.RemoteSlug, Skipped: true}),
-	})
+	}))
 
 	return nil
 }
@@ -452,10 +505,10 @@ func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time)
 
 // failActivateNoUploader reports that activation failed because no uploader is available.
 func (s *Service) failActivateNoUploader(pctx *publishContext) error {
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "error", "activate", StageContext{
+	s.broadcastStageLog(pctx.stageLog("error", "activate", StageContext{
 		What: "Activate plugin failed", Why: "Riseup Asia Uploader is not available on the remote site",
 		Where: pctx.SiteInfo.URL, Result: "FAILED: Install the Riseup Asia Uploader companion plugin to enable activation",
-	})
+	}))
 
 	return apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available — cannot activate plugin").
 		WithURL(pctx.SiteInfo.URL)
@@ -463,20 +516,22 @@ func (s *Service) failActivateNoUploader(pctx *publishContext) error {
 
 // logActivateRequest broadcasts the activation request details.
 func (s *Service) logActivateRequest(pctx *publishContext, endpointURL string) {
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "activate", StageContext{
+	s.broadcastStageLog(pctx.stageLog("info", "activate", StageContext{
 		What: "Activate plugin via Riseup Asia Uploader", Why: "Enable plugin after successful upload",
 		Where: endpointURL, Details: toDetails(ActivateRequestDetails{Method: "POST", RemoteSlug: pctx.Mapping.RemoteSlug}),
-	})
+	}))
 }
 
 // logActivateSuccess broadcasts activation success.
 func (s *Service) logActivateSuccess(pctx *publishContext, endpointURL string, startTime time.Time) {
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "activate", StageContext{
+	s.broadcastStageLog(pctx.stageLog("info", "activate", StageContext{
 		What: "Activate plugin via Riseup Asia Uploader", Why: "Enable plugin after upload",
 		Where: endpointURL, Result: "SUCCESS - plugin is now active",
 		Details: toDetails(ActivateSuccessDetails{RemoteSlug: pctx.Mapping.RemoteSlug, DurationMs: time.Since(startTime).Milliseconds()}),
-	})
+	}))
 }
+
+// ─── Rollback ────────────────────────────────────────────────────────────────
 
 // handleRollback performs rollback when activation fails
 func (s *Service) handleRollback(ctx context.Context, pctx *publishContext, preUploadBackupZip string, options PublishOptions, activateStage Stage, result *PublishResult) {
@@ -496,11 +551,11 @@ func (s *Service) handleRollback(ctx context.Context, pctx *publishContext, preU
 
 // executeRollbackSteps deactivates the broken plugin and optionally re-uploads the backup.
 func (s *Service) executeRollbackSteps(ctx context.Context, pctx *publishContext, preUploadBackupZip string, activateStage Stage) error {
-	s.broadcastProgress(pctx.PluginID, pctx.SiteID, "rollback", 85, "Activation failed — rolling back...")
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "warn", "rollback", StageContext{
+	s.broadcastProgress(pctx.progress("rollback", 85, "Activation failed — rolling back..."))
+	s.broadcastStageLog(pctx.stageLog("warn", "rollback", StageContext{
 		What: "Rolling back plugin after activation failure",
 		Why:  fmt.Sprintf("Activation failed: %s", activateStage.Message), Where: pctx.SiteInfo.URL,
-	})
+	}))
 
 	s.rollbackDeactivate(pctx)
 
@@ -509,33 +564,33 @@ func (s *Service) executeRollbackSteps(ctx context.Context, pctx *publishContext
 
 // rollbackDeactivate deactivates the broken plugin during rollback.
 func (s *Service) rollbackDeactivate(pctx *publishContext) {
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "rollback", StageContext{What: "Deactivating broken plugin to stabilize site"})
+	s.broadcastStageLog(pctx.stageLog("info", "rollback", StageContext{What: "Deactivating broken plugin to stabilize site"}))
 
 	if disableErr := pctx.WPClient.DisablePluginViaUploader(pctx.Mapping.RemoteSlug); disableErr != nil {
-		s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "warn", "rollback", StageContext{
+		s.broadcastStageLog(pctx.stageLog("warn", "rollback", StageContext{
 			What: "Deactivation during rollback", Result: fmt.Sprintf("Could not deactivate: %s (site may already be safe)", disableErr.Error()),
-		})
+		}))
 	}
 }
 
 // rollbackRestore re-uploads the pre-upload backup if available.
 func (s *Service) rollbackRestore(ctx context.Context, pctx *publishContext, preUploadBackupZip string) error {
 	if preUploadBackupZip == "" {
-		s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "warn", "rollback", StageContext{
+		s.broadcastStageLog(pctx.stageLog("warn", "rollback", StageContext{
 			What: "No pre-upload backup available", Result: "Plugin deactivated but files not restored. Manual intervention may be needed.",
-		})
+		}))
 
 		return nil
 	}
 
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "rollback", StageContext{What: "Re-uploading pre-publish backup to restore previous version"})
+	s.broadcastStageLog(pctx.stageLog("info", "rollback", StageContext{What: "Re-uploading pre-publish backup to restore previous version"}))
 	_, _, _, uploadErr := s.uploadPlugin(ctx, pctx.WPClient, preUploadBackupZip, pctx.Mapping.RemoteSlug)
 
 	if uploadErr != nil {
 		return apperror.Wrap(uploadErr, apperror.ErrWPConnection, "rollback upload failed")
 	}
 
-	s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, "info", "rollback", StageContext{What: "Rollback upload complete", Result: "Previous plugin version restored successfully"})
+	s.broadcastStageLog(pctx.stageLog("info", "rollback", StageContext{What: "Rollback upload complete", Result: "Previous plugin version restored successfully"}))
 
 	return nil
 }
@@ -545,19 +600,21 @@ func (s *Service) reportRollbackOutcome(pctx *publishContext, rollbackStage Stag
 	if rollbackStage.Status.IsFailed() {
 		result.RollbackStatus = enumstatus.Failed.String()
 		result.RollbackMessage = rollbackStage.Message
-		s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, loglevel.Error.String(), "rollback", StageContext{What: "Rollback failed", Result: rollbackStage.Message})
+		s.broadcastStageLog(pctx.stageLog(loglevel.Error.String(), "rollback", StageContext{What: "Rollback failed", Result: rollbackStage.Message}))
 	} else {
 		result.RollbackStatus = enumstatus.Success.String()
 		result.RollbackMessage = "Previous version restored"
-		s.broadcastStageLog(pctx.PluginID, pctx.SiteID, pctx.SessionID, loglevel.Info.String(), "rollback", StageContext{What: "Rollback completed successfully", Result: "Site should be stable with previous plugin version"})
+		s.broadcastStageLog(pctx.stageLog(loglevel.Info.String(), "rollback", StageContext{What: "Rollback completed successfully", Result: "Site should be stable with previous plugin version"}))
 	}
 }
+
+// ─── Cleanup ─────────────────────────────────────────────────────────────────
 
 // executeCleanupStage marks files as synced
 func (s *Service) executeCleanupStage(ctx context.Context, pluginID, siteID int64, options PublishOptions) Stage {
 	return s.runStage("cleanup", func() error {
-		s.broadcastProgress(pluginID, siteID, "cleanup", 95, "Marking files as synced...")
-		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", "Updating local sync state", nil)
+		s.broadcastProgress(progressFor(pluginID, siteID, "cleanup", 95, "Marking files as synced..."))
+		s.broadcastDetailedLog(detailedFor(pluginID, siteID, "info", "cleanup", "Updating local sync state", nil))
 
 		if options.Mode == "selected" && len(options.Files) > 0 {
 			return s.syncService.MarkSynced(ctx, pluginID, siteID, options.Files)
@@ -576,6 +633,8 @@ func (s *Service) countFilesUpdated(options PublishOptions, pluginInfo models.Pl
 	return pluginInfo.FileCount
 }
 
+// ─── Completion ──────────────────────────────────────────────────────────────
+
 // broadcastCompletion sends the final publish status broadcast
 func (s *Service) broadcastCompletion(pluginID, siteID int64, result *PublishResult) {
 	completionStep, completionMessage := resolveCompletionStatus(result)
@@ -584,10 +643,10 @@ func (s *Service) broadcastCompletion(pluginID, siteID int64, result *PublishRes
 		logLevel = loglevel.Error.String()
 	}
 
-	s.broadcastDetailedLog(pluginID, siteID, logLevel, "complete", completionMessage, toDetails(CompletionDetails{
+	s.broadcastDetailedLog(detailedFor(pluginID, siteID, logLevel, "complete", completionMessage, toDetails(CompletionDetails{
 		IsSuccess: result.IsSuccess, FilesUpdated: result.FilesUpdated, DurationMs: result.Duration,
-	}))
-	s.broadcastProgress(pluginID, siteID, completionStep, 100, completionMessage)
+	})))
+	s.broadcastProgress(progressFor(pluginID, siteID, completionStep, 100, completionMessage))
 }
 
 // resolveCompletionStatus returns step and message for completion broadcast.
@@ -602,6 +661,8 @@ func resolveCompletionStatus(result *PublishResult) (string, string) {
 
 	return stagestatus.Failed.String(), msg
 }
+
+// ─── History ─────────────────────────────────────────────────────────────────
 
 // recordHistory records the publish result to the history service
 func (s *Service) recordHistory(pluginInfo models.Plugin, siteInfo *models.Site, options PublishOptions, result *PublishResult) {
