@@ -193,7 +193,7 @@ func main() {
 	ws.SetAppVersion(versionInfo.Version)
 
 	// Initialize services
-	services := initServices(db, cfg, wsHub, log)
+	services := initServices(InitServicesInput{DB: db, Cfg: cfg, WSHub: wsHub, Log: log})
 
 	// Initialize file caches for registered plugins
 	ctx := context.Background()
@@ -342,16 +342,24 @@ func parseLogLevel(level string) logger.Level {
 	}
 }
 
+// InitServicesInput holds dependencies for service initialization.
+type InitServicesInput struct {
+	DB    *database.DB
+	Cfg   *config.Config
+	WSHub *ws.Hub
+	Log   *logger.Logger
+}
+
 // initServices creates and wires all application services
-func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logger.Logger) *Services {
+func initServices(input InitServicesInput) *Services {
 	// WordPress REST API client factory with progress callback support
-	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details wordpress.ProgressDetails)) *wordpress.Client {
+	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(event wordpress.ProgressEvent)) *wordpress.Client {
 		return wordpress.NewClient(wordpress.ClientConfig{
 			BaseURL:         siteURL,
 			Username:        username,
 			Password:        password,
-			Timeout:         time.Duration(cfg.WordPress.TimeoutSeconds) * time.Second,
-			StackTraceDepth: cfg.Logging.StackTraceDepth,
+			Timeout:         time.Duration(input.Cfg.WordPress.TimeoutSeconds) * time.Second,
+			StackTraceDepth: input.Cfg.Logging.StackTraceDepth,
 			OnProgress:      onProgress,
 		})
 	}
@@ -362,93 +370,61 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 			BaseURL:         siteURL,
 			Username:        username,
 			Password:        password,
-			Timeout:         time.Duration(cfg.WordPress.TimeoutSeconds) * time.Second,
-			StackTraceDepth: cfg.Logging.StackTraceDepth,
+			Timeout:         time.Duration(input.Cfg.WordPress.TimeoutSeconds) * time.Second,
+			StackTraceDepth: input.Cfg.Logging.StackTraceDepth,
 		})
 	}
 
 	// Initialize session service for operation logging (must be before siteService)
 	sessionService, err := session.New(session.Config{
-		DataDir:       filepath.Dir(cfg.DatabasePath),
-		Logger:        log,
+		DataDir:       filepath.Dir(input.Cfg.DatabasePath),
+		Logger:        input.Log,
 		RetentionDays: 7,
 	})
 	if err != nil {
-		log.Error("Failed to initialize session service", "error", err)
+		input.Log.Error("Failed to initialize session service", "error", err)
 	}
+
+	siteWSHub := &SiteWSHubAdapter{hub: input.WSHub}
 
 	// Initialize services with dependencies
 	siteService := site.New(site.Config{
-		DB:              db,
-		Logger:          log,
-		EncryptionKey:   cfg.Security.EncryptionKey,
+		DB:              input.DB,
+		Logger:          input.Log,
+		EncryptionKey:   input.Cfg.Security.EncryptionKey,
 		WPClientFactory: wpClientFactoryWithProgress,
-		WSHub:           wsHub,
+		WSHub:           siteWSHub,
 		SessionService:  sessionService,
-		IsCacheEnabled:  cfg.RemotePlugins.CacheEnabled,
-		CacheTTLMinutes: cfg.RemotePlugins.CacheTTLMinutes,
+		IsCacheEnabled:  input.Cfg.RemotePlugins.CacheEnabled,
+		CacheTTLMinutes: input.Cfg.RemotePlugins.CacheTTLMinutes,
 	})
 
-	pluginService := plugin.New(plugin.Config{
-		DB:     db,
-		Logger: log,
-	})
+	pluginService := plugin.New(plugin.Config{DB: input.DB, Logger: input.Log})
 
 	backupService := backup.New(backup.Config{
-		DB:            db,
-		Logger:        log,
-		BackupDir:     cfg.Backup.Location,
-		RetentionDays: cfg.Backup.RetentionDays,
-		MaxPerPlugin:  cfg.Backup.MaxBackupsPerPlugin,
+		DB: input.DB, Logger: input.Log, BackupDir: input.Cfg.Backup.Location,
+		RetentionDays: input.Cfg.Backup.RetentionDays, MaxPerPlugin: input.Cfg.Backup.MaxBackupsPerPlugin,
 	})
 
 	syncService := sync.New(sync.Config{
-		DB:                    db,
-		Logger:                log,
-		PluginService:         pluginService,
-		SitePasswordDecryptor: siteService,
-		WPClientFactory:       wpClientFactory,
-		WSHub:                 wsHub,
+		DB: input.DB, Logger: input.Log, PluginService: pluginService,
+		SitePasswordDecryptor: siteService, WPClientFactory: wpClientFactory, WSHub: input.WSHub,
 	})
 
-	// Initialize publish history service
-	publishHistoryService := publishhistory.New(publishhistory.Config{
-		DB:     db,
-		Logger: log,
-	})
-
-	// Initialize site health service
-	siteHealthService := sitehealth.New(sitehealth.Config{
-		DB:     db,
-		Logger: log,
-	})
+	publishHistoryService := publishhistory.New(publishhistory.Config{DB: input.DB, Logger: input.Log})
+	siteHealthService := sitehealth.New(sitehealth.Config{DB: input.DB, Logger: input.Log})
 
 	publishService := publish.New(publish.Config{
-		DB:                    db,
-		Logger:                log,
-		PluginService:         pluginService,
-		BackupService:         backupService,
-		SyncService:           syncService,
-		SitePasswordDecryptor: siteService,
-		WPClientFactory:       wpClientFactory,
-		TempDir:               cfg.TempDir,
-		WSHub:                 wsHub,
-		SessionService:        sessionService,
-		HistoryService:        publishHistoryService,
+		DB: input.DB, Logger: input.Log, PluginService: pluginService, BackupService: backupService,
+		SyncService: syncService, SitePasswordDecryptor: siteService, WPClientFactory: wpClientFactory,
+		TempDir: input.Cfg.TempDir, WSHub: input.WSHub, SessionService: sessionService, HistoryService: publishHistoryService,
 	})
 
 	watcherService := watcher.New(watcher.Config{
-		DB:            db,
-		Logger:        log,
-		PluginService: pluginService,
-		WSHub:         wsHub,
+		DB: input.DB, Logger: input.Log, PluginService: pluginService, WSHub: input.WSHub,
 	})
 
-	// Initialize error history service for persistent error storage
-	errorHistoryService := errorhistory.New(errorhistory.Config{
-		DB:     db,
-		Logger: log,
-	})
+	errorHistoryService := errorhistory.New(errorhistory.Config{DB: input.DB, Logger: input.Log})
 
 	return &Services{
 		Site:           siteService,

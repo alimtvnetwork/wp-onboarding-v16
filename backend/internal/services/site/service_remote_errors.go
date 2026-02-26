@@ -103,7 +103,10 @@ func (s *Service) emitRemoteActionToSession(sessionId string, siteId int64, acti
 		s.sessionService.Log(sessionId, level, step, message, details)
 	}
 	if s.wsHub != nil {
-		s.wsHub.BroadcastRemotePluginLogWithSession(siteId, action, sessionId, level, step, message, details)
+		s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
+			SiteID: siteId, Action: action, SessionID: sessionId,
+			Level: level, Step: step, Message: message, Details: details,
+		})
 	}
 }
 
