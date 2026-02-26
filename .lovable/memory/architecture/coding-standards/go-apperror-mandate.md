@@ -1,5 +1,5 @@
 # Memory: architecture/coding-standards/go-apperror-mandate
-Updated: 2026-02-25
+Updated: 2026-02-26
 
 ---
 
@@ -13,5 +13,6 @@ Key rules:
 4. **Result types**: All result wrappers (`dbutil.Result[T]`, `apperror.Result[T]`, etc.) store and return `*apperror.AppError` from `.AppError()`.
 5. **CompiledError()**: When `*apperror.AppError` must cross into the `error` interface boundary (e.g., final HTTP response, CLI output), use `appErr.CompiledError()` which returns a plain `error` containing the full diagnostic string (stack trace, values, cause chain). This is the ONLY sanctioned `AppError→error` conversion.
 6. **NormalizePluginSlug()**: Use `apperror.NormalizePluginSlug(slug)` for slug validation/normalization. Returns `(string, *apperror.AppError)`.
+7. **Serializability**: `*apperror.AppError` is fully JSON-serializable via custom `MarshalJSON()`/`UnmarshalJSON()`. It can be marshaled, stored, transmitted, and deserialized back with all diagnostic context intact. **Struct fields that hold errors MUST use `*apperror.AppError`** (not raw `error`) so the error serializes alongside the parent struct. The sole exception is `AppError.Cause` which uses `error` interface for `errors.Unwrap()` compat, handled by custom JSON marshaling.
 
-This ensures stack traces, error codes, and diagnostic context are always preserved.
+This ensures stack traces, error codes, and diagnostic context are always preserved and transportable across process/network boundaries.
