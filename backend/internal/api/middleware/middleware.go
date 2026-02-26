@@ -162,21 +162,21 @@ func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duratio
 
 	// ── Parse envelope from response body ──
 	var env envelopeForParsing
-	envelopeParsed := false
+	isEnvelopeParsed := false
 	if rw.body.Len() > 0 {
 		if json.Unmarshal(rw.body.Bytes(), &env) == nil && env.Status.Message != "" {
-			envelopeParsed = true
+			isEnvelopeParsed = true
 		}
 	}
 
 	// ── Envelope Status ──
-	if envelopeParsed {
+	if isEnvelopeParsed {
 		sb.WriteString(fmt.Sprintf("  Error Code: %d\n", env.Status.Code))
 		sb.WriteString(fmt.Sprintf("  Error Message: %s\n", env.Status.Message))
 	}
 
 	// ── Request Delegation Context ──
-	if envelopeParsed && env.Attributes != nil {
+	if isEnvelopeParsed && env.Attributes != nil {
 		if env.Attributes.RequestedAt != "" {
 			sb.WriteString(fmt.Sprintf("  RequestedAt: %s\n", env.Attributes.RequestedAt))
 		}
@@ -186,7 +186,7 @@ func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duratio
 	}
 
 	// ── Delegated Service Error Stack (PHP errors/stack from remote) ──
-	if envelopeParsed && env.Errors != nil {
+	if isEnvelopeParsed && env.Errors != nil {
 		if env.Errors.BackendMessage != "" {
 			sb.WriteString(fmt.Sprintf("  Backend Error: %s\n", env.Errors.BackendMessage))
 		}
@@ -205,7 +205,7 @@ func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duratio
 	}
 
 	// ── Methods Stack (Go call chain) ──
-	if envelopeParsed && env.MethodsStack != nil && len(env.MethodsStack.Backend) > 0 {
+	if isEnvelopeParsed && env.MethodsStack != nil && len(env.MethodsStack.Backend) > 0 {
 		sb.WriteString("  Go Methods Stack:\n")
 		for i, frame := range env.MethodsStack.Backend {
 			sb.WriteString(fmt.Sprintf("    #%d %s at %s:%d\n", i, frame.Method, frame.File, frame.LineNumber))

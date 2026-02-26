@@ -156,7 +156,7 @@ func normalizeUploaderEnvelopeFields(status *UploaderStatus) {
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
 // uploadSource identifies how the upload was triggered (e.g., uploadsource.RestAPI).
-func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource uploadsource.Variant) (*UploaderUploadResult, error) {
+func (c *Client) UploadPluginViaUploader(zipPath string, slug string, isActivate bool, uploadSource uploadsource.Variant) (*UploaderUploadResult, error) {
 	uc, err := c.prepareUploadContext(zipPath, slug)
 	if err != nil {
 		return nil, err
@@ -167,13 +167,13 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, URL: uc.UploadURL, Method: "multipart/form-data",
 	}))
 
-	body, contentType, err := buildMultipartBody(uc, activate, uploadSource)
+	body, contentType, err := buildMultipartBody(uc, isActivate, uploadSource)
 	if err != nil {
 		return nil, err
 	}
 
-	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, activate, uc.ZipSize, body.Len()), toProgress(UploadBodyProgress{
-		Slug: uc.Slug, Activate: activate, ZipSize: uc.ZipSize, BodySize: body.Len(),
+	c.progress(action.Upload.String(), stagestatus.Running.String(), fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, isActivate, uc.ZipSize, body.Len()), toProgress(UploadBodyProgress{
+		Slug: uc.Slug, IsActivate: isActivate, ZipSize: uc.ZipSize, BodySize: body.Len(),
 	}))
 
 	return c.executeUploadHTTP(uc, body, contentType)

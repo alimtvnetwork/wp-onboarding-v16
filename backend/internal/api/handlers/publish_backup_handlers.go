@@ -46,11 +46,11 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, publish.PublishOptions{
-		Mode:              input.Mode,
-		Files:             input.Files,
-		CreateBackup:      input.CreateBackup,
-		KeepZipFiles:      input.KeepZipFiles,
-		RollbackOnFailure: true,
+		Mode:                input.Mode,
+		Files:               input.Files,
+		IsCreateBackup:      input.CreateBackup,
+		IsKeepZipFiles:      input.KeepZipFiles,
+		IsRollbackOnFailure: true,
 	})
 	if err != nil {
 		respondError(

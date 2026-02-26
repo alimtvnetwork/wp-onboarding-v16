@@ -245,22 +245,22 @@ func parseVersionLine(trimmed string) string {
 }
 
 // cleanupZip handles ZIP file cleanup after publish
-func (s *Service) cleanupZip(pluginID, siteID int64, zipPath string, publishFailed, keepZipFiles bool) {
+func (s *Service) cleanupZip(pluginID, siteID int64, zipPath string, isPublishFailed, isKeepZipFiles bool) {
 	if zipPath == "" {
 		return
 	}
 
-	if publishFailed {
+	if isPublishFailed {
 		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), toDetails(CleanupDetails{ZipPath: zipPath, Reason: "publish_failed"}))
 		return
 	}
 
-	if keepZipFiles {
-		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), toDetails(CleanupDetails{ZipPath: zipPath, KeepZipFiles: true}))
+	if isKeepZipFiles {
+		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), toDetails(CleanupDetails{ZipPath: zipPath, IsKeepZipFiles: true}))
 		return
 	}
 
-	s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), toDetails(CleanupDetails{KeepZipFiles: keepZipFiles}))
+	s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), toDetails(CleanupDetails{IsKeepZipFiles: isKeepZipFiles}))
 	os.Remove(zipPath)
 }
 
@@ -317,21 +317,21 @@ func buildUploadErrorInner(slug string, attempts int, err error) UploadErrorInne
 }
 
 // logUploadSuccess logs a structured upload success
-func (s *Service) logUploadSuccess(pluginID, siteID int64, sessionID string, mapping *models.PluginMapping, zipSize int64, startTime time.Time, activated bool, attempts int, uploadResult *wordpress.OnboardUploadResult) {
+func (s *Service) logUploadSuccess(pluginID, siteID int64, sessionID string, mapping *models.PluginMapping, zipSize int64, startTime time.Time, isActivated bool, attempts int, uploadResult *wordpress.OnboardUploadResult) {
 	resultMsg := "Plugin uploaded successfully"
-	if activated {
+	if isActivated {
 		resultMsg = "Plugin uploaded and activated"
 	}
-	inner := buildUploadSuccessInner(mapping.RemoteSlug, activated, startTime, attempts, uploadResult)
+	inner := buildUploadSuccessInner(mapping.RemoteSlug, isActivated, startTime, attempts, uploadResult)
 	s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
 		What: fmt.Sprintf("Upload ZIP (%s)", formatBytes(zipSize)), Result: resultMsg, Details: toDetails(inner),
 	})
 }
 
 // buildUploadSuccessInner constructs success detail struct.
-func buildUploadSuccessInner(slug string, activated bool, startTime time.Time, attempts int, result *wordpress.OnboardUploadResult) UploadSuccessInner {
+func buildUploadSuccessInner(slug string, isActivated bool, startTime time.Time, attempts int, result *wordpress.OnboardUploadResult) UploadSuccessInner {
 	inner := UploadSuccessInner{
-		RemoteSlug: slug, Activated: activated, DurationMs: time.Since(startTime).Milliseconds(), Attempts: attempts,
+		RemoteSlug: slug, Activated: isActivated, DurationMs: time.Since(startTime).Milliseconds(), Attempts: attempts,
 	}
 	if result != nil {
 		inner.Version = result.Version

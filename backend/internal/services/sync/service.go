@@ -66,7 +66,7 @@ type SyncResult struct {
 	PluginID     int64
 	SiteID       int64
 	SiteName     string              `json:",omitempty"`
-	InSync       bool
+	IsInSync     bool                `json:"InSync"`
 	LocalFiles   int
 	RemoteFiles  int
 	Added        int
@@ -83,7 +83,7 @@ type BatchSyncResult struct {
 	PluginName string
 	Results    []SyncResult
 	TotalSites int
-	InSync     int
+	IsInSync   int                  `json:"InSync"`
 	OutOfSync  int
 	Errors     int
 }
@@ -209,17 +209,17 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	result.Added = countByType(changes, "added")
 	result.Modified = countByType(changes, "modified")
 	result.Deleted = countByType(changes, "deleted")
-	result.InSync = len(changes) == 0
+	result.IsInSync = len(changes) == 0
 
 	// Update mapping sync status
-	s.updateMappingSyncStatus(ctx, pluginID, siteID, result.InSync)
+	s.updateMappingSyncStatus(ctx, pluginID, siteID, result.IsInSync)
 
 	s.broadcastProgress(pluginID, siteID, "complete", 100, "Sync check complete")
 
 	s.log.Info("Sync check completed",
 		"pluginId", pluginID,
 		"siteId", siteID,
-		"inSync", result.InSync,
+		"isInSync", result.IsInSync,
 		"changes", len(changes))
 
 	return apperror.Ok(result)
@@ -257,8 +257,8 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperro
 
 			if sr.ErrorMessage != "" {
 				result.Errors++
-			} else if sr.InSync {
-				result.InSync++
+			} else if sr.IsInSync {
+				result.IsInSync++
 			} else {
 				result.OutOfSync++
 			}
@@ -312,7 +312,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 		return apperror.Ok(result)
 	}
 
-	if sr.InSync {
+	if sr.IsInSync {
 		result.IsSuccess = true
 		s.broadcastProgress(pluginID, siteID, "complete", 100, "Already in sync, nothing to push")
 		return apperror.Ok(result)

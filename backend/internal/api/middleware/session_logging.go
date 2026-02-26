@@ -52,11 +52,11 @@ type SessionStore interface {
 }
 
 // SessionLogging creates middleware that logs all API requests with full details
-func SessionLogging(log *logger.Logger, store SessionStore, enabled bool) func(http.Handler) http.Handler {
+func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Skip if session logging is disabled or for non-API routes
-			if !enabled || !strings.HasPrefix(r.URL.Path, "/api/") {
+			if !isEnabled || !strings.HasPrefix(r.URL.Path, "/api/") {
 				next.ServeHTTP(w, r)
 				return
 			}

@@ -192,7 +192,7 @@ func (s *Store) DeleteRequestSession(id string) error {
 	delete(s.cache, id)
 	s.mu.Unlock()
 
-	var deleted bool
+	var isDeleted bool
 	err := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -201,7 +201,7 @@ func (s *Store) DeleteRequestSession(id string) error {
 			return nil
 		}
 		if err := os.Remove(path); err == nil {
-			deleted = true
+			isDeleted = true
 		}
 		return filepath.SkipAll
 	})
@@ -210,7 +210,7 @@ func (s *Store) DeleteRequestSession(id string) error {
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session")
 	}
 
-	if !deleted {
+	if !isDeleted {
 		return apperror.New(apperror.ErrSessionNotFound, "session not found: "+id)
 	}
 

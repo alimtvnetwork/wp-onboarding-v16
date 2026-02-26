@@ -88,9 +88,9 @@ func New(cfg Config) *Service {
 type PublishOptions struct {
 	Mode              string   // "selected" or "full"
 	Files             []string // files to publish (for "selected" mode)
-	CreateBackup      bool     // create backup before publishing
-	KeepZipFiles      bool     // keep ZIP files after publish (for debugging)
-	RollbackOnFailure bool     // auto-rollback if activation fails (default: true)
+	IsCreateBackup      bool     // create backup before publishing
+	IsKeepZipFiles      bool     // keep ZIP files after publish (for debugging)
+	IsRollbackOnFailure bool     // auto-rollback if activation fails (default: true)
 }
 
 // PublishResult represents the result of a publish operation

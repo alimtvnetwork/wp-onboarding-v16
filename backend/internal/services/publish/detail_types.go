@@ -77,9 +77,9 @@ type ZipCreatedDetails struct {
 
 // CleanupDetails carries ZIP cleanup context.
 type CleanupDetails struct {
-	ZipPath      string `json:",omitempty"`
-	Reason       string `json:",omitempty"`
-	KeepZipFiles bool   `json:",omitempty"`
+	ZipPath        string `json:",omitempty"`
+	Reason         string `json:",omitempty"`
+	IsKeepZipFiles bool   `json:",omitempty"`
 }
 
 // CompletionDetails carries publish completion context.

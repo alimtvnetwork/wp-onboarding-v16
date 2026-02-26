@@ -76,7 +76,7 @@ func (s *Service) runPublishPipeline(ctx context.Context, pluginID, siteID int64
 	s.logConnect(pluginID, siteID, siteInfo)
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 
-	if options.CreateBackup {
+	if options.IsCreateBackup {
 		if err := s.runBackupStage(pluginID, siteID, mapping, result); err != nil {
 			return err
 		}
@@ -120,15 +120,15 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pluginID, siteID int
 		return s.failStage(pluginID, siteID, "package", stage, result)
 	}
 
-	publishFailed := false
+	isPublishFailed := false
 	preUploadBackupZip := s.createPreUploadBackup(ctx, pluginID, siteID, sessionID, wpClient, mapping, options)
 	if preUploadBackupZip != "" {
 		defer os.Remove(preUploadBackupZip)
 	}
-	defer s.cleanupZip(pluginID, siteID, zipPath, publishFailed, options.KeepZipFiles)
+	defer s.cleanupZip(pluginID, siteID, zipPath, isPublishFailed, options.IsKeepZipFiles)
 
 	if err := s.runUploadStage(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo, options, preUploadBackupZip, result); err != nil {
-		publishFailed = true
+		isPublishFailed = true
 		return err
 	}
 
@@ -146,9 +146,9 @@ func (s *Service) failStage(pluginID, siteID int64, stageName string, stage Stag
 
 // runUploadStage executes upload, activate, and cleanup stages.
 func (s *Service) runUploadStage(ctx context.Context, pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, zipPath string, mapping *models.PluginMapping, siteInfo *models.Site, options PublishOptions, preUploadBackupZip string, result *PublishResult) error {
-	alreadyActivated, uploadStage := s.executeUploadStage(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo)
+	isAlreadyActivated, uploadStage := s.executeUploadStage(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo)
 	result.Stages = append(result.Stages, uploadStage)
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", uploadStage.Status.String(), uploadStage.Duration, toDetails(UploadStageDetails{RemoteSlug: mapping.RemoteSlug, Activated: alreadyActivated}))
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", uploadStage.Status.String(), uploadStage.Duration, toDetails(UploadStageDetails{RemoteSlug: mapping.RemoteSlug, Activated: isAlreadyActivated}))
 
 	if uploadStage.Status.IsFailed() {
 		result.ErrorMessage = uploadStage.Message
@@ -156,15 +156,15 @@ func (s *Service) runUploadStage(ctx context.Context, pluginID, siteID int64, se
 		return fmt.Errorf("%s", uploadStage.Message)
 	}
 
-	s.runActivateAndCleanup(ctx, pluginID, siteID, sessionID, wpClient, mapping, siteInfo, alreadyActivated, preUploadBackupZip, options, result)
+	s.runActivateAndCleanup(ctx, pluginID, siteID, sessionID, wpClient, mapping, siteInfo, isAlreadyActivated, preUploadBackupZip, options, result)
 	return nil
 }
 
 // runActivateAndCleanup handles the activate and cleanup stages.
-func (s *Service) runActivateAndCleanup(ctx context.Context, pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, mapping *models.PluginMapping, siteInfo *models.Site, alreadyActivated bool, preUploadBackupZip string, options PublishOptions, result *PublishResult) {
-	activateStage := s.executeActivateStage(pluginID, siteID, sessionID, wpClient, mapping, siteInfo, alreadyActivated)
+func (s *Service) runActivateAndCleanup(ctx context.Context, pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, mapping *models.PluginMapping, siteInfo *models.Site, isAlreadyActivated bool, preUploadBackupZip string, options PublishOptions, result *PublishResult) {
+	activateStage := s.executeActivateStage(pluginID, siteID, sessionID, wpClient, mapping, siteInfo, isAlreadyActivated)
 	result.Stages = append(result.Stages, activateStage)
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", activateStage.Status.String(), activateStage.Duration, toDetails(ActivateSkipDetails{RemoteSlug: mapping.RemoteSlug, Skipped: alreadyActivated}))
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", activateStage.Status.String(), activateStage.Duration, toDetails(ActivateSkipDetails{RemoteSlug: mapping.RemoteSlug, Skipped: isAlreadyActivated}))
 
 	if activateStage.Status.IsFailed() {
 		result.ActivationStatus = loglevel.Error.String()
@@ -191,7 +191,7 @@ func (s *Service) finalizePublishResult(pluginID, siteID int64, pluginInfo model
 // PublishFiles publishes specific files to a WordPress site
 func (s *Service) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) apperror.Result[PublishResult] {
 	return s.Publish(ctx, pluginID, siteID, PublishOptions{
-		Mode: "selected", Files: files, CreateBackup: false,
+		Mode: "selected", Files: files, IsCreateBackup: false,
 	})
 }
 
@@ -266,7 +266,7 @@ func (s *Service) buildZip(pluginID, siteID int64, pluginInfo models.Plugin, opt
 
 // createPreUploadBackup exports the remote plugin for rollback capability
 func (s *Service) createPreUploadBackup(ctx context.Context, pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, mapping *models.PluginMapping, options PublishOptions) string {
-	if !options.RollbackOnFailure {
+	if !options.IsRollbackOnFailure {
 		return ""
 	}
 
@@ -313,16 +313,16 @@ func (s *Service) saveRollbackZip(pluginID, siteID int64, sessionID string, mapp
 
 // executeUploadStage uploads the plugin ZIP to WordPress
 func (s *Service) executeUploadStage(ctx context.Context, pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, zipPath string, mapping *models.PluginMapping, siteInfo *models.Site) (bool, Stage) {
-	var alreadyActivated bool
+	var isAlreadyActivated bool
 	uploadStartTime := time.Now()
 
 	stage := s.runStageWithSession(sessionID, "upload", func() error {
 		var err error
-		alreadyActivated, err = s.performUpload(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo, uploadStartTime)
+		isAlreadyActivated, err = s.performUpload(ctx, pluginID, siteID, sessionID, wpClient, zipPath, mapping, siteInfo, uploadStartTime)
 		return err
 	})
 
-	return alreadyActivated, stage
+	return isAlreadyActivated, stage
 }
 
 // performUpload handles the upload retry and result logging.
@@ -331,9 +331,9 @@ func (s *Service) performUpload(ctx context.Context, pluginID, siteID int64, ses
 	s.broadcastProgress(pluginID, siteID, "uploading", 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize)))
 
 	type uploadOut struct {
-		performed    bool
+		isPerformed  bool
 		uploadResult *wordpress.OnboardUploadResult
-		activated    bool
+		isActivated  bool
 	}
 	retryCfg := DefaultRetryConfig()
 	uploadVal, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (uploadOut, error) {
@@ -346,14 +346,14 @@ func (s *Service) performUpload(ctx context.Context, pluginID, siteID int64, ses
 		return false, apperror.Wrap(retryResult.LastError, apperror.ErrWPConnection, "plugin upload failed")
 	}
 
-	if uploadVal.performed {
-		s.logUploadSuccess(pluginID, siteID, sessionID, mapping, zipSize, startTime, uploadVal.activated, retryResult.Attempts, uploadVal.uploadResult)
+	if uploadVal.isPerformed {
+		s.logUploadSuccess(pluginID, siteID, sessionID, mapping, zipSize, startTime, uploadVal.isActivated, retryResult.Attempts, uploadVal.uploadResult)
 	} else {
 		s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "upload", StageContext{
 			What: "Upload ZIP to WordPress", Result: "SIMULATED - no companion plugin available",
 		})
 	}
-	return uploadVal.activated, nil
+	return uploadVal.isActivated, nil
 }
 
 // getFileSize returns the file size or 0 on error.
@@ -365,12 +365,12 @@ func getFileSize(path string) int64 {
 }
 
 // executeActivateStage activates the plugin on WordPress
-func (s *Service) executeActivateStage(pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, mapping *models.PluginMapping, siteInfo *models.Site, alreadyActivated bool) Stage {
+func (s *Service) executeActivateStage(pluginID, siteID int64, sessionID string, wpClient *wordpress.Client, mapping *models.PluginMapping, siteInfo *models.Site, isAlreadyActivated bool) Stage {
 	activateStartTime := time.Now()
 
 	return s.runStageWithSession(sessionID, "activate", func() error {
 		s.broadcastProgress(pluginID, siteID, "activating", 80, "Activating plugin...")
-		if alreadyActivated {
+		if isAlreadyActivated {
 			return s.logActivateSkipped(pluginID, siteID, sessionID, mapping, siteInfo)
 		}
 		return s.activateViaUploader(pluginID, siteID, sessionID, wpClient, mapping, siteInfo, activateStartTime)
@@ -433,7 +433,7 @@ func (s *Service) logActivateSuccess(pluginID, siteID int64, sessionID string, m
 
 // handleRollback performs rollback when activation fails
 func (s *Service) handleRollback(pluginID, siteID int64, sessionID string, ctx context.Context, wpClient *wordpress.Client, mapping *models.PluginMapping, siteInfo *models.Site, preUploadBackupZip string, options PublishOptions, activateStage Stage, result *PublishResult) {
-	if !options.RollbackOnFailure {
+	if !options.IsRollbackOnFailure {
 		result.RollbackStatus = stagestatus.Skipped.String()
 		result.RollbackMessage = "Rollback disabled by user"
 		return
