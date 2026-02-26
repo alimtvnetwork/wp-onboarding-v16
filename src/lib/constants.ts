@@ -375,123 +375,322 @@ export type ResponseMessageType = (typeof ResponseMessageType)[keyof typeof Resp
 
 export const ResponseKeyType = {
   // Envelope keys
-  Success: "success",
-  Error: "error",
-  Message: "message",
-  Data: "data",
-  Code: "code",
-  Valid: "valid",
-  Errors: "errors",
-  Cached: "cached",
-  Phase: "phase",
-  Reason: "reason",
+  Success: "Success",
+  Error: "Error",
+  Message: "Message",
+  Data: "Data",
+  Code: "Code",
+  Valid: "Valid",
+  Errors: "Errors",
+  Cached: "Cached",
+  Phase: "Phase",
+  Reason: "Reason",
 
   // Domain collection keys
-  Total: "total",
-  Agents: "agents",
-  Actions: "actions",
-  Logs: "logs",
-  Snapshots: "snapshots",
-  Sql: "sql",
-  Params: "params",
-  Sets: "sets",
-  Plugins: "plugins",
-  Tables: "tables",
+  Total: "Total",
+  Agents: "Agents",
+  Actions: "Actions",
+  Logs: "Logs",
+  Snapshots: "Snapshots",
+  Sql: "Sql",
+  Params: "Params",
+  Sets: "Sets",
+  Plugins: "Plugins",
+  Tables: "Tables",
+  Settings: "Settings",
+  Providers: "Providers",
+  Dependencies: "Dependencies",
 
   // File and size keys
-  Rows: "rows",
-  Bytes: "bytes",
-  Size: "size",
-  FileSize: "fileSize",
-  Path: "path",
-  Filename: "filename",
-  Checksum: "checksum",
-  Duration: "duration",
-  Count: "count",
-  Files: "files",
-  Directory: "directory",
-  Scope: "scope",
-  Exported: "exported",
-  Entry: "entry",
-  Computed: "computed",
-  Removed: "removed",
+  Rows: "Rows",
+  Bytes: "Bytes",
+  Size: "Size",
+  FileSize: "FileSize",
+  Path: "Path",
+  Filename: "Filename",
+  Checksum: "Checksum",
+  Duration: "Duration",
+  Count: "Count",
+  Files: "Files",
+  Directory: "Directory",
+  Scope: "Scope",
+  Exported: "Exported",
+  Entry: "Entry",
+  Computed: "Computed",
+  Removed: "Removed",
+
+  // Pagination keys
+  Limit: "Limit",
+  Offset: "Offset",
+
+  // Domain entity keys
+  Posts: "Posts",
+  Categories: "Categories",
+  Category: "Category",
+  Export: "Export",
+  Incrementals: "Incrementals",
+  TotalSize: "TotalSize",
+  Applied: "Applied",
+  Folder: "Folder",
 
   // Snapshot-domain keys
-  SnapshotId: "snapshotId",
-  Sequence: "sequence",
-  FolderName: "folderName",
-  TablesChanged: "tablesChanged",
-  TotalRows: "totalRows",
-  TotalNewRows: "totalNewRows",
-  ZipSize: "zipSize",
-  BackupId: "backupId",
-  ZipFailed: "zipFailed",
-  SkipAudit: "skipAudit",
-  TablesRestored: "tablesRestored",
+  SnapshotId: "SnapshotId",
+  Sequence: "Sequence",
+  FolderName: "FolderName",
+  TablesChanged: "TablesChanged",
+  TotalRows: "TotalRows",
+  TotalNewRows: "TotalNewRows",
+  ZipPath: "ZipPath",
+  ZipSize: "ZipSize",
+  BackupId: "BackupId",
+  ZipFailed: "ZipFailed",
+  SkipAudit: "SkipAudit",
+  TablesRestored: "TablesRestored",
 
   // Cleanup-pipeline keys
-  DeletedByPolicy: "deletedByPolicy",
-  DeletedOrphans: "deletedOrphans",
-  DeletedFailed: "deletedFailed",
-  SpaceFreedBytes: "spaceFreedBytes",
-  Retention: "retention",
-  Orphans: "orphans",
-  Stuck: "stuck",
-  DryRun: "dryRun",
-  BytesFreed: "bytesFreed",
-  Deleted: "deleted",
-  Cleaned: "cleaned",
+  DeletedByPolicy: "DeletedByPolicy",
+  DeletedOrphans: "DeletedOrphans",
+  DeletedFailed: "DeletedFailed",
+  SpaceFreedBytes: "SpaceFreedBytes",
+  Retention: "Retention",
+  Orphans: "Orphans",
+  Stuck: "Stuck",
+  DryRun: "DryRun",
+  BytesFreed: "BytesFreed",
+  Deleted: "Deleted",
+  Cleaned: "Cleaned",
 
   // Plugin lifecycle keys
-  Activated: "activated",
-  PluginSlug: "pluginSlug",
-  IsUpdate: "isUpdate",
-  IsSelfUpdate: "isSelfUpdate",
-  PluginVersion: "pluginVersion",
-  ActivationError: "activationError",
-  Inventory: "inventory",
-
-  // Log/diagnostic keys
-  ErrorLog: "errorLog",
-  FullLog: "fullLog",
-  StacktraceLog: "stacktraceLog",
-  Exists: "exists",
-  Content: "content",
-  Truncated: "truncated",
-  Lines: "lines",
-  TotalLines: "totalLines",
-
-  // Internal/domain-specific keys
-  Ids: "ids",
-  TotalSnapshots: "totalSnapshots",
-  TotalSizeBytes: "totalSizeBytes",
-  TempFile: "tempFile",
-  Stmt: "stmt",
-  Columns: "columns",
-
-  // Temporal keys
-  CreatedAt: "createdAt",
-  UpdatedAt: "updatedAt",
-
-  // Analysis and dependency keys
-  ParentTable: "parentTable",
-  ChildTable: "childTable",
-  FkColumn: "fkColumn",
-  RefColumn: "refColumn",
-  SeedOrder: "seedOrder",
-  TableCount: "tableCount",
-  DepCount: "depCount",
-
-  // Domain collection keys (extended)
-  Settings: "settings",
-  Providers: "providers",
-  Dependencies: "dependencies",
+  Activated: "Activated",
+  PluginSlug: "PluginSlug",
+  IsUpdate: "IsUpdate",
+  IsSelfUpdate: "IsSelfUpdate",
+  PluginVersion: "PluginVersion",
+  ActivationError: "ActivationError",
+  Inventory: "Inventory",
+  PluginFile: "PluginFile",
 
   // General-purpose entity keys
-  Slug: "slug",
-  Title: "title",
-  Type: "type",
-  PluginFile: "pluginFile",
+  Slug: "Slug",
+  Title: "Title",
+  Type: "Type",
+  Action: "Action",
+  Status: "Status",
+  Percent: "Percent",
+  Plugin: "Plugin",
+
+  // Log/diagnostic keys
+  ErrorLog: "ErrorLog",
+  FullLog: "FullLog",
+  StacktraceLog: "StacktraceLog",
+  Exists: "Exists",
+  Content: "Content",
+  Truncated: "Truncated",
+  Lines: "Lines",
+  TotalLines: "TotalLines",
+
+  // Internal/domain-specific keys
+  Ids: "Ids",
+  TotalSnapshots: "TotalSnapshots",
+  TotalSizeBytes: "TotalSizeBytes",
+  TempFile: "TempFile",
+  Stmt: "Stmt",
+  Columns: "Columns",
+
+  // Temporal keys
+  CreatedAt: "CreatedAt",
+  UpdatedAt: "UpdatedAt",
+  Timestamp: "Timestamp",
+
+  // Analysis and dependency keys
+  ParentTable: "ParentTable",
+  ChildTable: "ChildTable",
+  FkColumn: "FkColumn",
+  RefColumn: "RefColumn",
+  SeedOrder: "SeedOrder",
+  TableCount: "TableCount",
+  DepCount: "DepCount",
+  NewRows: "NewRows",
+  PluginDetails: "PluginDetails",
+  IncludedIds: "IncludedIds",
+  IncrementalCount: "IncrementalCount",
+
+  // Detection and provider keys
+  DetectionMethod: "DetectionMethod",
+  SqliteVersion: "SqliteVersion",
+  IsCore: "IsCore",
+
+  // Scheduler keys
+  ScheduleEnabled: "ScheduleEnabled",
+  NextScheduledSnapshot: "NextScheduledSnapshot",
+  NextCleanup: "NextCleanup",
+  RetentionType: "RetentionType",
+  RetentionDays: "RetentionDays",
+  RetentionCount: "RetentionCount",
+  SnapshotType: "SnapshotType",
+
+  // Error enrichment keys
+  ErrorCategory: "ErrorCategory",
+  LogHint: "LogHint",
+
+  // Sync keys
+  FilesUpdated: "FilesUpdated",
+  FilesDeleted: "FilesDeleted",
+  FilesIgnored: "FilesIgnored",
+  IgnoredFiles: "IgnoredFiles",
+
+  // Export and plugin keys
+  PluginZip: "PluginZip",
+  ResolvedUrl: "ResolvedUrl",
+  TraceLines: "TraceLines",
+
+  // Snapshot progress and worker keys
+  CompletedAt: "CompletedAt",
+  ExportedAt: "ExportedAt",
+  Format: "Format",
+  FormatVersion: "FormatVersion",
+  JobId: "JobId",
+  TotalTables: "TotalTables",
+  TablesExported: "TablesExported",
+  PoolSize: "PoolSize",
+  TotalBatches: "TotalBatches",
+  CurrentBatch: "CurrentBatch",
+  TableProgress: "TableProgress",
+  IncrementalsApplied: "IncrementalsApplied",
+  SkippedMaster: "SkippedMaster",
+  ExportedTables: "ExportedTables",
+  SnapshotDir: "SnapshotDir",
+  DirName: "DirName",
+  RowCount: "RowCount",
+
+  // Cron and audit keys
+  TriggeredBy: "TriggeredBy",
+  AuditData: "AuditData",
+  LogDataKey: "LogData",
+
+  // Manifest and import metadata keys
+  OriginalId: "OriginalId",
+  OriginalCreatedAt: "OriginalCreatedAt",
+  SourceSite: "SourceSite",
+  OriginalTitle: "OriginalTitle",
+  OriginalType: "OriginalType",
+  WpVersion: "WpVersion",
+  PhpVersion: "PhpVersion",
+  MysqlVersion: "MysqlVersion",
+  SiteUrl: "SiteUrl",
+  DbPrefix: "DbPrefix",
+  PluginCount: "PluginCount",
+  DurationMs: "DurationMs",
+  TableCounts: "TableCounts",
+
+  // Sync manifest keys
+  DownloadUrl: "DownloadUrl",
+  FileCount: "FileCount",
+  GeneratedAt: "GeneratedAt",
+  CacheStats: "CacheStats",
+  FromCache: "FromCache",
+
+  // Statistics keys
+  TotalTransactions: "TotalTransactions",
+  ByAction: "ByAction",
+  ByStatus: "ByStatus",
+  Last24h: "Last24h",
+
+  // Backup option keys
+  IncludePlugins: "IncludePlugins",
+  PluginSelection: "PluginSelection",
+  Compression: "Compression",
+  Async: "Async",
+  Trigger: "Trigger",
+  MasterSnapshotId: "MasterSnapshotId",
+  MasterDir: "MasterDir",
+  Confirm: "Confirm",
+  CreateBackup: "CreateBackup",
+  RequireBackup: "RequireBackup",
+  Mode: "Mode",
+
+  // Scheduler response keys
+  Frequency: "Frequency",
+  Time: "Time",
+  Day: "Day",
+  Scheduled: "Scheduled",
+  Trace: "Trace",
+  Options: "Options",
+
+  // Storage stats keys
+  TotalSizeFormatted: "TotalSizeFormatted",
+  OldestTimestamp: "OldestTimestamp",
+  NewestTimestamp: "NewestTimestamp",
+  DiskFreeBytes: "DiskFreeBytes",
+  DiskFreeFormatted: "DiskFreeFormatted",
+  SnapshotsCount: "SnapshotsCount",
+  BytesFormatted: "BytesFormatted",
+
+  // Progress envelope keys
+  IsSuccess: "IsSuccess",
+  HasAnyErrors: "HasAnyErrors",
+
+  // Cleanup detail keys
+  Details: "Details",
+  Order: "Order",
+
+  // Internal passing keys
+  Graph: "Graph",
+  InDegree: "InDegree",
+  Manifest: "Manifest",
+  SqlitePath: "SqlitePath",
+  RealPath: "RealPath",
+  FilePath: "FilePath",
+  PkColumn: "PkColumn",
+  TableName: "TableName",
+
+  // Provider and plugin info keys
+  Id: "Id",
+  Name: "Name",
+  Available: "Available",
+  Capabilities: "Capabilities",
+  Version: "Version",
+  Author: "Author",
+  Description: "Description",
+  Active: "Active",
+  TotalFiles: "TotalFiles",
+  LastSeenId: "LastSeenId",
+  FileType: "FileType",
+  Provider: "Provider",
+  Snapshot: "Snapshot",
+  Source: "Source",
+
+  // Capability sub-keys
+  FullSite: "FullSite",
+  DatabaseOnly: "DatabaseOnly",
+  Selective: "Selective",
+  Restore: "Restore",
+  Import: "Import",
+
+  // Restore option keys
+  Strict: "Strict",
+  ApplyIncrementals: "ApplyIncrementals",
+  Sqlite: "Sqlite",
+  SqliteFile: "SqliteFile",
+  InternalMode: "_Mode",
+
+  // OPcache status keys
+  OpcacheAvailable: "OpcacheAvailable",
+  OpcacheReset: "OpcacheReset",
+  FilesInvalidated: "FilesInvalidated",
+
+  // Plugin archive keys
+  Zip: "Zip",
+  ZipFile: "ZipFile",
+  FileSizeBytes: "FileSizeBytes",
+  ChecksumMd5: "ChecksumMd5",
+  PluginName: "PluginName",
+
+  // Status payload keys
+  Route: "Route",
+  Methods: "Methods",
+  Result: "Result",
+  Results: "Results",
 } as const;
 
 export type ResponseKeyType = (typeof ResponseKeyType)[keyof typeof ResponseKeyType];
