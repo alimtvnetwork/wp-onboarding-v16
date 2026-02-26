@@ -231,19 +231,7 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 // DownloadErrorBundle creates and serves a ZIP bundle of error logs
 func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	dataDir := "data/errors"
-
-	report := ""
-	if r.Method == http.MethodPost {
-		var payload struct {
-			Report string `json:"report"` // external key (frontend request body)
-		}
-		bodyBytes, _ := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
-
-		if len(bodyBytes) > 0 {
-			_ = json.Unmarshal(bodyBytes, &payload)
-			report = payload.Report
-		}
-	}
+	report := extractReportFromBody(r)
 
 	logFile := dataDir + "/log.txt"
 	errorFile := dataDir + "/error.log.txt"
@@ -252,18 +240,41 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	errorExists := fileExists(errorFile)
 
 	isNoLogsFound := !logExists && !errorExists
-
 	if isNoLogsFound {
-		respondError(
-			w,
-			wordpress.HttpStatusNotFound,
-			"E9001",
-			"No error log files found",
-		)
-
+		respondError(w, wordpress.HttpStatusNotFound, "E9001", "No error log files found")
 		return
 	}
 
+	writeErrorBundleZip(w, logFile, errorFile, logExists, errorExists, report)
+}
+
+// extractReportFromBody reads the optional report field from a POST body.
+func extractReportFromBody(r *http.Request) string {
+	if r.Method != http.MethodPost {
+		return ""
+	}
+
+	var payload struct {
+		Report string `json:"report"` // external key (frontend request body)
+	}
+	bodyBytes, _ := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
+	if len(bodyBytes) > 0 {
+		_ = json.Unmarshal(bodyBytes, &payload)
+	}
+	return payload.Report
+}
+
+// errorBundleFiles holds the file paths and existence flags for the bundle.
+type errorBundleFiles struct {
+	LogFile     string
+	ErrorFile   string
+	LogExists   bool
+	ErrorExists bool
+	Report      string
+}
+
+// writeErrorBundleZip writes the ZIP response with log files and manifest.
+func writeErrorBundleZip(w http.ResponseWriter, logFile, errorFile string, logExists, errorExists bool, report string) {
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", "attachment; filename=error-bundle-"+time.Now().Format("20060102-150405")+".zip")
 
@@ -271,25 +282,34 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	ziputil.RegisterBestCompression(zipWriter)
 	defer zipWriter.Close()
 
+	addBundleLogFiles(zipWriter, logFile, errorFile, logExists, errorExists)
+	addBundleReport(zipWriter, report)
+	addBundleManifest(zipWriter, logExists, errorExists, report)
+}
+
+// addBundleLogFiles adds the log and error files to the ZIP.
+func addBundleLogFiles(zipWriter *zip.Writer, logFile, errorFile string, logExists, errorExists bool) {
 	if logExists {
-		if err := addFileToZip(zipWriter, logFile, "log.txt"); err != nil {
-			return
-		}
+		_ = addFileToZip(zipWriter, logFile, "log.txt")
 	}
-
 	if errorExists {
-		if err := addFileToZip(zipWriter, errorFile, "error.log.txt"); err != nil {
-			return
-		}
+		_ = addFileToZip(zipWriter, errorFile, "error.log.txt")
 	}
+}
 
-	if report != "" {
-		reportWriter, err := zipWriter.Create("report.md")
-		if err == nil {
-			_, _ = io.WriteString(reportWriter, report)
-		}
+// addBundleReport adds the user report to the ZIP if present.
+func addBundleReport(zipWriter *zip.Writer, report string) {
+	if report == "" {
+		return
 	}
+	reportWriter, err := zipWriter.Create("report.md")
+	if err == nil {
+		_, _ = io.WriteString(reportWriter, report)
+	}
+}
 
+// addBundleManifest writes the manifest.json into the ZIP.
+func addBundleManifest(zipWriter *zip.Writer, logExists, errorExists bool, report string) {
 	manifest := struct {
 		GeneratedAt string   `json:"generatedAt"` // external key (export manifest JSON file)
 		Files       []string `json:"files"`       // external key
@@ -301,11 +321,9 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	if logExists {
 		manifest.Files = append(manifest.Files, "log.txt")
 	}
-
 	if errorExists {
 		manifest.Files = append(manifest.Files, "error.log.txt")
 	}
-
 	if report != "" {
 		manifest.Files = append(manifest.Files, "report.md")
 	}

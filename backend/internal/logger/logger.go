@@ -216,15 +216,20 @@ func (l *Logger) WithContext(keyvals ...any) *Logger {
 
 // CaptureStackTrace captures a full stack trace starting from skip frames up
 func CaptureStackTrace(skip int) string {
-	var builder strings.Builder
-	pcs := make([]uintptr, 64) // Increased buffer for deeper stacks
+	pcs := make([]uintptr, 64)
 	n := runtime.Callers(skip+1, pcs)
 	frames := runtime.CallersFrames(pcs[:n])
 
+	return formatLogFrames(frames)
+}
+
+// formatLogFrames formats runtime frames into a readable stack trace string.
+func formatLogFrames(frames *runtime.Frames) string {
+	var builder strings.Builder
 	frameNum := 0
+
 	for {
 		frame, more := frames.Next()
-		// Skip runtime internals (but keep runtime.main)
 		isRuntimeInternal := strings.Contains(frame.Function, "runtime.") && !strings.Contains(frame.Function, "runtime.main")
 		if isRuntimeInternal {
 			if !more {
