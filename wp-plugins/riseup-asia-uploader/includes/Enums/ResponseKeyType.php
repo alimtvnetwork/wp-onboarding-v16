@@ -329,6 +329,7 @@ enum ResponseKeyType: string
     case Route   = 'Route';
     case Methods = 'Methods';
     case Result  = 'Result';
+    case Results = 'Results';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

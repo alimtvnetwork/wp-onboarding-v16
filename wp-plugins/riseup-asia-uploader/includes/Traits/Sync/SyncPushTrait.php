@@ -83,7 +83,7 @@ trait SyncPushTrait
 
         return ResultHelper::ok($counters + array(
             ResponseKeyType::IgnoredFiles->value => $ignoredFiles,
-            'results'       => $results,
+            ResponseKeyType::Results->value => $results,
         ));
     }
 
