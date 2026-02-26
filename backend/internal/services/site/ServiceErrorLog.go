@@ -51,32 +51,38 @@ func (s *Service) isDuplicateErrorLog(ref *remoteActionRef, details *ExtractedEr
 
 // openErrorLogFile creates the errors directory and opens the log file for appending.
 func (s *Service) openErrorLogFile() (*os.File, error) {
-	errorsDir, errorLogPath, err := s.resolveErrorLogPaths()
+	logPaths, err := s.resolveErrorLogPaths()
 	if err != nil {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(errorsDir, 0755); err != nil {
+	if err := os.MkdirAll(logPaths.Dir, 0755); err != nil {
 		s.log.Error("Failed to create errors directory", "error", err)
 		return nil, err
 	}
 
-	return s.openLogFileForAppend(errorLogPath)
+	return s.openLogFileForAppend(logPaths.FilePath)
+}
+
+// errorLogPaths holds the resolved directory and file paths for the error log.
+type errorLogPaths struct {
+	Dir      string
+	FilePath string
 }
 
 // resolveErrorLogPaths resolves the errors directory and log file paths.
-func (s *Service) resolveErrorLogPaths() (string, string, error) {
+func (s *Service) resolveErrorLogPaths() (*errorLogPaths, error) {
 	errorsDir, err := pathutil.Join(filepath.Dir(s.db.Path()), "errors")
 	if err != nil {
 		s.log.Error("Failed to resolve errors directory path", "error", err)
-		return "", "", err
+		return nil, err
 	}
 	errorLogPath, err := pathutil.Join(errorsDir, "error.log.txt")
 	if err != nil {
 		s.log.Error("Failed to resolve error log path", "error", err)
-		return "", "", err
+		return nil, err
 	}
-	return errorsDir, errorLogPath, nil
+	return &errorLogPaths{Dir: errorsDir, FilePath: errorLogPath}, nil
 }
 
 // openLogFileForAppend opens the log file for appending.

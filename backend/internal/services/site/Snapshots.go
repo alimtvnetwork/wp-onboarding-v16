@@ -185,16 +185,22 @@ func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 	return resp, nil
 }
 
+// SnapshotZipDownload holds the response and metadata for a snapshot ZIP download.
+type SnapshotZipDownload struct {
+	Response *http.Response
+	Meta     *wordpress.SnapshotDownloadResult
+}
+
 // DownloadSnapshotZip requests a cached ZIP build for a snapshot, then streams the ZIP file back.
-func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, *wordpress.SnapshotDownloadResult, error) {
+func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*SnapshotZipDownload, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	meta, err := s.requestSnapshotMeta(client, siteID, snapshotID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	return s.streamSnapshotFromMeta(client, siteID, snapshotID, meta)
@@ -208,7 +214,7 @@ func (s *Service) requestSnapshotMeta(client *wordpress.Client, siteID, snapshot
 			WithSiteId(siteID).WithSnapshotId(snapshotID)
 	}
 
-	if meta.URL == "" {
+	if meta.Url == "" {
 		return nil, apperror.New(apperror.ErrInternal, "no download URL in response").
 			WithSiteId(siteID).
 			WithSnapshotId(snapshotID)
@@ -218,17 +224,17 @@ func (s *Service) requestSnapshotMeta(client *wordpress.Client, siteID, snapshot
 }
 
 // streamSnapshotFromMeta streams the ZIP file from the download URL.
-func (s *Service) streamSnapshotFromMeta(client *wordpress.Client, siteID, snapshotID int64, meta *wordpress.SnapshotDownloadResult) (*http.Response, *wordpress.SnapshotDownloadResult, error) {
-	zipResp, err := client.StreamSnapshotZip(meta.URL)
+func (s *Service) streamSnapshotFromMeta(client *wordpress.Client, siteID, snapshotID int64, meta *wordpress.SnapshotDownloadResult) (*SnapshotZipDownload, error) {
+	zipResp, err := client.StreamSnapshotZip(meta.Url)
 	if err != nil {
-		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
 			WithSiteId(siteID).
 			WithSnapshotId(snapshotID).
-			WithURL(meta.URL)
+			WithURL(meta.Url)
 	}
 
 	s.log.Info("Remote snapshot ZIP download started", "siteId", siteID, "snapshotId", snapshotID, "cached", meta.Cached)
-	return zipResp, meta, nil
+	return &SnapshotZipDownload{Response: zipResp, Meta: meta}, nil
 }
 
 // createWPClient is a helper that creates a WordPress client for a site.

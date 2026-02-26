@@ -46,11 +46,11 @@ func TestCheckUploaderHelperAvailable_UsesUploaderNamespace(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	ok, err := c.CheckUploaderHelperAvailable()
+	result, err := c.CheckUploaderHelperAvailable()
 	if err != nil {
 		t.Fatalf("expected nil error, got: %v", err)
 	}
-	if !ok {
+	if result == nil || !result.Available {
 		t.Fatalf("expected available=true")
 	}
 }

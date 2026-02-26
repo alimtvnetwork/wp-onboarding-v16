@@ -75,17 +75,17 @@ func (s *serviceImpl) testInvalidCredentials(ctx context.Context, result *TestRe
 }
 
 func (s *serviceImpl) testCreatePluginMapping(ctx context.Context, result *TestResult) error {
-	pluginID, siteID, err := s.setupPluginAndSite()
+	ids, err := s.setupPluginAndSite()
 	if err != nil {
 		return err
 	}
-	defer s.cleanupPlugin(pluginID)
-	defer s.cleanupSite(siteID)
+	defer s.cleanupPlugin(ids.PluginID)
+	defer s.cleanupSite(ids.SiteID)
 
-	body := mappingCreateBody{SiteID: siteID, RemoteSlug: "e2e-test-plugin"}
+	body := mappingCreateBody{SiteID: ids.SiteID, RemoteSlug: "e2e-test-plugin"}
 	result.RequestData = toJSON(body)
 
-	resp, err := s.api.post(fmt.Sprintf("/plugins/%d/mappings", pluginID), body)
+	resp, err := s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginID), body)
 	if err != nil {
 		return fmt.Errorf("POST /plugins/%d/mappings failed: %w", pluginID, err)
 	}
@@ -94,18 +94,24 @@ func (s *serviceImpl) testCreatePluginMapping(ctx context.Context, result *TestR
 	return expectSuccess(resp)
 }
 
+// testIds holds IDs created during test setup.
+type testIds struct {
+	PluginID int64
+	SiteID   int64
+}
+
 // setupPluginAndSite creates a test plugin and site, returning their IDs.
-func (s *serviceImpl) setupPluginAndSite() (int64, int64, error) {
+func (s *serviceImpl) setupPluginAndSite() (*testIds, error) {
 	pluginID, err := s.createTestPlugin()
 	if err != nil {
-		return 0, 0, fmt.Errorf("setup plugin: %w", err)
+		return nil, fmt.Errorf("setup plugin: %w", err)
 	}
 	siteID, err := s.createTestSite()
 	if err != nil {
 		s.cleanupPlugin(pluginID)
-		return 0, 0, fmt.Errorf("setup site: %w", err)
+		return nil, fmt.Errorf("setup site: %w", err)
 	}
-	return pluginID, siteID, nil
+	return &testIds{PluginID: pluginID, SiteID: siteID}, nil
 }
 
 // --- Sync Tests ---
@@ -148,14 +154,14 @@ func (s *serviceImpl) testBatchScanAll(ctx context.Context, result *TestResult) 
 // --- Publish Tests ---
 
 func (s *serviceImpl) testPreviewPublish(ctx context.Context, result *TestResult) error {
-	pluginID, siteID, err := s.createTestMapping()
+	ids, err := s.createTestMapping()
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
-	defer s.cleanupPlugin(pluginID)
-	defer s.cleanupSite(siteID)
+	defer s.cleanupPlugin(ids.PluginID)
+	defer s.cleanupSite(ids.SiteID)
 
-	body := publishPreviewBody{PluginID: pluginID, SiteID: siteID}
+	body := publishPreviewBody{PluginID: ids.PluginID, SiteID: ids.SiteID}
 	result.RequestData = toJSON(body)
 
 	resp, err := s.api.post("/publish/preview", body)

@@ -403,7 +403,7 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zipResp, meta, err := Services.SiteService.DownloadSnapshotZip(r.Context(), siteId, body.SnapshotId)
+	download, err := Services.SiteService.DownloadSnapshotZip(r.Context(), siteId, body.SnapshotId)
 	if err != nil {
 		respondError(
 			w,
@@ -414,15 +414,15 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	defer zipResp.Body.Close()
+	defer download.Response.Body.Close()
 
 	// Set download headers
-	filename := meta.Filename
+	filename := download.Meta.Filename
 	if filename == "" {
 		filename = fmt.Sprintf("snapshot-%d.zip", body.SnapshotId)
 	}
 
-	if ct := zipResp.Header.Get("Content-Type"); ct != "" {
+	if ct := download.Response.Header.Get("Content-Type"); ct != "" {
 		w.Header().Set("Content-Type", ct)
 	} else {
 		w.Header().Set("Content-Type", "application/zip")
@@ -430,23 +430,23 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 
-	if cl := zipResp.Header.Get("Content-Length"); cl != "" {
+	if cl := download.Response.Header.Get("Content-Length"); cl != "" {
 		w.Header().Set("Content-Length", cl)
 	}
 
 	// Expose metadata as custom headers so React can read them
-	if meta.Cached {
+	if download.Meta.Cached {
 		w.Header().Set("X-Snapshot-Cached", "true")
 	} else {
 		w.Header().Set("X-Snapshot-Cached", "false")
 	}
 
-	if meta.Size > 0 {
-		w.Header().Set("X-Snapshot-Size", strconv.FormatInt(meta.Size, 10))
+	if download.Meta.Size > 0 {
+		w.Header().Set("X-Snapshot-Size", strconv.FormatInt(download.Meta.Size, 10))
 	}
 
 	w.WriteHeader(wordpress.HttpStatusOk.Int())
-	io.Copy(w, zipResp.Body)
+	io.Copy(w, download.Response.Body)
 }
 
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting

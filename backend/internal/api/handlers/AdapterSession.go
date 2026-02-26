@@ -19,13 +19,19 @@ type SessionServiceInterface interface {
 // ErrorHistoryServiceInterface defines error history service methods
 type ErrorHistoryServiceInterface interface {
 	Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error)
-	List(limit, offset int, filters models.ErrorHistoryFilters) ([]models.ErrorHistory, int, error)
+	List(limit, offset int, filters models.ErrorHistoryFilters) (*ErrorHistoryListResult, error)
 	GetById(id int64) (*models.ErrorHistory, error)
 	GetByErrorId(errorId string) (*models.ErrorHistory, error)
 	Delete(id int64) error
 	Clear() (int64, error)
 	BulkExport(ids []int64) (string, error)
 	GetStats() (*models.ErrorHistoryStats, error)
+}
+
+// ErrorHistoryListResult holds paginated error history results.
+type ErrorHistoryListResult struct {
+	Items []models.ErrorHistory
+	Total int
 }
 
 // SessionServiceAdapter wraps *session.Service to implement SessionServiceInterface
@@ -84,13 +90,13 @@ func (a *ErrorHistoryServiceAdapter) Save(input models.ErrorHistoryInput) (*mode
 	return &v, nil
 }
 
-func (a *ErrorHistoryServiceAdapter) List(limit, offset int, filters models.ErrorHistoryFilters) ([]models.ErrorHistory, int, error) {
+func (a *ErrorHistoryServiceAdapter) List(limit, offset int, filters models.ErrorHistoryFilters) (*ErrorHistoryListResult, error) {
 	result := a.Service.List(limit, offset, filters)
 	if result.HasError() {
-		return nil, 0, result.AppError()
+		return nil, result.AppError()
 	}
 	v := result.Value()
-	return v.Items, v.Total, nil
+	return &ErrorHistoryListResult{Items: v.Items, Total: v.Total}, nil
 }
 
 func (a *ErrorHistoryServiceAdapter) GetById(id int64) (*models.ErrorHistory, error) {

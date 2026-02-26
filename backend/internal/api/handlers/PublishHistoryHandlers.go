@@ -44,7 +44,7 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 		filters.SiteID, _ = strconv.ParseInt(sid, 10, 64)
 	}
 
-	entries, total, err := Services.PublishHistoryService.List(limit, offset, filters)
+	listResult, err := Services.PublishHistoryService.List(limit, offset, filters)
 	if err != nil {
 		respondError(
 			w,
@@ -57,8 +57,8 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondSuccess(w, PaginatedEntries{
-		Entries: entries,
-		Total:   total,
+		Entries: listResult.Items,
+		Total:   listResult.Total,
 		Limit:   limit,
 		Offset:  offset,
 	})

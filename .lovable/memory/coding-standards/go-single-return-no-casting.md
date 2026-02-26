@@ -1,5 +1,5 @@
 # Memory: coding-standards/go-single-return-no-casting
-Updated: 2026-02-26
+Updated: 2026-02-26 (expanded with comprehensive examples)
 
 ---
 

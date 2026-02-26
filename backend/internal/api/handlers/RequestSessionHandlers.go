@@ -32,7 +32,7 @@ func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 		limit = 50
 	}
 
-	sessions, total, err := RequestSessionStore.ListRequestSessions(limit, offset)
+	listResult, err := RequestSessionStore.ListRequestSessions(limit, offset)
 	if err != nil {
 		respondError(
 			w,
@@ -45,8 +45,8 @@ func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondSuccess(w, PaginatedSessions{
-		Sessions: sessions,
-		Total:    total,
+		Sessions: listResult.Sessions,
+		Total:    listResult.Total,
 		Limit:    limit,
 		Offset:   offset,
 	})
@@ -157,7 +157,7 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get all sessions and filter by error
-	sessions, _, err := RequestSessionStore.ListRequestSessions(1000, 0)
+	allResult, err := RequestSessionStore.ListRequestSessions(1000, 0)
 	if err != nil {
 		respondError(
 			w,
@@ -171,7 +171,7 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 
 	// Filter sessions with errors
 	var errorSessions []*middleware.RequestSession
-	for _, s := range sessions {
+	for _, s := range allResult.Sessions {
 		if s.StatusCode >= 400 || s.Error != "" {
 			errorSessions = append(errorSessions, s)
 			if len(errorSessions) >= limit {

@@ -30,41 +30,47 @@ type zipSession struct {
 
 // resolveZipContext resolves temp dir, plugin path, and zip file path.
 func (s *Service) resolveZipContext(pluginPath, pluginName, suffix string) (*zipContext, error) {
-	absTempDir, absPluginPath, err := resolveZipPaths(s.tempDir, pluginPath)
+	paths, err := resolveZipPaths(s.tempDir, pluginPath)
 	if err != nil {
 		return nil, err
 	}
 
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
-	absZipPath, err := pathutil.Join(absTempDir, fmt.Sprintf("%s%s.zip", slug, suffix))
+	absZipPath, err := pathutil.Join(paths.TempDir, fmt.Sprintf("%s%s.zip", slug, suffix))
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve zip path")
 	}
 
 	zc := &zipContext{
-		AbsPluginPath: absPluginPath,
+		AbsPluginPath: paths.PluginPath,
 		AbsZipPath:    absZipPath,
 		Slug:          slug,
 	}
 	return zc, nil
 }
 
+// resolvedPaths holds resolved absolute paths for zip operations.
+type resolvedPaths struct {
+	TempDir    string
+	PluginPath string
+}
+
 // resolveZipPaths resolves and ensures both the temp dir and plugin path exist.
-func resolveZipPaths(tempDir, pluginPath string) (string, string, error) {
+func resolveZipPaths(tempDir, pluginPath string) (*resolvedPaths, error) {
 	absTempDir, err := pathutil.ToAbsolute(tempDir)
 	if err != nil {
-		return "", "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
 	}
 	if err := os.MkdirAll(absTempDir, 0755); err != nil {
-		return "", "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
 	}
 
 	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
 	if err != nil {
-		return "", "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
-	return absTempDir, absPluginPath, nil
+	return &resolvedPaths{TempDir: absTempDir, PluginPath: absPluginPath}, nil
 }
 
 // openZipSession creates a zip file, writer, and registers best compression.
