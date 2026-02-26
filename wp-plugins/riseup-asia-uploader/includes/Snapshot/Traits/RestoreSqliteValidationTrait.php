@@ -49,7 +49,7 @@ trait RestoreSqliteValidationTrait {
         $rowCount = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
 
         return ResultHelper::ok(array(
-            'sqlite'                         => $sqlite,
+            ResponseKeyType::Sqlite->value   => $sqlite,
             ResponseKeyType::Columns->value  => $columnNames,
             ResponseKeyType::RowCount->value => $rowCount,
         ));

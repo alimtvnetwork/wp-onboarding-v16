@@ -306,6 +306,13 @@ enum ResponseKeyType: string
     case Restore      = 'Restore';
     case Import       = 'Import';
 
+    /** Restore option keys. */
+    case Strict             = 'Strict';
+    case ApplyIncrementals  = 'ApplyIncrementals';
+    case Sqlite             = 'Sqlite';
+    case SqliteFile         = 'SqliteFile';
+    case InternalMode       = '_Mode';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

@@ -33,8 +33,8 @@ trait ExporterBuildTrait {
     use ExporterBuildCollectTrait;
 
     private function buildZip($snapshot) {
-        $snapshotId = (int) $snapshot['id'];
-        $snapshotDir = dirname($snapshot['filepath']);
+        $snapshotId = (int) $snapshot[ResponseKeyType::Id->value];
+        $snapshotDir = dirname($snapshot[ResponseKeyType::FilePath->value]);
 
         $this->log(LogLevelType::Info->value, 'Building ZIP export', array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
@@ -92,7 +92,7 @@ trait ExporterBuildTrait {
     }
 
     private function prepareZipPaths(string $exportsDir, array $snapshot): array {
-        $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $snapshot['filename']);
+        $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $snapshot[ResponseKeyType::Filename->value]);
         $zipFilename = $safeName . '_export.zip';
 
         return array(
@@ -211,13 +211,13 @@ trait ExporterBuildTrait {
         array $snapshot,
         string $snapshotDir,
     ): array {
-        $incrementals = $this->getIncrementalSnapshots($snapshotId, $snapshot['filename']);
+        $incrementals = $this->getIncrementalSnapshots($snapshotId, $snapshot[ResponseKeyType::Filename->value]);
         $incrementalDir = $snapshotDir . '/incremental';
         $incrementalFiles = is_dir($incrementalDir) ? $this->collectIncrementalFiles($incrementalDir) : array();
         $includedIds = array($snapshotId);
 
         foreach ($incrementals as $inc) {
-            $includedIds[] = (int) $inc['id'];
+            $includedIds[] = (int) $inc[ResponseKeyType::Id->value];
         }
 
         return array(
@@ -288,16 +288,16 @@ trait ExporterBuildTrait {
         array $incrementals,
     ) {
         $manifest = array(
-            'version'                                => PluginConfigType::Version->value,
+            ResponseKeyType::Version->value          => PluginConfigType::Version->value,
             ResponseKeyType::CreatedAt->value        => DateHelper::nowIso(),
             ResponseKeyType::SnapshotId->value       => $snapshotId,
-            ResponseKeyType::Filename->value         => $snapshot['filename'],
-            ResponseKeyType::Scope->value            => $snapshot['scope'],
-            ResponseKeyType::Tables->value           => json_decode($snapshot['tables_json'] ?? '[]', true),
-            ResponseKeyType::TotalRows->value        => (int) ($snapshot['total_rows'] ?? 0),
+            ResponseKeyType::Filename->value         => $snapshot[ResponseKeyType::Filename->value],
+            ResponseKeyType::Scope->value            => $snapshot[ResponseKeyType::Scope->value],
+            ResponseKeyType::Tables->value           => json_decode($snapshot['TablesJson'] ?? '[]', true),
+            ResponseKeyType::TotalRows->value        => (int) ($snapshot[ResponseKeyType::TotalRows->value] ?? 0),
             ResponseKeyType::IncludedIds->value      => $includedIds,
             ResponseKeyType::IncrementalCount->value => count($incrementals),
-            'type'                                   => 'full_with_incrementals',
+            ResponseKeyType::Type->value             => 'full_with_incrementals',
         );
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
