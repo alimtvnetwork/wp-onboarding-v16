@@ -89,12 +89,14 @@ class OnboardUploadValidator {
 
         // Validate ZIP structure.
         $structure_validation = $this->validate_zip_structure($file['tmp_name']);
+
         if (is_wp_error($structure_validation)) {
             return $structure_validation;
         }
 
         // Scan for malicious code.
         $security_scan = $this->scan_for_malicious_code($file['tmp_name']);
+
         if (is_wp_error($security_scan)) {
             return $security_scan;
         }

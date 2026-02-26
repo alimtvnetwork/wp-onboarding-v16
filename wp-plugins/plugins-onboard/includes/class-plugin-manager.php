@@ -99,6 +99,7 @@ class OnboardPluginManager {
      */
     public function get_plugin($slug) {
         $plugins = $this->get_all_plugins();
+
         foreach ($plugins as $plugin) {
             if ($plugin['slug'] === $slug) {
                 return $plugin;
@@ -329,6 +330,7 @@ class OnboardPluginManager {
         $backup = null;
 
         $isBackupRequired = $existing_plugin && $auto_backup && $this->should_backup('upload');
+
         if ($isBackupRequired) {
             $backup = $this->snapshot->create($slug, 'pre_upload', $app_id, $ip_address);
 
@@ -447,6 +449,7 @@ class OnboardPluginManager {
 
         // Search for PHP file with plugin headers.
         $files = glob(WP_PLUGIN_DIR . '/' . $slug . '/*.php');
+
         foreach ($files as $file) {
             $data = get_file_data($file, array('Name' => 'Plugin Name'));
             if (!empty($data['Name'])) {

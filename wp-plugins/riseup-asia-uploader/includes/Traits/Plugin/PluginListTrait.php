@@ -198,6 +198,7 @@ trait PluginListTrait
     public function handlePluginFileContent($request) {
         $json = $request->get_json_params();
         $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
+
         if (empty($slug)) {
 
             return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
@@ -233,6 +234,7 @@ trait PluginListTrait
         }
 
         $filePath = ltrim($filePath, '/\\');
+
         if (strpos($filePath, '..') !== false) {
 
             return $this->errorResponse('Invalid file path', HttpStatusType::BadRequest->value);
