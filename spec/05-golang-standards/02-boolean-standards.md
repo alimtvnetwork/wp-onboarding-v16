@@ -52,6 +52,18 @@ func IsDirMissing(path string) bool { return !IsDir(path) }
 func (r Result[T]) IsEmpty() bool { return !r.defined }  // already exists ✅
 ```
 
+#### Inventory of Positive Guard Functions
+
+The following counterparts exist in the codebase and **must** be used instead of inline `!` negation:
+
+| Package | Function | Replaces |
+|---------|----------|----------|
+| `pathutil` | `IsDirMissing(path)` | `!IsDir(path)` |
+| `portutil` | `isPortFree(port)` | `!isPortInUse(port)` |
+| `wordpress` | `isErrorStatus(code, ok)` | `!isOkStatus(code, ok)` |
+| `wordpress` | `IsEnvelopeMissing(data)` | `!IsEnvelope(data)` |
+| `publish` | `isPermanentError(err)` | `!isTransientAppError(err)` |
+
 ### 2.3 — Enum Comparisons
 
 Use `IsOther(val)` or `IsInvalid()` instead of `!=` or `!IsValid()`:
