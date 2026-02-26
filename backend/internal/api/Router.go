@@ -107,7 +107,9 @@ func resolveSpaStaticDir(dir string) string {
 // fileExists checks if a file exists and is not a directory
 func fileExists(path string) bool {
 	fi, appErr := pathutil.StatFile(path)
-	return appErr == nil && !fi.Info.IsDir()
+	isValidStat := appErr == nil
+	isRegularFile := isValidStat && !fi.Info.IsDir()
+	return isRegularFile
 }
 
 // spaHandler serves static files with SPA fallback for client-side routing
