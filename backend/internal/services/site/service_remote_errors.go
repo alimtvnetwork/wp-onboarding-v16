@@ -109,7 +109,7 @@ func (s *Service) logRemoteAction(ref *remoteActionRef, input RemoteActionLogInp
 // emitRemoteActionToSession sends logs to session service and WebSocket.
 func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, input RemoteActionLogInput) {
 	if s.sessionService != nil && ref.SessionID != "" {
-		s.sessionService.Log(ref.SessionID, input.Level, input.Step, input.Message, input.Details)
+		s.sessionService.Log(session.LogInput{SessionID: ref.SessionID, Level: input.Level, Step: input.Step, Message: input.Message, Details: input.Details})
 	}
 	if s.wsHub != nil {
 		s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
@@ -267,7 +267,7 @@ func (s *Service) logPhpErrorsToSession(sessionId string, entries []wordpress.Re
 		return
 	}
 	for _, entry := range entries {
-		s.sessionService.Log(sessionId, "error", "remote_php_error", entry.Message, session.ToJSON(PhpErrorDetail{PhpFile: entry.File, PhpLine: derefInt(entry.Line), PhpLevel: entry.Level, PhpCreated: entry.CreatedAt}))
+		s.sessionService.Log(session.LogInput{SessionID: sessionId, Level: "error", Step: "remote_php_error", Message: entry.Message, Details: session.ToJSON(PhpErrorDetail{PhpFile: entry.File, PhpLine: derefInt(entry.Line), PhpLevel: entry.Level, PhpCreated: entry.CreatedAt})})
 	}
 }
 
@@ -307,7 +307,7 @@ func (s *Service) applyStackTraceContent(ref *remoteActionRef, logsResult *wordp
 		Details: session.ToJSON(StackTraceLogDetails{Lines: stLog.Lines, TotalSize: int(stLog.TotalSize), Truncated: stLog.Truncated})})
 
 	if s.sessionService != nil && ref.SessionID != "" {
-		s.sessionService.Log(ref.SessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site",
-			session.ToJSON(StackTraceContentDetails{Content: stLog.Content, Lines: stLog.Lines, Truncated: stLog.Truncated}))
+		s.sessionService.Log(session.LogInput{SessionID: ref.SessionID, Level: "info", Step: "remote_php_stacktrace", Message: "PHP stacktrace.txt content from remote site",
+			Details: session.ToJSON(StackTraceContentDetails{Content: stLog.Content, Lines: stLog.Lines, Truncated: stLog.Truncated})})
 	}
 }
