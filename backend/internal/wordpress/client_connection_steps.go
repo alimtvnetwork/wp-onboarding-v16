@@ -61,12 +61,25 @@ func (c *Client) testRestApiAvailability(result *ConnectionInfo) error {
 	resp, err := c.httpClient.Get(fmt.Sprintf("%s/wp-json/", c.baseURL))
 	if err != nil {
 		c.progress(connectionstep.RestApiCheck.Value(), stagestatus.Failed.String(), fmt.Sprintf("REST API not accessible: %v", err), toProgress(URLProgress{URL: c.baseURL}))
+
 		return apperror.Wrap(err, apperror.ErrWPAPIDisabled, "REST API not accessible").WithURL(c.baseURL)
 	}
 	defer resp.Body.Close()
 
+	if err := c.validateRestApiStatus(resp, result); err != nil {
+		return err
+	}
+
+	c.progress(connectionstep.RestApiCheck.Value(), stagestatus.Completed.String(), "REST API is available", toProgress(SiteNameProgress{URL: c.baseURL, SiteName: result.SiteName}))
+
+	return nil
+}
+
+// validateRestApiStatus checks the REST API response status and parses site info.
+func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionInfo) error {
 	if resp.StatusCode == HttpStatusNotFound.Int() {
 		c.progress(connectionstep.RestApiCheck.Value(), stagestatus.Failed.String(), "REST API not found - is permalink structure set?", toProgress(URLProgress{URL: c.baseURL}))
+
 		return apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").WithURL(c.baseURL)
 	}
 
@@ -76,7 +89,6 @@ func (c *Client) testRestApiAvailability(result *ConnectionInfo) error {
 		result.SiteDescription = rootInfo.Description
 	}
 
-	c.progress(connectionstep.RestApiCheck.Value(), stagestatus.Completed.String(), "REST API is available", toProgress(SiteNameProgress{URL: c.baseURL, SiteName: result.SiteName}))
 	return nil
 }
 
@@ -106,15 +118,13 @@ func (c *Client) testAuthentication(result *ConnectionInfo) error {
 // checkAuthStatus validates the authentication response status code.
 func (c *Client) checkAuthStatus(statusCode int, body []byte) error {
 	if statusCode == HttpStatusUnauthorized.Int() {
-		c.progress(connectionstep.AuthCheck.Value(), stagestatus.Failed.String(), "Invalid username or application password", toProgress(AuthHintProgress{URL: c.baseURL, Hint: "Generate an application password in WordPress: Users → Profile → Application Passwords"}))
-
-		return apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").WithURL(c.baseURL).WithUsername(c.username)
+		return c.reportAuthFailure("Invalid username or application password",
+			apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").WithURL(c.baseURL).WithUsername(c.username))
 	}
 
 	if statusCode == HttpStatusForbidden.Int() {
-		c.progress(connectionstep.AuthCheck.Value(), stagestatus.Failed.String(), "Access forbidden - user lacks permissions", toProgress(URLProgress{URL: c.baseURL}))
-
-		return apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").WithURL(c.baseURL).WithStatusCode(statusCode)
+		return c.reportAuthFailure("Access forbidden - user lacks permissions",
+			apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").WithURL(c.baseURL).WithStatusCode(statusCode))
 	}
 
 	if statusCode != HttpStatusOk.Int() {
@@ -124,6 +134,13 @@ func (c *Client) checkAuthStatus(statusCode int, body []byte) error {
 	}
 
 	return nil
+}
+
+// reportAuthFailure logs an auth failure and returns the error.
+func (c *Client) reportAuthFailure(message string, err *apperror.AppError) error {
+	c.progress(connectionstep.AuthCheck.Value(), stagestatus.Failed.String(), message, toProgress(URLProgress{URL: c.baseURL}))
+
+	return err
 }
 
 // parseUserInfoFromBytes decodes the users/me response bytes into the ConnectionInfo result.

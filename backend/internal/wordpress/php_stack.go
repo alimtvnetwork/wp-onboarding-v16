@@ -34,28 +34,42 @@ type phpErrorResponse struct {
 // formatted PHP stack trace string. Returns an empty string if the response
 // doesn't contain stack trace frames.
 func ExtractPHPStackTrace(respBytes []byte) string {
-	if len(respBytes) == 0 {
-		return ""
-	}
-
-	var parsed phpErrorResponse
-	if err := json.Unmarshal(respBytes, &parsed); err != nil {
-		return ""
-	}
-
-	frames := parsed.Error.Details.StackTraceFrames
+	frames := parsePHPErrorFrames(respBytes)
 	if len(frames) == 0 {
 		return ""
 	}
 
+	return formatPHPStackTrace(frames)
+}
+
+// parsePHPErrorFrames extracts stack trace frames from a PHP error response.
+func parsePHPErrorFrames(respBytes []byte) []PHPStackTraceFrame {
+	if len(respBytes) == 0 {
+		return nil
+	}
+
+	var parsed phpErrorResponse
+	if err := json.Unmarshal(respBytes, &parsed); err != nil {
+		return nil
+	}
+
+	return parsed.Error.Details.StackTraceFrames
+}
+
+// formatPHPStackTrace formats PHP stack trace frames into a readable string.
+func formatPHPStackTrace(frames []PHPStackTraceFrame) string {
 	result := "\n--- PHP Stack Trace (from WordPress) ---\n"
+
 	for i, frame := range frames {
 		funcName := frame.Function
+
 		if frame.Class != "" {
 			funcName = frame.Class + "::" + frame.Function
 		}
+
 		result += fmt.Sprintf("  #%d %s() at %s:%d\n", i, funcName, frame.FileBase, frame.Line)
 	}
+
 	result += "--- End PHP Stack Trace ---"
 	return result
 }

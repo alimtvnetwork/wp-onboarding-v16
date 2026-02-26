@@ -55,9 +55,19 @@ type SnapshotImportResult struct {
 func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 	endpoint := snapshotEndpoint(ep.SnapshotsImport)
 
+	body, contentType, err := buildImportMultipart(zipPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.executeImportRequest(endpoint, body, contentType)
+}
+
+// buildImportMultipart creates the multipart body for a snapshot import.
+func buildImportMultipart(zipPath string) (*bytes.Buffer, string, error) {
 	file, err := os.Open(zipPath)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to open import ZIP file")
+		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to open import ZIP file")
 	}
 	defer file.Close()
 
@@ -66,22 +76,28 @@ func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 
 	part, err := writer.CreateFormFile("file", filepath.Base(zipPath))
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create multipart form")
+		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to create multipart form")
 	}
 
 	if _, err := io.Copy(part, file); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write file to form")
+		return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to write file to form")
 	}
 
 	writer.Close()
 
-	resp, err := c.requestMultipart("POST", endpoint, body, writer.FormDataContentType())
+	return body, writer.FormDataContentType(), nil
+}
+
+// executeImportRequest sends the multipart import and parses the response.
+func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, contentType string) (*SnapshotImportResult, error) {
+	resp, err := c.requestMultipart("POST", endpoint, body, contentType)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to import snapshot")
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
+
 	if !isOkStatus(resp.StatusCode, []int{http.StatusOK, http.StatusCreated}) {
 		return nil, c.buildCallError(apiCallInput{
 			Method: "POST", Endpoint: endpoint, Operation: "import snapshot",

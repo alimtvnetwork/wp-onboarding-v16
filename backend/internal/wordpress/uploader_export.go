@@ -163,24 +163,38 @@ func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID i
 // buildErrorSessionsEndpoint constructs the endpoint URL with query parameters.
 func buildErrorSessionsEndpoint(namespace, level, search string, sinceID, limit, offset int) string {
 	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorSessions)
-	params := []string{}
-	if level != "" {
-		params = append(params, fmt.Sprintf("level=%s", level))
-	}
-	if search != "" {
-		params = append(params, fmt.Sprintf("search=%s", search))
-	}
-	if sinceID > 0 {
-		params = append(params, fmt.Sprintf("since_id=%d", sinceID))
-	}
-	if limit > 0 {
-		params = append(params, fmt.Sprintf("limit=%d", limit))
-	}
-	if offset > 0 {
-		params = append(params, fmt.Sprintf("offset=%d", offset))
-	}
+	params := collectErrorSessionParams(level, search, sinceID, limit, offset)
+
 	if len(params) > 0 {
 		endpoint += "?" + strings.Join(params, "&")
 	}
+
 	return endpoint
+}
+
+// collectErrorSessionParams builds the query parameter list for error sessions.
+func collectErrorSessionParams(level, search string, sinceID, limit, offset int) []string {
+	var params []string
+
+	if level != "" {
+		params = append(params, fmt.Sprintf("level=%s", level))
+	}
+
+	if search != "" {
+		params = append(params, fmt.Sprintf("search=%s", search))
+	}
+
+	if sinceID > 0 {
+		params = append(params, fmt.Sprintf("since_id=%d", sinceID))
+	}
+
+	if limit > 0 {
+		params = append(params, fmt.Sprintf("limit=%d", limit))
+	}
+
+	if offset > 0 {
+		params = append(params, fmt.Sprintf("offset=%d", offset))
+	}
+
+	return params
 }

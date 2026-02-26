@@ -37,93 +37,53 @@ type PowerShellResult struct {
 	IsActivated  bool   `json:",omitempty"`
 }
 
+// psJsonOutput is the typed struct for parsing PowerShell quiet-mode JSON.
+type psJsonOutput struct {
+	Success   bool   `json:"success"`   // external key (PowerShell JSON output)
+	Plugin    string `json:"plugin"`    // external key
+	Activated bool   `json:"activated"` // external key
+	Error     string `json:"error"`     // external key
+}
+
 // RunPowerShellUpload executes the upload-plugin.ps1 script with the given configuration.
 // It passes config as inline JSON for direct invocation from the app.
 func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(line string)) (*PowerShellResult, error) {
-	// Only available on Windows
 	if runtime.GOOS != "windows" {
 		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
 
-	result := &PowerShellResult{
-		Success:  false,
-		ExitCode: -1,
-	}
-
-	// Serialize config to JSON
 	configBytes, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrPublishConfig, "failed to marshal PowerShell config")
 	}
 
-	// Build PowerShell command with inline JSON config
-	args := []string{
+	args := buildPsJsonConfigArgs(scriptPath, string(configBytes))
+	emitPsStartLog(onOutput, cfg.PluginFolderPath, cfg.WordPressSiteURL)
+
+	return executePowerShellCommand(args, onOutput)
+}
+
+// buildPsJsonConfigArgs constructs PowerShell arguments for JSON config mode.
+func buildPsJsonConfigArgs(scriptPath, jsonConfig string) []string {
+	return []string{
 		"-ExecutionPolicy", "Bypass",
 		"-NoProfile",
 		"-NonInteractive",
 		"-File", scriptPath,
-		"-JsonConfig", string(configBytes),
+		"-JsonConfig", jsonConfig,
 		"-Quiet",
 	}
+}
 
-	cmd := exec.Command("powershell.exe", args...)
-
-	// Capture stdout and stderr
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	// Run the command
-	if onOutput != nil {
-		onOutput(fmt.Sprintf("Executing PowerShell upload script..."))
-		onOutput(fmt.Sprintf("  Plugin: %s", cfg.PluginFolderPath))
-		onOutput(fmt.Sprintf("  Site: %s", cfg.WordPressSiteURL))
+// emitPsStartLog logs the start of a PowerShell upload if callback is set.
+func emitPsStartLog(onOutput func(line string), pluginPath, siteURL string) {
+	if onOutput == nil {
+		return
 	}
 
-	err = cmd.Run()
-
-	result.Stdout = stdout.String()
-	result.Stderr = stderr.String()
-
-	if cmd.ProcessState != nil {
-		result.ExitCode = cmd.ProcessState.ExitCode()
-	}
-
-	// Parse JSON output from quiet mode
-	if result.Stdout != "" {
-		var jsonResult struct {
-			Success   bool   `json:"success"`   // external key (PowerShell JSON output)
-			Plugin    string `json:"plugin"`     // external key
-			Activated bool   `json:"activated"`  // external key
-			Error     string `json:"error"`      // external key
-		}
-		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
-			result.IsSuccess = jsonResult.Success
-			result.Plugin = jsonResult.Plugin
-			result.IsActivated = jsonResult.Activated
-			result.ErrorMessage = jsonResult.Error
-		}
-	}
-
-	// Stream output lines if callback provided (for non-quiet debug)
-	if onOutput != nil && result.Stderr != "" {
-		for _, line := range strings.Split(result.Stderr, "\n") {
-			line = strings.TrimSpace(line)
-			if line != "" {
-				onOutput("[PS] " + line)
-			}
-		}
-	}
-
-	if err != nil && result.ErrorMessage == "" {
-		result.ErrorMessage = err.Error()
-	}
-
-	if result.ExitCode == 0 && result.ErrorMessage == "" {
-		result.IsSuccess = true
-	}
-
-	return result, nil
+	onOutput(fmt.Sprintf("Executing PowerShell upload script..."))
+	onOutput(fmt.Sprintf("  Plugin: %s", pluginPath))
+	onOutput(fmt.Sprintf("  Site: %s", siteURL))
 }
 
 // RunPowerShellUploadDirect executes the upload script with direct command-line parameters.
@@ -133,11 +93,17 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
 
-	result := &PowerShellResult{
-		Success:  false,
-		ExitCode: -1,
+	args := buildPsDirectArgs(scriptPath, pluginPath, siteUrl, username, password, slug, activate)
+
+	if onOutput != nil {
+		onOutput("Executing PowerShell upload...")
 	}
 
+	return executePowerShellCommand(args, onOutput)
+}
+
+// buildPsDirectArgs constructs PowerShell arguments for direct parameter mode.
+func buildPsDirectArgs(scriptPath, pluginPath, siteUrl, username, password, slug string, activate bool) []string {
 	args := []string{
 		"-ExecutionPolicy", "Bypass",
 		"-NoProfile",
@@ -159,41 +125,77 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 		args = append(args, "-Activate")
 	}
 
+	return args
+}
+
+// executePowerShellCommand runs a PowerShell command and processes the output.
+func executePowerShellCommand(args []string, onOutput func(line string)) (*PowerShellResult, error) {
 	cmd := exec.Command("powershell.exe", args...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	if onOutput != nil {
-		onOutput("Executing PowerShell upload...")
-	}
-
 	err := cmd.Run()
 
-	result.Stdout = stdout.String()
-	result.Stderr = stderr.String()
+	result := buildPsResult(cmd, &stdout, &stderr)
+	parsePsJsonOutput(result)
+	streamPsStderr(result, onOutput)
+	finalizePsResult(result, err)
+
+	return result, nil
+}
+
+// buildPsResult creates a PowerShellResult from command output.
+func buildPsResult(cmd *exec.Cmd, stdout, stderr *bytes.Buffer) *PowerShellResult {
+	result := &PowerShellResult{
+		IsSuccess: false,
+		ExitCode:  -1,
+		Stdout:    stdout.String(),
+		Stderr:    stderr.String(),
+	}
 
 	if cmd.ProcessState != nil {
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 
-	// Parse JSON output
-	if result.Stdout != "" {
-		var jsonResult struct {
-			Success   bool   `json:"success"`   // external key (PowerShell JSON output)
-			Plugin    string `json:"plugin"`     // external key
-			Activated bool   `json:"activated"`  // external key
-			Error     string `json:"error"`      // external key
-		}
-		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
-			result.IsSuccess = jsonResult.Success
-			result.Plugin = jsonResult.Plugin
-			result.IsActivated = jsonResult.Activated
-			result.ErrorMessage = jsonResult.Error
-		}
+	return result
+}
+
+// parsePsJsonOutput parses JSON from PowerShell stdout quiet mode.
+func parsePsJsonOutput(result *PowerShellResult) {
+	if result.Stdout == "" {
+		return
 	}
 
+	var jsonResult psJsonOutput
+	if err := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); err != nil {
+		return
+	}
+
+	result.IsSuccess = jsonResult.Success
+	result.Plugin = jsonResult.Plugin
+	result.IsActivated = jsonResult.Activated
+	result.ErrorMessage = jsonResult.Error
+}
+
+// streamPsStderr streams stderr lines to the output callback.
+func streamPsStderr(result *PowerShellResult, onOutput func(line string)) {
+	if onOutput == nil || result.Stderr == "" {
+		return
+	}
+
+	for _, line := range strings.Split(result.Stderr, "\n") {
+		line = strings.TrimSpace(line)
+
+		if line != "" {
+			onOutput("[PS] " + line)
+		}
+	}
+}
+
+// finalizePsResult sets final success/error state on the result.
+func finalizePsResult(result *PowerShellResult, err error) {
 	if err != nil && result.ErrorMessage == "" {
 		result.ErrorMessage = err.Error()
 	}
@@ -201,33 +203,50 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 	if result.ExitCode == 0 && result.ErrorMessage == "" {
 		result.IsSuccess = true
 	}
-
-	return result, nil
 }
 
 // FindUploadScript looks for upload-plugin.ps1 in common locations.
 func FindUploadScript(backendDir string) string {
-	// Build candidates, skipping paths that fail resolution
-	var candidates []string
-	if p, err := pathutil.Join(backendDir, "scripts", "upload-plugin.ps1"); err == nil {
-		candidates = append(candidates, p)
-	}
-	if p, err := pathutil.Join(backendDir, "upload-plugin.ps1"); err == nil {
-		candidates = append(candidates, p)
-	}
-	candidates = append(candidates, "scripts/upload-plugin.ps1", "upload-plugin.ps1")
+	candidates := buildScriptCandidates(backendDir)
 
 	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
-			absPath, err := pathutil.ToAbsolute(path)
-			if err != nil {
-				return path // Return unresolved if absolute fails
-			}
-			return absPath
+		if resolved := resolveScriptPath(path); resolved != "" {
+			return resolved
 		}
 	}
 
 	return ""
+}
+
+// buildScriptCandidates builds the list of candidate script paths.
+func buildScriptCandidates(backendDir string) []string {
+	var candidates []string
+
+	if p, err := pathutil.Join(backendDir, "scripts", "upload-plugin.ps1"); err == nil {
+		candidates = append(candidates, p)
+	}
+
+	if p, err := pathutil.Join(backendDir, "upload-plugin.ps1"); err == nil {
+		candidates = append(candidates, p)
+	}
+
+	candidates = append(candidates, "scripts/upload-plugin.ps1", "upload-plugin.ps1")
+
+	return candidates
+}
+
+// resolveScriptPath checks if a path exists and returns its absolute form.
+func resolveScriptPath(path string) string {
+	if _, err := os.Stat(path); err != nil {
+		return ""
+	}
+
+	absPath, err := pathutil.ToAbsolute(path)
+	if err != nil {
+		return path
+	}
+
+	return absPath
 }
 
 // IsPowerShellAvailable checks if PowerShell is available on the system.
