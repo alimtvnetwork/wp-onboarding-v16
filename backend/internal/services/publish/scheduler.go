@@ -197,131 +197,135 @@ func (s *PublishScheduler) executeJob(jobId string) {
 	}
 	s.mu.Unlock()
 
-	startTime := time.Now()
+	s.broadcastJobStarted(job)
+	s.enqueueJobSites(job)
+	s.rescheduleJob(job)
+	s.broadcastJobComplete(jobId, job)
+	s.broadcastJobUpdate()
+}
 
-	// Broadcast job starting
+// broadcastJobStarted sends a job start event.
+func (s *PublishScheduler) broadcastJobStarted(job *ScheduledJob) {
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobStartedData{
-			Type:       "scheduled_job_started",
-			JobId:      jobId,
-			PluginId:   job.PluginId,
-			PluginName: job.PluginName,
+			Type: "scheduled_job_started", JobId: job.Id,
+			PluginId: job.PluginId, PluginName: job.PluginName,
 		})
 	}
+}
 
-	// Enqueue publish operations for all target sites
-	items := make([]QueueItem, 0)
+// enqueueJobSites enqueues publish operations for all target sites.
+func (s *PublishScheduler) enqueueJobSites(job *ScheduledJob) {
+	items := make([]QueueItem, 0, len(job.SiteIds))
 	for i, siteId := range job.SiteIds {
 		siteName := ""
 		if i < len(job.SiteNames) {
 			siteName = job.SiteNames[i]
 		}
 		items = append(items, QueueItem{
-			PluginId:   job.PluginId,
-			PluginName: job.PluginName,
-			SiteId:     siteId,
-			SiteName:   siteName,
-			Options:    job.Options,
-			Priority:   0, // Normal priority for scheduled jobs
+			PluginId: job.PluginId, PluginName: job.PluginName,
+			SiteId: siteId, SiteName: siteName, Options: job.Options,
 		})
 	}
-
 	if s.queue != nil && len(items) > 0 {
 		s.queue.EnqueueBatch(items)
 	}
+}
 
-	// Update job state
+// rescheduleJob updates last run and schedules the next run.
+func (s *PublishScheduler) rescheduleJob(job *ScheduledJob) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	now := time.Now()
 	job.LastRunAt = &now
-	job.LastStatus = "success" // Will be updated based on results
+	job.LastStatus = "success"
 
-	// Schedule next run
 	nextRun, err := s.calculateNextRun(job.Schedule)
 	if err == nil {
 		job.NextRunAt = &nextRun
 		s.scheduleTimer(job)
 	}
-	s.mu.Unlock()
+}
 
-	duration := time.Since(startTime).Milliseconds()
-
-	// Broadcast job complete
+// broadcastJobComplete sends a job completion event.
+func (s *PublishScheduler) broadcastJobComplete(jobId string, job *ScheduledJob) {
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobCompleteData{
-			Type:       "scheduled_job_complete",
-			JobId:      jobId,
-			PluginId:   job.PluginId,
-			PluginName: job.PluginName,
-			DurationMs: duration,
-			NextRunAt:  job.NextRunAt,
+			Type: "scheduled_job_complete", JobId: jobId,
+			PluginId: job.PluginId, PluginName: job.PluginName,
+			NextRunAt: job.NextRunAt,
 		})
 	}
-
-	s.broadcastJobUpdate()
 }
 
 // calculateNextRun parses the schedule expression and returns the next run time
 func (s *PublishScheduler) calculateNextRun(cfg ScheduleConfig) (time.Time, error) {
-	loc := time.UTC
-	if cfg.Timezone != "" {
-		var err error
-		loc, err = time.LoadLocation(cfg.Timezone)
-		if err != nil {
-			loc = time.UTC
-		}
-	}
-
+	loc := resolveTimezone(cfg.Timezone)
 	now := time.Now().In(loc)
-
-	var hour, minute int
 
 	switch {
 	case len(cfg.CronExpr) > 6 && cfg.CronExpr[:6] == "daily:":
-		_, err := fmt.Sscanf(cfg.CronExpr, "daily:%d:%d", &hour, &minute)
-		if err != nil {
-			return time.Time{}, apperror.New(apperror.ErrValidation, "invalid daily schedule").
-				WithValue("cronExpr", cfg.CronExpr)
-		}
-		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
-		if next.Before(now) {
-			next = next.Add(24 * time.Hour)
-		}
-		return next, nil
-
+		return parseDailySchedule(cfg.CronExpr, now, loc)
 	case len(cfg.CronExpr) > 7 && cfg.CronExpr[:7] == "weekly:":
-		var dayName string
-		_, err := fmt.Sscanf(cfg.CronExpr, "weekly:%3s:%d:%d", &dayName, &hour, &minute)
-		if err != nil {
-			return time.Time{}, apperror.New(apperror.ErrValidation, "invalid weekly schedule").
-				WithValue("cronExpr", cfg.CronExpr)
-		}
-		targetDay := parseDayOfWeek(dayName)
-		daysUntil := (int(targetDay) - int(now.Weekday()) + 7) % 7
-		if daysUntil == 0 {
-			next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
-			if next.Before(now) {
-				daysUntil = 7
-			} else {
-				return next, nil
-			}
-		}
-		next := time.Date(now.Year(), now.Month(), now.Day()+daysUntil, hour, minute, 0, 0, loc)
-		return next, nil
-
+		return parseWeeklySchedule(cfg.CronExpr, now, loc)
 	case len(cfg.CronExpr) > 9 && cfg.CronExpr[:9] == "interval:":
-		var minutes int
-		_, err := fmt.Sscanf(cfg.CronExpr, "interval:%d", &minutes)
-		if err != nil || minutes < 1 {
-			return time.Time{}, apperror.New(apperror.ErrValidation, "invalid interval schedule").
-				WithValue("cronExpr", cfg.CronExpr)
-		}
-		return now.Add(time.Duration(minutes) * time.Minute), nil
-
+		return parseIntervalSchedule(cfg.CronExpr, now)
 	default:
-		return time.Time{}, apperror.New(apperror.ErrValidation, "unknown schedule format").
-			WithValue("cronExpr", cfg.CronExpr)
+		return time.Time{}, apperror.New(apperror.ErrValidation, "unknown schedule format").WithValue("cronExpr", cfg.CronExpr)
 	}
+}
+
+// resolveTimezone loads the timezone or defaults to UTC.
+func resolveTimezone(tz string) *time.Location {
+	if tz != "" {
+		if loc, err := time.LoadLocation(tz); err == nil {
+			return loc
+		}
+	}
+	return time.UTC
+}
+
+// parseDailySchedule parses "daily:HH:MM" format.
+func parseDailySchedule(expr string, now time.Time, loc *time.Location) (time.Time, error) {
+	var hour, minute int
+	if _, err := fmt.Sscanf(expr, "daily:%d:%d", &hour, &minute); err != nil {
+		return time.Time{}, apperror.New(apperror.ErrValidation, "invalid daily schedule").WithValue("cronExpr", expr)
+	}
+	next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
+	if next.Before(now) {
+		next = next.Add(24 * time.Hour)
+	}
+	return next, nil
+}
+
+// parseWeeklySchedule parses "weekly:DAY:HH:MM" format.
+func parseWeeklySchedule(expr string, now time.Time, loc *time.Location) (time.Time, error) {
+	var dayName string
+	var hour, minute int
+	if _, err := fmt.Sscanf(expr, "weekly:%3s:%d:%d", &dayName, &hour, &minute); err != nil {
+		return time.Time{}, apperror.New(apperror.ErrValidation, "invalid weekly schedule").WithValue("cronExpr", expr)
+	}
+
+	targetDay := parseDayOfWeek(dayName)
+	daysUntil := (int(targetDay) - int(now.Weekday()) + 7) % 7
+	if daysUntil == 0 {
+		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
+		if !next.Before(now) {
+			return next, nil
+		}
+		daysUntil = 7
+	}
+	return time.Date(now.Year(), now.Month(), now.Day()+daysUntil, hour, minute, 0, 0, loc), nil
+}
+
+// parseIntervalSchedule parses "interval:MINUTES" format.
+func parseIntervalSchedule(expr string, now time.Time) (time.Time, error) {
+	var minutes int
+	if _, err := fmt.Sscanf(expr, "interval:%d", &minutes); err != nil || minutes < 1 {
+		return time.Time{}, apperror.New(apperror.ErrValidation, "invalid interval schedule").WithValue("cronExpr", expr)
+	}
+	return now.Add(time.Duration(minutes) * time.Minute), nil
 }
 
 func parseDayOfWeek(day string) time.Weekday {
@@ -350,28 +354,33 @@ func (s *PublishScheduler) broadcastJobUpdate() {
 	if s.wsHub == nil {
 		return
 	}
+	ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobsUpdateData{
+		Type: "scheduled_jobs_update", Jobs: s.collectJobSummaries(),
+	})
+}
+
+// collectJobSummaries builds a summary list of all jobs.
+func (s *PublishScheduler) collectJobSummaries() []ws.ScheduledJobSummary {
 	jobs := make([]ws.ScheduledJobSummary, 0, len(s.jobs))
 	for _, job := range s.jobs {
-		j := ws.ScheduledJobSummary{
-			Id:         job.Id,
-			PluginId:   job.PluginId,
-			PluginName: job.PluginName,
-			IsEnabled:  job.Enabled,
-			Schedule:   job.Schedule.CronExpr,
-			LastStatus: job.LastStatus,
-		}
-		if job.NextRunAt != nil {
-			j.NextRunAt = job.NextRunAt.Format(time.RFC3339)
-		}
-		if job.LastRunAt != nil {
-			j.LastRunAt = job.LastRunAt.Format(time.RFC3339)
-		}
-		jobs = append(jobs, j)
+		jobs = append(jobs, buildJobSummary(job))
 	}
-	ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobsUpdateData{
-		Type: "scheduled_jobs_update",
-		Jobs: jobs,
-	})
+	return jobs
+}
+
+// buildJobSummary creates a summary from a ScheduledJob.
+func buildJobSummary(job *ScheduledJob) ws.ScheduledJobSummary {
+	j := ws.ScheduledJobSummary{
+		Id: job.Id, PluginId: job.PluginId, PluginName: job.PluginName,
+		IsEnabled: job.Enabled, Schedule: job.Schedule.CronExpr, LastStatus: job.LastStatus,
+	}
+	if job.NextRunAt != nil {
+		j.NextRunAt = job.NextRunAt.Format(time.RFC3339)
+	}
+	if job.LastRunAt != nil {
+		j.LastRunAt = job.LastRunAt.Format(time.RFC3339)
+	}
+	return j
 }
 
 // Shutdown gracefully stops the scheduler
