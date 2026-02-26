@@ -554,8 +554,11 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 			m.log.Warn("Failed to resolve archived database path", "path", path, "error", err)
 			continue
 		}
-		if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
-			m.log.Warn("Failed to delete archived database file", "path", pathutil.ForDisplay(fullPath), "error", err)
+		if err := os.Remove(fullPath); err != nil {
+			isRealError := !os.IsNotExist(err)
+			if isRealError {
+				m.log.Warn("Failed to delete archived database file", "path", pathutil.ForDisplay(fullPath), "error", err)
+			}
 		} else {
 			deleted++
 		}

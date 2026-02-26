@@ -46,7 +46,9 @@ func formatStackFrames(frames *runtime.Frames, maxDepth int) string {
 		builder.WriteString(fmt.Sprintf("  #%d %s\n      %s:%d\n", frameNum, frame.Function, frame.File, frame.Line))
 		frameNum++
 
-		if !more || frameNum >= maxDepth {
+		isExhausted := !more
+		isAtLimit := frameNum >= maxDepth
+		if isExhausted || isAtLimit {
 			break
 		}
 	}

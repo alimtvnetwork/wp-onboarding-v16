@@ -26,7 +26,9 @@ func ParseDateTime(s string) time.Time {
 
 // ParseNullTime converts sql.NullString to *time.Time using ParseDateTime.
 func ParseNullTime(ns sql.NullString) *time.Time {
-	if !ns.Valid || strings.TrimSpace(ns.String) == "" {
+	isInvalid := !ns.Valid
+	isBlank := strings.TrimSpace(ns.String) == ""
+	if isInvalid || isBlank {
 		return nil
 	}
 	t := ParseDateTime(ns.String)

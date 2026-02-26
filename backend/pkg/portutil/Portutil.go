@@ -82,7 +82,9 @@ func parseNetstatWindows(output string, port int) (int, error) {
 	needle := fmt.Sprintf(":%d", port)
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
-		if line == "" || !strings.Contains(line, needle) {
+		isEmpty := line == ""
+		isMissingPort := !strings.Contains(line, needle)
+		if isEmpty || isMissingPort {
 			continue
 		}
 		fields := strings.Fields(line)

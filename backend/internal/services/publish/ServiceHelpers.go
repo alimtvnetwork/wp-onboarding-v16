@@ -307,7 +307,12 @@ func readPluginPhpFile(dirPath, fileName string) ([]byte, error) {
 	}
 
 	content, err := os.ReadFile(filePath)
-	if err != nil || !strings.Contains(string(content), "Plugin Name:") {
+	if err != nil {
+		return nil, fmt.Errorf("not a plugin file")
+	}
+
+	isNotPlugin := !strings.Contains(string(content), "Plugin Name:")
+	if isNotPlugin {
 		return nil, fmt.Errorf("not a plugin file")
 	}
 

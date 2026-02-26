@@ -339,7 +339,9 @@ func (s *Service) validateInput(input CreateInput) *apperror.AppError {
 
 // parseNullTime parses a nullable time string.
 func parseNullTime(ns sql.NullString) *time.Time {
-	if !ns.Valid || ns.String == "" {
+	isInvalid := !ns.Valid
+	isEmpty := ns.String == ""
+	if isInvalid || isEmpty {
 		return nil
 	}
 	t := parseTime(ns.String)
