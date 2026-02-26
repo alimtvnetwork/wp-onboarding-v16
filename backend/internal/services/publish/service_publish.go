@@ -705,14 +705,16 @@ func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time)
 	s.logActivateRequest(pctx, endpointURL)
 
 	if err := pctx.WPClient.EnablePluginViaUploader(pctx.Mapping.RemoteSlug); err != nil {
+		activateErr := apperror.Wrap(err, apperror.ErrWPConnection, "plugin activation failed")
+
 		errInput := activationErrorInput{
 			EndpointURL: endpointURL,
 			StartTime:   startTime,
-			Err:         err,
+			Err:         activateErr,
 		}
 		s.logActivationError(pctx, errInput)
 
-		return apperror.Wrap(err, apperror.ErrWPConnection, "plugin activation failed")
+		return activateErr
 	}
 
 	s.logActivateSuccess(pctx, endpointURL, startTime)
