@@ -19,6 +19,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use WP_Query;
 
 trait PostQueryTrait {
 
@@ -46,7 +47,7 @@ trait PostQueryTrait {
                 $args['s'] = sanitize_text_field($params['search']);
             }
 
-            $query = new \WP_Query($args);
+            $query = new WP_Query($args);
             $posts = array();
 
             foreach ($query->posts as $post) {

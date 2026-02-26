@@ -638,19 +638,34 @@ if ($hasValidFile) {
 
 ## Rule 8: No Leading Backslash on Global Types
 
-In catch blocks and type hints, use `Throwable` without the leading backslash, even in namespaced files. The same applies to other global types used in catch blocks or parameter hints.
+In catch blocks, type hints, and `new` instantiation, use global types **without** the leading backslash in namespaced files. Add `use` imports at the file top instead. This applies to `Throwable`, `RuntimeException`, `InvalidArgumentException`, `PDO`, `PDOException`, `WP_Query`, and all other global-namespace types.
 
 ```php
 // ── PHP ──────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN
 catch (\Throwable $e)
-function foo(\Throwable $e): array
+throw new \RuntimeException('message', 14100);
+$pdo = new \PDO($dsn);
+$query = new \WP_Query($args);
+catch (\PDOException $e)
 
-// ✅ REQUIRED
+// ✅ REQUIRED — add `use` imports at file top
+use Throwable;
+use RuntimeException;
+use PDO;
+use PDOException;
+use WP_Query;
+
+// Then use unqualified:
 catch (Throwable $e)
-function foo(Throwable $e): array
+throw new RuntimeException('message', 14100);
+$pdo = new PDO($dsn);
+$query = new WP_Query($args);
+catch (PDOException $e)
 ```
+
+**Exemptions:** `Autoloader.php` (must be self-contained before autoloading is available) and the main plugin bootstrap file.
 
 ```typescript
 // ── TypeScript / Go ─────────────────────────────────────────
