@@ -96,15 +96,15 @@ trait StatusOpsTrait {
 
     private function buildOpcacheResult(): array {
         $result = ResultHelper::ok(array(
-            'opcacheAvailable' => function_exists('opcache_reset'),
-            'opcacheReset'     => false,
-            'filesInvalidated' => 0,
-            'timestamp'        => DateHelper::nowIso(),
+            ResponseKeyType::OpcacheAvailable->value => function_exists('opcache_reset'),
+            ResponseKeyType::OpcacheReset->value     => false,
+            ResponseKeyType::FilesInvalidated->value => 0,
+            ResponseKeyType::Timestamp->value        => DateHelper::nowIso(),
         ));
 
         if (function_exists('opcache_reset')) {
-            $result['opcacheReset'] = opcache_reset();
-            $this->fileLogger->info('OPcache reset executed', array('result' => $result['opcacheReset']));
+            $result[ResponseKeyType::OpcacheReset->value] = opcache_reset();
+            $this->fileLogger->info('OPcache reset executed', array('result' => $result[ResponseKeyType::OpcacheReset->value]));
         }
 
         return $result;

@@ -145,10 +145,10 @@ class SnapshotProviderWpReset extends SnapshotProviderInterface {
 
         foreach ($allTables as $tableInfo) {
             $tables[] = array(
-                'name' => $tableInfo['Name'],
-                ResponseKeyType::Rows->value => (int) $tableInfo['Rows'],
-                ResponseKeyType::Size->value => (int) $tableInfo['Data_length'] + (int) $tableInfo['Index_length'],
-                'isCore' => strpos($tableInfo['Name'], $wpdb->prefix) === 0,
+                ResponseKeyType::Name->value   => $tableInfo['Name'],
+                ResponseKeyType::Rows->value   => (int) $tableInfo['Rows'],
+                ResponseKeyType::Size->value   => (int) $tableInfo['Data_length'] + (int) $tableInfo['Index_length'],
+                ResponseKeyType::IsCore->value => strpos($tableInfo['Name'], $wpdb->prefix) === 0,
             );
         }
 

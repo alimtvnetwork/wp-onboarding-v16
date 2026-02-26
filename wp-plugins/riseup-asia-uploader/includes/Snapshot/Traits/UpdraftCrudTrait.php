@@ -94,7 +94,7 @@ trait UpdraftCrudTrait {
 
         return array_map(function($info) use ($wpdb) {
             return array(
-                'name' => $info['Name'],
+                ResponseKeyType::Name->value   => $info['Name'],
                 ResponseKeyType::Rows->value => (int)$info['Rows'],
                 ResponseKeyType::Size->value => (int)$info['Data_length'] + (int)$info['Index_length'],
                 ResponseKeyType::IsCore->value => strpos($info['Name'], $wpdb->prefix) === 0,

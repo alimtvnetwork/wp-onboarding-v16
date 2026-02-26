@@ -46,7 +46,7 @@ trait DetectorSettingsTrait {
         $providers = $this->detectAvailableProviders();
 
         foreach ($providers as $provider) {
-            if ($provider['id'] === $preferred && $provider['available']) {
+            if ($provider[ResponseKeyType::Id->value] === $preferred && $provider[ResponseKeyType::Available->value]) {
                 return $preferred;
             }
         }
@@ -71,7 +71,7 @@ trait DetectorSettingsTrait {
 
         foreach ($priority as $candidateId) {
             foreach ($providers as $provider) {
-                if ($provider['id'] === $candidateId && $provider['available']) {
+                if ($provider[ResponseKeyType::Id->value] === $candidateId && $provider[ResponseKeyType::Available->value]) {
                     return $candidateId;
                 }
             }
@@ -107,7 +107,7 @@ trait DetectorSettingsTrait {
         $providers = $this->detectAvailableProviders();
 
         foreach ($providers as $provider) {
-            $isMatch = ($provider['id'] === $providerId && $provider['available']);
+            $isMatch = ($provider[ResponseKeyType::Id->value] === $providerId && $provider[ResponseKeyType::Available->value]);
 
             if ($isMatch) {
                 return;
