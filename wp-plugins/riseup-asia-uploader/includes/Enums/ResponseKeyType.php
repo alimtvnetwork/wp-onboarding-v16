@@ -229,6 +229,50 @@ enum ResponseKeyType: string
     case CacheStats  = 'CacheStats';
     case FromCache   = 'FromCache';
 
+    /** Statistics keys. */
+    case TotalTransactions = 'TotalTransactions';
+    case ByAction          = 'ByAction';
+    case ByStatus          = 'ByStatus';
+    case Last24h           = 'Last24h';
+
+    /** Backup option keys. */
+    case IncludePlugins   = 'IncludePlugins';
+    case PluginSelection  = 'PluginSelection';
+    case Compression      = 'Compression';
+    case Async            = 'Async';
+    case Trigger          = 'Trigger';
+    case MasterSnapshotId = 'MasterSnapshotId';
+    case MasterDir        = 'MasterDir';
+    case Confirm          = 'Confirm';
+    case CreateBackup     = 'CreateBackup';
+    case RequireBackup    = 'RequireBackup';
+    case Mode             = 'Mode';
+
+    /** Scheduler response keys. */
+    case Frequency  = 'Frequency';
+    case Time       = 'Time';
+    case Day        = 'Day';
+    case Scheduled  = 'Scheduled';
+    case Trace      = 'Trace';
+    case Options    = 'Options';
+
+    /** Storage stats keys. */
+    case TotalSizeFormatted = 'TotalSizeFormatted';
+    case OldestTimestamp    = 'OldestTimestamp';
+    case NewestTimestamp    = 'NewestTimestamp';
+    case DiskFreeBytes      = 'DiskFreeBytes';
+    case DiskFreeFormatted  = 'DiskFreeFormatted';
+    case SnapshotsCount     = 'SnapshotsCount';
+    case BytesFormatted     = 'BytesFormatted';
+
+    /** Progress envelope keys. */
+    case IsSuccess    = 'IsSuccess';
+    case HasAnyErrors = 'HasAnyErrors';
+
+    /** Cleanup detail keys. */
+    case Details = 'Details';
+    case Order   = 'Order';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

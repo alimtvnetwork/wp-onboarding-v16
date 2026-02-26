@@ -16,6 +16,7 @@ use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
@@ -23,13 +24,13 @@ use RiseupAsia\Helpers\PathHelper;
 trait CleanerStorageTrait {
     public function getStorageStats(): array {
         $stats = array(
-            ResponseKeyType::TotalSnapshots->value => 0,
-            ResponseKeyType::TotalSizeBytes->value => 0,
-            'totalSizeFormatted'                   => '0 B',
-            'oldestTimestamp'                       => null,
-            'newestTimestamp'                       => null,
-            'diskFreeBytes'                        => 0,
-            'diskFreeFormatted'                    => '0 B',
+            ResponseKeyType::TotalSnapshots->value    => 0,
+            ResponseKeyType::TotalSizeBytes->value    => 0,
+            ResponseKeyType::TotalSizeFormatted->value => '0 B',
+            ResponseKeyType::OldestTimestamp->value    => null,
+            ResponseKeyType::NewestTimestamp->value    => null,
+            ResponseKeyType::DiskFreeBytes->value      => 0,
+            ResponseKeyType::DiskFreeFormatted->value  => '0 B',
         );
 
         try {
@@ -47,14 +48,14 @@ trait CleanerStorageTrait {
             if ($dbStats) {
                 $stats[ResponseKeyType::TotalSnapshots->value] = intval($dbStats[ResponseKeyType::Count->value]);
                 $stats[ResponseKeyType::TotalSizeBytes->value] = intval($dbStats['total_size']);
-                $stats['totalSizeFormatted'] = PathHelper::formatBytes($stats[ResponseKeyType::TotalSizeBytes->value]);
+                $stats[ResponseKeyType::TotalSizeFormatted->value] = PathHelper::formatBytes($stats[ResponseKeyType::TotalSizeBytes->value]);
 
                 if ($dbStats['oldest']) {
-                    $stats['oldestTimestamp'] = strtotime($dbStats['oldest']);
+                    $stats[ResponseKeyType::OldestTimestamp->value] = strtotime($dbStats['oldest']);
                 }
 
                 if ($dbStats['newest']) {
-                    $stats['newestTimestamp'] = strtotime($dbStats['newest']);
+                    $stats[ResponseKeyType::NewestTimestamp->value] = strtotime($dbStats['newest']);
                 }
             }
 
@@ -64,8 +65,8 @@ trait CleanerStorageTrait {
                 $free = PathHelper::getFreeSpace($snapshotsDir);
 
                 if ($free !== false) {
-                    $stats['diskFreeBytes']     = $free;
-                    $stats['diskFreeFormatted'] = PathHelper::formatBytes($free);
+                    $stats[ResponseKeyType::DiskFreeBytes->value]     = $free;
+                    $stats[ResponseKeyType::DiskFreeFormatted->value] = PathHelper::formatBytes($free);
                 }
             }
         } catch (Throwable $e) {
@@ -77,18 +78,18 @@ trait CleanerStorageTrait {
 
     public function estimateCleanup(array $settings): array {
         $estimate = array(
-            'snapshotsCount' => 0,
-            'bytes'          => 0,
-            'bytesFormatted' => '0 B',
+            ResponseKeyType::SnapshotsCount->value => 0,
+            ResponseKeyType::Bytes->value          => 0,
+            ResponseKeyType::BytesFormatted->value => '0 B',
         );
 
         try {
             $snapshots = array();
 
-            if ($settings['retention_type'] === RetentionType::Days->value) {
-                $snapshots = $this->getSnapshotsOlderThan($settings['retention_days']);
-            } elseif ($settings['retention_type'] === RetentionType::Count->value) {
-                $snapshots = $this->getSnapshotsBeyondCount($settings['retention_count']);
+            if ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Days->value) {
+                $snapshots = $this->getSnapshotsOlderThan($settings[SettingsKeyType::RetentionDays->value]);
+            } elseif ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Count->value) {
+                $snapshots = $this->getSnapshotsBeyondCount($settings[SettingsKeyType::RetentionCount->value]);
             }
 
             $snapshots = array_filter($snapshots, function($s) {
@@ -97,9 +98,9 @@ trait CleanerStorageTrait {
                 return $isOrdinarySnapshot;
             });
 
-            $estimate['snapshotsCount'] = count($snapshots);
+            $estimate[ResponseKeyType::SnapshotsCount->value] = count($snapshots);
             $estimate[ResponseKeyType::Bytes->value] = array_sum(array_column($snapshots, 'size'));
-            $estimate['bytesFormatted'] = PathHelper::formatBytes($estimate[ResponseKeyType::Bytes->value]);
+            $estimate[ResponseKeyType::BytesFormatted->value] = PathHelper::formatBytes($estimate[ResponseKeyType::Bytes->value]);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array(ResponseKeyType::Error->value => $e->getMessage()));
         }

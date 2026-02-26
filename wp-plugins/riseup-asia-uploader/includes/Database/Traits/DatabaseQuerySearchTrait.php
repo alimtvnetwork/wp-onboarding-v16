@@ -73,6 +73,7 @@ trait DatabaseQuerySearchTrait {
     private function decodeLogDetails(array &$logs): void {
         foreach ($logs as &$log) {
             $hasDetails = BooleanHelpers::hasValue($log['Details'] ?? null);
+
             if ($hasDetails) {
                 $log['Details'] = json_decode($log['Details'], true);
             }
@@ -160,10 +161,10 @@ trait DatabaseQuerySearchTrait {
 
         try {
             return array(
-                'total_transactions' => Orm::forTable(TableType::Transactions->value)->count(),
-                'by_action'          => $this->countByColumn('Action'),
-                'by_status'          => $this->countByColumn('Status'),
-                'last_24h'           => Orm::forTable(TableType::Transactions->value)
+                ResponseKeyType::TotalTransactions->value => Orm::forTable(TableType::Transactions->value)->count(),
+                ResponseKeyType::ByAction->value          => $this->countByColumn('Action'),
+                ResponseKeyType::ByStatus->value          => $this->countByColumn('Status'),
+                ResponseKeyType::Last24h->value           => Orm::forTable(TableType::Transactions->value)
                     ->whereGte('CreatedAt', DateHelper::formatUtc(time() - DAY_IN_SECONDS))
                     ->count(),
             );

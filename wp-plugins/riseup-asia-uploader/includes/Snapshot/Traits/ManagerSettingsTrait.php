@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginSelectionType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Snapshot\SnapshotFactory;
@@ -31,22 +32,22 @@ trait ManagerSettingsTrait {
         $settings = $this->readSettingsFromDb();
 
         $defaults = array(
-            'mode'               => SnapshotWorkerModeType::PerTable->value,
-            'backup_type'        => SnapshotModeType::Incremental->value,
-            'worker_count'       => 10,
-            'storage_path'       => 'snapshots/',
-            'include_plugins'    => true,
-            'plugin_selection'   => PluginSelectionType::All->value,
-            'retention_days'     => SnapshotConfigType::RetentionDaysDefault->value,
-            'retention_count'    => SnapshotConfigType::RetentionCountDefault->value,
-            'compression'        => true,
-            'batch_size'         => SnapshotConfigType::BatchSize->value,
-            'provider'           => SnapshotProviderType::Auto->value,
-            'scope'              => SnapshotScopeType::WordPress->value,
-            'frequency'          => SnapshotFrequencyType::Manual->value,
-            'schedule_time'      => '03:00',
-            'pre_restore_backup' => true,
-            'custom_tables'      => array(),
+            SettingsKeyType::Mode->value            => SnapshotWorkerModeType::PerTable->value,
+            SettingsKeyType::BackupType->value       => SnapshotModeType::Incremental->value,
+            SettingsKeyType::WorkerCount->value      => 10,
+            SettingsKeyType::StoragePath->value      => 'snapshots/',
+            SettingsKeyType::IncludePlugins->value   => true,
+            SettingsKeyType::PluginSelection->value  => PluginSelectionType::All->value,
+            SettingsKeyType::RetentionDays->value    => SnapshotConfigType::RetentionDaysDefault->value,
+            SettingsKeyType::RetentionCount->value   => SnapshotConfigType::RetentionCountDefault->value,
+            SettingsKeyType::Compression->value      => true,
+            SettingsKeyType::BatchSize->value        => SnapshotConfigType::BatchSize->value,
+            SettingsKeyType::Provider->value         => SnapshotProviderType::Auto->value,
+            SettingsKeyType::Scope->value            => SnapshotScopeType::WordPress->value,
+            SettingsKeyType::Frequency->value        => SnapshotFrequencyType::Manual->value,
+            SettingsKeyType::ScheduleTime->value     => '03:00',
+            SettingsKeyType::PreRestoreBackup->value => true,
+            SettingsKeyType::CustomTables->value     => array(),
         );
 
         return array_merge($defaults, $settings);
@@ -66,7 +67,8 @@ trait ManagerSettingsTrait {
 
             foreach ($rows as $row) {
                 $key = str_replace('snapshot.', '', $row['Key']);
-                $settings[$key] = $this->castSettingValue($row['Value'], $row['Type']);
+                $migratedKey = $this->migrateSettingsKey($key);
+                $settings[$migratedKey] = $this->castSettingValue($row['Value'], $row['Type']);
             }
 
             return $settings;
@@ -79,8 +81,28 @@ trait ManagerSettingsTrait {
         }
     }
 
+    /**
+     * Migrate a legacy snake_case key to PascalCase.
+     */
+    private function migrateSettingsKey(string $key): string {
+        $enumCase = SettingsKeyType::tryFrom($key);
+
+        if ($enumCase instanceof SettingsKeyType) {
+            return $enumCase->value;
+        }
+
+        if (SettingsKeyType::isLegacyKey($key)) {
+            $map = SettingsKeyType::legacyMap();
+
+            return $map[$key]->value;
+        }
+
+        return $key;
+    }
+
     public function updateSettings(array $settings): array {
         $pdo = $this->db->getPdo();
+        $settings = SettingsKeyType::migrateArray($settings);
 
         if ($pdo) {
             try {
@@ -105,7 +127,7 @@ trait ManagerSettingsTrait {
             }
         }
 
-        if (isset($settings['frequency'])) {
+        if (isset($settings[SettingsKeyType::Frequency->value])) {
             $updated = $this->getSettings();
             $scheduler = SnapshotFactory::scheduler($this->logger, $this->db);
             $scheduler->syncSchedule($updated);

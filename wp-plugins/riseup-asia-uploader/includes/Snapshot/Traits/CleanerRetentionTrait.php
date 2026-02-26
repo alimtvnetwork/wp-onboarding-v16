@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
@@ -23,38 +24,38 @@ trait CleanerRetentionTrait {
     private function cleanByRetention(array $settings, bool $dryRun = false): array {
         $resolved = $this->resolveRetentionSnapshots($settings);
 
-        if (empty($resolved['snapshots'])) {
+        if (empty($resolved[ResponseKeyType::Snapshots->value])) {
             return array(
                 ResponseKeyType::Deleted->value       => 0,
                 ResponseKeyType::SkippedMaster->value  => 0,
                 ResponseKeyType::BytesFreed->value     => 0,
-                'details'                              => array(),
+                ResponseKeyType::Details->value        => array(),
             );
         }
 
-        return $this->processRetentionDeletions($resolved['snapshots'], $resolved['reason'], $dryRun);
+        return $this->processRetentionDeletions($resolved[ResponseKeyType::Snapshots->value], $resolved[ResponseKeyType::Reason->value], $dryRun);
     }
 
     private function resolveRetentionSnapshots(array $settings): array {
-        $isDaysRetention = ($settings['retention_type'] === RetentionType::Days->value && BooleanHelpers::hasValue($settings['retention_days']));
+        $isDaysRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Days->value && BooleanHelpers::hasValue($settings[SettingsKeyType::RetentionDays->value]));
 
         if ($isDaysRetention) {
             return array(
-                'snapshots' => $this->getSnapshotsOlderThan((int) $settings['retention_days']),
-                'reason'    => "older than {$settings['retention_days']} days",
+                ResponseKeyType::Snapshots->value => $this->getSnapshotsOlderThan((int) $settings[SettingsKeyType::RetentionDays->value]),
+                ResponseKeyType::Reason->value    => "older than {$settings[SettingsKeyType::RetentionDays->value]} days",
             );
         }
 
-        $isCountRetention = ($settings['retention_type'] === RetentionType::Count->value && BooleanHelpers::hasValue($settings['retention_count']));
+        $isCountRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Count->value && BooleanHelpers::hasValue($settings[SettingsKeyType::RetentionCount->value]));
 
         if ($isCountRetention) {
             return array(
-                'snapshots' => $this->getSnapshotsBeyondCount((int) $settings['retention_count']),
-                'reason'    => "exceeds max count of {$settings['retention_count']}",
+                ResponseKeyType::Snapshots->value => $this->getSnapshotsBeyondCount((int) $settings[SettingsKeyType::RetentionCount->value]),
+                ResponseKeyType::Reason->value    => "exceeds max count of {$settings[SettingsKeyType::RetentionCount->value]}",
             );
         }
 
-        return array('snapshots' => array(), 'reason' => '');
+        return array(ResponseKeyType::Snapshots->value => array(), ResponseKeyType::Reason->value => '');
     }
 
     private function processRetentionDeletions(
@@ -66,7 +67,7 @@ trait CleanerRetentionTrait {
             ResponseKeyType::Deleted->value       => 0,
             ResponseKeyType::SkippedMaster->value  => 0,
             ResponseKeyType::BytesFreed->value     => 0,
-            'details'                              => array(),
+            ResponseKeyType::Details->value        => array(),
         );
 
         foreach ($snapshots as $snapshot) {
@@ -75,7 +76,7 @@ trait CleanerRetentionTrait {
                 continue;
             }
 
-            $result['details'][] = array(
+            $result[ResponseKeyType::Details->value][] = array(
                 'id'                             => $snapshot['Id'],
                 ResponseKeyType::Filename->value => $snapshot['Filename'] ?? '',
                 ResponseKeyType::Reason->value   => $reason,

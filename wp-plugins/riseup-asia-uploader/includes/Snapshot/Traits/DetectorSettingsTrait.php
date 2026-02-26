@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Exception;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
@@ -35,13 +36,15 @@ trait DetectorSettingsTrait {
      */
     public function getPreferredProvider(): string {
         $settings = get_option(OptionNameType::SnapshotSettings->value, array());
-        $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : SnapshotProviderType::Auto->value;
+        $settings = SettingsKeyType::migrateArray($settings);
+        $preferred = isset($settings[SettingsKeyType::PreferredProvider->value]) ? $settings[SettingsKeyType::PreferredProvider->value] : SnapshotProviderType::Auto->value;
 
         if ($preferred === SnapshotProviderType::Auto->value) {
             return $this->getBestAvailableProvider();
         }
 
         $providers = $this->detectAvailableProviders();
+
         foreach ($providers as $provider) {
             if ($provider['id'] === $preferred && $provider['available']) {
                 return $preferred;
@@ -102,6 +105,7 @@ trait DetectorSettingsTrait {
     /** Assert a provider is available, throwing if not. */
     private function assertProviderAvailable(string $providerId): void {
         $providers = $this->detectAvailableProviders();
+
         foreach ($providers as $provider) {
             $isMatch = ($provider['id'] === $providerId && $provider['available']);
 
@@ -137,25 +141,26 @@ trait DetectorSettingsTrait {
      */
     public function getSettings(): array {
         $defaults = array(
-            'preferred_provider' => SnapshotProviderType::Auto->value,
-            'schedule_enabled' => false,
-            'schedule_frequency' => SnapshotFrequencyType::Daily->value,
-            'schedule_time' => '03:00',
-            'schedule_day' => 1,
-            'default_scope' => SnapshotScopeType::WordPress->value,
-            'custom_tables' => array(),
-            'retention_type' => RetentionType::Days->value,
-            'retention_days' => SnapshotConfigType::RetentionDaysDefault->value,
-            'retention_count' => SnapshotConfigType::RetentionCountDefault->value,
-            'pre_restore_backup' => true,
-            'require_restore_confirm' => true,
-            'max_snapshot_size_mb' => SnapshotConfigType::MaxSizeMb->value,
-            'batch_size' => SnapshotConfigType::BatchSize->value,
-            'worker_pool_size' => SnapshotConfigType::WorkerPoolDefault->value,
-            'storage_mode' => StorageModeType::PerTable->value,
+            SettingsKeyType::PreferredProvider->value     => SnapshotProviderType::Auto->value,
+            SettingsKeyType::ScheduleEnabled->value       => false,
+            SettingsKeyType::ScheduleFrequency->value     => SnapshotFrequencyType::Daily->value,
+            SettingsKeyType::ScheduleTime->value          => '03:00',
+            SettingsKeyType::ScheduleDay->value           => 1,
+            SettingsKeyType::DefaultScope->value          => SnapshotScopeType::WordPress->value,
+            SettingsKeyType::CustomTables->value          => array(),
+            SettingsKeyType::RetentionType->value         => RetentionType::Days->value,
+            SettingsKeyType::RetentionDays->value         => SnapshotConfigType::RetentionDaysDefault->value,
+            SettingsKeyType::RetentionCount->value        => SnapshotConfigType::RetentionCountDefault->value,
+            SettingsKeyType::PreRestoreBackup->value      => true,
+            SettingsKeyType::RequireRestoreConfirm->value => true,
+            SettingsKeyType::MaxSnapshotSizeMb->value     => SnapshotConfigType::MaxSizeMb->value,
+            SettingsKeyType::BatchSize->value             => SnapshotConfigType::BatchSize->value,
+            SettingsKeyType::WorkerPoolSize->value        => SnapshotConfigType::WorkerPoolDefault->value,
+            SettingsKeyType::StorageMode->value           => StorageModeType::PerTable->value,
         );
 
         $saved = get_option(OptionNameType::SnapshotSettings->value, array());
+        $saved = SettingsKeyType::migrateArray($saved);
 
         return array_merge($defaults, $saved);
     }
@@ -168,6 +173,7 @@ trait DetectorSettingsTrait {
      */
     public function updateSettings(array $settings): bool {
         $current = $this->getSettings();
+        $settings = SettingsKeyType::migrateArray($settings);
         $updated = $this->validateSettings(array_merge($current, $settings));
 
         $result = update_option(OptionNameType::SnapshotSettings->value, $updated);
