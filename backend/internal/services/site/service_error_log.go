@@ -17,8 +17,8 @@ import (
 )
 
 // logToErrorFile writes error details to data/errors/error.log.txt
-func (s *Service) logToErrorFile(action string, siteId int64, pluginSlug, siteName, siteUrl string, details *ExtractedErrorDetails) {
-	if s.isDuplicateErrorLog(action, siteId, pluginSlug, details) {
+func (s *Service) logToErrorFile(ref *remoteActionRef, details *ExtractedErrorDetails) {
+	if s.isDuplicateErrorLog(ref.Action, ref.SiteID, ref.PluginSlug, details) {
 		return
 	}
 
@@ -28,7 +28,7 @@ func (s *Service) logToErrorFile(action string, siteId int64, pluginSlug, siteNa
 	}
 	defer f.Close()
 
-	logEntry := s.buildErrorLogEntry(action, siteId, pluginSlug, siteName, siteUrl, details)
+	logEntry := s.buildErrorLogEntry(ref, details)
 	f.WriteString(logEntry)
 }
 
@@ -90,23 +90,25 @@ func (s *Service) openLogFileForAppend(errorLogPath string) (*os.File, error) {
 }
 
 // buildErrorLogEntry formats the complete error log entry string.
-func (s *Service) buildErrorLogEntry(action string, siteId int64, pluginSlug, siteName, siteUrl string, details *ExtractedErrorDetails) string {
-	method, delegatedUrl := resolveMethodAndUrl(details, siteUrl)
-	pluginIdentifier := resolvePluginIdentifier(pluginSlug, details)
+func (s *Service) buildErrorLogEntry(ref *remoteActionRef, details *ExtractedErrorDetails) string {
+	method, delegatedUrl := resolveMethodAndUrl(details, ref.Site.Url)
+	pluginIdentifier := resolvePluginIdentifier(ref.PluginSlug, details)
 	requestBody := resolveRequestBody(details, pluginIdentifier)
 
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
-	entry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
-	entry += fmt.Sprintf("  Site Request URL: %s\n  Site ID: %d\n  Site Name: %s\n  Site Base URL: %s\n", delegatedUrl, siteId, siteName, siteUrl)
-	entry += fmt.Sprintf("  Plugin Identifier: %s\n  Requested Action: %s\n", pluginIdentifier, action)
+	entry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(ref.Action))
+	entry += fmt.Sprintf("  Site Request URL: %s\n  Site ID: %d\n  Site Name: %s\n  Site Base URL: %s\n", delegatedUrl, ref.SiteID, ref.Site.Name, ref.Site.Url)
+	entry += fmt.Sprintf("  Plugin Identifier: %s\n  Requested Action: %s\n", pluginIdentifier, ref.Action)
 	entry += fmt.Sprintf("  Delegated Request:\n    Method: %s\n    Endpoint: %s\n    Request Body:\n      %s\n", method, details.Endpoint, requestBody)
 	entry += formatResponseSection(details)
-	entry += formatGuardRailSection(action, siteUrl, details, method)
+	entry += formatGuardRailSection(ref.Action, ref.Site.Url, details, method)
 	entry += formatStackTraceSection(details)
 	entry += formatPhpErrorsSection(details)
 	entry += "───────────────────────────────────────────────────────────────────────────────\n"
+
 	return entry
 }
+
 
 // resolveMethodAndUrl derives the HTTP method and delegated URL from error details.
 func resolveMethodAndUrl(details *ExtractedErrorDetails, siteUrl string) (string, string) {

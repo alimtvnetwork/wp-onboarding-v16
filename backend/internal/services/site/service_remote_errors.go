@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"wp-plugin-publish/internal/enums/log_level"
 	"wp-plugin-publish/internal/services/session"
@@ -17,6 +16,7 @@ func (s *Service) buildPhpStackFrames(details *ExtractedErrorDetails) []session.
 	for _, f := range details.StackTraceFrames {
 		frames = append(frames, session.StackFrame{Function: f.Function, File: f.File, Line: f.Line, Class: f.Class})
 	}
+
 	return frames
 }
 
@@ -31,6 +31,7 @@ func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 
 	s.populateApiErrorFields(details, apiErr)
 	s.parseErrorResponseEnvelope(details, apiErr.ResponseBody)
+
 	return details
 }
 
@@ -90,21 +91,29 @@ func (s *Service) parseLegacyStackFrames(details *ExtractedErrorDetails, envResp
 	details.ErrorLine = envResp.ErrorLegacy.Details.Line
 }
 
+// RemoteActionLogInput bundles parameters for logging a remote action event.
+type RemoteActionLogInput struct {
+	Level   string
+	Step    string
+	Message string
+	Details json.RawMessage
+}
+
 // logRemoteAction logs a remote plugin action to session and WebSocket.
-func (s *Service) logRemoteAction(sessionId string, siteId int64, action, level, step, message string, details json.RawMessage) {
-	s.emitRemoteActionToSession(sessionId, siteId, action, level, step, message, details)
-	logCtx := s.resolveRemoteActionLogContext(siteId, details)
-	s.emitRemoteActionToLogger(level, message, siteId, action, step, logCtx)
+func (s *Service) logRemoteAction(ref *remoteActionRef, level, step, message string, details json.RawMessage) {
+	s.emitRemoteActionToSession(ref, level, step, message, details)
+	logCtx := s.resolveRemoteActionLogContext(ref.SiteID, details)
+	s.emitRemoteActionToLogger(level, message, ref.SiteID, ref.Action, step, logCtx)
 }
 
 // emitRemoteActionToSession sends logs to session service and WebSocket.
-func (s *Service) emitRemoteActionToSession(sessionId string, siteId int64, action, level, step, message string, details json.RawMessage) {
-	if s.sessionService != nil && sessionId != "" {
-		s.sessionService.Log(sessionId, level, step, message, details)
+func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, level, step, message string, details json.RawMessage) {
+	if s.sessionService != nil && ref.SessionID != "" {
+		s.sessionService.Log(ref.SessionID, level, step, message, details)
 	}
 	if s.wsHub != nil {
 		s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
-			SiteID: siteId, Action: action, SessionID: sessionId,
+			SiteID: ref.SiteID, Action: ref.Action, SessionID: ref.SessionID,
 			Level: level, Step: step, Message: message, Details: details,
 		})
 	}
@@ -176,6 +185,7 @@ func buildRemoteActionLogFields(siteId int64, action, step string, ctx remoteAct
 	if ctx.PluginSlug != "" {
 		logFields = append(logFields, "pluginSlug", ctx.PluginSlug)
 	}
+
 	return logFields
 }
 
@@ -187,31 +197,33 @@ func (s *Service) endRemoteSession(sessionId, status, errorMsg string) {
 }
 
 // fetchAndAttachRemotePhpErrors pulls recent PHP error sessions from the remote WordPress site
-func (s *Service) fetchAndAttachRemotePhpErrors(client *wordpress.Client, sessionId string, siteId int64, action, pluginSlug, siteName, siteUrl string, errDetails *ExtractedErrorDetails) {
-	s.fetchAndAttachPhpErrorSessions(client, sessionId, siteId, action, errDetails)
-	s.fetchAndAttachPhpStackTrace(client, sessionId, siteId, action, errDetails)
+func (s *Service) fetchAndAttachRemotePhpErrors(ref *remoteActionRef, errDetails *ExtractedErrorDetails) {
+	s.fetchAndAttachPhpErrorSessions(ref, errDetails)
+	s.fetchAndAttachPhpStackTrace(ref, errDetails)
 }
 
 // fetchAndAttachPhpErrorSessions pulls recent PHP error entries from the remote site.
-func (s *Service) fetchAndAttachPhpErrorSessions(client *wordpress.Client, sessionId string, siteId int64, action string, errDetails *ExtractedErrorDetails) {
-	s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
+func (s *Service) fetchAndAttachPhpErrorSessions(ref *remoteActionRef, errDetails *ExtractedErrorDetails) {
+	s.logRemoteAction(ref, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
 
-	result, fetchErr := client.FetchRemoteErrorSessions("error", "", 0, 10, 0)
+	result, fetchErr := ref.Client.FetchRemoteErrorSessions("error", "", 0, 10, 0)
 	if fetchErr != nil {
-		s.logRemoteAction(sessionId, siteId, action, "warn", "fetch_php_errors", fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()), nil)
+		s.logRemoteAction(ref, "warn", "fetch_php_errors", fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()), nil)
+
 		return
 	}
 
 	if result == nil || len(result.Entries) == 0 {
-		s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
+		s.logRemoteAction(ref, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
+
 		return
 	}
 
-	s.attachPhpErrorEntries(sessionId, siteId, action, result, errDetails)
+	s.attachPhpErrorEntries(ref, result, errDetails)
 }
 
 // attachPhpErrorEntries collects and attaches PHP error entries to the error details.
-func (s *Service) attachPhpErrorEntries(sessionId string, siteId int64, action string, result *wordpress.RemoteErrorSessionsResult, errDetails *ExtractedErrorDetails) {
+func (s *Service) attachPhpErrorEntries(ref *remoteActionRef, result *wordpress.RemoteErrorSessionsResult, errDetails *ExtractedErrorDetails) {
 	phpErrors := collectPhpErrorEntries(result.Entries)
 	errDetails.RemotePhpErrors = phpErrors
 	errDetails.RemotePhpErrorCount = len(result.Entries)
@@ -219,8 +231,8 @@ func (s *Service) attachPhpErrorEntries(sessionId string, siteId int64, action s
 		errDetails.RemotePhpFlashUnseen = result.Flash.UnseenCount
 	}
 
-	s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_errors", fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)), session.ToJSON(PhpErrorCountDetail{PhpErrorCount: len(result.Entries)}))
-	s.logPhpErrorsToSession(sessionId, result.Entries)
+	s.logRemoteAction(ref, "info", "fetch_php_errors", fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)), session.ToJSON(PhpErrorCountDetail{PhpErrorCount: len(result.Entries)}))
+	s.logPhpErrorsToSession(ref.SessionID, result.Entries)
 }
 
 // collectPhpErrorEntries converts remote error entries to PhpErrorEntry slice.
@@ -235,6 +247,7 @@ func collectPhpErrorEntries(entries []wordpress.RemoteErrorSessionEntry) []PhpEr
 		}
 		phpErrors = append(phpErrors, phpErr)
 	}
+
 	return phpErrors
 }
 
@@ -249,21 +262,23 @@ func (s *Service) logPhpErrorsToSession(sessionId string, entries []wordpress.Re
 }
 
 // fetchAndAttachPhpStackTrace pulls the PHP stacktrace.txt from the remote site.
-func (s *Service) fetchAndAttachPhpStackTrace(client *wordpress.Client, sessionId string, siteId int64, action string, errDetails *ExtractedErrorDetails) {
-	s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_stacktrace", "Pulling PHP stacktrace.txt from remote site...", nil)
+func (s *Service) fetchAndAttachPhpStackTrace(ref *remoteActionRef, errDetails *ExtractedErrorDetails) {
+	s.logRemoteAction(ref, "info", "fetch_php_stacktrace", "Pulling PHP stacktrace.txt from remote site...", nil)
 
-	logsResult, logsErr := client.FetchRemoteErrorLogs()
+	logsResult, logsErr := ref.Client.FetchRemoteErrorLogs()
 	if logsErr != nil {
-		s.logRemoteAction(sessionId, siteId, action, "warn", "fetch_php_stacktrace", fmt.Sprintf("Could not fetch remote error logs: %s", logsErr.Error()), nil)
+		s.logRemoteAction(ref, "warn", "fetch_php_stacktrace", fmt.Sprintf("Could not fetch remote error logs: %s", logsErr.Error()), nil)
+
 		return
 	}
 
 	if !hasStackTraceContent(logsResult) {
-		s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_stacktrace", "No stacktrace.txt content available on remote site", nil)
+		s.logRemoteAction(ref, "info", "fetch_php_stacktrace", "No stacktrace.txt content available on remote site", nil)
+
 		return
 	}
 
-	s.applyStackTraceContent(sessionId, siteId, action, logsResult, errDetails)
+	s.applyStackTraceContent(ref, logsResult, errDetails)
 }
 
 // hasStackTraceContent checks if the logs result contains a valid stack trace.
@@ -272,17 +287,17 @@ func hasStackTraceContent(logsResult *wordpress.RemoteErrorLogsResult) bool {
 }
 
 // applyStackTraceContent copies stack trace content to error details and logs it.
-func (s *Service) applyStackTraceContent(sessionId string, siteId int64, action string, logsResult *wordpress.RemoteErrorLogsResult, errDetails *ExtractedErrorDetails) {
+func (s *Service) applyStackTraceContent(ref *remoteActionRef, logsResult *wordpress.RemoteErrorLogsResult, errDetails *ExtractedErrorDetails) {
 	stLog := logsResult.StackTraceLog
 	errDetails.RemotePhpStackTrace = stLog.Content
 	errDetails.RemotePhpStackTraceLines = stLog.Lines
 
-	s.logRemoteAction(sessionId, siteId, action, "info", "fetch_php_stacktrace",
+	s.logRemoteAction(ref, "info", "fetch_php_stacktrace",
 		fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", stLog.Lines, stLog.TotalSize),
 		session.ToJSON(StackTraceLogDetails{Lines: stLog.Lines, TotalSize: int(stLog.TotalSize), Truncated: stLog.Truncated}))
 
-	if s.sessionService != nil && sessionId != "" {
-		s.sessionService.Log(sessionId, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site",
+	if s.sessionService != nil && ref.SessionID != "" {
+		s.sessionService.Log(ref.SessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site",
 			session.ToJSON(StackTraceContentDetails{Content: stLog.Content, Lines: stLog.Lines, Truncated: stLog.Truncated}))
 	}
 }
