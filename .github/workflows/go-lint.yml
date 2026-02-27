@@ -42,8 +42,11 @@ jobs:
       - name: Lint — File Size (max 300 lines)
         run: bash scripts/lint-file-size.sh
 
-      - name: Lint — Function Size (max 15 lines)
+      - name: Lint — Function Size (backend)
         run: bash scripts/lint-func-size.sh
+
+      - name: Lint — Function Size (tools)
+        run: bash scripts/lint-func-size.sh --dir tools/consistency-checker
 
       - name: Lint — Negative Naming
         run: bash scripts/lint-negative.sh
