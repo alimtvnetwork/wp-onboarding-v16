@@ -57,6 +57,11 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	createSiteOrFail(w, r, input)
+}
+
+// createSiteOrFail persists the site and writes the response.
+func createSiteOrFail(w http.ResponseWriter, r *http.Request, input SiteCreateInput) {
 	site, err := Services.SiteService.Create(r.Context(), input)
 	if err != nil {
 		respondBadRequest(w, apperror.ErrDatabaseInsert, err.Error())
@@ -84,6 +89,11 @@ func validateCreateSiteInput(input SiteCreateInput) string {
 		return "URL is required"
 	}
 
+	return validateCreateSiteCredentials(input)
+}
+
+// validateCreateSiteCredentials checks the credential fields of SiteCreateInput.
+func validateCreateSiteCredentials(input SiteCreateInput) string {
 	if input.Username == "" {
 		return "Username is required"
 	}
@@ -125,7 +135,11 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	normalizeUpdateSitePassword(&input)
+	updateSiteOrFail(w, r, id, input)
+}
 
+// updateSiteOrFail persists the site update and writes the response.
+func updateSiteOrFail(w http.ResponseWriter, r *http.Request, id int64, input SiteUpdateInput) {
 	site, err := Services.SiteService.Update(r.Context(), id, input)
 	if err != nil {
 		respondBadRequest(w, apperror.ErrDatabaseUpdate, err.Error())
@@ -187,6 +201,11 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	testCredentialsOrFail(w, r, input)
+}
+
+// testCredentialsOrFail executes the credentials test and writes the response.
+func testCredentialsOrFail(w http.ResponseWriter, r *http.Request, input credentialsInput) {
 	result, err := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.Url, input.Username, input.Password)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPConnection, err.Error())
