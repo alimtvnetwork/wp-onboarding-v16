@@ -49,6 +49,16 @@ func respondBadRequest(w http.ResponseWriter, code apperror.ErrorCode, message s
 	respondError(w, wordpress.HttpStatusBadRequest, code, message)
 }
 
+// respondServerError is a shorthand for respondError with HttpStatusServerError.
+func respondServerError(w http.ResponseWriter, code apperror.ErrorCode, message string) {
+	respondError(w, wordpress.HttpStatusServerError, code, message)
+}
+
+// respondNotFound is a shorthand for respondError with HttpStatusNotFound.
+func respondNotFound(w http.ResponseWriter, code apperror.ErrorCode, message string) {
+	respondError(w, wordpress.HttpStatusNotFound, code, message)
+}
+
 // respondErrorWithSession writes an error envelope with session ID and stack traces.
 // Extracts sessionId from apperror diagnostic if available.
 func respondErrorWithSession(

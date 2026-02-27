@@ -55,3 +55,10 @@ func backupService() any {
 func versionServiceGetter() any { return VersionService }
 
 func e2eServiceGetter() any { return E2EService }
+
+func errorHistoryService() any {
+	if Services == nil {
+		return nil
+	}
+	return Services.ErrorHistoryService
+}

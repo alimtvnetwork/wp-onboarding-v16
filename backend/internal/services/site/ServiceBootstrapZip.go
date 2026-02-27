@@ -28,6 +28,7 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
 
 	if err := writeUploaderZipContent(tempFile, absUploaderPath); err != nil {
 		os.Remove(tempPath)
+
 		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP").WithPath(pathutil.ForDisplay(absUploaderPath))
 	}
 
@@ -45,6 +46,7 @@ func resolveUploaderDir(uploaderPath string) (string, error) {
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSNotFound, "uploader path not found").WithPath(pathutil.ForDisplay(absPath))
 	}
+
 	if !info.IsDir() {
 		return "", apperror.New(apperror.ErrFSInvalid, "uploader path is not a directory").WithPath(pathutil.ForDisplay(absPath))
 	}
@@ -62,7 +64,10 @@ func writeUploaderZipContent(tempFile *os.File, absUploaderPath string) error {
 		if err != nil {
 			return err
 		}
-		return addFileToUploaderZip(uploaderZipEntryInput{Writer: zipWriter, BaseDir: absUploaderPath, BaseName: baseName, Path: path, Info: info})
+
+		return addFileToUploaderZip(uploaderZipEntryInput{
+			Writer: zipWriter, BaseDir: absUploaderPath, BaseName: baseName, Path: path, Info: info,
+		})
 	})
 
 	zipWriter.Close()
@@ -86,46 +91,78 @@ func addFileToUploaderZip(input uploaderZipEntryInput) error {
 	if relPath == "." {
 		return nil
 	}
+
 	if shouldSkipFile(relPath) {
-		if input.Info.IsDir() {
-			return filepath.SkipDir
-		}
-		return nil
+		return resolveSkipResult(input.Info)
 	}
+
 	if input.Info.IsDir() {
 		return nil
 	}
 
 	zipPath := input.BaseName + "/" + filepath.ToSlash(relPath)
-	writer, err := input.Writer.Create(zipPath)
+
+	return copyFileToZipEntry(input.Writer, zipPath, input.Path)
+}
+
+// resolveSkipResult returns SkipDir for directories, nil for files.
+func resolveSkipResult(info os.FileInfo) error {
+	if info.IsDir() {
+		return filepath.SkipDir
+	}
+
+	return nil
+}
+
+// copyFileToZipEntry copies a single file into a ZIP archive entry.
+func copyFileToZipEntry(zipWriter *zip.Writer, zipPath, filePath string) error {
+	writer, err := zipWriter.Create(zipPath)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Open(input.Path)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
 	_, err = io.Copy(writer, file)
+
 	return err
 }
 
 // shouldSkipFile checks if a file should be skipped when creating the uploader ZIP
 func shouldSkipFile(relPath string) bool {
 	relPath = filepath.ToSlash(relPath)
+
+	if hasHiddenSegment(relPath) {
+		return true
+	}
+
+	return matchesSkipPattern(relPath)
+}
+
+// hasHiddenSegment checks if any path segment starts with a dot (except .uploadignore).
+func hasHiddenSegment(relPath string) bool {
 	parts := strings.Split(relPath, "/")
 	for _, part := range parts {
 		if strings.HasPrefix(part, ".") && part != ".uploadignore" {
 			return true
 		}
 	}
+
+	return false
+}
+
+// matchesSkipPattern checks if a path matches any skip pattern.
+func matchesSkipPattern(relPath string) bool {
 	skipPatterns := []string{"node_modules", "vendor", "tests", "phpunit.xml", "phpunit.xml.dist", "composer.lock"}
 	for _, pattern := range skipPatterns {
 		if relPath == pattern || strings.HasPrefix(relPath, pattern+"/") {
 			return true
 		}
 	}
+
 	return false
 }

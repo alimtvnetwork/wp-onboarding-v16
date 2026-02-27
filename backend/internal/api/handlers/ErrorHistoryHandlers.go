@@ -2,71 +2,34 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"wp-plugin-publish/internal/enums/response_message"
 	"wp-plugin-publish/internal/models"
-	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // SaveErrorHistory persists a new error to history
 func SaveErrorHistory(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.ErrorHistoryService == nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServiceUnavailable,
-			"E9001",
-			responsemessage.ServiceNotAvailable.String(),
-		)
-
+	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
 	var input models.ErrorHistoryInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1001",
-			responsemessage.InvalidRequestBody.String(),
-		)
-
+	if !decodeJSON(w, r, &input) {
 		return
 	}
 
-	if input.Code == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Error code is required",
-		)
-
-		return
-	}
-
-	if input.Message == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E1002",
-			"Error message is required",
-		)
+	if msg := validateSaveErrorInput(input); msg != "" {
+		respondBadRequest(w, apperror.ErrConfigParse, msg)
 
 		return
 	}
 
 	result, err := Services.ErrorHistoryService.Save(input)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			"E9004",
-			err.Error(),
-		)
+		respondServerError(w, apperror.ErrNotImplemented, err.Error())
 
 		return
 	}
@@ -74,40 +37,31 @@ func SaveErrorHistory(w http.ResponseWriter, r *http.Request) {
 	respondCreated(w, result)
 }
 
+// validateSaveErrorInput returns an error message if any required field is missing.
+func validateSaveErrorInput(input models.ErrorHistoryInput) string {
+	if input.Code == "" {
+		return "Error code is required"
+	}
+
+	if input.Message == "" {
+		return "Error message is required"
+	}
+
+	return ""
+}
+
 // ListErrorHistory returns paginated error history
 func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.ErrorHistoryService == nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServiceUnavailable,
-			"E9001",
-			responsemessage.ServiceNotAvailable.String(),
-		)
-
+	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
-	// Parse query parameters
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-
-	filters := models.ErrorHistoryFilters{
-		Code:      r.URL.Query().Get("code"),
-		Level:     r.URL.Query().Get("level"),
-		StartDate: r.URL.Query().Get("startDate"),
-		EndDate:   r.URL.Query().Get("endDate"),
-		Search:    r.URL.Query().Get("search"),
-	}
-
+	limit, offset := parsePagination(r)
+	filters := parseErrorHistoryFilters(r)
 
 	listResult, err := Services.ErrorHistoryService.List(limit, offset, filters)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			"E9004",
-			err.Error(),
-		)
+		respondServerError(w, apperror.ErrNotImplemented, err.Error())
 
 		return
 	}
@@ -121,51 +75,60 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, response)
 }
 
+// parsePagination extracts limit and offset from query parameters.
+func parsePagination(r *http.Request) (int, int) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+
+	return limit, offset
+}
+
+// parseErrorHistoryFilters extracts filter values from query parameters.
+func parseErrorHistoryFilters(r *http.Request) models.ErrorHistoryFilters {
+	return models.ErrorHistoryFilters{
+		Code:      r.URL.Query().Get("code"),
+		Level:     r.URL.Query().Get("level"),
+		StartDate: r.URL.Query().Get("startDate"),
+		EndDate:   r.URL.Query().Get("endDate"),
+		Search:    r.URL.Query().Get("search"),
+	}
+}
+
 // GetErrorHistoryByID returns a single error by database ID
 func GetErrorHistoryByID(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.ErrorHistoryService == nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServiceUnavailable,
-			"E9001",
-			responsemessage.ServiceNotAvailable.String(),
-		)
-
+	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
-	vars := mux.Vars(r)
-	idStr := vars["id"]
+	idStr := mux.Vars(r)["id"]
 
-	// Try to parse as int64 first (database ID)
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		// Try as errorId string
-		errHistory, err := Services.ErrorHistoryService.GetByErrorId(idStr)
-		if err != nil {
-			respondError(
-				w,
-				wordpress.HttpStatusNotFound,
-				"E9001",
-				err.Error(),
-			)
-
-			return
-		}
-
-		respondSuccess(w, errHistory)
+		getErrorHistoryByErrorId(w, idStr)
 
 		return
 	}
 
+	getErrorHistoryByDatabaseId(w, id)
+}
+
+// getErrorHistoryByErrorId looks up an error by its string error ID.
+func getErrorHistoryByErrorId(w http.ResponseWriter, errorId string) {
+	errHistory, err := Services.ErrorHistoryService.GetByErrorId(errorId)
+	if err != nil {
+		respondNotFound(w, apperror.ErrNotFound, err.Error())
+
+		return
+	}
+
+	respondSuccess(w, errHistory)
+}
+
+// getErrorHistoryByDatabaseId looks up an error by its numeric database ID.
+func getErrorHistoryByDatabaseId(w http.ResponseWriter, id int64) {
 	errHistory, err := Services.ErrorHistoryService.GetById(id)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusNotFound,
-			"E9001",
-			err.Error(),
-		)
+		respondNotFound(w, apperror.ErrNotFound, err.Error())
 
 		return
 	}
