@@ -49,34 +49,29 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Password == "" && input.ApplicationPassword != "" {
-		input.Password = input.ApplicationPassword
-	}
+	normalizeCreateSitePassword(&input)
 
-	if err := validateCreateSiteInput(input); err != "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			apperror.ErrValidation,
-			err,
-		)
+	if msg := validateCreateSiteInput(input); msg != "" {
+		respondBadRequest(w, apperror.ErrValidation, msg)
 
 		return
 	}
 
 	site, err := Services.SiteService.Create(r.Context(), input)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			apperror.ErrDatabaseInsert,
-			err.Error(),
-		)
+		respondBadRequest(w, apperror.ErrDatabaseInsert, err.Error())
 
 		return
 	}
 
 	respondCreated(w, site)
+}
+
+// normalizeCreateSitePassword maps applicationPassword to password if needed.
+func normalizeCreateSitePassword(input *SiteCreateInput) {
+	if input.Password == "" && input.ApplicationPassword != "" {
+		input.Password = input.ApplicationPassword
+	}
 }
 
 // validateCreateSiteInput returns an error message if any required field is missing.
@@ -133,12 +128,7 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 
 	site, err := Services.SiteService.Update(r.Context(), id, input)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			apperror.ErrDatabaseUpdate,
-			err.Error(),
-		)
+		respondBadRequest(w, apperror.ErrDatabaseUpdate, err.Error())
 
 		return
 	}
@@ -199,12 +189,7 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.Url, input.Username, input.Password)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			apperror.ErrWPConnection,
-			err.Error(),
-		)
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPConnection, err.Error())
 
 		return
 	}
