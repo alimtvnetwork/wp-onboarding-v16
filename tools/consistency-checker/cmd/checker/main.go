@@ -21,6 +21,7 @@ type cliFlags struct {
 	Dir      string
 	Config   string
 	DBPath   string
+	Format   string
 	IsDryRun bool
 }
 
@@ -30,13 +31,23 @@ func main() {
 	files := scanFiles(cfg, flags.Dir)
 
 	result := runEngine(cfg, files)
-
 	summary := report.BuildSummary(result.Findings, result.FilesCount)
-	report.PrintFindings(result.Findings)
-	report.PrintSummary(summary)
+
+	printOutput(flags.Format, result.Findings, summary)
 
 	persistResults(flags, summary, result)
 	exitWithCode(summary)
+}
+
+// printOutput renders findings in the requested format.
+func printOutput(format string, findings []engine.Finding, summary report.Summary) {
+	if format == "json" {
+		report.PrintJSON(findings, summary)
+		return
+	}
+
+	report.PrintFindings(findings)
+	report.PrintSummary(summary)
 }
 
 // parseFlags reads CLI arguments.
@@ -45,6 +56,7 @@ func parseFlags() cliFlags {
 	flag.StringVar(&flags.Dir, "dir", ".", "Directory to scan")
 	flag.StringVar(&flags.Config, "config", "config/rules.json", "Path to rules.json")
 	flag.StringVar(&flags.DBPath, "db", "data/findings.db", "Path to SQLite database")
+	flag.StringVar(&flags.Format, "format", "text", "Output format: text or json")
 	flag.BoolVar(&flags.IsDryRun, "dry-run", false, "Print findings without persisting")
 	flag.Parse()
 	return flags
