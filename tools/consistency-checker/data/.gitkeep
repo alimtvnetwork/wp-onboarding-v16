@@ -1,0 +1,2 @@
+# data directory — SQLite database stored here at runtime
+*.db

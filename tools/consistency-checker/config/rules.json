@@ -1,0 +1,82 @@
+{
+  "global_exclude": [
+    "vendor/**",
+    "node_modules/**",
+    ".git/**",
+    "*_test.go",
+    "**/_generated/**",
+    "**/e2e/**"
+  ],
+  "rules": [
+    {
+      "id": "go-file-size",
+      "name": "Go File Size Limit",
+      "enabled": true,
+      "severity": "error",
+      "languages": ["go"],
+      "params": {
+        "max_lines": 300
+      },
+      "exclude": ["*_test.go"],
+      "reference": "spec/03-rules.md#go-file-size"
+    },
+    {
+      "id": "go-func-size",
+      "name": "Go Function Body Size",
+      "enabled": true,
+      "severity": "error",
+      "languages": ["go"],
+      "params": {
+        "max_lines": 15
+      },
+      "exclude": ["*_test.go"],
+      "reference": "spec/03-rules.md#go-func-size"
+    },
+    {
+      "id": "go-single-return",
+      "name": "Go Single Return Value",
+      "enabled": true,
+      "severity": "error",
+      "languages": ["go"],
+      "params": {},
+      "exclude": ["*_test.go", "pkg/apperror/**"],
+      "reference": "spec/03-rules.md#go-single-return"
+    },
+    {
+      "id": "go-import-groups",
+      "name": "Go Import Grouping",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["go"],
+      "params": {
+        "groups": 3
+      },
+      "exclude": ["*_test.go"],
+      "reference": "spec/03-rules.md#go-import-groups"
+    },
+    {
+      "id": "go-param-count",
+      "name": "Go Parameter Count",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["go"],
+      "params": {
+        "max_params": 3
+      },
+      "exclude": ["*_test.go"],
+      "reference": "spec/03-rules.md#go-param-count"
+    },
+    {
+      "id": "file-naming",
+      "name": "Go File Naming Convention",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["go"],
+      "params": {
+        "convention": "PascalCase"
+      },
+      "exclude": ["*_test.go", "go.mod", "go.sum"],
+      "reference": "spec/03-rules.md#file-naming"
+    }
+  ]
+}
