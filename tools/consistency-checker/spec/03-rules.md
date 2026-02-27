@@ -13,13 +13,13 @@
 | `go-file-naming` | File Naming         | PascalCase       | warning  | Go files must follow naming convention      |
 | `go-param-count` | Parameter Count     | max: 3           | warning  | Max params excluding context.Context        |
 
-### PHP Rules (Future)
+### PHP Rules
 
 | Rule ID          | Name                | Default          | Severity | Description                                |
 |------------------|---------------------|------------------|----------|--------------------------------------------|
 | `php-file-size`  | File Size Limit     | max: 500 lines   | warning  | PHP files must not exceed line limit        |
 
-### Markdown Rules (Future)
+### Markdown Rules
 
 | Rule ID          | Name                | Default          | Severity | Description                                |
 |------------------|---------------------|------------------|----------|--------------------------------------------|

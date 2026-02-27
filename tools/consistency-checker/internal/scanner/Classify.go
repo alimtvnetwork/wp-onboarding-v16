@@ -12,7 +12,7 @@ func classifyLanguage(path string) string {
 	switch ext {
 	case ".go":
 		return "go"
-	case ".php":
+	case ".php", ".inc":
 		return "php"
 	case ".html", ".htm":
 		return "html"
