@@ -1,0 +1,140 @@
+// Package handlers - Snapshot export and ZIP download HTTP handlers
+package handlers
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+
+	"wp-plugin-publish/internal/services/site"
+	"wp-plugin-publish/internal/wordpress"
+)
+
+// ExportRemoteSnapshot streams a snapshot ZIP file from a remote WordPress site.
+func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
+	if !requireSiteService(w) {
+		return
+	}
+
+	siteId, ok := parseSiteIdOrFail(w, r)
+	if !ok {
+		return
+	}
+
+	snapshotId, ok := parseSnapshotIdOrFail(w, r)
+	if !ok {
+		return
+	}
+
+	resp, err := Services.SiteService.ExportRemoteSnapshot(r.Context(), siteId, snapshotId)
+	if err != nil {
+		respondError(w, wordpress.HttpStatusServerError, "E3028", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	setExportHeaders(w, resp, snapshotId)
+	w.WriteHeader(wordpress.HttpStatusOk.Int())
+	io.Copy(w, resp.Body)
+}
+
+// setExportHeaders forwards content headers from the upstream response.
+func setExportHeaders(w http.ResponseWriter, resp *http.Response, snapshotId int64) {
+	if ct := resp.Header.Get("Content-Type"); ct != "" {
+		w.Header().Set("Content-Type", ct)
+	} else {
+		w.Header().Set("Content-Type", "application/zip")
+	}
+
+	if cd := resp.Header.Get("Content-Disposition"); cd != "" {
+		w.Header().Set("Content-Disposition", cd)
+	} else {
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=snapshot-%d.zip", snapshotId))
+	}
+
+	if cl := resp.Header.Get("Content-Length"); cl != "" {
+		w.Header().Set("Content-Length", cl)
+	}
+}
+
+// DownloadSnapshotZip proxies a cached ZIP download: requests build from WordPress, then streams the ZIP binary.
+func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
+	if !requireSiteService(w) {
+		return
+	}
+
+	siteId, ok := parseSiteIdOrFail(w, r)
+	if !ok {
+		return
+	}
+
+	snapshotId, ok := parseZipDownloadBody(w, r)
+	if !ok {
+		return
+	}
+
+	download, err := Services.SiteService.DownloadSnapshotZip(r.Context(), siteId, snapshotId)
+	if err != nil {
+		respondError(w, wordpress.HttpStatusServerError, "E3040", err.Error())
+		return
+	}
+	defer download.Response.Body.Close()
+
+	writeZipDownloadResponse(w, download)
+}
+
+// parseZipDownloadBody reads the snapshotId from the POST body.
+func parseZipDownloadBody(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	var body struct {
+		SnapshotId int64
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotId <= 0 {
+		respondBadRequest(w, "E1002", "Invalid or missing snapshotId")
+		return 0, false
+	}
+
+	return body.SnapshotId, true
+}
+
+// writeZipDownloadResponse sets headers and streams the ZIP binary to the client.
+func writeZipDownloadResponse(w http.ResponseWriter, download *site.SnapshotZipDownload) {
+	setZipContentHeaders(w, download)
+	setZipMetadataHeaders(w, download.Meta)
+	w.WriteHeader(wordpress.HttpStatusOk.Int())
+	io.Copy(w, download.Response.Body)
+}
+
+// setZipContentHeaders sets Content-Type, Content-Disposition, and Content-Length.
+func setZipContentHeaders(w http.ResponseWriter, download *site.SnapshotZipDownload) {
+	if ct := download.Response.Header.Get("Content-Type"); ct != "" {
+		w.Header().Set("Content-Type", ct)
+	} else {
+		w.Header().Set("Content-Type", "application/zip")
+	}
+
+	filename := download.Meta.Filename
+	if filename == "" {
+		filename = "snapshot.zip"
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+
+	if cl := download.Response.Header.Get("Content-Length"); cl != "" {
+		w.Header().Set("Content-Length", cl)
+	}
+}
+
+// setZipMetadataHeaders exposes cache and size metadata as custom headers.
+func setZipMetadataHeaders(w http.ResponseWriter, meta *wordpress.SnapshotDownloadResult) {
+	if meta.Cached {
+		w.Header().Set("X-Snapshot-Cached", "true")
+	} else {
+		w.Header().Set("X-Snapshot-Cached", "false")
+	}
+
+	if meta.Size > 0 {
+		w.Header().Set("X-Snapshot-Size", strconv.FormatInt(meta.Size, 10))
+	}
+}

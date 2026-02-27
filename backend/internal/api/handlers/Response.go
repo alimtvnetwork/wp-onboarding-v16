@@ -44,6 +44,11 @@ func respondError(
 	envelope.Write(w, envelope.ErrorWithStack(status.Int(), code.String(), message))
 }
 
+// respondBadRequest is a shorthand for respondError with HttpStatusBadRequest.
+func respondBadRequest(w http.ResponseWriter, code apperror.ErrorCode, message string) {
+	respondError(w, wordpress.HttpStatusBadRequest, code, message)
+}
+
 // respondErrorWithSession writes an error envelope with session ID and stack traces.
 // Extracts sessionId from apperror diagnostic if available.
 func respondErrorWithSession(
