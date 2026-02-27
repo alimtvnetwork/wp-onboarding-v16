@@ -1,7 +1,6 @@
 package site
 
 import (
-	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -10,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
@@ -157,149 +154,4 @@ func formatResponseSection(details *ExtractedErrorDetails) string {
 	}
 	entry += fmt.Sprintf("  Error Summary:\n    %s\n", details.Error)
 	return entry
-}
-
-// guardRailInput bundles parameters for formatGuardRailSection.
-type guardRailInput struct {
-	Action  string
-	SiteUrl string
-	Details *ExtractedErrorDetails
-	Method  string
-}
-
-// formatGuardRailSection formats the WP Core mutation guard rail section.
-func formatGuardRailSection(input guardRailInput) string {
-	isNonPluginEndpoint := !strings.Contains(input.Details.Endpoint, "/wp/v2/plugins")
-	isReadOnly := input.Method == "GET"
-	if isNonPluginEndpoint || isReadOnly {
-		return "    This request was correctly delegated through the Riseup Uploader endpoint.\n"
-	}
-
-	requiredEndpoint := resolveRequiredEndpoint(input.Action, input.SiteUrl)
-	entry := "    WARNING: This request was sent to a WordPress Core endpoint instead of the Riseup Uploader.\n"
-	entry += fmt.Sprintf("  Guard Rail:\n    Blocked Direct WP Core Mutation: true\n    Blocked Endpoint: %s\n    Required Delegation Endpoint: %s\n", input.Details.Endpoint, requiredEndpoint)
-	return entry
-}
-
-// resolveRequiredEndpoint maps an action to its required Riseup delegation endpoint.
-func resolveRequiredEndpoint(action, siteUrl string) string {
-	switch action {
-	case "disable":
-		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Disable.String())
-	case "enable":
-		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Enable.String())
-	case "delete":
-		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Delete.String())
-	default:
-		return fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteUrl, wordpress.RiseupAsiaNamespace, action)
-	}
-}
-
-// formatStackTraceSection formats PHP stack trace frames for the log entry.
-func formatStackTraceSection(details *ExtractedErrorDetails) string {
-	if len(details.StackTraceFrames) == 0 {
-		return ""
-	}
-
-	entry := "  PHP Stack Trace Frames:\n"
-	for i, frame := range details.StackTraceFrames {
-		if frame.Class != "" {
-			entry += fmt.Sprintf("    #%d %s::%s() at %s:%d\n", i, frame.Class, frame.Function, frame.File, frame.Line)
-		} else {
-			entry += fmt.Sprintf("    #%d %s() at %s:%d\n", i, frame.Function, frame.File, frame.Line)
-		}
-	}
-	return entry
-}
-
-// formatPhpErrorsSection formats remote PHP error sessions for the log entry.
-func formatPhpErrorsSection(details *ExtractedErrorDetails) string {
-	if len(details.RemotePhpErrors) == 0 {
-		return ""
-	}
-
-	entry := fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(details.RemotePhpErrors))
-	for i, phpErr := range details.RemotePhpErrors {
-		entry += fmt.Sprintf("    [%d] [%s] %s\n        File: %s  Line: %d  At: %s\n", i+1, strings.ToUpper(phpErr.Level), phpErr.Message, phpErr.File, phpErr.Line, phpErr.CreatedAt)
-	}
-	return entry
-}
-
-// =============================================================================
-// REMOTE PLUGIN FILE BROWSER
-// =============================================================================
-
-// RemotePluginFile represents a file in a remote plugin
-type RemotePluginFile struct {
-	Path       string    `json:"path"`       // external key (Riseup Asia Uploader API)
-	Hash       string    `json:"hash"`       // external key
-	Size       int64     `json:"size"`       // external key
-	ModifiedAt time.Time `json:"modifiedAt,omitempty"` // external key
-}
-
-// RemotePluginFilesResult wraps the file list result
-type RemotePluginFilesResult struct {
-	PluginSlug string             `json:"pluginSlug"` // external key
-	TotalFiles int                `json:"totalFiles"` // external key
-	Files      []RemotePluginFile `json:"files"`      // external key
-}
-
-// GetRemotePluginFiles fetches the file list for a remote plugin via Riseup Asia Uploader
-func (s *Service) GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*RemotePluginFilesResult, error) {
-	client, err := s.createClientForSite(ctx, siteId)
-	if err != nil {
-		return nil, err
-	}
-
-	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").
-			WithSiteId(siteId).
-			WithPluginSlug(pluginSlug)
-	}
-
-	return s.buildRemoteFilesResult(siteId, pluginSlug, files), nil
-}
-
-// buildRemoteFilesResult converts file info into the result struct.
-func (s *Service) buildRemoteFilesResult(siteId int64, pluginSlug string, files []wordpress.RemoteFileInfo) *RemotePluginFilesResult {
-	filesResult := &RemotePluginFilesResult{PluginSlug: pluginSlug, TotalFiles: len(files), Files: make([]RemotePluginFile, 0, len(files))}
-	for _, f := range files {
-		filesResult.Files = append(filesResult.Files, RemotePluginFile{Path: f.Path, Hash: f.Hash, Size: f.Size, ModifiedAt: f.ModifiedAt})
-	}
-	s.log.Debug("Remote plugin files fetched", "siteId", siteId, "pluginSlug", pluginSlug, "fileCount", len(filesResult.Files))
-	return filesResult
-}
-
-// createClientForSite creates a WordPress client for the given site.
-func (s *Service) createClientForSite(ctx context.Context, siteId int64) (*wordpress.Client, error) {
-	result := s.GetById(ctx, siteId)
-	if result.HasError() {
-		return nil, result.AppError()
-	}
-	site := result.Value()
-	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
-	}
-	return s.wpClientFactory(site.Url, site.Username, string(password), nil), nil
-}
-
-// GetRemotePluginFileContent fetches the content of a specific file from a remote plugin
-func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteId int64, pluginSlug, filePath string) (string, error) {
-	client, err := s.createClientForSite(ctx, siteId)
-	if err != nil {
-		return "", err
-	}
-
-	content, err := client.GetPluginFileContent(ctx, pluginSlug, filePath)
-	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").
-			WithSiteId(siteId).
-			WithPluginSlug(pluginSlug).
-			WithFilePath(filePath)
-	}
-
-	s.log.Debug("Remote file content fetched", "siteId", siteId, "pluginSlug", pluginSlug, "filePath", filePath, "contentLen", len(content))
-	return content, nil
 }
