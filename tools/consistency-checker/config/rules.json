@@ -77,6 +77,28 @@
       },
       "exclude": ["*_test.go", "go.mod", "go.sum"],
       "reference": "spec/03-rules.md#file-naming"
+    },
+    {
+      "id": "php-file-size",
+      "name": "PHP File Size Limit",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["php"],
+      "params": {
+        "max_lines": 500
+      },
+      "exclude": [],
+      "reference": "spec/03-rules.md#php-file-size"
+    },
+    {
+      "id": "md-heading",
+      "name": "Single H1 Heading",
+      "enabled": true,
+      "severity": "info",
+      "languages": ["md"],
+      "params": {},
+      "exclude": [],
+      "reference": "spec/03-rules.md#md-heading"
     }
   ]
 }

@@ -11,4 +11,6 @@ func RegisterAll(eng *engine.Engine) {
 	eng.Register(&GoImportGroups{})
 	eng.Register(&GoParamCount{})
 	eng.Register(&FileNaming{})
+	eng.Register(&PhpFileSize{})
+	eng.Register(&MdHeading{})
 }
