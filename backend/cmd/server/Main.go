@@ -55,7 +55,6 @@ func main() {
 
 	cfg := loadConfig(bootstrapLog)
 	versionInfo, _ := version.Load(cfg.Server.StaticDir)
-
 	paths := resolveLogPaths(cfg.DatabasePath, bootstrapLog)
 	applyStartupCleanup(cfg, paths, bootstrapLog)
 
@@ -66,8 +65,14 @@ func main() {
 	initEnvelopeDebug(cfg)
 	log.Info("Starting application", "version", versionInfo.String())
 
+	server := bootstrapServer(cfg, log, versionInfo)
+	launchServer(server, cfg, log, versionInfo)
+	awaitShutdown(server, log)
+}
+
+// bootstrapServer initializes database, services, and builds the HTTP server.
+func bootstrapServer(cfg *config.Config, log *logger.Logger, versionInfo *version.Info) *api.Server {
 	db := initDatabase(cfg, log)
-	defer db.Close()
 
 	wsHub := initWebSocket(versionInfo)
 	services := initServices(InitServicesInput{DB: db, Cfg: cfg, WSHub: wsHub, Log: log})
@@ -76,9 +81,7 @@ func main() {
 	reqStore := initRequestSessionStore(cfg, log)
 	initE2EService(cfg, db, wsHub, log)
 
-	server := buildServer(cfg, services, wsHub, log, reqStore)
-	launchServer(server, cfg, log, versionInfo)
-	awaitShutdown(server, log)
+	return buildServer(cfg, services, wsHub, log, reqStore)
 }
 
 // loadConfig loads the application configuration.
@@ -201,7 +204,14 @@ func buildServer(cfg *config.Config, services *Services, wsHub *ws.Hub, log *log
 		services.Watcher, services.Publish, services.Backup,
 		services.Session, services.ErrorHistory, services.PublishHistory, services.SiteHealth,
 	)
-	return api.NewServer(api.ServerConfig{
+	serverCfg := buildServerConfig(cfg, registry, wsHub, log, reqStore)
+
+	return api.NewServer(serverCfg)
+}
+
+// buildServerConfig constructs the api.ServerConfig from the registry and dependencies.
+func buildServerConfig(cfg *config.Config, registry *handlers.ServiceRegistry, wsHub *ws.Hub, log *logger.Logger, reqStore *requestsession.Store) api.ServerConfig {
+	return api.ServerConfig{
 		Port:      cfg.Server.Port,
 		StaticDir: cfg.Server.StaticDir,
 		Services: &api.ServiceRegistry{
@@ -215,7 +225,7 @@ func buildServer(cfg *config.Config, services *Services, wsHub *ws.Hub, log *log
 		WSHub: wsHub, Logger: log,
 		RequestSessionStore:   reqStore,
 		SessionLoggingEnabled: cfg.Logging.SessionLoggingEnabled,
-	})
+	}
 }
 
 // launchServer starts the server and opens the browser.
