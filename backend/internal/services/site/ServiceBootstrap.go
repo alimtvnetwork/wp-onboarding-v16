@@ -35,6 +35,11 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		return nil, err
 	}
 
+	return s.bootstrapUploadAndFinalize(id, bctx, uploaderPath)
+}
+
+// bootstrapUploadAndFinalize creates the ZIP, uploads, and returns the result.
+func (s *Service) bootstrapUploadAndFinalize(id int64, bctx *bootstrapContext, uploaderPath string) (*BootstrapResult, error) {
 	zipPath, err := s.prepareBootstrapZip(id, uploaderPath)
 	if err != nil {
 		return nil, err
@@ -59,6 +64,11 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 
 	s.logBootstrapStart(id, site)
 
+	return s.buildBootstrapClient(id, site)
+}
+
+// buildBootstrapClient decrypts credentials and creates a WordPress client.
+func (s *Service) buildBootstrapClient(id int64, site models.Site) (*bootstrapContext, error) {
 	decrypted, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
@@ -189,9 +199,14 @@ func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress
 		UploadSource: uploadsource.RestAPI,
 	}
 
-	result, err := input.Client.UploadPluginViaUploader(uploadInput)
+	return s.executeUploaderUpload(input.SiteID, input.Client, uploadInput)
+}
+
+// executeUploaderUpload performs the upload and wraps errors.
+func (s *Service) executeUploaderUpload(siteID int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, error) {
+	result, err := client.UploadPluginViaUploader(input)
 	if err != nil {
-		s.logBootstrapError(input.SiteID, fmt.Sprintf("Upload failed: %v", err))
+		s.logBootstrapError(siteID, fmt.Sprintf("Upload failed: %v", err))
 
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
@@ -234,11 +249,11 @@ func (s *Service) finalizeBootstrap(id int64, site models.Site, uploadResult *wo
 }
 
 // logBootstrapDeploySuccess broadcasts and logs the successful deployment.
-func (s *Service) logBootstrapDeploySuccess(id int64, site models.Site, activated bool) {
+func (s *Service) logBootstrapDeploySuccess(id int64, site models.Site, isActivated bool) {
 	deployDetails := toJson(UploaderDeployDetails{
 		SiteId:      id,
 		SiteName:    site.Name,
-		IsActivated: activated,
+		IsActivated: isActivated,
 	})
 	s.broadcastBootstrapLog(bootstrapLogInput{
 		Level:   loglevel.Info,
@@ -247,7 +262,7 @@ func (s *Service) logBootstrapDeploySuccess(id int64, site models.Site, activate
 		Details: deployDetails,
 	})
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site",
-		"siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", activated)
+		"siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", isActivated)
 }
 
 // buildBootstrapResult constructs the final BootstrapResult.

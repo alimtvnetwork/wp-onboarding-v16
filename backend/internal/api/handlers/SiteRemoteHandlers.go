@@ -48,23 +48,18 @@ func parseRemotePluginInputOrFail(w http.ResponseWriter, r *http.Request) (*remo
 
 	parsed, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			apperror.ErrConfigParse,
-			"Invalid request: "+err.Error(),
-		)
+		respondBadRequest(w, apperror.ErrConfigParse, "Invalid request: "+err.Error())
 
 		return nil, false
 	}
 
+	return validateRemotePluginSlug(w, parsed)
+}
+
+// validateRemotePluginSlug ensures the plugin slug is non-empty.
+func validateRemotePluginSlug(w http.ResponseWriter, parsed *remotePluginParsed) (*remotePluginParsed, bool) {
 	if parsed.PluginSlug == "" {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			apperror.ErrConfigParse,
-			"Plugin slug is required in JSON body",
-		)
+		respondBadRequest(w, apperror.ErrConfigParse, "Plugin slug is required in JSON body")
 
 		return nil, false
 	}
@@ -99,13 +94,13 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clearCacheOrFail(w, r, id)
+}
+
+// clearCacheOrFail invalidates the remote plugins cache and writes the response.
+func clearCacheOrFail(w http.ResponseWriter, r *http.Request, id int64) {
 	if err := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id); err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			apperror.ErrWPPluginGet,
-			err.Error(),
-		)
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, err.Error())
 
 		return
 	}
@@ -120,15 +115,14 @@ func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	checkPluginExistsOrFail(w, r, parsed)
+}
+
+// checkPluginExistsOrFail queries plugin existence and writes the response.
+func checkPluginExistsOrFail(w http.ResponseWriter, r *http.Request, parsed *remotePluginParsed) {
 	result, err := Services.SiteService.CheckRemotePluginExists(r.Context(), parsed.SiteID, parsed.PluginSlug)
 	if err != nil {
-		respondErrorWithSession(
-			w,
-			resolveHTTPStatus(err, wordpress.HttpStatusServerError),
-			apperror.ErrWPPluginDelete,
-			err.Error(),
-			err,
-		)
+		respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), apperror.ErrWPPluginDelete, err.Error(), err)
 
 		return
 	}
@@ -141,6 +135,11 @@ func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// respondRemotePluginError writes an error response for remote plugin actions.
+func respondRemotePluginError(w http.ResponseWriter, errCode apperror.ErrorCode, err error) {
+	respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), errCode, err.Error(), err)
+}
+
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	parsed, ok := parseRemotePluginInputOrFail(w, r)
@@ -149,13 +148,7 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.SiteService.EnableRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug); err != nil {
-		respondErrorWithSession(
-			w,
-			resolveHTTPStatus(err, wordpress.HttpStatusServerError),
-			apperror.ErrWPPluginActivate,
-			err.Error(),
-			err,
-		)
+		respondRemotePluginError(w, apperror.ErrWPPluginActivate, err)
 
 		return
 	}
@@ -171,13 +164,7 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.SiteService.DisableRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug); err != nil {
-		respondErrorWithSession(
-			w,
-			resolveHTTPStatus(err, wordpress.HttpStatusServerError),
-			apperror.ErrWPPluginActivate,
-			err.Error(),
-			err,
-		)
+		respondRemotePluginError(w, apperror.ErrWPPluginActivate, err)
 
 		return
 	}
@@ -193,13 +180,7 @@ func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.SiteService.DeleteRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug); err != nil {
-		respondErrorWithSession(
-			w,
-			resolveHTTPStatus(err, wordpress.HttpStatusServerError),
-			apperror.ErrWPPluginDelete,
-			err.Error(),
-			err,
-		)
+		respondRemotePluginError(w, apperror.ErrWPPluginDelete, err)
 
 		return
 	}
@@ -214,14 +195,14 @@ func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fetchRemoteFilesOrFail(w, r, parsed)
+}
+
+// fetchRemoteFilesOrFail queries remote plugin files and writes the response.
+func fetchRemoteFilesOrFail(w http.ResponseWriter, r *http.Request, parsed *remotePluginParsed) {
 	files, err := Services.SiteService.GetRemotePluginFiles(r.Context(), parsed.SiteID, parsed.PluginSlug)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			apperror.ErrWPPluginFiles,
-			err.Error(),
-		)
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginFiles, err.Error())
 
 		return
 	}

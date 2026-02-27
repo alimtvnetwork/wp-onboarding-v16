@@ -27,6 +27,11 @@ func SaveErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	saveErrorHistoryOrFail(w, input)
+}
+
+// saveErrorHistoryOrFail persists the error input and writes the response.
+func saveErrorHistoryOrFail(w http.ResponseWriter, input models.ErrorHistoryInput) {
 	result, err := Services.ErrorHistoryService.Save(input)
 	if err != nil {
 		respondServerError(w, apperror.ErrNotImplemented, err.Error())
@@ -59,6 +64,11 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 	limit, offset := parsePagination(r)
 	filters := parseErrorHistoryFilters(r)
 
+	listErrorHistoryOrFail(w, limit, offset, filters)
+}
+
+// listErrorHistoryOrFail queries error history and writes the paginated response.
+func listErrorHistoryOrFail(w http.ResponseWriter, limit, offset int, filters models.ErrorHistoryFilters) {
 	listResult, err := Services.ErrorHistoryService.List(limit, offset, filters)
 	if err != nil {
 		respondServerError(w, apperror.ErrNotImplemented, err.Error())
