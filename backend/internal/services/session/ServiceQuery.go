@@ -76,7 +76,7 @@ func (s *Service) GetSessionDiagnostics(sessionID string) apperror.Result[Sessio
 	diag.Request = s.loadDiagnosticRequest(sessionID)
 	diag.Response = s.loadDiagnosticResponse(sessionID)
 	diag.StackTrace = s.loadDiagnosticStackTrace(sessionID)
-	diag.PHPStackTraceLog = s.loadPHPStackTrace(sessionID)
+	diag.PhpStackTraceLog = s.loadPhpStackTrace(sessionID)
 
 	return apperror.Ok(diag)
 }
@@ -150,22 +150,22 @@ func (s *Service) loadDiagnosticStackTrace(sessionID string) *SessionStackTrace 
 	return errorData.StackTrace
 }
 
-// loadPHPStackTrace extracts the PHP stacktrace from session logs.
-func (s *Service) loadPHPStackTrace(sessionID string) string {
+// loadPhpStackTrace extracts the PHP stacktrace from session logs.
+func (s *Service) loadPhpStackTrace(sessionID string) string {
 	logsResult := s.GetSessionLogs(sessionID)
 	isLogsUnavailable := !logsResult.IsSafe()
 
 	if isLogsUnavailable {
 		return ""
 	}
-	return extractPHPStackTraceFromLogs(logsResult.Value())
+	return extractPhpStackTraceFromLogs(logsResult.Value())
 }
 
-// extractPHPStackTraceFromLogs scans session log lines for the remote_php_stacktrace
+// extractPhpStackTraceFromLogs scans session log lines for the remote_php_stacktrace
 // entry and extracts the embedded stacktrace.txt content from its JSON context.
-func extractPHPStackTraceFromLogs(logs string) string {
+func extractPhpStackTraceFromLogs(logs string) string {
 	for _, line := range strings.Split(logs, "\n") {
-		content := extractPHPContentFromLine(line)
+		content := extractPhpContentFromLine(line)
 		if content != "" {
 			return content
 		}
@@ -173,8 +173,8 @@ func extractPHPStackTraceFromLogs(logs string) string {
 	return ""
 }
 
-// extractPHPContentFromLine extracts PHP stacktrace content from a single log line.
-func extractPHPContentFromLine(line string) string {
+// extractPhpContentFromLine extracts PHP stacktrace content from a single log line.
+func extractPhpContentFromLine(line string) string {
 	isUnrelatedLine := !strings.Contains(line, "remote_php_stacktrace")
 
 	if isUnrelatedLine {
@@ -186,11 +186,11 @@ func extractPHPContentFromLine(line string) string {
 	if isBraceMissing {
 		return ""
 	}
-	return parsePHPContent(line[braceIdx:])
+	return parsePhpContent(line[braceIdx:])
 }
 
-// parsePHPContent unmarshals the JSON fragment and returns the content field.
-func parsePHPContent(jsonFragment string) string {
+// parsePhpContent unmarshals the JSON fragment and returns the content field.
+func parsePhpContent(jsonFragment string) string {
 	// stackTraceContentContext extracts "content" from remote_php_stacktrace log JSON.
 	type stackTraceContentContext struct {
 		Content string `json:"content"` // external key (session log JSON)

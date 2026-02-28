@@ -159,7 +159,7 @@ func (s *Service) saveRemoteErrorStackAndDetails(sessionId string, errDetails *E
 		SessionID: sessionId,
 		StackTrace: &session.SessionStackTrace{
 			Golang: goFrames,
-			PHP:    phpFrames,
+			Php:    phpFrames,
 		},
 		ErrorMsg: appErr.Error(),
 		Details:  session.ToJSON(errDetails),

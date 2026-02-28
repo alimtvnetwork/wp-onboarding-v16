@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-// PHPStackTraceFrame represents a single frame from a WordPress PHP stack trace.
-type PHPStackTraceFrame struct {
+// PhpStackTraceFrame represents a single frame from a WordPress PHP stack trace.
+type PhpStackTraceFrame struct {
 	File     string `json:"file"`     // external key (WordPress PHP error response)
 	FileBase string `json:"fileBase"` // external key
 	Line     int    `json:"line"`     // external key
@@ -23,27 +23,27 @@ type phpErrorResponse struct {
 		Message string `json:"message"` // external key
 		Details struct {
 			StackTrace       string               `json:"stackTrace"`       // external key
-			StackTraceFrames []PHPStackTraceFrame  `json:"stackTraceFrames"` // external key
+			StackTraceFrames []PhpStackTraceFrame  `json:"stackTraceFrames"` // external key
 			ExceptionClass   string                `json:"exceptionClass"`   // external key
-			PHPVersion       string                `json:"phpVersion"`       // external key
+			PhpVersion       string                `json:"phpVersion"`       // external key
 		} `json:"details"` // external key
 	} `json:"error"` // external key
 }
 
-// ExtractPHPStackTrace parses a WordPress error response body and returns a
+// ExtractPhpStackTrace parses a WordPress error response body and returns a
 // formatted PHP stack trace string. Returns an empty string if the response
 // doesn't contain stack trace frames.
-func ExtractPHPStackTrace(respBytes []byte) string {
-	frames := parsePHPErrorFrames(respBytes)
+func ExtractPhpStackTrace(respBytes []byte) string {
+	frames := parsePhpErrorFrames(respBytes)
 	if len(frames) == 0 {
 		return ""
 	}
 
-	return formatPHPStackTrace(frames)
+	return formatPhpStackTrace(frames)
 }
 
-// parsePHPErrorFrames extracts stack trace frames from a PHP error response.
-func parsePHPErrorFrames(respBytes []byte) []PHPStackTraceFrame {
+// parsePhpErrorFrames extracts stack trace frames from a PHP error response.
+func parsePhpErrorFrames(respBytes []byte) []PhpStackTraceFrame {
 	if len(respBytes) == 0 {
 		return nil
 	}
@@ -58,8 +58,8 @@ func parsePHPErrorFrames(respBytes []byte) []PHPStackTraceFrame {
 	return parsed.Error.Details.StackTraceFrames
 }
 
-// formatPHPStackTrace formats PHP stack trace frames into a readable string.
-func formatPHPStackTrace(frames []PHPStackTraceFrame) string {
+// formatPhpStackTrace formats PHP stack trace frames into a readable string.
+func formatPhpStackTrace(frames []PhpStackTraceFrame) string {
 	result := "\n--- PHP Stack Trace (from WordPress) ---\n"
 
 	for i, frame := range frames {

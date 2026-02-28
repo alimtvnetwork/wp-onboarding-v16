@@ -285,7 +285,7 @@ func buildUploadApiError(input uploadApiErrorInput) *ApiError {
 		Endpoint:     input.UploadEndpoint,
 		Url:          input.UploadURL,
 		StatusCode:   input.StatusCode,
-		ResponseBody: diagnosticBody + ExtractPHPStackTrace(input.RespBytes),
+		ResponseBody: diagnosticBody + ExtractPhpStackTrace(input.RespBytes),
 		StackTrace:   stackTrace,
 	}
 }
