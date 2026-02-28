@@ -123,7 +123,7 @@ func (s *Service) preDeleteDisable(client *wordpress.Client, pluginSlug string) 
 		return
 	}
 
-	apiErr := wordpress.ExtractAPIError(disableErr)
+	apiErr := wordpress.ExtractApiError(disableErr)
 	isMissingError := apiErr != nil && apiErr.StatusCode == http.StatusNotFound
 
 	if isMissingError {

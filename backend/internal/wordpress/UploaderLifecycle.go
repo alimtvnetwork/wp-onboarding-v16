@@ -48,7 +48,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.App
 		PluginSlug: normalizedSlug,
 		ErrorCode:  input.ErrorCode,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 
 	return rawResult.AppError()
 }
@@ -74,7 +74,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) apperror.Result[*Plug
 		PluginSlug: normalizedSlug,
 		ErrorCode:  apperror.ErrWPConnection,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
 		return apperror.Fail[*PluginExistsResult](rawResult.AppError())
 	}
@@ -166,7 +166,7 @@ func (c *Client) ListPluginsViaUploader() apperror.Result[[]UploaderPluginInfo] 
 		Operation: "list plugins",
 		ErrorCode: apperror.ErrWPPluginList,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
 		return apperror.Fail[[]UploaderPluginInfo](rawResult.AppError())
 	}
@@ -216,7 +216,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) apperror.Result[[]Uploa
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPPluginGet,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
 		return apperror.Fail[[]UploaderFileInfo](rawResult.AppError())
 	}
