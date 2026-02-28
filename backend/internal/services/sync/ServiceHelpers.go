@@ -5,18 +5,13 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	changetype "wp-plugin-publish/internal/enums/changetype"
-	syncdirection "wp-plugin-publish/internal/enums/syncdirectiontype"
 	syncstep "wp-plugin-publish/internal/enums/syncsteptype"
 	"wp-plugin-publish/internal/models"
-	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
@@ -46,38 +41,51 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 			return nil
 		}
 
-		relPath, err := filepath.Rel(absPluginPath, path)
-		if err != nil {
-			return nil
-		}
-
-		for _, pattern := range excludePatterns {
-			matched, _ := filepath.Match(pattern, filepath.Base(path))
-			if matched {
-				return nil
-			}
-		}
-
-		if strings.HasPrefix(filepath.Base(path), ".") {
-			return nil
-		}
-
-		hash, err := s.calculateFileHash(path)
-		if err != nil {
-			return nil
-		}
-
-		key := filepath.ToSlash(relPath)
-		files[key] = FileEntry{
-			Path:       key,
-			Hash:       hash,
-			ModifiedAt: info.ModTime().UTC(),
-			Size:       info.Size(),
-		}
-		return nil
+		return s.processLocalFile(files, absPluginPath, path, info, excludePatterns)
 	})
 
 	return files, err
+}
+
+// processLocalFile handles a single file during local scan.
+func (s *serviceImpl) processLocalFile(files map[string]FileEntry, basePath, path string, info os.FileInfo, excludePatterns []string) error {
+	relPath, err := filepath.Rel(basePath, path)
+	if err != nil {
+		return nil
+	}
+
+	if isFileExcluded(path, excludePatterns) {
+		return nil
+	}
+
+	if strings.HasPrefix(filepath.Base(path), ".") {
+		return nil
+	}
+
+	hash, err := s.calculateFileHash(path)
+	if err != nil {
+		return nil
+	}
+
+	key := filepath.ToSlash(relPath)
+	files[key] = FileEntry{
+		Path:       key,
+		Hash:       hash,
+		ModifiedAt: info.ModTime().UTC(),
+		Size:       info.Size(),
+	}
+	return nil
+}
+
+// isFileExcluded checks if a file matches any exclude pattern.
+func isFileExcluded(path string, excludePatterns []string) bool {
+	for _, pattern := range excludePatterns {
+		matched, _ := filepath.Match(pattern, filepath.Base(path))
+		if matched {
+			return true
+		}
+	}
+	return false
 }
 
 // calculateFileHash calculates MD5 hash of a file
@@ -99,58 +107,42 @@ func (s *serviceImpl) calculateFileHash(path string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// compareFiles compares local and remote file entries with timestamp-based conflict resolution
+// compareFiles compares local and remote file entries with timestamp-based conflict resolution.
 func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.FileChange {
+	changes := s.detectLocalChanges(local, remote)
+	deleted := s.detectDeletedFiles(local, remote)
+	return append(changes, deleted...)
+}
+
+// detectLocalChanges finds files that are added or modified locally vs remote.
+func (s *serviceImpl) detectLocalChanges(local, remote map[string]FileEntry) []models.FileChange {
 	var changes []models.FileChange
 
 	for path, localEntry := range local {
-		localMod := localEntry.ModifiedAt
 		remoteEntry, isFound := remote[path]
 		if isFound {
-			if localEntry.Hash != remoteEntry.Hash {
-				remoteMod := remoteEntry.ModifiedAt
-				direction := syncdirection.LocalNewer.Value()
-				if remoteMod.After(localMod) {
-					direction = syncdirection.RemoteNewer.Value()
-				}
-				changes = append(changes, models.FileChange{
-					FilePath:         path,
-					ChangeType:       changetype.Modified.Value(),
-					LocalHash:        localEntry.Hash,
-					RemoteHash:       remoteEntry.Hash,
-					LocalModifiedAt:  &localMod,
-					RemoteModifiedAt: &remoteMod,
-					LocalSize:        localEntry.Size,
-					RemoteSize:       remoteEntry.Size,
-					Direction:        direction,
-				})
+			change := buildModifiedChange(path, localEntry, remoteEntry)
+			if change != nil {
+				changes = append(changes, *change)
 			}
 		} else {
-			changes = append(changes, models.FileChange{
-				FilePath:        path,
-				ChangeType:      changetype.Added.Value(),
-				LocalHash:       localEntry.Hash,
-				LocalModifiedAt: &localMod,
-				LocalSize:       localEntry.Size,
-				Direction:       syncdirection.LocalOnly.Value(),
-			})
+			changes = append(changes, buildAddedChange(path, localEntry))
 		}
 	}
+
+	return changes
+}
+
+// detectDeletedFiles finds files present remotely but missing locally.
+func (s *serviceImpl) detectDeletedFiles(local, remote map[string]FileEntry) []models.FileChange {
+	var changes []models.FileChange
 
 	for path, remoteEntry := range remote {
 		_, isFound := local[path]
 		isLocalMissing := !isFound
 
 		if isLocalMissing {
-			remoteMod := remoteEntry.ModifiedAt
-			changes = append(changes, models.FileChange{
-				FilePath:         path,
-				ChangeType:       changetype.Deleted.Value(),
-				RemoteHash:       remoteEntry.Hash,
-				RemoteModifiedAt: &remoteMod,
-				RemoteSize:       remoteEntry.Size,
-				Direction:        syncdirection.RemoteOnly.Value(),
-			})
+			changes = append(changes, buildDeletedChange(path, remoteEntry))
 		}
 	}
 
@@ -177,8 +169,13 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 	}
 	password := passwordResult.Value()
 
+	return s.fetchAndParseManifest(ctx, siteInfoResult.Value(), mapping, pluginID, siteID, password)
+}
+
+// fetchAndParseManifest calls the remote API and converts the manifest to FileEntry map.
+func (s *serviceImpl) fetchAndParseManifest(ctx context.Context, info models.Site, mapping models.PluginMapping, pluginID, siteID int64, password string) (map[string]FileEntry, string) {
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
-	info := siteInfoResult.Value()
+
 	wpClient := s.wpClientFactory(info.Url, info.Username, password)
 	manifestResult := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
 
@@ -189,12 +186,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
 	} else {
 		for _, rf := range manifestResult.Value() {
-			remoteFiles[rf.Path] = FileEntry{
-				Path:       rf.Path,
-				Hash:       rf.Hash,
-				ModifiedAt: rf.ModifiedAt,
-				Size:       rf.Size,
-			}
+			remoteFiles[rf.Path] = FileEntry{Path: rf.Path, Hash: rf.Hash, ModifiedAt: rf.ModifiedAt, Size: rf.Size}
 		}
 	}
 
