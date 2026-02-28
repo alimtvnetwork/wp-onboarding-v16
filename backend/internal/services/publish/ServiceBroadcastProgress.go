@@ -133,7 +133,7 @@ func buildProgressData(input ProgressInput) ws.PublishStageProgressData {
 	return ws.PublishStageProgressData{
 		PluginID: input.PluginId,
 		SiteID:   input.SiteId,
-		Stage:    mapStepToStage(input.Step),
+		Stage:    input.Step.Stage(),
 		Step:     input.Step.Value(),
 		Status:   mapStepToStatus(input.Step),
 		Progress: input.Progress,
@@ -146,14 +146,14 @@ func buildProgressData(input ProgressInput) ws.PublishStageProgressData {
 func (s *Service) broadcastSessionProgress(input ProgressInput, data ws.PublishStageProgressData) {
 	eventType := resolveProgressEvent(input.Step)
 	ws.BroadcastWithSession(s.wsHub, eventType, data, input.SessionId)
-	s.emitSessionProgressLog(input, mapStepToStage(input.Step))
+	s.emitSessionProgressLog(input, input.Step.Stage())
 }
 
 // broadcastNonSessionProgress sends progress without session context.
 func (s *Service) broadcastNonSessionProgress(input ProgressInput, data ws.PublishStageProgressData) {
 	eventType := resolveProgressEvent(input.Step)
 	ws.Broadcast(s.wsHub, eventType, data)
-	s.emitProgressLog(input, mapStepToStage(input.Step))
+	s.emitProgressLog(input, input.Step.Stage())
 }
 
 // emitProgressLog logs a non-session progress event.
@@ -263,24 +263,6 @@ func resolveProgressEvent(step publishstep.Variant) string {
 }
 
 // ─── Step/Stage Mapping ──────────────────────────────────────────────────────
-
-// mapStepToStage maps step names to stage names for frontend compatibility
-func mapStepToStage(step publishstep.Variant) string {
-	switch step {
-	case publishstep.Started:
-		return publishstep.Backup.Value()
-	case publishstep.Packaging:
-		return publishstep.Package.Value()
-	case publishstep.Uploading:
-		return publishstep.Upload.Value()
-	case publishstep.Activating:
-		return publishstep.Activate.Value()
-	case publishstep.Cleanup:
-		return publishstep.Cleanup.Value()
-	default:
-		return step.Value()
-	}
-}
 
 // mapStepToStatus maps step names to status strings
 func mapStepToStatus(step publishstep.Variant) string {
