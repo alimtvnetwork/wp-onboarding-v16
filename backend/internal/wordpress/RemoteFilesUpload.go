@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"wp-plugin-publish/internal/enums/httpmethodtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/pkg/apperror"
@@ -94,6 +93,7 @@ func (c *Client) buildFormFromOpenedFile(opened *openedFile, zipPath, pluginSlug
 		ZipPath:    zipPath,
 		PluginSlug: pluginSlug,
 	}
+
 	err := writeZipFormFields(formInput)
 	if err != nil {
 
@@ -149,7 +149,7 @@ func writeZipFormFields(input zipFormInput) error {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file for upload")
 	}
 
-	_, err := io.Copy(part, input.File)
+	_, err = io.Copy(part, input.File)
 	if err != nil {
 
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to copy file to multipart form")
@@ -164,25 +164,15 @@ func writeZipFormFields(input zipFormInput) error {
 	return input.Writer.WriteField("overwrite", "true")
 }
 
-// zipUploadInput bundles parameters for executeOnboardZipUpload.
-type zipUploadInput struct {
-	Endpoint    string
-	Body        *bytes.Buffer
-	ContentType string
-	FileSize    int64
-	ZipPath     string
-	PluginSlug  string
-}
-
 // executeOnboardZipUpload sends the multipart upload and parses the response.
 func (c *Client) executeOnboardZipUpload(endpoint string, form *zipMultipartForm, zipPath, pluginSlug string) (*OnboardUploadResult, error) {
 	url := BuildWPJSONURL(c.baseURL, endpoint)
 
 	c.reportOnboardUploadStart(url, endpoint, form, zipPath)
 
-	mpResp, err := c.doMultipartRequest(url, form.Body, form.ContentType)
-	if err != nil {
-		return nil, err
+	mpResp, appErr := c.sendMultipartUpload(endpoint, form)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	c.reportOnboardUploadResponse(mpResp)
@@ -225,32 +215,38 @@ type multipartResponse struct {
 	Body       string
 }
 
-// doMultipartRequest sends a POST with multipart body and returns status + body.
-func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType string) (*multipartResponse, error) {
-	req, err := http.NewRequest(httpmethodtype.Post.Value(), url, body)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").WithURL(url)
+// sendMultipartUpload sends a multipart POST via the standardized requestMultipart helper.
+func (c *Client) sendMultipartUpload(endpoint string, form *zipMultipartForm) (*multipartResponse, *apperror.AppError) {
+	input := multipartInput{
+		Method:      httpmethod.Post,
+		Endpoint:    endpoint,
+		Body:        form.Body,
+		ContentType: form.ContentType,
 	}
 
-	c.setStandardHeaders(req, contentType)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").WithURL(url)
+	resp, appErr := c.requestMultipart(input)
+	if appErr != nil {
+		return nil, appErr
 	}
 	defer resp.Body.Close()
 
-	respBytes, _ := io.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to read multipart response body")
+	}
 
 	return &multipartResponse{StatusCode: resp.StatusCode, Body: string(respBytes)}, nil
 }
 
 // parseOnboardUploadResponse validates the status code and unmarshals the result.
 func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint, url, pluginSlug string) (*OnboardUploadResult, error) {
-	if mpResp.StatusCode != http.StatusOK && mpResp.StatusCode != http.StatusCreated {
+	isSuccess := mpResp.StatusCode == HttpStatusOk.Int() ||
+		mpResp.StatusCode == HttpStatusCreated.Int()
+
+	if !isSuccess {
 		return nil, &APIError{
 			Operation:    "upload plugin zip",
-			Method:       httpmethodtype.Post.Value(),
+			Method:       httpmethod.Post.Value(),
 			Endpoint:     endpoint,
 			Url:          url,
 			StatusCode:   mpResp.StatusCode,
@@ -303,7 +299,9 @@ func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) (*Uploa
 
 // truncateBody truncates a string to maxLen for error messages.
 func truncateBody(body string, maxLen int) string {
-	if len(body) > maxLen {
+	isTooLong := len(body) > maxLen
+
+	if isTooLong {
 		return body[:maxLen] + "..."
 	}
 
