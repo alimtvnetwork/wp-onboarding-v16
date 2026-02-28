@@ -33,7 +33,7 @@ type SiteUpdateInput struct {
 var GetSites = handleListNilSafe(
 	siteService,
 	apperror.ErrDatabaseConnect,
-	func(ctx context.Context) (any, error) {
+	func(ctx context.Context) (any, *apperror.AppError) {
 		return Services.SiteService.List(ctx)
 	},
 )
@@ -65,9 +65,9 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 
 // createSiteOrFail persists the site and writes the response.
 func createSiteOrFail(w http.ResponseWriter, r *http.Request, input SiteCreateInput) {
-	site, err := Services.SiteService.Create(r.Context(), input)
-	if err != nil {
-		respondBadRequest(w, apperror.ErrDatabaseInsert, err.Error())
+	site, appErr := Services.SiteService.Create(r.Context(), input)
+	if appErr != nil {
+		respondBadRequest(w, apperror.ErrDatabaseInsert, appErr.Error())
 
 		return
 	}
@@ -127,7 +127,7 @@ var GetSite = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     apperror.ErrNotFound,
 	},
-	func(ctx context.Context, id int64) (any, error) {
+	func(ctx context.Context, id int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetById(ctx, id)
 	},
 )
@@ -154,9 +154,9 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 
 // updateSiteOrFail persists the site update and writes the response.
 func updateSiteOrFail(w http.ResponseWriter, r *http.Request, id int64, input SiteUpdateInput) {
-	site, err := Services.SiteService.Update(r.Context(), id, input)
-	if err != nil {
-		respondBadRequest(w, apperror.ErrDatabaseUpdate, err.Error())
+	site, appErr := Services.SiteService.Update(r.Context(), id, input)
+	if appErr != nil {
+		respondBadRequest(w, apperror.ErrDatabaseUpdate, appErr.Error())
 
 		return
 	}
@@ -179,7 +179,7 @@ var DeleteSite = handleDeleteByID(
 		ParamName:   "id",
 		ErrCode:     apperror.ErrDatabaseDelete,
 	},
-	func(ctx context.Context, id int64) error {
+	func(ctx context.Context, id int64) *apperror.AppError {
 		return Services.SiteService.Delete(ctx, id)
 	},
 )
@@ -192,7 +192,7 @@ var TestSiteConnection = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     apperror.ErrWPConnection,
 	},
-	func(ctx context.Context, id int64) (any, error) {
+	func(ctx context.Context, id int64) (any, *apperror.AppError) {
 		return Services.SiteService.TestConnection(ctx, id)
 	},
 )
@@ -220,9 +220,9 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 
 // testCredentialsOrFail executes the credentials test and writes the response.
 func testCredentialsOrFail(w http.ResponseWriter, r *http.Request, input credentialsInput) {
-	result, err := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.Url, input.Username, input.Password)
-	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPConnection, err.Error())
+	result, appErr := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.Url, input.Username, input.Password)
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPConnection, appErr.Error())
 
 		return
 	}
@@ -238,7 +238,7 @@ var GetSiteCredentials = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     apperror.ErrDatabaseMigrate,
 	},
-	func(ctx context.Context, id int64) (any, error) {
+	func(ctx context.Context, id int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetCredentials(ctx, id)
 	},
 )

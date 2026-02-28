@@ -11,6 +11,7 @@ import (
 	"wp-plugin-publish/internal/services/publish"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // PublishInput represents the request body for publishing
@@ -74,13 +75,8 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 // PreviewPublish returns a preview of files that will be published
 var PreviewPublish = handleTwoIDs(
 	twoIDConfig{GetService: publishService, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5007"},
-	func(ctx context.Context, pluginID, siteID int64) (any, error) {
-		result, appErr := Services.PublishService.PreviewPublish(ctx, pluginID, siteID)
-		if appErr != nil {
-			return nil, appErr.CompiledError()
-		}
-
-		return result, nil
+	func(ctx context.Context, pluginID, siteID int64) (any, *apperror.AppError) {
+		return Services.PublishService.PreviewPublish(ctx, pluginID, siteID)
 	},
 )
 
@@ -91,13 +87,8 @@ var PreviewPublish = handleTwoIDs(
 // GetBackups returns backup history for a plugin
 var GetBackups = handleActionByID(
 	handlerIDConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6001"},
-	func(ctx context.Context, pluginID int64) (any, error) {
-		result, appErr := Services.BackupService.List(ctx, pluginID)
-		if appErr != nil {
-			return nil, appErr.CompiledError()
-		}
-
-		return result, nil
+	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
+		return Services.BackupService.List(ctx, pluginID)
 	},
 )
 
@@ -130,13 +121,8 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 // DeleteBackup removes a backup file
 var DeleteBackup = handleDeleteByID(
 	handlerIDConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6003"},
-	func(ctx context.Context, id int64) error {
-		appErr := Services.BackupService.Delete(ctx, id)
-		if appErr != nil {
-			return appErr.CompiledError()
-		}
-
-		return nil
+	func(ctx context.Context, id int64) *apperror.AppError {
+		return Services.BackupService.Delete(ctx, id)
 	},
 )
 
@@ -209,38 +195,23 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 // GetPluginVersion returns a specific version entry
 var GetPluginVersion = handleActionByID(
 	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8002"},
-	func(ctx context.Context, id int64) (any, error) {
-		result, appErr := VersionService.GetVersion(ctx, id)
-		if appErr != nil {
-			return nil, appErr.CompiledError()
-		}
-
-		return result, nil
+	func(ctx context.Context, id int64) (any, *apperror.AppError) {
+		return VersionService.GetVersion(ctx, id)
 	},
 )
 
 // RollbackPluginVersion restores a plugin to a previous version
 var RollbackPluginVersion = handleActionByID(
 	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8003"},
-	func(ctx context.Context, id int64) (any, error) {
-		result, appErr := VersionService.Rollback(ctx, id)
-		if appErr != nil {
-			return nil, appErr.CompiledError()
-		}
-
-		return result, nil
+	func(ctx context.Context, id int64) (any, *apperror.AppError) {
+		return VersionService.Rollback(ctx, id)
 	},
 )
 
 // DeletePluginVersion removes a version entry
 var DeletePluginVersion = handleDeleteByID(
 	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8004"},
-	func(ctx context.Context, id int64) error {
-		appErr := VersionService.DeleteVersion(ctx, id)
-		if appErr != nil {
-			return appErr.CompiledError()
-		}
-
-		return nil
+	func(ctx context.Context, id int64) *apperror.AppError {
+		return VersionService.DeleteVersion(ctx, id)
 	},
 )

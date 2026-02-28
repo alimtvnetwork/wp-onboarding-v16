@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // --- Sync Handlers ---
@@ -19,7 +20,7 @@ var CheckSync = handleTwoIDs(
 		Param2Name:  "siteId",
 		ErrCode:     "E4002",
 	},
-	func(ctx context.Context, pluginID, siteID int64) (any, error) {
+	func(ctx context.Context, pluginID, siteID int64) (any, *apperror.AppError) {
 		return Services.SyncService.CheckSync(ctx, pluginID, siteID)
 	},
 )
@@ -32,7 +33,7 @@ var CheckAllSites = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     "E4003",
 	},
-	func(ctx context.Context, pluginID int64) (any, error) {
+	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
 		return Services.SyncService.CheckAllSites(ctx, pluginID)
 	},
 )
@@ -46,7 +47,7 @@ var PushSync = handleTwoIDs(
 		Param2Name:  "siteId",
 		ErrCode:     "E4004",
 	},
-	func(ctx context.Context, pluginID, siteID int64) (any, error) {
+	func(ctx context.Context, pluginID, siteID int64) (any, *apperror.AppError) {
 		return Services.SyncService.PushSync(ctx, pluginID, siteID)
 	},
 )
@@ -61,7 +62,7 @@ var GitPull = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     "E5001",
 	},
-	func(ctx context.Context, pluginID int64) (any, error) {
+	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
 		return Services.GitService.Pull(ctx, pluginID)
 	},
 )
@@ -73,7 +74,7 @@ var GitPullAll = handleNoArgs(
 		ServiceName: "Git service",
 		ErrCode:     "E5002",
 	},
-	func(ctx context.Context) (any, error) {
+	func(ctx context.Context) (any, *apperror.AppError) {
 		return Services.GitService.PullAll(ctx)
 	},
 )
@@ -86,7 +87,7 @@ var GitStatus = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     "E5003",
 	},
-	func(ctx context.Context, pluginID int64) (any, error) {
+	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
 		return Services.GitService.Status(ctx, pluginID)
 	},
 )
@@ -120,13 +121,13 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := Services.GitService.Commit(r.Context(), pluginID, input.Message)
-	if err != nil {
+	result, appErr := Services.GitService.Commit(r.Context(), pluginID, input.Message)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E5004",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -143,7 +144,7 @@ var GitPush = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     "E5005",
 	},
-	func(ctx context.Context, pluginID int64) (any, error) {
+	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
 		return Services.GitService.Push(ctx, pluginID)
 	},
 )

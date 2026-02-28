@@ -71,7 +71,7 @@ func validateRemotePluginSlug(w http.ResponseWriter, parsed *remotePluginParsed)
 // GetRemotePlugins returns all plugins installed on a remote WordPress site
 var GetRemotePlugins = handleSiteActionByID(
 	apperror.ErrWPPluginList,
-	func(ctx context.Context, siteId int64) (any, error) {
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemotePlugins(ctx, siteId)
 	},
 )
@@ -79,7 +79,7 @@ var GetRemotePlugins = handleSiteActionByID(
 // ForceSyncRemotePlugins clears cache and fetches fresh plugin data
 var ForceSyncRemotePlugins = handleSiteActionByID(
 	apperror.ErrWPPluginList,
-	func(ctx context.Context, siteId int64) (any, error) {
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.ForceSyncRemotePlugins(ctx, siteId)
 	},
 )
@@ -100,9 +100,9 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 
 // clearCacheOrFail invalidates the remote plugins cache and writes the response.
 func clearCacheOrFail(w http.ResponseWriter, r *http.Request, id int64) {
-	err := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id)
-	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, err.Error())
+	appErr := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id)
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, appErr.Error())
 
 		return
 	}
@@ -215,9 +215,9 @@ func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
 
 // fetchRemoteFilesOrFail queries remote plugin files and writes the response.
 func fetchRemoteFilesOrFail(w http.ResponseWriter, r *http.Request, parsed *remotePluginParsed) {
-	files, err := Services.SiteService.GetRemotePluginFiles(r.Context(), parsed.SiteID, parsed.PluginSlug)
-	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginFiles, err.Error())
+	files, appErr := Services.SiteService.GetRemotePluginFiles(r.Context(), parsed.SiteID, parsed.PluginSlug)
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginFiles, appErr.Error())
 
 		return
 	}

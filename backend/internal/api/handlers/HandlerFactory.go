@@ -26,7 +26,7 @@ type handlerIDConfig struct {
 // handleActionByID creates a handler: isServiceMissing → parseID → fn(ctx, id) → respondSuccess
 func handleActionByID(
 	cfg handlerIDConfig,
-	fn func(ctx context.Context, id int64) (any, error),
+	fn func(ctx context.Context, id int64) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
@@ -38,13 +38,13 @@ func handleActionByID(
 			return
 		}
 
-		result, err := fn(r.Context(), id)
-		if err != nil {
+		result, appErr := fn(r.Context(), id)
+		if appErr != nil {
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
 				cfg.ErrCode,
-				err.Error(),
+				appErr.Error(),
 			)
 
 			return
@@ -57,7 +57,7 @@ func handleActionByID(
 // handleDeleteByID creates a handler: isServiceMissing → parseID → fn(ctx, id) → respondDeleted
 func handleDeleteByID(
 	cfg handlerIDConfig,
-	fn func(ctx context.Context, id int64) error,
+	fn func(ctx context.Context, id int64) *apperror.AppError,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
@@ -69,13 +69,13 @@ func handleDeleteByID(
 			return
 		}
 
-		err := fn(r.Context(), id)
-		if err != nil {
+		appErr := fn(r.Context(), id)
+		if appErr != nil {
 			respondError(
 				w,
 				wordpress.HttpStatusBadRequest,
 				cfg.ErrCode,
-				err.Error(),
+				appErr.Error(),
 			)
 
 			return
@@ -89,7 +89,7 @@ func handleDeleteByID(
 func handleListNilSafe(
 	getService func() any,
 	errCode apperror.ErrorCode,
-	fn func(ctx context.Context) (any, error),
+	fn func(ctx context.Context) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if getService() == nil {
@@ -98,13 +98,13 @@ func handleListNilSafe(
 			return
 		}
 
-		result, err := fn(r.Context())
-		if err != nil {
+		result, appErr := fn(r.Context())
+		if appErr != nil {
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
 				errCode,
-				err.Error(),
+				appErr.Error(),
 			)
 
 			return
@@ -117,7 +117,7 @@ func handleListNilSafe(
 // handleSiteActionByID creates a handler for site-scoped actions.
 func handleSiteActionByID(
 	errCode apperror.ErrorCode,
-	fn func(ctx context.Context, siteID int64) (any, error),
+	fn func(ctx context.Context, siteID int64) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isSiteServiceMissing(w) {
@@ -136,13 +136,13 @@ func handleSiteActionByID(
 			return
 		}
 
-		result, err := fn(r.Context(), siteID)
-		if err != nil {
+		result, appErr := fn(r.Context(), siteID)
+		if appErr != nil {
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
 				errCode,
-				err.Error(),
+				appErr.Error(),
 			)
 
 			return
@@ -162,20 +162,20 @@ type noArgsConfig struct {
 // handleNoArgs creates a handler: isServiceMissing → fn(ctx) → respondSuccess
 func handleNoArgs(
 	cfg noArgsConfig,
-	fn func(ctx context.Context) (any, error),
+	fn func(ctx context.Context) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
-		result, err := fn(r.Context())
-		if err != nil {
+		result, appErr := fn(r.Context())
+		if appErr != nil {
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
 				cfg.ErrCode,
-				err.Error(),
+				appErr.Error(),
 			)
 
 			return
@@ -197,7 +197,7 @@ type twoIDConfig struct {
 // handleTwoIDs creates a handler: isServiceMissing → parseID(param1) → parseID(param2) → fn(ctx, id1, id2) → respondSuccess
 func handleTwoIDs(
 	cfg twoIDConfig,
-	fn func(ctx context.Context, id1, id2 int64) (any, error),
+	fn func(ctx context.Context, id1, id2 int64) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
@@ -214,13 +214,13 @@ func handleTwoIDs(
 			return
 		}
 
-		result, err := fn(r.Context(), id1, id2)
-		if err != nil {
+		result, appErr := fn(r.Context(), id1, id2)
+		if appErr != nil {
 			respondError(
 				w,
 				wordpress.HttpStatusServerError,
 				cfg.ErrCode,
-				err.Error(),
+				appErr.Error(),
 			)
 
 			return

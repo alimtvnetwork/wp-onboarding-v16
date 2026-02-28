@@ -7,11 +7,12 @@ import (
 	"net/http"
 
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // GetRemoteSnapshotSettings fetches snapshot settings from a remote WordPress site.
 var GetRemoteSnapshotSettings = handleSiteActionByID("E3025",
-	func(ctx context.Context, siteId int64) (any, error) {
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemoteSnapshotSettings(ctx, siteId)
 	},
 )
@@ -34,9 +35,9 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := Services.SiteService.UpdateRemoteSnapshotSettings(r.Context(), siteId, settings)
-	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3026", err.Error())
+	result, appErr := Services.SiteService.UpdateRemoteSnapshotSettings(r.Context(), siteId, settings)
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusServerError, "E3026", appErr.Error())
 		return
 	}
 
@@ -45,14 +46,14 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 
 // GetRemoteSnapshotProviders returns available snapshot providers on a remote WordPress site.
 var GetRemoteSnapshotProviders = handleSiteActionByID("E3027",
-	func(ctx context.Context, siteId int64) (any, error) {
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemoteSnapshotProviders(ctx, siteId)
 	},
 )
 
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting.
 var GetRemoteAvailableTables = handleSiteActionByID("E3029",
-	func(ctx context.Context, siteId int64) (any, error) {
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemoteAvailableTables(ctx, siteId)
 	},
 )
