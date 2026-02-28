@@ -30,27 +30,37 @@ func NewServiceRegistry(
 	siteHealthService *sitehealth.Service,
 ) *ServiceRegistry {
 	var sessionAdapter SessionServiceInterface
-	if sessionService != nil {
+	isSessionAvailable := sessionService != nil
+
+	if isSessionAvailable {
 		sessionAdapter = &SessionServiceAdapter{sessionService}
 	}
 
 	var errorHistoryAdapter ErrorHistoryServiceInterface
-	if errorHistoryService != nil {
+	isErrorHistoryAvailable := errorHistoryService != nil
+
+	if isErrorHistoryAvailable {
 		errorHistoryAdapter = &ErrorHistoryServiceAdapter{errorHistoryService}
 	}
 
 	var publishHistoryAdapter PublishHistoryServiceInterface
-	if publishHistoryService != nil {
+	isPublishHistoryAvailable := publishHistoryService != nil
+
+	if isPublishHistoryAvailable {
 		publishHistoryAdapter = &PublishHistoryServiceAdapter{publishHistoryService}
 	}
 
 	var siteHealthAdapter SiteHealthServiceInterface
-	if siteHealthService != nil {
+	isSiteHealthAvailable := siteHealthService != nil
+
+	if isSiteHealthAvailable {
 		siteHealthAdapter = &SiteHealthServiceAdapter{siteHealthService}
 	}
 
 	var gitAdapter GitServiceInterface
-	if gitService != nil {
+	isGitAvailable := gitService != nil
+
+	if isGitAvailable {
 		gitAdapter = &GitServiceAdapter{gitService}
 	}
 

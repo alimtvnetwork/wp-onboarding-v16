@@ -12,7 +12,9 @@ import (
 func CaptureMethodFrames(skip int) []MethodFrame {
 	maxFrames := resolveMaxFrames()
 	pcs := captureCallers(skip+1, 64)
-	if pcs == nil {
+	hasNoCallers := pcs == nil
+
+	if hasNoCallers {
 		return nil
 	}
 
@@ -28,11 +30,16 @@ func collectMethodFrames(pcs []uintptr, maxFrames int) []MethodFrame {
 		frame, more := frames.Next()
 		if isAppFrame(frame.Function) {
 			result = append(result, buildMethodFrame(frame))
-			if len(result) >= maxFrames {
+			isFrameLimitReached := len(result) >= maxFrames
+
+			if isFrameLimitReached {
 				break
 			}
 		}
-		if !more {
+
+		isLastFrame := !more
+
+		if isLastFrame {
 			break
 		}
 	}
@@ -53,7 +60,9 @@ func buildMethodFrame(frame runtime.Frame) MethodFrame {
 func CaptureBackendTrace(skip int) []string {
 	maxFrames := resolveMaxFrames()
 	pcs := captureCallers(skip+1, 64)
-	if pcs == nil {
+	hasNoCallers := pcs == nil
+
+	if hasNoCallers {
 		return nil
 	}
 
@@ -70,11 +79,16 @@ func collectTraceLines(pcs []uintptr, maxFrames int) []string {
 		if isAppFrame(frame.Function) {
 			line := fmt.Sprintf("%s:%d %s", shortenAppPath(frame.File), frame.Line, shortenFuncName(frame.Function))
 			result = append(result, line)
-			if len(result) >= maxFrames {
+			isFrameLimitReached := len(result) >= maxFrames
+
+			if isFrameLimitReached {
 				break
 			}
 		}
-		if !more {
+
+		isLastFrame := !more
+
+		if isLastFrame {
 			break
 		}
 	}
@@ -96,9 +110,12 @@ func ErrorWithStack(statusCode int, code, message string) Response {
 // resolveMaxFrames returns the configured max stack frames.
 func resolveMaxFrames() int {
 	maxFrames := globalDebug.MaxStackFrames
-	if maxFrames <= 0 {
+	isMaxFramesInvalid := maxFrames <= 0
+
+	if isMaxFramesInvalid {
 		maxFrames = 20
 	}
+
 	return maxFrames
 }
 
@@ -106,9 +123,12 @@ func resolveMaxFrames() int {
 func captureCallers(skip, maxPCs int) []uintptr {
 	pcs := make([]uintptr, maxPCs)
 	n := runtime.Callers(skip+1, pcs)
-	if n == 0 {
+	hasNoCallers := n == 0
+
+	if hasNoCallers {
 		return nil
 	}
+
 	return pcs[:n]
 }
 
@@ -122,17 +142,23 @@ func isAppFrame(funcName string) bool {
 // shortenAppPath trims the module prefix from a file path.
 func shortenAppPath(file string) string {
 	idx := strings.Index(file, appModulePrefix)
-	if idx >= 0 {
+	hasAppPrefix := idx >= 0
+
+	if hasAppPrefix {
 		return file[idx+len(appModulePrefix):]
 	}
+
 	return file
 }
 
 // shortenFuncName trims the module path prefix from a function name.
 func shortenFuncName(fn string) string {
 	fnIdx := strings.LastIndex(fn, "/")
-	if fnIdx >= 0 {
+	hasSlash := fnIdx >= 0
+
+	if hasSlash {
 		return fn[fnIdx+1:]
 	}
+
 	return fn
 }
