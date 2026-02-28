@@ -187,9 +187,9 @@ func formatLogLine(input LogInput) string {
 
 // writeLogDetails writes indented JSON details to the log file if present.
 func writeLogDetails(file *os.File, details json.RawMessage) {
-	hasNoDetails := len(details) == 0
+	isDetailsEmpty := len(details) == 0
 
-	if hasNoDetails {
+	if isDetailsEmpty {
 		return
 	}
 	var parsedJSON json.RawMessage

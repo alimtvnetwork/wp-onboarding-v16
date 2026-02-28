@@ -129,7 +129,6 @@ func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionIn
 	isMissing := resp.StatusCode == HttpStatusNotFound.Int()
 
 	if isMissing {
-
 		return c.reportRestApiNotFound()
 	}
 
