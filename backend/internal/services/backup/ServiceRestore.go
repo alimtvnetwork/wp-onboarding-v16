@@ -10,7 +10,14 @@ import (
 // Restore uploads a backup to WordPress
 func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[RestoreResult] {
 	s.log.Info("Restoring backup", "backupId", backupID)
-	s.logInfoWithDetails(BackupLogInput{PluginID: backupID, Step: "init", Message: "Starting backup restore", Details: toDetails(InitDetails{BackupID: backupID})})
+
+	restoreLog := BackupLogInput{
+		PluginID: backupID,
+		Step:     "init",
+		Message:  "Starting backup restore",
+		Details:  toDetails(InitDetails{BackupID: backupID}),
+	}
+	s.logInfoWithDetails(restoreLog)
 
 	// TODO: Implement restore steps
 	s.logInfo(backupID, "locate", "Locating backup file")
@@ -24,7 +31,14 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 // Delete removes a backup file and database record
 func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 	s.log.Info("Deleting backup", "id", id)
-	s.logInfoWithDetails(BackupLogInput{PluginID: id, Step: "delete", Message: "Deleting backup", Details: toDetails(InitDetails{BackupID: id})})
+
+	deleteLog := BackupLogInput{
+		PluginID: id,
+		Step:     "delete",
+		Message:  "Deleting backup",
+		Details:  toDetails(InitDetails{BackupID: id}),
+	}
+	s.logInfoWithDetails(deleteLog)
 
 	// TODO: Get backup path from database and delete file
 
@@ -36,7 +50,14 @@ func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 // Cleanup removes expired backups
 func (s *Service) Cleanup(ctx context.Context) *apperror.AppError {
 	s.log.Info("Running backup cleanup")
-	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "init", Message: "Starting backup cleanup", Details: toDetails(CleanupInitDetails{RetentionDays: s.retentionDays})})
+
+	cleanupLog := BackupLogInput{
+		PluginID: 0,
+		Step:     "init",
+		Message:  "Starting backup cleanup",
+		Details:  toDetails(CleanupInitDetails{RetentionDays: s.retentionDays}),
+	}
+	s.logInfoWithDetails(cleanupLog)
 
 	result := s.removeExpiredBackups()
 	if result.HasError() {
@@ -54,5 +75,12 @@ func (s *Service) Cleanup(ctx context.Context) *apperror.AppError {
 func (s *Service) logCleanupComplete(removedCount int) {
 	s.log.Info("Backup cleanup complete")
 	completeDetails := toDetails(CleanupCompleteDetails{RemovedCount: removedCount})
-	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "complete", Message: fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), Details: completeDetails})
+
+	completeLog := BackupLogInput{
+		PluginID: 0,
+		Step:     "complete",
+		Message:  fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount),
+		Details:  completeDetails,
+	}
+	s.logInfoWithDetails(completeLog)
 }

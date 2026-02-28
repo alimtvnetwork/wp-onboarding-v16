@@ -24,7 +24,13 @@ type exportState struct {
 func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) apperror.Result[ExportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
-	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "init", Message: fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), Details: toDetails(ExportInitDetails{SourceCount: len(sourcePaths)})})
+	initLog := BackupLogInput{
+		PluginID: 0,
+		Step:     "init",
+		Message:  fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)),
+		Details:  toDetails(ExportInitDetails{SourceCount: len(sourcePaths)}),
+	}
+	s.logInfoWithDetails(initLog)
 
 	handleResult := s.createExportZip(outputPath)
 	if handleResult.HasError() {
@@ -167,7 +173,13 @@ func (s *Service) logExportComplete(outputPath string, state *exportState, start
 		TotalBytes: state.TotalBytes,
 		DurationMs: duration.Milliseconds(),
 	})
-	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "complete", Message: fmt.Sprintf("Export complete: %d files, %d bytes", state.FilesCount, state.TotalBytes), Details: completeDetails})
+	completeLog := BackupLogInput{
+		PluginID: 0,
+		Step:     "complete",
+		Message:  fmt.Sprintf("Export complete: %d files, %d bytes", state.FilesCount, state.TotalBytes),
+		Details:  completeDetails,
+	}
+	s.logInfoWithDetails(completeLog)
 }
 
 // addFileToZip adds a single file to a zip archive
