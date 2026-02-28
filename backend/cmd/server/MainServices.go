@@ -72,15 +72,22 @@ type coreServicesDeps struct {
 // buildCoreServices creates the site, plugin, backup, and sync services.
 func buildCoreServices(input InitServicesInput, wf wpFactories, sessionSvc *session.Service) coreServicesDeps {
 	siteWSHub := &SiteWSHubAdapter{hub: input.WSHub}
-
 	siteService := initSiteService(siteDepsInput{
 		Init:      input,
 		WPFactory: wf.withProgress,
 		WSHub:     siteWSHub,
 		Session:   sessionSvc,
 	})
+
 	pluginService := plugin.New(plugin.Config{DB: input.DB, Logger: input.Log})
+
+	return buildRemainingCoreServices(input, wf, siteService, pluginService)
+}
+
+// buildRemainingCoreServices creates backup and sync services and assembles the deps.
+func buildRemainingCoreServices(input InitServicesInput, wf wpFactories, siteService *site.Service, pluginService *plugin.Service) coreServicesDeps {
 	backupService := initBackupService(input)
+
 	syncService := initSyncService(syncDepsInput{
 		Init:      input,
 		Plugin:    pluginService,
@@ -89,8 +96,10 @@ func buildCoreServices(input InitServicesInput, wf wpFactories, sessionSvc *sess
 	})
 
 	return coreServicesDeps{
-		Site: siteService, Plugin: pluginService,
-		Backup: backupService, Sync: syncService,
+		Site:   siteService,
+		Plugin: pluginService,
+		Backup: backupService,
+		Sync:   syncService,
 	}
 }
 
