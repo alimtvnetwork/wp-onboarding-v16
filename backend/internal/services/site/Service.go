@@ -163,14 +163,16 @@ func normalizeUrl(rawUrl string) string {
 func ensureScheme(rawUrl string) string {
 	hasHttpPrefix := strings.HasPrefix(rawUrl, "http://")
 	hasHttpsPrefix := strings.HasPrefix(rawUrl, "https://")
-	isMissingScheme :=
-		!hasHttpPrefix &&
-		!hasHttpsPrefix
+	hasScheme :=
+		hasHttpPrefix ||
+		hasHttpsPrefix
 
-	if isMissingScheme {
-		return "https://" + rawUrl
+	if hasScheme {
+
+		return rawUrl
 	}
-	return rawUrl
+
+	return "https://" + rawUrl
 }
 
 // stripWordPressPaths removes common WordPress path suffixes from a URL path.
