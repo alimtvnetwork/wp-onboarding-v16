@@ -148,7 +148,11 @@ func (s *Service) logRemoteAction(ref *remoteActionRef, input RemoteActionLogInp
 
 // emitRemoteActionToSession sends logs to session service and WebSocket.
 func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, input RemoteActionLogInput) {
-	if s.sessionService != nil && ref.SessionID != "" {
+	hasSessionService := s.sessionService != nil
+	hasSessionID := ref.SessionID != ""
+	isSessionLoggable := hasSessionService && hasSessionID
+
+	if isSessionLoggable {
 		s.sessionService.Log(session.LogInput{
 			SessionID: ref.SessionID,
 			Level:     input.Level,
@@ -158,7 +162,9 @@ func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, input RemoteAc
 		})
 	}
 
-	if s.wsHub != nil {
+	hasWsHub := s.wsHub != nil
+
+	if hasWsHub {
 		s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
 			SiteID:    ref.SiteID,
 			Action:    ref.Action,
@@ -208,7 +214,13 @@ func parseRemoteActionLogDetails(details json.RawMessage) remoteActionResolvedCo
 
 // fillMissingSiteContext loads site info from DB if name or URL is missing.
 func (s *Service) fillMissingSiteContext(siteId int64, ctx *remoteActionResolvedContext) {
-	if (ctx.SiteName != "" && ctx.SiteUrl != "") || siteId <= 0 {
+	hasName := ctx.SiteName != ""
+	hasUrl := ctx.SiteUrl != ""
+	isFullyResolved := hasName && hasUrl
+	isInvalidSiteId := siteId <= 0
+	isSkippable := isFullyResolved || isInvalidSiteId
+
+	if isSkippable {
 
 		return
 	}
@@ -268,7 +280,11 @@ func buildRemoteActionLogFields(input loggerEmitInput) []any {
 
 // endRemoteSession ends the session if service is available
 func (s *Service) endRemoteSession(sessionId, status, errorMsg string) {
-	if s.sessionService != nil && sessionId != "" {
+	hasSessionService := s.sessionService != nil
+	hasSessionID := sessionId != ""
+	isSessionEndable := hasSessionService && hasSessionID
+
+	if isSessionEndable {
 		s.sessionService.EndSession(sessionId, status, errorMsg)
 	}
 }

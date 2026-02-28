@@ -104,7 +104,12 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.activeRun == nil || s.activeRun.ID != runID {
+	hasNoActiveRun := s.activeRun == nil
+	isRunMismatch := !hasNoActiveRun && s.activeRun.ID != runID
+	isAbortInvalid := hasNoActiveRun || isRunMismatch
+
+	if isAbortInvalid {
+
 		return apperror.New(apperror.ErrNotFound, "no active run with ID").WithRunId(runID)
 	}
 
