@@ -123,7 +123,10 @@ func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.
 		IsActivate: isActivate,
 		Source:     source,
 	}
-	writeUploadFields(fieldsInput)
+	appErr = writeUploadFields(fieldsInput)
+	if appErr != nil {
+		return nil, appErr
+	}
 
 	return closeMultipartWriter(writer, &requestBody)
 }
@@ -163,14 +166,31 @@ type uploadFieldsInput struct {
 }
 
 // writeUploadFields adds form fields to the multipart writer.
-func writeUploadFields(input uploadFieldsInput) {
-	_ = input.Writer.WriteField("slug", input.Slug)
-	if input.IsActivate {
-		_ = input.Writer.WriteField("activate", "1")
-	} else {
-		_ = input.Writer.WriteField("activate", "0")
+func writeUploadFields(input uploadFieldsInput) *apperror.AppError {
+	err := input.Writer.WriteField("slug", input.Slug)
+
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "write slug field")
 	}
-	_ = input.Writer.WriteField("upload_source", input.Source.String())
+
+	activateValue := "0"
+	if input.IsActivate {
+		activateValue = "1"
+	}
+
+	err = input.Writer.WriteField("activate", activateValue)
+
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "write activate field")
+	}
+
+	err = input.Writer.WriteField("upload_source", input.Source.String())
+
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "write upload_source field")
+	}
+
+	return nil
 }
 
 // executeUploadHttp sends the multipart upload request and parses the response.

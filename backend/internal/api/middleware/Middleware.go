@@ -49,7 +49,10 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 
 			var requestBodyBytes []byte
 			if r.Body != nil {
-				requestBodyBytes, _ = io.ReadAll(r.Body)
+				bodyBytes, readErr := io.ReadAll(r.Body)
+				if readErr == nil {
+					requestBodyBytes = bodyBytes
+				}
 				r.Body = io.NopCloser(bytes.NewBuffer(requestBodyBytes))
 			}
 

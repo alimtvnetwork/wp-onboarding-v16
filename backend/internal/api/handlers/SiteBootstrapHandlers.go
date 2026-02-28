@@ -26,7 +26,13 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input bootstrapInput
-	_ = json.NewDecoder(r.Body).Decode(&input)
+	decodeErr := json.NewDecoder(r.Body).Decode(&input)
+
+	if decodeErr != nil {
+		respondError(w, wordpress.HttpStatusBadRequest, apperror.ErrInvalidInput, "Invalid request body: "+decodeErr.Error())
+
+		return
+	}
 
 	result, err := Services.SiteService.BootstrapUploader(r.Context(), id, input.UploaderPath)
 	if err != nil {

@@ -92,7 +92,10 @@ func parseRemoteActionLogDetails(details json.RawMessage) remoteActionResolvedCo
 
 	hasDetails := len(details) > 0
 	if hasDetails {
-		_ = json.Unmarshal(details, &logCtx)
+		unmarshalErr := json.Unmarshal(details, &logCtx)
+		if unmarshalErr != nil {
+			logCtx = remoteActionLogContext{}
+		}
 	}
 
 	return remoteActionResolvedContext{

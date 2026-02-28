@@ -75,7 +75,14 @@ func parseNameDetails(details json.RawMessage) *resolvedNames {
 	hasDetails := len(details) > 0
 
 	if hasDetails {
-		_ = json.Unmarshal(details, &parsed)
+		unmarshalErr := json.Unmarshal(details, &parsed)
+		if unmarshalErr != nil {
+			parsed = struct {
+				PluginName string `json:",omitempty"`
+				SiteName   string `json:",omitempty"`
+				SiteUrl    string `json:",omitempty"`
+			}{}
+		}
 	}
 
 	return &resolvedNames{PluginName: parsed.PluginName, SiteName: parsed.SiteName, SiteUrl: parsed.SiteUrl}

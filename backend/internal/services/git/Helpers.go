@@ -56,18 +56,27 @@ func parseGitPullOutput(output string, result *PullResult) {
 	hasFileChanges := len(matches) >= 2
 
 	if hasFileChanges {
-		result.FilesChanged, _ = strconv.Atoi(matches[1])
+		parsed, parseErr := strconv.Atoi(matches[1])
+		if parseErr == nil {
+			result.FilesChanged = parsed
+		}
 
 		hasInsertions := len(matches) >= 3
 
 		if hasInsertions {
-			result.Insertions, _ = strconv.Atoi(matches[2])
+			parsed, parseErr := strconv.Atoi(matches[2])
+			if parseErr == nil {
+				result.Insertions = parsed
+			}
 		}
 
 		hasDeletions := len(matches) >= 4
 
 		if hasDeletions {
-			result.Deletions, _ = strconv.Atoi(matches[3])
+			parsed, parseErr := strconv.Atoi(matches[3])
+			if parseErr == nil {
+				result.Deletions = parsed
+			}
 		}
 	}
 }

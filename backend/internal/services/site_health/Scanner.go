@@ -60,7 +60,13 @@ func scanHealthCheckRow(rows *sql.Rows) (models.SiteHealthCheck, error) {
 		m.ErrorMessage = *errMsg
 	}
 
-	m.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+	parsed, parseErr := time.Parse("2006-01-02 15:04:05", createdAt)
+
+	if parseErr != nil {
+		m.CreatedAt = time.Time{}
+	} else {
+		m.CreatedAt = parsed
+	}
 
 	return m, nil
 }

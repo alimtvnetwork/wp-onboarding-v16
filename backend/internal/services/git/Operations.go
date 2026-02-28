@@ -246,13 +246,27 @@ func (s *Service) collectStatus(path string, result *StatusResult) apperror.Resu
 
 // populateAheadBehind fills ahead/behind counts from rev-list.
 func (s *Service) populateAheadBehind(path string, result *StatusResult) {
-	revList, _ := s.runGitCommand(path, "rev-list", "--left-right", "--count", result.Branch+"...origin/"+result.Branch)
+	revList, revErr := s.runGitCommand(path, "rev-list", "--left-right", "--count", result.Branch+"...origin/"+result.Branch)
+
+	if revErr != nil {
+		s.log.Debug("rev-list ahead/behind failed", "error", revErr.Error())
+
+		return
+	}
+
 	parts := strings.Fields(revList)
 	hasAheadBehind := len(parts) == 2
 
 	if hasAheadBehind {
-		result.Ahead, _ = strconv.Atoi(parts[0])
-		result.Behind, _ = strconv.Atoi(parts[1])
+		ahead, aErr := strconv.Atoi(parts[0])
+		if aErr == nil {
+			result.Ahead = ahead
+		}
+
+		behind, bErr := strconv.Atoi(parts[1])
+		if bErr == nil {
+			result.Behind = behind
+		}
 	}
 }
 

@@ -22,7 +22,7 @@ func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var opts wordpress.SnapshotBackupOptions
-	_ = decodeJsonSilent(r, &opts)
+	decodeJsonSilent(r, &opts) // opts are optional; decode errors leave zero-value defaults
 
 	result, err := Services.SiteService.FullBackupRemoteSnapshot(r.Context(), siteId, opts)
 	if err != nil {
@@ -45,7 +45,7 @@ func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var opts wordpress.SnapshotBackupOptions
-	_ = decodeJsonSilent(r, &opts)
+	decodeJsonSilent(r, &opts) // opts are optional; decode errors leave zero-value defaults
 
 	result, err := Services.SiteService.IncrementalBackupRemoteSnapshot(r.Context(), siteId, opts)
 	if err != nil {
@@ -146,7 +146,7 @@ func CleanupRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var opts wordpress.SnapshotCleanupOptions
-	_ = decodeJsonSilent(r, &opts)
+	decodeJsonSilent(r, &opts) // opts are optional; decode errors leave zero-value defaults
 
 	result, err := Services.SiteService.CleanupRemoteSnapshots(r.Context(), siteId, opts)
 	if err != nil {

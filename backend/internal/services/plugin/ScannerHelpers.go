@@ -63,7 +63,12 @@ func (s *Service) processWalkEntry(ws *walkState, filePath string, info os.FileI
 	isFile := !info.IsDir()
 
 	if isFile {
-		fileInfo.Hash, _ = s.calculateFileHash(filePath)
+		hash, hashErr := s.calculateFileHash(filePath)
+		if hashErr != nil {
+			fileInfo.Hash = ""
+		} else {
+			fileInfo.Hash = hash
+		}
 		ws.Scan.TotalSize += info.Size()
 		ws.Scan.FileCount++
 	}

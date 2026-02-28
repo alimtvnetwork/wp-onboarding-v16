@@ -94,11 +94,23 @@ func (s *Service) Push(ctx context.Context, pluginId int64) apperror.Result[Push
 
 // executePush runs the actual git push and populates the result.
 func (s *Service) executePush(path string, pluginName string, result *PushResult) apperror.Result[PushResult] {
-	branch, _ := s.runGitCommand(path, "rev-parse", "--abbrev-ref", "HEAD")
+	branch, branchErr := s.runGitCommand(path, "rev-parse", "--abbrev-ref", "HEAD")
+
+	if branchErr != nil {
+		return apperror.FailWrap[PushResult](branchErr, apperror.ErrGitCommand, "failed to detect current branch")
+	}
 	branch = strings.TrimSpace(branch)
 
-	revList, _ := s.runGitCommand(path, "rev-list", "--count", branch+"...origin/"+branch)
-	result.Pushed, _ = strconv.Atoi(strings.TrimSpace(revList))
+	revList, revErr := s.runGitCommand(path, "rev-list", "--count", branch+"...origin/"+branch)
+
+	if revErr != nil {
+		s.log.Debug("rev-list count failed (may not have remote tracking)", "error", revErr.Error())
+	}
+
+	pushed, pushCountErr := strconv.Atoi(strings.TrimSpace(revList))
+	if pushCountErr == nil {
+		result.Pushed = pushed
+	}
 
 	output, err := s.runGitCommand(path, "push", "origin", branch)
 	if err != nil {
