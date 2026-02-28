@@ -182,13 +182,18 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 
 	// Get or create cache
 	s.mu.Lock()
-	cache, exists := s.cache[pluginID]
-	if !exists {
+	cache, isFound := s.cache[pluginID]
+	isNotCached := !isFound
+
+	if isNotCached {
 		// Initialize cache first
 		s.mu.Unlock()
+
 		if err := s.InitializeCache(ctx, pluginID); err != nil {
+
 			return apperror.FailWrap[ScanResult](err, apperror.ErrInternal, "failed to initialize watcher cache")
 		}
+
 		s.mu.Lock()
 		cache = s.cache[pluginID]
 	}
@@ -368,7 +373,7 @@ func (s *Service) scanAndCompare(cache *pluginScanCache) []FileChange {
 		currentFiles[relPath] = fi
 
 		// Compare with last scan
-		if lastInfo, exists := cache.lastScan[relPath]; exists {
+		if lastInfo, isFound := cache.lastScan[relPath]; isFound {
 			if lastInfo.Hash != fi.Hash {
 				changes = append(changes, FileChange{
 					Path:       relPath,
@@ -393,7 +398,7 @@ func (s *Service) scanAndCompare(cache *pluginScanCache) []FileChange {
 
 	// Check for deleted files
 	for path := range cache.lastScan {
-		if _, exists := currentFiles[path]; !exists {
+		if _, isFound := currentFiles[path]; !isFound {
 			changes = append(changes, FileChange{
 				Path:       path,
 				ChangeType: "deleted",

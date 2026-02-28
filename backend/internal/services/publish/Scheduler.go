@@ -101,15 +101,18 @@ func (s *PublishScheduler) RemoveJob(jobId string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if timer, ok := s.timers[jobId]; ok {
+	if timer, isFound := s.timers[jobId]; isFound {
 		timer.Stop()
 		delete(s.timers, jobId)
 	}
-	if _, ok := s.jobs[jobId]; ok {
+
+	if _, isFound := s.jobs[jobId]; isFound {
 		delete(s.jobs, jobId)
 		s.broadcastJobUpdate()
+
 		return true
 	}
+
 	return false
 }
 
@@ -118,8 +121,10 @@ func (s *PublishScheduler) ToggleJob(jobId string, isEnabled bool) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	job, ok := s.jobs[jobId]
-	if !ok {
+	job, isFound := s.jobs[jobId]
+	isNotFound := !isFound
+
+	if isNotFound {
 		return false
 	}
 
@@ -131,7 +136,7 @@ func (s *PublishScheduler) ToggleJob(jobId string, isEnabled bool) bool {
 			s.scheduleTimer(job)
 		}
 	} else {
-		if timer, ok := s.timers[jobId]; ok {
+		if timer, isFound := s.timers[jobId]; isFound {
 			timer.Stop()
 			delete(s.timers, jobId)
 		}
@@ -157,8 +162,11 @@ func (s *PublishScheduler) ListJobs() []ScheduledJob {
 func (s *PublishScheduler) GetJob(jobId string) (*ScheduledJob, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	job, ok := s.jobs[jobId]
-	if !ok {
+	job, isFound := s.jobs[jobId]
+	isNotFound := !isFound
+
+	if isNotFound {
+
 		return nil, false
 	}
 	copy := *job
@@ -174,7 +182,7 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 	}
 
 	// Cancel existing timer
-	if timer, ok := s.timers[job.Id]; ok {
+	if timer, isFound := s.timers[job.Id]; isFound {
 		timer.Stop()
 	}
 
@@ -194,8 +202,9 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 // executeJob runs a scheduled publish job
 func (s *PublishScheduler) executeJob(jobId string) {
 	s.mu.Lock()
-	job, ok := s.jobs[jobId]
-	isJobMissing := !ok || !job.Enabled
+	job, isFound := s.jobs[jobId]
+	isJobMissing := !isFound || !job.Enabled
+
 	if isJobMissing {
 		s.mu.Unlock()
 		return

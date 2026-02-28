@@ -278,7 +278,8 @@ func (s *Service) insertMappingsForSite(ctx context.Context, siteID int64, plugi
 
 // resolveRemoteSlug returns the existing slug or generates one from plugin name.
 func (s *Service) resolveRemoteSlug(ctx context.Context, pluginID int64, slugByPluginID map[int64]string) string {
-	if slug, ok := slugByPluginID[pluginID]; ok && slug != "" {
+	if slug, isFound := slugByPluginID[pluginID]; isFound && slug != "" {
+
 		return slug
 	}
 

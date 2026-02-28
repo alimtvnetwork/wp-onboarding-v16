@@ -94,8 +94,9 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
 // GetRequestSession retrieves a session by ID
 func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error) {
 	s.mu.RLock()
-	if session, ok := s.cache[id]; ok {
+	if session, isCached := s.cache[id]; isCached {
 		s.mu.RUnlock()
+
 		return session, nil
 	}
 	s.mu.RUnlock()
