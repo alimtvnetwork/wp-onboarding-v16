@@ -122,7 +122,9 @@ func (s *Service) runUploadAndActivate(ctx context.Context, pctx *publishContext
 // uploadActivateAndCleanup handles the post-packaging stages.
 func (s *Service) uploadActivateAndCleanup(ctx context.Context, pctx *publishContext, pkgResult PackageStageResult) error {
 	preUploadBackupZip := s.createPreUploadBackup(ctx, pctx)
-	if preUploadBackupZip != "" {
+	hasBackupZip := preUploadBackupZip != ""
+
+	if hasBackupZip {
 		defer os.Remove(preUploadBackupZip)
 	}
 
@@ -250,8 +252,9 @@ func (s *Service) handleActivateResult(ctx context.Context, pctx *publishContext
 
 // finalizePublishResult computes final metrics, broadcasts completion, and records history.
 func (s *Service) finalizePublishResult(pctx *publishContext) {
-	pctx.Result.IsSuccess = pctx.Result.ActivationStatus == pluginstatus.Active.String() ||
-		pctx.Result.ActivationStatus == pluginstatus.Inactive.String()
+	isActive := pctx.Result.ActivationStatus == pluginstatus.Active.String()
+	isInactive := pctx.Result.ActivationStatus == pluginstatus.Inactive.String()
+	pctx.Result.IsSuccess = isActive || isInactive
 	pctx.Result.Duration = time.Since(pctx.StartTime).Milliseconds()
 
 	s.broadcastCompletion(pctx)

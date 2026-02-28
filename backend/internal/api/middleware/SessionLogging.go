@@ -72,7 +72,9 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			}
 
 			// Skip health checks and other high-frequency endpoints to reduce noise
-			if r.URL.Path == "/api/v1/health" {
+			isHealthCheck := r.URL.Path == "/api/v1/health"
+
+			if isHealthCheck {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -82,7 +84,12 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 
 			// Capture request body
 			var requestBody string
-			if r.Body != nil && r.Method != "GET" && r.Method != "HEAD" {
+			hasBody := r.Body != nil
+			isNotGet := r.Method != "GET"
+			isNotHead := r.Method != "HEAD"
+			isBodyCapturable := hasBody && isNotGet && isNotHead
+
+			if isBodyCapturable {
 				bodyBytes, err := io.ReadAll(r.Body)
 				if err == nil {
 					requestBody = string(bodyBytes)
@@ -95,7 +102,11 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			headers := make(map[string]string)
 			for key, values := range r.Header {
 				lowerKey := strings.ToLower(key)
-				if lowerKey == "authorization" || lowerKey == "cookie" {
+				isAuthHeader := lowerKey == "authorization"
+				isCookieHeader := lowerKey == "cookie"
+				isSensitive := isAuthHeader || isCookieHeader
+
+				if isSensitive {
 					headers[key] = "[REDACTED]"
 				} else if len(values) > 0 {
 					headers[key] = values[0]
@@ -136,7 +147,9 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			}
 
 			// Extract error from response if status >= 400
-			if wrapped.statusCode >= 400 {
+			isErrorResponse := wrapped.statusCode >= 400
+
+			if isErrorResponse {
 				session.Error = extractErrorFromResponse(wrapped.body.String())
 			}
 
@@ -148,7 +161,7 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			}
 
 			// Log summary
-			if wrapped.statusCode >= 400 {
+			if isErrorResponse {
 				log.Warn("API request failed",
 					"sessionId", sessionID,
 					"method", r.Method,
@@ -183,7 +196,9 @@ func (w *sessionResponseWriter) WriteHeader(code int) {
 
 func (w *sessionResponseWriter) Write(b []byte) (int, error) {
 	// Capture body (up to limit)
-	if w.body.Len() < 100000 {
+	isUnderLimit := w.body.Len() < 100000
+
+	if isUnderLimit {
 		w.body.Write(b)
 	}
 	return w.ResponseWriter.Write(b)
@@ -191,7 +206,9 @@ func (w *sessionResponseWriter) Write(b []byte) (int, error) {
 
 // truncateBody limits body size for storage
 func truncateBody(body string, maxLen int) string {
-	if len(body) <= maxLen {
+	isWithinLimit := len(body) <= maxLen
+
+	if isWithinLimit {
 		return body
 	}
 	return body[:maxLen] + "\n... [truncated]"

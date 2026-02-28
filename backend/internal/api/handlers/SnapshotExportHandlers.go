@@ -42,19 +42,28 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // setExportHeaders forwards content headers from the upstream response.
 func setExportHeaders(w http.ResponseWriter, resp *http.Response, snapshotId int64) {
-	if ct := resp.Header.Get("Content-Type"); ct != "" {
+	ct := resp.Header.Get("Content-Type")
+	hasContentType := ct != ""
+
+	if hasContentType {
 		w.Header().Set("Content-Type", ct)
 	} else {
 		w.Header().Set("Content-Type", "application/zip")
 	}
 
-	if cd := resp.Header.Get("Content-Disposition"); cd != "" {
+	cd := resp.Header.Get("Content-Disposition")
+	hasContentDisposition := cd != ""
+
+	if hasContentDisposition {
 		w.Header().Set("Content-Disposition", cd)
 	} else {
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=snapshot-%d.zip", snapshotId))
 	}
 
-	if cl := resp.Header.Get("Content-Length"); cl != "" {
+	cl := resp.Header.Get("Content-Length")
+	hasContentLength := cl != ""
+
+	if hasContentLength {
 		w.Header().Set("Content-Length", cl)
 	}
 }
@@ -109,19 +118,28 @@ func writeZipDownloadResponse(w http.ResponseWriter, download *site.SnapshotZipD
 
 // setZipContentHeaders sets Content-Type, Content-Disposition, and Content-Length.
 func setZipContentHeaders(w http.ResponseWriter, download *site.SnapshotZipDownload) {
-	if ct := download.Response.Header.Get("Content-Type"); ct != "" {
+	ct := download.Response.Header.Get("Content-Type")
+	hasContentType := ct != ""
+
+	if hasContentType {
 		w.Header().Set("Content-Type", ct)
 	} else {
 		w.Header().Set("Content-Type", "application/zip")
 	}
 
 	filename := download.Meta.Filename
-	if filename == "" {
+	isFilenameEmpty := filename == ""
+
+	if isFilenameEmpty {
 		filename = "snapshot.zip"
 	}
+
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 
-	if cl := download.Response.Header.Get("Content-Length"); cl != "" {
+	cl := download.Response.Header.Get("Content-Length")
+	hasContentLength := cl != ""
+
+	if hasContentLength {
 		w.Header().Set("Content-Length", cl)
 	}
 }

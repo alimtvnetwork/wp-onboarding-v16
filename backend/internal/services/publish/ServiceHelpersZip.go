@@ -21,7 +21,9 @@ type cleanupZipInput struct {
 
 // cleanupZip handles ZIP file cleanup after publish
 func (s *Service) cleanupZip(input cleanupZipInput) {
-	if input.ZipPath == "" {
+	isZipPathEmpty := input.ZipPath == ""
+
+	if isZipPathEmpty {
 		return
 	}
 
@@ -116,7 +118,9 @@ func (s *Service) logZipEntries(pluginId, siteId int64, entries []string) {
 
 // resolveMaxZipEntries returns the number of entries to show (capped at 20).
 func resolveMaxZipEntries(total int) int {
-	if total < 20 {
+	isUnderLimit := total < 20
+
+	if isUnderLimit {
 		return total
 	}
 
@@ -139,7 +143,9 @@ func (s *Service) logZipEntryLines(pluginId, siteId int64, entries []string, max
 
 // logZipEntryOverflow logs the count of remaining entries beyond 20.
 func (s *Service) logZipEntryOverflow(pluginId, siteId int64, total int) {
-	if total <= 20 {
+	isWithinLimit := total <= 20
+
+	if isWithinLimit {
 		return
 	}
 

@@ -86,7 +86,9 @@ func (s *Service) broadcastCompletion(pctx *publishContext) {
 
 // resolveCompletionLogLevel returns the appropriate log level for completion.
 func resolveCompletionLogLevel(result *PublishResult) logleveltype.Variant {
-	if !result.IsSuccess {
+	isFailed := !result.IsSuccess
+
+	if isFailed {
 		return logleveltype.Error
 	}
 
@@ -116,8 +118,11 @@ func resolveCompletionStatus(result *PublishResult) (publishsteptype.Variant, st
 	if result.IsSuccess {
 		return publishsteptype.Completed, fmt.Sprintf("Published %d files in %dms", result.FilesUpdated, result.Duration)
 	}
+
 	msg := result.ErrorMessage
-	if msg == "" {
+	isMessageEmpty := msg == ""
+
+	if isMessageEmpty {
 		msg = "Publish failed - check logs for details"
 	}
 
@@ -163,7 +168,9 @@ func buildHistoryEntry(input historyEntryInput) models.PublishHistory {
 // buildHistoryBase constructs the base history entry from plugin/site/options.
 func buildHistoryBase(input historyEntryInput) models.PublishHistory {
 	historyStatus := statustype.Success.String()
-	if !input.Result.IsSuccess {
+	isFailed := !input.Result.IsSuccess
+
+	if isFailed {
 		historyStatus = statustype.Failed.String()
 	}
 

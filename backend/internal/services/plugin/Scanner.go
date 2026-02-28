@@ -59,7 +59,9 @@ func validateDirectoryExists(path string, scan *ScanResult) *apperror.Result[Sca
 		return &r
 	}
 
-	if !fi.Info.IsDir() {
+	isNotDirectory := !fi.Info.IsDir()
+
+	if isNotDirectory {
 		scan.Error = "path is not a directory"
 		r := apperror.Ok(*scan)
 

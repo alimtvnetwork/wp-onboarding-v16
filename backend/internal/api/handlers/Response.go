@@ -69,8 +69,11 @@ func respondErrorWithSession(
 	err error,
 ) {
 	resp := envelope.ErrorWithStack(status.Int(), code, message)
+
 	if appErr := apperror.Extract(err); appErr != nil {
-		if appErr.Diagnostic.SessionId != "" {
+		hasSessionId := appErr.Diagnostic.SessionId != ""
+
+		if hasSessionId {
 			resp = resp.WithSessionId(appErr.Diagnostic.SessionId)
 		}
 	}
@@ -172,15 +175,23 @@ func decodeJSONSilent(r *http.Request, target any) error {
 func resolveHTTPStatus(err error, fallback wordpress.HttpStatusType) wordpress.HttpStatusType {
 	// Check direct APIError
 	var apiErr *wordpress.APIError
-	if errors.As(err, &apiErr) && apiErr.StatusCode > 0 {
+	isDirectAPIError := errors.As(err, &apiErr)
+	hasDirectStatus := isDirectAPIError && apiErr.StatusCode > 0
+
+	if hasDirectStatus {
 		return wordpress.HttpStatusType(apiErr.StatusCode)
 	}
 
 	// Check apperror wrapping an APIError
 	var appErr *apperror.AppError
-	if errors.As(err, &appErr) && appErr.Unwrap() != nil {
+	isWrappedError := errors.As(err, &appErr) && appErr.Unwrap() != nil
+
+	if isWrappedError {
 		var inner *wordpress.APIError
-		if errors.As(appErr.Unwrap(), &inner) && inner.StatusCode > 0 {
+		isInnerAPIError := errors.As(appErr.Unwrap(), &inner)
+		hasInnerStatus := isInnerAPIError && inner.StatusCode > 0
+
+		if hasInnerStatus {
 			return wordpress.HttpStatusType(inner.StatusCode)
 		}
 	}
