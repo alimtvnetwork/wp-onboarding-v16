@@ -53,11 +53,16 @@ func appendToErrorLog(input errorLogInput) {
 
 	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-
 		return
 	}
 	defer f.Close()
 
+	entry := buildErrorLogEntry(input)
+	f.WriteString(entry)
+}
+
+// buildErrorLogEntry constructs the full error log string.
+func buildErrorLogEntry(input errorLogInput) string {
 	now := time.Now().Format("2006-01-02 15:04:05")
 	var sb strings.Builder
 
@@ -72,154 +77,160 @@ func appendToErrorLog(input errorLogInput) {
 
 	writeResponseBody(&sb, input.Writer)
 	sb.WriteString("───────────────────────────────────────────────────────────────────────────────\n")
-	f.WriteString(sb.String())
+	return sb.String()
 }
 
+// writeErrorLogHeader writes the HTTP status, method, and URL line.
 func writeErrorLogHeader(sb *strings.Builder, now string, input errorLogInput) {
 	sb.WriteString(fmt.Sprintf("[%s] HTTP %d %s FAILED\n", now, input.Writer.statusCode, input.Request.Method))
 
-	scheme := "http"
-	hasTLS := input.Request.TLS != nil
-
-	if hasTLS {
-		scheme = "https"
-	}
-
-	host := input.Request.Host
-	isHostEmpty := host == ""
-
-	if isHostEmpty {
-		host = input.Request.URL.Host
-	}
-
-	fullURL := fmt.Sprintf("%s://%s%s", scheme, host, input.Request.URL.RequestURI())
+	fullURL := resolveFullURL(input.Request)
 	sb.WriteString(fmt.Sprintf("  Requested To: %s %s\n", input.Request.Method, fullURL))
 
 	hasQueryParams := input.Request.URL.RawQuery != ""
-
 	if hasQueryParams {
 		sb.WriteString(fmt.Sprintf("  Query Params: %s\n", input.Request.URL.RawQuery))
 	}
 }
 
+// resolveFullURL constructs the full request URL from the http.Request.
+func resolveFullURL(r *http.Request) string {
+	scheme := "http"
+	hasTLS := r.TLS != nil
+	if hasTLS {
+		scheme = "https"
+	}
+
+	host := r.Host
+	isHostEmpty := host == ""
+	if isHostEmpty {
+		host = r.URL.Host
+	}
+
+	return fmt.Sprintf("%s://%s%s", scheme, host, r.URL.RequestURI())
+}
+
+// writeErrorLogRequestBody writes the request body (pretty-printed if JSON).
 func writeErrorLogRequestBody(sb *strings.Builder, input errorLogInput) {
 	isBodyEmpty := len(input.RequestBody) == 0
-
 	if isBodyEmpty {
-
 		return
 	}
 
-	bodyStr := string(input.RequestBody)
-	isBodyTooLong := len(bodyStr) > 4096
+	bodyStr := truncateBody(string(input.RequestBody))
+	writePrettyOrRawBody(sb, input.RequestBody, bodyStr)
+}
 
+// truncateBody truncates a body string to 4096 chars.
+func truncateBody(body string) string {
+	isBodyTooLong := len(body) > 4096
 	if isBodyTooLong {
-		bodyStr = bodyStr[:4096] + "... (truncated)"
+		return body[:4096] + "... (truncated)"
 	}
+	return body
+}
 
+// writePrettyOrRawBody writes JSON-indented body if possible, otherwise raw.
+func writePrettyOrRawBody(sb *strings.Builder, raw []byte, fallback string) {
 	var prettyBuf bytes.Buffer
-	isPrettyPrintable := json.Indent(&prettyBuf, input.RequestBody, "    ", "  ") == nil && prettyBuf.Len() > 0
+	isPrettyPrintable := json.Indent(&prettyBuf, raw, "    ", "  ") == nil && prettyBuf.Len() > 0
 
 	if isPrettyPrintable {
 		sb.WriteString("  Request Body:\n")
 		sb.WriteString(fmt.Sprintf("    %s\n", prettyBuf.String()))
 	} else {
-		sb.WriteString(fmt.Sprintf("  Request Body: %s\n", bodyStr))
+		sb.WriteString(fmt.Sprintf("  Request Body: %s\n", fallback))
 	}
 }
 
+// parseEnvelope attempts to parse the response body as an envelope.
 func parseEnvelope(w *responseWriter) (envelopeForParsing, bool) {
 	var env envelopeForParsing
 	isBodyEmpty := w.body.Len() == 0
-
 	if isBodyEmpty {
-
 		return env, false
 	}
 
 	isParsed := json.Unmarshal(w.body.Bytes(), &env) == nil && env.Status.Message != ""
-
 	if isParsed {
-
 		return env, true
 	}
 
 	return env, false
 }
 
+// writeEnvelopeDetails writes error code, message, attributes, errors, and methods stack.
 func writeEnvelopeDetails(sb *strings.Builder, env envelopeForParsing) {
 	sb.WriteString(fmt.Sprintf("  Error Code: %d\n", env.Status.Code))
 	sb.WriteString(fmt.Sprintf("  Error Message: %s\n", env.Status.Message))
 
-	hasAttributes := env.Attributes != nil
-	if hasAttributes {
-		hasRequestedAt := env.Attributes.RequestedAt != ""
-
-		if hasRequestedAt {
-			sb.WriteString(fmt.Sprintf("  RequestedAt: %s\n", env.Attributes.RequestedAt))
-		}
-
-		hasDelegatedAt := env.Attributes.RequestDelegatedAt != ""
-
-		if hasDelegatedAt {
-			sb.WriteString(fmt.Sprintf("  RequestDelegatedAt: %s\n", env.Attributes.RequestDelegatedAt))
-		}
-	}
-
-	hasErrors := env.Errors != nil
-	if hasErrors {
+	writeEnvelopeAttributes(sb, env)
+	if env.Errors != nil {
 		writeEnvelopeErrors(sb, env)
 	}
+	writeMethodsStack(sb, env)
+}
 
-	hasMethodsStack := env.MethodsStack != nil
-	hasBackendMethods := hasMethodsStack && len(env.MethodsStack.Backend) > 0
+// writeEnvelopeAttributes writes RequestedAt and RequestDelegatedAt if present.
+func writeEnvelopeAttributes(sb *strings.Builder, env envelopeForParsing) {
+	hasAttributes := env.Attributes != nil
+	if !hasAttributes {
+		return
+	}
 
-	if hasBackendMethods {
-		sb.WriteString("  Go Methods Stack:\n")
-		for i, frame := range env.MethodsStack.Backend {
-			sb.WriteString(fmt.Sprintf("    #%d %s at %s:%d\n", i, frame.Method, frame.File, frame.LineNumber))
-		}
+	if env.Attributes.RequestedAt != "" {
+		sb.WriteString(fmt.Sprintf("  RequestedAt: %s\n", env.Attributes.RequestedAt))
+	}
+	if env.Attributes.RequestDelegatedAt != "" {
+		sb.WriteString(fmt.Sprintf("  RequestDelegatedAt: %s\n", env.Attributes.RequestDelegatedAt))
 	}
 }
 
+// writeMethodsStack writes the Go methods stack trace if present.
+func writeMethodsStack(sb *strings.Builder, env envelopeForParsing) {
+	hasMethodsStack := env.MethodsStack != nil
+	hasBackendMethods := hasMethodsStack && len(env.MethodsStack.Backend) > 0
+
+	if !hasBackendMethods {
+		return
+	}
+
+	sb.WriteString("  Go Methods Stack:\n")
+	for i, frame := range env.MethodsStack.Backend {
+		sb.WriteString(fmt.Sprintf("    #%d %s at %s:%d\n", i, frame.Method, frame.File, frame.LineNumber))
+	}
+}
+
+// writeEnvelopeErrors writes backend message and error stacks.
 func writeEnvelopeErrors(sb *strings.Builder, env envelopeForParsing) {
 	hasBackendMessage := env.Errors.BackendMessage != ""
-
 	if hasBackendMessage {
 		sb.WriteString(fmt.Sprintf("  Backend Error: %s\n", env.Errors.BackendMessage))
 	}
 
-	hasDelegatedStack := len(env.Errors.DelegatedServiceErrorStack) > 0
-	if hasDelegatedStack {
-		sb.WriteString("  Delegated Service Error Stack (PHP):\n")
-		for _, line := range env.Errors.DelegatedServiceErrorStack {
-			sb.WriteString(fmt.Sprintf("    %s\n", line))
-		}
-	}
-
-	hasBackendStack := len(env.Errors.Backend) > 0
-	if hasBackendStack {
-		sb.WriteString("  Go Backend Stack:\n")
-		for _, line := range env.Errors.Backend {
-			sb.WriteString(fmt.Sprintf("    %s\n", line))
-		}
-	}
+	writeStackLines(sb, "Delegated Service Error Stack (PHP)", env.Errors.DelegatedServiceErrorStack)
+	writeStackLines(sb, "Go Backend Stack", env.Errors.Backend)
 }
 
-func writeResponseBody(sb *strings.Builder, w *responseWriter) {
-	isBodyEmpty := w.body.Len() == 0
-
-	if isBodyEmpty {
-
+// writeStackLines writes a labeled list of stack lines if non-empty.
+func writeStackLines(sb *strings.Builder, label string, lines []string) {
+	if len(lines) == 0 {
 		return
 	}
 
-	body := w.body.String()
-	isBodyTooLong := len(body) > 4096
+	sb.WriteString(fmt.Sprintf("  %s:\n", label))
+	for _, line := range lines {
+		sb.WriteString(fmt.Sprintf("    %s\n", line))
+	}
+}
 
-	if isBodyTooLong {
-		body = body[:4096] + "... (truncated)"
+// writeResponseBody writes the truncated response body.
+func writeResponseBody(sb *strings.Builder, w *responseWriter) {
+	isBodyEmpty := w.body.Len() == 0
+	if isBodyEmpty {
+		return
 	}
 
+	body := truncateBody(w.body.String())
 	sb.WriteString(fmt.Sprintf("  Response Body:\n    %s\n", body))
 }
