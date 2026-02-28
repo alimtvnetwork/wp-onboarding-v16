@@ -43,7 +43,7 @@ type fileInfo struct {
 
 // pluginScanCache stores the last known state of a plugin's files
 type pluginScanCache struct {
-	pluginID int64
+	pluginId int64
 	path     string
 	excludes []string
 	lastScan map[string]fileInfo
@@ -51,7 +51,7 @@ type pluginScanCache struct {
 
 // PublishService interface for triggering auto-publish
 type PublishService interface {
-	PublishPlugin(ctx context.Context, pluginID, siteID int64, mode string, isCreateBackup bool) (int, error)
+	PublishPlugin(ctx context.Context, pluginId, siteId int64, mode string, isCreateBackup bool) (int, error)
 }
 
 // Config holds watcher configuration
@@ -92,8 +92,8 @@ func (s *Service) SetPublishService(ps PublishService) {
 }
 
 // InitializeCache loads the current file state for a plugin
-func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
-	pResult := s.pluginService.GetById(ctx, pluginID)
+func (s *Service) InitializeCache(ctx context.Context, pluginId int64) error {
+	pResult := s.pluginService.GetById(ctx, pluginId)
 	if pResult.HasError() {
 		return pResult.AppError()
 	}
@@ -103,40 +103,40 @@ func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
 	defer s.mu.Unlock()
 
 	cache := &pluginScanCache{
-		pluginID: pluginID,
+		pluginId: pluginId,
 		path:     p.Path,
 		excludes: p.ExcludePatterns,
 		lastScan: make(map[string]fileInfo),
 	}
 
 	s.populateCache(cache)
-	s.cache[pluginID] = cache
+	s.cache[pluginId] = cache
 
-	s.log.Info("Initialized file cache", "plugin", p.Name, "pluginId", pluginID, "files", len(cache.lastScan))
+	s.log.Info("Initialized file cache", "plugin", p.Name, "pluginId", pluginId, "files", len(cache.lastScan))
 	return nil
 }
 
 // TriggerScan performs a manual scan
-func (s *Service) TriggerScan(ctx context.Context, pluginID int64) apperror.Result[ScanResult] {
-	return s.performScan(ctx, pluginID, "manual")
+func (s *Service) TriggerScan(ctx context.Context, pluginId int64) apperror.Result[ScanResult] {
+	return s.performScan(ctx, pluginId, "manual")
 }
 
 // ScanAfterGitPull performs a scan after git pull
-func (s *Service) ScanAfterGitPull(ctx context.Context, pluginID int64) apperror.Result[ScanResult] {
-	return s.performScan(ctx, pluginID, "git_pull")
+func (s *Service) ScanAfterGitPull(ctx context.Context, pluginId int64) apperror.Result[ScanResult] {
+	return s.performScan(ctx, pluginId, "git_pull")
 }
 
 // ScanAll scans all cached plugins
 func (s *Service) ScanAll(ctx context.Context) apperror.ResultSlice[ScanResult] {
 	s.mu.RLock()
-	pluginIDs := make([]int64, 0, len(s.cache))
+	pluginIds := make([]int64, 0, len(s.cache))
 	for id := range s.cache {
-		pluginIDs = append(pluginIDs, id)
+		pluginIds = append(pluginIds, id)
 	}
 	s.mu.RUnlock()
 
 	var results []ScanResult
-	for _, id := range pluginIDs {
+	for _, id := range pluginIds {
 		result := s.TriggerScan(ctx, id)
 		if result.IsSafe() {
 			results = append(results, result.Value())
@@ -146,11 +146,11 @@ func (s *Service) ScanAll(ctx context.Context) apperror.ResultSlice[ScanResult] 
 }
 
 // ClearCache removes a plugin from the cache
-func (s *Service) ClearCache(pluginID int64) {
+func (s *Service) ClearCache(pluginId int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.cache, pluginID)
-	s.log.Info("Cleared file cache", "pluginId", pluginID)
+	delete(s.cache, pluginId)
+	s.log.Info("Cleared file cache", "pluginId", pluginId)
 }
 
 // GetCachedPlugins returns list of plugins with active cache

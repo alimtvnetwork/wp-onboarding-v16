@@ -19,7 +19,7 @@ const pluginSelectQuery = `
 	FROM Plugins p
 	LEFT JOIN PluginGitConfig g ON g.PluginId = p.Id`
 
-const pluginSelectByIDQuery = pluginSelectQuery + ` WHERE p.Id = ?`
+const pluginSelectByIdQuery = pluginSelectQuery + ` WHERE p.Id = ?`
 
 const pluginSelectByPathQuery = `SELECT Id FROM Plugins WHERE Path = ?`
 
@@ -150,7 +150,7 @@ func (s *Service) loadMappingsForAll(ctx context.Context, plugins []models.Plugi
 func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.Plugin] {
 	s.log.Debug("Getting plugin by Id", "pluginId", id)
 
-	result := dbutil.QueryOne[models.Plugin](ctx, s.dbu, pluginSelectByIDQuery, scanPluginRow, id)
+	result := dbutil.QueryOne[models.Plugin](ctx, s.dbu, pluginSelectByIdQuery, scanPluginRow, id)
 	if result.HasError() {
 		return apperror.Fail[models.Plugin](result.AppError())
 	}
@@ -219,7 +219,7 @@ func (s *Service) validateCreatePath(ctx context.Context, input CreateInput) *ap
 
 // checkDuplicatePath returns the existing plugin if the path is already registered.
 func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (apperror.Result[models.Plugin], bool) {
-	result := dbutil.QueryOne[int64](ctx, s.dbu, pluginSelectByPathQuery, scanID, input.Path)
+	result := dbutil.QueryOne[int64](ctx, s.dbu, pluginSelectByPathQuery, scanId, input.Path)
 	if result.HasError() {
 		return apperror.Fail[models.Plugin](result.AppError()), true
 	}
@@ -236,8 +236,8 @@ func (s *Service) checkDuplicatePath(ctx context.Context, input CreateInput) (ap
 	return apperror.FailNew[models.Plugin](apperror.ErrDuplicate, "plugin path already registered"), true
 }
 
-// scanID scans a single int64 from a row.
-func scanID(row *sql.Row) (int64, error) {
+// scanId scans a single int64 from a row.
+func scanId(row *sql.Row) (int64, error) {
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -282,13 +282,13 @@ func (s *Service) encodeExcludePatterns(patterns []string) string {
 }
 
 // insertGitConfig saves git config if git is enabled.
-func (s *Service) insertGitConfig(ctx context.Context, pluginID int64, input CreateInput) {
+func (s *Service) insertGitConfig(ctx context.Context, pluginId int64, input CreateInput) {
 	if input.GitEnabled {
 		dbutil.Exec(
 			ctx,
 			s.dbu,
 			pluginGitInsertQuery,
-			pluginID,
+			pluginId,
 			input.GitRemoteURL,
 			input.BuildCommand != "",
 			input.BuildCommand,

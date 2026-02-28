@@ -32,23 +32,23 @@ func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) 
 
 	id, ok := resp.dataFieldFloat("id")
 	if ok {
-		s.setCleanupID("site", int64(id))
+		s.setCleanupId("site", int64(id))
 	}
 	return nil
 }
 
 func (s *serviceImpl) testSiteConnection(ctx context.Context, result *TestResult) error {
-	siteID, err := s.createTestSite()
+	siteId, err := s.createTestSite()
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
-	defer s.cleanupSite(siteID)
+	defer s.cleanupSite(siteId)
 
-	result.RequestData = fmt.Sprintf(`{"siteId": %d}`, siteID)
+	result.RequestData = fmt.Sprintf(`{"siteId": %d}`, siteId)
 
-	resp, err := s.api.post(fmt.Sprintf("/sites/%d/test", siteID), nil)
+	resp, err := s.api.post(fmt.Sprintf("/sites/%d/test", siteId), nil)
 	if err != nil {
-		return fmt.Errorf("POST /sites/%d/test failed: %w", siteID, err)
+		return fmt.Errorf("POST /sites/%d/test failed: %w", siteId, err)
 	}
 	result.ResponseData = resp.RawBody
 
@@ -104,32 +104,32 @@ type testIds struct {
 
 // setupPluginAndSite creates a test plugin and site, returning their IDs.
 func (s *serviceImpl) setupPluginAndSite() (*testIds, error) {
-	pluginID, err := s.createTestPlugin()
+	pluginId, err := s.createTestPlugin()
 	if err != nil {
 		return nil, fmt.Errorf("setup plugin: %w", err)
 	}
-	siteID, err := s.createTestSite()
+	siteId, err := s.createTestSite()
 	if err != nil {
-		s.cleanupPlugin(pluginID)
+		s.cleanupPlugin(pluginId)
 		return nil, fmt.Errorf("setup site: %w", err)
 	}
-	return &testIds{PluginId: pluginID, SiteId: siteID}, nil
+	return &testIds{PluginId: pluginId, SiteId: siteId}, nil
 }
 
 // --- Sync Tests ---
 
 func (s *serviceImpl) testDetectNewFiles(ctx context.Context, result *TestResult) error {
-	pluginID, err := s.createTestPlugin()
+	pluginId, err := s.createTestPlugin()
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
-	defer s.cleanupPlugin(pluginID)
+	defer s.cleanupPlugin(pluginId)
 
-	resp, err := s.api.post(fmt.Sprintf("/watcher/scan/%d", pluginID), nil)
+	resp, err := s.api.post(fmt.Sprintf("/watcher/scan/%d", pluginId), nil)
 	if err != nil {
 		return fmt.Errorf("POST /watcher/scan failed: %w", err)
 	}
-	result.RequestData = fmt.Sprintf(`{"pluginId": %d, "action": "scan"}`, pluginID)
+	result.RequestData = fmt.Sprintf(`{"pluginId": %d, "action": "scan"}`, pluginId)
 	result.ResponseData = resp.RawBody
 
 	if resp.StatusCode >= 400 {
@@ -179,17 +179,17 @@ func (s *serviceImpl) testPreviewPublish(ctx context.Context, result *TestResult
 }
 
 func (s *serviceImpl) testBackupList(ctx context.Context, result *TestResult) error {
-	pluginID, err := s.createTestPlugin()
+	pluginId, err := s.createTestPlugin()
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
-	defer s.cleanupPlugin(pluginID)
+	defer s.cleanupPlugin(pluginId)
 
-	result.RequestData = fmt.Sprintf(`{"pluginId": %d}`, pluginID)
+	result.RequestData = fmt.Sprintf(`{"pluginId": %d}`, pluginId)
 
-	resp, err := s.api.get(fmt.Sprintf("/backups/%d", pluginID))
+	resp, err := s.api.get(fmt.Sprintf("/backups/%d", pluginId))
 	if err != nil {
-		return fmt.Errorf("GET /backups/%d failed: %w", pluginID, err)
+		return fmt.Errorf("GET /backups/%d failed: %w", pluginId, err)
 	}
 	result.ResponseData = resp.RawBody
 

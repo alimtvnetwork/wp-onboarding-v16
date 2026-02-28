@@ -21,7 +21,7 @@ import (
 
 // SitePasswordDecryptor interface for getting decrypted site passwords
 type SitePasswordDecryptor interface {
-	GetDecryptedPassword(ctx context.Context, siteID int64) apperror.Result[string]
+	GetDecryptedPassword(ctx context.Context, siteId int64) apperror.Result[string]
 }
 
 // SessionLogger interface for session-based logging

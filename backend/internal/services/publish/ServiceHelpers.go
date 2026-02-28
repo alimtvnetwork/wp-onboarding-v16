@@ -17,13 +17,13 @@ import (
 )
 
 // getMapping retrieves the plugin-site mapping.
-func (s *Service) getMapping(ctx context.Context, pluginID, siteID int64) apperror.Result[models.PluginMapping] {
+func (s *Service) getMapping(ctx context.Context, pluginId, siteId int64) apperror.Result[models.PluginMapping] {
 	query := `
 		SELECT Id, PluginId, SiteId, RemoteSlug, SyncStatus, LastSyncAt, LastBackupAt, CreatedAt, UpdatedAt
 		FROM PluginMappings
 		WHERE PluginId = ? AND SiteId = ?
 	`
-	row := s.db.QueryRowContext(ctx, query, pluginID, siteID)
+	row := s.db.QueryRowContext(ctx, query, pluginId, siteId)
 
 	return scanMapping(row)
 }
@@ -81,13 +81,13 @@ type SiteCredentialsResult struct {
 }
 
 // getSiteCredentials retrieves site info and decrypted password.
-func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) apperror.Result[SiteCredentialsResult] {
-	siteResult := s.querySite(ctx, siteID)
+func (s *Service) getSiteCredentials(ctx context.Context, siteId int64) apperror.Result[SiteCredentialsResult] {
+	siteResult := s.querySite(ctx, siteId)
 	if siteResult.HasError() {
 		return apperror.Fail[SiteCredentialsResult](siteResult.AppError())
 	}
 
-	passwordResult := s.decryptSitePassword(ctx, siteID)
+	passwordResult := s.decryptSitePassword(ctx, siteId)
 	if passwordResult.HasError() {
 		return apperror.Fail[SiteCredentialsResult](passwordResult.AppError())
 	}
@@ -101,13 +101,13 @@ func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) apperror
 }
 
 // querySite fetches a site by ID.
-func (s *Service) querySite(ctx context.Context, siteID int64) apperror.Result[models.Site] {
+func (s *Service) querySite(ctx context.Context, siteId int64) apperror.Result[models.Site] {
 	query := `
 		SELECT Id, Name, Url, Username, PasswordEncrypted, ConnectionStatus,
 		       LastTestedAt, LastSyncAt, CreatedAt, UpdatedAt
 		FROM Sites WHERE Id = ?
 	`
-	row := s.db.QueryRowContext(ctx, query, siteID)
+	row := s.db.QueryRowContext(ctx, query, siteId)
 
 	return scanSiteRow(row)
 }
@@ -160,16 +160,16 @@ func applySiteTimestamps(site *models.Site, ts siteTimestamps) {
 }
 
 // decryptSitePassword decrypts the site password via the decryptor.
-func (s *Service) decryptSitePassword(ctx context.Context, siteID int64) apperror.Result[string] {
+func (s *Service) decryptSitePassword(ctx context.Context, siteId int64) apperror.Result[string] {
 	isDecryptorMissing := s.sitePasswordDecryptor == nil
 
 	if isDecryptorMissing {
 		return apperror.Ok("")
 	}
 
-	result := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
+	result := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteId)
 	if result.HasError() {
-		s.log.Warn("Failed to decrypt password", "siteId", siteID, "error", result.AppError().Error())
+		s.log.Warn("Failed to decrypt password", "siteId", siteId, "error", result.AppError().Error())
 
 		return apperror.Fail[string](result.AppError())
 	}

@@ -12,7 +12,7 @@ func (s *serviceImpl) createTestPlugin() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return extractID(resp, "create plugin")
+	return extractId(resp, "create plugin")
 }
 
 func (s *serviceImpl) createTestSite() (int64, error) {
@@ -23,11 +23,11 @@ func (s *serviceImpl) createTestSite() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return extractID(resp, "create site")
+	return extractId(resp, "create site")
 }
 
-// extractID pulls an int64 id from an API response.
-func extractID(resp *apiResponse, action string) (int64, error) {
+// extractId pulls an int64 id from an API response.
+func extractId(resp *apiResponse, action string) (int64, error) {
 	isErrorStatus := resp.StatusCode >= 400
 
 	if isErrorStatus {
@@ -65,23 +65,23 @@ func (s *serviceImpl) cleanupSite(id int64) {
 	s.api.delete(fmt.Sprintf("/sites/%d", id))
 }
 
-// setCleanupID stores the resource id for later cleanup.
-func (s *serviceImpl) setCleanupID(resourceType string, id int64) {
+// setCleanupId stores the resource id for later cleanup.
+func (s *serviceImpl) setCleanupId(resourceType string, id int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.cleanupIDs == nil {
-		s.cleanupIDs = make(map[string]int64)
+	if s.cleanupIds == nil {
+		s.cleanupIds = make(map[string]int64)
 	}
-	s.cleanupIDs[resourceType] = id
+	s.cleanupIds[resourceType] = id
 }
 
-// getCleanupID retrieves a stored resource id.
-func (s *serviceImpl) getCleanupID(resourceType string) (int64, bool) {
+// getCleanupId retrieves a stored resource id.
+func (s *serviceImpl) getCleanupId(resourceType string) (int64, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	id, ok := s.cleanupIDs[resourceType]
+	id, ok := s.cleanupIds[resourceType]
 	return id, ok
 }
 
@@ -89,7 +89,7 @@ func (s *serviceImpl) getCleanupID(resourceType string) (int64, bool) {
 func (s *serviceImpl) cleanupAll() {
 	s.mu.RLock()
 	ids := make(map[string]int64)
-	for k, v := range s.cleanupIDs {
+	for k, v := range s.cleanupIds {
 		ids[k] = v
 	}
 	s.mu.RUnlock()

@@ -16,48 +16,48 @@ import (
 )
 
 // performScan executes the actual directory scan.
-func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType string) apperror.Result[ScanResult] {
+func (s *Service) performScan(ctx context.Context, pluginId int64, triggerType string) apperror.Result[ScanResult] {
 	startTime := time.Now()
-	s.log.Debug("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
+	s.log.Debug("Scanning plugin", "pluginId", pluginId, "trigger", triggerType)
 
-	cache, cacheErr := s.ensureScanCache(ctx, pluginID)
+	cache, cacheErr := s.ensureScanCache(ctx, pluginId)
 	if cacheErr != nil {
 		return apperror.FailWrap[ScanResult](cacheErr, apperror.ErrInternal, "failed to initialize watcher cache")
 	}
 
 	changes := s.scanAndCompare(cache)
-	result := s.buildScanResult(pluginID, cache, changes, triggerType, startTime)
+	result := s.buildScanResult(pluginId, cache, changes, triggerType, startTime)
 
-	s.handleScanChanges(ctx, pluginID, changes, triggerType)
-	s.log.Info("Scan complete", "pluginId", pluginID, "changes", len(changes), "duration", result.DurationMs)
+	s.handleScanChanges(ctx, pluginId, changes, triggerType)
+	s.log.Info("Scan complete", "pluginId", pluginId, "changes", len(changes), "duration", result.DurationMs)
 	return apperror.Ok(result)
 }
 
 // ensureScanCache returns the existing cache or initializes a new one.
-func (s *Service) ensureScanCache(ctx context.Context, pluginID int64) (*pluginScanCache, error) {
+func (s *Service) ensureScanCache(ctx context.Context, pluginId int64) (*pluginScanCache, error) {
 	s.mu.Lock()
-	cache, isFound := s.cache[pluginID]
+	cache, isFound := s.cache[pluginId]
 	s.mu.Unlock()
 
 	if isFound {
 		return cache, nil
 	}
 
-	err := s.InitializeCache(ctx, pluginID)
+	err := s.InitializeCache(ctx, pluginId)
 	if err != nil {
 		return nil, err
 	}
 
 	s.mu.Lock()
-	cache = s.cache[pluginID]
+	cache = s.cache[pluginId]
 	s.mu.Unlock()
 	return cache, nil
 }
 
 // buildScanResult constructs a ScanResult from scan output.
-func (s *Service) buildScanResult(pluginID int64, cache *pluginScanCache, changes []FileChange, triggerType string, startTime time.Time) ScanResult {
+func (s *Service) buildScanResult(pluginId int64, cache *pluginScanCache, changes []FileChange, triggerType string, startTime time.Time) ScanResult {
 	return ScanResult{
-		PluginId:     pluginID,
+		PluginId:     pluginId,
 		Path:         cache.path,
 		ScanTime:     startTime,
 		DurationMs:   time.Since(startTime).Milliseconds(),
@@ -68,23 +68,23 @@ func (s *Service) buildScanResult(pluginID int64, cache *pluginScanCache, change
 }
 
 // handleScanChanges broadcasts, records, and triggers auto-publish for detected changes.
-func (s *Service) handleScanChanges(ctx context.Context, pluginID int64, changes []FileChange, triggerType string) {
+func (s *Service) handleScanChanges(ctx context.Context, pluginId int64, changes []FileChange, triggerType string) {
 	if len(changes) == 0 {
 		return
 	}
 
-	s.broadcastChanges(pluginID, changes, triggerType)
-	s.recordChangesToDB(ctx, pluginID, changes)
-	go s.triggerAutoPublish(ctx, pluginID, changes)
+	s.broadcastChanges(pluginId, changes, triggerType)
+	s.recordChangesToDB(ctx, pluginId, changes)
+	go s.triggerAutoPublish(ctx, pluginId, changes)
 }
 
 // recordChangesToDB persists each file change to the database.
-func (s *Service) recordChangesToDB(ctx context.Context, pluginID int64, changes []FileChange) {
+func (s *Service) recordChangesToDB(ctx context.Context, pluginId int64, changes []FileChange) {
 	for _, c := range changes {
 		s.db.ExecContext(ctx, `
 			INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, DetectedAt)
 			VALUES (?, ?, ?, ?, datetime('now'))
-		`, pluginID, c.Path, c.ChangeType, c.Hash)
+		`, pluginId, c.Path, c.ChangeType, c.Hash)
 	}
 }
 

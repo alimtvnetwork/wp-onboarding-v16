@@ -242,62 +242,62 @@ func (s *Service) insertMappingsForPlugin(ctx context.Context, input UpdatePlugi
 }
 
 // UpdateMappingsForSite replaces all plugin mappings for a site.
-func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError {
-	s.log.Info("Updating site mappings", "siteId", siteID, "plugins", len(pluginIDs))
+func (s *Service) UpdateMappingsForSite(ctx context.Context, siteId int64, pluginIds []int64) *apperror.AppError {
+	s.log.Info("Updating site mappings", "siteId", siteId, "plugins", len(pluginIds))
 
-	slugByPluginID := s.buildSlugMap(ctx, siteID)
+	slugByPluginId := s.buildSlugMap(ctx, siteId)
 
-	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE SiteId = ?", siteID)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE SiteId = ?", siteId)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to clear existing site mappings")
 	}
 
-	s.insertMappingsForSite(ctx, insertSiteMappingsInput{SiteID: siteID, PluginIDs: pluginIDs, SlugMap: slugByPluginID})
+	s.insertMappingsForSite(ctx, insertSiteMappingsInput{SiteId: siteId, PluginIds: pluginIds, SlugMap: slugByPluginId})
 
-	s.log.Info("Site mappings updated", "siteId", siteID, "pluginsLinked", len(pluginIDs))
+	s.log.Info("Site mappings updated", "siteId", siteId, "pluginsLinked", len(pluginIds))
 	return nil
 }
 
-// buildSlugMap returns a map of pluginID → remoteSlug from existing mappings.
-func (s *Service) buildSlugMap(ctx context.Context, siteID int64) map[int64]string {
-	existingResult := s.GetMappingsBySite(ctx, siteID)
-	slugByPluginID := make(map[int64]string)
+// buildSlugMap returns a map of pluginId → remoteSlug from existing mappings.
+func (s *Service) buildSlugMap(ctx context.Context, siteId int64) map[int64]string {
+	existingResult := s.GetMappingsBySite(ctx, siteId)
+	slugByPluginId := make(map[int64]string)
 
 	hasExistingMappings := !existingResult.HasError()
 
 	if hasExistingMappings {
 		for _, m := range existingResult.Items() {
-			slugByPluginID[m.PluginId] = m.RemoteSlug
+			slugByPluginId[m.PluginId] = m.RemoteSlug
 		}
 	}
-	return slugByPluginID
+	return slugByPluginId
 }
 
 // insertSiteMappingsInput bundles parameters for insertMappingsForSite.
 type insertSiteMappingsInput struct {
 	SiteId    int64
-	PluginIDs []int64
+	PluginIds []int64
 	SlugMap   map[int64]string
 }
 
 // insertMappingsForSite inserts mappings for each pluginID using resolved slugs.
 func (s *Service) insertMappingsForSite(ctx context.Context, input insertSiteMappingsInput) {
-	for _, pluginID := range input.PluginIDs {
-		remoteSlug := s.resolveRemoteSlug(ctx, pluginID, input.SlugMap)
+	for _, pluginId := range input.PluginIds {
+		remoteSlug := s.resolveRemoteSlug(ctx, pluginId, input.SlugMap)
 
 		_, err := s.db.ExecContext(ctx, `
 			INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-		`, pluginID, input.SiteId, remoteSlug)
+		`, pluginId, input.SiteId, remoteSlug)
 		if err != nil {
-			s.log.Warn("Failed to create site mapping", "siteId", input.SiteId, "pluginId", pluginID, "error", err)
+			s.log.Warn("Failed to create site mapping", "siteId", input.SiteId, "pluginId", pluginId, "error", err)
 		}
 	}
 }
 
 // resolveRemoteSlug returns the existing slug or generates one from plugin name.
-func (s *Service) resolveRemoteSlug(ctx context.Context, pluginID int64, slugByPluginID map[int64]string) string {
-	slug, isFound := slugByPluginID[pluginID]
+func (s *Service) resolveRemoteSlug(ctx context.Context, pluginId int64, slugByPluginId map[int64]string) string {
+	slug, isFound := slugByPluginId[pluginId]
 	hasSlug := slug != ""
 	isResolved := isFound && hasSlug
 
@@ -307,7 +307,7 @@ func (s *Service) resolveRemoteSlug(ctx context.Context, pluginID int64, slugByP
 	}
 
 	var pluginName string
-	err := s.db.QueryRowContext(ctx, "SELECT Name FROM Plugins WHERE Id = ?", pluginID).Scan(&pluginName)
+	err := s.db.QueryRowContext(ctx, "SELECT Name FROM Plugins WHERE Id = ?", pluginId).Scan(&pluginName)
 	if err == nil {
 		return strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
 	}

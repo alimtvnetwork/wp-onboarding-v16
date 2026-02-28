@@ -81,7 +81,7 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 				return
 			}
 
-			sessionID := uuid.New().String()
+			sessionId := uuid.New().String()
 			startTime := time.Now()
 
 			// Capture request body
@@ -119,7 +119,7 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			}
 
 			// Add session ID to context
-			ctx := context.WithValue(r.Context(), SessionContextKey{}, sessionID)
+			ctx := context.WithValue(r.Context(), SessionContextKey{}, sessionId)
 			r = r.WithContext(ctx)
 
 			// Wrap response writer to capture response
@@ -137,7 +137,7 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 
 			// Build session record
 		session := &RequestSession{
-				Id:           sessionID,
+				Id:           sessionId,
 				Method:       r.Method,
 				Path:         r.URL.Path,
 				Query:        r.URL.RawQuery,
@@ -164,14 +164,14 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			if isStoreAvailable {
 				saveErr := store.SaveRequestSession(session)
 				if saveErr != nil {
-					log.Error("Failed to save request session", "sessionId", sessionID, "error", saveErr)
+					log.Error("Failed to save request session", "sessionId", sessionId, "error", saveErr)
 				}
 			}
 
 			// Log summary
 			if isErrorResponse {
 				log.Warn("API request failed",
-					"sessionId", sessionID,
+					"sessionId", sessionId,
 					"method", r.Method,
 					"path", r.URL.Path,
 					"status", wrapped.statusCode,

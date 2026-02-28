@@ -159,7 +159,7 @@ type serviceImpl struct {
 	testSiteUrl      string
 	testSiteUsername  string
 	testSitePassword string
-	cleanupIDs       map[string][]int64
+	cleanupIds       map[string][]int64
 }
 
 // New creates a new E2E test service
