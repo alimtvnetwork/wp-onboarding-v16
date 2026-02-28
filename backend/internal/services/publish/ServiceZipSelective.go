@@ -10,28 +10,38 @@ import (
 	"wp-plugin-publish/pkg/pathutil"
 )
 
-// createSelectiveZip creates a zip file with only selected files
-func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []string) (string, error) {
-	zc, err := s.resolveZipContext(pluginPath, pluginName, "-patch")
-	if err != nil {
-		return "", err
+// createSelectiveZip creates a zip file with only selected files.
+func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []string) apperror.Result[string] {
+	zcResult := s.resolveZipContext(pluginPath, pluginName, "-patch")
+	if zcResult.HasError() {
+		return apperror.Fail[string](zcResult.AppError())
 	}
 
+	zc := zcResult.Value()
+
+	return s.buildSelectiveZipArchive(&zc, files)
+}
+
+// buildSelectiveZipArchive opens a zip session, writes entries, and finalizes.
+func (s *Service) buildSelectiveZipArchive(zc *zipContext, files []string) apperror.Result[string] {
 	zs, err := openZipSession(zc)
 	if err != nil {
-		return "", err
+		return apperror.FailWrap[string](err, apperror.ErrFSZip, "failed to open zip session")
 	}
 
 	writeErr := s.writeSelectiveEntries(zs.Writer, zs.Ctx, files)
 	if writeErr != nil {
-		return zs.CleanupOnError(writeErr)
+		zs.CleanupOnError(writeErr)
+
+		return apperror.FailWrap[string](writeErr, apperror.ErrFSZip, "failed to create selective zip archive")
 	}
 
 	appErr := zs.Finalize()
 	if appErr != nil {
-		return "", appErr
+		return apperror.Fail[string](appErr)
 	}
-	return zc.AbsZipPath, nil
+
+	return apperror.Ok(zc.AbsZipPath)
 }
 
 // writeSelectiveEntries adds each selected file to the zip.

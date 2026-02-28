@@ -22,7 +22,7 @@ type SiteServiceInterface interface {
 	TestConnection(ctx context.Context, id int64) (*site.ConnectionResult, *apperror.AppError)
 	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (*site.ConnectionResult, *apperror.AppError)
 	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, *apperror.AppError)
-	GetCredentials(ctx context.Context, siteId int64) (*site.SiteCredentials, *apperror.AppError)
+	GetCredentials(ctx context.Context, siteId int64) (site.SiteCredentials, *apperror.AppError)
 
 	// Remote plugin proxy — typed returns
 	GetRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, *apperror.AppError)
@@ -165,8 +165,13 @@ func (a *SiteServiceAdapter) GetRemotePluginFileContent(ctx context.Context, sit
 	return a.Service.GetRemotePluginFileContent(ctx, siteId, pluginSlug, filePath)
 }
 
-func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteId int64) (*site.SiteCredentials, *apperror.AppError) {
-	return a.Service.GetCredentials(ctx, siteId)
+func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteId int64) (site.SiteCredentials, *apperror.AppError) {
+	result := a.Service.GetCredentials(ctx, siteId)
+	if result.HasError() {
+		return site.SiteCredentials{}, result.AppError()
+	}
+
+	return result.Value(), nil
 }
 
 func (a *SiteServiceAdapter) GetRemoteSnapshots(ctx context.Context, siteId int64) ([]wordpress.SnapshotRecord, *apperror.AppError) {

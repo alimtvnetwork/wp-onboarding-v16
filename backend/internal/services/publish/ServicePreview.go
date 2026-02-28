@@ -77,17 +77,21 @@ type previewLoadResult struct {
 
 // loadSiteForPreview loads site, credentials, and mapping for preview.
 func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64, result *PublishPreviewResult) (*previewLoadResult, *apperror.AppError) {
-	creds, err := s.getSiteCredentials(ctx, siteID)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
+	credsResult := s.getSiteCredentials(ctx, siteID)
+	if credsResult.HasError() {
+		return nil, apperror.Wrap(credsResult.AppError(), apperror.ErrNotFound, "site not found")
 	}
+
+	creds := credsResult.Value()
 	result.SiteName = creds.Site.Name
 	result.SiteUrl = creds.Site.URL
 
-	mapping, mapErr := s.getMapping(ctx, pluginID, siteID)
-	if mapErr != nil {
-		return nil, apperror.Wrap(mapErr, apperror.ErrNotFound, "plugin-site mapping not found")
+	mappingResult := s.getMapping(ctx, pluginID, siteID)
+	if mappingResult.HasError() {
+		return nil, apperror.Wrap(mappingResult.AppError(), apperror.ErrNotFound, "plugin-site mapping not found")
 	}
+
+	mapping := mappingResult.Value()
 	result.RemoteSlug = mapping.RemoteSlug
 
 	loadResult := &previewLoadResult{
@@ -100,6 +104,7 @@ func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64
 			RemoteSlug: mapping.RemoteSlug,
 		},
 	}
+
 	return loadResult, nil
 }
 
@@ -119,15 +124,19 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 		return apperror.Fail[FileDiffResult](apperror.Wrap(pluginResult.AppError(), apperror.ErrDatabaseQuery, "plugin not found"))
 	}
 
-	creds, err := s.getSiteCredentials(ctx, siteID)
-	if err != nil {
-		return apperror.FailWrap[FileDiffResult](err, apperror.ErrDatabaseQuery, "site not found")
+	credsResult := s.getSiteCredentials(ctx, siteID)
+	if credsResult.HasError() {
+		return apperror.Fail[FileDiffResult](apperror.Wrap(credsResult.AppError(), apperror.ErrDatabaseQuery, "site not found"))
 	}
 
-	mapping, err := s.getMapping(ctx, pluginID, siteID)
-	if err != nil {
-		return apperror.FailWrap[FileDiffResult](err, apperror.ErrDatabaseQuery, "mapping not found")
+	creds := credsResult.Value()
+
+	mappingResult := s.getMapping(ctx, pluginID, siteID)
+	if mappingResult.HasError() {
+		return apperror.Fail[FileDiffResult](apperror.Wrap(mappingResult.AppError(), apperror.ErrDatabaseQuery, "mapping not found"))
 	}
+
+	mapping := mappingResult.Value()
 
 	result := &FileDiffResult{Path: filePath}
 	result.LocalContent = s.readLocalFileContent(pluginResult.Value().Path, filePath)
@@ -159,29 +168,33 @@ func (s *Service) readLocalFileContent(pluginPath, filePath string) string {
 
 // readRemoteFileContent fetches remote file content or returns empty string.
 func (s *Service) readRemoteFileContent(ctx context.Context, wpClient *wordpress.Client, slug, filePath string) string {
-	content, err := wpClient.GetPluginFileContent(ctx, slug, filePath)
-	if err != nil {
-		s.log.Debug("Could not fetch remote file content", "path", filePath, "error", err)
+	result := wpClient.GetPluginFileContent(ctx, slug, filePath)
+	if result.HasError() {
+		s.log.Debug("Could not fetch remote file content", "path", filePath, "error", result.AppError())
+
 		return ""
 	}
-	return content
+
+	return result.Value()
 }
 
-// fetchRemoteFileMap fetches the remote file map for diff comparison
+// fetchRemoteFileMap fetches the remote file map for diff comparison.
 func (s *Service) fetchRemoteFileMap(ctx context.Context, wpClient *wordpress.Client, remoteSlug string) (map[string]string, bool) {
 	remoteFileMap := make(map[string]string)
 
-	remoteFiles, err := wpClient.GetPluginFilesViaRiseup(ctx, remoteSlug)
-	if err != nil {
-		remoteFiles, err = wpClient.GetPluginFiles(ctx, remoteSlug)
-		if err != nil {
-			s.log.Debug("Could not fetch remote files, falling back to local-only preview", "error", err)
+	filesResult := wpClient.GetPluginFilesViaRiseup(ctx, remoteSlug)
+	if filesResult.HasError() {
+		filesResult = wpClient.GetPluginFiles(ctx, remoteSlug)
+		if filesResult.HasError() {
+			s.log.Debug("Could not fetch remote files, falling back to local-only preview", "error", filesResult.AppError())
+
 			return remoteFileMap, true
 		}
 	}
 
-	for _, rf := range remoteFiles {
+	for _, rf := range filesResult.Value() {
 		remoteFileMap[rf.Path] = rf.Hash
 	}
+
 	return remoteFileMap, false
 }

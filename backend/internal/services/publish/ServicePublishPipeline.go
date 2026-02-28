@@ -24,13 +24,14 @@ type pipelineCredentials struct {
 
 // runPublishPipeline executes the backup → package → upload → activate → cleanup pipeline.
 func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, creds pipelineCredentials) *apperror.AppError {
-	mapping, err := s.getMapping(ctx, pctx.PluginId, pctx.SiteId)
-	if err != nil {
+	mappingResult := s.getMapping(ctx, pctx.PluginId, pctx.SiteId)
+	if mappingResult.HasError() {
 
-		return s.failPipeline(pctx, err, pctx.Result)
+		return s.failPipeline(pctx, mappingResult.AppError(), pctx.Result)
 	}
 
-	s.initPipelineContext(pctx, creds, mapping)
+	mapping := mappingResult.Value()
+	s.initPipelineContext(pctx, creds, &mapping)
 
 	if pctx.Options.IsCreateBackup {
 		appErr := s.runBackupStage(pctx)
@@ -54,20 +55,20 @@ func (s *Service) initPipelineContext(pctx *publishContext, creds pipelineCreden
 }
 
 // failPipeline handles a pipeline init failure.
-func (s *Service) failPipeline(pctx *publishContext, err error, result *PublishResult) *apperror.AppError {
-	result.ErrorMessage = err.Error()
+func (s *Service) failPipeline(pctx *publishContext, appErr *apperror.AppError, result *PublishResult) *apperror.AppError {
+	result.ErrorMessage = appErr.Error()
 
 	failLog := sessionLogInput{
 		SessionId: pctx.SessionId,
 		Level:     loglevel.Error,
 		Step:      publishstep.Init,
-		Message:   fmt.Sprintf("Failed to get mapping: %s", err.Error()),
+		Message:   fmt.Sprintf("Failed to get mapping: %s", appErr.Error()),
 	}
 	s.sessionLog(failLog)
-	s.endSession(pctx.SessionId, loglevel.Error.Lower(), err.Error())
-	s.broadcastProgress(pctx.progress(publishstep.Failed, 0, err.Error()))
+	s.endSession(pctx.SessionId, loglevel.Error.Lower(), appErr.Error())
+	s.broadcastProgress(pctx.progress(publishstep.Failed, 0, appErr.Error()))
 
-	return apperror.Wrap(err, apperror.ErrInternal, "publish pipeline init failed")
+	return apperror.Wrap(appErr, apperror.ErrInternal, "publish pipeline init failed")
 }
 
 // logConnect broadcasts the WordPress connection attempt.
