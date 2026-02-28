@@ -24,27 +24,48 @@ type remoteActionRef struct {
 }
 
 // CheckRemotePluginExists performs a lightweight pre-flight check
-func (s *Service) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, error) {
+func (s *Service) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, *apperror.AppError) {
 	result := s.GetById(ctx, siteId)
+
 	if result.HasError() {
+
 		return nil, apperror.Wrap(result.AppError(), apperror.ErrNotFound, "site not found")
 	}
-	site := result.Value()
-	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
-	}
-	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
 
-	return client.CheckPluginExistsViaUploader(pluginSlug)
+	site := result.Value()
+	password, decryptErr := decrypt(site.PasswordEncrypted, s.encryptionKey)
+
+	if decryptErr != nil {
+
+		return nil, apperror.Wrap(decryptErr, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
+	existsResult, wpErr := client.CheckPluginExistsViaUploader(pluginSlug)
+
+	if wpErr != nil {
+
+		return nil, apperror.Wrap(wpErr, apperror.ErrWPPluginGet, "check plugin exists via uploader")
+	}
+
+	return existsResult, nil
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
-func (s *Service) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+func (s *Service) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
 	input := remoteActionInput{
-		SiteId: siteId, PluginSlug: pluginSlug, Action: "enable",
-		ExecFn: func(client *wordpress.Client) error {
-			return client.EnablePluginViaUploader(pluginSlug)
+		SiteId:     siteId,
+		PluginSlug: pluginSlug,
+		Action:     "enable",
+		ExecFn: func(client *wordpress.Client) *apperror.AppError {
+			wpErr := client.EnablePluginViaUploader(pluginSlug)
+
+			if wpErr != nil {
+
+				return apperror.Wrap(wpErr, apperror.ErrWPPluginActivate, "enable plugin via uploader")
+			}
+
+			return nil
 		},
 	}
 
@@ -52,11 +73,20 @@ func (s *Service) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSl
 }
 
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
-func (s *Service) DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+func (s *Service) DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
 	input := remoteActionInput{
-		SiteId: siteId, PluginSlug: pluginSlug, Action: "disable",
-		ExecFn: func(client *wordpress.Client) error {
-			return client.DisablePluginViaUploader(pluginSlug)
+		SiteId:     siteId,
+		PluginSlug: pluginSlug,
+		Action:     "disable",
+		ExecFn: func(client *wordpress.Client) *apperror.AppError {
+			wpErr := client.DisablePluginViaUploader(pluginSlug)
+
+			if wpErr != nil {
+
+				return apperror.Wrap(wpErr, apperror.ErrWPPluginActivate, "disable plugin via uploader")
+			}
+
+			return nil
 		},
 	}
 
@@ -64,12 +94,21 @@ func (s *Service) DisableRemotePlugin(ctx context.Context, siteId int64, pluginS
 }
 
 // DeleteRemotePlugin removes a plugin from a remote WordPress site
-func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
 	input := remoteActionInput{
-		SiteId: siteId, PluginSlug: pluginSlug, Action: "delete",
-		ExecFn: func(client *wordpress.Client) error {
+		SiteId:     siteId,
+		PluginSlug: pluginSlug,
+		Action:     "delete",
+		ExecFn: func(client *wordpress.Client) *apperror.AppError {
 			s.preDeleteDisable(client, pluginSlug)
-			return client.DeletePluginViaUploader(pluginSlug)
+			wpErr := client.DeletePluginViaUploader(pluginSlug)
+
+			if wpErr != nil {
+
+				return apperror.Wrap(wpErr, apperror.ErrWPPluginDelete, "delete plugin via uploader")
+			}
+
+			return nil
 		},
 	}
 
@@ -78,15 +117,20 @@ func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSl
 
 // preDeleteDisable attempts to disable the plugin before deletion, logging but not failing on error.
 func (s *Service) preDeleteDisable(client *wordpress.Client, pluginSlug string) {
-	if disableErr := client.DisablePluginViaUploader(pluginSlug); disableErr != nil {
-		apiErr := wordpress.ExtractAPIError(disableErr)
-		isNotFoundError := apiErr != nil && apiErr.StatusCode == http.StatusNotFound
+	disableErr := client.DisablePluginViaUploader(pluginSlug)
 
-		if isNotFoundError {
-			s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
-		} else {
-			s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())
-		}
+	if disableErr == nil {
+
+		return
+	}
+
+	apiErr := wordpress.ExtractAPIError(disableErr)
+	isNotFoundError := apiErr != nil && apiErr.StatusCode == http.StatusNotFound
+
+	if isNotFoundError {
+		s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
+	} else {
+		s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())
 	}
 }
 
@@ -95,37 +139,46 @@ type remoteActionInput struct {
 	SiteId     int64
 	PluginSlug string
 	Action     string
-	ExecFn     func(*wordpress.Client) error
+	ExecFn     func(*wordpress.Client) *apperror.AppError
 }
 
 // executeRemotePluginAction runs a remote plugin action with session logging
-func (s *Service) executeRemotePluginAction(ctx context.Context, input remoteActionInput) error {
+func (s *Service) executeRemotePluginAction(ctx context.Context, input remoteActionInput) *apperror.AppError {
 	startTime := time.Now()
 
-	ref, err := s.setupRemoteActionRef(ctx, input)
-	if err != nil {
-		return err
+	ref, refErr := s.setupRemoteActionRef(ctx, input)
+
+	if refErr != nil {
+
+		return refErr
 	}
 
-	client, err := s.connectForRemoteAction(ref)
-	if err != nil {
-		return err
+	client, connectErr := s.connectForRemoteAction(ref)
+
+	if connectErr != nil {
+
+		return connectErr
 	}
+
 	ref.Client = client
 
 	return s.runRemoteAction(ctx, ref, startTime, input.ExecFn)
 }
 
 // setupRemoteActionRef resolves the site, creates the ref, and starts session.
-func (s *Service) setupRemoteActionRef(ctx context.Context, input remoteActionInput) (*remoteActionRef, error) {
-	site, err := s.resolveRemoteSite(ctx, input.SiteId)
-	if err != nil {
-		return nil, err
+func (s *Service) setupRemoteActionRef(ctx context.Context, input remoteActionInput) (*remoteActionRef, *apperror.AppError) {
+	site, siteErr := s.resolveRemoteSite(ctx, input.SiteId)
+
+	if siteErr != nil {
+
+		return nil, siteErr
 	}
 
 	ref := &remoteActionRef{
-		SiteID: input.SiteId, Action: input.Action,
-		PluginSlug: input.PluginSlug, Site: &site,
+		SiteID:     input.SiteId,
+		Action:     input.Action,
+		PluginSlug: input.PluginSlug,
+		Site:       &site,
 	}
 
 	ref.SessionID = s.initRemoteActionSession(ref)
@@ -135,15 +188,16 @@ func (s *Service) setupRemoteActionRef(ctx context.Context, input remoteActionIn
 }
 
 // runRemoteAction executes the action and handles success/failure.
-func (s *Service) runRemoteAction(ctx context.Context, ref *remoteActionRef, startTime time.Time, execFn func(*wordpress.Client) error) error {
+func (s *Service) runRemoteAction(ctx context.Context, ref *remoteActionRef, startTime time.Time, execFn func(*wordpress.Client) *apperror.AppError) *apperror.AppError {
 	s.logRemoteStageStart(ref)
 
-	err := execFn(ref.Client)
+	appErr := execFn(ref.Client)
 	durationMs := time.Since(startTime).Milliseconds()
 
-	if err != nil {
-		s.handleRemoteActionError(ctx, ref, err, durationMs)
-		return err
+	if appErr != nil {
+		s.handleRemoteActionError(ctx, ref, appErr, durationMs)
+
+		return appErr
 	}
 
 	s.handleRemoteActionSuccess(ctx, ref, durationMs)
@@ -152,9 +206,11 @@ func (s *Service) runRemoteAction(ctx context.Context, ref *remoteActionRef, sta
 }
 
 // resolveRemoteSite fetches and returns the site model for a remote action.
-func (s *Service) resolveRemoteSite(ctx context.Context, siteId int64) (models.Site, error) {
+func (s *Service) resolveRemoteSite(ctx context.Context, siteId int64) (models.Site, *apperror.AppError) {
 	siteResult := s.GetById(ctx, siteId)
+
 	if siteResult.HasError() {
+
 		return models.Site{}, siteResult.AppError()
 	}
 
@@ -164,14 +220,18 @@ func (s *Service) resolveRemoteSite(ctx context.Context, siteId int64) (models.S
 // initRemoteActionSession starts a session for the remote action and returns the session ID.
 func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 	if s.sessionService == nil {
+
 		return ""
 	}
 
 	sessionType := resolveRemoteSessionType(ref.Action)
 
 	startInput := session.StartSessionInput{
-		Type: sessionType, PluginID: 0, SiteID: ref.SiteID,
-		PluginName: ref.PluginSlug, SiteName: ref.Site.Name,
+		Type:       sessionType,
+		PluginID:   0,
+		SiteID:     ref.SiteID,
+		PluginName: ref.PluginSlug,
+		SiteName:   ref.Site.Name,
 	}
 	sessionId, _ := s.sessionService.StartSession(startInput)
 
@@ -182,30 +242,49 @@ func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 func resolveRemoteSessionType(action string) session.SessionType {
 	switch action {
 	case "enable":
+
 		return session.SessionTypeRemotePluginEnable
 	case "disable":
+
 		return session.SessionTypeRemotePluginDisable
 	case "delete":
+
 		return session.SessionTypeRemotePluginDelete
 	default:
+
 		return session.SessionType("remote_plugin_action")
 	}
 }
 
 // connectForRemoteAction decrypts credentials and creates a WordPress client.
-func (s *Service) connectForRemoteAction(ref *remoteActionRef) (*wordpress.Client, error) {
-	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "decrypt", Message: "Decrypting site credentials..."})
+func (s *Service) connectForRemoteAction(ref *remoteActionRef) (*wordpress.Client, *apperror.AppError) {
+	s.logRemoteAction(ref, RemoteActionLogInput{
+		Level:   "info",
+		Step:    "decrypt",
+		Message: "Decrypting site credentials...",
+	})
 
-	password, err := decrypt(ref.Site.PasswordEncrypted, s.encryptionKey)
-	if err != nil {
+	password, decryptErr := decrypt(ref.Site.PasswordEncrypted, s.encryptionKey)
+
+	if decryptErr != nil {
 		errMsg := "failed to decrypt password"
-		s.logRemoteAction(ref, RemoteActionLogInput{Level: "error", Step: "decrypt", Message: errMsg, Details: session.ToJSON(ErrorDetail{Error: err.Error()})})
+		appErr := apperror.Wrap(decryptErr, apperror.ErrInternal, errMsg)
+		s.logRemoteAction(ref, RemoteActionLogInput{
+			Level:   "error",
+			Step:    "decrypt",
+			Message: errMsg,
+			Details: session.ToJSON(AppErrorDetail{Error: appErr.Error()}),
+		})
 		s.endRemoteSession(ref.SessionID, "error", errMsg)
 
-		return nil, apperror.Wrap(err, apperror.ErrInternal, errMsg)
+		return nil, appErr
 	}
 
-	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "connect", Message: fmt.Sprintf("Connecting to WordPress site: %s", ref.Site.Url)})
+	s.logRemoteAction(ref, RemoteActionLogInput{
+		Level:   "info",
+		Step:    "connect",
+		Message: fmt.Sprintf("Connecting to WordPress site: %s", ref.Site.Url),
+	})
 
 	return s.wpClientFactory(ref.Site.Url, ref.Site.Username, string(password), nil), nil
 }
@@ -213,10 +292,19 @@ func (s *Service) connectForRemoteAction(ref *remoteActionRef) (*wordpress.Clien
 // logRemoteStageStart logs the stage start for the remote action execution.
 func (s *Service) logRemoteStageStart(ref *remoteActionRef) {
 	hasSessionService := s.sessionService != nil
-	hasSessionId      := ref.SessionID != ""
+	hasSessionId := ref.SessionID != ""
 
 	if hasSessionService && hasSessionId {
 		s.sessionService.LogStageStart(ref.SessionID, ref.Action)
 	}
-	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: ref.Action, Message: fmt.Sprintf("Executing %s action on plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(RemoteActionExecDetails{TargetUrl: ref.Site.Url, PluginSlug: ref.PluginSlug})})
+
+	s.logRemoteAction(ref, RemoteActionLogInput{
+		Level:   "info",
+		Step:    ref.Action,
+		Message: fmt.Sprintf("Executing %s action on plugin: %s", ref.Action, ref.PluginSlug),
+		Details: session.ToJSON(RemoteActionExecDetails{
+			TargetUrl:  ref.Site.Url,
+			PluginSlug: ref.PluginSlug,
+		}),
+	})
 }

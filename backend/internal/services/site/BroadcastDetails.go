@@ -18,8 +18,9 @@ func toJson(v any) json.RawMessage {
 
 // --- Connection test detail structs ---
 
-// ErrorDetail carries a single error message for broadcast context.
-type ErrorDetail struct {
+// AppErrorDetail carries a single error message for broadcast context.
+// The Error field stores the string representation from *apperror.AppError.
+type AppErrorDetail struct {
 	Error string
 }
 

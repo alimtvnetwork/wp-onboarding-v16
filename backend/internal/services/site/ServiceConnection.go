@@ -93,13 +93,13 @@ func (s *Service) loadSiteWithProgress(ctx context.Context, id int64) (*models.S
 }
 
 // broadcastSiteLoadFailure sends a site load failure progress event.
-func (s *Service) broadcastSiteLoadFailure(id int64, err error) {
+func (s *Service) broadcastSiteLoadFailure(id int64, appErr *apperror.AppError) {
 	failProgress := ConnectionProgressInput{
 		SiteID:  id,
 		Step:    connectionstep.FetchSite.String(),
 		Status:  stagestatus.Failed.String(),
 		Message: "Failed to retrieve site info",
-		Details: toJson(ErrorDetail{Error: err.Error()}),
+		Details: toJson(AppErrorDetail{Error: appErr.Error()}),
 	}
 	s.broadcastProgress(failProgress)
 }
@@ -116,16 +116,20 @@ func (s *Service) broadcastSiteLoadSuccess(id int64, siteName string) {
 }
 
 // decryptWithProgress decrypts a password with broadcast progress updates.
-func (s *Service) decryptWithProgress(siteId int64, encrypted string) ([]byte, error) {
+func (s *Service) decryptWithProgress(siteId int64, encrypted string) ([]byte, *apperror.AppError) {
 	s.broadcastDecryptStart(siteId)
 
 	password, err := decrypt(encrypted, s.encryptionKey)
+
 	if err != nil {
-		s.broadcastDecryptFailure(siteId, err)
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		appErr := apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		s.broadcastDecryptFailure(siteId, appErr)
+
+		return nil, appErr
 	}
 
 	s.broadcastDecryptSuccess(siteId)
+
 	return password, nil
 }
 
@@ -140,13 +144,13 @@ func (s *Service) broadcastDecryptStart(siteId int64) {
 }
 
 // broadcastDecryptFailure sends decrypt failure progress.
-func (s *Service) broadcastDecryptFailure(siteId int64, err error) {
+func (s *Service) broadcastDecryptFailure(siteId int64, appErr *apperror.AppError) {
 	s.broadcastProgress(ConnectionProgressInput{
 		SiteID:  siteId,
 		Step:    "decrypt",
 		Status:  stagestatus.Failed.String(),
 		Message: "Failed to decrypt credentials",
-		Details: toJson(ErrorDetail{Error: err.Error()}),
+		Details: toJson(AppErrorDetail{Error: appErr.Error()}),
 	})
 }
 
