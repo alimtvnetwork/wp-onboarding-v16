@@ -44,7 +44,9 @@ func (s *Service) registerSession(sessionID string, session *Session) {
 	s.sessions[sessionID] = session
 	s.mu.Unlock()
 
-	if s.log != nil {
+	isLogAvailable := s.log != nil
+
+	if isLogAvailable {
 		s.log.Info("Session started", "sessionId", sessionID, "type", session.Type)
 	}
 }
@@ -109,10 +111,15 @@ func writeSessionHeader(file *os.File, sessionID string, input StartSessionInput
 	header += fmt.Sprintf(" SESSION: %s\n", sessionID)
 	header += fmt.Sprintf(" TYPE: %s\n", input.Type)
 	header += fmt.Sprintf(" STARTED: %s\n", startedAt.Format("2006-01-02 15:04:05 UTC"))
-	if input.PluginName != "" {
+	hasPluginName := input.PluginName != ""
+
+	if hasPluginName {
 		header += fmt.Sprintf(" PLUGIN: %s (ID: %d)\n", input.PluginName, input.PluginID)
 	}
-	if input.SiteName != "" {
+
+	hasSiteName := input.SiteName != ""
+
+	if hasSiteName {
 		header += fmt.Sprintf(" SITE: %s (ID: %d)\n", input.SiteName, input.SiteID)
 	}
 	header += "═══════════════════════════════════════════════════════════════════════════════\n\n"
@@ -131,14 +138,18 @@ type LogInput struct {
 // Log writes a log entry to the session
 func (s *Service) Log(input LogInput) {
 	session := s.getActiveSession(input.SessionID)
-	if session == nil {
+	isSessionMissing := session == nil
+
+	if isSessionMissing {
 		return
 	}
 
 	session.mu.Lock()
 	defer session.mu.Unlock()
 
-	if session.logFile == nil {
+	isLogFileMissing := session.logFile == nil
+
+	if isLogFileMissing {
 		return
 	}
 
@@ -166,7 +177,9 @@ func formatLogLine(input LogInput) string {
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	parsed, parseErr := loglevel.Parse(input.Level)
 	levelUpper := loglevel.Info.String()
-	if parseErr == nil {
+	isParsed := parseErr == nil
+
+	if isParsed {
 		levelUpper = strings.ToUpper(parsed.String())
 	}
 	return fmt.Sprintf("[%s] [%s] [%s] %s\n", timestamp, levelUpper, input.Step, input.Message)
@@ -174,11 +187,15 @@ func formatLogLine(input LogInput) string {
 
 // writeLogDetails writes indented JSON details to the log file if present.
 func writeLogDetails(file *os.File, details json.RawMessage) {
-	if len(details) == 0 {
+	hasNoDetails := len(details) == 0
+
+	if hasNoDetails {
 		return
 	}
 	var parsedJSON json.RawMessage
-	if json.Unmarshal(details, &parsedJSON) == nil {
+	isParseable := json.Unmarshal(details, &parsedJSON) == nil
+
+	if isParseable {
 		detailsJSON, _ := json.MarshalIndent(parsedJSON, "    ", "  ")
 		file.WriteString(fmt.Sprintf("    %s\n", string(detailsJSON)))
 	}
@@ -187,14 +204,18 @@ func writeLogDetails(file *os.File, details json.RawMessage) {
 // LogStageStart writes a stage header to the session log
 func (s *Service) LogStageStart(sessionID, stageName string) {
 	session := s.getActiveSession(sessionID)
-	if session == nil {
+	isSessionMissing := session == nil
+
+	if isSessionMissing {
 		return
 	}
 
 	session.mu.Lock()
 	defer session.mu.Unlock()
 
-	if session.logFile == nil {
+	isLogFileMissing := session.logFile == nil
+
+	if isLogFileMissing {
 		return
 	}
 
@@ -220,14 +241,18 @@ type StageEndInput struct {
 // LogStageEnd writes a stage completion marker
 func (s *Service) LogStageEnd(input StageEndInput) {
 	session := s.getActiveSession(input.SessionID)
-	if session == nil {
+	isSessionMissing := session == nil
+
+	if isSessionMissing {
 		return
 	}
 
 	session.mu.Lock()
 	defer session.mu.Unlock()
 
-	if session.logFile == nil {
+	isLogFileMissing := session.logFile == nil
+
+	if isLogFileMissing {
 		return
 	}
 
@@ -278,14 +303,18 @@ func applyEndState(session *Session, status, errorMsg string) {
 
 // logSessionEnd logs session end if logger is available.
 func (s *Service) logSessionEnd(sessionID, status string) {
-	if s.log != nil {
+	isLogAvailable := s.log != nil
+
+	if isLogAvailable {
 		s.log.Info("Session ended", "sessionId", sessionID, "status", status)
 	}
 }
 
 // writeSessionFooter writes the end-of-session footer and closes the log file.
 func writeSessionFooter(session *Session, now time.Time, status, errorMsg string) {
-	if session.logFile == nil {
+	isLogFileMissing := session.logFile == nil
+
+	if isLogFileMissing {
 		return
 	}
 
@@ -302,7 +331,9 @@ func buildFooterString(startedAt, now time.Time, status, errorMsg string) string
 	footer += fmt.Sprintf(" SESSION ENDED: %s\n", now.Format("2006-01-02 15:04:05 UTC"))
 	footer += fmt.Sprintf(" STATUS: %s\n", status)
 	footer += fmt.Sprintf(" DURATION: %v\n", duration.Round(time.Millisecond))
-	if errorMsg != "" {
+	hasErrorMsg := errorMsg != ""
+
+	if hasErrorMsg {
 		footer += fmt.Sprintf(" ERROR: %s\n", errorMsg)
 	}
 	footer += "═══════════════════════════════════════════════════════════════════════════════\n"

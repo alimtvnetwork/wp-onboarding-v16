@@ -110,9 +110,13 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 
 				if isSensitive {
 					headers[key] = "[REDACTED]"
-				} else if len(values) > 0 {
+			} else {
+				hasValues := len(values) > 0
+
+				if hasValues {
 					headers[key] = values[0]
 				}
+			}
 			}
 
 			// Add session ID to context
@@ -156,7 +160,9 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			}
 
 			// Persist session if store is available
-			if store != nil {
+			isStoreAvailable := store != nil
+
+			if isStoreAvailable {
 				saveErr := store.SaveRequestSession(session)
 				if saveErr != nil {
 					log.Error("Failed to save request session", "sessionId", sessionID, "error", saveErr)
@@ -227,11 +233,17 @@ func extractErrorFromResponse(body string) string {
 		} `json:"error"` // external key
 	}
 	err := json.Unmarshal([]byte(body), &response)
-	if err == nil && response.Error.Message != "" {
-		if response.Error.Code != "" {
+	hasErrorMessage := err == nil && response.Error.Message != ""
+
+	if hasErrorMessage {
+		hasErrorCode := response.Error.Code != ""
+
+		if hasErrorCode {
 			return "[" + response.Error.Code + "] " + response.Error.Message
 		}
+
 		return response.Error.Message
 	}
+
 	return ""
 }
