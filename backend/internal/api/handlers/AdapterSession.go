@@ -12,10 +12,10 @@ import (
 // All methods return *apperror.AppError — never raw error.
 type SessionServiceInterface interface {
 	ListSessions(limit int) ([]*session.SessionSummary, *apperror.AppError)
-	GetSession(sessionID string) (*session.Session, *apperror.AppError)
-	GetSessionLogs(sessionID string) (string, *apperror.AppError)
-	GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, *apperror.AppError)
-	DeleteSession(sessionID string) *apperror.AppError
+	GetSession(sessionId string) (*session.Session, *apperror.AppError)
+	GetSessionLogs(sessionId string) (string, *apperror.AppError)
+	GetSessionDiagnostics(sessionId string) (*session.SessionDiagnostics, *apperror.AppError)
+	DeleteSession(sessionId string) *apperror.AppError
 }
 
 // ErrorHistoryServiceInterface defines error history service methods.
@@ -50,24 +50,24 @@ func (a *SessionServiceAdapter) ListSessions(limit int) ([]*session.SessionSumma
 	return result.Items(), nil
 }
 
-func (a *SessionServiceAdapter) GetSession(sessionID string) (*session.Session, *apperror.AppError) {
-	result := a.Service.GetSession(sessionID)
+func (a *SessionServiceAdapter) GetSession(sessionId string) (*session.Session, *apperror.AppError) {
+	result := a.Service.GetSession(sessionId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
 	return result.Value(), nil
 }
 
-func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, *apperror.AppError) {
-	result := a.Service.GetSessionLogs(sessionID)
+func (a *SessionServiceAdapter) GetSessionLogs(sessionId string) (string, *apperror.AppError) {
+	result := a.Service.GetSessionLogs(sessionId)
 	if result.HasError() {
 		return "", result.AppError()
 	}
 	return result.Value(), nil
 }
 
-func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, *apperror.AppError) {
-	result := a.Service.GetSessionDiagnostics(sessionID)
+func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionId string) (*session.SessionDiagnostics, *apperror.AppError) {
+	result := a.Service.GetSessionDiagnostics(sessionId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -75,8 +75,8 @@ func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (*sessio
 	return &v, nil
 }
 
-func (a *SessionServiceAdapter) DeleteSession(sessionID string) *apperror.AppError {
-	return a.Service.DeleteSession(sessionID)
+func (a *SessionServiceAdapter) DeleteSession(sessionId string) *apperror.AppError {
+	return a.Service.DeleteSession(sessionId)
 }
 
 // ErrorHistoryServiceAdapter wraps *errorhistory.Service to implement ErrorHistoryServiceInterface

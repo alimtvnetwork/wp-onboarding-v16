@@ -50,8 +50,8 @@ func New(cfg Config) *Service {
 }
 
 // CheckSite performs a health check on a single site
-func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[models.SiteHealthCheck] {
-	site, siteErr := s.querySiteForCheck(ctx, siteID)
+func (s *Service) CheckSite(ctx context.Context, siteId int64) apperror.Result[models.SiteHealthCheck] {
+	site, siteErr := s.querySiteForCheck(ctx, siteId)
 	if siteErr != nil {
 
 		return apperror.Fail[models.SiteHealthCheck](siteErr)
@@ -64,12 +64,12 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 }
 
 // querySiteForCheck fetches the site info needed for a health check.
-func (s *Service) querySiteForCheck(ctx context.Context, siteID int64) (*siteCheckInfo, *apperror.AppError) {
+func (s *Service) querySiteForCheck(ctx context.Context, siteId int64) (*siteCheckInfo, *apperror.AppError) {
 	var m siteCheckInfo
-	m.Id = siteID
+	m.Id = siteId
 
 	err := s.db.QueryRowContext(ctx,
-		"SELECT Name, Url, Username, PasswordEncrypted FROM Sites WHERE Id = ?", siteID,
+		"SELECT Name, Url, Username, PasswordEncrypted FROM Sites WHERE Id = ?", siteId,
 	).Scan(
 		&m.Name,
 		&m.Url,
@@ -80,7 +80,7 @@ func (s *Service) querySiteForCheck(ctx context.Context, siteID int64) (*siteChe
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "site not found").
-			WithSiteId(siteID)
+			WithSiteId(siteId)
 	}
 
 	return &m, nil
@@ -204,14 +204,14 @@ func (s *Service) listSiteIds(ctx context.Context) ([]int64, *apperror.AppError)
 }
 
 // GetHistory returns health check history
-func (s *Service) GetHistory(siteID int64, limit int) apperror.ResultSlice[models.SiteHealthCheck] {
+func (s *Service) GetHistory(siteId int64, limit int) apperror.ResultSlice[models.SiteHealthCheck] {
 	isLimitUnset := limit <= 0
 
 	if isLimitUnset {
 		limit = 50
 	}
 
-	rows, err := s.db.Query(healthHistorySQL, siteID, siteID, limit)
+	rows, err := s.db.Query(healthHistorySQL, siteId, siteId, limit)
 	if err != nil {
 
 		return apperror.FailSliceWrap[models.SiteHealthCheck](err, apperror.ErrFSDelete, "failed to query health history")

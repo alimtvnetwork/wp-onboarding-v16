@@ -156,33 +156,33 @@ func (s *serviceImpl) detectDeletedFiles(local, remote map[string]FileEntry) []m
 }
 
 // fetchRemoteManifest retrieves the remote file manifest for comparison.
-func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID int64) (map[string]FileEntry, string) {
-	mappingResult := s.getMapping(ctx, pluginID, siteID)
+func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId int64) (map[string]FileEntry, string) {
+	mappingResult := s.getMapping(ctx, pluginId, siteId)
 	if mappingResult.HasError() {
 		return nil, "No site mapping found: " + mappingResult.AppError().Error()
 	}
 	mapping := mappingResult.Value()
 
 	credProgress := SyncProgressInput{
-		PluginId: pluginID,
-		SiteId:   siteID,
+		PluginId: pluginId,
+		SiteId:   siteId,
 		Step:     syncstep.Comparing.Value(),
 		Progress: 40,
 		Message:  "Retrieving site credentials...",
 	}
 	s.broadcastProgress(credProgress)
-	siteInfoResult := s.getSiteInfo(ctx, siteID)
+	siteInfoResult := s.getSiteInfo(ctx, siteId)
 	if siteInfoResult.HasError() {
 		return nil, "Failed to get site info: " + siteInfoResult.AppError().Error()
 	}
 
-	passwordResult := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
+	passwordResult := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteId)
 	if passwordResult.HasError() {
 		return nil, "Failed to decrypt credentials: " + passwordResult.AppError().Error()
 	}
 	password := passwordResult.Value()
 
-	return s.fetchAndParseManifest(ctx, siteInfoResult.Value(), mapping, pluginID, siteID, password)
+	return s.fetchAndParseManifest(ctx, siteInfoResult.Value(), mapping, pluginId, siteId, password)
 }
 
 // fetchAndParseManifest calls the remote API and converts the manifest to FileEntry map.
@@ -190,13 +190,13 @@ func (s *serviceImpl) fetchAndParseManifest(
 	ctx context.Context,
 	info models.Site,
 	mapping models.PluginMapping,
-	pluginID int64,
-	siteID int64,
+	pluginId int64,
+	siteId int64,
 	password string,
 ) (map[string]FileEntry, string) {
 	fetchProgress := SyncProgressInput{
-		PluginId: pluginID,
-		SiteId:   siteID,
+		PluginId: pluginId,
+		SiteId:   siteId,
 		Step:     syncstep.Comparing.Value(),
 		Progress: 50,
 		Message:  "Fetching remote file manifest...",
@@ -209,10 +209,10 @@ func (s *serviceImpl) fetchAndParseManifest(
 	remoteFiles := make(map[string]FileEntry)
 	if manifestResult.HasError() {
 		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
-			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", manifestResult.AppError())
+			"pluginId", pluginId, "siteId", siteId, "slug", mapping.RemoteSlug, "error", manifestResult.AppError())
 		fallbackProgress := SyncProgressInput{
-			PluginId: pluginID,
-			SiteId:   siteID,
+			PluginId: pluginId,
+			SiteId:   siteId,
 			Step:     syncstep.Comparing.Value(),
 			Progress: 60,
 			Message:  "Remote manifest unavailable, comparing local only...",

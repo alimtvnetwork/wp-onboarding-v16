@@ -29,14 +29,14 @@ type PushSyncResult struct {
 
 // Service interface for sync operations
 type Service interface {
-	CheckSync(ctx context.Context, pluginID, siteID int64) apperror.Result[SyncResult]
-	CheckAllSites(ctx context.Context, pluginID int64) apperror.Result[BatchSyncResult]
+	CheckSync(ctx context.Context, pluginId, siteId int64) apperror.Result[SyncResult]
+	CheckAllSites(ctx context.Context, pluginId int64) apperror.Result[BatchSyncResult]
 	CheckAllPlugins(ctx context.Context) apperror.ResultSlice[SyncResult]
-	PushSync(ctx context.Context, pluginID, siteID int64) apperror.Result[PushSyncResult]
-	GetFileChanges(ctx context.Context, pluginID, siteID int64) apperror.ResultSlice[models.FileChange]
+	PushSync(ctx context.Context, pluginId, siteId int64) apperror.Result[PushSyncResult]
+	GetFileChanges(ctx context.Context, pluginId, siteId int64) apperror.ResultSlice[models.FileChange]
 	RecordFileChange(ctx context.Context, change *models.FileChange) *apperror.AppError
-	MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) *apperror.AppError
-	ClearChanges(ctx context.Context, pluginID int64) *apperror.AppError
+	MarkSynced(ctx context.Context, pluginId, siteId int64, files []string) *apperror.AppError
+	ClearChanges(ctx context.Context, pluginId int64) *apperror.AppError
 }
 
 // FileEntry represents a file with its hash, modification time, and size
@@ -76,7 +76,7 @@ type BatchSyncResult struct {
 
 // SitePasswordDecryptor interface for getting decrypted site passwords
 type SitePasswordDecryptor interface {
-	GetDecryptedPassword(ctx context.Context, siteID int64) apperror.Result[string]
+	GetDecryptedPassword(ctx context.Context, siteId int64) apperror.Result[string]
 }
 
 // Config holds sync service configuration

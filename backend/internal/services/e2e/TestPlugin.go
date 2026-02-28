@@ -71,7 +71,7 @@ func (s *serviceImpl) verifyAndStorePlugin(resp *apiResponse) error {
 
 	id, ok := resp.dataFieldFloat("id")
 	if ok {
-		s.setCleanupID("plugin", int64(id))
+		s.setCleanupId("plugin", int64(id))
 	}
 	return nil
 }
@@ -115,18 +115,18 @@ func (s *serviceImpl) testRegisterInvalidPath(ctx context.Context, result *TestR
 }
 
 func (s *serviceImpl) testUpdatePlugin(ctx context.Context, result *TestResult) error {
-	pluginID, err := s.createTestPlugin()
+	pluginId, err := s.createTestPlugin()
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
-	defer s.cleanupPlugin(pluginID)
+	defer s.cleanupPlugin(pluginId)
 
 	body := pluginUpdateBody{Name: "E2E Updated Plugin"}
 	result.RequestData = toJSON(body)
 
-	resp, err := s.api.put(fmt.Sprintf("/plugins/%d", pluginID), body)
+	resp, err := s.api.put(fmt.Sprintf("/plugins/%d", pluginId), body)
 	if err != nil {
-		return fmt.Errorf("PUT /plugins/%d failed: %w", pluginID, err)
+		return fmt.Errorf("PUT /plugins/%d failed: %w", pluginId, err)
 	}
 	result.ResponseData = resp.RawBody
 
@@ -135,7 +135,7 @@ func (s *serviceImpl) testUpdatePlugin(ctx context.Context, result *TestResult) 
 		return err
 	}
 
-	return s.verifyPluginName(pluginID, "E2E Updated Plugin")
+	return s.verifyPluginName(pluginId, "E2E Updated Plugin")
 }
 
 // verifyPluginName confirms a plugin has the expected name.
@@ -154,16 +154,16 @@ func (s *serviceImpl) verifyPluginName(id int64, expected string) error {
 }
 
 func (s *serviceImpl) testDeletePlugin(ctx context.Context, result *TestResult) error {
-	pluginID, err := s.createTestPlugin()
+	pluginId, err := s.createTestPlugin()
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	result.RequestData = fmt.Sprintf(`{"id": %d}`, pluginID)
+	result.RequestData = fmt.Sprintf(`{"id": %d}`, pluginId)
 
-	resp, err := s.api.del(fmt.Sprintf("/plugins/%d", pluginID))
+	resp, err := s.api.del(fmt.Sprintf("/plugins/%d", pluginId))
 	if err != nil {
-		return fmt.Errorf("DELETE /plugins/%d failed: %w", pluginID, err)
+		return fmt.Errorf("DELETE /plugins/%d failed: %w", pluginId, err)
 	}
 	result.ResponseData = resp.RawBody
 
@@ -173,7 +173,7 @@ func (s *serviceImpl) testDeletePlugin(ctx context.Context, result *TestResult) 
 		return fmt.Errorf("expected success, got HTTP %d", resp.StatusCode)
 	}
 
-	return s.verifyPluginDeleted(pluginID)
+	return s.verifyPluginDeleted(pluginId)
 }
 
 // verifyPluginDeleted confirms a plugin returns 404.
@@ -191,17 +191,17 @@ func (s *serviceImpl) verifyPluginDeleted(id int64) error {
 }
 
 func (s *serviceImpl) testScanPluginFiles(ctx context.Context, result *TestResult) error {
-	pluginID, err := s.createTestPlugin()
+	pluginId, err := s.createTestPlugin()
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
-	defer s.cleanupPlugin(pluginID)
+	defer s.cleanupPlugin(pluginId)
 
-	result.RequestData = fmt.Sprintf(`{"pluginId": %d}`, pluginID)
+	result.RequestData = fmt.Sprintf(`{"pluginId": %d}`, pluginId)
 
-	resp, err := s.api.post(fmt.Sprintf("/watcher/scan/%d", pluginID), nil)
+	resp, err := s.api.post(fmt.Sprintf("/watcher/scan/%d", pluginId), nil)
 	if err != nil {
-		return fmt.Errorf("POST /watcher/scan/%d failed: %w", pluginID, err)
+		return fmt.Errorf("POST /watcher/scan/%d failed: %w", pluginId, err)
 	}
 	result.ResponseData = resp.RawBody
 

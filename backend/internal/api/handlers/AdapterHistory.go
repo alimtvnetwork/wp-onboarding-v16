@@ -28,9 +28,9 @@ type PublishHistoryListResult struct {
 
 // SiteHealthServiceInterface defines health check service methods
 type SiteHealthServiceInterface interface {
-	CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, *apperror.AppError)
+	CheckSite(ctx context.Context, siteId int64) (*models.SiteHealthCheck, *apperror.AppError)
 	CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, *apperror.AppError)
-	GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError)
+	GetHistory(siteId int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError)
 	GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, *apperror.AppError)
 	GetStats(ctx context.Context) (*models.SiteHealthStats, *apperror.AppError)
 	ClearHistory(olderThanDays int) (int64, *apperror.AppError)
@@ -103,8 +103,8 @@ type SiteHealthServiceAdapter struct {
 	*sitehealth.Service
 }
 
-func (a *SiteHealthServiceAdapter) CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, *apperror.AppError) {
-	result := a.Service.CheckSite(ctx, siteID)
+func (a *SiteHealthServiceAdapter) CheckSite(ctx context.Context, siteId int64) (*models.SiteHealthCheck, *apperror.AppError) {
+	result := a.Service.CheckSite(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -123,8 +123,8 @@ func (a *SiteHealthServiceAdapter) CheckAllSites(ctx context.Context) ([]models.
 	return result.Items(), nil
 }
 
-func (a *SiteHealthServiceAdapter) GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError) {
-	result := a.Service.GetHistory(siteID, limit)
+func (a *SiteHealthServiceAdapter) GetHistory(siteId int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError) {
+	result := a.Service.GetHistory(siteId, limit)
 	if result.HasError() {
 		return nil, result.AppError()
 	}

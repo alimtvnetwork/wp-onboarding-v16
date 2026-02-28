@@ -17,7 +17,7 @@ import (
 // 1. REST API probe   2. Auth check   3. Parse user info   4. Plugin access   5. Write test
 func (c *Client) TestConnection() apperror.Result[*ConnectionInfo] {
 	result := &ConnectionInfo{
-		Url: c.baseURL,
+		Url: c.baseUrl,
 	}
 
 	appErr := c.runPreAuthSteps(result)
@@ -80,7 +80,7 @@ func (c *Client) reportProbeStart() {
 		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Running.String(),
 		Message: "Checking WordPress REST API availability...",
-		Details: toProgress(UrlProgress{Url: c.baseURL}),
+		Details: toProgress(UrlProgress{Url: c.baseUrl}),
 	}
 	c.progress(probeStart)
 }
@@ -91,11 +91,11 @@ func (c *Client) reportProbeFailure(err error) *apperror.AppError {
 		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Failed.String(),
 		Message: fmt.Sprintf("REST API not accessible: %v", err),
-		Details: toProgress(UrlProgress{Url: c.baseURL}),
+		Details: toProgress(UrlProgress{Url: c.baseUrl}),
 	}
 	c.progress(failEvent)
 
-	return apperror.Wrap(err, apperror.ErrWPAPIDisabled, "REST API not accessible").WithURL(c.baseURL)
+	return apperror.Wrap(err, apperror.ErrWPAPIDisabled, "REST API not accessible").WithURL(c.baseUrl)
 }
 
 // reportProbeSuccess sends the probe success event.
@@ -104,7 +104,7 @@ func (c *Client) reportProbeSuccess(result *ConnectionInfo) {
 		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Completed.String(),
 		Message: "REST API is available",
-		Details: toProgress(SiteNameProgress{Url: c.baseURL, SiteName: result.SiteName}),
+		Details: toProgress(SiteNameProgress{Url: c.baseUrl, SiteName: result.SiteName}),
 	}
 	c.progress(successEvent)
 }
@@ -135,11 +135,11 @@ func (c *Client) reportRestApiNotFound() *apperror.AppError {
 		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Failed.String(),
 		Message: "REST API not found - is permalink structure set?",
-		Details: toProgress(UrlProgress{Url: c.baseURL}),
+		Details: toProgress(UrlProgress{Url: c.baseUrl}),
 	}
 	c.progress(notFoundEvent)
 
-	return apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").WithURL(c.baseURL)
+	return apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").WithURL(c.baseUrl)
 }
 
 // authenticateAndParseUser checks authentication (Step 2) and parses user info (Step 3).
@@ -171,7 +171,7 @@ func (c *Client) reportAuthStart() {
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Authenticating as %s...", c.username),
-		Details: toProgress(AuthInitProgress{Url: c.baseURL, Username: c.username}),
+		Details: toProgress(AuthInitProgress{Url: c.baseUrl, Username: c.username}),
 	}
 	c.progress(authStartEvent)
 }
@@ -193,19 +193,19 @@ func (c *Client) reportAuthRequestFailed(err *apperror.AppError) *apperror.AppEr
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Failed.String(),
 		Message: fmt.Sprintf("Authentication request failed: %v", err),
-		Details: toProgress(UrlProgress{Url: c.baseURL}),
+		Details: toProgress(UrlProgress{Url: c.baseUrl}),
 	}
 	c.progress(authFailEvent)
 
 	return apperror.Wrap(err, apperror.ErrWPAuth, "authentication request failed").
-		WithURL(c.baseURL).
+		WithURL(c.baseUrl).
 		WithUsername(c.username)
 }
 
 // reportAuthSuccess sends the auth success event.
 func (c *Client) reportAuthSuccess(result *ConnectionInfo) {
 	authProgress := UserAuthProgress{
-		Url:    c.baseURL,
+		Url:    c.baseUrl,
 		UserId: result.UserId,
 		Roles:  result.UserRoles,
 	}
@@ -227,7 +227,7 @@ func (c *Client) checkAuthStatus(statusCode int, body []byte) *apperror.AppError
 
 		return c.reportAuthFailure("Invalid username or application password",
 			apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").
-				WithURL(c.baseURL).
+				WithURL(c.baseUrl).
 				WithUsername(c.username))
 	}
 
@@ -237,7 +237,7 @@ func (c *Client) checkAuthStatus(statusCode int, body []byte) *apperror.AppError
 
 		return c.reportAuthFailure("Access forbidden - user lacks permissions",
 			apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").
-				WithURL(c.baseURL).
+				WithURL(c.baseUrl).
 				WithStatusCode(statusCode))
 	}
 
@@ -257,12 +257,12 @@ func (c *Client) checkUnexpectedAuthStatus(statusCode int, body []byte) *apperro
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Failed.String(),
 		Message: fmt.Sprintf("Unexpected response: %d", statusCode),
-		Details: toProgress(AuthBodyProgress{Url: c.baseURL, Body: string(body)}),
+		Details: toProgress(AuthBodyProgress{Url: c.baseUrl, Body: string(body)}),
 	}
 	c.progress(unexpectedEvent)
 
 	return apperror.New(apperror.ErrWPConnection, "unexpected authentication response").
-		WithURL(c.baseURL).
+		WithURL(c.baseUrl).
 		WithStatusCode(statusCode).
 		WithDetails(string(body))
 }
@@ -273,7 +273,7 @@ func (c *Client) reportAuthFailure(message string, err *apperror.AppError) *appe
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Failed.String(),
 		Message: message,
-		Details: toProgress(UrlProgress{Url: c.baseURL}),
+		Details: toProgress(UrlProgress{Url: c.baseUrl}),
 	}
 	c.progress(authFailureEvent)
 

@@ -161,8 +161,8 @@ func startService(cfg Config, sessionsDir string, retentionDays int) *Service {
 }
 
 // getSessionDir returns the directory path for a session
-func (s *Service) getSessionDir(sessionID string) apperror.Result[string] {
-	dir, err := pathutil.Join(s.sessionsDir, sessionID)
+func (s *Service) getSessionDir(sessionId string) apperror.Result[string] {
+	dir, err := pathutil.Join(s.sessionsDir, sessionId)
 
 	if err != nil {
 		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve session directory")
@@ -172,8 +172,8 @@ func (s *Service) getSessionDir(sessionID string) apperror.Result[string] {
 }
 
 // getLogPath returns the file path for a session's main log
-func (s *Service) getLogPath(sessionID string) apperror.Result[string] {
-	dirResult := s.getSessionDir(sessionID)
+func (s *Service) getLogPath(sessionId string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionId)
 
 	if dirResult.HasError() {
 		return dirResult
@@ -189,8 +189,8 @@ func (s *Service) getLogPath(sessionID string) apperror.Result[string] {
 }
 
 // getRequestPath returns the file path for request.json
-func (s *Service) getRequestPath(sessionID string) apperror.Result[string] {
-	dirResult := s.getSessionDir(sessionID)
+func (s *Service) getRequestPath(sessionId string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionId)
 
 	if dirResult.HasError() {
 		return dirResult
@@ -206,8 +206,8 @@ func (s *Service) getRequestPath(sessionID string) apperror.Result[string] {
 }
 
 // getResponsePath returns the file path for response.json
-func (s *Service) getResponsePath(sessionID string) apperror.Result[string] {
-	dirResult := s.getSessionDir(sessionID)
+func (s *Service) getResponsePath(sessionId string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionId)
 
 	if dirResult.HasError() {
 		return dirResult
@@ -223,8 +223,8 @@ func (s *Service) getResponsePath(sessionID string) apperror.Result[string] {
 }
 
 // getErrorLogPath returns the file path for error.log
-func (s *Service) getErrorLogPath(sessionID string) apperror.Result[string] {
-	dirResult := s.getSessionDir(sessionID)
+func (s *Service) getErrorLogPath(sessionId string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionId)
 
 	if dirResult.HasError() {
 		return dirResult

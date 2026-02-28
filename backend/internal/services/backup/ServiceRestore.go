@@ -8,22 +8,22 @@ import (
 )
 
 // Restore uploads a backup to WordPress
-func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[RestoreResult] {
-	s.log.Info("Restoring backup", "backupId", backupID)
+func (s *Service) Restore(ctx context.Context, backupId int64) apperror.Result[RestoreResult] {
+	s.log.Info("Restoring backup", "backupId", backupId)
 
 	restoreLog := BackupLogInput{
-		PluginId: backupID,
+		PluginId: backupId,
 		Step:     "init",
 		Message:  "Starting backup restore",
-		Details:  toDetails(InitDetails{BackupId: backupID}),
+		Details:  toDetails(InitDetails{BackupId: backupId}),
 	}
 	s.logInfoWithDetails(restoreLog)
 
 	// TODO: Implement restore steps
-	s.logInfo(backupID, "locate", "Locating backup file")
-	s.logInfo(backupID, "upload", "Uploading backup to WordPress")
-	s.logInfo(backupID, "activate", "Activating restored plugin")
-	s.logInfo(backupID, "complete", "Backup restored successfully")
+	s.logInfo(backupId, "locate", "Locating backup file")
+	s.logInfo(backupId, "upload", "Uploading backup to WordPress")
+	s.logInfo(backupId, "activate", "Activating restored plugin")
+	s.logInfo(backupId, "complete", "Backup restored successfully")
 
 	return apperror.Ok(RestoreResult{IsSuccess: true})
 }

@@ -12,15 +12,15 @@ import (
 )
 
 // PreviewPublish returns a preview of what files will change during publish
-func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) apperror.Result[PublishPreviewResult] {
-	result := &PublishPreviewResult{PluginId: pluginID, SiteId: siteID, Files: []FilePreview{}}
+func (s *Service) PreviewPublish(ctx context.Context, pluginId, siteId int64) apperror.Result[PublishPreviewResult] {
+	result := &PublishPreviewResult{PluginId: pluginId, SiteId: siteId, Files: []FilePreview{}}
 
-	pluginInfo, err := s.loadPluginForPreview(ctx, pluginID, result)
+	pluginInfo, err := s.loadPluginForPreview(ctx, pluginId, result)
 	if err != nil {
 		return apperror.Fail[PublishPreviewResult](err)
 	}
 
-	previewLoad, err := s.loadSiteForPreview(ctx, pluginID, siteID, result)
+	previewLoad, err := s.loadSiteForPreview(ctx, pluginId, siteId, result)
 	if err != nil {
 		return apperror.Fail[PublishPreviewResult](err)
 	}
@@ -46,8 +46,8 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 }
 
 // loadPluginForPreview loads plugin info and populates preview result fields.
-func (s *Service) loadPluginForPreview(ctx context.Context, pluginID int64, result *PublishPreviewResult) (*pluginPreviewInfo, *apperror.AppError) {
-	pluginResult := s.pluginService.GetById(ctx, pluginID)
+func (s *Service) loadPluginForPreview(ctx context.Context, pluginId int64, result *PublishPreviewResult) (*pluginPreviewInfo, *apperror.AppError) {
+	pluginResult := s.pluginService.GetById(ctx, pluginId)
 	if pluginResult.HasError() {
 		return nil, apperror.Wrap(pluginResult.AppError(), apperror.ErrNotFound, "plugin not found")
 	}
@@ -81,8 +81,8 @@ type mappingPreviewInfo struct {
 }
 
 // loadSiteForPreview loads site, credentials, and mapping for preview.
-func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64, result *PublishPreviewResult) (*previewLoadResult, *apperror.AppError) {
-	credsResult := s.getSiteCredentials(ctx, siteID)
+func (s *Service) loadSiteForPreview(ctx context.Context, pluginId, siteId int64, result *PublishPreviewResult) (*previewLoadResult, *apperror.AppError) {
+	credsResult := s.getSiteCredentials(ctx, siteId)
 	if credsResult.HasError() {
 		return nil, apperror.Wrap(credsResult.AppError(), apperror.ErrNotFound, "site not found")
 	}
@@ -90,7 +90,7 @@ func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64
 	result.SiteName = creds.Site.Name
 	result.SiteUrl = creds.Site.Url
 
-	mapping, mappingErr := s.loadMappingForPreview(ctx, pluginID, siteID)
+	mapping, mappingErr := s.loadMappingForPreview(ctx, pluginId, siteId)
 	if mappingErr != nil {
 		return nil, mappingErr
 	}
@@ -100,8 +100,8 @@ func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64
 }
 
 // loadMappingForPreview loads the plugin-site mapping.
-func (s *Service) loadMappingForPreview(ctx context.Context, pluginID, siteID int64) (models.PluginMapping, *apperror.AppError) {
-	mappingResult := s.getMapping(ctx, pluginID, siteID)
+func (s *Service) loadMappingForPreview(ctx context.Context, pluginId, siteId int64) (models.PluginMapping, *apperror.AppError) {
+	mappingResult := s.getMapping(ctx, pluginId, siteId)
 	if mappingResult.HasError() {
 		return models.PluginMapping{}, apperror.Wrap(mappingResult.AppError(), apperror.ErrNotFound, "plugin-site mapping not found")
 	}
@@ -127,8 +127,8 @@ type fileDiffDeps struct {
 }
 
 // GetFileDiff retrieves both local and remote content for a file to show differences.
-func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) apperror.Result[FileDiffResult] {
-	deps := s.resolveFileDiffDeps(ctx, pluginID, siteID)
+func (s *Service) GetFileDiff(ctx context.Context, pluginId, siteId int64, filePath string) apperror.Result[FileDiffResult] {
+	deps := s.resolveFileDiffDeps(ctx, pluginId, siteId)
 	if deps.HasError() {
 		return apperror.Fail[FileDiffResult](deps.AppError())
 	}
@@ -144,18 +144,18 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 }
 
 // resolveFileDiffDeps loads plugin, site credentials, and mapping for file diff.
-func (s *Service) resolveFileDiffDeps(ctx context.Context, pluginID, siteID int64) apperror.Result[fileDiffDeps] {
-	pluginResult := s.pluginService.GetById(ctx, pluginID)
+func (s *Service) resolveFileDiffDeps(ctx context.Context, pluginId, siteId int64) apperror.Result[fileDiffDeps] {
+	pluginResult := s.pluginService.GetById(ctx, pluginId)
 	if pluginResult.HasError() {
 		return apperror.FailWrap[fileDiffDeps](pluginResult.AppError(), apperror.ErrDatabaseQuery, "plugin not found")
 	}
 
-	credsResult := s.getSiteCredentials(ctx, siteID)
+	credsResult := s.getSiteCredentials(ctx, siteId)
 	if credsResult.HasError() {
 		return apperror.FailWrap[fileDiffDeps](credsResult.AppError(), apperror.ErrDatabaseQuery, "site not found")
 	}
 
-	mappingResult := s.getMapping(ctx, pluginID, siteID)
+	mappingResult := s.getMapping(ctx, pluginId, siteId)
 	if mappingResult.HasError() {
 		return apperror.FailWrap[fileDiffDeps](mappingResult.AppError(), apperror.ErrDatabaseQuery, "mapping not found")
 	}

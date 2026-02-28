@@ -70,7 +70,7 @@ func (s *Service) failPipeline(pctx *publishContext, appErr *apperror.AppError, 
 }
 
 // logConnect broadcasts the WordPress connection attempt.
-func (s *Service) logConnect(pluginID, siteID int64, siteInfo *models.Site) {
+func (s *Service) logConnect(pluginId, siteId int64, siteInfo *models.Site) {
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.Url, "username", siteInfo.Username)
 
 	connectDetails := toDetails(ConnectDetails{
@@ -78,8 +78,8 @@ func (s *Service) logConnect(pluginID, siteID int64, siteInfo *models.Site) {
 		Username: siteInfo.Username,
 	})
 	connectLog := DetailedLogInput{
-		PluginId: pluginID,
-		SiteId:   siteID,
+		PluginId: pluginId,
+		SiteId:   siteId,
 		Level:    loglevel.Info,
 		Step:     publishstep.Connect,
 		Message:  fmt.Sprintf("Connecting to WordPress: %s", siteInfo.Url),
