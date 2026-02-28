@@ -35,7 +35,6 @@ func (s *Service) GetSessionLogs(sessionID string) apperror.Result[string] {
 	logResult := s.getLogPath(sessionID)
 
 	if logResult.HasError() {
-
 		return apperror.Fail[string](logResult.AppError())
 	}
 
@@ -88,21 +87,18 @@ func (s *Service) loadDiagnosticRequest(sessionID string) *SessionRequest {
 	reqResult := s.getRequestPath(sessionID)
 
 	if reqResult.HasError() {
-
 		return nil
 	}
 
 	data, err := os.ReadFile(reqResult.Value())
 
 	if err != nil {
-
 		return nil
 	}
 
 	var req SessionRequest
 
 	if json.Unmarshal(data, &req) != nil {
-
 		return nil
 	}
 
@@ -114,21 +110,18 @@ func (s *Service) loadDiagnosticResponse(sessionID string) *SessionResponse {
 	respResult := s.getResponsePath(sessionID)
 
 	if respResult.HasError() {
-
 		return nil
 	}
 
 	data, err := os.ReadFile(respResult.Value())
 
 	if err != nil {
-
 		return nil
 	}
 
 	var resp SessionResponse
 
 	if json.Unmarshal(data, &resp) != nil {
-
 		return nil
 	}
 
@@ -140,14 +133,12 @@ func (s *Service) loadDiagnosticStackTrace(sessionID string) *SessionStackTrace 
 	errResult := s.getErrorLogPath(sessionID)
 
 	if errResult.HasError() {
-
 		return nil
 	}
 
 	data, err := os.ReadFile(errResult.Value())
 
 	if err != nil {
-
 		return nil
 	}
 
@@ -214,7 +205,6 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, *apperror.App
 	dirResult := s.getSessionDir(sessionID)
 
 	if dirResult.HasError() {
-
 		return nil, dirResult.AppError()
 	}
 

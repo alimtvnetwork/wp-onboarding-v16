@@ -69,7 +69,6 @@ func (s *Service) initSessionDir(sessionID string) *apperror.AppError {
 	dirResult := s.getSessionDir(sessionID)
 
 	if dirResult.HasError() {
-
 		return dirResult.AppError()
 	}
 
@@ -77,7 +76,6 @@ func (s *Service) initSessionDir(sessionID string) *apperror.AppError {
 	mkErr := os.MkdirAll(sessionDir, 0755)
 
 	if mkErr != nil {
-
 		return apperror.Wrap(mkErr, apperror.ErrSessionInit, "create session directory").
 			WithPath(sessionDir)
 	}
@@ -90,7 +88,6 @@ func (s *Service) createSessionLogFile(sessionID string) (*os.File, *apperror.Ap
 	logResult := s.getLogPath(sessionID)
 
 	if logResult.HasError() {
-
 		return nil, logResult.AppError()
 	}
 
