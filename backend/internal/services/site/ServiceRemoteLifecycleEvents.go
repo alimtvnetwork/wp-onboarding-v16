@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	ep "wp-plugin-publish/internal/enums/endpointtype"
 	"wp-plugin-publish/internal/services/session"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // broadcastRemoteActionStarted sends session start logs and WS broadcast.
@@ -25,7 +27,7 @@ func (s *Service) saveRemoteActionRequest(ref *remoteActionRef) {
 		return
 	}
 	s.sessionService.SaveRequest(ref.SessionID, &session.SessionRequest{
-		URL:    fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", ref.SiteID, ref.PluginSlug, ref.Action),
+		URL:    wordpress.GoAPISitePluginRoute(ref.SiteID, ref.PluginSlug, ref.Action),
 		Method: "POST",
 		Body:   toJson(RemoteActionRequestBody{SiteId: ref.SiteID, PluginSlug: ref.PluginSlug, Action: ref.Action}),
 	})
@@ -93,7 +95,7 @@ func (s *Service) saveRemoteSuccessResponse(ref *remoteActionRef, durationMs int
 		return
 	}
 	s.sessionService.SaveResponse(ref.SessionID, &session.SessionResponse{
-		RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", ref.Site.Url, ref.Action),
+		RequestURL:  wordpress.BuildWPPluginURL(ref.Site.Url, wordpress.RiseupAsiaNamespace, ep.Plugins),
 		ResponseURL: ref.Site.Url, StatusCode: 200,
 		Body: toJson(RemoteActionSuccessBody{Success: true, Action: ref.Action, Plugin: ref.PluginSlug}),
 	})

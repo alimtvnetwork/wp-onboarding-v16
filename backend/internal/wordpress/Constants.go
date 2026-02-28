@@ -1,5 +1,7 @@
 package wordpress
 
+import "fmt"
+
 // =============================================================================
 // REST API NAMESPACES
 // =============================================================================
@@ -75,3 +77,48 @@ const (
 	// WPCorePostById is the endpoint for a specific post (format: /wp/v2/posts/%d).
 	WPCorePostById = "/wp/v2/posts/%d"
 )
+
+// =============================================================================
+// LEGACY ONBOARD ENDPOINT FRAGMENTS
+// =============================================================================
+
+const (
+	// OnboardMutationPrefix is the path prefix for legacy Onboard mutation endpoints.
+	OnboardMutationPrefix = "/mutations/"
+
+	// OnboardMutationUploadSuffix is the path suffix for legacy Onboard upload.
+	OnboardMutationUploadSuffix = "/plugins/upload"
+
+	// OnboardRequestMutationPath is the path for requesting a mutation token.
+	// Usage: fmt.Sprintf("/%s%s?action=%s", OnboardNamespace, OnboardRequestMutationPath, action)
+	OnboardRequestMutationPath = "/request-mutation"
+)
+
+// =============================================================================
+// GO API ROUTE CONSTANTS
+// =============================================================================
+
+const (
+	// GoAPIPrefix is the base prefix for all Go backend API routes.
+	GoAPIPrefix = "/api/v1"
+
+	// GoAPIHealth is the health check endpoint.
+	GoAPIHealth = GoAPIPrefix + "/health"
+
+	// GoAPISitesPrefix is the prefix for site-scoped routes.
+	GoAPISitesPrefix = GoAPIPrefix + "/sites"
+
+	// GoAPIWebSocket is the WebSocket endpoint.
+	GoAPIWebSocket = "/ws"
+)
+
+// GoAPISiteRoute constructs a site-scoped Go API route: /api/v1/sites/{siteID}/{suffix}.
+func GoAPISiteRoute(siteID int64, suffix string) string {
+	return fmt.Sprintf("%s/%d/%s", GoAPISitesPrefix, siteID, suffix)
+}
+
+// GoAPISitePluginRoute constructs a site+plugin Go API route:
+// /api/v1/sites/{siteID}/remote-plugins/{pluginSlug}/{action}.
+func GoAPISitePluginRoute(siteID int64, pluginSlug, action string) string {
+	return fmt.Sprintf("%s/%d/remote-plugins/%s/%s", GoAPISitesPrefix, siteID, pluginSlug, action)
+}

@@ -34,7 +34,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 		return nil, err
 	}
 
-	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
+	endpoint := OnboardMutationUploadEndpoint(OnboardNamespace, mutationToken)
 
 	return c.executeOnboardZipUpload(endpoint, form, zipPath, pluginSlug)
 }
@@ -168,7 +168,7 @@ type zipUploadInput struct {
 
 // executeOnboardZipUpload sends the multipart upload and parses the response.
 func (c *Client) executeOnboardZipUpload(endpoint string, form *zipMultipartForm, zipPath, pluginSlug string) (*OnboardUploadResult, error) {
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+	url := BuildWPJSONURL(c.baseURL, endpoint)
 
 	c.reportOnboardUploadStart(url, endpoint, form, zipPath)
 

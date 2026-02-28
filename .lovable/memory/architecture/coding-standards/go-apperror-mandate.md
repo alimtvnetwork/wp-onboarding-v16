@@ -1,5 +1,5 @@
 # Memory: architecture/coding-standards/go-apperror-mandate
-Updated: 2026-02-26
+Updated: 2026-02-28
 
 ---
 
@@ -16,3 +16,11 @@ Key rules:
 7. **Serializability**: `*apperror.AppError` is fully JSON-serializable via custom `MarshalJSON()`/`UnmarshalJSON()`. It can be marshaled, stored, transmitted, and deserialized back with all diagnostic context intact. **Struct fields that hold errors MUST use `*apperror.AppError`** (not raw `error`) so the error serializes alongside the parent struct. The sole exception is `AppError.Cause` which uses `error` interface for `errors.Unwrap()` compat, handled by custom JSON marshaling.
 
 This ensures stack traces, error codes, and diagnostic context are always preserved and transportable across process/network boundaries.
+
+## Path and URL Constants (§13)
+
+All URL paths, API route patterns, and path fragments MUST use typed constants or builder functions from the `wordpress` package. Hardcoded strings like `"/wp-json"`, `"/api/v1/sites"`, or `"/mutations/%s/plugins/upload"` in business logic are forbidden.
+
+Builder functions: `BuildWPJSONURL()`, `BuildWPPluginURL()`, `BuildWPProbeURL()`, `BuildNamespacedEndpoint()`, `OnboardMutationUploadEndpoint()`, `GoAPISitePluginRoute()`.
+
+When path construction results in an error (HTTP 404, connection refused, etc.), the error MUST include the resolved URL, all interpolated variable values, and the endpoint constant used.
