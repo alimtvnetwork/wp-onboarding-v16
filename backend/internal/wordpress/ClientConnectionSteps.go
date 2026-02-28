@@ -95,7 +95,7 @@ func (c *Client) reportProbeFailure(err error) *apperror.AppError {
 	}
 	c.progress(failEvent)
 
-	return apperror.Wrap(err, apperror.ErrWPAPIDisabled, "REST API not accessible").WithURL(c.baseUrl)
+	return apperror.Wrap(err, apperror.ErrWPAPIDisabled, "REST API not accessible").WithUrl(c.baseUrl)
 }
 
 // reportProbeSuccess sends the probe success event.
@@ -139,7 +139,7 @@ func (c *Client) reportRestApiNotFound() *apperror.AppError {
 	}
 	c.progress(notFoundEvent)
 
-	return apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").WithURL(c.baseUrl)
+	return apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").WithUrl(c.baseUrl)
 }
 
 // authenticateAndParseUser checks authentication (Step 2) and parses user info (Step 3).
@@ -198,7 +198,7 @@ func (c *Client) reportAuthRequestFailed(err *apperror.AppError) *apperror.AppEr
 	c.progress(authFailEvent)
 
 	return apperror.Wrap(err, apperror.ErrWPAuth, "authentication request failed").
-		WithURL(c.baseUrl).
+		WithUrl(c.baseUrl).
 		WithUsername(c.username)
 }
 
@@ -227,7 +227,7 @@ func (c *Client) checkAuthStatus(statusCode int, body []byte) *apperror.AppError
 
 		return c.reportAuthFailure("Invalid username or application password",
 			apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").
-				WithURL(c.baseUrl).
+				WithUrl(c.baseUrl).
 				WithUsername(c.username))
 	}
 
@@ -237,7 +237,7 @@ func (c *Client) checkAuthStatus(statusCode int, body []byte) *apperror.AppError
 
 		return c.reportAuthFailure("Access forbidden - user lacks permissions",
 			apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").
-				WithURL(c.baseUrl).
+				WithUrl(c.baseUrl).
 				WithStatusCode(statusCode))
 	}
 
@@ -262,7 +262,7 @@ func (c *Client) checkUnexpectedAuthStatus(statusCode int, body []byte) *apperro
 	c.progress(unexpectedEvent)
 
 	return apperror.New(apperror.ErrWPConnection, "unexpected authentication response").
-		WithURL(c.baseUrl).
+		WithUrl(c.baseUrl).
 		WithStatusCode(statusCode).
 		WithDetails(string(body))
 }

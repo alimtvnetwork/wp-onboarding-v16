@@ -58,7 +58,7 @@ func (c *Client) reportPluginAccessRequestFailed(err *apperror.AppError) *apperr
 	}
 	c.progress(accessFail)
 
-	return apperror.Wrap(err, apperror.ErrWPPluginList, "plugin endpoint not accessible").WithURL(c.baseUrl)
+	return apperror.Wrap(err, apperror.ErrWPPluginList, "plugin endpoint not accessible").WithUrl(c.baseUrl)
 }
 
 // evaluatePluginAccess checks plugin access based on status code.
@@ -88,7 +88,7 @@ func (c *Client) reportInsufficientPluginPermissions(result *ConnectionInfo, sta
 	c.progress(permFail)
 
 	return apperror.New(apperror.ErrWPAuth, "insufficient permissions: user cannot manage plugins (requires administrator role)").
-		WithURL(c.baseUrl).
+		WithUrl(c.baseUrl).
 		WithStatusCode(statusCode)
 }
 

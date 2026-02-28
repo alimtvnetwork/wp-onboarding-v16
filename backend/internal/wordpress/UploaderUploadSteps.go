@@ -237,7 +237,7 @@ func (c *Client) buildUploadFailureAppError(uc *uploadContext, statusCode int, r
 	apiErr := buildUploadApiError(errInput)
 
 	return apperror.WrapWithSkip(apiErr, apperror.ErrWPPluginUpload, "upload plugin failed", 1).
-		WithURL(uc.UploadUrl).
+		WithUrl(uc.UploadUrl).
 		WithStatusCode(statusCode)
 }
 

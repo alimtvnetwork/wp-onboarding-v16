@@ -97,7 +97,7 @@ func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint,
 		return apperror.Fail[*OnboardUploadResult](
 			apperror.New(apperror.ErrWPPluginUpload, "upload plugin zip failed").
 				WithEndpoint(endpoint).
-				WithURL(url).
+				WithUrl(url).
 				WithSlug(pluginSlug).
 				WithValue("statusCode", fmt.Sprintf("%d", mpResp.StatusCode)).
 				WithValue("responseBody", truncateBody(mpResp.Body, 8192)))

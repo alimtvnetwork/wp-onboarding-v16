@@ -112,7 +112,7 @@ func (db *DB) GetSiteIdByUrl(url string) (int64, error) {
 	err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", url).Scan(&id)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site by URL").
-			WithURL(url)
+			WithUrl(url)
 	}
 	return id, nil
 }
@@ -148,7 +148,7 @@ func (db *DB) CreateSeedSite(input SeedSiteInput) (int64, error) {
 	`, input.Name, input.Url, input.Username, input.PasswordEncrypted, input.Category)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed site").
-			WithURL(input.Url)
+			WithUrl(input.Url)
 	}
 	return result.LastInsertId()
 }

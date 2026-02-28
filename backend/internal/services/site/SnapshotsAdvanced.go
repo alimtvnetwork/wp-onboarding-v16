@@ -75,7 +75,7 @@ func (s *Service) streamSnapshotFromMeta(input streamSnapshotInput) (*SnapshotZi
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
 			WithSiteId(input.SiteId).
 			WithSnapshotId(input.SnapshotId).
-			WithURL(input.Meta.Url)
+			WithUrl(input.Meta.Url)
 	}
 
 	s.log.Info("Remote snapshot ZIP download started", "siteId", input.SiteId, "snapshotId", input.SnapshotId, "cached", input.Meta.Cached)

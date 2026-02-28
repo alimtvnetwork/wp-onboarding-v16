@@ -176,7 +176,7 @@ func (s *Service) emitDetailedLogToLogger(input DetailedLogInput) {
 	ctx := logContext{
 		PluginName: names.PluginName,
 		SiteName:   names.SiteName,
-		SiteUrl:    names.SiteURL,
+		SiteUrl:    names.SiteUrl,
 		PluginId:   input.PluginId,
 		SiteId:     input.SiteId,
 		Step:       input.Step,
