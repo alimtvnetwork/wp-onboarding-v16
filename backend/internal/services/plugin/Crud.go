@@ -120,7 +120,9 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Plugin] 
 	}
 
 	plugins := set.Items()
-	if plugins == nil {
+	isPluginsEmpty := plugins == nil
+
+	if isPluginsEmpty {
 		plugins = []models.Plugin{}
 	}
 
@@ -257,7 +259,9 @@ func (s *Service) scanFileCount(ctx context.Context, path string) int {
 
 // encodeExcludePatterns marshals exclude patterns to JSON string.
 func (s *Service) encodeExcludePatterns(patterns []string) string {
-	if patterns == nil {
+	isPatternsEmpty := patterns == nil
+
+	if isPatternsEmpty {
 		return "[]"
 	}
 	b, _ := json.Marshal(patterns)

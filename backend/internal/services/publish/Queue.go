@@ -169,7 +169,9 @@ func (q *PublishQueue) countCompletedLocked() (int, int) {
 // processNext pulls the next queued item and executes it
 func (q *PublishQueue) processNext() {
 	item := q.dequeueHighestPriority()
-	if item == nil {
+	isQueueEmpty := item == nil
+
+	if isQueueEmpty {
 		return
 	}
 

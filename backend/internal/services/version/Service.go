@@ -41,7 +41,9 @@ func New(cfg Config) *Service {
 
 // GetVersions returns version history for a plugin
 func (s *Service) GetVersions(ctx context.Context, pluginId int64, siteId *int64, limit int) ([]PluginVersionRow, *apperror.AppError) {
-	if limit <= 0 {
+	isLimitUnset := limit <= 0
+
+	if isLimitUnset {
 		limit = 50
 	}
 	rows, err := s.db.GetPluginVersions(pluginId, siteId, limit)

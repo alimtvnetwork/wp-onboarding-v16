@@ -290,7 +290,9 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) apperror.ResultSlice[
 		}
 	}
 
-	if results == nil {
+	isResultsEmpty := results == nil
+
+	if isResultsEmpty {
 		results = []SyncResult{}
 	}
 	return apperror.OkSlice(results)

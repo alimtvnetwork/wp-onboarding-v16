@@ -141,7 +141,9 @@ func resolvePluginSlug(p wordpress.UploaderPluginInfo) string {
 		return p.Slug
 	}
 	idx := strings.Index(p.File, "/")
-	if idx > 0 {
+	hasSlashSeparator := idx > 0
+
+	if hasSlashSeparator {
 		return p.File[:idx]
 	}
 	return p.File

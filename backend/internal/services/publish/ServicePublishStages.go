@@ -66,7 +66,9 @@ func (s *Service) executePackageStage(pctx *publishContext) PackageStageResult {
 
 // buildPackageStageResult constructs the PackageStageResult from build output.
 func buildPackageStageResult(buildResult *PackageBuildResult, stage Stage) PackageStageResult {
-	if buildResult == nil {
+	isBuildMissing := buildResult == nil
+
+	if isBuildMissing {
 		return PackageStageResult{Stage: stage}
 	}
 

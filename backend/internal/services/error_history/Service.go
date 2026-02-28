@@ -93,10 +93,15 @@ func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.Er
 
 // List returns error history with pagination and filters
 func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) apperror.Result[ErrorHistoryListResult] {
-	if limit <= 0 {
+	isLimitUnset := limit <= 0
+
+	if isLimitUnset {
 		limit = 50
 	}
-	if limit > 500 {
+
+	isLimitExcessive := limit > 500
+
+	if isLimitExcessive {
 		limit = 500
 	}
 
@@ -241,12 +246,16 @@ func (s *Service) Delete(id int64) error {
 	}
 
 	rows, _ := result.RowsAffected()
-	if rows == 0 {
+	isNotFound := rows == 0
+
+	if isNotFound {
 		return apperror.New(apperror.ErrNotFound, "error history entry not found").
 			WithValue("id", fmt.Sprintf("%d", id))
 	}
 
-	if s.log != nil {
+	hasLogger := s.log != nil
+
+	if hasLogger {
 		s.log.Debug("Error history deleted", "id", id)
 	}
 

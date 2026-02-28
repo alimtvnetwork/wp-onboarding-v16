@@ -109,7 +109,9 @@ func isTransientAppError(appErr *apperror.AppError) bool {
 	}
 
 	cause := appErr.Unwrap()
-	if cause == nil {
+	isCauseMissing := cause == nil
+
+	if isCauseMissing {
 		return isTransientMessage(appErr.Error())
 	}
 

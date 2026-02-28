@@ -299,7 +299,9 @@ func (s *PublishScheduler) calculateNextRun(cfg ScheduleConfig) (time.Time, erro
 
 // resolveTimezone loads the timezone or defaults to UTC.
 func resolveTimezone(tz string) *time.Location {
-	if tz != "" {
+	hasTimezone := tz != ""
+
+	if hasTimezone {
 		loc, err := time.LoadLocation(tz)
 		if err == nil {
 			return loc
@@ -333,7 +335,9 @@ func parseWeeklySchedule(expr string, now time.Time, loc *time.Location) (time.T
 
 	targetDay := parseDayOfWeek(dayName)
 	daysUntil := (int(targetDay) - int(now.Weekday()) + 7) % 7
-	if daysUntil == 0 {
+	isTargetToday := daysUntil == 0
+
+	if isTargetToday {
 		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
 		isFutureToday := !next.Before(now)
 
@@ -349,7 +353,9 @@ func parseWeeklySchedule(expr string, now time.Time, loc *time.Location) (time.T
 func parseIntervalSchedule(expr string, now time.Time) (time.Time, error) {
 	var minutes int
 	_, err := fmt.Sscanf(expr, "interval:%d", &minutes)
-	if err != nil || minutes < 1 {
+	isInvalidMinutes := minutes < 1
+
+	if err != nil || isInvalidMinutes {
 		return time.Time{}, apperror.New(apperror.ErrValidation, "invalid interval schedule").WithValue("cronExpr", expr)
 	}
 	return now.Add(time.Duration(minutes) * time.Minute), nil
