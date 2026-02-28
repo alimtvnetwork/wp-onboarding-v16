@@ -19,7 +19,9 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 	}
 
 	items := set.Items()
-	if items == nil {
+	isItemsNil := items == nil
+
+	if isItemsNil {
 		items = []models.Site{}
 	}
 	return apperror.OkSlice(items)
@@ -98,7 +100,9 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 
 	existing := existingResult.Value()
 	updates, args := s.buildUpdateFields(ctx, id, input, &existing)
-	if len(updates) == 0 {
+	hasNoUpdates := len(updates) == 0
+
+	if hasNoUpdates {
 		return existingResult
 	}
 
@@ -159,7 +163,9 @@ func appendUrlUpdate(input urlUpdateInput) {
 		return
 	}
 	normalizedUrl := normalizeUrl(*input.UrlInput)
-	if normalizedUrl != input.ExistingUrl {
+	isUrlChanged := normalizedUrl != input.ExistingUrl
+
+	if isUrlChanged {
 		*input.Updates = append(*input.Updates, "Url = ?")
 		*input.Args = append(*input.Args, normalizedUrl)
 	}
@@ -183,7 +189,9 @@ func (s *Service) appendPasswordUpdate(updates *[]string, args *[]any, password 
 		return
 	}
 	encryptedPassword, err := encrypt([]byte(*password), s.encryptionKey)
-	if err == nil {
+	isEncrypted := err == nil
+
+	if isEncrypted {
 		*updates = append(*updates, "PasswordEncrypted = ?")
 		*args = append(*args, encryptedPassword)
 		*updates = append(*updates, "ConnectionStatus = 'unknown'")
@@ -224,21 +232,34 @@ func (s *Service) updateConnectionStatus(ctx context.Context, id int64, status s
 
 // validateInput validates the create input.
 func (s *Service) validateInput(input CreateInput) *apperror.AppError {
-	if input.Name == "" {
+	isNameMissing := input.Name == ""
+
+	if isNameMissing {
 		return apperror.New(apperror.ErrValidation, "name is required")
 	}
-	if input.Url == "" {
+
+	isUrlMissing := input.Url == ""
+
+	if isUrlMissing {
 		return apperror.New(apperror.ErrValidation, "URL is required")
 	}
-	if input.Username == "" {
+
+	isUsernameMissing := input.Username == ""
+
+	if isUsernameMissing {
 		return apperror.New(apperror.ErrValidation, "username is required")
 	}
-	if input.Password == "" {
+
+	isPasswordMissing := input.Password == ""
+
+	if isPasswordMissing {
 		return apperror.New(apperror.ErrValidation, "application password is required")
 	}
+
 	_, err := url.Parse(input.Url)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrValidation, "invalid URL format")
 	}
+
 	return nil
 }

@@ -14,7 +14,9 @@ import (
 
 // broadcastStageStatus explicitly marks a publish stage as success/error
 func (s *Service) broadcastStageStatus(input StageStatusInput) {
-	if s.wsHub == nil {
+	isHubMissing := s.wsHub == nil
+
+	if isHubMissing {
 		return
 	}
 
@@ -49,7 +51,9 @@ func (s *Service) emitStageStatusLog(input StageStatusInput) {
 
 // resolveStageStatusLevel returns error level if status is error, info otherwise.
 func resolveStageStatusLevel(status string) loglevel.Variant {
-	if status == loglevel.Error.Lower() {
+	isErrorStatus := status == loglevel.Error.Lower()
+
+	if isErrorStatus {
 		return loglevel.Error
 	}
 
@@ -72,7 +76,9 @@ func buildStageStatusLogEntry(input StageStatusInput, level loglevel.Variant) ws
 
 // broadcastStageComplete sends a stage_complete event for frontend tracking
 func (s *Service) broadcastStageComplete(input StageCompleteInput) {
-	if s.wsHub == nil {
+	isHubMissing := s.wsHub == nil
+
+	if isHubMissing {
 		return
 	}
 
@@ -125,7 +131,9 @@ func (s *Service) broadcastStageLogSession(input StageLogInput, message string, 
 
 // resolveStageLogMessage builds the message string from stage context.
 func resolveStageLogMessage(ctx StageContext) string {
-	if ctx.Result != "" {
+	hasResult := ctx.Result != ""
+
+	if hasResult {
 		return fmt.Sprintf("%s → %s", ctx.What, ctx.Result)
 	}
 
@@ -134,7 +142,9 @@ func resolveStageLogMessage(ctx StageContext) string {
 
 // broadcastDetailedLog sends a detailed log entry with structured data
 func (s *Service) broadcastDetailedLog(input DetailedLogInput) {
-	if s.wsHub == nil {
+	isHubMissing := s.wsHub == nil
+
+	if isHubMissing {
 		return
 	}
 
@@ -200,7 +210,9 @@ func (s *Service) logWithLevel(level loglevel.Variant, message string, ctx logCo
 // buildLogFields constructs log fields for detailed log messages.
 func buildLogFields(ctx logContext) []any {
 	fields := []any{"plugin", ctx.PluginName, "site", ctx.SiteName}
-	if ctx.SiteUrl != "" {
+	hasSiteUrl := ctx.SiteUrl != ""
+
+	if hasSiteUrl {
 		fields = append(fields, "siteUrl", ctx.SiteUrl)
 	}
 
@@ -252,7 +264,9 @@ func (s *Service) resolvePluginName(pluginId int64, name string) string {
 			return pResult.Value().Name
 		}
 	}
-	if name == "" {
+	isNameMissing := name == ""
+
+	if isNameMissing {
 		return fmt.Sprintf("plugin#%d", pluginId)
 	}
 
@@ -278,7 +292,9 @@ func (s *Service) resolveSiteNames(siteId int64, name, url string) (string, stri
 			}
 		}
 	}
-	if name == "" {
+	isNameMissing := name == ""
+
+	if isNameMissing {
 		name = fmt.Sprintf("site#%d", siteId)
 	}
 
