@@ -60,7 +60,9 @@ func parseFunctions(lines []string) []parsedFunction {
 		}
 
 		braceDepth = updateBraceDepth(trimmed, braceDepth)
-		current.BodyLines++
+		if !isBlankOrComment(trimmed) {
+			current.BodyLines++
+		}
 
 		if braceDepth == 0 {
 			current.EndLine = i + 1
@@ -97,6 +99,11 @@ func extractFuncName(line string) string {
 		return candidate
 	}
 	return "anonymous"
+}
+
+// isBlankOrComment returns true if the trimmed line is empty or a comment.
+func isBlankOrComment(trimmed string) bool {
+	return trimmed == "" || strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "*")
 }
 
 // updateBraceDepth tracks brace nesting depth.
