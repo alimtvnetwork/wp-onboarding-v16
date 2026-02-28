@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"wp-plugin-publish/internal/enums/connection_step"
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/post_status"
-	"wp-plugin-publish/internal/enums/stage_status"
+	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	poststatus "wp-plugin-publish/internal/enums/poststatustype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

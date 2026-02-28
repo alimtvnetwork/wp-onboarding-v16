@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"wp-plugin-publish/internal/enums/content_type"
-	"wp-plugin-publish/internal/enums/header"
-	"wp-plugin-publish/internal/enums/http_method"
+	contenttype "wp-plugin-publish/internal/enums/contenttype"
+	header "wp-plugin-publish/internal/enums/headertype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

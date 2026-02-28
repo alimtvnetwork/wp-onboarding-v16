@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
-	"wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/health_status"
+	endpoint "wp-plugin-publish/internal/enums/endpointtype"
+	healthstatus "wp-plugin-publish/internal/enums/healthstatustype"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"

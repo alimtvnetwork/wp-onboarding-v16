@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
-	"wp-plugin-publish/internal/enums/publish_type"
+	"wp-plugin-publish/internal/enums/publishtype"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"

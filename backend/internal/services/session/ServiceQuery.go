@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"wp-plugin-publish/internal/enums/stage_status"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )

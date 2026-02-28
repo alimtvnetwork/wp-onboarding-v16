@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	pluginstatus "wp-plugin-publish/internal/enums/plugin_status"
-	publishstep "wp-plugin-publish/internal/enums/publish_step"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	pluginstatus "wp-plugin-publish/internal/enums/pluginstatustype"
+	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 )

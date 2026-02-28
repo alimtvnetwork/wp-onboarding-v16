@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	ep "wp-plugin-publish/internal/enums/endpoint"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
 	"wp-plugin-publish/internal/wordpress"
 )
 

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"wp-plugin-publish/internal/enums/action"
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/stage_status"
+	action "wp-plugin-publish/internal/enums/actiontype"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"wp-plugin-publish/internal/enums/log_level"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

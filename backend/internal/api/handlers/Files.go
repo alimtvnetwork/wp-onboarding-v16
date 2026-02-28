@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"wp-plugin-publish/internal/enums/response_message"
+	responsemessage "wp-plugin-publish/internal/enums/responsemessagetype"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"

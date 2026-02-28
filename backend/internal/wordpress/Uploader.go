@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"wp-plugin-publish/internal/enums/action"
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/stage_status"
-	"wp-plugin-publish/internal/enums/upload_source"
+	action "wp-plugin-publish/internal/enums/actiontype"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
+	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

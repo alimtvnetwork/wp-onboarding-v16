@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"wp-plugin-publish/internal/enums/connection_status"
+	connectionstatus "wp-plugin-publish/internal/enums/connectionstatustype"
 
 	"github.com/gorilla/websocket"
 )

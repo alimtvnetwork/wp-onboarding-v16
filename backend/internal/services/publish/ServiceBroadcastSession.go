@@ -3,9 +3,9 @@ package publish
 import (
 	"encoding/json"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	publishstep "wp-plugin-publish/internal/enums/publish_step"
-	stagestatus "wp-plugin-publish/internal/enums/stage_status"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/internal/services/session"
 )
 

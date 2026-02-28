@@ -4,8 +4,8 @@ package site
 import (
 	"fmt"
 
-	"wp-plugin-publish/internal/enums/connection_step"
-	"wp-plugin-publish/internal/enums/stage_status"
+	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/internal/wordpress"
 )
 

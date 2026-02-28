@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"wp-plugin-publish/internal/enums/log_level"
-	"wp-plugin-publish/internal/enums/stage_status"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

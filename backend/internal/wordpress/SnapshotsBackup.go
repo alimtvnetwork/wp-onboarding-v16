@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/operation"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operation "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
