@@ -11,8 +11,8 @@ import (
 )
 
 // GetMappings returns all site mappings for a plugin.
-func (s *Service) GetMappings(ctx context.Context, pluginID int64) apperror.ResultSlice[models.PluginMapping] {
-	rows, err := s.db.QueryContext(ctx, mappingsByPluginQuery, pluginID)
+func (s *Service) GetMappings(ctx context.Context, pluginId int64) apperror.ResultSlice[models.PluginMapping] {
+	rows, err := s.db.QueryContext(ctx, mappingsByPluginQuery, pluginId)
 	if err != nil {
 		return apperror.FailSliceWrap[models.PluginMapping](err, apperror.ErrDatabaseQuery, "failed to get mappings")
 	}
@@ -66,9 +66,9 @@ func scanMappingWithSite(rows *sql.Rows) (models.PluginMapping, error) {
 	var createdAtStr, updatedAtStr sql.NullString
 
 	err := rows.Scan(
-		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
+		&m.Id, &m.PluginId, &m.SiteId, &m.RemoteSlug, &m.SyncStatus,
 		&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
-		&m.SiteName, &m.SiteURL,
+		&m.SiteName, &m.SiteUrl,
 	)
 	if err != nil {
 		return m, err
@@ -86,7 +86,7 @@ func scanMappingBySite(rows *sql.Rows) (models.PluginMapping, error) {
 	var createdAtStr, updatedAtStr sql.NullString
 
 	err := rows.Scan(
-		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
+		&m.Id, &m.PluginId, &m.SiteId, &m.RemoteSlug, &m.SyncStatus,
 		&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
 		&pluginName,
 	)
@@ -115,8 +115,8 @@ func applyMappingTimestamps(m *models.PluginMapping, ts mappingTimestamps) {
 }
 
 // GetMappingsBySite returns all mappings for a site.
-func (s *Service) GetMappingsBySite(ctx context.Context, siteID int64) apperror.ResultSlice[models.PluginMapping] {
-	rows, err := s.db.QueryContext(ctx, mappingsBySiteQuery, siteID)
+func (s *Service) GetMappingsBySite(ctx context.Context, siteId int64) apperror.ResultSlice[models.PluginMapping] {
+	rows, err := s.db.QueryContext(ctx, mappingsBySiteQuery, siteId)
 	if err != nil {
 		return apperror.FailSliceWrap[models.PluginMapping](err, apperror.ErrDatabaseQuery, "failed to get mappings by site")
 	}
@@ -127,7 +127,7 @@ func (s *Service) GetMappingsBySite(ctx context.Context, siteID int64) apperror.
 
 // CreateMapping creates a new plugin-site mapping.
 func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) apperror.Result[models.PluginMapping] {
-	s.log.Info("Creating plugin mapping", "pluginId", input.PluginID, "siteId", input.SiteID)
+	s.log.Info("Creating plugin mapping", "pluginId", input.PluginId, "siteId", input.SiteId)
 
 	err := s.checkDuplicateMapping(ctx, input)
 
@@ -150,7 +150,7 @@ func (s *Service) checkDuplicateMapping(ctx context.Context, input CreateMapping
 	var exists int
 	err := s.db.QueryRowContext(ctx,
 		"SELECT 1 FROM PluginMappings WHERE PluginId = ? AND SiteId = ?",
-		input.PluginID, input.SiteID,
+		input.PluginId, input.SiteId,
 	).Scan(&exists)
 	isDuplicate := err != sql.ErrNoRows
 
@@ -166,7 +166,7 @@ func (s *Service) insertMapping(ctx context.Context, input CreateMappingInput) (
 	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-	`, input.PluginID, input.SiteID, input.RemoteSlug)
+	`, input.PluginId, input.SiteId, input.RemoteSlug)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create mapping")
 	}
@@ -180,8 +180,8 @@ func (s *Service) loadMappingByID(ctx context.Context, id int64) models.PluginMa
 	var createdAtStr, updatedAtStr sql.NullString
 
 	s.db.QueryRowContext(ctx, mappingByIDQuery, id).Scan(
-		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-		&createdAtStr, &updatedAtStr, &m.SiteName, &m.SiteURL,
+		&m.Id, &m.PluginId, &m.SiteId, &m.RemoteSlug, &m.SyncStatus,
+		&createdAtStr, &updatedAtStr, &m.SiteName, &m.SiteUrl,
 	)
 	m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
 	m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
@@ -189,10 +189,10 @@ func (s *Service) loadMappingByID(ctx context.Context, id int64) models.PluginMa
 }
 
 // DeleteMapping removes a plugin-site mapping.
-func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) *apperror.AppError {
-	s.log.Info("Deleting plugin mapping", "mappingId", mappingID)
+func (s *Service) DeleteMapping(ctx context.Context, mappingId int64) *apperror.AppError {
+	s.log.Info("Deleting plugin mapping", "mappingId", mappingId)
 
-	result, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE Id = ?", mappingID)
+	result, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE Id = ?", mappingId)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to delete mapping")
 	}
@@ -204,7 +204,7 @@ func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) *apperror.
 		return apperror.New(apperror.ErrNotFound, "mapping not found")
 	}
 
-	s.log.Info("Plugin mapping deleted", "mappingId", mappingID)
+	s.log.Info("Plugin mapping deleted", "mappingId", mappingId)
 	return nil
 }
 

@@ -53,10 +53,10 @@ type ServiceInterface interface {
 	ValidatePath(ctx context.Context, path string) *apperror.AppError
 
 	// Mappings — Result-wrapped returns
-	GetMappings(ctx context.Context, pluginID int64) apperror.ResultSlice[models.PluginMapping]
-	GetMappingsBySite(ctx context.Context, siteID int64) apperror.ResultSlice[models.PluginMapping]
+	GetMappings(ctx context.Context, pluginId int64) apperror.ResultSlice[models.PluginMapping]
+	GetMappingsBySite(ctx context.Context, siteId int64) apperror.ResultSlice[models.PluginMapping]
 	CreateMapping(ctx context.Context, input CreateMappingInput) apperror.Result[models.PluginMapping]
-	DeleteMapping(ctx context.Context, mappingID int64) *apperror.AppError
+	DeleteMapping(ctx context.Context, mappingId int64) *apperror.AppError
 	UpdateMappingsForPlugin(ctx context.Context, input UpdatePluginMappingsInput) *apperror.AppError
-	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError
+	UpdateMappingsForSite(ctx context.Context, siteId int64, pluginIds []int64) *apperror.AppError
 }

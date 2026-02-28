@@ -52,7 +52,7 @@ func (h *Hub) BroadcastLog(level string, message string, context json.RawMessage
 
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
 func (h *Hub) BroadcastOperationLog(input OperationLogInput) {
-	input.SessionID = ""
+	input.SessionId = ""
 	h.BroadcastOperationLogWithSession(input)
 }
 
@@ -66,12 +66,12 @@ func (h *Hub) BroadcastOperationLogWithSession(input OperationLogInput) {
 		EventType: EventLog,
 		Data: OperationLogData{
 			OperationType: input.OperationType,
-			PluginId:      input.PluginID,
-			SiteId:        input.SiteID,
-			SessionId:     input.SessionID,
+			PluginId:      input.PluginId,
+			SiteId:        input.SiteId,
+			SessionId:     input.SessionId,
 			Log:           input.Entry,
 		},
-		SessionId: input.SessionID,
+		SessionId: input.SessionId,
 	})
 }
 
@@ -113,7 +113,7 @@ func (h *Hub) BroadcastBackupLogWithSession(input OperationLogInput) {
 
 // BroadcastRemotePluginLog is a convenience method for remote plugin action logs
 func (h *Hub) BroadcastRemotePluginLog(input RemotePluginLogInput) {
-	input.SessionID = ""
+	input.SessionId = ""
 	h.BroadcastRemotePluginLogWithSession(input)
 }
 
@@ -121,8 +121,8 @@ func (h *Hub) BroadcastRemotePluginLog(input RemotePluginLogInput) {
 func (h *Hub) BroadcastRemotePluginLogWithSession(input RemotePluginLogInput) {
 	h.BroadcastOperationLogWithSession(OperationLogInput{
 		OperationType: "remote_plugin_" + input.Action,
-		SiteID:        input.SiteID,
-		SessionID:     input.SessionID,
+		SiteId:        input.SiteId,
+		SessionId:     input.SessionId,
 		Entry: OperationLogEntry{
 			Level: input.Level, Step: input.Step, Message: input.Message, Details: input.Details,
 		},

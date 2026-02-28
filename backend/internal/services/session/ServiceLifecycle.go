@@ -57,10 +57,10 @@ func (s *Service) registerSession(sessionID string, session *Session) {
 // buildNewSession constructs a new Session from the input.
 func buildNewSession(sessionID string, input StartSessionInput) *Session {
 	return &Session{
-		ID:         sessionID,
+		Id:         sessionID,
 		Type:       input.Type,
-		PluginID:   input.PluginID,
-		SiteID:     input.SiteID,
+		PluginId:   input.PluginId,
+		SiteId:     input.SiteId,
 		PluginName: input.PluginName,
 		SiteName:   input.SiteName,
 		Status:     stagestatus.Running.String(),
@@ -123,13 +123,13 @@ func writeSessionHeader(shi sessionHeaderInput) {
 	hasPluginName := shi.Input.PluginName != ""
 
 	if hasPluginName {
-		header += fmt.Sprintf(" PLUGIN: %s (ID: %d)\n", shi.Input.PluginName, shi.Input.PluginID)
+		header += fmt.Sprintf(" PLUGIN: %s (ID: %d)\n", shi.Input.PluginName, shi.Input.PluginId)
 	}
 
 	hasSiteName := shi.Input.SiteName != ""
 
 	if hasSiteName {
-		header += fmt.Sprintf(" SITE: %s (ID: %d)\n", shi.Input.SiteName, shi.Input.SiteID)
+		header += fmt.Sprintf(" SITE: %s (ID: %d)\n", shi.Input.SiteName, shi.Input.SiteId)
 	}
 	header += "═══════════════════════════════════════════════════════════════════════════════\n\n"
 	shi.File.WriteString(header)

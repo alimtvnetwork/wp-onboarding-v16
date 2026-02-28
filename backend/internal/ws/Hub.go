@@ -271,17 +271,17 @@ type OperationLogEntry struct {
 // OperationLogInput holds parameters for operation log broadcasts.
 type OperationLogInput struct {
 	OperationType string
-	PluginID      int64
-	SiteID        int64
-	SessionID     string
+	PluginId      int64
+	SiteId        int64
+	SessionId     string
 	Entry         OperationLogEntry
 }
 
 // RemotePluginLogInput holds parameters for remote plugin log broadcasts.
 type RemotePluginLogInput struct {
-	SiteID    int64
+	SiteId    int64
 	Action    string
-	SessionID string
+	SessionId string
 	Level     string
 	Step      string
 	Message   string
