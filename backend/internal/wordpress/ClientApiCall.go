@@ -17,39 +17,39 @@ type apiCallInput struct {
 	Body       any
 	Operation  operationtype.Variant
 	OkStatuses []int  // defaults to [200] if empty
-	PluginSlug string // optional: populates APIError.PluginSlugIn
+	PluginSlug string // optional: populates ApiError.PluginSlugIn
 	ErrorCode  string // optional: apperror wrap code (defaults to ErrInternal)
 }
 
-// APICallResponse holds the raw body and status code from an API call.
-type APICallResponse struct {
+// ApiCallResponse holds the raw body and status code from an API call.
+type ApiCallResponse struct {
 	Body       []byte
 	StatusCode int
 }
 
-// doAPICallWithStatus sends the request and returns the raw response.
-// Unlike doAPICallRaw, it does NOT validate the status code — the caller decides how to handle it.
+// doApiCallWithStatus sends the request and returns the raw response.
+// Unlike doApiCallRaw, it does NOT validate the status code — the caller decides how to handle it.
 // The error return is only for transport-level failures (DNS, timeout, request creation).
-func (c *Client) doAPICallWithStatus(input apiCallInput) apperror.Result[APICallResponse] {
+func (c *Client) doApiCallWithStatus(input apiCallInput) apperror.Result[ApiCallResponse] {
 	resp, appErr := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if appErr != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
-		return apperror.FailWrap[APICallResponse](appErr, code, input.Operation.Value())
+		return apperror.FailWrap[ApiCallResponse](appErr, code, input.Operation.Value())
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
-	return apperror.Ok(APICallResponse{
+	return apperror.Ok(ApiCallResponse{
 		Body:       bodyBytes,
 		StatusCode: resp.StatusCode,
 	})
 }
 
-// doAPICallRaw sends the request, checks the status code, and returns raw body bytes on success.
-func (c *Client) doAPICallRaw(input apiCallInput) apperror.Result[[]byte] {
-	callResult := c.doAPICallWithStatus(input)
+// doApiCallRaw sends the request, checks the status code, and returns raw body bytes on success.
+func (c *Client) doApiCallRaw(input apiCallInput) apperror.Result[[]byte] {
+	callResult := c.doApiCallWithStatus(input)
 	if callResult.HasError() {
 		return apperror.Fail[[]byte](callResult.AppError())
 	}
@@ -63,9 +63,9 @@ func (c *Client) doAPICallRaw(input apiCallInput) apperror.Result[[]byte] {
 	return apperror.Ok(resp.Body)
 }
 
-// doAPICallStream sends the request, validates the status code, and returns the raw HTTP response.
+// doApiCallStream sends the request, validates the status code, and returns the raw HTTP response.
 // The caller is responsible for closing the response body. Use this for streaming responses (e.g. ZIP downloads).
-func (c *Client) doAPICallStream(input apiCallInput) apperror.Result[*http.Response] {
+func (c *Client) doApiCallStream(input apiCallInput) apperror.Result[*http.Response] {
 	resp, appErr := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if appErr != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
@@ -83,9 +83,9 @@ func (c *Client) doAPICallStream(input apiCallInput) apperror.Result[*http.Respo
 	return apperror.Ok(resp)
 }
 
-// buildCallError constructs an AppError from a failed API call, wrapping the structured APIError.
+// buildCallError constructs an AppError from a failed API call, wrapping the structured ApiError.
 func (c *Client) buildCallError(input apiCallInput, statusCode int, body []byte) *apperror.AppError {
-	apiErr := &APIError{
+	apiErr := &ApiError{
 		Operation:    input.Operation.Value(),
 		Method:       input.Method.Value(),
 		Endpoint:     input.Endpoint,
@@ -120,18 +120,18 @@ func isErrorStatus(statusCode int, okStatuses []int) bool {
 	return !isOkStatus(statusCode, okStatuses)
 }
 
-// doAPICall sends a request, checks status, and JSON-decodes the response into T.
-func doAPICall[T any](c *Client, input apiCallInput) apperror.Result[T] {
-	rawResult := c.doAPICallRaw(input)
+// doApiCall sends a request, checks status, and JSON-decodes the response into T.
+func doApiCall[T any](c *Client, input apiCallInput) apperror.Result[T] {
+	rawResult := c.doApiCallRaw(input)
 	if rawResult.HasError() {
 		return apperror.Fail[T](rawResult.AppError())
 	}
 
-	return decodeAPIResponse[T](rawResult.Value(), input.Operation.Value())
+	return decodeApiResponse[T](rawResult.Value(), input.Operation.Value())
 }
 
-// decodeAPIResponse unmarshals raw JSON bytes into T.
-func decodeAPIResponse[T any](data []byte, operationDesc string) apperror.Result[T] {
+// decodeApiResponse unmarshals raw JSON bytes into T.
+func decodeApiResponse[T any](data []byte, operationDesc string) apperror.Result[T] {
 	var result T
 	err := json.Unmarshal(data, &result)
 

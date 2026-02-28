@@ -34,12 +34,12 @@ func Health(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// APIIndex returns API metadata for the base /api/v1 endpoint
-func APIIndex(w http.ResponseWriter, r *http.Request) {
+// ApiIndex returns API metadata for the base /api/v1 endpoint
+func ApiIndex(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, ApiIndexResponse{
 		Name:    "WP Plugin Publish API",
 		Version: "v1",
-		Health:  wordpress.GoAPIHealth,
-		WS:      wordpress.GoAPIWebSocket,
+		Health:  wordpress.GoApiHealth,
+		WS:      wordpress.GoApiWebSocket,
 	})
 }

@@ -221,7 +221,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) apperror.Result[[]Uploa
 		return apperror.Fail[[]UploaderFileInfo](rawResult.AppError())
 	}
 
-	decodeResult := decodeAPIResponse[listFilesResult](rawResult.Value(), "plugin files list")
+	decodeResult := decodeApiResponse[listFilesResult](rawResult.Value(), "plugin files list")
 	if decodeResult.HasError() {
 		return apperror.Fail[[]UploaderFileInfo](decodeResult.AppError())
 	}
@@ -229,8 +229,8 @@ func (c *Client) ListPluginFilesViaUploader(slug string) apperror.Result[[]Uploa
 	return apperror.Ok(decodeResult.Value().Files)
 }
 
-// decodeAPIResponseTyped unmarshals raw JSON bytes into *T, returning apperror.Result.
-func decodeAPIResponseTyped[T any](data []byte, label string) apperror.Result[*T] {
+// decodeApiResponseTyped unmarshals raw JSON bytes into *T, returning apperror.Result.
+func decodeApiResponseTyped[T any](data []byte, label string) apperror.Result[*T] {
 	var result T
 	err := json.Unmarshal(data, &result)
 

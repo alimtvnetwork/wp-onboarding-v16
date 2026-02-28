@@ -12,17 +12,17 @@ import (
 // BuildWPJSONURL constructs a full WordPress JSON API URL: {baseURL}/wp-json{endpoint}.
 // The endpoint should start with "/" (e.g., "/riseup-asia-uploader/v1/status").
 func BuildWPJSONURL(baseURL, endpoint string) string {
-	return fmt.Sprintf("%s%s%s", baseURL, WPCoreAPIRoot, endpoint)
+	return fmt.Sprintf("%s%s%s", baseURL, WPCoreApiRoot, endpoint)
 }
 
 // BuildWPPluginURL constructs a full WordPress plugin API URL: {baseURL}/wp-json/{namespace}{endpointPath}.
 func BuildWPPluginURL(baseURL, namespace string, endpoint ep.Variant) string {
-	return fmt.Sprintf("%s%s/%s%s", baseURL, WPCoreAPIRoot, namespace, endpoint.String())
+	return fmt.Sprintf("%s%s/%s%s", baseURL, WPCoreApiRoot, namespace, endpoint.String())
 }
 
 // BuildWPProbeURL constructs the WordPress REST API probe URL: {baseURL}/wp-json/.
 func BuildWPProbeURL(baseURL string) string {
-	return fmt.Sprintf("%s%s/", baseURL, WPCoreAPIRoot)
+	return fmt.Sprintf("%s%s/", baseURL, WPCoreApiRoot)
 }
 
 // BuildNamespacedEndpoint constructs a namespaced endpoint path: /{namespace}{endpointPath}.

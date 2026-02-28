@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-// ExtractAPIError returns the *APIError from an error, or nil if not an APIError.
+// ExtractApiError returns the *ApiError from an error, or nil if not an ApiError.
 // This is the centralized extraction point — callers MUST use this instead of inline type assertions.
-func ExtractAPIError(err error) *APIError {
+func ExtractApiError(err error) *ApiError {
 	if err == nil {
 		return nil
 	}
-	apiErr, ok := err.(*APIError)
+	apiErr, ok := err.(*ApiError)
 	if !ok {
 		return nil
 	}
@@ -34,7 +34,7 @@ func ExtractExitError(err error) *exec.ExitError {
 // APIError contains rich request/response context for failed WordPress REST calls.
 // It intentionally keeps Error() short/stable (so user-facing messages remain readable)
 // while exposing full diagnostics via fields.
-type APIError struct {
+type ApiError struct {
 	Operation     string
 	Method        string
 	Endpoint      string
@@ -47,7 +47,7 @@ type APIError struct {
 	StackTrace    string // Captured stack trace at error time
 }
 
-func (e *APIError) Error() string {
+func (e *ApiError) Error() string {
 	op := e.Operation
 	isOperationMissing := op == ""
 
@@ -69,7 +69,7 @@ func (e *APIError) Error() string {
 }
 
 // FullError returns the complete error message with response body for logging
-func (e *APIError) FullError() string {
+func (e *ApiError) FullError() string {
 	msg := e.Error()
 	hasResponseBody := e.ResponseBody != ""
 
@@ -90,6 +90,7 @@ func (e *APIError) FullError() string {
 type ConnectionInfo struct {
 	IsConnected      bool
 	Connected        bool     // legacy compat
+	URL              string
 	Username         string
 	WPVersion        string   `json:",omitempty"`
 	SiteName         string   `json:",omitempty"`

@@ -58,7 +58,7 @@ func (c *Client) FetchRemoteErrorLogs() apperror.Result[*RemoteErrorLogsResult] 
 		return apperror.Fail[*RemoteErrorLogsResult](rawResult.AppError())
 	}
 
-	decodeResult := decodeAPIResponse[RemoteErrorLogsResult](rawResult.Value(), "remote error logs")
+	decodeResult := decodeApiResponse[RemoteErrorLogsResult](rawResult.Value(), "remote error logs")
 	if decodeResult.HasError() {
 		return apperror.Fail[*RemoteErrorLogsResult](decodeResult.AppError())
 	}
@@ -139,7 +139,7 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) apperror.Res
 		return apperror.Fail[*RemoteErrorSessionsResult](rawResult.AppError())
 	}
 
-	decodeResult := decodeAPIResponse[RemoteErrorSessionsResult](rawResult.Value(), "remote error sessions")
+	decodeResult := decodeApiResponse[RemoteErrorSessionsResult](rawResult.Value(), "remote error sessions")
 	if decodeResult.HasError() {
 		return apperror.Fail[*RemoteErrorSessionsResult](decodeResult.AppError())
 	}

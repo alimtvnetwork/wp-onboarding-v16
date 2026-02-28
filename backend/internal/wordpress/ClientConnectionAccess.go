@@ -37,14 +37,14 @@ func (c *Client) reportPluginAccessStart() {
 }
 
 // fetchPluginAccessResponse sends the plugin list API call.
-func (c *Client) fetchPluginAccessResponse() apperror.Result[APICallResponse] {
+func (c *Client) fetchPluginAccessResponse() apperror.Result[ApiCallResponse] {
 	pluginAccessInput := apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
 		Operation: "check plugin access",
 	}
 
-	return c.doAPICallWithStatus(pluginAccessInput)
+	return c.doApiCallWithStatus(pluginAccessInput)
 }
 
 // reportPluginAccessRequestFailed sends a plugin access request failure event.
@@ -149,7 +149,7 @@ func (c *Client) reportWriteTestStart() {
 }
 
 // sendWriteTestPost creates a draft post for write testing.
-func (c *Client) sendWriteTestPost() apperror.Result[APICallResponse] {
+func (c *Client) sendWriteTestPost() apperror.Result[ApiCallResponse] {
 	testPost := wpTestPost{
 		Title:   "WP Plugin Publish Connection Test",
 		Content: "This draft was created to test API write permissions. You can safely delete it.",
@@ -163,7 +163,7 @@ func (c *Client) sendWriteTestPost() apperror.Result[APICallResponse] {
 		Operation: "test write permissions",
 	}
 
-	return c.doAPICallWithStatus(writeTestInput)
+	return c.doApiCallWithStatus(writeTestInput)
 }
 
 // reportWriteTestRequestFailed sends a write test request failure event.
@@ -241,5 +241,5 @@ func (c *Client) deleteTestPost(postId int) {
 		Operation:  "delete test post",
 		OkStatuses: []int{HttpStatusOk.Int(), HttpStatusNoContent.Int()},
 	}
-	c.doAPICallRaw(deleteInput)
+	c.doApiCallRaw(deleteInput)
 }

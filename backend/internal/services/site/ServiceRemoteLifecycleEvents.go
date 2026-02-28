@@ -49,7 +49,7 @@ func (s *Service) saveRemoteActionRequest(ref *remoteActionRef) {
 	}
 
 	s.sessionService.SaveRequest(ref.SessionID, &session.SessionRequest{
-		URL:    wordpress.GoAPISitePluginRoute(ref.SiteID, ref.PluginSlug, ref.Action),
+		URL:    wordpress.GoApiSitePluginRoute(ref.SiteID, ref.PluginSlug, ref.Action),
 		Method: "POST",
 		Body: toJson(RemoteActionRequestBody{
 			SiteId:     ref.SiteID,

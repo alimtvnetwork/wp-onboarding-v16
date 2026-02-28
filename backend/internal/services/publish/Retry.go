@@ -122,7 +122,7 @@ func isTransientAppError(appErr *apperror.AppError) bool {
 		return true
 	}
 
-	apiErr := wordpress.ExtractAPIError(cause)
+	apiErr := wordpress.ExtractApiError(cause)
 	if apiErr != nil {
 		return wordpress.HttpStatusType(apiErr.StatusCode).IsRetryable()
 	}
