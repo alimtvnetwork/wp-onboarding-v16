@@ -62,7 +62,9 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Path == "" {
+	isPathEmpty := req.Path == ""
+
+	if isPathEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -171,7 +173,9 @@ func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Path == "" {
+	isPathEmpty := req.Path == ""
+
+	if isPathEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

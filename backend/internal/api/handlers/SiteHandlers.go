@@ -51,7 +51,10 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 
 	normalizeCreateSitePassword(&input)
 
-	if msg := validateCreateSiteInput(input); msg != "" {
+	msg := validateCreateSiteInput(input)
+	hasValidationError := msg != ""
+
+	if hasValidationError {
 		respondBadRequest(w, apperror.ErrValidation, msg)
 
 		return
@@ -84,11 +87,15 @@ func normalizeCreateSitePassword(input *SiteCreateInput) {
 
 // validateCreateSiteInput returns an error message if any required field is missing.
 func validateCreateSiteInput(input SiteCreateInput) string {
-	if input.Name == "" {
+	isNameEmpty := input.Name == ""
+
+	if isNameEmpty {
 		return "Name is required"
 	}
 
-	if input.Url == "" {
+	isUrlEmpty := input.Url == ""
+
+	if isUrlEmpty {
 		return "URL is required"
 	}
 
@@ -97,11 +104,15 @@ func validateCreateSiteInput(input SiteCreateInput) string {
 
 // validateCreateSiteCredentials checks the credential fields of SiteCreateInput.
 func validateCreateSiteCredentials(input SiteCreateInput) string {
-	if input.Username == "" {
+	isUsernameEmpty := input.Username == ""
+
+	if isUsernameEmpty {
 		return "Username is required"
 	}
 
-	if input.Password == "" {
+	isPasswordEmpty := input.Password == ""
+
+	if isPasswordEmpty {
 		return "Application password is required"
 	}
 

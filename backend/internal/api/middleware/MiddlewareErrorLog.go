@@ -80,23 +80,33 @@ func writeErrorLogHeader(sb *strings.Builder, now string, input errorLogInput) {
 		scheme = "https"
 	}
 	host := input.Request.Host
-	if host == "" {
+	isHostEmpty := host == ""
+
+	if isHostEmpty {
 		host = input.Request.URL.Host
 	}
+
 	fullURL := fmt.Sprintf("%s://%s%s", scheme, host, input.Request.URL.RequestURI())
 	sb.WriteString(fmt.Sprintf("  Requested To: %s %s\n", input.Request.Method, fullURL))
 
-	if input.Request.URL.RawQuery != "" {
+	hasQueryParams := input.Request.URL.RawQuery != ""
+
+	if hasQueryParams {
 		sb.WriteString(fmt.Sprintf("  Query Params: %s\n", input.Request.URL.RawQuery))
 	}
 }
 
 func writeErrorLogRequestBody(sb *strings.Builder, input errorLogInput) {
-	if len(input.RequestBody) == 0 {
+	isBodyEmpty := len(input.RequestBody) == 0
+
+	if isBodyEmpty {
 		return
 	}
+
 	bodyStr := string(input.RequestBody)
-	if len(bodyStr) > 4096 {
+	isBodyTooLong := len(bodyStr) > 4096
+
+	if isBodyTooLong {
 		bodyStr = bodyStr[:4096] + "... (truncated)"
 	}
 	var prettyBuf bytes.Buffer
@@ -110,12 +120,18 @@ func writeErrorLogRequestBody(sb *strings.Builder, input errorLogInput) {
 
 func parseEnvelope(w *responseWriter) (envelopeForParsing, bool) {
 	var env envelopeForParsing
-	if w.body.Len() == 0 {
+	isBodyEmpty := w.body.Len() == 0
+
+	if isBodyEmpty {
 		return env, false
 	}
-	if json.Unmarshal(w.body.Bytes(), &env) == nil && env.Status.Message != "" {
+
+	isParsed := json.Unmarshal(w.body.Bytes(), &env) == nil && env.Status.Message != ""
+
+	if isParsed {
 		return env, true
 	}
+
 	return env, false
 }
 
@@ -124,10 +140,15 @@ func writeEnvelopeDetails(sb *strings.Builder, env envelopeForParsing) {
 	sb.WriteString(fmt.Sprintf("  Error Message: %s\n", env.Status.Message))
 
 	if env.Attributes != nil {
-		if env.Attributes.RequestedAt != "" {
+		hasRequestedAt := env.Attributes.RequestedAt != ""
+
+		if hasRequestedAt {
 			sb.WriteString(fmt.Sprintf("  RequestedAt: %s\n", env.Attributes.RequestedAt))
 		}
-		if env.Attributes.RequestDelegatedAt != "" {
+
+		hasDelegatedAt := env.Attributes.RequestDelegatedAt != ""
+
+		if hasDelegatedAt {
 			sb.WriteString(fmt.Sprintf("  RequestDelegatedAt: %s\n", env.Attributes.RequestDelegatedAt))
 		}
 	}
@@ -145,7 +166,9 @@ func writeEnvelopeDetails(sb *strings.Builder, env envelopeForParsing) {
 }
 
 func writeEnvelopeErrors(sb *strings.Builder, env envelopeForParsing) {
-	if env.Errors.BackendMessage != "" {
+	hasBackendMessage := env.Errors.BackendMessage != ""
+
+	if hasBackendMessage {
 		sb.WriteString(fmt.Sprintf("  Backend Error: %s\n", env.Errors.BackendMessage))
 	}
 	if len(env.Errors.DelegatedServiceErrorStack) > 0 {
@@ -163,12 +186,18 @@ func writeEnvelopeErrors(sb *strings.Builder, env envelopeForParsing) {
 }
 
 func writeResponseBody(sb *strings.Builder, w *responseWriter) {
-	if w.body.Len() == 0 {
+	isBodyEmpty := w.body.Len() == 0
+
+	if isBodyEmpty {
 		return
 	}
+
 	body := w.body.String()
-	if len(body) > 4096 {
+	isBodyTooLong := len(body) > 4096
+
+	if isBodyTooLong {
 		body = body[:4096] + "... (truncated)"
 	}
+
 	sb.WriteString(fmt.Sprintf("  Response Body:\n    %s\n", body))
 }

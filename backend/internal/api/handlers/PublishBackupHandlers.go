@@ -152,7 +152,10 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 
 	var siteID *int64
 
-	if siteIDStr := r.URL.Query().Get("siteId"); siteIDStr != "" {
+	siteIDStr := r.URL.Query().Get("siteId")
+	hasSiteIdParam := siteIDStr != ""
+
+	if hasSiteIdParam {
 		if parsed, err := strconv.ParseInt(siteIDStr, 10, 64); err == nil {
 			siteID = &parsed
 		}
@@ -160,7 +163,10 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 
 	limit := 50
 
-	if l := r.URL.Query().Get("limit"); l != "" {
+	l := r.URL.Query().Get("limit")
+	hasLimitParam := l != ""
+
+	if hasLimitParam {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
 			limit = parsed
 		}

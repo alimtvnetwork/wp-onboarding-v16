@@ -135,7 +135,9 @@ func (s *Service) loadDiagnosticStackTrace(sessionID string) *SessionStackTrace 
 // loadPHPStackTrace extracts the PHP stacktrace from session logs.
 func (s *Service) loadPHPStackTrace(sessionID string) string {
 	logsResult := s.GetSessionLogs(sessionID)
-	if !logsResult.IsSafe() {
+	isLogsUnavailable := !logsResult.IsSafe()
+
+	if isLogsUnavailable {
 		return ""
 	}
 	return extractPHPStackTraceFromLogs(logsResult.Value())

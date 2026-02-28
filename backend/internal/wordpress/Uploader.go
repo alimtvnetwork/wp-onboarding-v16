@@ -109,7 +109,12 @@ func (c *Client) CheckRiseupAsiaAvailable() (*UploaderAvailability, error) {
 			return nil, err
 		}
 
-		if callResp.StatusCode == HttpStatusOk.Int() || callResp.StatusCode == HttpStatusUnauthorized.Int() || callResp.StatusCode == HttpStatusForbidden.Int() {
+		isOkStatus := callResp.StatusCode == HttpStatusOk.Int()
+		isUnauthorized := callResp.StatusCode == HttpStatusUnauthorized.Int()
+		isForbidden := callResp.StatusCode == HttpStatusForbidden.Int()
+		isAvailable := isOkStatus || isUnauthorized || isForbidden
+
+		if isAvailable {
 			return &UploaderAvailability{Available: true, Namespace: ns}, nil
 		}
 	}

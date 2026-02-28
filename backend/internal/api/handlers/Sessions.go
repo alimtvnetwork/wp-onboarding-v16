@@ -22,7 +22,10 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 
 	// Parse optional limit parameter
 	limit := 100
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+	limitStr := r.URL.Query().Get("limit")
+	hasLimitParam := limitStr != ""
+
+	if hasLimitParam {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
 			limit = l
 		}
@@ -62,7 +65,9 @@ func GetSession(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sessionID := vars["id"]
 
-	if sessionID == "" {
+	isSessionIdEmpty := sessionID == ""
+
+	if isSessionIdEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -107,7 +112,9 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sessionID := vars["id"]
 
-	if sessionID == "" {
+	isSessionIdEmpty := sessionID == ""
+
+	if isSessionIdEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -166,7 +173,9 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sessionID := vars["id"]
 
-	if sessionID == "" {
+	isSessionIdEmpty := sessionID == ""
+
+	if isSessionIdEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -210,7 +219,9 @@ func GetSessionDiagnostics(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sessionID := vars["id"]
 
-	if sessionID == "" {
+	isSessionIdEmpty := sessionID == ""
+
+	if isSessionIdEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

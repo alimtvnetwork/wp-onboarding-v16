@@ -18,7 +18,9 @@ import (
 // GetErrors returns application error logs
 func GetErrors(w http.ResponseWriter, r *http.Request) {
 	logType := r.URL.Query().Get("type")
-	if logType == "" {
+	isLogTypeEmpty := logType == ""
+
+	if isLogTypeEmpty {
 		logType = "errors"
 	}
 
@@ -35,7 +37,9 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 
 // resolveErrorLogPath returns the file path for the given log type.
 func resolveErrorLogPath(logType string) string {
-	if logType == "all" {
+	isAllLogs := logType == "all"
+
+	if isAllLogs {
 		return "data/errors/log.txt"
 	}
 	return "data/errors/error.log.txt"
@@ -88,12 +92,17 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 // parseStreamParams extracts logType and tailLines from request query.
 func parseStreamParams(r *http.Request) (string, int) {
 	logType := r.URL.Query().Get("type")
-	if logType == "" {
+	isLogTypeEmpty := logType == ""
+
+	if isLogTypeEmpty {
 		logType = "all"
 	}
 
 	tailLines := 100
-	if tailStr := r.URL.Query().Get("tail"); tailStr != "" {
+	tailStr := r.URL.Query().Get("tail")
+	hasTailParam := tailStr != ""
+
+	if hasTailParam {
 		n, err := strconv.Atoi(tailStr)
 		isValidTail := err == nil && n > 0 && n <= 10000
 

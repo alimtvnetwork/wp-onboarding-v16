@@ -231,7 +231,9 @@ func (s *Service) saveRollbackZip(pctx *publishContext, exportResult *wordpress.
 	}
 
 	backupPath := s.writeRollbackZipToDisk(pctx.Mapping.RemoteSlug, zipData)
-	if backupPath == "" {
+	isBackupPathEmpty := backupPath == ""
+
+	if isBackupPathEmpty {
 		return ""
 	}
 

@@ -182,7 +182,9 @@ func matchPattern(pattern compiledPattern, path string) bool {
 func (u *UploadIgnore) FilterFiles(files []string) []string {
 	result := make([]string, 0, len(files))
 	for _, f := range files {
-		if !u.ShouldIgnore(f) {
+		isIncluded := !u.ShouldIgnore(f)
+
+		if isIncluded {
 			result = append(result, f)
 		}
 	}
