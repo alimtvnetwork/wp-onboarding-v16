@@ -21,7 +21,10 @@ type sessionLogInput struct {
 }
 
 func (s *Service) sessionLog(input sessionLogInput) {
-	if s.sessionService == nil || input.SessionId == "" {
+	isSessionUnavailable := s.sessionService == nil
+	isSessionIdMissing := input.SessionId == ""
+
+	if isSessionUnavailable || isSessionIdMissing {
 		return
 	}
 
@@ -36,7 +39,10 @@ func (s *Service) sessionLog(input sessionLogInput) {
 }
 
 func (s *Service) sessionLogStageStart(sessionId, stageName string) {
-	if s.sessionService == nil || sessionId == "" {
+	isSessionUnavailable := s.sessionService == nil
+	isSessionIdMissing := sessionId == ""
+
+	if isSessionUnavailable || isSessionIdMissing {
 		return
 	}
 	s.sessionService.LogStageStart(sessionId, stageName)
@@ -51,7 +57,10 @@ type sessionStageEndInput struct {
 }
 
 func (s *Service) sessionLogStageEnd(input sessionStageEndInput) {
-	if s.sessionService == nil || input.SessionId == "" {
+	isSessionUnavailable := s.sessionService == nil
+	isSessionIdMissing := input.SessionId == ""
+
+	if isSessionUnavailable || isSessionIdMissing {
 		return
 	}
 
@@ -65,7 +74,10 @@ func (s *Service) sessionLogStageEnd(input sessionStageEndInput) {
 }
 
 func (s *Service) endSession(sessionId, status, errorMsg string) {
-	if s.sessionService == nil || sessionId == "" {
+	isSessionUnavailable := s.sessionService == nil
+	isSessionIdMissing := sessionId == ""
+
+	if isSessionUnavailable || isSessionIdMissing {
 		return
 	}
 	s.sessionService.EndSession(sessionId, status, errorMsg)

@@ -49,14 +49,19 @@ type APIError struct {
 
 func (e *APIError) Error() string {
 	op := e.Operation
-	if op == "" {
+	isOperationMissing := op == ""
+
+	if isOperationMissing {
 		op = "WordPress API request failed"
 	}
 
 	req := ""
-	if e.Method != "" || e.Endpoint != "" {
+	hasMethodOrEndpoint := e.Method != "" || e.Endpoint != ""
+	hasUrl := e.Url != ""
+
+	if hasMethodOrEndpoint {
 		req = fmt.Sprintf(" (%s %s)", strings.ToUpper(e.Method), e.Endpoint)
-	} else if e.Url != "" {
+	} else if hasUrl {
 		req = fmt.Sprintf(" (%s)", e.Url)
 	}
 
@@ -66,12 +71,18 @@ func (e *APIError) Error() string {
 // FullError returns the complete error message with response body for logging
 func (e *APIError) FullError() string {
 	msg := e.Error()
-	if e.ResponseBody != "" {
+	hasResponseBody := e.ResponseBody != ""
+
+	if hasResponseBody {
 		msg += fmt.Sprintf("\nResponse Body: %s", e.ResponseBody)
 	}
-	if e.StackTrace != "" {
+
+	hasStackTrace := e.StackTrace != ""
+
+	if hasStackTrace {
 		msg += fmt.Sprintf("\n--- Stack Trace ---\n%s--- End Stack Trace ---", e.StackTrace)
 	}
+
 	return msg
 }
 

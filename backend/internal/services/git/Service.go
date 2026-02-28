@@ -97,10 +97,15 @@ type Service struct {
 
 // New creates a new git service
 func New(cfg Config) *Service {
-	if cfg.DefaultBranch == "" {
+	isBranchMissing := cfg.DefaultBranch == ""
+
+	if isBranchMissing {
 		cfg.DefaultBranch = "main"
 	}
-	if cfg.Timeout == 0 {
+
+	isTimeoutMissing := cfg.Timeout == 0
+
+	if isTimeoutMissing {
 		cfg.Timeout = 60
 	}
 
@@ -440,26 +445,34 @@ func (s *Service) Status(ctx context.Context, pluginID int64) apperror.Result[St
 	s.runGitCommand(p.Path, "fetch", "--quiet")
 	revList, _ := s.runGitCommand(p.Path, "rev-list", "--left-right", "--count", result.Branch+"...origin/"+result.Branch)
 	parts := strings.Fields(revList)
-	if len(parts) == 2 {
+	hasAheadBehind := len(parts) == 2
+
+	if hasAheadBehind {
 		result.Ahead, _ = strconv.Atoi(parts[0])
 		result.Behind, _ = strconv.Atoi(parts[1])
 	}
 
 	// Get staged files count
 	staged, _ := s.runGitCommand(p.Path, "diff", "--cached", "--name-only")
-	if staged != "" {
+	hasStagedFiles := staged != ""
+
+	if hasStagedFiles {
 		result.Staged = len(strings.Split(strings.TrimSpace(staged), "\n"))
 	}
 
 	// Get modified files count
 	modified, _ := s.runGitCommand(p.Path, "diff", "--name-only")
-	if modified != "" {
+	hasModifiedFiles := modified != ""
+
+	if hasModifiedFiles {
 		result.Modified = len(strings.Split(strings.TrimSpace(modified), "\n"))
 	}
 
 	// Get untracked files count
 	untracked, _ := s.runGitCommand(p.Path, "ls-files", "--others", "--exclude-standard")
-	if untracked != "" {
+	hasUntrackedFiles := untracked != ""
+
+	if hasUntrackedFiles {
 		result.Untracked = len(strings.Split(strings.TrimSpace(untracked), "\n"))
 	}
 
@@ -610,12 +623,20 @@ func (s *Service) runGitCommand(dir string, args ...string) (string, error) {
 func (s *Service) parseGitOutput(output string, result *PullResult) {
 	re := regexp.MustCompile(`(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?`)
 	matches := re.FindStringSubmatch(output)
-	if len(matches) >= 2 {
+	hasFileChanges := len(matches) >= 2
+
+	if hasFileChanges {
 		result.FilesChanged, _ = strconv.Atoi(matches[1])
-		if len(matches) >= 3 {
+
+		hasInsertions := len(matches) >= 3
+
+		if hasInsertions {
 			result.Insertions, _ = strconv.Atoi(matches[2])
 		}
-		if len(matches) >= 4 {
+
+		hasDeletions := len(matches) >= 4
+
+		if hasDeletions {
 			result.Deletions, _ = strconv.Atoi(matches[3])
 		}
 	}
