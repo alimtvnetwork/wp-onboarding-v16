@@ -38,4 +38,30 @@ trait BooleanDomainTrait {
     public static function isWpScheduleMissing(string $hook): bool { return !wp_next_scheduled($hook); }
     public static function isCapabilityMissing(string $capability): bool { return !current_user_can($capability); }
     public static function isPropertyMissing(object $obj, string $prop): bool { return !isset($obj->$prop); }
+
+    // ── String Inspection ──
+
+    /** True when $haystack contains $needle anywhere. */
+    public static function hasSubstring(string $haystack, string $needle): bool { return str_contains($haystack, $needle); }
+
+    /** True when $haystack does NOT contain $needle. */
+    public static function lacksSubstring(string $haystack, string $needle): bool { return !str_contains($haystack, $needle); }
+
+    /** True when $haystack starts with $prefix. */
+    public static function hasPrefix(string $haystack, string $prefix): bool { return str_starts_with($haystack, $prefix); }
+
+    /** True when $haystack does NOT start with $prefix. */
+    public static function lacksPrefix(string $haystack, string $prefix): bool { return !str_starts_with($haystack, $prefix); }
+
+    /** True when $haystack ends with $suffix. */
+    public static function hasSuffix(string $haystack, string $suffix): bool { return str_ends_with($haystack, $suffix); }
+
+    /** True when $haystack does NOT end with $suffix. */
+    public static function lacksSuffix(string $haystack, string $suffix): bool { return !str_ends_with($haystack, $suffix); }
+
+    /** True when $value is a non-empty string. */
+    public static function isStringPopulated(string $value): bool { return $value !== ''; }
+
+    /** True when $value is an empty string. */
+    public static function isStringEmpty(string $value): bool { return $value === ''; }
 }
