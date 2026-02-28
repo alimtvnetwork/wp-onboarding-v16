@@ -49,7 +49,10 @@ type errorLogInput struct {
 // appendToErrorLog writes a structured error entry to data/errors/error.log.txt
 func appendToErrorLog(input errorLogInput) {
 	logPath := filepath.Join(ErrorLogDir, logfile.ErrorLog)
-	_ = os.MkdirAll(ErrorLogDir, 0755)
+	mkdirErr := os.MkdirAll(ErrorLogDir, 0755)
+	if mkdirErr != nil {
+		return
+	}
 
 	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

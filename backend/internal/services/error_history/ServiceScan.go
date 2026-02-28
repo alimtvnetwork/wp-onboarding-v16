@@ -92,7 +92,13 @@ func populateFromNullFields(s *scanNullFields) {
 	s.e.InvocationChainJson = s.invocationChainJson.String
 	s.e.UiClickPath = s.uiClickPath.String
 	s.e.MarkdownReport = s.markdownReport.String
-	s.e.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", s.createdAt)
+	parsed, parseErr := time.Parse("2006-01-02 15:04:05", s.createdAt)
+
+	if parseErr != nil {
+		s.e.CreatedAt = time.Time{}
+	} else {
+		s.e.CreatedAt = parsed
+	}
 }
 
 // randomString generates a random string for error IDs

@@ -32,7 +32,11 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 		limit = 25
 	}
 
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	parsedOffset, offsetErr := strconv.Atoi(r.URL.Query().Get("offset"))
+	offset := 0
+	if offsetErr == nil {
+		offset = parsedOffset
+	}
 
 	filters := models.PublishHistoryFilters{
 		Status: r.URL.Query().Get("status"),
@@ -43,14 +47,20 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 	hasPluginFilter := pid != ""
 
 	if hasPluginFilter {
-		filters.PluginId, _ = strconv.ParseInt(pid, 10, 64)
+		parsedPid, pidErr := strconv.ParseInt(pid, 10, 64)
+		if pidErr == nil {
+			filters.PluginId = parsedPid
+		}
 	}
 
 	sid := r.URL.Query().Get("siteId")
 	hasSiteFilter := sid != ""
 
 	if hasSiteFilter {
-		filters.SiteId, _ = strconv.ParseInt(sid, 10, 64)
+		parsedSid, sidErr := strconv.ParseInt(sid, 10, 64)
+		if sidErr == nil {
+			filters.SiteId = parsedSid
+		}
 	}
 
 	listResult, err := Services.PublishHistoryService.List(limit, offset, filters)
@@ -202,7 +212,13 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Confirm bool `json:"confirm"` // external key (frontend request body)
 	}
-	_ = json.NewDecoder(r.Body).Decode(&input)
+	decodeErr := json.NewDecoder(r.Body).Decode(&input)
+
+	if decodeErr != nil {
+		respondError(w, wordpress.HttpStatusBadRequest, apperror.ErrInvalidInput, "Invalid request body: "+decodeErr.Error())
+
+		return
+	}
 
 	isUnconfirmed := !input.Confirm
 	if isUnconfirmed {

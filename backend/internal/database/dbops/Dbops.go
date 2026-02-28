@@ -127,8 +127,15 @@ func FindOrCreate(
 		return nil, err
 	}
 
-	rows, _ := result.RowsAffected()
-	id, _ = result.LastInsertId()
+	rows, rowsErr := result.RowsAffected()
+	if rowsErr != nil {
+		logError(ctx, rowsErr)
+	}
+
+	id, idErr := result.LastInsertId()
+	if idErr != nil {
+		logError(ctx, idErr)
+	}
 
 	isRaceCondition := rows == 0
 

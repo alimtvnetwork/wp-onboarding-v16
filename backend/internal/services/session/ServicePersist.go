@@ -139,6 +139,10 @@ func (s *Service) SetMetadata(sessionId, key string, value json.RawMessage) {
 		m = make(map[string]json.RawMessage)
 	}
 	m[key] = value
-	session.Metadata, _ = json.Marshal(m)
+	marshaled, marshalErr := json.Marshal(m)
+
+	if marshalErr == nil {
+		session.Metadata = marshaled
+	}
 	session.mu.Unlock()
 }

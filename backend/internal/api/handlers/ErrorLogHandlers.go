@@ -83,8 +83,19 @@ func GetError(w http.ResponseWriter, r *http.Request) {
 
 // ClearErrors removes all error logs
 func ClearErrors(w http.ResponseWriter, r *http.Request) {
-	_ = os.Truncate("data/errors/log.txt", 0)
-	_ = os.Truncate("data/errors/error.log.txt", 0)
+	truncErr := os.Truncate("data/errors/log.txt", 0)
+	if truncErr != nil && !os.IsNotExist(truncErr) {
+		respondError(w, wordpress.HttpStatusServerError, "E9005", "Failed to clear log file: "+truncErr.Error())
+
+		return
+	}
+
+	errTruncErr := os.Truncate("data/errors/error.log.txt", 0)
+	if errTruncErr != nil && !os.IsNotExist(errTruncErr) {
+		respondError(w, wordpress.HttpStatusServerError, "E9005", "Failed to clear error log file: "+errTruncErr.Error())
+
+		return
+	}
 
 	respondSuccess(w, ActionResponse{IsCleared: true, Message: "Log files cleared"})
 }

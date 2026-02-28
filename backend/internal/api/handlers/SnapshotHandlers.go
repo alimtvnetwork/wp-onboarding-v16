@@ -105,7 +105,7 @@ func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var opts wordpress.SnapshotCreateOptions
-	_ = decodeJsonSilent(r, &opts)
+	decodeJsonSilent(r, &opts) // opts are optional; decode errors leave zero-value defaults
 
 	result, appErr := Services.SiteService.CreateRemoteSnapshot(r.Context(), siteId, opts)
 	if appErr != nil {

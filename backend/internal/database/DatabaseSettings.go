@@ -178,14 +178,22 @@ func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, error) {
 			WithPath(input.Path)
 	}
 
-	pluginId, _ := result.LastInsertId()
+	pluginId, lastIdErr := result.LastInsertId()
+
+	if lastIdErr != nil {
+		return 0, apperror.Wrap(lastIdErr, apperror.ErrDatabaseQuery, "failed to get last insert ID for seed plugin")
+	}
 
 	// Create git config if enabled
 	if input.GitEnabled {
-		_, _ = db.Exec(`
+		_, gitErr := db.Exec(`
 			INSERT INTO PluginGitConfig (PluginId, GitEnabled, UpdatedAt)
 			VALUES (?, 1, datetime('now'))
 		`, pluginId)
+
+		if gitErr != nil {
+			return pluginId, apperror.Wrap(gitErr, apperror.ErrDatabaseInsert, "failed to create git config for seed plugin")
+		}
 	}
 
 	return pluginId, nil

@@ -117,13 +117,19 @@ func compareVersions(a, b string) int {
 		isWithinA := i < len(partsA)
 
 		if isWithinA {
-			numA, _ = strconv.Atoi(partsA[i])
+			parsed, parseErr := strconv.Atoi(partsA[i])
+			if parseErr == nil {
+				numA = parsed
+			}
 		}
 
 		isWithinB := i < len(partsB)
 
 		if isWithinB {
-			numB, _ = strconv.Atoi(partsB[i])
+			parsed, parseErr := strconv.Atoi(partsB[i])
+			if parseErr == nil {
+				numB = parsed
+			}
 		}
 
 		isAGreater := numA > numB

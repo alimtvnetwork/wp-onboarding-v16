@@ -170,9 +170,9 @@ func parseId(w http.ResponseWriter, r *http.Request, paramName string) (int64, b
 }
 
 // decodeJsonSilent decodes a JSON request body without writing an error response.
-// Returns nil on success, error on failure. Used by optional body decoders.
-func decodeJsonSilent(r *http.Request, target any) error {
-	return json.NewDecoder(r.Body).Decode(target)
+// Used for optional body parameters where zero-value defaults are acceptable.
+func decodeJsonSilent(r *http.Request, target any) {
+	json.NewDecoder(r.Body).Decode(target) //nolint:errcheck // intentionally silent for optional bodies
 }
 
 // resolveHttpStatus extracts the HTTP status code from a WordPress ApiError

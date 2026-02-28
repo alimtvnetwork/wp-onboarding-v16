@@ -227,7 +227,10 @@ func (s *Service) logRemoteSuccessAction(ref *remoteActionRef, durationMs int64)
 
 // finalizeRemoteSuccess invalidates cache, ends session, broadcasts, and logs.
 func (s *Service) finalizeRemoteSuccess(ctx context.Context, ref *remoteActionRef, durationMs int64) {
-	_ = s.InvalidateRemotePluginsCache(ctx, ref.SiteId)
+	cacheErr := s.InvalidateRemotePluginsCache(ctx, ref.SiteId)
+	if cacheErr != nil {
+		s.log.Warn("Failed to invalidate remote plugins cache", "siteId", ref.SiteId, "error", cacheErr.Error())
+	}
 	s.endRemoteSession(ref.SessionId, "success", "")
 
 	completeInput := remoteActionCompleteInput{
