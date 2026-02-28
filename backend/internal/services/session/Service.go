@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"wp-plugin-publish/internal/constants/logfile"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
@@ -190,7 +191,7 @@ func (s *Service) getErrorLogPath(sessionID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return pathutil.Join(dir, "error.log")
+	return pathutil.Join(dir, logfile.SessionErrorLog)
 }
 
 // SessionSummary provides a brief overview of a session

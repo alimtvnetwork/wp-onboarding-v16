@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 
 	"wp-plugin-publish/internal/api/middleware"
+	"wp-plugin-publish/internal/constants/logfile"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // logPaths holds paths for on-disk log files.
@@ -19,34 +21,25 @@ type logPaths struct {
 
 // resolveLogPaths computes and ensures the errors directory and log file paths.
 func resolveLogPaths(dbPath string, log *logger.Logger) logPaths {
-	errorsDir := filepath.Join(filepath.Dir(dbPath), "errors")
-	if err := os.MkdirAll(errorsDir, 0755); err != nil {
+	errorsDir := filepath.Join(filepath.Dir(dbPath), logfile.ErrorsDir)
+	err := os.MkdirAll(errorsDir, 0755)
+	if err != nil {
 		log.Error("Failed to create errors dir", "path", errorsDir, "error", err)
 	}
 	middleware.ErrorLogDir = errorsDir
 
 	return logPaths{
 		errorsDir:  errorsDir,
-		allLogPath: filepath.Join(errorsDir, "log.txt"),
-		errLogPath: filepath.Join(errorsDir, "error.log.txt"),
+		allLogPath: filepath.Join(errorsDir, logfile.AllLog),
+		errLogPath: filepath.Join(errorsDir, logfile.ErrorLog),
 	}
 }
 
 // clearStartupLogs removes log files if clearLogsOnStartup is configured.
 func clearStartupLogs(paths logPaths, log *logger.Logger) {
 	log.Info("Clearing logs on startup (clearLogsOnStartup=true)")
-	removeIfExists(paths.allLogPath, "log.txt", log)
-	removeIfExists(paths.errLogPath, "error.log.txt", log)
-}
-
-// removeIfExists removes a file, ignoring not-found errors.
-func removeIfExists(path, label string, log *logger.Logger) {
-	if err := os.Remove(path); err != nil {
-		isRealError := !os.IsNotExist(err)
-		if isRealError {
-			log.Error("Failed to clear "+label, "error", err)
-		}
-	}
+	pathutil.RemoveFileUnchecked(paths.allLogPath)
+	pathutil.RemoveFileUnchecked(paths.errLogPath)
 }
 
 // clearStartupSessions removes the sessions directory if configured.
@@ -54,13 +47,10 @@ func clearStartupSessions(dbPath string, log *logger.Logger) {
 	sessionsDir := filepath.Join(filepath.Dir(dbPath), "sessions")
 	log.Info("Clearing sessions on startup (clearSessionsOnStartup=true)", "path", sessionsDir)
 
-	if err := os.RemoveAll(sessionsDir); err != nil {
-		isRealError := !os.IsNotExist(err)
-		if isRealError {
-			log.Error("Failed to clear sessions directory", "error", err)
-		}
-	}
-	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+	pathutil.RemoveDirUnchecked(sessionsDir)
+
+	err := os.MkdirAll(sessionsDir, 0755)
+	if err != nil {
 		log.Error("Failed to recreate sessions directory", "error", err)
 	}
 }
@@ -70,7 +60,12 @@ func openLogFiles(paths logPaths, log *logger.Logger) (io.Writer, func()) {
 	allFile, err1 := os.OpenFile(paths.allLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	errFile, err2 := os.OpenFile(paths.errLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 
-	if err1 != nil || err2 != nil {
+	hasOpenError :=
+		err1 != nil ||
+		err2 != nil
+
+	if hasOpenError {
+
 		return handleLogFileErrors(allFile, errFile, paths, log)
 	}
 
@@ -86,6 +81,7 @@ func handleLogFileErrors(allFile, errFile *os.File, paths logPaths, log *logger.
 	if errFile != nil {
 		errFile.Close()
 	}
+
 	return os.Stdout, func() {}
 }
 
@@ -102,5 +98,6 @@ func buildLogWriters(allFile, errFile *os.File, paths logPaths, log *logger.Logg
 		allFile.Close()
 		errFile.Close()
 	}
+
 	return logOutput, cleanup
 }

@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"wp-plugin-publish/internal/constants/logfile"
 )
 
 // envelopeForParsing mirrors the envelope structure for JSON unmarshalling.
@@ -46,7 +48,7 @@ type errorLogInput struct {
 
 // appendToErrorLog writes a structured error entry to data/errors/error.log.txt
 func appendToErrorLog(input errorLogInput) {
-	logPath := filepath.Join(ErrorLogDir, "error.log.txt")
+	logPath := filepath.Join(ErrorLogDir, logfile.ErrorLog)
 	_ = os.MkdirAll(ErrorLogDir, 0755)
 
 	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

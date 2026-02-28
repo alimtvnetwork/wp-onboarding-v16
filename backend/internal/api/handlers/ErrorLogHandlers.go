@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"wp-plugin-publish/internal/constants/logfile"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
@@ -179,12 +180,12 @@ func buildLogLinesResponse(input logLinesResponseInput) LogLinesResponse {
 
 // GetBackendErrorLog returns the content of error.log.txt
 func GetBackendErrorLog(w http.ResponseWriter, r *http.Request) {
-	readLogFile(w, "data/errors/error.log.txt", "error.log.txt")
+	readLogFile(w, "data/"+logfile.ErrorsDir+"/"+logfile.ErrorLog, logfile.ErrorLog)
 }
 
 // GetBackendFullLog returns the content of the full log.txt
 func GetBackendFullLog(w http.ResponseWriter, r *http.Request) {
-	readLogFile(w, "data/errors/log.txt", "log.txt")
+	readLogFile(w, "data/"+logfile.ErrorsDir+"/"+logfile.AllLog, logfile.AllLog)
 }
 
 // readLogFile is a helper to read and return log file contents
