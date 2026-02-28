@@ -44,7 +44,9 @@ func StatDir(path string) (*FileInfo, *apperror.AppError) {
 		return nil, appErr
 	}
 
-	if !fi.Info.IsDir() {
+	isFilePath := !fi.Info.IsDir()
+
+	if isFilePath {
 		return nil, apperror.New(apperror.ErrFSInvalid, "path is not a directory").
 			WithPath(fi.Path)
 	}

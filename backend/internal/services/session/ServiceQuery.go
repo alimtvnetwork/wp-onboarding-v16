@@ -177,7 +177,9 @@ func extractPHPStackTraceFromLogs(logs string) string {
 
 // extractPHPContentFromLine extracts PHP stacktrace content from a single log line.
 func extractPHPContentFromLine(line string) string {
-	if !strings.Contains(line, "remote_php_stacktrace") {
+	isUnrelatedLine := !strings.Contains(line, "remote_php_stacktrace")
+
+	if isUnrelatedLine {
 		return ""
 	}
 	braceIdx := strings.Index(line, "{")
