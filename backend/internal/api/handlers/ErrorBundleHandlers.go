@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"wp-plugin-publish/internal/constants/logfile"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/ziputil"
@@ -84,19 +85,23 @@ func writeErrorBundleZip(w http.ResponseWriter, input errorBundleInput) {
 // addBundleLogFiles adds the log and error files to the ZIP.
 func addBundleLogFiles(zipWriter *zip.Writer, input errorBundleInput) {
 	if input.LogExists {
-		_ = addFileToZip(zipWriter, input.LogFile, "log.txt")
+		_ = addFileToZip(zipWriter, input.LogFile, logfile.AllLog)
 	}
 	if input.ErrorExists {
-		_ = addFileToZip(zipWriter, input.ErrorFile, "error.log.txt")
+		_ = addFileToZip(zipWriter, input.ErrorFile, logfile.ErrorLog)
 	}
 }
 
 // addBundleReport adds the user report to the ZIP if present.
 func addBundleReport(zipWriter *zip.Writer, report string) {
-	if report == "" {
+	isReportEmpty := report == ""
+
+	if isReportEmpty {
+
 		return
 	}
-	reportWriter, err := zipWriter.Create("report.md")
+
+	reportWriter, err := zipWriter.Create(logfile.Report)
 	if err == nil {
 		_, _ = io.WriteString(reportWriter, report)
 	}
@@ -106,7 +111,7 @@ func addBundleReport(zipWriter *zip.Writer, report string) {
 func addBundleManifest(zipWriter *zip.Writer, input errorBundleInput) {
 	manifest := buildManifestFiles(input)
 
-	manifestWriter, err := zipWriter.Create("manifest.json")
+	manifestWriter, err := zipWriter.Create(logfile.Manifest)
 	if err == nil {
 		json.NewEncoder(manifestWriter).Encode(manifest)
 	}
@@ -122,13 +127,13 @@ type bundleManifest struct {
 func buildManifestFiles(input errorBundleInput) bundleManifest {
 	files := []string{}
 	if input.LogExists {
-		files = append(files, "log.txt")
+		files = append(files, logfile.AllLog)
 	}
 	if input.ErrorExists {
-		files = append(files, "error.log.txt")
+		files = append(files, logfile.ErrorLog)
 	}
 	if input.Report != "" {
-		files = append(files, "report.md")
+		files = append(files, logfile.Report)
 	}
 
 	return bundleManifest{GeneratedAt: time.Now().Format(time.RFC3339), Files: files}

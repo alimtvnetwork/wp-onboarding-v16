@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"wp-plugin-publish/internal/constants/logfile"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
@@ -75,7 +76,7 @@ func (s *Service) resolveErrorLogPaths() (*errorLogPaths, error) {
 		s.log.Error("Failed to resolve errors directory path", "error", err)
 		return nil, err
 	}
-	errorLogPath, err := pathutil.Join(errorsDir, "error.log.txt")
+	errorLogPath, err := pathutil.Join(errorsDir, logfile.ErrorLog)
 	if err != nil {
 		s.log.Error("Failed to resolve error log path", "error", err)
 		return nil, err

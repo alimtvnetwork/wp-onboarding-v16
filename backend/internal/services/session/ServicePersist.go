@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"os"
 	"time"
+
+	"wp-plugin-publish/internal/constants/logfile"
 )
 
 // SaveRequest persists the inbound request as request.json in the session folder
@@ -96,7 +98,7 @@ func (s *Service) SaveError(input SaveErrorInput) {
 
 	s.writeSessionArtifact(sessionArtifactInput{
 		SessionID: input.SessionID,
-		Filename:  "error.log",
+		Filename:  logfile.SessionErrorLog,
 		Data:      errorData,
 		PathFn:    s.getErrorLogPath,
 	})

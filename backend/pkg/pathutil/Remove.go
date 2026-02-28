@@ -70,6 +70,16 @@ func RemoveFileUnchecked(path string) {
 	os.Remove(abs)
 }
 
+// RemoveDirUnchecked removes a directory without returning an error. Suitable for cleanup/defer.
+func RemoveDirUnchecked(path string) {
+	abs, err := ToAbsolute(path)
+	if err != nil {
+		return
+	}
+
+	os.RemoveAll(abs)
+}
+
 // RemoveEntry removes a file or directory based on the isDir flag. Returns nil if not found.
 func RemoveEntry(
 	path string,

@@ -48,3 +48,15 @@ Since `pathutil.RemoveFile`/`RemoveDir` already handle not-found silently, there
 ## Rule: No Nested If Blocks
 
 Two levels of `if` nesting are strictly prohibited. Flatten using early returns or extract to helper functions.
+
+## Rule: No Magic File Name Strings
+
+All repeated file names (e.g., `"log.txt"`, `"error.log.txt"`, `"error.log"`, `"report.md"`, `"manifest.json"`) MUST use constants from `internal/constants/logfile/logfile.go`. Never hardcode file names as string literals.
+
+```go
+// ❌ PROHIBITED
+_ = addFileToZip(zipWriter, logFile, "log.txt")
+
+// ✅ REQUIRED
+_ = addFileToZip(zipWriter, logFile, logfile.AllLog)
+```
