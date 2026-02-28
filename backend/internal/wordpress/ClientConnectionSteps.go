@@ -13,33 +13,6 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// wpRootInfo is the typed struct for parsing the WordPress REST API root response.
-type wpRootInfo struct {
-	Name        string `json:"name"`        // external key (WordPress REST API)
-	Description string `json:"description"` // external key
-}
-
-// wpUserInfo is the typed struct for parsing the users/me response.
-type wpUserInfo struct {
-	Id           int             `json:"id"`           // external key (WordPress REST API)
-	Name         string          `json:"name"`         // external key
-	Slug         string          `json:"slug"`         // external key
-	Roles        []string        `json:"roles"`        // external key
-	Capabilities map[string]bool `json:"capabilities"` // external key
-}
-
-// wpCreatedPost is the typed struct for parsing a created post response.
-type wpCreatedPost struct {
-	Id int `json:"id"` // external key (WordPress REST API)
-}
-
-// wpTestPost is the typed struct for creating a test draft post.
-type wpTestPost struct {
-	Title   string `json:"title"`   // external key (WordPress REST API)
-	Content string `json:"content"` // external key
-	Status  string `json:"status"`  // external key
-}
-
 // TestConnection runs the full five-step connection test sequence:
 // 1. REST API probe   2. Auth check   3. Parse user info   4. Plugin access   5. Write test
 func (c *Client) TestConnection() apperror.Result[*ConnectionInfo] {
