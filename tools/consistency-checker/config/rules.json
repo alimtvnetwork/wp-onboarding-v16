@@ -89,6 +89,16 @@
       "reference": "spec/03-rules.md#file-naming"
     },
     {
+      "id": "go-abbr-casing",
+      "name": "Go Abbreviation Casing",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["go"],
+      "params": {},
+      "exclude": ["*_test.go"],
+      "reference": "spec/03-rules.md#go-abbr-casing"
+    },
+    {
       "id": "php-file-size",
       "name": "PHP File Size Limit",
       "enabled": true,
