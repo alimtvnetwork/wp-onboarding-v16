@@ -49,24 +49,36 @@ func (s *Service) extractErrorDetails(appErr *apperror.AppError) *ExtractedError
 
 // populateApiErrorFields copies API error fields into the details struct.
 func (s *Service) populateApiErrorFields(details *ExtractedErrorDetails, apiErr *wordpress.ApiError) {
+	copyRequiredApiFields(details, apiErr)
+	copyOptionalApiFields(details, apiErr)
+}
+
+// copyRequiredApiFields copies the always-present API error fields.
+func copyRequiredApiFields(details *ExtractedErrorDetails, apiErr *wordpress.ApiError) {
 	details.Method = apiErr.Method
 	details.Endpoint = apiErr.Endpoint
 	details.Url = apiErr.URL
 	details.StatusCode = apiErr.StatusCode
 	details.RequestBody = apiErr.RequestBody
 	details.ResponseBody = apiErr.ResponseBody
+}
 
+// copyOptionalApiFields copies conditionally-present API error fields.
+func copyOptionalApiFields(details *ExtractedErrorDetails, apiErr *wordpress.ApiError) {
 	hasStackTrace := apiErr.StackTrace != ""
+
 	if hasStackTrace {
 		details.StackTrace = apiErr.StackTrace
 	}
 
 	hasPluginSlugIn := apiErr.PluginSlugIn != ""
+
 	if hasPluginSlugIn {
 		details.PluginSlugIn = apiErr.PluginSlugIn
 	}
 
 	hasPluginIDUsed := apiErr.PluginIDUsed != ""
+
 	if hasPluginIDUsed {
 		details.PluginIdUsed = apiErr.PluginIDUsed
 	}
