@@ -173,7 +173,7 @@ func (s *Service) performRealUpload(wpClient *wordpress.Client, zipPath, slug st
 }
 
 // callUploaderUpload sends the upload request to the uploader.
-func (s *Service) callUploaderUpload(wpClient *wordpress.Client, zipPath, slug string) (*wordpress.UploaderUploadResult, error) {
+func (s *Service) callUploaderUpload(wpClient *wordpress.Client, zipPath, slug string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	uploadInput := wordpress.UploadInput{
 		ZipPath:      zipPath,
 		Slug:         slug,

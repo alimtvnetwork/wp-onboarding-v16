@@ -280,7 +280,7 @@ func (c *Client) CheckOnboardAvailable() (*UploaderAvailability, error) {
 
 // UploadPluginViaOnboard uploads a plugin via the Riseup Asia Uploader and returns UploaderUploadResult.
 // Deprecated: Delegates to UploadPluginViaUploader.
-func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) (*UploaderUploadResult, error) {
+func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) (*UploaderUploadResult, *apperror.AppError) {
 	slug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
 	uploadInput := UploadInput{
 		ZipPath:      zipPath,

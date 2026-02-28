@@ -14,10 +14,10 @@ import (
 )
 
 // createUploaderZip creates a ZIP file of the uploader plugin
-func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
-	absUploaderPath, err := resolveUploaderDir(uploaderPath)
-	if err != nil {
-		return "", err
+func (s *Service) createUploaderZip(uploaderPath string) (string, *apperror.AppError) {
+	absUploaderPath, resolveErr := resolveUploaderDir(uploaderPath)
+	if resolveErr != nil {
+		return "", resolveErr
 	}
 
 	tempFile, err := os.CreateTemp("", "riseup-asia-uploader-*.zip")
@@ -36,7 +36,7 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
 }
 
 // resolveUploaderDir validates and returns the absolute path to the uploader directory.
-func resolveUploaderDir(uploaderPath string) (string, error) {
+func resolveUploaderDir(uploaderPath string) (string, *apperror.AppError) {
 	absPath, err := pathutil.ToAbsolute(uploaderPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve uploader path").WithPath(uploaderPath)
