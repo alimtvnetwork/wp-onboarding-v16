@@ -62,7 +62,6 @@ type SiteServiceAdapter struct {
 func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, *apperror.AppError) {
 	result := a.Service.List(ctx)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -72,7 +71,6 @@ func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, *apperror
 func (a *SiteServiceAdapter) GetById(ctx context.Context, id int64) (*models.Site, *apperror.AppError) {
 	result := a.Service.GetById(ctx, id)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -90,7 +88,6 @@ func (a *SiteServiceAdapter) Create(ctx context.Context, input SiteCreateInput) 
 	}
 	result := a.Service.Create(ctx, siteInput)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -108,7 +105,6 @@ func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input SiteUpd
 	}
 	result := a.Service.Update(ctx, id, updateInput)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -118,151 +114,121 @@ func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input SiteUpd
 }
 
 func (a *SiteServiceAdapter) Delete(ctx context.Context, id int64) *apperror.AppError {
-
 	return a.Service.Delete(ctx, id)
 }
 
 func (a *SiteServiceAdapter) TestConnection(ctx context.Context, id int64) (*site.ConnectionResult, *apperror.AppError) {
-
 	return a.Service.TestConnection(ctx, id)
 }
 
 func (a *SiteServiceAdapter) TestConnectionWithCredentials(ctx context.Context, url, username, password string) (*site.ConnectionResult, *apperror.AppError) {
-
 	return a.Service.TestConnectionWithCredentials(url, username, password)
 }
 
 func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, *apperror.AppError) {
-
 	return a.Service.BootstrapUploader(ctx, id, uploaderPath)
 }
 
 func (a *SiteServiceAdapter) GetRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, *apperror.AppError) {
-
 	return a.Service.GetRemotePlugins(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) ForceSyncRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, *apperror.AppError) {
-
 	return a.Service.ForceSyncRemotePlugins(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) InvalidateRemotePluginsCache(ctx context.Context, siteId int64) *apperror.AppError {
-
 	return a.Service.InvalidateRemotePluginsCache(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
-
 	return a.Service.EnableRemotePlugin(ctx, siteId, pluginSlug)
 }
 
 func (a *SiteServiceAdapter) DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
-
 	return a.Service.DisableRemotePlugin(ctx, siteId, pluginSlug)
 }
 
 func (a *SiteServiceAdapter) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, *apperror.AppError) {
-
 	return a.Service.CheckRemotePluginExists(ctx, siteId, pluginSlug)
 }
 
 func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
-
 	return a.Service.DeleteRemotePlugin(ctx, siteId, pluginSlug)
 }
 
 func (a *SiteServiceAdapter) GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*site.RemotePluginFilesResult, *apperror.AppError) {
-
 	return a.Service.GetRemotePluginFiles(ctx, siteId, pluginSlug)
 }
 
 func (a *SiteServiceAdapter) GetRemotePluginFileContent(ctx context.Context, siteId int64, pluginSlug, filePath string) (string, *apperror.AppError) {
-
 	return a.Service.GetRemotePluginFileContent(ctx, siteId, pluginSlug, filePath)
 }
 
 func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteId int64) (*site.SiteCredentials, *apperror.AppError) {
-
 	return a.Service.GetCredentials(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) GetRemoteSnapshots(ctx context.Context, siteId int64) ([]wordpress.SnapshotRecord, *apperror.AppError) {
-
 	return a.Service.GetRemoteSnapshots(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) GetRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) (*wordpress.SnapshotRecord, *apperror.AppError) {
-
 	return a.Service.GetRemoteSnapshot(ctx, siteId, snapshotId)
 }
 
 func (a *SiteServiceAdapter) CreateRemoteSnapshot(ctx context.Context, siteId int64, opts wordpress.SnapshotCreateOptions) (*wordpress.SnapshotCreateResult, *apperror.AppError) {
-
 	return a.Service.CreateRemoteSnapshot(ctx, siteId, opts)
 }
 
 func (a *SiteServiceAdapter) DeleteRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) *apperror.AppError {
-
 	return a.Service.DeleteRemoteSnapshot(ctx, siteId, snapshotId)
 }
 
 func (a *SiteServiceAdapter) RestoreRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) (*wordpress.SnapshotRestoreResult, *apperror.AppError) {
-
 	return a.Service.RestoreRemoteSnapshot(ctx, siteId, snapshotId)
 }
 
 func (a *SiteServiceAdapter) ExportRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) (*http.Response, *apperror.AppError) {
-
 	return a.Service.ExportRemoteSnapshot(ctx, siteId, snapshotId)
 }
 
 func (a *SiteServiceAdapter) DownloadSnapshotZip(ctx context.Context, siteId, snapshotId int64) (*site.SnapshotZipDownload, *apperror.AppError) {
-
 	return a.Service.DownloadSnapshotZip(ctx, siteId, snapshotId)
 }
 
 func (a *SiteServiceAdapter) GetRemoteSnapshotSettings(ctx context.Context, siteId int64) (*wordpress.SnapshotSettings, *apperror.AppError) {
-
 	return a.Service.GetRemoteSnapshotSettings(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) UpdateRemoteSnapshotSettings(ctx context.Context, siteId int64, settings wordpress.SnapshotSettings) (*wordpress.SnapshotSettings, *apperror.AppError) {
-
 	return a.Service.UpdateRemoteSnapshotSettings(ctx, siteId, settings)
 }
 
 func (a *SiteServiceAdapter) GetRemoteSnapshotProviders(ctx context.Context, siteId int64) ([]wordpress.SnapshotProvider, *apperror.AppError) {
-
 	return a.Service.GetRemoteSnapshotProviders(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) GetRemoteAvailableTables(ctx context.Context, siteId int64) ([]wordpress.AvailableTable, *apperror.AppError) {
-
 	return a.Service.GetRemoteAvailableTables(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) FullBackupRemoteSnapshot(ctx context.Context, siteId int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, *apperror.AppError) {
-
 	return a.Service.FullBackupRemoteSnapshot(ctx, siteId, opts)
 }
 
 func (a *SiteServiceAdapter) IncrementalBackupRemoteSnapshot(ctx context.Context, siteId int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, *apperror.AppError) {
-
 	return a.Service.IncrementalBackupRemoteSnapshot(ctx, siteId, opts)
 }
 
 func (a *SiteServiceAdapter) ImportRemoteSnapshot(ctx context.Context, siteId int64, zipPath string) (*wordpress.SnapshotImportResult, *apperror.AppError) {
-
 	return a.Service.ImportRemoteSnapshot(ctx, siteId, zipPath)
 }
 
 func (a *SiteServiceAdapter) CleanupRemoteSnapshots(ctx context.Context, siteId int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, *apperror.AppError) {
-
 	return a.Service.CleanupRemoteSnapshots(ctx, siteId, opts)
 }
 
 func (a *SiteServiceAdapter) ClearErrorLogHashes() int {
-
 	return a.Service.ClearErrorLogHashes()
 }

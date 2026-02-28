@@ -152,7 +152,6 @@ func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileC
 		change.LocalHash,
 	)
 	if res.HasError() {
-
 		return res.AppError()
 	}
 
@@ -183,7 +182,6 @@ func (s *serviceImpl) MarkSynced(ctx context.Context, pluginId, siteId int64, fi
 
 	res := dbutil.Exec(ctx, s.dbu, query, args...)
 	if res.HasError() {
-
 		return res.AppError()
 	}
 
@@ -199,7 +197,6 @@ func (s *serviceImpl) ClearChanges(ctx context.Context, pluginId int64) *apperro
 		pluginId,
 	)
 	if res.HasError() {
-
 		return res.AppError()
 	}
 
@@ -216,7 +213,6 @@ func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) ([]models
 		pluginId,
 	)
 	if set.HasError() {
-
 		return nil, set.AppError()
 	}
 
@@ -234,12 +230,10 @@ func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) (*
 		siteId,
 	)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
 	if result.IsEmpty() {
-
 		return nil, apperror.New(apperror.ErrNotFound, "plugin-site mapping not found").
 			WithPluginId(pluginId).WithSiteId(siteId)
 	}
@@ -259,12 +253,10 @@ func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo,
 		siteId,
 	)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
 	if result.IsEmpty() {
-
 		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteId(siteId)
 	}
 

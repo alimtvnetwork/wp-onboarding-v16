@@ -198,14 +198,12 @@ func (s *Service) getRequestPath(sessionID string) apperror.Result[string] {
 	dirResult := s.getSessionDir(sessionID)
 
 	if dirResult.HasError() {
-
 		return dirResult
 	}
 
 	reqPath, err := pathutil.Join(dirResult.Value(), "request.json")
 
 	if err != nil {
-
 		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve request path")
 	}
 
@@ -217,14 +215,12 @@ func (s *Service) getResponsePath(sessionID string) apperror.Result[string] {
 	dirResult := s.getSessionDir(sessionID)
 
 	if dirResult.HasError() {
-
 		return dirResult
 	}
 
 	respPath, err := pathutil.Join(dirResult.Value(), "response.json")
 
 	if err != nil {
-
 		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve response path")
 	}
 
@@ -236,14 +232,12 @@ func (s *Service) getErrorLogPath(sessionID string) apperror.Result[string] {
 	dirResult := s.getSessionDir(sessionID)
 
 	if dirResult.HasError() {
-
 		return dirResult
 	}
 
 	errPath, err := pathutil.Join(dirResult.Value(), logfile.SessionErrorLog)
 
 	if err != nil {
-
 		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve error log path")
 	}
 

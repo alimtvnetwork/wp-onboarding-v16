@@ -5,7 +5,6 @@ import (
 	"context"
 
 	"wp-plugin-publish/internal/models"
-	"wp-plugin-publish/internal/services/git"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
 	"wp-plugin-publish/pkg/apperror"
@@ -31,7 +30,6 @@ type SyncServiceAdapter struct {
 func (a *SyncServiceAdapter) CheckSync(ctx context.Context, pluginID, siteID int64) (*sync.SyncResult, *apperror.AppError) {
 	result := a.Service.CheckSync(ctx, pluginID, siteID)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -43,7 +41,6 @@ func (a *SyncServiceAdapter) CheckSync(ctx context.Context, pluginID, siteID int
 func (a *SyncServiceAdapter) CheckAllSites(ctx context.Context, pluginID int64) (*sync.BatchSyncResult, *apperror.AppError) {
 	result := a.Service.CheckAllSites(ctx, pluginID)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -55,7 +52,6 @@ func (a *SyncServiceAdapter) CheckAllSites(ctx context.Context, pluginID int64) 
 func (a *SyncServiceAdapter) CheckAllPlugins(ctx context.Context) ([]sync.SyncResult, *apperror.AppError) {
 	result := a.Service.CheckAllPlugins(ctx)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -65,7 +61,6 @@ func (a *SyncServiceAdapter) CheckAllPlugins(ctx context.Context) ([]sync.SyncRe
 func (a *SyncServiceAdapter) GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, *apperror.AppError) {
 	result := a.Service.GetFileChanges(ctx, pluginID, siteID)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -75,7 +70,6 @@ func (a *SyncServiceAdapter) GetFileChanges(ctx context.Context, pluginID, siteI
 func (a *SyncServiceAdapter) PushSync(ctx context.Context, pluginID, siteID int64) (*sync.PushSyncResult, *apperror.AppError) {
 	result := a.Service.PushSync(ctx, pluginID, siteID)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -85,17 +79,14 @@ func (a *SyncServiceAdapter) PushSync(ctx context.Context, pluginID, siteID int6
 }
 
 func (a *SyncServiceAdapter) RecordFileChange(ctx context.Context, change *models.FileChange) *apperror.AppError {
-
 	return a.Service.RecordFileChange(ctx, change)
 }
 
 func (a *SyncServiceAdapter) MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) *apperror.AppError {
-
 	return a.Service.MarkSynced(ctx, pluginID, siteID, files)
 }
 
 func (a *SyncServiceAdapter) ClearChanges(ctx context.Context, pluginID int64) *apperror.AppError {
-
 	return a.Service.ClearChanges(ctx, pluginID)
 }
 
@@ -113,7 +104,6 @@ type WatcherServiceAdapter struct {
 func (a *WatcherServiceAdapter) TriggerScan(ctx context.Context, pluginID int64) (*watcher.ScanResult, *apperror.AppError) {
 	result := a.Service.TriggerScan(ctx, pluginID)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -125,7 +115,6 @@ func (a *WatcherServiceAdapter) TriggerScan(ctx context.Context, pluginID int64)
 func (a *WatcherServiceAdapter) ScanAll(ctx context.Context) ([]watcher.ScanResult, *apperror.AppError) {
 	result := a.Service.ScanAll(ctx)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 

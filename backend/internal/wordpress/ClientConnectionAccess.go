@@ -18,7 +18,6 @@ func (c *Client) testPluginAccess(result *ConnectionInfo) *apperror.AppError {
 
 	pluginResp := c.fetchPluginAccessResponse()
 	if pluginResp.HasError() {
-
 		return c.reportPluginAccessRequestFailed(pluginResp.AppError())
 	}
 
