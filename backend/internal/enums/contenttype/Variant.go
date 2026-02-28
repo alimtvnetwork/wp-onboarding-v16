@@ -11,23 +11,23 @@ type Variant byte
 
 const (
 	Invalid        Variant = iota
-	JSON
+	Json
 	Multipart
-	FormURLEncoded
+	FormUrlEncoded
 )
 
 var variantLabels = [...]string{
 	Invalid:        "Invalid",
-	JSON:           "JSON",
+	Json:           "Json",
 	Multipart:      "Multipart",
-	FormURLEncoded: "FormURLEncoded",
+	FormUrlEncoded: "FormUrlEncoded",
 }
 
 var variantValues = [...]string{
 	Invalid:        "invalid",
-	JSON:           "application/json",
+	Json:           "application/json",
 	Multipart:      "multipart/form-data",
-	FormURLEncoded: "application/x-www-form-urlencoded",
+	FormUrlEncoded: "application/x-www-form-urlencoded",
 }
 
 func (v Variant) String() string {
@@ -54,12 +54,12 @@ func (v Variant) IsValid() bool {
 	return v > Invalid && v < Variant(len(variantLabels))
 }
 
-func (v Variant) IsJSON() bool           { return v == JSON }
-func (v Variant) IsMultipart() bool      { return v == Multipart }
-func (v Variant) IsFormURLEncoded() bool  { return v == FormURLEncoded }
-func (v Variant) IsInvalid() bool        { return v == Invalid }
-func (v Variant) IsDefined() bool        { return v != Invalid }
-func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
+func (v Variant) IsJson() bool            { return v == Json }
+func (v Variant) IsMultipart() bool       { return v == Multipart }
+func (v Variant) IsFormUrlEncoded() bool   { return v == FormUrlEncoded }
+func (v Variant) IsInvalid() bool         { return v == Invalid }
+func (v Variant) IsDefined() bool         { return v != Invalid }
+func (v Variant) IsDefinedAndValid() bool  { return v.IsDefined() && v.IsValid() }
 
 func (v Variant) IsOther(other Variant) bool { return v != other }
 
@@ -74,7 +74,7 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 }
 
 func All() []Variant {
-	return []Variant{JSON, Multipart, FormURLEncoded}
+	return []Variant{Json, Multipart, FormUrlEncoded}
 }
 
 func ByIndex(i int) Variant {

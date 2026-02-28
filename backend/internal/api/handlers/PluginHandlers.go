@@ -46,8 +46,8 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPlugin returns a specific plugin by ID
-var GetPlugin = handleActionByID(
-	handlerIDConfig{
+var GetPlugin = handleActionById(
+	handlerIdConfig{
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
@@ -64,7 +64,7 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := parseID(w, r, "id")
+	id, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
@@ -90,8 +90,8 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeletePlugin removes a plugin registration
-var DeletePlugin = handleDeleteByID(
-	handlerIDConfig{
+var DeletePlugin = handleDeleteById(
+	handlerIdConfig{
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
@@ -103,8 +103,8 @@ var DeletePlugin = handleDeleteByID(
 )
 
 // GetPluginMappings returns plugin-site mappings
-var GetPluginMappings = handleActionByID(
-	handlerIDConfig{
+var GetPluginMappings = handleActionById(
+	handlerIdConfig{
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
@@ -121,7 +121,7 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := parseID(w, r, "id")
+	id, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
@@ -131,7 +131,7 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	input.PluginID = id
+	input.PluginId = id
 
 	mapping, appErr := Services.PluginService.CreateMapping(r.Context(), id, input)
 	if appErr != nil {
@@ -149,8 +149,8 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeletePluginMapping removes a plugin-site mapping
-var DeletePluginMapping = handleDeleteByID(
-	handlerIDConfig{
+var DeletePluginMapping = handleDeleteById(
+	handlerIdConfig{
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
@@ -163,7 +163,7 @@ var DeletePluginMapping = handleDeleteByID(
 
 // pluginMappingsInput is the JSON body for UpdatePluginMappings.
 type pluginMappingsInput struct {
-	SiteIDs    []int64 `json:"siteIds"`    // external key (frontend request body)
+	SiteIds    []int64 `json:"siteIds"`    // external key (frontend request body)
 	RemoteSlug string  `json:"remoteSlug"` // external key
 }
 
@@ -173,7 +173,7 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := parseID(w, r, "id")
+	id, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
@@ -183,7 +183,7 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appErr := Services.PluginService.UpdateMappingsForPlugin(r.Context(), plugin.UpdatePluginMappingsInput{PluginID: id, SiteIDs: input.SiteIDs, RemoteSlug: input.RemoteSlug})
+	appErr := Services.PluginService.UpdateMappingsForPlugin(r.Context(), plugin.UpdatePluginMappingsInput{PluginId: id, SiteIds: input.SiteIds, RemoteSlug: input.RemoteSlug})
 	if appErr != nil {
 		respondError(
 			w,
@@ -201,8 +201,8 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetSiteMappings returns all plugin mappings for a site
-var GetSiteMappings = handleActionByID(
-	handlerIDConfig{
+var GetSiteMappings = handleActionById(
+	handlerIdConfig{
 		GetService:  pluginService,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
@@ -215,7 +215,7 @@ var GetSiteMappings = handleActionByID(
 
 // siteMappingsInput is the JSON body for UpdateSiteMappings.
 type siteMappingsInput struct {
-	PluginIDs []int64 `json:"pluginIds"` // external key (frontend request body)
+	PluginIds []int64 `json:"pluginIds"` // external key (frontend request body)
 }
 
 // UpdateSiteMappings bulk-updates all plugin mappings for a site
@@ -224,7 +224,7 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, ok := parseID(w, r, "id")
+	siteId, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
@@ -234,7 +234,7 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appErr := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, input.PluginIDs)
+	appErr := Services.PluginService.UpdateMappingsForSite(r.Context(), siteId, input.PluginIds)
 	if appErr != nil {
 		respondError(
 			w,
@@ -246,7 +246,7 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mappings, _ := Services.PluginService.GetMappingsBySite(r.Context(), siteID)
+	mappings, _ := Services.PluginService.GetMappingsBySite(r.Context(), siteId)
 
 	respondSuccess(w, mappings)
 }

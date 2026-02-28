@@ -15,8 +15,8 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// respondJSON writes a raw JSON response (used only for non-envelope responses like file downloads)
-func respondJSON(w http.ResponseWriter, status int, data any) {
+// respondJson writes a raw JSON response (used only for non-envelope responses like file downloads)
+func respondJson(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
@@ -106,8 +106,8 @@ func respondListUnpaginated[T any](w http.ResponseWriter, data T, count int) {
 	envelope.Write(w, envelope.ListUnpaginated(data, count))
 }
 
-// getIDParam extracts an ID parameter from the URL
-func getIDParam(r *http.Request, name string) (int64, error) {
+// getIdParam extracts an ID parameter from the URL
+func getIdParam(r *http.Request, name string) (int64, error) {
 	vars := mux.Vars(r)
 
 	return strconv.ParseInt(vars[name], 10, 64)
@@ -151,9 +151,9 @@ func isBodyInvalid(w http.ResponseWriter, r *http.Request, target any) bool {
 	return false
 }
 
-// parseID extracts a URL path param as int64. Returns false and writes 400 on failure.
-func parseID(w http.ResponseWriter, r *http.Request, paramName string) (int64, bool) {
-	id, err := getIDParam(r, paramName)
+// parseId extracts a URL path param as int64. Returns false and writes 400 on failure.
+func parseId(w http.ResponseWriter, r *http.Request, paramName string) (int64, bool) {
+	id, err := getIdParam(r, paramName)
 	if err != nil {
 		respondError(
 			w,
@@ -168,17 +168,17 @@ func parseID(w http.ResponseWriter, r *http.Request, paramName string) (int64, b
 	return id, true
 }
 
-// decodeJSONSilent decodes a JSON request body without writing an error response.
+// decodeJsonSilent decodes a JSON request body without writing an error response.
 // Returns nil on success, error on failure. Used by optional body decoders.
-func decodeJSONSilent(r *http.Request, target any) error {
+func decodeJsonSilent(r *http.Request, target any) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
-// resolveHTTPStatus extracts the HTTP status code from a WordPress ApiError
+// resolveHttpStatus extracts the HTTP status code from a WordPress ApiError
 // wrapped inside an apperror chain. Returns fallback if no ApiError is found.
 // This ensures that PHP-side 404s are forwarded to the frontend instead of
 // being masked as 500 Internal Server Error.
-func resolveHTTPStatus(err error, fallback wordpress.HttpStatusType) wordpress.HttpStatusType {
+func resolveHttpStatus(err error, fallback wordpress.HttpStatusType) wordpress.HttpStatusType {
 	// Check direct ApiError
 	var apiErr *wordpress.ApiError
 	isDirectApiError := errors.As(err, &apiErr)

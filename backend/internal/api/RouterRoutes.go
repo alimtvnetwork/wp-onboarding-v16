@@ -143,7 +143,7 @@ func registerHistoryRoutes(api *mux.Router) {
 	api.HandleFunc("/publish-history", handlers.ListPublishHistory).Methods("GET")
 	api.HandleFunc("/publish-history", handlers.ClearPublishHistory).Methods("DELETE")
 	api.HandleFunc("/publish-history/stats", handlers.GetPublishHistoryStats).Methods("GET")
-	api.HandleFunc("/publish-history/{id}", handlers.GetPublishHistoryByID).Methods("GET")
+	api.HandleFunc("/publish-history/{id}", handlers.GetPublishHistoryById).Methods("GET")
 	api.HandleFunc("/publish-history/{id}", handlers.DeletePublishHistoryEntry).Methods("DELETE")
 	api.HandleFunc("/errors/bundle", handlers.DownloadErrorBundle).Methods("GET", "POST")
 	api.HandleFunc("/errors/stream", handlers.StreamErrorLogs).Methods("GET")
@@ -157,7 +157,7 @@ func registerHistoryRoutes(api *mux.Router) {
 	api.HandleFunc("/error-history", handlers.ClearErrorHistory).Methods("DELETE")
 	api.HandleFunc("/error-history/stats", handlers.GetErrorHistoryStats).Methods("GET")
 	api.HandleFunc("/error-history/bulk-export", handlers.BulkExportErrorHistory).Methods("POST")
-	api.HandleFunc("/error-history/{id}", handlers.GetErrorHistoryByID).Methods("GET")
+	api.HandleFunc("/error-history/{id}", handlers.GetErrorHistoryById).Methods("GET")
 	api.HandleFunc("/error-history/{id}", handlers.DeleteErrorHistory).Methods("DELETE")
 }
 

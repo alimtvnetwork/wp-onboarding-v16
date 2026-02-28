@@ -114,8 +114,8 @@ func parseErrorHistoryFilters(r *http.Request) models.ErrorHistoryFilters {
 	}
 }
 
-// GetErrorHistoryByID returns a single error by database ID
-func GetErrorHistoryByID(w http.ResponseWriter, r *http.Request) {
+// GetErrorHistoryById returns a single error by database ID
+func GetErrorHistoryById(w http.ResponseWriter, r *http.Request) {
 	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}

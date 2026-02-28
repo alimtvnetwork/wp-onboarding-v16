@@ -14,25 +14,25 @@ type ErrorHistory struct {
 	Level               string
 	Message             string
 	Details             string          `json:",omitempty"`
-	ContextJSON         string          `json:"-"`
+	ContextJson         string          `json:"-"`
 	Context             json.RawMessage `json:",omitempty"`
 	StackTrace          string          `json:",omitempty"`
 	Endpoint            string          `json:",omitempty"`
 	Method              string          `json:",omitempty"`
-	RequestBodyJSON     string          `json:"-"`
+	RequestBodyJson     string          `json:"-"`
 	RequestBody         json.RawMessage `json:",omitempty"`
 	ResponseStatus      int             `json:",omitempty"`
 	SessionId           string          `json:",omitempty"`
 	SessionType         string          `json:",omitempty"`
 	PhpStackFramesJson  string          `json:"-"`
 	PhpStackFrames      []PhpStackFrame `json:",omitempty"`
-	BackendLogsJSON     string          `json:"-"`
+	BackendLogsJson     string          `json:"-"`
 	BackendLogs         []string        `json:",omitempty"`
 	BackendStackTrace   string          `json:",omitempty"`
 	SiteUrl             string          `json:",omitempty"`
 	TriggerComponent    string          `json:",omitempty"`
 	TriggerAction       string          `json:",omitempty"`
-	InvocationChainJSON string          `json:"-"`
+	InvocationChainJson string          `json:"-"`
 	InvocationChain     []string        `json:",omitempty"`
 	UIClickPath         string          `json:",omitempty"`
 	MarkdownReport      string          `json:",omitempty"`
@@ -92,19 +92,19 @@ type ErrorHistoryFilters struct {
 
 // ParseJsonFields parses the JSON string fields into their structured counterparts
 func (e *ErrorHistory) ParseJsonFields() {
-	if e.ContextJSON != "" {
-		e.Context = json.RawMessage(e.ContextJSON)
+	if e.ContextJson != "" {
+		e.Context = json.RawMessage(e.ContextJson)
 	}
-	if e.RequestBodyJSON != "" {
-		e.RequestBody = json.RawMessage(e.RequestBodyJSON)
+	if e.RequestBodyJson != "" {
+		e.RequestBody = json.RawMessage(e.RequestBodyJson)
 	}
 	if e.PhpStackFramesJson != "" {
 		json.Unmarshal([]byte(e.PhpStackFramesJson), &e.PhpStackFrames)
 	}
-	if e.BackendLogsJSON != "" {
-		json.Unmarshal([]byte(e.BackendLogsJSON), &e.BackendLogs)
+	if e.BackendLogsJson != "" {
+		json.Unmarshal([]byte(e.BackendLogsJson), &e.BackendLogs)
 	}
-	if e.InvocationChainJSON != "" {
-		json.Unmarshal([]byte(e.InvocationChainJSON), &e.InvocationChain)
+	if e.InvocationChainJson != "" {
+		json.Unmarshal([]byte(e.InvocationChainJson), &e.InvocationChain)
 	}
 }

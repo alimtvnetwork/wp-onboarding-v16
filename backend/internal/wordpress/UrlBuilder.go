@@ -9,20 +9,20 @@ import (
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 )
 
-// BuildWPJSONURL constructs a full WordPress JSON API URL: {baseURL}/wp-json{endpoint}.
+// BuildWpJsonUrl constructs a full WordPress JSON API URL: {baseUrl}/wp-json{endpoint}.
 // The endpoint should start with "/" (e.g., "/riseup-asia-uploader/v1/status").
-func BuildWPJSONURL(baseURL, endpoint string) string {
-	return fmt.Sprintf("%s%s%s", baseURL, WPCoreApiRoot, endpoint)
+func BuildWpJsonUrl(baseUrl, endpoint string) string {
+	return fmt.Sprintf("%s%s%s", baseUrl, WPCoreApiRoot, endpoint)
 }
 
-// BuildWPPluginURL constructs a full WordPress plugin API URL: {baseURL}/wp-json/{namespace}{endpointPath}.
-func BuildWPPluginURL(baseURL, namespace string, endpoint ep.Variant) string {
-	return fmt.Sprintf("%s%s/%s%s", baseURL, WPCoreApiRoot, namespace, endpoint.String())
+// BuildWpPluginUrl constructs a full WordPress plugin API URL: {baseUrl}/wp-json/{namespace}{endpointPath}.
+func BuildWpPluginUrl(baseUrl, namespace string, endpoint ep.Variant) string {
+	return fmt.Sprintf("%s%s/%s%s", baseUrl, WPCoreApiRoot, namespace, endpoint.String())
 }
 
-// BuildWPProbeURL constructs the WordPress REST API probe URL: {baseURL}/wp-json/.
-func BuildWPProbeURL(baseURL string) string {
-	return fmt.Sprintf("%s%s/", baseURL, WPCoreApiRoot)
+// BuildWpProbeUrl constructs the WordPress REST API probe URL: {baseUrl}/wp-json/.
+func BuildWpProbeUrl(baseUrl string) string {
+	return fmt.Sprintf("%s%s/", baseUrl, WPCoreApiRoot)
 }
 
 // BuildNamespacedEndpoint constructs a namespaced endpoint path: /{namespace}{endpointPath}.

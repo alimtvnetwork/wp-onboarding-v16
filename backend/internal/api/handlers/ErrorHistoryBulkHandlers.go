@@ -15,7 +15,7 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := getIDParam(r, "id")
+	id, err := getIdParam(r, "id")
 	if err != nil {
 		respondBadRequest(w, apperror.ErrConfigParse, "Invalid ID parameter")
 
@@ -31,7 +31,7 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 
 	respondSuccess(w, ActionResponse{
 		IsDeleted: true,
-		ID:        strconv.FormatInt(id, 10),
+		Id:        strconv.FormatInt(id, 10),
 	})
 }
 
@@ -56,7 +56,7 @@ func ClearErrorHistory(w http.ResponseWriter, r *http.Request) {
 
 // bulkExportInput is the JSON body for BulkExportErrorHistory.
 type bulkExportInput struct {
-	IDs []int64 `json:"ids"`
+	Ids []int64 `json:"ids"`
 }
 
 // BulkExportErrorHistory generates a combined markdown report
@@ -70,7 +70,7 @@ func BulkExportErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	report, err := Services.ErrorHistoryService.BulkExport(input.IDs)
+	report, err := Services.ErrorHistoryService.BulkExport(input.Ids)
 	if err != nil {
 		respondServerError(w, apperror.ErrNotImplemented, err.Error())
 
@@ -79,7 +79,7 @@ func BulkExportErrorHistory(w http.ResponseWriter, r *http.Request) {
 
 	respondSuccess(w, ErrorReportResponse{
 		Report: report,
-		Count:  len(input.IDs),
+		Count:  len(input.Ids),
 	})
 }
 
@@ -93,7 +93,7 @@ func parseBulkExportInput(w http.ResponseWriter, r *http.Request) (*bulkExportIn
 		return nil, false
 	}
 
-	if len(input.IDs) == 0 {
+	if len(input.Ids) == 0 {
 		respondBadRequest(w, apperror.ErrConfigParse, "At least one error ID is required")
 
 		return nil, false

@@ -15,17 +15,17 @@ import (
 
 // --- Generic Handler Factories ---
 
-// handlerIDConfig bundles parameters for single-ID handler factories.
-type handlerIDConfig struct {
+// handlerIdConfig bundles parameters for single-ID handler factories.
+type handlerIdConfig struct {
 	GetService  func() any
 	ServiceName string
 	ParamName   string
 	ErrCode     apperror.ErrorCode
 }
 
-// handleActionByID creates a handler: isServiceMissing → parseID → fn(ctx, id) → respondSuccess
-func handleActionByID(
-	cfg handlerIDConfig,
+// handleActionById creates a handler: isServiceMissing → parseId → fn(ctx, id) → respondSuccess
+func handleActionById(
+	cfg handlerIdConfig,
 	fn func(ctx context.Context, id int64) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func handleActionByID(
 			return
 		}
 
-		id, ok := parseID(w, r, cfg.ParamName)
+		id, ok := parseId(w, r, cfg.ParamName)
 		if !ok {
 			return
 		}
@@ -54,9 +54,9 @@ func handleActionByID(
 	}
 }
 
-// handleDeleteByID creates a handler: isServiceMissing → parseID → fn(ctx, id) → respondDeleted
-func handleDeleteByID(
-	cfg handlerIDConfig,
+// handleDeleteById creates a handler: isServiceMissing → parseId → fn(ctx, id) → respondDeleted
+func handleDeleteById(
+	cfg handlerIdConfig,
 	fn func(ctx context.Context, id int64) *apperror.AppError,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func handleDeleteByID(
 			return
 		}
 
-		id, ok := parseID(w, r, cfg.ParamName)
+		id, ok := parseId(w, r, cfg.ParamName)
 		if !ok {
 			return
 		}
@@ -114,17 +114,17 @@ func handleListNilSafe(
 	}
 }
 
-// handleSiteActionByID creates a handler for site-scoped actions.
-func handleSiteActionByID(
+// handleSiteActionById creates a handler for site-scoped actions.
+func handleSiteActionById(
 	errCode apperror.ErrorCode,
-	fn func(ctx context.Context, siteID int64) (any, *apperror.AppError),
+	fn func(ctx context.Context, siteId int64) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isSiteServiceMissing(w) {
 			return
 		}
 
-		siteID, err := getIDParam(r, "id")
+		siteId, err := getIdParam(r, "id")
 		if err != nil {
 			respondError(
 				w,
@@ -136,7 +136,7 @@ func handleSiteActionByID(
 			return
 		}
 
-		result, appErr := fn(r.Context(), siteID)
+		result, appErr := fn(r.Context(), siteId)
 		if appErr != nil {
 			respondError(
 				w,
@@ -185,8 +185,8 @@ func handleNoArgs(
 	}
 }
 
-// twoIDConfig bundles parameters for two-ID handler factories.
-type twoIDConfig struct {
+// twoIdConfig bundles parameters for two-ID handler factories.
+type twoIdConfig struct {
 	GetService  func() any
 	ServiceName string
 	Param1Name  string
@@ -194,9 +194,9 @@ type twoIDConfig struct {
 	ErrCode     apperror.ErrorCode
 }
 
-// handleTwoIDs creates a handler: isServiceMissing → parseID(param1) → parseID(param2) → fn(ctx, id1, id2) → respondSuccess
-func handleTwoIDs(
-	cfg twoIDConfig,
+// handleTwoIds creates a handler: isServiceMissing → parseId(param1) → parseId(param2) → fn(ctx, id1, id2) → respondSuccess
+func handleTwoIds(
+	cfg twoIdConfig,
 	fn func(ctx context.Context, id1, id2 int64) (any, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -204,12 +204,12 @@ func handleTwoIDs(
 			return
 		}
 
-		id1, ok := parseID(w, r, cfg.Param1Name)
+		id1, ok := parseId(w, r, cfg.Param1Name)
 		if !ok {
 			return
 		}
 
-		id2, ok := parseID(w, r, cfg.Param2Name)
+		id2, ok := parseId(w, r, cfg.Param2Name)
 		if !ok {
 			return
 		}
