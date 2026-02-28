@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/constants/logfile"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // SaveRequest persists the inbound request as request.json in the session folder
@@ -40,27 +41,31 @@ type sessionArtifactInput struct {
 	SessionID string
 	Filename  string
 	Data      any
-	PathFn    func(string) (string, error)
+	PathFn    func(string) apperror.Result[string]
 }
 
 // writeSessionArtifact marshals data and writes it to a session file.
 func (s *Service) writeSessionArtifact(input sessionArtifactInput) {
-	jsonData, err := json.MarshalIndent(input.Data, "", "  ")
-	if err != nil {
-		s.logPersistError("Failed to marshal "+input.Filename, input.SessionID, err)
+	jsonData, marshalErr := json.MarshalIndent(input.Data, "", "  ")
+
+	if marshalErr != nil {
+		s.logPersistError("Failed to marshal "+input.Filename, input.SessionID, marshalErr)
 
 		return
 	}
 
-	path, err := input.PathFn(input.SessionID)
-	if err != nil {
-		s.logPersistError("Failed to resolve "+input.Filename+" path", input.SessionID, err)
+	pathResult := input.PathFn(input.SessionID)
+
+	if pathResult.HasError() {
+		s.logPersistAppError("Failed to resolve "+input.Filename+" path", input.SessionID, pathResult.AppError())
 
 		return
 	}
 
-	if err := os.WriteFile(path, jsonData, 0644); err != nil {
-		s.logPersistError("Failed to write "+input.Filename, input.SessionID, err)
+	writeErr := os.WriteFile(pathResult.Value(), jsonData, 0644)
+
+	if writeErr != nil {
+		s.logPersistError("Failed to write "+input.Filename, input.SessionID, writeErr)
 	}
 }
 
@@ -68,6 +73,13 @@ func (s *Service) writeSessionArtifact(input sessionArtifactInput) {
 func (s *Service) logPersistError(message, sessionID string, err error) {
 	if s.log != nil {
 		s.log.Error(message, "sessionId", sessionID, "error", err)
+	}
+}
+
+// logPersistAppError logs a persistence AppError if the logger is available.
+func (s *Service) logPersistAppError(message, sessionID string, appErr *apperror.AppError) {
+	if s.log != nil {
+		s.log.Error(message, "sessionId", sessionID, "error", appErr)
 	}
 }
 

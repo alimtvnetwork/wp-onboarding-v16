@@ -110,34 +110,43 @@ type Service struct {
 }
 
 // New creates a new session service
-func New(cfg Config) (*Service, error) {
+func New(cfg Config) apperror.Result[*Service] {
 	retentionDays := cfg.RetentionDays
+
 	if retentionDays <= 0 {
 		retentionDays = 7
 	}
 
-	sessionsDir, err := ensureSessionsDir(cfg.DataDir)
-	if err != nil {
-		return nil, err
+	sessionsResult := ensureSessionsDir(cfg.DataDir)
+
+	if sessionsResult.HasError() {
+
+		return apperror.Fail[*Service](sessionsResult.AppError())
 	}
 
-	return startService(cfg, sessionsDir, retentionDays), nil
+	return apperror.Ok(startService(cfg, sessionsResult.Value(), retentionDays))
 }
 
 // ensureSessionsDir resolves and creates the sessions directory.
-func ensureSessionsDir(dataDir string) (string, error) {
+func ensureSessionsDir(dataDir string) apperror.Result[string] {
 	sessionsDir, err := pathutil.Join(dataDir, "sessions")
+
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrSessionInit, "resolve sessions directory")
+
+		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve sessions directory")
 	}
 
 	mkErr := os.MkdirAll(sessionsDir, 0755)
+
 	if mkErr != nil {
-		return "", apperror.Wrap(mkErr, apperror.ErrSessionInit, "create sessions directory").
-			WithPath(sessionsDir)
+
+		return apperror.Fail[string](
+			apperror.Wrap(mkErr, apperror.ErrSessionInit, "create sessions directory").
+				WithPath(sessionsDir),
+		)
 	}
 
-	return sessionsDir, nil
+	return apperror.Ok(sessionsDir)
 }
 
 // startService builds the Service and starts the background cleanup loop.
@@ -154,44 +163,91 @@ func startService(cfg Config, sessionsDir string, retentionDays int) *Service {
 }
 
 // getSessionDir returns the directory path for a session
-func (s *Service) getSessionDir(sessionID string) (string, error) {
-	return pathutil.Join(s.sessionsDir, sessionID)
+func (s *Service) getSessionDir(sessionID string) apperror.Result[string] {
+	dir, err := pathutil.Join(s.sessionsDir, sessionID)
+
+	if err != nil {
+
+		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve session directory")
+	}
+
+	return apperror.Ok(dir)
 }
 
 // getLogPath returns the file path for a session's main log
-func (s *Service) getLogPath(sessionID string) (string, error) {
-	dir, err := s.getSessionDir(sessionID)
-	if err != nil {
-		return "", err
+func (s *Service) getLogPath(sessionID string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionID)
+
+	if dirResult.HasError() {
+
+		return dirResult
 	}
-	return pathutil.Join(dir, "session.log")
+
+	logPath, err := pathutil.Join(dirResult.Value(), "session.log")
+
+	if err != nil {
+
+		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve session log path")
+	}
+
+	return apperror.Ok(logPath)
 }
 
 // getRequestPath returns the file path for request.json
-func (s *Service) getRequestPath(sessionID string) (string, error) {
-	dir, err := s.getSessionDir(sessionID)
-	if err != nil {
-		return "", err
+func (s *Service) getRequestPath(sessionID string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionID)
+
+	if dirResult.HasError() {
+
+		return dirResult
 	}
-	return pathutil.Join(dir, "request.json")
+
+	reqPath, err := pathutil.Join(dirResult.Value(), "request.json")
+
+	if err != nil {
+
+		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve request path")
+	}
+
+	return apperror.Ok(reqPath)
 }
 
 // getResponsePath returns the file path for response.json
-func (s *Service) getResponsePath(sessionID string) (string, error) {
-	dir, err := s.getSessionDir(sessionID)
-	if err != nil {
-		return "", err
+func (s *Service) getResponsePath(sessionID string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionID)
+
+	if dirResult.HasError() {
+
+		return dirResult
 	}
-	return pathutil.Join(dir, "response.json")
+
+	respPath, err := pathutil.Join(dirResult.Value(), "response.json")
+
+	if err != nil {
+
+		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve response path")
+	}
+
+	return apperror.Ok(respPath)
 }
 
 // getErrorLogPath returns the file path for error.log
-func (s *Service) getErrorLogPath(sessionID string) (string, error) {
-	dir, err := s.getSessionDir(sessionID)
-	if err != nil {
-		return "", err
+func (s *Service) getErrorLogPath(sessionID string) apperror.Result[string] {
+	dirResult := s.getSessionDir(sessionID)
+
+	if dirResult.HasError() {
+
+		return dirResult
 	}
-	return pathutil.Join(dir, logfile.SessionErrorLog)
+
+	errPath, err := pathutil.Join(dirResult.Value(), logfile.SessionErrorLog)
+
+	if err != nil {
+
+		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve error log path")
+	}
+
+	return apperror.Ok(errPath)
 }
 
 // SessionSummary provides a brief overview of a session
