@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"wp-plugin-publish/internal/enums/test_status"
+	teststatus "wp-plugin-publish/internal/enums/teststatustype"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )

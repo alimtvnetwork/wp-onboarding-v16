@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"wp-plugin-publish/internal/database"
-	"wp-plugin-publish/internal/enums/publish_type"
+	"wp-plugin-publish/internal/enums/publishtype"
 	"wp-plugin-publish/internal/services/publish"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
