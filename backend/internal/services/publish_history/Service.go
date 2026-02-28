@@ -44,7 +44,7 @@ func New(cfg Config) *Service {
 
 // Record saves a new publish history entry
 func (s *Service) Record(entry models.PublishHistory) (*models.PublishHistory, error) {
-	result, err := s.db.Exec(insertHistorySQL,
+	result, err := s.db.Exec(insertHistorySql,
 		entry.PluginId,
 		entry.PluginName,
 		entry.SiteId,
@@ -106,7 +106,7 @@ func (s *Service) countHistory(where string, args []any) (int, *apperror.AppErro
 
 // queryHistoryPage fetches a page of publish history entries.
 func (s *Service) queryHistoryPage(where string, args []any, limit, offset int) ([]models.PublishHistory, *apperror.AppError) {
-	query := selectHistorySQL + where + " ORDER BY CreatedAt DESC LIMIT ? OFFSET ?"
+	query := selectHistorySql + where + " ORDER BY CreatedAt DESC LIMIT ? OFFSET ?"
 	allArgs := append(args, limit, offset)
 
 	rows, err := s.db.Query(query, allArgs...)
@@ -121,7 +121,7 @@ func (s *Service) queryHistoryPage(where string, args []any, limit, offset int) 
 
 // GetById returns a specific publish history entry
 func (s *Service) GetById(id int64) apperror.Result[models.PublishHistory] {
-	row := s.db.QueryRow(selectHistorySQL+" WHERE Id = ?", id)
+	row := s.db.QueryRow(selectHistorySql+" WHERE Id = ?", id)
 
 	m, err := scanHistoryRow(row)
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *Service) GetById(id int64) apperror.Result[models.PublishHistory] {
 func (s *Service) GetStats() apperror.Result[models.PublishHistoryStats] {
 	var m models.PublishHistoryStats
 
-	err := s.db.QueryRow(statsSQL).Scan(
+	err := s.db.QueryRow(statsSql).Scan(
 		&m.TotalPublishes,
 		&m.SuccessCount,
 		&m.FailureCount,

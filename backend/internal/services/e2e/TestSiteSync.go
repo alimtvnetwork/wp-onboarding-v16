@@ -14,7 +14,7 @@ func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) 
 		Name: "E2E Test Site", Url: s.testSiteUrl,
 		Username: s.testSiteUsername, Password: s.testSitePassword,
 	}
-	result.RequestData = toJSON(redactSiteBody(body))
+	result.RequestData = toJson(redactSiteBody(body))
 
 	resp, err := s.api.post("/sites", body)
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *serviceImpl) testInvalidCredentials(ctx context.Context, result *TestRe
 	body := credentialsTestBody{
 		Url: s.testSiteUrl, Username: "invalid_user_e2e", Password: "invalid_password_e2e",
 	}
-	result.RequestData = toJSON(body)
+	result.RequestData = toJson(body)
 
 	resp, err := s.api.post("/sites/test", body)
 	if err != nil {
@@ -85,7 +85,7 @@ func (s *serviceImpl) testCreatePluginMapping(ctx context.Context, result *TestR
 	defer s.cleanupSite(ids.SiteId)
 
 	body := mappingCreateBody{SiteId: ids.SiteId, RemoteSlug: "e2e-test-plugin"}
-	result.RequestData = toJSON(body)
+	result.RequestData = toJson(body)
 
 	resp, err := s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginId), body)
 	if err != nil {
@@ -164,7 +164,7 @@ func (s *serviceImpl) testPreviewPublish(ctx context.Context, result *TestResult
 	defer s.cleanupSite(ids.SiteId)
 
 	body := publishPreviewBody{PluginId: ids.PluginId, SiteId: ids.SiteId}
-	result.RequestData = toJSON(body)
+	result.RequestData = toJson(body)
 
 	resp, err := s.api.post("/publish/preview", body)
 	if err != nil {

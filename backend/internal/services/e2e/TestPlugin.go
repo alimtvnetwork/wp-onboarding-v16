@@ -45,7 +45,7 @@ type credentialsTestBody struct {
 
 func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult) error {
 	body := pluginCreateBody{Name: "E2E Test Plugin", Path: s.testPluginPath, ForceCreate: true}
-	result.RequestData = toJSON(body)
+	result.RequestData = toJson(body)
 
 	resp, err := s.api.post("/plugins", body)
 	if err != nil {
@@ -92,7 +92,7 @@ func (s *serviceImpl) verifyPluginInList() error {
 
 func (s *serviceImpl) testRegisterInvalidPath(ctx context.Context, result *TestResult) error {
 	body := pluginCreateBody{Name: "Invalid Plugin", Path: "/nonexistent/path/e2e-test-invalid"}
-	result.RequestData = toJSON(body)
+	result.RequestData = toJson(body)
 
 	resp, err := s.api.post("/plugins", body)
 	if err != nil {
@@ -122,7 +122,7 @@ func (s *serviceImpl) testUpdatePlugin(ctx context.Context, result *TestResult) 
 	defer s.cleanupPlugin(pluginId)
 
 	body := pluginUpdateBody{Name: "E2E Updated Plugin"}
-	result.RequestData = toJSON(body)
+	result.RequestData = toJson(body)
 
 	resp, err := s.api.put(fmt.Sprintf("/plugins/%d", pluginId), body)
 	if err != nil {

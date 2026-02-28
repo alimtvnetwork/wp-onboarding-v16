@@ -74,9 +74,9 @@ func appendOptionalFields(updates *[]string, args *[]any, input UpdateInput) {
 		*args = append(*args, *input.Category)
 	}
 	if input.ExcludePatterns != nil {
-		excludeJSON, _ := json.Marshal(*input.ExcludePatterns)
+		excludeJson, _ := json.Marshal(*input.ExcludePatterns)
 		*updates = append(*updates, "ExcludePatterns = ?")
-		*args = append(*args, string(excludeJSON))
+		*args = append(*args, string(excludeJson))
 	}
 }
 

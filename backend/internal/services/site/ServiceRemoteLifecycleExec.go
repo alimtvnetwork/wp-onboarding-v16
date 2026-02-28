@@ -134,7 +134,7 @@ func (s *Service) handleDecryptFailure(ref *remoteActionRef, decryptErr error) *
 
 	s.logRemoteAction(ref, RemoteActionLogInput{
 		Level: "error", Step: "decrypt", Message: errMsg,
-		Details: session.ToJSON(AppErrorDetail{Error: appErr.Error()}),
+		Details: session.ToJson(AppErrorDetail{Error: appErr.Error()}),
 	})
 	s.endRemoteSession(ref.SessionId, "error", errMsg)
 
@@ -154,7 +154,7 @@ func (s *Service) logRemoteStageStart(ref *remoteActionRef) {
 		Level:   "info",
 		Step:    ref.Action,
 		Message: fmt.Sprintf("Executing %s action on plugin: %s", ref.Action, ref.PluginSlug),
-		Details: session.ToJSON(RemoteActionExecDetails{
+		Details: session.ToJson(RemoteActionExecDetails{
 			TargetUrl:  ref.Site.Url,
 			PluginSlug: ref.PluginSlug,
 		}),

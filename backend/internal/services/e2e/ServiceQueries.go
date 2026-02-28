@@ -84,18 +84,18 @@ func scanCaseRows(rows interface {
 // scanSingleCase scans a single test case row.
 func scanSingleCase(row interface{ Scan(dest ...any) error }) (TestCase, error) {
 	var tc TestCase
-	var preJSON, stepsJSON string
+	var preJson, stepsJson string
 
 	err := row.Scan(
-		&tc.Id, &tc.SuiteId, &tc.Name, &tc.Description, &preJSON, &stepsJSON,
+		&tc.Id, &tc.SuiteId, &tc.Name, &tc.Description, &preJson, &stepsJson,
 		&tc.ExpectedResult, &tc.TimeoutSeconds, &tc.OrderIndex, &tc.Enabled,
 	)
 	if err != nil {
 		return tc, err
 	}
 
-	json.Unmarshal([]byte(preJSON), &tc.Preconditions)
-	json.Unmarshal([]byte(stepsJSON), &tc.Steps)
+	json.Unmarshal([]byte(preJson), &tc.Preconditions)
+	json.Unmarshal([]byte(stepsJson), &tc.Steps)
 	return tc, nil
 }
 

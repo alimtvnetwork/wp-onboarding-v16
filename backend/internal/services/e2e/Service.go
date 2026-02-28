@@ -11,7 +11,7 @@ import (
 // SQL constants
 // ---------------------------------------------------------------------------
 
-const schemaSQL = `
+const schemaSql = `
 	CREATE TABLE IF NOT EXISTS TestSuites (
 		Id TEXT PRIMARY KEY,
 		Name TEXT NOT NULL,
@@ -180,6 +180,6 @@ func New(cfg Config) Service {
 
 func (s *serviceImpl) initSchema() error {
 	s.migrateToPascalCase()
-	_, err := s.db.Exec(schemaSQL)
+	_, err := s.db.Exec(schemaSql)
 	return err
 }

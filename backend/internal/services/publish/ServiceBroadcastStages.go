@@ -100,10 +100,10 @@ func (s *Service) broadcastStageComplete(input StageCompleteInput) {
 // broadcastStageLog sends a detailed log entry with structured context
 func (s *Service) broadcastStageLog(input StageLogInput) {
 	message := resolveStageLogMessage(input.Ctx)
-	detailsJSON, _ := json.Marshal(input.Ctx)
+	detailsJson, _ := json.Marshal(input.Ctx)
 
-	s.broadcastStageLogDetailed(input, message, detailsJSON)
-	s.broadcastStageLogSession(input, message, detailsJSON)
+	s.broadcastStageLogDetailed(input, message, detailsJson)
+	s.broadcastStageLogSession(input, message, detailsJson)
 }
 
 // broadcastStageLogDetailed sends the detailed log entry for a stage.

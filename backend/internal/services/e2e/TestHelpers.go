@@ -106,7 +106,7 @@ func (s *serviceImpl) cleanupAll() {
 	return
 }
 
-func toJSON(v any) string {
+func toJson(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
 }

@@ -6,7 +6,7 @@ import (
 	"wp-plugin-publish/internal/models"
 )
 
-const healthHistorySQL = `
+const healthHistorySql = `
 	SELECT h.Id, h.SiteId, s.Name, s.Url, h.Status, h.ResponseMs, h.StatusCode, h.ErrorMessage, h.UploaderOk, h.CreatedAt
 	FROM SiteHealthChecks h
 	JOIN Sites s ON s.Id = h.SiteId
@@ -15,13 +15,13 @@ const healthHistorySQL = `
 	LIMIT ?
 `
 
-const insertCheckSQL = `
+const insertCheckSql = `
 	INSERT INTO SiteHealthChecks (SiteId, Status, ResponseMs, StatusCode, ErrorMessage, UploaderOk, CreatedAt)
 	VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
-// buildSummarySQL constructs the health summary query using enum values.
-func buildSummarySQL() string {
+// buildSummarySql constructs the health summary query using enum values.
+func buildSummarySql() string {
 	healthy := healthstatus.Healthy.DBValue()
 	down := healthstatus.Down.DBValue()
 	unknown := healthstatus.Unknown.DBValue()

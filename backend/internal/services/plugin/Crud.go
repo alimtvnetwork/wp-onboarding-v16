@@ -38,7 +38,7 @@ const pluginUpdateFileCountQuery = `
 type pluginRaw struct {
 	plugin       models.Plugin
 	category     sql.NullString
-	excludeJSON  string
+	excludeJson  string
 	lastScanned  sql.NullString
 	createdAtStr sql.NullString
 	updatedAtStr sql.NullString
@@ -55,7 +55,7 @@ func scanPluginColumns(dest *pluginRaw, scan func(dest ...any) error) error {
 		&dest.category,
 		&dest.plugin.WatchEnabled,
 		&dest.autoPublish,
-		&dest.excludeJSON,
+		&dest.excludeJson,
 		&dest.plugin.FileCount,
 		&dest.lastScanned,
 		&dest.createdAtStr,
@@ -77,8 +77,8 @@ func (r *pluginRaw) toPlugin() models.Plugin {
 	p.CreatedAt = parseDateTime(r.createdAtStr.String)
 	p.UpdatedAt = parseDateTime(r.updatedAtStr.String)
 
-	if r.excludeJSON != "" {
-		json.Unmarshal([]byte(r.excludeJSON), &p.ExcludePatterns)
+	if r.excludeJson != "" {
+		json.Unmarshal([]byte(r.excludeJson), &p.ExcludePatterns)
 	}
 	if r.lastScanned.Valid {
 		t, _ := time.Parse(time.RFC3339, r.lastScanned.String)
@@ -246,11 +246,11 @@ func scanId(row *sql.Row) (int64, error) {
 // insertPlugin inserts a new plugin and optional git config.
 func (s *Service) insertPlugin(ctx context.Context, input CreateInput) apperror.Result[models.Plugin] {
 	fileCount := s.scanFileCount(ctx, input.Path)
-	excludeJSON := s.encodeExcludePatterns(input.ExcludePatterns)
+	excludeJson := s.encodeExcludePatterns(input.ExcludePatterns)
 
 	res := dbutil.Exec(ctx, s.dbu, pluginInsertQuery,
 		input.Name, input.Path, input.Category, input.WatchEnabled,
-		input.AutoPublish, excludeJSON, fileCount,
+		input.AutoPublish, excludeJson, fileCount,
 	)
 	if res.HasError() {
 		return apperror.Fail[models.Plugin](res.AppError())

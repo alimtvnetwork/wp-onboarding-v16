@@ -211,7 +211,7 @@ func (s *Service) GetHistory(siteId int64, limit int) apperror.ResultSlice[model
 		limit = 50
 	}
 
-	rows, err := s.db.Query(healthHistorySQL, siteId, siteId, limit)
+	rows, err := s.db.Query(healthHistorySql, siteId, siteId, limit)
 	if err != nil {
 
 		return apperror.FailSliceWrap[models.SiteHealthCheck](err, apperror.ErrFSDelete, "failed to query health history")
@@ -225,7 +225,7 @@ func (s *Service) GetHistory(siteId int64, limit int) apperror.ResultSlice[model
 
 // GetSummaries returns health summaries for all sites
 func (s *Service) GetSummaries(ctx context.Context) apperror.ResultSlice[models.SiteHealthSummary] {
-	rows, err := s.db.QueryContext(ctx, buildSummarySQL())
+	rows, err := s.db.QueryContext(ctx, buildSummarySql())
 	if err != nil {
 
 		return apperror.FailSliceWrap[models.SiteHealthSummary](err, apperror.ErrFSNotFound, "failed to query health summaries")
@@ -276,7 +276,7 @@ func (s *Service) saveCheck(check *models.SiteHealthCheck) {
 	check.CreatedAt = time.Now()
 
 	_, err := s.db.Exec(
-		insertCheckSQL,
+		insertCheckSql,
 		check.SiteId,
 		check.Status,
 		check.ResponseMs,
