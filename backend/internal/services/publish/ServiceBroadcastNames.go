@@ -53,16 +53,16 @@ func buildLogFields(ctx logContext) []any {
 type resolvedNames struct {
 	PluginName string
 	SiteName   string
-	SiteURL    string
+	SiteUrl    string
 }
 
 // resolveNames looks up plugin/site names from details or DB
 func (s *Service) resolveNames(pluginId, siteId int64, details json.RawMessage) *resolvedNames {
 	parsed := parseNameDetails(details)
 	pluginName := s.resolvePluginName(pluginId, parsed.PluginName)
-	siteName, siteUrl := s.resolveSiteNames(siteId, parsed.SiteName, parsed.SiteURL)
+	siteName, siteUrl := s.resolveSiteNames(siteId, parsed.SiteName, parsed.SiteUrl)
 
-	return &resolvedNames{PluginName: pluginName, SiteName: siteName, SiteURL: siteUrl}
+	return &resolvedNames{PluginName: pluginName, SiteName: siteName, SiteUrl: siteUrl}
 }
 
 // parseNameDetails extracts names from JSON details.
@@ -70,7 +70,7 @@ func parseNameDetails(details json.RawMessage) *resolvedNames {
 	var parsed struct {
 		PluginName string `json:",omitempty"`
 		SiteName   string `json:",omitempty"`
-		SiteURL    string `json:",omitempty"`
+		SiteUrl    string `json:",omitempty"`
 	}
 	hasDetails := len(details) > 0
 
@@ -78,7 +78,7 @@ func parseNameDetails(details json.RawMessage) *resolvedNames {
 		_ = json.Unmarshal(details, &parsed)
 	}
 
-	return &resolvedNames{PluginName: parsed.PluginName, SiteName: parsed.SiteName, SiteURL: parsed.SiteURL}
+	return &resolvedNames{PluginName: parsed.PluginName, SiteName: parsed.SiteName, SiteUrl: parsed.SiteUrl}
 }
 
 // resolvePluginName fetches plugin name from DB if not provided.
@@ -87,7 +87,7 @@ func (s *Service) resolvePluginName(pluginId int64, name string) string {
 	hasPluginId   := pluginId > 0
 
 	if isNameMissing && hasPluginId {
-		pResult := s.pluginService.GetByID(context.Background(), pluginId)
+		pResult := s.pluginService.GetById(context.Background(), pluginId)
 		if pResult.IsSafe() {
 			return pResult.Value().Name
 		}
@@ -116,7 +116,7 @@ func (s *Service) resolveSiteNames(siteId int64, name, url string) (string, stri
 			}
 
 			if isUrlMissing {
-				url = creds.Site.URL
+				url = creds.Site.Url
 			}
 		}
 	}

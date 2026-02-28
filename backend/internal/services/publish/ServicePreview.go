@@ -30,7 +30,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 		return apperror.FailWrap[PublishPreviewResult](scanErr, apperror.ErrFSRead, "failed to scan plugin files")
 	}
 
-	wpClient := s.wpClientFactory(previewLoad.Site.URL, previewLoad.Site.Username, previewLoad.Password)
+	wpClient := s.wpClientFactory(previewLoad.Site.Url, previewLoad.Site.Username, previewLoad.Password)
 	result.RemoteVersion = s.fetchRemoteVersion(wpClient, previewLoad.Mapping.RemoteSlug)
 	remoteFileMap, fetchFailed := s.fetchRemoteFileMap(ctx, wpClient, previewLoad.Mapping.RemoteSlug)
 
@@ -47,7 +47,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) ap
 
 // loadPluginForPreview loads plugin info and populates preview result fields.
 func (s *Service) loadPluginForPreview(ctx context.Context, pluginID int64, result *PublishPreviewResult) (*pluginPreviewInfo, *apperror.AppError) {
-	pluginResult := s.pluginService.GetByID(ctx, pluginID)
+	pluginResult := s.pluginService.GetById(ctx, pluginID)
 	if pluginResult.HasError() {
 		return nil, apperror.Wrap(pluginResult.AppError(), apperror.ErrNotFound, "plugin not found")
 	}
@@ -72,7 +72,7 @@ type previewLoadResult struct {
 }
 
 type sitePreviewInfo struct {
-	URL      string
+	Url      string
 	Username string
 }
 
@@ -88,7 +88,7 @@ func (s *Service) loadSiteForPreview(ctx context.Context, pluginID, siteID int64
 	}
 	creds := credsResult.Value()
 	result.SiteName = creds.Site.Name
-	result.SiteUrl = creds.Site.URL
+	result.SiteUrl = creds.Site.Url
 
 	mapping, mappingErr := s.loadMappingForPreview(ctx, pluginID, siteID)
 	if mappingErr != nil {
@@ -111,7 +111,7 @@ func (s *Service) loadMappingForPreview(ctx context.Context, pluginID, siteID in
 // buildPreviewLoadResult constructs the previewLoadResult from credentials and mapping.
 func buildPreviewLoadResult(creds siteCredentials, mapping models.PluginMapping) *previewLoadResult {
 	return &previewLoadResult{
-		Site:     &sitePreviewInfo{URL: creds.Site.URL, Username: creds.Site.Username},
+		Site:     &sitePreviewInfo{Url: creds.Site.Url, Username: creds.Site.Username},
 		Password: creds.Password,
 		Mapping:  &mappingPreviewInfo{RemoteSlug: mapping.RemoteSlug},
 	}
@@ -145,7 +145,7 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 
 // resolveFileDiffDeps loads plugin, site credentials, and mapping for file diff.
 func (s *Service) resolveFileDiffDeps(ctx context.Context, pluginID, siteID int64) apperror.Result[fileDiffDeps] {
-	pluginResult := s.pluginService.GetByID(ctx, pluginID)
+	pluginResult := s.pluginService.GetById(ctx, pluginID)
 	if pluginResult.HasError() {
 		return apperror.FailWrap[fileDiffDeps](pluginResult.AppError(), apperror.ErrDatabaseQuery, "plugin not found")
 	}
@@ -163,7 +163,7 @@ func (s *Service) resolveFileDiffDeps(ctx context.Context, pluginID, siteID int6
 	creds := credsResult.Value()
 	return apperror.Ok(fileDiffDeps{
 		PluginPath: pluginResult.Value().Path,
-		SiteUrl:    creds.Site.URL,
+		SiteUrl:    creds.Site.Url,
 		SiteUser:   creds.Site.Username,
 		Password:   creds.Password,
 		RemoteSlug: mappingResult.Value().RemoteSlug,

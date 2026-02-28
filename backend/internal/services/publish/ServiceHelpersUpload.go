@@ -15,7 +15,7 @@ func (s *Service) logUploadError(pctx *publishContext, attempts int, appErr *app
 	inner := buildUploadErrorInner(pctx.Mapping.RemoteSlug, attempts, appErr)
 
 	errCtx := StageContext{
-		What:    fmt.Sprintf("Upload ZIP to %s", pctx.SiteInfo.URL),
+		What:    fmt.Sprintf("Upload ZIP to %s", pctx.SiteInfo.Url),
 		Result:  fmt.Sprintf("FAILED: %s", appErr.Error()),
 		Details: toDetails(inner),
 	}
@@ -88,7 +88,7 @@ func buildUploadSuccessInner(slug string, input logUploadSuccessInput) UploadSuc
 
 // activationErrorInput bundles parameters for logActivationError.
 type activationErrorInput struct {
-	EndpointURL string
+	EndpointUrl string
 	StartTime   time.Time
 	Err         *apperror.AppError
 }
@@ -100,7 +100,7 @@ func (s *Service) logActivationError(pctx *publishContext, input activationError
 	errCtx := StageContext{
 		What:    "Activate plugin via Riseup Asia Uploader",
 		Why:     "Enable plugin after upload",
-		Where:   input.EndpointURL,
+		Where:   input.EndpointUrl,
 		Result:  fmt.Sprintf("FAILED: %s", input.Err.Error()),
 		Details: toDetails(inner),
 	}
@@ -122,7 +122,7 @@ func buildActivateErrorInner(slug string, startTime time.Time, appErr *apperror.
 			inner.Request = &ActivateRequestInfo{
 				Method:   apiErr.Method,
 				Endpoint: apiErr.Endpoint,
-				URL:      apiErr.URL,
+				Url:      apiErr.Url,
 			}
 			inner.Response = &ActivateResponseInfo{
 				Status: apiErr.StatusCode,

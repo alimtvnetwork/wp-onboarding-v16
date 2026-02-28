@@ -68,7 +68,7 @@ func (s *serviceImpl) runCheckAndValidate(ctx context.Context, pluginID, siteID 
 
 // resolvePushDeps fetches plugin, mapping, and credentials needed for push.
 func (s *serviceImpl) resolvePushDeps(ctx context.Context, pluginID, siteID int64) apperror.Result[pushDeps] {
-	plugResult := s.pluginService.GetByID(ctx, pluginID)
+	plugResult := s.pluginService.GetById(ctx, pluginID)
 	if plugResult.HasError() {
 		return apperror.FailWrap[pushDeps](plugResult.AppError(), apperror.ErrDatabaseQuery, "failed to get plugin")
 	}

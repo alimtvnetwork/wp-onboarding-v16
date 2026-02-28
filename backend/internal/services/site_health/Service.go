@@ -66,13 +66,13 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 // querySiteForCheck fetches the site info needed for a health check.
 func (s *Service) querySiteForCheck(ctx context.Context, siteID int64) (*siteCheckInfo, *apperror.AppError) {
 	var m siteCheckInfo
-	m.ID = siteID
+	m.Id = siteID
 
 	err := s.db.QueryRowContext(ctx,
 		"SELECT Name, Url, Username, PasswordEncrypted FROM Sites WHERE Id = ?", siteID,
 	).Scan(
 		&m.Name,
-		&m.URL,
+		&m.Url,
 		&m.Username,
 		&m.PasswordEncrypted,
 	)
@@ -89,13 +89,13 @@ func (s *Service) querySiteForCheck(ctx context.Context, siteID int64) (*siteChe
 // performHealthProbe performs the HTTP probe and returns the check result.
 func (s *Service) performHealthProbe(ctx context.Context, site *siteCheckInfo) models.SiteHealthCheck {
 	check := models.SiteHealthCheck{
-		SiteID:   site.ID,
+		SiteId:   site.Id,
 		SiteName: site.Name,
-		SiteURL:  site.URL,
+		SiteUrl:  site.Url,
 	}
 
-	statusURL := wordpress.BuildWPPluginURL(site.URL, wordpress.RiseupAsiaNamespace, endpoint.Status)
-	req, err := http.NewRequestWithContext(ctx, "GET", statusURL, nil)
+	statusUrl := wordpress.BuildWPPluginURL(site.Url, wordpress.RiseupAsiaNamespace, endpoint.Status)
+	req, err := http.NewRequestWithContext(ctx, "GET", statusUrl, nil)
 
 	if err != nil {
 		check.Status = healthstatus.Down.DBValue()
@@ -154,15 +154,15 @@ func applyHttpStatus(check *models.SiteHealthCheck, statusCode int, elapsed int6
 
 // CheckAllSites performs health checks on all registered sites
 func (s *Service) CheckAllSites(ctx context.Context) apperror.ResultSlice[models.SiteHealthCheck] {
-	siteIDs, err := s.listSiteIDs(ctx)
+	siteIds, err := s.listSiteIds(ctx)
 	if err != nil {
 
 		return apperror.FailSlice[models.SiteHealthCheck](err)
 	}
 
-	results := make([]models.SiteHealthCheck, 0, len(siteIDs))
+	results := make([]models.SiteHealthCheck, 0, len(siteIds))
 
-	for _, id := range siteIDs {
+	for _, id := range siteIds {
 		result := s.CheckSite(ctx, id)
 
 		if result.HasError() {
@@ -177,8 +177,8 @@ func (s *Service) CheckAllSites(ctx context.Context) apperror.ResultSlice[models
 	return apperror.OkSlice(results)
 }
 
-// listSiteIDs returns all site IDs from the database.
-func (s *Service) listSiteIDs(ctx context.Context) ([]int64, *apperror.AppError) {
+// listSiteIds returns all site IDs from the database.
+func (s *Service) listSiteIds(ctx context.Context) ([]int64, *apperror.AppError) {
 	rows, err := s.db.QueryContext(ctx, "SELECT Id FROM Sites")
 	if err != nil {
 
@@ -186,7 +186,7 @@ func (s *Service) listSiteIDs(ctx context.Context) ([]int64, *apperror.AppError)
 	}
 	defer rows.Close()
 
-	var siteIDs []int64
+	var siteIds []int64
 
 	for rows.Next() {
 		var id int64
@@ -197,10 +197,10 @@ func (s *Service) listSiteIDs(ctx context.Context) ([]int64, *apperror.AppError)
 			continue
 		}
 
-		siteIDs = append(siteIDs, id)
+		siteIds = append(siteIds, id)
 	}
 
-	return siteIDs, nil
+	return siteIds, nil
 }
 
 // GetHistory returns health check history
@@ -277,7 +277,7 @@ func (s *Service) saveCheck(check *models.SiteHealthCheck) {
 
 	_, err := s.db.Exec(
 		insertCheckSQL,
-		check.SiteID,
+		check.SiteId,
 		check.Status,
 		check.ResponseMs,
 		check.StatusCode,
@@ -287,6 +287,6 @@ func (s *Service) saveCheck(check *models.SiteHealthCheck) {
 	)
 
 	if err != nil {
-		s.log.Error("Failed to save health check", "siteId", check.SiteID, "error", err)
+		s.log.Error("Failed to save health check", "siteId", check.SiteId, "error", err)
 	}
 }

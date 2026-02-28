@@ -45,7 +45,7 @@ func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, 
 // initPipelineContext sets up the WP client and context fields.
 func (s *Service) initPipelineContext(pctx *publishContext, creds pipelineCredentials, mapping *models.PluginMapping) {
 	s.logConnect(pctx.PluginId, pctx.SiteId, creds.SiteInfo)
-	wpClient := s.wpClientFactory(creds.SiteInfo.URL, creds.SiteInfo.Username, creds.Password)
+	wpClient := s.wpClientFactory(creds.SiteInfo.Url, creds.SiteInfo.Username, creds.Password)
 
 	pctx.WPClient = wpClient
 	pctx.Mapping = mapping
@@ -71,10 +71,10 @@ func (s *Service) failPipeline(pctx *publishContext, appErr *apperror.AppError, 
 
 // logConnect broadcasts the WordPress connection attempt.
 func (s *Service) logConnect(pluginID, siteID int64, siteInfo *models.Site) {
-	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
+	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.Url, "username", siteInfo.Username)
 
 	connectDetails := toDetails(ConnectDetails{
-		SiteURL:  siteInfo.URL,
+		SiteUrl:  siteInfo.Url,
 		Username: siteInfo.Username,
 	})
 	connectLog := DetailedLogInput{
@@ -82,7 +82,7 @@ func (s *Service) logConnect(pluginID, siteID int64, siteInfo *models.Site) {
 		SiteId:   siteID,
 		Level:    loglevel.Info,
 		Step:     publishstep.Connect,
-		Message:  fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL),
+		Message:  fmt.Sprintf("Connecting to WordPress: %s", siteInfo.Url),
 		Details:  connectDetails,
 	}
 	s.broadcastDetailedLog(connectLog)

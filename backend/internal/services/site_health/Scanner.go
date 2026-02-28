@@ -10,9 +10,9 @@ import (
 
 // siteCheckInfo holds site data needed for a health check probe.
 type siteCheckInfo struct {
-	ID                int64
+	Id                int64
 	Name              string
-	URL               string
+	Url               string
 	Username          string
 	PasswordEncrypted []byte
 }
@@ -40,10 +40,10 @@ func scanHealthCheckRow(rows *sql.Rows) (models.SiteHealthCheck, error) {
 	var errMsg *string
 
 	err := rows.Scan(
-		&m.ID,
-		&m.SiteID,
+		&m.Id,
+		&m.SiteId,
 		&m.SiteName,
-		&m.SiteURL,
+		&m.SiteUrl,
 		&m.Status,
 		&m.ResponseMs,
 		&m.StatusCode,
@@ -90,9 +90,9 @@ func scanSummaryRow(rows *sql.Rows) (models.SiteHealthSummary, error) {
 	var m models.SiteHealthSummary
 
 	err := rows.Scan(
-		&m.SiteID,
+		&m.SiteId,
 		&m.SiteName,
-		&m.SiteURL,
+		&m.SiteUrl,
 		&m.CurrentStatus,
 		&m.LastCheckedAt,
 		&m.AvgResponseMs,

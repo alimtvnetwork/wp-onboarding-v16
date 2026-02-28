@@ -38,7 +38,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 
 // scanLocalForCheck scans local files for a sync check, returning files or an error message.
 func (s *serviceImpl) scanLocalForCheck(ctx context.Context, pluginID, siteID int64) (map[string]FileEntry, string) {
-	plugResult := s.pluginService.GetByID(ctx, pluginID)
+	plugResult := s.pluginService.GetById(ctx, pluginID)
 	if plugResult.HasError() {
 		return nil, plugResult.AppError().Error()
 	}
@@ -74,7 +74,7 @@ func (s *serviceImpl) finalizeCheckResult(result *SyncResult, localFiles, remote
 func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperror.Result[BatchSyncResult] {
 	result := BatchSyncResult{PluginID: pluginID, Results: []SyncResult{}}
 
-	plugResult := s.pluginService.GetByID(ctx, pluginID)
+	plugResult := s.pluginService.GetById(ctx, pluginID)
 	if plugResult.HasError() {
 		return apperror.Fail[BatchSyncResult](plugResult.AppError())
 	}
@@ -95,7 +95,7 @@ func (s *serviceImpl) aggregateSiteResults(result *BatchSyncResult, ctx context.
 	result.TotalSites = len(mappings)
 
 	for _, mapping := range mappings {
-		syncResult := s.CheckSync(ctx, pluginID, mapping.SiteID)
+		syncResult := s.CheckSync(ctx, pluginID, mapping.SiteId)
 		if !syncResult.IsSafe() {
 			continue
 		}

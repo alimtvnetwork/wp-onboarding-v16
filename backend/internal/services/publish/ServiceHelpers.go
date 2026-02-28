@@ -34,9 +34,9 @@ func scanMapping(row *sql.Row) apperror.Result[models.PluginMapping] {
 	var lastSyncAt, lastBackupAt, createdAt, updatedAt sql.NullString
 
 	err := row.Scan(
-		&m.ID,
-		&m.PluginID,
-		&m.SiteID,
+		&m.Id,
+		&m.PluginId,
+		&m.SiteId,
 		&m.RemoteSlug,
 		&m.SyncStatus,
 		&lastSyncAt,
@@ -118,9 +118,9 @@ func scanSiteRow(row *sql.Row) apperror.Result[models.Site] {
 	var lastTestedAt, lastSyncAt, createdAt, updatedAt sql.NullString
 
 	err := row.Scan(
-		&site.ID,
+		&site.Id,
 		&site.Name,
-		&site.URL,
+		&site.Url,
 		&site.Username,
 		&site.PasswordEncrypted,
 		&site.ConnectionStatus,

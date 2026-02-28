@@ -23,7 +23,7 @@ func (s *Service) executeBackupStage(pctx *publishContext) Stage {
 // broadcastBackupInitLog sends the backup initiation log.
 func (s *Service) broadcastBackupInitLog(pctx *publishContext) {
 	backupDetails := toDetails(BackupStageDetails{
-		MappingID:  pctx.Mapping.ID,
+		MappingId:  pctx.Mapping.Id,
 		RemoteSlug: pctx.Mapping.RemoteSlug,
 	})
 	backupLog := DetailedLogInput{
