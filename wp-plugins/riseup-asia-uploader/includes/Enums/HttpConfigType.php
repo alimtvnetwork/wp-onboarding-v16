@@ -31,7 +31,7 @@ enum HttpConfigType: int
             'timeout'   => self::TimeoutDefault->value,
             'headers'   => array(
                 'Authorization' => $authHeader,
-                'Content-Type'  => 'application/json',
+                'Content-Type'  => ContentTypeValueType::Json->value,
             ),
             'sslverify' => true,
         );
