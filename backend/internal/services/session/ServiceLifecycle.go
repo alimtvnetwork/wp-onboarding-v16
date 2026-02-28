@@ -28,14 +28,21 @@ func (s *Service) StartSession(input StartSessionInput) apperror.Result[string] 
 	if fileResult.HasError() {
 		return apperror.Fail[string](fileResult.AppError())
 	}
+
 	session.logFile = fileResult.Value()
 
+	return s.finalizeSessionStart(sessionID, session, input)
+}
+
+// finalizeSessionStart writes the header, registers the session, and returns the ID.
+func (s *Service) finalizeSessionStart(sessionID string, session *Session, input StartSessionInput) apperror.Result[string] {
 	writeSessionHeader(sessionHeaderInput{
 		File:      session.logFile,
 		SessionID: sessionID,
 		Input:     input,
 		StartedAt: session.StartedAt,
 	})
+
 	s.registerSession(sessionID, session)
 
 	return apperror.Ok(sessionID)

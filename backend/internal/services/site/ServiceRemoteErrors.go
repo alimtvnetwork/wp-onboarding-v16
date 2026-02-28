@@ -119,9 +119,15 @@ func (s *Service) parseLegacyStackFrames(details *ExtractedErrorDetails, envResp
 		return
 	}
 
-	parsed := make([]PhpStackFrame, 0, len(envResp.ErrorLegacy.Details.StackTraceFrames))
+	details.StackTraceFrames = convertLegacyFrames(envResp.ErrorLegacy.Details.StackTraceFrames)
+	applyLegacyErrorLocation(details, &envResp.ErrorLegacy.Details)
+}
 
-	for _, fm := range envResp.ErrorLegacy.Details.StackTraceFrames {
+// convertLegacyFrames maps raw legacy frames to typed PhpStackFrame slice.
+func convertLegacyFrames(rawFrames []legacyStackFrame) []PhpStackFrame {
+	parsed := make([]PhpStackFrame, 0, len(rawFrames))
+
+	for _, fm := range rawFrames {
 		parsed = append(parsed, PhpStackFrame{
 			Function: fm.Function,
 			File:     fm.File,
@@ -130,14 +136,18 @@ func (s *Service) parseLegacyStackFrames(details *ExtractedErrorDetails, envResp
 		})
 	}
 
-	details.StackTraceFrames = parsed
+	return parsed
+}
 
-	hasErrorFile := envResp.ErrorLegacy.Details.FileFull != ""
+// applyLegacyErrorLocation copies error file and line from legacy details.
+func applyLegacyErrorLocation(details *ExtractedErrorDetails, legacy *errorLegacyDetails) {
+	hasErrorFile := legacy.FileFull != ""
+
 	if hasErrorFile {
-		details.ErrorFile = envResp.ErrorLegacy.Details.FileFull
+		details.ErrorFile = legacy.FileFull
 	}
 
-	details.ErrorLine = envResp.ErrorLegacy.Details.Line
+	details.ErrorLine = legacy.Line
 }
 
 // RemoteActionLogInput bundles parameters for logging a remote action event.

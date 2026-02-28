@@ -33,24 +33,22 @@ func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[Pull
 
 	p := pResult.Value()
 
+	return s.preparePull(p, pluginId, startTime)
+}
+
+// preparePull builds the result, broadcasts start, and validates the repo.
+func (s *Service) preparePull(p models.Plugin, pluginId int64, startTime time.Time) apperror.Result[PullResult] {
 	result := PullResult{
 		PluginId:   pluginId,
 		PluginName: p.Name,
 		PulledAt:   time.Now(),
 	}
 
-	ws.Broadcast(s.wsHub, ws.EventGitPullStarted, ws.GitPullStartedData{
-		PluginId:   pluginId,
-		PluginName: p.Name,
-	})
+	s.broadcastPullStarted(pluginId, p.Name)
 
 	repoErr := requireGitRepo(p.Path)
 	if repoErr != nil {
-		result.IsSuccess = false
-		result.Error = "not a git repository"
-		result.Duration = time.Since(startTime).Milliseconds()
-
-		return apperror.Fail[PullResult](repoErr)
+		return s.handleRepoNotFound(&result, startTime, repoErr)
 	}
 
 	return s.executePull(pullContext{
@@ -58,6 +56,23 @@ func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[Pull
 		Result:    &result,
 		StartTime: startTime,
 	})
+}
+
+// broadcastPullStarted sends the pull started WebSocket event.
+func (s *Service) broadcastPullStarted(pluginId int64, pluginName string) {
+	ws.Broadcast(s.wsHub, ws.EventGitPullStarted, ws.GitPullStartedData{
+		PluginId:   pluginId,
+		PluginName: pluginName,
+	})
+}
+
+// handleRepoNotFound marks the result as failed and returns an error.
+func (s *Service) handleRepoNotFound(result *PullResult, startTime time.Time, repoErr *apperror.AppError) apperror.Result[PullResult] {
+	result.IsSuccess = false
+	result.Error = "not a git repository"
+	result.Duration = time.Since(startTime).Milliseconds()
+
+	return apperror.Fail[PullResult](repoErr)
 }
 
 // executePull runs the actual git pull and populates the result.

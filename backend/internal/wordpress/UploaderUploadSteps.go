@@ -112,25 +112,40 @@ func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
 
-	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(uc.AbsZipPath))
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "create multipart form file")
-	}
-	_, copyErr := io.Copy(part, uc.ZipFile)
-
-	if copyErr != nil {
-		return nil, apperror.Wrap(copyErr, apperror.ErrFSRead, "stream zip to multipart")
+	appErr := writeZipToPart(writer, uc)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	writeUploadFields(uploadFieldsInput{Writer: writer, Slug: uc.Slug, IsActivate: isActivate, Source: source})
 
+	return closeMultipartWriter(writer, &requestBody)
+}
+
+// writeZipToPart creates the form file part and streams the ZIP into it.
+func writeZipToPart(writer *multipart.Writer, uc *uploadContext) *apperror.AppError {
+	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(uc.AbsZipPath))
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "create multipart form file")
+	}
+
+	_, copyErr := io.Copy(part, uc.ZipFile)
+	if copyErr != nil {
+		return apperror.Wrap(copyErr, apperror.ErrFSRead, "stream zip to multipart")
+	}
+
+	return nil
+}
+
+// closeMultipartWriter closes the writer and returns the result.
+func closeMultipartWriter(writer *multipart.Writer, body *bytes.Buffer) (*multipartResult, *apperror.AppError) {
 	closeErr := writer.Close()
 
 	if closeErr != nil {
 		return nil, apperror.Wrap(closeErr, apperror.ErrInternal, "close multipart writer")
 	}
 
-	return &multipartResult{Body: &requestBody, ContentType: writer.FormDataContentType()}, nil
+	return &multipartResult{Body: body, ContentType: writer.FormDataContentType()}, nil
 }
 
 // uploadFieldsInput bundles parameters for writeUploadFields.

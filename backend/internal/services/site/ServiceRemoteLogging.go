@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/session"
 )
 
@@ -113,20 +114,34 @@ func (s *Service) fillMissingSiteContext(siteId int64, ctx *remoteActionResolved
 		return
 	}
 
+	s.applySiteContextFromDB(siteId, ctx)
+}
+
+// applySiteContextFromDB fetches the site and fills missing name/URL fields.
+func (s *Service) applySiteContextFromDB(siteId int64, ctx *remoteActionResolvedContext) {
 	siteResult := s.GetById(context.Background(), siteId)
+	isUnavailable := !siteResult.IsSafe()
 
-	if siteResult.IsSafe() {
-		site := siteResult.Value()
+	if isUnavailable {
+		return
+	}
 
-		isSiteNameMissing := ctx.SiteName == ""
-		if isSiteNameMissing {
-			ctx.SiteName = site.Name
-		}
+	site := siteResult.Value()
+	applySiteFields(ctx, &site)
+}
 
-		isSiteUrlMissing := ctx.SiteUrl == ""
-		if isSiteUrlMissing {
-			ctx.SiteUrl = site.Url
-		}
+// applySiteFields copies missing name and URL from the site model.
+func applySiteFields(ctx *remoteActionResolvedContext, site *models.Site) {
+	isSiteNameMissing := ctx.SiteName == ""
+
+	if isSiteNameMissing {
+		ctx.SiteName = site.Name
+	}
+
+	isSiteUrlMissing := ctx.SiteUrl == ""
+
+	if isSiteUrlMissing {
+		ctx.SiteUrl = site.Url
 	}
 }
 
