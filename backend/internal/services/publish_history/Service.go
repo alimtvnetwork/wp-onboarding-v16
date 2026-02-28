@@ -2,6 +2,7 @@
 package publishhistory
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -43,19 +44,30 @@ func New(cfg Config) *Service {
 
 // Record saves a new publish history entry
 func (s *Service) Record(entry models.PublishHistory) (*models.PublishHistory, error) {
-	result, err := s.db.Exec(`
-		INSERT INTO PublishHistory (PluginId, PluginName, SiteId, SiteName, SiteUrl, SessionId, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		entry.PluginId, entry.PluginName, entry.SiteId, entry.SiteName, entry.SiteUrl,
-		entry.SessionId, entry.Status, entry.Mode, entry.FilesUpdated,
-		entry.ActivationStatus, entry.RollbackStatus, entry.RollbackMessage,
-		entry.ErrorMessage, entry.DurationMs,
+	result, err := s.db.Exec(insertHistorySQL,
+		entry.PluginId,
+		entry.PluginName,
+		entry.SiteId,
+		entry.SiteName,
+		entry.SiteUrl,
+		entry.SessionId,
+		entry.Status,
+		entry.Mode,
+		entry.FilesUpdated,
+		entry.ActivationStatus,
+		entry.RollbackStatus,
+		entry.RollbackMessage,
+		entry.ErrorMessage,
+		entry.DurationMs,
 	)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, errDBWrite, "failed to record publish history")
 	}
+
 	id, _ := result.LastInsertId()
 	entry.Id = id
+
 	return &entry, nil
 }
 
@@ -63,74 +75,92 @@ func (s *Service) Record(entry models.PublishHistory) (*models.PublishHistory, e
 func (s *Service) List(limit, offset int, filters models.PublishHistoryFilters) apperror.Result[PublishHistoryListResult] {
 	where, args := buildWhereClause(filters)
 
-	// Count total
+	total, countErr := s.countHistory(where, args)
+	if countErr != nil {
+
+		return apperror.Fail[PublishHistoryListResult](countErr)
+	}
+
+	entries, listErr := s.queryHistoryPage(where, args, limit, offset)
+	if listErr != nil {
+
+		return apperror.Fail[PublishHistoryListResult](listErr)
+	}
+
+	return apperror.Ok(PublishHistoryListResult{Items: entries, Total: total})
+}
+
+// countHistory returns the total count matching the where clause.
+func (s *Service) countHistory(where string, args []any) (int, *apperror.AppError) {
 	var total int
 	countQuery := "SELECT COUNT(*) FROM PublishHistory" + where
 	err := s.db.QueryRow(countQuery, args...).Scan(&total)
+
 	if err != nil {
-		return apperror.FailWrap[PublishHistoryListResult](err, errDBRead, "failed to count publish history")
+
+		return 0, apperror.Wrap(err, errDBRead, "failed to count publish history")
 	}
 
-	// Fetch page
-	query := "SELECT Id, PluginId, PluginName, SiteId, SiteName, SiteUrl, SessionId, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs, CreatedAt FROM PublishHistory" + where + " ORDER BY CreatedAt DESC LIMIT ? OFFSET ?"
+	return total, nil
+}
+
+// queryHistoryPage fetches a page of publish history entries.
+func (s *Service) queryHistoryPage(where string, args []any, limit, offset int) ([]models.PublishHistory, *apperror.AppError) {
+	query := selectHistorySQL + where + " ORDER BY CreatedAt DESC LIMIT ? OFFSET ?"
 	allArgs := append(args, limit, offset)
 
 	rows, err := s.db.Query(query, allArgs...)
 	if err != nil {
-		return apperror.FailWrap[PublishHistoryListResult](err, errDBRead, "failed to list publish history")
+
+		return nil, apperror.Wrap(err, errDBRead, "failed to list publish history")
 	}
 	defer rows.Close()
 
-	var entries []models.PublishHistory
-	for rows.Next() {
-		var e models.PublishHistory
-		scanErr := rows.Scan(&e.Id, &e.PluginId, &e.PluginName, &e.SiteId, &e.SiteName, &e.SiteUrl, &e.SessionId, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt)
-		if scanErr != nil {
-			s.log.Warn("Failed to scan publish history row", "error", scanErr)
-			continue
-		}
-		entries = append(entries, e)
-	}
-	return apperror.Ok(PublishHistoryListResult{Items: entries, Total: total})
+	return scanHistoryRows(rows, s.log), nil
 }
 
 // GetById returns a specific publish history entry
 func (s *Service) GetById(id int64) apperror.Result[models.PublishHistory] {
-	var e models.PublishHistory
-	err := s.db.QueryRow("SELECT Id, PluginId, PluginName, SiteId, SiteName, SiteUrl, SessionId, Status, Mode, FilesUpdated, ActivationStatus, RollbackStatus, RollbackMessage, ErrorMessage, DurationMs, CreatedAt FROM PublishHistory WHERE Id = ?", id).
-		Scan(&e.Id, &e.PluginId, &e.PluginName, &e.SiteId, &e.SiteName, &e.SiteUrl, &e.SessionId, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt)
+	row := s.db.QueryRow(selectHistorySQL+" WHERE Id = ?", id)
+
+	m, err := scanHistoryRow(row)
 	if err != nil {
+
 		return apperror.FailWrap[models.PublishHistory](err, errDBRead, "publish history entry not found")
 	}
-	return apperror.Ok(e)
+
+	return apperror.Ok(m)
 }
 
 // GetStats returns aggregate publish statistics
 func (s *Service) GetStats() apperror.Result[models.PublishHistoryStats] {
-	var stats models.PublishHistoryStats
-	err := s.db.QueryRow(`
-		SELECT 
-			COUNT(*),
-			COALESCE(SUM(CASE WHEN Status = 'success' THEN 1 ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN Status = 'failed' THEN 1 ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN Status = 'partial' THEN 1 ELSE 0 END), 0),
-			COALESCE(AVG(DurationMs), 0),
-			COALESCE(SUM(FilesUpdated), 0),
-			MAX(CreatedAt)
-		FROM PublishHistory
-	`).Scan(&stats.TotalPublishes, &stats.SuccessCount, &stats.FailureCount, &stats.PartialCount, &stats.AvgDurationMs, &stats.TotalFilesUpdated, &stats.LastPublishAt)
+	var m models.PublishHistoryStats
+
+	err := s.db.QueryRow(statsSQL).Scan(
+		&m.TotalPublishes,
+		&m.SuccessCount,
+		&m.FailureCount,
+		&m.PartialCount,
+		&m.AvgDurationMs,
+		&m.TotalFilesUpdated,
+		&m.LastPublishAt,
+	)
 	if err != nil {
+
 		return apperror.FailWrap[models.PublishHistoryStats](err, errDBRead, "failed to get publish history stats")
 	}
-	return apperror.Ok(stats)
+
+	return apperror.Ok(m)
 }
 
 // Delete removes a publish history entry
 func (s *Service) Delete(id int64) error {
 	_, err := s.db.Exec("DELETE FROM PublishHistory WHERE Id = ?", id)
 	if err != nil {
+
 		return apperror.Wrap(err, errDBDel, "failed to delete publish history")
 	}
+
 	return nil
 }
 
@@ -138,9 +168,12 @@ func (s *Service) Delete(id int64) error {
 func (s *Service) Clear() apperror.Result[int64] {
 	result, err := s.db.Exec("DELETE FROM PublishHistory")
 	if err != nil {
+
 		return apperror.FailWrap[int64](err, errDBDel, "failed to clear publish history")
 	}
+
 	count, _ := result.RowsAffected()
+
 	return apperror.Ok(count)
 }
 
@@ -152,22 +185,29 @@ func buildWhereClause(f models.PublishHistoryFilters) (string, []any) {
 		conditions = append(conditions, "PluginId = ?")
 		args = append(args, f.PluginId)
 	}
+
 	if f.SiteId > 0 {
 		conditions = append(conditions, "SiteId = ?")
 		args = append(args, f.SiteId)
 	}
+
 	if f.Status != "" {
 		conditions = append(conditions, "Status = ?")
 		args = append(args, f.Status)
 	}
+
 	if f.Search != "" {
 		conditions = append(conditions, "(PluginName LIKE ? OR SiteName LIKE ? OR ErrorMessage LIKE ?)")
 		search := fmt.Sprintf("%%%s%%", f.Search)
 		args = append(args, search, search, search)
 	}
 
-	if len(conditions) == 0 {
+	isNoConditions := len(conditions) == 0
+
+	if isNoConditions {
+
 		return "", nil
 	}
+
 	return " WHERE " + strings.Join(conditions, " AND "), args
 }
