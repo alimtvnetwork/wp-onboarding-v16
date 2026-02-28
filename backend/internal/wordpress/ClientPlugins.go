@@ -55,7 +55,9 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, *apperror.AppError) {
 // If slug already looks like a full identifier (contains "/"), it is returned as-is.
 func (c *Client) ResolvePluginIdentifier(slug string) (string, *apperror.AppError) {
 	slug = strings.TrimSpace(slug)
-	if slug == "" {
+	isSlugEmpty := slug == ""
+
+	if isSlugEmpty {
 		return "", apperror.New(apperror.ErrValidation, "empty plugin slug")
 	}
 	if strings.Contains(slug, "/") {

@@ -28,7 +28,9 @@ type ExportPluginResult struct {
 // ExportPlugin fetches an arbitrary plugin as a base64-encoded ZIP from the remote site.
 func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 	namespace := c.resolveNamespace()
-	if namespace == "" {
+	isNamespaceMissing := namespace == ""
+
+	if isNamespaceMissing {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
@@ -57,7 +59,9 @@ type ExportSelfResult struct {
 // ExportSelfFromSite fetches the Riseup Asia Uploader plugin as a ZIP from a site.
 func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 	namespace := c.resolveNamespace()
-	if namespace == "" {
+	isNamespaceMissing := namespace == ""
+
+	if isNamespaceMissing {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
@@ -131,7 +135,9 @@ type RemoteErrorLogsResult struct {
 // FetchRemoteErrorLogs retrieves the PHP error and log files from the WordPress plugin.
 func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 	namespace := c.resolveNamespace()
-	if namespace == "" {
+	isNamespaceMissing := namespace == ""
+
+	if isNamespaceMissing {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
@@ -191,7 +197,9 @@ type ErrorSessionsInput struct {
 // error_sessions SQLite table.
 func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) (*RemoteErrorSessionsResult, error) {
 	namespace := c.resolveNamespace()
-	if namespace == "" {
+	isNamespaceMissing := namespace == ""
+
+	if isNamespaceMissing {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 

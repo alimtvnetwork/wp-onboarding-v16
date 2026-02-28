@@ -233,7 +233,9 @@ func ResolveWPEndpoint(name WPEndpointName) string {
 }
 
 func replaceID(pattern string, id int64) string {
-	if id > 0 {
+	hasID := id > 0
+
+	if hasID {
 		return strings.ReplaceAll(pattern, "{id}", strconv.FormatInt(id, 10))
 	}
 	return pattern

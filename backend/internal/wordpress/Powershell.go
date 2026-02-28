@@ -81,7 +81,9 @@ func buildPsJsonConfigArgs(scriptPath, jsonConfig string) []string {
 
 // emitPsStartLog logs the start of a PowerShell upload if callback is set.
 func emitPsStartLog(onOutput func(line string), pluginPath, siteURL string) {
-	if onOutput == nil {
+	isCallbackMissing := onOutput == nil
+
+	if isCallbackMissing {
 
 		return
 	}
