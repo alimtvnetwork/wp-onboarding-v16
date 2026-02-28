@@ -48,7 +48,7 @@ func (s *serviceImpl) checkNoActiveRun() error {
 
 	if isRunning {
 		return apperror.New(apperror.ErrE2ERunning, "test run already in progress").
-			WithRunId(s.activeRun.ID)
+			WithRunId(s.activeRun.Id)
 	}
 	return nil
 }
@@ -77,7 +77,7 @@ func filterSuitesByIds(suites []TestSuite, ids []string) []TestSuite {
 
 	var out []TestSuite
 	for _, s := range suites {
-		if idMap[s.ID] && s.Enabled {
+		if idMap[s.Id] && s.Enabled {
 			out = append(out, s)
 		}
 	}
@@ -103,13 +103,13 @@ func (s *serviceImpl) createRunRecord(ctx context.Context, suites []TestSuite) *
 	}
 
 	run := &TestRun{
-		ID:         fmt.Sprintf("run-%s", uuid.New().String()[:8]),
+		Id:         fmt.Sprintf("run-%s", uuid.New().String()[:8]),
 		StartedAt:  time.Now(),
 		Status:     teststatus.Running.String(),
 		TotalTests: totalTests,
 	}
 
-	_, err := s.db.ExecContext(ctx, runInsertQuery, run.ID, run.StartedAt, run.Status, run.TotalTests)
+	_, err := s.db.ExecContext(ctx, runInsertQuery, run.Id, run.StartedAt, run.Status, run.TotalTests)
 	if err != nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func (s *serviceImpl) activateRun(run *TestRun) {
 
 	if s.broadcast != nil {
 		s.broadcast("e2e:run:started", ws.E2ERunStartedData{
-			RunID:      run.ID,
+			RunId:      run.Id,
 			TotalTests: run.TotalTests,
 		})
 	}
@@ -160,7 +160,7 @@ func (s *serviceImpl) runSuiteCases(
 	suite TestSuite,
 	opts RunOptions,
 ) bool {
-	cases, err := s.GetCases(ctx, suite.ID)
+	cases, err := s.GetCases(ctx, suite.Id)
 	if err != nil {
 		return false
 	}
@@ -198,7 +198,7 @@ func (s *serviceImpl) runSingleCase(ctx context.Context, input RunSingleCaseInpu
 	result := s.executeTest(ctx, input.Run, input.Suite, input.Case)
 	s.persistResult(result)
 	s.tallyResult(input.Run, result)
-	s.broadcastTestResult(input.Run.ID, input.Case.ID, result)
+	s.broadcastTestResult(input.Run.Id, input.Case.Id, result)
 
 	isFailed := result.Status == teststatus.Failed.String()
 	shouldStop := input.Opts.StopOnFailure && isFailed
@@ -217,7 +217,7 @@ func (s *serviceImpl) isRunAborted() bool {
 func (s *serviceImpl) persistResult(r *TestResult) {
 	s.db.Exec(
 		resultInsertQuery,
-		r.ID, r.RunID, r.SuiteID, r.CaseID, r.CaseName, r.Status,
+		r.Id, r.RunId, r.SuiteId, r.CaseId, r.CaseName, r.Status,
 		r.StartedAt, r.CompletedAt, r.DurationMs, r.ErrorMessage, r.ErrorDetails,
 		r.RequestData, r.ResponseData, r.Logs,
 	)
@@ -236,11 +236,11 @@ func (s *serviceImpl) tallyResult(run *TestRun, r *TestResult) {
 }
 
 // broadcastTestResult sends a test completion event.
-func (s *serviceImpl) broadcastTestResult(runID, caseID string, r *TestResult) {
+func (s *serviceImpl) broadcastTestResult(runId, caseId string, r *TestResult) {
 	if s.broadcast != nil {
 		s.broadcast("e2e:test:completed", ws.E2ETestCompletedData{
-			RunID:      runID,
-			CaseID:     caseID,
+			RunId:      runId,
+			CaseId:     caseId,
 			Status:     r.Status,
 			DurationMs: r.DurationMs,
 		})
@@ -254,7 +254,7 @@ func (s *serviceImpl) finalizeRun(run *TestRun) {
 	run.DurationMs = now.Sub(run.StartedAt).Milliseconds()
 	run.Status = s.resolveRunStatus(run)
 
-	s.db.Exec(runCompleteQuery, run.CompletedAt, run.Status, run.PassedTests, run.FailedTests, run.SkippedTests, run.DurationMs, run.ID)
+	s.db.Exec(runCompleteQuery, run.CompletedAt, run.Status, run.PassedTests, run.FailedTests, run.SkippedTests, run.DurationMs, run.Id)
 	s.broadcastRunComplete(run)
 
 	s.mu.Lock()
@@ -276,7 +276,7 @@ func (s *serviceImpl) resolveRunStatus(run *TestRun) string {
 func (s *serviceImpl) broadcastRunComplete(run *TestRun) {
 	if s.broadcast != nil {
 		s.broadcast("e2e:run:completed", ws.E2ERunCompletedData{
-			RunID:  run.ID,
+			RunId:  run.Id,
 			Status: run.Status,
 			Passed: run.PassedTests,
 			Failed: run.FailedTests,

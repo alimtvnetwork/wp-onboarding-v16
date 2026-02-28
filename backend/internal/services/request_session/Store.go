@@ -67,7 +67,7 @@ func New(cfg Config) (*Store, *apperror.AppError) {
 // SaveRequestSession persists a request session to disk
 func (s *Store) SaveRequestSession(session *middleware.RequestSession) *apperror.AppError {
 	s.mu.Lock()
-	s.cache[session.ID] = session
+	s.cache[session.Id] = session
 	s.mu.Unlock()
 
 	dateDir := session.StartedAt.Format("2006-01-02")
@@ -84,7 +84,7 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) *apperror
 		return apperror.Wrap(mkdirErr, apperror.ErrSessionStore, "create session directory")
 	}
 
-	sessionPath, pathErr := pathutil.Join(sessionDir, session.ID+".json")
+	sessionPath, pathErr := pathutil.Join(sessionDir, session.Id+".json")
 	if pathErr != nil {
 
 		return apperror.Wrap(pathErr, apperror.ErrSessionStore, "resolve session file path")

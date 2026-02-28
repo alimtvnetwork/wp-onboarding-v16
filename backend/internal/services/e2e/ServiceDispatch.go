@@ -13,9 +13,9 @@ import (
 // executeTest runs a single test case and returns the result.
 func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestSuite, tc TestCase) *TestResult {
 	result := s.initTestResult(run, suite, tc)
-	s.broadcastTestStarted(run.ID, tc)
+	s.broadcastTestStarted(run.Id, tc)
 
-	testErr := s.dispatchTest(ctx, tc.ID, result)
+	testErr := s.dispatchTest(ctx, tc.Id, result)
 	s.completeTestResult(result, testErr)
 
 	return result
@@ -24,29 +24,29 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 // initTestResult creates a new TestResult for the given case.
 func (s *serviceImpl) initTestResult(run *TestRun, suite TestSuite, tc TestCase) *TestResult {
 	return &TestResult{
-		ID:        uuid.New().String(),
-		RunID:     run.ID,
-		SuiteID:   suite.ID,
-		CaseID:    tc.ID,
+		Id:        uuid.New().String(),
+		RunId:     run.Id,
+		SuiteId:   suite.Id,
+		CaseId:    tc.Id,
 		CaseName:  tc.Name,
 		StartedAt: time.Now(),
 	}
 }
 
 // broadcastTestStarted sends a test start event.
-func (s *serviceImpl) broadcastTestStarted(runID string, tc TestCase) {
+func (s *serviceImpl) broadcastTestStarted(runId string, tc TestCase) {
 	if s.broadcast != nil {
 		s.broadcast("e2e:test:started", ws.E2ETestStartedData{
-			RunID:    runID,
-			CaseID:   tc.ID,
+			RunId:    runId,
+			CaseId:   tc.Id,
 			CaseName: tc.Name,
 		})
 	}
 }
 
 // dispatchTest routes a test case ID to its implementation.
-func (s *serviceImpl) dispatchTest(ctx context.Context, caseID string, result *TestResult) error {
-	switch caseID {
+func (s *serviceImpl) dispatchTest(ctx context.Context, caseId string, result *TestResult) error {
+	switch caseId {
 	case "TC-PLUGIN-001":
 		return s.testRegisterPlugin(ctx, result)
 	case "TC-PLUGIN-002":
@@ -74,14 +74,14 @@ func (s *serviceImpl) dispatchTest(ctx context.Context, caseID string, result *T
 	case "TC-PUBLISH-003":
 		return s.testBackupList(ctx, result)
 	default:
-		return s.skipUnimplemented(result, caseID)
+		return s.skipUnimplemented(result, caseId)
 	}
 }
 
 // skipUnimplemented marks a test as skipped (no implementation).
-func (s *serviceImpl) skipUnimplemented(result *TestResult, caseID string) error {
+func (s *serviceImpl) skipUnimplemented(result *TestResult, caseId string) error {
 	result.Status = teststatustype.Skipped.String()
-	result.Logs = "No test implementation for " + caseID
+	result.Logs = "No test implementation for " + caseId
 	now := time.Now()
 	result.CompletedAt = &now
 	result.DurationMs = now.Sub(result.StartedAt).Milliseconds()

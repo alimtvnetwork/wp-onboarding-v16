@@ -8,7 +8,7 @@ import (
 
 // TestSuite represents a collection of related test cases
 type TestSuite struct {
-	ID             string
+	Id             string
 	Name           string
 	Category       string
 	Enabled        bool
@@ -19,8 +19,8 @@ type TestSuite struct {
 
 // TestCase represents a single test case
 type TestCase struct {
-	ID             string
-	SuiteID        string
+	Id             string
+	SuiteId        string
 	Name           string
 	Description    string
 	Preconditions  []string
@@ -33,7 +33,7 @@ type TestCase struct {
 
 // TestRun represents a test execution session
 type TestRun struct {
-	ID           string
+	Id           string
 	StartedAt    time.Time
 	CompletedAt  *time.Time `json:",omitempty"`
 	Status       string
@@ -46,10 +46,10 @@ type TestRun struct {
 
 // TestResult represents the result of a single test case execution
 type TestResult struct {
-	ID           string
-	RunID        string
-	SuiteID      string
-	CaseID       string
+	Id           string
+	RunId        string
+	SuiteId      string
+	CaseId       string
 	CaseName     string
 	Status       string
 	StartedAt    time.Time
@@ -79,10 +79,10 @@ type RunSummary struct {
 type Service interface {
 	ListSuites(ctx context.Context) ([]TestSuite, error)
 	GetSuite(ctx context.Context, id string) (*TestSuite, error)
-	GetCases(ctx context.Context, suiteID string) ([]TestCase, error)
+	GetCases(ctx context.Context, suiteId string) ([]TestCase, error)
 	StartRun(ctx context.Context, opts RunOptions) (*TestRun, error)
-	AbortRun(ctx context.Context, runID string) error
+	AbortRun(ctx context.Context, runId string) error
 	ListRuns(ctx context.Context, limit int) ([]TestRun, error)
-	GetRun(ctx context.Context, runID string) (*RunSummary, error)
-	DeleteRun(ctx context.Context, runID string) error
+	GetRun(ctx context.Context, runId string) (*RunSummary, error)
+	DeleteRun(ctx context.Context, runId string) error
 }

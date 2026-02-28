@@ -30,7 +30,7 @@ func scanSuiteRows(rows interface {
 	for rows.Next() {
 		var suite TestSuite
 		err := rows.Scan(
-			&suite.ID, &suite.Name, &suite.Category, &suite.Enabled,
+			&suite.Id, &suite.Name, &suite.Category, &suite.Enabled,
 			&suite.TimeoutSeconds, &suite.CreatedAt, &suite.CaseCount,
 		)
 		if err != nil {
@@ -45,7 +45,7 @@ func scanSuiteRows(rows interface {
 func (s *serviceImpl) GetSuite(ctx context.Context, id string) (*TestSuite, error) {
 	var suite TestSuite
 	err := s.db.QueryRowContext(ctx, suiteSelectQuery, id).Scan(
-		&suite.ID, &suite.Name, &suite.Category, &suite.Enabled,
+		&suite.Id, &suite.Name, &suite.Category, &suite.Enabled,
 		&suite.TimeoutSeconds, &suite.CreatedAt, &suite.CaseCount,
 	)
 	if err != nil {
@@ -55,8 +55,8 @@ func (s *serviceImpl) GetSuite(ctx context.Context, id string) (*TestSuite, erro
 }
 
 // GetCases returns all test cases for a suite.
-func (s *serviceImpl) GetCases(ctx context.Context, suiteID string) ([]TestCase, error) {
-	rows, err := s.db.QueryContext(ctx, caseListQuery, suiteID)
+func (s *serviceImpl) GetCases(ctx context.Context, suiteId string) ([]TestCase, error) {
+	rows, err := s.db.QueryContext(ctx, caseListQuery, suiteId)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func scanSingleCase(row interface{ Scan(dest ...any) error }) (TestCase, error) 
 	var preJSON, stepsJSON string
 
 	err := row.Scan(
-		&tc.ID, &tc.SuiteID, &tc.Name, &tc.Description, &preJSON, &stepsJSON,
+		&tc.Id, &tc.SuiteId, &tc.Name, &tc.Description, &preJSON, &stepsJSON,
 		&tc.ExpectedResult, &tc.TimeoutSeconds, &tc.OrderIndex, &tc.Enabled,
 	)
 	if err != nil {
@@ -100,34 +100,34 @@ func scanSingleCase(row interface{ Scan(dest ...any) error }) (TestCase, error) 
 }
 
 // AbortRun stops a running test.
-func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
+func (s *serviceImpl) AbortRun(ctx context.Context, runId string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	isIdle := s.activeRun == nil
-	isRunMismatch := !isIdle && s.activeRun.ID != runID
+	isRunMismatch := !isIdle && s.activeRun.Id != runId
 	isAbortInvalid := isIdle || isRunMismatch
 
 	if isAbortInvalid {
 
-		return apperror.New(apperror.ErrNotFound, "no active run with ID").WithRunId(runID)
+		return apperror.New(apperror.ErrNotFound, "no active run with ID").WithRunId(runId)
 	}
 
-	s.abortActiveRun(ctx, runID)
+	s.abortActiveRun(ctx, runId)
 	return nil
 }
 
 // abortActiveRun marks the active run as aborted. Must be called with mu held.
-func (s *serviceImpl) abortActiveRun(ctx context.Context, runID string) {
+func (s *serviceImpl) abortActiveRun(ctx context.Context, runId string) {
 	now := time.Now()
 	s.activeRun.Status = teststatus.Aborted.String()
 	s.activeRun.CompletedAt = &now
 
-	s.db.ExecContext(ctx, runAbortQuery, now, runID)
+	s.db.ExecContext(ctx, runAbortQuery, now, runId)
 
 	if s.broadcast != nil {
 		s.broadcast("e2e:run:completed", ws.E2ERunCompletedData{
-			RunID:  runID,
+			RunId:  runId,
 			Status: teststatus.Aborted.String(),
 		})
 	}
@@ -161,7 +161,7 @@ func scanRunRows(rows interface {
 	for rows.Next() {
 		var run TestRun
 		err := rows.Scan(
-			&run.ID, &run.StartedAt, &run.CompletedAt, &run.Status,
+			&run.Id, &run.StartedAt, &run.CompletedAt, &run.Status,
 			&run.TotalTests, &run.PassedTests, &run.FailedTests, &run.SkippedTests, &run.DurationMs,
 		)
 		if err != nil {
@@ -173,13 +173,13 @@ func scanRunRows(rows interface {
 }
 
 // GetRun returns a test run with its results.
-func (s *serviceImpl) GetRun(ctx context.Context, runID string) (*RunSummary, error) {
-	run, err := s.loadRun(ctx, runID)
+func (s *serviceImpl) GetRun(ctx context.Context, runId string) (*RunSummary, error) {
+	run, err := s.loadRun(ctx, runId)
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := s.loadRunResults(ctx, runID)
+	results, err := s.loadRunResults(ctx, runId)
 	if err != nil {
 		return nil, err
 	}
@@ -188,10 +188,10 @@ func (s *serviceImpl) GetRun(ctx context.Context, runID string) (*RunSummary, er
 }
 
 // loadRun fetches a single run record by ID.
-func (s *serviceImpl) loadRun(ctx context.Context, runID string) (*TestRun, error) {
+func (s *serviceImpl) loadRun(ctx context.Context, runId string) (*TestRun, error) {
 	var run TestRun
-	err := s.db.QueryRowContext(ctx, runSelectQuery, runID).Scan(
-		&run.ID, &run.StartedAt, &run.CompletedAt, &run.Status,
+	err := s.db.QueryRowContext(ctx, runSelectQuery, runId).Scan(
+		&run.Id, &run.StartedAt, &run.CompletedAt, &run.Status,
 		&run.TotalTests, &run.PassedTests, &run.FailedTests, &run.SkippedTests, &run.DurationMs,
 	)
 	if err != nil {
@@ -201,8 +201,8 @@ func (s *serviceImpl) loadRun(ctx context.Context, runID string) (*TestRun, erro
 }
 
 // loadRunResults fetches all results for a given run.
-func (s *serviceImpl) loadRunResults(ctx context.Context, runID string) ([]TestResult, error) {
-	rows, err := s.db.QueryContext(ctx, resultListQuery, runID)
+func (s *serviceImpl) loadRunResults(ctx context.Context, runId string) ([]TestResult, error) {
+	rows, err := s.db.QueryContext(ctx, resultListQuery, runId)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func scanResultRows(rows interface {
 	for rows.Next() {
 		var r TestResult
 		err := rows.Scan(
-			&r.ID, &r.RunID, &r.SuiteID, &r.CaseID, &r.CaseName, &r.Status,
+			&r.Id, &r.RunId, &r.SuiteId, &r.CaseId, &r.CaseName, &r.Status,
 			&r.StartedAt, &r.CompletedAt, &r.DurationMs, &r.ErrorMessage, &r.ErrorDetails,
 			&r.RequestData, &r.ResponseData, &r.Logs,
 		)
@@ -233,8 +233,8 @@ func scanResultRows(rows interface {
 }
 
 // DeleteRun removes a test run and its results.
-func (s *serviceImpl) DeleteRun(ctx context.Context, runID string) error {
-	s.db.ExecContext(ctx, resultDeleteQuery, runID)
-	_, err := s.db.ExecContext(ctx, runDeleteQuery, runID)
+func (s *serviceImpl) DeleteRun(ctx context.Context, runId string) error {
+	s.db.ExecContext(ctx, resultDeleteQuery, runId)
+	_, err := s.db.ExecContext(ctx, runDeleteQuery, runId)
 	return err
 }
