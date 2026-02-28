@@ -4,7 +4,9 @@ import "fmt"
 
 // logSuccess logs a successful database operation
 func logSuccess(ctx Context, res *Result) {
-	if ctx.Logger == nil {
+	isLoggerMissing := ctx.Logger == nil
+
+	if isLoggerMissing {
 		return
 	}
 
@@ -17,12 +19,16 @@ func logSuccess(ctx Context, res *Result) {
 		Caller:       fmt.Sprintf("%s:%d", file, line),
 	})
 
-	if res.LastInsertID > 0 {
+	hasLastInsertID := res.LastInsertID > 0
+
+	if hasLastInsertID {
 		fields.LastInsertID = res.LastInsertID
 	}
+
 	if res.IsCreated {
 		fields.IsCreated = true
 	}
+
 	if res.IsExists {
 		fields.IsExists = true
 	}
@@ -32,7 +38,9 @@ func logSuccess(ctx Context, res *Result) {
 
 // logError logs a failed database operation with stack trace
 func logError(ctx Context, err error) {
-	if ctx.Logger == nil {
+	isLoggerMissing := ctx.Logger == nil
+
+	if isLoggerMissing {
 		return
 	}
 

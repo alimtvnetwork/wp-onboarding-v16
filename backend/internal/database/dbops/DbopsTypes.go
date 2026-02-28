@@ -19,12 +19,18 @@ func ParseDateTime(s string) time.Time {
 		return time.Time{}
 	}
 
-	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+	t, err := time.Parse("2006-01-02 15:04:05", s)
+	isParsed := err == nil
+
+	if isParsed {
 
 		return t
 	}
 
-	if t, err := time.Parse(time.RFC3339, s); err == nil {
+	t, err = time.Parse(time.RFC3339, s)
+	isParsed = err == nil
+
+	if isParsed {
 
 		return t
 	}
@@ -36,13 +42,17 @@ func ParseDateTime(s string) time.Time {
 func ParseNullTime(ns sql.NullString) *time.Time {
 	isInvalid := !ns.Valid
 	isBlank := strings.TrimSpace(ns.String) == ""
+
 	if isInvalid || isBlank {
 		return nil
 	}
+
 	t := ParseDateTime(ns.String)
+
 	if t.IsZero() {
 		return nil
 	}
+
 	return &t
 }
 
@@ -205,11 +215,13 @@ type Context struct {
 // captureStackTrace returns a formatted stack trace string from the call site
 func captureStackTrace(skip int) string {
 	var stack strings.Builder
+
 	for i := skip; i < skip+10; i++ {
-		pc, file, line, ok := runtime.Caller(i)
-		if !ok {
+		pc, file, line, isValid := runtime.Caller(i)
+		if !isValid {
 			break
 		}
+
 		fn := runtime.FuncForPC(pc)
 		fnName := "unknown"
 
@@ -239,8 +251,8 @@ func captureStackTrace(skip int) string {
 
 // getCallerInfo returns the caller's file and line for logging
 func getCallerInfo(skip int) (file string, line int) {
-	_, file, line, ok := runtime.Caller(skip)
-	if !ok {
+	_, file, line, isValid := runtime.Caller(skip)
+	if !isValid {
 
 		return "unknown", 0
 	}

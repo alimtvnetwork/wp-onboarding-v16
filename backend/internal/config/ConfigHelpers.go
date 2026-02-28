@@ -13,16 +13,22 @@ func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error
 	log.Debug("Verifying mappings exist for all seeded plugins")
 
 	var siteIds []int64
+
 	for _, site := range cfg.Seed.Sites {
 		normalizedUrl := normalizeUrl(site.URL)
-		if id, err := db.GetSiteIdByUrl(normalizedUrl); err == nil && id > 0 {
+		id, err := db.GetSiteIdByUrl(normalizedUrl)
+		isFound := err == nil && id > 0
+
+		if isFound {
 			siteIds = append(siteIds, id)
 		} else {
 			log.Warn("Site not found in database", "name", site.Name, "url", normalizedUrl, "error", err)
 		}
 	}
 
-	if len(siteIds) == 0 {
+	isEmpty := len(siteIds) == 0
+
+	if isEmpty {
 		log.Debug("No sites found for mapping verification")
 		return nil
 	}
@@ -30,14 +36,18 @@ func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error
 	log.Debug("Found sites for mapping", "count", len(siteIds))
 
 	mappingsCreated := 0
+
 	for _, plugin := range cfg.Seed.Plugins {
 		pluginId, err := db.GetPluginIdByPath(plugin.Path)
-		if err != nil || pluginId == 0 {
+		isPluginMissing := err != nil || pluginId == 0
+
+		if isPluginMissing {
 			log.Warn("Plugin not found for mapping", "name", plugin.Name, "path", plugin.Path, "error", err)
 			continue
 		}
 
 		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
+
 		for _, siteId := range siteIds {
 			created, err := db.CreateSeedMapping(database.SeedMappingInput{PluginID: pluginId, SiteID: siteId, RemoteSlug: remoteSlug, Logger: log})
 			if err != nil {
@@ -48,11 +58,14 @@ func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error
 		}
 	}
 
-	if mappingsCreated > 0 {
+	hasMappingsCreated := mappingsCreated > 0
+
+	if hasMappingsCreated {
 		log.Info("Mapping verification complete", "mappingsCreated", mappingsCreated)
 	} else {
 		log.Debug("All mappings already exist")
 	}
+
 	return nil
 }
 
@@ -60,25 +73,38 @@ func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error
 func normalizeUrl(rawUrl string) string {
 	u := strings.TrimSpace(rawUrl)
 	u = strings.TrimRight(u, "/")
+
 	for _, suffix := range []string{"/wp-admin", "/wp-login.php", "/wp-json"} {
 		u = strings.TrimSuffix(u, suffix)
 	}
-	if strings.HasPrefix(u, "http://") {
+
+	isHTTP := strings.HasPrefix(u, "http://")
+
+	if isHTTP {
 		u = "https://" + strings.TrimPrefix(u, "http://")
 	}
-	if !strings.HasPrefix(u, "https://") {
+
+	isHTTPSMissing := !strings.HasPrefix(u, "https://")
+
+	if isHTTPSMissing {
 		u = "https://" + u
 	}
+
 	return u
 }
 
 // compareVersions compares two semantic versions
 // Returns: -1 if a < b, 0 if a == b, 1 if a > b
 func compareVersions(a, b string) int {
-	if a == b {
+	isEqual := a == b
+
+	if isEqual {
 		return 0
 	}
-	if b == "" {
+
+	isBEmpty := b == ""
+
+	if isBEmpty {
 		return 1
 	}
 
@@ -87,16 +113,28 @@ func compareVersions(a, b string) int {
 
 	for i := 0; i < 3; i++ {
 		var numA, numB int
-		if i < len(partsA) {
+
+		isWithinA := i < len(partsA)
+
+		if isWithinA {
 			numA, _ = strconv.Atoi(partsA[i])
 		}
-		if i < len(partsB) {
+
+		isWithinB := i < len(partsB)
+
+		if isWithinB {
 			numB, _ = strconv.Atoi(partsB[i])
 		}
-		if numA > numB {
+
+		isAGreater := numA > numB
+
+		if isAGreater {
 			return 1
 		}
-		if numA < numB {
+
+		isASmaller := numA < numB
+
+		if isASmaller {
 			return -1
 		}
 	}

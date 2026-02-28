@@ -109,15 +109,19 @@ func Load(path string) (*Config, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		isNotFound := os.IsNotExist(err)
+
+		if isNotFound {
 			return cfg, nil
 		}
+
 		return nil, err
 	}
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(cfg); err != nil {
+	err = decoder.Decode(cfg)
+	if err != nil {
 		return nil, err
 	}
 

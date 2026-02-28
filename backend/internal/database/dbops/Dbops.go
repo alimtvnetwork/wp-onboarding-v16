@@ -21,11 +21,14 @@ func ExecInsert(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 	rows, _ := result.RowsAffected()
 	id, _ := result.LastInsertId()
 
+	isCreated := rows > 0
+	isExists := rows == 0
+
 	res := &Result{
 		AffectedRows: rows,
 		LastInsertID: id,
-		Created:      rows > 0,
-		Exists:       rows == 0,
+		Created:      isCreated,
+		Exists:       isExists,
 	}
 
 	logSuccess(ctx, res)
@@ -92,8 +95,12 @@ func FindOrCreate(
 ) (*FindOrCreateResult, error) {
 	var id int64
 	err := db.QueryRow(selectQuery, selectArgs...).Scan(&id)
-	if err == nil {
-		if ctx.Logger != nil {
+	isFound := err == nil
+
+	if isFound {
+		hasLogger := ctx.Logger != nil
+
+		if hasLogger {
 			fields := mergeFields(ctx.Fields, OperationFields{
 				Table:     ctx.Table,
 				Operation: "FIND",
@@ -102,10 +109,13 @@ func FindOrCreate(
 			})
 			ctx.Logger.Debug("Record found (exists)", fields.toKeyvals()...)
 		}
+
 		return &FindOrCreateResult{ID: id, Created: false}, nil
 	}
 
-	if err != sql.ErrNoRows {
+	isUnexpectedError := err != sql.ErrNoRows
+
+	if isUnexpectedError {
 		logError(ctx, err)
 		return nil, err
 	}
@@ -120,13 +130,18 @@ func FindOrCreate(
 	rows, _ := result.RowsAffected()
 	id, _ = result.LastInsertId()
 
-	if rows == 0 {
+	isRaceCondition := rows == 0
+
+	if isRaceCondition {
 		err := db.QueryRow(selectQuery, selectArgs...).Scan(&id)
 		if err != nil {
 			logError(ctx, err)
 			return nil, err
 		}
-		if ctx.Logger != nil {
+
+		hasLogger := ctx.Logger != nil
+
+		if hasLogger {
 			fields := mergeFields(ctx.Fields, OperationFields{
 				Table:     ctx.Table,
 				Operation: "FIND_AFTER_RACE",
@@ -135,6 +150,7 @@ func FindOrCreate(
 			})
 			ctx.Logger.Debug("Record found after race condition", fields.toKeyvals()...)
 		}
+
 		return &FindOrCreateResult{ID: id, Created: false}, nil
 	}
 
@@ -164,7 +180,9 @@ func CreateMapping(
 			strings.Contains(errStr, "duplicate")
 
 		if isConstraintViolation {
-			if ctx.Logger != nil {
+			hasLogger := ctx.Logger != nil
+
+			if hasLogger {
 				fields := mergeFields(ctx.Fields, OperationFields{
 					Table:     ctx.Table,
 					Operation: "INSERT_MAPPING",
@@ -173,6 +191,7 @@ func CreateMapping(
 				})
 				ctx.Logger.Debug("Mapping exists", fields.toKeyvals()...)
 			}
+
 			return false, nil
 		}
 
@@ -181,10 +200,12 @@ func CreateMapping(
 	}
 
 	rows, _ := result.RowsAffected()
-	created := rows > 0
+	isCreated := rows > 0
 
-	if created {
-		if ctx.Logger != nil {
+	if isCreated {
+		hasLogger := ctx.Logger != nil
+
+		if hasLogger {
 			id, _ := result.LastInsertId()
 			fields := mergeFields(ctx.Fields, OperationFields{
 				Table:        ctx.Table,
@@ -196,7 +217,9 @@ func CreateMapping(
 			ctx.Logger.Info("Mapping CREATED", fields.toKeyvals()...)
 		}
 	} else {
-		if ctx.Logger != nil {
+		hasLogger := ctx.Logger != nil
+
+		if hasLogger {
 			fields := mergeFields(ctx.Fields, OperationFields{
 				Table:     ctx.Table,
 				Operation: "INSERT_MAPPING",
@@ -207,5 +230,5 @@ func CreateMapping(
 		}
 	}
 
-	return created, nil
+	return isCreated, nil
 }
