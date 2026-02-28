@@ -119,6 +119,7 @@ const (
 	ErrValidation     ErrorCode = "E9002" // Validation failed
 	ErrInternal       ErrorCode = "E9003" // Internal server error
 	ErrNotImplemented ErrorCode = "E9004" // Feature not implemented
+	ErrTypeCast       ErrorCode = "E9005" // Type assertion/cast failed
 )
 
 // E2E Test errors (E10xxx)
