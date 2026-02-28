@@ -86,7 +86,9 @@ class SnapshotCleaner {
             ResponseKeyType::DryRun->value   => $isDryRun,
         ));
 
-        $isLiveRunWithDeletions = ($isDryRun === false) && $totalDeleted > 0;
+        $isLiveRun = !$isDryRun;
+        $hasDeletions = $totalDeleted > 0;
+        $isLiveRunWithDeletions = $isLiveRun && $hasDeletions;
 
         if ($isLiveRunWithDeletions) {
             $this->logCleanupAudit($results);
