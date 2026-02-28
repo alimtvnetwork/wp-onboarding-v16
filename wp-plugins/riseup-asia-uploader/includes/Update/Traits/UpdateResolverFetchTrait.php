@@ -13,7 +13,9 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Enums\ContentTypeValueType;
 use RiseupAsia\Enums\HttpConfigType;
+use RiseupAsia\Enums\HttpHeaderType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -118,11 +120,10 @@ trait UpdateResolverFetchTrait {
 
     private function parseUpdateResponseBody(array|WP_Error $response, string $updateUrl): array {
         $body = wp_remote_retrieve_body($response);
-        $contentType = wp_remote_retrieve_header($response, 'content-type');
+        $contentType = wp_remote_retrieve_header($response, HttpHeaderType::ContentType->value);
+        $isJsonResponse = (strpos($contentType, ContentTypeValueType::Json->value) !== false);
 
-        $isNonJsonResponse = (strpos($contentType, 'application/json') === false);
-
-        if ($isNonJsonResponse) {
+        if (!$isJsonResponse) {
             return array('version' => '', 'package' => $updateUrl);
         }
 

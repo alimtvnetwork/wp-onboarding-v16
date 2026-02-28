@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ContentTypeValueType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -132,7 +133,7 @@ class FatalErrorHandler
         $isHeadersUnsent = (headers_sent() === false);
 
         if ($isHeadersUnsent) {
-            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Type: ' . ContentTypeValueType::JsonUtf8->value);
             http_response_code(HttpStatusType::ServerError->value);
         }
 
