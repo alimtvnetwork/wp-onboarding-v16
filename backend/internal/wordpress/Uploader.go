@@ -199,7 +199,7 @@ type UploadInput struct {
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
-func (c *Client) UploadPluginViaUploader(input UploadInput) (*UploaderUploadResult, error) {
+func (c *Client) UploadPluginViaUploader(input UploadInput) (*UploaderUploadResult, *apperror.AppError) {
 	uc, err := c.prepareUploadContext(input.ZipPath, input.Slug)
 	if err != nil {
 		return nil, err
@@ -208,9 +208,9 @@ func (c *Client) UploadPluginViaUploader(input UploadInput) (*UploaderUploadResu
 
 	c.reportUploadInitProgress(uc)
 
-	mp, err := buildMultipartBody(uc, input.IsActivate, input.UploadSource)
-	if err != nil {
-		return nil, err
+	mp, mpErr := buildMultipartBody(uc, input.IsActivate, input.UploadSource)
+	if mpErr != nil {
+		return nil, mpErr
 	}
 
 	c.reportMultipartBodyReady(uc, input, mp)
@@ -253,7 +253,7 @@ type uploadAPIErrorInput struct {
 
 // buildUploadAPIError constructs a detailed APIError for upload failures.
 func buildUploadAPIError(input uploadAPIErrorInput) *APIError {
-	stackTrace := captureStackTraceN(3, input.StackTraceDepth)
+	stackTrace := captureStackTraceN(4, input.StackTraceDepth)
 	diagnosticBody := buildUploadDiagnosticBody(input.RespBody)
 
 	fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n",

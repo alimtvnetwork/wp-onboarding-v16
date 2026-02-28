@@ -118,7 +118,12 @@ func (a *SiteServiceAdapter) TestConnectionWithCredentials(ctx context.Context, 
 }
 
 func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, error) {
-	return a.Service.BootstrapUploader(ctx, id, uploaderPath)
+	result, err := a.Service.BootstrapUploader(ctx, id, uploaderPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (a *SiteServiceAdapter) GetRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, error) {

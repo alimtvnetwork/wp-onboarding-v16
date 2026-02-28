@@ -33,7 +33,7 @@ type uploadContext struct {
 }
 
 // prepareUploadContext resolves paths, validates slug, opens the ZIP, and computes metadata.
-func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, error) {
+func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, *apperror.AppError) {
 	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "resolve zip path").WithPath(zipPath)
@@ -41,21 +41,22 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, err
 
 	slug = normalizeUploadSlug(absZipPath, slug)
 
-	zfh, err := openAndStatZip(absZipPath)
-	if err != nil {
-		return nil, err
+	zfh, openErr := openAndStatZip(absZipPath)
+	if openErr != nil {
+		return nil, openErr
 	}
 
-	return c.buildUploadContext(absZipPath, slug, zfh)
+	return c.buildUploadContext(absZipPath, slug, zfh), nil
 }
 
 // buildUploadContext constructs the uploadContext from resolved inputs.
-func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle) (*uploadContext, error) {
+// This function never errors — it is pure struct construction.
+func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle) *uploadContext {
 	namespace := c.resolveNamespace()
 	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, ep.Upload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	uc := &uploadContext{
+	return &uploadContext{
 		AbsZipPath:     absZipPath,
 		Slug:           slug,
 		ZipSize:        zfh.Size,
@@ -64,15 +65,16 @@ func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle)
 		UploadURL:      uploadURL,
 		ZipFile:        zfh.File,
 	}
-
-	return uc, nil
 }
 
 // normalizeUploadSlug ensures a valid slug for the upload, stripping .zip extensions.
 func normalizeUploadSlug(absZipPath, slug string) string {
-	if slug == "" {
+	isSlugEmpty := slug == ""
+
+	if isSlugEmpty {
 		slug = strings.TrimSuffix(filepath.Base(absZipPath), ".zip")
 	}
+
 	return strings.TrimSuffix(slug, ".zip")
 }
 
@@ -83,7 +85,7 @@ type zipFileHandle struct {
 }
 
 // openAndStatZip opens a ZIP file and returns the handle and size.
-func openAndStatZip(absZipPath string) (*zipFileHandle, error) {
+func openAndStatZip(absZipPath string) (*zipFileHandle, *apperror.AppError) {
 	zipFile, err := os.Open(absZipPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip file").WithPath(pathutil.ForDisplay(absZipPath))
@@ -92,6 +94,7 @@ func openAndStatZip(absZipPath string) (*zipFileHandle, error) {
 	fileInfo, err := zipFile.Stat()
 	if err != nil {
 		zipFile.Close()
+
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stat zip file").WithPath(pathutil.ForDisplay(absZipPath))
 	}
 
@@ -105,7 +108,7 @@ type multipartResult struct {
 }
 
 // buildMultipartBody creates the multipart/form-data request body for plugin upload.
-func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.Variant) (*multipartResult, error) {
+func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.Variant) (*multipartResult, *apperror.AppError) {
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
 
@@ -146,7 +149,7 @@ func writeUploadFields(input uploadFieldsInput) {
 }
 
 // executeUploadHTTP sends the multipart upload request and parses the response.
-func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, contentType string) (*UploaderUploadResult, error) {
+func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, contentType string) (*UploaderUploadResult, *apperror.AppError) {
 	req, err := http.NewRequest("POST", uc.UploadURL, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "create upload HTTP request").WithURL(uc.UploadURL)
@@ -164,17 +167,19 @@ func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, conten
 }
 
 // parseUploadResponse reads and processes the upload HTTP response.
-func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) (*UploaderUploadResult, error) {
+func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) (*UploaderUploadResult, *apperror.AppError) {
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
 	c.reportUploadResponseProgress(resp.StatusCode, respBody, uc.UploadURL)
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, c.buildUploadFailureError(uc, resp.StatusCode, respBytes, respBody)
+	isErrorResponse := resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated
+
+	if isErrorResponse {
+		return nil, c.buildUploadFailureAppError(uc, resp.StatusCode, respBytes, respBody)
 	}
 
-	return decodeUploadResult(respBytes)
+	return decodeUploadResult(respBytes), nil
 }
 
 // reportUploadResponseProgress logs the upload response progress.
@@ -190,8 +195,8 @@ func (c *Client) reportUploadResponseProgress(statusCode int, respBody, uploadUR
 	})
 }
 
-// buildUploadFailureError constructs the error for a failed upload response.
-func (c *Client) buildUploadFailureError(uc *uploadContext, statusCode int, respBytes []byte, respBody string) error {
+// buildUploadFailureAppError constructs an *apperror.AppError wrapping the structured APIError.
+func (c *Client) buildUploadFailureAppError(uc *uploadContext, statusCode int, respBytes []byte, respBody string) *apperror.AppError {
 	errInput := uploadAPIErrorInput{
 		AbsZipPath:      uc.AbsZipPath,
 		UploadURL:       uc.UploadURL,
@@ -202,16 +207,21 @@ func (c *Client) buildUploadFailureError(uc *uploadContext, statusCode int, resp
 		StackTraceDepth: c.stackTraceDepth,
 	}
 
-	return buildUploadAPIError(errInput)
+	apiErr := buildUploadAPIError(errInput)
+
+	return apperror.WrapWithSkip(apiErr, apperror.ErrWPPluginUpload, "upload plugin failed", 1).
+		WithURL(uc.UploadURL).
+		WithStatusCode(statusCode)
 }
 
 // decodeUploadResult unmarshals the upload response or returns a default success.
-func decodeUploadResult(respBytes []byte) (*UploaderUploadResult, error) {
+// This function never errors — on unmarshal failure it returns a default success result.
+func decodeUploadResult(respBytes []byte) *UploaderUploadResult {
 	var result UploaderUploadResult
 	if err := json.Unmarshal(respBytes, &result); err != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}
 
-	return &result, nil
+	return &result
 }

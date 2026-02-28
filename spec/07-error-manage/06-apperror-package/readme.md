@@ -922,6 +922,110 @@ return $execResult->affectedRows() > 0;
 
 ---
 
+## 12. Error Boundary Rule — No Raw `error` Returns
+
+### 12.1 Principle
+
+All internal functions MUST return `*apperror.AppError` (or `apperror.Result[T]`) instead of Go's raw `error` interface. The raw `error` type may only appear at two boundaries:
+
+1. **Stdlib/framework callback signatures** — functions passed to `filepath.Walk`, `sort.Slice`, `http.HandlerFunc`, etc. that are required to return `error` by the stdlib contract
+2. **Service Adapter unwrap layer** — adapter methods that convert `Result[T]` → `(T, error)` for handler consumption (see §10)
+
+### 12.2 Rule Summary
+
+| Return Type | When to Use |
+|------------|-------------|
+| `*apperror.AppError` | Internal functions that can fail (replaces bare `error`) |
+| `apperror.Result[T]` | Service methods returning a value + possible error |
+| `apperror.ResultSlice[T]` | Service methods returning a collection + possible error |
+| `error` | **Only** at stdlib callback boundaries and adapter unwrap layer |
+
+### 12.3 Stdlib Boundary Wrappers
+
+When calling stdlib/framework functions that return raw `error` (e.g., `os.Open`, `json.Marshal`, `http.NewRequest`), the conversion to `*apperror.AppError` MUST happen at the **immediate call site** using `apperror.Wrap()`. The resulting `*apperror.AppError` is then returned and propagated through the entire internal call chain — never as `error`.
+
+```go
+// ❌ FORBIDDEN: returning raw error from internal function
+func openAndStatZip(path string) (*zipFileHandle, error) {
+    file, err := os.Open(path)
+    if err != nil {
+        return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip file")
+        // ↑ Creates *apperror.AppError but returns it as `error` — type info lost
+    }
+    ...
+}
+
+// ✅ REQUIRED: return *apperror.AppError explicitly
+func openAndStatZip(path string) (*zipFileHandle, *apperror.AppError) {
+    file, err := os.Open(path)
+    if err != nil {
+        return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip file")
+        // ↑ Returns *apperror.AppError — type preserved through call chain
+    }
+    ...
+}
+```
+
+### 12.4 Dedicated Boundary Wrapper Functions
+
+For stdlib calls used in multiple places, create dedicated wrapper functions that:
+1. Accept the same parameters as the stdlib function
+2. Return `*apperror.AppError` instead of `error`
+3. Use `apperror.WrapWithSkip(err, code, msg, 1)` to skip the wrapper frame in the stack trace
+
+```go
+// ✅ Boundary wrapper — converts stdlib error at the edge
+func openFile(path string) (*os.File, *apperror.AppError) {
+    file, err := os.Open(path)
+    if err != nil {
+        return nil, apperror.WrapWithSkip(err, apperror.ErrFSRead, "open file", 1).
+            WithPath(path)
+    }
+    return file, nil
+}
+```
+
+**Stack trace skip rule:** The wrapper adds `skip=1` so the stack trace points to the caller of `openFile()`, not to `openFile()` itself (which is just a mechanical conversion layer with no business logic).
+
+### 12.5 Functions That Never Error
+
+If a function currently returns `(T, error)` but the error path is unreachable (e.g., the function always returns `nil` error), **remove the error return entirely**:
+
+```go
+// ❌ WRONG: error return is never used
+func buildContext(slug string) (*context, error) {
+    ctx := &context{Slug: slug}
+    return ctx, nil  // always nil — misleading signature
+}
+
+// ✅ CORRECT: remove unused error return
+func buildContext(slug string) *context {
+    return &context{Slug: slug}
+}
+```
+
+### 12.6 Interface Boundary Exception
+
+When a function implements a Go interface that requires `error` (e.g., `io.Reader`, `http.Handler`, `error` itself), the function signature must match the interface. In these cases, return `*apperror.AppError` values typed as `error` — the caller at the boundary should use `apperror.Extract(err)` to recover the structured type.
+
+```go
+// Interface requires `error` return — acceptable
+func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    // interface-mandated signature
+}
+
+// Adapter unwrap — acceptable (§10)
+func (a *Adapter) GetById(ctx context.Context, id int64) (*Model, error) {
+    result := a.Service.GetById(ctx, id)
+    if result.HasError() {
+        return nil, result.AppError()  // *apperror.AppError → error (interface boundary)
+    }
+    return result.Value(), nil
+}
+```
+
+---
+
 ## Cross-References
 
 - [Golang Coding Standards](../../03-golang-standards/readme.md) — File size, function size, type safety, file naming
@@ -930,4 +1034,4 @@ return $execResult->affectedRows() > 0;
 
 ---
 
-*apperror package specification v1.4.0 — 2026-02-23*
+*apperror package specification v1.5.0 — 2026-02-28*

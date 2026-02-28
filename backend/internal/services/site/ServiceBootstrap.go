@@ -29,7 +29,7 @@ type bootstrapContext struct {
 }
 
 // BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
-func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*BootstrapResult, error) {
+func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*BootstrapResult, *apperror.AppError) {
 	bctx, err := s.initBootstrapContext(ctx, id, uploaderPath)
 	if err != nil {
 		return nil, err
@@ -39,23 +39,23 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 }
 
 // bootstrapUploadAndFinalize creates the ZIP, uploads, and returns the result.
-func (s *Service) bootstrapUploadAndFinalize(id int64, bctx *bootstrapContext, uploaderPath string) (*BootstrapResult, error) {
+func (s *Service) bootstrapUploadAndFinalize(id int64, bctx *bootstrapContext, uploaderPath string) (*BootstrapResult, *apperror.AppError) {
 	zipPath, err := s.prepareBootstrapZip(id, uploaderPath)
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(zipPath)
 
-	uploadResult, err := s.executeBootstrapUpload(id, bctx.Client, zipPath)
-	if err != nil {
-		return nil, err
+	uploadResult, uploadErr := s.executeBootstrapUpload(id, bctx.Client, zipPath)
+	if uploadErr != nil {
+		return nil, uploadErr
 	}
 
-	return s.finalizeBootstrap(id, bctx.Site, uploadResult)
+	return s.finalizeBootstrap(id, bctx.Site, uploadResult), nil
 }
 
 // initBootstrapContext loads the site, decrypts credentials, and creates a WordPress client.
-func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPath string) (*bootstrapContext, error) {
+func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPath string) (*bootstrapContext, *apperror.AppError) {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -68,7 +68,7 @@ func (s *Service) initBootstrapContext(ctx context.Context, id int64, uploaderPa
 }
 
 // buildBootstrapClient decrypts credentials and creates a WordPress client.
-func (s *Service) buildBootstrapClient(id int64, site models.Site) (*bootstrapContext, error) {
+func (s *Service) buildBootstrapClient(id int64, site models.Site) (*bootstrapContext, *apperror.AppError) {
 	decrypted, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
@@ -115,7 +115,7 @@ func (s *Service) buildProgressCallback(id int64, siteName string) func(string, 
 }
 
 // prepareBootstrapZip creates the uploader ZIP archive.
-func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, error) {
+func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, *apperror.AppError) {
 	isUploaderPathEmpty := uploaderPath == ""
 
 	if isUploaderPathEmpty {
@@ -165,7 +165,7 @@ func (s *Service) logBootstrapInfo(id int64, message string) {
 }
 
 // executeBootstrapUpload uploads the uploader plugin to the remote site.
-func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
+func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	availability, _ := client.CheckRiseupAsiaAvailable()
 	isUploaderReady :=
 		availability.IsAvailable() &&
@@ -194,7 +194,7 @@ type bootstrapUploaderInput struct {
 }
 
 // bootstrapViaUploader updates via an existing Riseup Asia Uploader.
-func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress.UploaderUploadResult, error) {
+func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	s.logBootstrapInfo(input.SiteID, fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", input.Namespace))
 
 	uploadInput := wordpress.UploadInput{
@@ -208,7 +208,7 @@ func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress
 }
 
 // executeUploaderUpload performs the upload and wraps errors.
-func (s *Service) executeUploaderUpload(siteID int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, error) {
+func (s *Service) executeUploaderUpload(siteID int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	result, err := client.UploadPluginViaUploader(input)
 	if err != nil {
 		s.logBootstrapError(siteID, fmt.Sprintf("Upload failed: %v", err))
@@ -220,7 +220,7 @@ func (s *Service) executeUploaderUpload(siteID int64, client *wordpress.Client, 
 }
 
 // bootstrapViaOnboard installs via the Onboard plugin for first-time setup.
-func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
+func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	s.logBootstrapInfo(id, "First-time installation - checking for Onboard plugin")
 
 	isOnboardUnavailable := !s.checkOnboardAvailable(client)
@@ -235,7 +235,7 @@ func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPat
 }
 
 // uploadViaOnboard performs the actual upload via the Onboard plugin.
-func (s *Service) uploadViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
+func (s *Service) uploadViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	s.logBootstrapInfo(id, "Using Onboard plugin for installation")
 
 	result, err := client.UploadPluginViaOnboard(zipPath, true)
@@ -249,10 +249,10 @@ func (s *Service) uploadViaOnboard(id int64, client *wordpress.Client, zipPath s
 }
 
 // finalizeBootstrap logs success and returns the result.
-func (s *Service) finalizeBootstrap(id int64, site models.Site, uploadResult *wordpress.UploaderUploadResult) (*BootstrapResult, error) {
+func (s *Service) finalizeBootstrap(id int64, site models.Site, uploadResult *wordpress.UploaderUploadResult) *BootstrapResult {
 	s.logBootstrapDeploySuccess(id, site, uploadResult.Activated)
 
-	return buildBootstrapResult(id, site, uploadResult), nil
+	return buildBootstrapResult(id, site, uploadResult)
 }
 
 // logBootstrapDeploySuccess broadcasts and logs the successful deployment.

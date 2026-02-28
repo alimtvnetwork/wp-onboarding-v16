@@ -1,7 +1,7 @@
 # Golang Coding Standards
 
-> **Version:** 3.3.0
-> **Updated:** 2026-02-23
+> **Version:** 3.4.0
+> **Updated:** 2026-02-28
 > **Applies to:** All Go backend code
 
 ---
@@ -598,6 +598,7 @@ func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { 
 | Global mutable state | Race conditions | Dependency injection |
 | `map[string]interface{}` in APIs | Untyped | Defined structs |
 | Raw `(T, error)` from services | No semantic methods | `apperror.Result[T]` |
+| Raw `error` from internal funcs | Loses type safety | `*apperror.AppError` (see §12 in apperror spec) |
 | `!fn()` raw negation | Easy to miss `!` | Positive guard function |
 | Nested `if` (any depth) | **Zero tolerance** | Flatten with early returns |
 | Functions > 15 lines | Hard to read | Extract small helpers |
@@ -698,6 +699,28 @@ func (s *PluginService) GetById(ctx context.Context, id int64) (*Plugin, error) 
 
 // ✅ CORRECT — typed result wrapper
 func (s *PluginService) GetById(ctx context.Context, id int64) apperror.Result[Plugin] { ... }
+```
+
+### Mistake 6: Raw `error` Return from Internal Functions
+
+```go
+// ❌ WRONG — returns *apperror.AppError as error interface, losing type info
+func openAndStatZip(path string) (*zipFileHandle, error) {
+    file, err := os.Open(path)
+    if err != nil {
+        return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip")
+    }
+    ...
+}
+
+// ✅ CORRECT — explicit *apperror.AppError return preserves type
+func openAndStatZip(path string) (*zipFileHandle, *apperror.AppError) {
+    file, err := os.Open(path)
+    if err != nil {
+        return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip")
+    }
+    ...
+}
 ```
 
 ### Mistake 6: `interface{}` / `any` in Business Logic
