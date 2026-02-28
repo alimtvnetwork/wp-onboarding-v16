@@ -32,6 +32,15 @@ type OnboardUploadResult struct {
 	Overwritten  bool   `json:"overwritten,omitempty"`      // external key
 }
 
+// IsDefined returns true if the result is not nil (nil-safe).
+func (r *OnboardUploadResult) IsDefined() bool { return r != nil }
+
+// IsSuccessful returns true if the upload succeeded (nil-safe).
+func (r *OnboardUploadResult) IsSuccessful() bool { return r != nil && r.Success }
+
+// IsFailed returns true if the result is nil or the upload failed (nil-safe).
+func (r *OnboardUploadResult) IsFailed() bool { return r == nil || !r.Success }
+
 // GetPluginFiles retrieves the list of files for a remote plugin.
 // Delegates to GetPluginFilesViaRiseup (Riseup Asia Uploader).
 func (c *Client) GetPluginFiles(ctx context.Context, slug string) apperror.Result[[]RemoteFile] {
