@@ -11,14 +11,14 @@ import (
 )
 
 // SaveRequest persists the inbound request as request.json in the session folder
-func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
+func (s *Service) SaveRequest(sessionId string, req *SessionRequest) {
 	isRequestMissing := req == nil
 
 	if isRequestMissing {
 		return
 	}
 	s.writeSessionArtifact(sessionArtifactInput{
-		SessionId: sessionID,
+		SessionId: sessionId,
 		Filename:  "request.json",
 		Data:      req,
 		PathFn:    s.getRequestPath,
@@ -26,14 +26,14 @@ func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
 }
 
 // SaveResponse persists the delegated response as response.json in the session folder
-func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
+func (s *Service) SaveResponse(sessionId string, resp *SessionResponse) {
 	isResponseMissing := resp == nil
 
 	if isResponseMissing {
 		return
 	}
 	s.writeSessionArtifact(sessionArtifactInput{
-		SessionId: sessionID,
+		SessionId: sessionId,
 		Filename:  "response.json",
 		Data:      resp,
 		PathFn:    s.getResponsePath,
@@ -74,16 +74,16 @@ func (s *Service) writeSessionArtifact(input sessionArtifactInput) {
 }
 
 // logPersistError logs a persistence error if the logger is available.
-func (s *Service) logPersistError(message, sessionID string, err error) {
+func (s *Service) logPersistError(message, sessionId string, err error) {
 	if s.log != nil {
-		s.log.Error(message, "sessionId", sessionID, "error", err)
+		s.log.Error(message, "sessionId", sessionId, "error", err)
 	}
 }
 
 // logPersistAppError logs a persistence AppError if the logger is available.
-func (s *Service) logPersistAppError(message, sessionID string, appErr *apperror.AppError) {
+func (s *Service) logPersistAppError(message, sessionId string, appErr *apperror.AppError) {
 	if s.log != nil {
-		s.log.Error(message, "sessionId", sessionID, "error", appErr)
+		s.log.Error(message, "sessionId", sessionId, "error", appErr)
 	}
 }
 
@@ -121,8 +121,8 @@ func (s *Service) SaveError(input SaveErrorInput) {
 }
 
 // SetMetadata sets a key-value pair on a session's metadata JSON object.
-func (s *Service) SetMetadata(sessionID, key string, value json.RawMessage) {
-	session := s.getActiveSession(sessionID)
+func (s *Service) SetMetadata(sessionId, key string, value json.RawMessage) {
+	session := s.getActiveSession(sessionId)
 	isSessionMissing := session == nil
 
 	if isSessionMissing {

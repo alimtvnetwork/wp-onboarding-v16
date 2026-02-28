@@ -291,13 +291,13 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 		relPath, _ := filepath.Rel(m.dataDir, path)
 		parts := strings.Split(relPath, string(os.PathSeparator))
 
-		var dbType, entityID string
+		var dbType, entityId string
 		if len(parts) >= 2 {
 			dbType = strings.TrimSuffix(parts[1], ".db")
 		}
 		if len(parts) >= 3 {
 			dbType = parts[1]
-			entityID = strings.TrimSuffix(parts[2], ".db")
+			entityId = strings.TrimSuffix(parts[2], ".db")
 		}
 
 		// Check if already registered
@@ -313,7 +313,7 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 		_, err = m.rootDB.Exec(`
 			INSERT INTO Databases (Id, ProjectId, Type, EntityId, Path, SizeBytes, Status, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`, generateID(), project.Id, dbType, entityID, relPath, info.Size())
+		`, generateId(), project.Id, dbType, entityId, relPath, info.Size())
 		if err != nil {
 			return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to register imported database").
 				WithDetails(fmt.Sprintf("path=%s, type=%s", relPath, dbType))

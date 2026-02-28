@@ -86,7 +86,7 @@ func (s *Service) buildSingleSummary(d dirInfo) *SessionSummary {
 	}
 
 	return &SessionSummary{
-		ID:        d.name,
+		Id:        d.name,
 		Status:    stagestatus.Completed.String(),
 		StartedAt: d.modTime,
 	}
@@ -108,10 +108,10 @@ func summaryFromSession(session *Session) *SessionSummary {
 }
 
 // DeleteSession removes a session's directory (or legacy file)
-func (s *Service) DeleteSession(sessionID string) *apperror.AppError {
-	s.closeAndRemoveSession(sessionID)
+func (s *Service) DeleteSession(sessionId string) *apperror.AppError {
+	s.closeAndRemoveSession(sessionId)
 
-	dirResult := s.getSessionDir(sessionID)
+	dirResult := s.getSessionDir(sessionId)
 
 	if dirResult.HasError() {
 
@@ -125,13 +125,13 @@ func (s *Service) DeleteSession(sessionID string) *apperror.AppError {
 		return s.removeDirSession(sessionDir)
 	}
 
-	return s.removeLegacySession(sessionID)
+	return s.removeLegacySession(sessionId)
 }
 
 // closeAndRemoveSession closes the log file and removes from in-memory map.
-func (s *Service) closeAndRemoveSession(sessionID string) {
+func (s *Service) closeAndRemoveSession(sessionId string) {
 	s.mu.Lock()
-	session, isFound := s.sessions[sessionID]
+	session, isFound := s.sessions[sessionId]
 	if isFound {
 		session.mu.Lock()
 		if session.logFile != nil {
@@ -139,7 +139,7 @@ func (s *Service) closeAndRemoveSession(sessionID string) {
 			session.logFile = nil
 		}
 		session.mu.Unlock()
-		delete(s.sessions, sessionID)
+		delete(s.sessions, sessionId)
 	}
 	s.mu.Unlock()
 }
@@ -150,8 +150,8 @@ func (s *Service) removeDirSession(sessionDir string) *apperror.AppError {
 }
 
 // removeLegacySession removes a legacy flat-file session.
-func (s *Service) removeLegacySession(sessionID string) *apperror.AppError {
-	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
+func (s *Service) removeLegacySession(sessionId string) *apperror.AppError {
+	legacyPath, err := pathutil.Join(s.sessionsDir, sessionId+".log")
 	if err != nil {
 
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve legacy session path")

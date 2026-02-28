@@ -13,20 +13,20 @@ import (
 )
 
 // GetOrCreateDB returns a database, creating it if it doesn't exist
-func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB, error) {
+func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityId string) (*sql.DB, error) {
 	startTime := time.Now()
 
 	m.log.Debug("GetOrCreateDB called",
 		"project", projectSlug,
 		"type", dbType,
-		"entity", entityID,
+		"entity", entityId,
 	)
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	// Check if already open
-	key := fmt.Sprintf("%s/%s/%s", projectSlug, dbType, entityID)
+	key := fmt.Sprintf("%s/%s/%s", projectSlug, dbType, entityId)
 	db, isCached := m.openDBs[key]
 
 	if isCached {
@@ -43,11 +43,11 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 	}
 
 	// Get or create database record
-	dbPath := m.buildDBPath(projectSlug, dbType, entityID)
+	dbPath := m.buildDBPath(projectSlug, dbType, entityId)
 	dbInput := GetOrCreateDBInput{
 		ProjectId: project.Id,
 		DBType:    dbType,
-		EntityId:  entityID,
+		EntityId:  entityId,
 		Path:      dbPath,
 	}
 	dbRecord, err := m.getOrCreateDatabase(dbInput)
@@ -65,7 +65,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 	m.log.Info("Database ready",
 		"project", projectSlug,
 		"type", dbType,
-		"entity", entityID,
+		"entity", entityId,
 		"durationMs", time.Since(startTime).Milliseconds(),
 	)
 
@@ -135,7 +135,7 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 // insertProject creates a new project record.
 func (m *DBManager) insertProject(slug string) (*Project, error) {
 	project := Project{
-		Id:          generateID(),
+		Id:          generateId(),
 		Slug:        slug,
 		DisplayName: slug,
 		Path:        slug + "/",
@@ -196,7 +196,7 @@ func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, er
 // insertDatabase creates a new database record.
 func (m *DBManager) insertDatabase(input GetOrCreateDBInput) (*Database, error) {
 	db := Database{
-		Id:        generateID(),
+		Id:        generateId(),
 		ProjectId: input.ProjectId,
 		Type:      input.DBType,
 		EntityId:  input.EntityId,
@@ -220,13 +220,13 @@ func (m *DBManager) insertDatabase(input GetOrCreateDBInput) (*Database, error) 
 }
 
 // buildDBPath constructs the path for a database file
-func (m *DBManager) buildDBPath(projectSlug, dbType, entityID string) string {
-	isGlobalDB := entityID == ""
+func (m *DBManager) buildDBPath(projectSlug, dbType, entityId string) string {
+	isGlobalDB := entityId == ""
 
 	if isGlobalDB {
 		return filepath.Join(projectSlug, dbType+".db")
 	}
-	return filepath.Join(projectSlug, dbType, GenerateSlug(entityID)+".db")
+	return filepath.Join(projectSlug, dbType, GenerateSlug(entityId)+".db")
 }
 
 // updateLastAccessed updates the last accessed timestamp

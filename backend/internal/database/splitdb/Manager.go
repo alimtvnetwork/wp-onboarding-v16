@@ -156,7 +156,7 @@ func GenerateSlug(name string) string {
 	return slug
 }
 
-// generateID generates a unique ID
-func generateID() string {
+// generateId generates a unique ID
+func generateId() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
 }

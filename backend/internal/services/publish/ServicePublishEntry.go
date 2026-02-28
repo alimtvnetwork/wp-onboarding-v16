@@ -84,12 +84,12 @@ func (p *publishContext) stageComplete(input stageCompleteInput) StageCompleteIn
 // ─── Publish Entry Points ────────────────────────────────────────────────────
 
 // Publish publishes plugin changes to a WordPress site
-func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts PublishOptions) apperror.Result[PublishResult] {
+func (s *Service) Publish(ctx context.Context, pluginId, siteId int64, opts PublishOptions) apperror.Result[PublishResult] {
 	result := s.initPublishResult()
 
 	initInput := initPublishInput{
-		PluginId: pluginID,
-		SiteId:   siteID,
+		PluginId: pluginId,
+		SiteId:   siteId,
 		Result:   result,
 	}
 
@@ -99,24 +99,24 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		return apperror.Ok(*result)
 	}
 
-	return s.startAndExecutePublish(ctx, pluginID, siteID, opts, result, initResult)
+	return s.startAndExecutePublish(ctx, pluginId, siteId, opts, result, initResult)
 }
 
 // startAndExecutePublish broadcasts start, builds context, and runs the pipeline.
 func (s *Service) startAndExecutePublish(
 	ctx context.Context,
-	pluginID int64,
-	siteID int64,
+	pluginId int64,
+	siteId int64,
 	opts PublishOptions,
 	result *PublishResult,
 	initResult *publishInitResult,
 ) apperror.Result[PublishResult] {
 	result.SessionId = initResult.SessionId
-	s.broadcastPublishStart(pluginID, siteID, initResult)
+	s.broadcastPublishStart(pluginId, siteId, initResult)
 
 	pctx := s.buildPublishContext(buildPublishContextInput{
-		PluginId:   pluginID,
-		SiteId:     siteID,
+		PluginId:   pluginId,
+		SiteId:     siteId,
 		InitResult: initResult,
 		Opts:       opts,
 		Result:     result,
@@ -135,23 +135,23 @@ func (s *Service) initPublishResult() *PublishResult {
 
 // broadcastPublishStart sends the initial progress and session log.
 func (s *Service) broadcastPublishStart(
-	pluginID int64,
-	siteID int64,
+	pluginId int64,
+	siteId int64,
 	initResult *publishInitResult,
 ) {
-	s.broadcastPublishStartProgress(pluginID, siteID, initResult)
+	s.broadcastPublishStartProgress(pluginId, siteId, initResult)
 	s.logPublishStartSession(initResult)
 }
 
 // broadcastPublishStartProgress sends the started progress event.
 func (s *Service) broadcastPublishStartProgress(
-	pluginID int64,
-	siteID int64,
+	pluginId int64,
+	siteId int64,
 	initResult *publishInitResult,
 ) {
 	startProgress := ProgressInput{
-		PluginId:  pluginID,
-		SiteId:    siteID,
+		PluginId:  pluginId,
+		SiteId:    siteId,
 		SessionId: initResult.SessionId,
 		Step:      publishstep.Started,
 		Progress:  0,
@@ -207,12 +207,12 @@ func (s *Service) executeAndFinalize(ctx context.Context, pctx *publishContext, 
 }
 
 // PublishFiles publishes specific files to a WordPress site
-func (s *Service) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) apperror.Result[PublishResult] {
+func (s *Service) PublishFiles(ctx context.Context, pluginId, siteId int64, files []string) apperror.Result[PublishResult] {
 	opts := PublishOptions{
 		Mode:           publishtype.Selected,
 		Files:          files,
 		IsCreateBackup: false,
 	}
 
-	return s.Publish(ctx, pluginID, siteID, opts)
+	return s.Publish(ctx, pluginId, siteId, opts)
 }

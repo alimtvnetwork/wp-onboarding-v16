@@ -175,7 +175,7 @@ func Deleted() Response {
 // Generic: callers get compile-time type checking on the data parameter.
 // requestPath is the base URL path (e.g., "/api/v1/plugins") used to generate navigation URLs.
 func List[T any](data T, pg Pagination, requestPath string) Response {
-	nav := pg.NavigationURLs(requestPath)
+	nav := pg.NavigationUrls(requestPath)
 	resp := newListResponse(data, pg)
 	resp.Navigation = &nav
 	return resp

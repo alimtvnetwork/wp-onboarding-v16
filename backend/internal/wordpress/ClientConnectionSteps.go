@@ -31,7 +31,7 @@ func (c *Client) TestConnection() apperror.Result[*ConnectionInfo] {
 
 // runPreAuthSteps executes REST API probe and authentication.
 func (c *Client) runPreAuthSteps(result *ConnectionInfo) *apperror.AppError {
-	appErr := c.probeRestAPI(result)
+	appErr := c.probeRestApi(result)
 	if appErr != nil {
 		return appErr
 	}
@@ -52,8 +52,8 @@ func (c *Client) runPostAuthSteps(result *ConnectionInfo) apperror.Result[*Conne
 	return apperror.Ok(result)
 }
 
-// probeRestAPI checks WordPress REST API availability (Step 1).
-func (c *Client) probeRestAPI(result *ConnectionInfo) *apperror.AppError {
+// probeRestApi checks WordPress REST API availability (Step 1).
+func (c *Client) probeRestApi(result *ConnectionInfo) *apperror.AppError {
 	c.reportProbeStart()
 
 	resp, err := c.httpClient.Get(BuildWpProbeUrl(c.baseUrl))

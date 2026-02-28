@@ -11,9 +11,9 @@ import (
 )
 
 // CheckSiteHealth performs a health check on a single site
-var CheckSiteHealth = handleSiteActionByID("E4001",
-	func(ctx context.Context, siteID int64) (any, *apperror.AppError) {
-		return Services.SiteHealthService.CheckSite(ctx, siteID)
+var CheckSiteHealth = handleSiteActionById("E4001",
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+		return Services.SiteHealthService.CheckSite(ctx, siteId)
 	},
 )
 
@@ -64,10 +64,10 @@ func GetSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, _ := strconv.ParseInt(r.URL.Query().Get("siteId"), 10, 64)
+	siteId, _ := strconv.ParseInt(r.URL.Query().Get("siteId"), 10, 64)
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 
-	history, appErr := Services.SiteHealthService.GetHistory(siteID, limit)
+	history, appErr := Services.SiteHealthService.GetHistory(siteId, limit)
 	if appErr != nil {
 		respondError(
 			w,
