@@ -82,6 +82,21 @@ type UploaderAvailability struct {
 	Namespace string
 }
 
+// IsDefined returns true if the availability result is not nil.
+func (a *UploaderAvailability) IsDefined() bool { return a != nil }
+
+// IsAvailable returns true if the uploader is present and available (nil-safe).
+func (a *UploaderAvailability) IsAvailable() bool { return a != nil && a.Available }
+
+// IsUnavailable returns true if the uploader is nil or not available (nil-safe).
+func (a *UploaderAvailability) IsUnavailable() bool { return a == nil || !a.Available }
+
+// HasNamespace returns true if the availability result has a resolved namespace (nil-safe).
+func (a *UploaderAvailability) HasNamespace() bool { return a != nil && a.Namespace != "" }
+
+// IsNamespaceMissing returns true if no namespace was resolved (nil-safe).
+func (a *UploaderAvailability) IsNamespaceMissing() bool { return a == nil || a.Namespace == "" }
+
 // CheckRiseupAsiaAvailable checks if the Riseup Asia Uploader plugin is installed.
 // It tries namespaces in priority order (newest first) and returns the first match.
 func (c *Client) CheckRiseupAsiaAvailable() (*UploaderAvailability, error) {

@@ -470,6 +470,77 @@ if (isUnauthorized) {
 }
 ```
 
+### Go-Specific: Nil-Safe Receiver Methods on Pointer Objects (P9)
+
+When a function returns a **pointer-based struct** (e.g., `*UploaderAvailability`, `*CacheStatus`), the struct **must** provide nil-safe receiver methods for boolean queries. Callers must **never** check `obj == nil` externally — instead, call a receiver method that handles `nil` internally.
+
+This is the Go equivalent of P3 (named guards over raw negation) applied to pointer objects.
+
+```go
+// ── Struct definition ────────────────────────────────────────
+
+type UploaderAvailability struct {
+	Available bool
+	Namespace string
+}
+
+// Nil-safe receiver methods — handle nil pointer internally
+func (a *UploaderAvailability) IsDefined() bool        { return a != nil }
+func (a *UploaderAvailability) IsAvailable() bool       { return a != nil && a.Available }
+func (a *UploaderAvailability) IsUnavailable() bool     { return a == nil || !a.Available }
+func (a *UploaderAvailability) HasNamespace() bool      { return a != nil && a.Namespace != "" }
+func (a *UploaderAvailability) IsNamespaceMissing() bool { return a == nil || a.Namespace == "" }
+```
+
+```go
+// ── Callers ──────────────────────────────────────────────────
+
+// ❌ FORBIDDEN — external nil check + field access
+availability, _ := client.CheckRiseupAsiaAvailable()
+isUploaderMissing :=
+	availability == nil ||
+	!availability.Available
+
+if isUploaderMissing {
+	return fallback()
+}
+
+// ✅ REQUIRED — nil-safe receiver method
+availability, _ := client.CheckRiseupAsiaAvailable()
+
+if availability.IsUnavailable() {
+	return fallback()
+}
+
+// ❌ FORBIDDEN — external nil + field check for compound conditions
+isReady := availability != nil && availability.Available && availability.Namespace != ""
+
+// ✅ REQUIRED — compose nil-safe methods, multi-line
+isReady :=
+	availability.IsAvailable() &&
+	availability.HasNamespace()
+
+if isReady {
+	useUploader(availability.Namespace)
+}
+```
+
+### Why This Matters
+
+| Pattern | Problem | Fix |
+|---------|---------|-----|
+| `obj == nil \|\| !obj.Field` | Caller must know internal structure | `obj.IsUnavailable()` — encapsulates nil + field check |
+| `obj != nil && obj.Field != ""` | Leaks implementation to every call site | `obj.HasNamespace()` — single source of truth |
+| `obj == nil` before method call | Defensive nil check that should be inside the object | `obj.IsDefined()` with nil receiver |
+
+### Rules
+
+1. **Every pointer-based return type** must provide `IsDefined() bool` (nil-safe self-check)
+2. **Every boolean field** must have a positive (`IsAvailable()`) and negative (`IsUnavailable()`) nil-safe method
+3. **Every string/slice field** used in guards must have `HasX()` and `IsXMissing()` nil-safe methods
+4. **Callers must never write** `obj == nil` or `obj != nil` — always use receiver methods
+5. Nil-safe methods use **pointer receiver** (`func (a *T)`) so they work on nil pointers
+
 ### Go-Specific Exemptions
 
 These patterns are **exempt** from the no-negation rule in Go:

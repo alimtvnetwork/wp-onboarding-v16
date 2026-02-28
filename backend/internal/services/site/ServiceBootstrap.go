@@ -165,8 +165,11 @@ func (s *Service) logBootstrapInfo(id int64, message string) {
 // executeBootstrapUpload uploads the uploader plugin to the remote site.
 func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
 	availability, _ := client.CheckRiseupAsiaAvailable()
-	isUploaderAvailable := availability != nil && availability.Available && availability.Namespace != ""
-	if isUploaderAvailable {
+	isUploaderReady :=
+		availability.IsAvailable() &&
+		availability.HasNamespace()
+
+	if isUploaderReady {
 		input := bootstrapUploaderInput{
 			SiteID:    id,
 			Client:    client,
