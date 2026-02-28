@@ -21,14 +21,23 @@ type PluginVersionInput struct {
 
 // CreatePluginVersion records a new version entry after a publish operation
 func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, error) {
-	result, err := db.Exec(`
-		INSERT INTO PluginVersions (PluginId, SiteId, Version, BackupPath, FilesUpdated, GitCommitHash, PublishType, Status, Notes, CreatedAt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, datetime('now'))
-	`, input.PluginId, input.SiteId, input.Version, input.BackupPath, input.FilesUpdated, input.GitCommitHash, input.PublishType, input.Notes)
+	result, err := db.Exec(insertVersionSQL,
+		input.PluginId,
+		input.SiteId,
+		input.Version,
+		input.BackupPath,
+		input.FilesUpdated,
+		input.GitCommitHash,
+		input.PublishType,
+		input.Notes,
+	)
+
 	if err != nil {
+
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create plugin version").
 			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", input.PluginId, input.SiteId))
 	}
+
 	return result.LastInsertId()
 }
 
@@ -50,25 +59,11 @@ type PluginVersionRow struct {
 
 // GetPluginVersions returns version history for a plugin, optionally filtered by site
 func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]PluginVersionRow, error) {
-	query := `
-		SELECT pv.Id, pv.PluginId, pv.SiteId, s.Name as SiteName, pv.Version, pv.BackupPath, 
-			   pv.FilesUpdated, pv.GitCommitHash, pv.PublishType, pv.Status, pv.Notes, pv.CreatedAt
-		FROM PluginVersions pv
-		LEFT JOIN Sites s ON pv.SiteId = s.Id
-		WHERE pv.PluginId = ?
-	`
-	args := []any{pluginID}
-
-	if siteID != nil && *siteID > 0 {
-		query += " AND pv.SiteId = ?"
-		args = append(args, *siteID)
-	}
-
-	query += " ORDER BY pv.CreatedAt DESC LIMIT ?"
-	args = append(args, limit)
+	query, args := buildVersionQuery(pluginID, siteID, limit)
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query plugin versions").
 			WithDetails(fmt.Sprintf("pluginId=%d", pluginID))
 	}
@@ -77,28 +72,36 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]Plu
 	return scanPluginVersionRows(rows)
 }
 
+// buildVersionQuery constructs the version query with optional site filter.
+func buildVersionQuery(pluginID int64, siteID *int64, limit int) (string, []any) {
+	query := selectVersionSQL + " WHERE pv.PluginId = ?"
+	args := []any{pluginID}
+
+	hasSiteFilter := siteID != nil && *siteID > 0
+
+	if hasSiteFilter {
+		query += " AND pv.SiteId = ?"
+		args = append(args, *siteID)
+	}
+
+	query += " ORDER BY pv.CreatedAt DESC LIMIT ?"
+	args = append(args, limit)
+
+	return query, args
+}
+
 // scanPluginVersionRows scans all rows into PluginVersionRow slices.
 func scanPluginVersionRows(rows *sql.Rows) ([]PluginVersionRow, error) {
 	var versions []PluginVersionRow
-	for rows.Next() {
-		var v PluginVersionRow
-		var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
 
-		err := rows.Scan(&v.ID, &v.PluginID, &v.SiteID, &siteName, &version, &backupPath,
-			&v.FilesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
+	for rows.Next() {
+		m, err := scanVersionRow(rows)
 		if err != nil {
+
 			continue
 		}
 
-		v.SiteName = siteName.String
-		v.Version = version.String
-		v.BackupPath = backupPath.String
-		v.GitCommitHash = gitCommitHash.String
-		v.PublishType = publishType.String
-		v.Status = status.String
-		v.Notes = notes.String
-		v.CreatedAt = createdAt.String
-		versions = append(versions, v)
+		versions = append(versions, m)
 	}
 
 	isVersionsEmpty := versions == nil
@@ -106,56 +109,153 @@ func scanPluginVersionRows(rows *sql.Rows) ([]PluginVersionRow, error) {
 	if isVersionsEmpty {
 		versions = []PluginVersionRow{}
 	}
+
 	return versions, nil
+}
+
+// versionNullFields holds nullable fields for version row scanning.
+type versionNullFields struct {
+	SiteName      sql.NullString
+	Version       sql.NullString
+	BackupPath    sql.NullString
+	GitCommitHash sql.NullString
+	PublishType   sql.NullString
+	Status        sql.NullString
+	Notes         sql.NullString
+	CreatedAt     sql.NullString
+}
+
+// scanVersionRow scans a single version row from *sql.Rows.
+func scanVersionRow(rows *sql.Rows) (PluginVersionRow, error) {
+	var m PluginVersionRow
+	var nf versionNullFields
+
+	err := rows.Scan(
+		&m.ID,
+		&m.PluginID,
+		&m.SiteID,
+		&nf.SiteName,
+		&nf.Version,
+		&nf.BackupPath,
+		&m.FilesUpdated,
+		&nf.GitCommitHash,
+		&nf.PublishType,
+		&nf.Status,
+		&nf.Notes,
+		&nf.CreatedAt,
+	)
+
+	if err != nil {
+
+		return m, err
+	}
+
+	applyVersionNullFields(&m, &nf)
+
+	return m, nil
+}
+
+// applyVersionNullFields applies nullable fields to the version row.
+func applyVersionNullFields(m *PluginVersionRow, nf *versionNullFields) {
+	m.SiteName = nf.SiteName.String
+	m.Version = nf.Version.String
+	m.BackupPath = nf.BackupPath.String
+	m.GitCommitHash = nf.GitCommitHash.String
+	m.PublishType = nf.PublishType.String
+	m.Status = nf.Status.String
+	m.Notes = nf.Notes.String
+	m.CreatedAt = nf.CreatedAt.String
 }
 
 // GetPluginVersionByID returns a specific version entry
 func (db *DB) GetPluginVersionByID(versionID int64) (*PluginVersionRow, error) {
-	var v PluginVersionRow
-	var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
+	var m PluginVersionRow
+	var nf versionNullFields
 
-	err := db.QueryRow(`
-		SELECT pv.Id, pv.PluginId, pv.SiteId, s.Name as SiteName, pv.Version, pv.BackupPath, 
-			   pv.FilesUpdated, pv.GitCommitHash, pv.PublishType, pv.Status, pv.Notes, pv.CreatedAt
-		FROM PluginVersions pv
-		LEFT JOIN Sites s ON pv.SiteId = s.Id
-		WHERE pv.Id = ?
-	`, versionID).Scan(&v.ID, &v.PluginID, &v.SiteID, &siteName, &version, &backupPath,
-		&v.FilesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
+	err := db.QueryRow(selectVersionSQL+" WHERE pv.Id = ?", versionID).Scan(
+		&m.ID,
+		&m.PluginID,
+		&m.SiteID,
+		&nf.SiteName,
+		&nf.Version,
+		&nf.BackupPath,
+		&m.FilesUpdated,
+		&nf.GitCommitHash,
+		&nf.PublishType,
+		&nf.Status,
+		&nf.Notes,
+		&nf.CreatedAt,
+	)
+
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin version by ID").
 			WithDetails(fmt.Sprintf("versionId=%d", versionID))
 	}
 
-	v.SiteName = siteName.String
-	v.Version = version.String
-	v.BackupPath = backupPath.String
-	v.GitCommitHash = gitCommitHash.String
-	v.PublishType = publishType.String
-	v.Status = status.String
-	v.Notes = notes.String
-	v.CreatedAt = createdAt.String
-	return &v, nil
+	applyVersionNullFields(&m, &nf)
+
+	return &m, nil
 }
 
 // DeletePluginVersion removes a version entry
 func (db *DB) DeletePluginVersion(versionID int64) error {
 	_, err := db.Exec("DELETE FROM PluginVersions WHERE Id = ?", versionID)
+
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete plugin version").
 			WithDetails(fmt.Sprintf("versionId=%d", versionID))
 	}
+
 	return nil
 }
 
 // GetNextVersionNumber generates the next version number for a plugin-site combination
 func (db *DB) GetNextVersionNumber(pluginID, siteID int64) (string, error) {
 	var count int
-	err := db.QueryRow(`
-		SELECT COUNT(*) FROM PluginVersions WHERE PluginId = ? AND SiteId = ?
-	`, pluginID, siteID).Scan(&count)
+
+	err := db.QueryRow(
+		"SELECT COUNT(*) FROM PluginVersions WHERE PluginId = ? AND SiteId = ?",
+		pluginID,
+		siteID,
+	).Scan(&count)
+
 	if err != nil {
+
 		return "1.0.0", nil
 	}
+
 	return fmt.Sprintf("1.0.%d", count+1), nil
 }
+
+// SQL constants
+
+const selectVersionSQL = `SELECT
+	pv.Id,
+	pv.PluginId,
+	pv.SiteId,
+	s.Name as SiteName,
+	pv.Version,
+	pv.BackupPath,
+	pv.FilesUpdated,
+	pv.GitCommitHash,
+	pv.PublishType,
+	pv.Status,
+	pv.Notes,
+	pv.CreatedAt
+FROM PluginVersions pv
+LEFT JOIN Sites s ON pv.SiteId = s.Id`
+
+const insertVersionSQL = `INSERT INTO PluginVersions (
+	PluginId,
+	SiteId,
+	Version,
+	BackupPath,
+	FilesUpdated,
+	GitCommitHash,
+	PublishType,
+	Status,
+	Notes,
+	CreatedAt
+) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, datetime('now'))`
