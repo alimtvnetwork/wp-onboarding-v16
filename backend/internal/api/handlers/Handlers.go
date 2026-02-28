@@ -4,6 +4,8 @@ package handlers
 import (
 	"net/http"
 	"time"
+
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // ServiceRegistry holds references to all services
@@ -37,7 +39,7 @@ func APIIndex(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, ApiIndexResponse{
 		Name:    "WP Plugin Publish API",
 		Version: "v1",
-		Health:  "/api/v1/health",
-		WS:      "/ws",
+		Health:  wordpress.GoAPIHealth,
+		WS:      wordpress.GoAPIWebSocket,
 	})
 }

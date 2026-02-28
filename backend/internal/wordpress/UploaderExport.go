@@ -83,7 +83,7 @@ func (c *Client) reportExportSelfStart() {
 
 // callExportSelf sends the export-self API call.
 func (c *Client) callExportSelf(namespace string) (*ExportSelfResult, error) {
-	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ExportSelf)
+	endpoint := BuildNamespacedEndpoint(namespace, ep.ExportSelf)
 
 	return doAPICall[ExportSelfResult](c, apiCallInput{
 		Method:    httpmethod.Get,
@@ -135,7 +135,7 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
-	endpoint := fmt.Sprintf("/%s%s", namespace, ep.ErrorLogs)
+	endpoint := BuildNamespacedEndpoint(namespace, ep.ErrorLogs)
 	return doAPICall[RemoteErrorLogsResult](c, apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
@@ -223,7 +223,7 @@ type errorSessionsParams struct {
 
 // buildErrorSessionsEndpoint constructs the endpoint URL with query parameters.
 func buildErrorSessionsEndpoint(p errorSessionsParams) string {
-	endpoint := fmt.Sprintf("/%s%s", p.Namespace, ep.ErrorSessions)
+	endpoint := BuildNamespacedEndpoint(p.Namespace, ep.ErrorSessions)
 	params := collectErrorSessionParams(p)
 
 	if len(params) > 0 {

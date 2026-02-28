@@ -53,8 +53,8 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, *ap
 // This function never errors — it is pure struct construction.
 func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle) *uploadContext {
 	namespace := c.resolveNamespace()
-	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, ep.Upload)
-	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
+	uploadEndpoint := BuildNamespacedEndpoint(namespace, ep.Upload)
+	uploadURL := BuildWPJSONURL(c.baseURL, uploadEndpoint)
 
 	return &uploadContext{
 		AbsZipPath:     absZipPath,

@@ -135,7 +135,7 @@ func (c *Client) CheckUploaderHelperAvailable() (*UploaderAvailability, error) {
 // GetUploaderStatus gets the Rise Up Uploader status.
 func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	namespace := c.resolveNamespace()
-	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Status)
+	endpoint := BuildNamespacedEndpoint(namespace, ep.Status)
 
 	data, err := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,

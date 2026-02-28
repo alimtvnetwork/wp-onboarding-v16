@@ -605,6 +605,59 @@ func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { 
 | Files > 400 lines | Hard to navigate | Split with suffix convention (target 300) |
 | Magic strings/numbers | Brittle | Typed constants |
 | Boolean flag parameters | Unclear intent | Separate named methods |
+| Hardcoded URL/path fragments | Unmaintainable | Typed constants + builder functions (see §13) |
+
+---
+
+## 13. Path and URL Constant Mandate
+
+### 13.1 Rule
+
+All URL paths, API route patterns, and path fragments MUST be defined as typed constants or constructed via dedicated builder functions. Hardcoding path strings like `"/wp-json"`, `"/api/v1/sites"`, or `"/mutations/%s/plugins/upload"` directly in business logic is **strictly forbidden**.
+
+### 13.2 Constant Locations
+
+| Path Type | Constant Location | Example |
+|-----------|-------------------|---------|
+| WordPress REST API root | `wordpress.WPCoreAPIRoot` | `"/wp-json"` |
+| WordPress core endpoints | `wordpress.WPCore*` constants | `"/wp/v2/plugins"` |
+| Plugin REST endpoints | `endpointtype.Variant` enum | `/status`, `/plugins/enable` |
+| Go backend API routes | `wordpress.GoAPI*` constants | `"/api/v1/health"` |
+| Legacy Onboard paths | `wordpress.Onboard*` constants | `"/mutations/"`, `"/plugins/upload"` |
+| REST API namespaces | `wordpress.*Namespace` constants | `"riseup-asia-uploader/v1"` |
+
+### 13.3 Builder Functions
+
+Use `wordpress.Build*` helper functions to compose full URLs:
+
+```go
+// ❌ FORBIDDEN — raw path strings
+url := fmt.Sprintf("%s/wp-json/%s%s", baseURL, namespace, ep.Status)
+
+// ✅ REQUIRED — builder function
+url := wordpress.BuildWPPluginURL(baseURL, namespace, ep.Status)
+
+// ❌ FORBIDDEN — hardcoded Go API route
+path := fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", siteID, slug, action)
+
+// ✅ REQUIRED — typed constant + builder
+path := wordpress.GoAPISitePluginRoute(siteID, slug, action)
+```
+
+### 13.4 Error Context for Path Construction
+
+When a constructed path/URL fails (HTTP error, 404, connection refused), the error MUST include:
+1. **The resolved URL** — the full URL that was actually called
+2. **The variable inputs** — all interpolated values (siteID, namespace, slug, etc.)
+3. **The endpoint constant** — which enum/constant was used
+
+```go
+// ✅ CORRECT — error includes resolved URL and inputs
+return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").
+    WithURL(resolvedURL).
+    WithValue("namespace", namespace).
+    WithValue("endpoint", ep.Upload.Label())
+```
 
 ---
 

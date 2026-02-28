@@ -68,7 +68,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) apperror.Result[m
 
 	// Measure response time to the WP REST API
 	start := time.Now()
-	statusURL := fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, endpoint.Status)
+	statusURL := wordpress.BuildWPPluginURL(siteURL, wordpress.RiseupAsiaNamespace, endpoint.Status)
 	req, err := http.NewRequestWithContext(ctx, "GET", statusURL, nil)
 	if err != nil {
 		check.Status = healthstatus.Down.DBValue()

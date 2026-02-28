@@ -115,7 +115,7 @@ func (c *Client) request(method, endpoint string, body any) (*http.Response, err
 
 // buildAndSendRequest creates and sends an HTTP request with standard headers.
 func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+	url := BuildWPJSONURL(c.baseURL, endpoint)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
@@ -138,7 +138,7 @@ type multipartInput struct {
 
 // requestMultipart sends a multipart HTTP request (for file uploads).
 func (c *Client) requestMultipart(input multipartInput) (*http.Response, error) {
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, input.Endpoint)
+	url := BuildWPJSONURL(c.baseURL, input.Endpoint)
 	req, err := http.NewRequest(input.Method.Value(), url, input.Body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
@@ -151,7 +151,7 @@ func (c *Client) requestMultipart(input multipartInput) (*http.Response, error) 
 }
 
 func (c *Client) fullURL(endpoint string) string {
-	return fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+	return BuildWPJSONURL(c.baseURL, endpoint)
 }
 
 // rawGet performs an authenticated GET request to an arbitrary full URL on the same WordPress host.

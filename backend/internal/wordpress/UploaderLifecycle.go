@@ -149,7 +149,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 // ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.
 func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	namespace := c.resolveNamespace()
-	endpoint := fmt.Sprintf("/%s%s", namespace, ep.Plugins)
+	endpoint := BuildNamespacedEndpoint(namespace, ep.Plugins)
 
 	callInput := apiCallInput{
 		Method:    httpmethod.Get,

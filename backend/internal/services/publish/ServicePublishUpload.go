@@ -156,7 +156,7 @@ func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time)
 
 // buildActivateEndpointURL constructs the activation endpoint URL.
 func buildActivateEndpointURL(siteURL string) string {
-	return fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, endpoint.Enable)
+	return wordpress.BuildWPPluginURL(siteURL, wordpress.RiseupAsiaNamespace, endpoint.Enable)
 }
 
 // executeActivation performs the actual plugin activation call.

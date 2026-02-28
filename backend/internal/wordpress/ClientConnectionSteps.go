@@ -68,7 +68,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 func (c *Client) probeRestAPI(result *ConnectionInfo) error {
 	c.reportProbeStart()
 
-	resp, err := c.httpClient.Get(fmt.Sprintf("%s/wp-json/", c.baseURL))
+	resp, err := c.httpClient.Get(BuildWPProbeURL(c.baseURL))
 	if err != nil {
 		return c.reportProbeFailure(err)
 	}

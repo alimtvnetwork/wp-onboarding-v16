@@ -35,13 +35,13 @@ func formatGuardRailSection(input guardRailInput) string {
 func resolveRequiredEndpoint(action, siteUrl string) string {
 	switch action {
 	case "disable":
-		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Disable.String())
+		return wordpress.BuildWPPluginURL(siteUrl, wordpress.RiseupAsiaNamespace, ep.Disable)
 	case "enable":
-		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Enable.String())
+		return wordpress.BuildWPPluginURL(siteUrl, wordpress.RiseupAsiaNamespace, ep.Enable)
 	case "delete":
-		return fmt.Sprintf("%s/wp-json/%s%s", siteUrl, wordpress.RiseupAsiaNamespace, ep.Delete.String())
+		return wordpress.BuildWPPluginURL(siteUrl, wordpress.RiseupAsiaNamespace, ep.Delete)
 	default:
-		return fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteUrl, wordpress.RiseupAsiaNamespace, action)
+		return wordpress.BuildWPPluginURL(siteUrl, wordpress.RiseupAsiaNamespace, ep.Plugins) + "/" + action
 	}
 }
 

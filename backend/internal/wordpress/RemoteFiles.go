@@ -116,7 +116,7 @@ type mutationTokenResult struct {
 // RequestMutationToken requests a mutation token from the legacy Onboard companion plugin.
 // Deprecated: The Riseup Asia Uploader does not use mutation tokens.
 func (c *Client) RequestMutationToken(action string) (string, error) {
-	endpoint := fmt.Sprintf("/%s/request-mutation?action=%s", OnboardNamespace, action)
+	endpoint := fmt.Sprintf("/%s%s?action=%s", OnboardNamespace, OnboardRequestMutationPath, action)
 
 	callInput := apiCallInput{
 		Method:    httpmethod.Get,

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
@@ -124,7 +125,7 @@ func resolveMethodAndUrl(details *ExtractedErrorDetails, siteUrl string) (string
 	hasEndpoint          := details.Endpoint != ""
 
 	if isDelegatedUrlMissing && hasEndpoint {
-		delegatedUrl = fmt.Sprintf("%s/wp-json%s", siteUrl, details.Endpoint)
+		delegatedUrl = wordpress.BuildWPJSONURL(siteUrl, details.Endpoint)
 	}
 	return method, delegatedUrl
 }

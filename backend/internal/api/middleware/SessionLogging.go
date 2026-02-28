@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // SessionContextKey is the context key for session ID
@@ -72,7 +73,7 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			}
 
 			// Skip health checks and other high-frequency endpoints to reduce noise
-			isHealthCheck := r.URL.Path == "/api/v1/health"
+			isHealthCheck := r.URL.Path == wordpress.GoAPIHealth
 
 			if isHealthCheck {
 				next.ServeHTTP(w, r)
