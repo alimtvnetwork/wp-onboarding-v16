@@ -12,7 +12,9 @@ import (
 
 // SaveRequest persists the inbound request as request.json in the session folder
 func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
-	if req == nil {
+	isRequestMissing := req == nil
+
+	if isRequestMissing {
 		return
 	}
 	s.writeSessionArtifact(sessionArtifactInput{
@@ -25,7 +27,9 @@ func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
 
 // SaveResponse persists the delegated response as response.json in the session folder
 func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
-	if resp == nil {
+	isResponseMissing := resp == nil
+
+	if isResponseMissing {
 		return
 	}
 	s.writeSessionArtifact(sessionArtifactInput{
@@ -119,7 +123,9 @@ func (s *Service) SaveError(input SaveErrorInput) {
 // SetMetadata sets a key-value pair on a session's metadata JSON object.
 func (s *Service) SetMetadata(sessionID, key string, value json.RawMessage) {
 	session := s.getActiveSession(sessionID)
-	if session == nil {
+	isSessionMissing := session == nil
+
+	if isSessionMissing {
 		return
 	}
 

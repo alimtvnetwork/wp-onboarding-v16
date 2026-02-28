@@ -15,7 +15,9 @@ func CaptureGoStack(skip int) []StackFrame {
 	pcs := make([]uintptr, maxFrames)
 	// skip+1 to also skip runtime.Callers itself
 	n := runtime.Callers(skip+1, pcs)
-	if n == 0 {
+	isEmpty := n == 0
+
+	if isEmpty {
 		return nil
 	}
 

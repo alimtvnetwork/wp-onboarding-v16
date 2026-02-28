@@ -183,7 +183,9 @@ func extractPHPContentFromLine(line string) string {
 		return ""
 	}
 	braceIdx := strings.Index(line, "{")
-	if braceIdx < 0 {
+	isBraceMissing := braceIdx < 0
+
+	if isBraceMissing {
 		return ""
 	}
 	return parsePHPContent(line[braceIdx:])

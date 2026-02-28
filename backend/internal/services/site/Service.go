@@ -100,7 +100,9 @@ func (s *Service) ClearErrorLogHashes() int {
 // New creates a new site service instance
 func New(cfg Config) *Service {
 	cacheTTL := cfg.CacheTTLMinutes
-	if cacheTTL <= 0 {
+	isTTLUnset := cacheTTL <= 0
+
+	if isTTLUnset {
 		cacheTTL = 60
 	}
 	return buildService(cfg, cacheTTL)

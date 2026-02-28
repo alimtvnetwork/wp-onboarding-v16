@@ -21,7 +21,9 @@ type dirInfo struct {
 
 // ListSessions returns recent sessions
 func (s *Service) ListSessions(limit int) apperror.ResultSlice[*SessionSummary] {
-	if limit <= 0 {
+	isLimitUnset := limit <= 0
+
+	if isLimitUnset {
 		limit = 100
 	}
 

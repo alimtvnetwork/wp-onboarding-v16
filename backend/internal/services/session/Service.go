@@ -112,8 +112,9 @@ type Service struct {
 // New creates a new session service
 func New(cfg Config) apperror.Result[*Service] {
 	retentionDays := cfg.RetentionDays
+	isRetentionUnset := retentionDays <= 0
 
-	if retentionDays <= 0 {
+	if isRetentionUnset {
 		retentionDays = 7
 	}
 

@@ -21,7 +21,9 @@ func (s *Service) GetRemoteSnapshots(ctx context.Context, siteID int64) ([]wordp
 			WithSiteId(siteID)
 	}
 
-	if snapshots == nil {
+	isSnapshotsEmpty := snapshots == nil
+
+	if isSnapshotsEmpty {
 		snapshots = []wordpress.SnapshotRecord{}
 	}
 
