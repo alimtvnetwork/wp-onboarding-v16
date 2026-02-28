@@ -18,7 +18,8 @@ var CheckSiteHealth = handleSiteActionByID("E4001",
 
 // CheckAllSitesHealth performs health checks on all sites
 func CheckAllSitesHealth(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteHealthService == nil {
+	isMissing := Services == nil || Services.SiteHealthService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -46,7 +47,8 @@ func CheckAllSitesHealth(w http.ResponseWriter, r *http.Request) {
 
 // GetSiteHealthHistory returns health check history
 func GetSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteHealthService == nil {
+	isMissing := Services == nil || Services.SiteHealthService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -77,7 +79,8 @@ func GetSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
 
 // GetSiteHealthSummaries returns health summaries for all sites
 func GetSiteHealthSummaries(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteHealthService == nil {
+	isMissing := Services == nil || Services.SiteHealthService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -105,7 +108,8 @@ func GetSiteHealthSummaries(w http.ResponseWriter, r *http.Request) {
 
 // GetSiteHealthStats returns overall health statistics
 func GetSiteHealthStats(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteHealthService == nil {
+	isMissing := Services == nil || Services.SiteHealthService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -133,7 +137,8 @@ func GetSiteHealthStats(w http.ResponseWriter, r *http.Request) {
 
 // ClearSiteHealthHistory removes old health check records
 func ClearSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteHealthService == nil {
+	isMissing := Services == nil || Services.SiteHealthService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,

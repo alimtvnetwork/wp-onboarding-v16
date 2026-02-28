@@ -42,7 +42,7 @@ func parseRemotePluginInput(r *http.Request) (*remotePluginParsed, error) {
 // parseRemotePluginInputOrFail parses site ID + plugin slug, writing error responses on failure.
 // Returns the parsed input and ok=true, or writes an error and returns ok=false.
 func parseRemotePluginInputOrFail(w http.ResponseWriter, r *http.Request) (*remotePluginParsed, bool) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return nil, false
 	}
 
@@ -85,7 +85,7 @@ var ForceSyncRemotePlugins = handleSiteActionByID(
 
 // ClearRemotePluginsCache invalidates the cache without fetching
 func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return
 	}
 

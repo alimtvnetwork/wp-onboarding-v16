@@ -13,14 +13,17 @@ import (
 
 // --- Snapshot Validation Helpers ---
 
-// requireSiteService checks that the site service is available, responding with an error if not.
-func requireSiteService(w http.ResponseWriter) bool {
-	if Services == nil || Services.SiteService == nil {
+// isSiteServiceMissing checks that the site service is available, responding with an error if not.
+// Returns true if the service is missing (positive guard for failure).
+func isSiteServiceMissing(w http.ResponseWriter) bool {
+	isMissing := Services == nil || Services.SiteService == nil
+	if isMissing {
 		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
-		return false
+
+		return true
 	}
 
-	return true
+	return false
 }
 
 // parseSiteIdOrFail extracts the site ID from URL params, responding with an error on failure.
@@ -63,7 +66,7 @@ var GetRemoteSnapshots = handleSiteActionByID("E3020",
 
 // GetRemoteSnapshot returns a specific snapshot from a remote WordPress site.
 func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -88,7 +91,7 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // CreateRemoteSnapshot triggers a new snapshot on a remote WordPress site.
 func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -111,7 +114,7 @@ func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // DeleteRemoteSnapshot removes a snapshot from a remote WordPress site.
 func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -135,7 +138,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote WordPress site.
 func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 

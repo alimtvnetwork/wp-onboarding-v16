@@ -23,13 +23,13 @@ type handlerIDConfig struct {
 	ErrCode     apperror.ErrorCode
 }
 
-// handleActionByID creates a handler: requireService → parseID → fn(ctx, id) → respondSuccess
+// handleActionByID creates a handler: isServiceMissing → parseID → fn(ctx, id) → respondSuccess
 func handleActionByID(
 	cfg handlerIDConfig,
 	fn func(ctx context.Context, id int64) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
@@ -54,13 +54,13 @@ func handleActionByID(
 	}
 }
 
-// handleDeleteByID creates a handler: requireService → parseID → fn(ctx, id) → respondDeleted
+// handleDeleteByID creates a handler: isServiceMissing → parseID → fn(ctx, id) → respondDeleted
 func handleDeleteByID(
 	cfg handlerIDConfig,
 	fn func(ctx context.Context, id int64) error,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
@@ -119,14 +119,7 @@ func handleSiteActionByID(
 	fn func(ctx context.Context, siteID int64) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if Services == nil || Services.SiteService == nil {
-			respondError(
-				w,
-				wordpress.HttpStatusServiceUnavailable,
-				apperror.ErrNotFound,
-				responsemessage.ServiceNotAvailable.String(),
-			)
-
+		if isSiteServiceMissing(w) {
 			return
 		}
 
@@ -165,13 +158,13 @@ type noArgsConfig struct {
 	ErrCode     apperror.ErrorCode
 }
 
-// handleNoArgs creates a handler: requireService → fn(ctx) → respondSuccess
+// handleNoArgs creates a handler: isServiceMissing → fn(ctx) → respondSuccess
 func handleNoArgs(
 	cfg noArgsConfig,
 	fn func(ctx context.Context) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 
@@ -200,13 +193,13 @@ type twoIDConfig struct {
 	ErrCode     apperror.ErrorCode
 }
 
-// handleTwoIDs creates a handler: requireService → parseID(param1) → parseID(param2) → fn(ctx, id1, id2) → respondSuccess
+// handleTwoIDs creates a handler: isServiceMissing → parseID(param1) → parseID(param2) → fn(ctx, id1, id2) → respondSuccess
 func handleTwoIDs(
 	cfg twoIDConfig,
 	fn func(ctx context.Context, id1, id2 int64) (any, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !requireService(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
 			return
 		}
 

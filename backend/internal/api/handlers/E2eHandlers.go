@@ -60,12 +60,12 @@ func GetE2ECases(w http.ResponseWriter, r *http.Request) {
 
 // StartE2ERun begins a new test run
 func StartE2ERun(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, E2EService, "E2E service") {
+	if isServiceMissing(w, E2EService, "E2E service") {
 		return
 	}
 
 	var opts e2e.RunOptions
-	if !decodeJSON(w, r, &opts) {
+	if isBodyInvalid(w, r, &opts) {
 		return
 	}
 
@@ -117,7 +117,7 @@ func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
 
 // GetE2ERun returns a specific test run with results
 func GetE2ERun(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, E2EService, "E2E service") {
+	if isServiceMissing(w, E2EService, "E2E service") {
 		return
 	}
 
@@ -141,7 +141,7 @@ func GetE2ERun(w http.ResponseWriter, r *http.Request) {
 
 // AbortE2ERun stops a running test
 func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, E2EService, "E2E service") {
+	if isServiceMissing(w, E2EService, "E2E service") {
 		return
 	}
 
@@ -164,7 +164,7 @@ func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
 
 // DeleteE2ERun removes a test run
 func DeleteE2ERun(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, E2EService, "E2E service") {
+	if isServiceMissing(w, E2EService, "E2E service") {
 		return
 	}
 

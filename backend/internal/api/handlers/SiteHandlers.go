@@ -40,12 +40,12 @@ var GetSites = handleListNilSafe(
 
 // CreateSite creates a new WordPress site connection
 func CreateSite(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return
 	}
 
 	var input SiteCreateInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -120,7 +120,7 @@ var GetSite = handleActionByID(
 
 // UpdateSite updates an existing site
 func UpdateSite(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return
 	}
 
@@ -130,7 +130,7 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input SiteUpdateInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -192,12 +192,12 @@ type credentialsInput struct {
 
 // TestSiteCredentials tests credentials without saving (for pre-create validation)
 func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return
 	}
 
 	var input credentialsInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 

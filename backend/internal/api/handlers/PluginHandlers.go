@@ -21,12 +21,12 @@ var GetPlugins = handleListNilSafe(
 
 // CreatePlugin registers a new local plugin directory
 func CreatePlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
+	if isServiceMissing(w, Services.PluginService, "Plugin service") {
 		return
 	}
 
 	var input plugin.CreateInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -60,7 +60,7 @@ var GetPlugin = handleActionByID(
 
 // UpdatePlugin updates an existing plugin
 func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
+	if isServiceMissing(w, Services.PluginService, "Plugin service") {
 		return
 	}
 
@@ -70,7 +70,7 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input plugin.UpdateInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -117,7 +117,7 @@ var GetPluginMappings = handleActionByID(
 
 // CreatePluginMapping creates a new plugin-site mapping
 func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
+	if isServiceMissing(w, Services.PluginService, "Plugin service") {
 		return
 	}
 
@@ -127,7 +127,7 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input plugin.CreateMappingInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -169,7 +169,7 @@ type pluginMappingsInput struct {
 
 // UpdatePluginMappings bulk-updates all site mappings for a plugin
 func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
+	if isServiceMissing(w, Services.PluginService, "Plugin service") {
 		return
 	}
 
@@ -179,7 +179,7 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input pluginMappingsInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -219,7 +219,7 @@ type siteMappingsInput struct {
 
 // UpdateSiteMappings bulk-updates all plugin mappings for a site
 func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
+	if isServiceMissing(w, Services.PluginService, "Plugin service") {
 		return
 	}
 
@@ -229,7 +229,7 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input siteMappingsInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 

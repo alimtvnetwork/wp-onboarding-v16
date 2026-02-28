@@ -13,7 +13,8 @@ import (
 
 // ListPublishHistory returns paginated publish history
 func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PublishHistoryService == nil {
+	isMissing := Services == nil || Services.PublishHistoryService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -25,7 +26,8 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit <= 0 || limit > 100 {
+	isInvalidLimit := limit <= 0 || limit > 100
+	if isInvalidLimit {
 		limit = 25
 	}
 
@@ -68,7 +70,8 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 
 // GetPublishHistoryByID returns a single publish history entry
 func GetPublishHistoryByID(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PublishHistoryService == nil {
+	isMissing := Services == nil || Services.PublishHistoryService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -108,7 +111,8 @@ func GetPublishHistoryByID(w http.ResponseWriter, r *http.Request) {
 
 // GetPublishHistoryStats returns aggregate statistics
 func GetPublishHistoryStats(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PublishHistoryService == nil {
+	isMissing := Services == nil || Services.PublishHistoryService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -136,7 +140,8 @@ func GetPublishHistoryStats(w http.ResponseWriter, r *http.Request) {
 
 // DeletePublishHistoryEntry removes a single entry
 func DeletePublishHistoryEntry(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PublishHistoryService == nil {
+	isMissing := Services == nil || Services.PublishHistoryService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -175,7 +180,8 @@ func DeletePublishHistoryEntry(w http.ResponseWriter, r *http.Request) {
 
 // ClearPublishHistory removes all entries
 func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PublishHistoryService == nil {
+	isMissing := Services == nil || Services.PublishHistoryService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -192,7 +198,8 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&input)
 
-	if !input.Confirm {
+	isUnconfirmed := !input.Confirm
+	if isUnconfirmed {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

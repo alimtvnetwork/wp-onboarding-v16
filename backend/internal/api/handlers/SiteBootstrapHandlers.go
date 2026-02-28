@@ -16,7 +16,7 @@ type bootstrapInput struct {
 
 // BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
 func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return
 	}
 
@@ -51,12 +51,12 @@ type bulkBootstrapInput struct {
 
 // BulkBootstrapUploader deploys the Riseup Asia Uploader to multiple sites
 func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return
 	}
 
 	var input bulkBootstrapInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 

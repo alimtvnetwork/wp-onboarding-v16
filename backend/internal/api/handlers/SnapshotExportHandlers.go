@@ -14,7 +14,7 @@ import (
 
 // ExportRemoteSnapshot streams a snapshot ZIP file from a remote WordPress site.
 func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -61,7 +61,7 @@ func setExportHeaders(w http.ResponseWriter, resp *http.Response, snapshotId int
 
 // DownloadSnapshotZip proxies a cached ZIP download: requests build from WordPress, then streams the ZIP binary.
 func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -134,7 +134,8 @@ func setZipMetadataHeaders(w http.ResponseWriter, meta *wordpress.SnapshotDownlo
 		w.Header().Set("X-Snapshot-Cached", "false")
 	}
 
-	if meta.Size > 0 {
+	hasSize := meta.Size > 0
+	if hasSize {
 		w.Header().Set("X-Snapshot-Size", strconv.FormatInt(meta.Size, 10))
 	}
 }

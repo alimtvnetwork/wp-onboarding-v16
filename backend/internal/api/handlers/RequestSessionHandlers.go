@@ -28,7 +28,8 @@ func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
-	if limit <= 0 {
+	isInvalidLimit := limit <= 0
+	if isInvalidLimit {
 		limit = 50
 	}
 
@@ -152,7 +153,8 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 	}
 
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit <= 0 {
+	isInvalidLimit := limit <= 0
+	if isInvalidLimit {
 		limit = 50
 	}
 
@@ -172,9 +174,11 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 	// Filter sessions with errors
 	var errorSessions []*middleware.RequestSession
 	for _, s := range allResult.Sessions {
-		if s.StatusCode >= 400 || s.Error != "" {
+		isErrorResponse := s.StatusCode >= 400 || s.Error != ""
+		if isErrorResponse {
 			errorSessions = append(errorSessions, s)
-			if len(errorSessions) >= limit {
+			isAtLimit := len(errorSessions) >= limit
+			if isAtLimit {
 				break
 			}
 		}
