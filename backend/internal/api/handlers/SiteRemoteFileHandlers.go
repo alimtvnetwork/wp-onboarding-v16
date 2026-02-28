@@ -23,7 +23,7 @@ type pluginFileParsed struct {
 
 // parseRemotePluginFileInputOrFail parses site ID + plugin slug + file path, writing error responses on failure.
 func parseRemotePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (*pluginFileParsed, bool) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return nil, false
 	}
 
@@ -33,7 +33,7 @@ func parseRemotePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (*
 	}
 
 	var input pluginFileInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return nil, false
 	}
 
@@ -79,7 +79,7 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 
 // ClearErrorLogHashes resets the in-memory error deduplication map
 func ClearErrorLogHashes(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
+	if isServiceMissing(w, Services.SiteService, "Site service") {
 		return
 	}
 

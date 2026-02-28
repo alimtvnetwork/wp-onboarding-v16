@@ -34,7 +34,8 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	logExists := fileExists(logFile)
 	errorExists := fileExists(errorFile)
 
-	if !logExists && !errorExists {
+	hasLogFiles := logExists || errorExists
+	if !hasLogFiles {
 		respondError(w, wordpress.HttpStatusNotFound, "E9001", "No error log files found")
 		return
 	}
@@ -57,7 +58,8 @@ func extractReportFromBody(r *http.Request) string {
 		Report string `json:"report"` // external key (frontend request body)
 	}
 	bodyBytes, _ := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
-	if len(bodyBytes) > 0 {
+	hasBody := len(bodyBytes) > 0
+	if hasBody {
 		_ = json.Unmarshal(bodyBytes, &payload)
 	}
 	return payload.Report

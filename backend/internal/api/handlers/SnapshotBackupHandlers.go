@@ -11,7 +11,7 @@ import (
 
 // FullBackupRemoteSnapshot triggers end-to-end full backup orchestration on a remote WordPress site.
 func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -34,7 +34,7 @@ func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote WordPress site.
 func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -57,7 +57,7 @@ func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // ImportRemoteSnapshot handles uploading a ZIP file to import as a snapshot on a remote site.
 func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 
@@ -124,7 +124,7 @@ func writeToTempFile(w http.ResponseWriter, src io.Reader) (string, bool) {
 
 // CleanupRemoteSnapshots triggers cleanup of old/orphan/stuck snapshots on a remote WordPress site.
 func CleanupRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 

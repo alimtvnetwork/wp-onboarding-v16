@@ -23,7 +23,7 @@ type PublishInput struct {
 
 // PublishPlugin publishes plugin changes to a site
 func PublishPlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PublishService, "Publish service") {
+	if isServiceMissing(w, Services.PublishService, "Publish service") {
 		return
 	}
 
@@ -38,7 +38,7 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input PublishInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -91,7 +91,7 @@ var GetBackups = handleActionByID(
 
 // RestoreBackup restores a plugin from backup
 func RestoreBackup(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.BackupService, "Backup service") {
+	if isServiceMissing(w, Services.BackupService, "Backup service") {
 		return
 	}
 

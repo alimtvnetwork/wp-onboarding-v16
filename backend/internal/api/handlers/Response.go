@@ -108,9 +108,9 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 	return strconv.ParseInt(vars[name], 10, 64)
 }
 
-// requireService checks if a service is non-nil, writing 503 if unavailable.
-// Returns true if the service is available.
-func requireService(w http.ResponseWriter, service any, name string) bool {
+// isServiceMissing checks if a service is nil, writing 503 if unavailable.
+// Returns true if the service is missing (positive guard for failure).
+func isServiceMissing(w http.ResponseWriter, service any, name string) bool {
 	if service == nil {
 		respondError(
 			w,
@@ -119,15 +119,15 @@ func requireService(w http.ResponseWriter, service any, name string) bool {
 			responsemessage.ServiceNotAvailable.String(),
 		)
 
-		return false
+		return true
 	}
 
-	return true
+	return false
 }
 
-// decodeJSON decodes a JSON request body into target. Returns false and writes
-// a 400 error response if decoding fails.
-func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
+// isBodyInvalid decodes a JSON request body into target. Returns true and writes
+// a 400 error response if decoding fails (positive guard for failure).
+func isBodyInvalid(w http.ResponseWriter, r *http.Request, target any) bool {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
 		respondError(
 			w,
@@ -136,10 +136,10 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 			responsemessage.InvalidRequestBody.String(),
 		)
 
-		return false
+		return true
 	}
 
-	return true
+	return false
 }
 
 // parseID extracts a URL path param as int64. Returns false and writes 400 on failure.

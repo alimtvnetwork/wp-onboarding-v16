@@ -12,12 +12,12 @@ import (
 
 // SaveErrorHistory persists a new error to history
 func SaveErrorHistory(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
 	var input models.ErrorHistoryInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -57,7 +57,7 @@ func validateSaveErrorInput(input models.ErrorHistoryInput) string {
 
 // ListErrorHistory returns paginated error history
 func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
@@ -106,7 +106,7 @@ func parseErrorHistoryFilters(r *http.Request) models.ErrorHistoryFilters {
 
 // GetErrorHistoryByID returns a single error by database ID
 func GetErrorHistoryByID(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 

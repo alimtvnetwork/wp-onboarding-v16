@@ -18,7 +18,7 @@ var GetRemoteSnapshotSettings = handleSiteActionByID("E3025",
 
 // UpdateRemoteSnapshotSettings updates snapshot settings on a remote WordPress site.
 func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
-	if !requireSiteService(w) {
+	if isSiteServiceMissing(w) {
 		return
 	}
 

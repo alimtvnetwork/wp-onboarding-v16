@@ -46,12 +46,12 @@ type scanPathInput struct {
 
 // ScanDirectoryPath scans a directory path for WordPress plugin and creates wp-plugin-detected.json
 func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
+	if isServiceMissing(w, Services.PluginService, "Plugin service") {
 		return
 	}
 
 	var input scanPathInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
@@ -88,7 +88,8 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 
 // respondScanWithDetection handles the detection file creation logic for ScanDirectoryPath.
 func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult scanDetectionInput) {
-	if !scanResult.Input.CreateDetection {
+	isDetectionSkipped := !scanResult.Input.CreateDetection
+	if isDetectionSkipped {
 		respondSuccess(w, scanResult.Result)
 
 		return
@@ -127,12 +128,12 @@ type scanPathsInput struct {
 
 // ScanDirectoriesPath scans multiple directories for WordPress plugin info
 func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
+	if isServiceMissing(w, Services.PluginService, "Plugin service") {
 		return
 	}
 
 	var input scanPathsInput
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 

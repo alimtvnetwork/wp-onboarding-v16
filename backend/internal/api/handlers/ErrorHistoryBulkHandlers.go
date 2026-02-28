@@ -11,7 +11,7 @@ import (
 
 // DeleteErrorHistory removes an error from history
 func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
@@ -36,7 +36,7 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 
 // ClearErrorHistory removes all error history
 func ClearErrorHistory(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
@@ -60,7 +60,7 @@ type bulkExportInput struct {
 
 // BulkExportErrorHistory generates a combined markdown report
 func BulkExportErrorHistory(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 
@@ -102,7 +102,7 @@ func parseBulkExportInput(w http.ResponseWriter, r *http.Request) (*bulkExportIn
 
 // GetErrorHistoryStats returns error statistics
 func GetErrorHistoryStats(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.ErrorHistoryService, "ErrorHistory service") {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
 		return
 	}
 

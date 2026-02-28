@@ -11,7 +11,8 @@ import (
 
 // GetSessions returns a list of recent sessions
 func GetSessions(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SessionService == nil {
+	isMissing := Services == nil || Services.SessionService == nil
+	if isMissing {
 		respondSuccess(w, []any{})
 
 		return
@@ -42,7 +43,8 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 
 // GetSession returns details for a specific session
 func GetSession(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SessionService == nil {
+	isMissing := Services == nil || Services.SessionService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -84,7 +86,8 @@ func GetSession(w http.ResponseWriter, r *http.Request) {
 
 // GetSessionLogs returns the full log content for a session
 func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SessionService == nil {
+	isMissing := Services == nil || Services.SessionService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -123,7 +126,8 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 
 	// Check if client wants plain text
 	accept := r.Header.Get("Accept")
-	if accept == "text/plain" {
+	isPlainTextRequest := accept == "text/plain"
+	if isPlainTextRequest {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(wordpress.HttpStatusOk.Int())
 		w.Write([]byte(logs))
@@ -139,7 +143,8 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 
 // DeleteSession removes a session's log file
 func DeleteSession(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SessionService == nil {
+	isMissing := Services == nil || Services.SessionService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -180,7 +185,8 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 
 // GetSessionDiagnostics returns structured request/response/stackTrace for a session
 func GetSessionDiagnostics(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SessionService == nil {
+	isMissing := Services == nil || Services.SessionService == nil
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,

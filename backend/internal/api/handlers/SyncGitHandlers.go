@@ -93,7 +93,7 @@ var GitStatus = handleActionByID(
 
 // GitCommit commits changes for a specific plugin
 func GitCommit(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.GitService, "Git service") {
+	if isServiceMissing(w, Services.GitService, "Git service") {
 		return
 	}
 
@@ -105,7 +105,7 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Message string `json:"message"` // external key (frontend request body)
 	}
-	if !decodeJSON(w, r, &input) {
+	if isBodyInvalid(w, r, &input) {
 		return
 	}
 
