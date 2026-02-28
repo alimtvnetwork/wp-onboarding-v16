@@ -21,7 +21,7 @@ var ScanPlugin = handleActionByID(
 		ParamName:   "id",
 		ErrCode:     apperror.ErrBackupCreate,
 	},
-	func(ctx context.Context, id int64) (any, error) {
+	func(ctx context.Context, id int64) (any, *apperror.AppError) {
 		return Services.WatcherService.TriggerScan(ctx, id)
 	},
 )
@@ -33,7 +33,7 @@ var ScanAllPlugins = handleNoArgs(
 		ServiceName: "Watcher service",
 		ErrCode:     apperror.ErrBackupRestore,
 	},
-	func(ctx context.Context) (any, error) {
+	func(ctx context.Context) (any, *apperror.AppError) {
 		return Services.WatcherService.ScanAll(ctx)
 	},
 )
@@ -68,13 +68,13 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := Services.PluginService.ScanDirectory(r.Context(), input.Path)
-	if err != nil {
+	result, appErr := Services.PluginService.ScanDirectory(r.Context(), input.Path)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			apperror.ErrBackupDelete,
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -97,11 +97,11 @@ func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult
 		return
 	}
 
-	err := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path)
-	if err != nil {
+	appErr := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path)
+	if appErr != nil {
 		errorResponse := ScanResultResponse{
 			Scan:           scanResult.Result,
-			DetectionError: err.Error(),
+			DetectionError: appErr.Error(),
 		}
 
 		respondSuccess(w, errorResponse)
@@ -183,12 +183,12 @@ func scanAllDirectories(r *http.Request, input scanPathsInput) ([]DirectoryScanR
 
 // scanSingleDirectory scans one directory and optionally writes a detection file.
 func scanSingleDirectory(r *http.Request, path string, createDetection bool) DirectoryScanResult {
-	result, err := Services.PluginService.ScanDirectory(r.Context(), path)
-	if err != nil {
+	result, appErr := Services.PluginService.ScanDirectory(r.Context(), path)
+	if appErr != nil {
 		return DirectoryScanResult{
 			Path:     path,
 			IsPlugin: false,
-			Error:    err.Error(),
+			Error:    appErr.Error(),
 		}
 	}
 
@@ -227,13 +227,13 @@ func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 
 	siteID := parseSiteIDFromQuery(r)
 
-	changes, err := Services.SyncService.GetFileChanges(r.Context(), id, siteID)
-	if err != nil {
+	changes, appErr := Services.SyncService.GetFileChanges(r.Context(), id, siteID)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			apperror.ErrFSRead,
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return

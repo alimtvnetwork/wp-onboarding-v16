@@ -7,11 +7,12 @@ import (
 	"strconv"
 
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // CheckSiteHealth performs a health check on a single site
 var CheckSiteHealth = handleSiteActionByID("E4001",
-	func(ctx context.Context, siteID int64) (any, error) {
+	func(ctx context.Context, siteID int64) (any, *apperror.AppError) {
 		return Services.SiteHealthService.CheckSite(ctx, siteID)
 	},
 )
@@ -32,13 +33,13 @@ func CheckAllSitesHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checks, err := Services.SiteHealthService.CheckAllSites(r.Context())
-	if err != nil {
+	checks, appErr := Services.SiteHealthService.CheckAllSites(r.Context())
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E4002",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -66,13 +67,13 @@ func GetSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
 	siteID, _ := strconv.ParseInt(r.URL.Query().Get("siteId"), 10, 64)
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 
-	history, err := Services.SiteHealthService.GetHistory(siteID, limit)
-	if err != nil {
+	history, appErr := Services.SiteHealthService.GetHistory(siteID, limit)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E4003",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -97,13 +98,13 @@ func GetSiteHealthSummaries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summaries, err := Services.SiteHealthService.GetSummaries(r.Context())
-	if err != nil {
+	summaries, appErr := Services.SiteHealthService.GetSummaries(r.Context())
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E4004",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -128,13 +129,13 @@ func GetSiteHealthStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stats, err := Services.SiteHealthService.GetStats(r.Context())
-	if err != nil {
+	stats, appErr := Services.SiteHealthService.GetStats(r.Context())
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E4005",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -161,13 +162,13 @@ func ClearSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
 
 	days, _ := strconv.Atoi(r.URL.Query().Get("days"))
 
-	deleted, err := Services.SiteHealthService.ClearHistory(days)
-	if err != nil {
+	deleted, appErr := Services.SiteHealthService.ClearHistory(days)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E4005",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
