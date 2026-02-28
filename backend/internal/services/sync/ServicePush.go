@@ -65,11 +65,12 @@ func (s *serviceImpl) runCheckAndValidate(
 
 	sr := syncResult.Value()
 	if sr.ErrorMessage != "" {
-		r := apperror.Ok(PushSyncResult{
+		errorResult := PushSyncResult{
 			PluginId:     pluginID,
 			SiteId:       siteID,
 			ErrorMessage: sr.ErrorMessage,
-		})
+		}
+		r := apperror.Ok(errorResult)
 
 		return SyncResult{}, &r
 	}
@@ -84,11 +85,12 @@ func (s *serviceImpl) runCheckAndValidate(
 		}
 		s.broadcastProgress(inSyncProgress)
 
-		r := apperror.Ok(PushSyncResult{
+		inSyncResult := PushSyncResult{
 			PluginId:  pluginID,
 			SiteId:    siteID,
 			IsSuccess: true,
-		})
+		}
+		r := apperror.Ok(inSyncResult)
 
 		return SyncResult{}, &r
 	}
@@ -120,13 +122,15 @@ func (s *serviceImpl) resolvePushDeps(ctx context.Context, pluginID, siteID int6
 
 	siteInfo := siteInfoResult.Value()
 
-	return apperror.Ok(pushDeps{
+	resolved := pushDeps{
 		Plugin:   plugResult.Value(),
 		Mapping:  mappingResult.Value(),
 		SiteUrl:  siteInfo.Url,
 		SiteUser: siteInfo.Username,
 		Password: passwordResult.Value(),
-	})
+	}
+
+	return apperror.Ok(resolved)
 }
 
 // executePush builds sync files, pushes to remote, and returns the result.
@@ -161,11 +165,13 @@ func (s *serviceImpl) executePush(
 		}
 		s.broadcastProgress(noPushProgress)
 
-		return apperror.Ok(PushSyncResult{
+		noPushResult := PushSyncResult{
 			PluginId:  pluginID,
 			SiteId:    siteID,
 			IsSuccess: true,
-		})
+		}
+
+		return apperror.Ok(noPushResult)
 	}
 
 	return s.pushFilesToRemote(ctx, deps, syncFiles, pluginID, siteID)
@@ -200,12 +206,14 @@ func (s *serviceImpl) pushFilesToRemote(
 		}
 		s.broadcastProgress(errorProgress)
 
-		return apperror.Ok(PushSyncResult{
+		pushErrorResult := PushSyncResult{
 			PluginId:     pluginID,
 			SiteId:       siteID,
 			TotalChanges: len(syncFiles),
 			ErrorMessage: err.Error(),
-		})
+		}
+
+		return apperror.Ok(pushErrorResult)
 	}
 
 	result := PushSyncResult{
