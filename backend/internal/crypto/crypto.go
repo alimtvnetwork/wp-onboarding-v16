@@ -12,7 +12,7 @@ import (
 )
 
 // Encrypt encrypts plaintext using AES-256-GCM
-func Encrypt(plaintext, key []byte) ([]byte, error) {
+func Encrypt(plaintext, key []byte) ([]byte, *apperror.AppError) {
 	hash := sha256.Sum256(key)
 	derivedKey := hash[:]
 
@@ -36,7 +36,7 @@ func Encrypt(plaintext, key []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts ciphertext using AES-256-GCM
-func Decrypt(ciphertext, key []byte) ([]byte, error) {
+func Decrypt(ciphertext, key []byte) ([]byte, *apperror.AppError) {
 	if len(ciphertext) == 0 {
 		return nil, apperror.New(apperror.ErrCryptoInvalid, "empty ciphertext")
 	}

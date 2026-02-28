@@ -4,6 +4,8 @@ package site
 import (
 	"fmt"
 
+	"wp-plugin-publish/pkg/apperror"
+
 	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/internal/wordpress"
@@ -67,10 +69,10 @@ func (s *Service) executeCredentialsTest(client *wordpress.Client, normalizedUrl
 }
 
 // buildCredentialsFailure handles a failed credentials test.
-func (s *Service) buildCredentialsFailure(normalizedUrl, username string, err error) *ConnectionResult {
+func (s *Service) buildCredentialsFailure(normalizedUrl, username string, appErr *apperror.AppError) *ConnectionResult {
 	result := &ConnectionResult{
 		IsSuccess: false,
-		Message:   err.Error(),
+		Message:   appErr.Error(),
 	}
 
 	failDetails := toJson(ConnectionFailureDetails{
@@ -81,7 +83,7 @@ func (s *Service) buildCredentialsFailure(normalizedUrl, username string, err er
 		SiteID:  0,
 		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Failed.String(),
-		Message: fmt.Sprintf("Connection failed: %s", err.Error()),
+		Message: fmt.Sprintf("Connection failed: %s", appErr.Error()),
 		Details: failDetails,
 	})
 	s.broadcastCompleteStep(0, stagestatus.Failed.String(), "Connection test failed")
