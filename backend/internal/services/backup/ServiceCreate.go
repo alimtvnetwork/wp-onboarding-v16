@@ -19,7 +19,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 		PluginId: mappingID,
 		Step:     "init",
 		Message:  "Starting backup creation",
-		Details:  toDetails(InitDetails{MappingID: mappingID}),
+		Details:  toDetails(InitDetails{MappingId: mappingID}),
 	}
 	s.logInfoWithDetails(initLog)
 
@@ -70,7 +70,7 @@ func (s *Service) createBackupFile(mappingID int64) apperror.Result[string] {
 // buildBackupModel creates the backup model struct.
 func (s *Service) buildBackupModel(mappingID int64, backupPath string) models.Backup {
 	return models.Backup{
-		PluginMappingID: mappingID,
+		PluginMappingId: mappingID,
 		FilePath:        backupPath,
 		FileSize:        pathutil.FileSize(backupPath),
 		CreatedAt:       time.Now(),

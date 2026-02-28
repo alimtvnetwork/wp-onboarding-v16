@@ -21,7 +21,7 @@ type SessionContextKey struct{}
 
 // RequestSession contains session data for a single API request
 type RequestSession struct {
-	ID            string
+	Id            string
 	Method        string
 	Path          string
 	Query         string              `json:",omitempty"`
@@ -136,8 +136,8 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			duration := endTime.Sub(startTime)
 
 			// Build session record
-			session := &RequestSession{
-				ID:           sessionID,
+		session := &RequestSession{
+				Id:           sessionID,
 				Method:       r.Method,
 				Path:         r.URL.Path,
 				Query:        r.URL.RawQuery,
@@ -182,8 +182,8 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 	}
 }
 
-// GetSessionID extracts the session ID from context
-func GetSessionID(ctx context.Context) string {
+// GetSessionId extracts the session ID from context
+func GetSessionId(ctx context.Context) string {
 	id, ok := ctx.Value(SessionContextKey{}).(string)
 	if ok {
 		return id

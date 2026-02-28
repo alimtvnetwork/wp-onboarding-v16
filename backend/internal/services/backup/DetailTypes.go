@@ -16,8 +16,8 @@ func toDetails[T any](v T) json.RawMessage {
 
 // InitDetails carries backup/restore init context.
 type InitDetails struct {
-	MappingID int64 `json:",omitempty"`
-	BackupID  int64 `json:",omitempty"`
+	MappingId int64 `json:",omitempty"`
+	BackupId  int64 `json:",omitempty"`
 }
 
 // PathDetails carries a file path context.

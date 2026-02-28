@@ -15,7 +15,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 		PluginId: backupID,
 		Step:     "init",
 		Message:  "Starting backup restore",
-		Details:  toDetails(InitDetails{BackupID: backupID}),
+		Details:  toDetails(InitDetails{BackupId: backupID}),
 	}
 	s.logInfoWithDetails(restoreLog)
 
@@ -36,7 +36,7 @@ func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 		PluginId: id,
 		Step:     "delete",
 		Message:  "Deleting backup",
-		Details:  toDetails(InitDetails{BackupID: id}),
+		Details:  toDetails(InitDetails{BackupId: id}),
 	}
 	s.logInfoWithDetails(deleteLog)
 
