@@ -76,6 +76,23 @@ if isReadyToFlush {
 }
 ```
 
+### P8 Exemptions
+
+The following patterns are **exempt** from P8 extraction because they are idiomatic or auto-generated:
+
+1. **Enum bounds checks** — `IsValid()`, `IsDefined()`, `IsDefinedAndValid()` methods in enum `Variant.go` files may use raw comparisons inline:
+   ```go
+   func (v Variant) IsValid() bool           { return v > Invalid && v < Variant(len(variantLabels)) }
+   func (v Variant) IsInvalid() bool          { return v == Invalid }
+   func (v Variant) IsDefined() bool          { return v != Invalid }
+   func (v Variant) IsDefinedAndValid() bool  { return v.IsDefined() && v.IsValid() }
+   ```
+   These are the *definition sites* of named booleans — extracting further would be circular.
+
+2. **Idiomatic error guards** — `if err != nil` is exempt as standard Go idiom.
+
+3. **Enum variant identity checks** — `IsX() bool { return v == X }` one-liner methods are exempt (they *are* the named boolean).
+
 ---
 
 ## Concrete Examples
