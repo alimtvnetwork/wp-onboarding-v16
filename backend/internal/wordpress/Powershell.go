@@ -208,12 +208,11 @@ func parsePsJsonOutput(result *PowerShellResult) {
 
 // streamPsStderr streams stderr lines to the output callback.
 func streamPsStderr(result *PowerShellResult, onOutput func(line string)) {
-	hasNoCallback := onOutput == nil
+	isCallbackMissing := onOutput == nil
 	isStderrEmpty := result.Stderr == ""
-	isSkippable := hasNoCallback || isStderrEmpty
+	isSkippable := isCallbackMissing || isStderrEmpty
 
 	if isSkippable {
-
 		return
 	}
 
@@ -230,15 +229,15 @@ func streamPsStderr(result *PowerShellResult, onOutput func(line string)) {
 // finalizePsResult sets final success/error state on the result.
 func finalizePsResult(result *PowerShellResult, err error) {
 	hasError := err != nil
-	hasNoErrorMessage := result.ErrorMessage == ""
-	isUnreportedError := hasError && hasNoErrorMessage
+	isErrorMessageEmpty := result.ErrorMessage == ""
+	isUnreportedError := hasError && isErrorMessageEmpty
 
 	if isUnreportedError {
 		result.ErrorMessage = err.Error()
 	}
 
 	isZeroExit := result.ExitCode == 0
-	isCleanResult := isZeroExit && hasNoErrorMessage
+	isCleanResult := isZeroExit && isErrorMessageEmpty
 
 	if isCleanResult {
 		result.IsSuccess = true

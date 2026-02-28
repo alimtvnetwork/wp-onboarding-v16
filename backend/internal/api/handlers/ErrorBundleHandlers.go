@@ -58,7 +58,6 @@ func extractReportFromBody(r *http.Request) string {
 	isReadOnly := r.Method != http.MethodPost
 
 	if isReadOnly {
-
 		return ""
 	}
 

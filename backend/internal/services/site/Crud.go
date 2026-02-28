@@ -100,9 +100,9 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 
 	existing := existingResult.Value()
 	updates, args := s.buildUpdateFields(ctx, id, input, &existing)
-	hasNoUpdates := len(updates) == 0
+	isUpdateEmpty := len(updates) == 0
 
-	if hasNoUpdates {
+	if isUpdateEmpty {
 		return existingResult
 	}
 

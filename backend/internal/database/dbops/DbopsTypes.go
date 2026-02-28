@@ -11,19 +11,23 @@ import (
 )
 
 // ParseDateTime parses SQLite datetime strings into time.Time.
+// Go's time.Parse uses a reference time (Mon Jan 2 15:04:05 MST 2006) as the format template.
+// The literal "2006-01-02 15:04:05" is NOT an arbitrary date — it is Go's canonical reference
+// timestamp that defines the layout. See: https://pkg.go.dev/time#pkg-constants
 func ParseDateTime(s string) time.Time {
 	isBlank := strings.TrimSpace(s) == ""
 
 	if isBlank {
-
 		return time.Time{}
 	}
 
-	t, err := time.Parse("2006-01-02 15:04:05", s)
+	// sqliteDateTimeLayout is Go's reference time in SQLite's default DATETIME format.
+	sqliteDateTimeLayout := "2006-01-02 15:04:05"
+
+	t, err := time.Parse(sqliteDateTimeLayout, s)
 	isParsed := err == nil
 
 	if isParsed {
-
 		return t
 	}
 
@@ -31,7 +35,6 @@ func ParseDateTime(s string) time.Time {
 	isParsed = err == nil
 
 	if isParsed {
-
 		return t
 	}
 
@@ -257,7 +260,6 @@ func getCallerInfo(skip int) (file string, line int) {
 	isInvalid := !isValid
 
 	if isInvalid {
-
 		return "unknown", 0
 	}
 
