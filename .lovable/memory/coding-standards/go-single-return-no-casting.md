@@ -45,30 +45,46 @@ Even private/unexported functions must follow this rule. If a helper returns `(s
 
 ---
 
-## Rule 2: No Type Assertions (No Casting)
+## Rule 2: No Inline Type Assertions — Use `apperror.Cast[T]`
 
-Code MUST NOT use inline Go type assertions (`value.(ConcreteType)`) to inspect error types or extract concrete implementations. Use centralized extraction functions instead.
+Code MUST NOT use inline Go type assertions (`value.(ConcreteType)`) to inspect error types or extract concrete implementations. Use `apperror.Cast[T]` or centralized extraction functions instead. **Never swallow a type assertion failure with `_, _ :=`.**
 
 ### Why
 
-Scattered type assertions couple callers to concrete types, are easy to forget, and bypass the type system. Centralized extractors provide a single place to handle type narrowing.
+- Scattered type assertions couple callers to concrete types and are easy to forget
+- Swallowed assertion failures (`_, _ := x.(T)`) silently produce zero values, causing subtle bugs
+- `apperror.Cast[T]` returns `Result[T]` with a full stack trace (`ErrTypeCast / E9005`), making failures visible and debuggable
+
+### `apperror.Cast[T]` — The Standard Utility
+
+```go
+// Cast performs a safe type assertion from any to T.
+// Returns Result[T] with ErrTypeCast if the assertion fails.
+func Cast[T any](value any) Result[T]
+
+// CastSlice performs a safe type assertion from any to []T.
+func CastSlice[T any](value any) ResultSlice[T]
+```
 
 ### Patterns
 
 ```go
-// ❌ WRONG — inline type assertion
-if appErr, ok := err.(*apperror.AppError); ok {
-    sessionId = appErr.Diagnostic.SessionId
-}
+// ❌ WRONG — swallowed assertion failure
+results, _ := resp.Results.([]interface{})
 
-// ✅ CORRECT — centralized extractor
+// ❌ WRONG — inline assertion without error handling
+if appErr, ok := err.(*apperror.AppError); ok { ... }
+
+// ✅ CORRECT — apperror.Cast returns Result with stack trace
+castResult := apperror.Cast[[]interface{}](resp.Results)
+if castResult.HasError() {
+    return apperror.Fail[MyType](castResult.AppError())
+}
+results := castResult.Value()
+
+// ✅ CORRECT — centralized extractor (for error-type narrowing)
 if appErr := apperror.Extract(err); appErr != nil {
     sessionId = appErr.Diagnostic.SessionId
-}
-
-// ❌ WRONG — inline assertion on APIError
-if apiErr, ok := err.(*wordpress.APIError); ok {
-    status = apiErr.StatusCode
 }
 
 // ✅ CORRECT — centralized extractor
@@ -82,5 +98,5 @@ if apiErr := wordpress.ExtractAPIError(err); apiErr != nil {
 1. **Go stdlib interface compliance** — `rw.ResponseWriter.(http.Flusher)`, `rw.ResponseWriter.(http.Hijacker)`, etc. These are required by the Go HTTP spec and cannot be avoided.
 2. **`context.Value()` extraction** — `ctx.Value(key).(string)` is the standard Go context pattern.
 3. **`net.Error` check** — `cause.(net.Error)` for network error detection is standard Go.
-4. **Inside the `apperror` and `wordpress` packages themselves** — the `Extract()`, `Is()`, `Recover()`, and `ExtractAPIError()` functions are the designated centralized extraction points. They internally use type assertions, which is their purpose.
+4. **Inside the `apperror` and `wordpress` packages themselves** — the `Extract()`, `Is()`, `Recover()`, `Cast[T]()`, and `ExtractAPIError()` functions are the designated centralized extraction points. They internally use type assertions, which is their purpose.
 5. **`errors.As()` / `errors.Is()`** — standard Go error unwrapping is allowed.

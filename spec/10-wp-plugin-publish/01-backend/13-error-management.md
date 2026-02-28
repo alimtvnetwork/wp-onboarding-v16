@@ -648,6 +648,16 @@ s.broadcastProgress(pluginID, siteID, "packaging", 30, "Building package...")
 // ❌ Don't swallow errors
 result, _ := doSomething()  // Never ignore errors
 
+// ❌ Don't swallow type assertion failures
+results, _ := resp.Results.([]interface{})  // Silent zero value on failure
+
+// ✅ Use apperror.Cast[T] for safe type assertions
+castResult := apperror.Cast[[]interface{}](resp.Results)
+if castResult.HasError() {
+    return apperror.Fail[MyType](castResult.AppError())  // ErrTypeCast / E9005 with stack trace
+}
+results := castResult.Value()
+
 // ❌ Don't use generic messages
 return fmt.Errorf("error occurred")  // Too vague
 

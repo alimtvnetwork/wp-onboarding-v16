@@ -21,6 +21,7 @@ The `apperror` package provides **structured application errors with mandatory s
 | `clipboard.go` | AI-friendly error report formatting | ≤200 |
 | `match.go` | Error matching utilities | ≤50 |
 | `codes.go` | Error code constants | ≤200 |
+| `cast.go` | Safe type assertion utilities (Cast[T], CastSlice[T]) | ≤50 |
 | `result.go` | Result[T] — single value wrapper | ≤150 |
 | `result_slice.go` | ResultSlice[T] — collection wrapper | ≤150 |
 | `result_map.go` | ResultMap[K, V] — associative map wrapper | ≤150 |
