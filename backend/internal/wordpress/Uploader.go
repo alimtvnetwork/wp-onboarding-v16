@@ -273,7 +273,9 @@ func buildUploadAPIError(input uploadAPIErrorInput) *APIError {
 // buildUploadDiagnosticBody returns a truncated response body or a descriptive empty-body message.
 func buildUploadDiagnosticBody(respBody string) string {
 	body := truncateBody(respBody, 8192)
-	if body != "" {
+	isBodyPresent := body != ""
+
+	if isBodyPresent {
 		return body
 	}
 

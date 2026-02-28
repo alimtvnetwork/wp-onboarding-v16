@@ -100,7 +100,9 @@ func ParseTypedEnvelope[T any](data []byte) *TypedEnvelope[T] {
 // not in envelope format, enabling the caller to fall back to legacy parsing.
 func UnwrapResults[T any](data []byte) ([]T, bool) {
 	env := ParseTypedEnvelope[T](data)
-	if env == nil {
+	isEnvelopeMissing := env == nil
+
+	if isEnvelopeMissing {
 		return nil, false
 	}
 	return env.Results, true
@@ -111,7 +113,11 @@ func UnwrapResults[T any](data []byte) ([]T, bool) {
 // if the data is not in envelope format or Results is empty.
 func UnwrapSingleResult[T any](data []byte) (*T, bool) {
 	env := ParseTypedEnvelope[T](data)
-	if env == nil || len(env.Results) == 0 {
+	isEnvelopeMissing := env == nil
+	isResultsEmpty := !isEnvelopeMissing && len(env.Results) == 0
+	isEmpty := isEnvelopeMissing || isResultsEmpty
+
+	if isEmpty {
 		return nil, false
 	}
 	return &env.Results[0], true

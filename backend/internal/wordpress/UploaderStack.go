@@ -17,7 +17,9 @@ func captureStackTrace(skip int) string {
 
 // captureStackTraceN captures the call stack with a configurable depth.
 func captureStackTraceN(skip int, maxDepth int) string {
-	if maxDepth <= 0 {
+	isDepthUnset := maxDepth <= 0
+
+	if isDepthUnset {
 		maxDepth = DefaultStackTraceDepth
 	}
 

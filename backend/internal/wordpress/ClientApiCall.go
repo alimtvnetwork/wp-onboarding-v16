@@ -143,7 +143,9 @@ func decodeAPIResponse[T any](data []byte, operationDesc string) apperror.Result
 // firstNonEmpty returns the first non-empty string argument.
 func firstNonEmpty(values ...string) string {
 	for _, v := range values {
-		if v != "" {
+		isNonEmpty := v != ""
+
+		if isNonEmpty {
 			return v
 		}
 	}

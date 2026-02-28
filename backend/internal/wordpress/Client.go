@@ -99,7 +99,9 @@ func (c *Client) setStandardHeaders(req *http.Request, contentType string) {
 
 // marshalBody encodes the body to JSON if non-nil.
 func marshalBody(body any) (io.Reader, *apperror.AppError) {
-	if body == nil {
+	isBodyEmpty := body == nil
+
+	if isBodyEmpty {
 
 		return nil, nil
 	}

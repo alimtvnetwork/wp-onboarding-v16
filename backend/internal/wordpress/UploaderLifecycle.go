@@ -16,7 +16,9 @@ import (
 func normalizePluginSlug(slug string) string {
 	if strings.Contains(slug, "/") {
 		dir := filepath.Dir(slug)
-		if dir != "." && dir != "" {
+		isDirValid := dir != "." && dir != ""
+
+		if isDirValid {
 			return dir
 		}
 	}
