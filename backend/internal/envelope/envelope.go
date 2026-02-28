@@ -277,7 +277,10 @@ func (r Response) WithBackendTrace(lines []string) Response {
 	if isTraceDisabled || isEmpty {
 		return r
 	}
-	if globalDebug.MaxStackFrames > 0 && len(lines) > globalDebug.MaxStackFrames {
+	hasFrameLimit     := globalDebug.MaxStackFrames > 0
+	isOverFrameLimit  := len(lines) > globalDebug.MaxStackFrames
+
+	if hasFrameLimit && isOverFrameLimit {
 		lines = lines[:globalDebug.MaxStackFrames]
 	}
 	r.ensureErrors()
@@ -293,7 +296,10 @@ func (r Response) WithDelegatedErrorStack(lines []string) Response {
 	if isTraceDisabled || isEmpty {
 		return r
 	}
-	if globalDebug.MaxStackFrames > 0 && len(lines) > globalDebug.MaxStackFrames {
+	hasFrameLimit     := globalDebug.MaxStackFrames > 0
+	isOverFrameLimit  := len(lines) > globalDebug.MaxStackFrames
+
+	if hasFrameLimit && isOverFrameLimit {
 		lines = lines[:globalDebug.MaxStackFrames]
 	}
 	r.ensureErrors()

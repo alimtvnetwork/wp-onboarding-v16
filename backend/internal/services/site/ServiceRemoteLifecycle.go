@@ -79,7 +79,10 @@ func (s *Service) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSl
 // preDeleteDisable attempts to disable the plugin before deletion, logging but not failing on error.
 func (s *Service) preDeleteDisable(client *wordpress.Client, pluginSlug string) {
 	if disableErr := client.DisablePluginViaUploader(pluginSlug); disableErr != nil {
-		if apiErr := wordpress.ExtractAPIError(disableErr); apiErr != nil && apiErr.StatusCode == http.StatusNotFound {
+		apiErr := wordpress.ExtractAPIError(disableErr)
+		isNotFoundError := apiErr != nil && apiErr.StatusCode == http.StatusNotFound
+
+		if isNotFoundError {
 			s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
 		} else {
 			s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())
@@ -209,7 +212,10 @@ func (s *Service) connectForRemoteAction(ref *remoteActionRef) (*wordpress.Clien
 
 // logRemoteStageStart logs the stage start for the remote action execution.
 func (s *Service) logRemoteStageStart(ref *remoteActionRef) {
-	if s.sessionService != nil && ref.SessionID != "" {
+	hasSessionService := s.sessionService != nil
+	hasSessionId      := ref.SessionID != ""
+
+	if hasSessionService && hasSessionId {
 		s.sessionService.LogStageStart(ref.SessionID, ref.Action)
 	}
 	s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: ref.Action, Message: fmt.Sprintf("Executing %s action on plugin: %s", ref.Action, ref.PluginSlug), Details: session.ToJSON(RemoteActionExecDetails{TargetUrl: ref.Site.Url, PluginSlug: ref.PluginSlug})})

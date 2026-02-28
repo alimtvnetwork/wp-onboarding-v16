@@ -179,7 +179,9 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 	}
 
 	delay := time.Until(*job.NextRunAt)
-	if delay < 0 {
+	isOverdue := delay < 0
+
+	if isOverdue {
 		delay = 0
 	}
 
@@ -230,7 +232,10 @@ func (s *PublishScheduler) enqueueJobSites(job *ScheduledJob) {
 			SiteId: siteId, SiteName: siteName, Options: job.Options,
 		})
 	}
-	if s.queue != nil && len(items) > 0 {
+	hasQueue := s.queue != nil
+	hasItems := len(items) > 0
+
+	if hasQueue && hasItems {
 		s.queue.EnqueueBatch(items)
 	}
 }

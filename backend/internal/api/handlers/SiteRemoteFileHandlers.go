@@ -37,7 +37,11 @@ func parseRemotePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (*
 		return nil, false
 	}
 
-	if input.Plugin == "" || input.Path == "" {
+	isPluginMissing := input.Plugin == ""
+	isPathMissing   := input.Path == ""
+	isInputInvalid  := isPluginMissing || isPathMissing
+
+	if isInputInvalid {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

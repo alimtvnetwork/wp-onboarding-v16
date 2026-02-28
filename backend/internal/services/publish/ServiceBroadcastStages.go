@@ -232,7 +232,9 @@ func parseNameDetails(details json.RawMessage) *resolvedNames {
 		SiteName   string `json:",omitempty"`
 		SiteURL    string `json:",omitempty"`
 	}
-	if len(details) > 0 {
+	hasDetails := len(details) > 0
+
+	if hasDetails {
 		_ = json.Unmarshal(details, &parsed)
 	}
 
@@ -241,7 +243,10 @@ func parseNameDetails(details json.RawMessage) *resolvedNames {
 
 // resolvePluginName fetches plugin name from DB if not provided.
 func (s *Service) resolvePluginName(pluginId int64, name string) string {
-	if name == "" && pluginId > 0 {
+	isNameMissing := name == ""
+	hasPluginId   := pluginId > 0
+
+	if isNameMissing && hasPluginId {
 		pResult := s.pluginService.GetByID(context.Background(), pluginId)
 		if pResult.IsSafe() {
 			return pResult.Value().Name
@@ -256,12 +261,18 @@ func (s *Service) resolvePluginName(pluginId int64, name string) string {
 
 // resolveSiteNames fetches site name/URL from DB if not provided.
 func (s *Service) resolveSiteNames(siteId int64, name, url string) (string, string) {
-	if (name == "" || url == "") && siteId > 0 {
+	isNameMissing := name == ""
+	isUrlMissing  := url == ""
+	hasIncomplete := isNameMissing || isUrlMissing
+	hasSiteId     := siteId > 0
+
+	if hasIncomplete && hasSiteId {
 		if creds, err := s.getSiteCredentials(context.Background(), siteId); err == nil {
-			if name == "" {
+			if isNameMissing {
 				name = creds.Site.Name
 			}
-			if url == "" {
+
+			if isUrlMissing {
 				url = creds.Site.URL
 			}
 		}

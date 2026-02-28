@@ -187,16 +187,22 @@ Replace with a single named boolean that captures the combined meaning:
 ```go
 // ✅ CORRECT — named variable with positive semantics
 isExternalAdmin := user.IsAdmin() && request.IsExternal()
+
 if isExternalAdmin { ... }
 
-isLiveRunWithDeletions := !isDryRun && totalDeleted > 0  // ← also acceptable with counterpart ↓
-isLiveRunWithDeletions := isDryRun == false && totalDeleted > 0  // ← explicit comparison OK
+isLiveRun    := !isDryRun
+hasDeletedItems := totalDeleted > 0
+isLiveRunWithDeletions := isLiveRun && hasDeletedItems
+
+if isLiveRunWithDeletions { ... }
 
 isEnabledButUncached := config.IsEnabled() && cache.IsMissing(key)
+
 if isEnabledButUncached { ... }
 
-isPartialFailure := resp.StatusCode < 400 && resp.IsUnsuccessful()
-if isPartialFailure { ... }
+hasPartialFailure := resp.IsSuccessStatus() && resp.IsUnsuccessful()
+
+if hasPartialFailure { ... }
 ```
 
 ### 5.3 — Fix: Use Positive Counterpart Method
@@ -241,8 +247,11 @@ if !isDryRun && totalDeleted > 0 {
 
 **After:**
 ```go
-// ✅ Named boolean
-isLiveRunWithDeletions := (isDryRun == false) && totalDeleted > 0
+// ✅ Named booleans — no raw comparisons in compound expression
+isLiveRun       := !isDryRun
+hasDeletedItems := totalDeleted > 0
+isLiveRunWithDeletions := isLiveRun && hasDeletedItems
+
 if isLiveRunWithDeletions {
     s.logCleanupAudit(results)
 }

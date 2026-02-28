@@ -133,7 +133,9 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 
 // appendNameUpdate adds a Name update if provided.
 func appendNameUpdate(updates *[]string, args *[]any, name *string) {
-	if name != nil && *name != "" {
+	isNameProvided := name != nil && *name != ""
+
+	if isNameProvided {
 		*updates = append(*updates, "Name = ?")
 		*args = append(*args, *name)
 	}
@@ -149,7 +151,9 @@ type urlUpdateInput struct {
 
 // appendUrlUpdate adds a Url update if provided and changed.
 func appendUrlUpdate(input urlUpdateInput) {
-	if input.UrlInput == nil || *input.UrlInput == "" {
+	isUrlMissing := input.UrlInput == nil || *input.UrlInput == ""
+
+	if isUrlMissing {
 		return
 	}
 	normalizedUrl := normalizeUrl(*input.UrlInput)
@@ -161,7 +165,9 @@ func appendUrlUpdate(input urlUpdateInput) {
 
 // appendUsernameUpdate adds a Username update if provided.
 func appendUsernameUpdate(updates *[]string, args *[]any, username *string) {
-	if username != nil && *username != "" {
+	isUsernameProvided := username != nil && *username != ""
+
+	if isUsernameProvided {
 		*updates = append(*updates, "Username = ?")
 		*args = append(*args, *username)
 	}
@@ -169,7 +175,9 @@ func appendUsernameUpdate(updates *[]string, args *[]any, username *string) {
 
 // appendPasswordUpdate adds a PasswordEncrypted update if provided.
 func (s *Service) appendPasswordUpdate(updates *[]string, args *[]any, password *string) {
-	if password == nil || *password == "" {
+	isPasswordMissing := password == nil || *password == ""
+
+	if isPasswordMissing {
 		return
 	}
 	encryptedPassword, err := encrypt([]byte(*password), s.encryptionKey)
