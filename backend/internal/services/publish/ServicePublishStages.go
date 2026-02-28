@@ -51,10 +51,14 @@ func (s *Service) executePackageStage(pctx *publishContext) PackageStageResult {
 	stage := s.runStage("package", func() error {
 		s.broadcastProgress(pctx.progress(publishstep.Packaging, 30, "Building package..."))
 
-		var err error
-		buildResult, err = s.buildPluginPackage(pctx)
+		result, appErr := s.buildPluginPackage(pctx)
+		if appErr != nil {
+			return appErr
+		}
 
-		return err
+		buildResult = result
+
+		return nil
 	})
 
 	return buildPackageStageResult(buildResult, stage)
@@ -80,12 +84,13 @@ type PackageBuildResult struct {
 }
 
 // buildPluginPackage creates the ZIP for full or selective mode.
-func (s *Service) buildPluginPackage(pctx *publishContext) (*PackageBuildResult, error) {
+func (s *Service) buildPluginPackage(pctx *publishContext) (*PackageBuildResult, *apperror.AppError) {
 	s.broadcastPackageStartLog(pctx)
 
-	buildResult, err := s.buildZip(pctx)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create plugin ZIP package")
+	buildResult, appErr := s.buildZip(pctx)
+	if appErr != nil {
+
+		return nil, apperror.Wrap(appErr, apperror.ErrInternal, "failed to create plugin ZIP package")
 	}
 
 	s.logZipIfCreated(pctx, buildResult)
@@ -130,7 +135,7 @@ func (s *Service) logZipIfCreated(pctx *publishContext, buildResult *PackageBuil
 }
 
 // buildZip delegates to selective or full zip creation.
-func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, error) {
+func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, *apperror.AppError) {
 	hasSelectedMode := pctx.Options.Mode.IsSelected()
 	hasFiles := len(pctx.Options.Files) > 0
 	isSelectiveMode :=
@@ -145,12 +150,13 @@ func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, error) {
 }
 
 // buildSelectiveZipResult creates a selective ZIP with chosen files.
-func (s *Service) buildSelectiveZipResult(pctx *publishContext) (*PackageBuildResult, error) {
+func (s *Service) buildSelectiveZipResult(pctx *publishContext) (*PackageBuildResult, *apperror.AppError) {
 	s.broadcastSelectiveZipLog(pctx)
 
 	path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
 	if err != nil {
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create selective ZIP")
 	}
 
 	return &PackageBuildResult{ZipPath: path, FileCount: len(pctx.Options.Files)}, nil
@@ -173,7 +179,7 @@ func (s *Service) broadcastSelectiveZipLog(pctx *publishContext) {
 }
 
 // buildFullZipResult creates a full ZIP with all plugin files.
-func (s *Service) buildFullZipResult(pctx *publishContext) (*PackageBuildResult, error) {
+func (s *Service) buildFullZipResult(pctx *publishContext) (*PackageBuildResult, *apperror.AppError) {
 	fullLog := DetailedLogInput{
 		PluginId: pctx.PluginId,
 		SiteId:   pctx.SiteId,
@@ -185,7 +191,8 @@ func (s *Service) buildFullZipResult(pctx *publishContext) (*PackageBuildResult,
 
 	path, err := s.createFullZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.PluginInfo.ExcludePatterns)
 	if err != nil {
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create full ZIP")
 	}
 
 	return &PackageBuildResult{ZipPath: path, FileCount: pctx.PluginInfo.FileCount}, nil
@@ -245,7 +252,9 @@ func (s *Service) saveRollbackZip(pctx *publishContext, exportResult *wordpress.
 // writeRollbackZipToDisk writes the decoded zip data to a temp file.
 func (s *Service) writeRollbackZipToDisk(remoteSlug string, zipData []byte) string {
 	backupPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-rollback-%d.zip", remoteSlug, time.Now().Unix()))
-	if writeErr := os.WriteFile(backupPath, zipData, 0644); writeErr != nil {
+
+	writeErr := os.WriteFile(backupPath, zipData, 0644)
+	if writeErr != nil {
 		return ""
 	}
 

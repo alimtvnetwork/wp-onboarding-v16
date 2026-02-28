@@ -33,14 +33,19 @@ func (s *Service) handleRollback(input rollbackInput) {
 	}
 
 	rollbackStage := s.runStageWithSession(input.Pctx.SessionId, "rollback", func() error {
-		return s.executeRollbackSteps(input)
+		appErr := s.executeRollbackSteps(input)
+		if appErr != nil {
+			return appErr
+		}
+
+		return nil
 	})
 	input.Pctx.Result.Stages = append(input.Pctx.Result.Stages, rollbackStage)
 	s.reportRollbackOutcome(input.Pctx, rollbackStage, input.Pctx.Result)
 }
 
 // executeRollbackSteps deactivates the broken plugin and optionally re-uploads the backup.
-func (s *Service) executeRollbackSteps(input rollbackInput) error {
+func (s *Service) executeRollbackSteps(input rollbackInput) *apperror.AppError {
 	s.broadcastProgress(input.Pctx.progress(publishstep.Rollback, 85, "Activation failed — rolling back..."))
 	s.broadcastRollbackStartLog(input.Pctx, input.ActivateStage)
 	s.rollbackDeactivate(input.Pctx)
@@ -67,7 +72,8 @@ func (s *Service) rollbackDeactivate(pctx *publishContext) {
 	deactLog := pctx.stageLog(loglevel.Info, publishstep.Rollback, deactCtx)
 	s.broadcastStageLog(deactLog)
 
-	if disableErr := pctx.WPClient.DisablePluginViaUploader(pctx.Mapping.RemoteSlug); disableErr != nil {
+	disableErr := pctx.WPClient.DisablePluginViaUploader(pctx.Mapping.RemoteSlug)
+	if disableErr != nil {
 		failCtx := StageContext{
 			What:   "Deactivation during rollback",
 			Result: fmt.Sprintf("Could not deactivate: %s (site may already be safe)", disableErr.Error()),
@@ -78,34 +84,35 @@ func (s *Service) rollbackDeactivate(pctx *publishContext) {
 }
 
 // rollbackRestore re-uploads the pre-upload backup if available.
-func (s *Service) rollbackRestore(ctx context.Context, pctx *publishContext, preUploadBackupZip string) error {
+func (s *Service) rollbackRestore(ctx context.Context, pctx *publishContext, preUploadBackupZip string) *apperror.AppError {
 	isBackupMissing := preUploadBackupZip == ""
 
 	if isBackupMissing {
-		return s.reportNoBackupAvailable(pctx)
+		s.logNoBackupAvailable(pctx)
+
+		return nil
 	}
 
 	return s.performRollbackUpload(ctx, pctx, preUploadBackupZip)
 }
 
-// reportNoBackupAvailable logs that no backup is available for rollback.
-func (s *Service) reportNoBackupAvailable(pctx *publishContext) error {
+// logNoBackupAvailable logs that no backup is available for rollback.
+func (s *Service) logNoBackupAvailable(pctx *publishContext) {
 	noBackupCtx := StageContext{
 		What:   "No pre-upload backup available",
 		Result: "Plugin deactivated but files not restored. Manual intervention may be needed.",
 	}
 	noBackupLog := pctx.stageLog(loglevel.Warn, publishstep.Rollback, noBackupCtx)
 	s.broadcastStageLog(noBackupLog)
-
-	return nil
 }
 
 // performRollbackUpload re-uploads the backup ZIP and logs the result.
-func (s *Service) performRollbackUpload(ctx context.Context, pctx *publishContext, preUploadBackupZip string) error {
+func (s *Service) performRollbackUpload(ctx context.Context, pctx *publishContext, preUploadBackupZip string) *apperror.AppError {
 	s.logRollbackRestoreStart(pctx)
 
 	uploadResult := s.uploadPlugin(ctx, pctx.WPClient, preUploadBackupZip, pctx.Mapping.RemoteSlug)
 	if uploadResult.HasError() {
+
 		return apperror.Wrap(uploadResult.AppError(), apperror.ErrWPConnection, "rollback upload failed")
 	}
 
@@ -137,9 +144,11 @@ func (s *Service) logRollbackRestoreComplete(pctx *publishContext) {
 func (s *Service) reportRollbackOutcome(pctx *publishContext, rollbackStage Stage, result *PublishResult) {
 	if rollbackStage.Status.IsFailed() {
 		s.reportRollbackFailed(pctx, rollbackStage, result)
-	} else {
-		s.reportRollbackSuccess(pctx, result)
+
+		return
 	}
+
+	s.reportRollbackSuccess(pctx, result)
 }
 
 // reportRollbackFailed sets the failed rollback status and logs it.

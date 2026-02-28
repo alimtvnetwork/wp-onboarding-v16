@@ -1,10 +1,10 @@
 package publish
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -15,8 +15,8 @@ func (s *Service) getLocalPluginVersion(pluginPath string) string {
 		return ""
 	}
 
-	entries, err := os.ReadDir(absPath)
-	if err != nil {
+	entries, readErr := os.ReadDir(absPath)
+	if readErr != nil {
 		return ""
 	}
 
@@ -41,8 +41,8 @@ func (s *Service) findVersionInPhpFiles(absPath string, entries []os.DirEntry) s
 
 // extractVersionFromPhpFile reads a PHP file and extracts the Version header.
 func (s *Service) extractVersionFromPhpFile(dirPath, fileName string) string {
-	content, err := readPluginPhpFile(dirPath, fileName)
-	if err != nil {
+	content, appErr := readPluginPhpFile(dirPath, fileName)
+	if appErr != nil {
 		return ""
 	}
 
@@ -50,20 +50,23 @@ func (s *Service) extractVersionFromPhpFile(dirPath, fileName string) string {
 }
 
 // readPluginPhpFile reads a PHP file and validates it contains a Plugin Name header.
-func readPluginPhpFile(dirPath, fileName string) ([]byte, error) {
+func readPluginPhpFile(dirPath, fileName string) ([]byte, *apperror.AppError) {
 	filePath, err := pathutil.Join(dirPath, fileName)
 	if err != nil {
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin PHP file path")
 	}
 
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("not a plugin file")
+	content, readErr := os.ReadFile(filePath)
+	if readErr != nil {
+
+		return nil, apperror.Wrap(readErr, apperror.ErrFSRead, "failed to read plugin PHP file")
 	}
 
 	isNotPlugin := !strings.Contains(string(content), "Plugin Name:")
 	if isNotPlugin {
-		return nil, fmt.Errorf("not a plugin file")
+
+		return nil, apperror.New(apperror.ErrValidation, "not a plugin file").WithFilePath(filePath)
 	}
 
 	return content, nil
