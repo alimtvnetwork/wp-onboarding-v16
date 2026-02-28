@@ -215,7 +215,7 @@ func (s *Service) loadSessionFromDisk(sessionID string) apperror.Result[*Session
 	dirInfo, dirErr := pathutil.StatDir(sessionDir)
 	if dirErr == nil {
 		return apperror.Ok(&Session{
-			ID:        sessionID,
+			Id:        sessionID,
 			Status:    stagestatus.Completed.String(),
 			StartedAt: dirInfo.Info.ModTime(),
 		})
@@ -242,11 +242,10 @@ func (s *Service) statLegacyFile(sessionID, legacyPath string) apperror.Result[*
 	}
 
 	return apperror.Ok(&Session{
-		ID:        sessionID,
+		Id:        sessionID,
 		Status:    stagestatus.Completed.String(),
 		StartedAt: fi.Info.ModTime(),
 	})
-}
 }
 
 // wrapLegacyStatError wraps the stat error with appropriate context.
