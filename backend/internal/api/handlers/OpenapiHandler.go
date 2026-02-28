@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	openAPISpec     json.RawMessage
-	openAPISpecOnce sync.Once
+	openApiSpec     json.RawMessage
+	openApiSpecOnce sync.Once
 )
 
-// ServeOpenAPISpec returns the OpenAPI 3.0 specification as JSON
-func ServeOpenAPISpec(w http.ResponseWriter, r *http.Request) {
-	openAPISpecOnce.Do(func() {
+// ServeOpenApiSpec returns the OpenAPI 3.0 specification as JSON
+func ServeOpenApiSpec(w http.ResponseWriter, r *http.Request) {
+	openApiSpecOnce.Do(func() {
 		// Try multiple paths (binary may run from different working dirs)
 		paths := []string{
 			"api/openapi.json",
@@ -28,14 +28,14 @@ func ServeOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 		for _, p := range paths {
 			data, err := os.ReadFile(p)
 			if err == nil {
-				openAPISpec = data
+				openApiSpec = data
 
 				return
 			}
 		}
 	})
 
-	isSpecMissing := openAPISpec == nil
+	isSpecMissing := openApiSpec == nil
 
 	if isSpecMissing {
 		respondError(
@@ -51,5 +51,5 @@ func ServeOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 	w.WriteHeader(wordpress.HttpStatusOk.Int())
-	w.Write(openAPISpec)
+	w.Write(openApiSpec)
 }

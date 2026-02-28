@@ -33,7 +33,7 @@ func (c *Client) ExportPlugin(slug string) apperror.Result[*ExportPluginResult] 
 	}
 
 	endpoint := "/" + namespace + ep.ExportPlugin.String()
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: slug},
@@ -100,7 +100,7 @@ func (c *Client) reportExportSelfStart() {
 func (c *Client) callExportSelf(namespace string) apperror.Result[*ExportSelfResult] {
 	endpoint := BuildNamespacedEndpoint(namespace, ep.ExportSelf)
 
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "export self via Riseup Asia Uploader",

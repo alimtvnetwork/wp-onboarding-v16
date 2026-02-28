@@ -42,7 +42,7 @@ func registerCoreRoutes(api *mux.Router) {
 	api.HandleFunc("", handlers.ApiIndex).Methods("GET")
 	api.HandleFunc("/", handlers.ApiIndex).Methods("GET")
 	api.HandleFunc("/health", handlers.Health).Methods("GET")
-	api.HandleFunc("/openapi", handlers.ServeOpenAPISpec).Methods("GET")
+	api.HandleFunc("/openapi", handlers.ServeOpenApiSpec).Methods("GET")
 	api.HandleFunc("/settings", handlers.GetSettings).Methods("GET")
 	api.HandleFunc("/settings", handlers.UpdateSettings).Methods("PUT")
 	api.HandleFunc("/settings/clear-error-dedup", handlers.ClearErrorLogHashes).Methods("POST")
