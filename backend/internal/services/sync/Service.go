@@ -51,9 +51,9 @@ type Service interface {
 
 	// File change management — Result-wrapped or plain error
 	GetFileChanges(ctx context.Context, pluginID, siteID int64) apperror.ResultSlice[models.FileChange]
-	RecordFileChange(ctx context.Context, change *models.FileChange) error
-	MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) error
-	ClearChanges(ctx context.Context, pluginID int64) error
+	RecordFileChange(ctx context.Context, change *models.FileChange) *apperror.AppError
+	MarkSynced(ctx context.Context, pluginID, siteID int64, files []string) *apperror.AppError
+	ClearChanges(ctx context.Context, pluginID int64) *apperror.AppError
 }
 
 // FileEntry represents a file with its hash, modification time, and size

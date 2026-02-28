@@ -141,7 +141,7 @@ func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginId, siteId int64
 }
 
 // RecordFileChange records a file change in the database.
-func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileChange) error {
+func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileChange) *apperror.AppError {
 	res := dbutil.Exec(
 		ctx,
 		s.dbu,
@@ -152,18 +152,21 @@ func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileC
 		change.LocalHash,
 	)
 	if res.HasError() {
+
 		return res.AppError()
 	}
 
 	if s.wsHub != nil {
 		s.wsHub.BroadcastFileChange(change.PluginId, change.FilePath, change.ChangeType)
 	}
+
 	return nil
 }
 
 // MarkSynced marks specific files as synced.
-func (s *serviceImpl) MarkSynced(ctx context.Context, pluginId, siteId int64, files []string) error {
+func (s *serviceImpl) MarkSynced(ctx context.Context, pluginId, siteId int64, files []string) *apperror.AppError {
 	if len(files) == 0 {
+
 		return nil
 	}
 
@@ -180,13 +183,15 @@ func (s *serviceImpl) MarkSynced(ctx context.Context, pluginId, siteId int64, fi
 
 	res := dbutil.Exec(ctx, s.dbu, query, args...)
 	if res.HasError() {
+
 		return res.AppError()
 	}
+
 	return nil
 }
 
 // ClearChanges removes all pending changes for a plugin.
-func (s *serviceImpl) ClearChanges(ctx context.Context, pluginId int64) error {
+func (s *serviceImpl) ClearChanges(ctx context.Context, pluginId int64) *apperror.AppError {
 	res := dbutil.Exec(
 		ctx,
 		s.dbu,
@@ -194,13 +199,15 @@ func (s *serviceImpl) ClearChanges(ctx context.Context, pluginId int64) error {
 		pluginId,
 	)
 	if res.HasError() {
+
 		return res.AppError()
 	}
+
 	return nil
 }
 
 // getMappings retrieves all mappings for a plugin.
-func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) ([]models.PluginMapping, error) {
+func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) ([]models.PluginMapping, *apperror.AppError) {
 	set := dbutil.QueryMany[models.PluginMapping](
 		ctx,
 		s.dbu,
@@ -209,13 +216,15 @@ func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) ([]models
 		pluginId,
 	)
 	if set.HasError() {
+
 		return nil, set.AppError()
 	}
+
 	return set.Items(), nil
 }
 
 // getMapping retrieves a specific plugin-site mapping.
-func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) (*models.PluginMapping, error) {
+func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) (*models.PluginMapping, *apperror.AppError) {
 	result := dbutil.QueryOne[models.PluginMapping](
 		ctx,
 		s.dbu,
@@ -225,18 +234,23 @@ func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) (*
 		siteId,
 	)
 	if result.HasError() {
+
 		return nil, result.AppError()
 	}
+
 	if result.IsEmpty() {
+
 		return nil, apperror.New(apperror.ErrNotFound, "plugin-site mapping not found").
 			WithPluginId(pluginId).WithSiteId(siteId)
 	}
+
 	m := result.Value()
+
 	return &m, nil
 }
 
 // getSiteInfo retrieves minimal site info for creating a WP client.
-func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo, error) {
+func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo, *apperror.AppError) {
 	result := dbutil.QueryOne[siteInfo](
 		ctx,
 		s.dbu,
@@ -245,12 +259,17 @@ func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo,
 		siteId,
 	)
 	if result.HasError() {
+
 		return nil, result.AppError()
 	}
+
 	if result.IsEmpty() {
+
 		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteId(siteId)
 	}
+
 	info := result.Value()
+
 	return &info, nil
 }
 
