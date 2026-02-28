@@ -25,7 +25,7 @@ type FileChange struct {
 
 // ScanResult contains the outcome of a directory scan
 type ScanResult struct {
-	PluginID     int64
+	PluginId     int64
 	Path         string
 	ScanTime     time.Time
 	DurationMs   int64

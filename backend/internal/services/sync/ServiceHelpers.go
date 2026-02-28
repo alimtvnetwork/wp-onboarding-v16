@@ -163,7 +163,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 	}
 	mapping := mappingResult.Value()
 
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 40, Message: "Retrieving site credentials..."})
+	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 40, Message: "Retrieving site credentials..."})
 	siteInfoResult := s.getSiteInfo(ctx, siteID)
 	if siteInfoResult.HasError() {
 		return nil, "Failed to get site info: " + siteInfoResult.AppError().Error()
@@ -187,7 +187,7 @@ func (s *serviceImpl) fetchAndParseManifest(
 	siteID int64,
 	password string,
 ) (map[string]FileEntry, string) {
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
+	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
 
 	wpClient := s.wpClientFactory(info.Url, info.Username, password)
 	manifestResult := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
@@ -196,7 +196,7 @@ func (s *serviceImpl) fetchAndParseManifest(
 	if manifestResult.HasError() {
 		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
 			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", manifestResult.AppError())
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
+		s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
 	} else {
 		for _, rf := range manifestResult.Value() {
 			remoteFiles[rf.Path] = FileEntry{Path: rf.Path, Hash: rf.Hash, ModifiedAt: rf.ModifiedAt, Size: rf.Size}
@@ -208,8 +208,8 @@ func (s *serviceImpl) fetchAndParseManifest(
 
 // SyncProgressInput bundles parameters for broadcastProgress.
 type SyncProgressInput struct {
-	PluginID int64
-	SiteID   int64
+	PluginId int64
+	SiteId   int64
 	Step     string
 	Progress int
 	Message  string
@@ -222,8 +222,8 @@ func (s *serviceImpl) broadcastProgress(input SyncProgressInput) {
 	}
 
 	ws.Broadcast(s.wsHub, ws.EventSyncProgress, ws.SyncStepProgressData{
-		PluginID: input.PluginID,
-		SiteID:   input.SiteID,
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
 		Step:     input.Step,
 		Progress: input.Progress,
 		Total:    100,
@@ -232,11 +232,11 @@ func (s *serviceImpl) broadcastProgress(input SyncProgressInput) {
 
 	// Also broadcast detailed log entry for frontend live log display
 	s.wsHub.BroadcastSyncLog(ws.OperationLogInput{
-		PluginID: input.PluginID, SiteID: input.SiteID,
+		PluginId: input.PluginId, SiteId: input.SiteId,
 		Entry: ws.OperationLogEntry{Level: "info", Step: input.Step, Message: input.Message},
 	})
 
-	s.log.Debug("Sync progress", "pluginId", input.PluginID, "siteId", input.SiteID, "step", input.Step, "progress", input.Progress, "message", input.Message)
+	s.log.Debug("Sync progress", "pluginId", input.PluginId, "siteId", input.SiteId, "step", input.Step, "progress", input.Progress, "message", input.Message)
 }
 
 // countByType counts changes by type

@@ -13,9 +13,9 @@ import (
 
 // CheckSync compares local vs remote files for a specific plugin-site mapping.
 func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) apperror.Result[SyncResult] {
-	result := SyncResult{PluginID: pluginID, SiteID: siteID, CheckedAt: time.Now()}
+	result := SyncResult{PluginId: pluginID, SiteId: siteID, CheckedAt: time.Now()}
 
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Starting sync check..."})
+	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Starting sync check..."})
 
 	localFiles, errMsg := s.scanLocalForCheck(ctx, pluginID, siteID)
 	if errMsg != "" {
@@ -27,7 +27,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	remoteFiles, errMsg := s.fetchRemoteManifest(ctx, pluginID, siteID)
 	if errMsg != "" {
 		result.ErrorMessage = errMsg
-		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: errMsg})
+		s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: errMsg})
 		return apperror.Ok(result)
 	}
 	result.RemoteFiles = len(remoteFiles)
@@ -44,7 +44,7 @@ func (s *serviceImpl) scanLocalForCheck(ctx context.Context, pluginID, siteID in
 	}
 	plug := plugResult.Value()
 
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Scanning.Value(), Progress: 20, Message: "Scanning local files..."})
+	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Scanning.Value(), Progress: 20, Message: "Scanning local files..."})
 	localFiles, err := s.scanLocalFiles(plug.Path, plug.ExcludePatterns)
 	if err != nil {
 		return nil, err.Error()
@@ -55,7 +55,7 @@ func (s *serviceImpl) scanLocalForCheck(ctx context.Context, pluginID, siteID in
 
 // finalizeCheckResult computes changes, updates mapping status, and broadcasts completion.
 func (s *serviceImpl) finalizeCheckResult(result *SyncResult, localFiles, remoteFiles map[string]FileEntry, pluginID, siteID int64) {
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 70, Message: "Comparing files..."})
+	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 70, Message: "Comparing files..."})
 	changes := s.compareFiles(localFiles, remoteFiles)
 
 	result.Changes = changes
@@ -65,14 +65,14 @@ func (s *serviceImpl) finalizeCheckResult(result *SyncResult, localFiles, remote
 	result.IsInSync = len(changes) == 0
 
 	s.updateMappingSyncStatus(context.Background(), pluginID, siteID, result.IsInSync)
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "Sync check complete"})
+	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "Sync check complete"})
 
 	s.log.Info("Sync check completed", "pluginId", pluginID, "siteId", siteID, "isInSync", result.IsInSync, "changes", len(changes))
 }
 
 // CheckAllSites checks sync status for all sites mapped to a plugin.
 func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperror.Result[BatchSyncResult] {
-	result := BatchSyncResult{PluginID: pluginID, Results: []SyncResult{}}
+	result := BatchSyncResult{PluginId: pluginID, Results: []SyncResult{}}
 
 	plugResult := s.pluginService.GetById(ctx, pluginID)
 	if plugResult.HasError() {

@@ -17,8 +17,8 @@ import (
 
 // PushSyncResult represents the result of a sync push operation
 type PushSyncResult struct {
-	PluginID     int64
-	SiteID       int64
+	PluginId     int64
+	SiteId       int64
 	FilesUpdated int
 	FilesDeleted int
 	FilesIgnored int
@@ -49,8 +49,8 @@ type FileEntry struct {
 
 // SyncResult represents the result of a sync check
 type SyncResult struct {
-	PluginID     int64
-	SiteID       int64
+	PluginId     int64
+	SiteId       int64
 	SiteName     string              `json:",omitempty"`
 	IsInSync     bool
 	LocalFiles   int
@@ -65,7 +65,7 @@ type SyncResult struct {
 
 // BatchSyncResult represents sync results for multiple sites
 type BatchSyncResult struct {
-	PluginID   int64
+	PluginId   int64
 	PluginName string
 	Results    []SyncResult
 	TotalSites int
