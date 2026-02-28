@@ -14,57 +14,57 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// StartSession creates a new session directory and returns its ID
+// StartSession creates a new session directory and returns its Id
 func (s *Service) StartSession(input StartSessionInput) apperror.Result[string] {
-	sessionID := uuid.New().String()
-	session := buildNewSession(sessionID, input)
+	sessionId := uuid.New().String()
+	session := buildNewSession(sessionId, input)
 
-	initErr := s.initSessionDir(sessionID)
+	initErr := s.initSessionDir(sessionId)
 	if initErr != nil {
 		return apperror.FailWrap[string](initErr, apperror.ErrSessionInit, "init session dir")
 	}
 
-	fileResult := s.createSessionLogFile(sessionID)
+	fileResult := s.createSessionLogFile(sessionId)
 	if fileResult.HasError() {
 		return apperror.Fail[string](fileResult.AppError())
 	}
 
 	session.logFile = fileResult.Value()
 
-	return s.finalizeSessionStart(sessionID, session, input)
+	return s.finalizeSessionStart(sessionId, session, input)
 }
 
-// finalizeSessionStart writes the header, registers the session, and returns the ID.
-func (s *Service) finalizeSessionStart(sessionID string, session *Session, input StartSessionInput) apperror.Result[string] {
+// finalizeSessionStart writes the header, registers the session, and returns the Id.
+func (s *Service) finalizeSessionStart(sessionId string, session *Session, input StartSessionInput) apperror.Result[string] {
 	writeSessionHeader(sessionHeaderInput{
 		File:      session.logFile,
-		SessionId: sessionID,
+		SessionId: sessionId,
 		Input:     input,
 		StartedAt: session.StartedAt,
 	})
 
-	s.registerSession(sessionID, session)
+	s.registerSession(sessionId, session)
 
-	return apperror.Ok(sessionID)
+	return apperror.Ok(sessionId)
 }
 
 // registerSession stores the session in the map and logs it.
-func (s *Service) registerSession(sessionID string, session *Session) {
+func (s *Service) registerSession(sessionId string, session *Session) {
 	s.mu.Lock()
-	s.sessions[sessionID] = session
+	s.sessions[sessionId] = session
 	s.mu.Unlock()
 
 	isLogAvailable := s.log != nil
 
 	if isLogAvailable {
-		s.log.Info("Session started", "sessionId", sessionID, "type", session.Type)
+		s.log.Info("Session started", "sessionId", sessionId, "type", session.Type)
 	}
 }
 
 // buildNewSession constructs a new Session from the input.
-func buildNewSession(sessionID string, input StartSessionInput) *Session {
+func buildNewSession(sessionId string, input StartSessionInput) *Session {
 	return &Session{
-		Id:         sessionID,
+		Id:         sessionId,
 		Type:       input.Type,
 		PluginId:   input.PluginId,
 		SiteId:     input.SiteId,
@@ -77,8 +77,8 @@ func buildNewSession(sessionID string, input StartSessionInput) *Session {
 }
 
 // initSessionDir creates the session directory on disk.
-func (s *Service) initSessionDir(sessionID string) *apperror.AppError {
-	dirResult := s.getSessionDir(sessionID)
+func (s *Service) initSessionDir(sessionId string) *apperror.AppError {
+	dirResult := s.getSessionDir(sessionId)
 
 	if dirResult.HasError() {
 		return dirResult.AppError()
@@ -96,8 +96,8 @@ func (s *Service) initSessionDir(sessionID string) *apperror.AppError {
 }
 
 // createSessionLogFile creates and returns the session.log file handle.
-func (s *Service) createSessionLogFile(sessionID string) apperror.Result[*os.File] {
-	logResult := s.getLogPath(sessionID)
+func (s *Service) createSessionLogFile(sessionId string) apperror.Result[*os.File] {
+	logResult := s.getLogPath(sessionId)
 
 	if logResult.HasError() {
 		return apperror.Fail[*os.File](logResult.AppError())
@@ -175,9 +175,9 @@ func (s *Service) Log(input LogInput) {
 }
 
 // getActiveSession returns the in-memory session or nil if not found.
-func (s *Service) getActiveSession(sessionID string) *Session {
+func (s *Service) getActiveSession(sessionId string) *Session {
 	s.mu.RLock()
-	session, isFound := s.sessions[sessionID]
+	session, isFound := s.sessions[sessionId]
 	s.mu.RUnlock()
 
 	isMissing := !isFound

@@ -81,10 +81,10 @@ func (c *Client) ResolvePluginIdentifier(slug string) apperror.Result[string] {
 	plugs := plugsResult.Value()
 	target := strings.ToLower(slug)
 	for _, p := range plugs {
-		pluginID := strings.ToLower(strings.TrimSpace(p.Plugin))
+		pluginId := strings.ToLower(strings.TrimSpace(p.Plugin))
 		textDomain := strings.ToLower(strings.TrimSpace(p.TextDomain))
 
-		if pluginID == target || textDomain == target || strings.HasPrefix(pluginID, target+"/") {
+		if pluginId == target || textDomain == target || strings.HasPrefix(pluginId, target+"/") {
 			return apperror.Ok(p.Plugin)
 		}
 	}

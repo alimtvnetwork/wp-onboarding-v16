@@ -11,22 +11,22 @@ import (
 
 // ExportRemoteSnapshot streams a snapshot ZIP from a remote site.
 // Returns the raw HTTP response; caller must close the body.
-func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, *apperror.AppError) {
-	client, appErr := s.createWPClient(ctx, siteID)
+func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteId, snapshotId int64) (*http.Response, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 
 		return nil, appErr
 	}
 
-	resp, err := client.ExportSnapshot(snapshotID)
+	resp, err := client.ExportSnapshot(snapshotId)
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to export snapshot").
-			WithSiteId(siteID).
-			WithSnapshotId(snapshotID)
+			WithSiteId(siteId).
+			WithSnapshotId(snapshotId)
 	}
 
-	s.log.Info("Remote snapshot export started", "siteId", siteID, "snapshotId", snapshotID)
+	s.log.Info("Remote snapshot export started", "siteId", siteId, "snapshotId", snapshotId)
 
 	return resp, nil
 }
@@ -38,14 +38,14 @@ type SnapshotZipDownload struct {
 }
 
 // DownloadSnapshotZip requests a cached ZIP build for a snapshot, then streams the ZIP file back.
-func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*SnapshotZipDownload, *apperror.AppError) {
-	client, appErr := s.createWPClient(ctx, siteID)
+func (s *Service) DownloadSnapshotZip(ctx context.Context, siteId, snapshotId int64) (*SnapshotZipDownload, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 
 		return nil, appErr
 	}
 
-	meta, metaErr := s.requestSnapshotMeta(client, siteID, snapshotID)
+	meta, metaErr := s.requestSnapshotMeta(client, siteId, snapshotId)
 	if metaErr != nil {
 
 		return nil, metaErr
@@ -53,8 +53,8 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 
 	return s.streamSnapshotFromMeta(streamSnapshotInput{
 		Client:     client,
-		SiteId:     siteID,
-		SnapshotId: snapshotID,
+		SiteId:     siteId,
+		SnapshotId: snapshotId,
 		Meta:       meta,
 	})
 }
@@ -84,8 +84,8 @@ func (s *Service) streamSnapshotFromMeta(input streamSnapshotInput) (*SnapshotZi
 }
 
 // FullBackupRemoteSnapshot triggers an end-to-end full backup on a remote site.
-func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, *apperror.AppError) {
-	client, appErr := s.createWPClient(ctx, siteID)
+func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteId int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 
 		return nil, appErr
@@ -95,17 +95,17 @@ func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, op
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger full backup").
-			WithSiteId(siteID)
+			WithSiteId(siteId)
 	}
 
-	s.log.Info("Remote full backup triggered", "siteId", siteID)
+	s.log.Info("Remote full backup triggered", "siteId", siteId)
 
 	return result, nil
 }
 
 // IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote site.
-func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, *apperror.AppError) {
-	client, appErr := s.createWPClient(ctx, siteID)
+func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteId int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 
 		return nil, appErr
@@ -115,17 +115,17 @@ func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID in
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger incremental backup").
-			WithSiteId(siteID)
+			WithSiteId(siteId)
 	}
 
-	s.log.Info("Remote incremental backup triggered", "siteId", siteID)
+	s.log.Info("Remote incremental backup triggered", "siteId", siteId)
 
 	return result, nil
 }
 
 // ImportRemoteSnapshot uploads a ZIP file to import as a snapshot on a remote site.
-func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (*wordpress.SnapshotImportResult, *apperror.AppError) {
-	client, appErr := s.createWPClient(ctx, siteID)
+func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteId int64, zipPath string) (*wordpress.SnapshotImportResult, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 
 		return nil, appErr
@@ -135,17 +135,17 @@ func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPat
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to import snapshot").
-			WithSiteId(siteID)
+			WithSiteId(siteId)
 	}
 
-	s.log.Info("Remote snapshot imported", "siteId", siteID)
+	s.log.Info("Remote snapshot imported", "siteId", siteId)
 
 	return result, nil
 }
 
 // CleanupRemoteSnapshots triggers cleanup on a remote site.
-func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, *apperror.AppError) {
-	client, appErr := s.createWPClient(ctx, siteID)
+func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteId int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 
 		return nil, appErr
@@ -155,10 +155,10 @@ func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger snapshot cleanup").
-			WithSiteId(siteID)
+			WithSiteId(siteId)
 	}
 
-	s.log.Info("Remote snapshot cleanup triggered", "siteId", siteID)
+	s.log.Info("Remote snapshot cleanup triggered", "siteId", siteId)
 
 	return result, nil
 }

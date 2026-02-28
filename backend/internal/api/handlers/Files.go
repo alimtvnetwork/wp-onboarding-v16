@@ -39,7 +39,7 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	idStr := vars["id"]
-	pluginID, err := strconv.ParseInt(idStr, 10, 64)
+	pluginId, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		respondError(
 			w,
@@ -79,7 +79,7 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get plugin to find its path — returns *models.Plugin with Path field
-	pluginData, err := Services.PluginService.GetById(r.Context(), pluginID)
+	pluginData, err := Services.PluginService.GetById(r.Context(), pluginId)
 	if err != nil {
 		respondError(
 			w,
@@ -141,10 +141,10 @@ func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	pluginIDStr := vars["id"]
-	siteIDStr := vars["siteId"]
+	pluginIdStr := vars["id"]
+	siteIdStr := vars["siteId"]
 
-	pluginID, err := strconv.ParseInt(pluginIDStr, 10, 64)
+	pluginId, err := strconv.ParseInt(pluginIdStr, 10, 64)
 	if err != nil {
 		respondError(
 			w,
@@ -156,7 +156,7 @@ func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	siteID, err := strconv.ParseInt(siteIDStr, 10, 64)
+	siteId, err := strconv.ParseInt(siteIdStr, 10, 64)
 	if err != nil {
 		respondError(
 			w,
@@ -198,8 +198,8 @@ func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 	// Get file diff via publish service
 	result, err := Services.PublishService.GetFileDiff(
 		r.Context(),
-		pluginID,
-		siteID,
+		pluginId,
+		siteId,
 		req.Path,
 	)
 	if err != nil {
@@ -240,7 +240,7 @@ func calculateMD5(filePath string) (string, error) {
 
 	hash := md5.New()
 
-	_, err := io.Copy(hash, file)
+	_, err = io.Copy(hash, file)
 	if err != nil {
 
 		return "", err

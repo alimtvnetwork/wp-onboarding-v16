@@ -92,8 +92,8 @@ func configureConnection(db *sql.DB) error {
 }
 
 // GetChildDB returns or creates a child database for a specific type/entity
-func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
-	key := fmt.Sprintf("%s/%s", dbType, entityID)
+func (db *DB) GetChildDB(dbType, entityId string) (*sql.DB, error) {
+	key := fmt.Sprintf("%s/%s", dbType, entityId)
 
 	db.mu.RLock()
 	child, isCached := db.childDBs[key]
@@ -115,7 +115,7 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 		return child, nil
 	}
 
-	childPath, err := resolveChildPath(db.dataDir, dbType, entityID)
+	childPath, err := resolveChildPath(db.dataDir, dbType, entityId)
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +139,8 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 }
 
 // resolveChildPath builds the filesystem path for a child database.
-func resolveChildPath(dataDir, dbType, entityID string) (string, error) {
-	isGlobalDB := entityID == ""
+func resolveChildPath(dataDir, dbType, entityId string) (string, error) {
+	isGlobalDB := entityId == ""
 
 	if isGlobalDB {
 		p, err := pathutil.Join(dataDir, dbType+".db")
@@ -160,7 +160,7 @@ func resolveChildPath(dataDir, dbType, entityID string) (string, error) {
 		return "", apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create child db directory").
 			WithPath(childDir)
 	}
-	p, err := pathutil.Join(childDir, entityID+".db")
+	p, err := pathutil.Join(childDir, entityId+".db")
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db path")
 	}

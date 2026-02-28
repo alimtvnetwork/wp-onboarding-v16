@@ -214,13 +214,13 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 }
 
 // ResolveGoEndpoint returns the Go backend route for a given operation,
-// replacing {id} with the actual site ID.
-func ResolveGoEndpoint(name WPEndpointName, siteID int64) string {
+// replacing {id} with the actual site Id.
+func ResolveGoEndpoint(name WPEndpointName, siteId int64) string {
 	route, ok := GoEndpointMap[name]
 	if !ok {
 		return "UNKNOWN"
 	}
-	return replaceID(route.Pattern, siteID)
+	return replaceId(route.Pattern, siteId)
 }
 
 // ResolveWPEndpoint returns the full WordPress REST API path for a given operation.
@@ -232,10 +232,10 @@ func ResolveWPEndpoint(name WPEndpointName) string {
 	return "/" + RiseupAsiaNamespace + route.Endpoint.String()
 }
 
-func replaceID(pattern string, id int64) string {
-	hasID := id > 0
+func replaceId(pattern string, id int64) string {
+	hasId := id > 0
 
-	if hasID {
+	if hasId {
 		return strings.ReplaceAll(pattern, "{id}", strconv.FormatInt(id, 10))
 	}
 	return pattern

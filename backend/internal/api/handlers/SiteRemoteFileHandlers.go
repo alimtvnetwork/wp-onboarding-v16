@@ -27,7 +27,7 @@ func parseRemotePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (*
 		return nil, false
 	}
 
-	id, ok := parseID(w, r, "id")
+	id, ok := parseId(w, r, "id")
 	if !ok {
 		return nil, false
 	}
