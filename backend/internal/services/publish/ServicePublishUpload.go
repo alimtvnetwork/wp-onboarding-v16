@@ -143,11 +143,8 @@ func (s *Service) logActivateSkipped(pctx *publishContext) error {
 // activateViaUploader attempts plugin activation via the Riseup Asia Uploader
 func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time) error {
 	availability, _ := pctx.WPClient.CheckRiseupAsiaAvailable()
-	isUploaderMissing :=
-		availability == nil ||
-		!availability.Available
 
-	if isUploaderMissing {
+	if availability.IsUnavailable() {
 		return s.failActivateNoUploader(pctx)
 	}
 

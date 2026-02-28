@@ -1,7 +1,7 @@
 # Memory: architecture/coding-standards/boolean-logic-principles
 Updated: 2026-02-28
 
-Strict boolean logic standards apply across all languages (PHP, TS, Go). Eight principles are enforced (spec: `spec/03-coding-guidelines/boolean-principles.md` v3.0.0):
+Strict boolean logic standards apply across all languages (PHP, TS, Go). Nine principles are enforced (spec: `spec/03-coding-guidelines/boolean-principles.md` v3.0.0):
 
 1. **P1 — `is`/`has` prefix**: All boolean identifiers must use `is` or `has` prefixes.
 2. **P2 — No negative words in names**: The words `not`, `no`, `non` are absolutely banned from boolean variable/function/method names. Always use a positive semantic synonym instead (e.g., `isPending` not `isNotReady`, `isAbsentFromList` not `isNotInList`, `isErrorListClear` not `isNoRecentErrors`). Double negatives (`!isNot...`) are the worst form.
@@ -11,6 +11,7 @@ Strict boolean logic standards apply across all languages (PHP, TS, Go). Eight p
 6. **P6 — No mixed polarity**: Never combine positive + negative booleans in a single `if` condition (e.g., `isX && !isY`). Always extract to a single named boolean capturing intent (e.g., `isConflict`, `isAccessDenied`, `isPending`).
 7. **P7 — Extract negations to positive counterpart variables**: When a boolean must be negated, ALWAYS extract the negation into a new named variable with a positive semantic name on the preceding line. Then use only the positive variable in conditions. `== false` is NOT acceptable either — it's just a verbose negation with the same readability problem.
 8. **P8 — Extract numeric/comparison expressions**: Raw numeric comparisons (e.g., `statusCode < 400`, `totalDeleted > 0`) must be extracted into named boolean variables that describe intent (e.g., `isSuccessStatus`, `hasDeletions`).
+9. **P9 — Nil-safe receiver methods on pointer objects (Go)**: Pointer-based structs returned from functions MUST provide nil-safe receiver methods (`IsDefined()`, `IsAvailable()`, `IsUnavailable()`, `HasX()`, `IsXMissing()`). Callers must NEVER check `obj == nil` externally — always use receiver methods that handle nil internally. Example: `availability.IsUnavailable()` instead of `availability == nil || !availability.Available`.
 
 **Multi-line formatting rule (Rule 3a):** When a boolean assignment has 2+ conditions joined by `&&` or `||`, each condition MUST be on its own line. Place a line break after `=`/`:=`, indent each condition, and leave a blank line before the `if`.
 
