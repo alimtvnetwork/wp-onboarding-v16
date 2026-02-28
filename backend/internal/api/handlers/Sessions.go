@@ -186,12 +186,13 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := Services.SessionService.DeleteSession(sessionID); err != nil {
+	appErr := Services.SessionService.DeleteSession(sessionID)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E8003",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return

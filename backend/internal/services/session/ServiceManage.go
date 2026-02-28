@@ -106,7 +106,7 @@ func summaryFromSession(session *Session) *SessionSummary {
 }
 
 // DeleteSession removes a session's directory (or legacy file)
-func (s *Service) DeleteSession(sessionID string) error {
+func (s *Service) DeleteSession(sessionID string) *apperror.AppError {
 	s.closeAndRemoveSession(sessionID)
 
 	sessionDir, err := s.getSessionDir(sessionID)
@@ -116,20 +116,10 @@ func (s *Service) DeleteSession(sessionID string) error {
 	}
 
 	if pathutil.IsDir(sessionDir) {
-		appErr := s.removeDirSession(sessionDir)
-		if appErr != nil {
-			return appErr
-		}
-
-		return nil
+		return s.removeDirSession(sessionDir)
 	}
 
-	appErr := s.removeLegacySession(sessionID)
-	if appErr != nil {
-		return appErr
-	}
-
-	return nil
+	return s.removeLegacySession(sessionID)
 }
 
 // closeAndRemoveSession closes the log file and removes from in-memory map.
@@ -215,7 +205,7 @@ func (s *Service) removeSessionEntry(entry os.DirEntry) {
 }
 
 // ClearAllSessions removes all session directories and files
-func (s *Service) ClearAllSessions() error {
+func (s *Service) ClearAllSessions() *apperror.AppError {
 	s.closeAllSessions()
 
 	entries, err := os.ReadDir(s.sessionsDir)
@@ -225,12 +215,7 @@ func (s *Service) ClearAllSessions() error {
 			WithPath(s.sessionsDir)
 	}
 
-	appErr := s.clearEntries(entries)
-	if appErr != nil {
-		return appErr
-	}
-
-	return nil
+	return s.clearEntries(entries)
 }
 
 // clearEntries removes all entries and logs the result.

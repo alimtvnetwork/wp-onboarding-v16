@@ -22,7 +22,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 }
 
 // Delete removes a backup file and database record
-func (s *Service) Delete(ctx context.Context, id int64) error {
+func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 	s.log.Info("Deleting backup", "id", id)
 	s.logInfoWithDetails(id, "delete", "Deleting backup", toDetails(InitDetails{BackupID: id}))
 
@@ -34,7 +34,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 }
 
 // Cleanup removes expired backups
-func (s *Service) Cleanup(ctx context.Context) error {
+func (s *Service) Cleanup(ctx context.Context) *apperror.AppError {
 	s.log.Info("Running backup cleanup")
 	s.logInfoWithDetails(0, "init", "Starting backup cleanup", toDetails(CleanupInitDetails{RetentionDays: s.retentionDays}))
 

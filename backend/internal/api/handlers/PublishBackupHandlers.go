@@ -50,19 +50,19 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 		mode = publishtype.Full
 	}
 
-	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, publish.PublishOptions{
+	result, appErr := Services.PublishService.Publish(r.Context(), pluginID, siteID, publish.PublishOptions{
 		Mode:                mode,
 		Files:               input.Files,
 		IsCreateBackup:      input.CreateBackup,
 		IsKeepZipFiles:      input.KeepZipFiles,
 		IsRollbackOnFailure: true,
 	})
-	if err != nil {
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E5006",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -75,7 +75,12 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 var PreviewPublish = handleTwoIDs(
 	twoIDConfig{GetService: publishService, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5007"},
 	func(ctx context.Context, pluginID, siteID int64) (any, error) {
-		return Services.PublishService.PreviewPublish(ctx, pluginID, siteID)
+		result, appErr := Services.PublishService.PreviewPublish(ctx, pluginID, siteID)
+		if appErr != nil {
+			return nil, appErr.CompiledError()
+		}
+
+		return result, nil
 	},
 )
 
@@ -87,7 +92,12 @@ var PreviewPublish = handleTwoIDs(
 var GetBackups = handleActionByID(
 	handlerIDConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6001"},
 	func(ctx context.Context, pluginID int64) (any, error) {
-		return Services.BackupService.List(ctx, pluginID)
+		result, appErr := Services.BackupService.List(ctx, pluginID)
+		if appErr != nil {
+			return nil, appErr.CompiledError()
+		}
+
+		return result, nil
 	},
 )
 
@@ -102,12 +112,13 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := Services.BackupService.Restore(r.Context(), backupID); err != nil {
+	appErr := Services.BackupService.Restore(r.Context(), backupID)
+	if appErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E6002",
-			err.Error(),
+			appErr.Error(),
 		)
 
 		return
@@ -120,18 +131,24 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 var DeleteBackup = handleDeleteByID(
 	handlerIDConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6003"},
 	func(ctx context.Context, id int64) error {
-		return Services.BackupService.Delete(ctx, id)
+		appErr := Services.BackupService.Delete(ctx, id)
+		if appErr != nil {
+			return appErr.CompiledError()
+		}
+
+		return nil
 	},
 )
 
 // --- Version History Handlers ---
 
-// VersionServiceInterface defines version history service methods
+// VersionServiceInterface defines version history service methods.
+// All methods return *apperror.AppError — never raw error.
 type VersionServiceInterface interface {
-	GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) ([]database.PluginVersionRow, error)
-	GetVersion(ctx context.Context, versionID int64) (*database.PluginVersionRow, error)
-	Rollback(ctx context.Context, versionID int64) (*ws.RollbackCompleteData, error)
-	DeleteVersion(ctx context.Context, versionID int64) error
+	GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) ([]database.PluginVersionRow, *apperror.AppError)
+	GetVersion(ctx context.Context, versionID int64) (*database.PluginVersionRow, *apperror.AppError)
+	Rollback(ctx context.Context, versionID int64) (*ws.RollbackCompleteData, *apperror.AppError)
+	DeleteVersion(ctx context.Context, versionID int64) *apperror.AppError
 }
 
 // VersionService holds the version service instance
@@ -193,8 +210,9 @@ var GetPluginVersion = handleActionByID(
 	func(ctx context.Context, id int64) (any, error) {
 		result, appErr := VersionService.GetVersion(ctx, id)
 		if appErr != nil {
-			return nil, appErr
+			return nil, appErr.CompiledError()
 		}
+
 		return result, nil
 	},
 )
@@ -205,8 +223,9 @@ var RollbackPluginVersion = handleActionByID(
 	func(ctx context.Context, id int64) (any, error) {
 		result, appErr := VersionService.Rollback(ctx, id)
 		if appErr != nil {
-			return nil, appErr
+			return nil, appErr.CompiledError()
 		}
+
 		return result, nil
 	},
 )
@@ -215,6 +234,11 @@ var RollbackPluginVersion = handleActionByID(
 var DeletePluginVersion = handleDeleteByID(
 	handlerIDConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8004"},
 	func(ctx context.Context, id int64) error {
-		return VersionService.DeleteVersion(ctx, id)
+		appErr := VersionService.DeleteVersion(ctx, id)
+		if appErr != nil {
+			return appErr.CompiledError()
+		}
+
+		return nil
 	},
 )

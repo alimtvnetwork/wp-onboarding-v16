@@ -26,7 +26,7 @@ type SitePasswordDecryptor interface {
 
 // SessionLogger interface for session-based logging
 type SessionLogger interface {
-	StartSession(input session.StartSessionInput) (string, error)
+	StartSession(input session.StartSessionInput) (string, *apperror.AppError)
 	Log(input session.LogInput)
 	LogStageStart(sessionId, stageName string)
 	LogStageEnd(input session.StageEndInput)

@@ -5,27 +5,30 @@ import (
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/error_history"
 	"wp-plugin-publish/internal/services/session"
+	"wp-plugin-publish/pkg/apperror"
 )
 
-// SessionServiceInterface defines session service methods needed by handlers
+// SessionServiceInterface defines session service methods needed by handlers.
+// All methods return *apperror.AppError — never raw error.
 type SessionServiceInterface interface {
-	ListSessions(limit int) ([]*session.SessionSummary, error)
-	GetSession(sessionID string) (*session.Session, error)
-	GetSessionLogs(sessionID string) (string, error)
-	GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, error)
-	DeleteSession(sessionID string) error
+	ListSessions(limit int) ([]*session.SessionSummary, *apperror.AppError)
+	GetSession(sessionID string) (*session.Session, *apperror.AppError)
+	GetSessionLogs(sessionID string) (string, *apperror.AppError)
+	GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, *apperror.AppError)
+	DeleteSession(sessionID string) *apperror.AppError
 }
 
-// ErrorHistoryServiceInterface defines error history service methods
+// ErrorHistoryServiceInterface defines error history service methods.
+// All methods return *apperror.AppError — never raw error.
 type ErrorHistoryServiceInterface interface {
-	Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error)
-	List(limit, offset int, filters models.ErrorHistoryFilters) (*ErrorHistoryListResult, error)
-	GetById(id int64) (*models.ErrorHistory, error)
-	GetByErrorId(errorId string) (*models.ErrorHistory, error)
-	Delete(id int64) error
-	Clear() (int64, error)
-	BulkExport(ids []int64) (string, error)
-	GetStats() (*models.ErrorHistoryStats, error)
+	Save(input models.ErrorHistoryInput) (*models.ErrorHistory, *apperror.AppError)
+	List(limit, offset int, filters models.ErrorHistoryFilters) (*ErrorHistoryListResult, *apperror.AppError)
+	GetById(id int64) (*models.ErrorHistory, *apperror.AppError)
+	GetByErrorId(errorId string) (*models.ErrorHistory, *apperror.AppError)
+	Delete(id int64) *apperror.AppError
+	Clear() (int64, *apperror.AppError)
+	BulkExport(ids []int64) (string, *apperror.AppError)
+	GetStats() (*models.ErrorHistoryStats, *apperror.AppError)
 }
 
 // ErrorHistoryListResult holds paginated error history results.
@@ -39,7 +42,7 @@ type SessionServiceAdapter struct {
 	*session.Service
 }
 
-func (a *SessionServiceAdapter) ListSessions(limit int) ([]*session.SessionSummary, error) {
+func (a *SessionServiceAdapter) ListSessions(limit int) ([]*session.SessionSummary, *apperror.AppError) {
 	result := a.Service.ListSessions(limit)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -47,7 +50,7 @@ func (a *SessionServiceAdapter) ListSessions(limit int) ([]*session.SessionSumma
 	return result.Items(), nil
 }
 
-func (a *SessionServiceAdapter) GetSession(sessionID string) (*session.Session, error) {
+func (a *SessionServiceAdapter) GetSession(sessionID string) (*session.Session, *apperror.AppError) {
 	result := a.Service.GetSession(sessionID)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -55,7 +58,7 @@ func (a *SessionServiceAdapter) GetSession(sessionID string) (*session.Session, 
 	return result.Value(), nil
 }
 
-func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, error) {
+func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, *apperror.AppError) {
 	result := a.Service.GetSessionLogs(sessionID)
 	if result.HasError() {
 		return "", result.AppError()
@@ -63,7 +66,7 @@ func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, error)
 	return result.Value(), nil
 }
 
-func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, error) {
+func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, *apperror.AppError) {
 	result := a.Service.GetSessionDiagnostics(sessionID)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -72,7 +75,7 @@ func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (*sessio
 	return &v, nil
 }
 
-func (a *SessionServiceAdapter) DeleteSession(sessionID string) error {
+func (a *SessionServiceAdapter) DeleteSession(sessionID string) *apperror.AppError {
 	return a.Service.DeleteSession(sessionID)
 }
 
@@ -81,7 +84,7 @@ type ErrorHistoryServiceAdapter struct {
 	*errorhistory.Service
 }
 
-func (a *ErrorHistoryServiceAdapter) Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error) {
+func (a *ErrorHistoryServiceAdapter) Save(input models.ErrorHistoryInput) (*models.ErrorHistory, *apperror.AppError) {
 	result := a.Service.Save(input)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -90,7 +93,7 @@ func (a *ErrorHistoryServiceAdapter) Save(input models.ErrorHistoryInput) (*mode
 	return &v, nil
 }
 
-func (a *ErrorHistoryServiceAdapter) List(limit, offset int, filters models.ErrorHistoryFilters) (*ErrorHistoryListResult, error) {
+func (a *ErrorHistoryServiceAdapter) List(limit, offset int, filters models.ErrorHistoryFilters) (*ErrorHistoryListResult, *apperror.AppError) {
 	result := a.Service.List(limit, offset, filters)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -99,7 +102,7 @@ func (a *ErrorHistoryServiceAdapter) List(limit, offset int, filters models.Erro
 	return &ErrorHistoryListResult{Items: v.Items, Total: v.Total}, nil
 }
 
-func (a *ErrorHistoryServiceAdapter) GetById(id int64) (*models.ErrorHistory, error) {
+func (a *ErrorHistoryServiceAdapter) GetById(id int64) (*models.ErrorHistory, *apperror.AppError) {
 	result := a.Service.GetById(id)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -108,7 +111,7 @@ func (a *ErrorHistoryServiceAdapter) GetById(id int64) (*models.ErrorHistory, er
 	return &v, nil
 }
 
-func (a *ErrorHistoryServiceAdapter) GetByErrorId(errorId string) (*models.ErrorHistory, error) {
+func (a *ErrorHistoryServiceAdapter) GetByErrorId(errorId string) (*models.ErrorHistory, *apperror.AppError) {
 	result := a.Service.GetByErrorId(errorId)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -117,11 +120,11 @@ func (a *ErrorHistoryServiceAdapter) GetByErrorId(errorId string) (*models.Error
 	return &v, nil
 }
 
-func (a *ErrorHistoryServiceAdapter) Delete(id int64) error {
+func (a *ErrorHistoryServiceAdapter) Delete(id int64) *apperror.AppError {
 	return a.Service.Delete(id)
 }
 
-func (a *ErrorHistoryServiceAdapter) Clear() (int64, error) {
+func (a *ErrorHistoryServiceAdapter) Clear() (int64, *apperror.AppError) {
 	result := a.Service.Clear()
 	if result.HasError() {
 		return 0, result.AppError()
@@ -129,7 +132,7 @@ func (a *ErrorHistoryServiceAdapter) Clear() (int64, error) {
 	return result.Value(), nil
 }
 
-func (a *ErrorHistoryServiceAdapter) BulkExport(ids []int64) (string, error) {
+func (a *ErrorHistoryServiceAdapter) BulkExport(ids []int64) (string, *apperror.AppError) {
 	result := a.Service.BulkExport(ids)
 	if result.HasError() {
 		return "", result.AppError()
@@ -137,7 +140,7 @@ func (a *ErrorHistoryServiceAdapter) BulkExport(ids []int64) (string, error) {
 	return result.Value(), nil
 }
 
-func (a *ErrorHistoryServiceAdapter) GetStats() (*models.ErrorHistoryStats, error) {
+func (a *ErrorHistoryServiceAdapter) GetStats() (*models.ErrorHistoryStats, *apperror.AppError) {
 	result := a.Service.GetStats()
 	if result.HasError() {
 		return nil, result.AppError()
