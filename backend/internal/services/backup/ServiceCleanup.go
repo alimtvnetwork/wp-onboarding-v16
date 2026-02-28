@@ -21,7 +21,14 @@ func (s *Service) removeExpiredBackups() apperror.Result[int] {
 			return nil
 		}
 
-		return s.removeIfExpired(expiredCheckInput{Path: path, Info: info, Cutoff: cutoff, Count: &removedCount})
+		checkInput := expiredCheckInput{
+			Path:   path,
+			Info:   info,
+			Cutoff: cutoff,
+			Count:  &removedCount,
+		}
+
+		return s.removeIfExpired(checkInput)
 	})
 
 	if err != nil {

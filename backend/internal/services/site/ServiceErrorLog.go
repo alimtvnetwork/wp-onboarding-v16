@@ -109,7 +109,13 @@ func (s *Service) buildErrorLogEntry(ref *remoteActionRef, details *ExtractedErr
 	entry += fmt.Sprintf("  Plugin Identifier: %s\n  Requested Action: %s\n", pluginIdentifier, ref.Action)
 	entry += fmt.Sprintf("  Delegated Request:\n    Method: %s\n    Endpoint: %s\n    Request Body:\n      %s\n", method, details.Endpoint, requestBody)
 	entry += formatResponseSection(details)
-	entry += formatGuardRailSection(guardRailInput{Action: ref.Action, SiteUrl: ref.Site.Url, Details: details, Method: method})
+	grInput := guardRailInput{
+		Action:  ref.Action,
+		SiteUrl: ref.Site.Url,
+		Details: details,
+		Method:  method,
+	}
+	entry += formatGuardRailSection(grInput)
 	entry += formatStackTraceSection(details)
 	entry += formatPhpErrorsSection(details)
 	entry += "───────────────────────────────────────────────────────────────────────────────\n"

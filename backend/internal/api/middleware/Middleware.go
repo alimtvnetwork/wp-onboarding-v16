@@ -69,7 +69,13 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 			isLoggableError := isErrorResponse && hasErrorLogDir
 
 			if isLoggableError {
-				appendToErrorLog(errorLogInput{Request: r, Writer: wrapped, Duration: duration, RequestBody: requestBodyBytes})
+				errLogInput := errorLogInput{
+					Request:     r,
+					Writer:      wrapped,
+					Duration:    duration,
+					RequestBody: requestBodyBytes,
+				}
+				appendToErrorLog(errLogInput)
 			}
 		})
 	}

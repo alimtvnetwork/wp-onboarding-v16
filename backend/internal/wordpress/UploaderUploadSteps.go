@@ -117,7 +117,13 @@ func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.
 		return nil, appErr
 	}
 
-	writeUploadFields(uploadFieldsInput{Writer: writer, Slug: uc.Slug, IsActivate: isActivate, Source: source})
+	fieldsInput := uploadFieldsInput{
+		Writer:     writer,
+		Slug:       uc.Slug,
+		IsActivate: isActivate,
+		Source:     source,
+	}
+	writeUploadFields(fieldsInput)
 
 	return closeMultipartWriter(writer, &requestBody)
 }

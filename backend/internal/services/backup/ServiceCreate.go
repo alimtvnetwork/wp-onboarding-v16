@@ -14,7 +14,14 @@ import (
 // Create downloads the current remote plugin and saves as a backup
 func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[models.Backup] {
 	s.log.Info("Creating backup", "mappingId", mappingID)
-	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "init", Message: "Starting backup creation", Details: toDetails(InitDetails{MappingID: mappingID})})
+
+	initLog := BackupLogInput{
+		PluginID: mappingID,
+		Step:     "init",
+		Message:  "Starting backup creation",
+		Details:  toDetails(InitDetails{MappingID: mappingID}),
+	}
+	s.logInfoWithDetails(initLog)
 
 	pathResult := s.createBackupFile(mappingID)
 	if pathResult.HasError() {
@@ -49,7 +56,13 @@ func (s *Service) createBackupFile(mappingID int64) apperror.Result[string] {
 	}
 	file.Close()
 
-	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "write", Message: "Backup file created successfully", Details: toDetails(PathDetails{Path: backupPath})})
+	writeLog := BackupLogInput{
+		PluginID: mappingID,
+		Step:     "write",
+		Message:  "Backup file created successfully",
+		Details:  toDetails(PathDetails{Path: backupPath}),
+	}
+	s.logInfoWithDetails(writeLog)
 
 	return apperror.Ok(backupPath)
 }
@@ -70,7 +83,13 @@ func (s *Service) runRetentionPolicy(ctx context.Context, mappingID int64) {
 		MaxPerPlugin:  s.maxPerPlugin,
 		RetentionDays: s.retentionDays,
 	})
-	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "retention", Message: "Enforcing retention policy", Details: retentionDetails})
+	retentionLog := BackupLogInput{
+		PluginID: mappingID,
+		Step:     "retention",
+		Message:  "Enforcing retention policy",
+		Details:  retentionDetails,
+	}
+	s.logInfoWithDetails(retentionLog)
 
 	appErr := s.enforceRetention(ctx, mappingID)
 	if appErr != nil {
@@ -83,5 +102,12 @@ func (s *Service) runRetentionPolicy(ctx context.Context, mappingID int64) {
 func (s *Service) logBackupComplete(mappingID int64, backupPath string, size int64) {
 	s.log.Info("Backup created", "mappingId", mappingID, "path", backupPath)
 	completeDetails := toDetails(BackupCompleteDetails{Path: backupPath, FileSize: size})
-	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "complete", Message: "Backup created successfully", Details: completeDetails})
+
+	completeLog := BackupLogInput{
+		PluginID: mappingID,
+		Step:     "complete",
+		Message:  "Backup created successfully",
+		Details:  completeDetails,
+	}
+	s.logInfoWithDetails(completeLog)
 }

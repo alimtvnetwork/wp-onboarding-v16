@@ -105,7 +105,14 @@ func applyEndState(session *Session, status, errorMsg string) {
 	session.Status = status
 	session.EndedAt = &now
 	session.ErrorMsg = errorMsg
-	writeSessionFooter(sessionFooterInput{Session: session, Now: now, Status: status, ErrorMsg: errorMsg})
+
+	footerInput := sessionFooterInput{
+		Session:  session,
+		Now:      now,
+		Status:   status,
+		ErrorMsg: errorMsg,
+	}
+	writeSessionFooter(footerInput)
 }
 
 // logSessionEnd logs session end if logger is available.
@@ -133,7 +140,13 @@ func writeSessionFooter(input sessionFooterInput) {
 		return
 	}
 
-	footer := buildFooterString(footerStringInput{StartedAt: input.Session.StartedAt, Now: input.Now, Status: input.Status, ErrorMsg: input.ErrorMsg})
+	strInput := footerStringInput{
+		StartedAt: input.Session.StartedAt,
+		Now:       input.Now,
+		Status:    input.Status,
+		ErrorMsg:  input.ErrorMsg,
+	}
+	footer := buildFooterString(strInput)
 	input.Session.logFile.WriteString(footer)
 	input.Session.logFile.Close()
 	input.Session.logFile = nil

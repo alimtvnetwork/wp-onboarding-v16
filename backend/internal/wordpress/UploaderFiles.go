@@ -108,9 +108,16 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) apper
 
 // reportSyncStart emits a progress event for the start of a delta sync operation.
 func (c *Client) reportSyncStart(slug string, fileCount int, namespace string) {
+	syncProgress := SyncInitProgress{
+		Slug:      slug,
+		FileCount: fileCount,
+		Namespace: namespace,
+	}
+
 	c.progress(ProgressEvent{
-		Step: action.Sync.String(), Status: stagestatus.Running.String(),
+		Step:    action.Sync.String(),
+		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Syncing %d files to %s...", fileCount, slug),
-		Details: toProgress(SyncInitProgress{Slug: slug, FileCount: fileCount, Namespace: namespace}),
+		Details: toProgress(syncProgress),
 	})
 }
