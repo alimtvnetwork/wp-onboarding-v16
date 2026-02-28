@@ -53,8 +53,8 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 
 	return s.streamSnapshotFromMeta(streamSnapshotInput{
 		Client:     client,
-		SiteID:     siteID,
-		SnapshotID: snapshotID,
+		SiteId:     siteID,
+		SnapshotId: snapshotID,
 		Meta:       meta,
 	})
 }
@@ -62,8 +62,8 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 // streamSnapshotInput bundles parameters for streamSnapshotFromMeta.
 type streamSnapshotInput struct {
 	Client     *wordpress.Client
-	SiteID     int64
-	SnapshotID int64
+	SiteId     int64
+	SnapshotId int64
 	Meta       *wordpress.SnapshotDownloadResult
 }
 
@@ -73,12 +73,12 @@ func (s *Service) streamSnapshotFromMeta(input streamSnapshotInput) (*SnapshotZi
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
-			WithSiteId(input.SiteID).
-			WithSnapshotId(input.SnapshotID).
+			WithSiteId(input.SiteId).
+			WithSnapshotId(input.SnapshotId).
 			WithURL(input.Meta.Url)
 	}
 
-	s.log.Info("Remote snapshot ZIP download started", "siteId", input.SiteID, "snapshotId", input.SnapshotID, "cached", input.Meta.Cached)
+	s.log.Info("Remote snapshot ZIP download started", "siteId", input.SiteId, "snapshotId", input.SnapshotId, "cached", input.Meta.Cached)
 
 	return &SnapshotZipDownload{Response: zipResp, Meta: input.Meta}, nil
 }

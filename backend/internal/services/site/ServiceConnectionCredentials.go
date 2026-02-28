@@ -26,7 +26,7 @@ func (s *Service) TestConnectionWithCredentials(siteUrl, username, password stri
 // broadcastCredentialsStart sends start and normalize progress for credential tests.
 func (s *Service) broadcastCredentialsStart(normalizedUrl, originalUrl string) {
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  0,
+		SiteId:  0,
 		Step:    "start",
 		Status:  stagestatus.Running.String(),
 		Message: "Testing connection with provided credentials...",
@@ -36,7 +36,7 @@ func (s *Service) broadcastCredentialsStart(normalizedUrl, originalUrl string) {
 		NormalizedUrl: normalizedUrl,
 	})
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  0,
+		SiteId:  0,
 		Step:    "normalize",
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("Normalized URL: %s", normalizedUrl),
@@ -48,7 +48,7 @@ func (s *Service) broadcastCredentialsStart(normalizedUrl, originalUrl string) {
 func (s *Service) buildCredentialsProgressCallback() func(wordpress.ProgressEvent) {
 	return func(event wordpress.ProgressEvent) {
 		s.broadcastProgress(ConnectionProgressInput{
-			SiteID:  0,
+			SiteId:  0,
 			Step:    event.Step,
 			Status:  event.Status,
 			Message: event.Message,
@@ -80,7 +80,7 @@ func (s *Service) buildCredentialsFailure(normalizedUrl, username string, appErr
 		Username: username,
 	})
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  0,
+		SiteId:  0,
 		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Failed.String(),
 		Message: fmt.Sprintf("Connection failed: %s", appErr.Error()),
@@ -96,7 +96,7 @@ func (s *Service) buildCredentialsSuccess(connInfo *wordpress.ConnectionInfo) *C
 
 	successDetails := toJson(ConnectionSuccessDetails{WPVersion: connInfo.WPVersion})
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  0,
+		SiteId:  0,
 		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("WordPress %s detected", connInfo.WPVersion),

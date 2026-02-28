@@ -15,7 +15,7 @@ type SiteWSHubAdapter struct {
 // BroadcastConnectionTestProgress converts site.ConnectionProgressInput to ws types.
 func (a *SiteWSHubAdapter) BroadcastConnectionTestProgress(data site.ConnectionProgressInput) {
 	a.hub.BroadcastConnectionTestProgress(ws.ConnectionTestProgressData{
-		SiteId:  data.SiteID,
+		SiteId:  data.SiteId,
 		Step:    data.Step,
 		Status:  data.Status,
 		Message: data.Message,
@@ -31,9 +31,9 @@ func (a *SiteWSHubAdapter) BroadcastLog(level string, message string, context js
 // BroadcastRemotePluginLogWithSession converts site.RemotePluginLogInput to ws types.
 func (a *SiteWSHubAdapter) BroadcastRemotePluginLogWithSession(input site.RemotePluginLogInput) {
 	a.hub.BroadcastRemotePluginLogWithSession(ws.RemotePluginLogInput{
-		SiteID:    input.SiteID,
+		SiteId:    input.SiteId,
 		Action:    input.Action,
-		SessionID: input.SessionID,
+		SessionId: input.SessionId,
 		Level:     input.Level,
 		Step:      input.Step,
 		Message:   input.Message,

@@ -28,7 +28,7 @@ func (s *Service) broadcastRemoteActionStarted(ref *remoteActionRef) {
 // buildRemoteActionContext creates context details for logging.
 func buildRemoteActionContext(ref *remoteActionRef) RemoteActionContext {
 	return RemoteActionContext{
-		SiteId:     ref.SiteID,
+		SiteId:     ref.SiteId,
 		SiteName:   ref.Site.Name,
 		SiteUrl:    ref.Site.Url,
 		PluginSlug: ref.PluginSlug,
@@ -42,30 +42,30 @@ func (s *Service) broadcastRemoteActionStartedWS(ref *remoteActionRef) {
 	}
 
 	event := RemoteActionStartedEvent{
-		SiteId:     ref.SiteID,
+		SiteId:     ref.SiteId,
 		SiteName:   ref.Site.Name,
 		Action:     ref.Action,
 		PluginSlug: ref.PluginSlug,
 	}
 
-	s.wsHub.BroadcastWithSession("remote_plugin_action_started", event, ref.SessionID)
+	s.wsHub.BroadcastWithSession("remote_plugin_action_started", event, ref.SessionId)
 }
 
 // saveRemoteActionRequest saves the request to the session log.
 func (s *Service) saveRemoteActionRequest(ref *remoteActionRef) {
-	if s.sessionService == nil || ref.SessionID == "" {
+	if s.sessionService == nil || ref.SessionId == "" {
 
 		return
 	}
 
 	body := toJson(RemoteActionRequestBody{
-		SiteId:     ref.SiteID,
+		SiteId:     ref.SiteId,
 		PluginSlug: ref.PluginSlug,
 		Action:     ref.Action,
 	})
 
-	s.sessionService.SaveRequest(ref.SessionID, &session.SessionRequest{
-		URL:    wordpress.GoApiSitePluginRoute(ref.SiteID, ref.PluginSlug, ref.Action),
+	s.sessionService.SaveRequest(ref.SessionId, &session.SessionRequest{
+		URL:    wordpress.GoApiSitePluginRoute(ref.SiteId, ref.PluginSlug, ref.Action),
 		Method: "POST",
 		Body:   body,
 	})
@@ -80,7 +80,7 @@ func (s *Service) handleRemoteActionError(
 ) {
 	errDetails := s.extractErrorDetails(appErr)
 
-	s.saveRemoteErrorResponse(ref.SessionID, errDetails, appErr)
+	s.saveRemoteErrorResponse(ref.SessionId, errDetails, appErr)
 	s.logRemoteErrorAction(ref, errDetails)
 	s.logRemoteErrorStageEnd(ref, durationMs)
 	s.finalizeRemoteError(ctx, ref, errDetails, appErr, durationMs)
@@ -100,12 +100,12 @@ func (s *Service) logRemoteErrorAction(ref *remoteActionRef, errDetails *Extract
 
 // logRemoteErrorStageEnd logs the stage end for a failed action.
 func (s *Service) logRemoteErrorStageEnd(ref *remoteActionRef, durationMs int64) {
-	if s.sessionService == nil || ref.SessionID == "" {
+	if s.sessionService == nil || ref.SessionId == "" {
 		return
 	}
 
 	stageInput := session.StageEndInput{
-		SessionID:  ref.SessionID,
+		SessionID:  ref.SessionId,
 		StageName:  ref.Action,
 		Status:     "error",
 		DurationMs: durationMs,
@@ -124,7 +124,7 @@ func (s *Service) finalizeRemoteError(
 ) {
 	s.fetchAndAttachRemotePhpErrors(ref, errDetails)
 	s.logToErrorFile(ref, errDetails)
-	s.endRemoteSession(ref.SessionID, "error", appErr.Error())
+	s.endRemoteSession(ref.SessionId, "error", appErr.Error())
 
 	completeInput := remoteActionCompleteInput{
 		Ref:        ref,
@@ -227,8 +227,8 @@ func (s *Service) logRemoteSuccessAction(ref *remoteActionRef, durationMs int64)
 
 // finalizeRemoteSuccess invalidates cache, ends session, broadcasts, and logs.
 func (s *Service) finalizeRemoteSuccess(ctx context.Context, ref *remoteActionRef, durationMs int64) {
-	_ = s.InvalidateRemotePluginsCache(ctx, ref.SiteID)
-	s.endRemoteSession(ref.SessionID, "success", "")
+	_ = s.InvalidateRemotePluginsCache(ctx, ref.SiteId)
+	s.endRemoteSession(ref.SessionId, "success", "")
 
 	completeInput := remoteActionCompleteInput{
 		Ref:        ref,
@@ -237,12 +237,12 @@ func (s *Service) finalizeRemoteSuccess(ctx context.Context, ref *remoteActionRe
 	}
 
 	s.broadcastRemoteActionComplete(completeInput)
-	s.log.Info(fmt.Sprintf("Remote plugin %sd", ref.Action), "siteId", ref.SiteID, "plugin", ref.PluginSlug)
+	s.log.Info(fmt.Sprintf("Remote plugin %sd", ref.Action), "siteId", ref.SiteId, "plugin", ref.PluginSlug)
 }
 
 // saveRemoteSuccessResponse records the success response in the session.
 func (s *Service) saveRemoteSuccessResponse(ref *remoteActionRef, durationMs int64) {
-	if s.sessionService == nil || ref.SessionID == "" {
+	if s.sessionService == nil || ref.SessionId == "" {
 
 		return
 	}
@@ -266,13 +266,13 @@ func (s *Service) saveRemoteSuccessHttpResponse(ref *remoteActionRef) {
 		Body:        body,
 	}
 
-	s.sessionService.SaveResponse(ref.SessionID, resp)
+	s.sessionService.SaveResponse(ref.SessionId, resp)
 }
 
 // logRemoteSuccessStageEnd logs the stage end for a successful action.
 func (s *Service) logRemoteSuccessStageEnd(ref *remoteActionRef, durationMs int64) {
 	stageInput := session.StageEndInput{
-		SessionID:  ref.SessionID,
+		SessionID:  ref.SessionId,
 		StageName:  ref.Action,
 		Status:     "success",
 		DurationMs: durationMs,
@@ -297,7 +297,7 @@ func (s *Service) broadcastRemoteActionComplete(input remoteActionCompleteInput)
 	}
 
 	event := RemoteActionCompleteEvent{
-		SiteId:     input.Ref.SiteID,
+		SiteId:     input.Ref.SiteId,
 		SiteName:   input.Ref.Site.Name,
 		Action:     input.Ref.Action,
 		PluginSlug: input.Ref.PluginSlug,
@@ -306,5 +306,5 @@ func (s *Service) broadcastRemoteActionComplete(input remoteActionCompleteInput)
 		DurationMs: input.DurationMs,
 	}
 
-	s.wsHub.BroadcastWithSession("remote_plugin_action_complete", event, input.Ref.SessionID)
+	s.wsHub.BroadcastWithSession("remote_plugin_action_complete", event, input.Ref.SessionId)
 }

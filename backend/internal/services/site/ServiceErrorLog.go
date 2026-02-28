@@ -33,7 +33,7 @@ func (s *Service) logToErrorFile(ref *remoteActionRef, details *ExtractedErrorDe
 
 // isDuplicateErrorLog checks and registers the error hash to suppress duplicates.
 func (s *Service) isDuplicateErrorLog(ref *remoteActionRef, details *ExtractedErrorDetails) bool {
-	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", ref.Action, ref.SiteID, ref.PluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
+	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", ref.Action, ref.SiteId, ref.PluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
 	hashBytes := md5.Sum([]byte(hashInput))
 	hashHex := hex.EncodeToString(hashBytes[:])
 
@@ -42,7 +42,7 @@ func (s *Service) isDuplicateErrorLog(ref *remoteActionRef, details *ExtractedEr
 
 	_, isDuplicate := s.errorLogHashes[hashHex]
 	if isDuplicate {
-		s.log.Debug("Duplicate error log entry suppressed", "action", ref.Action, "siteId", ref.SiteID, "plugin", ref.PluginSlug, "hash", hashHex)
+		s.log.Debug("Duplicate error log entry suppressed", "action", ref.Action, "siteId", ref.SiteId, "plugin", ref.PluginSlug, "hash", hashHex)
 
 		return true
 	}
@@ -105,7 +105,7 @@ func (s *Service) buildErrorLogEntry(ref *remoteActionRef, details *ExtractedErr
 
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	entry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(ref.Action))
-	entry += fmt.Sprintf("  Site Request URL: %s\n  Site ID: %d\n  Site Name: %s\n  Site Base URL: %s\n", delegatedUrl, ref.SiteID, ref.Site.Name, ref.Site.Url)
+	entry += fmt.Sprintf("  Site Request URL: %s\n  Site ID: %d\n  Site Name: %s\n  Site Base URL: %s\n", delegatedUrl, ref.SiteId, ref.Site.Name, ref.Site.Url)
 	entry += fmt.Sprintf("  Plugin Identifier: %s\n  Requested Action: %s\n", pluginIdentifier, ref.Action)
 	entry += fmt.Sprintf("  Delegated Request:\n    Method: %s\n    Endpoint: %s\n    Request Body:\n      %s\n", method, details.Endpoint, requestBody)
 	entry += formatResponseSection(details)
