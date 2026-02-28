@@ -10,17 +10,18 @@ import (
 
 	"wp-plugin-publish/internal/services/e2e"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // E2EServiceInterface defines E2E test service methods
 type E2EServiceInterface interface {
-	ListSuites(ctx context.Context) ([]e2e.TestSuite, error)
-	GetCases(ctx context.Context, suiteId string) ([]e2e.TestCase, error)
-	StartRun(ctx context.Context, opts e2e.RunOptions) (*e2e.TestRun, error)
-	AbortRun(ctx context.Context, runId string) error
-	ListRuns(ctx context.Context, limit int) ([]e2e.TestRun, error)
-	GetRun(ctx context.Context, runId string) (*e2e.RunSummary, error)
-	DeleteRun(ctx context.Context, runId string) error
+	ListSuites(ctx context.Context) ([]e2e.TestSuite, *apperror.AppError)
+	GetCases(ctx context.Context, suiteId string) ([]e2e.TestCase, *apperror.AppError)
+	StartRun(ctx context.Context, opts e2e.RunOptions) (*e2e.TestRun, *apperror.AppError)
+	AbortRun(ctx context.Context, runId string) *apperror.AppError
+	ListRuns(ctx context.Context, limit int) ([]e2e.TestRun, *apperror.AppError)
+	GetRun(ctx context.Context, runId string) (*e2e.RunSummary, *apperror.AppError)
+	DeleteRun(ctx context.Context, runId string) *apperror.AppError
 }
 
 // E2EService holds the E2E service instance
@@ -28,7 +29,7 @@ var E2EService E2EServiceInterface
 
 // GetE2ESuites returns all test suites
 var GetE2ESuites = handleListNilSafe(e2eServiceGetter, "E7001",
-	func(ctx context.Context) (any, error) {
+	func(ctx context.Context) (any, *apperror.AppError) {
 		return E2EService.ListSuites(ctx)
 	},
 )
@@ -46,14 +47,10 @@ func GetE2ECases(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	suiteId := vars["id"]
 
-	cases, err := E2EService.GetCases(r.Context(), suiteId)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			"E7002",
-			err.Error(),
-		)
+	cases, appErr := E2EService.GetCases(r.Context(), suiteId)
+
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusServerError, "E7002", appErr.Error())
 
 		return
 	}
@@ -72,14 +69,10 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := E2EService.StartRun(r.Context(), opts)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E7003",
-			err.Error(),
-		)
+	run, appErr := E2EService.StartRun(r.Context(), opts)
+
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusBadRequest, "E7003", appErr.Error())
 
 		return
 	}
@@ -109,14 +102,10 @@ func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	runs, err := E2EService.ListRuns(r.Context(), limit)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			"E7001",
-			err.Error(),
-		)
+	runs, appErr := E2EService.ListRuns(r.Context(), limit)
+
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusServerError, "E7001", appErr.Error())
 
 		return
 	}
@@ -133,14 +122,10 @@ func GetE2ERun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	runId := vars["id"]
 
-	run, err := E2EService.GetRun(r.Context(), runId)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusNotFound,
-			"E7001",
-			err.Error(),
-		)
+	run, appErr := E2EService.GetRun(r.Context(), runId)
+
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusNotFound, "E7001", appErr.Error())
 
 		return
 	}
@@ -157,14 +142,10 @@ func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	runId := vars["id"]
 
-	err := E2EService.AbortRun(r.Context(), runId)
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E7003",
-			err.Error(),
-		)
+	appErr := E2EService.AbortRun(r.Context(), runId)
+
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusBadRequest, "E7003", appErr.Error())
 
 		return
 	}
@@ -181,15 +162,10 @@ func DeleteE2ERun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	runId := vars["id"]
 
-	err := E2EService.DeleteRun(r.Context(), runId)
+	appErr := E2EService.DeleteRun(r.Context(), runId)
 
-	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			"E7001",
-			err.Error(),
-		)
+	if appErr != nil {
+		respondError(w, wordpress.HttpStatusBadRequest, "E7001", appErr.Error())
 
 		return
 	}

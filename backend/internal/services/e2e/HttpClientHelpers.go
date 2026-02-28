@@ -6,18 +6,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // do performs an HTTP request and returns the parsed response.
-func (c *apiClient) do(method, path string, body any) (*apiResponse, error) {
-	req, err := c.buildRequest(method, path, body)
-	if err != nil {
-		return nil, err
+func (c *apiClient) do(method, path string, body any) (*apiResponse, *apperror.AppError) {
+	req, appErr := c.buildRequest(method, path, body)
+
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	resp, err := c.client.Do(req)
+
 	if err != nil {
-		return nil, fmt.Errorf("execute request: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrE2ERequest, "execute request")
 	}
 	defer resp.Body.Close()
 
@@ -25,33 +29,38 @@ func (c *apiClient) do(method, path string, body any) (*apiResponse, error) {
 }
 
 // buildRequest creates an http.Request with optional JSON body.
-func (c *apiClient) buildRequest(method, path string, body any) (*http.Request, error) {
+func (c *apiClient) buildRequest(method, path string, body any) (*http.Request, *apperror.AppError) {
 	url := fmt.Sprintf("%s/api/v1%s", c.baseUrl, path)
 
 	var reqBody io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
+
 		if err != nil {
-			return nil, fmt.Errorf("marshal request: %w", err)
+			return nil, apperror.Wrap(err, apperror.ErrE2ERequest, "marshal request")
 		}
 		reqBody = bytes.NewReader(b)
 	}
 
 	req, err := http.NewRequest(method, url, reqBody)
+
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrE2ERequest, "create request")
 	}
+
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+
 	return req, nil
 }
 
 // parseResponse reads the response body and parses the JSON envelope.
-func (c *apiClient) parseResponse(resp *http.Response) (*apiResponse, error) {
+func (c *apiClient) parseResponse(resp *http.Response) (*apiResponse, *apperror.AppError) {
 	rawBytes, err := io.ReadAll(resp.Body)
+
 	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrE2ERequest, "read response")
 	}
 
 	result := &apiResponse{

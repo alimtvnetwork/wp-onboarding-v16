@@ -124,7 +124,11 @@ const (
 
 // E2E Test errors (E10xxx)
 const (
-	ErrE2ERunning ErrorCode = "E10001" // E2E test already running
+	ErrE2ERunning   ErrorCode = "E10001" // E2E test already running
+	ErrE2ERequest   ErrorCode = "E10002" // E2E HTTP request failed
+	ErrE2EAssertion ErrorCode = "E10003" // E2E test assertion failed
+	ErrE2ESetup     ErrorCode = "E10004" // E2E test setup failed
+	ErrE2ESchema    ErrorCode = "E10005" // E2E schema initialization failed
 )
 
 // Publish errors (E11xxx)

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // apiClient wraps HTTP calls to the backend API
@@ -38,22 +40,22 @@ type apiErrorPayload struct {
 }
 
 // get performs a GET request
-func (c *apiClient) get(path string) (*apiResponse, error) {
+func (c *apiClient) get(path string) (*apiResponse, *apperror.AppError) {
 	return c.do("GET", path, nil)
 }
 
 // post performs a POST request with JSON body
-func (c *apiClient) post(path string, body any) (*apiResponse, error) {
+func (c *apiClient) post(path string, body any) (*apiResponse, *apperror.AppError) {
 	return c.do("POST", path, body)
 }
 
 // put performs a PUT request with JSON body
-func (c *apiClient) put(path string, body any) (*apiResponse, error) {
+func (c *apiClient) put(path string, body any) (*apiResponse, *apperror.AppError) {
 	return c.do("PUT", path, body)
 }
 
 // del performs a DELETE request
-func (c *apiClient) del(path string) (*apiResponse, error) {
+func (c *apiClient) del(path string) (*apiResponse, *apperror.AppError) {
 	return c.do("DELETE", path, nil)
 }
 
