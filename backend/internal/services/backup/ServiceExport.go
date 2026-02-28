@@ -43,12 +43,14 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	state := s.exportSources(handle.Writer, sourcePaths)
 	s.logExportComplete(outputPath, state, startTime)
 
-	return apperror.Ok(ExportResult{
+	exportResult := ExportResult{
 		OutputPath: outputPath,
 		FilesCount: state.FilesCount,
 		TotalBytes: state.TotalBytes,
 		Duration:   time.Since(startTime),
-	})
+	}
+
+	return apperror.Ok(exportResult)
 }
 
 // exportZipHandle holds the zip writer and cleanup function.

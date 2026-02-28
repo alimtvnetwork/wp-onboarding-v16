@@ -47,12 +47,14 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, is
 
 	s.logImportComplete(destDir, state, startTime)
 
-	return apperror.Ok(ImportResult{
+	importResult := ImportResult{
 		DestPath:   destDir,
 		FilesCount: state.FilesCount,
 		TotalBytes: state.TotalBytes,
 		Duration:   time.Since(startTime),
-	})
+	}
+
+	return apperror.Ok(importResult)
 }
 
 // openImportZip validates and opens the zip file.
