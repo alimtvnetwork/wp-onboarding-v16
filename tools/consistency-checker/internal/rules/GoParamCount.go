@@ -12,8 +12,8 @@ import (
 // (excluding context.Context).
 type GoParamCount struct{}
 
-// ID returns the rule identifier.
-func (r *GoParamCount) ID() string { return "go-param-count" }
+// Id returns the rule identifier.
+func (r *GoParamCount) Id() string { return "go-param-count" }
 
 // Name returns the rule display name.
 func (r *GoParamCount) Name() string { return "Go Parameter Count" }
@@ -167,7 +167,7 @@ func filterContextParam(params []string) []string {
 func buildParamCountFinding(ctx engine.CheckContext, line string, lineNum, count, max int) engine.Finding {
 	funcName := extractFuncName(line)
 	return engine.Finding{
-		RuleID:     "go-param-count",
+		RuleId:     "go-param-count",
 		RuleName:   "Go Parameter Count",
 		Severity:   ctx.Spec.Severity,
 		FilePath:   ctx.FilePath,

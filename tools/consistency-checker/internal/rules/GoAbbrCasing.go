@@ -42,8 +42,8 @@ func buildAbbrPattern() *regexp.Regexp {
 // instead of ALL-CAPS (ID, URL, HTTP, etc.).
 type GoAbbrCasing struct{}
 
-// ID returns the rule identifier.
-func (r *GoAbbrCasing) ID() string { return "go-abbr-casing" }
+// Id returns the rule identifier.
+func (r *GoAbbrCasing) Id() string { return "go-abbr-casing" }
 
 // Name returns the rule display name.
 func (r *GoAbbrCasing) Name() string { return "Go Abbreviation Casing" }
@@ -139,7 +139,7 @@ func checkLineForViolations(
 
 		suggestion := buildAbbrSuggestion(match, abbr)
 		finding := engine.Finding{
-			RuleID:   "go-abbr-casing",
+			RuleId:   "go-abbr-casing",
 			RuleName: "Go Abbreviation Casing",
 			Severity: ctx.Spec.Severity,
 			FilePath: ctx.FilePath,

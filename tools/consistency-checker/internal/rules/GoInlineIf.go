@@ -14,8 +14,8 @@ var inlineIfPattern = regexp.MustCompile(`^\s*if\s+.*:=.*;\s*`)
 // GoInlineIf detects prohibited inline if-init patterns.
 type GoInlineIf struct{}
 
-// ID returns the rule identifier.
-func (r *GoInlineIf) ID() string { return "go-inline-if" }
+// Id returns the rule identifier.
+func (r *GoInlineIf) Id() string { return "go-inline-if" }
 
 // Name returns the rule display name.
 func (r *GoInlineIf) Name() string { return "Go Inline If-Init" }
@@ -33,7 +33,7 @@ func (r *GoInlineIf) Check(ctx engine.CheckContext) []engine.Finding {
 		if isViolation {
 			lineNum := i + 1
 			finding := engine.Finding{
-				RuleID:     "go-inline-if",
+				RuleId:     "go-inline-if",
 				RuleName:   "Go Inline If-Init",
 				Severity:   ctx.Spec.Severity,
 				FilePath:   ctx.FilePath,

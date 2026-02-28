@@ -138,7 +138,7 @@ func saveRun(db *database.DB, flags cliFlags, summary report.Summary, result eng
 // toDBFinding converts an engine Finding to a database Finding.
 func toDBFinding(f engine.Finding) database.Finding {
 	return database.Finding{
-		RuleId: f.RuleID, RuleName: f.RuleName,
+		RuleId: f.RuleId, RuleName: f.RuleName,
 		Severity: f.Severity, FilePath: f.FilePath,
 		Line: f.Line, EndLine: f.EndLine,
 		Message: f.Message, Suggestion: f.Suggestion,

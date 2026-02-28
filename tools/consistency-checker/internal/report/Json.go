@@ -27,7 +27,7 @@ type jsonSummary struct {
 
 // jsonFinding represents a single violation in JSON output.
 type jsonFinding struct {
-	RuleID     string `json:"rule_id"`
+	RuleId     string `json:"rule_id"`
 	Severity   string `json:"severity"`
 	File       string `json:"file"`
 	Line       int    `json:"line"`
@@ -90,7 +90,7 @@ func toJSONFindings(findings []engine.Finding) []jsonFinding {
 // toJSONFinding converts a single engine Finding to jsonFinding.
 func toJSONFinding(f engine.Finding) jsonFinding {
 	return jsonFinding{
-		RuleID:     f.RuleID,
+		RuleId:     f.RuleId,
 		Severity:   f.Severity,
 		File:       f.FilePath,
 		Line:       f.Line,

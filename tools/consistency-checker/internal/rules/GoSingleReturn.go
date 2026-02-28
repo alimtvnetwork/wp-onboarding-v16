@@ -11,8 +11,8 @@ import (
 // GoSingleReturn checks that Go functions return exactly one value.
 type GoSingleReturn struct{}
 
-// ID returns the rule identifier.
-func (r *GoSingleReturn) ID() string { return "go-single-return" }
+// Id returns the rule identifier.
+func (r *GoSingleReturn) Id() string { return "go-single-return" }
 
 // Name returns the rule display name.
 func (r *GoSingleReturn) Name() string { return "Go Single Return Value" }
@@ -100,7 +100,7 @@ func isMultiReturnSignature(returnPart string) bool {
 func buildMultiReturnFinding(ctx engine.CheckContext, line string, lineNum int) engine.Finding {
 	funcName := extractFuncName(line)
 	return engine.Finding{
-		RuleID:     "go-single-return",
+		RuleId:     "go-single-return",
 		RuleName:   "Go Single Return Value",
 		Severity:   ctx.Spec.Severity,
 		FilePath:   ctx.FilePath,

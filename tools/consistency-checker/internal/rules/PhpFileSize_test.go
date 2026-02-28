@@ -58,7 +58,7 @@ func phpContext(lineCount, maxLines int) engine.CheckContext {
 		Language: "php",
 		Lines:    lines,
 		Spec: config.RuleSpec{
-			ID:        "php-file-size",
+			Id:        "php-file-size",
 			Severity:  "warning",
 			Params:    map[string]any{"max_lines": float64(maxLines)},
 			Reference: "spec/03-rules.md#php-file-size",
@@ -66,10 +66,10 @@ func phpContext(lineCount, maxLines int) engine.CheckContext {
 	}
 }
 
-func assertFinding(t *testing.T, f engine.Finding, ruleID, severity string, line int) {
+func assertFinding(t *testing.T, f engine.Finding, ruleId, severity string, line int) {
 	t.Helper()
-	if f.RuleID != ruleID {
-		t.Errorf("expected rule_id %q, got %q", ruleID, f.RuleID)
+	if f.RuleId != ruleId {
+		t.Errorf("expected rule_id %q, got %q", ruleId, f.RuleId)
 	}
 	if f.Severity != severity {
 		t.Errorf("expected severity %q, got %q", severity, f.Severity)
