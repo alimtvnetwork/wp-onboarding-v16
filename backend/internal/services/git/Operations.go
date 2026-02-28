@@ -196,8 +196,9 @@ func hasGitDirectory(pluginPath string) bool {
 // pullAndTrack pulls a single plugin and records the result in the batch.
 func (s *Service) pullAndTrack(ctx context.Context, pluginId int64, batch *BatchPullResult) {
 	pullResult := s.Pull(ctx, pluginId)
+	isPullFailed := !pullResult.IsSafe()
 
-	if !pullResult.IsSafe() {
+	if isPullFailed {
 		return
 	}
 

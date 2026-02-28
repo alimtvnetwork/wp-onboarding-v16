@@ -138,7 +138,9 @@ func (s *serviceImpl) aggregateSiteResults(result *BatchSyncResult, ctx context.
 
 	for _, mapping := range mappings {
 		syncResult := s.CheckSync(ctx, pluginId, mapping.SiteId)
-		if !syncResult.IsSafe() {
+		isSyncUnavailable := !syncResult.IsSafe()
+
+		if isSyncUnavailable {
 			continue
 		}
 
