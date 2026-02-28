@@ -137,10 +137,11 @@ func (s *Service) closeAndRemoveSession(sessionID string) {
 
 // removeDirSession removes a directory-based session.
 func (s *Service) removeDirSession(sessionDir string) error {
-	if err := os.RemoveAll(sessionDir); err != nil {
-		return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session directory").
-			WithPath(sessionDir)
+	appErr := pathutil.RemoveDir(sessionDir, "sessionDir")
+	if appErr != nil {
+		return appErr
 	}
+
 	return nil
 }
 
@@ -150,13 +151,12 @@ func (s *Service) removeLegacySession(sessionID string) error {
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve legacy session path")
 	}
-	if err := os.Remove(legacyPath); err != nil {
-		isRealError := !os.IsNotExist(err)
-		if isRealError {
-			return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session log").
-				WithPath(legacyPath)
-		}
+
+	appErr := pathutil.RemoveFile(legacyPath, "legacyPath")
+	if appErr != nil {
+		return appErr
 	}
+
 	return nil
 }
 
@@ -203,11 +203,12 @@ func (s *Service) removeSessionEntry(entry os.DirEntry) {
 	if err != nil {
 		return
 	}
-	if entry.IsDir() {
-		os.RemoveAll(fullPath)
-	} else {
-		os.Remove(fullPath)
-	}
+
+	pathutil.RemoveEntry(
+		fullPath,
+		entry.IsDir(),
+		"fullPath",
+	)
 }
 
 // ClearAllSessions removes all session directories and files
@@ -255,10 +256,14 @@ func (s *Service) closeAllSessions() {
 func (s *Service) removeAllEntries(entries []os.DirEntry) []error {
 	var errors []error
 	for _, entry := range entries {
-		if err := s.removeEntryByName(entry); err != nil {
-			errors = append(errors, err)
+		entryErr := s.removeEntryByName(entry)
+		if entryErr != nil {
+			errors = append(errors, entryErr)
 		}
 	}
+
+	return errors
+}
 	return errors
 }
 
@@ -268,17 +273,15 @@ func (s *Service) removeEntryByName(entry os.DirEntry) error {
 	if err != nil {
 		return nil
 	}
-	var removeErr error
-	if entry.IsDir() {
-		removeErr = os.RemoveAll(fullPath)
-	} else {
-		removeErr = os.Remove(fullPath)
+
+	appErr := pathutil.RemoveEntry(
+		fullPath,
+		entry.IsDir(),
+		"fullPath",
+	)
+	if appErr != nil {
+		return appErr
 	}
-	if removeErr != nil {
-		isRealError := !os.IsNotExist(removeErr)
-		if isRealError {
-			return removeErr
-		}
-	}
+
 	return nil
 }

@@ -1,7 +1,7 @@
 # Memory: architecture/coding-standards/control-flow-and-formatting
 Updated: 2026-02-26
 
-Code style across all languages (PHP, TypeScript, Go) is governed by a canonical spec at `spec/03-coding-guidelines/code-style.md` (v3.2.0) with fifteen rules plus sub-rules: (1) mandatory curly braces `{}` for all control structures, (2) no nested `if` blocks — flatten via combined conditions or early returns, (3) extract any `if` condition with 2+ operators into a named boolean variable, method, or constant, (4) blank line before `return` or `throw` unless it's the sole statement in its block, (5) blank line after `}` when more code follows (exception: consecutive `}` or `else`/`catch`), (6) max 15 lines per function body — **(6a) error wrapping chains must use one `.WithX()` per line and are never compressed; if this pushes past 15 lines, extract other logic into helpers**, (7) reinforced zero-tolerance nested-if ban, (8) no leading backslash on global types, (9) **multi-line arguments for signatures, calls, AND arrays when >2 items** — each argument/item on its own line with trailing comma; applies to function signatures (9a), function/method calls (9b), and PHP array literals (9c), (10) blank line before control structures (`if`/`for`/`foreach`/`while`) when preceded by one or more non-brace statements, (11) **no inline `if init; cond {` for ANY variable assignment in Go** — always declare the variable on a separate line, then check the condition on the next line. The only permitted exception is `if err := ...; err != nil` for error checks, which is idiomatic Go. All other inline init patterns are banned. Stat calls must use `pathutil.StatFile` / `pathutil.StatDir`, (12) **no raw `os.Stat`** — always use `pathutil` helpers (`StatFile`, `StatDir`, `IsFileExists`, `IsFileMissing`, `FileSize`) which resolve to absolute paths and return `*apperror.AppError`. Raw `os.Stat` is only permitted inside `pathutil` itself and test files, (13) **no magic strings** — all string literals used as keys, step identifiers, status values, or category labels must be defined as typed enum constants or named constants. Never pass raw string literals like `"fetch_site"` or `"api_test"` directly; use the corresponding enum's `.String()` or `.Value()` method, (14) **camelCase for all structured log keys** — logger key arguments must use camelCase (`"durationMs"`, `"filesCount"`, `"totalBytes"`, `"dbId"`), never snake_case (`"duration_ms"`, `"files_count"`). This applies to all `s.log.Info/Debug/Warn/Error` calls.
+Code style across all languages (PHP, TypeScript, Go) is governed by a canonical spec at `spec/03-coding-guidelines/code-style.md` (v3.3.0) with fifteen rules plus sub-rules: (1) mandatory curly braces `{}` for all control structures, (2) no nested `if` blocks — flatten via combined conditions or early returns, (3) extract any `if` condition with 2+ operators into a named boolean variable, method, or constant, (4) blank line before `return` or `throw` unless it's the sole statement in its block, (5) blank line after `}` when more code follows (exception: consecutive `}` or `else`/`catch`), (6) max 15 lines per function body — **(6a) error wrapping chains must use one `.WithX()` per line and are never compressed; if this pushes past 15 lines, extract other logic into helpers**, (7) reinforced zero-tolerance nested-if ban, (8) no leading backslash on global types, (9) **multi-line arguments for signatures, calls, AND arrays when >2 items** — each argument/item on its own line with trailing comma; applies to function signatures (9a), function/method calls (9b), and PHP array literals (9c), (10) blank line before control structures (`if`/`for`/`foreach`/`while`) when preceded by one or more non-brace statements, (11) **no inline `if init; cond {` in Go — ALL forms are prohibited, including `if err := ...; err != nil`**. Every variable assignment (including error checks) must be on its own line, then the condition on the next line. No exceptions. (12) **no raw `os.Stat`** — always use `pathutil` helpers (`StatFile`, `StatDir`, `IsFileExists`, `IsFileMissing`, `FileSize`). (12a) **no raw `os.Remove` / `os.RemoveAll`** — always use `pathutil.RemoveFile`, `pathutil.RemoveDir`, `pathutil.RemoveEntry`, or `pathutil.RemoveFileUnchecked`. These handle not-found silently and include path + variable name in error context. (13) **no magic strings**, (14) **camelCase for all structured log keys**.
 
 ### Rule 11 Examples
 
@@ -17,21 +17,37 @@ if userId != "" {
     args = append(args, "userId", userId)
 }
 
-// ❌ WRONG — inline init for function result
-if resolved := resolveScriptPath(path); resolved != "" {
-    return resolved
-}
-
-// ✅ CORRECT
-resolved := resolveScriptPath(path)
-if resolved != "" {
-    return resolved
-}
-
-// ✅ OK — error check inline is the sole exception
+// ❌ WRONG — inline init for error (NO LONGER EXEMPT)
 if err := validate(input); err != nil {
     return err
 }
+
+// ✅ CORRECT — error on separate line
+err := validate(input)
+if err != nil {
+    return err
+}
+```
+
+### Rule 12a Examples (Raw os.Remove Prohibited)
+
+```go
+// ❌ WRONG — raw os.Remove with os.IsNotExist check
+if err := os.Remove(legacyPath); err != nil {
+    isRealError := !os.IsNotExist(err)
+    if isRealError {
+        return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session log")
+    }
+}
+
+// ✅ CORRECT — pathutil handles not-found silently, includes var name
+appErr := pathutil.RemoveFile(legacyPath, "legacyPath")
+if appErr != nil {
+    return appErr
+}
+
+// ✅ CORRECT — cleanup/defer (no error needed)
+defer pathutil.RemoveFileUnchecked(tempPath)
 ```
 
 ### Rule 13 Examples

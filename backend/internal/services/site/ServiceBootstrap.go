@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // BootstrapResult represents the result of bootstrapping the uploader to a site
@@ -44,7 +44,7 @@ func (s *Service) bootstrapUploadAndFinalize(id int64, bctx *bootstrapContext, u
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(zipPath)
+	defer pathutil.RemoveFileUnchecked(zipPath)
 
 	uploadResult, uploadErr := s.executeBootstrapUpload(id, bctx.Client, zipPath)
 	if uploadErr != nil {

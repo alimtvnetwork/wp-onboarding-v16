@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // FullBackupRemoteSnapshot triggers end-to-end full backup orchestration on a remote WordPress site.
@@ -70,7 +71,7 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	defer os.Remove(tempPath)
+	defer pathutil.RemoveFileUnchecked(tempPath)
 
 	result, err := Services.SiteService.ImportRemoteSnapshot(r.Context(), siteId, tempPath)
 	if err != nil {
@@ -83,12 +84,21 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // receiveUploadToTemp parses the multipart form, writes the file to a temp path, and returns it.
 func receiveUploadToTemp(w http.ResponseWriter, r *http.Request) (string, bool) {
-	if err := r.ParseMultipartForm(500 << 20); err != nil {
-		respondBadRequest(w, "E1001", "Failed to parse multipart form: "+err.Error())
+	parseErr := r.ParseMultipartForm(500 << 20)
+	if parseErr != nil {
+		respondBadRequest(w, "E1001", "Failed to parse multipart form: "+parseErr.Error())
+
 		return "", false
 	}
 
 	return extractFormFileToTemp(w, r)
+}
+
+// copyToTemp copies data from src to dst.
+func copyToTemp(dst *os.File, src io.Reader) error {
+	_, err := io.Copy(dst, src)
+
+	return err
 }
 
 // extractFormFileToTemp reads the "file" field and writes it to a temporary file.
@@ -111,10 +121,12 @@ func writeToTempFile(w http.ResponseWriter, src io.Reader) (string, bool) {
 		return "", false
 	}
 
-	if _, err := io.Copy(tempFile, src); err != nil {
+	copyErr := copyToTemp(tempFile, src)
+	if copyErr != nil {
 		tempFile.Close()
-		os.Remove(tempFile.Name())
+		pathutil.RemoveFileUnchecked(tempFile.Name())
 		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to write temp file")
+
 		return "", false
 	}
 	tempFile.Close()
