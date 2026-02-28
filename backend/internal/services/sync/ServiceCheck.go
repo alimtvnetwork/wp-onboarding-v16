@@ -3,51 +3,58 @@ package sync
 
 import (
 	"context"
+	"time"
 
 	changetype "wp-plugin-publish/internal/enums/changetype"
 	syncstep "wp-plugin-publish/internal/enums/syncsteptype"
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// CheckSync compares local vs remote files for a specific plugin-site mapping
+// CheckSync compares local vs remote files for a specific plugin-site mapping.
 func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) apperror.Result[SyncResult] {
-	result := SyncResult{
-		PluginID:  pluginID,
-		SiteID:    siteID,
-		CheckedAt: time.Now(),
-	}
+	result := SyncResult{PluginID: pluginID, SiteID: siteID, CheckedAt: time.Now()}
 
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Starting sync check..."})
 
-	plugResult := s.pluginService.GetByID(ctx, pluginID)
-	if plugResult.HasError() {
-		result.ErrorMessage = plugResult.AppError().Error()
-
-		return apperror.Ok(result)
-	}
-	plug := plugResult.Value()
-
-	// Scan local files
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Scanning.Value(), Progress: 20, Message: "Scanning local files..."})
-	localFiles, err := s.scanLocalFiles(plug.Path, plug.ExcludePatterns)
-	if err != nil {
-		result.ErrorMessage = err.Error()
-
+	localFiles, errMsg := s.scanLocalForCheck(ctx, pluginID, siteID)
+	if errMsg != "" {
+		result.ErrorMessage = errMsg
 		return apperror.Ok(result)
 	}
 	result.LocalFiles = len(localFiles)
 
-	// Fetch remote manifest
 	remoteFiles, errMsg := s.fetchRemoteManifest(ctx, pluginID, siteID)
 	if errMsg != "" {
 		result.ErrorMessage = errMsg
 		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: errMsg})
-
 		return apperror.Ok(result)
 	}
 	result.RemoteFiles = len(remoteFiles)
 
-	// Compare files
+	s.finalizeCheckResult(&result, localFiles, remoteFiles, pluginID, siteID)
+	return apperror.Ok(result)
+}
+
+// scanLocalForCheck scans local files for a sync check, returning files or an error message.
+func (s *serviceImpl) scanLocalForCheck(ctx context.Context, pluginID, siteID int64) (map[string]FileEntry, string) {
+	plugResult := s.pluginService.GetByID(ctx, pluginID)
+	if plugResult.HasError() {
+		return nil, plugResult.AppError().Error()
+	}
+	plug := plugResult.Value()
+
+	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Scanning.Value(), Progress: 20, Message: "Scanning local files..."})
+	localFiles, err := s.scanLocalFiles(plug.Path, plug.ExcludePatterns)
+	if err != nil {
+		return nil, err.Error()
+	}
+
+	return localFiles, ""
+}
+
+// finalizeCheckResult computes changes, updates mapping status, and broadcasts completion.
+func (s *serviceImpl) finalizeCheckResult(result *SyncResult, localFiles, remoteFiles map[string]FileEntry, pluginID, siteID int64) {
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 70, Message: "Comparing files..."})
 	changes := s.compareFiles(localFiles, remoteFiles)
 
@@ -57,24 +64,15 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	result.Deleted = countByType(changes, changetype.Deleted.Value())
 	result.IsInSync = len(changes) == 0
 
-	s.updateMappingSyncStatus(ctx, pluginID, siteID, result.IsInSync)
+	s.updateMappingSyncStatus(context.Background(), pluginID, siteID, result.IsInSync)
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "Sync check complete"})
 
-	s.log.Info("Sync check completed",
-		"pluginId", pluginID,
-		"siteId", siteID,
-		"isInSync", result.IsInSync,
-		"changes", len(changes))
-
-	return apperror.Ok(result)
+	s.log.Info("Sync check completed", "pluginId", pluginID, "siteId", siteID, "isInSync", result.IsInSync, "changes", len(changes))
 }
 
-// CheckAllSites checks sync status for all sites mapped to a plugin
+// CheckAllSites checks sync status for all sites mapped to a plugin.
 func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperror.Result[BatchSyncResult] {
-	result := BatchSyncResult{
-		PluginID: pluginID,
-		Results:  []SyncResult{},
-	}
+	result := BatchSyncResult{PluginID: pluginID, Results: []SyncResult{}}
 
 	plugResult := s.pluginService.GetByID(ctx, pluginID)
 	if plugResult.HasError() {
@@ -87,50 +85,52 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperro
 	if mappingsResult.HasError() {
 		return apperror.Fail[BatchSyncResult](mappingsResult.AppError())
 	}
-	mappings := mappingsResult.Items()
+
+	s.aggregateSiteResults(&result, ctx, pluginID, mappingsResult.Items())
+	return apperror.Ok(result)
+}
+
+// aggregateSiteResults checks each mapping and tallies results.
+func (s *serviceImpl) aggregateSiteResults(result *BatchSyncResult, ctx context.Context, pluginID int64, mappings []models.PluginMapping) {
 	result.TotalSites = len(mappings)
 
 	for _, mapping := range mappings {
 		syncResult := s.CheckSync(ctx, pluginID, mapping.SiteID)
-		if syncResult.IsSafe() {
-			sr := syncResult.Value()
-			sr.SiteName = mapping.SiteName
-			result.Results = append(result.Results, sr)
+		if !syncResult.IsSafe() {
+			continue
+		}
 
-			if sr.ErrorMessage != "" {
-				result.Errors++
-			} else if sr.IsInSync {
-				result.IsInSync++
-			} else {
-				result.OutOfSync++
-			}
+		sr := syncResult.Value()
+		sr.SiteName = mapping.SiteName
+		result.Results = append(result.Results, sr)
+
+		switch {
+		case sr.ErrorMessage != "":
+			result.Errors++
+		case sr.IsInSync:
+			result.IsInSync++
+		default:
+			result.OutOfSync++
 		}
 	}
-
-	return apperror.Ok(result)
 }
 
-// CheckAllPlugins checks sync status for all registered plugins
+// CheckAllPlugins checks sync status for all registered plugins.
 func (s *serviceImpl) CheckAllPlugins(ctx context.Context) apperror.ResultSlice[SyncResult] {
-	var results []SyncResult
-
 	pluginListResult := s.pluginService.List(ctx)
 	if pluginListResult.HasError() {
 		return apperror.FailSlice[SyncResult](pluginListResult.AppError())
 	}
 
-	pluginList := pluginListResult.Items()
-
-	for _, plug := range pluginList {
+	var results []SyncResult
+	for _, plug := range pluginListResult.Items() {
 		batchResult := s.CheckAllSites(ctx, plug.ID)
 		if batchResult.IsSafe() {
 			results = append(results, batchResult.Value().Results...)
 		}
 	}
 
-	isResultsEmpty := results == nil
-
-	if isResultsEmpty {
+	if results == nil {
 		results = []SyncResult{}
 	}
 	return apperror.OkSlice(results)
