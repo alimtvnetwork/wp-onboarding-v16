@@ -230,18 +230,30 @@ func (h *Hub) Run() {
 	}
 }
 
-// Broadcast sends a typed message to all connected clients.
-func Broadcast[T any](h *Hub, eventType string, data T) {
-	BroadcastWithSession(h, eventType, data, "")
+// BroadcastInput bundles parameters for BroadcastWithSession.
+type BroadcastInput[T any] struct {
+	Hub       *Hub
+	EventType string
+	Data      T
+	SessionId string
 }
 
-// BroadcastWithSession sends a typed message with a session ID.
-func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionId string) {
-	h.broadcast <- &Message{
-		Type:      eventType,
+// Broadcast sends a typed message to all connected clients.
+func Broadcast[T any](h *Hub, eventType string, data T) {
+	BroadcastWithSession(BroadcastInput[T]{
+		Hub:       h,
+		EventType: eventType,
 		Data:      data,
+	})
+}
+
+// BroadcastWithSession sends a typed message with an optional session ID.
+func BroadcastWithSession[T any](input BroadcastInput[T]) {
+	input.Hub.broadcast <- &Message{
+		Type:      input.EventType,
+		Data:      input.Data,
 		Timestamp: utcTimestamp(),
-		SessionId: sessionId,
+		SessionId: input.SessionId,
 	}
 }
 

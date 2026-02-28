@@ -61,13 +61,18 @@ func (h *Hub) BroadcastOperationLogWithSession(input OperationLogInput) {
 	if input.Entry.Timestamp == "" {
 		input.Entry.Timestamp = formatLogTimestamp()
 	}
-	BroadcastWithSession(h, EventLog, OperationLogData{
-		OperationType: input.OperationType,
-		PluginId:      input.PluginID,
-		SiteId:        input.SiteID,
-		SessionId:     input.SessionID,
-		Log:           input.Entry,
-	}, input.SessionID)
+	BroadcastWithSession(BroadcastInput[OperationLogData]{
+		Hub:       h,
+		EventType: EventLog,
+		Data: OperationLogData{
+			OperationType: input.OperationType,
+			PluginId:      input.PluginID,
+			SiteId:        input.SiteID,
+			SessionId:     input.SessionID,
+			Log:           input.Entry,
+		},
+		SessionId: input.SessionID,
+	})
 }
 
 // BroadcastPublishLog is a convenience method for publish operation logs

@@ -277,7 +277,7 @@ func (s *Service) finalizePublishResult(pctx *publishContext) {
 
 	s.broadcastCompletion(pctx)
 	s.logPublishComplete(pctx)
-	s.recordHistory(pctx.PluginInfo, pctx.SiteInfo, pctx.Options, pctx.Result)
+	s.recordHistory(pctx)
 }
 
 // logPublishComplete writes the final publish log entry.

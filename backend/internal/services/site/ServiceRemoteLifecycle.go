@@ -162,7 +162,11 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, input remoteAct
 
 	ref.Client = client
 
-	return s.runRemoteAction(ctx, ref, startTime, input.ExecFn)
+	return s.runRemoteAction(ctx, remoteActionExecInput{
+		Ref:       ref,
+		StartTime: startTime,
+		ExecFn:    input.ExecFn,
+	})
 }
 
 // setupRemoteActionRef resolves the site, creates the ref, and starts session.
@@ -187,20 +191,27 @@ func (s *Service) setupRemoteActionRef(ctx context.Context, input remoteActionIn
 	return ref, nil
 }
 
-// runRemoteAction executes the action and handles success/failure.
-func (s *Service) runRemoteAction(ctx context.Context, ref *remoteActionRef, startTime time.Time, execFn func(*wordpress.Client) *apperror.AppError) *apperror.AppError {
-	s.logRemoteStageStart(ref)
+// remoteActionExecInput bundles parameters for runRemoteAction.
+type remoteActionExecInput struct {
+	Ref       *remoteActionRef
+	StartTime time.Time
+	ExecFn    func(*wordpress.Client) *apperror.AppError
+}
 
-	appErr := execFn(ref.Client)
-	durationMs := time.Since(startTime).Milliseconds()
+// runRemoteAction executes the action and handles success/failure.
+func (s *Service) runRemoteAction(ctx context.Context, input remoteActionExecInput) *apperror.AppError {
+	s.logRemoteStageStart(input.Ref)
+
+	appErr := input.ExecFn(input.Ref.Client)
+	durationMs := time.Since(input.StartTime).Milliseconds()
 
 	if appErr != nil {
-		s.handleRemoteActionError(ctx, ref, appErr, durationMs)
+		s.handleRemoteActionError(ctx, input.Ref, appErr, durationMs)
 
 		return appErr
 	}
 
-	s.handleRemoteActionSuccess(ctx, ref, durationMs)
+	s.handleRemoteActionSuccess(ctx, input.Ref, durationMs)
 
 	return nil
 }
