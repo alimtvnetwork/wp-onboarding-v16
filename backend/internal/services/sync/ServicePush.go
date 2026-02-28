@@ -42,7 +42,11 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 }
 
 // runCheckAndValidate runs sync comparison and returns early results for in-sync or error states.
-func (s *serviceImpl) runCheckAndValidate(ctx context.Context, pluginID, siteID int64) (SyncResult, *apperror.Result[PushSyncResult]) {
+func (s *serviceImpl) runCheckAndValidate(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+) (SyncResult, *apperror.Result[PushSyncResult]) {
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Running sync comparison..."})
 
 	syncResult := s.CheckSync(ctx, pluginID, siteID)
@@ -99,7 +103,13 @@ func (s *serviceImpl) resolvePushDeps(ctx context.Context, pluginID, siteID int6
 }
 
 // executePush builds sync files, pushes to remote, and returns the result.
-func (s *serviceImpl) executePush(ctx context.Context, deps pushDeps, sr SyncResult, pluginID, siteID int64) apperror.Result[PushSyncResult] {
+func (s *serviceImpl) executePush(
+	ctx context.Context,
+	deps pushDeps,
+	sr SyncResult,
+	pluginID int64,
+	siteID int64,
+) apperror.Result[PushSyncResult] {
 	syncFilesResult := s.buildSyncFiles(buildSyncFilesInput{PluginPath: deps.Plugin.Path, SyncResult: sr, PluginID: pluginID, SiteID: siteID})
 	if syncFilesResult.HasError() {
 		return apperror.Fail[PushSyncResult](syncFilesResult.AppError())
@@ -115,7 +125,13 @@ func (s *serviceImpl) executePush(ctx context.Context, deps pushDeps, sr SyncRes
 }
 
 // pushFilesToRemote sends files to the remote site and returns the result.
-func (s *serviceImpl) pushFilesToRemote(ctx context.Context, deps pushDeps, syncFiles []wordpress.SyncFile, pluginID, siteID int64) apperror.Result[PushSyncResult] {
+func (s *serviceImpl) pushFilesToRemote(
+	ctx context.Context,
+	deps pushDeps,
+	syncFiles []wordpress.SyncFile,
+	pluginID int64,
+	siteID int64,
+) apperror.Result[PushSyncResult] {
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Pushing.Value(), Progress: 60,
 		Message: fmt.Sprintf("Pushing %d files to remote...", len(syncFiles))})
 
@@ -145,7 +161,12 @@ func (s *serviceImpl) pushFilesToRemote(ctx context.Context, deps pushDeps, sync
 }
 
 // broadcastPushComplete broadcasts and logs the push completion.
-func (s *serviceImpl) broadcastPushComplete(pluginName string, result PushSyncResult, pluginID, siteID int64) {
+func (s *serviceImpl) broadcastPushComplete(
+	pluginName string,
+	result PushSyncResult,
+	pluginID int64,
+	siteID int64,
+) {
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Complete.Value(), Progress: 100,
 		Message: fmt.Sprintf("Sync complete: %d updated, %d deleted, %d ignored",
 			result.FilesUpdated, result.FilesDeleted, result.FilesIgnored)})

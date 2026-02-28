@@ -48,7 +48,13 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 }
 
 // processLocalFile handles a single file during local scan.
-func (s *serviceImpl) processLocalFile(files map[string]FileEntry, basePath, path string, info os.FileInfo, excludePatterns []string) error {
+func (s *serviceImpl) processLocalFile(
+	files map[string]FileEntry,
+	basePath string,
+	path string,
+	info os.FileInfo,
+	excludePatterns []string,
+) error {
 	relPath, err := filepath.Rel(basePath, path)
 	if err != nil {
 		return nil
@@ -173,7 +179,14 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 }
 
 // fetchAndParseManifest calls the remote API and converts the manifest to FileEntry map.
-func (s *serviceImpl) fetchAndParseManifest(ctx context.Context, info models.Site, mapping models.PluginMapping, pluginID, siteID int64, password string) (map[string]FileEntry, string) {
+func (s *serviceImpl) fetchAndParseManifest(
+	ctx context.Context,
+	info models.Site,
+	mapping models.PluginMapping,
+	pluginID int64,
+	siteID int64,
+	password string,
+) (map[string]FileEntry, string) {
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
 
 	wpClient := s.wpClientFactory(info.Url, info.Username, password)

@@ -72,7 +72,12 @@ func (s *Service) saveRemoteActionRequest(ref *remoteActionRef) {
 }
 
 // handleRemoteActionError processes a failed remote action.
-func (s *Service) handleRemoteActionError(ctx context.Context, ref *remoteActionRef, appErr *apperror.AppError, durationMs int64) {
+func (s *Service) handleRemoteActionError(
+	ctx context.Context,
+	ref *remoteActionRef,
+	appErr *apperror.AppError,
+	durationMs int64,
+) {
 	errDetails := s.extractErrorDetails(appErr)
 
 	s.saveRemoteErrorResponse(ref.SessionID, errDetails, appErr)
@@ -110,7 +115,13 @@ func (s *Service) logRemoteErrorStageEnd(ref *remoteActionRef, durationMs int64)
 }
 
 // finalizeRemoteError handles PHP errors, error file, session end, and broadcast.
-func (s *Service) finalizeRemoteError(ctx context.Context, ref *remoteActionRef, errDetails *ExtractedErrorDetails, appErr *apperror.AppError, durationMs int64) {
+func (s *Service) finalizeRemoteError(
+	ctx context.Context,
+	ref *remoteActionRef,
+	errDetails *ExtractedErrorDetails,
+	appErr *apperror.AppError,
+	durationMs int64,
+) {
 	s.fetchAndAttachRemotePhpErrors(ref, errDetails)
 	s.logToErrorFile(ref, errDetails)
 	s.endRemoteSession(ref.SessionID, "error", appErr.Error())
@@ -126,7 +137,11 @@ func (s *Service) finalizeRemoteError(ctx context.Context, ref *remoteActionRef,
 }
 
 // saveRemoteErrorResponse saves the error response to the session.
-func (s *Service) saveRemoteErrorResponse(sessionId string, errDetails *ExtractedErrorDetails, appErr *apperror.AppError) {
+func (s *Service) saveRemoteErrorResponse(
+	sessionId string,
+	errDetails *ExtractedErrorDetails,
+	appErr *apperror.AppError,
+) {
 	if s.sessionService == nil || sessionId == "" {
 
 		return
@@ -151,7 +166,11 @@ func (s *Service) saveRemoteErrorHttpResponse(sessionId string, errDetails *Extr
 }
 
 // saveRemoteErrorStackAndDetails saves stack trace and error details.
-func (s *Service) saveRemoteErrorStackAndDetails(sessionId string, errDetails *ExtractedErrorDetails, appErr *apperror.AppError) {
+func (s *Service) saveRemoteErrorStackAndDetails(
+	sessionId string,
+	errDetails *ExtractedErrorDetails,
+	appErr *apperror.AppError,
+) {
 	phpFrames := s.buildPhpStackFrames(errDetails)
 	goFrames := session.CaptureGoStack(2)
 
