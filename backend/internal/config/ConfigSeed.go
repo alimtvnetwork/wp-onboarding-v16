@@ -19,18 +19,26 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 		log.Error("Failed to get seed version from database", "error", err)
 		return apperror.Wrap(err, apperror.ErrConfigSeed, "get seed version from database")
 	}
+
 	log.Debug("Current seed version", "version", currentVersion)
 
-	if compareVersions(cfg.Version, currentVersion) > 0 {
+	isNewer := compareVersions(cfg.Version, currentVersion) > 0
+
+	if isNewer {
 		log.Info("Seeding database", "from", currentVersion, "to", cfg.Version)
-		if err := seedFromConfig(db, cfg, log); err != nil {
+
+		err = seedFromConfig(db, cfg, log)
+		if err != nil {
 			log.Error("Seeding failed", "error", err)
 			return apperror.Wrap(err, apperror.ErrConfigSeed, "seed from config")
 		}
-		if err := db.SetSeedVersion(cfg.Version); err != nil {
+
+		err = db.SetSeedVersion(cfg.Version)
+		if err != nil {
 			log.Error("Failed to update seed version", "error", err)
 			return apperror.Wrap(err, apperror.ErrConfigSeed, "update seed version")
 		}
+
 		log.Info("Seed version updated", "version", cfg.Version)
 	} else {
 		log.Debug("No seeding required", "configVersion", cfg.Version, "dbVersion", currentVersion)
@@ -38,7 +46,9 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 
 	if cfg.Seed.Enabled {
 		log.Info("Ensuring all plugin→site mappings exist")
-		if err := ensureMappingsExist(db, cfg, log); err != nil {
+
+		err = ensureMappingsExist(db, cfg, log)
+		if err != nil {
 			log.Error("Mapping verification failed", "error", err)
 			return apperror.Wrap(err, apperror.ErrConfigSeed, "ensure mappings exist")
 		}
@@ -84,14 +94,17 @@ func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
 	}
 
 	for _, s := range settings {
-		if err := db.SetSettingIfNotExists(s.Key, s.Value); err != nil {
+		err := db.SetSettingIfNotExists(s.Key, s.Value)
+		if err != nil {
 			log.Warn("Failed to set setting", "key", s.Key, "error", err)
 		}
 	}
 
 	if cfg.Seed.Enabled {
 		log.Info("Seeding sites and plugins", "siteCount", len(cfg.Seed.Sites), "pluginCount", len(cfg.Seed.Plugins))
-		if err := seedSitesAndPlugins(db, cfg, log); err != nil {
+
+		err := seedSitesAndPlugins(db, cfg, log)
+		if err != nil {
 			return apperror.Wrap(err, apperror.ErrConfigSeed, "seed sites and plugins")
 		}
 	}
@@ -117,7 +130,9 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 		}
 
 		existingId, err := db.GetSiteIdByUrl(normalizedUrl)
-		if err == nil && existingId > 0 {
+		isExisting := err == nil && existingId > 0
+
+		if isExisting {
 			log.Info("Site exists in DB", "id", existingId, "name", site.Name)
 			allSiteIds = append(allSiteIds, existingId)
 			continue
@@ -134,6 +149,7 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 			log.Error("Failed to create seed site", "name", site.Name, "error", err)
 			continue
 		}
+
 		log.Info("Site CREATED", "name", site.Name, "id", id)
 		allSiteIds = append(allSiteIds, id)
 	}
@@ -141,13 +157,16 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 	log.Info("Site processing complete", "siteIds", allSiteIds)
 
 	totalMappingsCreated := 0
+
 	for i, plugin := range cfg.Seed.Plugins {
 		log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", plugin.Path)
 
 		var pluginId int64
 
 		existingId, err := db.GetPluginIdByPath(plugin.Path)
-		if err == nil && existingId > 0 {
+		isExisting := err == nil && existingId > 0
+
+		if isExisting {
 			log.Info("Plugin exists in DB", "id", existingId, "name", plugin.Name)
 			pluginId = existingId
 		} else {
@@ -156,10 +175,12 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 				log.Error("Failed to create seed plugin", "name", plugin.Name, "path", plugin.Path, "error", err)
 				continue
 			}
+
 			log.Info("Plugin CREATED", "name", plugin.Name, "id", pluginId)
 		}
 
 		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
+
 		for _, siteId := range allSiteIds {
 			created, err := db.CreateSeedMapping(database.SeedMappingInput{PluginID: pluginId, SiteID: siteId, RemoteSlug: remoteSlug, Logger: log})
 			if err != nil {
