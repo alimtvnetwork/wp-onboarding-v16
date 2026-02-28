@@ -202,4 +202,112 @@ class OnboardBooleanHelpers {
     public static function is_db_disconnected($db) {
         return $db === null || !$db->is_connected();
     }
+
+    // ── String Inspection ──
+
+    /**
+     * Check if a string contains a substring.
+     *
+     * @param string $haystack String to search in.
+     * @param string $needle   Substring to find.
+     * @return bool True if haystack contains needle.
+     */
+    public static function has_substring($haystack, $needle) {
+        return str_contains($haystack, $needle);
+    }
+
+    /**
+     * Check if a string does NOT contain a substring.
+     *
+     * @param string $haystack String to search in.
+     * @param string $needle   Substring to find.
+     * @return bool True if haystack lacks needle.
+     */
+    public static function lacks_substring($haystack, $needle) {
+        return !str_contains($haystack, $needle);
+    }
+
+    /**
+     * Check if a string starts with a prefix.
+     *
+     * @param string $haystack String to check.
+     * @param string $prefix   Expected prefix.
+     * @return bool True if haystack starts with prefix.
+     */
+    public static function has_prefix($haystack, $prefix) {
+        return str_starts_with($haystack, $prefix);
+    }
+
+    /**
+     * Check if a string does NOT start with a prefix.
+     *
+     * @param string $haystack String to check.
+     * @param string $prefix   Expected prefix.
+     * @return bool True if haystack lacks prefix.
+     */
+    public static function lacks_prefix($haystack, $prefix) {
+        return !str_starts_with($haystack, $prefix);
+    }
+
+    /**
+     * Check if a string ends with a suffix.
+     *
+     * @param string $haystack String to check.
+     * @param string $suffix   Expected suffix.
+     * @return bool True if haystack ends with suffix.
+     */
+    public static function has_suffix($haystack, $suffix) {
+        return str_ends_with($haystack, $suffix);
+    }
+
+    /**
+     * Check if a string does NOT end with a suffix.
+     *
+     * @param string $haystack String to check.
+     * @param string $suffix   Expected suffix.
+     * @return bool True if haystack lacks suffix.
+     */
+    public static function lacks_suffix($haystack, $suffix) {
+        return !str_ends_with($haystack, $suffix);
+    }
+
+    /**
+     * Check if a string is non-empty.
+     *
+     * @param string $value String to check.
+     * @return bool True if string has content.
+     */
+    public static function is_string_populated($value) {
+        return $value !== '';
+    }
+
+    /**
+     * Check if a string is empty.
+     *
+     * @param string $value String to check.
+     * @return bool True if string is empty.
+     */
+    public static function is_string_empty($value) {
+        return $value === '';
+    }
+
+    /**
+     * Check if a value evaluates to true.
+     *
+     * @param mixed $value Value to check.
+     * @return bool True if truthy.
+     */
+    public static function isTruthy($value) {
+        return !empty($value);
+    }
+
+    /**
+     * Check if a value evaluates to false.
+     *
+     * @param mixed $value Value to check.
+     * @return bool True if falsy.
+     */
+    public static function isFalsy($value) {
+        return empty($value);
+    }
 }
