@@ -57,6 +57,6 @@ type ServiceInterface interface {
 	GetMappingsBySite(ctx context.Context, siteID int64) apperror.ResultSlice[models.PluginMapping]
 	CreateMapping(ctx context.Context, input CreateMappingInput) apperror.Result[models.PluginMapping]
 	DeleteMapping(ctx context.Context, mappingID int64) *apperror.AppError
-	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) *apperror.AppError
+	UpdateMappingsForPlugin(ctx context.Context, input UpdatePluginMappingsInput) *apperror.AppError
 	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError
 }

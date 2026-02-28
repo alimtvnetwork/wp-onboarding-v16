@@ -20,7 +20,7 @@ type PluginServiceInterface interface {
 	GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, *apperror.AppError)
 	CreateMapping(ctx context.Context, pluginID int64, input plugin.CreateMappingInput) (*models.PluginMapping, *apperror.AppError)
 	DeleteMapping(ctx context.Context, id int64) *apperror.AppError
-	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) *apperror.AppError
+	UpdateMappingsForPlugin(ctx context.Context, input plugin.UpdatePluginMappingsInput) *apperror.AppError
 	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError
 	ScanDirectory(ctx context.Context, path string) (*plugin.ScanResult, *apperror.AppError)
 	WritePluginDetected(ctx context.Context, path string) *apperror.AppError
@@ -111,8 +111,8 @@ func (a *PluginServiceAdapter) GetMappingsBySite(ctx context.Context, siteID int
 	return result.Items(), nil
 }
 
-func (a *PluginServiceAdapter) UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) *apperror.AppError {
-	return a.Service.UpdateMappingsForPlugin(ctx, pluginID, siteIDs, remoteSlug)
+func (a *PluginServiceAdapter) UpdateMappingsForPlugin(ctx context.Context, input plugin.UpdatePluginMappingsInput) *apperror.AppError {
+	return a.Service.UpdateMappingsForPlugin(ctx, input)
 }
 
 func (a *PluginServiceAdapter) UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError {

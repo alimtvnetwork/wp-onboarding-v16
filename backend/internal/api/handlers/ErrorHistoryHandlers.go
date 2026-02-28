@@ -67,12 +67,19 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 	limit, offset := parsePagination(r)
 	filters := parseErrorHistoryFilters(r)
 
-	listErrorHistoryOrFail(w, limit, offset, filters)
+	listErrorHistoryOrFail(w, listErrorHistoryInput{Limit: limit, Offset: offset, Filters: filters})
+}
+
+// listErrorHistoryInput bundles parameters for listErrorHistoryOrFail.
+type listErrorHistoryInput struct {
+	Limit   int
+	Offset  int
+	Filters models.ErrorHistoryFilters
 }
 
 // listErrorHistoryOrFail queries error history and writes the paginated response.
-func listErrorHistoryOrFail(w http.ResponseWriter, limit, offset int, filters models.ErrorHistoryFilters) {
-	listResult, err := Services.ErrorHistoryService.List(limit, offset, filters)
+func listErrorHistoryOrFail(w http.ResponseWriter, input listErrorHistoryInput) {
+	listResult, err := Services.ErrorHistoryService.List(input.Limit, input.Offset, input.Filters)
 	if err != nil {
 		respondServerError(w, apperror.ErrNotImplemented, err.Error())
 
@@ -82,8 +89,8 @@ func listErrorHistoryOrFail(w http.ResponseWriter, limit, offset int, filters mo
 	response := PaginatedErrors{
 		Errors: listResult.Items,
 		Total:  listResult.Total,
-		Limit:  limit,
-		Offset: offset,
+		Limit:  input.Limit,
+		Offset: input.Offset,
 	}
 	respondSuccess(w, response)
 }

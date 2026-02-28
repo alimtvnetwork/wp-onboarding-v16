@@ -183,7 +183,7 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appErr := Services.PluginService.UpdateMappingsForPlugin(r.Context(), id, input.SiteIDs, input.RemoteSlug)
+	appErr := Services.PluginService.UpdateMappingsForPlugin(r.Context(), plugin.UpdatePluginMappingsInput{PluginID: id, SiteIDs: input.SiteIDs, RemoteSlug: input.RemoteSlug})
 	if appErr != nil {
 		respondError(
 			w,

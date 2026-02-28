@@ -149,12 +149,19 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	normalizeUpdateSitePassword(&input)
-	updateSiteOrFail(w, r, id, input)
+	updateSiteOrFail(w, siteUpdateRequest{Request: r, ID: id, Input: input})
+}
+
+// siteUpdateRequest bundles parameters for updateSiteOrFail.
+type siteUpdateRequest struct {
+	Request *http.Request
+	ID      int64
+	Input   SiteUpdateInput
 }
 
 // updateSiteOrFail persists the site update and writes the response.
-func updateSiteOrFail(w http.ResponseWriter, r *http.Request, id int64, input SiteUpdateInput) {
-	site, appErr := Services.SiteService.Update(r.Context(), id, input)
+func updateSiteOrFail(w http.ResponseWriter, req siteUpdateRequest) {
+	site, appErr := Services.SiteService.Update(req.Request.Context(), req.ID, req.Input)
 	if appErr != nil {
 		respondBadRequest(w, apperror.ErrDatabaseUpdate, appErr.Error())
 

@@ -16,15 +16,21 @@ import (
 
 // ─── Pipeline ────────────────────────────────────────────────────────────────
 
+// pipelineCredentials bundles site info and password for pipeline init.
+type pipelineCredentials struct {
+	SiteInfo *models.Site
+	Password string
+}
+
 // runPublishPipeline executes the backup → package → upload → activate → cleanup pipeline.
-func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, siteInfo *models.Site, password string) *apperror.AppError {
+func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, creds pipelineCredentials) *apperror.AppError {
 	mapping, err := s.getMapping(ctx, pctx.PluginId, pctx.SiteId)
 	if err != nil {
 
 		return s.failPipeline(pctx, err, pctx.Result)
 	}
 
-	s.initPipelineContext(pctx, siteInfo, password, mapping)
+	s.initPipelineContext(pctx, creds, mapping)
 
 	if pctx.Options.IsCreateBackup {
 		appErr := s.runBackupStage(pctx)
@@ -38,13 +44,13 @@ func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, 
 }
 
 // initPipelineContext sets up the WP client and context fields.
-func (s *Service) initPipelineContext(pctx *publishContext, siteInfo *models.Site, password string, mapping *models.PluginMapping) {
-	s.logConnect(pctx.PluginId, pctx.SiteId, siteInfo)
-	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+func (s *Service) initPipelineContext(pctx *publishContext, creds pipelineCredentials, mapping *models.PluginMapping) {
+	s.logConnect(pctx.PluginId, pctx.SiteId, creds.SiteInfo)
+	wpClient := s.wpClientFactory(creds.SiteInfo.URL, creds.SiteInfo.Username, creds.Password)
 
 	pctx.WPClient = wpClient
 	pctx.Mapping = mapping
-	pctx.SiteInfo = siteInfo
+	pctx.SiteInfo = creds.SiteInfo
 }
 
 // failPipeline handles a pipeline init failure.
@@ -136,30 +142,24 @@ func (s *Service) uploadActivateAndCleanup(ctx context.Context, pctx *publishCon
 
 	defer s.deferCleanupZip(pctx, pkgResult.ZipPath)
 
-	return s.executeUploadAndFinish(ctx, pctx, pkgResult, preUploadBackupZip)
+	return s.executeUploadAndFinish(ctx, pctx, uploadFinishInput{PkgResult: pkgResult, PreUploadBackupZip: preUploadBackupZip})
 }
 
-// deferCleanupZip builds the cleanup input and runs cleanup.
-func (s *Service) deferCleanupZip(pctx *publishContext, zipPath string) {
-	cleanupInput := cleanupZipInput{
-		PluginId:        pctx.PluginId,
-		SiteId:          pctx.SiteId,
-		ZipPath:         zipPath,
-		IsPublishFailed: false,
-		IsKeepZipFiles:  pctx.Options.IsKeepZipFiles,
-	}
-	s.cleanupZip(cleanupInput)
+// uploadFinishInput bundles parameters for executeUploadAndFinish.
+type uploadFinishInput struct {
+	PkgResult          PackageStageResult
+	PreUploadBackupZip string
 }
 
 // executeUploadAndFinish runs upload stage and counts files updated.
-func (s *Service) executeUploadAndFinish(ctx context.Context, pctx *publishContext, pkgResult PackageStageResult, preUploadBackupZip string) *apperror.AppError {
-	appErr := s.runUploadStage(ctx, pctx, pkgResult.ZipPath, preUploadBackupZip)
+func (s *Service) executeUploadAndFinish(ctx context.Context, pctx *publishContext, input uploadFinishInput) *apperror.AppError {
+	appErr := s.runUploadStage(ctx, pctx, uploadStageInput{ZipPath: input.PkgResult.ZipPath, PreUploadBackupZip: input.PreUploadBackupZip})
 	if appErr != nil {
 
 		return appErr
 	}
 
-	pctx.Result.FilesUpdated = s.countFilesUpdated(pctx.Options, pctx.PluginInfo, pkgResult.FileCount)
+	pctx.Result.FilesUpdated = s.countFilesUpdated(pctx.Options, pctx.PluginInfo, input.PkgResult.FileCount)
 
 	return nil
 }
@@ -181,9 +181,15 @@ func (s *Service) failStage(pctx *publishContext, step publishstep.Variant, stag
 	return apperror.New(apperror.ErrInternal, stage.Message)
 }
 
+// uploadStageInput bundles parameters for runUploadStage.
+type uploadStageInput struct {
+	ZipPath            string
+	PreUploadBackupZip string
+}
+
 // runUploadStage executes upload, activate, and cleanup stages.
-func (s *Service) runUploadStage(ctx context.Context, pctx *publishContext, zipPath, preUploadBackupZip string) *apperror.AppError {
-	isAlreadyActivated, uploadStage := s.executeUploadStage(ctx, pctx, zipPath)
+func (s *Service) runUploadStage(ctx context.Context, pctx *publishContext, input uploadStageInput) *apperror.AppError {
+	isAlreadyActivated, uploadStage := s.executeUploadStage(ctx, pctx, input.ZipPath)
 	pctx.Result.Stages = append(pctx.Result.Stages, uploadStage)
 
 	s.broadcastUploadComplete(pctx, uploadStage, isAlreadyActivated)
@@ -193,7 +199,7 @@ func (s *Service) runUploadStage(ctx context.Context, pctx *publishContext, zipP
 		return s.reportUploadFailure(pctx, uploadStage)
 	}
 
-	s.runActivateAndCleanup(ctx, pctx, isAlreadyActivated, preUploadBackupZip)
+	s.runActivateAndCleanup(ctx, pctx, activateCleanupInput{IsAlreadyActivated: isAlreadyActivated, PreUploadBackupZip: input.PreUploadBackupZip})
 
 	return nil
 }
@@ -221,13 +227,19 @@ func (s *Service) reportUploadFailure(pctx *publishContext, uploadStage Stage) *
 	return apperror.New(apperror.ErrWPUploadFailed, uploadStage.Message)
 }
 
+// activateCleanupInput bundles parameters for runActivateAndCleanup.
+type activateCleanupInput struct {
+	IsAlreadyActivated bool
+	PreUploadBackupZip string
+}
+
 // runActivateAndCleanup handles the activate and cleanup stages.
-func (s *Service) runActivateAndCleanup(ctx context.Context, pctx *publishContext, isAlreadyActivated bool, preUploadBackupZip string) {
-	activateStage := s.executeActivateStage(pctx, isAlreadyActivated)
+func (s *Service) runActivateAndCleanup(ctx context.Context, pctx *publishContext, input activateCleanupInput) {
+	activateStage := s.executeActivateStage(pctx, input.IsAlreadyActivated)
 	pctx.Result.Stages = append(pctx.Result.Stages, activateStage)
 
-	s.broadcastActivateComplete(pctx, activateStage, isAlreadyActivated)
-	s.handleActivateResult(ctx, pctx, activateStage, preUploadBackupZip)
+	s.broadcastActivateComplete(pctx, activateStage, input.IsAlreadyActivated)
+	s.handleActivateResult(ctx, pctx, activateResultInput{ActivateStage: activateStage, PreUploadBackupZip: input.PreUploadBackupZip})
 
 	cleanupStage := s.executeCleanupStage(ctx, pctx)
 	pctx.Result.Stages = append(pctx.Result.Stages, cleanupStage)
@@ -248,16 +260,22 @@ func (s *Service) broadcastActivateComplete(pctx *publishContext, activateStage 
 	s.broadcastStageComplete(activateComplete)
 }
 
+// activateResultInput bundles parameters for handleActivateResult.
+type activateResultInput struct {
+	ActivateStage      Stage
+	PreUploadBackupZip string
+}
+
 // handleActivateResult sets activation status and triggers rollback if needed.
-func (s *Service) handleActivateResult(ctx context.Context, pctx *publishContext, activateStage Stage, preUploadBackupZip string) {
-	if activateStage.Status.IsFailed() {
+func (s *Service) handleActivateResult(ctx context.Context, pctx *publishContext, input activateResultInput) {
+	if input.ActivateStage.Status.IsFailed() {
 		pctx.Result.ActivationStatus = loglevel.Error.Lower()
-		pctx.Result.ErrorMessage = activateStage.Message
+		pctx.Result.ErrorMessage = input.ActivateStage.Message
 		s.handleRollback(rollbackInput{
 			Ctx:                ctx,
 			Pctx:               pctx,
-			PreUploadBackupZip: preUploadBackupZip,
-			ActivateStage:      activateStage,
+			PreUploadBackupZip: input.PreUploadBackupZip,
+			ActivateStage:      input.ActivateStage,
 		})
 
 		return
