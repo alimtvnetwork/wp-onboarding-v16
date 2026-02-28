@@ -43,9 +43,9 @@ func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, error) {
 
 // PluginVersionRow holds a single plugin version record from the database.
 type PluginVersionRow struct {
-	ID            int64
-	PluginID      int64
-	SiteID        int64
+	Id            int64
+	PluginId      int64
+	SiteId        int64
 	SiteName      string
 	Version       string
 	BackupPath    string
@@ -131,9 +131,9 @@ func scanVersionRow(rows *sql.Rows) (PluginVersionRow, error) {
 	var nf versionNullFields
 
 	err := rows.Scan(
-		&m.ID,
-		&m.PluginID,
-		&m.SiteID,
+		&m.Id,
+		&m.PluginId,
+		&m.SiteId,
 		&nf.SiteName,
 		&nf.Version,
 		&nf.BackupPath,
@@ -173,9 +173,9 @@ func (db *DB) GetPluginVersionById(versionID int64) (*PluginVersionRow, error) {
 	var nf versionNullFields
 
 	err := db.QueryRow(selectVersionSQL+" WHERE pv.Id = ?", versionID).Scan(
-		&m.ID,
-		&m.PluginID,
-		&m.SiteID,
+		&m.Id,
+		&m.PluginId,
+		&m.SiteId,
 		&nf.SiteName,
 		&nf.Version,
 		&nf.BackupPath,

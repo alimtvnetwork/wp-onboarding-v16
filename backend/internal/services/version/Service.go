@@ -129,14 +129,14 @@ func (s *Service) Rollback(ctx context.Context, versionId int64) (*ws.RollbackCo
 			WithVersionId(versionId)
 	}
 
-	s.log.Info("Starting rollback", "versionId", versionId, "version", ver.Version, "pluginId", ver.PluginID, "siteId", ver.SiteID)
+	s.log.Info("Starting rollback", "versionId", versionId, "version", ver.Version, "pluginId", ver.PluginId, "siteId", ver.SiteId)
 
 	if s.wsHub != nil {
 		ws.Broadcast(s.wsHub, ws.EventRollbackStarted, ws.RollbackStartedData{
 			VersionId: versionId,
 			Version:   ver.Version,
-			PluginId:  ver.PluginID,
-			SiteId:    ver.SiteID,
+			PluginId:  ver.PluginId,
+			SiteId:    ver.SiteId,
 		})
 	}
 
