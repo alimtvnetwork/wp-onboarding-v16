@@ -114,10 +114,11 @@ func (c *Client) reportSyncStart(slug string, fileCount int, namespace string) {
 		Namespace: namespace,
 	}
 
-	c.progress(ProgressEvent{
+	syncStartEvent := ProgressEvent{
 		Step:    action.Sync.String(),
 		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Syncing %d files to %s...", fileCount, slug),
 		Details: toProgress(syncProgress),
-	})
+	}
+	c.progress(syncStartEvent)
 }

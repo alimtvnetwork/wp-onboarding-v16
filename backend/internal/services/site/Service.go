@@ -220,11 +220,13 @@ func (s *Service) buildSiteCredentials(siteId int64, site models.Site) apperror.
 
 	s.log.Debug("Credentials retrieved for site", "siteId", siteId, "siteName", site.Name)
 
-	return apperror.Ok(SiteCredentials{
+	creds := SiteCredentials{
 		Url:         site.Url,
 		Username:    site.Username,
 		AppPassword: string(password),
-	})
+	}
+
+	return apperror.Ok(creds)
 }
 
 // derefInt safely dereferences an *int pointer, returning 0 if nil.

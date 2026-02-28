@@ -53,7 +53,7 @@ func (s *Service) emitToWSHub(ref *remoteActionRef, input RemoteActionLogInput) 
 		return
 	}
 
-	s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
+	logInput := RemotePluginLogInput{
 		SiteId:    ref.SiteId,
 		Action:    ref.Action,
 		SessionId: ref.SessionId,
@@ -61,7 +61,8 @@ func (s *Service) emitToWSHub(ref *remoteActionRef, input RemoteActionLogInput) 
 		Step:      input.Step,
 		Message:   input.Message,
 		Details:   input.Details,
-	})
+	}
+	s.wsHub.BroadcastRemotePluginLogWithSession(logInput)
 }
 
 // remoteActionResolvedContext holds resolved context for log output.

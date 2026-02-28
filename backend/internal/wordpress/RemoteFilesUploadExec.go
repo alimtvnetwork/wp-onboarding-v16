@@ -35,12 +35,13 @@ func (c *Client) reportOnboardUploadStart(url, endpoint string, form *zipMultipa
 		ZipFile:  filepath.Base(zipPath),
 		Endpoint: endpoint,
 	}
-	c.progress(ProgressEvent{
+	uploadStartEvent := ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("POSTing %d bytes to %s", form.FileSize, url),
 		Details: toProgress(uploadProgress),
-	})
+	}
+	c.progress(uploadStartEvent)
 }
 
 // reportOnboardUploadResponse logs the upload response progress.
@@ -49,12 +50,13 @@ func (c *Client) reportOnboardUploadResponse(mpResp *multipartResponse) {
 		Status: mpResp.StatusCode,
 		Body:   truncateBody(mpResp.Body, 500),
 	}
-	c.progress(ProgressEvent{
+	uploadRespEvent := ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("Upload response: %d", mpResp.StatusCode),
 		Details: toProgress(responseProgress),
-	})
+	}
+	c.progress(uploadRespEvent)
 }
 
 // multipartResponse holds the result of a multipart HTTP request.

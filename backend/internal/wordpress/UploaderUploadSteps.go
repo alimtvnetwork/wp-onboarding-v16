@@ -209,15 +209,17 @@ func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) app
 
 // reportUploadResponseProgress logs the upload response progress.
 func (c *Client) reportUploadResponseProgress(statusCode int, respBody, uploadUrl string) {
-	c.progress(ProgressEvent{
+	respProgress := ResponseProgress{
+		Url:    uploadUrl,
+		Status: statusCode,
+		Body:   truncateBody(respBody, 2000),
+	}
+	uploadRespEvent := ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
 		Message: fmt.Sprintf("Upload response: %d from %s", statusCode, uploadUrl),
-		Details: toProgress(ResponseProgress{
-			Url:    uploadUrl,
-			Status: statusCode,
-			Body:   truncateBody(respBody, 2000),
-		}),
-	})
+		Details: toProgress(respProgress),
+	}
+	c.progress(uploadRespEvent)
 }
 
 // buildUploadFailureAppError constructs an *apperror.AppError wrapping the structured APIError.

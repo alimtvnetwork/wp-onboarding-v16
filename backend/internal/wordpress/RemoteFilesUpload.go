@@ -42,11 +42,12 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) apperror.Res
 
 // requestUploadMutationToken requests and returns a mutation token for upload.
 func (c *Client) requestUploadMutationToken(pluginSlug string) apperror.Result[string] {
-	c.progress(ProgressEvent{
+	tokenRequestEvent := ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug),
-	})
+	}
+	c.progress(tokenRequestEvent)
 
 	tokenResult := c.RequestMutationToken("upload")
 	if tokenResult.HasError() {
@@ -59,12 +60,13 @@ func (c *Client) requestUploadMutationToken(pluginSlug string) apperror.Result[s
 
 // reportMutationTokenObtained logs that the mutation token was obtained.
 func (c *Client) reportMutationTokenObtained(zipPath, mutationToken string) {
-	c.progress(ProgressEvent{
+	tokenObtainedEvent := ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)),
 		Details: toProgress(TokenProgress{TokenLength: len(mutationToken)}),
-	})
+	}
+	c.progress(tokenObtainedEvent)
 }
 
 // zipMultipartForm holds the built multipart form and file metadata.

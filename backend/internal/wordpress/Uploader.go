@@ -240,23 +240,27 @@ func (c *Client) UploadPluginViaUploader(input UploadInput) apperror.Result[*Upl
 
 // reportUploadInitProgress logs the upload initialization progress.
 func (c *Client) reportUploadInitProgress(uc *uploadContext) {
-	c.progress(ProgressEvent{
+	initProgress := UploadInitProgress{
+		ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, Url: uc.UploadUrl, Method: "multipart/form-data",
+	}
+	uploadInitEvent := ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
 		Message: fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(uc.AbsZipPath), uc.ZipSize, uc.UploadUrl),
-		Details: toProgress(UploadInitProgress{
-			ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, Url: uc.UploadUrl, Method: "multipart/form-data",
-		}),
-	})
+		Details: toProgress(initProgress),
+	}
+	c.progress(uploadInitEvent)
 }
 
 // reportMultipartBodyReady logs that the multipart body is ready.
 func (c *Client) reportMultipartBodyReady(uc *uploadContext, input UploadInput, mp *multipartResult) {
-	c.progress(ProgressEvent{
+	bodyProgress := UploadBodyProgress{
+		Slug: uc.Slug, IsActivate: input.IsActivate, ZipSize: uc.ZipSize, BodySize: mp.Body.Len(),
+	}
+	bodyReadyEvent := ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
 		Message: fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", uc.Slug, input.IsActivate, uc.ZipSize, mp.Body.Len()),
-		Details: toProgress(UploadBodyProgress{
-			Slug: uc.Slug, IsActivate: input.IsActivate, ZipSize: uc.ZipSize, BodySize: mp.Body.Len(),
-		}),
-	})
+		Details: toProgress(bodyProgress),
+	}
+	c.progress(bodyReadyEvent)
 }
 

@@ -89,10 +89,11 @@ func (c *Client) ExportSelfFromSite() apperror.Result[*ExportSelfResult] {
 
 // reportExportSelfStart logs the export self start progress.
 func (c *Client) reportExportSelfStart() {
-	c.progress(ProgressEvent{
+	exportStartEvent := ProgressEvent{
 		Step: action.ExportSelf.String(), Status: stagestatus.Running.String(),
 		Message: "Exporting Riseup Asia Uploader plugin...",
-	})
+	}
+	c.progress(exportStartEvent)
 }
 
 // callExportSelf sends the export-self API call.
@@ -121,8 +122,9 @@ func (c *Client) callExportSelf(namespace string) apperror.Result[*ExportSelfRes
 
 // reportExportSelfComplete logs the export self completion progress.
 func (c *Client) reportExportSelfComplete(result *ExportSelfResult) {
-	c.progress(ProgressEvent{
+	exportCompleteEvent := ProgressEvent{
 		Step: action.ExportSelf.String(), Status: stagestatus.Completed.String(),
 		Message: fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount),
-	})
+	}
+	c.progress(exportCompleteEvent)
 }

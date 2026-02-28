@@ -108,25 +108,27 @@ func (s *Service) broadcastStageLog(input StageLogInput) {
 
 // broadcastStageLogDetailed sends the detailed log entry for a stage.
 func (s *Service) broadcastStageLogDetailed(input StageLogInput, message string, details json.RawMessage) {
-	s.broadcastDetailedLog(DetailedLogInput{
+	detailedLog := DetailedLogInput{
 		PluginId: input.PluginId,
 		SiteId:   input.SiteId,
 		Level:    input.Level,
 		Step:     input.Stage,
 		Message:  message,
 		Details:  details,
-	})
+	}
+	s.broadcastDetailedLog(detailedLog)
 }
 
 // broadcastStageLogSession sends the session log entry for a stage.
 func (s *Service) broadcastStageLogSession(input StageLogInput, message string, details json.RawMessage) {
-	s.sessionLog(sessionLogInput{
+	sessionLog := sessionLogInput{
 		SessionId: input.SessionId,
 		Level:     input.Level,
 		Step:      input.Stage,
 		Message:   message,
 		Details:   details,
-	})
+	}
+	s.sessionLog(sessionLog)
 }
 
 // resolveStageLogMessage builds the message string from stage context.
