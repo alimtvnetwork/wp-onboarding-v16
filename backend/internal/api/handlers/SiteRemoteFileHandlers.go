@@ -17,7 +17,7 @@ type pluginFileInput struct {
 
 // pluginFileParsed holds the parsed site ID and file input from a request.
 type pluginFileParsed struct {
-	SiteID int64
+	SiteId int64
 	Input  pluginFileInput
 }
 
@@ -52,7 +52,7 @@ func parseRemotePluginFileInputOrFail(w http.ResponseWriter, r *http.Request) (*
 		return nil, false
 	}
 
-	return &pluginFileParsed{SiteID: id, Input: input}, true
+	return &pluginFileParsed{SiteId: id, Input: input}, true
 }
 
 // GetRemotePluginFileContent returns the content of a specific file from a remote plugin
@@ -62,7 +62,7 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content, err := Services.SiteService.GetRemotePluginFileContent(r.Context(), parsed.SiteID, parsed.Input.Plugin, parsed.Input.Path)
+	content, err := Services.SiteService.GetRemotePluginFileContent(r.Context(), parsed.SiteId, parsed.Input.Plugin, parsed.Input.Path)
 	if err != nil {
 		respondError(
 			w,

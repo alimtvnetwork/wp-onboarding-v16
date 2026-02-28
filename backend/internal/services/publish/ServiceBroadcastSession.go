@@ -29,7 +29,7 @@ func (s *Service) sessionLog(input sessionLogInput) {
 	}
 
 	logInput := session.LogInput{
-		SessionID: input.SessionId,
+		SessionId: input.SessionId,
 		Level:     input.Level.Lower(),
 		Step:      input.Step.Value(),
 		Message:   input.Message,
@@ -65,7 +65,7 @@ func (s *Service) sessionLogStageEnd(input sessionStageEndInput) {
 	}
 
 	stageEnd := session.StageEndInput{
-		SessionID:  input.SessionId,
+		SessionId:  input.SessionId,
 		StageName:  input.StageName,
 		Status:     input.Status.String(),
 		DurationMs: input.DurationMs,

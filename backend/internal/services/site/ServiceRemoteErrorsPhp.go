@@ -165,7 +165,7 @@ func buildPhpErrorLogInput(sessionId string, entry wordpress.RemoteErrorSessionE
 	}
 
 	return session.LogInput{
-		SessionID: sessionId,
+		SessionId: sessionId,
 		Level:     "error",
 		Step:      "remote_php_error",
 		Message:   entry.Message,
@@ -259,7 +259,7 @@ func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.
 	}
 
 	s.sessionService.Log(session.LogInput{
-		SessionID: ref.SessionId,
+		SessionId: ref.SessionId,
 		Level:     "info",
 		Step:      "remote_php_stacktrace",
 		Message:   "PHP stacktrace.txt content from remote site",

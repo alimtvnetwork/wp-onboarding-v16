@@ -95,8 +95,8 @@ func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 
 	startInput := session.StartSessionInput{
 		Type:       sessionType,
-		PluginID:   0,
-		SiteID:     ref.SiteId,
+		PluginId:   0,
+		SiteId:     ref.SiteId,
 		PluginName: ref.PluginSlug,
 		SiteName:   ref.Site.Name,
 	}

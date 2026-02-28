@@ -39,7 +39,7 @@ func (s *Service) emitToSessionService(ref *remoteActionRef, input RemoteActionL
 	}
 
 	s.sessionService.Log(session.LogInput{
-		SessionID: ref.SessionId,
+		SessionId: ref.SessionId,
 		Level:     input.Level,
 		Step:      input.Step,
 		Message:   input.Message,

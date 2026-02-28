@@ -53,7 +53,7 @@ func New(cfg Config) *Service {
 
 // BackupLogInput bundles parameters for broadcastLog.
 type BackupLogInput struct {
-	PluginID int64
+	PluginId int64
 	Level    string
 	Step     string
 	Message  string
@@ -73,7 +73,7 @@ func (s *Service) broadcastLog(input BackupLogInput) {
 		Details: input.Details,
 	}
 	logInput := ws.OperationLogInput{
-		PluginID: input.PluginID,
+		PluginId: input.PluginId,
 		Entry:    entry,
 	}
 	s.wsHub.BroadcastBackupLog(logInput)
@@ -82,7 +82,7 @@ func (s *Service) broadcastLog(input BackupLogInput) {
 // logInfo broadcasts an info-level log entry.
 func (s *Service) logInfo(pluginID int64, step, message string) {
 	s.broadcastLog(BackupLogInput{
-		PluginID: pluginID,
+		PluginId: pluginID,
 		Level:    loglevel.Info.Lower(),
 		Step:     step,
 		Message:  message,
@@ -98,7 +98,7 @@ func (s *Service) logInfoWithDetails(input BackupLogInput) {
 // logError broadcasts an error-level log entry.
 func (s *Service) logError(pluginID int64, step, message string) {
 	s.broadcastLog(BackupLogInput{
-		PluginID: pluginID,
+		PluginId: pluginID,
 		Level:    loglevel.Error.Lower(),
 		Step:     step,
 		Message:  message,
@@ -108,7 +108,7 @@ func (s *Service) logError(pluginID int64, step, message string) {
 // logWarn broadcasts a warn-level log entry.
 func (s *Service) logWarn(pluginID int64, step, message string) {
 	s.broadcastLog(BackupLogInput{
-		PluginID: pluginID,
+		PluginId: pluginID,
 		Level:    loglevel.Warn.Lower(),
 		Step:     step,
 		Message:  message,

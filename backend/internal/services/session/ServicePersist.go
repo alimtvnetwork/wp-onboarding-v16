@@ -18,7 +18,7 @@ func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
 		return
 	}
 	s.writeSessionArtifact(sessionArtifactInput{
-		SessionID: sessionID,
+		SessionId: sessionID,
 		Filename:  "request.json",
 		Data:      req,
 		PathFn:    s.getRequestPath,
@@ -33,7 +33,7 @@ func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
 		return
 	}
 	s.writeSessionArtifact(sessionArtifactInput{
-		SessionID: sessionID,
+		SessionId: sessionID,
 		Filename:  "response.json",
 		Data:      resp,
 		PathFn:    s.getResponsePath,
@@ -42,7 +42,7 @@ func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
 
 // sessionArtifactInput bundles parameters for writeSessionArtifact.
 type sessionArtifactInput struct {
-	SessionID string
+	SessionId string
 	Filename  string
 	Data      any
 	PathFn    func(string) apperror.Result[string]
@@ -53,15 +53,15 @@ func (s *Service) writeSessionArtifact(input sessionArtifactInput) {
 	jsonData, marshalErr := json.MarshalIndent(input.Data, "", "  ")
 
 	if marshalErr != nil {
-		s.logPersistError("Failed to marshal "+input.Filename, input.SessionID, marshalErr)
+		s.logPersistError("Failed to marshal "+input.Filename, input.SessionId, marshalErr)
 
 		return
 	}
 
-	pathResult := input.PathFn(input.SessionID)
+	pathResult := input.PathFn(input.SessionId)
 
 	if pathResult.HasError() {
-		s.logPersistAppError("Failed to resolve "+input.Filename+" path", input.SessionID, pathResult.AppError())
+		s.logPersistAppError("Failed to resolve "+input.Filename+" path", input.SessionId, pathResult.AppError())
 
 		return
 	}
@@ -69,7 +69,7 @@ func (s *Service) writeSessionArtifact(input sessionArtifactInput) {
 	writeErr := os.WriteFile(pathResult.Value(), jsonData, 0644)
 
 	if writeErr != nil {
-		s.logPersistError("Failed to write "+input.Filename, input.SessionID, writeErr)
+		s.logPersistError("Failed to write "+input.Filename, input.SessionId, writeErr)
 	}
 }
 
@@ -97,7 +97,7 @@ type ErrorLogData struct {
 
 // SaveErrorInput bundles parameters for SaveError.
 type SaveErrorInput struct {
-	SessionID  string
+	SessionId  string
 	StackTrace *SessionStackTrace
 	ErrorMsg   string
 	Details    json.RawMessage
@@ -113,7 +113,7 @@ func (s *Service) SaveError(input SaveErrorInput) {
 	}
 
 	s.writeSessionArtifact(sessionArtifactInput{
-		SessionID: input.SessionID,
+		SessionId: input.SessionId,
 		Filename:  logfile.SessionErrorLog,
 		Data:      errorData,
 		PathFn:    s.getErrorLogPath,

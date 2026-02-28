@@ -126,8 +126,8 @@ func (s *Service) startPublishSession(input startPublishSessionInput) (string, e
 
 	startInput := session.StartSessionInput{
 		Type:       session.SessionTypePublish,
-		PluginID:   input.PluginId,
-		SiteID:     input.SiteId,
+		PluginId:   input.PluginId,
+		SiteId:     input.SiteId,
 		PluginName: input.PluginInfo.Name,
 		SiteName:   input.SiteInfo.Name,
 	}

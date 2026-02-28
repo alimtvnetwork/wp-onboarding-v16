@@ -88,8 +88,8 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 	result := s.initPublishResult()
 
 	initInput := initPublishInput{
-		PluginID: pluginID,
-		SiteID:   siteID,
+		PluginId: pluginID,
+		SiteId:   siteID,
 		Result:   result,
 	}
 
@@ -111,12 +111,12 @@ func (s *Service) startAndExecutePublish(
 	result *PublishResult,
 	initResult *publishInitResult,
 ) apperror.Result[PublishResult] {
-	result.SessionId = initResult.SessionID
+	result.SessionId = initResult.SessionId
 	s.broadcastPublishStart(pluginID, siteID, initResult)
 
 	pctx := s.buildPublishContext(buildPublishContextInput{
-		PluginID:   pluginID,
-		SiteID:     siteID,
+		PluginId:   pluginID,
+		SiteId:     siteID,
 		InitResult: initResult,
 		Opts:       opts,
 		Result:     result,
@@ -152,7 +152,7 @@ func (s *Service) broadcastPublishStartProgress(
 	startProgress := ProgressInput{
 		PluginId:  pluginID,
 		SiteId:    siteID,
-		SessionId: initResult.SessionID,
+		SessionId: initResult.SessionId,
 		Step:      publishstep.Started,
 		Progress:  0,
 		Message:   "Starting publish...",
@@ -163,7 +163,7 @@ func (s *Service) broadcastPublishStartProgress(
 // logPublishStartSession writes the publish start session log.
 func (s *Service) logPublishStartSession(initResult *publishInitResult) {
 	initLog := sessionLogInput{
-		SessionId: initResult.SessionID,
+		SessionId: initResult.SessionId,
 		Level:     loglevel.Info,
 		Step:      publishstep.Init,
 		Message:   fmt.Sprintf("Starting publish for %s to %s", initResult.PluginInfo.Name, initResult.SiteInfo.Name),
@@ -173,8 +173,8 @@ func (s *Service) logPublishStartSession(initResult *publishInitResult) {
 
 // buildPublishContextInput bundles parameters for buildPublishContext.
 type buildPublishContextInput struct {
-	PluginID   int64
-	SiteID     int64
+	PluginId   int64
+	SiteId     int64
 	InitResult *publishInitResult
 	Opts       PublishOptions
 	Result     *PublishResult
@@ -183,9 +183,9 @@ type buildPublishContextInput struct {
 // buildPublishContext constructs the publishContext struct.
 func (s *Service) buildPublishContext(input buildPublishContextInput) *publishContext {
 	return &publishContext{
-		PluginId:   input.PluginID,
-		SiteId:     input.SiteID,
-		SessionId:  input.InitResult.SessionID,
+		PluginId:   input.PluginId,
+		SiteId:     input.SiteId,
+		SessionId:  input.InitResult.SessionId,
 		PluginInfo: input.InitResult.PluginInfo,
 		Options:    input.Opts,
 		Result:     input.Result,
