@@ -49,7 +49,8 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	}
 
 	// Ensure output directory exists
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+	err = os.MkdirAll(filepath.Dir(outputPath), 0755)
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
 			WithPath(outputPath)
 	}
@@ -177,13 +178,15 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, isOverwrit
 
 	// Remove existing directory if overwriting
 	if isOverwrite {
-		if err := os.RemoveAll(projectDir); err != nil {
+		err := os.RemoveAll(projectDir)
+		if err != nil {
 			m.log.Warn("Failed to remove existing project directory", "error", err)
 		}
 	}
 
 	// Create project directory
-	if err := os.MkdirAll(projectDir, 0755); err != nil {
+	err = os.MkdirAll(projectDir, 0755)
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create project directory").
 			WithPath(projectDir)
 	}
@@ -205,7 +208,8 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, isOverwrit
 		m.log.Debug("Extracting", "file", file.Name, "size", file.UncompressedSize64)
 
 		// Create directory structure
-		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+		err = os.MkdirAll(filepath.Dir(destPath), 0755)
+		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create directory").
 				WithPath(destPath)
 		}
@@ -223,7 +227,8 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, isOverwrit
 	}
 
 	// Register databases in root.db
-	if err := m.registerImportedDatabases(projectSlug); err != nil {
+	err = m.registerImportedDatabases(projectSlug)
+	if err != nil {
 		m.log.Warn("Failed to register databases", "error", err)
 	}
 
@@ -334,7 +339,8 @@ func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPat
 	}
 
 	// Ensure output directory exists
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+	err = os.MkdirAll(filepath.Dir(outputPath), 0755)
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
 			WithPath(outputPath)
 	}

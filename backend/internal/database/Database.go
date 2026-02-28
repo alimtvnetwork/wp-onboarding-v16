@@ -29,7 +29,8 @@ type DB struct {
 func New(path string) (*DB, error) {
 	// Ensure directory exists
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create database directory").
 			WithPath(dir)
 	}
@@ -49,13 +50,16 @@ func New(path string) (*DB, error) {
 	}
 
 	// Configure for concurrent access
-	if err := configureConnection(sqlDB); err != nil {
+	err = configureConnection(sqlDB)
+	if err != nil {
 		sqlDB.Close()
+
 		return nil, err
 	}
 
 	// Test connection
-	if err := sqlDB.Ping(); err != nil {
+	err = sqlDB.Ping()
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to ping database").
 			WithPath(absPath)
 	}
@@ -77,7 +81,8 @@ func configureConnection(db *sql.DB) error {
 	}
 
 	for _, pragma := range pragmas {
-		if _, err := db.Exec(pragma); err != nil {
+		_, err := db.Exec(pragma)
+		if err != nil {
 			return apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to execute pragma").
 				WithDetails(pragma)
 		}
@@ -117,8 +122,10 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 			WithPath(childPath)
 	}
 
-	if err := configureConnection(child); err != nil {
+	err = configureConnection(child)
+	if err != nil {
 		child.Close()
+
 		return nil, err
 	}
 
@@ -140,7 +147,8 @@ func resolveChildPath(dataDir, dbType, entityID string) (string, error) {
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db directory")
 	}
-	if err := os.MkdirAll(childDir, 0755); err != nil {
+	err = os.MkdirAll(childDir, 0755)
+	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create child db directory").
 			WithPath(childDir)
 	}

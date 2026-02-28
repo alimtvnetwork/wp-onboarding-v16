@@ -89,7 +89,8 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 		cfg.ConnLife = time.Hour
 	}
 
-	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
+	err := os.MkdirAll(cfg.DataDir, 0755)
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create data dir").
 			WithPath(cfg.DataDir)
 	}
@@ -105,7 +106,8 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 	}
 
 	// Configure root DB
-	if err := configureDB(rootDB); err != nil {
+	err = configureDB(rootDB)
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to configure root db").
 			WithPath(rootPath)
 	}
@@ -120,7 +122,9 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 		connLife: cfg.ConnLife,
 	}
 
-	if err := manager.initRootSchema(); err != nil {
+	err = manager.initRootSchema()
+	if err != nil {
+
 		return nil, err
 	}
 
@@ -137,7 +141,8 @@ func configureDB(db *sql.DB) error {
 	}
 
 	for _, pragma := range pragmas {
-		if _, err := db.Exec(pragma); err != nil {
+		_, err := db.Exec(pragma)
+		if err != nil {
 			return apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to execute pragma").
 				WithDetails(pragma)
 		}
@@ -255,7 +260,8 @@ func (m *DBManager) migrateToPascalCase() error {
 	}
 
 	for _, stmt := range migrations {
-		if _, err := m.rootDB.Exec(stmt); err != nil {
+		_, err := m.rootDB.Exec(stmt)
+		if err != nil {
 			// Column/table may already be renamed — log and continue
 			m.log.Debug("Migration step skipped (may already be applied)", "stmt", stmt, "error", err)
 		}
@@ -308,7 +314,8 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 			WithPath(dbRecord.Path)
 	}
 	dir := filepath.Dir(fullPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	err = os.MkdirAll(dir, 0755)
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create db dir").
 			WithPath(dir)
 	}
@@ -321,8 +328,10 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 			WithPath(fullPath)
 	}
 
-	if err := configureDB(db); err != nil {
+	err = configureDB(db)
+	if err != nil {
 		db.Close()
+
 		return nil, err
 	}
 
@@ -469,7 +478,9 @@ func (m *DBManager) ListProjects() ([]Project, error) {
 	var projects []Project
 	for rows.Next() {
 		var p Project
-		if err := rows.Scan(&p.ID, &p.Slug, &p.DisplayName, &p.Path, &p.Status, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		err := rows.Scan(&p.ID, &p.Slug, &p.DisplayName, &p.Path, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+		if err != nil {
+
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan project row")
 		}
 		projects = append(projects, p)
@@ -498,10 +509,12 @@ func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
 	var dbs []Database
 	for rows.Next() {
 		var db Database
-		if err := rows.Scan(
+		err := rows.Scan(
 			&db.ID, &db.ProjectID, &db.Type, &db.EntityID, &db.Path,
 			&db.SizeBytes, &db.RecordCount, &db.Status, &db.CreatedAt, &db.UpdatedAt,
-		); err != nil {
+		)
+		if err != nil {
+
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan database row")
 		}
 		dbs = append(dbs, db)

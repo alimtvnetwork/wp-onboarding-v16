@@ -63,7 +63,8 @@ func (s *Service) fetchAndCachePlugins(ctx context.Context, siteId int64) ([]Rem
 	}
 
 	if s.isCacheEnabled {
-		if err := s.cacheRemotePlugins(ctx, siteId, plugins); err != nil {
+		err := s.cacheRemotePlugins(ctx, siteId, plugins)
+		if err != nil {
 			s.log.Warn("Failed to cache remote plugins", "siteId", siteId, "error", err)
 		}
 	}
@@ -170,7 +171,9 @@ func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteId int64) (
 	}
 
 	var plugins []RemotePlugin
-	if err := json.Unmarshal([]byte(result.Value().PluginsJson), &plugins); err != nil {
+	err := json.Unmarshal([]byte(result.Value().PluginsJson), &plugins)
+	if err != nil {
+
 		return nil, err
 	}
 	return plugins, nil
@@ -193,7 +196,8 @@ func (s *Service) cacheRemotePlugins(ctx context.Context, siteId int64, plugins 
 
 // ForceSyncRemotePlugins clears cache and fetches fresh data.
 func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
-	if err := s.InvalidateRemotePluginsCache(ctx, siteId); err != nil {
+	err := s.InvalidateRemotePluginsCache(ctx, siteId)
+	if err != nil {
 		s.log.Warn("Failed to invalidate cache before force sync", "siteId", siteId, "error", err)
 	}
 	return s.GetRemotePluginsWithCache(ctx, siteId, true)

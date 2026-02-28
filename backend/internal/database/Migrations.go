@@ -13,7 +13,9 @@ import (
 func Migrate(db *DB, log *logger.Logger) error {
 	log.Info("Starting database migrations")
 
-	if err := ensureMigrationsTable(db, log); err != nil {
+	err := ensureMigrationsTable(db, log)
+	if err != nil {
+
 		return err
 	}
 
@@ -67,7 +69,9 @@ func applyPendingMigrations(db *DB, log *logger.Logger, currentVersion int) (int
 		if m.Version <= currentVersion {
 			continue
 		}
-		if err := applySingleMigration(db, log, m); err != nil {
+		err := applySingleMigration(db, log, m)
+		if err != nil {
+
 			return applied, err
 		}
 		applied++
@@ -84,12 +88,16 @@ func applySingleMigration(db *DB, log *logger.Logger, m Migration) error {
 		return wrapMigrationError(err, "failed to begin transaction", m.Version)
 	}
 
-	if err := executeMigrationTx(tx, m); err != nil {
+	err = executeMigrationTx(tx, m)
+	if err != nil {
 		tx.Rollback()
+
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
+	err = tx.Commit()
+	if err != nil {
+
 		return wrapMigrationError(err, "failed to commit migration", m.Version)
 	}
 
@@ -99,11 +107,16 @@ func applySingleMigration(db *DB, log *logger.Logger, m Migration) error {
 
 // executeMigrationTx runs the SQL and records the migration within a transaction.
 func executeMigrationTx(tx *sql.Tx, m Migration) error {
-	if _, err := tx.Exec(m.SQL); err != nil {
+	_, err := tx.Exec(m.SQL)
+	if err != nil {
+
 		return wrapMigrationError(err, "failed to apply migration SQL", m.Version).
 			WithDetails(fmt.Sprintf("description=%s", m.Description))
 	}
-	if _, err := tx.Exec("INSERT INTO _migrations (Version, Description) VALUES (?, ?)", m.Version, m.Description); err != nil {
+
+	_, err = tx.Exec("INSERT INTO _migrations (Version, Description) VALUES (?, ?)", m.Version, m.Description)
+	if err != nil {
+
 		return wrapMigrationError(err, "failed to record migration", m.Version)
 	}
 	return nil

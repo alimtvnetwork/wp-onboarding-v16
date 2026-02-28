@@ -24,7 +24,9 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) apperror.Resul
 		return result
 	}
 
-	if err := validateDirectoryExists(path, &scan); err != nil {
+	err := validateDirectoryExists(path, &scan)
+	if err != nil {
+
 		return *err
 	}
 
@@ -36,7 +38,9 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) apperror.Resul
 
 	applyPluginInfo(&scan, pluginInfo)
 
-	if err := s.walkDirectory(path, &scan); err != nil {
+	err := s.walkDirectory(path, &scan)
+	if err != nil {
+
 		return apperror.FailWrap[ScanResult](err, apperror.ErrDirRead, "failed to scan directory")
 	}
 
@@ -137,7 +141,9 @@ func (s *Service) writeDetectedFile(path string, scanVal ScanResult) error {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to resolve plugin detected path")
 	}
 
-	if err := os.WriteFile(detectedPath, data, 0644); err != nil {
+	err = os.WriteFile(detectedPath, data, 0644)
+	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to write plugin detected file")
 	}
 
@@ -169,7 +175,9 @@ func (s *Service) readPluginDetected(path string) (*PluginDetected, error) {
 		return nil, err
 	}
 	var detected PluginDetected
-	if err := json.Unmarshal(data, &detected); err != nil {
+	err = json.Unmarshal(data, &detected)
+	if err != nil {
+
 		return nil, err
 	}
 	return &detected, nil
