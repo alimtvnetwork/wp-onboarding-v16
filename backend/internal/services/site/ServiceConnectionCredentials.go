@@ -59,13 +59,13 @@ func (s *Service) buildCredentialsProgressCallback() func(wordpress.ProgressEven
 
 // executeCredentialsTest runs the connection test with provided credentials.
 func (s *Service) executeCredentialsTest(client *wordpress.Client, normalizedUrl, username string) (*ConnectionResult, *apperror.AppError) {
-	connInfo, appErr := client.TestConnection()
-	if appErr != nil {
+	connResult := client.TestConnection()
+	if connResult.HasError() {
 
-		return s.buildCredentialsFailure(normalizedUrl, username, appErr), nil
+		return s.buildCredentialsFailure(normalizedUrl, username, connResult.AppError()), nil
 	}
 
-	return s.buildCredentialsSuccess(connInfo), nil
+	return s.buildCredentialsSuccess(connResult.Value()), nil
 }
 
 // buildCredentialsFailure handles a failed credentials test.

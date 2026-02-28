@@ -42,7 +42,7 @@ type wpTestPost struct {
 
 // TestConnection runs the full five-step connection test sequence:
 // 1. REST API probe   2. Auth check   3. Parse user info   4. Plugin access   5. Write test
-func (c *Client) TestConnection() (*ConnectionInfo, *apperror.AppError) {
+func (c *Client) TestConnection() apperror.Result[*ConnectionInfo] {
 	result := &ConnectionInfo{
 		URL: c.baseURL,
 	}
@@ -50,24 +50,24 @@ func (c *Client) TestConnection() (*ConnectionInfo, *apperror.AppError) {
 	appErr := c.probeRestAPI(result)
 	if appErr != nil {
 
-		return result, appErr
+		return apperror.Fail[*ConnectionInfo](appErr)
 	}
 
 	appErr = c.authenticateAndParseUser(result)
 	if appErr != nil {
 
-		return result, appErr
+		return apperror.Fail[*ConnectionInfo](appErr)
 	}
 
 	appErr = c.testPluginAccess(result)
 	if appErr != nil {
 
-		return result, appErr
+		return apperror.Fail[*ConnectionInfo](appErr)
 	}
 
 	c.testWritePermission(result)
 
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // probeRestAPI checks WordPress REST API availability (Step 1).

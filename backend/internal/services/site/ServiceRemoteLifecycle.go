@@ -41,14 +41,14 @@ func (s *Service) CheckRemotePluginExists(ctx context.Context, siteId int64, plu
 	}
 
 	client := s.wpClientFactory(site.Url, site.Username, string(password), nil)
-	existsResult, wpErr := client.CheckPluginExistsViaUploader(pluginSlug)
+	existsResult := client.CheckPluginExistsViaUploader(pluginSlug)
 
-	if wpErr != nil {
+	if existsResult.HasError() {
 
-		return nil, apperror.Wrap(wpErr, apperror.ErrWPPluginGet, "check plugin exists via uploader")
+		return nil, apperror.Wrap(existsResult.AppError(), apperror.ErrWPPluginGet, "check plugin exists via uploader")
 	}
 
-	return existsResult, nil
+	return existsResult.Value(), nil
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site

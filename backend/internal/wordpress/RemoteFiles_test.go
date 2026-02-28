@@ -25,11 +25,11 @@ func TestCheckOnboardPluginAvailable_UsesOnboardNamespace(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	ok, err := c.CheckOnboardPluginAvailable()
-	if err != nil {
-		t.Fatalf("expected nil error, got: %v", err)
+	result := c.CheckOnboardPluginAvailable()
+	if result.HasError() {
+		t.Fatalf("expected no error, got: %v", result.AppError())
 	}
-	if !ok {
+	if !result.Value().Available {
 		t.Fatalf("expected available=true")
 	}
 }
@@ -46,11 +46,12 @@ func TestCheckUploaderHelperAvailable_UsesUploaderNamespace(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	result, err := c.CheckUploaderHelperAvailable()
-	if err != nil {
-		t.Fatalf("expected nil error, got: %v", err)
+	result := c.CheckUploaderHelperAvailable()
+	if result.HasError() {
+		t.Fatalf("expected no error, got: %v", result.AppError())
 	}
-	if result == nil || !result.Available {
+	avail := result.Value()
+	if avail == nil || !avail.Available {
 		t.Fatalf("expected available=true")
 	}
 }
@@ -71,12 +72,12 @@ func TestRequestMutationToken_UsesOnboardNamespace(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	tok, err := c.RequestMutationToken("upload")
-	if err != nil {
-		t.Fatalf("expected nil error, got: %v", err)
+	tokResult := c.RequestMutationToken("upload")
+	if tokResult.HasError() {
+		t.Fatalf("expected no error, got: %v", tokResult.AppError())
 	}
-	if tok != "abc123" {
-		t.Fatalf("expected token abc123, got: %s", tok)
+	if tokResult.Value() != "abc123" {
+		t.Fatalf("expected token abc123, got: %s", tokResult.Value())
 	}
 }
 
@@ -131,11 +132,11 @@ func TestUploadPluginZip_PostsToOnboardUploadEndpoint(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	res, err := c.UploadPluginZip(zipPath, "category-generator")
-	if err != nil {
-		t.Fatalf("expected nil error, got: %v", err)
+	res := c.UploadPluginZip(zipPath, "category-generator")
+	if res.HasError() {
+		t.Fatalf("expected no error, got: %v", res.AppError())
 	}
-	if res == nil || !res.Success {
+	if res.Value() == nil || !res.Value().Success {
 		t.Fatalf("expected success result")
 	}
 }
@@ -185,14 +186,14 @@ func TestUploadPluginViaUploader_PostsToUploaderEndpoint(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	res, err := c.UploadPluginViaUploader(UploadInput{ZipPath: zipPath, Slug: "test-plugin", IsActivate: true, UploadSource: uploadsourcetype.RestAPI})
-	if err != nil {
-		t.Fatalf("expected nil error, got: %v", err)
+	res := c.UploadPluginViaUploader(UploadInput{ZipPath: zipPath, Slug: "test-plugin", IsActivate: true, UploadSource: uploadsourcetype.RestAPI})
+	if res.HasError() {
+		t.Fatalf("expected no error, got: %v", res.AppError())
 	}
-	if res == nil || !res.Success {
+	if res.Value() == nil || !res.Value().Success {
 		t.Fatalf("expected success result")
 	}
-	if !res.Activated {
+	if !res.Value().Activated {
 		t.Fatalf("expected activated=true")
 	}
 }

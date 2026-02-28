@@ -102,18 +102,18 @@ func isExcludedFile(path, relPath string, patterns []string) bool {
 
 // fetchRemoteVersion tries to get the remote plugin version
 func (s *Service) fetchRemoteVersion(wpClient *wordpress.Client, remoteSlug string) string {
-	remotePlugins, err := wpClient.ListPluginsViaUploader()
-	if err == nil {
-		for _, rp := range remotePlugins {
+	pluginsResult := wpClient.ListPluginsViaUploader()
+	if pluginsResult.IsSafe() {
+		for _, rp := range pluginsResult.Value() {
 			if rp.Slug == remoteSlug {
 				return rp.Version
 			}
 		}
 	}
 
-	remotePluginInfo, err := wpClient.GetPlugin(remoteSlug)
-	if err == nil && remotePluginInfo != nil {
-		return remotePluginInfo.Version
+	pluginResult := wpClient.GetPlugin(remoteSlug)
+	if pluginResult.IsSafe() {
+		return pluginResult.Value().Version
 	}
 	return ""
 }
