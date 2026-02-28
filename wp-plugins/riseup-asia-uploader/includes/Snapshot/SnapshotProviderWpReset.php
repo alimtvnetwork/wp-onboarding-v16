@@ -36,7 +36,10 @@ class SnapshotProviderWpReset extends SnapshotProviderInterface {
     }
 
     public function isAvailable(): bool {
-        return class_exists('WP_Reset') || class_exists('WP_Reset_Pro');
+        $hasFreeVersion = class_exists('WP_Reset');
+        $hasProVersion  = class_exists('WP_Reset_Pro');
+
+        return $hasFreeVersion || $hasProVersion;
     }
 
     public function getCapabilities(): array {
@@ -144,11 +147,13 @@ class SnapshotProviderWpReset extends SnapshotProviderInterface {
         $allTables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
 
         foreach ($allTables as $tableInfo) {
+            $isCoreTable = (strpos($tableInfo['Name'], $wpdb->prefix) === 0);
+
             $tables[] = array(
                 ResponseKeyType::Name->value   => $tableInfo['Name'],
                 ResponseKeyType::Rows->value   => (int) $tableInfo['Rows'],
                 ResponseKeyType::Size->value   => (int) $tableInfo['Data_length'] + (int) $tableInfo['Index_length'],
-                ResponseKeyType::IsCore->value => strpos($tableInfo['Name'], $wpdb->prefix) === 0,
+                ResponseKeyType::IsCore->value => $isCoreTable,
             );
         }
 

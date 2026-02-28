@@ -36,7 +36,10 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
     }
 
     public function isAvailable(): bool {
-        return extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
+        $hasSqlite3    = extension_loaded('sqlite3');
+        $hasPdoSqlite  = extension_loaded('pdo_sqlite');
+
+        return $hasSqlite3 || $hasPdoSqlite;
     }
 
     public function getCapabilities(): array {

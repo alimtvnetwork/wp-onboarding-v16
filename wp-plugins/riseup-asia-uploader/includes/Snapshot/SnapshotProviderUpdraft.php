@@ -34,7 +34,10 @@ class SnapshotProviderUpdraft extends SnapshotProviderInterface {
     }
 
     public function isAvailable(): bool {
-        return class_exists('UpdraftPlus') || isset($GLOBALS['updraftplus']);
+        $hasUpdraftClass  = class_exists('UpdraftPlus');
+        $hasUpdraftGlobal = isset($GLOBALS['updraftplus']);
+
+        return $hasUpdraftClass || $hasUpdraftGlobal;
     }
 
     public function getCapabilities(): array {

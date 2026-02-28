@@ -96,11 +96,19 @@ trait NativeTableExportConvertTrait {
             case SnapshotScopeType::All->value:
                 return $allTables;
             case SnapshotScopeType::WordPress->value:
-                return array_filter($allTables, function($table) use ($prefix) { $isWpTable = (strpos($table, $prefix) === 0); return $isWpTable; });
+                return array_filter($allTables, function($table) use ($prefix) {
+                    $isWpTable = (strpos($table, $prefix) === 0);
+
+                    return $isWpTable;
+                });
             case SnapshotScopeType::Content->value:
                 return $this->getContentTables($allTables, $prefix);
             case SnapshotScopeType::Custom->value:
-                return array_filter($allTables, function($table) use ($custom) { return in_array($table, $custom); });
+                return array_filter($allTables, function($table) use ($custom) {
+                    $isCustomTable = in_array($table, $custom);
+
+                    return $isCustomTable;
+                });
             default:
                 return array();
         }
@@ -118,6 +126,10 @@ trait NativeTableExportConvertTrait {
             $prefix . 'term_relationships',
         );
 
-        return array_filter($allTables, function($table) use ($contentTables) { return in_array($table, $contentTables); });
+        return array_filter($allTables, function($table) use ($contentTables) {
+            $isContentTable = in_array($table, $contentTables);
+
+            return $isContentTable;
+        });
     }
 }

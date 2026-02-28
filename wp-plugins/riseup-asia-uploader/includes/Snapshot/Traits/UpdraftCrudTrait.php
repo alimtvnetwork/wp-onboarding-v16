@@ -93,11 +93,13 @@ trait UpdraftCrudTrait {
         $allTables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
 
         return array_map(function($info) use ($wpdb) {
+            $isCoreTable = (strpos($info['Name'], $wpdb->prefix) === 0);
+
             return array(
                 ResponseKeyType::Name->value   => $info['Name'],
-                ResponseKeyType::Rows->value => (int)$info['Rows'],
-                ResponseKeyType::Size->value => (int)$info['Data_length'] + (int)$info['Index_length'],
-                ResponseKeyType::IsCore->value => strpos($info['Name'], $wpdb->prefix) === 0,
+                ResponseKeyType::Rows->value   => (int)$info['Rows'],
+                ResponseKeyType::Size->value   => (int)$info['Data_length'] + (int)$info['Index_length'],
+                ResponseKeyType::IsCore->value => $isCoreTable,
             );
         }, $allTables);
     }

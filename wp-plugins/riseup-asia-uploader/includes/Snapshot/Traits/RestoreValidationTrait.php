@@ -28,7 +28,12 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreValidationTrait {
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
-        if (empty($options[ResponseKeyType::Confirm->value]) || $options[ResponseKeyType::Confirm->value] !== true) {
+        $confirmKey       = ResponseKeyType::Confirm->value;
+        $isConfirmMissing = empty($options[$confirmKey]);
+        $isConfirmNotTrue = !$isConfirmMissing && $options[$confirmKey] !== true;
+        $isUnconfirmed    = $isConfirmMissing || $isConfirmNotTrue;
+
+        if ($isUnconfirmed) {
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => 'Restore requires explicit confirmation (Confirm=true)',
