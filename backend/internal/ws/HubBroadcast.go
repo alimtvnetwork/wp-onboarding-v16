@@ -119,14 +119,15 @@ func (h *Hub) BroadcastRemotePluginLog(input RemotePluginLogInput) {
 
 // BroadcastRemotePluginLogWithSession is a convenience method for remote plugin action logs with session
 func (h *Hub) BroadcastRemotePluginLogWithSession(input RemotePluginLogInput) {
-	h.BroadcastOperationLogWithSession(OperationLogInput{
+	opLog := OperationLogInput{
 		OperationType: "remote_plugin_" + input.Action,
 		SiteId:        input.SiteId,
 		SessionId:     input.SessionId,
 		Entry: OperationLogEntry{
 			Level: input.Level, Step: input.Step, Message: input.Message, Details: input.Details,
 		},
-	})
+	}
+	h.BroadcastOperationLogWithSession(opLog)
 }
 
 // BroadcastWithSession is a method wrapper for the package-level generic BroadcastWithSession function,

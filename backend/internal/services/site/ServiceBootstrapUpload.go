@@ -103,17 +103,19 @@ func (s *Service) finalizeBootstrap(id int64, site models.Site, uploadResult *wo
 
 // logBootstrapDeploySuccess broadcasts and logs the successful deployment.
 func (s *Service) logBootstrapDeploySuccess(id int64, site models.Site, isActivated bool) {
-	deployDetails := toJson(UploaderDeployDetails{
+	uploaderDeploy := UploaderDeployDetails{
 		SiteId:      id,
 		SiteName:    site.Name,
 		IsActivated: isActivated,
-	})
-	s.broadcastBootstrapLog(bootstrapLogInput{
+	}
+	deployDetails := toJson(uploaderDeploy)
+	deployLog := bootstrapLogInput{
 		Level:   loglevel.Info,
 		SiteId:  id,
 		Message: "Riseup Asia Uploader deployed successfully",
 		Details: deployDetails,
-	})
+	}
+	s.broadcastBootstrapLog(deployLog)
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site",
 		"siteId", id, "siteName", site.Name, "siteUrl", site.Url, "activated", isActivated)
 }

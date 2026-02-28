@@ -95,18 +95,19 @@ func (s *Service) logZipCreated(input logZipInput) {
 
 // broadcastZipCreatedLog sends the ZIP creation log entry.
 func (s *Service) broadcastZipCreatedLog(input logZipInput, zipSize int64, zipEntries []string) {
+	zipCreatedDetails := ZipCreatedDetails{
+		ZipPath:      input.ZipPath,
+		ZipSize:      zipSize,
+		FileCount:    input.FileCount,
+		ZipStructure: zipEntries,
+	}
 	zipLog := DetailedLogInput{
 		PluginId: input.PluginId,
 		SiteId:   input.SiteId,
 		Level:    loglevel.Info,
 		Step:     publishstep.Package,
 		Message:  fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(input.ZipPath), zipSize),
-		Details: toDetails(ZipCreatedDetails{
-			ZipPath:      input.ZipPath,
-			ZipSize:      zipSize,
-			FileCount:    input.FileCount,
-			ZipStructure: zipEntries,
-		}),
+		Details:  toDetails(zipCreatedDetails),
 	}
 	s.broadcastDetailedLog(zipLog)
 }

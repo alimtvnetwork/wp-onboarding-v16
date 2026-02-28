@@ -28,12 +28,13 @@ func (c *Client) testPluginAccess(result *ConnectionInfo) *apperror.AppError {
 
 // reportPluginAccessStart sends the plugin access check start event.
 func (c *Client) reportPluginAccessStart() {
-	c.progress(ProgressEvent{
+	accessStart := ProgressEvent{
 		Step:    connectionstep.PluginAccessCheck.Value(),
 		Status:  stagestatus.Running.String(),
 		Message: "Checking plugin management access...",
 		Details: toProgress(UrlProgress{Url: c.baseURL}),
-	})
+	}
+	c.progress(accessStart)
 }
 
 // fetchPluginAccessResponse sends the plugin list API call.
@@ -49,12 +50,13 @@ func (c *Client) fetchPluginAccessResponse() apperror.Result[ApiCallResponse] {
 
 // reportPluginAccessRequestFailed sends a plugin access request failure event.
 func (c *Client) reportPluginAccessRequestFailed(err *apperror.AppError) *apperror.AppError {
-	c.progress(ProgressEvent{
+	accessFail := ProgressEvent{
 		Step:    connectionstep.PluginAccessCheck.Value(),
 		Status:  stagestatus.Failed.String(),
 		Message: fmt.Sprintf("Plugin endpoint request failed: %v", err),
 		Details: toProgress(UrlProgress{Url: c.baseURL}),
-	})
+	}
+	c.progress(accessFail)
 
 	return apperror.Wrap(err, apperror.ErrWPPluginList, "plugin endpoint not accessible").WithURL(c.baseURL)
 }
@@ -77,12 +79,13 @@ func (c *Client) evaluatePluginAccess(statusCode int, result *ConnectionInfo) *a
 
 // reportInsufficientPluginPermissions sends permission failure event.
 func (c *Client) reportInsufficientPluginPermissions(result *ConnectionInfo, statusCode int) *apperror.AppError {
-	c.progress(ProgressEvent{
+	permFail := ProgressEvent{
 		Step:    connectionstep.PluginAccessCheck.Value(),
 		Status:  stagestatus.Failed.String(),
 		Message: "User cannot manage plugins - requires administrator role",
 		Details: toProgress(UserRolesProgress{Url: c.baseURL, UserRoles: result.UserRoles}),
-	})
+	}
+	c.progress(permFail)
 
 	return apperror.New(apperror.ErrWPAuth, "insufficient permissions: user cannot manage plugins (requires administrator role)").
 		WithURL(c.baseURL).
@@ -105,22 +108,24 @@ func (c *Client) reportPluginAccessByStatus(statusCode int, result *ConnectionIn
 
 // reportPluginAccessConfirmed sends the plugin access confirmed event.
 func (c *Client) reportPluginAccessConfirmed() {
-	c.progress(ProgressEvent{
+	accessConfirmed := ProgressEvent{
 		Step:    connectionstep.PluginAccessCheck.Value(),
 		Status:  stagestatus.Completed.String(),
 		Message: "Plugin management access confirmed",
 		Details: toProgress(UrlProgress{Url: c.baseURL}),
-	})
+	}
+	c.progress(accessConfirmed)
 }
 
 // reportPluginAccessWarning sends the plugin access warning event.
 func (c *Client) reportPluginAccessWarning(statusCode int) {
-	c.progress(ProgressEvent{
+	accessWarning := ProgressEvent{
 		Step:    connectionstep.PluginAccessCheck.Value(),
 		Status:  stagestatus.Warning.String(),
 		Message: fmt.Sprintf("Plugin endpoint returned %d", statusCode),
 		Details: toProgress(UrlProgress{Url: c.baseURL}),
-	})
+	}
+	c.progress(accessWarning)
 }
 
 // testWritePermission creates and deletes a draft post to verify write access (Step 5).
@@ -140,12 +145,13 @@ func (c *Client) testWritePermission(result *ConnectionInfo) {
 
 // reportWriteTestStart sends the write test start event.
 func (c *Client) reportWriteTestStart() {
-	c.progress(ProgressEvent{
+	writeStart := ProgressEvent{
 		Step:    connectionstep.WriteTest.Value(),
 		Status:  stagestatus.Running.String(),
 		Message: "Testing write permissions...",
 		Details: toProgress(UrlProgress{Url: c.baseURL}),
-	})
+	}
+	c.progress(writeStart)
 }
 
 // sendWriteTestPost creates a draft post for write testing.
@@ -168,12 +174,13 @@ func (c *Client) sendWriteTestPost() apperror.Result[ApiCallResponse] {
 
 // reportWriteTestRequestFailed sends a write test request failure event.
 func (c *Client) reportWriteTestRequestFailed(err *apperror.AppError) {
-	c.progress(ProgressEvent{
+	writeFail := ProgressEvent{
 		Step:    connectionstep.WriteTest.Value(),
 		Status:  stagestatus.Warning.String(),
 		Message: "Could not test write permissions",
 		Details: toProgress(UrlErrorProgress{Url: c.baseURL, Error: err.Error()}),
-	})
+	}
+	c.progress(writeFail)
 }
 
 // evaluateWriteTestByStatus handles the write test response based on status code.
@@ -201,12 +208,13 @@ func (c *Client) reportWriteTestNonCreated(statusCode int) {
 		msg = "User cannot create posts"
 	}
 
-	c.progress(ProgressEvent{
+	writeWarning := ProgressEvent{
 		Step:    connectionstep.WriteTest.Value(),
 		Status:  stagestatus.Warning.String(),
 		Message: msg,
 		Details: toProgress(UrlProgress{Url: c.baseURL}),
-	})
+	}
+	c.progress(writeWarning)
 }
 
 // handleWriteTestCleanup cleans up the test post and reports success.
@@ -225,12 +233,13 @@ func (c *Client) handleWriteTestCleanup(body []byte, result *ConnectionInfo) {
 	c.deleteTestPost(createdPost.Id)
 
 	result.CanWritePosts = true
-	c.progress(ProgressEvent{
+	writeSuccess := ProgressEvent{
 		Step:    connectionstep.WriteTest.Value(),
 		Status:  stagestatus.Completed.String(),
 		Message: "Write permissions verified (test post created and deleted)",
 		Details: toProgress(WriteTestProgress{Url: c.baseURL, TestPostId: createdPost.Id}),
-	})
+	}
+	c.progress(writeSuccess)
 }
 
 // deleteTestPost removes the test draft post.

@@ -82,35 +82,39 @@ func (s *Service) buildBootstrapClient(id int64, site models.Site) (*bootstrapCo
 
 // logBootstrapStart broadcasts the initial deployment log entry.
 func (s *Service) logBootstrapStart(id int64, site models.Site) {
-	contextDetails := toJson(SiteContextDetails{
+	siteContext := SiteContextDetails{
 		SiteId:   id,
 		SiteName: site.Name,
 		SiteUrl:  site.Url,
-	})
-	s.broadcastBootstrapLog(bootstrapLogInput{
+	}
+	contextDetails := toJson(siteContext)
+	startLog := bootstrapLogInput{
 		Level:   loglevel.Info,
 		SiteId:  id,
 		Message: "Starting Riseup Asia Uploader deployment",
 		Details: contextDetails,
-	})
+	}
+	s.broadcastBootstrapLog(startLog)
 }
 
 // buildProgressCallback creates a progress callback for WordPress client operations.
 func (s *Service) buildProgressCallback(id int64, siteName string) func(string, string, string, wordpress.ProgressDetails) {
 	return func(step, status, message string, details wordpress.ProgressDetails) {
-		logDetails := toJson(BootstrapLogDetails{
+		bootstrapDetails := BootstrapLogDetails{
 			SiteId:   id,
 			SiteName: siteName,
 			Step:     step,
 			Status:   status,
 			Details:  details,
-		})
-		s.broadcastBootstrapLog(bootstrapLogInput{
+		}
+		logDetails := toJson(bootstrapDetails)
+		progressLog := bootstrapLogInput{
 			Level:   loglevel.Info,
-		SiteId:  id,
+			SiteId:  id,
 			Message: fmt.Sprintf("[%s] %s", step, message),
 			Details: logDetails,
-		})
+		}
+		s.broadcastBootstrapLog(progressLog)
 	}
 }
 
@@ -136,32 +140,35 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, *a
 
 // logBootstrapZipStart broadcasts the ZIP creation log entry.
 func (s *Service) logBootstrapZipStart(id int64, uploaderPath string) {
-	s.broadcastBootstrapLog(bootstrapLogInput{
+	zipStartLog := bootstrapLogInput{
 		Level:   loglevel.Info,
 		SiteId:  id,
 		Message: "Creating plugin ZIP archive",
 		Details: toJson(ZipCreationDetails{SiteId: id, Path: uploaderPath}),
-	})
+	}
+	s.broadcastBootstrapLog(zipStartLog)
 }
 
 // logBootstrapError broadcasts a bootstrap error log entry.
 func (s *Service) logBootstrapError(id int64, message string) {
-	s.broadcastBootstrapLog(bootstrapLogInput{
+	errorLog := bootstrapLogInput{
 		Level:   loglevel.Error,
 		SiteId:  id,
 		Message: message,
 		Details: toJson(SiteIdDetail{SiteId: id}),
-	})
+	}
+	s.broadcastBootstrapLog(errorLog)
 }
 
 // logBootstrapInfo broadcasts a bootstrap info log entry.
 func (s *Service) logBootstrapInfo(id int64, message string) {
-	s.broadcastBootstrapLog(bootstrapLogInput{
+	infoLog := bootstrapLogInput{
 		Level:   loglevel.Info,
 		SiteId:  id,
 		Message: message,
 		Details: toJson(SiteIdDetail{SiteId: id}),
-	})
+	}
+	s.broadcastBootstrapLog(infoLog)
 }
 
 // bootstrapLogInput bundles parameters for broadcastBootstrapLog.
