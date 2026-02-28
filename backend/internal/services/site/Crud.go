@@ -229,6 +229,16 @@ func (s *Service) updateConnectionStatus(ctx context.Context, id int64, status s
 
 // validateInput validates the create input.
 func (s *Service) validateInput(input CreateInput) *apperror.AppError {
+	appErr := validateRequiredFields(input)
+	if appErr != nil {
+		return appErr
+	}
+
+	return validateUrlFormat(input.Url)
+}
+
+// validateRequiredFields checks that all required fields are present.
+func validateRequiredFields(input CreateInput) *apperror.AppError {
 	isNameMissing := input.Name == ""
 
 	if isNameMissing {
@@ -241,6 +251,11 @@ func (s *Service) validateInput(input CreateInput) *apperror.AppError {
 		return apperror.New(apperror.ErrValidation, "URL is required")
 	}
 
+	return validateCredentialFields(input)
+}
+
+// validateCredentialFields checks username and password presence.
+func validateCredentialFields(input CreateInput) *apperror.AppError {
 	isUsernameMissing := input.Username == ""
 
 	if isUsernameMissing {
@@ -253,7 +268,12 @@ func (s *Service) validateInput(input CreateInput) *apperror.AppError {
 		return apperror.New(apperror.ErrValidation, "application password is required")
 	}
 
-	_, err := url.Parse(input.Url)
+	return nil
+}
+
+// validateUrlFormat validates the URL can be parsed.
+func validateUrlFormat(rawUrl string) *apperror.AppError {
+	_, err := url.Parse(rawUrl)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrValidation, "invalid URL format")
 	}

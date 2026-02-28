@@ -47,19 +47,28 @@ func (c *Client) TestConnection() apperror.Result[*ConnectionInfo] {
 		URL: c.baseURL,
 	}
 
+	appErr := c.runPreAuthSteps(result)
+	if appErr != nil {
+
+		return apperror.Fail[*ConnectionInfo](appErr)
+	}
+
+	return c.runPostAuthSteps(result)
+}
+
+// runPreAuthSteps executes REST API probe and authentication.
+func (c *Client) runPreAuthSteps(result *ConnectionInfo) *apperror.AppError {
 	appErr := c.probeRestAPI(result)
 	if appErr != nil {
-
-		return apperror.Fail[*ConnectionInfo](appErr)
+		return appErr
 	}
 
-	appErr = c.authenticateAndParseUser(result)
-	if appErr != nil {
+	return c.authenticateAndParseUser(result)
+}
 
-		return apperror.Fail[*ConnectionInfo](appErr)
-	}
-
-	appErr = c.testPluginAccess(result)
+// runPostAuthSteps executes plugin access check and write permission test.
+func (c *Client) runPostAuthSteps(result *ConnectionInfo) apperror.Result[*ConnectionInfo] {
+	appErr := c.testPluginAccess(result)
 	if appErr != nil {
 
 		return apperror.Fail[*ConnectionInfo](appErr)

@@ -73,14 +73,22 @@ func (s *Service) isPhpErrorResultEmpty(ref *remoteActionRef, result *wordpress.
 
 // attachPhpErrorEntries collects and attaches PHP error entries to the error details.
 func (s *Service) attachPhpErrorEntries(ref *remoteActionRef, result *wordpress.RemoteErrorSessionsResult, errDetails *ExtractedErrorDetails) {
-	phpErrors := collectPhpErrorEntries(result.Entries)
-	errDetails.RemotePhpErrors = phpErrors
+	populatePhpErrorDetails(result, errDetails)
+	s.logPhpErrorAttachment(ref, result)
+}
+
+// populatePhpErrorDetails fills error details with collected PHP errors and flash state.
+func populatePhpErrorDetails(result *wordpress.RemoteErrorSessionsResult, errDetails *ExtractedErrorDetails) {
+	errDetails.RemotePhpErrors = collectPhpErrorEntries(result.Entries)
 	errDetails.RemotePhpErrorCount = len(result.Entries)
 
 	if result.Flash.HasUnseen {
 		errDetails.RemotePhpFlashUnseen = result.Flash.UnseenCount
 	}
+}
 
+// logPhpErrorAttachment logs the PHP error retrieval and writes entries to session.
+func (s *Service) logPhpErrorAttachment(ref *remoteActionRef, result *wordpress.RemoteErrorSessionsResult) {
 	countDetail := PhpErrorCountDetail{
 		PhpErrorCount: len(result.Entries),
 	}

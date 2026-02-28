@@ -87,16 +87,30 @@ func (p *publishContext) stageComplete(input stageCompleteInput) StageCompleteIn
 func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts PublishOptions) apperror.Result[PublishResult] {
 	result := s.initPublishResult()
 
-	initResult, appErr := s.initPublishContext(ctx, initPublishInput{
+	initInput := initPublishInput{
 		PluginID: pluginID,
 		SiteID:   siteID,
 		Result:   result,
-	})
+	}
+
+	initResult, appErr := s.initPublishContext(ctx, initInput)
 	if appErr != nil {
 
 		return apperror.Ok(*result)
 	}
 
+	return s.startAndExecutePublish(ctx, pluginID, siteID, opts, result, initResult)
+}
+
+// startAndExecutePublish broadcasts start, builds context, and runs the pipeline.
+func (s *Service) startAndExecutePublish(
+	ctx context.Context,
+	pluginID int64,
+	siteID int64,
+	opts PublishOptions,
+	result *PublishResult,
+	initResult *publishInitResult,
+) apperror.Result[PublishResult] {
 	result.SessionId = initResult.SessionID
 	s.broadcastPublishStart(pluginID, siteID, initResult)
 
