@@ -13,7 +13,9 @@ func NormalizePluginSlug(slug string) (string, *AppError) {
 	}
 
 	if strings.Contains(slug, "/") {
-		if !strings.HasSuffix(slug, ".php") {
+		isPhpExtensionMissing := !strings.HasSuffix(slug, ".php")
+
+		if isPhpExtensionMissing {
 			slug = slug + ".php"
 		}
 		return slug, nil

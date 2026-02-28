@@ -82,8 +82,11 @@ func hasExcludedPrefix(funcName string) bool {
 
 // isOwnModule checks if the function belongs to our module.
 func isOwnModule(funcName string) bool {
-	if !strings.Contains(funcName, ".") {
+	isPlainName := !strings.Contains(funcName, ".")
+
+	if isPlainName {
 		return false
 	}
+
 	return strings.Contains(funcName, "wp-plugin-publish/")
 }

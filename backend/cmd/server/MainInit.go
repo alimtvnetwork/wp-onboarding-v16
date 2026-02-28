@@ -29,7 +29,9 @@ import (
 func initPluginCaches(services *Services, log *logger.Logger) {
 	ctx := context.Background()
 	pluginResult := services.Plugin.List(ctx)
-	if !pluginResult.IsSafe() {
+	isListFailed := !pluginResult.IsSafe()
+
+	if isListFailed {
 		return
 	}
 	for _, p := range pluginResult.Items() {

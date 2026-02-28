@@ -37,7 +37,9 @@ func writeDetailsSection(b *strings.Builder, e *AppError) {
 
 // writeValuesSection writes injected variable values if present.
 func writeValuesSection(b *strings.Builder, e *AppError) {
-	if !e.HasValues() {
+	isValuesEmpty := !e.HasValues()
+
+	if isValuesEmpty {
 		return
 	}
 
@@ -61,7 +63,9 @@ func writeLocationSection(b *strings.Builder, e *AppError) {
 
 // writeDiagnosticSection writes diagnostic fields if present.
 func writeDiagnosticSection(b *strings.Builder, e *AppError) {
-	if !e.Diagnostic.HasFields() {
+	isDiagnosticsEmpty := !e.Diagnostic.HasFields()
+
+	if isDiagnosticsEmpty {
 		return
 	}
 

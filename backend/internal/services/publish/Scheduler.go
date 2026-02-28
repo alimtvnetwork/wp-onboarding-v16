@@ -335,7 +335,9 @@ func parseWeeklySchedule(expr string, now time.Time, loc *time.Location) (time.T
 	daysUntil := (int(targetDay) - int(now.Weekday()) + 7) % 7
 	if daysUntil == 0 {
 		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
-		if !next.Before(now) {
+		isFutureToday := !next.Before(now)
+
+		if isFutureToday {
 			return next, nil
 		}
 		daysUntil = 7

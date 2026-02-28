@@ -56,7 +56,9 @@ func appendDetails(b *strings.Builder, e *AppError) {
 
 // appendValues writes the values section if present.
 func appendValues(b *strings.Builder, e *AppError) {
-	if !e.HasValues() {
+	isValuesEmpty := !e.HasValues()
+
+	if isValuesEmpty {
 		return
 	}
 
@@ -68,7 +70,9 @@ func appendValues(b *strings.Builder, e *AppError) {
 
 // appendDiagnostics writes diagnostic fields if present.
 func appendDiagnostics(b *strings.Builder, e *AppError) {
-	if !e.Diagnostic.HasFields() {
+	isDiagnosticsEmpty := !e.Diagnostic.HasFields()
+
+	if isDiagnosticsEmpty {
 		return
 	}
 
