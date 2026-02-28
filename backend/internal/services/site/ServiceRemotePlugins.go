@@ -34,20 +34,22 @@ type RemotePluginsResult struct {
 }
 
 // GetRemotePlugins fetches all plugins installed on a remote WordPress site (with caching)
-func (s *Service) GetRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
+func (s *Service) GetRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, *apperror.AppError) {
 	return s.GetRemotePluginsWithCache(ctx, siteId, false)
 }
 
 // GetRemotePluginsWithCache fetches remote plugins with optional cache bypass
-func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, isForceRefresh bool) ([]RemotePlugin, error) {
+func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, isForceRefresh bool) ([]RemotePlugin, *apperror.AppError) {
 	isUseCache := !isForceRefresh
 	isCacheUsable :=
 		s.isCacheEnabled &&
 		isUseCache
 
 	if isCacheUsable {
-		if cached, err := s.getRemotePluginsFromCache(ctx, siteId); err == nil && cached != nil {
+		cached, cacheErr := s.getRemotePluginsFromCache(ctx, siteId)
+		if cacheErr == nil && cached != nil {
 			s.log.Debug("Remote plugins loaded from cache", "siteId", siteId, "count", len(cached))
+
 			return cached, nil
 		}
 	}
@@ -56,16 +58,17 @@ func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteId int64, i
 }
 
 // fetchAndCachePlugins fetches fresh plugins and stores them in cache.
-func (s *Service) fetchAndCachePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
-	plugins, err := s.fetchRemotePlugins(ctx, siteId)
-	if err != nil {
-		return nil, err
+func (s *Service) fetchAndCachePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, *apperror.AppError) {
+	plugins, fetchErr := s.fetchRemotePlugins(ctx, siteId)
+	if fetchErr != nil {
+
+		return nil, fetchErr
 	}
 
 	if s.isCacheEnabled {
-		err := s.cacheRemotePlugins(ctx, siteId, plugins)
-		if err != nil {
-			s.log.Warn("Failed to cache remote plugins", "siteId", siteId, "error", err)
+		cacheErr := s.cacheRemotePlugins(ctx, siteId, plugins)
+		if cacheErr != nil {
+			s.log.Warn("Failed to cache remote plugins", "siteId", siteId, "error", cacheErr)
 		}
 	}
 
@@ -73,21 +76,24 @@ func (s *Service) fetchAndCachePlugins(ctx context.Context, siteId int64) ([]Rem
 }
 
 // fetchRemotePlugins fetches plugins directly from the remote WordPress site.
-func (s *Service) fetchRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
-	client, err := s.createWPClient(ctx, siteId)
-	if err != nil {
-		return nil, err
+func (s *Service) fetchRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, *apperror.AppError) {
+	client, clientErr := s.createWPClient(ctx, siteId)
+	if clientErr != nil {
+
+		return nil, clientErr
 	}
 
 	uploaderPlugins, uploaderErr := client.ListPluginsViaUploader()
 	if uploaderErr != nil {
 		site, _ := s.resolveRemoteSite(ctx, siteId)
 		s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteId, "siteUrl", site.Url, "error", uploaderErr)
+
 		return nil, apperror.Wrap(uploaderErr, apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site.")
 	}
 
 	plugins := s.convertUploaderPlugins(siteId, uploaderPlugins)
 	s.log.Debug("Remote plugins fetched via Uploader API", "siteId", siteId, "count", len(plugins))
+
 	return plugins, nil
 }
 
@@ -152,7 +158,7 @@ func (s *Service) resolvePluginFile(siteId int64, p wordpress.UploaderPluginInfo
 }
 
 // getRemotePluginsFromCache retrieves cached plugins if not expired.
-func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
+func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteId int64) ([]RemotePlugin, *apperror.AppError) {
 	type cacheRow struct {
 		PluginsJson string
 		ExpiresAt   string
@@ -160,56 +166,68 @@ func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteId int64) (
 	result := dbutil.QueryOne[cacheRow](ctx, s.dbu, cacheSelectQuery, func(row *sql.Row) (cacheRow, error) {
 		var r cacheRow
 		err := row.Scan(&r.PluginsJson, &r.ExpiresAt)
+
 		return r, err
 	}, siteId)
 
 	if result.HasError() {
+
 		return nil, result.AppError()
 	}
+
 	if result.IsEmpty() {
+
 		return nil, nil
 	}
 
 	var plugins []RemotePlugin
-	err := json.Unmarshal([]byte(result.Value().PluginsJson), &plugins)
-	if err != nil {
+	unmarshalErr := json.Unmarshal([]byte(result.Value().PluginsJson), &plugins)
+	if unmarshalErr != nil {
 
-		return nil, err
+		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to unmarshal cached plugins")
 	}
+
 	return plugins, nil
 }
 
 // cacheRemotePlugins stores plugins in the cache.
-func (s *Service) cacheRemotePlugins(ctx context.Context, siteId int64, plugins []RemotePlugin) error {
-	pluginsJson, err := json.Marshal(plugins)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrInternal, "failed to marshal remote plugins for cache")
+func (s *Service) cacheRemotePlugins(ctx context.Context, siteId int64, plugins []RemotePlugin) *apperror.AppError {
+	pluginsJson, marshalErr := json.Marshal(plugins)
+	if marshalErr != nil {
+
+		return apperror.Wrap(marshalErr, apperror.ErrInternal, "failed to marshal remote plugins for cache")
 	}
 
 	expiresAt := time.Now().Add(time.Duration(s.cacheTTLMinutes) * time.Minute)
 	res := dbutil.Exec(ctx, s.dbu, cacheUpsertQuery, siteId, string(pluginsJson), expiresAt.Format("2006-01-02 15:04:05"))
 	if res.HasError() {
+
 		return res.AppError()
 	}
+
 	return nil
 }
 
 // ForceSyncRemotePlugins clears cache and fetches fresh data.
-func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, error) {
-	err := s.InvalidateRemotePluginsCache(ctx, siteId)
-	if err != nil {
-		s.log.Warn("Failed to invalidate cache before force sync", "siteId", siteId, "error", err)
+func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteId int64) ([]RemotePlugin, *apperror.AppError) {
+	invalidateErr := s.InvalidateRemotePluginsCache(ctx, siteId)
+	if invalidateErr != nil {
+		s.log.Warn("Failed to invalidate cache before force sync", "siteId", siteId, "error", invalidateErr)
 	}
+
 	return s.GetRemotePluginsWithCache(ctx, siteId, true)
 }
 
 // InvalidateRemotePluginsCache removes cached plugins for a site.
-func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteId int64) error {
+func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteId int64) *apperror.AppError {
 	res := dbutil.Exec(ctx, s.dbu, cacheDeleteQuery, siteId)
 	if res.HasError() {
+
 		return res.AppError()
 	}
+
 	s.log.Debug("Remote plugins cache invalidated", "siteId", siteId)
+
 	return nil
 }
 
@@ -227,13 +245,16 @@ type cacheTimestampStrings struct {
 }
 
 // GetRemotePluginsCacheStatus returns cache status for a site
-func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64) (*CacheStatus, error) {
-	timestamps, err := s.queryCacheTimestamps(ctx, siteId)
-	if err != nil {
-		return nil, err
+func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64) (*CacheStatus, *apperror.AppError) {
+	timestamps, queryErr := s.queryCacheTimestamps(ctx, siteId)
+	if queryErr != nil {
+
+		return nil, queryErr
 	}
+
 	if timestamps.CachedAt == "" {
 		result := &CacheStatus{}
+
 		return result, nil
 	}
 
@@ -241,21 +262,24 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64)
 }
 
 // queryCacheTimestamps fetches raw cache timestamps from the database.
-func (s *Service) queryCacheTimestamps(ctx context.Context, siteId int64) (*cacheTimestampStrings, error) {
+func (s *Service) queryCacheTimestamps(ctx context.Context, siteId int64) (*cacheTimestampStrings, *apperror.AppError) {
 	query := `SELECT CachedAt, ExpiresAt FROM RemotePluginsCache WHERE SiteId = ?`
 	var cachedAtStr, expiresAtStr string
 	err := s.db.QueryRowContext(ctx, query, siteId).Scan(&cachedAtStr, &expiresAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
+
 			return &cacheTimestampStrings{}, nil
 		}
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "query cache timestamps")
 	}
 
 	result := &cacheTimestampStrings{
 		CachedAt:  cachedAtStr,
 		ExpiresAt: expiresAtStr,
 	}
+
 	return result, nil
 }
 

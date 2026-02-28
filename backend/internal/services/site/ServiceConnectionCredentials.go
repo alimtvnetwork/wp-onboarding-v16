@@ -10,7 +10,7 @@ import (
 )
 
 // TestConnectionWithCredentials tests a connection without saving
-func (s *Service) TestConnectionWithCredentials(siteUrl, username, password string) (*ConnectionResult, error) {
+func (s *Service) TestConnectionWithCredentials(siteUrl, username, password string) (*ConnectionResult, *apperror.AppError) {
 	normalizedUrl := normalizeUrl(siteUrl)
 
 	s.broadcastCredentialsStart(normalizedUrl, siteUrl)
@@ -56,7 +56,7 @@ func (s *Service) buildCredentialsProgressCallback() func(wordpress.ProgressEven
 }
 
 // executeCredentialsTest runs the connection test with provided credentials.
-func (s *Service) executeCredentialsTest(client *wordpress.Client, normalizedUrl, username string) (*ConnectionResult, error) {
+func (s *Service) executeCredentialsTest(client *wordpress.Client, normalizedUrl, username string) (*ConnectionResult, *apperror.AppError) {
 	connInfo, appErr := client.TestConnection()
 	if appErr != nil {
 

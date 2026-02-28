@@ -22,12 +22,13 @@ type ConnectionResult struct {
 }
 
 // TestConnection verifies the WordPress REST API is accessible
-func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResult, error) {
+func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResult, *apperror.AppError) {
 	s.broadcastStartProgress(id)
 
-	prepared, err := s.prepareConnectionTest(ctx, id)
-	if err != nil {
-		return nil, err
+	prepared, prepErr := s.prepareConnectionTest(ctx, id)
+	if prepErr != nil {
+
+		return nil, prepErr
 	}
 
 	callback := s.buildProgressCallback(id)
@@ -66,29 +67,34 @@ type connectionTestContext struct {
 }
 
 // prepareConnectionTest loads the site and decrypts credentials.
-func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*connectionTestContext, error) {
-	site, err := s.loadSiteWithProgress(ctx, id)
-	if err != nil {
-		return nil, err
+func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*connectionTestContext, *apperror.AppError) {
+	site, siteErr := s.loadSiteWithProgress(ctx, id)
+	if siteErr != nil {
+
+		return nil, siteErr
 	}
 
-	password, err := s.decryptWithProgress(id, site.PasswordEncrypted)
-	if err != nil {
-		return nil, err
+	password, decryptErr := s.decryptWithProgress(id, site.PasswordEncrypted)
+	if decryptErr != nil {
+
+		return nil, decryptErr
 	}
 
 	return &connectionTestContext{Site: site, Password: password}, nil
 }
 
 // loadSiteWithProgress loads a site and broadcasts progress updates.
-func (s *Service) loadSiteWithProgress(ctx context.Context, id int64) (*models.Site, error) {
+func (s *Service) loadSiteWithProgress(ctx context.Context, id int64) (*models.Site, *apperror.AppError) {
 	siteResult := s.GetById(ctx, id)
 	if siteResult.HasError() {
 		s.broadcastSiteLoadFailure(id, siteResult.AppError())
+
 		return nil, siteResult.AppError()
 	}
+
 	site := siteResult.Value()
 	s.broadcastSiteLoadSuccess(id, site.Name)
+
 	return &site, nil
 }
 
@@ -171,7 +177,7 @@ type connTestRef struct {
 }
 
 // executeConnectionTest runs the connection test and processes the result.
-func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *models.Site, client *wordpress.Client) (*ConnectionResult, error) {
+func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *models.Site, client *wordpress.Client) (*ConnectionResult, *apperror.AppError) {
 	s.broadcastConnecting(id, site.Url)
 
 	ref := connTestRef{ID: id, Site: site}
@@ -180,6 +186,7 @@ func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *mod
 
 		return s.handleConnectionFailure(ctx, ref, appErr), nil
 	}
+
 	return s.handleConnectionSuccess(ctx, ref, connInfo), nil
 }
 
