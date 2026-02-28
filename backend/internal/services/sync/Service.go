@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
-	"wp-plugin-publish/internal/enums/change_type"
-	"wp-plugin-publish/internal/enums/sync_direction"
-	"wp-plugin-publish/internal/enums/sync_step"
+	changetype "wp-plugin-publish/internal/enums/changetype"
+	syncdirection "wp-plugin-publish/internal/enums/syncdirectiontype"
+	syncstep "wp-plugin-publish/internal/enums/syncsteptype"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/plugin"

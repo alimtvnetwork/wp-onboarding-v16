@@ -4,11 +4,11 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"wp-plugin-publish/internal/enums/action"
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/operation"
-	"wp-plugin-publish/internal/enums/stage_status"
+	action "wp-plugin-publish/internal/enums/actiontype"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operation "wp-plugin-publish/internal/enums/operationtype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

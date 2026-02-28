@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"wp-plugin-publish/internal/enums/log_level"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"
 )
