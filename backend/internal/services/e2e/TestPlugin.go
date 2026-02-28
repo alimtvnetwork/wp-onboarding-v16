@@ -65,7 +65,9 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 
 // verifyAndStorePlugin confirms the plugin list is non-empty and stores the cleanup ID.
 func (s *serviceImpl) verifyAndStorePlugin(resp *apiResponse) error {
-	if err := s.verifyPluginInList(); err != nil {
+	err := s.verifyPluginInList()
+
+	if err != nil {
 		return err
 	}
 
