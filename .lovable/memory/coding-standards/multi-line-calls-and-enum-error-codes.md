@@ -5,6 +5,10 @@ Updated: 2026-02-28
 
 All function/method calls with 3 or more arguments MUST use one argument per line. This applies across Go, PHP, and TypeScript.
 
+## Rule: Multi-Line Function Declarations (3+ Parameters)
+
+All function/method declarations with 3 or more parameters MUST place each parameter on its own line. Functions with 4+ parameters (excluding ctx) MUST be refactored to use an input struct.
+
 ## Rule: Multi-Line Compound Boolean Assignments (Rule 3a)
 
 When a boolean variable assignment has 2+ conditions joined by `&&` or `||`, each condition MUST be on its own line. Line break after `=`/`:=`, indent each condition, blank line before the `if`.

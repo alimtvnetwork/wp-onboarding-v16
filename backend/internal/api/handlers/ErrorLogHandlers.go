@@ -134,7 +134,13 @@ func respondStreamedLines(w http.ResponseWriter, logPath, logType string, tailLi
 	lines := tailSlice(allLines, tailLines)
 	fi, _ := pathutil.StatFile(logPath)
 
-	respondSuccess(w, buildLogLinesResponse(logPath, logType, allLines, lines, fi))
+	respondSuccess(w, buildLogLinesResponse(logLinesResponseInput{
+		LogPath:  logPath,
+		LogType:  logType,
+		AllLines: allLines,
+		Lines:    lines,
+		FileStat: fi,
+	}))
 }
 
 // tailSlice returns the last n items from a slice.
@@ -145,19 +151,29 @@ func tailSlice(items []string, n int) []string {
 	return items
 }
 
+// logLinesResponseInput bundles parameters for buildLogLinesResponse.
+type logLinesResponseInput struct {
+	LogPath  string
+	LogType  string
+	AllLines []string
+	Lines    []string
+	FileStat *pathutil.FileStatResult
+}
+
 // buildLogLinesResponse constructs the LogLinesResponse from parts.
-func buildLogLinesResponse(logPath, logType string, allLines, lines []string, fi *pathutil.FileStatResult) LogLinesResponse {
+func buildLogLinesResponse(input logLinesResponseInput) LogLinesResponse {
 	resp := LogLinesResponse{
-		Lines:      lines,
-		TotalLines: len(allLines),
-		Path:       logPath,
+		Lines:      input.Lines,
+		TotalLines: len(input.AllLines),
+		Path:       input.LogPath,
 		Exists:     true,
-		LogType:    logType,
+		LogType:    input.LogType,
 	}
-	if fi != nil {
-		resp.Size = fi.Info.Size()
-		resp.ModifiedAt = fi.Info.ModTime().Format(time.RFC3339)
+	if input.FileStat != nil {
+		resp.Size = input.FileStat.Info.Size()
+		resp.ModifiedAt = input.FileStat.Info.ModTime().Format(time.RFC3339)
 	}
+
 	return resp
 }
 

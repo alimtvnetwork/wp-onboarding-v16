@@ -22,7 +22,12 @@ func (s *Service) executeUploadStage(ctx context.Context, pctx *publishContext, 
 
 	stage := s.runStageWithSession(pctx.SessionId, "upload", func() error {
 		var err error
-		isAlreadyActivated, err = s.performUpload(ctx, pctx, zipPath, uploadStartTime)
+		isAlreadyActivated, err = s.performUpload(performUploadInput{
+			Ctx:       ctx,
+			Pctx:      pctx,
+			ZipPath:   zipPath,
+			StartTime: uploadStartTime,
+		})
 
 		return err
 	})
@@ -30,18 +35,32 @@ func (s *Service) executeUploadStage(ctx context.Context, pctx *publishContext, 
 	return isAlreadyActivated, stage
 }
 
-// performUpload handles the upload retry and result logging.
-func (s *Service) performUpload(ctx context.Context, pctx *publishContext, zipPath string, startTime time.Time) (bool, error) {
-	zipSize := getFileSize(zipPath)
-	s.broadcastProgress(pctx.progress(publishstep.Uploading, 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
+// performUploadInput bundles parameters for performUpload.
+type performUploadInput struct {
+	Ctx       context.Context
+	Pctx      *publishContext
+	ZipPath   string
+	StartTime time.Time
+}
 
-	uploadOutcome, retryResult := s.attemptUploadWithRetry(ctx, pctx, zipPath)
+// performUpload handles the upload retry and result logging.
+func (s *Service) performUpload(input performUploadInput) (bool, error) {
+	zipSize := getFileSize(input.ZipPath)
+	s.broadcastProgress(input.Pctx.progress(publishstep.Uploading, 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
+
+	uploadOutcome, retryResult := s.attemptUploadWithRetry(input.Ctx, input.Pctx, input.ZipPath)
 
 	if retryResult.LastError != nil {
-		return false, s.handleUploadRetryFailure(pctx, retryResult)
+		return false, s.handleUploadRetryFailure(input.Pctx, retryResult)
 	}
 
-	s.logUploadOutcome(pctx, uploadOutcome, zipSize, startTime, retryResult.Attempts)
+	s.logUploadOutcome(uploadOutcomeLogInput{
+		Pctx:      input.Pctx,
+		Outcome:   uploadOutcome,
+		ZipSize:   zipSize,
+		StartTime: input.StartTime,
+		Attempts:  retryResult.Attempts,
+	})
 
 	return uploadOutcome.IsActivated, nil
 }
@@ -67,27 +86,36 @@ func (s *Service) handleUploadRetryFailure(pctx *publishContext, retryResult Ret
 	return apperror.Wrap(retryResult.LastError, apperror.ErrWPConnection, "plugin upload failed")
 }
 
+// uploadOutcomeLogInput bundles parameters for logUploadOutcome and logPerformedUpload.
+type uploadOutcomeLogInput struct {
+	Pctx      *publishContext
+	Outcome   UploadOutcome
+	ZipSize   int64
+	StartTime time.Time
+	Attempts  int
+}
+
 // logUploadOutcome logs the upload result based on whether it was performed.
-func (s *Service) logUploadOutcome(pctx *publishContext, outcome UploadOutcome, zipSize int64, startTime time.Time, attempts int) {
-	if outcome.IsPerformed {
-		s.logPerformedUpload(pctx, outcome, zipSize, startTime, attempts)
+func (s *Service) logUploadOutcome(input uploadOutcomeLogInput) {
+	if input.Outcome.IsPerformed {
+		s.logPerformedUpload(input)
 
 		return
 	}
 
-	s.logSimulatedUpload(pctx)
+	s.logSimulatedUpload(input.Pctx)
 }
 
 // logPerformedUpload logs a real upload that was performed.
-func (s *Service) logPerformedUpload(pctx *publishContext, outcome UploadOutcome, zipSize int64, startTime time.Time, attempts int) {
+func (s *Service) logPerformedUpload(input uploadOutcomeLogInput) {
 	successInput := logUploadSuccessInput{
-		ZipSize:      zipSize,
-		StartTime:    startTime,
-		IsActivated:  outcome.IsActivated,
-		Attempts:     attempts,
-		UploadResult: outcome.UploadResult,
+		ZipSize:      input.ZipSize,
+		StartTime:    input.StartTime,
+		IsActivated:  input.Outcome.IsActivated,
+		Attempts:     input.Attempts,
+		UploadResult: input.Outcome.UploadResult,
 	}
-	s.logUploadSuccess(pctx, successInput)
+	s.logUploadSuccess(input.Pctx, successInput)
 }
 
 // logSimulatedUpload logs a simulated upload when no companion plugin is available.

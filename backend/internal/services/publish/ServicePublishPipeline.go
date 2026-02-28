@@ -195,12 +195,12 @@ func (s *Service) broadcastUploadComplete(pctx *publishContext, uploadStage Stag
 		RemoteSlug: pctx.Mapping.RemoteSlug,
 		Activated:  isAlreadyActivated,
 	})
-	uploadComplete := pctx.stageComplete(
-		publishstep.Upload,
-		uploadStage.Status.String(),
-		uploadStage.Duration,
-		uploadDetails,
-	)
+	uploadComplete := pctx.stageComplete(stageCompleteInput{
+		StageName:  publishstep.Upload,
+		Status:     uploadStage.Status.String(),
+		DurationMs: uploadStage.Duration,
+		Details:    uploadDetails,
+	})
 	s.broadcastStageComplete(uploadComplete)
 }
 
@@ -230,12 +230,12 @@ func (s *Service) broadcastActivateComplete(pctx *publishContext, activateStage 
 		RemoteSlug: pctx.Mapping.RemoteSlug,
 		Skipped:    isAlreadyActivated,
 	})
-	activateComplete := pctx.stageComplete(
-		publishstep.Activate,
-		activateStage.Status.String(),
-		activateStage.Duration,
-		activateDetails,
-	)
+	activateComplete := pctx.stageComplete(stageCompleteInput{
+		StageName:  publishstep.Activate,
+		Status:     activateStage.Status.String(),
+		DurationMs: activateStage.Duration,
+		Details:    activateDetails,
+	})
 	s.broadcastStageComplete(activateComplete)
 }
 
@@ -244,7 +244,12 @@ func (s *Service) handleActivateResult(ctx context.Context, pctx *publishContext
 	if activateStage.Status.IsFailed() {
 		pctx.Result.ActivationStatus = loglevel.Error.Lower()
 		pctx.Result.ErrorMessage = activateStage.Message
-		s.handleRollback(ctx, pctx, preUploadBackupZip, activateStage)
+		s.handleRollback(rollbackInput{
+			Ctx:                ctx,
+			Pctx:               pctx,
+			PreUploadBackupZip: preUploadBackupZip,
+			ActivateStage:      activateStage,
+		})
 	} else {
 		pctx.Result.ActivationStatus = pluginstatus.Active.String()
 	}
