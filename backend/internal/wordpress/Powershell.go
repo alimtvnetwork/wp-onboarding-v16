@@ -48,12 +48,16 @@ type psJsonOutput struct {
 // RunPowerShellUpload executes the upload-plugin.ps1 script with the given configuration.
 // It passes config as inline JSON for direct invocation from the app.
 func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(line string)) (*PowerShellResult, error) {
-	if runtime.GOOS != "windows" {
+	isNotWindows := runtime.GOOS != "windows"
+
+	if isNotWindows {
+
 		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
 
 	configBytes, err := json.Marshal(cfg)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrPublishConfig, "failed to marshal PowerShell config")
 	}
 
@@ -78,6 +82,7 @@ func buildPsJsonConfigArgs(scriptPath, jsonConfig string) []string {
 // emitPsStartLog logs the start of a PowerShell upload if callback is set.
 func emitPsStartLog(onOutput func(line string), pluginPath, siteURL string) {
 	if onOutput == nil {
+
 		return
 	}
 
@@ -101,13 +106,17 @@ type DirectUploadInput struct {
 // RunPowerShellUploadDirect executes the upload script with direct command-line parameters.
 // This is simpler than JSON config and works well for programmatic invocation.
 func RunPowerShellUploadDirect(input DirectUploadInput) (*PowerShellResult, error) {
-	if runtime.GOOS != "windows" {
+	isNotWindows := runtime.GOOS != "windows"
+
+	if isNotWindows {
+
 		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
 
 	args := buildPsDirectArgs(input)
 
-	if input.OnOutput != nil {
+	hasOutputCallback := input.OnOutput != nil
+	if hasOutputCallback {
 		input.OnOutput("Executing PowerShell upload...")
 	}
 
@@ -129,7 +138,8 @@ func buildPsDirectArgs(input DirectUploadInput) []string {
 		"-DeleteZip",
 	}
 
-	if input.Slug != "" {
+	hasSlug := input.Slug != ""
+	if hasSlug {
 		args = append(args, "-Slug", input.Slug)
 	}
 
@@ -167,7 +177,8 @@ func buildPsResult(cmd *exec.Cmd, stdout, stderr *bytes.Buffer) *PowerShellResul
 		Stderr:    stderr.String(),
 	}
 
-	if cmd.ProcessState != nil {
+	hasProcessState := cmd.ProcessState != nil
+	if hasProcessState {
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 
@@ -176,12 +187,16 @@ func buildPsResult(cmd *exec.Cmd, stdout, stderr *bytes.Buffer) *PowerShellResul
 
 // parsePsJsonOutput parses JSON from PowerShell stdout quiet mode.
 func parsePsJsonOutput(result *PowerShellResult) {
-	if result.Stdout == "" {
+	isStdoutEmpty := result.Stdout == ""
+
+	if isStdoutEmpty {
+
 		return
 	}
 
 	var jsonResult psJsonOutput
 	if err := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); err != nil {
+
 		return
 	}
 
@@ -193,14 +208,20 @@ func parsePsJsonOutput(result *PowerShellResult) {
 
 // streamPsStderr streams stderr lines to the output callback.
 func streamPsStderr(result *PowerShellResult, onOutput func(line string)) {
-	if onOutput == nil || result.Stderr == "" {
+	hasNoCallback := onOutput == nil
+	isStderrEmpty := result.Stderr == ""
+	isSkippable := hasNoCallback || isStderrEmpty
+
+	if isSkippable {
+
 		return
 	}
 
 	for _, line := range strings.Split(result.Stderr, "\n") {
 		line = strings.TrimSpace(line)
 
-		if line != "" {
+		hasContent := line != ""
+		if hasContent {
 			onOutput("[PS] " + line)
 		}
 	}
@@ -208,11 +229,18 @@ func streamPsStderr(result *PowerShellResult, onOutput func(line string)) {
 
 // finalizePsResult sets final success/error state on the result.
 func finalizePsResult(result *PowerShellResult, err error) {
-	if err != nil && result.ErrorMessage == "" {
+	hasError := err != nil
+	hasNoErrorMessage := result.ErrorMessage == ""
+	isUnreportedError := hasError && hasNoErrorMessage
+
+	if isUnreportedError {
 		result.ErrorMessage = err.Error()
 	}
 
-	if result.ExitCode == 0 && result.ErrorMessage == "" {
+	isZeroExit := result.ExitCode == 0
+	isCleanResult := isZeroExit && hasNoErrorMessage
+
+	if isCleanResult {
 		result.IsSuccess = true
 	}
 }
@@ -223,7 +251,10 @@ func FindUploadScript(backendDir string) string {
 
 	for _, path := range candidates {
 		resolved := resolveScriptPath(path)
-		if resolved != "" {
+		hasResolved := resolved != ""
+
+		if hasResolved {
+
 			return resolved
 		}
 	}
@@ -251,11 +282,13 @@ func buildScriptCandidates(backendDir string) []string {
 // resolveScriptPath checks if a path exists and returns its absolute form.
 func resolveScriptPath(path string) string {
 	if pathutil.IsFileMissing(path) {
+
 		return ""
 	}
 
 	absPath, err := pathutil.ToAbsolute(path)
 	if err != nil {
+
 		return path
 	}
 
@@ -264,10 +297,15 @@ func resolveScriptPath(path string) string {
 
 // IsPowerShellAvailable checks if PowerShell is available on the system.
 func IsPowerShellAvailable() bool {
-	if runtime.GOOS != "windows" {
+	isNotWindows := runtime.GOOS != "windows"
+
+	if isNotWindows {
+
 		return false
 	}
 
 	_, err := exec.LookPath("powershell.exe")
-	return err == nil
+	isAvailable := err == nil
+
+	return isAvailable
 }

@@ -12,15 +12,23 @@ import (
 
 // ParseDateTime parses SQLite datetime strings into time.Time.
 func ParseDateTime(s string) time.Time {
-	if strings.TrimSpace(s) == "" {
+	isBlank := strings.TrimSpace(s) == ""
+
+	if isBlank {
+
 		return time.Time{}
 	}
+
 	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+
 		return t
 	}
+
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
+
 		return t
 	}
+
 	return time.Time{}
 }
 
@@ -77,71 +85,112 @@ type OperationFields struct {
 // toKeyvals converts the struct to a flat key-value slice for the logger.
 func (f OperationFields) toKeyvals() []any {
 	var kv []any
+
 	// Domain fields
-	if f.SiteID != 0 {
+	hasSiteID := f.SiteID != 0
+	if hasSiteID {
 		kv = append(kv, "siteId", f.SiteID)
 	}
-	if f.PluginID != 0 {
+
+	hasPluginID := f.PluginID != 0
+	if hasPluginID {
 		kv = append(kv, "pluginId", f.PluginID)
 	}
-	if f.MappingID != 0 {
+
+	hasMappingID := f.MappingID != 0
+	if hasMappingID {
 		kv = append(kv, "mappingId", f.MappingID)
 	}
-	if f.URL != "" {
+
+	hasURL := f.URL != ""
+	if hasURL {
 		kv = append(kv, "url", f.URL)
 	}
-	if f.Path != "" {
+
+	hasPath := f.Path != ""
+	if hasPath {
 		kv = append(kv, "path", f.Path)
 	}
-	if f.RemoteSlug != "" {
+
+	hasRemoteSlug := f.RemoteSlug != ""
+	if hasRemoteSlug {
 		kv = append(kv, "remoteSlug", f.RemoteSlug)
 	}
-	if f.PluginName != "" {
+
+	hasPluginName := f.PluginName != ""
+	if hasPluginName {
 		kv = append(kv, "pluginName", f.PluginName)
 	}
-	if f.SiteName != "" {
+
+	hasSiteName := f.SiteName != ""
+	if hasSiteName {
 		kv = append(kv, "siteName", f.SiteName)
 	}
-	if f.Version != "" {
+
+	hasVersion := f.Version != ""
+	if hasVersion {
 		kv = append(kv, "version", f.Version)
 	}
-	if f.Category != "" {
+
+	hasCategory := f.Category != ""
+	if hasCategory {
 		kv = append(kv, "category", f.Category)
 	}
+
 	// Operation fields
-	if f.Table != "" {
+	hasTable := f.Table != ""
+	if hasTable {
 		kv = append(kv, "table", f.Table)
 	}
-	if f.Operation != "" {
+
+	hasOperation := f.Operation != ""
+	if hasOperation {
 		kv = append(kv, "operation", f.Operation)
 	}
-	if f.AffectedRows != 0 {
+
+	hasAffectedRows := f.AffectedRows != 0
+	if hasAffectedRows {
 		kv = append(kv, "affectedRows", f.AffectedRows)
 	}
-	if f.Caller != "" {
+
+	hasCaller := f.Caller != ""
+	if hasCaller {
 		kv = append(kv, "caller", f.Caller)
 	}
-	if f.Error != "" {
+
+	hasError := f.Error != ""
+	if hasError {
 		kv = append(kv, "error", f.Error)
 	}
-	if f.StackTrace != "" {
+
+	hasStackTrace := f.StackTrace != ""
+	if hasStackTrace {
 		kv = append(kv, "stackTrace", f.StackTrace)
 	}
-	if f.ID != 0 {
+
+	hasID := f.ID != 0
+	if hasID {
 		kv = append(kv, "id", f.ID)
 	}
+
 	if f.Created {
 		kv = append(kv, "created", f.Created)
 	}
+
 	if f.Exists {
 		kv = append(kv, "exists", f.Exists)
 	}
-	if f.LastInsertID != 0 {
+
+	hasLastInsertID := f.LastInsertID != 0
+	if hasLastInsertID {
 		kv = append(kv, "lastInsertId", f.LastInsertID)
 	}
-	if f.Note != "" {
+
+	hasNote := f.Note != ""
+	if hasNote {
 		kv = append(kv, "note", f.Note)
 	}
+
 	return kv
 }
 
@@ -163,19 +212,28 @@ func captureStackTrace(skip int) string {
 		}
 		fn := runtime.FuncForPC(pc)
 		fnName := "unknown"
-		if fn != nil {
+
+		hasFn := fn != nil
+		if hasFn {
 			fnName = fn.Name()
 			idx := strings.LastIndex(fnName, "/")
-			if idx != -1 {
+			hasSlash := idx != -1
+
+			if hasSlash {
 				fnName = fnName[idx+1:]
 			}
 		}
+
 		fileIdx := strings.LastIndex(file, "/")
-		if fileIdx != -1 {
+		hasFileSlash := fileIdx != -1
+
+		if hasFileSlash {
 			file = file[fileIdx+1:]
 		}
+
 		stack.WriteString(fmt.Sprintf("  at %s (%s:%d)\n", fnName, file, line))
 	}
+
 	return stack.String()
 }
 
@@ -183,80 +241,126 @@ func captureStackTrace(skip int) string {
 func getCallerInfo(skip int) (file string, line int) {
 	_, file, line, ok := runtime.Caller(skip)
 	if !ok {
+
 		return "unknown", 0
 	}
+
 	idx := strings.LastIndex(file, "/")
-	if idx != -1 {
+	hasSlash := idx != -1
+
+	if hasSlash {
 		file = file[idx+1:]
 	}
+
 	return file, line
 }
 
 // mergeFields overlays non-zero extra fields onto base.
 func mergeFields(base, extra OperationFields) OperationFields {
 	result := base
-	if extra.SiteID != 0 {
+
+	hasSiteID := extra.SiteID != 0
+	if hasSiteID {
 		result.SiteID = extra.SiteID
 	}
-	if extra.PluginID != 0 {
+
+	hasPluginID := extra.PluginID != 0
+	if hasPluginID {
 		result.PluginID = extra.PluginID
 	}
-	if extra.MappingID != 0 {
+
+	hasMappingID := extra.MappingID != 0
+	if hasMappingID {
 		result.MappingID = extra.MappingID
 	}
-	if extra.URL != "" {
+
+	hasURL := extra.URL != ""
+	if hasURL {
 		result.URL = extra.URL
 	}
-	if extra.Path != "" {
+
+	hasPath := extra.Path != ""
+	if hasPath {
 		result.Path = extra.Path
 	}
-	if extra.RemoteSlug != "" {
+
+	hasRemoteSlug := extra.RemoteSlug != ""
+	if hasRemoteSlug {
 		result.RemoteSlug = extra.RemoteSlug
 	}
-	if extra.PluginName != "" {
+
+	hasPluginName := extra.PluginName != ""
+	if hasPluginName {
 		result.PluginName = extra.PluginName
 	}
-	if extra.SiteName != "" {
+
+	hasSiteName := extra.SiteName != ""
+	if hasSiteName {
 		result.SiteName = extra.SiteName
 	}
-	if extra.Version != "" {
+
+	hasVersion := extra.Version != ""
+	if hasVersion {
 		result.Version = extra.Version
 	}
-	if extra.Category != "" {
+
+	hasCategory := extra.Category != ""
+	if hasCategory {
 		result.Category = extra.Category
 	}
-	if extra.Table != "" {
+
+	hasTable := extra.Table != ""
+	if hasTable {
 		result.Table = extra.Table
 	}
-	if extra.Operation != "" {
+
+	hasOperation := extra.Operation != ""
+	if hasOperation {
 		result.Operation = extra.Operation
 	}
-	if extra.AffectedRows != 0 {
+
+	hasAffectedRows := extra.AffectedRows != 0
+	if hasAffectedRows {
 		result.AffectedRows = extra.AffectedRows
 	}
-	if extra.Caller != "" {
+
+	hasCaller := extra.Caller != ""
+	if hasCaller {
 		result.Caller = extra.Caller
 	}
-	if extra.Error != "" {
+
+	hasError := extra.Error != ""
+	if hasError {
 		result.Error = extra.Error
 	}
-	if extra.StackTrace != "" {
+
+	hasStackTrace := extra.StackTrace != ""
+	if hasStackTrace {
 		result.StackTrace = extra.StackTrace
 	}
-	if extra.ID != 0 {
+
+	hasID := extra.ID != 0
+	if hasID {
 		result.ID = extra.ID
 	}
+
 	if extra.IsCreated {
 		result.IsCreated = extra.IsCreated
 	}
+
 	if extra.IsExists {
 		result.IsExists = extra.IsExists
 	}
-	if extra.LastInsertID != 0 {
+
+	hasLastInsertID := extra.LastInsertID != 0
+	if hasLastInsertID {
 		result.LastInsertID = extra.LastInsertID
 	}
-	if extra.Note != "" {
+
+	hasNote := extra.Note != ""
+	if hasNote {
 		result.Note = extra.Note
 	}
+
 	return result
 }
