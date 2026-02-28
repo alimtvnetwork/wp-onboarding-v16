@@ -3,29 +3,17 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"io"
-	"os"
-	"os/exec"
-	"os/signal"
 	"regexp"
-	"runtime"
 	"strings"
-	"syscall"
-	"time"
 
 	"wp-plugin-publish/internal/api"
-	"wp-plugin-publish/internal/api/handlers"
 	"wp-plugin-publish/internal/config"
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/envelope"
 	"wp-plugin-publish/internal/logger"
-	"wp-plugin-publish/internal/services/e2e"
-	"wp-plugin-publish/internal/services/request_session"
 	"wp-plugin-publish/internal/version"
 	"wp-plugin-publish/internal/ws"
-	"wp-plugin-publish/pkg/portutil"
 )
 
 var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -78,9 +66,15 @@ func bootstrapServer(cfg *config.Config, log *logger.Logger, versionInfo *versio
 	initPluginCaches(services, log)
 
 	reqStore := initRequestSessionStore(cfg, log)
-	initE2EService(cfg, db, wsHub, log)
+	initE2EService(e2eInput{Cfg: cfg, DB: db, WSHub: wsHub, Log: log})
 
-	return buildServer(cfg, services, wsHub, log, reqStore)
+	return buildServer(serverBuildInput{
+		Cfg:      cfg,
+		Services: services,
+		WSHub:    wsHub,
+		Log:      log,
+		ReqStore: reqStore,
+	})
 }
 
 // loadConfig loads the application configuration.
