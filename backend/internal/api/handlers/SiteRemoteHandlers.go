@@ -120,9 +120,10 @@ func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
 
 // checkPluginExistsOrFail queries plugin existence and writes the response.
 func checkPluginExistsOrFail(w http.ResponseWriter, r *http.Request, parsed *remotePluginParsed) {
-	result, err := Services.SiteService.CheckRemotePluginExists(r.Context(), parsed.SiteID, parsed.PluginSlug)
-	if err != nil {
-		respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), apperror.ErrWPPluginDelete, err.Error(), err)
+	result, appErr := Services.SiteService.CheckRemotePluginExists(r.Context(), parsed.SiteID, parsed.PluginSlug)
+
+	if appErr != nil {
+		respondErrorWithSession(w, resolveHTTPStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPPluginDelete, appErr.Error(), appErr)
 
 		return
 	}
@@ -136,19 +137,23 @@ func checkPluginExistsOrFail(w http.ResponseWriter, r *http.Request, parsed *rem
 }
 
 // respondRemotePluginError writes an error response for remote plugin actions.
-func respondRemotePluginError(w http.ResponseWriter, errCode apperror.ErrorCode, err error) {
-	respondErrorWithSession(w, resolveHTTPStatus(err, wordpress.HttpStatusServerError), errCode, err.Error(), err)
+func respondRemotePluginError(w http.ResponseWriter, errCode apperror.ErrorCode, appErr *apperror.AppError) {
+	respondErrorWithSession(w, resolveHTTPStatus(appErr, wordpress.HttpStatusServerError), errCode, appErr.Error(), appErr)
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	parsed, ok := parseRemotePluginInputOrFail(w, r)
+
 	if !ok {
+
 		return
 	}
 
-	if err := Services.SiteService.EnableRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug); err != nil {
-		respondRemotePluginError(w, apperror.ErrWPPluginActivate, err)
+	appErr := Services.SiteService.EnableRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug)
+
+	if appErr != nil {
+		respondRemotePluginError(w, apperror.ErrWPPluginActivate, appErr)
 
 		return
 	}
@@ -159,12 +164,16 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
 func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	parsed, ok := parseRemotePluginInputOrFail(w, r)
+
 	if !ok {
+
 		return
 	}
 
-	if err := Services.SiteService.DisableRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug); err != nil {
-		respondRemotePluginError(w, apperror.ErrWPPluginActivate, err)
+	appErr := Services.SiteService.DisableRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug)
+
+	if appErr != nil {
+		respondRemotePluginError(w, apperror.ErrWPPluginActivate, appErr)
 
 		return
 	}
@@ -175,12 +184,16 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 // DeleteRemotePlugin removes a plugin from a remote WordPress site (POST with JSON body)
 func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	parsed, ok := parseRemotePluginInputOrFail(w, r)
+
 	if !ok {
+
 		return
 	}
 
-	if err := Services.SiteService.DeleteRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug); err != nil {
-		respondRemotePluginError(w, apperror.ErrWPPluginDelete, err)
+	appErr := Services.SiteService.DeleteRemotePlugin(r.Context(), parsed.SiteID, parsed.PluginSlug)
+
+	if appErr != nil {
+		respondRemotePluginError(w, apperror.ErrWPPluginDelete, appErr)
 
 		return
 	}

@@ -8,6 +8,7 @@ import (
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // SiteServiceInterface defines site service methods
@@ -27,10 +28,10 @@ type SiteServiceInterface interface {
 	GetRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, error)
 	ForceSyncRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, error)
 	InvalidateRemotePluginsCache(ctx context.Context, siteId int64) error
-	EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error
-	DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error
-	CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, error)
-	DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error
+	EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError
+	DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError
+	CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, *apperror.AppError)
+	DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError
 	GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*site.RemotePluginFilesResult, error)
 	GetRemotePluginFileContent(ctx context.Context, siteId int64, pluginSlug, filePath string) (string, error)
 
@@ -138,19 +139,23 @@ func (a *SiteServiceAdapter) InvalidateRemotePluginsCache(ctx context.Context, s
 	return a.Service.InvalidateRemotePluginsCache(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+func (a *SiteServiceAdapter) EnableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
+
 	return a.Service.EnableRemotePlugin(ctx, siteId, pluginSlug)
 }
 
-func (a *SiteServiceAdapter) DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+func (a *SiteServiceAdapter) DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
+
 	return a.Service.DisableRemotePlugin(ctx, siteId, pluginSlug)
 }
 
-func (a *SiteServiceAdapter) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, error) {
+func (a *SiteServiceAdapter) CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, *apperror.AppError) {
+
 	return a.Service.CheckRemotePluginExists(ctx, siteId, pluginSlug)
 }
 
-func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) error {
+func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError {
+
 	return a.Service.DeleteRemotePlugin(ctx, siteId, pluginSlug)
 }
 
