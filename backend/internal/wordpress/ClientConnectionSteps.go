@@ -42,21 +42,27 @@ type wpTestPost struct {
 
 // TestConnection runs the full five-step connection test sequence:
 // 1. REST API probe   2. Auth check   3. Parse user info   4. Plugin access   5. Write test
-func (c *Client) TestConnection() (*ConnectionInfo, error) {
+func (c *Client) TestConnection() (*ConnectionInfo, *apperror.AppError) {
 	result := &ConnectionInfo{
 		URL: c.baseURL,
 	}
 
-	if err := c.probeRestAPI(result); err != nil {
-		return result, err
+	appErr := c.probeRestAPI(result)
+	if appErr != nil {
+
+		return result, appErr
 	}
 
-	if err := c.authenticateAndParseUser(result); err != nil {
-		return result, err
+	appErr = c.authenticateAndParseUser(result)
+	if appErr != nil {
+
+		return result, appErr
 	}
 
-	if err := c.testPluginAccess(result); err != nil {
-		return result, err
+	appErr = c.testPluginAccess(result)
+	if appErr != nil {
+
+		return result, appErr
 	}
 
 	c.testWritePermission(result)
@@ -65,17 +71,20 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 }
 
 // probeRestAPI checks WordPress REST API availability (Step 1).
-func (c *Client) probeRestAPI(result *ConnectionInfo) error {
+func (c *Client) probeRestAPI(result *ConnectionInfo) *apperror.AppError {
 	c.reportProbeStart()
 
 	resp, err := c.httpClient.Get(BuildWPProbeURL(c.baseURL))
 	if err != nil {
+
 		return c.reportProbeFailure(err)
 	}
 	defer resp.Body.Close()
 
-	if err := c.validateRestApiStatus(resp, result); err != nil {
-		return err
+	appErr := c.validateRestApiStatus(resp, result)
+	if appErr != nil {
+
+		return appErr
 	}
 
 	c.reportProbeSuccess(result)
@@ -94,7 +103,7 @@ func (c *Client) reportProbeStart() {
 }
 
 // reportProbeFailure sends a probe failure event and returns an error.
-func (c *Client) reportProbeFailure(err error) error {
+func (c *Client) reportProbeFailure(err error) *apperror.AppError {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Failed.String(),
@@ -116,13 +125,19 @@ func (c *Client) reportProbeSuccess(result *ConnectionInfo) {
 }
 
 // validateRestApiStatus checks the REST API response status and parses site info.
-func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionInfo) error {
-	if resp.StatusCode == HttpStatusNotFound.Int() {
+func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionInfo) *apperror.AppError {
+	isNotFound := resp.StatusCode == HttpStatusNotFound.Int()
+
+	if isNotFound {
+
 		return c.reportRestApiNotFound()
 	}
 
 	var rootInfo wpRootInfo
-	if err := json.NewDecoder(resp.Body).Decode(&rootInfo); err == nil {
+	decodeErr := json.NewDecoder(resp.Body).Decode(&rootInfo)
+	isDecoded := decodeErr == nil
+
+	if isDecoded {
 		result.SiteName = rootInfo.Name
 		result.SiteDescription = rootInfo.Description
 	}
@@ -131,7 +146,7 @@ func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionIn
 }
 
 // reportRestApiNotFound sends a not-found event and returns an error.
-func (c *Client) reportRestApiNotFound() error {
+func (c *Client) reportRestApiNotFound() *apperror.AppError {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.DnsCheck.Value(),
 		Status:  stagestatus.Failed.String(),
@@ -143,16 +158,19 @@ func (c *Client) reportRestApiNotFound() error {
 }
 
 // authenticateAndParseUser checks authentication (Step 2) and parses user info (Step 3).
-func (c *Client) authenticateAndParseUser(result *ConnectionInfo) error {
+func (c *Client) authenticateAndParseUser(result *ConnectionInfo) *apperror.AppError {
 	c.reportAuthStart()
 
 	authResp := c.fetchAuthResponse()
 	if authResp.HasError() {
+
 		return c.reportAuthRequestFailed(authResp.AppError())
 	}
 
 	resp := authResp.Value()
-	if authErr := c.checkAuthStatus(resp.StatusCode, resp.Body); authErr != nil {
+	authErr := c.checkAuthStatus(resp.StatusCode, resp.Body)
+	if authErr != nil {
+
 		return authErr
 	}
 
@@ -184,7 +202,7 @@ func (c *Client) fetchAuthResponse() apperror.Result[APICallResponse] {
 }
 
 // reportAuthRequestFailed sends an auth request failure event.
-func (c *Client) reportAuthRequestFailed(err *apperror.AppError) error {
+func (c *Client) reportAuthRequestFailed(err *apperror.AppError) *apperror.AppError {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Failed.String(),
@@ -208,15 +226,21 @@ func (c *Client) reportAuthSuccess(result *ConnectionInfo) {
 }
 
 // checkAuthStatus validates the authentication response status code.
-func (c *Client) checkAuthStatus(statusCode int, body []byte) error {
-	if statusCode == HttpStatusUnauthorized.Int() {
+func (c *Client) checkAuthStatus(statusCode int, body []byte) *apperror.AppError {
+	isUnauthorized := statusCode == HttpStatusUnauthorized.Int()
+
+	if isUnauthorized {
+
 		return c.reportAuthFailure("Invalid username or application password",
 			apperror.New(apperror.ErrWPAuth, "authentication failed: invalid username or application password").
 				WithURL(c.baseURL).
 				WithUsername(c.username))
 	}
 
-	if statusCode == HttpStatusForbidden.Int() {
+	isForbidden := statusCode == HttpStatusForbidden.Int()
+
+	if isForbidden {
+
 		return c.reportAuthFailure("Access forbidden - user lacks permissions",
 			apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").
 				WithURL(c.baseURL).
@@ -227,8 +251,11 @@ func (c *Client) checkAuthStatus(statusCode int, body []byte) error {
 }
 
 // checkUnexpectedAuthStatus handles non-standard auth response codes.
-func (c *Client) checkUnexpectedAuthStatus(statusCode int, body []byte) error {
-	if statusCode == HttpStatusOk.Int() {
+func (c *Client) checkUnexpectedAuthStatus(statusCode int, body []byte) *apperror.AppError {
+	isOk := statusCode == HttpStatusOk.Int()
+
+	if isOk {
+
 		return nil
 	}
 
@@ -246,7 +273,7 @@ func (c *Client) checkUnexpectedAuthStatus(statusCode int, body []byte) error {
 }
 
 // reportAuthFailure logs an auth failure and returns the error.
-func (c *Client) reportAuthFailure(message string, err *apperror.AppError) error {
+func (c *Client) reportAuthFailure(message string, err *apperror.AppError) *apperror.AppError {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Failed.String(),
@@ -260,7 +287,10 @@ func (c *Client) reportAuthFailure(message string, err *apperror.AppError) error
 // parseUserInfoFromBytes decodes the users/me response bytes into the ConnectionInfo result.
 func (c *Client) parseUserInfoFromBytes(body []byte, result *ConnectionInfo) {
 	var userInfo wpUserInfo
-	if err := json.Unmarshal(body, &userInfo); err == nil {
+	decodeErr := json.Unmarshal(body, &userInfo)
+	isDecoded := decodeErr == nil
+
+	if isDecoded {
 		result.UserId = userInfo.Id
 		result.UserDisplayName = userInfo.Name
 		result.UserRoles = userInfo.Roles

@@ -103,9 +103,10 @@ func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, conte
 		ContentType: contentType,
 	}
 
-	resp, err := c.requestMultipart(mpInput)
-	if err != nil {
-		return apperror.FailWrap[SnapshotImportResult](err, apperror.ErrInternal, "failed to import snapshot")
+	resp, appErr := c.requestMultipart(mpInput)
+	if appErr != nil {
+
+		return apperror.Fail[SnapshotImportResult](appErr)
 	}
 
 	defer resp.Body.Close()

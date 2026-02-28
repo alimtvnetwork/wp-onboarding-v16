@@ -171,9 +171,10 @@ func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *mod
 	s.broadcastConnecting(id, site.Url)
 
 	ref := connTestRef{ID: id, Site: site}
-	connInfo, err := client.TestConnection()
-	if err != nil {
-		return s.handleConnectionFailure(ctx, ref, err), nil
+	connInfo, appErr := client.TestConnection()
+	if appErr != nil {
+
+		return s.handleConnectionFailure(ctx, ref, appErr), nil
 	}
 	return s.handleConnectionSuccess(ctx, ref, connInfo), nil
 }
