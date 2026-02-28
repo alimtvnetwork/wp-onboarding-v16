@@ -45,11 +45,11 @@ func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.Er
 		input.ErrorId = fmt.Sprintf("%d-%s", time.Now().UnixMilli(), randomString(8))
 	}
 
-	contextJSON, _ := json.Marshal(input.Context)
-	requestBodyJSON, _ := json.Marshal(input.RequestBody)
-	phpStackFramesJSON, _ := json.Marshal(input.PhpStackFrames)
-	backendLogsJSON, _ := json.Marshal(input.BackendLogs)
-	invocationChainJSON, _ := json.Marshal(input.InvocationChain)
+	contextJson, _ := json.Marshal(input.Context)
+	requestBodyJson, _ := json.Marshal(input.RequestBody)
+	phpStackFramesJson, _ := json.Marshal(input.PhpStackFrames)
+	backendLogsJson, _ := json.Marshal(input.BackendLogs)
+	invocationChainJson, _ := json.Marshal(input.InvocationChain)
 
 	query := `
 		INSERT INTO ErrorHistory (
@@ -61,12 +61,30 @@ func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.Er
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := s.db.Exec(query,
-		input.ErrorId, input.Code, input.Level, input.Message, input.Details, string(contextJSON),
-		input.StackTrace, input.Endpoint, input.Method, string(requestBodyJSON), input.ResponseStatus,
-		input.SessionId, input.SessionType, string(phpStackFramesJSON), string(backendLogsJSON),
-		input.BackendStackTrace, input.SiteUrl, input.TriggerComponent, input.TriggerAction,
-		string(invocationChainJSON), input.UIClickPath, input.MarkdownReport,
+	result, err := s.db.Exec(
+		query,
+		input.ErrorId,
+		input.Code,
+		input.Level,
+		input.Message,
+		input.Details,
+		string(contextJson),
+		input.StackTrace,
+		input.Endpoint,
+		input.Method,
+		string(requestBodyJson),
+		input.ResponseStatus,
+		input.SessionId,
+		input.SessionType,
+		string(phpStackFramesJson),
+		string(backendLogsJson),
+		input.BackendStackTrace,
+		input.SiteUrl,
+		input.TriggerComponent,
+		input.TriggerAction,
+		string(invocationChainJson),
+		input.UIClickPath,
+		input.MarkdownReport,
 	)
 	if err != nil {
 		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "insert error history").
@@ -89,7 +107,11 @@ func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.Er
 }
 
 // List returns error history with pagination and filters
-func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) apperror.Result[ErrorHistoryListResult] {
+func (s *Service) List(
+	limit int,
+	offset int,
+	filters models.ErrorHistoryFilters,
+) apperror.Result[ErrorHistoryListResult] {
 	isLimitUnset := limit <= 0
 
 	if isLimitUnset {
@@ -107,6 +129,7 @@ func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ap
 	// Get total count
 	var total int
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM ErrorHistory %s", whereClause)
+
 	err := s.db.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
 		return apperror.FailWrap[ErrorHistoryListResult](err, apperror.ErrDatabaseQuery, "count error history")
@@ -132,11 +155,13 @@ func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ap
 	defer rows.Close()
 
 	var errors []models.ErrorHistory
+
 	for rows.Next() {
 		e, scanErr := scanErrorHistoryRow(rows)
 		if scanErr != nil {
 			return apperror.FailWrap[ErrorHistoryListResult](scanErr, apperror.ErrDatabaseQuery, "scan error history")
 		}
+
 		errors = append(errors, e)
 	}
 
