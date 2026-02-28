@@ -57,7 +57,7 @@ func (s *Service) ensureScanCache(ctx context.Context, pluginID int64) (*pluginS
 // buildScanResult constructs a ScanResult from scan output.
 func (s *Service) buildScanResult(pluginID int64, cache *pluginScanCache, changes []FileChange, triggerType string, startTime time.Time) ScanResult {
 	return ScanResult{
-		PluginID:     pluginID,
+		PluginId:     pluginID,
 		Path:         cache.path,
 		ScanTime:     startTime,
 		DurationMs:   time.Since(startTime).Milliseconds(),
