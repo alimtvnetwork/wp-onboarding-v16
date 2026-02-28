@@ -53,6 +53,7 @@ func appendToErrorLog(input errorLogInput) {
 
 	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+
 		return
 	}
 	defer f.Close()
@@ -78,9 +79,12 @@ func writeErrorLogHeader(sb *strings.Builder, now string, input errorLogInput) {
 	sb.WriteString(fmt.Sprintf("[%s] HTTP %d %s FAILED\n", now, input.Writer.statusCode, input.Request.Method))
 
 	scheme := "http"
-	if input.Request.TLS != nil {
+	hasTLS := input.Request.TLS != nil
+
+	if hasTLS {
 		scheme = "https"
 	}
+
 	host := input.Request.Host
 	isHostEmpty := host == ""
 
@@ -102,6 +106,7 @@ func writeErrorLogRequestBody(sb *strings.Builder, input errorLogInput) {
 	isBodyEmpty := len(input.RequestBody) == 0
 
 	if isBodyEmpty {
+
 		return
 	}
 
@@ -111,8 +116,11 @@ func writeErrorLogRequestBody(sb *strings.Builder, input errorLogInput) {
 	if isBodyTooLong {
 		bodyStr = bodyStr[:4096] + "... (truncated)"
 	}
+
 	var prettyBuf bytes.Buffer
-	if json.Indent(&prettyBuf, input.RequestBody, "    ", "  ") == nil && prettyBuf.Len() > 0 {
+	isPrettyPrintable := json.Indent(&prettyBuf, input.RequestBody, "    ", "  ") == nil && prettyBuf.Len() > 0
+
+	if isPrettyPrintable {
 		sb.WriteString("  Request Body:\n")
 		sb.WriteString(fmt.Sprintf("    %s\n", prettyBuf.String()))
 	} else {
@@ -125,12 +133,14 @@ func parseEnvelope(w *responseWriter) (envelopeForParsing, bool) {
 	isBodyEmpty := w.body.Len() == 0
 
 	if isBodyEmpty {
+
 		return env, false
 	}
 
 	isParsed := json.Unmarshal(w.body.Bytes(), &env) == nil && env.Status.Message != ""
 
 	if isParsed {
+
 		return env, true
 	}
 
@@ -141,7 +151,8 @@ func writeEnvelopeDetails(sb *strings.Builder, env envelopeForParsing) {
 	sb.WriteString(fmt.Sprintf("  Error Code: %d\n", env.Status.Code))
 	sb.WriteString(fmt.Sprintf("  Error Message: %s\n", env.Status.Message))
 
-	if env.Attributes != nil {
+	hasAttributes := env.Attributes != nil
+	if hasAttributes {
 		hasRequestedAt := env.Attributes.RequestedAt != ""
 
 		if hasRequestedAt {
@@ -155,11 +166,15 @@ func writeEnvelopeDetails(sb *strings.Builder, env envelopeForParsing) {
 		}
 	}
 
-	if env.Errors != nil {
+	hasErrors := env.Errors != nil
+	if hasErrors {
 		writeEnvelopeErrors(sb, env)
 	}
 
-	if env.MethodsStack != nil && len(env.MethodsStack.Backend) > 0 {
+	hasMethodsStack := env.MethodsStack != nil
+	hasBackendMethods := hasMethodsStack && len(env.MethodsStack.Backend) > 0
+
+	if hasBackendMethods {
 		sb.WriteString("  Go Methods Stack:\n")
 		for i, frame := range env.MethodsStack.Backend {
 			sb.WriteString(fmt.Sprintf("    #%d %s at %s:%d\n", i, frame.Method, frame.File, frame.LineNumber))
@@ -173,13 +188,17 @@ func writeEnvelopeErrors(sb *strings.Builder, env envelopeForParsing) {
 	if hasBackendMessage {
 		sb.WriteString(fmt.Sprintf("  Backend Error: %s\n", env.Errors.BackendMessage))
 	}
-	if len(env.Errors.DelegatedServiceErrorStack) > 0 {
+
+	hasDelegatedStack := len(env.Errors.DelegatedServiceErrorStack) > 0
+	if hasDelegatedStack {
 		sb.WriteString("  Delegated Service Error Stack (PHP):\n")
 		for _, line := range env.Errors.DelegatedServiceErrorStack {
 			sb.WriteString(fmt.Sprintf("    %s\n", line))
 		}
 	}
-	if len(env.Errors.Backend) > 0 {
+
+	hasBackendStack := len(env.Errors.Backend) > 0
+	if hasBackendStack {
 		sb.WriteString("  Go Backend Stack:\n")
 		for _, line := range env.Errors.Backend {
 			sb.WriteString(fmt.Sprintf("    %s\n", line))
@@ -191,6 +210,7 @@ func writeResponseBody(sb *strings.Builder, w *responseWriter) {
 	isBodyEmpty := w.body.Len() == 0
 
 	if isBodyEmpty {
+
 		return
 	}
 

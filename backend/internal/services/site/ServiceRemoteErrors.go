@@ -56,15 +56,18 @@ func (s *Service) populateApiErrorFields(details *ExtractedErrorDetails, apiErr 
 	details.RequestBody = apiErr.RequestBody
 	details.ResponseBody = apiErr.ResponseBody
 
-	if apiErr.StackTrace != "" {
+	hasStackTrace := apiErr.StackTrace != ""
+	if hasStackTrace {
 		details.StackTrace = apiErr.StackTrace
 	}
 
-	if apiErr.PluginSlugIn != "" {
+	hasPluginSlugIn := apiErr.PluginSlugIn != ""
+	if hasPluginSlugIn {
 		details.PluginSlugIn = apiErr.PluginSlugIn
 	}
 
-	if apiErr.PluginIDUsed != "" {
+	hasPluginIDUsed := apiErr.PluginIDUsed != ""
+	if hasPluginIDUsed {
 		details.PluginIdUsed = apiErr.PluginIDUsed
 	}
 }
@@ -73,7 +76,9 @@ func (s *Service) populateApiErrorFields(details *ExtractedErrorDetails, apiErr 
 func (s *Service) parseErrorResponseEnvelope(details *ExtractedErrorDetails, responseBody string) {
 	var envResp errorResponseEnvelope
 
-	if json.Unmarshal([]byte(responseBody), &envResp) != nil {
+	isUnmarshalFailed := json.Unmarshal([]byte(responseBody), &envResp) != nil
+
+	if isUnmarshalFailed {
 
 		return
 	}
@@ -84,15 +89,18 @@ func (s *Service) parseErrorResponseEnvelope(details *ExtractedErrorDetails, res
 
 // applyEnvelopeErrors copies envelope error fields into the details struct.
 func applyEnvelopeErrors(details *ExtractedErrorDetails, errors *envelopeErrors) {
-	if errors.BackendMessage != "" {
+	hasBackendMessage := errors.BackendMessage != ""
+	if hasBackendMessage {
 		details.ErrorMessage = errors.BackendMessage
 	}
 
-	if len(errors.DelegatedServiceErrorStack) > 0 {
+	hasDelegatedStack := len(errors.DelegatedServiceErrorStack) > 0
+	if hasDelegatedStack {
 		details.DelegatedServiceErrorStack = errors.DelegatedServiceErrorStack
 	}
 
-	if len(errors.Backend) > 0 {
+	hasBackendStack := len(errors.Backend) > 0
+	if hasBackendStack {
 		details.PhpBackendStack = errors.Backend
 	}
 }
@@ -117,7 +125,8 @@ func (s *Service) parseLegacyStackFrames(details *ExtractedErrorDetails, envResp
 
 	details.StackTraceFrames = parsed
 
-	if envResp.ErrorLegacy.Details.FileFull != "" {
+	hasErrorFile := envResp.ErrorLegacy.Details.FileFull != ""
+	if hasErrorFile {
 		details.ErrorFile = envResp.ErrorLegacy.Details.FileFull
 	}
 
@@ -190,7 +199,8 @@ func (s *Service) resolveRemoteActionLogContext(siteId int64, details json.RawMe
 
 	s.fillMissingSiteContext(siteId, &resolved)
 
-	if resolved.SiteName == "" {
+	isSiteNameMissing := resolved.SiteName == ""
+	if isSiteNameMissing {
 		resolved.SiteName = fmt.Sprintf("site#%d", siteId)
 	}
 
@@ -201,7 +211,8 @@ func (s *Service) resolveRemoteActionLogContext(siteId int64, details json.RawMe
 func parseRemoteActionLogDetails(details json.RawMessage) remoteActionResolvedContext {
 	var logCtx remoteActionLogContext
 
-	if len(details) > 0 {
+	hasDetails := len(details) > 0
+	if hasDetails {
 		_ = json.Unmarshal(details, &logCtx)
 	}
 
@@ -230,11 +241,13 @@ func (s *Service) fillMissingSiteContext(siteId int64, ctx *remoteActionResolved
 	if siteResult.IsSafe() {
 		site := siteResult.Value()
 
-		if ctx.SiteName == "" {
+		isSiteNameMissing := ctx.SiteName == ""
+		if isSiteNameMissing {
 			ctx.SiteName = site.Name
 		}
 
-		if ctx.SiteUrl == "" {
+		isSiteUrlMissing := ctx.SiteUrl == ""
+		if isSiteUrlMissing {
 			ctx.SiteUrl = site.Url
 		}
 	}
@@ -254,7 +267,9 @@ type loggerEmitInput struct {
 func (s *Service) emitRemoteActionToLogger(input loggerEmitInput) {
 	logFields := buildRemoteActionLogFields(input)
 
-	if input.Level == loglevel.Error.String() {
+	isErrorLevel := input.Level == loglevel.Error.String()
+
+	if isErrorLevel {
 		s.log.Error(input.Message, logFields...)
 	} else {
 		s.log.Debug(input.Message, logFields...)
@@ -265,13 +280,15 @@ func (s *Service) emitRemoteActionToLogger(input loggerEmitInput) {
 func buildRemoteActionLogFields(input loggerEmitInput) []any {
 	logFields := []any{"site", input.Ctx.SiteName}
 
-	if input.Ctx.SiteUrl != "" {
+	hasSiteUrl := input.Ctx.SiteUrl != ""
+	if hasSiteUrl {
 		logFields = append(logFields, "siteUrl", input.Ctx.SiteUrl)
 	}
 
 	logFields = append(logFields, "siteId", input.SiteID, "action", input.Action, "step", input.Step)
 
-	if input.Ctx.PluginSlug != "" {
+	hasPluginSlug := input.Ctx.PluginSlug != ""
+	if hasPluginSlug {
 		logFields = append(logFields, "pluginSlug", input.Ctx.PluginSlug)
 	}
 
