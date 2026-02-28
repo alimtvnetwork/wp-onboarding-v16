@@ -54,7 +54,7 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, *ap
 func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle) *uploadContext {
 	namespace := c.resolveNamespace()
 	uploadEndpoint := BuildNamespacedEndpoint(namespace, ep.Upload)
-	uploadUrl := BuildWPJSONURL(c.baseURL, uploadEndpoint)
+	uploadUrl := BuildWpJsonUrl(c.baseUrl, uploadEndpoint)
 
 	return &uploadContext{
 		AbsZipPath:     absZipPath,
@@ -173,8 +173,8 @@ func writeUploadFields(input uploadFieldsInput) {
 	_ = input.Writer.WriteField("upload_source", input.Source.String())
 }
 
-// executeUploadHTTP sends the multipart upload request and parses the response.
-func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, contentType string) apperror.Result[*UploaderUploadResult] {
+// executeUploadHttp sends the multipart upload request and parses the response.
+func (c *Client) executeUploadHttp(uc *uploadContext, body *bytes.Buffer, contentType string) apperror.Result[*UploaderUploadResult] {
 	req, err := http.NewRequest("POST", uc.UploadUrl, body)
 	if err != nil {
 		return apperror.FailWrap[*UploaderUploadResult](err, apperror.ErrInternal, "create upload HTTP request")

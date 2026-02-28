@@ -137,7 +137,7 @@ func resolveMethodAndUrl(details *ExtractedErrorDetails, siteUrl string) (string
 	hasEndpoint          := details.Endpoint != ""
 
 	if isDelegatedUrlMissing && hasEndpoint {
-		delegatedUrl = wordpress.BuildWPJSONURL(siteUrl, details.Endpoint)
+		delegatedUrl = wordpress.BuildWpJsonUrl(siteUrl, details.Endpoint)
 	}
 	return method, delegatedUrl
 }

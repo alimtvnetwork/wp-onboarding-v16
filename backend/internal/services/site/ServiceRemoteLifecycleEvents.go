@@ -156,8 +156,8 @@ func (s *Service) saveRemoteErrorHttpResponse(sessionId string, errDetails *Extr
 	bodyJson := buildErrorBodyJson(errDetails.ResponseBody)
 
 	resp := &session.SessionResponse{
-		RequestURL:  errDetails.Url,
-		ResponseURL: errDetails.Url,
+		RequestUrl:  errDetails.Url,
+		ResponseUrl: errDetails.Url,
 		StatusCode:  errDetails.StatusCode,
 		Body:        bodyJson,
 	}
@@ -260,8 +260,8 @@ func (s *Service) saveRemoteSuccessHttpResponse(ref *remoteActionRef) {
 	})
 
 	resp := &session.SessionResponse{
-		RequestURL:  wordpress.BuildWPPluginURL(ref.Site.Url, wordpress.RiseupAsiaNamespace, ep.Plugins),
-		ResponseURL: ref.Site.Url,
+		RequestUrl:  wordpress.BuildWpPluginUrl(ref.Site.Url, wordpress.RiseupAsiaNamespace, ep.Plugins),
+		ResponseUrl: ref.Site.Url,
 		StatusCode:  200,
 		Body:        body,
 	}

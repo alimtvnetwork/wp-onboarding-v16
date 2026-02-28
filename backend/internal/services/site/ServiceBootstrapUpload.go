@@ -47,7 +47,7 @@ func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress
 		ZipPath:      input.ZipPath,
 		Slug:         "riseup-asia-uploader",
 		IsActivate:   true,
-		UploadSource: uploadsource.RestAPI,
+		UploadSource: uploadsource.RestApi,
 	}
 
 	return s.executeUploaderUpload(input.SiteId, input.Client, uploadInput)

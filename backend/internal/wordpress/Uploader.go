@@ -235,7 +235,7 @@ func (c *Client) UploadPluginViaUploader(input UploadInput) apperror.Result[*Upl
 
 	c.reportMultipartBodyReady(uc, input, mp)
 
-	return c.executeUploadHTTP(uc, mp.Body, mp.ContentType)
+	return c.executeUploadHttp(uc, mp.Body, mp.ContentType)
 }
 
 // reportUploadInitProgress logs the upload initialization progress.

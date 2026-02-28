@@ -11,7 +11,7 @@ import (
 
 func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) error {
 	body := siteCreateBody{
-		Name: "E2E Test Site", Url: s.testSiteURL,
+		Name: "E2E Test Site", Url: s.testSiteUrl,
 		Username: s.testSiteUsername, Password: s.testSitePassword,
 	}
 	result.RequestData = toJSON(redactSiteBody(body))
@@ -60,7 +60,7 @@ func (s *serviceImpl) testSiteConnection(ctx context.Context, result *TestResult
 
 func (s *serviceImpl) testInvalidCredentials(ctx context.Context, result *TestResult) error {
 	body := credentialsTestBody{
-		Url: s.testSiteURL, Username: "invalid_user_e2e", Password: "invalid_password_e2e",
+		Url: s.testSiteUrl, Username: "invalid_user_e2e", Password: "invalid_password_e2e",
 	}
 	result.RequestData = toJSON(body)
 

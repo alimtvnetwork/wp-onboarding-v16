@@ -84,7 +84,7 @@ type RemoteErrorSessionEntry struct {
 
 // RemoteFlashState represents the flash notification state from the plugin.
 type RemoteFlashState struct {
-	LastSeenID  int  `json:"last_seen_id"`  // external key (Riseup Asia Uploader API)
+	LastSeenId  int  `json:"last_seen_id"`  // external key (Riseup Asia Uploader API)
 	HasUnseen   bool `json:"has_unseen"`    // external key
 	UnseenCount int  `json:"unseen_count"`  // external key
 }
@@ -106,7 +106,7 @@ type RemoteErrorSessionsResult struct {
 type ErrorSessionsInput struct {
 	Level   string
 	Search  string
-	SinceID int
+	SinceId int
 	Limit   int
 	Offset  int
 }
@@ -125,7 +125,7 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) apperror.Res
 		Namespace: namespace,
 		Level:     input.Level,
 		Search:    input.Search,
-		SinceID:   input.SinceID,
+		SinceId:   input.SinceId,
 		Limit:     input.Limit,
 		Offset:    input.Offset,
 	})
@@ -154,7 +154,7 @@ type errorSessionsParams struct {
 	Namespace string
 	Level     string
 	Search    string
-	SinceID   int
+	SinceId   int
 	Limit     int
 	Offset    int
 }
@@ -183,8 +183,8 @@ func collectErrorSessionParams(p errorSessionsParams) []string {
 		params = append(params, fmt.Sprintf("search=%s", p.Search))
 	}
 
-	if p.SinceID > 0 {
-		params = append(params, fmt.Sprintf("since_id=%d", p.SinceID))
+	if p.SinceId > 0 {
+		params = append(params, fmt.Sprintf("since_id=%d", p.SinceId))
 	}
 
 	if p.Limit > 0 {

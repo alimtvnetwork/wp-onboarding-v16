@@ -74,10 +74,10 @@ func copyOptionalApiFields(details *ExtractedErrorDetails, apiErr *wordpress.Api
 		details.PluginSlugIn = apiErr.PluginSlugIn
 	}
 
-	hasPluginIDUsed := apiErr.PluginIDUsed != ""
+	hasPluginIdUsed := apiErr.PluginIdUsed != ""
 
-	if hasPluginIDUsed {
-		details.PluginIdUsed = apiErr.PluginIDUsed
+	if hasPluginIdUsed {
+		details.PluginIdUsed = apiErr.PluginIdUsed
 	}
 }
 

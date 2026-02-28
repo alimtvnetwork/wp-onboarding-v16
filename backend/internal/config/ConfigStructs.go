@@ -11,7 +11,7 @@ import (
 type E2EConfig struct {
 	Enabled          bool
 	TestPluginPath   string
-	TestSiteURL      string
+	TestSiteUrl      string
 	TestSiteUsername  string
 	TestSitePassword string
 }

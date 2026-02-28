@@ -84,8 +84,8 @@ func buildErrorLogEntry(input errorLogInput) string {
 func writeErrorLogHeader(sb *strings.Builder, now string, input errorLogInput) {
 	sb.WriteString(fmt.Sprintf("[%s] HTTP %d %s FAILED\n", now, input.Writer.statusCode, input.Request.Method))
 
-	fullURL := resolveFullURL(input.Request)
-	sb.WriteString(fmt.Sprintf("  Requested To: %s %s\n", input.Request.Method, fullURL))
+	fullUrl := resolveFullUrl(input.Request)
+	sb.WriteString(fmt.Sprintf("  Requested To: %s %s\n", input.Request.Method, fullUrl))
 
 	hasQueryParams := input.Request.URL.RawQuery != ""
 	if hasQueryParams {
@@ -93,8 +93,8 @@ func writeErrorLogHeader(sb *strings.Builder, now string, input errorLogInput) {
 	}
 }
 
-// resolveFullURL constructs the full request URL from the http.Request.
-func resolveFullURL(r *http.Request) string {
+// resolveFullUrl constructs the full request URL from the http.Request.
+func resolveFullUrl(r *http.Request) string {
 	scheme := "http"
 	hasTLS := r.TLS != nil
 	if hasTLS {

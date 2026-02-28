@@ -34,7 +34,7 @@ type ErrorHistory struct {
 	TriggerAction       string          `json:",omitempty"`
 	InvocationChainJson string          `json:"-"`
 	InvocationChain     []string        `json:",omitempty"`
-	UIClickPath         string          `json:",omitempty"`
+	UiClickPath         string          `json:",omitempty"`
 	MarkdownReport      string          `json:",omitempty"`
 	CreatedAt           time.Time
 }
@@ -70,7 +70,7 @@ type ErrorHistoryInput struct {
 	TriggerComponent   string          `json:",omitempty"`
 	TriggerAction      string          `json:",omitempty"`
 	InvocationChain    []string        `json:",omitempty"`
-	UIClickPath        string          `json:",omitempty"`
+	UiClickPath        string          `json:",omitempty"`
 	MarkdownReport     string          `json:",omitempty"`
 }
 

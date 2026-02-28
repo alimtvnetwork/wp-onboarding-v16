@@ -20,10 +20,10 @@ type pluginHeaderInfo struct {
 	Version     string
 	Description string
 	Author      string
-	AuthorURI   string
-	PluginURI   string
+	AuthorUri   string
+	PluginUri   string
 	TextDomain  string
-	RequiresPHP string
+	RequiresPhp string
 	RequiresWP  string
 }
 
@@ -112,10 +112,10 @@ func headerPatterns() map[string]*regexp.Regexp {
 		"Version":     regexp.MustCompile(`Version:\s*(.+)`),
 		"Description": regexp.MustCompile(`Description:\s*(.+)`),
 		"Author":      regexp.MustCompile(`Author:\s*(.+)`),
-		"AuthorURI":   regexp.MustCompile(`Author URI:\s*(.+)`),
-		"PluginURI":   regexp.MustCompile(`Plugin URI:\s*(.+)`),
+		"AuthorUri":   regexp.MustCompile(`Author URI:\s*(.+)`),
+		"PluginUri":   regexp.MustCompile(`Plugin URI:\s*(.+)`),
 		"TextDomain":  regexp.MustCompile(`Text Domain:\s*(.+)`),
-		"RequiresPHP": regexp.MustCompile(`Requires PHP:\s*(.+)`),
+		"RequiresPhp": regexp.MustCompile(`Requires PHP:\s*(.+)`),
 		"RequiresWP":  regexp.MustCompile(`Requires at least:\s*(.+)`),
 	}
 }
@@ -200,14 +200,14 @@ func setHeaderField(info *pluginHeaderInfo, key, val string) {
 		info.Description = val
 	case "Author":
 		info.Author = val
-	case "AuthorURI":
-		info.AuthorURI = val
-	case "PluginURI":
-		info.PluginURI = val
+	case "AuthorUri":
+		info.AuthorUri = val
+	case "PluginUri":
+		info.PluginUri = val
 	case "TextDomain":
 		info.TextDomain = val
-	case "RequiresPHP":
-		info.RequiresPHP = val
+	case "RequiresPhp":
+		info.RequiresPhp = val
 	case "RequiresWP":
 		info.RequiresWP = val
 	}

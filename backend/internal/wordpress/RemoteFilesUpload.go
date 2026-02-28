@@ -196,7 +196,7 @@ func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) apperro
 		ZipPath:      zipPath,
 		Slug:         slug,
 		IsActivate:   isActivate,
-		UploadSource: uploadsourcetype.RestAPI,
+		UploadSource: uploadsourcetype.RestApi,
 	}
 
 	return c.UploadPluginViaUploader(uploadInput)

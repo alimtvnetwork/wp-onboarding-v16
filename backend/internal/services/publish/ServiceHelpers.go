@@ -227,7 +227,7 @@ func (s *Service) callUploaderUpload(wpClient *wordpress.Client, zipPath, slug s
 		ZipPath:      zipPath,
 		Slug:         slug,
 		IsActivate:   true,
-		UploadSource: uploadsource.RestAPI,
+		UploadSource: uploadsource.RestApi,
 	}
 
 	return wpClient.UploadPluginViaUploader(uploadInput)

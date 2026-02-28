@@ -106,10 +106,10 @@ func applyDetectedInfo(scan *ScanResult, d *PluginDetected) {
 	scan.MainFile = d.MainFile
 	scan.Description = d.Description
 	scan.Author = d.Author
-	scan.AuthorURI = d.AuthorURI
-	scan.PluginURI = d.PluginURI
+	scan.AuthorUri = d.AuthorUri
+	scan.PluginUri = d.PluginUri
 	scan.TextDomain = d.TextDomain
-	scan.RequiresPHP = d.RequiresPHP
+	scan.RequiresPhp = d.RequiresPhp
 	scan.RequiresWP = d.RequiresWP
 }
 
@@ -162,10 +162,10 @@ func buildPluginDetected(path string, s ScanResult) PluginDetected {
 		MainFile:    s.MainFile,
 		Description: s.Description,
 		Author:      s.Author,
-		AuthorURI:   s.AuthorURI,
-		PluginURI:   s.PluginURI,
+		AuthorUri:   s.AuthorUri,
+		PluginUri:   s.PluginUri,
 		TextDomain:  s.TextDomain,
-		RequiresPHP: s.RequiresPHP,
+		RequiresPhp: s.RequiresPhp,
 		RequiresWP:  s.RequiresWP,
 		DetectedAt:  time.Now().UTC().Format(time.RFC3339),
 	}

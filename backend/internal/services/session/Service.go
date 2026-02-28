@@ -63,7 +63,7 @@ type SessionDiagnostics struct {
 
 // SessionRequest captures the original inbound request
 type SessionRequest struct {
-	URL     string
+	Url     string
 	Method  string
 	Headers map[string]string `json:",omitempty"`
 	Body    json.RawMessage   `json:",omitempty"`
@@ -71,8 +71,8 @@ type SessionRequest struct {
 
 // SessionResponse captures the delegated response from WordPress
 type SessionResponse struct {
-	RequestURL  string
-	ResponseURL string
+	RequestUrl  string
+	ResponseUrl string
 	StatusCode  int
 	Headers     map[string]string `json:",omitempty"`
 	Body        json.RawMessage   `json:",omitempty"`

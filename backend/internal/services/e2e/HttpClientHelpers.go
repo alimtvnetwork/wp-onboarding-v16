@@ -26,7 +26,7 @@ func (c *apiClient) do(method, path string, body any) (*apiResponse, error) {
 
 // buildRequest creates an http.Request with optional JSON body.
 func (c *apiClient) buildRequest(method, path string, body any) (*http.Request, error) {
-	url := fmt.Sprintf("%s/api/v1%s", c.baseURL, path)
+	url := fmt.Sprintf("%s/api/v1%s", c.baseUrl, path)
 
 	var reqBody io.Reader
 	if body != nil {
