@@ -86,8 +86,8 @@ func (s *Service) tryLoadDetected(path string, scan *ScanResult) (apperror.Resul
 		return apperror.Result[ScanResult]{}, false
 	}
 
-	detected, err := s.readPluginDetected(detectedPath)
-	if err != nil {
+	detected, appErr := s.readPluginDetected(detectedPath)
+	if appErr != nil {
 		return apperror.Result[ScanResult]{}, false
 	}
 
@@ -113,7 +113,7 @@ func applyDetectedInfo(scan *ScanResult, d *PluginDetected) {
 
 
 // WritePluginDetected creates .plugin-detected.json for a valid WordPress plugin.
-func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
+func (s *Service) WritePluginDetected(ctx context.Context, path string) *apperror.AppError {
 	scan := s.ScanDirectory(ctx, path)
 	if scan.HasError() {
 		return scan.AppError()
@@ -128,7 +128,7 @@ func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
 }
 
 // writeDetectedFile marshals and writes the detected plugin JSON.
-func (s *Service) writeDetectedFile(path string, scanVal ScanResult) error {
+func (s *Service) writeDetectedFile(path string, scanVal ScanResult) *apperror.AppError {
 	detected := buildPluginDetected(path, scanVal)
 
 	data, err := json.MarshalIndent(detected, "", "  ")
@@ -169,17 +169,19 @@ func buildPluginDetected(path string, s ScanResult) PluginDetected {
 	}
 }
 
-func (s *Service) readPluginDetected(path string) (*PluginDetected, error) {
+func (s *Service) readPluginDetected(path string) (*PluginDetected, *apperror.AppError) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to read plugin detected file")
 	}
+
 	var detected PluginDetected
 	err = json.Unmarshal(data, &detected)
 	if err != nil {
 
-		return nil, err
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to unmarshal plugin detected")
 	}
+
 	return &detected, nil
 }
 

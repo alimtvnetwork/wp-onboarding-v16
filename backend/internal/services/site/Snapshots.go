@@ -9,10 +9,10 @@ import (
 )
 
 // GetRemoteSnapshots lists all snapshots on a remote WordPress site.
-func (s *Service) GetRemoteSnapshots(ctx context.Context, siteID int64) ([]wordpress.SnapshotRecord, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) GetRemoteSnapshots(ctx context.Context, siteID int64) ([]wordpress.SnapshotRecord, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	snapshots, err := client.GetSnapshots()
@@ -30,10 +30,10 @@ func (s *Service) GetRemoteSnapshots(ctx context.Context, siteID int64) ([]wordp
 }
 
 // GetRemoteSnapshot returns a specific snapshot from a remote site.
-func (s *Service) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRecord, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRecord, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	snapshot, err := client.GetSnapshot(snapshotID)
@@ -47,10 +47,10 @@ func (s *Service) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int6
 }
 
 // CreateRemoteSnapshot triggers a new snapshot on a remote site.
-func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotCreateOptions) (*wordpress.SnapshotCreateResult, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotCreateOptions) (*wordpress.SnapshotCreateResult, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	result, err := client.CreateSnapshot(opts)
@@ -64,14 +64,15 @@ func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts w
 }
 
 // DeleteRemoteSnapshot removes a snapshot from a remote site.
-func (s *Service) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) error {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrWPConnection, "failed to create WordPress client for snapshot deletion").
+func (s *Service) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) *apperror.AppError {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return apperror.Wrap(appErr, apperror.ErrWPConnection, "failed to create WordPress client for snapshot deletion").
 			WithSiteId(siteID)
 	}
 
-	if err := client.DeleteSnapshot(snapshotID); err != nil {
+	err := client.DeleteSnapshot(snapshotID)
+	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "failed to delete snapshot").
 			WithSiteId(siteID).
 			WithSnapshotId(snapshotID)
@@ -82,10 +83,10 @@ func (s *Service) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 }
 
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote site.
-func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRestoreResult, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRestoreResult, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	result, err := client.RestoreSnapshot(snapshotID)
@@ -100,10 +101,10 @@ func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID 
 }
 
 // GetRemoteSnapshotSettings fetches snapshot settings from a remote site.
-func (s *Service) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (*wordpress.SnapshotSettings, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (*wordpress.SnapshotSettings, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	settings, err := client.GetSnapshotSettings()
@@ -116,10 +117,10 @@ func (s *Service) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (
 }
 
 // UpdateRemoteSnapshotSettings updates snapshot settings on a remote site.
-func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings wordpress.SnapshotSettings) (*wordpress.SnapshotSettings, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings wordpress.SnapshotSettings) (*wordpress.SnapshotSettings, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	result, err := client.UpdateSnapshotSettings(settings)
@@ -133,10 +134,10 @@ func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64
 }
 
 // GetRemoteSnapshotProviders returns available snapshot providers on a remote site.
-func (s *Service) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) ([]wordpress.SnapshotProvider, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) ([]wordpress.SnapshotProvider, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	providers, err := client.GetSnapshotProviders()
@@ -149,10 +150,10 @@ func (s *Service) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) 
 }
 
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting.
-func (s *Service) GetRemoteAvailableTables(ctx context.Context, siteID int64) ([]wordpress.AvailableTable, error) {
-	client, err := s.createWPClient(ctx, siteID)
-	if err != nil {
-		return nil, err
+func (s *Service) GetRemoteAvailableTables(ctx context.Context, siteID int64) ([]wordpress.AvailableTable, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteID)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	tables, err := client.GetAvailableTables()
@@ -166,11 +167,12 @@ func (s *Service) GetRemoteAvailableTables(ctx context.Context, siteID int64) ([
 }
 
 // createWPClient is a helper that creates a WordPress client for a site.
-func (s *Service) createWPClient(ctx context.Context, siteId int64) (*wordpress.Client, error) {
+func (s *Service) createWPClient(ctx context.Context, siteId int64) (*wordpress.Client, *apperror.AppError) {
 	result := s.GetById(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
+
 	site := result.Value()
 
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)

@@ -187,7 +187,7 @@ func (s *Service) loadMappingByID(ctx context.Context, id int64) models.PluginMa
 }
 
 // DeleteMapping removes a plugin-site mapping.
-func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) error {
+func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) *apperror.AppError {
 	s.log.Info("Deleting plugin mapping", "mappingId", mappingID)
 
 	result, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE Id = ?", mappingID)
@@ -207,7 +207,7 @@ func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) error {
 }
 
 // UpdateMappingsForPlugin replaces all site mappings for a plugin.
-func (s *Service) UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error {
+func (s *Service) UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) *apperror.AppError {
 	s.log.Info("Updating plugin mappings", "pluginId", pluginID, "sites", len(siteIDs))
 
 	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE PluginId = ?", pluginID)
@@ -233,7 +233,7 @@ func (s *Service) insertMappingsForPlugin(ctx context.Context, pluginID int64, s
 }
 
 // UpdateMappingsForSite replaces all plugin mappings for a site.
-func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error {
+func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError {
 	s.log.Info("Updating site mappings", "siteId", siteID, "plugins", len(pluginIDs))
 
 	slugByPluginID := s.buildSlugMap(ctx, siteID)

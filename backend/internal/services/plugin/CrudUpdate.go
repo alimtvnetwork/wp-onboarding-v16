@@ -33,7 +33,6 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) apper
 		return apperror.Fail[models.Plugin](res.AppError())
 	}
 
-
 	return s.GetById(ctx, id)
 }
 
@@ -47,11 +46,15 @@ func (s *Service) buildUpdateFields(ctx context.Context, input UpdateInput) ([]s
 		args = append(args, *input.Name)
 	}
 	if input.Path != nil {
-		if appErr := s.ValidatePath(ctx, *input.Path); appErr == nil {
+		appErr := s.ValidatePath(ctx, *input.Path)
+		isValid := appErr == nil
+
+		if isValid {
 			updates = append(updates, "Path = ?")
 			args = append(args, *input.Path)
 		}
 	}
+
 	appendOptionalFields(&updates, &args, input)
 	return updates, args
 }
@@ -78,7 +81,7 @@ func appendOptionalFields(updates *[]string, args *[]any, input UpdateInput) {
 }
 
 // Delete removes a plugin registration.
-func (s *Service) Delete(ctx context.Context, id int64) error {
+func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 	s.log.Info("Deleting plugin", "pluginId", id)
 
 	result := s.GetById(ctx, id)
@@ -90,9 +93,10 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 }
 
 // deletePluginCascade removes all related records then the plugin itself.
-func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
-	if err := s.deletePluginRelated(ctx, id); err != nil {
-		return err
+func (s *Service) deletePluginCascade(ctx context.Context, id int64) *apperror.AppError {
+	appErr := s.deletePluginRelated(ctx, id)
+	if appErr != nil {
+		return appErr
 	}
 
 	res := dbutil.Exec(ctx, s.dbu, "DELETE FROM Plugins WHERE Id = ?", id)
@@ -105,7 +109,7 @@ func (s *Service) deletePluginCascade(ctx context.Context, id int64) error {
 }
 
 // deletePluginRelated removes mappings, git config, and file changes.
-func (s *Service) deletePluginRelated(ctx context.Context, id int64) error {
+func (s *Service) deletePluginRelated(ctx context.Context, id int64) *apperror.AppError {
 	res := dbutil.Exec(ctx, s.dbu, "DELETE FROM PluginMappings WHERE PluginId = ?", id)
 	if res.HasError() {
 		return res.AppError()
@@ -117,7 +121,7 @@ func (s *Service) deletePluginRelated(ctx context.Context, id int64) error {
 }
 
 // RefreshFileCount updates the file count for a plugin.
-func (s *Service) RefreshFileCount(ctx context.Context, id int64) error {
+func (s *Service) RefreshFileCount(ctx context.Context, id int64) *apperror.AppError {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
 		return result.AppError()
@@ -139,5 +143,6 @@ func (s *Service) RefreshFileCount(ctx context.Context, id int64) error {
 	if res.HasError() {
 		return res.AppError()
 	}
+
 	return nil
 }
