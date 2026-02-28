@@ -19,7 +19,9 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) apperror.Resul
 
 	scan := ScanResult{Path: path, IsValid: false, Files: []FileInfo{}}
 
-	if result, isDetected := s.tryLoadDetected(path, &scan); isDetected {
+	result, isDetected := s.tryLoadDetected(path, &scan)
+
+	if isDetected {
 
 		return result
 	}

@@ -146,60 +146,60 @@ type IncomingMessage struct {
 // Event types for WebSocket messages
 const (
 	// File and sync events
-	EventFileChange     = "file_change"
-	EventSyncStarted    = "sync_started"
-	EventSyncProgress   = "sync_progress"
-	EventSyncComplete   = "sync_complete"
+	EventFileChange     = "fileChange"
+	EventSyncStarted    = "syncStarted"
+	EventSyncProgress   = "syncProgress"
+	EventSyncComplete   = "syncComplete"
 	
 	// Publish events
-	EventPublishStarted  = "publish_started"
-	EventPublishProgress = "publish_progress"
-	EventPublishComplete = "publish_complete"
+	EventPublishStarted  = "publishStarted"
+	EventPublishProgress = "publishProgress"
+	EventPublishComplete = "publishComplete"
 	
 	// Auto-publish events
-	EventAutoPublishTriggered = "auto_publish_triggered"
-	EventAutoPublishComplete  = "auto_publish_complete"
-	EventAutoPublishFailed    = "auto_publish_failed"
+	EventAutoPublishTriggered = "autoPublishTriggered"
+	EventAutoPublishComplete  = "autoPublishComplete"
+	EventAutoPublishFailed    = "autoPublishFailed"
 	
 	// Scan events
-	EventScanStarted  = "scan_started"
-	EventScanProgress = "scan_progress"
-	EventScanComplete = "scan_complete"
+	EventScanStarted  = "scanStarted"
+	EventScanProgress = "scanProgress"
+	EventScanComplete = "scanComplete"
 	
 	// Git events
-	EventGitPullStarted   = "git_pull_started"
-	EventGitPullComplete  = "git_pull_complete"
-	EventGitPullFailed    = "git_pull_failed"
-	EventGitPullAllComplete = "git_pull_all_complete"
-	EventGitCommitComplete = "git_commit_complete"
-	EventGitPushComplete  = "git_push_complete"
+	EventGitPullStarted    = "gitPullStarted"
+	EventGitPullComplete   = "gitPullComplete"
+	EventGitPullFailed     = "gitPullFailed"
+	EventGitPullAllComplete = "gitPullAllComplete"
+	EventGitCommitComplete = "gitCommitComplete"
+	EventGitPushComplete   = "gitPushComplete"
 	
 	// Build events
-	EventBuildStarted  = "build_started"
-	EventBuildComplete = "build_complete"
-	EventBuildFailed   = "build_failed"
+	EventBuildStarted  = "buildStarted"
+	EventBuildComplete = "buildComplete"
+	EventBuildFailed   = "buildFailed"
 	
 	// Connection test events
-	EventConnectionTestStarted  = "connection_test_started"
-	EventConnectionTestProgress = "connection_test_progress"
-	EventConnectionTestComplete = "connection_test_complete"
+	EventConnectionTestStarted  = "connectionTestStarted"
+	EventConnectionTestProgress = "connectionTestProgress"
+	EventConnectionTestComplete = "connectionTestComplete"
 	
 	// Remote plugin action events
-	EventRemotePluginActionStarted  = "remote_plugin_action_started"
-	EventRemotePluginActionProgress = "remote_plugin_action_progress"
-	EventRemotePluginActionComplete = "remote_plugin_action_complete"
+	EventRemotePluginActionStarted  = "remotePluginActionStarted"
+	EventRemotePluginActionProgress = "remotePluginActionProgress"
+	EventRemotePluginActionComplete = "remotePluginActionComplete"
 	
 	// Version history events
-	EventVersionCreated   = "version_created"
-	EventRollbackStarted  = "rollback_started"
-	EventRollbackComplete = "rollback_complete"
-	EventRollbackFailed   = "rollback_failed"
+	EventVersionCreated   = "versionCreated"
+	EventRollbackStarted  = "rollbackStarted"
+	EventRollbackComplete = "rollbackComplete"
+	EventRollbackFailed   = "rollbackFailed"
 	
 	// E2E test events
-	EventE2ERunStarted    = "e2e_run_started"
-	EventE2ETestStarted   = "e2e_test_started"
-	EventE2ETestCompleted = "e2e_test_completed"
-	EventE2ERunCompleted  = "e2e_run_completed"
+	EventE2ERunStarted    = "e2eRunStarted"
+	EventE2ETestStarted   = "e2eTestStarted"
+	EventE2ETestCompleted = "e2eTestCompleted"
+	EventE2ERunCompleted  = "e2eRunCompleted"
 	
 	// General events
 	EventError      = "error"
@@ -228,7 +228,9 @@ func (h *Hub) Run() {
 
 		case client := <-h.unregister:
 			h.mu.Lock()
-			if _, ok := h.clients[client]; ok {
+			_, isRegistered := h.clients[client]
+
+			if isRegistered {
 				delete(h.clients, client)
 				close(client.send)
 			}
@@ -487,7 +489,9 @@ func (c *Client) readPump() {
 func (c *Client) handleMessage(message []byte) {
 	var msg IncomingMessage
 
-	if err := json.Unmarshal(message, &msg); err != nil {
+	err := json.Unmarshal(message, &msg)
+
+	if err != nil {
 		return
 	}
 
@@ -519,13 +523,17 @@ func (c *Client) writePump() {
 				return
 			}
 
-			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			writeErr := c.conn.WriteMessage(websocket.TextMessage, message)
+
+			if writeErr != nil {
 				return
 			}
 
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			pingErr := c.conn.WriteMessage(websocket.PingMessage, nil)
+
+			if pingErr != nil {
 				return
 			}
 		}

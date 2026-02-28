@@ -21,7 +21,9 @@ func (c *Client) GetPlugins() ([]PluginInfo, *apperror.AppError) {
 	}
 
 	var plugins []PluginInfo
-	if unmarshalErr := json.Unmarshal(data, &plugins); unmarshalErr != nil {
+	unmarshalErr := json.Unmarshal(data, &plugins)
+
+	if unmarshalErr != nil {
 		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode plugins response").
 			WithEndpoint(WPCorePlugins)
 	}
@@ -43,7 +45,9 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, *apperror.AppError) {
 	}
 
 	var plugin PluginInfo
-	if unmarshalErr := json.Unmarshal(data, &plugin); unmarshalErr != nil {
+	unmarshalErr := json.Unmarshal(data, &plugin)
+
+	if unmarshalErr != nil {
 		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode plugin response").
 			WithSlug(slug)
 	}

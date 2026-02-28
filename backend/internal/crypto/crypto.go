@@ -27,8 +27,10 @@ func Encrypt(plaintext, key []byte) ([]byte, *apperror.AppError) {
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrCryptoEncrypt, "generate nonce")
+	_, nonceErr := io.ReadFull(rand.Reader, nonce)
+
+	if nonceErr != nil {
+		return nil, apperror.Wrap(nonceErr, apperror.ErrCryptoEncrypt, "generate nonce")
 	}
 
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)

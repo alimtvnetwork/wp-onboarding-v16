@@ -35,8 +35,10 @@ func initPluginCaches(services *Services, log *logger.Logger) {
 		return
 	}
 	for _, p := range pluginResult.Items() {
-		if err := services.Watcher.InitializeCache(ctx, p.ID); err != nil {
-			log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", err)
+		cacheErr := services.Watcher.InitializeCache(ctx, p.ID)
+
+		if cacheErr != nil {
+			log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", cacheErr)
 		}
 	}
 }
@@ -110,12 +112,18 @@ func buildServerConfig(cfg *config.Config, registry *handlers.ServiceRegistry, w
 
 // launchServer starts the server and opens the browser.
 func launchServer(server *api.Server, cfg *config.Config, log *logger.Logger, vi *version.Info) {
-	if err := portutil.EnsurePortFree(cfg.Server.Port); err != nil {
-		log.Warn("Port conflict resolution", "port", cfg.Server.Port, "result", err.Error())
+	portErr := portutil.EnsurePortFree(cfg.Server.Port)
+
+	if portErr != nil {
+		log.Warn("Port conflict resolution", "port", cfg.Server.Port, "result", portErr.Error())
 	}
+
 	go func() {
-		if err := server.Start(); err != nil && err.Error() != "http: Server closed" {
-			log.Fatal("Server failed", "error", err)
+		startErr := server.Start()
+		isRealError := startErr != nil && startErr.Error() != "http: Server closed"
+
+		if isRealError {
+			log.Fatal("Server failed", "error", startErr)
 		}
 	}()
 	log.Info("Server started", "port", cfg.Server.Port)
@@ -143,8 +151,10 @@ func openBrowser(port int, log *logger.Logger) {
 	default:
 		cmd = exec.Command("xdg-open", localURL)
 	}
-	if err := cmd.Run(); err != nil {
-		log.Warn("Could not open browser automatically", "error", err)
+	runErr := cmd.Run()
+
+	if runErr != nil {
+		log.Warn("Could not open browser automatically", "error", runErr)
 	}
 }
 
@@ -158,8 +168,10 @@ func awaitShutdown(server *api.Server, log *logger.Logger) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
-		log.Error("Server shutdown error", "error", err)
+	shutdownErr := server.Shutdown(ctx)
+
+	if shutdownErr != nil {
+		log.Error("Server shutdown error", "error", shutdownErr)
 	}
 	log.Info("Application stopped")
 }

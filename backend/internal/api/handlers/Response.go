@@ -70,7 +70,9 @@ func respondErrorWithSession(
 ) {
 	resp := envelope.ErrorWithStack(status.Int(), code, message)
 
-	if appErr := apperror.Extract(err); appErr != nil {
+	appErr := apperror.Extract(err)
+
+	if appErr != nil {
 		hasSessionId := appErr.Diagnostic.SessionId != ""
 
 		if hasSessionId {
@@ -133,7 +135,9 @@ func isServiceMissing(w http.ResponseWriter, service any, name string) bool {
 // isBodyInvalid decodes a JSON request body into target. Returns true and writes
 // a 400 error response if decoding fails (positive guard for failure).
 func isBodyInvalid(w http.ResponseWriter, r *http.Request, target any) bool {
-	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+	err := json.NewDecoder(r.Body).Decode(target)
+
+	if err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

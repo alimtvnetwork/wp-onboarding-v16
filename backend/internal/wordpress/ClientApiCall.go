@@ -133,7 +133,9 @@ func doAPICall[T any](c *Client, input apiCallInput) apperror.Result[T] {
 // decodeAPIResponse unmarshals raw JSON bytes into T.
 func decodeAPIResponse[T any](data []byte, operationDesc string) apperror.Result[T] {
 	var result T
-	if err := json.Unmarshal(data, &result); err != nil {
+	err := json.Unmarshal(data, &result)
+
+	if err != nil {
 		return apperror.FailWrap[T](err, apperror.ErrInternal, "decode "+operationDesc)
 	}
 

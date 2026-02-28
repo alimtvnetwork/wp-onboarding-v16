@@ -21,7 +21,10 @@ func SaveErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := validateSaveErrorInput(input); msg != "" {
+	msg := validateSaveErrorInput(input)
+	isInvalid := msg != ""
+
+	if isInvalid {
 		respondBadRequest(w, apperror.ErrConfigParse, msg)
 
 		return

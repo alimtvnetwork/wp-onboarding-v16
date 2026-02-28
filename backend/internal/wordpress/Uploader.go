@@ -151,14 +151,18 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 
 // parseUploaderStatus parses envelope or legacy flat format from raw response bytes.
 func parseUploaderStatus(data []byte) (*UploaderStatus, error) {
-	if status, ok := UnwrapSingleResult[UploaderStatus](data); ok {
+	status, ok := UnwrapSingleResult[UploaderStatus](data)
+
+	if ok {
 		normalizeUploaderEnvelopeFields(status)
 
 		return status, nil
 	}
 
 	var status UploaderStatus
-	if err := json.Unmarshal(data, &status); err != nil {
+	err := json.Unmarshal(data, &status)
+
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode status response")
 	}
 

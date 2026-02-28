@@ -30,8 +30,10 @@ func EnsurePortFree(port int) error {
 
 	pidStr := strconv.Itoa(pid)
 
-	if err := killProcess(pid); err != nil {
-		return apperror.Wrap(err, apperror.ErrInternal, "port is in use but could not kill occupying process").
+	killErr := killProcess(pid)
+
+	if killErr != nil {
+		return apperror.Wrap(killErr, apperror.ErrInternal, "port is in use but could not kill occupying process").
 			WithValue("port", portStr).
 			WithValue("pid", pidStr)
 	}
@@ -99,16 +101,22 @@ func parseNetstatWindows(output string, port int) (int, error) {
 func killProcess(pid int) error {
 	switch runtime.GOOS {
 	case "windows":
-		if err := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run(); err != nil {
-			return apperror.Wrap(err, apperror.ErrInternal, "taskkill failed").
+		killErr := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run()
+
+		if killErr != nil {
+			return apperror.Wrap(killErr, apperror.ErrInternal, "taskkill failed").
 				WithValue("pid", strconv.Itoa(pid))
 		}
+
 		return nil
 	default:
-		if err := exec.Command("kill", "-9", strconv.Itoa(pid)).Run(); err != nil {
-			return apperror.Wrap(err, apperror.ErrInternal, "kill command failed").
+		killErr := exec.Command("kill", "-9", strconv.Itoa(pid)).Run()
+
+		if killErr != nil {
+			return apperror.Wrap(killErr, apperror.ErrInternal, "kill command failed").
 				WithValue("pid", strconv.Itoa(pid))
 		}
+
 		return nil
 	}
 }

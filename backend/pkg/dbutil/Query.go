@@ -52,8 +52,10 @@ func collectRows[T any](rows *sql.Rows, scan RowsScanner[T]) ResultSet[T] {
 		}
 		items = append(items, item)
 	}
-	if err := rows.Err(); err != nil {
-		wrapped := apperror.Wrap(err, "E5013", "rows iteration failed")
+	rowsErr := rows.Err()
+
+	if rowsErr != nil {
+		wrapped := apperror.Wrap(rowsErr, "E5013", "rows iteration failed")
 		return NewResultSetError[T](wrapped, wrapped.StackTrace)
 	}
 	return NewResultSet(items)

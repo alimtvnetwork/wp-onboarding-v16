@@ -90,7 +90,9 @@ func (r *pluginRaw) toPlugin() models.Plugin {
 // scanPluginRow is a dbutil.RowScanner[models.Plugin] for QueryOne.
 func scanPluginRow(row *sql.Row) (models.Plugin, error) {
 	var raw pluginRaw
-	if err := scanPluginColumns(&raw, row.Scan); err != nil {
+	err := scanPluginColumns(&raw, row.Scan)
+
+	if err != nil {
 		return models.Plugin{}, err
 	}
 	return raw.toPlugin(), nil
@@ -99,7 +101,9 @@ func scanPluginRow(row *sql.Row) (models.Plugin, error) {
 // scanPluginRows is a dbutil.RowsScanner[models.Plugin] for QueryMany.
 func scanPluginRows(rows *sql.Rows) (models.Plugin, error) {
 	var raw pluginRaw
-	if err := scanPluginColumns(&raw, rows.Scan); err != nil {
+	err := scanPluginColumns(&raw, rows.Scan)
+
+	if err != nil {
 		return models.Plugin{}, err
 	}
 	return raw.toPlugin(), nil
@@ -173,11 +177,16 @@ func parseDateTime(s string) time.Time {
 	if isEmpty {
 		return time.Time{}
 	}
-	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
-		return t
+	t1, err1 := time.Parse("2006-01-02 15:04:05", s)
+
+	if err1 == nil {
+		return t1
 	}
-	if t, err := time.Parse(time.RFC3339, s); err == nil {
-		return t
+
+	t2, err2 := time.Parse(time.RFC3339, s)
+
+	if err2 == nil {
+		return t2
 	}
 	return time.Time{}
 }
@@ -186,7 +195,9 @@ func parseDateTime(s string) time.Time {
 func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result[models.Plugin] {
 	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path, "forceCreate", input.ForceCreate)
 
-	if appErr := s.validateCreatePath(ctx, input); appErr != nil {
+	appErr := s.validateCreatePath(ctx, input)
+
+	if appErr != nil {
 		return apperror.Fail[models.Plugin](appErr)
 	}
 

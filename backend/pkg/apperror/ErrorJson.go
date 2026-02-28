@@ -37,7 +37,9 @@ func (e *AppError) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON deserializes JSON into AppError, restoring Cause as a plain error.
 func (e *AppError) UnmarshalJSON(data []byte) error {
 	var alias appErrorJSON
-	if err := json.Unmarshal(data, &alias); err != nil {
+	err := json.Unmarshal(data, &alias)
+
+	if err != nil {
 		return fmt.Errorf("apperror.UnmarshalJSON: failed to decode AppError (received %d bytes: %s): %w", len(data), truncateData(data, 200), err)
 	}
 

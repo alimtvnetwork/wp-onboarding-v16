@@ -14,7 +14,9 @@ import (
 
 // StartRun begins a new test run.
 func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, error) {
-	if err := s.checkNoActiveRun(); err != nil {
+	err := s.checkNoActiveRun()
+
+	if err != nil {
 		return nil, err
 	}
 

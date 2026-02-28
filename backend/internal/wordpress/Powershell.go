@@ -197,7 +197,9 @@ func parsePsJsonOutput(result *PowerShellResult) {
 	}
 
 	var jsonResult psJsonOutput
-	if err := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); err != nil {
+	err := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult)
+
+	if err != nil {
 
 		return
 	}
@@ -267,12 +269,16 @@ func FindUploadScript(backendDir string) string {
 func buildScriptCandidates(backendDir string) []string {
 	var candidates []string
 
-	if p, err := pathutil.Join(backendDir, "scripts", "upload-plugin.ps1"); err == nil {
-		candidates = append(candidates, p)
+	p1, err1 := pathutil.Join(backendDir, "scripts", "upload-plugin.ps1")
+
+	if err1 == nil {
+		candidates = append(candidates, p1)
 	}
 
-	if p, err := pathutil.Join(backendDir, "upload-plugin.ps1"); err == nil {
-		candidates = append(candidates, p)
+	p2, err2 := pathutil.Join(backendDir, "upload-plugin.ps1")
+
+	if err2 == nil {
+		candidates = append(candidates, p2)
 	}
 
 	candidates = append(candidates, "scripts/upload-plugin.ps1", "upload-plugin.ps1")

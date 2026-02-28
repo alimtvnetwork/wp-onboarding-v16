@@ -85,8 +85,10 @@ func buildImportMultipart(zipPath string) (*multipartResult, error) {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create multipart form")
 	}
 
-	if _, err := io.Copy(part, file); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write file to form")
+	_, copyErr := io.Copy(part, file)
+
+	if copyErr != nil {
+		return nil, apperror.Wrap(copyErr, apperror.ErrInternal, "failed to write file to form")
 	}
 
 	writer.Close()

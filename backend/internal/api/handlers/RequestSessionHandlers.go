@@ -106,7 +106,9 @@ func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	if err := RequestSessionStore.DeleteRequestSession(id); err != nil {
+	err := RequestSessionStore.DeleteRequestSession(id)
+
+	if err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusNotFound,
@@ -135,7 +137,9 @@ func ClearRequestSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := RequestSessionStore.ClearRequestSessions(); err != nil {
+	err := RequestSessionStore.ClearRequestSessions()
+
+	if err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
