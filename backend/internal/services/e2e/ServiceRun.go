@@ -140,7 +140,12 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 }
 
 // runSuites iterates suites and cases, executing each test.
-func (s *serviceImpl) runSuites(ctx context.Context, run *TestRun, suites []TestSuite, opts RunOptions) {
+func (s *serviceImpl) runSuites(
+	ctx context.Context,
+	run *TestRun,
+	suites []TestSuite,
+	opts RunOptions,
+) {
 	for _, suite := range suites {
 		if s.runSuiteCases(ctx, run, suite, opts) {
 			return
@@ -149,7 +154,12 @@ func (s *serviceImpl) runSuites(ctx context.Context, run *TestRun, suites []Test
 }
 
 // runSuiteCases executes cases in a suite. Returns true if run should stop.
-func (s *serviceImpl) runSuiteCases(ctx context.Context, run *TestRun, suite TestSuite, opts RunOptions) bool {
+func (s *serviceImpl) runSuiteCases(
+	ctx context.Context,
+	run *TestRun,
+	suite TestSuite,
+	opts RunOptions,
+) bool {
 	cases, err := s.GetCases(ctx, suite.ID)
 	if err != nil {
 		return false
