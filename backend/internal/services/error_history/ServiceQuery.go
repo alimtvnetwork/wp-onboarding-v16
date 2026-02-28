@@ -25,12 +25,30 @@ func (s *Service) GetById(id int64) apperror.Result[models.ErrorHistory] {
 	scanned := scanNullFields{}
 
 	err := s.db.QueryRow(query, id).Scan(
-		&scanned.e.Id, &scanned.e.ErrorId, &scanned.e.Code, &scanned.e.Level, &scanned.e.Message,
-		&scanned.details, &scanned.contextJSON,
-		&scanned.stackTrace, &scanned.endpoint, &scanned.method, &scanned.requestBodyJSON, &scanned.responseStatus,
-		&scanned.sessionId, &scanned.sessionType, &scanned.phpStackFramesJson, &scanned.backendLogsJSON,
-		&scanned.backendStackTrace, &scanned.siteUrl, &scanned.triggerComponent, &scanned.triggerAction,
-		&scanned.invocationChainJSON, &scanned.uiClickPath, &scanned.markdownReport, &scanned.createdAt,
+		&scanned.e.Id,
+		&scanned.e.ErrorId,
+		&scanned.e.Code,
+		&scanned.e.Level,
+		&scanned.e.Message,
+		&scanned.details,
+		&scanned.contextJson,
+		&scanned.stackTrace,
+		&scanned.endpoint,
+		&scanned.method,
+		&scanned.requestBodyJson,
+		&scanned.responseStatus,
+		&scanned.sessionId,
+		&scanned.sessionType,
+		&scanned.phpStackFramesJson,
+		&scanned.backendLogsJson,
+		&scanned.backendStackTrace,
+		&scanned.siteUrl,
+		&scanned.triggerComponent,
+		&scanned.triggerAction,
+		&scanned.invocationChainJson,
+		&scanned.uiClickPath,
+		&scanned.markdownReport,
+		&scanned.createdAt,
 	)
 	if err == sql.ErrNoRows {
 		return apperror.FailNew[models.ErrorHistory](apperror.ErrNotFound, "error not found").
@@ -51,6 +69,7 @@ func (s *Service) GetById(id int64) apperror.Result[models.ErrorHistory] {
 func (s *Service) GetByErrorId(errorId string) apperror.Result[models.ErrorHistory] {
 	query := `SELECT Id FROM ErrorHistory WHERE ErrorId = ?`
 	var id int64
+
 	err := s.db.QueryRow(query, errorId).Scan(&id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -61,6 +80,7 @@ func (s *Service) GetByErrorId(errorId string) apperror.Result[models.ErrorHisto
 		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "query error by error ID").
 			WithValue("errorId", errorId)
 	}
+
 	return s.GetById(id)
 }
 
@@ -111,11 +131,13 @@ func (s *Service) BulkExport(ids []int64) apperror.Result[string] {
 	}
 
 	var reports []string
+
 	for _, id := range ids {
 		result := s.GetById(id)
 		if result.HasError() {
 			continue
 		}
+
 		e := result.Value()
 
 		if e.MarkdownReport != "" {
@@ -129,6 +151,7 @@ func (s *Service) BulkExport(ids []int64) apperror.Result[string] {
 			if e.StackTrace != "" {
 				report += fmt.Sprintf("\n### Stack Trace\n```\n%s\n```\n", e.StackTrace)
 			}
+
 			reports = append(reports, report)
 		}
 	}
