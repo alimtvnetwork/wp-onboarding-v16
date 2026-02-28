@@ -42,7 +42,9 @@ func New(cfg Config) (*Store, error) {
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "resolve request sessions directory")
 	}
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+	err = os.MkdirAll(dataDir, 0755)
+	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "create request sessions directory")
 	}
 
@@ -71,7 +73,9 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
 		return apperror.Wrap(err, apperror.ErrSessionStore, "resolve session directory")
 	}
 
-	if err := os.MkdirAll(sessionDir, 0755); err != nil {
+	err = os.MkdirAll(sessionDir, 0755)
+	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrSessionStore, "create session directory")
 	}
 
@@ -84,7 +88,9 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
 		return apperror.Wrap(err, apperror.ErrSessionStore, "marshal session")
 	}
 
-	if err := os.WriteFile(sessionPath, data, 0644); err != nil {
+	err = os.WriteFile(sessionPath, data, 0644)
+	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrSessionStore, "write session file")
 	}
 
@@ -115,7 +121,9 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error)
 				return nil
 			}
 			var session middleware.RequestSession
-			if err := json.Unmarshal(data, &session); err != nil {
+			err := json.Unmarshal(data, &session)
+			if err != nil {
+
 				return nil
 			}
 			found = &session
@@ -157,7 +165,9 @@ func (s *Store) ListRequestSessions(limit, offset int) (*middleware.SessionListR
 		}
 
 		var session middleware.RequestSession
-		if err := json.Unmarshal(data, &session); err != nil {
+		err := json.Unmarshal(data, &session)
+		if err != nil {
+
 			return nil
 		}
 

@@ -51,7 +51,8 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request body
 	var req FileContentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -162,7 +163,8 @@ func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request body
 	var req FileContentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -231,7 +233,9 @@ func calculateMD5(filePath string) (string, error) {
 
 	hash := md5.New()
 
-	if _, err := io.Copy(hash, file); err != nil {
+	_, err := io.Copy(hash, file)
+	if err != nil {
+
 		return "", err
 	}
 

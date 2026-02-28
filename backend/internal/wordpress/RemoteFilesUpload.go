@@ -94,11 +94,15 @@ func (c *Client) buildFormFromOpenedFile(opened *openedFile, zipPath, pluginSlug
 		ZipPath:    zipPath,
 		PluginSlug: pluginSlug,
 	}
-	if err := writeZipFormFields(formInput); err != nil {
+	err := writeZipFormFields(formInput)
+	if err != nil {
+
 		return nil, err
 	}
 
-	if err := writer.Close(); err != nil {
+	err = writer.Close()
+	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to close multipart writer")
 	}
 
@@ -145,11 +149,15 @@ func writeZipFormFields(input zipFormInput) error {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file for upload")
 	}
 
-	if _, err := io.Copy(part, input.File); err != nil {
+	_, err := io.Copy(part, input.File)
+	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to copy file to multipart form")
 	}
 
-	if err := input.Writer.WriteField("pluginSlug", input.PluginSlug); err != nil {
+	err = input.Writer.WriteField("pluginSlug", input.PluginSlug)
+	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to write pluginSlug field")
 	}
 
@@ -252,7 +260,8 @@ func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint,
 	}
 
 	var result OnboardUploadResult
-	if err := json.Unmarshal([]byte(mpResp.Body), &result); err != nil {
+	err := json.Unmarshal([]byte(mpResp.Body), &result)
+	if err != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}
