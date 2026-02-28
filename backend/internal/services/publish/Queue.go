@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"wp-plugin-publish/internal/enums/queue_status"
+	"wp-plugin-publish/internal/enums/queuestatustype"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -38,7 +38,7 @@ type QueueItem struct {
 	Options    PublishOptions
 	Priority   int // Higher = processed first
 	QueuedAt   time.Time
-	Status     queuestatus.Variant
+	Status     queuestatustype.Variant
 }
 
 // QueueStatus provides queue state overview
@@ -92,7 +92,7 @@ func (q *PublishQueue) Enqueue(item QueueItem) (string, error) {
 
 	item.Id = fmt.Sprintf("pq-%d-%d-%d", item.PluginId, item.SiteId, time.Now().UnixMilli())
 	item.QueuedAt = time.Now()
-	item.Status = queuestatus.Queued
+	item.Status = queuestatustype.Queued
 
 	q.items = append(q.items, &item)
 	q.broadcastStatus()
@@ -121,7 +121,7 @@ func (q *PublishQueue) Cancel(itemId string) bool {
 
 	for i, item := range q.items {
 		if item.Id == itemId && item.Status.IsQueued() {
-			item.Status = queuestatus.Cancelled
+			item.Status = queuestatustype.Cancelled
 			q.completed = append(q.completed, item)
 			q.items = append(q.items[:i], q.items[i+1:]...)
 			q.broadcastStatus()
@@ -198,7 +198,7 @@ func (q *PublishQueue) dequeueHighestPriority() *QueueItem {
 
 	item := q.items[bestIdx]
 	q.items = append(q.items[:bestIdx], q.items[bestIdx+1:]...)
-	item.Status = queuestatus.Running
+	item.Status = queuestatustype.Running
 	q.active[item.Id] = item
 	return item
 }
@@ -227,9 +227,9 @@ func (q *PublishQueue) recordResult(item *QueueItem, hasError bool) {
 
 	delete(q.active, item.Id)
 	if hasError {
-		item.Status = queuestatus.Failed
+		item.Status = queuestatustype.Failed
 	} else {
-		item.Status = queuestatus.Completed
+		item.Status = queuestatustype.Completed
 	}
 	q.completed = append(q.completed, item)
 	q.trimCompletedLocked()

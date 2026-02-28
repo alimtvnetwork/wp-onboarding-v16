@@ -5,17 +5,17 @@ import (
 	"io"
 	"net/http"
 
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/operation"
+	"wp-plugin-publish/internal/enums/httpmethodtype"
+	"wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
 // apiCallInput holds common parameters for a WordPress REST API call.
 type apiCallInput struct {
-	Method     httpmethod.Variant
+	Method     httpmethodtype.Variant
 	Endpoint   string
 	Body       any
-	Operation  operation.Variant
+	Operation  operationtype.Variant
 	OkStatuses []int  // defaults to [200] if empty
 	PluginSlug string // optional: populates APIError.PluginSlugIn
 	ErrorCode  string // optional: apperror wrap code (defaults to ErrInternal)

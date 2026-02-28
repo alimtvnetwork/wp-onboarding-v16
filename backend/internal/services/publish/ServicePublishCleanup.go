@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	pluginstatus "wp-plugin-publish/internal/enums/plugin_status"
-	publishstep "wp-plugin-publish/internal/enums/publish_step"
-	enumstatus "wp-plugin-publish/internal/enums/status"
+	"wp-plugin-publish/internal/enums/logleveltype"
+	"wp-plugin-publish/internal/enums/pluginstatustype"
+	"wp-plugin-publish/internal/enums/publishsteptype"
+	"wp-plugin-publish/internal/enums/statustype"
 	"wp-plugin-publish/internal/models"
 )
 
@@ -29,13 +29,13 @@ func (s *Service) executeCleanupStage(ctx context.Context, pctx *publishContext)
 
 // broadcastCleanupProgress sends cleanup progress and log.
 func (s *Service) broadcastCleanupProgress(pctx *publishContext) {
-	s.broadcastProgress(pctx.progress(publishstep.Cleanup, 95, "Marking files as synced..."))
+	s.broadcastProgress(pctx.progress(publishsteptype.Cleanup, 95, "Marking files as synced..."))
 
 	cleanLog := DetailedLogInput{
 		PluginId: pctx.PluginId,
 		SiteId:   pctx.SiteId,
-		Level:    loglevel.Info,
-		Step:     publishstep.Cleanup,
+		Level:    logleveltype.Info,
+		Step:     publishsteptype.Cleanup,
 		Message:  "Updating local sync state",
 	}
 	s.broadcastDetailedLog(cleanLog)
@@ -54,8 +54,8 @@ func (s *Service) countFilesUpdated(options PublishOptions, pluginInfo models.Pl
 
 // finalizePublishResult computes final metrics, broadcasts completion, and records history.
 func (s *Service) finalizePublishResult(pctx *publishContext) {
-	pctx.Result.IsSuccess = pctx.Result.ActivationStatus == pluginstatus.Active.String() ||
-		pctx.Result.ActivationStatus == pluginstatus.Inactive.String()
+	pctx.Result.IsSuccess = pctx.Result.ActivationStatus == pluginstatustype.Active.String() ||
+		pctx.Result.ActivationStatus == pluginstatustype.Inactive.String()
 	pctx.Result.Duration = time.Since(pctx.StartTime).Milliseconds()
 
 	s.broadcastCompletion(pctx)
@@ -85,16 +85,16 @@ func (s *Service) broadcastCompletion(pctx *publishContext) {
 }
 
 // resolveCompletionLogLevel returns the appropriate log level for completion.
-func resolveCompletionLogLevel(result *PublishResult) loglevel.Variant {
+func resolveCompletionLogLevel(result *PublishResult) logleveltype.Variant {
 	if !result.IsSuccess {
-		return loglevel.Error
+		return logleveltype.Error
 	}
 
-	return loglevel.Info
+	return logleveltype.Info
 }
 
 // broadcastCompletionLog sends the completion detailed log.
-func (s *Service) broadcastCompletionLog(pctx *publishContext, logLevel loglevel.Variant, message string) {
+func (s *Service) broadcastCompletionLog(pctx *publishContext, logLevel logleveltype.Variant, message string) {
 	completionDetails := toDetails(CompletionDetails{
 		IsSuccess:    pctx.Result.IsSuccess,
 		FilesUpdated: pctx.Result.FilesUpdated,
@@ -104,7 +104,7 @@ func (s *Service) broadcastCompletionLog(pctx *publishContext, logLevel loglevel
 		PluginId: pctx.PluginId,
 		SiteId:   pctx.SiteId,
 		Level:    logLevel,
-		Step:     publishstep.Complete,
+		Step:     publishsteptype.Complete,
 		Message:  message,
 		Details:  completionDetails,
 	}
@@ -112,16 +112,16 @@ func (s *Service) broadcastCompletionLog(pctx *publishContext, logLevel loglevel
 }
 
 // resolveCompletionStatus returns step and message for completion broadcast.
-func resolveCompletionStatus(result *PublishResult) (publishstep.Variant, string) {
+func resolveCompletionStatus(result *PublishResult) (publishsteptype.Variant, string) {
 	if result.IsSuccess {
-		return publishstep.Completed, fmt.Sprintf("Published %d files in %dms", result.FilesUpdated, result.Duration)
+		return publishsteptype.Completed, fmt.Sprintf("Published %d files in %dms", result.FilesUpdated, result.Duration)
 	}
 	msg := result.ErrorMessage
 	if msg == "" {
 		msg = "Publish failed - check logs for details"
 	}
 
-	return publishstep.Failed, msg
+	return publishsteptype.Failed, msg
 }
 
 // ─── History ─────────────────────────────────────────────────────────────────
@@ -162,9 +162,9 @@ func buildHistoryEntry(input historyEntryInput) models.PublishHistory {
 
 // buildHistoryBase constructs the base history entry from plugin/site/options.
 func buildHistoryBase(input historyEntryInput) models.PublishHistory {
-	historyStatus := enumstatus.Success.String()
+	historyStatus := statustype.Success.String()
 	if !input.Result.IsSuccess {
-		historyStatus = enumstatus.Failed.String()
+		historyStatus = statustype.Failed.String()
 	}
 
 	return models.PublishHistory{

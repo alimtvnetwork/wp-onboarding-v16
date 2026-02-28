@@ -8,7 +8,7 @@
 
 ## Standard Layout
 
-All enums MUST be placed in the `internal/enums/` directory at the project root.
+All enums MUST be placed in the `internal/enums/` directory at the project root. Each enum package MUST use the `type` suffix (lowercase, no underscores).
 
 ```
 {cli-root}/
@@ -16,16 +16,16 @@ All enums MUST be placed in the `internal/enums/` directory at the project root.
 │   └── root.go
 ├── internal/
 │   ├── enums/
-│   │   ├── provider/
-│   │   │   └── variant.go
-│   │   ├── platform/
-│   │   │   └── variant.go
-│   │   ├── engine/
-│   │   │   └── variant.go
-│   │   ├── search_mode/
-│   │   │   └── variant.go
-│   │   ├── output_format/
-│   │   │   └── variant.go
+│   │   ├── providertype/
+│   │   │   └── Variant.go
+│   │   ├── platformtype/
+│   │   │   └── Variant.go
+│   │   ├── enginetype/
+│   │   │   └── Variant.go
+│   │   ├── searchmodetype/
+│   │   │   └── Variant.go
+│   │   ├── outputformattype/
+│   │   │   └── Variant.go
 │   │   └── registry.go       # Optional: Central registry
 │   ├── models/
 │   ├── services/
@@ -37,18 +37,22 @@ All enums MUST be placed in the `internal/enums/` directory at the project root.
 
 ## Naming Conventions
 
-### Package Names
+### Package Names — `type` Suffix (Mandatory)
 
-- Use `snake_case` for multi-word packages
-- Keep names short and descriptive
+All Go enum packages MUST end with the `type` suffix (lowercase, no underscores). This is the **convention-over-configuration** rule: by looking at the package name alone, anyone can immediately tell it is an enum package.
+
+- **Go packages:** lowercase, no underscores, `type` suffix (e.g., `httpmethodtype`, `statustype`)
+- **PHP enums:** PascalCase, `Type` suffix (e.g., `HttpMethodType`, `StatusType`)
 - One enum per package
 
-| ✅ Correct | ❌ Wrong |
-|-----------|----------|
-| `provider` | `providers` |
-| `search_mode` | `searchMode` |
-| `output_format` | `OutputFormat` |
-| `movie_provider` | `movieProvider` |
+| ✅ Correct | ❌ Wrong | Reason |
+|-----------|----------|--------|
+| `statustype` | `status` | Missing `type` suffix |
+| `httpmethodtype` | `http_method` | Underscore + missing suffix |
+| `logleveltype` | `log_level` | Underscore + missing suffix |
+| `backuptype` | `backup_type` | Underscore forbidden |
+| `endpointtype` | `endpoint` | Missing `type` suffix |
+| `actiontype` | `action` | Missing `type` suffix |
 
 ### File Names
 
@@ -56,10 +60,10 @@ All enums MUST be placed in the `internal/enums/` directory at the project root.
 - Additional helper files allowed: `helpers.go`, `validation.go`
 
 ```
-internal/enums/provider/
-├── variant.go      # Main enum definition
-├── helpers.go      # Optional: Helper functions
-└── validation.go   # Optional: Validation logic
+internal/enums/providertype/
+├── Variant.go      # Main enum definition
+├── Helpers.go      # Optional: Helper functions
+└── Validation.go   # Optional: Validation logic
 ```
 
 ---
@@ -68,20 +72,20 @@ internal/enums/provider/
 
 ```go
 import (
-    "myapp/internal/enums/provider"
-    "myapp/internal/enums/platform"
-    "myapp/internal/enums/engine"
+    "myapp/internal/enums/providertype"
+    "myapp/internal/enums/platformtype"
+    "myapp/internal/enums/enginetype"
 )
 
 func main() {
-    p := provider.SerpApi
+    p := providertype.SerpApi
     if p.IsSerpApi() {
         // ...
     }
     
-    platforms := []platform.Variant{
-        platform.YouTube,
-        platform.Reddit,
+    platforms := []platformtype.Variant{
+        platformtype.YouTube,
+        platformtype.Reddit,
     }
 }
 ```
@@ -94,75 +98,75 @@ func main() {
 
 ```
 internal/enums/
-├── provider/           # SerpApi, MapsScraper, Colly
-├── platform/           # YouTube, Reddit, LinkedIn, etc.
-├── engine/             # Google, Bing, DuckDuckGo
-├── search_mode/        # Sequential, Parallel, RoundRobin
-├── output_format/      # Json, Csv, Table, Markdown
-├── movie_provider/     # Tmdb, Omdb, Trakt, ImdbScraper
-├── social_media/       # LinkedIn, Twitter, Instagram, etc.
-└── content_type/       # Web, Image, Video, News
+├── providertype/        # SerpApi, MapsScraper, Colly
+├── platformtype/        # YouTube, Reddit, LinkedIn, etc.
+├── enginetype/          # Google, Bing, DuckDuckGo
+├── searchmodetype/      # Sequential, Parallel, RoundRobin
+├── outputformattype/    # Json, Csv, Table, Markdown
+├── movieprovidertype/   # Tmdb, Omdb, Trakt, ImdbScraper
+├── socialmediatype/     # LinkedIn, Twitter, Instagram, etc.
+└── contenttype/         # Web, Image, Video, News
 ```
 
 ### BRun CLI
 
 ```
 internal/enums/
-├── build_type/         # Debug, Release, Test
-├── run_mode/           # Foreground, Background, Watch
-├── log_level/          # Debug, Info, Warn, Error
-└── profile/            # Development, Staging, Production
+├── buildtype/          # Debug, Release, Test
+├── runmodetype/        # Foreground, Background, Watch
+├── logleveltype/       # Debug, Info, Warn, Error
+└── profiletype/        # Development, Staging, Production
 ```
 
 ### AI Bridge CLI
 
 ```
 internal/enums/
-├── model_provider/     # Ollama, OpenAi, Anthropic
-├── reasoning_mode/     # SinglePrompt, TwoStage, Research
-├── step_type/          # Search, Fetch, Parse, Embed, etc.
-├── execution_status/   # Pending, Running, Success, Failed
-├── checkpoint_type/    # Auto, Manual, Rollback
-└── memory_flag/        # IsCritical, IsImportant, Standard
+├── modelprovidertype/  # Ollama, OpenAi, Anthropic
+├── reasoningmodetype/  # SinglePrompt, TwoStage, Research
+├── steptype/           # Search, Fetch, Parse, Embed, etc.
+├── executionstatustype/ # Pending, Running, Success, Failed
+├── checkpointtype/     # Auto, Manual, Rollback
+└── memoryflagtype/     # IsCritical, IsImportant, Standard
 ```
 
 ### Nexus Flow CLI
 
 ```
 internal/enums/
-├── node_type/          # Start, End, Task, Decision, Fork, Join
-├── flow_status/        # Draft, Active, Paused, Completed
-├── trigger_type/       # Manual, Scheduled, Webhook, Event
-└── execution_mode/     # Sequential, Parallel
+├── nodetype/           # Start, End, Task, Decision, Fork, Join
+├── flowstatustype/     # Draft, Active, Paused, Completed
+├── triggertype/        # Manual, Scheduled, Webhook, Event
+└── executionmodetype/  # Sequential, Parallel
 ```
 
 ### Spec Reverse CLI
 
 ```
 internal/enums/
-├── output_format/      # Markdown, Json, Yaml
-├── parser_type/        # Go, TypeScript, Python
-└── extraction_mode/    # Full, Summary, Skeleton
+├── outputformattype/   # Markdown, Json, Yaml
+├── parsertype/         # Go, TypeScript, Python
+└── extractionmodetype/ # Full, Summary, Skeleton
 ```
 
 ### WP SEO Publish CLI
 
 ```
 internal/enums/
-├── content_type/       # Post, Page, Product
-├── publish_status/     # Draft, Pending, Published
-├── seo_score/          # Poor, Fair, Good, Excellent
-└── media_type/         # Image, Video, Document
+├── contenttype/        # Post, Page, Product
+├── publishstatustype/  # Draft, Pending, Published
+├── seoscoretype/       # Poor, Fair, Good, Excellent
+└── mediatype/          # Image, Video, Document
 ```
 
 ### AI Transcribe CLI
 
 ```
 internal/enums/
-├── audio_format/       # Mp3, Wav, Flac, Ogg
-├── transcribe_provider/ # Whisper, DeepGram, AssemblyAi
-├── output_format/      # Srt, Vtt, Txt, Json
-└── language/           # En, Es, Fr, De, etc.
+├── audioformattype/         # Mp3, Wav, Flac, Ogg
+├── transcribeprovidertype/  # Whisper, DeepGram, AssemblyAi
+├── outputformattype/        # Srt, Vtt, Txt, Json
+└── languagetype/            # En, Es, Fr, De, etc.
 ```
 
 ---
@@ -176,29 +180,29 @@ For CLIs with many enums, create a central registry:
 package enums
 
 import (
-    "myapp/internal/enums/provider"
-    "myapp/internal/enums/platform"
-    "myapp/internal/enums/engine"
+    "myapp/internal/enums/providertype"
+    "myapp/internal/enums/platformtype"
+    "myapp/internal/enums/enginetype"
 )
 
 // Re-export for convenience
 type (
-    Provider   = provider.Variant
-    Platform   = platform.Variant
-    Engine     = engine.Variant
+    Provider   = providertype.Variant
+    Platform   = platformtype.Variant
+    Engine     = enginetype.Variant
 )
 
 // Constants re-export
 const (
-    ProviderSerpApi     = provider.SerpApi
-    ProviderMapsScraper = provider.MapsScraper
-    ProviderColly       = provider.Colly
+    ProviderSerpApi     = providertype.SerpApi
+    ProviderMapsScraper = providertype.MapsScraper
+    ProviderColly       = providertype.Colly
     
-    PlatformYouTube     = platform.YouTube
-    PlatformReddit      = platform.Reddit
+    PlatformYouTube     = platformtype.YouTube
+    PlatformReddit      = platformtype.Reddit
     
-    EngineGoogle        = engine.Google
-    EngineBing          = engine.Bing
+    EngineGoogle        = enginetype.Google
+    EngineBing          = enginetype.Bing
 )
 ```
 
@@ -214,8 +218,8 @@ p := enums.ProviderSerpApi
 ## File Template
 
 ```go
-// internal/enums/{category}/variant.go
-package {category}
+// internal/enums/{categorytype}/Variant.go
+package {categorytype}
 
 import (
     "encoding/json"

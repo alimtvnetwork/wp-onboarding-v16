@@ -5,9 +5,9 @@ import (
 	"io"
 	"net/http"
 
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/operation"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
+	"wp-plugin-publish/internal/enums/httpmethodtype"
+	"wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -44,20 +44,20 @@ type SnapshotDownloadResult struct {
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response] {
 	return c.doAPICallStream(apiCallInput{
-		Method:    httpmethod.Post,
+		Method:    httpmethodtype.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsExport),
 		Body:      SnapshotIdRequest{Id: snapshotId},
-		Operation: operation.ExportSnapshot,
+		Operation: operationtype.ExportSnapshot,
 	})
 }
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
 func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotDownloadResult] {
 	return doAPICall[SnapshotDownloadResult](c, apiCallInput{
-		Method:    httpmethod.Post,
+		Method:    httpmethodtype.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsDownload),
 		Body:      SnapshotIdRequest{Id: snapshotId},
-		Operation: operation.DownloadSnapshotZip,
+		Operation: operationtype.DownloadSnapshotZip,
 	})
 }
 
@@ -66,7 +66,7 @@ func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotD
 func (c *Client) StreamSnapshotZip(downloadURL string) apperror.Result[*http.Response] {
 	resp, err := c.rawGet(downloadURL)
 	if err != nil {
-		return apperror.FailWrap[*http.Response](err, apperror.ErrInternal, operation.StreamSnapshotZip.Value())
+		return apperror.FailWrap[*http.Response](err, apperror.ErrInternal, operationtype.StreamSnapshotZip.Value())
 	}
 
 	if resp.StatusCode != HttpStatusOk.Int() {
@@ -82,23 +82,18 @@ func buildStreamZipAppError(resp *http.Response, downloadURL string) *apperror.A
 	resp.Body.Close()
 
 	apiErr := &APIError{
-		Operation:    operation.StreamSnapshotZip.Value(),
-		Method:       httpmethod.Get.Value(),
-		Endpoint:     downloadURL,
-		Url:          downloadURL,
-		StatusCode:   resp.StatusCode,
-		ResponseBody: truncateBody(string(bodyBytes), 8192),
-	}
-
-	return apperror.Wrap(apiErr, apperror.ErrWPConnection, operation.StreamSnapshotZip.Value())
+		Operation:    operationtype.StreamSnapshotZip.Value(),
+		Method:       httpmethodtype.Get.Value(),
+...
+	return apperror.Wrap(apiErr, apperror.ErrWPConnection, operationtype.StreamSnapshotZip.Value())
 }
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() apperror.Result[[]SnapshotProvider] {
 	rawResult := c.doAPICallRaw(apiCallInput{
-		Method:    httpmethod.Get,
+		Method:    httpmethodtype.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsProviders),
-		Operation: operation.GetSnapshotProviders,
+		Operation: operationtype.GetSnapshotProviders,
 	})
 	if rawResult.HasError() {
 		return apperror.Fail[[]SnapshotProvider](rawResult.AppError())
@@ -123,9 +118,9 @@ type AvailableTable struct {
 // GetAvailableTables returns the list of database tables available for snapshotting.
 func (c *Client) GetAvailableTables() apperror.Result[[]AvailableTable] {
 	rawResult := c.doAPICallRaw(apiCallInput{
-		Method:    httpmethod.Get,
+		Method:    httpmethodtype.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsTables),
-		Operation: operation.GetAvailableTables,
+		Operation: operationtype.GetAvailableTables,
 	})
 	if rawResult.HasError() {
 		return apperror.Fail[[]AvailableTable](rawResult.AppError())

@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"wp-plugin-publish/internal/enums/test_status"
+	"wp-plugin-publish/internal/enums/teststatustype"
 	"wp-plugin-publish/internal/ws"
 )
 
@@ -80,7 +80,7 @@ func (s *serviceImpl) dispatchTest(ctx context.Context, caseID string, result *T
 
 // skipUnimplemented marks a test as skipped (no implementation).
 func (s *serviceImpl) skipUnimplemented(result *TestResult, caseID string) error {
-	result.Status = teststatus.Skipped.String()
+	result.Status = teststatustype.Skipped.String()
 	result.Logs = "No test implementation for " + caseID
 	now := time.Now()
 	result.CompletedAt = &now
@@ -93,7 +93,7 @@ func (s *serviceImpl) skipUnimplemented(result *TestResult, caseID string) error
 // completeTestResult finalizes timing and status on a result.
 func (s *serviceImpl) completeTestResult(result *TestResult, testErr error) {
 	// Already finalized by skipUnimplemented
-	if result.Status == teststatus.Skipped.String() {
+	if result.Status == teststatustype.Skipped.String() {
 		return
 	}
 
@@ -102,9 +102,9 @@ func (s *serviceImpl) completeTestResult(result *TestResult, testErr error) {
 	result.DurationMs = now.Sub(result.StartedAt).Milliseconds()
 
 	if testErr != nil {
-		result.Status = teststatus.Failed.String()
+		result.Status = teststatustype.Failed.String()
 		result.ErrorMessage = testErr.Error()
 	} else {
-		result.Status = teststatus.Passed.String()
+		result.Status = teststatustype.Passed.String()
 	}
 }

@@ -434,7 +434,8 @@ func GetById(ctx context.Context, id int64) (*Model, error)
 | One exported type per file | Each struct/interface/enum gets its own file | Don't combine `Config` + `ServerConfig` |
 | Related methods stay together | All methods on a type live in its file | `StatusType.IsValid()` stays in `status_type.go` |
 | Suffix convention | Split large types using suffixes | `_crud.go`, `_helpers.go`, `_validation.go` |
-| Package directory | `snake_case` for multi-word | `site_health/`, `search_mode/` |
+| Package directory | `snake_case` for multi-word services | `site_health/`, `search_mode/` |
+| Enum package directory | lowercase, no underscores, `type` suffix | `httpmethodtype/`, `statustype/` |
 
 ### Splitting Convention (When Files Exceed 300 Lines)
 
@@ -449,15 +450,17 @@ func GetById(ctx context.Context, id int64) (*Model, error)
 ### Package Directory Naming
 
 ```
-// ✅ Correct
-internal/enums/log_level/
-internal/enums/snapshot_mode/
-internal/services/site_health/
+// ✅ Correct — enum packages use `type` suffix, no underscores
+internal/enums/logleveltype/
+internal/enums/snapshotmodetype/
+internal/enums/statustype/
+internal/services/site_health/   // non-enum packages keep snake_case
 
 // ❌ Wrong
-internal/enums/logLevel/
-internal/enums/SnapshotMode/
-internal/services/SiteHealth/
+internal/enums/log_level/        // underscore + missing type suffix
+internal/enums/logLevel/         // camelCase forbidden
+internal/enums/SnapshotMode/     // PascalCase forbidden
+internal/enums/status/           // missing type suffix
 ```
 
 ### File-to-Type Mapping Examples
