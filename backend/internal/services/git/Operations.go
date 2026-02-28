@@ -159,27 +159,41 @@ func (s *Service) pullEachPlugin(ctx context.Context, plugins []models.Plugin) B
 	batch := BatchPullResult{Results: make([]PullResult, 0)}
 
 	for _, p := range plugins {
-		gitDir, err := pathutil.Join(p.Path, ".git")
-		isGitMissing := err != nil || !pathutil.IsDir(gitDir)
+		isGitRepo := hasGitDirectory(p.Path)
 
-		if isGitMissing {
+		if !isGitRepo {
 			continue
 		}
 
-		pullResult := s.Pull(ctx, p.Id)
-		if pullResult.IsSafe() {
-			v := pullResult.Value()
-			batch.Results = append(batch.Results, v)
-
-			if v.IsSuccess {
-				batch.Succeeded++
-			} else {
-				batch.Failed++
-			}
-		}
+		s.pullAndTrack(ctx, p.Id, &batch)
 	}
 
 	return batch
+}
+
+// hasGitDirectory checks whether a .git directory exists at the given path.
+func hasGitDirectory(pluginPath string) bool {
+	gitDir, err := pathutil.Join(pluginPath, ".git")
+
+	return err == nil && pathutil.IsDir(gitDir)
+}
+
+// pullAndTrack pulls a single plugin and records the result in the batch.
+func (s *Service) pullAndTrack(ctx context.Context, pluginId int64, batch *BatchPullResult) {
+	pullResult := s.Pull(ctx, pluginId)
+
+	if !pullResult.IsSafe() {
+		return
+	}
+
+	v := pullResult.Value()
+	batch.Results = append(batch.Results, v)
+
+	if v.IsSuccess {
+		batch.Succeeded++
+	} else {
+		batch.Failed++
+	}
 }
 
 // Status returns git status for a plugin
@@ -229,26 +243,20 @@ func (s *Service) populateAheadBehind(path string, result *StatusResult) {
 
 // populateFileCountsFromStatus fills staged, modified, untracked counts.
 func (s *Service) populateFileCountsFromStatus(path string, result *StatusResult) {
-	staged, _ := s.runGitCommand(path, "diff", "--cached", "--name-only")
-	hasStagedFiles := staged != ""
-
-	if hasStagedFiles {
-		result.Staged = len(strings.Split(strings.TrimSpace(staged), "\n"))
-	}
-
-	modified, _ := s.runGitCommand(path, "diff", "--name-only")
-	hasModifiedFiles := modified != ""
-
-	if hasModifiedFiles {
-		result.Modified = len(strings.Split(strings.TrimSpace(modified), "\n"))
-	}
-
-	untracked, _ := s.runGitCommand(path, "ls-files", "--others", "--exclude-standard")
-	hasUntrackedFiles := untracked != ""
-
-	if hasUntrackedFiles {
-		result.Untracked = len(strings.Split(strings.TrimSpace(untracked), "\n"))
-	}
-
+	result.Staged = s.countGitFiles(path, "diff", "--cached", "--name-only")
+	result.Modified = s.countGitFiles(path, "diff", "--name-only")
+	result.Untracked = s.countGitFiles(path, "ls-files", "--others", "--exclude-standard")
 	result.HasChanges = result.Staged > 0 || result.Modified > 0 || result.Untracked > 0
+}
+
+// countGitFiles runs a git command and counts the resulting file lines.
+func (s *Service) countGitFiles(path string, args ...string) int {
+	output, _ := s.runGitCommand(path, args...)
+	hasNoFiles := output == ""
+
+	if hasNoFiles {
+		return 0
+	}
+
+	return len(strings.Split(strings.TrimSpace(output), "\n"))
 }

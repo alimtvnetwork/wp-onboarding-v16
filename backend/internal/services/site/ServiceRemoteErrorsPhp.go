@@ -101,27 +101,41 @@ func collectPhpErrorEntries(entries []wordpress.RemoteErrorSessionEntry) []PhpEr
 	phpErrors := make([]PhpErrorEntry, 0, len(entries))
 
 	for _, entry := range entries {
-		phpErr := PhpErrorEntry{
-			Id:        entry.ID,
-			Level:     entry.Level,
-			Message:   entry.Message,
-			File:      entry.File,
-			Line:      derefInt(entry.Line),
-			CreatedAt: entry.CreatedAt,
-		}
-
-		if len(entry.StackTraceFrames) > 0 {
-			raw, marshalErr := json.Marshal(entry.StackTraceFrames)
-
-			if marshalErr == nil {
-				phpErr.StackTraceFrames = raw
-			}
-		}
-
-		phpErrors = append(phpErrors, phpErr)
+		phpErrors = append(phpErrors, buildPhpErrorEntry(entry))
 	}
 
 	return phpErrors
+}
+
+// buildPhpErrorEntry converts a single remote error entry to a PhpErrorEntry.
+func buildPhpErrorEntry(entry wordpress.RemoteErrorSessionEntry) PhpErrorEntry {
+	phpErr := PhpErrorEntry{
+		Id:        entry.ID,
+		Level:     entry.Level,
+		Message:   entry.Message,
+		File:      entry.File,
+		Line:      derefInt(entry.Line),
+		CreatedAt: entry.CreatedAt,
+	}
+
+	marshalStackFrames(&phpErr, entry.StackTraceFrames)
+
+	return phpErr
+}
+
+// marshalStackFrames serializes stack trace frames into the PHP error entry.
+func marshalStackFrames(phpErr *PhpErrorEntry, frames []wordpress.RemoteStackTraceFrame) {
+	hasNoFrames := len(frames) == 0
+
+	if hasNoFrames {
+		return
+	}
+
+	raw, marshalErr := json.Marshal(frames)
+
+	if marshalErr == nil {
+		phpErr.StackTraceFrames = raw
+	}
 }
 
 // logPhpErrorsToSession writes individual PHP errors to the session log.
