@@ -45,7 +45,9 @@ func initPluginCaches(services *Services, log *logger.Logger) {
 
 // initRequestSessionStore creates the request session store if enabled.
 func initRequestSessionStore(cfg *config.Config, log *logger.Logger) *requestsession.Store {
-	if !cfg.Logging.SessionLoggingEnabled {
+	isSessionLoggingDisabled := !cfg.Logging.SessionLoggingEnabled
+
+	if isSessionLoggingDisabled {
 		return nil
 	}
 	store, err := requestsession.New(requestsession.Config{
@@ -71,7 +73,9 @@ type e2eInput struct {
 
 // initE2EService initializes the E2E test service if enabled.
 func initE2EService(input e2eInput) {
-	if !input.Cfg.E2E.Enabled {
+	isE2EDisabled := !input.Cfg.E2E.Enabled
+
+	if isE2EDisabled {
 		return
 	}
 	e2eSvc := e2e.New(e2e.Config{

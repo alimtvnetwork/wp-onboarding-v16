@@ -48,7 +48,9 @@ func (r Result[T]) ToAppResult() apperror.Result[T] {
 	if r.err != nil {
 		return apperror.Fail[T](r.err)
 	}
-	if !r.defined {
+	isUndefined := !r.defined
+
+	if isUndefined {
 		return apperror.Result[T]{}
 	}
 	return apperror.Ok(r.value)
