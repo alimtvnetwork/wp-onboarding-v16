@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"sync"
 	"time"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // ---------------------------------------------------------------------------
@@ -159,7 +161,7 @@ type serviceImpl struct {
 	testSiteUrl      string
 	testSiteUsername  string
 	testSitePassword string
-	cleanupIds       map[string][]int64
+	cleanupIds       map[string]int64
 }
 
 // New creates a new E2E test service
@@ -175,11 +177,18 @@ func New(cfg Config) Service {
 	}
 	svc.initSchema()
 	svc.seedTestSuites()
+
 	return svc
 }
 
-func (s *serviceImpl) initSchema() error {
+func (s *serviceImpl) initSchema() *apperror.AppError {
 	s.migrateToPascalCase()
+
 	_, err := s.db.Exec(schemaSql)
-	return err
+
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrE2ESchema, "failed to initialize e2e schema")
+	}
+
+	return nil
 }

@@ -13,23 +13,24 @@ import (
 )
 
 // StartRun begins a new test run.
-func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, error) {
-	err := s.checkNoActiveRun()
+func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, *apperror.AppError) {
+	appErr := s.checkNoActiveRun()
 
-	if err != nil {
-		return nil, err
+	if appErr != nil {
+		return nil, appErr
 	}
 
-	suitesToRun, err := s.resolveSuites(ctx, opts)
-	if err != nil {
-		return nil, err
+	suitesToRun, appErr := s.resolveSuites(ctx, opts)
+
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	run := s.createRunRecord(ctx, suitesToRun)
 	isRunMissing := run == nil
 
 	if isRunMissing {
-		return nil, fmt.Errorf("failed to create run record")
+		return nil, apperror.New(apperror.ErrDatabaseInsert, "failed to create run record")
 	}
 
 	s.activateRun(run)
@@ -39,7 +40,7 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 }
 
 // checkNoActiveRun returns an error if a run is already in progress.
-func (s *serviceImpl) checkNoActiveRun() error {
+func (s *serviceImpl) checkNoActiveRun() *apperror.AppError {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -50,14 +51,16 @@ func (s *serviceImpl) checkNoActiveRun() error {
 		return apperror.New(apperror.ErrE2ERunning, "test run already in progress").
 			WithRunId(s.activeRun.Id)
 	}
+
 	return nil
 }
 
 // resolveSuites filters enabled suites by opts.Suites (or all if empty).
-func (s *serviceImpl) resolveSuites(ctx context.Context, opts RunOptions) ([]TestSuite, error) {
-	suites, err := s.ListSuites(ctx)
-	if err != nil {
-		return nil, err
+func (s *serviceImpl) resolveSuites(ctx context.Context, opts RunOptions) ([]TestSuite, *apperror.AppError) {
+	suites, appErr := s.ListSuites(ctx)
+
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	hasSuiteFilter := len(opts.Suites) > 0
@@ -65,6 +68,7 @@ func (s *serviceImpl) resolveSuites(ctx context.Context, opts RunOptions) ([]Tes
 	if hasSuiteFilter {
 		return filterSuitesByIds(suites, opts.Suites), nil
 	}
+
 	return filterEnabledSuites(suites), nil
 }
 
@@ -81,6 +85,7 @@ func filterSuitesByIds(suites []TestSuite, ids []string) []TestSuite {
 			out = append(out, s)
 		}
 	}
+
 	return out
 }
 
@@ -92,6 +97,7 @@ func filterEnabledSuites(suites []TestSuite) []TestSuite {
 			out = append(out, s)
 		}
 	}
+
 	return out
 }
 
@@ -110,9 +116,11 @@ func (s *serviceImpl) createRunRecord(ctx context.Context, suites []TestSuite) *
 	}
 
 	_, err := s.db.ExecContext(ctx, runInsertQuery, run.Id, run.StartedAt, run.Status, run.TotalTests)
+
 	if err != nil {
 		return nil
 	}
+
 	return run
 }
 
@@ -160,8 +168,9 @@ func (s *serviceImpl) runSuiteCases(
 	suite TestSuite,
 	opts RunOptions,
 ) bool {
-	cases, err := s.GetCases(ctx, suite.Id)
-	if err != nil {
+	cases, appErr := s.GetCases(ctx, suite.Id)
+
+	if appErr != nil {
 		return false
 	}
 
@@ -171,6 +180,7 @@ func (s *serviceImpl) runSuiteCases(
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -188,6 +198,7 @@ func (s *serviceImpl) runSingleCase(ctx context.Context, input RunSingleCaseInpu
 
 	if isDisabled {
 		input.Run.SkippedTests++
+
 		return false
 	}
 
@@ -210,6 +221,7 @@ func (s *serviceImpl) runSingleCase(ctx context.Context, input RunSingleCaseInpu
 func (s *serviceImpl) isRunAborted() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	return s.activeRun == nil || s.activeRun.Status == teststatus.Aborted.String()
 }
 
@@ -269,6 +281,7 @@ func (s *serviceImpl) resolveRunStatus(run *TestRun) string {
 	if hasFailedTests {
 		return teststatus.Failed.String()
 	}
+
 	return teststatus.Passed.String()
 }
 

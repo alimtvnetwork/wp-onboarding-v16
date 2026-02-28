@@ -8,6 +8,7 @@ import (
 
 	"wp-plugin-publish/internal/enums/teststatustype"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // executeTest runs a single test case and returns the result.
@@ -45,7 +46,7 @@ func (s *serviceImpl) broadcastTestStarted(runId string, tc TestCase) {
 }
 
 // dispatchTest routes a test case ID to its implementation.
-func (s *serviceImpl) dispatchTest(ctx context.Context, caseId string, result *TestResult) error {
+func (s *serviceImpl) dispatchTest(ctx context.Context, caseId string, result *TestResult) *apperror.AppError {
 	switch caseId {
 	case "TC-PLUGIN-001":
 		return s.testRegisterPlugin(ctx, result)
@@ -79,19 +80,19 @@ func (s *serviceImpl) dispatchTest(ctx context.Context, caseId string, result *T
 }
 
 // skipUnimplemented marks a test as skipped (no implementation).
-func (s *serviceImpl) skipUnimplemented(result *TestResult, caseId string) error {
+func (s *serviceImpl) skipUnimplemented(result *TestResult, caseId string) *apperror.AppError {
 	result.Status = teststatustype.Skipped.String()
 	result.Logs = "No test implementation for " + caseId
 	now := time.Now()
 	result.CompletedAt = &now
 	result.DurationMs = now.Sub(result.StartedAt).Milliseconds()
 
-	// Return a sentinel so the caller knows it's already finalized
+	// Return nil so the caller knows it's already finalized
 	return nil
 }
 
 // completeTestResult finalizes timing and status on a result.
-func (s *serviceImpl) completeTestResult(result *TestResult, testErr error) {
+func (s *serviceImpl) completeTestResult(result *TestResult, testErr *apperror.AppError) {
 	// Already finalized by skipUnimplemented
 	if result.Status == teststatustype.Skipped.String() {
 		return

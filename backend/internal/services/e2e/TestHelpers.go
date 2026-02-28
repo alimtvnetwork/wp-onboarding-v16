@@ -3,66 +3,82 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
-func (s *serviceImpl) createTestPlugin() (int64, error) {
-	resp, err := s.api.post("/plugins", pluginCreateBody{
+func (s *serviceImpl) createTestPlugin() (int64, *apperror.AppError) {
+	resp, appErr := s.api.post("/plugins", pluginCreateBody{
 		Name: "E2E Test Plugin", Path: s.testPluginPath, ForceCreate: true,
 	})
-	if err != nil {
-		return 0, err
+
+	if appErr != nil {
+		return 0, appErr
 	}
+
 	return extractId(resp, "create plugin")
 }
 
-func (s *serviceImpl) createTestSite() (int64, error) {
-	resp, err := s.api.post("/sites", siteCreateBody{
+func (s *serviceImpl) createTestSite() (int64, *apperror.AppError) {
+	resp, appErr := s.api.post("/sites", siteCreateBody{
 		Name: "E2E Temp Site", Url: s.testSiteUrl,
 		Username: s.testSiteUsername, Password: s.testSitePassword,
 	})
-	if err != nil {
-		return 0, err
+
+	if appErr != nil {
+		return 0, appErr
 	}
+
 	return extractId(resp, "create site")
 }
 
 // extractId pulls an int64 id from an API response.
-func extractId(resp *apiResponse, action string) (int64, error) {
+func extractId(resp *apiResponse, action string) (int64, *apperror.AppError) {
 	isErrorStatus := resp.StatusCode >= 400
 
 	if isErrorStatus {
-		return 0, fmt.Errorf("%s failed: HTTP %d - %s", action, resp.StatusCode, resp.RawBody)
+		return 0, apperror.New(apperror.ErrE2EAssertion,
+			fmt.Sprintf("%s failed: HTTP %d - %s", action, resp.StatusCode, resp.RawBody))
 	}
+
 	id, ok := resp.dataFieldFloat("id")
-	if !ok {
-		return 0, fmt.Errorf("no id in %s response", action)
+	isIdMissing := !ok
+
+	if isIdMissing {
+		return 0, apperror.New(apperror.ErrE2EAssertion,
+			fmt.Sprintf("no id in %s response", action))
 	}
+
 	return int64(id), nil
 }
 
-func (s *serviceImpl) createTestMapping() (*testIds, error) {
-	ids, err := s.setupPluginAndSite()
-	if err != nil {
-		return nil, err
+func (s *serviceImpl) createTestMapping() (*testIds, *apperror.AppError) {
+	ids, appErr := s.setupPluginAndSite()
+
+	if appErr != nil {
+		return nil, appErr
 	}
 
-	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginId), mappingCreateBody{
+	_, appErr = s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginId), mappingCreateBody{
 		SiteId: ids.SiteId, RemoteSlug: "e2e-test-plugin",
 	})
-	if err != nil {
+
+	if appErr != nil {
 		s.cleanupPlugin(ids.PluginId)
 		s.cleanupSite(ids.SiteId)
-		return nil, fmt.Errorf("create mapping: %w", err)
+
+		return nil, apperror.Wrap(appErr, apperror.ErrE2ESetup, "create mapping")
 	}
+
 	return ids, nil
 }
 
 func (s *serviceImpl) cleanupPlugin(id int64) {
-	s.api.delete(fmt.Sprintf("/plugins/%d", id))
+	s.api.del(fmt.Sprintf("/plugins/%d", id))
 }
 
 func (s *serviceImpl) cleanupSite(id int64) {
-	s.api.delete(fmt.Sprintf("/sites/%d", id))
+	s.api.del(fmt.Sprintf("/sites/%d", id))
 }
 
 // setCleanupId stores the resource id for later cleanup.
@@ -82,6 +98,7 @@ func (s *serviceImpl) getCleanupId(resourceType string) (int64, bool) {
 	defer s.mu.RUnlock()
 
 	id, ok := s.cleanupIds[resourceType]
+
 	return id, ok
 }
 
@@ -102,12 +119,28 @@ func (s *serviceImpl) cleanupAll() {
 			s.cleanupSite(id)
 		}
 	}
+}
 
-	return
+// runCleanup runs post-test cleanup.
+func (s *serviceImpl) runCleanup() {
+	s.cleanupAll()
+}
+
+// expectSuccess returns an error if the response is not successful.
+func expectSuccess(resp *apiResponse) *apperror.AppError {
+	isSuccess := resp.Success
+
+	if isSuccess {
+		return nil
+	}
+
+	return apperror.New(apperror.ErrE2EAssertion,
+		fmt.Sprintf("expected success, got HTTP %d: %s", resp.StatusCode, resp.RawBody))
 }
 
 func toJson(v any) string {
 	b, _ := json.Marshal(v)
+
 	return string(b)
 }
 

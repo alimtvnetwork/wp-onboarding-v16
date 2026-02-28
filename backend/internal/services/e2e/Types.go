@@ -4,6 +4,8 @@ package e2e
 import (
 	"context"
 	"time"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // TestSuite represents a collection of related test cases
@@ -77,12 +79,12 @@ type RunSummary struct {
 
 // Service defines the E2E test service interface
 type Service interface {
-	ListSuites(ctx context.Context) ([]TestSuite, error)
-	GetSuite(ctx context.Context, id string) (*TestSuite, error)
-	GetCases(ctx context.Context, suiteId string) ([]TestCase, error)
-	StartRun(ctx context.Context, opts RunOptions) (*TestRun, error)
-	AbortRun(ctx context.Context, runId string) error
-	ListRuns(ctx context.Context, limit int) ([]TestRun, error)
-	GetRun(ctx context.Context, runId string) (*RunSummary, error)
-	DeleteRun(ctx context.Context, runId string) error
+	ListSuites(ctx context.Context) ([]TestSuite, *apperror.AppError)
+	GetSuite(ctx context.Context, id string) (*TestSuite, *apperror.AppError)
+	GetCases(ctx context.Context, suiteId string) ([]TestCase, *apperror.AppError)
+	StartRun(ctx context.Context, opts RunOptions) (*TestRun, *apperror.AppError)
+	AbortRun(ctx context.Context, runId string) *apperror.AppError
+	ListRuns(ctx context.Context, limit int) ([]TestRun, *apperror.AppError)
+	GetRun(ctx context.Context, runId string) (*RunSummary, *apperror.AppError)
+	DeleteRun(ctx context.Context, runId string) *apperror.AppError
 }
