@@ -136,14 +136,12 @@ func (s *Service) broadcastProgress(input ConnectionProgressInput) {
 func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, *apperror.AppError) {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
-
 		return "", result.AppError()
 	}
 
 	site := result.Value()
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
@@ -174,7 +172,6 @@ func ensureScheme(rawUrl string) string {
 		hasHttpsPrefix
 
 	if hasScheme {
-
 		return rawUrl
 	}
 
@@ -206,7 +203,6 @@ type SiteCredentials struct {
 func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCredentials, *apperror.AppError) {
 	result := s.GetById(ctx, siteId)
 	if result.HasError() {
-
 		return nil, result.AppError()
 	}
 
@@ -219,7 +215,6 @@ func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCreden
 func (s *Service) buildSiteCredentials(siteId int64, site models.Site) (*SiteCredentials, *apperror.AppError) {
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 

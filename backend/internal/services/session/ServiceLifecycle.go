@@ -21,13 +21,11 @@ func (s *Service) StartSession(input StartSessionInput) (string, *apperror.AppEr
 
 	initErr := s.initSessionDir(sessionID)
 	if initErr != nil {
-
 		return "", initErr
 	}
 
 	file, fileErr := s.createSessionLogFile(sessionID)
 	if fileErr != nil {
-
 		return "", fileErr
 	}
 	session.logFile = file
@@ -102,7 +100,6 @@ func (s *Service) createSessionLogFile(sessionID string) (*os.File, *apperror.Ap
 	file, createErr := os.Create(logPath)
 
 	if createErr != nil {
-
 		return nil, apperror.Wrap(createErr, apperror.ErrSessionStore, "create session log file").
 			WithPath(logPath)
 	}

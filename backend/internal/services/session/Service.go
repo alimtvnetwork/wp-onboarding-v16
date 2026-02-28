@@ -121,7 +121,6 @@ func New(cfg Config) apperror.Result[*Service] {
 	sessionsResult := ensureSessionsDir(cfg.DataDir)
 
 	if sessionsResult.HasError() {
-
 		return apperror.Fail[*Service](sessionsResult.AppError())
 	}
 
@@ -133,14 +132,12 @@ func ensureSessionsDir(dataDir string) apperror.Result[string] {
 	sessionsDir, err := pathutil.Join(dataDir, "sessions")
 
 	if err != nil {
-
 		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve sessions directory")
 	}
 
 	mkErr := os.MkdirAll(sessionsDir, 0755)
 
 	if mkErr != nil {
-
 		return apperror.Fail[string](
 			apperror.Wrap(mkErr, apperror.ErrSessionInit, "create sessions directory").
 				WithPath(sessionsDir),
@@ -168,7 +165,6 @@ func (s *Service) getSessionDir(sessionID string) apperror.Result[string] {
 	dir, err := pathutil.Join(s.sessionsDir, sessionID)
 
 	if err != nil {
-
 		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve session directory")
 	}
 
@@ -180,14 +176,12 @@ func (s *Service) getLogPath(sessionID string) apperror.Result[string] {
 	dirResult := s.getSessionDir(sessionID)
 
 	if dirResult.HasError() {
-
 		return dirResult
 	}
 
 	logPath, err := pathutil.Join(dirResult.Value(), "session.log")
 
 	if err != nil {
-
 		return apperror.FailWrap[string](err, apperror.ErrSessionInit, "resolve session log path")
 	}
 

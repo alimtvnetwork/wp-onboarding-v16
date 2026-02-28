@@ -1,7 +1,7 @@
 # Formatting Rules Reference
 
 > **Purpose:** Canonical specification for all project-wide formatting rules (PHP, Go, TypeScript).
-> **Updated:** 2026-02-25
+> **Updated:** 2026-02-28
 
 ## Rules
 
@@ -9,9 +9,11 @@
 
 All `if`, `foreach`, `while` statements must use braces, even for single-line bodies.
 
-### R4 — Blank Line Before Return/Throw
+### R4 — Blank Line Before Return/Throw (Conditional)
 
-A blank line must precede any `return` or `throw` statement if it is not the sole statement in its block.
+A blank line must precede any `return`, `throw`, `continue`, or `break` statement **only when** it is **not** the sole statement in its block. When `return` (or `continue`/`break`) is the **only** statement inside an `if`/`for`/`switch` block, there must be **no** blank line between the opening `{` and the statement.
+
+**Quick test:** Count statements between `{` and `return` — if 0, no blank line; if 1+, blank line required.
 
 ### R5 — Blank Line After Closing Brace
 

@@ -53,19 +53,16 @@ func (s *Service) extractVersionFromPhpFile(dirPath, fileName string) string {
 func readPluginPhpFile(dirPath, fileName string) ([]byte, *apperror.AppError) {
 	filePath, err := pathutil.Join(dirPath, fileName)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin PHP file path")
 	}
 
 	content, readErr := os.ReadFile(filePath)
 	if readErr != nil {
-
 		return nil, apperror.Wrap(readErr, apperror.ErrFSRead, "failed to read plugin PHP file")
 	}
 
 	isNotPlugin := !strings.Contains(string(content), "Plugin Name:")
 	if isNotPlugin {
-
 		return nil, apperror.New(apperror.ErrValidation, "not a plugin file").WithFilePath(filePath)
 	}
 

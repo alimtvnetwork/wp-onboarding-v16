@@ -91,7 +91,6 @@ func (s *Service) buildPluginPackage(pctx *publishContext) (*PackageBuildResult,
 
 	buildResult, appErr := s.buildZip(pctx)
 	if appErr != nil {
-
 		return nil, apperror.Wrap(appErr, apperror.ErrInternal, "failed to create plugin ZIP package")
 	}
 
@@ -157,7 +156,6 @@ func (s *Service) buildSelectiveZipResult(pctx *publishContext) (*PackageBuildRe
 
 	path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create selective ZIP")
 	}
 
@@ -193,7 +191,6 @@ func (s *Service) buildFullZipResult(pctx *publishContext) (*PackageBuildResult,
 
 	path, err := s.createFullZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.PluginInfo.ExcludePatterns)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create full ZIP")
 	}
 

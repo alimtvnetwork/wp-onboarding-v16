@@ -202,18 +202,15 @@ func (s *Service) appendPasswordUpdate(updates *[]string, args *[]any, password 
 func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
-
 		return result.AppError()
 	}
 
 	res := dbutil.Exec(ctx, s.dbu, siteDeleteQuery, id)
 	if res.HasError() {
-
 		return res.AppError()
 	}
 
 	if res.IsEmpty() {
-
 		return apperror.New(apperror.ErrNotFound, "site not found")
 	}
 
