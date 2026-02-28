@@ -80,9 +80,9 @@ func (s *Service) broadcastLog(input BackupLogInput) {
 }
 
 // logInfo broadcasts an info-level log entry.
-func (s *Service) logInfo(pluginID int64, step, message string) {
+func (s *Service) logInfo(pluginId int64, step, message string) {
 	infoLog := BackupLogInput{
-		PluginId: pluginID,
+		PluginId: pluginId,
 		Level:    loglevel.Info.Lower(),
 		Step:     step,
 		Message:  message,
@@ -97,9 +97,9 @@ func (s *Service) logInfoWithDetails(input BackupLogInput) {
 }
 
 // logError broadcasts an error-level log entry.
-func (s *Service) logError(pluginID int64, step, message string) {
+func (s *Service) logError(pluginId int64, step, message string) {
 	errorLog := BackupLogInput{
-		PluginId: pluginID,
+		PluginId: pluginId,
 		Level:    loglevel.Error.Lower(),
 		Step:     step,
 		Message:  message,
@@ -108,9 +108,9 @@ func (s *Service) logError(pluginID int64, step, message string) {
 }
 
 // logWarn broadcasts a warn-level log entry.
-func (s *Service) logWarn(pluginID int64, step, message string) {
+func (s *Service) logWarn(pluginId int64, step, message string) {
 	warnLog := BackupLogInput{
-		PluginId: pluginID,
+		PluginId: pluginId,
 		Level:    loglevel.Warn.Lower(),
 		Step:     step,
 		Message:  message,
@@ -119,7 +119,7 @@ func (s *Service) logWarn(pluginID int64, step, message string) {
 }
 
 // List returns all backups for a plugin mapping
-func (s *Service) List(ctx context.Context, mappingID int64) apperror.ResultSlice[models.Backup] {
+func (s *Service) List(ctx context.Context, mappingId int64) apperror.ResultSlice[models.Backup] {
 	return apperror.OkSlice([]models.Backup{})
 }
 
@@ -129,7 +129,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 }
 
 // enforceRetention ensures we don't exceed max backups per plugin
-func (s *Service) enforceRetention(ctx context.Context, mappingID int64) *apperror.AppError {
+func (s *Service) enforceRetention(ctx context.Context, mappingId int64) *apperror.AppError {
 	return nil
 }
 

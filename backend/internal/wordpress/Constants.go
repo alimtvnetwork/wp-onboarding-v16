@@ -112,13 +112,13 @@ const (
 	GoApiWebSocket = "/ws"
 )
 
-// GoApiSiteRoute constructs a site-scoped Go API route: /api/v1/sites/{siteID}/{suffix}.
-func GoApiSiteRoute(siteID int64, suffix string) string {
-	return fmt.Sprintf("%s/%d/%s", GoApiSitesPrefix, siteID, suffix)
+// GoApiSiteRoute constructs a site-scoped Go API route: /api/v1/sites/{siteId}/{suffix}.
+func GoApiSiteRoute(siteId int64, suffix string) string {
+	return fmt.Sprintf("%s/%d/%s", GoApiSitesPrefix, siteId, suffix)
 }
 
 // GoApiSitePluginRoute constructs a site+plugin Go API route:
-// /api/v1/sites/{siteID}/remote-plugins/{pluginSlug}/{action}.
-func GoApiSitePluginRoute(siteID int64, pluginSlug, action string) string {
-	return fmt.Sprintf("%s/%d/remote-plugins/%s/%s", GoApiSitesPrefix, siteID, pluginSlug, action)
+// /api/v1/sites/{siteId}/remote-plugins/{pluginSlug}/{action}.
+func GoApiSitePluginRoute(siteId int64, pluginSlug, action string) string {
+	return fmt.Sprintf("%s/%d/remote-plugins/%s/%s", GoApiSitesPrefix, siteId, pluginSlug, action)
 }

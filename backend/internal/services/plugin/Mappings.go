@@ -228,7 +228,7 @@ func (s *Service) UpdateMappingsForPlugin(ctx context.Context, input UpdatePlugi
 	return nil
 }
 
-// insertMappingsForPlugin inserts a mapping for each siteID.
+// insertMappingsForPlugin inserts a mapping for each siteId.
 func (s *Service) insertMappingsForPlugin(ctx context.Context, input UpdatePluginMappingsInput) {
 	for _, siteId := range input.SiteIds {
 		_, err := s.db.ExecContext(ctx, `
@@ -280,7 +280,7 @@ type insertSiteMappingsInput struct {
 	SlugMap   map[int64]string
 }
 
-// insertMappingsForSite inserts mappings for each pluginID using resolved slugs.
+// insertMappingsForSite inserts mappings for each pluginId using resolved slugs.
 func (s *Service) insertMappingsForSite(ctx context.Context, input insertSiteMappingsInput) {
 	for _, pluginId := range input.PluginIds {
 		remoteSlug := s.resolveRemoteSlug(ctx, pluginId, input.SlugMap)

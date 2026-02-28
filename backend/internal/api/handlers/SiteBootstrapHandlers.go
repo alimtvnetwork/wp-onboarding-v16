@@ -20,7 +20,7 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := parseID(w, r, "id")
+	id, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
