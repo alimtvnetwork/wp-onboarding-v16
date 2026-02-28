@@ -101,15 +101,17 @@ func buildWPFactories(input InitServicesInput) wpFactories {
 
 // initSessionService creates the session service.
 func initSessionService(input InitServicesInput) *session.Service {
-	svc, err := session.New(session.Config{
+	result := session.New(session.Config{
 		DataDir:       filepath.Dir(input.Cfg.DatabasePath),
 		Logger:        input.Log,
 		RetentionDays: 7,
 	})
-	if err != nil {
-		input.Log.Error("Failed to initialize session service", "error", err)
+
+	if result.HasError() {
+		input.Log.Error("Failed to initialize session service", "error", result.AppError())
 	}
-	return svc
+
+	return result.Value()
 }
 
 // initSiteService creates the site service.

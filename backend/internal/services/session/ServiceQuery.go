@@ -32,13 +32,14 @@ func (s *Service) GetSession(sessionID string) apperror.Result[*Session] {
 
 // GetSessionLogs returns the full log content for a session
 func (s *Service) GetSessionLogs(sessionID string) apperror.Result[string] {
-	logPath, err := s.getLogPath(sessionID)
-	if err != nil {
-		return apperror.FailWrap[string](err, apperror.ErrFSRead, "resolve session log path").
-			WithValue("sessionId", sessionID)
+	logResult := s.getLogPath(sessionID)
+
+	if logResult.HasError() {
+
+		return apperror.Fail[string](logResult.AppError())
 	}
 
-	return s.readLogFileOrLegacy(sessionID, logPath)
+	return s.readLogFileOrLegacy(sessionID, logResult.Value())
 }
 
 // readLogFileOrLegacy reads the log file, falling back to legacy format.
@@ -84,52 +85,79 @@ func (s *Service) GetSessionDiagnostics(sessionID string) apperror.Result[Sessio
 
 // loadDiagnosticRequest reads request.json from the session directory.
 func (s *Service) loadDiagnosticRequest(sessionID string) *SessionRequest {
-	reqPath, err := s.getRequestPath(sessionID)
-	if err != nil {
+	reqResult := s.getRequestPath(sessionID)
+
+	if reqResult.HasError() {
+
 		return nil
 	}
-	data, err := os.ReadFile(reqPath)
+
+	data, err := os.ReadFile(reqResult.Value())
+
 	if err != nil {
+
 		return nil
 	}
+
 	var req SessionRequest
+
 	if json.Unmarshal(data, &req) != nil {
+
 		return nil
 	}
+
 	return &req
 }
 
 // loadDiagnosticResponse reads response.json from the session directory.
 func (s *Service) loadDiagnosticResponse(sessionID string) *SessionResponse {
-	respPath, err := s.getResponsePath(sessionID)
-	if err != nil {
+	respResult := s.getResponsePath(sessionID)
+
+	if respResult.HasError() {
+
 		return nil
 	}
-	data, err := os.ReadFile(respPath)
+
+	data, err := os.ReadFile(respResult.Value())
+
 	if err != nil {
+
 		return nil
 	}
+
 	var resp SessionResponse
+
 	if json.Unmarshal(data, &resp) != nil {
+
 		return nil
 	}
+
 	return &resp
 }
 
 // loadDiagnosticStackTrace reads error.log and extracts the stack trace.
 func (s *Service) loadDiagnosticStackTrace(sessionID string) *SessionStackTrace {
-	errPath, err := s.getErrorLogPath(sessionID)
-	if err != nil {
+	errResult := s.getErrorLogPath(sessionID)
+
+	if errResult.HasError() {
+
 		return nil
 	}
-	data, err := os.ReadFile(errPath)
+
+	data, err := os.ReadFile(errResult.Value())
+
 	if err != nil {
+
 		return nil
 	}
+
 	var errorData ErrorLogData
+
 	if json.Unmarshal(data, &errorData) != nil {
+
 		return nil
 	}
+
 	return errorData.StackTrace
 }
 
@@ -183,11 +211,14 @@ func parsePHPContent(jsonFragment string) string {
 
 // loadSessionFromDisk attempts to load session info from disk
 func (s *Service) loadSessionFromDisk(sessionID string) (*Session, *apperror.AppError) {
-	sessionDir, err := s.getSessionDir(sessionID)
-	if err != nil {
+	dirResult := s.getSessionDir(sessionID)
 
-		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve session directory")
+	if dirResult.HasError() {
+
+		return nil, dirResult.AppError()
 	}
+
+	sessionDir := dirResult.Value()
 
 	dirInfo, dirErr := pathutil.StatDir(sessionDir)
 	if dirErr == nil {

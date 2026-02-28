@@ -66,13 +66,16 @@ func buildNewSession(sessionID string, input StartSessionInput) *Session {
 
 // initSessionDir creates the session directory on disk.
 func (s *Service) initSessionDir(sessionID string) *apperror.AppError {
-	sessionDir, err := s.getSessionDir(sessionID)
-	if err != nil {
+	dirResult := s.getSessionDir(sessionID)
 
-		return apperror.Wrap(err, apperror.ErrSessionInit, "resolve session directory")
+	if dirResult.HasError() {
+
+		return dirResult.AppError()
 	}
 
+	sessionDir := dirResult.Value()
 	mkErr := os.MkdirAll(sessionDir, 0755)
+
 	if mkErr != nil {
 
 		return apperror.Wrap(mkErr, apperror.ErrSessionInit, "create session directory").
@@ -84,13 +87,16 @@ func (s *Service) initSessionDir(sessionID string) *apperror.AppError {
 
 // createSessionLogFile creates and returns the session.log file handle.
 func (s *Service) createSessionLogFile(sessionID string) (*os.File, *apperror.AppError) {
-	logPath, err := s.getLogPath(sessionID)
-	if err != nil {
+	logResult := s.getLogPath(sessionID)
 
-		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "resolve session log path")
+	if logResult.HasError() {
+
+		return nil, logResult.AppError()
 	}
 
+	logPath := logResult.Value()
 	file, createErr := os.Create(logPath)
+
 	if createErr != nil {
 
 		return nil, apperror.Wrap(createErr, apperror.ErrSessionStore, "create session log file").

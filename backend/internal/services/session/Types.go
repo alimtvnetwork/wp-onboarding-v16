@@ -29,7 +29,7 @@ type StartSessionInput struct {
 // ServiceInterface defines the session service contract
 type ServiceInterface interface {
 	// StartSession creates a new session and returns its ID
-	StartSession(input StartSessionInput) (string, error)
+	StartSession(input StartSessionInput) (string, *apperror.AppError)
 
 	// Log writes a log entry to the session
 	Log(sessionId, level, step, message string, details json.RawMessage)
@@ -56,7 +56,7 @@ type ServiceInterface interface {
 	ListSessions(limit int) apperror.ResultSlice[*SessionSummary]
 
 	// DeleteSession removes a session's log file
-	DeleteSession(sessionId string) error
+	DeleteSession(sessionId string) *apperror.AppError
 
 	// SetMetadata sets a key-value pair on a session's metadata JSON object
 	SetMetadata(sessionId, key string, value json.RawMessage)

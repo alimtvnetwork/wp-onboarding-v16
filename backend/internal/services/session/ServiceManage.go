@@ -109,13 +109,17 @@ func summaryFromSession(session *Session) *SessionSummary {
 func (s *Service) DeleteSession(sessionID string) *apperror.AppError {
 	s.closeAndRemoveSession(sessionID)
 
-	sessionDir, err := s.getSessionDir(sessionID)
-	if err != nil {
+	dirResult := s.getSessionDir(sessionID)
 
-		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve session directory")
+	if dirResult.HasError() {
+
+		return dirResult.AppError()
 	}
 
+	sessionDir := dirResult.Value()
+
 	if pathutil.IsDir(sessionDir) {
+
 		return s.removeDirSession(sessionDir)
 	}
 
