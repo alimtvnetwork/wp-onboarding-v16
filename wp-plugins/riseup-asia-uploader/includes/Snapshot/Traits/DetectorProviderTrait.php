@@ -131,7 +131,7 @@ trait DetectorProviderTrait {
                 $result[ResponseKeyType::Version->value] = UPDRAFTPLUS_VERSION;
             }
 
-            $isPremium = strpos($result[ResponseKeyType::Name->value], 'Premium') !== false;
+            $isPremium = (strpos($result[ResponseKeyType::Name->value], 'Premium') !== false);
 
             $result[ResponseKeyType::Capabilities->value] = array(
                 ResponseKeyType::FullSite->value     => true,
@@ -190,7 +190,11 @@ trait DetectorProviderTrait {
     }
 
     private function logDetectionResults(array $providers): void {
-        $available = array_filter($providers, function($p) { return $p[ResponseKeyType::Available->value]; });
+        $available = array_filter($providers, function($p) {
+            $isAvailable = $p[ResponseKeyType::Available->value];
+
+            return $isAvailable;
+        });
 
         $this->logger->info('[SNAPSHOT] Provider detection complete', array(
             'total'     => count($providers),

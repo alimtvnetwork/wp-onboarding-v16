@@ -47,7 +47,13 @@ trait CleanerHelperTrait {
             $defaults = array_merge($defaults, $saved);
         }
 
-        return array_merge($defaults, array_filter($overrides, function($v) { return $v !== null; }));
+        $definedOverrides = array_filter($overrides, function($v) {
+            $isDefined = ($v !== null);
+
+            return $isDefined;
+        });
+
+        return array_merge($defaults, $definedOverrides);
     }
 
     private function getZipPath(string $sqlitePath): string {

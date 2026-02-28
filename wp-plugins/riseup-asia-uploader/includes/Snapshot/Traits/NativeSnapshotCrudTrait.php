@@ -155,11 +155,13 @@ trait NativeSnapshotCrudTrait {
         $tables = array();
         $allTables = $this->wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
         foreach ($allTables as $tableInfo) {
+            $isCoreTable = (strpos($tableInfo['Name'], $this->wpdb->prefix) === 0);
+
             $tables[] = array(
                 ResponseKeyType::Name->value     => $tableInfo['Name'],
                 ResponseKeyType::Rows->value     => (int)$tableInfo['Rows'],
                 ResponseKeyType::Size->value     => (int)$tableInfo['Data_length'] + (int)$tableInfo['Index_length'],
-                ResponseKeyType::IsCore->value   => (strpos($tableInfo['Name'], $this->wpdb->prefix) === 0),
+                ResponseKeyType::IsCore->value   => $isCoreTable,
             );
         }
 

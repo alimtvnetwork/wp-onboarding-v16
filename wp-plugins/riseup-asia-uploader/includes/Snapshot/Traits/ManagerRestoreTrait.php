@@ -54,7 +54,11 @@ trait ManagerRestoreTrait {
     }
 
     private function guardRestorePreConditions(int $snapshotId, array $options): ?array {
-        if (empty($options['confirm']) || $options['confirm'] !== true) {
+        $isConfirmMissing = empty($options['confirm']);
+        $isConfirmNotTrue = !$isConfirmMissing && $options['confirm'] !== true;
+        $isUnconfirmed    = $isConfirmMissing || $isConfirmNotTrue;
+
+        if ($isUnconfirmed) {
             return ResultHelper::errorWithCode(
                 'Restore requires explicit confirmation (confirm=true)',
                 SnapshotErrorType::RestoreNoConfirm->value,
