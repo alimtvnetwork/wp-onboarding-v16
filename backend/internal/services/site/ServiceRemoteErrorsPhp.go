@@ -131,22 +131,23 @@ func (s *Service) logPhpErrorsToSession(sessionId string, entries []wordpress.Re
 	}
 
 	for _, entry := range entries {
-		detail := PhpErrorDetail{
-			PhpFile:    entry.File,
-			PhpLine:    derefInt(entry.Line),
-			PhpLevel:   entry.Level,
-			PhpCreated: entry.CreatedAt,
-		}
+		s.sessionService.Log(buildPhpErrorLogInput(sessionId, entry))
+	}
+}
 
-		logInput := session.LogInput{
-			SessionID: sessionId,
-			Level:     "error",
-			Step:      "remote_php_error",
-			Message:   entry.Message,
-			Details:   session.ToJSON(detail),
-		}
+// buildPhpErrorLogInput creates a session log input for a single PHP error entry.
+func buildPhpErrorLogInput(sessionId string, entry wordpress.RemoteErrorSessionEntry) session.LogInput {
+	detail := PhpErrorDetail{
+		PhpFile: entry.File, PhpLine: derefInt(entry.Line),
+		PhpLevel: entry.Level, PhpCreated: entry.CreatedAt,
+	}
 
-		s.sessionService.Log(logInput)
+	return session.LogInput{
+		SessionID: sessionId,
+		Level:     "error",
+		Step:      "remote_php_error",
+		Message:   entry.Message,
+		Details:   session.ToJSON(detail),
 	}
 }
 
@@ -210,35 +211,36 @@ func (s *Service) applyStackTraceContent(ref *remoteActionRef, logsResult *wordp
 	errDetails.RemotePhpStackTraceLines = stLog.Lines
 
 	logDetails := StackTraceLogDetails{
-		Lines:     stLog.Lines,
-		TotalSize: int(stLog.TotalSize),
-		Truncated: stLog.Truncated,
+		Lines: stLog.Lines, TotalSize: int(stLog.TotalSize), Truncated: stLog.Truncated,
 	}
 
-	successLog := RemoteActionLogInput{
+	s.logRemoteAction(ref, RemoteActionLogInput{
 		Level:   "info",
 		Step:    "fetch_php_stacktrace",
 		Message: fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", stLog.Lines, stLog.TotalSize),
 		Details: session.ToJSON(logDetails),
+	})
+
+	s.logStackTraceToSession(ref, stLog)
+}
+
+// logStackTraceToSession writes the stack trace content to the session log.
+func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.StackTraceLog) {
+	isSessionUnavailable := s.sessionService == nil || ref.SessionID == ""
+
+	if isSessionUnavailable {
+		return
 	}
 
-	s.logRemoteAction(ref, successLog)
-
-	if s.sessionService != nil && ref.SessionID != "" {
-		contentDetail := StackTraceContentDetails{
-			Content:   stLog.Content,
-			Lines:     stLog.Lines,
-			Truncated: stLog.Truncated,
-		}
-
-		sessionLog := session.LogInput{
-			SessionID: ref.SessionID,
-			Level:     "info",
-			Step:      "remote_php_stacktrace",
-			Message:   "PHP stacktrace.txt content from remote site",
-			Details:   session.ToJSON(contentDetail),
-		}
-
-		s.sessionService.Log(sessionLog)
+	contentDetail := StackTraceContentDetails{
+		Content: stLog.Content, Lines: stLog.Lines, Truncated: stLog.Truncated,
 	}
+
+	s.sessionService.Log(session.LogInput{
+		SessionID: ref.SessionID,
+		Level:     "info",
+		Step:      "remote_php_stacktrace",
+		Message:   "PHP stacktrace.txt content from remote site",
+		Details:   session.ToJSON(contentDetail),
+	})
 }

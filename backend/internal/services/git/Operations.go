@@ -101,28 +101,34 @@ func (s *Service) handlePullFailure(result *PullResult, err error) apperror.Resu
 func (s *Service) finalizePullSuccess(path string, result *PullResult, output string) apperror.Result[PullResult] {
 	result.IsSuccess = true
 	parseGitPullOutput(output, result)
+	s.populateCommitInfo(path, result)
+	s.broadcastPullSuccess(result)
 
+	s.log.Info("Git pull complete",
+		"plugin", result.PluginName, "pluginId", result.PluginId,
+		"filesChanged", result.FilesChanged, "duration", result.Duration,
+	)
+
+	return apperror.Ok(*result)
+}
+
+// populateCommitInfo fetches the latest commit hash and message.
+func (s *Service) populateCommitInfo(path string, result *PullResult) {
 	commitHash, _ := s.runGitCommand(path, "rev-parse", "--short", "HEAD")
 	result.CommitHash = strings.TrimSpace(commitHash)
 
 	commitMsg, _ := s.runGitCommand(path, "log", "-1", "--format=%s")
 	result.CommitMsg = strings.TrimSpace(commitMsg)
+}
 
+// broadcastPullSuccess sends the pull complete event via WebSocket.
+func (s *Service) broadcastPullSuccess(result *PullResult) {
 	ws.Broadcast(s.wsHub, ws.EventGitPullComplete, ws.GitPullCompleteData{
 		PluginId:     result.PluginId,
 		IsSuccess:    true,
 		FilesChanged: result.FilesChanged,
 		CommitHash:   result.CommitHash,
 	})
-
-	s.log.Info("Git pull complete",
-		"plugin", result.PluginName,
-		"pluginId", result.PluginId,
-		"filesChanged", result.FilesChanged,
-		"duration", result.Duration,
-	)
-
-	return apperror.Ok(*result)
 }
 
 // PullAll performs git pull for all plugins with git enabled

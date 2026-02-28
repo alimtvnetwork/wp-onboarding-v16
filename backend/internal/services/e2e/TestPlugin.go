@@ -53,16 +53,19 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 	}
 	result.ResponseData = resp.RawBody
 
-	err = expectSuccess(resp)
-	if err != nil {
+	if err = expectSuccess(resp); err != nil {
 		return err
 	}
 	if resp.isDataMissing("id") {
 		return fmt.Errorf("expected 'id' field in response data")
 	}
 
-	err = s.verifyPluginInList()
-	if err != nil {
+	return s.verifyAndStorePlugin(resp)
+}
+
+// verifyAndStorePlugin confirms the plugin list is non-empty and stores the cleanup ID.
+func (s *serviceImpl) verifyAndStorePlugin(resp *apiResponse) error {
+	if err := s.verifyPluginInList(); err != nil {
 		return err
 	}
 
