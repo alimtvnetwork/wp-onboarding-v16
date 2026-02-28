@@ -16,11 +16,12 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	s.log.Info("Creating backup", "mappingId", mappingID)
 	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "init", Message: "Starting backup creation", Details: toDetails(InitDetails{MappingID: mappingID})})
 
-	backupPath, appErr := s.createBackupFile(mappingID)
-	if appErr != nil {
-		return apperror.Fail[models.Backup](appErr)
+	pathResult := s.createBackupFile(mappingID)
+	if pathResult.HasError() {
+		return apperror.Fail[models.Backup](pathResult.AppError())
 	}
 
+	backupPath := pathResult.Value()
 	backup := s.buildBackupModel(mappingID, backupPath)
 	s.runRetentionPolicy(ctx, mappingID)
 	s.logBackupComplete(mappingID, backupPath, backup.FileSize)
@@ -29,13 +30,13 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 }
 
 // createBackupFile generates the backup zip and returns the path.
-func (s *Service) createBackupFile(mappingID int64) (string, *apperror.AppError) {
+func (s *Service) createBackupFile(mappingID int64) apperror.Result[string] {
 	timestamp := time.Now().Format("20060102-150405")
 	filename := fmt.Sprintf("backup-%d-%s.zip", mappingID, timestamp)
 
 	backupPath, err := pathutil.Join(s.backupDir, filename)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrBackupCreate, "resolve backup path")
+		return apperror.FailWrap[string](err, apperror.ErrBackupCreate, "resolve backup path")
 	}
 
 	s.logInfo(mappingID, "prepare", fmt.Sprintf("Preparing backup file: %s", filename))
@@ -44,13 +45,13 @@ func (s *Service) createBackupFile(mappingID int64) (string, *apperror.AppError)
 	if createErr != nil {
 		s.logError(mappingID, "create", fmt.Sprintf("Failed to create backup file: %v", createErr))
 
-		return "", apperror.Wrap(createErr, apperror.ErrBackupCreate, "failed to create backup file")
+		return apperror.FailWrap[string](createErr, apperror.ErrBackupCreate, "failed to create backup file")
 	}
 	file.Close()
 
 	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "write", Message: "Backup file created successfully", Details: toDetails(PathDetails{Path: backupPath})})
 
-	return backupPath, nil
+	return apperror.Ok(backupPath)
 }
 
 // buildBackupModel creates the backup model struct.

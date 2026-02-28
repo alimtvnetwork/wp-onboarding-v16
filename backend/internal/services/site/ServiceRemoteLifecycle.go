@@ -244,9 +244,12 @@ func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 		PluginName: ref.PluginSlug,
 		SiteName:   ref.Site.Name,
 	}
-	sessionId, _ := s.sessionService.StartSession(startInput)
+	result := s.sessionService.StartSession(startInput)
+	if result.HasError() {
+		return ""
+	}
 
-	return sessionId
+	return result.Value()
 }
 
 // resolveRemoteSessionType maps an action string to a session type.

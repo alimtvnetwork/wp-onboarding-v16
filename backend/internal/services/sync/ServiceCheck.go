@@ -83,10 +83,11 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperro
 	plug := plugResult.Value()
 	result.PluginName = plug.Name
 
-	mappings, err := s.getMappings(ctx, pluginID)
-	if err != nil {
-		return apperror.FailWrap[BatchSyncResult](err, apperror.ErrDBRead, "failed to get mappings")
+	mappingsResult := s.getMappings(ctx, pluginID)
+	if mappingsResult.HasError() {
+		return apperror.Fail[BatchSyncResult](mappingsResult.AppError())
 	}
+	mappings := mappingsResult.Items()
 	result.TotalSites = len(mappings)
 
 	for _, mapping := range mappings {

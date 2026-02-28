@@ -15,30 +15,30 @@ import (
 )
 
 // StartSession creates a new session directory and returns its ID
-func (s *Service) StartSession(input StartSessionInput) (string, *apperror.AppError) {
+func (s *Service) StartSession(input StartSessionInput) apperror.Result[string] {
 	sessionID := uuid.New().String()
 	session := buildNewSession(sessionID, input)
 
 	initErr := s.initSessionDir(sessionID)
 	if initErr != nil {
-		return "", initErr
+		return apperror.FailWrap[string](initErr, apperror.ErrSessionInit, "init session dir")
 	}
 
-	file, fileErr := s.createSessionLogFile(sessionID)
-	if fileErr != nil {
-		return "", fileErr
+	fileResult := s.createSessionLogFile(sessionID)
+	if fileResult.HasError() {
+		return apperror.Fail[string](fileResult.AppError())
 	}
-	session.logFile = file
+	session.logFile = fileResult.Value()
 
 	writeSessionHeader(sessionHeaderInput{
-		File:      file,
+		File:      session.logFile,
 		SessionID: sessionID,
 		Input:     input,
 		StartedAt: session.StartedAt,
 	})
 	s.registerSession(sessionID, session)
 
-	return sessionID, nil
+	return apperror.Ok(sessionID)
 }
 
 // registerSession stores the session in the map and logs it.
@@ -89,22 +89,21 @@ func (s *Service) initSessionDir(sessionID string) *apperror.AppError {
 }
 
 // createSessionLogFile creates and returns the session.log file handle.
-func (s *Service) createSessionLogFile(sessionID string) (*os.File, *apperror.AppError) {
+func (s *Service) createSessionLogFile(sessionID string) apperror.Result[*os.File] {
 	logResult := s.getLogPath(sessionID)
 
 	if logResult.HasError() {
-		return nil, logResult.AppError()
+		return apperror.Fail[*os.File](logResult.AppError())
 	}
 
 	logPath := logResult.Value()
 	file, createErr := os.Create(logPath)
 
 	if createErr != nil {
-		return nil, apperror.Wrap(createErr, apperror.ErrSessionStore, "create session log file").
-			WithPath(logPath)
+		return apperror.FailWrap[*os.File](createErr, apperror.ErrSessionStore, "create session log file")
 	}
 
-	return file, nil
+	return apperror.Ok(file)
 }
 
 // sessionHeaderInput bundles parameters for writeSessionHeader.

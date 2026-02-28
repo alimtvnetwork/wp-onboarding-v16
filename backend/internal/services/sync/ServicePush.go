@@ -51,15 +51,16 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	plug := plugResult.Value()
 
 	// 3. Get mapping
-	mapping, err := s.getMapping(ctx, pluginID, siteID)
-	if err != nil {
-		return apperror.FailWrap[PushSyncResult](err, apperror.ErrDatabaseQuery, "failed to get mapping")
+	mappingResult := s.getMapping(ctx, pluginID, siteID)
+	if mappingResult.HasError() {
+		return apperror.Fail[PushSyncResult](mappingResult.AppError())
 	}
+	mapping := mappingResult.Value()
 
 	// 4. Get site credentials
-	siteInfo, err := s.getSiteInfo(ctx, siteID)
-	if err != nil {
-		return apperror.FailWrap[PushSyncResult](err, apperror.ErrDatabaseQuery, "failed to get site info")
+	siteInfoResult := s.getSiteInfo(ctx, siteID)
+	if siteInfoResult.HasError() {
+		return apperror.Fail[PushSyncResult](siteInfoResult.AppError())
 	}
 	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
 	if err != nil {
@@ -67,10 +68,11 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	// 5. Build sync files
-	syncFiles, buildErr := s.buildSyncFiles(plug.Path, sr, pluginID, siteID)
-	if buildErr != nil {
-		return apperror.FailWrap[PushSyncResult](buildErr, apperror.ErrFSRead, "failed to build sync files")
+	syncFilesResult := s.buildSyncFiles(plug.Path, sr, pluginID, siteID)
+	if syncFilesResult.HasError() {
+		return apperror.Fail[PushSyncResult](syncFilesResult.AppError())
 	}
+	syncFiles := syncFilesResult.Items()
 
 	if len(syncFiles) == 0 {
 		result.IsSuccess = true
@@ -85,7 +87,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Pushing.Value(), Progress: 60,
 		Message: fmt.Sprintf("Pushing %d files to remote...", len(syncFiles))})
 
-	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	wpClient := s.wpClientFactory(siteInfoResult.Value().Url, siteInfoResult.Value().Username, password)
 	syncPushResult, err := wpClient.SyncPluginFilesViaUploader(mapping.RemoteSlug, syncFiles)
 	if err != nil {
 		result.ErrorMessage = err.Error()
@@ -121,13 +123,12 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 }
 
 // buildSyncFiles constructs SyncFile array from changes.
-func (s *serviceImpl) buildSyncFiles(pluginPath string, sr SyncResult, pluginID, siteID int64) ([]wordpress.SyncFile, error) {
+func (s *serviceImpl) buildSyncFiles(pluginPath string, sr SyncResult, pluginID, siteID int64) apperror.ResultSlice[wordpress.SyncFile] {
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Packaging.Value(), Progress: 40, Message: "Packaging file changes..."})
 
 	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
 	if err != nil {
-
-		return nil, err
+		return apperror.FailSliceWrap[wordpress.SyncFile](err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
 	var syncFiles []wordpress.SyncFile
@@ -158,5 +159,5 @@ func (s *serviceImpl) buildSyncFiles(pluginPath string, sr SyncResult, pluginID,
 		}
 	}
 
-	return syncFiles, nil
+	return apperror.OkSlice(syncFiles)
 }

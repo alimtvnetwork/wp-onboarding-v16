@@ -38,14 +38,14 @@ func (s *Service) Cleanup(ctx context.Context) *apperror.AppError {
 	s.log.Info("Running backup cleanup")
 	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "init", Message: "Starting backup cleanup", Details: toDetails(CleanupInitDetails{RetentionDays: s.retentionDays})})
 
-	removedCount, appErr := s.removeExpiredBackups()
-	if appErr != nil {
-		s.logError(0, "cleanup", fmt.Sprintf("Cleanup failed: %v", appErr))
+	result := s.removeExpiredBackups()
+	if result.HasError() {
+		s.logError(0, "cleanup", fmt.Sprintf("Cleanup failed: %v", result.AppError()))
 
-		return appErr
+		return result.AppError()
 	}
 
-	s.logCleanupComplete(removedCount)
+	s.logCleanupComplete(result.Value())
 
 	return nil
 }
