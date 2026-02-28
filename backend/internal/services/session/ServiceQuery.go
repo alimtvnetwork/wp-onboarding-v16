@@ -21,12 +21,12 @@ func (s *Service) GetSession(sessionID string) apperror.Result[*Session] {
 		return apperror.Ok(session)
 	}
 
-	loaded, appErr := s.loadSessionFromDisk(sessionID)
-	if appErr != nil {
-		return apperror.Fail[*Session](appErr)
+	diskResult := s.loadSessionFromDisk(sessionID)
+	if diskResult.HasError() {
+		return apperror.Fail[*Session](diskResult.AppError())
 	}
 
-	return apperror.Ok(loaded)
+	return apperror.Ok(diskResult.Value())
 }
 
 // GetSessionLogs returns the full log content for a session
@@ -203,49 +203,50 @@ func parsePHPContent(jsonFragment string) string {
 }
 
 // loadSessionFromDisk attempts to load session info from disk
-func (s *Service) loadSessionFromDisk(sessionID string) (*Session, *apperror.AppError) {
+func (s *Service) loadSessionFromDisk(sessionID string) apperror.Result[*Session] {
 	dirResult := s.getSessionDir(sessionID)
 
 	if dirResult.HasError() {
-		return nil, dirResult.AppError()
+		return apperror.Fail[*Session](dirResult.AppError())
 	}
 
 	sessionDir := dirResult.Value()
 
 	dirInfo, dirErr := pathutil.StatDir(sessionDir)
 	if dirErr == nil {
-		return &Session{
+		return apperror.Ok(&Session{
 			ID:        sessionID,
 			Status:    stagestatus.Completed.String(),
 			StartedAt: dirInfo.Info.ModTime(),
-		}, nil
+		})
 	}
 
 	return s.loadLegacySession(sessionID)
 }
 
 // loadLegacySession loads a session from a legacy flat file.
-func (s *Service) loadLegacySession(sessionID string) (*Session, *apperror.AppError) {
+func (s *Service) loadLegacySession(sessionID string) apperror.Result[*Session] {
 	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve legacy session path")
+		return apperror.FailWrap[*Session](err, apperror.ErrSessionNotFound, "resolve legacy session path")
 	}
 
 	return s.statLegacyFile(sessionID, legacyPath)
 }
 
 // statLegacyFile stats the legacy file and returns a Session or a typed error.
-func (s *Service) statLegacyFile(sessionID, legacyPath string) (*Session, *apperror.AppError) {
+func (s *Service) statLegacyFile(sessionID, legacyPath string) apperror.Result[*Session] {
 	fi, statErr := pathutil.StatFile(legacyPath)
 	if statErr != nil {
-		return nil, wrapLegacyStatError(statErr, sessionID, legacyPath)
+		return apperror.Fail[*Session](wrapLegacyStatError(statErr, sessionID, legacyPath))
 	}
 
-	return &Session{
+	return apperror.Ok(&Session{
 		ID:        sessionID,
 		Status:    stagestatus.Completed.String(),
 		StartedAt: fi.Info.ModTime(),
-	}, nil
+	})
+}
 }
 
 // wrapLegacyStatError wraps the stat error with appropriate context.

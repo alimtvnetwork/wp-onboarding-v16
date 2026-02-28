@@ -29,7 +29,7 @@ type StartSessionInput struct {
 // ServiceInterface defines the session service contract
 type ServiceInterface interface {
 	// StartSession creates a new session and returns its ID
-	StartSession(input StartSessionInput) (string, *apperror.AppError)
+	StartSession(input StartSessionInput) apperror.Result[string]
 
 	// Log writes a log entry to the session
 	Log(sessionId, level, step, message string, details json.RawMessage)

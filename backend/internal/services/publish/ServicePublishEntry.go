@@ -325,12 +325,12 @@ func (s *Service) startPublishSession(input startPublishSessionInput) (string, e
 
 // executeStartSession starts the session and wraps errors.
 func (s *Service) executeStartSession(startInput session.StartSessionInput) (string, *apperror.AppError) {
-	sessionID, appErr := s.sessionService.StartSession(startInput)
-	if appErr != nil {
-		s.log.Warn("Failed to start session", "error", appErr)
+	result := s.sessionService.StartSession(startInput)
+	if result.HasError() {
+		s.log.Warn("Failed to start session", "error", result.AppError())
 
-		return "", appErr
+		return "", result.AppError()
 	}
 
-	return sessionID, nil
+	return result.Value(), nil
 }

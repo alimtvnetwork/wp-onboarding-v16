@@ -62,7 +62,7 @@ type RemotePluginLogInput struct {
 
 // SessionService interface for session-based logging
 type SessionService interface {
-	StartSession(sessionType session.SessionType, pluginId, siteId int64, pluginName, siteName string) (string, error)
+	StartSession(input session.StartSessionInput) apperror.Result[string]
 	Log(sessionId, level, step, message string, details json.RawMessage)
 	LogStageStart(sessionId, stageName string)
 	LogStageEnd(sessionId, stageName, status string, durationMs int64)
@@ -133,19 +133,19 @@ func (s *Service) broadcastProgress(input ConnectionProgressInput) {
 }
 
 // GetDecryptedPassword returns the decrypted password for a site
-func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, *apperror.AppError) {
+func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) apperror.Result[string] {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
-		return "", result.AppError()
+		return apperror.Fail[string](result.AppError())
 	}
 
 	site := result.Value()
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		return apperror.FailWrap[string](err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
-	return string(password), nil
+	return apperror.Ok(string(password))
 }
 
 // normalizeUrl normalizes a URL for consistent storage
@@ -200,10 +200,10 @@ type SiteCredentials struct {
 }
 
 // GetCredentials returns the decrypted credentials for a site
-func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCredentials, *apperror.AppError) {
+func (s *Service) GetCredentials(ctx context.Context, siteId int64) apperror.Result[SiteCredentials] {
 	result := s.GetById(ctx, siteId)
 	if result.HasError() {
-		return nil, result.AppError()
+		return apperror.Fail[SiteCredentials](result.AppError())
 	}
 
 	site := result.Value()
@@ -212,19 +212,19 @@ func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCreden
 }
 
 // buildSiteCredentials decrypts the password and constructs SiteCredentials.
-func (s *Service) buildSiteCredentials(siteId int64, site models.Site) (*SiteCredentials, *apperror.AppError) {
+func (s *Service) buildSiteCredentials(siteId int64, site models.Site) apperror.Result[SiteCredentials] {
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+		return apperror.FailWrap[SiteCredentials](err, apperror.ErrInternal, "failed to decrypt password")
 	}
 
 	s.log.Debug("Credentials retrieved for site", "siteId", siteId, "siteName", site.Name)
 
-	return &SiteCredentials{
+	return apperror.Ok(SiteCredentials{
 		Url:         site.Url,
 		Username:    site.Username,
 		AppPassword: string(password),
-	}, nil
+	})
 }
 
 // derefInt safely dereferences an *int pointer, returning 0 if nil.

@@ -12,7 +12,7 @@ import (
 )
 
 // removeExpiredBackups walks the backup directory and removes files past retention.
-func (s *Service) removeExpiredBackups() (int, *apperror.AppError) {
+func (s *Service) removeExpiredBackups() apperror.Result[int] {
 	cutoff := time.Now().AddDate(0, 0, -s.retentionDays)
 	var removedCount int
 
@@ -25,11 +25,10 @@ func (s *Service) removeExpiredBackups() (int, *apperror.AppError) {
 	})
 
 	if err != nil {
-
-		return removedCount, apperror.Wrap(err, apperror.ErrFSRead, "cleanup failed").WithBackupDir(s.backupDir)
+		return apperror.FailWrap[int](err, apperror.ErrFSRead, "cleanup failed")
 	}
 
-	return removedCount, nil
+	return apperror.Ok(removedCount)
 }
 
 // removeIfExpired removes a file if it's older than the cutoff.

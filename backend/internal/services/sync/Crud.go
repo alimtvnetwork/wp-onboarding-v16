@@ -205,7 +205,7 @@ func (s *serviceImpl) ClearChanges(ctx context.Context, pluginId int64) *apperro
 }
 
 // getMappings retrieves all mappings for a plugin.
-func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) ([]models.PluginMapping, *apperror.AppError) {
+func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) apperror.ResultSlice[models.PluginMapping] {
 	set := dbutil.QueryMany[models.PluginMapping](
 		ctx,
 		s.dbu,
@@ -214,14 +214,14 @@ func (s *serviceImpl) getMappings(ctx context.Context, pluginId int64) ([]models
 		pluginId,
 	)
 	if set.HasError() {
-		return nil, set.AppError()
+		return set.ToAppResultSlice()
 	}
 
-	return set.Items(), nil
+	return apperror.OkSlice(set.Items())
 }
 
 // getMapping retrieves a specific plugin-site mapping.
-func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) (*models.PluginMapping, *apperror.AppError) {
+func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) apperror.Result[models.PluginMapping] {
 	result := dbutil.QueryOne[models.PluginMapping](
 		ctx,
 		s.dbu,
@@ -231,21 +231,18 @@ func (s *serviceImpl) getMapping(ctx context.Context, pluginId, siteId int64) (*
 		siteId,
 	)
 	if result.HasError() {
-		return nil, result.AppError()
+		return apperror.Fail[models.PluginMapping](result.AppError())
 	}
 
 	if result.IsEmpty() {
-		return nil, apperror.New(apperror.ErrNotFound, "plugin-site mapping not found").
-			WithPluginId(pluginId).WithSiteId(siteId)
+		return apperror.FailNew[models.PluginMapping](apperror.ErrNotFound, "plugin-site mapping not found")
 	}
 
-	m := result.Value()
-
-	return &m, nil
+	return apperror.Ok(result.Value())
 }
 
 // getSiteInfo retrieves minimal site info for creating a WP client.
-func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo, *apperror.AppError) {
+func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) apperror.Result[siteInfo] {
 	result := dbutil.QueryOne[siteInfo](
 		ctx,
 		s.dbu,
@@ -254,16 +251,14 @@ func (s *serviceImpl) getSiteInfo(ctx context.Context, siteId int64) (*siteInfo,
 		siteId,
 	)
 	if result.HasError() {
-		return nil, result.AppError()
+		return apperror.Fail[siteInfo](result.AppError())
 	}
 
 	if result.IsEmpty() {
-		return nil, apperror.New(apperror.ErrNotFound, "site not found").WithSiteId(siteId)
+		return apperror.FailNew[siteInfo](apperror.ErrNotFound, "site not found")
 	}
 
-	info := result.Value()
-
-	return &info, nil
+	return apperror.Ok(result.Value())
 }
 
 // updateMappingSyncStatus updates the sync status of a mapping.

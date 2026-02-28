@@ -159,15 +159,16 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 
 // fetchRemoteManifest retrieves the remote file manifest for comparison.
 func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID int64) (map[string]FileEntry, string) {
-	mapping, err := s.getMapping(ctx, pluginID, siteID)
-	if err != nil {
-		return nil, "No site mapping found: " + err.Error()
+	mappingResult := s.getMapping(ctx, pluginID, siteID)
+	if mappingResult.HasError() {
+		return nil, "No site mapping found: " + mappingResult.AppError().Error()
 	}
+	mapping := mappingResult.Value()
 
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 40, Message: "Retrieving site credentials..."})
-	siteInfo, err := s.getSiteInfo(ctx, siteID)
-	if err != nil {
-		return nil, "Failed to get site info: " + err.Error()
+	siteInfoResult := s.getSiteInfo(ctx, siteID)
+	if siteInfoResult.HasError() {
+		return nil, "Failed to get site info: " + siteInfoResult.AppError().Error()
 	}
 
 	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
@@ -176,7 +177,8 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 	}
 
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
-	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	info := siteInfoResult.Value()
+	wpClient := s.wpClientFactory(info.Url, info.Username, password)
 	manifestResult := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
 
 	remoteFiles := make(map[string]FileEntry)
