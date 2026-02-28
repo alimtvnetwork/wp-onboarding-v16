@@ -519,7 +519,7 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 
 	for path, localEntry := range local {
 		localMod := localEntry.ModifiedAt
-		if remoteEntry, exists := remote[path]; exists {
+		if remoteEntry, isFound := remote[path]; isFound {
 			if localEntry.Hash != remoteEntry.Hash {
 				remoteMod := remoteEntry.ModifiedAt
 			direction := syncdirection.LocalNewer.Value()
@@ -551,7 +551,7 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 	}
 
 	for path, remoteEntry := range remote {
-		if _, exists := local[path]; !exists {
+		if _, isFound := local[path]; !isFound {
 			remoteMod := remoteEntry.ModifiedAt
 			changes = append(changes, models.FileChange{
 				FilePath:         path,

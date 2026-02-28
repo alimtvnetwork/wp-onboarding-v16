@@ -152,7 +152,7 @@ func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string
 	var added, modified, deleted int
 
 	for path, lf := range localFiles {
-		if remoteHash, exists := remoteFileMap[path]; exists {
+		if remoteHash, isFound := remoteFileMap[path]; isFound {
 			if lf.LocalHash != remoteHash {
 				lf.ChangeType = "modified"
 				modified++

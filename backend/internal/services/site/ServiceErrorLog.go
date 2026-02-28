@@ -40,8 +40,9 @@ func (s *Service) isDuplicateErrorLog(ref *remoteActionRef, details *ExtractedEr
 	s.errorLogHashesMu.Lock()
 	defer s.errorLogHashesMu.Unlock()
 
-	if _, exists := s.errorLogHashes[hashHex]; exists {
+	if _, isDuplicate := s.errorLogHashes[hashHex]; isDuplicate {
 		s.log.Debug("Duplicate error log entry suppressed", "action", ref.Action, "siteId", ref.SiteID, "plugin", ref.PluginSlug, "hash", hashHex)
+
 		return true
 	}
 	s.errorLogHashes[hashHex] = struct{}{}

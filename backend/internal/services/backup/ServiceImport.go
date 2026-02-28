@@ -114,8 +114,10 @@ func (s *Service) extractAllFiles(reader *zip.ReadCloser, destDir string) (*impo
 
 // extractSingleFile extracts one file from the zip archive.
 func (s *Service) extractSingleFile(file *zip.File, destDir string, state *importState) *apperror.AppError {
-	destPath, ok := s.resolveExtractPath(file.Name, destDir)
-	if !ok {
+	destPath, isResolved := s.resolveExtractPath(file.Name, destDir)
+	isSkipped := !isResolved
+
+	if isSkipped {
 		return nil
 	}
 
