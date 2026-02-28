@@ -14,8 +14,8 @@ import (
 // --- Watcher/Scan Handlers ---
 
 // ScanPlugin triggers a file scan for a specific plugin
-var ScanPlugin = handleActionByID(
-	handlerIDConfig{
+var ScanPlugin = handleActionById(
+	handlerIdConfig{
 		GetService:  watcherService,
 		ServiceName: "Watcher service",
 		ParamName:   "id",
@@ -222,14 +222,14 @@ func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := parseID(w, r, "id")
+	id, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
 
-	siteID := parseSiteIDFromQuery(r)
+	siteId := parseSiteIdFromQuery(r)
 
-	changes, appErr := Services.SyncService.GetFileChanges(r.Context(), id, siteID)
+	changes, appErr := Services.SyncService.GetFileChanges(r.Context(), id, siteId)
 	if appErr != nil {
 		respondError(
 			w,
@@ -244,8 +244,8 @@ func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, changes)
 }
 
-// parseSiteIDFromQuery extracts the optional siteId query parameter.
-func parseSiteIDFromQuery(r *http.Request) int64 {
+// parseSiteIdFromQuery extracts the optional siteId query parameter.
+func parseSiteIdFromQuery(r *http.Request) int64 {
 	s := r.URL.Query().Get("siteId")
 	hasSiteId := s != ""
 

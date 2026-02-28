@@ -12,58 +12,58 @@ import (
 // --- Sync Handlers ---
 
 // CheckSync compares local vs remote plugin files
-var CheckSync = handleTwoIDs(
-	twoIDConfig{
+var CheckSync = handleTwoIds(
+	twoIdConfig{
 		GetService:  syncService,
 		ServiceName: "Sync service",
 		Param1Name:  "id",
 		Param2Name:  "siteId",
 		ErrCode:     "E4002",
 	},
-	func(ctx context.Context, pluginID, siteID int64) (any, *apperror.AppError) {
-		return Services.SyncService.CheckSync(ctx, pluginID, siteID)
+	func(ctx context.Context, pluginId, siteId int64) (any, *apperror.AppError) {
+		return Services.SyncService.CheckSync(ctx, pluginId, siteId)
 	},
 )
 
 // CheckAllSites checks sync status for all mapped sites
-var CheckAllSites = handleActionByID(
-	handlerIDConfig{
+var CheckAllSites = handleActionById(
+	handlerIdConfig{
 		GetService:  syncService,
 		ServiceName: "Sync service",
 		ParamName:   "id",
 		ErrCode:     "E4003",
 	},
-	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
-		return Services.SyncService.CheckAllSites(ctx, pluginID)
+	func(ctx context.Context, pluginId int64) (any, *apperror.AppError) {
+		return Services.SyncService.CheckAllSites(ctx, pluginId)
 	},
 )
 
 // PushSync pushes local changes (including deletions) to the remote site
-var PushSync = handleTwoIDs(
-	twoIDConfig{
+var PushSync = handleTwoIds(
+	twoIdConfig{
 		GetService:  syncService,
 		ServiceName: "Sync service",
 		Param1Name:  "id",
 		Param2Name:  "siteId",
 		ErrCode:     "E4004",
 	},
-	func(ctx context.Context, pluginID, siteID int64) (any, *apperror.AppError) {
-		return Services.SyncService.PushSync(ctx, pluginID, siteID)
+	func(ctx context.Context, pluginId, siteId int64) (any, *apperror.AppError) {
+		return Services.SyncService.PushSync(ctx, pluginId, siteId)
 	},
 )
 
 // --- Git Handlers ---
 
 // GitPull performs git pull for a specific plugin
-var GitPull = handleActionByID(
-	handlerIDConfig{
+var GitPull = handleActionById(
+	handlerIdConfig{
 		GetService:  gitService,
 		ServiceName: "Git service",
 		ParamName:   "id",
 		ErrCode:     "E5001",
 	},
-	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
-		return Services.GitService.Pull(ctx, pluginID)
+	func(ctx context.Context, pluginId int64) (any, *apperror.AppError) {
+		return Services.GitService.Pull(ctx, pluginId)
 	},
 )
 
@@ -80,15 +80,15 @@ var GitPullAll = handleNoArgs(
 )
 
 // GitStatus returns git status for a specific plugin
-var GitStatus = handleActionByID(
-	handlerIDConfig{
+var GitStatus = handleActionById(
+	handlerIdConfig{
 		GetService:  gitService,
 		ServiceName: "Git service",
 		ParamName:   "id",
 		ErrCode:     "E5003",
 	},
-	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
-		return Services.GitService.Status(ctx, pluginID)
+	func(ctx context.Context, pluginId int64) (any, *apperror.AppError) {
+		return Services.GitService.Status(ctx, pluginId)
 	},
 )
 
@@ -98,7 +98,7 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pluginID, ok := parseID(w, r, "id")
+	pluginId, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
@@ -121,7 +121,7 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, appErr := Services.GitService.Commit(r.Context(), pluginID, input.Message)
+	result, appErr := Services.GitService.Commit(r.Context(), pluginId, input.Message)
 	if appErr != nil {
 		respondError(
 			w,
@@ -137,14 +137,14 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 }
 
 // GitPush pushes commits to remote for a specific plugin
-var GitPush = handleActionByID(
-	handlerIDConfig{
+var GitPush = handleActionById(
+	handlerIdConfig{
 		GetService:  gitService,
 		ServiceName: "Git service",
 		ParamName:   "id",
 		ErrCode:     "E5005",
 	},
-	func(ctx context.Context, pluginID int64) (any, *apperror.AppError) {
-		return Services.GitService.Push(ctx, pluginID)
+	func(ctx context.Context, pluginId int64) (any, *apperror.AppError) {
+		return Services.GitService.Push(ctx, pluginId)
 	},
 )

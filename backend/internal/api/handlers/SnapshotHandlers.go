@@ -31,7 +31,7 @@ func isSiteServiceMissing(w http.ResponseWriter) bool {
 
 // parseSiteIdOrFail extracts the site ID from URL params, responding with an error on failure.
 func parseSiteIdOrFail(w http.ResponseWriter, r *http.Request) (int64, bool) {
-	siteId, err := getIDParam(r, "id")
+	siteId, err := getIdParam(r, "id")
 	if err != nil {
 		respondError(w, wordpress.HttpStatusBadRequest, "E1002", responsemessage.InvalidId.String())
 		return 0, false
@@ -61,7 +61,7 @@ func getSnapshotIdParam(r *http.Request) (int64, error) {
 // --- Remote Snapshot CRUD Handlers ---
 
 // GetRemoteSnapshots returns all snapshots from a remote WordPress site.
-var GetRemoteSnapshots = handleSiteActionByID("E3020",
+var GetRemoteSnapshots = handleSiteActionById("E3020",
 	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemoteSnapshots(ctx, siteId)
 	},
@@ -104,7 +104,7 @@ func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var opts wordpress.SnapshotCreateOptions
-	_ = decodeJSONSilent(r, &opts)
+	_ = decodeJsonSilent(r, &opts)
 
 	result, appErr := Services.SiteService.CreateRemoteSnapshot(r.Context(), siteId, opts)
 	if appErr != nil {

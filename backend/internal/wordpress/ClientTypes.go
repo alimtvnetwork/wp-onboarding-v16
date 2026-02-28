@@ -90,7 +90,7 @@ func (e *ApiError) FullError() string {
 type ConnectionInfo struct {
 	IsConnected      bool
 	Connected        bool     // legacy compat
-	URL              string
+	Url              string
 	Username         string
 	WPVersion        string   `json:",omitempty"`
 	SiteName         string   `json:",omitempty"`

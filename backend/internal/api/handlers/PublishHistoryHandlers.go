@@ -42,14 +42,14 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 	hasPluginFilter := pid != ""
 
 	if hasPluginFilter {
-		filters.PluginID, _ = strconv.ParseInt(pid, 10, 64)
+		filters.PluginId, _ = strconv.ParseInt(pid, 10, 64)
 	}
 
 	sid := r.URL.Query().Get("siteId")
 	hasSiteFilter := sid != ""
 
 	if hasSiteFilter {
-		filters.SiteID, _ = strconv.ParseInt(sid, 10, 64)
+		filters.SiteId, _ = strconv.ParseInt(sid, 10, 64)
 	}
 
 	listResult, err := Services.PublishHistoryService.List(limit, offset, filters)
@@ -72,8 +72,8 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetPublishHistoryByID returns a single publish history entry
-func GetPublishHistoryByID(w http.ResponseWriter, r *http.Request) {
+// GetPublishHistoryById returns a single publish history entry
+func GetPublishHistoryById(w http.ResponseWriter, r *http.Request) {
 	isMissing := Services == nil || Services.PublishHistoryService == nil
 	if isMissing {
 		respondError(

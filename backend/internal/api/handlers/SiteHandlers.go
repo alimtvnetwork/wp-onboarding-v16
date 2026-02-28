@@ -120,8 +120,8 @@ func validateCreateSiteCredentials(input SiteCreateInput) string {
 }
 
 // GetSite returns a specific site by ID
-var GetSite = handleActionByID(
-	handlerIDConfig{
+var GetSite = handleActionById(
+	handlerIdConfig{
 		GetService:  siteService,
 		ServiceName: "Site service",
 		ParamName:   "id",
@@ -138,7 +138,7 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := parseID(w, r, "id")
+	id, ok := parseId(w, r, "id")
 	if !ok {
 		return
 	}
@@ -149,19 +149,19 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	normalizeUpdateSitePassword(&input)
-	updateSiteOrFail(w, siteUpdateRequest{Request: r, ID: id, Input: input})
+	updateSiteOrFail(w, siteUpdateRequest{Request: r, Id: id, Input: input})
 }
 
 // siteUpdateRequest bundles parameters for updateSiteOrFail.
 type siteUpdateRequest struct {
 	Request *http.Request
-	ID      int64
+	Id      int64
 	Input   SiteUpdateInput
 }
 
 // updateSiteOrFail persists the site update and writes the response.
 func updateSiteOrFail(w http.ResponseWriter, req siteUpdateRequest) {
-	site, appErr := Services.SiteService.Update(req.Request.Context(), req.ID, req.Input)
+	site, appErr := Services.SiteService.Update(req.Request.Context(), req.Id, req.Input)
 	if appErr != nil {
 		respondBadRequest(w, apperror.ErrDatabaseUpdate, appErr.Error())
 
@@ -179,8 +179,8 @@ func normalizeUpdateSitePassword(input *SiteUpdateInput) {
 }
 
 // DeleteSite removes a site
-var DeleteSite = handleDeleteByID(
-	handlerIDConfig{
+var DeleteSite = handleDeleteById(
+	handlerIdConfig{
 		GetService:  siteService,
 		ServiceName: "Site service",
 		ParamName:   "id",
@@ -192,8 +192,8 @@ var DeleteSite = handleDeleteByID(
 )
 
 // TestSiteConnection tests the WordPress REST API connection
-var TestSiteConnection = handleActionByID(
-	handlerIDConfig{
+var TestSiteConnection = handleActionById(
+	handlerIdConfig{
 		GetService:  siteService,
 		ServiceName: "Site service",
 		ParamName:   "id",
@@ -238,8 +238,8 @@ func testCredentialsOrFail(w http.ResponseWriter, r *http.Request, input credent
 }
 
 // GetSiteCredentials returns decrypted credentials for API Explorer
-var GetSiteCredentials = handleActionByID(
-	handlerIDConfig{
+var GetSiteCredentials = handleActionById(
+	handlerIdConfig{
 		GetService:  siteService,
 		ServiceName: "Site service",
 		ParamName:   "id",

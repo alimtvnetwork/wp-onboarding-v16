@@ -29,64 +29,64 @@ func toProgress[T any](v T) ProgressDetails {
 
 // --- Connection test progress structs (used in TestConnection) ---
 
-// URLProgress carries a URL-only progress context.
-type URLProgress struct {
-	URL string `json:",omitempty"`
+// UrlProgress carries a URL-only progress context.
+type UrlProgress struct {
+	Url string `json:",omitempty"`
 }
 
-// URLErrorProgress carries a URL + error progress context.
-type URLErrorProgress struct {
-	URL   string `json:",omitempty"`
+// UrlErrorProgress carries a URL + error progress context.
+type UrlErrorProgress struct {
+	Url   string `json:",omitempty"`
 	Error string `json:",omitempty"`
 }
 
-// URLStatusProgress carries a URL + HTTP status code progress context.
-type URLStatusProgress struct {
-	URL    string `json:",omitempty"`
+// UrlStatusProgress carries a URL + HTTP status code progress context.
+type UrlStatusProgress struct {
+	Url    string `json:",omitempty"`
 	Status int    `json:",omitempty"`
 }
 
 // SiteNameProgress carries site discovery progress context.
 type SiteNameProgress struct {
-	URL      string `json:",omitempty"`
+	Url      string `json:",omitempty"`
 	SiteName string `json:",omitempty"`
 }
 
 // AuthInitProgress carries authentication init progress context.
 type AuthInitProgress struct {
-	URL      string `json:",omitempty"`
+	Url      string `json:",omitempty"`
 	Username string `json:",omitempty"`
 }
 
 // AuthHintProgress carries authentication hint progress context.
 type AuthHintProgress struct {
-	URL  string `json:",omitempty"`
+	Url  string `json:",omitempty"`
 	Hint string `json:",omitempty"`
 }
 
 // AuthBodyProgress carries authentication response body progress context.
 type AuthBodyProgress struct {
-	URL  string `json:",omitempty"`
+	Url  string `json:",omitempty"`
 	Body string `json:",omitempty"`
 }
 
 // UserAuthProgress carries authenticated user progress context.
 type UserAuthProgress struct {
-	URL    string   `json:",omitempty"`
-	UserID int      `json:",omitempty"`
+	Url    string   `json:",omitempty"`
+	UserId int      `json:",omitempty"`
 	Roles  []string `json:",omitempty"`
 }
 
 // UserRolesProgress carries user roles check progress context.
 type UserRolesProgress struct {
-	URL       string   `json:",omitempty"`
+	Url       string   `json:",omitempty"`
 	UserRoles []string `json:",omitempty"`
 }
 
 // WriteTestProgress carries write test progress context.
 type WriteTestProgress struct {
-	URL        string `json:",omitempty"`
-	TestPostID int    `json:",omitempty"`
+	Url        string `json:",omitempty"`
+	TestPostId int    `json:",omitempty"`
 }
 
 // --- Upload progress structs (used in UploadPluginViaUploader) ---
@@ -97,7 +97,7 @@ type UploadInitProgress struct {
 	ZipPath   string `json:",omitempty"`
 	Namespace string `json:",omitempty"`
 	Endpoint  string `json:",omitempty"`
-	URL       string `json:",omitempty"`
+	Url       string `json:",omitempty"`
 	Method    string `json:",omitempty"`
 }
 
@@ -111,7 +111,7 @@ type UploadBodyProgress struct {
 
 // ResponseProgress carries HTTP response progress context.
 type ResponseProgress struct {
-	URL    string `json:",omitempty"`
+	Url    string `json:",omitempty"`
 	Status int    `json:",omitempty"`
 	Body   string `json:",omitempty"`
 }

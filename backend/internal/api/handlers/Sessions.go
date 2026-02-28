@@ -64,9 +64,9 @@ func GetSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	sessionID := vars["id"]
+	sessionId := vars["id"]
 
-	isSessionIdEmpty := sessionID == ""
+	isSessionIdEmpty := sessionId == ""
 
 	if isSessionIdEmpty {
 		respondError(
@@ -79,7 +79,7 @@ func GetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := Services.SessionService.GetSession(sessionID)
+	session, err := Services.SessionService.GetSession(sessionId)
 	if err != nil {
 		respondError(
 			w,
@@ -111,9 +111,9 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	sessionID := vars["id"]
+	sessionId := vars["id"]
 
-	isSessionIdEmpty := sessionID == ""
+	isSessionIdEmpty := sessionId == ""
 
 	if isSessionIdEmpty {
 		respondError(
@@ -126,7 +126,7 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := Services.SessionService.GetSessionLogs(sessionID)
+	logs, err := Services.SessionService.GetSessionLogs(sessionId)
 	if err != nil {
 		respondError(
 			w,
@@ -150,7 +150,7 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondSuccess(w, SessionLogsResponse{
-		SessionID: sessionID,
+		SessionId: sessionId,
 		Logs:      logs,
 	})
 }
@@ -172,9 +172,9 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	sessionID := vars["id"]
+	sessionId := vars["id"]
 
-	isSessionIdEmpty := sessionID == ""
+	isSessionIdEmpty := sessionId == ""
 
 	if isSessionIdEmpty {
 		respondError(
@@ -187,7 +187,7 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appErr := Services.SessionService.DeleteSession(sessionID)
+	appErr := Services.SessionService.DeleteSession(sessionId)
 	if appErr != nil {
 		respondError(
 			w,
@@ -219,9 +219,9 @@ func GetSessionDiagnostics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	sessionID := vars["id"]
+	sessionId := vars["id"]
 
-	isSessionIdEmpty := sessionID == ""
+	isSessionIdEmpty := sessionId == ""
 
 	if isSessionIdEmpty {
 		respondError(
@@ -234,7 +234,7 @@ func GetSessionDiagnostics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	diag, err := Services.SessionService.GetSessionDiagnostics(sessionID)
+	diag, err := Services.SessionService.GetSessionDiagnostics(sessionId)
 	if err != nil {
 		respondError(
 			w,
