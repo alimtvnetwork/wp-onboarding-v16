@@ -66,17 +66,21 @@ func (s *Service) processScanEntry(sc *scanContext, path string, info os.FileInf
 		return nil
 	}
 
-	hash := s.calculateFileHash(path).ValueOr("")
+	s.addFilePreview(sc, relPath, path, info)
+	return nil
+}
+
+// addFilePreview creates and stores a FilePreview for a scanned file.
+func (s *Service) addFilePreview(sc *scanContext, relPath, absPath string, info os.FileInfo) {
+	hash := s.calculateFileHash(absPath).ValueOr("")
 	relPathSlash := filepath.ToSlash(relPath)
 
-	preview := FilePreview{
+	sc.LocalFiles[relPathSlash] = FilePreview{
 		Path:      relPathSlash,
 		Size:      info.Size(),
 		LocalHash: hash,
 	}
-	sc.LocalFiles[relPathSlash] = preview
 	*sc.TotalSize += info.Size()
-	return nil
 }
 
 // checkDirExclusion returns SkipDir if the directory matches an exclude pattern.
@@ -141,16 +145,27 @@ func markAllAsAdded(localFiles map[string]FilePreview) FileDiffSummary {
 		lf.ChangeType = "added"
 		files = append(files, lf)
 	}
-	return FileDiffSummary{
-		Files: files,
-		Added: len(files),
-	}
+	return FileDiffSummary{Files: files, Added: len(files)}
 }
 
 // diffLocalRemote compares local files against remote hashes.
 func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string]string) FileDiffSummary {
+	files, added, modified := classifyLocalFiles(localFiles, remoteFileMap)
+	deletedFiles := collectDeletedFiles(remoteFileMap)
+	files = append(files, deletedFiles...)
+
+	return FileDiffSummary{
+		Files:    files,
+		Added:    added,
+		Modified: modified,
+		Deleted:  len(deletedFiles),
+	}
+}
+
+// classifyLocalFiles classifies each local file as added or modified vs remote.
+func classifyLocalFiles(localFiles map[string]FilePreview, remoteFileMap map[string]string) ([]FilePreview, int, int) {
 	var files []FilePreview
-	var added, modified, deleted int
+	var added, modified int
 
 	for path, lf := range localFiles {
 		remoteHash, isFound := remoteFileMap[path]
@@ -168,19 +183,14 @@ func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string
 		}
 	}
 
-	for path := range remoteFileMap {
-		deletedFile := FilePreview{
-			Path:       path,
-			ChangeType: "deleted",
-		}
-		files = append(files, deletedFile)
-		deleted++
-	}
+	return files, added, modified
+}
 
-	return FileDiffSummary{
-		Files:    files,
-		Added:    added,
-		Modified: modified,
-		Deleted:  deleted,
+// collectDeletedFiles returns FilePreview entries for remaining remote-only files.
+func collectDeletedFiles(remoteFileMap map[string]string) []FilePreview {
+	var files []FilePreview
+	for path := range remoteFileMap {
+		files = append(files, FilePreview{Path: path, ChangeType: "deleted"})
 	}
+	return files
 }
