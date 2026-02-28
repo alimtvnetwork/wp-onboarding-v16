@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -37,9 +38,10 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 
 	hasLogFiles :=
 		logExists ||
-		errorExists
+			errorExists
 	if !hasLogFiles {
 		respondError(w, wordpress.HttpStatusNotFound, "E9001", "No error log files found")
+
 		return
 	}
 
@@ -53,18 +55,31 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 
 // extractReportFromBody reads the optional report field from a POST body.
 func extractReportFromBody(r *http.Request) string {
-	if r.Method != http.MethodPost {
+	isNotPost := r.Method != http.MethodPost
+
+	if isNotPost {
+
 		return ""
 	}
 
 	var payload struct {
 		Report string `json:"report"` // external key (frontend request body)
 	}
-	bodyBytes, _ := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
+
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
+	if err != nil {
+		log.Printf("[WARN] Failed to read report body: %v", err)
+
+		return ""
+	}
+
 	hasBody := len(bodyBytes) > 0
 	if hasBody {
-		_ = json.Unmarshal(bodyBytes, &payload)
+		if unmarshalErr := json.Unmarshal(bodyBytes, &payload); unmarshalErr != nil {
+			log.Printf("[WARN] Failed to unmarshal report body: %v", unmarshalErr)
+		}
 	}
+
 	return payload.Report
 }
 
@@ -85,10 +100,15 @@ func writeErrorBundleZip(w http.ResponseWriter, input errorBundleInput) {
 // addBundleLogFiles adds the log and error files to the ZIP.
 func addBundleLogFiles(zipWriter *zip.Writer, input errorBundleInput) {
 	if input.LogExists {
-		_ = addFileToZip(zipWriter, input.LogFile, logfile.AllLog)
+		if err := addFileToZip(zipWriter, input.LogFile, logfile.AllLog); err != nil {
+			log.Printf("[WARN] Failed to add log file to bundle: path=%s error=%v", input.LogFile, err)
+		}
 	}
+
 	if input.ErrorExists {
-		_ = addFileToZip(zipWriter, input.ErrorFile, logfile.ErrorLog)
+		if err := addFileToZip(zipWriter, input.ErrorFile, logfile.ErrorLog); err != nil {
+			log.Printf("[WARN] Failed to add error file to bundle: path=%s error=%v", input.ErrorFile, err)
+		}
 	}
 }
 
@@ -102,8 +122,14 @@ func addBundleReport(zipWriter *zip.Writer, report string) {
 	}
 
 	reportWriter, err := zipWriter.Create(logfile.Report)
-	if err == nil {
-		_, _ = io.WriteString(reportWriter, report)
+	if err != nil {
+		log.Printf("[WARN] Failed to create report entry in bundle: %v", err)
+
+		return
+	}
+
+	if _, writeErr := io.WriteString(reportWriter, report); writeErr != nil {
+		log.Printf("[WARN] Failed to write report to bundle: %v", writeErr)
 	}
 }
 
@@ -112,8 +138,14 @@ func addBundleManifest(zipWriter *zip.Writer, input errorBundleInput) {
 	manifest := buildManifestFiles(input)
 
 	manifestWriter, err := zipWriter.Create(logfile.Manifest)
-	if err == nil {
-		json.NewEncoder(manifestWriter).Encode(manifest)
+	if err != nil {
+		log.Printf("[WARN] Failed to create manifest entry in bundle: %v", err)
+
+		return
+	}
+
+	if encodeErr := json.NewEncoder(manifestWriter).Encode(manifest); encodeErr != nil {
+		log.Printf("[WARN] Failed to encode manifest in bundle: %v", encodeErr)
 	}
 }
 
@@ -129,10 +161,13 @@ func buildManifestFiles(input errorBundleInput) bundleManifest {
 	if input.LogExists {
 		files = append(files, logfile.AllLog)
 	}
+
 	if input.ErrorExists {
 		files = append(files, logfile.ErrorLog)
 	}
-	if input.Report != "" {
+
+	hasReport := input.Report != ""
+	if hasReport {
 		files = append(files, logfile.Report)
 	}
 
@@ -143,17 +178,20 @@ func buildManifestFiles(input errorBundleInput) bundleManifest {
 func addFileToZip(zipWriter *zip.Writer, srcPath string, destName string) error {
 	file, err := os.Open(srcPath)
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrFileOpen, "failed to open file for zip").WithPath(srcPath)
 	}
 	defer file.Close()
 
 	writer, err := zipWriter.Create(destName)
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrZipCreate, "failed to create zip entry").WithPath(destName)
 	}
 
 	_, err = io.Copy(writer, file)
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrZipWrite, "failed to copy file into zip").WithPath(srcPath)
 	}
 
