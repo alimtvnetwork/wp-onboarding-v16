@@ -39,8 +39,11 @@ jobs:
         working-directory: backend
         run: go test ./...
 
-      - name: Lint — File Size (max 300 lines)
+      - name: Lint — File Size (backend)
         run: bash scripts/lint-file-size.sh
+
+      - name: Lint — File Size (tools)
+        run: bash scripts/lint-file-size.sh --dir tools/consistency-checker
 
       - name: Lint — Function Size (backend)
         run: bash scripts/lint-func-size.sh
