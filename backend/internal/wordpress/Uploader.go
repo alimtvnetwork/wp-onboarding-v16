@@ -162,15 +162,24 @@ func parseUploaderStatus(data []byte) (*UploaderStatus, error) {
 
 // normalizeUploaderEnvelopeFields copies envelope PascalCase fields to legacy fields.
 func normalizeUploaderEnvelopeFields(status *UploaderStatus) {
-	if status.Version == "" && status.EnvVersion != "" {
+	isVersionMissing    := status.Version == ""
+	hasEnvVersion       := status.EnvVersion != ""
+
+	if isVersionMissing && hasEnvVersion {
 		status.Version = status.EnvVersion
 	}
 
-	if status.WordPressVersion == "" && status.EnvWp != "" {
+	isWpVersionMissing  := status.WordPressVersion == ""
+	hasEnvWp            := status.EnvWp != ""
+
+	if isWpVersionMissing && hasEnvWp {
 		status.WordPressVersion = status.EnvWp
 	}
 
-	if status.PHPVersion == "" && status.EnvPhp != "" {
+	isPhpVersionMissing := status.PHPVersion == ""
+	hasEnvPhp           := status.EnvPhp != ""
+
+	if isPhpVersionMissing && hasEnvPhp {
 		status.PHPVersion = status.EnvPhp
 	}
 }

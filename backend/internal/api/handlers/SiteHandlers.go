@@ -74,7 +74,10 @@ func createSiteOrFail(w http.ResponseWriter, r *http.Request, input SiteCreateIn
 
 // normalizeCreateSitePassword maps applicationPassword to password if needed.
 func normalizeCreateSitePassword(input *SiteCreateInput) {
-	if input.Password == "" && input.ApplicationPassword != "" {
+	isPasswordMissing := input.Password == ""
+	hasAppPassword    := input.ApplicationPassword != ""
+
+	if isPasswordMissing && hasAppPassword {
 		input.Password = input.ApplicationPassword
 	}
 }

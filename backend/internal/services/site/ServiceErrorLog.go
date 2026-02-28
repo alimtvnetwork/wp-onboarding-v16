@@ -120,7 +120,10 @@ func resolveMethodAndUrl(details *ExtractedErrorDetails, siteUrl string) (string
 		method = "POST"
 	}
 	delegatedUrl := details.Url
-	if delegatedUrl == "" && details.Endpoint != "" {
+	isDelegatedUrlMissing := delegatedUrl == ""
+	hasEndpoint          := details.Endpoint != ""
+
+	if isDelegatedUrlMissing && hasEndpoint {
 		delegatedUrl = fmt.Sprintf("%s/wp-json%s", siteUrl, details.Endpoint)
 	}
 	return method, delegatedUrl

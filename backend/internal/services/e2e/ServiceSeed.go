@@ -6,7 +6,9 @@ import "encoding/json"
 func (s *serviceImpl) seedTestSuites() {
 	var count int
 	s.db.QueryRow(suiteCountQuery).Scan(&count)
-	if count > 0 {
+	hasSuites := count > 0
+
+	if hasSuites {
 		return
 	}
 

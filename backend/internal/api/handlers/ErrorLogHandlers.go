@@ -94,7 +94,10 @@ func parseStreamParams(r *http.Request) (string, int) {
 
 	tailLines := 100
 	if tailStr := r.URL.Query().Get("tail"); tailStr != "" {
-		if n, err := strconv.Atoi(tailStr); err == nil && n > 0 && n <= 10000 {
+		n, err := strconv.Atoi(tailStr)
+		isValidTail := err == nil && n > 0 && n <= 10000
+
+		if isValidTail {
 			tailLines = n
 		}
 	}

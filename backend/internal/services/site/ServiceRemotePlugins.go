@@ -104,8 +104,13 @@ func (s *Service) convertUploaderPlugins(siteId int64, uploaderPlugins []wordpre
 
 // convertSingleUploaderPlugin converts one UploaderPluginInfo to a RemotePlugin.
 func (s *Service) convertSingleUploaderPlugin(siteId int64, p wordpress.UploaderPluginInfo) *RemotePlugin {
-	if p.File == "" && p.Slug == "" {
+	isFileMissing := p.File == ""
+	isSlugMissing := p.Slug == ""
+	isUnidentifiable := isFileMissing && isSlugMissing
+
+	if isUnidentifiable {
 		s.log.Warn("Skipping remote plugin with empty file and slug", "name", p.Name, "siteId", siteId)
+
 		return nil
 	}
 
