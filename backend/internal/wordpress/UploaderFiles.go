@@ -12,18 +12,26 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// ReplaceFileInput bundles parameters for ReplaceFileViaUploader.
+type ReplaceFileInput struct {
+	Slug     string
+	RelPath  string
+	Content  []byte
+	IsBase64 bool
+}
+
 // ReplaceFileViaUploader replaces a single file in a plugin via the RiseupAsia Uploader.
-func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) *apperror.AppError {
+func (c *Client) ReplaceFileViaUploader(input ReplaceFileInput) *apperror.AppError {
 	namespace := c.resolveNamespace()
 	endpoint := "/" + namespace + ep.Files.String()
-	contentStr := base64.StdEncoding.EncodeToString(content)
+	contentStr := base64.StdEncoding.EncodeToString(input.Content)
 
 	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
-		Body:       PluginFileReplaceRequest{Plugin: slug, Path: relPath, Content: contentStr},
+		Body:       PluginFileReplaceRequest{Plugin: input.Slug, Path: input.RelPath, Content: contentStr},
 		Operation:  operation.ReplaceFile,
-		PluginSlug: slug,
+		PluginSlug: input.Slug,
 		ErrorCode:  apperror.ErrWPConnection,
 	})
 

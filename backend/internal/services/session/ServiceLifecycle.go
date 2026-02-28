@@ -32,7 +32,12 @@ func (s *Service) StartSession(input StartSessionInput) (string, *apperror.AppEr
 	}
 	session.logFile = file
 
-	writeSessionHeader(file, sessionID, input, session.StartedAt)
+	writeSessionHeader(sessionHeaderInput{
+		File:      file,
+		SessionID: sessionID,
+		Input:     input,
+		StartedAt: session.StartedAt,
+	})
 	s.registerSession(sessionID, session)
 
 	return sessionID, nil
@@ -105,25 +110,33 @@ func (s *Service) createSessionLogFile(sessionID string) (*os.File, *apperror.Ap
 	return file, nil
 }
 
+// sessionHeaderInput bundles parameters for writeSessionHeader.
+type sessionHeaderInput struct {
+	File      *os.File
+	SessionID string
+	Input     StartSessionInput
+	StartedAt time.Time
+}
+
 // writeSessionHeader writes the formatted session header to the log file.
-func writeSessionHeader(file *os.File, sessionID string, input StartSessionInput, startedAt time.Time) {
+func writeSessionHeader(shi sessionHeaderInput) {
 	header := "═══════════════════════════════════════════════════════════════════════════════\n"
-	header += fmt.Sprintf(" SESSION: %s\n", sessionID)
-	header += fmt.Sprintf(" TYPE: %s\n", input.Type)
-	header += fmt.Sprintf(" STARTED: %s\n", startedAt.Format("2006-01-02 15:04:05 UTC"))
-	hasPluginName := input.PluginName != ""
+	header += fmt.Sprintf(" SESSION: %s\n", shi.SessionID)
+	header += fmt.Sprintf(" TYPE: %s\n", shi.Input.Type)
+	header += fmt.Sprintf(" STARTED: %s\n", shi.StartedAt.Format("2006-01-02 15:04:05 UTC"))
+	hasPluginName := shi.Input.PluginName != ""
 
 	if hasPluginName {
-		header += fmt.Sprintf(" PLUGIN: %s (ID: %d)\n", input.PluginName, input.PluginID)
+		header += fmt.Sprintf(" PLUGIN: %s (ID: %d)\n", shi.Input.PluginName, shi.Input.PluginID)
 	}
 
-	hasSiteName := input.SiteName != ""
+	hasSiteName := shi.Input.SiteName != ""
 
 	if hasSiteName {
-		header += fmt.Sprintf(" SITE: %s (ID: %d)\n", input.SiteName, input.SiteID)
+		header += fmt.Sprintf(" SITE: %s (ID: %d)\n", shi.Input.SiteName, shi.Input.SiteID)
 	}
 	header += "═══════════════════════════════════════════════════════════════════════════════\n\n"
-	file.WriteString(header)
+	shi.File.WriteString(header)
 }
 
 // LogInput bundles parameters for Log.

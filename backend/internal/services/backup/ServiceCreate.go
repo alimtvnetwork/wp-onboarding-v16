@@ -14,7 +14,7 @@ import (
 // Create downloads the current remote plugin and saves as a backup
 func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[models.Backup] {
 	s.log.Info("Creating backup", "mappingId", mappingID)
-	s.logInfoWithDetails(mappingID, "init", "Starting backup creation", toDetails(InitDetails{MappingID: mappingID}))
+	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "init", Message: "Starting backup creation", Details: toDetails(InitDetails{MappingID: mappingID})})
 
 	backupPath, appErr := s.createBackupFile(mappingID)
 	if appErr != nil {
@@ -50,7 +50,7 @@ func (s *Service) createBackupFile(mappingID int64) (string, *apperror.AppError)
 	}
 	file.Close()
 
-	s.logInfoWithDetails(mappingID, "write", "Backup file created successfully", toDetails(PathDetails{Path: backupPath}))
+	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "write", Message: "Backup file created successfully", Details: toDetails(PathDetails{Path: backupPath})})
 
 	return backupPath, nil
 }
@@ -71,7 +71,7 @@ func (s *Service) runRetentionPolicy(ctx context.Context, mappingID int64) {
 		MaxPerPlugin:  s.maxPerPlugin,
 		RetentionDays: s.retentionDays,
 	})
-	s.logInfoWithDetails(mappingID, "retention", "Enforcing retention policy", retentionDetails)
+	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "retention", Message: "Enforcing retention policy", Details: retentionDetails})
 
 	appErr := s.enforceRetention(ctx, mappingID)
 	if appErr != nil {
@@ -84,5 +84,5 @@ func (s *Service) runRetentionPolicy(ctx context.Context, mappingID int64) {
 func (s *Service) logBackupComplete(mappingID int64, backupPath string, size int64) {
 	s.log.Info("Backup created", "mappingId", mappingID, "path", backupPath)
 	completeDetails := toDetails(BackupCompleteDetails{Path: backupPath, FileSize: size})
-	s.logInfoWithDetails(mappingID, "complete", "Backup created successfully", completeDetails)
+	s.logInfoWithDetails(BackupLogInput{PluginID: mappingID, Step: "complete", Message: "Backup created successfully", Details: completeDetails})
 }

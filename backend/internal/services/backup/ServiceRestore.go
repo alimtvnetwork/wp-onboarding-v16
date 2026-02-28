@@ -10,7 +10,7 @@ import (
 // Restore uploads a backup to WordPress
 func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[RestoreResult] {
 	s.log.Info("Restoring backup", "backupId", backupID)
-	s.logInfoWithDetails(backupID, "init", "Starting backup restore", toDetails(InitDetails{BackupID: backupID}))
+	s.logInfoWithDetails(BackupLogInput{PluginID: backupID, Step: "init", Message: "Starting backup restore", Details: toDetails(InitDetails{BackupID: backupID})})
 
 	// TODO: Implement restore steps
 	s.logInfo(backupID, "locate", "Locating backup file")
@@ -24,7 +24,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 // Delete removes a backup file and database record
 func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 	s.log.Info("Deleting backup", "id", id)
-	s.logInfoWithDetails(id, "delete", "Deleting backup", toDetails(InitDetails{BackupID: id}))
+	s.logInfoWithDetails(BackupLogInput{PluginID: id, Step: "delete", Message: "Deleting backup", Details: toDetails(InitDetails{BackupID: id})})
 
 	// TODO: Get backup path from database and delete file
 
@@ -36,7 +36,7 @@ func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 // Cleanup removes expired backups
 func (s *Service) Cleanup(ctx context.Context) *apperror.AppError {
 	s.log.Info("Running backup cleanup")
-	s.logInfoWithDetails(0, "init", "Starting backup cleanup", toDetails(CleanupInitDetails{RetentionDays: s.retentionDays}))
+	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "init", Message: "Starting backup cleanup", Details: toDetails(CleanupInitDetails{RetentionDays: s.retentionDays})})
 
 	removedCount, appErr := s.removeExpiredBackups()
 	if appErr != nil {
@@ -54,5 +54,5 @@ func (s *Service) Cleanup(ctx context.Context) *apperror.AppError {
 func (s *Service) logCleanupComplete(removedCount int) {
 	s.log.Info("Backup cleanup complete")
 	completeDetails := toDetails(CleanupCompleteDetails{RemovedCount: removedCount})
-	s.logInfoWithDetails(0, "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), completeDetails)
+	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "complete", Message: fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), Details: completeDetails})
 }

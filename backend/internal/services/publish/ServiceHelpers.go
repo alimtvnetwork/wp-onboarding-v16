@@ -40,17 +40,30 @@ func scanMapping(row *sql.Row) (*models.PluginMapping, error) {
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "mapping not found")
 	}
 
-	applyMappingTimestamps(&m, lastSyncAt, lastBackupAt, createdAt, updatedAt)
+	applyMappingTimestamps(&m, mappingTimestamps{
+		LastSync:   lastSyncAt,
+		LastBackup: lastBackupAt,
+		Created:    createdAt,
+		Updated:    updatedAt,
+	})
 
 	return &m, nil
 }
 
+// mappingTimestamps bundles nullable timestamp fields for PluginMapping.
+type mappingTimestamps struct {
+	LastSync   sql.NullString
+	LastBackup sql.NullString
+	Created    sql.NullString
+	Updated    sql.NullString
+}
+
 // applyMappingTimestamps parses and assigns timestamp fields on a PluginMapping.
-func applyMappingTimestamps(m *models.PluginMapping, lastSyncAt, lastBackupAt, createdAt, updatedAt sql.NullString) {
-	m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
-	m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
-	m.CreatedAt = dbops.ParseDateTime(createdAt.String)
-	m.UpdatedAt = dbops.ParseDateTime(updatedAt.String)
+func applyMappingTimestamps(m *models.PluginMapping, ts mappingTimestamps) {
+	m.LastSyncAt = dbops.ParseNullTime(ts.LastSync)
+	m.LastBackupAt = dbops.ParseNullTime(ts.LastBackup)
+	m.CreatedAt = dbops.ParseDateTime(ts.Created.String)
+	m.UpdatedAt = dbops.ParseDateTime(ts.Updated.String)
 }
 
 // SiteCredentialsResult holds a site and its decrypted password.
@@ -104,17 +117,30 @@ func scanSiteRow(row *sql.Row) (*models.Site, error) {
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
 
-	applySiteTimestamps(&site, lastTestedAt, lastSyncAt, createdAt, updatedAt)
+	applySiteTimestamps(&site, siteTimestamps{
+		LastTested: lastTestedAt,
+		LastSync:   lastSyncAt,
+		Created:    createdAt,
+		Updated:    updatedAt,
+	})
 
 	return &site, nil
 }
 
+// siteTimestamps bundles nullable timestamp fields for Site.
+type siteTimestamps struct {
+	LastTested sql.NullString
+	LastSync   sql.NullString
+	Created    sql.NullString
+	Updated    sql.NullString
+}
+
 // applySiteTimestamps parses and assigns timestamp fields on a Site.
-func applySiteTimestamps(site *models.Site, lastTestedAt, lastSyncAt, createdAt, updatedAt sql.NullString) {
-	site.LastTestedAt = dbops.ParseNullTime(lastTestedAt)
-	site.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
-	site.CreatedAt = dbops.ParseDateTime(createdAt.String)
-	site.UpdatedAt = dbops.ParseDateTime(updatedAt.String)
+func applySiteTimestamps(site *models.Site, ts siteTimestamps) {
+	site.LastTestedAt = dbops.ParseNullTime(ts.LastTested)
+	site.LastSyncAt = dbops.ParseNullTime(ts.LastSync)
+	site.CreatedAt = dbops.ParseDateTime(ts.Created.String)
+	site.UpdatedAt = dbops.ParseDateTime(ts.Updated.String)
 }
 
 // decryptSitePassword decrypts the site password via the decryptor.

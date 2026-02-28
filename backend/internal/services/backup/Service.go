@@ -90,14 +90,9 @@ func (s *Service) logInfo(pluginID int64, step, message string) {
 }
 
 // logInfoWithDetails broadcasts an info-level log entry with details.
-func (s *Service) logInfoWithDetails(pluginID int64, step, message string, details []byte) {
-	s.broadcastLog(BackupLogInput{
-		PluginID: pluginID,
-		Level:    loglevel.Info.Lower(),
-		Step:     step,
-		Message:  message,
-		Details:  details,
-	})
+func (s *Service) logInfoWithDetails(input BackupLogInput) {
+	input.Level = loglevel.Info.Lower()
+	s.broadcastLog(input)
 }
 
 // logError broadcasts an error-level log entry.

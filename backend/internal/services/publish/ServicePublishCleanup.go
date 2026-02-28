@@ -60,7 +60,7 @@ func (s *Service) finalizePublishResult(pctx *publishContext) {
 
 	s.broadcastCompletion(pctx)
 	s.logPublishComplete(pctx)
-	s.recordHistory(pctx.PluginInfo, pctx.SiteInfo, pctx.Options, pctx.Result)
+	s.recordHistory(pctx)
 }
 
 // logPublishComplete writes the final publish log entry.
@@ -132,16 +132,17 @@ func resolveCompletionStatus(result *PublishResult) (publishsteptype.Variant, st
 // ─── History ─────────────────────────────────────────────────────────────────
 
 // recordHistory records the publish result to the history service
-func (s *Service) recordHistory(pluginInfo models.Plugin, siteInfo *models.Site, options PublishOptions, result *PublishResult) {
+func (s *Service) recordHistory(pctx *publishContext) {
 	if s.historyService == nil {
+
 		return
 	}
 
 	input := historyEntryInput{
-		PluginInfo: pluginInfo,
-		SiteInfo:   siteInfo,
-		Options:    options,
-		Result:     result,
+		PluginInfo: pctx.PluginInfo,
+		SiteInfo:   pctx.SiteInfo,
+		Options:    pctx.Options,
+		Result:     pctx.Result,
 	}
 	entry := buildHistoryEntry(input)
 	_, err := s.historyService.Record(entry)

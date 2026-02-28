@@ -33,7 +33,11 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondErrorLogContent(w, logPath, logType, fi)
+	respondErrorLogContent(w, logContentInput{
+		LogPath: logPath,
+		LogType: logType,
+		FileStat: fi,
+	})
 }
 
 // resolveErrorLogPath returns the file path for the given log type.
@@ -46,21 +50,29 @@ func resolveErrorLogPath(logType string) string {
 	return "data/errors/error.log.txt"
 }
 
+// logContentInput bundles parameters for respondErrorLogContent.
+type logContentInput struct {
+	LogPath  string
+	LogType  string
+	FileStat *pathutil.FileStatResult
+}
+
 // respondErrorLogContent reads and responds with log file content.
-func respondErrorLogContent(w http.ResponseWriter, logPath, logType string, fi *pathutil.FileStatResult) {
-	content, err := os.ReadFile(logPath)
+func respondErrorLogContent(w http.ResponseWriter, input logContentInput) {
+	content, err := os.ReadFile(input.LogPath)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusServerError, "E4001", "Failed to read log file: "+err.Error())
+
 		return
 	}
 
 	respondSuccess(w, LogFileResponse{
 		Content:    string(content),
-		Path:       logPath,
+		Path:       input.LogPath,
 		Exists:     true,
-		LogType:    logType,
-		Size:       fi.Info.Size(),
-		ModifiedAt: fi.Info.ModTime().Format(time.RFC3339),
+		LogType:    input.LogType,
+		Size:       input.FileStat.Info.Size(),
+		ModifiedAt: input.FileStat.Info.ModTime().Format(time.RFC3339),
 	})
 }
 
@@ -87,7 +99,11 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondStreamedLines(w, logPath, logType, tailLines)
+	respondStreamedLines(w, streamLinesInput{
+		LogPath:   logPath,
+		LogType:   logType,
+		TailLines: tailLines,
+	})
 }
 
 // parseStreamParams extracts logType and tailLines from request query.
@@ -125,21 +141,29 @@ func resolveStreamLogPath(logType string) string {
 	return "data/errors/log.txt"
 }
 
+// streamLinesInput bundles parameters for respondStreamedLines.
+type streamLinesInput struct {
+	LogPath   string
+	LogType   string
+	TailLines int
+}
+
 // respondStreamedLines reads the file, tails lines, and responds.
-func respondStreamedLines(w http.ResponseWriter, logPath, logType string, tailLines int) {
-	content, err := os.ReadFile(logPath)
+func respondStreamedLines(w http.ResponseWriter, input streamLinesInput) {
+	content, err := os.ReadFile(input.LogPath)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusServerError, "E4001", "Failed to read log file: "+err.Error())
+
 		return
 	}
 
 	allLines := splitLines(string(content))
-	lines := tailSlice(allLines, tailLines)
-	fi, _ := pathutil.StatFile(logPath)
+	lines := tailSlice(allLines, input.TailLines)
+	fi, _ := pathutil.StatFile(input.LogPath)
 
 	respondSuccess(w, buildLogLinesResponse(logLinesResponseInput{
-		LogPath:  logPath,
-		LogType:  logType,
+		LogPath:  input.LogPath,
+		LogType:  input.LogType,
 		AllLines: allLines,
 		Lines:    lines,
 		FileStat: fi,
@@ -198,7 +222,11 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 		return
 	}
 
-	respondLogFileContent(w, path, filename, fi)
+	respondLogFileContent(w, logFileContentInput{
+		Path:     path,
+		Filename: filename,
+		FileStat: fi,
+	})
 }
 
 // respondLogFileStatError responds based on file stat error type.
@@ -210,19 +238,27 @@ func respondLogFileStatError(w http.ResponseWriter, statErr error, filename stri
 	}
 }
 
+// logFileContentInput bundles parameters for respondLogFileContent.
+type logFileContentInput struct {
+	Path     string
+	Filename string
+	FileStat *pathutil.FileStatResult
+}
+
 // respondLogFileContent reads file and responds with LogFileResponse.
-func respondLogFileContent(w http.ResponseWriter, path, filename string, fi *pathutil.FileStatResult) {
-	content, err := os.ReadFile(path)
+func respondLogFileContent(w http.ResponseWriter, input logFileContentInput) {
+	content, err := os.ReadFile(input.Path)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to read log file: "+err.Error())
+
 		return
 	}
 
 	respondSuccess(w, LogFileResponse{
 		Content:    string(content),
-		Filename:   filename,
-		Size:       fi.Info.Size(),
-		ModifiedAt: fi.Info.ModTime().Format(time.RFC3339),
+		Filename:   input.Filename,
+		Size:       input.FileStat.Info.Size(),
+		ModifiedAt: input.FileStat.Info.ModTime().Format(time.RFC3339),
 	})
 }
 

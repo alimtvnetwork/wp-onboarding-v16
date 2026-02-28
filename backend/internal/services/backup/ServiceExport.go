@@ -24,7 +24,7 @@ type exportState struct {
 func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) apperror.Result[ExportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
-	s.logInfoWithDetails(0, "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), toDetails(ExportInitDetails{SourceCount: len(sourcePaths)}))
+	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "init", Message: fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), Details: toDetails(ExportInitDetails{SourceCount: len(sourcePaths)})})
 
 	handleResult := s.createExportZip(outputPath)
 	if handleResult.HasError() {
@@ -106,7 +106,12 @@ func (s *Service) exportSingleSource(zipWriter *zip.Writer, sourcePath string, s
 		return
 	}
 
-	s.exportFile(zipWriter, sourcePath, filepath.Base(sourcePath), state)
+	s.exportFile(exportFileInput{
+		ZipWriter: zipWriter,
+		FilePath:  sourcePath,
+		ZipPath:   filepath.Base(sourcePath),
+		State:     state,
+	})
 }
 
 // exportDirectory walks a directory and adds all files to the zip.
@@ -120,24 +125,37 @@ func (s *Service) exportDirectory(zipWriter *zip.Writer, sourcePath string, stat
 		}
 
 		relPath, _ := filepath.Rel(sourcePath, path)
-		zipPath := filepath.ToSlash(filepath.Join(baseDir, relPath))
-		s.exportFile(zipWriter, path, zipPath, state)
+		zipEntryPath := filepath.ToSlash(filepath.Join(baseDir, relPath))
+		s.exportFile(exportFileInput{
+			ZipWriter: zipWriter,
+			FilePath:  path,
+			ZipPath:   zipEntryPath,
+			State:     state,
+		})
 
 		return nil
 	})
 }
 
+// exportFileInput bundles parameters for exportFile.
+type exportFileInput struct {
+	ZipWriter *zip.Writer
+	FilePath  string
+	ZipPath   string
+	State     *exportState
+}
+
 // exportFile adds a single file to the zip archive.
-func (s *Service) exportFile(zipWriter *zip.Writer, filePath, zipPath string, state *exportState) {
-	written, appErr := s.addFileToZip(zipWriter, filePath, zipPath)
+func (s *Service) exportFile(input exportFileInput) {
+	written, appErr := s.addFileToZip(input.ZipWriter, input.FilePath, input.ZipPath)
 	if appErr != nil {
-		s.log.Warn("Failed to add file", "path", filePath, "error", appErr)
+		s.log.Warn("Failed to add file", "path", input.FilePath, "error", appErr)
 
 		return
 	}
 
-	state.FilesCount++
-	state.TotalBytes += written
+	input.State.FilesCount++
+	input.State.TotalBytes += written
 }
 
 // logExportComplete broadcasts the export completion log.
@@ -150,7 +168,7 @@ func (s *Service) logExportComplete(outputPath string, state *exportState, start
 		TotalBytes: state.TotalBytes,
 		DurationMs: duration.Milliseconds(),
 	})
-	s.logInfoWithDetails(0, "complete", fmt.Sprintf("Export complete: %d files, %d bytes", state.FilesCount, state.TotalBytes), completeDetails)
+	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "complete", Message: fmt.Sprintf("Export complete: %d files, %d bytes", state.FilesCount, state.TotalBytes), Details: completeDetails})
 }
 
 // addFileToZip adds a single file to a zip archive
