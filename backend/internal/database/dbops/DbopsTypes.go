@@ -218,7 +218,9 @@ func captureStackTrace(skip int) string {
 
 	for i := skip; i < skip+10; i++ {
 		pc, file, line, isValid := runtime.Caller(i)
-		if !isValid {
+		isInvalid := !isValid
+
+		if isInvalid {
 			break
 		}
 
@@ -252,7 +254,9 @@ func captureStackTrace(skip int) string {
 // getCallerInfo returns the caller's file and line for logging
 func getCallerInfo(skip int) (file string, line int) {
 	_, file, line, isValid := runtime.Caller(skip)
-	if !isValid {
+	isInvalid := !isValid
+
+	if isInvalid {
 
 		return "unknown", 0
 	}

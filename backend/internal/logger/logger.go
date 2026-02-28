@@ -104,7 +104,9 @@ func (l *Logger) log(level Level, msg string, keyvals ...any) {
 // captureCaller extracts function name, file, and line from the call stack.
 func (l *Logger) captureCaller() callerContext {
 	pc, file, line, isValid := runtime.Caller(2)
-	if !isValid {
+	isInvalid := !isValid
+
+	if isInvalid {
 		return callerContext{funcName: "unknown", file: "unknown", line: 0}
 	}
 
