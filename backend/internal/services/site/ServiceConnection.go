@@ -181,13 +181,13 @@ func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *mod
 	s.broadcastConnecting(id, site.Url)
 
 	ref := connTestRef{ID: id, Site: site}
-	connInfo, appErr := client.TestConnection()
-	if appErr != nil {
+	connResult := client.TestConnection()
+	if connResult.HasError() {
 
-		return s.handleConnectionFailure(ctx, ref, appErr), nil
+		return s.handleConnectionFailure(ctx, ref, connResult.AppError()), nil
 	}
 
-	return s.handleConnectionSuccess(ctx, ref, connInfo), nil
+	return s.handleConnectionSuccess(ctx, ref, connResult.Value()), nil
 }
 
 // broadcastConnecting sends a "connecting" progress event.

@@ -3,7 +3,6 @@ package wordpress
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
@@ -35,7 +34,7 @@ type OnboardUploadResult struct {
 
 // GetPluginFiles retrieves the list of files for a remote plugin.
 // Delegates to GetPluginFilesViaRiseup (Riseup Asia Uploader).
-func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile, *apperror.AppError) {
+func (c *Client) GetPluginFiles(ctx context.Context, slug string) apperror.Result[[]RemoteFile] {
 	return c.GetPluginFilesViaRiseup(ctx, slug)
 }
 
@@ -52,7 +51,7 @@ type syncManifestResult struct {
 }
 
 // GetPluginSyncManifest retrieves the cached file manifest for a remote plugin via Riseup Asia Uploader.
-func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, *apperror.AppError) {
+func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) apperror.Result[[]RemoteFile] {
 	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
 
 	callInput := apiCallInput{
@@ -62,15 +61,17 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 		Operation: "get sync manifest",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	data, err := c.doAPICallRaw(callInput)
-	if err != nil {
-		return nil, err
+	rawResult := c.doAPICallRaw(callInput)
+	if rawResult.HasError() {
+		return apperror.Fail[[]RemoteFile](rawResult.AppError())
 	}
 
-	result, decodeErr := decodeAPIResponseTyped[syncManifestResult](data, "sync manifest")
-	if decodeErr != nil {
-		return nil, decodeErr
+	decodeResult := decodeAPIResponse[syncManifestResult](rawResult.Value(), "sync manifest")
+	if decodeResult.HasError() {
+		return apperror.Fail[[]RemoteFile](decodeResult.AppError())
 	}
+
+	result := decodeResult.Value()
 
 	return validateSuccessAndReturn(result.Success, result.Data.Files, successCheckContext{Operation: "sync manifest", Slug: slug})
 }
@@ -84,7 +85,7 @@ type pluginFilesResult struct {
 }
 
 // GetPluginFilesViaRiseup retrieves the list of files for a remote plugin via Riseup Asia Uploader.
-func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, *apperror.AppError) {
+func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) apperror.Result[[]RemoteFile] {
 	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
 
 	callInput := apiCallInput{
@@ -94,15 +95,17 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 		Operation: "get plugin files",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	data, err := c.doAPICallRaw(callInput)
-	if err != nil {
-		return nil, mapNotFoundError(err, "plugin not found on remote", slug)
+	rawResult := c.doAPICallRaw(callInput)
+	if rawResult.HasError() {
+		return apperror.Fail[[]RemoteFile](mapNotFoundError(rawResult.AppError(), "plugin not found on remote", slug))
 	}
 
-	result, decodeErr := decodeAPIResponseTyped[pluginFilesResult](data, "plugin files")
-	if decodeErr != nil {
-		return nil, decodeErr
+	decodeResult := decodeAPIResponse[pluginFilesResult](rawResult.Value(), "plugin files")
+	if decodeResult.HasError() {
+		return apperror.Fail[[]RemoteFile](decodeResult.AppError())
 	}
+
+	result := decodeResult.Value()
 
 	return validateSuccessAndReturn(result.Success, result.Files, successCheckContext{Operation: "plugin files", Slug: slug})
 }
@@ -115,7 +118,7 @@ type mutationTokenResult struct {
 
 // RequestMutationToken requests a mutation token from the legacy Onboard companion plugin.
 // Deprecated: The Riseup Asia Uploader does not use mutation tokens.
-func (c *Client) RequestMutationToken(action string) (string, *apperror.AppError) {
+func (c *Client) RequestMutationToken(action string) apperror.Result[string] {
 	endpoint := fmt.Sprintf("/%s%s?action=%s", OnboardNamespace, OnboardRequestMutationPath, action)
 
 	callInput := apiCallInput{
@@ -124,22 +127,24 @@ func (c *Client) RequestMutationToken(action string) (string, *apperror.AppError
 		Operation: "request mutation token",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	data, err := c.doAPICallRaw(callInput)
-	if err != nil {
-		return "", err
+	rawResult := c.doAPICallRaw(callInput)
+	if rawResult.HasError() {
+		return apperror.Fail[string](rawResult.AppError())
 	}
 
-	result, decodeErr := decodeAPIResponseTyped[mutationTokenResult](data, "mutation token")
-	if decodeErr != nil {
-		return "", decodeErr
+	decodeResult := decodeAPIResponse[mutationTokenResult](rawResult.Value(), "mutation token")
+	if decodeResult.HasError() {
+		return apperror.Fail[string](decodeResult.AppError())
 	}
 
+	result := decodeResult.Value()
 	isTokenEmpty := result.MutationToken == ""
 
 	if isTokenEmpty {
-		return "", apperror.New(apperror.ErrWPConnection, "empty mutation token in response")
+		return apperror.FailNew[string](apperror.ErrWPConnection, "empty mutation token in response")
 	}
-	return result.MutationToken, nil
+
+	return apperror.Ok(result.MutationToken)
 }
 
 // fileContentResult is the response from the file content endpoint.
@@ -150,7 +155,7 @@ type fileContentResult struct {
 }
 
 // GetPluginFileContent retrieves the content of a specific file from a remote plugin.
-func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, *apperror.AppError) {
+func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) apperror.Result[string] {
 	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
 
 	callInput := apiCallInput{
@@ -160,23 +165,24 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		Operation: "get file content",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	data, err := c.doAPICallRaw(callInput)
-	if err != nil {
-		return "", mapNotFoundError(err, "file not found on remote", filePath)
+	rawResult := c.doAPICallRaw(callInput)
+	if rawResult.HasError() {
+		return apperror.Fail[string](mapNotFoundError(rawResult.AppError(), "file not found on remote", filePath))
 	}
 
-	result, decodeErr := decodeAPIResponseTyped[fileContentResult](data, "file content")
-	if decodeErr != nil {
-		return "", decodeErr
+	decodeResult := decodeAPIResponse[fileContentResult](rawResult.Value(), "file content")
+	if decodeResult.HasError() {
+		return apperror.Fail[string](decodeResult.AppError())
 	}
 
+	result := decodeResult.Value()
 	isFailure := !result.Success
 
 	if isFailure {
-		return "", apperror.New(apperror.ErrWPConnection, "remote API returned failure for file content").
-			WithValue("filePath", filePath)
+		return apperror.FailNew[string](apperror.ErrWPConnection, "remote API returned failure for file content")
 	}
-	return result.Content, nil
+
+	return apperror.Ok(result.Content)
 }
 
 // successCheckContext bundles the context fields for validateSuccessAndReturn.
@@ -186,15 +192,14 @@ type successCheckContext struct {
 }
 
 // validateSuccessAndReturn checks the success flag and returns data or an error.
-func validateSuccessAndReturn[T any](isSuccess bool, data T, ctx successCheckContext) (T, *apperror.AppError) {
+func validateSuccessAndReturn[T any](isSuccess bool, data T, ctx successCheckContext) apperror.Result[T] {
 	isFailure := !isSuccess
 
 	if isFailure {
-		var zero T
-		return zero, apperror.New(apperror.ErrWPConnection, "remote API returned failure for "+ctx.Operation).
-			WithValue("slug", ctx.Slug)
+		return apperror.FailNew[T](apperror.ErrWPConnection, "remote API returned failure for "+ctx.Operation)
 	}
-	return data, nil
+
+	return apperror.Ok(data)
 }
 
 // mapNotFoundError checks if err is an APIError with 404 status and returns a typed not-found error.

@@ -211,11 +211,11 @@ func (s *Service) createPreUploadBackup(ctx context.Context, pctx *publishContex
 
 // exportRemoteForRollback exports and saves the remote plugin zip.
 func (s *Service) exportRemoteForRollback(pctx *publishContext) string {
-	exportResult, exportErr := pctx.WPClient.ExportPlugin(pctx.Mapping.RemoteSlug)
-	if exportErr != nil {
+	exportResult := pctx.WPClient.ExportPlugin(pctx.Mapping.RemoteSlug)
+	if exportResult.HasError() {
 		skipCtx := StageContext{
 			What:   "Pre-upload backup for rollback",
-			Result: fmt.Sprintf("Skipped: %s (rollback won't be available)", exportErr.Error()),
+			Result: fmt.Sprintf("Skipped: %s (rollback won't be available)", exportResult.AppError().Error()),
 		}
 		skipLog := pctx.stageLog(loglevel.Warn, publishstep.PreBackup, skipCtx)
 		s.broadcastStageLog(skipLog)
@@ -223,13 +223,14 @@ func (s *Service) exportRemoteForRollback(pctx *publishContext) string {
 		return ""
 	}
 
-	isExportEmpty := exportResult == nil || exportResult.PluginZip == ""
+	result := exportResult.Value()
+	isExportEmpty := result == nil || result.PluginZip == ""
 
 	if isExportEmpty {
 		return ""
 	}
 
-	return s.saveRollbackZip(pctx, exportResult)
+	return s.saveRollbackZip(pctx, result)
 }
 
 // saveRollbackZip decodes and writes the rollback zip to disk.

@@ -26,16 +26,16 @@ type ExportPluginResult struct {
 }
 
 // ExportPlugin fetches an arbitrary plugin as a base64-encoded ZIP from the remote site.
-func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
+func (c *Client) ExportPlugin(slug string) apperror.Result[*ExportPluginResult] {
 	namespace := c.resolveNamespace()
 	isNamespaceMissing := namespace == ""
 
 	if isNamespaceMissing {
-		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
+		return apperror.FailNew[*ExportPluginResult](apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
 	endpoint := "/" + namespace + ep.ExportPlugin.String()
-	return doAPICall[ExportPluginResult](c, apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: slug},
@@ -43,6 +43,18 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPConnection,
 	})
+	if rawResult.HasError() {
+		return apperror.Fail[*ExportPluginResult](rawResult.AppError())
+	}
+
+	decodeResult := decodeAPIResponse[ExportPluginResult](rawResult.Value(), "export plugin")
+	if decodeResult.HasError() {
+		return apperror.Fail[*ExportPluginResult](decodeResult.AppError())
+	}
+
+	val := decodeResult.Value()
+
+	return apperror.Ok(&val)
 }
 
 // ExportSelfResult represents the result of exporting the uploader plugin.
@@ -57,24 +69,24 @@ type ExportSelfResult struct {
 }
 
 // ExportSelfFromSite fetches the Riseup Asia Uploader plugin as a ZIP from a site.
-func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
+func (c *Client) ExportSelfFromSite() apperror.Result[*ExportSelfResult] {
 	namespace := c.resolveNamespace()
 	isNamespaceMissing := namespace == ""
 
 	if isNamespaceMissing {
-		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
+		return apperror.FailNew[*ExportSelfResult](apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
 	c.reportExportSelfStart()
 
-	result, err := c.callExportSelf(namespace)
-	if err != nil {
-		return nil, err
+	result := c.callExportSelf(namespace)
+	if result.HasError() {
+		return result
 	}
 
-	c.reportExportSelfComplete(result)
+	c.reportExportSelfComplete(result.Value())
 
-	return result, nil
+	return result
 }
 
 // reportExportSelfStart logs the export self start progress.
@@ -86,15 +98,27 @@ func (c *Client) reportExportSelfStart() {
 }
 
 // callExportSelf sends the export-self API call.
-func (c *Client) callExportSelf(namespace string) (*ExportSelfResult, error) {
+func (c *Client) callExportSelf(namespace string) apperror.Result[*ExportSelfResult] {
 	endpoint := BuildNamespacedEndpoint(namespace, ep.ExportSelf)
 
-	return doAPICall[ExportSelfResult](c, apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "export self via Riseup Asia Uploader",
 		ErrorCode: apperror.ErrWPConnection,
 	})
+	if rawResult.HasError() {
+		return apperror.Fail[*ExportSelfResult](rawResult.AppError())
+	}
+
+	decodeResult := decodeAPIResponse[ExportSelfResult](rawResult.Value(), "export self")
+	if decodeResult.HasError() {
+		return apperror.Fail[*ExportSelfResult](decodeResult.AppError())
+	}
+
+	val := decodeResult.Value()
+
+	return apperror.Ok(&val)
 }
 
 // reportExportSelfComplete logs the export self completion progress.
@@ -133,21 +157,33 @@ type RemoteErrorLogsResult struct {
 }
 
 // FetchRemoteErrorLogs retrieves the PHP error and log files from the WordPress plugin.
-func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
+func (c *Client) FetchRemoteErrorLogs() apperror.Result[*RemoteErrorLogsResult] {
 	namespace := c.resolveNamespace()
 	isNamespaceMissing := namespace == ""
 
 	if isNamespaceMissing {
-		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
+		return apperror.FailNew[*RemoteErrorLogsResult](apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
 	endpoint := BuildNamespacedEndpoint(namespace, ep.ErrorLogs)
-	return doAPICall[RemoteErrorLogsResult](c, apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "fetch remote error logs",
 		ErrorCode: apperror.ErrWPConnection,
 	})
+	if rawResult.HasError() {
+		return apperror.Fail[*RemoteErrorLogsResult](rawResult.AppError())
+	}
+
+	decodeResult := decodeAPIResponse[RemoteErrorLogsResult](rawResult.Value(), "remote error logs")
+	if decodeResult.HasError() {
+		return apperror.Fail[*RemoteErrorLogsResult](decodeResult.AppError())
+	}
+
+	val := decodeResult.Value()
+
+	return apperror.Ok(&val)
 }
 
 // RemoteErrorSessionEntry represents a single structured error from the plugin's SQLite DB.
@@ -195,12 +231,12 @@ type ErrorSessionsInput struct {
 
 // FetchRemoteErrorSessions retrieves structured error entries from the WordPress plugin's
 // error_sessions SQLite table.
-func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) (*RemoteErrorSessionsResult, error) {
+func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) apperror.Result[*RemoteErrorSessionsResult] {
 	namespace := c.resolveNamespace()
 	isNamespaceMissing := namespace == ""
 
 	if isNamespaceMissing {
-		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
+		return apperror.FailNew[*RemoteErrorSessionsResult](apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
 
 	endpoint := buildErrorSessionsEndpoint(errorSessionsParams{
@@ -211,12 +247,24 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) (*RemoteErro
 		Limit:     input.Limit,
 		Offset:    input.Offset,
 	})
-	return doAPICall[RemoteErrorSessionsResult](c, apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "fetch remote error sessions",
 		ErrorCode: apperror.ErrWPConnection,
 	})
+	if rawResult.HasError() {
+		return apperror.Fail[*RemoteErrorSessionsResult](rawResult.AppError())
+	}
+
+	decodeResult := decodeAPIResponse[RemoteErrorSessionsResult](rawResult.Value(), "remote error sessions")
+	if decodeResult.HasError() {
+		return apperror.Fail[*RemoteErrorSessionsResult](decodeResult.AppError())
+	}
+
+	val := decodeResult.Value()
+
+	return apperror.Ok(&val)
 }
 
 // errorSessionsParams bundles query parameters for error sessions endpoint.

@@ -153,17 +153,17 @@ func writeUploadFields(input uploadFieldsInput) {
 }
 
 // executeUploadHTTP sends the multipart upload request and parses the response.
-func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, contentType string) (*UploaderUploadResult, *apperror.AppError) {
+func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, contentType string) apperror.Result[*UploaderUploadResult] {
 	req, err := http.NewRequest("POST", uc.UploadURL, body)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "create upload HTTP request").WithURL(uc.UploadURL)
+		return apperror.FailWrap[*UploaderUploadResult](err, apperror.ErrInternal, "create upload HTTP request")
 	}
 
 	c.setStandardHeaders(req, contentType)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").WithURL(uc.UploadURL)
+		return apperror.FailWrap[*UploaderUploadResult](err, apperror.ErrWPConnection, "upload request failed")
 	}
 	defer resp.Body.Close()
 
@@ -171,7 +171,7 @@ func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, conten
 }
 
 // parseUploadResponse reads and processes the upload HTTP response.
-func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) (*UploaderUploadResult, *apperror.AppError) {
+func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) apperror.Result[*UploaderUploadResult] {
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
@@ -180,10 +180,10 @@ func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) (*U
 	isErrorResponse := resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated
 
 	if isErrorResponse {
-		return nil, c.buildUploadFailureAppError(uc, resp.StatusCode, respBytes, respBody)
+		return apperror.Fail[*UploaderUploadResult](c.buildUploadFailureAppError(uc, resp.StatusCode, respBytes, respBody))
 	}
 
-	return decodeUploadResult(respBytes), nil
+	return apperror.Ok(decodeUploadResult(respBytes))
 }
 
 // reportUploadResponseProgress logs the upload response progress.

@@ -48,8 +48,9 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.App
 		PluginSlug: normalizedSlug,
 		ErrorCode:  input.ErrorCode,
 	}
-	_, err := c.doAPICallRaw(callInput)
-	return err
+	rawResult := c.doAPICallRaw(callInput)
+
+	return rawResult.AppError()
 }
 
 // PluginExistsResult holds the result of a plugin existence check.
@@ -60,7 +61,7 @@ type PluginExistsResult struct {
 }
 
 // CheckPluginExistsViaUploader checks if a plugin slug is installed on the remote site.
-func (c *Client) CheckPluginExistsViaUploader(slug string) (*PluginExistsResult, *apperror.AppError) {
+func (c *Client) CheckPluginExistsViaUploader(slug string) apperror.Result[*PluginExistsResult] {
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
@@ -73,12 +74,12 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) (*PluginExistsResult,
 		PluginSlug: normalizedSlug,
 		ErrorCode:  apperror.ErrWPConnection,
 	}
-	data, err := c.doAPICallRaw(callInput)
-	if err != nil {
-		return nil, err
+	rawResult := c.doAPICallRaw(callInput)
+	if rawResult.HasError() {
+		return apperror.Fail[*PluginExistsResult](rawResult.AppError())
 	}
 
-	return parsePluginExistsResponse(data)
+	return parsePluginExistsResponse(rawResult.Value())
 }
 
 // pluginExistsResult is the typed struct for the plugin-exists envelope response.
@@ -90,7 +91,7 @@ type pluginExistsResult struct {
 }
 
 // parsePluginExistsResponse tries envelope format, then legacy flat format.
-func parsePluginExistsResponse(data []byte) (*PluginExistsResult, *apperror.AppError) {
+func parsePluginExistsResponse(data []byte) apperror.Result[*PluginExistsResult] {
 	results, ok := UnwrapResults[pluginExistsResult](data)
 	isEnvelopeMatch := ok && len(results) > 0
 
@@ -101,19 +102,19 @@ func parsePluginExistsResponse(data []byte) (*PluginExistsResult, *apperror.AppE
 			PluginFile: results[0].PluginFile,
 		}
 
-		return result, nil
+		return apperror.Ok(result)
 	}
 
 	return parsePluginExistsLegacy(data)
 }
 
 // parsePluginExistsLegacy decodes the legacy flat format for plugin-exists.
-func parsePluginExistsLegacy(data []byte) (*PluginExistsResult, *apperror.AppError) {
+func parsePluginExistsLegacy(data []byte) apperror.Result[*PluginExistsResult] {
 	var legacy pluginExistsResult
 	err := json.Unmarshal(data, &legacy)
 
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
+		return apperror.FailWrap[*PluginExistsResult](err, apperror.ErrInternal, "decode plugin exists response")
 	}
 
 	result := &PluginExistsResult{
@@ -121,7 +122,7 @@ func parsePluginExistsLegacy(data []byte) (*PluginExistsResult, *apperror.AppErr
 		Status:     legacy.Status,
 		PluginFile: legacy.PluginFile,
 	}
-	return result, nil
+	return apperror.Ok(result)
 }
 
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
@@ -155,7 +156,7 @@ func (c *Client) DeletePluginViaUploader(slug string) *apperror.AppError {
 }
 
 // ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.
-func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, *apperror.AppError) {
+func (c *Client) ListPluginsViaUploader() apperror.Result[[]UploaderPluginInfo] {
 	namespace := c.resolveNamespace()
 	endpoint := BuildNamespacedEndpoint(namespace, ep.Plugins)
 
@@ -165,20 +166,20 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, *apperror.AppEr
 		Operation: "list plugins",
 		ErrorCode: apperror.ErrWPPluginList,
 	}
-	data, err := c.doAPICallRaw(callInput)
-	if err != nil {
-		return nil, err
+	rawResult := c.doAPICallRaw(callInput)
+	if rawResult.HasError() {
+		return apperror.Fail[[]UploaderPluginInfo](rawResult.AppError())
 	}
 
-	return parsePluginListResponse(data)
+	return parsePluginListResponse(rawResult.Value())
 }
 
 // parsePluginListResponse tries envelope format, then legacy flat format.
-func parsePluginListResponse(data []byte) ([]UploaderPluginInfo, *apperror.AppError) {
+func parsePluginListResponse(data []byte) apperror.Result[[]UploaderPluginInfo] {
 	plugins, ok := UnwrapResults[UploaderPluginInfo](data)
 
 	if ok {
-		return plugins, nil
+		return apperror.Ok(plugins)
 	}
 
 	var response struct {
@@ -189,10 +190,10 @@ func parsePluginListResponse(data []byte) ([]UploaderPluginInfo, *apperror.AppEr
 	err := json.Unmarshal(data, &response)
 
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugins response")
+		return apperror.FailWrap[[]UploaderPluginInfo](err, apperror.ErrInternal, "decode plugins response")
 	}
 
-	return response.Plugins, nil
+	return apperror.Ok(response.Plugins)
 }
 
 // listFilesResult is the response shape from the files list endpoint.
@@ -204,7 +205,7 @@ type listFilesResult struct {
 }
 
 // ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
-func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, *apperror.AppError) {
+func (c *Client) ListPluginFilesViaUploader(slug string) apperror.Result[[]UploaderFileInfo] {
 	endpoint := "/" + c.resolveNamespace() + ep.Files.String()
 
 	callInput := apiCallInput{
@@ -215,25 +216,26 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, *a
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPPluginGet,
 	}
-	data, err := c.doAPICallRaw(callInput)
-	if err != nil {
-		return nil, err
+	rawResult := c.doAPICallRaw(callInput)
+	if rawResult.HasError() {
+		return apperror.Fail[[]UploaderFileInfo](rawResult.AppError())
 	}
 
-	result, decodeErr := decodeAPIResponseTyped[listFilesResult](data, "plugin files list")
-	if decodeErr != nil {
-		return nil, decodeErr
+	decodeResult := decodeAPIResponse[listFilesResult](rawResult.Value(), "plugin files list")
+	if decodeResult.HasError() {
+		return apperror.Fail[[]UploaderFileInfo](decodeResult.AppError())
 	}
-	return result.Files, nil
+
+	return apperror.Ok(decodeResult.Value().Files)
 }
 
-// decodeAPIResponseTyped unmarshals raw JSON bytes into *T, returning *apperror.AppError on failure.
-func decodeAPIResponseTyped[T any](data []byte, label string) (*T, *apperror.AppError) {
+// decodeAPIResponseTyped unmarshals raw JSON bytes into *T, returning apperror.Result.
+func decodeAPIResponseTyped[T any](data []byte, label string) apperror.Result[*T] {
 	var result T
 	err := json.Unmarshal(data, &result)
 
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, fmt.Sprintf("decode %s response", label))
+		return apperror.FailWrap[*T](err, apperror.ErrInternal, fmt.Sprintf("decode %s response", label))
 	}
-	return &result, nil
+	return apperror.Ok(&result)
 }

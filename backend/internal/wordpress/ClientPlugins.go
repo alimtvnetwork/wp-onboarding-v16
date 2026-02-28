@@ -10,59 +10,59 @@ import (
 )
 
 // GetPlugins returns a list of installed plugins
-func (c *Client) GetPlugins() ([]PluginInfo, *apperror.AppError) {
-	data, err := c.doAPICallRaw(apiCallInput{
+func (c *Client) GetPlugins() apperror.Result[[]PluginInfo] {
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
 		Operation: "get plugins list",
 	})
-	if err != nil {
-		return nil, err
+	if rawResult.HasError() {
+		return apperror.Fail[[]PluginInfo](rawResult.AppError())
 	}
 
 	var plugins []PluginInfo
-	unmarshalErr := json.Unmarshal(data, &plugins)
+	unmarshalErr := json.Unmarshal(rawResult.Value(), &plugins)
 
 	if unmarshalErr != nil {
-		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode plugins response").
-			WithEndpoint(WPCorePlugins)
+		return apperror.FailWrap[[]PluginInfo](unmarshalErr, apperror.ErrInternal, "failed to decode plugins response")
 	}
-	return plugins, nil
+
+	return apperror.Ok(plugins)
 }
 
 // GetPlugin returns information about a specific plugin
-func (c *Client) GetPlugin(slug string) (*PluginInfo, *apperror.AppError) {
+func (c *Client) GetPlugin(slug string) apperror.Result[PluginInfo] {
 	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(slug))
 
-	data, err := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:     httpmethod.Get,
 		Endpoint:   endpoint,
 		Operation:  "get plugin",
 		PluginSlug: slug,
 	})
-	if err != nil {
-		return nil, err
+	if rawResult.HasError() {
+		return apperror.Fail[PluginInfo](rawResult.AppError())
 	}
 
 	var plugin PluginInfo
-	unmarshalErr := json.Unmarshal(data, &plugin)
+	unmarshalErr := json.Unmarshal(rawResult.Value(), &plugin)
 
 	if unmarshalErr != nil {
-		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode plugin response").
-			WithSlug(slug)
+		return apperror.FailWrap[PluginInfo](unmarshalErr, apperror.ErrInternal, "failed to decode plugin response")
 	}
-	return &plugin, nil
+
+	return apperror.Ok(plugin)
 }
 
 // ResolvePluginIdentifier attempts to map a short slug (e.g. "akismet") to the full plugin
 // identifier used by WP REST API (e.g. "akismet/akismet.php").
 // If slug already looks like a full identifier (contains "/"), it is returned as-is.
-func (c *Client) ResolvePluginIdentifier(slug string) (string, *apperror.AppError) {
+func (c *Client) ResolvePluginIdentifier(slug string) apperror.Result[string] {
 	slug = strings.TrimSpace(slug)
 	isSlugEmpty := slug == ""
 
 	if isSlugEmpty {
-		return "", apperror.New(apperror.ErrValidation, "empty plugin slug")
+		return apperror.FailNew[string](apperror.ErrValidation, "empty plugin slug")
 	}
 	if strings.Contains(slug, "/") {
 		isPhpExtensionMissing := !strings.HasSuffix(slug, ".php")
@@ -70,24 +70,24 @@ func (c *Client) ResolvePluginIdentifier(slug string) (string, *apperror.AppErro
 		if isPhpExtensionMissing {
 			slug = slug + ".php"
 		}
-		return slug, nil
+		return apperror.Ok(slug)
 	}
 
-	plugs, err := c.GetPlugins()
-	if err != nil {
-		return slug, err
+	plugsResult := c.GetPlugins()
+	if plugsResult.HasError() {
+		return apperror.Fail[string](plugsResult.AppError())
 	}
 
+	plugs := plugsResult.Value()
 	target := strings.ToLower(slug)
 	for _, p := range plugs {
 		pluginID := strings.ToLower(strings.TrimSpace(p.Plugin))
 		textDomain := strings.ToLower(strings.TrimSpace(p.TextDomain))
 
 		if pluginID == target || textDomain == target || strings.HasPrefix(pluginID, target+"/") {
-			return p.Plugin, nil
+			return apperror.Ok(p.Plugin)
 		}
 	}
 
-	return slug, apperror.New(apperror.ErrNotFound, "plugin not found").
-		WithSlug(slug)
+	return apperror.Fail[string](apperror.New(apperror.ErrNotFound, "plugin not found").WithSlug(slug))
 }

@@ -177,15 +177,15 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
-	remoteManifest, err := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
+	manifestResult := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
 
 	remoteFiles := make(map[string]FileEntry)
-	if err != nil {
+	if manifestResult.HasError() {
 		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
-			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", err)
+			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", manifestResult.AppError())
 		s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
 	} else {
-		for _, rf := range remoteManifest {
+		for _, rf := range manifestResult.Value() {
 			remoteFiles[rf.Path] = FileEntry{
 				Path:       rf.Path,
 				Hash:       rf.Hash,

@@ -79,57 +79,58 @@ func snapshotEndpoint(path ep.Variant) string {
 }
 
 // GetSnapshots lists all snapshots on the remote site.
-func (c *Client) GetSnapshots() ([]SnapshotRecord, *apperror.AppError) {
+func (c *Client) GetSnapshots() apperror.Result[[]SnapshotRecord] {
 	endpoint := snapshotEndpoint(ep.SnapshotsList)
-	data, err := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "get snapshots",
 	})
-	if err != nil {
-		return nil, err
+	if rawResult.HasError() {
+		return apperror.Fail[[]SnapshotRecord](rawResult.AppError())
 	}
 
-	return parseSnapshotsResponse(c, endpoint, data)
+	return parseSnapshotsResponse(c, endpoint, rawResult.Value())
 }
 
 // parseSnapshotsResponse tries wrapped format first, then array fallback.
-func parseSnapshotsResponse(c *Client, endpoint string, data []byte) ([]SnapshotRecord, *apperror.AppError) {
+func parseSnapshotsResponse(c *Client, endpoint string, data []byte) apperror.Result[[]SnapshotRecord] {
 	var result struct {
 		Snapshots []SnapshotRecord `json:"snapshots"` // external key
 	}
 	unmarshalErr := json.Unmarshal(data, &result)
 
 	if unmarshalErr == nil {
-		return result.Snapshots, nil
+		return apperror.Ok(result.Snapshots)
 	}
 
 	return trySnapshotArrayFallback(c, endpoint)
 }
 
 // trySnapshotArrayFallback re-fetches and tries to decode as a plain array.
-func trySnapshotArrayFallback(c *Client, endpoint string) ([]SnapshotRecord, *apperror.AppError) {
-	fallbackData, fallbackErr := c.doAPICallRaw(apiCallInput{
+func trySnapshotArrayFallback(c *Client, endpoint string) apperror.Result[[]SnapshotRecord] {
+	fallbackResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "get snapshots (array fallback)",
 	})
-	if fallbackErr != nil {
-		return nil, apperror.Wrap(fallbackErr, apperror.ErrInternal, "failed to decode snapshots response")
+	if fallbackResult.HasError() {
+		return apperror.Fail[[]SnapshotRecord](
+			apperror.Wrap(fallbackResult.AppError(), apperror.ErrInternal, "failed to decode snapshots response"))
 	}
 
 	var snapshots []SnapshotRecord
-	unmarshalErr := json.Unmarshal(fallbackData, &snapshots)
+	unmarshalErr := json.Unmarshal(fallbackResult.Value(), &snapshots)
 
 	if unmarshalErr != nil {
-		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode snapshots response")
+		return apperror.FailWrap[[]SnapshotRecord](unmarshalErr, apperror.ErrInternal, "failed to decode snapshots response")
 	}
 
-	return snapshots, nil
+	return apperror.Ok(snapshots)
 }
 
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).
-func (c *Client) GetSnapshot(snapshotId int64) (*SnapshotRecord, *apperror.AppError) {
+func (c *Client) GetSnapshot(snapshotId int64) apperror.Result[SnapshotRecord] {
 	return doAPICall[SnapshotRecord](c, apiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsInfo),
@@ -139,7 +140,7 @@ func (c *Client) GetSnapshot(snapshotId int64) (*SnapshotRecord, *apperror.AppEr
 }
 
 // CreateSnapshot triggers a new snapshot on the remote site.
-func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResult, *apperror.AppError) {
+func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) apperror.Result[SnapshotCreateResult] {
 	return doAPICall[SnapshotCreateResult](c, apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsSchedule),
@@ -151,18 +152,19 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResu
 
 // DeleteSnapshot removes a snapshot from the remote site (ID in JSON body).
 func (c *Client) DeleteSnapshot(snapshotId int64) *apperror.AppError {
-	_, err := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsDelete),
 		Body:       SnapshotIdRequest{Id: snapshotId},
 		Operation:  "delete snapshot",
 		OkStatuses: []int{http.StatusOK, http.StatusNoContent},
 	})
-	return err
+
+	return rawResult.AppError()
 }
 
 // RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
-func (c *Client) RestoreSnapshot(snapshotId int64) (*SnapshotRestoreResult, *apperror.AppError) {
+func (c *Client) RestoreSnapshot(snapshotId int64) apperror.Result[SnapshotRestoreResult] {
 	return doAPICall[SnapshotRestoreResult](c, apiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsRestore),
@@ -172,7 +174,7 @@ func (c *Client) RestoreSnapshot(snapshotId int64) (*SnapshotRestoreResult, *app
 }
 
 // GetSnapshotSettings fetches snapshot settings from the remote site.
-func (c *Client) GetSnapshotSettings() (*SnapshotSettings, *apperror.AppError) {
+func (c *Client) GetSnapshotSettings() apperror.Result[SnapshotSettings] {
 	return doAPICall[SnapshotSettings](c, apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),
@@ -181,7 +183,7 @@ func (c *Client) GetSnapshotSettings() (*SnapshotSettings, *apperror.AppError) {
 }
 
 // UpdateSnapshotSettings updates snapshot settings on the remote site.
-func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSettings, *apperror.AppError) {
+func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) apperror.Result[SnapshotSettings] {
 	return doAPICall[SnapshotSettings](c, apiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),

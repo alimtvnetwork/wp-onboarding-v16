@@ -99,74 +99,75 @@ func (a *UploaderAvailability) IsNamespaceMissing() bool { return a == nil || a.
 
 // CheckRiseupAsiaAvailable checks if the Riseup Asia Uploader plugin is installed.
 // It tries namespaces in priority order (newest first) and returns the first match.
-func (c *Client) CheckRiseupAsiaAvailable() (*UploaderAvailability, error) {
+func (c *Client) CheckRiseupAsiaAvailable() apperror.Result[*UploaderAvailability] {
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
-		callResp, err := c.doAPICallWithStatus(apiCallInput{
+		callResp := c.doAPICallWithStatus(apiCallInput{
 			Method: httpmethod.Get, Endpoint: endpoint, Operation: "check uploader namespace",
 		})
-		if err != nil {
-			return nil, err
+		if callResp.HasError() {
+			return apperror.Fail[*UploaderAvailability](callResp.AppError())
 		}
 
-		isOkStatus := callResp.StatusCode == HttpStatusOk.Int()
-		isUnauthorized := callResp.StatusCode == HttpStatusUnauthorized.Int()
-		isForbidden := callResp.StatusCode == HttpStatusForbidden.Int()
+		resp := callResp.Value()
+		isOkStatus := resp.StatusCode == HttpStatusOk.Int()
+		isUnauthorized := resp.StatusCode == HttpStatusUnauthorized.Int()
+		isForbidden := resp.StatusCode == HttpStatusForbidden.Int()
 		isAvailable := isOkStatus || isUnauthorized || isForbidden
 
 		if isAvailable {
-			return &UploaderAvailability{Available: true, Namespace: ns}, nil
+			return apperror.Ok(&UploaderAvailability{Available: true, Namespace: ns})
 		}
 	}
 
-	return &UploaderAvailability{Available: false}, nil
+	return apperror.Ok(&UploaderAvailability{Available: false})
 }
 
 // CheckRiseUpUploaderAvailable is deprecated, use CheckRiseupAsiaAvailable.
-func (c *Client) CheckRiseUpUploaderAvailable() (*UploaderAvailability, error) {
+func (c *Client) CheckRiseUpUploaderAvailable() apperror.Result[*UploaderAvailability] {
 	return c.CheckRiseupAsiaAvailable()
 }
 
 // CheckUploaderHelperAvailable is deprecated, use CheckRiseupAsiaAvailable.
-func (c *Client) CheckUploaderHelperAvailable() (*UploaderAvailability, error) {
+func (c *Client) CheckUploaderHelperAvailable() apperror.Result[*UploaderAvailability] {
 	return c.CheckRiseupAsiaAvailable()
 }
 
 // GetUploaderStatus gets the Rise Up Uploader status.
-func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
+func (c *Client) GetUploaderStatus() apperror.Result[*UploaderStatus] {
 	namespace := c.resolveNamespace()
 	endpoint := BuildNamespacedEndpoint(namespace, ep.Status)
 
-	data, err := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "get uploader status", ErrorCode: apperror.ErrWPConnection,
 	})
-	if err != nil {
-		return nil, err
+	if rawResult.HasError() {
+		return apperror.Fail[*UploaderStatus](rawResult.AppError())
 	}
 
-	return parseUploaderStatus(data)
+	return parseUploaderStatus(rawResult.Value())
 }
 
 // parseUploaderStatus parses envelope or legacy flat format from raw response bytes.
-func parseUploaderStatus(data []byte) (*UploaderStatus, error) {
+func parseUploaderStatus(data []byte) apperror.Result[*UploaderStatus] {
 	status, ok := UnwrapSingleResult[UploaderStatus](data)
 
 	if ok {
 		normalizeUploaderEnvelopeFields(status)
 
-		return status, nil
+		return apperror.Ok(status)
 	}
 
-	var status UploaderStatus
-	err := json.Unmarshal(data, &status)
+	var legacyStatus UploaderStatus
+	err := json.Unmarshal(data, &legacyStatus)
 
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode status response")
+		return apperror.FailWrap[*UploaderStatus](err, apperror.ErrInternal, "decode status response")
 	}
 
-	return &status, nil
+	return apperror.Ok(&legacyStatus)
 }
 
 // normalizeUploaderEnvelopeFields copies envelope PascalCase fields to legacy fields.
@@ -203,10 +204,10 @@ type UploadInput struct {
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
-func (c *Client) UploadPluginViaUploader(input UploadInput) (*UploaderUploadResult, *apperror.AppError) {
+func (c *Client) UploadPluginViaUploader(input UploadInput) apperror.Result[*UploaderUploadResult] {
 	uc, err := c.prepareUploadContext(input.ZipPath, input.Slug)
 	if err != nil {
-		return nil, err
+		return apperror.Fail[*UploaderUploadResult](err)
 	}
 	defer uc.ZipFile.Close()
 
@@ -214,7 +215,7 @@ func (c *Client) UploadPluginViaUploader(input UploadInput) (*UploaderUploadResu
 
 	mp, mpErr := buildMultipartBody(uc, input.IsActivate, input.UploadSource)
 	if mpErr != nil {
-		return nil, mpErr
+		return apperror.Fail[*UploaderUploadResult](mpErr)
 	}
 
 	c.reportMultipartBodyReady(uc, input, mp)
