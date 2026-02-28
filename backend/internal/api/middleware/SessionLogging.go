@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // SessionContextKey is the context key for session ID
@@ -45,11 +46,11 @@ type SessionLogEntry struct {
 
 // SessionStore interface for persisting request sessions
 type SessionStore interface {
-	SaveRequestSession(session *RequestSession) error
-	GetRequestSession(id string) (*RequestSession, error)
-	ListRequestSessions(limit, offset int) (*SessionListResult, error)
-	DeleteRequestSession(id string) error
-	ClearRequestSessions() error
+	SaveRequestSession(session *RequestSession) *apperror.AppError
+	GetRequestSession(id string) (*RequestSession, *apperror.AppError)
+	ListRequestSessions(limit, offset int) (*SessionListResult, *apperror.AppError)
+	DeleteRequestSession(id string) *apperror.AppError
+	ClearRequestSessions() *apperror.AppError
 }
 
 // SessionListResult holds paginated session results.

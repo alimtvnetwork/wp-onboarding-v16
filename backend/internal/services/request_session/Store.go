@@ -32,7 +32,7 @@ type Config struct {
 }
 
 // New creates a new request session store
-func New(cfg Config) (*Store, error) {
+func New(cfg Config) (*Store, *apperror.AppError) {
 	retentionDays := cfg.RetentionDays
 	if retentionDays <= 0 {
 		retentionDays = 1
@@ -40,12 +40,14 @@ func New(cfg Config) (*Store, error) {
 
 	dataDir, err := pathutil.Join(cfg.DataDir, "request-sessions")
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "resolve request sessions directory")
 	}
-	err = os.MkdirAll(dataDir, 0755)
-	if err != nil {
 
-		return nil, apperror.Wrap(err, apperror.ErrSessionInit, "create request sessions directory")
+	mkdirErr := os.MkdirAll(dataDir, 0755)
+	if mkdirErr != nil {
+
+		return nil, apperror.Wrap(mkdirErr, apperror.ErrSessionInit, "create request sessions directory")
 	}
 
 	s := &Store{
@@ -61,7 +63,7 @@ func New(cfg Config) (*Store, error) {
 }
 
 // SaveRequestSession persists a request session to disk
-func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
+func (s *Store) SaveRequestSession(session *middleware.RequestSession) *apperror.AppError {
 	s.mu.Lock()
 	s.cache[session.ID] = session
 	s.mu.Unlock()
@@ -70,37 +72,42 @@ func (s *Store) SaveRequestSession(session *middleware.RequestSession) error {
 	hourDir := session.StartedAt.Format("15")
 	sessionDir, err := pathutil.Join(s.dataDir, dateDir, hourDir)
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrSessionStore, "resolve session directory")
 	}
 
-	err = os.MkdirAll(sessionDir, 0755)
-	if err != nil {
+	mkdirErr := os.MkdirAll(sessionDir, 0755)
+	if mkdirErr != nil {
 
-		return apperror.Wrap(err, apperror.ErrSessionStore, "create session directory")
+		return apperror.Wrap(mkdirErr, apperror.ErrSessionStore, "create session directory")
 	}
 
-	sessionPath, err := pathutil.Join(sessionDir, session.ID+".json")
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrSessionStore, "resolve session file path")
-	}
-	data, err := json.MarshalIndent(session, "", "  ")
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrSessionStore, "marshal session")
+	sessionPath, pathErr := pathutil.Join(sessionDir, session.ID+".json")
+	if pathErr != nil {
+
+		return apperror.Wrap(pathErr, apperror.ErrSessionStore, "resolve session file path")
 	}
 
-	err = os.WriteFile(sessionPath, data, 0644)
-	if err != nil {
+	data, marshalErr := json.MarshalIndent(session, "", "  ")
+	if marshalErr != nil {
 
-		return apperror.Wrap(err, apperror.ErrSessionStore, "write session file")
+		return apperror.Wrap(marshalErr, apperror.ErrSessionStore, "marshal session")
+	}
+
+	writeErr := os.WriteFile(sessionPath, data, 0644)
+	if writeErr != nil {
+
+		return apperror.Wrap(writeErr, apperror.ErrSessionStore, "write session file")
 	}
 
 	return nil
 }
 
 // GetRequestSession retrieves a session by ID
-func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error) {
+func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, *apperror.AppError) {
 	s.mu.RLock()
-	if session, isCached := s.cache[id]; isCached {
+	session, isCached := s.cache[id]
+	if isCached {
 		s.mu.RUnlock()
 
 		return session, nil
@@ -108,35 +115,46 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error)
 	s.mu.RUnlock()
 
 	var found *middleware.RequestSession
-	err := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+
 			return nil
 		}
+
 		if d.IsDir() || filepath.Ext(d.Name()) != ".json" {
+
 			return nil
 		}
+
 		if d.Name() == id+".json" {
-			data, err := os.ReadFile(path)
-			if err != nil {
-				return nil
-			}
-			var session middleware.RequestSession
-			err := json.Unmarshal(data, &session)
-			if err != nil {
+			data, readErr := os.ReadFile(path)
+			if readErr != nil {
 
 				return nil
 			}
+
+			var session middleware.RequestSession
+			unmarshalErr := json.Unmarshal(data, &session)
+			if unmarshalErr != nil {
+
+				return nil
+			}
+
 			found = &session
+
 			return filepath.SkipAll
 		}
+
 		return nil
 	})
 
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrSessionList, "search session")
+	if walkErr != nil {
+
+		return nil, apperror.Wrap(walkErr, apperror.ErrSessionList, "search session")
 	}
 
 	if found == nil {
+
 		return nil, apperror.New(apperror.ErrSessionNotFound, "session not found: "+id)
 	}
 
@@ -144,39 +162,45 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, error)
 }
 
 // ListRequestSessions returns recent sessions with pagination
-func (s *Store) ListRequestSessions(limit, offset int) (*middleware.SessionListResult, error) {
+func (s *Store) ListRequestSessions(limit, offset int) (*middleware.SessionListResult, *apperror.AppError) {
 	if limit <= 0 {
 		limit = 100
 	}
 
 	var allSessions []*middleware.RequestSession
 
-	err := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil
-		}
-		if d.IsDir() || filepath.Ext(d.Name()) != ".json" {
+
 			return nil
 		}
 
-		data, err := os.ReadFile(path)
-		if err != nil {
+		if d.IsDir() || filepath.Ext(d.Name()) != ".json" {
+
+			return nil
+		}
+
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+
 			return nil
 		}
 
 		var session middleware.RequestSession
-		err := json.Unmarshal(data, &session)
-		if err != nil {
+		unmarshalErr := json.Unmarshal(data, &session)
+		if unmarshalErr != nil {
 
 			return nil
 		}
 
 		allSessions = append(allSessions, &session)
+
 		return nil
 	})
 
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrSessionList, "list sessions")
+	if walkErr != nil {
+
+		return nil, apperror.Wrap(walkErr, apperror.ErrSessionList, "list sessions")
 	}
 
 	sort.Slice(allSessions, func(i, j int) bool {
@@ -186,6 +210,7 @@ func (s *Store) ListRequestSessions(limit, offset int) (*middleware.SessionListR
 	total := len(allSessions)
 
 	if offset >= len(allSessions) {
+
 		return &middleware.SessionListResult{Sessions: []*middleware.RequestSession{}, Total: total}, nil
 	}
 
@@ -198,33 +223,40 @@ func (s *Store) ListRequestSessions(limit, offset int) (*middleware.SessionListR
 }
 
 // DeleteRequestSession removes a session
-func (s *Store) DeleteRequestSession(id string) error {
+func (s *Store) DeleteRequestSession(id string) *apperror.AppError {
 	s.mu.Lock()
 	delete(s.cache, id)
 	s.mu.Unlock()
 
 	var isDeleted bool
-	err := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(s.dataDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+
 			return nil
 		}
+
 		if d.IsDir() || d.Name() != id+".json" {
+
 			return nil
 		}
+
 		removeErr := pathutil.RemoveFile(path, "path")
 		if removeErr == nil {
 			isDeleted = true
 		}
+
 		return filepath.SkipAll
 	})
 
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrSessionDelete, "delete session")
+	if walkErr != nil {
+
+		return apperror.Wrap(walkErr, apperror.ErrSessionDelete, "delete session")
 	}
 
 	isSessionMissing := !isDeleted
 
 	if isSessionMissing {
+
 		return apperror.New(apperror.ErrSessionNotFound, "session not found: "+id)
 	}
 
@@ -232,22 +264,25 @@ func (s *Store) DeleteRequestSession(id string) error {
 }
 
 // ClearRequestSessions removes all sessions
-func (s *Store) ClearRequestSessions() error {
+func (s *Store) ClearRequestSessions() *apperror.AppError {
 	s.mu.Lock()
 	s.cache = make(map[string]*middleware.RequestSession)
 	s.mu.Unlock()
 
 	entries, err := os.ReadDir(s.dataDir)
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrSessionClear, "read sessions directory")
 	}
 
 	for _, entry := range entries {
-		path, err := pathutil.Join(s.dataDir, entry.Name())
-		if err != nil {
-			s.log.Error("Failed to resolve session entry path", "entry", entry.Name(), "error", err)
+		path, pathErr := pathutil.Join(s.dataDir, entry.Name())
+		if pathErr != nil {
+			s.log.Error("Failed to resolve session entry path", "entry", entry.Name(), "error", pathErr)
+
 			continue
 		}
+
 		removeErr := pathutil.RemoveDir(path, "path")
 		if removeErr != nil {
 			s.log.Error("Failed to remove session entry", "path", path, "error", removeErr)
@@ -282,24 +317,40 @@ func (s *Store) cleanupOldSessions() {
 	}
 
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		isFile := !entry.IsDir()
+
+		if isFile {
 			continue
 		}
-		if entry.Name() < cutoffDate {
-			path, err := pathutil.Join(s.dataDir, entry.Name())
+
+		isExpired := entry.Name() < cutoffDate
+
+		if isExpired {
+			path, pathErr := pathutil.Join(s.dataDir, entry.Name())
+			if pathErr != nil {
+				continue
+			}
+
 			pathutil.RemoveFileUnchecked(path)
 		}
 	}
 }
 
 // GetSessionFiles returns the directory path for a session (for raw file access)
-func (s *Store) GetSessionFiles(id string) (string, error) {
+func (s *Store) GetSessionFiles(id string) (string, *apperror.AppError) {
 	session, err := s.GetRequestSession(id)
 	if err != nil {
+
 		return "", err
 	}
 
 	dateDir := session.StartedAt.Format("2006-01-02")
 	hourDir := session.StartedAt.Format("15")
-	return pathutil.Join(s.dataDir, dateDir, hourDir, id+".json")
+	path, pathErr := pathutil.Join(s.dataDir, dateDir, hourDir, id+".json")
+	if pathErr != nil {
+
+		return "", apperror.Wrap(pathErr, apperror.ErrSessionStore, "resolve session file path")
+	}
+
+	return path, nil
 }
