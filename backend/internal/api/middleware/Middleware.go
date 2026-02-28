@@ -62,7 +62,11 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 				"duration", duration.String(),
 			)
 
-			if wrapped.statusCode >= 400 && ErrorLogDir != "" {
+			isErrorResponse := wrapped.statusCode >= 400
+			hasErrorLogDir := ErrorLogDir != ""
+			isLoggableError := isErrorResponse && hasErrorLogDir
+
+			if isLoggableError {
 				appendToErrorLog(errorLogInput{Request: r, Writer: wrapped, Duration: duration, RequestBody: requestBodyBytes})
 			}
 		})

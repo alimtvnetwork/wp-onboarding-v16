@@ -150,7 +150,10 @@ func (s *Service) checkDuplicateMapping(ctx context.Context, input CreateMapping
 		"SELECT 1 FROM PluginMappings WHERE PluginId = ? AND SiteId = ?",
 		input.PluginID, input.SiteID,
 	).Scan(&exists)
-	if err != sql.ErrNoRows {
+	isDuplicate := err != sql.ErrNoRows
+
+	if isDuplicate {
+
 		return apperror.New(apperror.ErrDuplicate, "mapping already exists")
 	}
 	return nil
@@ -278,7 +281,11 @@ func (s *Service) insertMappingsForSite(ctx context.Context, siteID int64, plugi
 
 // resolveRemoteSlug returns the existing slug or generates one from plugin name.
 func (s *Service) resolveRemoteSlug(ctx context.Context, pluginID int64, slugByPluginID map[int64]string) string {
-	if slug, isFound := slugByPluginID[pluginID]; isFound && slug != "" {
+	slug, isFound := slugByPluginID[pluginID]
+	hasSlug := slug != ""
+	isResolved := isFound && hasSlug
+
+	if isResolved {
 
 		return slug
 	}
