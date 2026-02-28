@@ -48,13 +48,13 @@ type ActivateSuccessDetails struct {
 
 // ConnectDetails carries WordPress connection context.
 type ConnectDetails struct {
-	SiteURL  string `json:",omitempty"`
+	SiteUrl  string `json:",omitempty"`
 	Username string `json:",omitempty"`
 }
 
 // BackupStageDetails carries backup stage context.
 type BackupStageDetails struct {
-	MappingID  int64  `json:",omitempty"`
+	MappingId  int64  `json:",omitempty"`
 	RemoteSlug string `json:",omitempty"`
 }
 
@@ -126,7 +126,7 @@ type ActivateErrorInner struct {
 type ActivateRequestInfo struct {
 	Method   string `json:",omitempty"`
 	Endpoint string `json:",omitempty"`
-	URL      string `json:",omitempty"`
+	Url      string `json:",omitempty"`
 }
 
 // ActivateResponseInfo carries API response details.

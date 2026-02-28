@@ -11,7 +11,7 @@ import (
 
 // triggerAutoPublish checks if plugin has autoPublish enabled and publishes to all mapped sites
 func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, changes []FileChange) {
-	pResult := s.pluginService.GetByID(ctx, pluginID)
+	pResult := s.pluginService.GetById(ctx, pluginID)
 	if pResult.HasError() {
 		return
 	}
@@ -39,7 +39,7 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	)
 
 	ws.Broadcast(s.wsHub, ws.EventAutoPublishTriggered, ws.AutoPublishTriggeredData{
-		PluginID:   pluginID,
+		PluginId:   pluginID,
 		PluginName: p.Name,
 		Changes:    len(changes),
 		Sites:      len(p.Mappings),
@@ -57,18 +57,18 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 func (s *Service) publishToMappedSites(ctx context.Context, p models.Plugin, pluginID int64, changes []FileChange) {
 	successCount := 0
 	for _, mapping := range p.Mappings {
-		filesUpdated, err := s.publishService.PublishPlugin(ctx, pluginID, mapping.SiteID, "full", true)
+		filesUpdated, err := s.publishService.PublishPlugin(ctx, pluginID, mapping.SiteId, "full", true)
 		if err != nil {
 			s.log.Error("Auto-publish failed",
 				"plugin", p.Name,
 				"site", mapping.SiteName,
 				"pluginId", pluginID,
-				"siteId", mapping.SiteID,
+				"siteId", mapping.SiteId,
 				"error", err,
 			)
 			ws.Broadcast(s.wsHub, ws.EventAutoPublishFailed, ws.AutoPublishFailedData{
-				PluginID: pluginID,
-				SiteID:   mapping.SiteID,
+				PluginId: pluginID,
+				SiteId:   mapping.SiteId,
 				SiteName: mapping.SiteName,
 				Error:    err.Error(),
 			})
@@ -76,8 +76,8 @@ func (s *Service) publishToMappedSites(ctx context.Context, p models.Plugin, plu
 		}
 		successCount++
 		ws.Broadcast(s.wsHub, ws.EventAutoPublishComplete, ws.AutoPublishCompleteData{
-			PluginID:     pluginID,
-			SiteID:       mapping.SiteID,
+			PluginId:     pluginID,
+			SiteId:       mapping.SiteId,
 			SiteName:     mapping.SiteName,
 			FilesUpdated: filesUpdated,
 		})
@@ -111,7 +111,7 @@ func (s *Service) broadcastChanges(pluginID int64, changes []FileChange, trigger
 		}
 	}
 	ws.Broadcast(s.wsHub, ws.EventFileChange, ws.FileChangeBatchData{
-		PluginID:    pluginID,
+		PluginId:    pluginID,
 		TriggerType: triggerType,
 		Changes:     wsChanges,
 		Summary: ws.FileChangeSummary{
@@ -127,7 +127,7 @@ func (s *Service) RecordFileChange(ctx context.Context, change *models.FileChang
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, DetectedAt)
 		VALUES (?, ?, ?, ?, datetime('now'))
-	`, change.PluginID, change.FilePath, change.ChangeType, change.LocalHash)
+	`, change.PluginId, change.FilePath, change.ChangeType, change.LocalHash)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to record file change")
 	}

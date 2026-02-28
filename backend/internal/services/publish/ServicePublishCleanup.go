@@ -177,11 +177,11 @@ func buildHistoryBase(input historyEntryInput) models.PublishHistory {
 	}
 
 	return models.PublishHistory{
-		PluginId:   input.PluginInfo.ID,
+		PluginId:   input.PluginInfo.Id,
 		PluginName: input.PluginInfo.Name,
-		SiteId:     input.SiteInfo.ID,
+		SiteId:     input.SiteInfo.Id,
 		SiteName:   input.SiteInfo.Name,
-		SiteUrl:    input.SiteInfo.URL,
+		SiteUrl:    input.SiteInfo.Url,
 		Status:     historyStatus,
 		Mode:       input.Options.Mode.Value(),
 	}

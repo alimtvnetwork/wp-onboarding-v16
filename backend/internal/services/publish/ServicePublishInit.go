@@ -15,13 +15,13 @@ type publishInitResult struct {
 	PluginInfo models.Plugin
 	SiteInfo   *models.Site
 	Password   string
-	SessionID  string
+	SessionId  string
 }
 
 // initPublishInput bundles parameters for initPublishContext.
 type initPublishInput struct {
-	PluginID int64
-	SiteID   int64
+	PluginId int64
+	SiteId   int64
 	Result   *PublishResult
 }
 
@@ -39,23 +39,23 @@ func (s *Service) initPublishContext(ctx context.Context, input initPublishInput
 		return nil, appErr
 	}
 
-	sessionID, _ := s.startPublishSession(startPublishSessionInput{
-		PluginID:   input.PluginID,
-		SiteID:     input.SiteID,
+	sessionId, _ := s.startPublishSession(startPublishSessionInput{
+		PluginId:   input.PluginId,
+		SiteId:     input.SiteId,
 		PluginInfo: pluginInfo,
 		SiteInfo:   creds.Site,
 	})
 
-	return &publishInitResult{PluginInfo: pluginInfo, SiteInfo: creds.Site, Password: creds.Password, SessionID: sessionID}, nil
+	return &publishInitResult{PluginInfo: pluginInfo, SiteInfo: creds.Site, Password: creds.Password, SessionId: sessionId}, nil
 }
 
 // loadPublishPlugin loads the plugin and handles init failure.
 func (s *Service) loadPublishPlugin(ctx context.Context, input initPublishInput) (models.Plugin, *apperror.AppError) {
-	pluginResult := s.pluginService.GetByID(ctx, input.PluginID)
+	pluginResult := s.pluginService.GetById(ctx, input.PluginId)
 	if pluginResult.HasError() {
 		s.failInit(failInitInput{
-			PluginID: input.PluginID,
-			SiteID:   input.SiteID,
+			PluginId: input.PluginId,
+			SiteId:   input.SiteId,
 			Err:      pluginResult.AppError(),
 			Result:   input.Result,
 		})
@@ -68,11 +68,11 @@ func (s *Service) loadPublishPlugin(ctx context.Context, input initPublishInput)
 
 // loadPublishCredentials loads site credentials and handles init failure.
 func (s *Service) loadPublishCredentials(ctx context.Context, input initPublishInput) (*SiteCredentialsResult, *apperror.AppError) {
-	credsResult := s.getSiteCredentials(ctx, input.SiteID)
+	credsResult := s.getSiteCredentials(ctx, input.SiteId)
 	if credsResult.HasError() {
 		s.failInit(failInitInput{
-			PluginID: input.PluginID,
-			SiteID:   input.SiteID,
+			PluginId: input.PluginId,
+			SiteId:   input.SiteId,
 			Err:      credsResult.AppError(),
 			Result:   input.Result,
 		})
@@ -87,8 +87,8 @@ func (s *Service) loadPublishCredentials(ctx context.Context, input initPublishI
 
 // failInitInput bundles parameters for failInit.
 type failInitInput struct {
-	PluginID int64
-	SiteID   int64
+	PluginId int64
+	SiteId   int64
 	Err      error
 	Result   *PublishResult
 }
@@ -98,8 +98,8 @@ func (s *Service) failInit(input failInitInput) {
 	input.Result.ErrorMessage = input.Err.Error()
 
 	failProgress := ProgressInput{
-		PluginId: input.PluginID,
-		SiteId:   input.SiteID,
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
 		Step:     publishstep.Failed,
 		Progress: 0,
 		Message:  input.Err.Error(),
@@ -109,8 +109,8 @@ func (s *Service) failInit(input failInitInput) {
 
 // startPublishSessionInput bundles parameters for startPublishSession.
 type startPublishSessionInput struct {
-	PluginID   int64
-	SiteID     int64
+	PluginId   int64
+	SiteId     int64
 	PluginInfo models.Plugin
 	SiteInfo   *models.Site
 }
@@ -126,8 +126,8 @@ func (s *Service) startPublishSession(input startPublishSessionInput) (string, e
 
 	startInput := session.StartSessionInput{
 		Type:       session.SessionTypePublish,
-		PluginID:   input.PluginID,
-		SiteID:     input.SiteID,
+		PluginID:   input.PluginId,
+		SiteID:     input.SiteId,
 		PluginName: input.PluginInfo.Name,
 		SiteName:   input.SiteInfo.Name,
 	}

@@ -58,7 +58,7 @@ func (s *Service) broadcastRollbackStartLog(pctx *publishContext, activateStage 
 	rollbackCtx := StageContext{
 		What:  "Rolling back plugin after activation failure",
 		Why:   fmt.Sprintf("Activation failed: %s", activateStage.Message),
-		Where: pctx.SiteInfo.URL,
+		Where: pctx.SiteInfo.Url,
 	}
 	rollbackLog := pctx.stageLog(loglevel.Warn, publishstep.Rollback, rollbackCtx)
 	s.broadcastStageLog(rollbackLog)

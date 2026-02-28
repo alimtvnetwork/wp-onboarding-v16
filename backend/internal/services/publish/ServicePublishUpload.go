@@ -166,7 +166,7 @@ func (s *Service) logActivateSkipped(pctx *publishContext) {
 	skipCtx := StageContext{
 		What:   "Activate plugin on WordPress",
 		Why:    "Enable plugin functionality after upload",
-		Where:  pctx.SiteInfo.URL,
+		Where:  pctx.SiteInfo.Url,
 		Result: "SKIPPED - plugin activated during upload",
 		Details: toDetails(ActivateSkipDetails{
 			RemoteSlug: pctx.Mapping.RemoteSlug,
@@ -186,25 +186,25 @@ func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time)
 		return s.failActivateNoUploader(pctx)
 	}
 
-	endpointURL := buildActivateEndpointURL(pctx.SiteInfo.URL)
-	s.logActivateRequest(pctx, endpointURL)
+	endpointUrl := buildActivateEndpointUrl(pctx.SiteInfo.Url)
+	s.logActivateRequest(pctx, endpointUrl)
 
-	return s.executeActivation(pctx, endpointURL, startTime)
+	return s.executeActivation(pctx, endpointUrl, startTime)
 }
 
-// buildActivateEndpointURL constructs the activation endpoint URL.
-func buildActivateEndpointURL(siteURL string) string {
-	return wordpress.BuildWPPluginURL(siteURL, wordpress.RiseupAsiaNamespace, endpoint.Enable)
+// buildActivateEndpointUrl constructs the activation endpoint URL.
+func buildActivateEndpointUrl(siteUrl string) string {
+	return wordpress.BuildWPPluginURL(siteUrl, wordpress.RiseupAsiaNamespace, endpoint.Enable)
 }
 
 // executeActivation performs the actual plugin activation call.
-func (s *Service) executeActivation(pctx *publishContext, endpointURL string, startTime time.Time) *apperror.AppError {
+func (s *Service) executeActivation(pctx *publishContext, endpointUrl string, startTime time.Time) *apperror.AppError {
 	enableErr := pctx.WPClient.EnablePluginViaUploader(pctx.Mapping.RemoteSlug)
 	if enableErr != nil {
 		activateErr := apperror.Wrap(enableErr, apperror.ErrWPConnection, "plugin activation failed")
 
 		errInput := activationErrorInput{
-			EndpointURL: endpointURL,
+			EndpointUrl: endpointUrl,
 			StartTime:   startTime,
 			Err:         activateErr,
 		}
@@ -213,7 +213,7 @@ func (s *Service) executeActivation(pctx *publishContext, endpointURL string, st
 		return activateErr
 	}
 
-	s.logActivateSuccess(pctx, endpointURL, startTime)
+	s.logActivateSuccess(pctx, endpointUrl, startTime)
 
 	return nil
 }
@@ -223,18 +223,18 @@ func (s *Service) failActivateNoUploader(pctx *publishContext) *apperror.AppErro
 	failCtx := StageContext{
 		What:   "Activate plugin failed",
 		Why:    "Riseup Asia Uploader is not available on the remote site",
-		Where:  pctx.SiteInfo.URL,
+		Where:  pctx.SiteInfo.Url,
 		Result: "FAILED: Install the Riseup Asia Uploader companion plugin to enable activation",
 	}
 	failLog := pctx.stageLog(loglevel.Error, publishstep.Activate, failCtx)
 	s.broadcastStageLog(failLog)
 
 	return apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available — cannot activate plugin").
-		WithURL(pctx.SiteInfo.URL)
+		WithUrl(pctx.SiteInfo.Url)
 }
 
 // logActivateRequest broadcasts the activation request details.
-func (s *Service) logActivateRequest(pctx *publishContext, endpointURL string) {
+func (s *Service) logActivateRequest(pctx *publishContext, endpointUrl string) {
 	reqDetails := toDetails(ActivateRequestDetails{
 		Method:     "POST",
 		RemoteSlug: pctx.Mapping.RemoteSlug,
@@ -242,7 +242,7 @@ func (s *Service) logActivateRequest(pctx *publishContext, endpointURL string) {
 	reqCtx := StageContext{
 		What:    "Activate plugin via Riseup Asia Uploader",
 		Why:     "Enable plugin after successful upload",
-		Where:   endpointURL,
+		Where:   endpointUrl,
 		Details: reqDetails,
 	}
 	reqLog := pctx.stageLog(loglevel.Info, publishstep.Activate, reqCtx)
@@ -250,7 +250,7 @@ func (s *Service) logActivateRequest(pctx *publishContext, endpointURL string) {
 }
 
 // logActivateSuccess broadcasts activation success.
-func (s *Service) logActivateSuccess(pctx *publishContext, endpointURL string, startTime time.Time) {
+func (s *Service) logActivateSuccess(pctx *publishContext, endpointUrl string, startTime time.Time) {
 	successDetails := toDetails(ActivateSuccessDetails{
 		RemoteSlug: pctx.Mapping.RemoteSlug,
 		DurationMs: time.Since(startTime).Milliseconds(),
@@ -258,7 +258,7 @@ func (s *Service) logActivateSuccess(pctx *publishContext, endpointURL string, s
 	successCtx := StageContext{
 		What:    "Activate plugin via Riseup Asia Uploader",
 		Why:     "Enable plugin after upload",
-		Where:   endpointURL,
+		Where:   endpointUrl,
 		Result:  "SUCCESS - plugin is now active",
 		Details: successDetails,
 	}
