@@ -312,7 +312,8 @@ func (s *Service) Build(ctx context.Context, pluginId int64) apperror.Result[Bui
 	if err != nil {
 		result.IsSuccess = false
 		result.Error = stderr.String()
-		if exitErr := wordpress.ExtractExitError(err); exitErr != nil {
+		exitErr := wordpress.ExtractExitError(err)
+		if exitErr != nil {
 			result.ExitCode = exitErr.ExitCode()
 		}
 
@@ -499,9 +500,11 @@ func (s *Service) Commit(ctx context.Context, pluginId int64, message string) ap
 	}
 
 	// Stage all changes
-	if _, err := s.runGitCommand(p.Path, "add", "-A"); err != nil {
+	_, err = s.runGitCommand(p.Path, "add", "-A")
+	if err != nil {
 		result.IsSuccess = false
 		result.Message = "Failed to stage changes"
+
 		return apperror.FailWrap[CommitResult](err, apperror.ErrGitCommand, "failed to stage changes")
 	}
 

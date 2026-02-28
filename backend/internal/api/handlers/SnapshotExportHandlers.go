@@ -100,7 +100,8 @@ func parseZipDownloadBody(w http.ResponseWriter, r *http.Request) (int64, bool) 
 		SnapshotId int64
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotId <= 0 {
+	decodeErr := json.NewDecoder(r.Body).Decode(&body)
+	if decodeErr != nil || body.SnapshotId <= 0 {
 		respondBadRequest(w, "E1002", "Invalid or missing snapshotId")
 		return 0, false
 	}

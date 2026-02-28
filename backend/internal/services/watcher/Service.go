@@ -189,7 +189,8 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 		// Initialize cache first
 		s.mu.Unlock()
 
-		if err := s.InitializeCache(ctx, pluginID); err != nil {
+		err := s.InitializeCache(ctx, pluginID)
+		if err != nil {
 
 			return apperror.FailWrap[ScanResult](err, apperror.ErrInternal, "failed to initialize watcher cache")
 		}
@@ -373,7 +374,8 @@ func (s *Service) scanAndCompare(cache *pluginScanCache) []FileChange {
 		currentFiles[relPath] = fi
 
 		// Compare with last scan
-		if lastInfo, isFound := cache.lastScan[relPath]; isFound {
+		lastInfo, isFound := cache.lastScan[relPath]
+		if isFound {
 			if lastInfo.Hash != fi.Hash {
 				changes = append(changes, FileChange{
 					Path:       relPath,
@@ -398,7 +400,10 @@ func (s *Service) scanAndCompare(cache *pluginScanCache) []FileChange {
 
 	// Check for deleted files
 	for path := range cache.lastScan {
-		if _, isFound := currentFiles[path]; !isFound {
+		_, isFound := currentFiles[path]
+		isDeleted := !isFound
+
+		if isDeleted {
 			changes = append(changes, FileChange{
 				Path:       path,
 				ChangeType: "deleted",
@@ -466,7 +471,8 @@ func (s *Service) isExcluded(name string, excludes []string) bool {
 
 	// Custom excludes
 	for _, pattern := range excludes {
-		if matched, _ := filepath.Match(pattern, name); matched {
+		matched, _ := filepath.Match(pattern, name)
+		if matched {
 			return true
 		}
 	}
@@ -483,7 +489,8 @@ func (s *Service) calculateHash(path string) (string, error) {
 	defer file.Close()
 
 	hash := md5.New()
-	if _, err := io.Copy(hash, file); err != nil {
+	_, err = io.Copy(hash, file)
+	if err != nil {
 		return "", err
 	}
 

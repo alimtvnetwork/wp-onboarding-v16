@@ -53,18 +53,21 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 	}
 	result.ResponseData = resp.RawBody
 
-	if err := expectSuccess(resp); err != nil {
+	err = expectSuccess(resp)
+	if err != nil {
 		return err
 	}
 	if resp.isDataMissing("id") {
 		return fmt.Errorf("expected 'id' field in response data")
 	}
 
-	if err := s.verifyPluginInList(); err != nil {
+	err = s.verifyPluginInList()
+	if err != nil {
 		return err
 	}
 
-	if id, ok := resp.dataFieldFloat("id"); ok {
+	id, ok := resp.dataFieldFloat("id")
+	if ok {
 		s.setCleanupID("plugin", int64(id))
 	}
 	return nil
@@ -124,7 +127,8 @@ func (s *serviceImpl) testUpdatePlugin(ctx context.Context, result *TestResult) 
 	}
 	result.ResponseData = resp.RawBody
 
-	if err := expectSuccess(resp); err != nil {
+	err = expectSuccess(resp)
+	if err != nil {
 		return err
 	}
 

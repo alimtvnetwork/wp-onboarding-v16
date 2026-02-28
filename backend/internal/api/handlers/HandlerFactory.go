@@ -69,7 +69,8 @@ func handleDeleteByID(
 			return
 		}
 
-		if err := fn(r.Context(), id); err != nil {
+		err := fn(r.Context(), id)
+		if err != nil {
 			respondError(
 				w,
 				wordpress.HttpStatusBadRequest,

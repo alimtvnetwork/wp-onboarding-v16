@@ -129,7 +129,8 @@ func (s *Service) DeleteSession(sessionID string) *apperror.AppError {
 // closeAndRemoveSession closes the log file and removes from in-memory map.
 func (s *Service) closeAndRemoveSession(sessionID string) {
 	s.mu.Lock()
-	if session, isFound := s.sessions[sessionID]; isFound {
+	session, isFound := s.sessions[sessionID]
+	if isFound {
 		session.mu.Lock()
 		if session.logFile != nil {
 			session.logFile.Close()

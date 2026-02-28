@@ -156,8 +156,9 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 
 			// Persist session if store is available
 			if store != nil {
-				if err := store.SaveRequestSession(session); err != nil {
-					log.Error("Failed to save request session", "sessionId", sessionID, "error", err)
+				saveErr := store.SaveRequestSession(session)
+				if saveErr != nil {
+					log.Error("Failed to save request session", "sessionId", sessionID, "error", saveErr)
 				}
 			}
 
@@ -177,7 +178,8 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 
 // GetSessionID extracts the session ID from context
 func GetSessionID(ctx context.Context) string {
-	if id, ok := ctx.Value(SessionContextKey{}).(string); ok {
+	id, ok := ctx.Value(SessionContextKey{}).(string)
+	if ok {
 		return id
 	}
 	return ""
@@ -223,7 +225,8 @@ func extractErrorFromResponse(body string) string {
 			Code    string `json:"code"`    // external key
 		} `json:"error"` // external key
 	}
-	if err := json.Unmarshal([]byte(body), &response); err == nil && response.Error.Message != "" {
+	err := json.Unmarshal([]byte(body), &response)
+	if err == nil && response.Error.Message != "" {
 		if response.Error.Code != "" {
 			return "[" + response.Error.Code + "] " + response.Error.Message
 		}

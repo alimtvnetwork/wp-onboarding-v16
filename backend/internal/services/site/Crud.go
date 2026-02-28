@@ -47,12 +47,14 @@ func (s *Service) GetByUrl(ctx context.Context, siteUrl string) apperror.Result[
 
 // Create adds a new WordPress site.
 func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result[models.Site] {
-	if appErr := s.validateInput(input); appErr != nil {
+	appErr := s.validateInput(input)
+	if appErr != nil {
 		return apperror.Fail[models.Site](appErr)
 	}
 
 	normalizedUrl := normalizeUrl(input.Url)
-	if dupErr := s.checkDuplicateUrl(ctx, normalizedUrl); dupErr != nil {
+	dupErr := s.checkDuplicateUrl(ctx, normalizedUrl)
+	if dupErr != nil {
 		return dupErr
 	}
 
@@ -229,7 +231,8 @@ func (s *Service) validateInput(input CreateInput) *apperror.AppError {
 	if input.Password == "" {
 		return apperror.New(apperror.ErrValidation, "application password is required")
 	}
-	if _, err := url.Parse(input.Url); err != nil {
+	_, err := url.Parse(input.Url)
+	if err != nil {
 		return apperror.Wrap(err, apperror.ErrValidation, "invalid URL format")
 	}
 	return nil

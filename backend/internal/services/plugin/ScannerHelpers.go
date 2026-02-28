@@ -217,7 +217,8 @@ func (s *Service) calculateFileHash(path string) (string, error) {
 	defer file.Close()
 
 	hash := md5.New()
-	if _, err := io.Copy(hash, file); err != nil {
+	_, err = io.Copy(hash, file)
+	if err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil

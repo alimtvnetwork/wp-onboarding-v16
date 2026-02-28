@@ -28,7 +28,8 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var settings wordpress.SnapshotSettings
-	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
+	decodeErr := json.NewDecoder(r.Body).Decode(&settings)
+	if decodeErr != nil {
 		respondBadRequest(w, "E1001", "Invalid request body")
 		return
 	}

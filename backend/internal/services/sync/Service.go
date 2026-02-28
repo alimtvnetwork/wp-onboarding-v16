@@ -468,7 +468,8 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 		}
 
 		for _, pattern := range excludePatterns {
-			if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
+			matched, _ := filepath.Match(pattern, filepath.Base(path))
+			if matched {
 				return nil
 			}
 		}
@@ -505,7 +506,8 @@ func (s *serviceImpl) calculateFileHash(path string) (string, error) {
 	defer file.Close()
 
 	hash := md5.New()
-	if _, err := io.Copy(hash, file); err != nil {
+	_, err = io.Copy(hash, file)
+	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to read file for hashing").
 			WithFilePath(path)
 	}
@@ -519,7 +521,8 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 
 	for path, localEntry := range local {
 		localMod := localEntry.ModifiedAt
-		if remoteEntry, isFound := remote[path]; isFound {
+		remoteEntry, isFound := remote[path]
+		if isFound {
 			if localEntry.Hash != remoteEntry.Hash {
 				remoteMod := remoteEntry.ModifiedAt
 			direction := syncdirection.LocalNewer.Value()
@@ -551,7 +554,10 @@ func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.
 	}
 
 	for path, remoteEntry := range remote {
-		if _, isFound := local[path]; !isFound {
+		_, isFound := local[path]
+		isLocalMissing := !isFound
+
+		if isLocalMissing {
 			remoteMod := remoteEntry.ModifiedAt
 			changes = append(changes, models.FileChange{
 				FilePath:         path,

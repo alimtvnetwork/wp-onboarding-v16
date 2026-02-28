@@ -63,7 +63,8 @@ func collectPhpErrorEntries(entries []wordpress.RemoteErrorSessionEntry) []PhpEr
 	for _, entry := range entries {
 		phpErr := PhpErrorEntry{Id: entry.ID, Level: entry.Level, Message: entry.Message, File: entry.File, Line: derefInt(entry.Line), CreatedAt: entry.CreatedAt}
 		if len(entry.StackTraceFrames) > 0 {
-			if raw, marshalErr := json.Marshal(entry.StackTraceFrames); marshalErr == nil {
+			raw, marshalErr := json.Marshal(entry.StackTraceFrames)
+			if marshalErr == nil {
 				phpErr.StackTraceFrames = raw
 			}
 		}

@@ -151,7 +151,8 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 // simulateUpload logs a simulated upload when no uploader is available.
 func (s *Service) simulateUpload(zipPath, slug string) apperror.Result[UploadOutcome] {
 	s.log.Warn("Riseup Asia Uploader not available; upload simulated", "slug", slug)
-	if fi, appErr := pathutil.StatFile(zipPath); appErr == nil {
+	fi, appErr := pathutil.StatFile(zipPath)
+	if appErr == nil {
 		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", fi.Info.Size())
 	}
 
@@ -251,7 +252,8 @@ func (s *Service) calculateFileHash(path string) (string, error) {
 	defer file.Close()
 
 	h := md5.New()
-	if _, err := io.Copy(h, file); err != nil {
+	_, err = io.Copy(h, file)
+	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil

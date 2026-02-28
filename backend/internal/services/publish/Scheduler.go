@@ -101,12 +101,14 @@ func (s *PublishScheduler) RemoveJob(jobId string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if timer, isFound := s.timers[jobId]; isFound {
+	timer, isFound := s.timers[jobId]
+	if isFound {
 		timer.Stop()
 		delete(s.timers, jobId)
 	}
 
-	if _, isFound := s.jobs[jobId]; isFound {
+	_, isJobFound := s.jobs[jobId]
+	if isJobFound {
 		delete(s.jobs, jobId)
 		s.broadcastJobUpdate()
 
@@ -136,7 +138,8 @@ func (s *PublishScheduler) ToggleJob(jobId string, isEnabled bool) bool {
 			s.scheduleTimer(job)
 		}
 	} else {
-		if timer, isFound := s.timers[jobId]; isFound {
+		timer, isTimerFound := s.timers[jobId]
+		if isTimerFound {
 			timer.Stop()
 			delete(s.timers, jobId)
 		}
@@ -182,7 +185,8 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 	}
 
 	// Cancel existing timer
-	if timer, isFound := s.timers[job.Id]; isFound {
+	timer, isFound := s.timers[job.Id]
+	if isFound {
 		timer.Stop()
 	}
 
@@ -296,7 +300,8 @@ func (s *PublishScheduler) calculateNextRun(cfg ScheduleConfig) (time.Time, erro
 // resolveTimezone loads the timezone or defaults to UTC.
 func resolveTimezone(tz string) *time.Location {
 	if tz != "" {
-		if loc, err := time.LoadLocation(tz); err == nil {
+		loc, err := time.LoadLocation(tz)
+		if err == nil {
 			return loc
 		}
 	}
@@ -306,7 +311,8 @@ func resolveTimezone(tz string) *time.Location {
 // parseDailySchedule parses "daily:HH:MM" format.
 func parseDailySchedule(expr string, now time.Time, loc *time.Location) (time.Time, error) {
 	var hour, minute int
-	if _, err := fmt.Sscanf(expr, "daily:%d:%d", &hour, &minute); err != nil {
+	_, err := fmt.Sscanf(expr, "daily:%d:%d", &hour, &minute)
+	if err != nil {
 		return time.Time{}, apperror.New(apperror.ErrValidation, "invalid daily schedule").WithValue("cronExpr", expr)
 	}
 	next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
@@ -320,7 +326,8 @@ func parseDailySchedule(expr string, now time.Time, loc *time.Location) (time.Ti
 func parseWeeklySchedule(expr string, now time.Time, loc *time.Location) (time.Time, error) {
 	var dayName string
 	var hour, minute int
-	if _, err := fmt.Sscanf(expr, "weekly:%3s:%d:%d", &dayName, &hour, &minute); err != nil {
+	_, err := fmt.Sscanf(expr, "weekly:%3s:%d:%d", &dayName, &hour, &minute)
+	if err != nil {
 		return time.Time{}, apperror.New(apperror.ErrValidation, "invalid weekly schedule").WithValue("cronExpr", expr)
 	}
 
@@ -339,7 +346,8 @@ func parseWeeklySchedule(expr string, now time.Time, loc *time.Location) (time.T
 // parseIntervalSchedule parses "interval:MINUTES" format.
 func parseIntervalSchedule(expr string, now time.Time) (time.Time, error) {
 	var minutes int
-	if _, err := fmt.Sscanf(expr, "interval:%d", &minutes); err != nil || minutes < 1 {
+	_, err := fmt.Sscanf(expr, "interval:%d", &minutes)
+	if err != nil || minutes < 1 {
 		return time.Time{}, apperror.New(apperror.ErrValidation, "invalid interval schedule").WithValue("cronExpr", expr)
 	}
 	return now.Add(time.Duration(minutes) * time.Minute), nil

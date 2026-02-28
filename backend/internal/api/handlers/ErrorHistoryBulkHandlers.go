@@ -22,7 +22,8 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := Services.ErrorHistoryService.Delete(id); err != nil {
+	err = Services.ErrorHistoryService.Delete(id)
+	if err != nil {
 		respondNotFound(w, apperror.ErrNotFound, err.Error())
 
 		return
@@ -85,7 +86,8 @@ func BulkExportErrorHistory(w http.ResponseWriter, r *http.Request) {
 // parseBulkExportInput decodes and validates the bulk export JSON body.
 func parseBulkExportInput(w http.ResponseWriter, r *http.Request) (*bulkExportInput, bool) {
 	var input bulkExportInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+	decodeErr := json.NewDecoder(r.Body).Decode(&input)
+	if decodeErr != nil {
 		respondBadRequest(w, apperror.ErrConfigLoad, "Invalid request body")
 
 		return nil, false

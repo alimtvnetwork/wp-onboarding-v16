@@ -97,7 +97,8 @@ func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult
 		return
 	}
 
-	if err := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path); err != nil {
+	err := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path)
+	if err != nil {
 		errorResponse := ScanResultResponse{
 			Scan:           scanResult.Result,
 			DetectionError: err.Error(),
@@ -202,7 +203,8 @@ func scanSingleDirectory(r *http.Request, path string, createDetection bool) Dir
 	}
 
 	if createDetection && isPlugin {
-		if err := Services.PluginService.WritePluginDetected(r.Context(), path); err == nil {
+		detErr := Services.PluginService.WritePluginDetected(r.Context(), path)
+		if detErr == nil {
 			sr.IsDetectionCreated = true
 		}
 	}
