@@ -15,12 +15,12 @@ import (
 // E2EServiceInterface defines E2E test service methods
 type E2EServiceInterface interface {
 	ListSuites(ctx context.Context) ([]e2e.TestSuite, error)
-	GetCases(ctx context.Context, suiteID string) ([]e2e.TestCase, error)
+	GetCases(ctx context.Context, suiteId string) ([]e2e.TestCase, error)
 	StartRun(ctx context.Context, opts e2e.RunOptions) (*e2e.TestRun, error)
-	AbortRun(ctx context.Context, runID string) error
+	AbortRun(ctx context.Context, runId string) error
 	ListRuns(ctx context.Context, limit int) ([]e2e.TestRun, error)
-	GetRun(ctx context.Context, runID string) (*e2e.RunSummary, error)
-	DeleteRun(ctx context.Context, runID string) error
+	GetRun(ctx context.Context, runId string) (*e2e.RunSummary, error)
+	DeleteRun(ctx context.Context, runId string) error
 }
 
 // E2EService holds the E2E service instance
@@ -44,9 +44,9 @@ func GetE2ECases(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	suiteID := vars["id"]
+	suiteId := vars["id"]
 
-	cases, err := E2EService.GetCases(r.Context(), suiteID)
+	cases, err := E2EService.GetCases(r.Context(), suiteId)
 	if err != nil {
 		respondError(
 			w,
@@ -131,9 +131,9 @@ func GetE2ERun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	runID := vars["id"]
+	runId := vars["id"]
 
-	run, err := E2EService.GetRun(r.Context(), runID)
+	run, err := E2EService.GetRun(r.Context(), runId)
 	if err != nil {
 		respondError(
 			w,
@@ -155,9 +155,9 @@ func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	runID := vars["id"]
+	runId := vars["id"]
 
-	err := E2EService.AbortRun(r.Context(), runID)
+	err := E2EService.AbortRun(r.Context(), runId)
 	if err != nil {
 		respondError(
 			w,
@@ -179,9 +179,9 @@ func DeleteE2ERun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	runID := vars["id"]
+	runId := vars["id"]
 
-	err := E2EService.DeleteRun(r.Context(), runID)
+	err := E2EService.DeleteRun(r.Context(), runId)
 
 	if err != nil {
 		respondError(

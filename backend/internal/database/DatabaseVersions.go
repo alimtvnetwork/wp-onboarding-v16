@@ -58,14 +58,14 @@ type PluginVersionRow struct {
 }
 
 // GetPluginVersions returns version history for a plugin, optionally filtered by site
-func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]PluginVersionRow, error) {
-	query, args := buildVersionQuery(pluginID, siteID, limit)
+func (db *DB) GetPluginVersions(pluginId int64, siteId *int64, limit int) ([]PluginVersionRow, error) {
+	query, args := buildVersionQuery(pluginId, siteId, limit)
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
 
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query plugin versions").
-			WithDetails(fmt.Sprintf("pluginId=%d", pluginID))
+			WithDetails(fmt.Sprintf("pluginId=%d", pluginId))
 	}
 	defer rows.Close()
 
@@ -73,15 +73,15 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]Plu
 }
 
 // buildVersionQuery constructs the version query with optional site filter.
-func buildVersionQuery(pluginID int64, siteID *int64, limit int) (string, []any) {
+func buildVersionQuery(pluginId int64, siteId *int64, limit int) (string, []any) {
 	query := selectVersionSQL + " WHERE pv.PluginId = ?"
-	args := []any{pluginID}
+	args := []any{pluginId}
 
-	hasSiteFilter := siteID != nil && *siteID > 0
+	hasSiteFilter := siteId != nil && *siteId > 0
 
 	if hasSiteFilter {
 		query += " AND pv.SiteId = ?"
-		args = append(args, *siteID)
+		args = append(args, *siteId)
 	}
 
 	query += " ORDER BY pv.CreatedAt DESC LIMIT ?"
@@ -168,11 +168,11 @@ func applyVersionNullFields(m *PluginVersionRow, nf *versionNullFields) {
 }
 
 // GetPluginVersionById returns a specific version entry
-func (db *DB) GetPluginVersionById(versionID int64) (*PluginVersionRow, error) {
+func (db *DB) GetPluginVersionById(versionId int64) (*PluginVersionRow, error) {
 	var m PluginVersionRow
 	var nf versionNullFields
 
-	err := db.QueryRow(selectVersionSQL+" WHERE pv.Id = ?", versionID).Scan(
+	err := db.QueryRow(selectVersionSQL+" WHERE pv.Id = ?", versionId).Scan(
 		&m.Id,
 		&m.PluginId,
 		&m.SiteId,
@@ -189,8 +189,8 @@ func (db *DB) GetPluginVersionById(versionID int64) (*PluginVersionRow, error) {
 
 	if err != nil {
 
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin version by ID").
-			WithDetails(fmt.Sprintf("versionId=%d", versionID))
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin version by id").
+			WithDetails(fmt.Sprintf("versionId=%d", versionId))
 	}
 
 	applyVersionNullFields(&m, &nf)
@@ -199,26 +199,26 @@ func (db *DB) GetPluginVersionById(versionID int64) (*PluginVersionRow, error) {
 }
 
 // DeletePluginVersion removes a version entry
-func (db *DB) DeletePluginVersion(versionID int64) error {
-	_, err := db.Exec("DELETE FROM PluginVersions WHERE Id = ?", versionID)
+func (db *DB) DeletePluginVersion(versionId int64) error {
+	_, err := db.Exec("DELETE FROM PluginVersions WHERE Id = ?", versionId)
 
 	if err != nil {
 
 		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete plugin version").
-			WithDetails(fmt.Sprintf("versionId=%d", versionID))
+			WithDetails(fmt.Sprintf("versionId=%d", versionId))
 	}
 
 	return nil
 }
 
 // GetNextVersionNumber generates the next version number for a plugin-site combination
-func (db *DB) GetNextVersionNumber(pluginID, siteID int64) (string, error) {
+func (db *DB) GetNextVersionNumber(pluginId, siteId int64) (string, error) {
 	var count int
 
 	err := db.QueryRow(
 		"SELECT COUNT(*) FROM PluginVersions WHERE PluginId = ? AND SiteId = ?",
-		pluginID,
-		siteID,
+		pluginId,
+		siteId,
 	).Scan(&count)
 
 	if err != nil {
