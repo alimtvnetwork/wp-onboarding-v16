@@ -446,7 +446,9 @@ func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, er
 
 // buildDBPath constructs the path for a database file
 func (m *DBManager) buildDBPath(projectSlug, dbType, entityID string) string {
-	if entityID == "" {
+	isGlobalDB := entityID == ""
+
+	if isGlobalDB {
 		return filepath.Join(projectSlug, dbType+".db")
 	}
 	return filepath.Join(projectSlug, dbType, GenerateSlug(entityID)+".db")
@@ -537,7 +539,9 @@ func (m *DBManager) ArchiveStale(maxAge time.Duration) error {
 	}
 
 	affected, _ := result.RowsAffected()
-	if affected > 0 {
+	hasArchivedDatabases := affected > 0
+
+	if hasArchivedDatabases {
 		m.log.Info("Archived stale databases", "count", affected, "maxAge", maxAge.String())
 	}
 
@@ -584,7 +588,9 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to purge archived database records")
 	}
 
-	if deleted > 0 {
+	hasPurgedDatabases := deleted > 0
+
+	if hasPurgedDatabases {
 		m.log.Info("Purged archived databases", "count", deleted)
 	}
 

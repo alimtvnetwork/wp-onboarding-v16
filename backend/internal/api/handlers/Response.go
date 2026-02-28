@@ -114,7 +114,9 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 // isServiceMissing checks if a service is nil, writing 503 if unavailable.
 // Returns true if the service is missing (positive guard for failure).
 func isServiceMissing(w http.ResponseWriter, service any, name string) bool {
-	if service == nil {
+	isMissing := service == nil
+
+	if isMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,

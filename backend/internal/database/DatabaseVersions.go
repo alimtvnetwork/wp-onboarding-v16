@@ -101,7 +101,9 @@ func scanPluginVersionRows(rows *sql.Rows) ([]PluginVersionRow, error) {
 		versions = append(versions, v)
 	}
 
-	if versions == nil {
+	isVersionsEmpty := versions == nil
+
+	if isVersionsEmpty {
 		versions = []PluginVersionRow{}
 	}
 	return versions, nil

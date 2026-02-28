@@ -46,10 +46,15 @@ func formatLogFrames(frames *runtime.Frames) string {
 
 // LogProcessOutput logs the output of an external process with proper formatting
 func (l *Logger) LogProcessOutput(processName string, stdout, stderr string) {
-	if stdout != "" {
+	hasStdout := stdout != ""
+
+	if hasStdout {
 		l.Info(fmt.Sprintf("[%s] stdout", processName), "output", stdout)
 	}
-	if stderr != "" {
+
+	hasStderr := stderr != ""
+
+	if hasStderr {
 		l.Warn(fmt.Sprintf("[%s] stderr", processName), "output", stderr)
 	}
 }

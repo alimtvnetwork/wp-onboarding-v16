@@ -34,7 +34,9 @@ var GetE2ESuites = handleListNilSafe(e2eServiceGetter, "E7001",
 
 // GetE2ECases returns test cases for a suite
 func GetE2ECases(w http.ResponseWriter, r *http.Request) {
-	if E2EService == nil {
+	isServiceMissing := E2EService == nil
+
+	if isServiceMissing {
 		respondSuccess(w, []e2e.TestCase{})
 
 		return
@@ -86,7 +88,9 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 
 // GetE2ERuns returns past test runs
 func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
-	if E2EService == nil {
+	isServiceMissing := E2EService == nil
+
+	if isServiceMissing {
 		respondSuccess(w, []e2e.TestRun{})
 
 		return

@@ -142,7 +142,9 @@ var VersionService VersionServiceInterface
 
 // GetPluginVersions returns version history for a plugin
 func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
-	if VersionService == nil {
+	isServiceMissing := VersionService == nil
+
+	if isServiceMissing {
 		respondSuccess(w, []any{})
 
 		return

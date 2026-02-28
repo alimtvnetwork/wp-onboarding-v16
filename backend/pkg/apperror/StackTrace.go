@@ -107,7 +107,9 @@ func writeCurrentFrames(b *strings.Builder, frames []StackFrame) {
 
 // writePreviousTrace writes the previous trace section if present.
 func writePreviousTrace(b *strings.Builder, previous string) {
-	if previous == "" {
+	isPreviousEmpty := previous == ""
+
+	if isPreviousEmpty {
 		return
 	}
 

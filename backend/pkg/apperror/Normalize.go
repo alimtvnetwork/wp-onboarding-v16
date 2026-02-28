@@ -8,7 +8,9 @@ import "strings"
 func NormalizePluginSlug(slug string) (string, *AppError) {
 	slug = strings.TrimSpace(slug)
 
-	if slug == "" {
+	isSlugEmpty := slug == ""
+
+	if isSlugEmpty {
 		return "", New(ErrValidation, "empty plugin slug")
 	}
 

@@ -117,7 +117,9 @@ func parseStreamParams(r *http.Request) (string, int) {
 
 // resolveStreamLogPath returns the file path for streaming log type.
 func resolveStreamLogPath(logType string) string {
-	if logType == "errors" {
+	isErrorLogType := logType == "errors"
+
+	if isErrorLogType {
 		return "data/errors/error.log.txt"
 	}
 	return "data/errors/log.txt"

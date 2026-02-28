@@ -130,7 +130,9 @@ func wrapMigrationError(err error, message string, version int) *apperror.AppErr
 
 // logMigrationSummary logs the final migration result.
 func logMigrationSummary(log *logger.Logger, appliedCount, currentVersion int) {
-	if appliedCount > 0 {
+	hasMigrations := appliedCount > 0
+
+	if hasMigrations {
 		log.Info("Migrations applied", "count", appliedCount, "currentVersion", len(migrations))
 	} else {
 		log.Debug("No new migrations to apply", "currentVersion", currentVersion)
