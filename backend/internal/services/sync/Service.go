@@ -76,7 +76,7 @@ type BatchSyncResult struct {
 
 // SitePasswordDecryptor interface for getting decrypted site passwords
 type SitePasswordDecryptor interface {
-	GetDecryptedPassword(ctx context.Context, siteID int64) (string, error)
+	GetDecryptedPassword(ctx context.Context, siteID int64) apperror.Result[string]
 }
 
 // Config holds sync service configuration

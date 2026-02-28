@@ -154,12 +154,12 @@ func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, *apperror
 func (s *Service) buildSelectiveZipResult(pctx *publishContext) (*PackageBuildResult, *apperror.AppError) {
 	s.broadcastSelectiveZipLog(pctx)
 
-	path, err := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create selective ZIP")
+	zipResult := s.createSelectiveZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.Options.Files)
+	if zipResult.HasError() {
+		return nil, zipResult.AppError()
 	}
 
-	return &PackageBuildResult{ZipPath: path, FileCount: len(pctx.Options.Files)}, nil
+	return &PackageBuildResult{ZipPath: zipResult.Value(), FileCount: len(pctx.Options.Files)}, nil
 }
 
 // broadcastSelectiveZipLog sends the selective ZIP creation log.
@@ -189,12 +189,12 @@ func (s *Service) buildFullZipResult(pctx *publishContext) (*PackageBuildResult,
 	}
 	s.broadcastDetailedLog(fullLog)
 
-	path, err := s.createFullZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.PluginInfo.ExcludePatterns)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create full ZIP")
+	zipResult := s.createFullZip(pctx.PluginInfo.Path, pctx.PluginInfo.Name, pctx.PluginInfo.ExcludePatterns)
+	if zipResult.HasError() {
+		return nil, zipResult.AppError()
 	}
 
-	return &PackageBuildResult{ZipPath: path, FileCount: pctx.PluginInfo.FileCount}, nil
+	return &PackageBuildResult{ZipPath: zipResult.Value(), FileCount: pctx.PluginInfo.FileCount}, nil
 }
 
 // ─── Pre-Upload Backup ──────────────────────────────────────────────────────

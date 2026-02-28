@@ -62,10 +62,11 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	if siteInfoResult.HasError() {
 		return apperror.Fail[PushSyncResult](siteInfoResult.AppError())
 	}
-	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
-	if err != nil {
-		return apperror.FailWrap[PushSyncResult](err, apperror.ErrInternal, "failed to decrypt credentials")
+	passwordResult := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
+	if passwordResult.HasError() {
+		return apperror.Fail[PushSyncResult](passwordResult.AppError())
 	}
+	password := passwordResult.Value()
 
 	// 5. Build sync files
 	syncFilesResult := s.buildSyncFiles(buildSyncFilesInput{PluginPath: plug.Path, SyncResult: sr, PluginID: pluginID, SiteID: siteID})

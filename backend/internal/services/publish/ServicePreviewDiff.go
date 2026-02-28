@@ -66,7 +66,7 @@ func (s *Service) processScanEntry(sc *scanContext, path string, info os.FileInf
 		return nil
 	}
 
-	hash, _ := s.calculateFileHash(path)
+	hash := s.calculateFileHash(path).ValueOr("")
 	relPathSlash := filepath.ToSlash(relPath)
 
 	preview := FilePreview{

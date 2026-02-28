@@ -246,20 +246,21 @@ func (s *Service) loadPublishPlugin(ctx context.Context, input initPublishInput)
 
 // loadPublishCredentials loads site credentials and handles init failure.
 func (s *Service) loadPublishCredentials(ctx context.Context, input initPublishInput) (*SiteCredentialsResult, *apperror.AppError) {
-	creds, err := s.getSiteCredentials(ctx, input.SiteID)
-	if err != nil {
-		appErr := apperror.Wrap(err, apperror.ErrInternal, "failed to load site credentials")
+	credsResult := s.getSiteCredentials(ctx, input.SiteID)
+	if credsResult.HasError() {
 		s.failInit(failInitInput{
 			PluginID: input.PluginID,
 			SiteID:   input.SiteID,
-			Err:      appErr,
+			Err:      credsResult.AppError(),
 			Result:   input.Result,
 		})
 
-		return nil, appErr
+		return nil, credsResult.AppError()
 	}
 
-	return creds, nil
+	creds := credsResult.Value()
+
+	return &creds, nil
 }
 
 // failInitInput bundles parameters for failInit.

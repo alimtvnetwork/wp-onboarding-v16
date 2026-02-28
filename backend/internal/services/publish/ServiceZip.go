@@ -29,24 +29,23 @@ type zipSession struct {
 }
 
 // resolveZipContext resolves temp dir, plugin path, and zip file path.
-func (s *Service) resolveZipContext(pluginPath, pluginName, suffix string) (*zipContext, error) {
+func (s *Service) resolveZipContext(pluginPath, pluginName, suffix string) apperror.Result[zipContext] {
 	paths, err := resolveZipPaths(s.tempDir, pluginPath)
 	if err != nil {
-		return nil, err
+		return apperror.FailWrap[zipContext](err, apperror.ErrInternal, "failed to resolve zip paths")
 	}
 
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
 	absZipPath, err := pathutil.Join(paths.TempDir, fmt.Sprintf("%s%s.zip", slug, suffix))
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve zip path")
+		return apperror.FailWrap[zipContext](err, apperror.ErrInternal, "failed to resolve zip path")
 	}
 
-	zc := &zipContext{
+	return apperror.Ok(zipContext{
 		AbsPluginPath: paths.PluginPath,
 		AbsZipPath:    absZipPath,
 		Slug:          slug,
-	}
-	return zc, nil
+	})
 }
 
 // resolvedPaths holds resolved absolute paths for zip operations.
@@ -97,13 +96,11 @@ func (zs *zipSession) Finalize() *apperror.AppError {
 	return finalizeZip(zs.Writer, zs.File, zs.Ctx.AbsZipPath)
 }
 
-// CleanupOnError closes and removes the zip file, returning a wrapped error.
-func (zs *zipSession) CleanupOnError(err error) (string, error) {
+// CleanupOnError closes and removes the zip file.
+func (zs *zipSession) CleanupOnError(err error) {
 	zs.Writer.Close()
 	zs.File.Close()
 	pathutil.RemoveFileUnchecked(zs.Ctx.AbsZipPath)
-
-	return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip archive")
 }
 
 // finalizeZip closes the zip writer and file, validates the result.
@@ -144,29 +141,39 @@ func validateZipFile(absZipPath string) *apperror.AppError {
 	return nil
 }
 
-// createFullZip creates a zip file of the entire plugin directory
-func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns []string) (string, error) {
-	zc, err := s.resolveZipContext(pluginPath, pluginName, "")
-	if err != nil {
-		return "", err
+// createFullZip creates a zip file of the entire plugin directory.
+func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns []string) apperror.Result[string] {
+	zcResult := s.resolveZipContext(pluginPath, pluginName, "")
+	if zcResult.HasError() {
+		return apperror.Fail[string](zcResult.AppError())
 	}
 
+	zc := zcResult.Value()
+
+	return s.buildFullZipArchive(&zc, excludePatterns)
+}
+
+// buildFullZipArchive opens a zip session, walks entries, and finalizes.
+func (s *Service) buildFullZipArchive(zc *zipContext, excludePatterns []string) apperror.Result[string] {
 	zs, err := openZipSession(zc)
 	if err != nil {
-		return "", err
+		return apperror.FailWrap[string](err, apperror.ErrFSZip, "failed to open zip session")
 	}
 
 	zs.ExcludePatterns = excludePatterns
 	walkErr := s.walkAndAddEntries(zs)
 	if walkErr != nil {
-		return zs.CleanupOnError(walkErr)
+		zs.CleanupOnError(walkErr)
+
+		return apperror.FailWrap[string](walkErr, apperror.ErrFSZip, "failed to create zip archive")
 	}
 
 	appErr := zs.Finalize()
 	if appErr != nil {
-		return "", appErr
+		return apperror.Fail[string](appErr)
 	}
-	return zc.AbsZipPath, nil
+
+	return apperror.Ok(zc.AbsZipPath)
 }
 
 // walkAndAddEntries walks the plugin directory and adds matching files to the zip.

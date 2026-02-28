@@ -171,10 +171,11 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 		return nil, "Failed to get site info: " + siteInfoResult.AppError().Error()
 	}
 
-	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
-	if err != nil {
-		return nil, "Failed to decrypt credentials: " + err.Error()
+	passwordResult := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
+	if passwordResult.HasError() {
+		return nil, "Failed to decrypt credentials: " + passwordResult.AppError().Error()
 	}
+	password := passwordResult.Value()
 
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
 	info := siteInfoResult.Value()
