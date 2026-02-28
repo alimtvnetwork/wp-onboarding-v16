@@ -144,7 +144,7 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 			continue
 		}
 
-		id, err := db.CreateSeedSite(database.SeedSiteInput{Name: site.Name, URL: normalizedUrl, Username: site.Username, PasswordEncrypted: encryptedPassword, Category: site.Category})
+		id, err := db.CreateSeedSite(database.SeedSiteInput{Name: site.Name, Url: normalizedUrl, Username: site.Username, PasswordEncrypted: encryptedPassword, Category: site.Category})
 		if err != nil {
 			log.Error("Failed to create seed site", "name", site.Name, "error", err)
 			continue

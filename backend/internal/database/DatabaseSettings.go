@@ -133,7 +133,7 @@ func (db *DB) GetPluginIdByPath(path string) (int64, error) {
 // SeedSiteInput bundles parameters for CreateSeedSite.
 type SeedSiteInput struct {
 	Name              string
-	URL               string
+	Url               string
 	Username          string
 	PasswordEncrypted []byte
 	Category          string
@@ -145,10 +145,10 @@ func (db *DB) CreateSeedSite(input SeedSiteInput) (int64, error) {
 	result, err := db.Exec(`
 		INSERT INTO Sites (Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, 'connected', datetime('now'), datetime('now'))
-	`, input.Name, input.URL, input.Username, input.PasswordEncrypted, input.Category)
+	`, input.Name, input.Url, input.Username, input.PasswordEncrypted, input.Category)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed site").
-			WithURL(input.URL)
+			WithURL(input.Url)
 	}
 	return result.LastInsertId()
 }
@@ -178,17 +178,17 @@ func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, error) {
 			WithPath(input.Path)
 	}
 
-	pluginID, _ := result.LastInsertId()
+	pluginId, _ := result.LastInsertId()
 
 	// Create git config if enabled
 	if input.GitEnabled {
 		_, _ = db.Exec(`
 			INSERT INTO PluginGitConfig (PluginId, GitEnabled, UpdatedAt)
 			VALUES (?, 1, datetime('now'))
-		`, pluginID)
+		`, pluginId)
 	}
 
-	return pluginID, nil
+	return pluginId, nil
 }
 
 // SeedMappingInput bundles parameters for CreateSeedMapping.

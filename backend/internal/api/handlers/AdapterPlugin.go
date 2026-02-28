@@ -16,12 +16,12 @@ type PluginServiceInterface interface {
 	Create(ctx context.Context, input plugin.CreateInput) (*models.Plugin, *apperror.AppError)
 	Update(ctx context.Context, id int64, input plugin.UpdateInput) (*models.Plugin, *apperror.AppError)
 	Delete(ctx context.Context, id int64) *apperror.AppError
-	GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, *apperror.AppError)
-	GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, *apperror.AppError)
-	CreateMapping(ctx context.Context, pluginID int64, input plugin.CreateMappingInput) (*models.PluginMapping, *apperror.AppError)
+	GetMappings(ctx context.Context, pluginId int64) ([]models.PluginMapping, *apperror.AppError)
+	GetMappingsBySite(ctx context.Context, siteId int64) ([]models.PluginMapping, *apperror.AppError)
+	CreateMapping(ctx context.Context, pluginId int64, input plugin.CreateMappingInput) (*models.PluginMapping, *apperror.AppError)
 	DeleteMapping(ctx context.Context, id int64) *apperror.AppError
 	UpdateMappingsForPlugin(ctx context.Context, input plugin.UpdatePluginMappingsInput) *apperror.AppError
-	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError
+	UpdateMappingsForSite(ctx context.Context, siteId int64, pluginIds []int64) *apperror.AppError
 	ScanDirectory(ctx context.Context, path string) (*plugin.ScanResult, *apperror.AppError)
 	WritePluginDetected(ctx context.Context, path string) *apperror.AppError
 	RefreshFileCount(ctx context.Context, id int64) *apperror.AppError
@@ -78,8 +78,8 @@ func (a *PluginServiceAdapter) Delete(ctx context.Context, id int64) *apperror.A
 	return a.Service.Delete(ctx, id)
 }
 
-func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, *apperror.AppError) {
-	result := a.Service.GetMappings(ctx, pluginID)
+func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginId int64) ([]models.PluginMapping, *apperror.AppError) {
+	result := a.Service.GetMappings(ctx, pluginId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -87,7 +87,7 @@ func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) 
 	return result.Items(), nil
 }
 
-func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginID int64, input plugin.CreateMappingInput) (*models.PluginMapping, *apperror.AppError) {
+func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginId int64, input plugin.CreateMappingInput) (*models.PluginMapping, *apperror.AppError) {
 	result := a.Service.CreateMapping(ctx, input)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -102,8 +102,8 @@ func (a *PluginServiceAdapter) DeleteMapping(ctx context.Context, id int64) *app
 	return a.Service.DeleteMapping(ctx, id)
 }
 
-func (a *PluginServiceAdapter) GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, *apperror.AppError) {
-	result := a.Service.GetMappingsBySite(ctx, siteID)
+func (a *PluginServiceAdapter) GetMappingsBySite(ctx context.Context, siteId int64) ([]models.PluginMapping, *apperror.AppError) {
+	result := a.Service.GetMappingsBySite(ctx, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}
@@ -115,8 +115,8 @@ func (a *PluginServiceAdapter) UpdateMappingsForPlugin(ctx context.Context, inpu
 	return a.Service.UpdateMappingsForPlugin(ctx, input)
 }
 
-func (a *PluginServiceAdapter) UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) *apperror.AppError {
-	return a.Service.UpdateMappingsForSite(ctx, siteID, pluginIDs)
+func (a *PluginServiceAdapter) UpdateMappingsForSite(ctx context.Context, siteId int64, pluginIds []int64) *apperror.AppError {
+	return a.Service.UpdateMappingsForSite(ctx, siteId, pluginIds)
 }
 
 func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (*plugin.ScanResult, *apperror.AppError) {

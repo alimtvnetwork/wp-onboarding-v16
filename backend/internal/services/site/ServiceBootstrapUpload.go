@@ -54,10 +54,10 @@ func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress
 }
 
 // executeUploaderUpload performs the upload and wraps errors.
-func (s *Service) executeUploaderUpload(siteID int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
+func (s *Service) executeUploaderUpload(siteId int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	result, err := client.UploadPluginViaUploader(input)
 	if err != nil {
-		s.logBootstrapError(siteID, fmt.Sprintf("Upload failed: %v", err))
+		s.logBootstrapError(siteId, fmt.Sprintf("Upload failed: %v", err))
 
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
