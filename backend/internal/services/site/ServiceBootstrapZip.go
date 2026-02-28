@@ -91,7 +91,9 @@ type uploaderZipEntryInput struct {
 // addFileToUploaderZip adds a single file entry to the uploader ZIP archive.
 func addFileToUploaderZip(input uploaderZipEntryInput) error {
 	relPath, _ := filepath.Rel(input.BaseDir, input.Path)
-	if relPath == "." {
+	isRootEntry := relPath == "."
+
+	if isRootEntry {
 		return nil
 	}
 

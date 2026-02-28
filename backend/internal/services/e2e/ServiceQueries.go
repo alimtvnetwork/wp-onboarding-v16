@@ -137,7 +137,9 @@ func (s *serviceImpl) abortActiveRun(ctx context.Context, runID string) {
 
 // ListRuns returns past test runs.
 func (s *serviceImpl) ListRuns(ctx context.Context, limit int) ([]TestRun, error) {
-	if limit <= 0 {
+	isLimitUnset := limit <= 0
+
+	if isLimitUnset {
 		limit = 20
 	}
 

@@ -134,7 +134,9 @@ func parseNullTime(ns sql.NullString) *time.Time {
 
 // parseTime parses a time string from SQLite.
 func parseTime(s string) time.Time {
-	if s == "" {
+	isEmpty := s == ""
+
+	if isEmpty {
 		return time.Time{}
 	}
 	t, err := time.Parse("2006-01-02 15:04:05", s)

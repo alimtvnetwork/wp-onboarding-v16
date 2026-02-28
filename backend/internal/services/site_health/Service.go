@@ -148,7 +148,9 @@ func (s *Service) CheckAllSites(ctx context.Context) apperror.ResultSlice[models
 
 // GetHistory returns health check history
 func (s *Service) GetHistory(siteID int64, limit int) apperror.ResultSlice[models.SiteHealthCheck] {
-	if limit <= 0 {
+	isLimitUnset := limit <= 0
+
+	if isLimitUnset {
 		limit = 50
 	}
 
@@ -256,7 +258,9 @@ func (s *Service) GetStats(ctx context.Context) apperror.Result[models.SiteHealt
 
 // ClearHistory removes old health check records
 func (s *Service) ClearHistory(olderThanDays int) apperror.Result[int64] {
-	if olderThanDays <= 0 {
+	isDaysUnset := olderThanDays <= 0
+
+	if isDaysUnset {
 		olderThanDays = 30
 	}
 	cutoff := time.Now().AddDate(0, 0, -olderThanDays).Format("2006-01-02 15:04:05")

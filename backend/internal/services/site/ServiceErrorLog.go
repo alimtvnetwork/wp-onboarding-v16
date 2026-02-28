@@ -121,7 +121,9 @@ func (s *Service) buildErrorLogEntry(ref *remoteActionRef, details *ExtractedErr
 // resolveMethodAndUrl derives the HTTP method and delegated URL from error details.
 func resolveMethodAndUrl(details *ExtractedErrorDetails, siteUrl string) (string, string) {
 	method := details.Method
-	if method == "" {
+	isMethodEmpty := method == ""
+
+	if isMethodEmpty {
 		method = "POST"
 	}
 	delegatedUrl := details.Url

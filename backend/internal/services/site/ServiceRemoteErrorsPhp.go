@@ -35,7 +35,11 @@ func (s *Service) fetchAndAttachPhpErrorSessions(ref *remoteActionRef, errDetail
 
 // isPhpErrorResultEmpty checks if the result is empty and logs if so.
 func (s *Service) isPhpErrorResultEmpty(ref *remoteActionRef, result *wordpress.RemoteErrorSessionsResult) bool {
-	if result == nil || len(result.Entries) == 0 {
+	isResultMissing := result == nil
+	isEntriesEmpty := !isResultMissing && len(result.Entries) == 0
+	isEmpty := isResultMissing || isEntriesEmpty
+
+	if isEmpty {
 		s.logRemoteAction(ref, RemoteActionLogInput{Level: "info", Step: "fetch_php_errors", Message: "No recent PHP error sessions found on remote site"})
 
 		return true

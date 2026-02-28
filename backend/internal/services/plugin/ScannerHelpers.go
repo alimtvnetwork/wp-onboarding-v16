@@ -47,7 +47,9 @@ func (s *Service) walkDirectory(path string, scan *ScanResult) error {
 // processWalkEntry handles a single file system entry during directory walk.
 func (s *Service) processWalkEntry(ws *walkState, filePath string, info os.FileInfo) error {
 	relPath, _ := filepath.Rel(ws.BasePath, filePath)
-	if relPath == "." {
+	isRootEntry := relPath == "."
+
+	if isRootEntry {
 		return nil
 	}
 

@@ -234,7 +234,9 @@ func (s *Service) buildSiteCredentials(siteId int64, site models.Site) (*SiteCre
 
 // derefInt safely dereferences an *int pointer, returning 0 if nil.
 func derefInt(p *int) int {
-	if p == nil {
+	isNilPointer := p == nil
+
+	if isNilPointer {
 		return 0
 	}
 	return *p

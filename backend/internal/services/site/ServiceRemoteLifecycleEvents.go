@@ -123,7 +123,9 @@ func (s *Service) saveRemoteErrorResponse(sessionId string, errDetails *Extracte
 
 // buildErrorBodyJson converts a response body string to JSON.
 func buildErrorBodyJson(responseBody string) json.RawMessage {
-	if responseBody == "" {
+	isBodyEmpty := responseBody == ""
+
+	if isBodyEmpty {
 
 		return nil
 	}
