@@ -26,15 +26,17 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, is
 	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", isOverwrite)
 	s.logInfoWithDetails(0, "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), toDetails(ImportInitDetails{Destination: destDir, IsOverwrite: isOverwrite}))
 
-	reader, err := s.openImportZip(zipPath, destDir, isOverwrite)
-	if err != nil {
-		return apperror.Fail[ImportResult](err)
+	reader, appErr := s.openImportZip(zipPath, destDir, isOverwrite)
+	if appErr != nil {
+
+		return apperror.Fail[ImportResult](appErr)
 	}
 	defer reader.Close()
 
-	state, err := s.extractAllFiles(reader, destDir)
-	if err != nil {
-		return apperror.Fail[ImportResult](err)
+	state, extractErr := s.extractAllFiles(reader, destDir)
+	if extractErr != nil {
+
+		return apperror.Fail[ImportResult](extractErr)
 	}
 
 	s.logImportComplete(destDir, state, startTime)
@@ -48,7 +50,7 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, is
 }
 
 // openImportZip validates and opens the zip file.
-func (s *Service) openImportZip(zipPath, destDir string, isOverwrite bool) (*zip.ReadCloser, error) {
+func (s *Service) openImportZip(zipPath, destDir string, isOverwrite bool) (*zip.ReadCloser, *apperror.AppError) {
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
 		s.logError(0, "open", fmt.Sprintf("Failed to open zip: %v", err))
@@ -56,17 +58,18 @@ func (s *Service) openImportZip(zipPath, destDir string, isOverwrite bool) (*zip
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip")
 	}
 
-	if err := s.validateImportDest(destDir, isOverwrite); err != nil {
+	appErr := s.validateImportDest(destDir, isOverwrite)
+	if appErr != nil {
 		reader.Close()
 
-		return nil, err
+		return nil, appErr
 	}
 
 	return reader, nil
 }
 
 // validateImportDest checks if the destination is safe to write to.
-func (s *Service) validateImportDest(destDir string, isOverwrite bool) error {
+func (s *Service) validateImportDest(destDir string, isOverwrite bool) *apperror.AppError {
 	_, statErr := pathutil.StatDir(destDir)
 	isDestExists := statErr == nil
 	isConflict :=
@@ -79,17 +82,18 @@ func (s *Service) validateImportDest(destDir string, isOverwrite bool) error {
 		return apperror.New(apperror.ErrFSWrite, "destination exists, use overwrite=true to replace")
 	}
 
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		s.logError(0, "prepare", fmt.Sprintf("Failed to create destination: %v", err))
+	mkErr := os.MkdirAll(destDir, 0755)
+	if mkErr != nil {
+		s.logError(0, "prepare", fmt.Sprintf("Failed to create destination: %v", mkErr))
 
-		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to create destination")
+		return apperror.Wrap(mkErr, apperror.ErrFSWrite, "failed to create destination")
 	}
 
 	return nil
 }
 
 // extractAllFiles extracts all files from the zip reader.
-func (s *Service) extractAllFiles(reader *zip.ReadCloser, destDir string) (*importState, error) {
+func (s *Service) extractAllFiles(reader *zip.ReadCloser, destDir string) (*importState, *apperror.AppError) {
 	state := &importState{}
 	s.logInfo(0, "extract", fmt.Sprintf("Extracting %d files", len(reader.File)))
 
@@ -98,8 +102,10 @@ func (s *Service) extractAllFiles(reader *zip.ReadCloser, destDir string) (*impo
 			continue
 		}
 
-		if err := s.extractSingleFile(file, destDir, state); err != nil {
-			return state, err
+		appErr := s.extractSingleFile(file, destDir, state)
+		if appErr != nil {
+
+			return state, appErr
 		}
 	}
 
@@ -107,23 +113,24 @@ func (s *Service) extractAllFiles(reader *zip.ReadCloser, destDir string) (*impo
 }
 
 // extractSingleFile extracts one file from the zip archive.
-func (s *Service) extractSingleFile(file *zip.File, destDir string, state *importState) error {
+func (s *Service) extractSingleFile(file *zip.File, destDir string, state *importState) *apperror.AppError {
 	destPath, ok := s.resolveExtractPath(file.Name, destDir)
 	if !ok {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
-		s.logError(0, "mkdir", fmt.Sprintf("Failed to create directory: %v", err))
+	mkErr := os.MkdirAll(filepath.Dir(destPath), 0755)
+	if mkErr != nil {
+		s.logError(0, "mkdir", fmt.Sprintf("Failed to create directory: %v", mkErr))
 
-		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to create directory")
+		return apperror.Wrap(mkErr, apperror.ErrFSWrite, "failed to create directory")
 	}
 
-	written, err := s.extractFile(file, destPath)
-	if err != nil {
-		s.logError(0, "extract", fmt.Sprintf("Failed to extract %s: %v", file.Name, err))
+	written, extractErr := s.extractFile(file, destPath)
+	if extractErr != nil {
+		s.logError(0, "extract", fmt.Sprintf("Failed to extract %s: %v", file.Name, extractErr))
 
-		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to extract file")
+		return apperror.Wrap(extractErr, apperror.ErrFSWrite, "failed to extract file")
 	}
 
 	state.FilesCount++
@@ -153,20 +160,30 @@ func (s *Service) resolveExtractPath(name, destDir string) (string, bool) {
 }
 
 // extractFile extracts a single file from a zip archive
-func (s *Service) extractFile(file *zip.File, destPath string) (int64, error) {
+func (s *Service) extractFile(file *zip.File, destPath string) (int64, *apperror.AppError) {
 	src, err := file.Open()
 	if err != nil {
-		return 0, err
+
+		return 0, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip entry")
 	}
 	defer src.Close()
 
-	dst, err := os.Create(destPath)
-	if err != nil {
-		return 0, err
+	dst, createErr := os.Create(destPath)
+	if createErr != nil {
+
+		return 0, apperror.Wrap(createErr, apperror.ErrFSWrite, "failed to create destination file").
+			WithFilePath(destPath)
 	}
 	defer dst.Close()
 
-	return io.Copy(dst, src)
+	written, copyErr := io.Copy(dst, src)
+	if copyErr != nil {
+
+		return 0, apperror.Wrap(copyErr, apperror.ErrFSWrite, "failed to copy file content").
+			WithFilePath(destPath)
+	}
+
+	return written, nil
 }
 
 // logImportComplete broadcasts the import completion log.

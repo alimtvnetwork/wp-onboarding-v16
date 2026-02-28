@@ -111,13 +111,25 @@ func (s *Service) DeleteSession(sessionID string) error {
 
 	sessionDir, err := s.getSessionDir(sessionID)
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve session directory")
 	}
+
 	if pathutil.IsDir(sessionDir) {
-		return s.removeDirSession(sessionDir)
+		appErr := s.removeDirSession(sessionDir)
+		if appErr != nil {
+			return appErr
+		}
+
+		return nil
 	}
 
-	return s.removeLegacySession(sessionID)
+	appErr := s.removeLegacySession(sessionID)
+	if appErr != nil {
+		return appErr
+	}
+
+	return nil
 }
 
 // closeAndRemoveSession closes the log file and removes from in-memory map.
@@ -136,28 +148,19 @@ func (s *Service) closeAndRemoveSession(sessionID string) {
 }
 
 // removeDirSession removes a directory-based session.
-func (s *Service) removeDirSession(sessionDir string) error {
-	appErr := pathutil.RemoveDir(sessionDir, "sessionDir")
-	if appErr != nil {
-		return appErr
-	}
-
-	return nil
+func (s *Service) removeDirSession(sessionDir string) *apperror.AppError {
+	return pathutil.RemoveDir(sessionDir, "sessionDir")
 }
 
 // removeLegacySession removes a legacy flat-file session.
-func (s *Service) removeLegacySession(sessionID string) error {
+func (s *Service) removeLegacySession(sessionID string) *apperror.AppError {
 	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrSessionDelete, "resolve legacy session path")
 	}
 
-	appErr := pathutil.RemoveFile(legacyPath, "legacyPath")
-	if appErr != nil {
-		return appErr
-	}
-
-	return nil
+	return pathutil.RemoveFile(legacyPath, "legacyPath")
 }
 
 // cleanupLoop periodically removes old session directories
@@ -217,23 +220,32 @@ func (s *Service) ClearAllSessions() error {
 
 	entries, err := os.ReadDir(s.sessionsDir)
 	if err != nil {
+
 		return apperror.Wrap(err, apperror.ErrSessionClear, "read sessions directory").
 			WithPath(s.sessionsDir)
 	}
 
-	return s.clearEntries(entries)
+	appErr := s.clearEntries(entries)
+	if appErr != nil {
+		return appErr
+	}
+
+	return nil
 }
 
 // clearEntries removes all entries and logs the result.
-func (s *Service) clearEntries(entries []os.DirEntry) error {
+func (s *Service) clearEntries(entries []os.DirEntry) *apperror.AppError {
 	removeErrors := s.removeAllEntries(entries)
 	if len(removeErrors) > 0 {
+
 		return apperror.New(apperror.ErrSessionClear, "failed to remove session entries").
 			WithDetails(fmt.Sprintf("count=%d", len(removeErrors)))
 	}
+
 	if s.log != nil {
 		s.log.Info("All sessions cleared", "count", len(entries))
 	}
+
 	return nil
 }
 
@@ -253,8 +265,8 @@ func (s *Service) closeAllSessions() {
 }
 
 // removeAllEntries removes all files and directories in the sessions folder.
-func (s *Service) removeAllEntries(entries []os.DirEntry) []error {
-	var errors []error
+func (s *Service) removeAllEntries(entries []os.DirEntry) []*apperror.AppError {
+	var errors []*apperror.AppError
 	for _, entry := range entries {
 		entryErr := s.removeEntryByName(entry)
 		if entryErr != nil {
@@ -264,24 +276,18 @@ func (s *Service) removeAllEntries(entries []os.DirEntry) []error {
 
 	return errors
 }
-	return errors
-}
 
 // removeEntryByName resolves and removes a single named entry.
-func (s *Service) removeEntryByName(entry os.DirEntry) error {
+func (s *Service) removeEntryByName(entry os.DirEntry) *apperror.AppError {
 	fullPath, err := pathutil.Join(s.sessionsDir, entry.Name())
 	if err != nil {
+
 		return nil
 	}
 
-	appErr := pathutil.RemoveEntry(
+	return pathutil.RemoveEntry(
 		fullPath,
 		entry.IsDir(),
 		"fullPath",
 	)
-	if appErr != nil {
-		return appErr
-	}
-
-	return nil
 }

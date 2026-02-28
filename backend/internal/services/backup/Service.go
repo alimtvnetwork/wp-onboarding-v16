@@ -36,8 +36,9 @@ type Service struct {
 
 // New creates a new backup service
 func New(cfg Config) *Service {
-	if err := os.MkdirAll(cfg.BackupDir, 0755); err != nil {
-		cfg.Logger.Error("Failed to create backup directory", "error", err)
+	mkErr := os.MkdirAll(cfg.BackupDir, 0755)
+	if mkErr != nil {
+		cfg.Logger.Error("Failed to create backup directory", "error", mkErr)
 	}
 
 	return &Service{
@@ -130,7 +131,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.
 }
 
 // enforceRetention ensures we don't exceed max backups per plugin
-func (s *Service) enforceRetention(ctx context.Context, mappingID int64) error {
+func (s *Service) enforceRetention(ctx context.Context, mappingID int64) *apperror.AppError {
 	return nil
 }
 

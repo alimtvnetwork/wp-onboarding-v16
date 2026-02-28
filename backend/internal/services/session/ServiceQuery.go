@@ -21,11 +21,12 @@ func (s *Service) GetSession(sessionID string) apperror.Result[*Session] {
 		return apperror.Ok(session)
 	}
 
-	loaded, err := s.loadSessionFromDisk(sessionID)
-	if err != nil {
-		return apperror.FailWrap[*Session](err, apperror.ErrNotFound, "session not found").
-			WithValue("sessionId", sessionID)
+	loaded, appErr := s.loadSessionFromDisk(sessionID)
+	if appErr != nil {
+
+		return apperror.Fail[*Session](appErr)
 	}
+
 	return apperror.Ok(loaded)
 }
 
@@ -181,13 +182,16 @@ func parsePHPContent(jsonFragment string) string {
 }
 
 // loadSessionFromDisk attempts to load session info from disk
-func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
+func (s *Service) loadSessionFromDisk(sessionID string) (*Session, *apperror.AppError) {
 	sessionDir, err := s.getSessionDir(sessionID)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve session directory")
 	}
+
 	dirInfo, dirErr := pathutil.StatDir(sessionDir)
 	if dirErr == nil {
+
 		return &Session{
 			ID:        sessionID,
 			Status:    stagestatus.Completed.String(),
@@ -199,20 +203,24 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 }
 
 // loadLegacySession loads a session from a legacy flat file.
-func (s *Service) loadLegacySession(sessionID string) (*Session, error) {
+func (s *Service) loadLegacySession(sessionID string) (*Session, *apperror.AppError) {
 	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrSessionNotFound, "resolve legacy session path")
 	}
+
 	return s.statLegacyFile(sessionID, legacyPath)
 }
 
 // statLegacyFile stats the legacy file and returns a Session or a typed error.
-func (s *Service) statLegacyFile(sessionID, legacyPath string) (*Session, error) {
+func (s *Service) statLegacyFile(sessionID, legacyPath string) (*Session, *apperror.AppError) {
 	fi, statErr := pathutil.StatFile(legacyPath)
 	if statErr != nil {
+
 		return nil, wrapLegacyStatError(statErr, sessionID, legacyPath)
 	}
+
 	return &Session{
 		ID:        sessionID,
 		Status:    stagestatus.Completed.String(),
@@ -221,11 +229,13 @@ func (s *Service) statLegacyFile(sessionID, legacyPath string) (*Session, error)
 }
 
 // wrapLegacyStatError wraps the stat error with appropriate context.
-func wrapLegacyStatError(statErr error, sessionID, legacyPath string) error {
+func wrapLegacyStatError(statErr error, sessionID, legacyPath string) *apperror.AppError {
 	if apperror.Is(statErr, apperror.ErrFSNotFound) {
+
 		return apperror.New(apperror.ErrSessionNotFound, "session not found").
 			WithDetails(sessionID)
 	}
+
 	return apperror.Wrap(statErr, apperror.ErrSessionNotFound, "stat session file").
 		WithPath(legacyPath)
 }

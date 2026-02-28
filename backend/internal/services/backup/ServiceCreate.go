@@ -16,9 +16,10 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	s.log.Info("Creating backup", "mappingId", mappingID)
 	s.logInfoWithDetails(mappingID, "init", "Starting backup creation", toDetails(InitDetails{MappingID: mappingID}))
 
-	backupPath, err := s.createBackupFile(mappingID)
-	if err != nil {
-		return apperror.FailWrap[models.Backup](err, apperror.ErrBackupCreate, "failed to create backup file")
+	backupPath, appErr := s.createBackupFile(mappingID)
+	if appErr != nil {
+
+		return apperror.Fail[models.Backup](appErr)
 	}
 
 	backup := s.buildBackupModel(mappingID, backupPath)
@@ -29,22 +30,23 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 }
 
 // createBackupFile generates the backup zip and returns the path.
-func (s *Service) createBackupFile(mappingID int64) (string, error) {
+func (s *Service) createBackupFile(mappingID int64) (string, *apperror.AppError) {
 	timestamp := time.Now().Format("20060102-150405")
 	filename := fmt.Sprintf("backup-%d-%s.zip", mappingID, timestamp)
 
 	backupPath, err := pathutil.Join(s.backupDir, filename)
 	if err != nil {
-		return "", err
+
+		return "", apperror.Wrap(err, apperror.ErrBackupCreate, "resolve backup path")
 	}
 
 	s.logInfo(mappingID, "prepare", fmt.Sprintf("Preparing backup file: %s", filename))
 
-	file, err := os.Create(backupPath)
-	if err != nil {
-		s.logError(mappingID, "create", fmt.Sprintf("Failed to create backup file: %v", err))
+	file, createErr := os.Create(backupPath)
+	if createErr != nil {
+		s.logError(mappingID, "create", fmt.Sprintf("Failed to create backup file: %v", createErr))
 
-		return "", err
+		return "", apperror.Wrap(createErr, apperror.ErrBackupCreate, "failed to create backup file")
 	}
 	file.Close()
 
@@ -71,9 +73,10 @@ func (s *Service) runRetentionPolicy(ctx context.Context, mappingID int64) {
 	})
 	s.logInfoWithDetails(mappingID, "retention", "Enforcing retention policy", retentionDetails)
 
-	if err := s.enforceRetention(ctx, mappingID); err != nil {
-		s.log.Warn("Failed to enforce retention", "error", err)
-		s.logWarn(mappingID, "retention", fmt.Sprintf("Retention enforcement warning: %v", err))
+	appErr := s.enforceRetention(ctx, mappingID)
+	if appErr != nil {
+		s.log.Warn("Failed to enforce retention", "error", appErr)
+		s.logWarn(mappingID, "retention", fmt.Sprintf("Retention enforcement warning: %v", appErr))
 	}
 }
 
