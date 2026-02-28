@@ -57,7 +57,11 @@ class OnboardUploadValidator {
         }
 
         // Check file exists.
-        if (!isset($file['tmp_name']) || !file_exists($file['tmp_name'])) {
+        $isTmpNameMissing = !isset($file['tmp_name']);
+        $isTmpFileMissing = !$isTmpNameMissing && !file_exists($file['tmp_name']);
+        $isFileMissing    = $isTmpNameMissing || $isTmpFileMissing;
+
+        if ($isFileMissing) {
             return new WP_Error('file_missing', 'Uploaded file not found', array('status' => 400));
         }
 
@@ -65,7 +69,11 @@ class OnboardUploadValidator {
         $mime_type = isset($file['type']) ? $file['type'] : '';
         $finfo_mime = function_exists('finfo_open') ? finfo_file(finfo_open(FILEINFO_MIME_TYPE), $file['tmp_name']) : $mime_type;
 
-        if (!in_array($mime_type, self::ALLOWED_MIMETYPES, true) && !in_array($finfo_mime, self::ALLOWED_MIMETYPES, true)) {
+        $isMimeInvalid      = !in_array($mime_type, self::ALLOWED_MIMETYPES, true);
+        $isFinfoMimeInvalid = !in_array($finfo_mime, self::ALLOWED_MIMETYPES, true);
+        $isMimeTypeRejected = $isMimeInvalid && $isFinfoMimeInvalid;
+
+        if ($isMimeTypeRejected) {
             return new WP_Error('invalid_mime_type', 'Invalid file type. Only ZIP files are allowed.', array('status' => 400));
         }
 
@@ -128,7 +136,11 @@ class OnboardUploadValidator {
             $filename = $zip->getNameIndex($i);
 
             // Check for path traversal attempts.
-            if (strpos($filename, '..') !== false || strpos($filename, '//') !== false) {
+            $hasParentTraversal = (strpos($filename, '..') !== false);
+            $hasDoubleSlash     = (strpos($filename, '//') !== false);
+            $isPathUnsafe       = $hasParentTraversal || $hasDoubleSlash;
+
+            if ($isPathUnsafe) {
                 $zip->close();
                 return new WP_Error('path_traversal', 'ZIP contains invalid path: ' . $filename, array('status' => 400));
             }
@@ -140,9 +152,14 @@ class OnboardUploadValidator {
             }
 
             // Check for PHP files with plugin headers.
-            if (substr($filename, -4) === '.php' && count($parts) === 2) {
+            $isPhpFile          = (substr($filename, -4) === '.php');
+            $isRootLevelFile    = (count($parts) === 2);
+
+            if ($isPhpFile && $isRootLevelFile) {
                 $content = $zip->getFromIndex($i);
-                if (strpos($content, 'Plugin Name:') !== false) {
+                $hasPluginHeader = (strpos($content, 'Plugin Name:') !== false);
+
+                if ($hasPluginHeader) {
                     $has_plugin_folder = true;
                 }
             }

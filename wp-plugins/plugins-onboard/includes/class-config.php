@@ -182,8 +182,11 @@ class OnboardConfig {
         }
         
         // 3. Check ENV variable (highest priority) - overrides everything.
-        $env_value = getenv($constant_name);
-        if ($env_value !== false && $env_value !== '') {
+        $env_value    = getenv($constant_name);
+        $isEnvDefined = ($env_value !== false);
+        $isEnvPopulated = $isEnvDefined && ($env_value !== '');
+
+        if ($isEnvPopulated) {
             $value = $this->cast_value($env_value, $key);
         }
         
@@ -271,7 +274,9 @@ class OnboardConfig {
      * @return bool
      */
     public function set($key, $value) {
-        if (!$this->db || !$this->db->is_connected()) {
+        $isDbDisconnected = OnboardBooleanHelpers::is_db_disconnected($this->db);
+
+        if ($isDbDisconnected) {
             return false;
         }
 

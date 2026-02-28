@@ -364,7 +364,9 @@ class OnboardAdminUI {
      * Handle application deletion.
      */
     private function handle_delete_app() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'delete_app')) {
+        $isUnauthorized = !current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'delete_app');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -379,7 +381,9 @@ class OnboardAdminUI {
      * Handle snapshot deletion.
      */
     private function handle_delete_snapshot() {
-        if (!current_user_can('activate_plugins') || !wp_verify_nonce($_GET['_wpnonce'], 'delete_snapshot')) {
+        $isUnauthorized = !current_user_can('activate_plugins') || !wp_verify_nonce($_GET['_wpnonce'], 'delete_snapshot');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -394,7 +398,9 @@ class OnboardAdminUI {
      * Handle snapshot restoration.
      */
     private function handle_restore_snapshot() {
-        if (!current_user_can('activate_plugins') || !wp_verify_nonce($_GET['_wpnonce'], 'restore_snapshot')) {
+        $isUnauthorized = !current_user_can('activate_plugins') || !wp_verify_nonce($_GET['_wpnonce'], 'restore_snapshot');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -413,7 +419,9 @@ class OnboardAdminUI {
      * Handle clearing audit logs.
      */
     private function handle_clear_logs() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'clear_logs')) {
+        $isUnauthorized = !current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'clear_logs');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -427,7 +435,9 @@ class OnboardAdminUI {
      * Handle clearing temp files.
      */
     private function handle_clear_temp() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'clear_temp')) {
+        $isUnauthorized = !current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'clear_temp');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -441,7 +451,9 @@ class OnboardAdminUI {
      * Handle running cleanup.
      */
     private function handle_run_cleanup() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'run_cleanup')) {
+        $isUnauthorized = !current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'run_cleanup');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -455,7 +467,9 @@ class OnboardAdminUI {
      * Handle application creation.
      */
     private function handle_create_app() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['_wpnonce'], 'create_app')) {
+        $isUnauthorized = !current_user_can('manage_options') || !wp_verify_nonce($_POST['_wpnonce'], 'create_app');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -478,7 +492,9 @@ class OnboardAdminUI {
      * Handle settings save.
      */
     private function handle_save_settings() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['_wpnonce'], 'save_settings')) {
+        $isUnauthorized = !current_user_can('manage_options') || !wp_verify_nonce($_POST['_wpnonce'], 'save_settings');
+
+        if ($isUnauthorized) {
             wp_die(__('Unauthorized', 'plugins-onboard'));
         }
 
@@ -509,7 +525,11 @@ class OnboardAdminUI {
      */
     public function render_dashboard() {
         $plugins = $this->plugin_manager->get_all_plugins();
-        $active_count = count(array_filter($plugins, function($p) { return $p['is_active']; }));
+        $active_count = count(array_filter($plugins, function($p) {
+            $isActive = $p['is_active'];
+
+            return $isActive;
+        }));
         $snapshot_count = $this->snapshot->get_total_count();
         $snapshot_size = $this->snapshot->get_total_size();
         $audit_stats = $this->audit_logger->get_statistics();

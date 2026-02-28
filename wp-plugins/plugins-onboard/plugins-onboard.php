@@ -590,7 +590,9 @@ class PluginsOnboard {
         $route = $request->get_route();
 
         // Only enrich errors from our own namespace.
-        if (strpos($route, '/' . $namespace) !== 0) {
+        $isExternalRoute = (strpos($route, '/' . $namespace) !== 0);
+
+        if ($isExternalRoute) {
             return $response;
         }
 

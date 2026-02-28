@@ -100,7 +100,9 @@ function onboard_sanitize_path($path) {
     $path = preg_replace('#/+#', '/', $path);
     
     // Check for directory traversal.
-    if (strpos($path, '..') !== false) {
+    $hasTraversalAttempt = (strpos($path, '..') !== false);
+
+    if ($hasTraversalAttempt) {
         return false;
     }
     
