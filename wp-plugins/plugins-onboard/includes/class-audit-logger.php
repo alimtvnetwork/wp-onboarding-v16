@@ -56,7 +56,9 @@ class OnboardAuditLogger {
     ) {
         // Use constant with safe default (config may not be fully initialized).
         $audit_enabled = defined('ONBOARD_ENABLE_AUDIT_LOGS') ? ONBOARD_ENABLE_AUDIT_LOGS : true;
-        if (!$audit_enabled) {
+        $isAuditDisabled = !$audit_enabled;
+
+        if ($isAuditDisabled) {
             return;
         }
 

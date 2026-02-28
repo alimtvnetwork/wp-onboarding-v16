@@ -33,8 +33,9 @@ trait AdminNoticesTrait {
     public function renderBootDiagnosticsNotice(): void {
         $diagnostics = get_transient(self::DIAGNOSTICS_TRANSIENT);
         $hasDiagnostics = BooleanHelpers::hasValue($diagnostics);
+        $isDiagnosticsMissing = !$hasDiagnostics;
 
-        if (!$hasDiagnostics) {
+        if ($isDiagnosticsMissing) {
             return;
         }
 

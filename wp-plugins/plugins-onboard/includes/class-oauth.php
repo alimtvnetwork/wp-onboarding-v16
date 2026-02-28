@@ -162,7 +162,9 @@ class OnboardOAuth {
      */
     public function delete_application($app_id) {
         $app = $this->get_application($app_id);
-        if (!$app) {
+        $isAppMissing = !$app;
+
+        if ($isAppMissing) {
             return false;
         }
 
@@ -184,11 +186,15 @@ class OnboardOAuth {
      */
     public function verify_credentials($client_id, $client_secret) {
         $app = $this->get_application_by_client_id($client_id);
-        if (!$app) {
+        $isAppMissing = !$app;
+
+        if ($isAppMissing) {
             return false;
         }
 
-        if (!OnboardTokenEncryption::verify_secret($client_secret, $app['client_secret'])) {
+        $isSecretInvalid = !OnboardTokenEncryption::verify_secret($client_secret, $app['client_secret']);
+
+        if ($isSecretInvalid) {
             return false;
         }
 
@@ -234,7 +240,9 @@ class OnboardOAuth {
     public function exchange_code($auth_code, $client_id, $client_secret) {
         // Verify credentials.
         $app = $this->verify_credentials($client_id, $client_secret);
-        if (!$app) {
+        $isCredentialsInvalid = !$app;
+
+        if ($isCredentialsInvalid) {
             return new WP_Error('invalid_credentials', 'Invalid client credentials', array('status' => 401));
         }
 
@@ -244,7 +252,9 @@ class OnboardOAuth {
             array($auth_code, $app['app_id'], date('Y-m-d H:i:s'))
         )->fetch();
 
-        if (!$code) {
+        $isCodeInvalid = !$code;
+
+        if ($isCodeInvalid) {
             return new WP_Error('invalid_code', 'Invalid or expired authorization code', array('status' => 400));
         }
 
@@ -333,18 +343,24 @@ class OnboardOAuth {
             }
         }
 
-        if (!$token_record) {
+        $isTokenRecordMissing = !$token_record;
+
+        if ($isTokenRecordMissing) {
             return new WP_Error('invalid_refresh_token', 'Invalid refresh token', array('status' => 401));
         }
 
         // Check expiry.
-        if (strtotime($token_record['refresh_expires_at']) < time()) {
+        $isRefreshExpired = strtotime($token_record['refresh_expires_at']) < time();
+
+        if ($isRefreshExpired) {
             return new WP_Error('refresh_token_expired', 'Refresh token expired', array('status' => 401));
         }
 
         // Get application.
         $app = $this->get_application($token_record['app_id']);
-        if (!$app) {
+        $isAppMissing = !$app;
+
+        if ($isAppMissing) {
             return new WP_Error('app_not_found', 'Application not found', array('status' => 400));
         }
 
@@ -363,13 +379,19 @@ class OnboardOAuth {
      */
     public function validate_access_token($access_token) {
         $decoded = OnboardTokenEncryption::verify_jwt($access_token);
-        if (!$decoded) {
+        $isTokenInvalid = !$decoded;
+
+        if ($isTokenInvalid) {
             return false;
         }
 
         // Verify application exists and is active.
         $app = $this->get_application($decoded['app_id']);
-        if (!$app || $app['status'] !== 'active') {
+        $isAppMissing = !$app;
+        $isAppInactive = $app && $app['status'] !== 'active';
+        $isAppUnavailable = $isAppMissing || $isAppInactive;
+
+        if ($isAppUnavailable) {
             return false;
         }
 
@@ -418,7 +440,9 @@ class OnboardOAuth {
      */
     public function regenerate_secret($app_id) {
         $app = $this->get_application($app_id);
-        if (!$app) {
+        $isAppMissing = !$app;
+
+        if ($isAppMissing) {
             return false;
         }
 

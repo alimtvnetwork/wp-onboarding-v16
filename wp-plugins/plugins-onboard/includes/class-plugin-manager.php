@@ -118,11 +118,15 @@ class OnboardPluginManager {
      */
     public function enable($slug, $app_id = null, $ip_address = null) {
         $plugin = $this->get_plugin($slug);
-        if (!$plugin) {
+        $isPluginMissing = !$plugin;
+
+        if ($isPluginMissing) {
             return new WP_Error('plugin_not_found', 'Plugin not found: ' . $slug, array('status' => 404));
         }
 
-        if ($plugin['is_active']) {
+        $isAlreadyActive = $plugin['is_active'];
+
+        if ($isAlreadyActive) {
             return new WP_Error('plugin_already_active', 'Plugin is already active', array('status' => 400));
         }
 
@@ -147,6 +151,8 @@ class OnboardPluginManager {
             return $result;
         }
 
+        $isBackupCreated = !is_wp_error($backup);
+
         // Log success.
         $this->audit_logger->log(
             'plugin_enabled',
@@ -157,7 +163,7 @@ class OnboardPluginManager {
             array(
                 'plugin' => $slug,
                 'version' => $plugin['version'],
-                'backup_created' => !is_wp_error($backup),
+                'backup_created' => $isBackupCreated,
             )
         );
 
@@ -166,8 +172,8 @@ class OnboardPluginManager {
             'plugin_slug' => $slug,
             'status' => 'active',
             'message' => 'Plugin enabled successfully',
-            'backup_created' => !is_wp_error($backup),
-            'backup_location' => !is_wp_error($backup) ? $backup['file_path'] : null,
+            'backup_created' => $isBackupCreated,
+            'backup_location' => $isBackupCreated ? $backup['file_path'] : null,
         );
     }
 
@@ -181,11 +187,15 @@ class OnboardPluginManager {
      */
     public function disable($slug, $app_id = null, $ip_address = null) {
         $plugin = $this->get_plugin($slug);
-        if (!$plugin) {
+        $isPluginMissing = !$plugin;
+
+        if ($isPluginMissing) {
             return new WP_Error('plugin_not_found', 'Plugin not found: ' . $slug, array('status' => 404));
         }
 
-        if (!$plugin['is_active']) {
+        $isAlreadyInactive = !$plugin['is_active'];
+
+        if ($isAlreadyInactive) {
             return new WP_Error('plugin_already_inactive', 'Plugin is already inactive', array('status' => 400));
         }
 
@@ -203,6 +213,8 @@ class OnboardPluginManager {
         // Deactivate plugin.
         deactivate_plugins($plugin['file']);
 
+        $isBackupCreated = !is_wp_error($backup);
+
         // Log success.
         $this->audit_logger->log(
             'plugin_disabled',
@@ -213,7 +225,7 @@ class OnboardPluginManager {
             array(
                 'plugin' => $slug,
                 'version' => $plugin['version'],
-                'backup_created' => !is_wp_error($backup),
+                'backup_created' => $isBackupCreated,
             )
         );
 
@@ -222,8 +234,8 @@ class OnboardPluginManager {
             'plugin_slug' => $slug,
             'status' => 'inactive',
             'message' => 'Plugin disabled successfully',
-            'backup_created' => !is_wp_error($backup),
-            'backup_location' => !is_wp_error($backup) ? $backup['file_path'] : null,
+            'backup_created' => $isBackupCreated,
+            'backup_location' => $isBackupCreated ? $backup['file_path'] : null,
         );
     }
 
@@ -237,7 +249,9 @@ class OnboardPluginManager {
      */
     public function delete($slug, $app_id = null, $ip_address = null) {
         $plugin = $this->get_plugin($slug);
-        if (!$plugin) {
+        $isPluginMissing = !$plugin;
+
+        if ($isPluginMissing) {
             return new WP_Error('plugin_not_found', 'Plugin not found: ' . $slug, array('status' => 404));
         }
 
@@ -277,6 +291,8 @@ class OnboardPluginManager {
             return $deleted;
         }
 
+        $isBackupCreated = !is_wp_error($backup);
+
         // Log success.
         $this->audit_logger->log(
             'plugin_deleted',
@@ -287,7 +303,7 @@ class OnboardPluginManager {
             array(
                 'plugin' => $slug,
                 'version' => $plugin['version'],
-                'backup_created' => !is_wp_error($backup),
+                'backup_created' => $isBackupCreated,
             )
         );
 
@@ -295,8 +311,8 @@ class OnboardPluginManager {
             'success' => true,
             'plugin_slug' => $slug,
             'message' => 'Plugin deleted successfully',
-            'backup_created' => !is_wp_error($backup),
-            'backup_location' => !is_wp_error($backup) ? $backup['file_path'] : null,
+            'backup_created' => $isBackupCreated,
+            'backup_location' => $isBackupCreated ? $backup['file_path'] : null,
         );
     }
 
@@ -352,12 +368,14 @@ class OnboardPluginManager {
 
         // Find and activate plugin.
         $plugin_file = $this->find_plugin_file($slug);
-        if (!$plugin_file) {
+        $isPluginFileMissing = !$plugin_file;
+
+        if ($isPluginFileMissing) {
             return new WP_Error('plugin_file_not_found', 'Could not find plugin file after extraction', array('status' => 500));
         }
 
         $result = activate_plugin($plugin_file);
-        $is_active = !is_wp_error($result);
+        $isActivated = !is_wp_error($result);
 
         // Get updated plugin data.
         if (!function_exists('get_plugins')) {
@@ -366,6 +384,8 @@ class OnboardPluginManager {
         wp_cache_delete('plugins', 'plugins');
         $all_plugins = get_plugins();
         $plugin_data = isset($all_plugins[$plugin_file]) ? $all_plugins[$plugin_file] : array();
+
+        $isBackupCreated = !is_wp_error($backup) && $backup !== null;
 
         // Log upload.
         $this->audit_logger->log(
@@ -378,8 +398,8 @@ class OnboardPluginManager {
                 'plugin' => $slug,
                 'version' => isset($plugin_data['Version']) ? $plugin_data['Version'] : 'unknown',
                 'file_size' => $file['size'],
-                'backup_created' => !is_wp_error($backup) && $backup !== null,
-                'is_active' => $is_active,
+                'backup_created' => $isBackupCreated,
+                'is_active' => $isActivated,
             )
         );
 
@@ -388,10 +408,10 @@ class OnboardPluginManager {
             'plugin_slug' => $slug,
             'plugin_name' => isset($plugin_data['Name']) ? $plugin_data['Name'] : $slug,
             'version' => isset($plugin_data['Version']) ? $plugin_data['Version'] : 'unknown',
-            'is_active' => $is_active,
-            'backup_created' => !is_wp_error($backup) && $backup !== null,
-            'backup_location' => !is_wp_error($backup) && $backup !== null ? $backup['file_path'] : null,
-            'message' => 'Plugin uploaded' . ($is_active ? ' and activated' : '') . ' successfully' . ($backup !== null ? ', backup of previous version created' : ''),
+            'is_active' => $isActivated,
+            'backup_created' => $isBackupCreated,
+            'backup_location' => $isBackupCreated ? $backup['file_path'] : null,
+            'message' => 'Plugin uploaded' . ($isActivated ? ' and activated' : '') . ' successfully' . ($backup !== null ? ', backup of previous version created' : ''),
         );
     }
 
@@ -404,7 +424,9 @@ class OnboardPluginManager {
     private function should_backup($action) {
         // Use constant with safe default.
         $auto_backup = defined('ONBOARD_AUTO_BACKUP_ENABLED') ? ONBOARD_AUTO_BACKUP_ENABLED : true;
-        if (!$auto_backup) {
+        $isBackupDisabled = !$auto_backup;
+
+        if ($isBackupDisabled) {
             return false;
         }
 

@@ -159,7 +159,9 @@ class OnboardUploadValidator {
             );
         }
 
-        if (!$has_plugin_folder) {
+        $isMissingPluginFolder = !$has_plugin_folder;
+
+        if ($isMissingPluginFolder) {
             return new WP_Error(
                 'no_plugin_header',
                 'ZIP does not contain a valid WordPress plugin (missing Plugin Name header)',
@@ -262,7 +264,9 @@ class OnboardUploadValidator {
 
         $zip->close();
 
-        if (!$plugin_info) {
+        $isPluginInfoMissing = !$plugin_info;
+
+        if ($isPluginInfoMissing) {
             return new WP_Error('no_plugin_info', 'Could not extract plugin information from ZIP', array('status' => 400));
         }
 
