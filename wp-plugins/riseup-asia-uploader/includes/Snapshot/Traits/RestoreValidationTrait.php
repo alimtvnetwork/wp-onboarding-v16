@@ -28,10 +28,10 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreValidationTrait {
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
-        $confirmKey       = ResponseKeyType::Confirm->value;
-        $isConfirmMissing = empty($options[$confirmKey]);
-        $isConfirmNotTrue = !$isConfirmMissing && $options[$confirmKey] !== true;
-        $isUnconfirmed    = $isConfirmMissing || $isConfirmNotTrue;
+        $confirmKey    = ResponseKeyType::Confirm->value;
+        $isConfirmSet  = BooleanHelpers::hasValue($options[$confirmKey] ?? null);
+        $isConfirmed   = $isConfirmSet && $options[$confirmKey] === true;
+        $isUnconfirmed = !$isConfirmed;
 
         if ($isUnconfirmed) {
             return array(

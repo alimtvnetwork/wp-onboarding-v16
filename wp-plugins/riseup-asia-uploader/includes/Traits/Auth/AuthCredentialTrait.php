@@ -61,11 +61,11 @@ trait AuthCredentialTrait
         }
 
         $credentials = base64_decode(substr($authHeader, 6));
-        $isCredentialsMissing = ($credentials === false);
-        $isColonMissing = (!$isCredentialsMissing && strpos($credentials, ':') === false);
+        $isCredentialsDecoded = ($credentials !== false);
+        $isColonPresent = $isCredentialsDecoded && strpos($credentials, ':') !== false;
         $isFormatInvalid =
-            $isCredentialsMissing ||
-            $isColonMissing;
+            !$isCredentialsDecoded ||
+            !$isColonPresent;
 
         if ($isFormatInvalid) {
             return $this->buildAuthError('Invalid credentials format');

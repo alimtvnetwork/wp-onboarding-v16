@@ -35,7 +35,9 @@ trait RootDbCompatTrait {
         static $columnCache = array();
         $cacheKey = $table;
 
-        if (!isset($columnCache[$cacheKey])) {
+        $isCacheMissing = !isset($columnCache[$cacheKey]);
+
+        if ($isCacheMissing) {
             $columnCache[$cacheKey] = array();
             $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($columns as $col) {

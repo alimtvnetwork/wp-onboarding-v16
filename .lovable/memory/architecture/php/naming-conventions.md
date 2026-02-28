@@ -24,7 +24,45 @@ The following categories are **exempt** from camelCase and must retain their ori
 
 ## Boolean Property Naming
 
-All boolean properties must use 'is' or 'has' prefixes (e.g., `$isInitialized`, `$hasLoaded`, `$isActive`). Raw boolean names like `$initialized` or `$loaded` are prohibited.
+All boolean properties must use 'is', 'has', or 'should' prefixes (e.g., `$isInitialized`, `$hasLoaded`, `$isActive`). Raw boolean names like `$initialized` or `$loaded` are prohibited.
+
+### No Mixed Polarity in Boolean Assignments
+
+Never combine a negated variable with a positive condition (or vice versa) in the same assignment. Build from positive primitives, then derive negatives only at the final decision point.
+
+```php
+// ❌ WRONG — mixed polarity: negated bool guards a positive check
+$isPageMissing = !isset($_GET['page']);
+$isOtherPage = !$isPageMissing && strpos($_GET['page'], 'plugins-onboard') === false;
+$isNotOnboardPage = $isPageMissing || $isOtherPage;
+
+// ❌ WRONG — negated variable in compound condition
+$isCredentialsMissing = ($credentials === false);
+$isColonMissing = (!$isCredentialsMissing && strpos($credentials, ':') === false);
+
+// ✅ CORRECT — all positive primitives, negate only at decision
+$isPageDefined = isset($_GET['page']);
+$isOnboardPage = $isPageDefined && strpos($_GET['page'], 'plugins-onboard') !== false;
+$isDifferentPage = !$isOnboardPage;
+
+// ✅ CORRECT — positive primitives
+$isCredentialsDecoded = ($credentials !== false);
+$isColonPresent = $isCredentialsDecoded && strpos($credentials, ':') !== false;
+$isFormatValid = $isCredentialsDecoded && $isColonPresent;
+```
+
+### Avoid Redundant Negation Variables
+
+Don't create a `$isLiveRun = !$isDryRun` variable. Instead, use the original variable directly at the decision point:
+
+```php
+// ❌ WRONG — redundant negation variable
+$isLiveRun = !$isDryRun;
+$isLiveRunWithDeletions = $isLiveRun && $hasDeletions;
+
+// ✅ CORRECT — use original directly
+$shouldAudit = !$isDryRun && $hasDeletions;
+```
 
 ## Property & Parameter Naming
 

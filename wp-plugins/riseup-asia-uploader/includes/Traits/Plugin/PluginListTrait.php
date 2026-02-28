@@ -248,11 +248,11 @@ trait PluginListTrait
 
         $realPluginDir = realpath($pluginDir);
         $realFilePath = realpath($pluginDir . '/' . $filePath);
-        $isResolveFailed = ($realFilePath === false);
-        $isOutsidePluginDir = (!$isResolveFailed && strpos($realFilePath, $realPluginDir) !== 0);
-        $isPathInvalid =
-            $isResolveFailed ||
-            $isOutsidePluginDir;
+        $isResolved = ($realFilePath !== false);
+        $isInsidePluginDir = $isResolved && strpos($realFilePath, $realPluginDir) === 0;
+        $isPathValid = $isResolved && $isInsidePluginDir;
+
+        $isPathInvalid = !$isPathValid;
 
         if ($isPathInvalid) {
 
