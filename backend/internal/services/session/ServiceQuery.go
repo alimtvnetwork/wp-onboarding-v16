@@ -12,16 +12,16 @@ import (
 )
 
 // GetSession returns session info
-func (s *Service) GetSession(sessionID string) apperror.Result[*Session] {
+func (s *Service) GetSession(sessionId string) apperror.Result[*Session] {
 	s.mu.RLock()
-	session, isFound := s.sessions[sessionID]
+	session, isFound := s.sessions[sessionId]
 	s.mu.RUnlock()
 
 	if isFound {
 		return apperror.Ok(session)
 	}
 
-	diskResult := s.loadSessionFromDisk(sessionID)
+	diskResult := s.loadSessionFromDisk(sessionId)
 	if diskResult.HasError() {
 		return apperror.Fail[*Session](diskResult.AppError())
 	}
@@ -30,60 +30,60 @@ func (s *Service) GetSession(sessionID string) apperror.Result[*Session] {
 }
 
 // GetSessionLogs returns the full log content for a session
-func (s *Service) GetSessionLogs(sessionID string) apperror.Result[string] {
-	logResult := s.getLogPath(sessionID)
+func (s *Service) GetSessionLogs(sessionId string) apperror.Result[string] {
+	logResult := s.getLogPath(sessionId)
 
 	if logResult.HasError() {
 		return apperror.Fail[string](logResult.AppError())
 	}
 
-	return s.readLogFileOrLegacy(sessionID, logResult.Value())
+	return s.readLogFileOrLegacy(sessionId, logResult.Value())
 }
 
 // readLogFileOrLegacy reads the log file, falling back to legacy format.
-func (s *Service) readLogFileOrLegacy(sessionID, logPath string) apperror.Result[string] {
+func (s *Service) readLogFileOrLegacy(sessionId, logPath string) apperror.Result[string] {
 	data, err := os.ReadFile(logPath)
 	if err == nil {
 		return apperror.Ok(string(data))
 	}
 	if os.IsNotExist(err) {
-		return s.readLegacySessionLog(sessionID)
+		return s.readLegacySessionLog(sessionId)
 	}
 	return apperror.FailWrap[string](err, apperror.ErrFSRead, "read session log").
-		WithValue("sessionId", sessionID)
+		WithValue("sessionId", sessionId)
 }
 
 // readLegacySessionLog attempts to read a legacy flat-file session log.
-func (s *Service) readLegacySessionLog(sessionID string) apperror.Result[string] {
-	legacyPath, legacyErr := pathutil.Join(s.sessionsDir, sessionID+".log")
+func (s *Service) readLegacySessionLog(sessionId string) apperror.Result[string] {
+	legacyPath, legacyErr := pathutil.Join(s.sessionsDir, sessionId+".log")
 	if legacyErr != nil {
 		return apperror.FailNew[string](apperror.ErrNotFound, "session not found").
-			WithValue("sessionId", sessionID)
+			WithValue("sessionId", sessionId)
 	}
 
 	data, err := os.ReadFile(legacyPath)
 	if err != nil {
 		return apperror.FailNew[string](apperror.ErrNotFound, "session not found").
-			WithValue("sessionId", sessionID)
+			WithValue("sessionId", sessionId)
 	}
 	return apperror.Ok(string(data))
 }
 
 // GetSessionDiagnostics returns the structured diagnostics for a session
-func (s *Service) GetSessionDiagnostics(sessionID string) apperror.Result[SessionDiagnostics] {
+func (s *Service) GetSessionDiagnostics(sessionId string) apperror.Result[SessionDiagnostics] {
 	diag := SessionDiagnostics{}
 
-	diag.Request = s.loadDiagnosticRequest(sessionID)
-	diag.Response = s.loadDiagnosticResponse(sessionID)
-	diag.StackTrace = s.loadDiagnosticStackTrace(sessionID)
-	diag.PhpStackTraceLog = s.loadPhpStackTrace(sessionID)
+	diag.Request = s.loadDiagnosticRequest(sessionId)
+	diag.Response = s.loadDiagnosticResponse(sessionId)
+	diag.StackTrace = s.loadDiagnosticStackTrace(sessionId)
+	diag.PhpStackTraceLog = s.loadPhpStackTrace(sessionId)
 
 	return apperror.Ok(diag)
 }
 
 // loadDiagnosticRequest reads request.json from the session directory.
-func (s *Service) loadDiagnosticRequest(sessionID string) *SessionRequest {
-	reqResult := s.getRequestPath(sessionID)
+func (s *Service) loadDiagnosticRequest(sessionId string) *SessionRequest {
+	reqResult := s.getRequestPath(sessionId)
 
 	if reqResult.HasError() {
 		return nil
@@ -105,8 +105,8 @@ func (s *Service) loadDiagnosticRequest(sessionID string) *SessionRequest {
 }
 
 // loadDiagnosticResponse reads response.json from the session directory.
-func (s *Service) loadDiagnosticResponse(sessionID string) *SessionResponse {
-	respResult := s.getResponsePath(sessionID)
+func (s *Service) loadDiagnosticResponse(sessionId string) *SessionResponse {
+	respResult := s.getResponsePath(sessionId)
 
 	if respResult.HasError() {
 		return nil
@@ -128,8 +128,8 @@ func (s *Service) loadDiagnosticResponse(sessionID string) *SessionResponse {
 }
 
 // loadDiagnosticStackTrace reads error.log and extracts the stack trace.
-func (s *Service) loadDiagnosticStackTrace(sessionID string) *SessionStackTrace {
-	errResult := s.getErrorLogPath(sessionID)
+func (s *Service) loadDiagnosticStackTrace(sessionId string) *SessionStackTrace {
+	errResult := s.getErrorLogPath(sessionId)
 
 	if errResult.HasError() {
 		return nil
@@ -151,8 +151,8 @@ func (s *Service) loadDiagnosticStackTrace(sessionID string) *SessionStackTrace 
 }
 
 // loadPhpStackTrace extracts the PHP stacktrace from session logs.
-func (s *Service) loadPhpStackTrace(sessionID string) string {
-	logsResult := s.GetSessionLogs(sessionID)
+func (s *Service) loadPhpStackTrace(sessionId string) string {
+	logsResult := s.GetSessionLogs(sessionId)
 	isLogsUnavailable := !logsResult.IsSafe()
 
 	if isLogsUnavailable {
@@ -203,8 +203,8 @@ func parsePhpContent(jsonFragment string) string {
 }
 
 // loadSessionFromDisk attempts to load session info from disk
-func (s *Service) loadSessionFromDisk(sessionID string) apperror.Result[*Session] {
-	dirResult := s.getSessionDir(sessionID)
+func (s *Service) loadSessionFromDisk(sessionId string) apperror.Result[*Session] {
+	dirResult := s.getSessionDir(sessionId)
 
 	if dirResult.HasError() {
 		return apperror.Fail[*Session](dirResult.AppError())
@@ -215,44 +215,44 @@ func (s *Service) loadSessionFromDisk(sessionID string) apperror.Result[*Session
 	dirInfo, dirErr := pathutil.StatDir(sessionDir)
 	if dirErr == nil {
 		return apperror.Ok(&Session{
-			Id:        sessionID,
+			Id:        sessionId,
 			Status:    stagestatus.Completed.String(),
 			StartedAt: dirInfo.Info.ModTime(),
 		})
 	}
 
-	return s.loadLegacySession(sessionID)
+	return s.loadLegacySession(sessionId)
 }
 
 // loadLegacySession loads a session from a legacy flat file.
-func (s *Service) loadLegacySession(sessionID string) apperror.Result[*Session] {
-	legacyPath, err := pathutil.Join(s.sessionsDir, sessionID+".log")
+func (s *Service) loadLegacySession(sessionId string) apperror.Result[*Session] {
+	legacyPath, err := pathutil.Join(s.sessionsDir, sessionId+".log")
 	if err != nil {
 		return apperror.FailWrap[*Session](err, apperror.ErrSessionNotFound, "resolve legacy session path")
 	}
 
-	return s.statLegacyFile(sessionID, legacyPath)
+	return s.statLegacyFile(sessionId, legacyPath)
 }
 
 // statLegacyFile stats the legacy file and returns a Session or a typed error.
-func (s *Service) statLegacyFile(sessionID, legacyPath string) apperror.Result[*Session] {
+func (s *Service) statLegacyFile(sessionId, legacyPath string) apperror.Result[*Session] {
 	fi, statErr := pathutil.StatFile(legacyPath)
 	if statErr != nil {
-		return apperror.Fail[*Session](wrapLegacyStatError(statErr, sessionID, legacyPath))
+		return apperror.Fail[*Session](wrapLegacyStatError(statErr, sessionId, legacyPath))
 	}
 
 	return apperror.Ok(&Session{
-		Id:        sessionID,
+		Id:        sessionId,
 		Status:    stagestatus.Completed.String(),
 		StartedAt: fi.Info.ModTime(),
 	})
 }
 
 // wrapLegacyStatError wraps the stat error with appropriate context.
-func wrapLegacyStatError(statErr error, sessionID, legacyPath string) *apperror.AppError {
+func wrapLegacyStatError(statErr error, sessionId, legacyPath string) *apperror.AppError {
 	if apperror.Is(statErr, apperror.ErrFSNotFound) {
 		return apperror.New(apperror.ErrSessionNotFound, "session not found").
-			WithDetails(sessionID)
+			WithDetails(sessionId)
 	}
 
 	return apperror.Wrap(statErr, apperror.ErrSessionNotFound, "stat session file").

@@ -11,7 +11,7 @@ import (
 )
 
 // GetRemoteSnapshotSettings fetches snapshot settings from a remote WordPress site.
-var GetRemoteSnapshotSettings = handleSiteActionByID("E3025",
+var GetRemoteSnapshotSettings = handleSiteActionById("E3025",
 	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemoteSnapshotSettings(ctx, siteId)
 	},
@@ -45,14 +45,14 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetRemoteSnapshotProviders returns available snapshot providers on a remote WordPress site.
-var GetRemoteSnapshotProviders = handleSiteActionByID("E3027",
+var GetRemoteSnapshotProviders = handleSiteActionById("E3027",
 	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemoteSnapshotProviders(ctx, siteId)
 	},
 )
 
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting.
-var GetRemoteAvailableTables = handleSiteActionByID("E3029",
+var GetRemoteAvailableTables = handleSiteActionById("E3029",
 	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 		return Services.SiteService.GetRemoteAvailableTables(ctx, siteId)
 	},

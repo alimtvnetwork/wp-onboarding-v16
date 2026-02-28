@@ -9,8 +9,8 @@ import (
 )
 
 // LogStageStart writes a stage header to the session log
-func (s *Service) LogStageStart(sessionID, stageName string) {
-	session := s.getActiveSession(sessionID)
+func (s *Service) LogStageStart(sessionId, stageName string) {
+	session := s.getActiveSession(sessionId)
 	isSessionMissing := session == nil
 
 	if isSessionMissing {
@@ -81,9 +81,9 @@ func resolveStageIcon(status string) string {
 }
 
 // EndSession marks a session as complete
-func (s *Service) EndSession(sessionID, status, errorMsg string) {
+func (s *Service) EndSession(sessionId, status, errorMsg string) {
 	s.mu.Lock()
-	session, isFound := s.sessions[sessionID]
+	session, isFound := s.sessions[sessionId]
 	s.mu.Unlock()
 
 	isMissing := !isFound
@@ -96,7 +96,7 @@ func (s *Service) EndSession(sessionID, status, errorMsg string) {
 	defer session.mu.Unlock()
 
 	applyEndState(session, status, errorMsg)
-	s.logSessionEnd(sessionID, status)
+	s.logSessionEnd(sessionId, status)
 }
 
 // applyEndState updates the session fields and writes the footer.
@@ -116,11 +116,11 @@ func applyEndState(session *Session, status, errorMsg string) {
 }
 
 // logSessionEnd logs session end if logger is available.
-func (s *Service) logSessionEnd(sessionID, status string) {
+func (s *Service) logSessionEnd(sessionId, status string) {
 	isLogAvailable := s.log != nil
 
 	if isLogAvailable {
-		s.log.Info("Session ended", "sessionId", sessionID, "status", status)
+		s.log.Info("Session ended", "sessionId", sessionId, "status", status)
 	}
 }
 

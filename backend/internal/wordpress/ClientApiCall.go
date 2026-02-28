@@ -89,7 +89,7 @@ func (c *Client) buildCallError(input apiCallInput, statusCode int, body []byte)
 		Operation:    input.Operation.Value(),
 		Method:       input.Method.Value(),
 		Endpoint:     input.Endpoint,
-		Url:          c.fullURL(input.Endpoint),
+		Url:          c.fullUrl(input.Endpoint),
 		StatusCode:   statusCode,
 		ResponseBody: truncateBody(string(body), 8192),
 		PluginSlugIn: input.PluginSlug,

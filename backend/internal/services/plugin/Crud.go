@@ -289,7 +289,7 @@ func (s *Service) insertGitConfig(ctx context.Context, pluginId int64, input Cre
 			s.dbu,
 			pluginGitInsertQuery,
 			pluginId,
-			input.GitRemoteURL,
+			input.GitRemoteUrl,
 			input.BuildCommand != "",
 			input.BuildCommand,
 		)

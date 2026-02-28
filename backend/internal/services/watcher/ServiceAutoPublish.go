@@ -10,8 +10,8 @@ import (
 )
 
 // triggerAutoPublish checks if plugin has autoPublish enabled and publishes to all mapped sites
-func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, changes []FileChange) {
-	pResult := s.pluginService.GetById(ctx, pluginID)
+func (s *Service) triggerAutoPublish(ctx context.Context, pluginId int64, changes []FileChange) {
+	pResult := s.pluginService.GetById(ctx, pluginId)
 	if pResult.HasError() {
 		return
 	}
@@ -27,47 +27,47 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	isMappingsMissing := !hasMappings
 
 	if isMappingsMissing {
-		s.log.Debug("Auto-publish skipped: no site mappings", "plugin", p.Name, "pluginId", pluginID)
+		s.log.Debug("Auto-publish skipped: no site mappings", "plugin", p.Name, "pluginId", pluginId)
 		return
 	}
 
 	s.log.Info("Auto-publish triggered",
 		"plugin", p.Name,
-		"pluginId", pluginID,
+		"pluginId", pluginId,
 		"changes", len(changes),
 		"sites", len(p.Mappings),
 	)
 
 	ws.Broadcast(s.wsHub, ws.EventAutoPublishTriggered, ws.AutoPublishTriggeredData{
-		PluginId:   pluginID,
+		PluginId:   pluginId,
 		PluginName: p.Name,
 		Changes:    len(changes),
 		Sites:      len(p.Mappings),
 	})
 
 	if s.publishService == nil {
-		s.log.Warn("Auto-publish: publish service not configured", "plugin", p.Name, "pluginId", pluginID)
+		s.log.Warn("Auto-publish: publish service not configured", "plugin", p.Name, "pluginId", pluginId)
 		return
 	}
 
-	s.publishToMappedSites(ctx, p, pluginID, changes)
+	s.publishToMappedSites(ctx, p, pluginId, changes)
 }
 
 // publishToMappedSites publishes to all mapped sites.
-func (s *Service) publishToMappedSites(ctx context.Context, p models.Plugin, pluginID int64, changes []FileChange) {
+func (s *Service) publishToMappedSites(ctx context.Context, p models.Plugin, pluginId int64, changes []FileChange) {
 	successCount := 0
 	for _, mapping := range p.Mappings {
-		filesUpdated, err := s.publishService.PublishPlugin(ctx, pluginID, mapping.SiteId, "full", true)
+		filesUpdated, err := s.publishService.PublishPlugin(ctx, pluginId, mapping.SiteId, "full", true)
 		if err != nil {
 			s.log.Error("Auto-publish failed",
 				"plugin", p.Name,
 				"site", mapping.SiteName,
-				"pluginId", pluginID,
+				"pluginId", pluginId,
 				"siteId", mapping.SiteId,
 				"error", err,
 			)
 			ws.Broadcast(s.wsHub, ws.EventAutoPublishFailed, ws.AutoPublishFailedData{
-				PluginId: pluginID,
+				PluginId: pluginId,
 				SiteId:   mapping.SiteId,
 				SiteName: mapping.SiteName,
 				Error:    err.Error(),
@@ -76,18 +76,18 @@ func (s *Service) publishToMappedSites(ctx context.Context, p models.Plugin, plu
 		}
 		successCount++
 		ws.Broadcast(s.wsHub, ws.EventAutoPublishComplete, ws.AutoPublishCompleteData{
-			PluginId:     pluginID,
+			PluginId:     pluginId,
 			SiteId:       mapping.SiteId,
 			SiteName:     mapping.SiteName,
 			FilesUpdated: filesUpdated,
 		})
 	}
 
-	s.log.Info("Auto-publish complete", "plugin", p.Name, "pluginId", pluginID, "successfulSites", successCount)
+	s.log.Info("Auto-publish complete", "plugin", p.Name, "pluginId", pluginId, "successfulSites", successCount)
 }
 
 // broadcastChanges sends file changes via WebSocket
-func (s *Service) broadcastChanges(pluginID int64, changes []FileChange, triggerType string) {
+func (s *Service) broadcastChanges(pluginId int64, changes []FileChange, triggerType string) {
 	var created, modified, deleted int
 	for _, c := range changes {
 		switch c.ChangeType {
@@ -111,7 +111,7 @@ func (s *Service) broadcastChanges(pluginID int64, changes []FileChange, trigger
 		}
 	}
 	ws.Broadcast(s.wsHub, ws.EventFileChange, ws.FileChangeBatchData{
-		PluginId:    pluginID,
+		PluginId:    pluginId,
 		TriggerType: triggerType,
 		Changes:     wsChanges,
 		Summary: ws.FileChangeSummary{

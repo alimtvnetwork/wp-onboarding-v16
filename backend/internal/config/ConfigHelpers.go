@@ -84,9 +84,9 @@ func normalizeUrl(rawUrl string) string {
 		u = "https://" + strings.TrimPrefix(u, "http://")
 	}
 
-	isHTTPSMissing := !strings.HasPrefix(u, "https://")
+	isHttpsMissing := !strings.HasPrefix(u, "https://")
 
-	if isHTTPSMissing {
+	if isHttpsMissing {
 		u = "https://" + u
 	}
 

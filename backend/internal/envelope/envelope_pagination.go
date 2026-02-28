@@ -50,29 +50,29 @@ func (p Pagination) Offset() int {
 	return (p.Page - 1) * p.PerPage
 }
 
-// NavigationURLs computes the navigation block with URL string links.
-func (p Pagination) NavigationURLs(basePath string) Navigation {
+// NavigationUrls computes the navigation block with URL string links.
+func (p Pagination) NavigationUrls(basePath string) Navigation {
 	total := p.TotalPages()
 	nav := Navigation{}
 
-	pageCtx := pageURLContext{BasePath: basePath, Page: p.Page, PerPage: p.PerPage, Total: total}
-	nav.NextPage = buildNextPageURL(pageCtx)
-	nav.PrevPage = buildPrevPageURL(pageCtx)
+	pageCtx := pageUrlContext{BasePath: basePath, Page: p.Page, PerPage: p.PerPage, Total: total}
+	nav.NextPage = buildNextPageUrl(pageCtx)
+	nav.PrevPage = buildPrevPageUrl(pageCtx)
 	nav.CloserLinks = buildCloserLinks(pageCtx)
 
 	return nav
 }
 
-// pageURLContext bundles pagination URL parameters.
-type pageURLContext struct {
+// pageUrlContext bundles pagination URL parameters.
+type pageUrlContext struct {
 	BasePath string
 	Page     int
 	PerPage  int
 	Total    int
 }
 
-// buildNextPageURL returns the next page URL or nil.
-func buildNextPageURL(ctx pageURLContext) *string {
+// buildNextPageUrl returns the next page URL or nil.
+func buildNextPageUrl(ctx pageUrlContext) *string {
 	if ctx.Page >= ctx.Total {
 		return nil
 	}
@@ -80,8 +80,8 @@ func buildNextPageURL(ctx pageURLContext) *string {
 	return &next
 }
 
-// buildPrevPageURL returns the previous page URL or nil.
-func buildPrevPageURL(ctx pageURLContext) *string {
+// buildPrevPageUrl returns the previous page URL or nil.
+func buildPrevPageUrl(ctx pageUrlContext) *string {
 	isFirstPage := ctx.Page <= 1
 
 	if isFirstPage {
@@ -92,7 +92,7 @@ func buildPrevPageURL(ctx pageURLContext) *string {
 }
 
 // buildCloserLinks generates a 5-page sliding window of links.
-func buildCloserLinks(ctx pageURLContext) []string {
+func buildCloserLinks(ctx pageUrlContext) []string {
 	windowSize := 5
 	start, end := computeWindow(ctx.Page, windowSize, ctx.Total)
 
