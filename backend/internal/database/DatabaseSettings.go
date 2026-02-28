@@ -193,8 +193,8 @@ func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, error) {
 
 // SeedMappingInput bundles parameters for CreateSeedMapping.
 type SeedMappingInput struct {
-	PluginID   int64
-	SiteID     int64
+	PluginId   int64
+	SiteId     int64
 	RemoteSlug string
 	Logger     *logger.Logger
 }
@@ -206,8 +206,8 @@ func (db *DB) CreateSeedMapping(input SeedMappingInput) (bool, error) {
 		Table:  "PluginMappings",
 		Logger: input.Logger,
 		Fields: dbops.OperationFields{
-			PluginID:   input.PluginID,
-			SiteID:     input.SiteID,
+			PluginId:   input.PluginId,
+			SiteId:     input.SiteId,
 			RemoteSlug: input.RemoteSlug,
 		},
 	}
@@ -215,5 +215,5 @@ func (db *DB) CreateSeedMapping(input SeedMappingInput) (bool, error) {
 	return dbops.CreateMapping(db.DB, ctx, `
 		INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, datetime('now'), datetime('now'))
-	`, input.PluginID, input.SiteID, input.RemoteSlug)
+	`, input.PluginId, input.SiteId, input.RemoteSlug)
 }

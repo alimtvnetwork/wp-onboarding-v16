@@ -19,10 +19,10 @@ func logSuccess(ctx Context, res *Result) {
 		Caller:       fmt.Sprintf("%s:%d", file, line),
 	})
 
-	hasLastInsertID := res.LastInsertID > 0
+	hasLastInsertId := res.LastInsertId > 0
 
-	if hasLastInsertID {
-		fields.LastInsertID = res.LastInsertID
+	if hasLastInsertId {
+		fields.LastInsertId = res.LastInsertId
 	}
 
 	if res.IsCreated {

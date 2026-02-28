@@ -62,7 +62,7 @@ func ParseNullTime(ns sql.NullString) *time.Time {
 // Result represents the outcome of a database operation
 type Result struct {
 	AffectedRows int64
-	LastInsertID int64
+	LastInsertId int64
 	Created      bool
 	Exists       bool
 }
@@ -70,10 +70,10 @@ type Result struct {
 // OperationFields holds typed metadata for database operation logging (GE pattern).
 type OperationFields struct {
 	// Domain context (set by callers)
-	SiteID     int64  `json:",omitempty"`
-	PluginID   int64  `json:",omitempty"`
-	MappingID  int64  `json:",omitempty"`
-	URL        string `json:",omitempty"`
+	SiteId     int64  `json:",omitempty"`
+	PluginId   int64  `json:",omitempty"`
+	MappingId  int64  `json:",omitempty"`
+	Url        string `json:",omitempty"`
 	Path       string `json:",omitempty"`
 	RemoteSlug string `json:",omitempty"`
 	PluginName string `json:",omitempty"`
@@ -88,10 +88,10 @@ type OperationFields struct {
 	Caller       string `json:",omitempty"`
 	Error        string `json:",omitempty"`
 	StackTrace   string `json:",omitempty"`
-	ID           int64  `json:",omitempty"`
+	Id           int64  `json:",omitempty"`
 	IsCreated    bool   `json:",omitempty"`
 	IsExists     bool   `json:",omitempty"`
-	LastInsertID int64  `json:",omitempty"`
+	LastInsertId int64  `json:",omitempty"`
 	Note         string `json:",omitempty"`
 }
 
@@ -100,24 +100,24 @@ func (f OperationFields) toKeyvals() []any {
 	var kv []any
 
 	// Domain fields
-	hasSiteID := f.SiteID != 0
-	if hasSiteID {
-		kv = append(kv, "siteId", f.SiteID)
+	hasSiteId := f.SiteId != 0
+	if hasSiteId {
+		kv = append(kv, "siteId", f.SiteId)
 	}
 
-	hasPluginID := f.PluginID != 0
-	if hasPluginID {
-		kv = append(kv, "pluginId", f.PluginID)
+	hasPluginId := f.PluginId != 0
+	if hasPluginId {
+		kv = append(kv, "pluginId", f.PluginId)
 	}
 
-	hasMappingID := f.MappingID != 0
-	if hasMappingID {
-		kv = append(kv, "mappingId", f.MappingID)
+	hasMappingId := f.MappingId != 0
+	if hasMappingId {
+		kv = append(kv, "mappingId", f.MappingId)
 	}
 
-	hasURL := f.URL != ""
-	if hasURL {
-		kv = append(kv, "url", f.URL)
+	hasUrl := f.Url != ""
+	if hasUrl {
+		kv = append(kv, "url", f.Url)
 	}
 
 	hasPath := f.Path != ""
@@ -181,9 +181,9 @@ func (f OperationFields) toKeyvals() []any {
 		kv = append(kv, "stackTrace", f.StackTrace)
 	}
 
-	hasID := f.ID != 0
-	if hasID {
-		kv = append(kv, "id", f.ID)
+	hasId := f.Id != 0
+	if hasId {
+		kv = append(kv, "id", f.Id)
 	}
 
 	if f.Created {
@@ -194,9 +194,9 @@ func (f OperationFields) toKeyvals() []any {
 		kv = append(kv, "exists", f.Exists)
 	}
 
-	hasLastInsertID := f.LastInsertID != 0
-	if hasLastInsertID {
-		kv = append(kv, "lastInsertId", f.LastInsertID)
+	hasLastInsertId := f.LastInsertId != 0
+	if hasLastInsertId {
+		kv = append(kv, "lastInsertId", f.LastInsertId)
 	}
 
 	hasNote := f.Note != ""
@@ -277,24 +277,24 @@ func getCallerInfo(skip int) (file string, line int) {
 func mergeFields(base, extra OperationFields) OperationFields {
 	result := base
 
-	hasSiteID := extra.SiteID != 0
-	if hasSiteID {
-		result.SiteID = extra.SiteID
+	hasSiteId := extra.SiteId != 0
+	if hasSiteId {
+		result.SiteId = extra.SiteId
 	}
 
-	hasPluginID := extra.PluginID != 0
-	if hasPluginID {
-		result.PluginID = extra.PluginID
+	hasPluginId := extra.PluginId != 0
+	if hasPluginId {
+		result.PluginId = extra.PluginId
 	}
 
-	hasMappingID := extra.MappingID != 0
-	if hasMappingID {
-		result.MappingID = extra.MappingID
+	hasMappingId := extra.MappingId != 0
+	if hasMappingId {
+		result.MappingId = extra.MappingId
 	}
 
-	hasURL := extra.URL != ""
-	if hasURL {
-		result.URL = extra.URL
+	hasUrl := extra.Url != ""
+	if hasUrl {
+		result.Url = extra.Url
 	}
 
 	hasPath := extra.Path != ""
@@ -357,9 +357,9 @@ func mergeFields(base, extra OperationFields) OperationFields {
 		result.StackTrace = extra.StackTrace
 	}
 
-	hasID := extra.ID != 0
-	if hasID {
-		result.ID = extra.ID
+	hasId := extra.Id != 0
+	if hasId {
+		result.Id = extra.Id
 	}
 
 	if extra.IsCreated {
@@ -370,9 +370,9 @@ func mergeFields(base, extra OperationFields) OperationFields {
 		result.IsExists = extra.IsExists
 	}
 
-	hasLastInsertID := extra.LastInsertID != 0
-	if hasLastInsertID {
-		result.LastInsertID = extra.LastInsertID
+	hasLastInsertId := extra.LastInsertId != 0
+	if hasLastInsertId {
+		result.LastInsertId = extra.LastInsertId
 	}
 
 	hasNote := extra.Note != ""

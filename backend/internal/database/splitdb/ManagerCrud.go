@@ -44,7 +44,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 
 	// Get or create database record
 	dbPath := m.buildDBPath(projectSlug, dbType, entityID)
-	dbRecord, err := m.getOrCreateDatabase(GetOrCreateDBInput{ProjectID: project.ID, DBType: dbType, EntityID: entityID, Path: dbPath})
+	dbRecord, err := m.getOrCreateDatabase(GetOrCreateDBInput{ProjectId: project.Id, DBType: dbType, EntityId: entityID, Path: dbPath})
 	if err != nil {
 		m.log.Error("Failed to get/create database record", "error", err)
 		return nil, err
@@ -97,7 +97,7 @@ func (m *DBManager) openAndConfigure(dbRecord *Database, key string) (*sql.DB, e
 	}
 
 	m.openDBs[key] = db
-	m.updateLastAccessed(dbRecord.ID)
+	m.updateLastAccessed(dbRecord.Id)
 
 	return db, nil
 }
@@ -110,7 +110,7 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 		SELECT Id, Slug, DisplayName, Path, Status, CreatedAt, UpdatedAt
 		FROM Projects WHERE Slug = ?
 	`, slug).Scan(
-		&project.ID, &project.Slug, &project.DisplayName,
+		&project.Id, &project.Slug, &project.DisplayName,
 		&project.Path, &project.Status, &project.CreatedAt, &project.UpdatedAt,
 	)
 
@@ -129,7 +129,7 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 // insertProject creates a new project record.
 func (m *DBManager) insertProject(slug string) (*Project, error) {
 	project := Project{
-		ID:          generateID(),
+		Id:          generateID(),
 		Slug:        slug,
 		DisplayName: slug,
 		Path:        slug + "/",
@@ -141,7 +141,7 @@ func (m *DBManager) insertProject(slug string) (*Project, error) {
 	_, err := m.rootDB.Exec(`
 		INSERT INTO Projects (Id, Slug, DisplayName, Path, Status, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, project.ID, project.Slug, project.DisplayName, project.Path,
+	`, project.Id, project.Slug, project.DisplayName, project.Path,
 		project.Status, project.CreatedAt, project.UpdatedAt)
 
 	if err != nil {
@@ -149,16 +149,16 @@ func (m *DBManager) insertProject(slug string) (*Project, error) {
 			WithSlug(slug)
 	}
 
-	m.log.Info("Created project", "slug", slug, "id", project.ID)
+	m.log.Info("Created project", "slug", slug, "id", project.Id)
 
 	return &project, nil
 }
 
 // GetOrCreateDBInput bundles parameters for getOrCreateDatabase.
 type GetOrCreateDBInput struct {
-	ProjectID string
+	ProjectId string
 	DBType    string
-	EntityID  string
+	EntityId  string
 	Path      string
 }
 
@@ -170,8 +170,8 @@ func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, er
 	          Status, CreatedAt, UpdatedAt FROM Databases 
 	          WHERE ProjectId = ? AND Type = ? AND EntityId = ?`
 
-	err := m.rootDB.QueryRow(query, input.ProjectID, input.DBType, input.EntityID).Scan(
-		&db.ID, &db.ProjectID, &db.Type, &db.EntityID, &db.Path,
+	err := m.rootDB.QueryRow(query, input.ProjectId, input.DBType, input.EntityId).Scan(
+		&db.Id, &db.ProjectId, &db.Type, &db.EntityId, &db.Path,
 		&db.SizeBytes, &db.RecordCount, &db.Status, &db.CreatedAt, &db.UpdatedAt,
 	)
 
@@ -181,7 +181,7 @@ func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, er
 
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query database record").
-			WithDetails(fmt.Sprintf("type=%s, entityId=%s", input.DBType, input.EntityID))
+			WithDetails(fmt.Sprintf("type=%s, entityId=%s", input.DBType, input.EntityId))
 	}
 
 	return &db, nil
@@ -190,10 +190,10 @@ func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, er
 // insertDatabase creates a new database record.
 func (m *DBManager) insertDatabase(input GetOrCreateDBInput) (*Database, error) {
 	db := Database{
-		ID:        generateID(),
-		ProjectID: input.ProjectID,
+		Id:        generateID(),
+		ProjectId: input.ProjectId,
 		Type:      input.DBType,
-		EntityID:  input.EntityID,
+		EntityId:  input.EntityId,
 		Path:      input.Path,
 		Status:    "active",
 		CreatedAt: time.Now(),
@@ -203,11 +203,11 @@ func (m *DBManager) insertDatabase(input GetOrCreateDBInput) (*Database, error) 
 	_, err := m.rootDB.Exec(`
 		INSERT INTO Databases (Id, ProjectId, Type, EntityId, Path, Status, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, db.ID, db.ProjectID, db.Type, db.EntityID, db.Path, db.Status, db.CreatedAt, db.UpdatedAt)
+	`, db.Id, db.ProjectId, db.Type, db.EntityId, db.Path, db.Status, db.CreatedAt, db.UpdatedAt)
 
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create database record").
-			WithDetails(fmt.Sprintf("type=%s, entityId=%s", input.DBType, input.EntityID))
+			WithDetails(fmt.Sprintf("type=%s, entityId=%s", input.DBType, input.EntityId))
 	}
 
 	return &db, nil
@@ -224,12 +224,12 @@ func (m *DBManager) buildDBPath(projectSlug, dbType, entityID string) string {
 }
 
 // updateLastAccessed updates the last accessed timestamp
-func (m *DBManager) updateLastAccessed(dbID string) {
+func (m *DBManager) updateLastAccessed(dbId string) {
 	_, err := m.rootDB.Exec(`
 		UPDATE Databases SET LastAccessedAt = CURRENT_TIMESTAMP, UpdatedAt = CURRENT_TIMESTAMP
 		WHERE Id = ?
-	`, dbID)
+	`, dbId)
 	if err != nil {
-		m.log.Warn("Failed to update LastAccessedAt", "error", err, "dbId", dbID)
+		m.log.Warn("Failed to update LastAccessedAt", "error", err, "dbId", dbId)
 	}
 }
