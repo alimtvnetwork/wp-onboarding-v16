@@ -26,14 +26,16 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
 	s.logInfoWithDetails(0, "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), toDetails(ExportInitDetails{SourceCount: len(sourcePaths)}))
 
-	zipWriter, cleanup, appErr := s.createExportZip(outputPath)
-	if appErr != nil {
+	handleResult := s.createExportZip(outputPath)
+	if handleResult.HasError() {
 
-		return apperror.Fail[ExportResult](appErr)
+		return apperror.Fail[ExportResult](handleResult.AppError())
 	}
-	defer cleanup()
 
-	state := s.exportSources(zipWriter, sourcePaths)
+	handle := handleResult.Value()
+	defer handle.Cleanup()
+
+	state := s.exportSources(handle.Writer, sourcePaths)
 	s.logExportComplete(outputPath, state, startTime)
 
 	return apperror.Ok(ExportResult{
@@ -44,20 +46,26 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	})
 }
 
+// exportZipHandle holds the zip writer and cleanup function.
+type exportZipHandle struct {
+	Writer  *zip.Writer
+	Cleanup func()
+}
+
 // createExportZip creates the output directory and zip file.
-func (s *Service) createExportZip(outputPath string) (*zip.Writer, func(), *apperror.AppError) {
+func (s *Service) createExportZip(outputPath string) apperror.Result[*exportZipHandle] {
 	mkErr := os.MkdirAll(filepath.Dir(outputPath), 0755)
 	if mkErr != nil {
 		s.logError(0, "prepare", fmt.Sprintf("Failed to create output directory: %v", mkErr))
 
-		return nil, nil, apperror.Wrap(mkErr, apperror.ErrFSWrite, "failed to create output directory")
+		return apperror.FailWrap[*exportZipHandle](mkErr, apperror.ErrFSWrite, "failed to create output directory")
 	}
 
 	zipFile, createErr := os.Create(outputPath)
 	if createErr != nil {
 		s.logError(0, "create", fmt.Sprintf("Failed to create zip file: %v", createErr))
 
-		return nil, nil, apperror.Wrap(createErr, apperror.ErrFSZip, "failed to create zip file")
+		return apperror.FailWrap[*exportZipHandle](createErr, apperror.ErrFSZip, "failed to create zip file")
 	}
 
 	zipWriter := zip.NewWriter(zipFile)
@@ -68,7 +76,7 @@ func (s *Service) createExportZip(outputPath string) (*zip.Writer, func(), *appe
 		zipFile.Close()
 	}
 
-	return zipWriter, cleanup, nil
+	return apperror.Ok(&exportZipHandle{Writer: zipWriter, Cleanup: cleanup})
 }
 
 // exportSources processes all source paths into the zip archive.
