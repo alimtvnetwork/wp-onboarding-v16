@@ -88,6 +88,26 @@ func (v Variant) Label() string {
 
 func (v Variant) Value() string { return v.String() }
 
+// stageMap maps action-in-progress variants to their base stage variant value.
+// Variants not listed here resolve to their own Value().
+var stageMap = map[Variant]Variant{
+	Started:    Backup,
+	Packaging:  Package,
+	Uploading:  Upload,
+	Activating: Activate,
+}
+
+// Stage returns the base stage value for this step.
+// Action-in-progress variants (e.g. Packaging) resolve to their base stage (Package).
+func (v Variant) Stage() string {
+	if base, isFound := stageMap[v]; isFound {
+
+		return base.Value()
+	}
+
+	return v.Value()
+}
+
 func (v Variant) IsValid() bool            { return v > Invalid && v < Variant(len(variantLabels)) }
 func (v Variant) IsInvalid() bool           { return v == Invalid }
 func (v Variant) IsDefined() bool           { return v != Invalid }

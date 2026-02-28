@@ -493,4 +493,65 @@ func (v Variant) Value() string { return variantValues[v] }
 
 ---
 
+## External Switch Prohibition (Rule E1)
+
+**FORBIDDEN:** Writing `switch` statements over enum variants **outside** the enum package to derive string values, map to other variants, or compute derived properties.
+
+Any mapping, grouping, or derived value that depends on enum variants **must** be a method on the `Variant` type inside the enum package itself.
+
+### Why
+
+External switches duplicate knowledge that belongs to the enum. When new variants are added, external switches silently miss them. The enum's own methods are the single source of truth.
+
+### ❌ Forbidden — External switch mapping
+
+```go
+// WRONG: This switch in a service package is PROHIBITED
+func mapStepToStage(step publishstep.Variant) string {
+    switch step {
+    case publishstep.Packaging:
+        return publishstep.Package.Value()
+    case publishstep.Uploading:
+        return publishstep.Upload.Value()
+    default:
+        return step.Value()
+    }
+}
+```
+
+### ✅ Required — Method on the enum
+
+```go
+// In publishsteptype/Variant.go
+var stageMap = map[Variant]Variant{
+    Packaging:  Package,
+    Uploading:  Upload,
+    Activating: Activate,
+}
+
+func (v Variant) Stage() string {
+    if base, isFound := stageMap[v]; isFound {
+        return base.Value()
+    }
+    return v.Value()
+}
+```
+
+### What belongs in the enum package
+
+| Pattern | Location | Example |
+|---------|----------|---------|
+| Variant → string value | Enum package | `v.Value()`, `v.Label()` |
+| Variant → variant mapping | Enum package | `v.Stage()`, `v.Parent()` |
+| Variant → derived property | Enum package | `v.IsTerminal()`, `v.RequiresAuth()` |
+| Variant → grouping | Enum package | `v.IsAnyOf(...)`, `v.Category()` |
+| Business logic per variant | Service layer | ✅ Permitted (calls enum methods) |
+
+### Enforcement
+
+- **Automated**: `grep -rn 'switch.*Variant' --include="*.go" | grep -v 'internal/enums/'` flags external enum switches
+- **Manual review**: Any `switch` on an enum type outside its package must be justified or moved into the enum
+
+---
+
 *Required methods for enum compliance.*
