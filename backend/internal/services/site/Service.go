@@ -131,16 +131,20 @@ func (s *Service) broadcastProgress(input ConnectionProgressInput) {
 }
 
 // GetDecryptedPassword returns the decrypted password for a site
-func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, error) {
+func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) (string, *apperror.AppError) {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
+
 		return "", result.AppError()
 	}
+
 	site := result.Value()
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
+
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
+
 	return string(password), nil
 }
 
@@ -197,23 +201,28 @@ type SiteCredentials struct {
 }
 
 // GetCredentials returns the decrypted credentials for a site
-func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCredentials, error) {
+func (s *Service) GetCredentials(ctx context.Context, siteId int64) (*SiteCredentials, *apperror.AppError) {
 	result := s.GetById(ctx, siteId)
 	if result.HasError() {
+
 		return nil, result.AppError()
 	}
+
 	site := result.Value()
 
 	return s.buildSiteCredentials(siteId, site)
 }
 
 // buildSiteCredentials decrypts the password and constructs SiteCredentials.
-func (s *Service) buildSiteCredentials(siteId int64, site models.Site) (*SiteCredentials, error) {
+func (s *Service) buildSiteCredentials(siteId int64, site models.Site) (*SiteCredentials, *apperror.AppError) {
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
+
 	s.log.Debug("Credentials retrieved for site", "siteId", siteId, "siteName", site.Name)
+
 	return &SiteCredentials{
 		Url:         site.Url,
 		Username:    site.Username,

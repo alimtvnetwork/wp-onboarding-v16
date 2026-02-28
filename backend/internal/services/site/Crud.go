@@ -191,21 +191,26 @@ func (s *Service) appendPasswordUpdate(updates *[]string, args *[]any, password 
 }
 
 // Delete removes a site and its mappings (cascaded by FK).
-func (s *Service) Delete(ctx context.Context, id int64) error {
+func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 	result := s.GetById(ctx, id)
 	if result.HasError() {
+
 		return result.AppError()
 	}
 
 	res := dbutil.Exec(ctx, s.dbu, siteDeleteQuery, id)
 	if res.HasError() {
+
 		return res.AppError()
 	}
+
 	if res.IsEmpty() {
+
 		return apperror.New(apperror.ErrNotFound, "site not found")
 	}
 
 	s.log.Info("Site deleted", "id", id)
+
 	return nil
 }
 
