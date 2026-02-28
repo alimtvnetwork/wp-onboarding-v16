@@ -56,7 +56,7 @@ func (s *Service) GetVersions(ctx context.Context, pluginId int64, siteId *int64
 
 // GetVersion returns a specific version entry
 func (s *Service) GetVersion(ctx context.Context, versionId int64) (*PluginVersionRow, *apperror.AppError) {
-	row, err := s.db.GetPluginVersionByID(versionId)
+	row, err := s.db.GetPluginVersionById(versionId)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
 			WithVersionId(versionId)
@@ -118,7 +118,7 @@ func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (
 
 // Rollback restores a plugin to a previous version
 func (s *Service) Rollback(ctx context.Context, versionId int64) (*ws.RollbackCompleteData, *apperror.AppError) {
-	ver, err := s.db.GetPluginVersionByID(versionId)
+	ver, err := s.db.GetPluginVersionById(versionId)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
 			WithVersionId(versionId)

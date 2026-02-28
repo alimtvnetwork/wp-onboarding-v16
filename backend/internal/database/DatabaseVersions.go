@@ -167,8 +167,8 @@ func applyVersionNullFields(m *PluginVersionRow, nf *versionNullFields) {
 	m.CreatedAt = nf.CreatedAt.String
 }
 
-// GetPluginVersionByID returns a specific version entry
-func (db *DB) GetPluginVersionByID(versionID int64) (*PluginVersionRow, error) {
+// GetPluginVersionById returns a specific version entry
+func (db *DB) GetPluginVersionById(versionID int64) (*PluginVersionRow, error) {
 	var m PluginVersionRow
 	var nf versionNullFields
 

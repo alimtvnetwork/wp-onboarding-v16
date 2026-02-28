@@ -17,23 +17,23 @@ var (
 	urlSchemeRegex = regexp.MustCompile(`^https?://`)
 )
 
-// ValidateSiteURL validates a WordPress site URL
-func ValidateSiteURL(siteURL string) *apperror.AppError {
-	siteURL = strings.TrimSpace(siteURL)
-	isURLEmpty := siteURL == ""
+// ValidateSiteUrl validates a WordPress site URL
+func ValidateSiteUrl(siteUrl string) *apperror.AppError {
+	siteUrl = strings.TrimSpace(siteUrl)
+	isUrlEmpty := siteUrl == ""
 
-	if isURLEmpty {
+	if isUrlEmpty {
 		return apperror.New(apperror.ErrValidation, "URL is required")
 	}
 
 	// Add https if no scheme
-	isSchemeMissing := !urlSchemeRegex.MatchString(siteURL)
+	isSchemeMissing := !urlSchemeRegex.MatchString(siteUrl)
 
 	if isSchemeMissing {
-		siteURL = "https://" + siteURL
+		siteUrl = "https://" + siteUrl
 	}
 
-	parsed, err := url.Parse(siteURL)
+	parsed, err := url.Parse(siteUrl)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrValidation, "invalid URL format")
 	}

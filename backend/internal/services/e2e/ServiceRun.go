@@ -63,13 +63,13 @@ func (s *serviceImpl) resolveSuites(ctx context.Context, opts RunOptions) ([]Tes
 	hasSuiteFilter := len(opts.Suites) > 0
 
 	if hasSuiteFilter {
-		return filterSuitesByID(suites, opts.Suites), nil
+		return filterSuitesByIds(suites, opts.Suites), nil
 	}
 	return filterEnabledSuites(suites), nil
 }
 
-// filterSuitesByID returns enabled suites matching the given IDs.
-func filterSuitesByID(suites []TestSuite, ids []string) []TestSuite {
+// filterSuitesByIds returns enabled suites matching the given IDs.
+func filterSuitesByIds(suites []TestSuite, ids []string) []TestSuite {
 	idMap := make(map[string]bool, len(ids))
 	for _, id := range ids {
 		idMap[id] = true
