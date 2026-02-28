@@ -210,16 +210,16 @@ func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) *apperror.
 
 // UpdatePluginMappingsInput bundles parameters for UpdateMappingsForPlugin.
 type UpdatePluginMappingsInput struct {
-	PluginID   int64
-	SiteIDs    []int64
+	PluginId   int64
+	SiteIds    []int64
 	RemoteSlug string
 }
 
 // UpdateMappingsForPlugin replaces all site mappings for a plugin.
 func (s *Service) UpdateMappingsForPlugin(ctx context.Context, input UpdatePluginMappingsInput) *apperror.AppError {
-	s.log.Info("Updating plugin mappings", "pluginId", input.PluginID, "sites", len(input.SiteIDs))
+	s.log.Info("Updating plugin mappings", "pluginId", input.PluginId, "sites", len(input.SiteIds))
 
-	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE PluginId = ?", input.PluginID)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE PluginId = ?", input.PluginId)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to clear existing mappings")
 	}
@@ -230,13 +230,13 @@ func (s *Service) UpdateMappingsForPlugin(ctx context.Context, input UpdatePlugi
 
 // insertMappingsForPlugin inserts a mapping for each siteID.
 func (s *Service) insertMappingsForPlugin(ctx context.Context, input UpdatePluginMappingsInput) {
-	for _, siteID := range input.SiteIDs {
+	for _, siteId := range input.SiteIds {
 		_, err := s.db.ExecContext(ctx, `
 			INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-		`, input.PluginID, siteID, input.RemoteSlug)
+		`, input.PluginId, siteId, input.RemoteSlug)
 		if err != nil {
-			s.log.Warn("Failed to create mapping", "pluginId", input.PluginID, "siteId", siteID, "error", err)
+			s.log.Warn("Failed to create mapping", "pluginId", input.PluginId, "siteId", siteId, "error", err)
 		}
 	}
 }
