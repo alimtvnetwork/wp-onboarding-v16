@@ -141,9 +141,9 @@ const runDeleteQuery = "DELETE FROM TestRuns WHERE Id = ?"
 type Config struct {
 	DB               *sql.DB
 	Broadcast        func(event string, data any)
-	BaseURL          string // Backend API base URL (e.g. "http://localhost:8080")
+	BaseUrl          string // Backend API base URL (e.g. "http://localhost:8080")
 	TestPluginPath   string // Local path to a test plugin directory
-	TestSiteURL      string // WordPress test site URL
+	TestSiteUrl      string // WordPress test site URL
 	TestSiteUsername  string // WordPress test site username
 	TestSitePassword string // WordPress test site password
 }
@@ -156,7 +156,7 @@ type serviceImpl struct {
 	broadcast        func(event string, data any)
 	api              *apiClient
 	testPluginPath   string
-	testSiteURL      string
+	testSiteUrl      string
 	testSiteUsername  string
 	testSitePassword string
 	cleanupIDs       map[string][]int64
@@ -167,9 +167,9 @@ func New(cfg Config) Service {
 	svc := &serviceImpl{
 		db:               cfg.DB,
 		broadcast:        cfg.Broadcast,
-		api:              newAPIClient(cfg.BaseURL),
+		api:              newApiClient(cfg.BaseUrl),
 		testPluginPath:   cfg.TestPluginPath,
-		testSiteURL:      cfg.TestSiteURL,
+		testSiteUrl:      cfg.TestSiteUrl,
 		testSiteUsername:  cfg.TestSiteUsername,
 		testSitePassword: cfg.TestSitePassword,
 	}

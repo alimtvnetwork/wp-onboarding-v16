@@ -14,7 +14,7 @@ import (
 // PowerShellConfig holds configuration for the PowerShell uploader script.
 type PowerShellConfig struct {
 	PluginFolderPath     string `json:"pluginFolderPath"`     // external key (PowerShell script config)
-	WordPressSiteURL     string `json:"wordPressSiteURL"`     // external key
+	WordPressSiteUrl     string `json:"wordPressSiteURL"`     // external key
 	Username             string `json:"username"`             // external key
 	AppPassword          string `json:"appPassword"`          // external key
 	PluginSlug           string `json:"pluginSlug,omitempty"` // external key
@@ -59,7 +59,7 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 	}
 
 	args := buildPsJsonConfigArgs(scriptPath, string(configBytes))
-	emitPsStartLog(onOutput, cfg.PluginFolderPath, cfg.WordPressSiteURL)
+	emitPsStartLog(onOutput, cfg.PluginFolderPath, cfg.WordPressSiteUrl)
 
 	return executePowerShellCommand(args, onOutput)
 }
@@ -77,7 +77,7 @@ func buildPsJsonConfigArgs(scriptPath, jsonConfig string) []string {
 }
 
 // emitPsStartLog logs the start of a PowerShell upload if callback is set.
-func emitPsStartLog(onOutput func(line string), pluginPath, siteURL string) {
+func emitPsStartLog(onOutput func(line string), pluginPath, siteUrl string) {
 	isCallbackMissing := onOutput == nil
 
 	if isCallbackMissing {
@@ -87,7 +87,7 @@ func emitPsStartLog(onOutput func(line string), pluginPath, siteURL string) {
 
 	onOutput(fmt.Sprintf("Executing PowerShell upload script..."))
 	onOutput(fmt.Sprintf("  Plugin: %s", pluginPath))
-	onOutput(fmt.Sprintf("  Site: %s", siteURL))
+	onOutput(fmt.Sprintf("  Site: %s", siteUrl))
 }
 
 // DirectUploadInput holds parameters for direct PowerShell upload invocation.

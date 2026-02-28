@@ -12,17 +12,17 @@ type Variant byte
 const (
 	Invalid Variant = iota
 	Script
-	RestAPI
-	AdminUI
-	WPCLI
+	RestApi
+	AdminUi
+	WpCli
 )
 
 var variantLabels = [...]string{
 	Invalid: "Invalid",
 	Script:  "Script",
-	RestAPI: "RestAPI",
-	AdminUI: "AdminUI",
-	WPCLI:   "WPCLI",
+	RestApi: "RestAPI",
+	AdminUi: "AdminUI",
+	WpCli:   "WPCLI",
 }
 
 func (v Variant) String() string {
@@ -41,9 +41,9 @@ func (v Variant) IsValid() bool {
 }
 
 func (v Variant) IsScript() bool  { return v == Script }
-func (v Variant) IsRestAPI() bool { return v == RestAPI }
-func (v Variant) IsAdminUI() bool { return v == AdminUI }
-func (v Variant) IsWPCLI() bool   { return v == WPCLI }
+func (v Variant) IsRestApi() bool { return v == RestApi }
+func (v Variant) IsAdminUi() bool { return v == AdminUi }
+func (v Variant) IsWpCli() bool   { return v == WpCli }
 func (v Variant) IsInvalid() bool         { return v == Invalid }
 func (v Variant) IsDefined() bool         { return v != Invalid }
 func (v Variant) IsDefinedAndValid() bool { return v.IsDefined() && v.IsValid() }
@@ -60,7 +60,7 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 }
 
 func All() []Variant {
-	return []Variant{Script, RestAPI, AdminUI, WPCLI}
+	return []Variant{Script, RestApi, AdminUi, WpCli}
 }
 
 func ByIndex(i int) Variant {

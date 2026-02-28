@@ -46,10 +46,10 @@ type ScanResult struct {
 	MainFile    string     `json:",omitempty"`
 	Description string     `json:",omitempty"`
 	Author      string     `json:",omitempty"`
-	AuthorURI   string     `json:",omitempty"`
-	PluginURI   string     `json:",omitempty"`
+	AuthorUri   string     `json:",omitempty"`
+	PluginUri   string     `json:",omitempty"`
 	TextDomain  string     `json:",omitempty"`
-	RequiresPHP string     `json:",omitempty"`
+	RequiresPhp string     `json:",omitempty"`
 	RequiresWP  string     `json:",omitempty"`
 	FileCount   int
 	TotalSize   int64
@@ -77,10 +77,10 @@ type PluginDetected struct {
 	MainFile    string `json:"mainFile"`              // external key
 	Description string `json:"description,omitempty"` // external key
 	Author      string `json:"author,omitempty"`      // external key
-	AuthorURI   string `json:"authorUri,omitempty"`   // external key
-	PluginURI   string `json:"pluginUri,omitempty"`   // external key
+	AuthorUri   string `json:"authorUri,omitempty"`   // external key
+	PluginUri   string `json:"pluginUri,omitempty"`   // external key
 	TextDomain  string `json:"textDomain,omitempty"`  // external key
-	RequiresPHP string `json:"requiresPHP,omitempty"` // external key
+	RequiresPhp string `json:"requiresPHP,omitempty"` // external key
 	RequiresWP  string `json:"requiresWP,omitempty"`  // external key
 	DetectedAt  string `json:"detectedAt"`            // external key
 }

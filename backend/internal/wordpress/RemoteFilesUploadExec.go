@@ -13,7 +13,7 @@ import (
 
 // executeOnboardZipUpload sends the multipart upload and parses the response.
 func (c *Client) executeOnboardZipUpload(endpoint string, form *zipMultipartForm, zipPath, pluginSlug string) apperror.Result[*OnboardUploadResult] {
-	url := BuildWPJSONURL(c.baseURL, endpoint)
+	url := BuildWpJsonUrl(c.baseUrl, endpoint)
 
 	c.reportOnboardUploadStart(url, endpoint, form, zipPath)
 

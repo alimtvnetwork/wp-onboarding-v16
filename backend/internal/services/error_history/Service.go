@@ -83,7 +83,7 @@ func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.Er
 		input.TriggerComponent,
 		input.TriggerAction,
 		string(invocationChainJson),
-		input.UIClickPath,
+		input.UiClickPath,
 		input.MarkdownReport,
 	)
 	if err != nil {

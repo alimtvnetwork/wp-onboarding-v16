@@ -17,7 +17,7 @@ func (s *serviceImpl) createTestPlugin() (int64, error) {
 
 func (s *serviceImpl) createTestSite() (int64, error) {
 	resp, err := s.api.post("/sites", siteCreateBody{
-		Name: "E2E Temp Site", Url: s.testSiteURL,
+		Name: "E2E Temp Site", Url: s.testSiteUrl,
 		Username: s.testSiteUsername, Password: s.testSitePassword,
 	})
 	if err != nil {

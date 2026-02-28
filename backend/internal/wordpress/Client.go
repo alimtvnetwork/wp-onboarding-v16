@@ -41,7 +41,7 @@ func init() {
 
 // ClientConfig holds WordPress client configuration
 type ClientConfig struct {
-	BaseURL         string
+	BaseUrl         string
 	Username        string
 	Password        string
 	Timeout         time.Duration
@@ -51,7 +51,7 @@ type ClientConfig struct {
 
 // Client is a WordPress REST API client
 type Client struct {
-	baseURL         string
+	baseUrl         string
 	username        string
 	password        string
 	stackTraceDepth int
@@ -69,7 +69,7 @@ func NewClient(cfg ClientConfig) *Client {
 	}
 
 	return &Client{
-		baseURL:  strings.TrimSuffix(cfg.BaseURL, "/"),
+		baseUrl:  strings.TrimSuffix(cfg.BaseUrl, "/"),
 		username: cfg.Username,
 		password: cfg.Password,
 		stackTraceDepth: depth,
@@ -125,7 +125,7 @@ func (c *Client) request(method, endpoint string, body any) (*http.Response, *ap
 
 // buildAndSendRequest creates and sends an HTTP request with standard headers.
 func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*http.Response, *apperror.AppError) {
-	fullUrl := BuildWPJSONURL(c.baseURL, endpoint)
+	fullUrl := BuildWpJsonUrl(c.baseUrl, endpoint)
 	req, err := http.NewRequest(method, fullUrl, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
@@ -155,7 +155,7 @@ type multipartInput struct {
 
 // requestMultipart sends a multipart HTTP request (for file uploads).
 func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperror.AppError) {
-	fullUrl := BuildWPJSONURL(c.baseURL, input.Endpoint)
+	fullUrl := BuildWpJsonUrl(c.baseUrl, input.Endpoint)
 	req, err := http.NewRequest(input.Method.Value(), fullUrl, input.Body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
@@ -175,8 +175,8 @@ func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperr
 	return resp, nil
 }
 
-func (c *Client) fullURL(endpoint string) string {
-	return BuildWPJSONURL(c.baseURL, endpoint)
+func (c *Client) fullUrl(endpoint string) string {
+	return BuildWpJsonUrl(c.baseUrl, endpoint)
 }
 
 // rawGet performs an authenticated GET request to an arbitrary full URL on the same WordPress host.

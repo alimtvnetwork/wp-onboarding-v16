@@ -56,7 +56,7 @@ func (c *Client) runPostAuthSteps(result *ConnectionInfo) apperror.Result[*Conne
 func (c *Client) probeRestAPI(result *ConnectionInfo) *apperror.AppError {
 	c.reportProbeStart()
 
-	resp, err := c.httpClient.Get(BuildWPProbeURL(c.baseURL))
+	resp, err := c.httpClient.Get(BuildWpProbeUrl(c.baseUrl))
 	if err != nil {
 
 		return c.reportProbeFailure(err)

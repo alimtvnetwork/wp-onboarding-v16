@@ -9,13 +9,13 @@ import (
 
 // apiClient wraps HTTP calls to the backend API
 type apiClient struct {
-	baseURL string
+	baseUrl string
 	client  *http.Client
 }
 
-func newAPIClient(baseURL string) *apiClient {
+func newApiClient(baseUrl string) *apiClient {
 	return &apiClient{
-		baseURL: baseURL,
+		baseUrl: baseUrl,
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},

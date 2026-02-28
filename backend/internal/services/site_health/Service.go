@@ -94,7 +94,7 @@ func (s *Service) performHealthProbe(ctx context.Context, site *siteCheckInfo) m
 		SiteUrl:  site.Url,
 	}
 
-	statusUrl := wordpress.BuildWPPluginURL(site.Url, wordpress.RiseupAsiaNamespace, endpoint.Status)
+	statusUrl := wordpress.BuildWpPluginUrl(site.Url, wordpress.RiseupAsiaNamespace, endpoint.Status)
 	req, err := http.NewRequestWithContext(ctx, "GET", statusUrl, nil)
 
 	if err != nil {

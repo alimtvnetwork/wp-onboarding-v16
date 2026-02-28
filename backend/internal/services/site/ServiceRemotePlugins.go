@@ -21,7 +21,7 @@ type RemotePlugin struct {
 	Status      string `json:"status"`      // external key
 	Author      string `json:"author"`      // external key
 	Description string `json:"description"` // external key
-	PluginURI   string `json:"pluginUri"`   // external key
+	PluginUri   string `json:"pluginUri"`   // external key
 	TextDomain  string `json:"textDomain"`  // external key
 }
 

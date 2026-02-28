@@ -154,15 +154,15 @@ func buildWPFactories(input InitServicesInput) wpFactories {
 	timeout := time.Duration(input.Cfg.WordPress.TimeoutSeconds) * time.Second
 	depth := input.Cfg.Logging.StackTraceDepth
 
-	withProgress := func(siteURL, username, password string, onProgress func(event wordpress.ProgressEvent)) *wordpress.Client {
+	withProgress := func(siteUrl, username, password string, onProgress func(event wordpress.ProgressEvent)) *wordpress.Client {
 		return wordpress.NewClient(wordpress.ClientConfig{
-			BaseURL: siteURL, Username: username, Password: password,
+			BaseUrl: siteUrl, Username: username, Password: password,
 			Timeout: timeout, StackTraceDepth: depth, OnProgress: onProgress,
 		})
 	}
-	simple := func(siteURL, username, password string) *wordpress.Client {
+	simple := func(siteUrl, username, password string) *wordpress.Client {
 		return wordpress.NewClient(wordpress.ClientConfig{
-			BaseURL: siteURL, Username: username, Password: password,
+			BaseUrl: siteUrl, Username: username, Password: password,
 			Timeout: timeout, StackTraceDepth: depth,
 		})
 	}

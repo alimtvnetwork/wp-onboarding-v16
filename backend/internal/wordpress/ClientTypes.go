@@ -107,9 +107,9 @@ type PluginInfo struct {
 	Plugin      string `json:"plugin"`       // external key (WordPress REST API)
 	Status      string `json:"status"`       // external key
 	Name        string `json:"name"`         // external key
-	PluginURI   string `json:"plugin_uri"`   // external key
+	PluginUri   string `json:"plugin_uri"`   // external key
 	Author      string `json:"author"`       // external key
-	AuthorURI   string `json:"author_uri"`   // external key
+	AuthorUri   string `json:"author_uri"`   // external key
 	Description struct {
 		Raw      string `json:"raw"`      // external key
 		Rendered string `json:"rendered"` // external key
@@ -117,6 +117,6 @@ type PluginInfo struct {
 	Version     string `json:"version"`      // external key
 	NetworkOnly bool   `json:"network_only"` // external key
 	RequiresWP  string `json:"requires_wp"`  // external key
-	RequiresPHP string `json:"requires_php"` // external key
+	RequiresPhp string `json:"requires_php"` // external key
 	TextDomain  string `json:"textdomain"`   // external key
 }

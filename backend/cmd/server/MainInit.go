@@ -77,9 +77,9 @@ func initE2EService(input e2eInput) {
 	e2eSvc := e2e.New(e2e.Config{
 		DB:               input.DB.DB,
 		Broadcast:        func(event string, data any) { ws.Broadcast(input.WSHub, event, data) },
-		BaseURL:          fmt.Sprintf("http://localhost:%d", input.Cfg.Server.Port),
+		BaseUrl:          fmt.Sprintf("http://localhost:%d", input.Cfg.Server.Port),
 		TestPluginPath:   input.Cfg.E2E.TestPluginPath,
-		TestSiteURL:      input.Cfg.E2E.TestSiteURL,
+		TestSiteUrl:      input.Cfg.E2E.TestSiteUrl,
 		TestSiteUsername:  input.Cfg.E2E.TestSiteUsername,
 		TestSitePassword: input.Cfg.E2E.TestSitePassword,
 	})
@@ -151,23 +151,23 @@ func launchServer(server *api.Server, cfg *config.Config, log *logger.Logger, vi
 
 // printStartupBanner prints the server URL info.
 func printStartupBanner(port int, vi *version.Info) {
-	localURL := fmt.Sprintf("http://localhost:%d", port)
+	localUrl := fmt.Sprintf("http://localhost:%d", port)
 	fmt.Printf("\n  %s\n", vi.String())
-	fmt.Printf("  Local:     %s\n", localURL)
+	fmt.Printf("  Local:     %s\n", localUrl)
 	fmt.Printf("  WebSocket: ws://localhost:%d/ws\n\n", port)
 }
 
 // openBrowser attempts to open the default browser.
 func openBrowser(port int, log *logger.Logger) {
-	localURL := fmt.Sprintf("http://localhost:%d", port)
+	localUrl := fmt.Sprintf("http://localhost:%d", port)
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", localURL)
+		cmd = exec.Command("cmd", "/c", "start", localUrl)
 	case "darwin":
-		cmd = exec.Command("open", localURL)
+		cmd = exec.Command("open", localUrl)
 	default:
-		cmd = exec.Command("xdg-open", localURL)
+		cmd = exec.Command("xdg-open", localUrl)
 	}
 	runErr := cmd.Run()
 
