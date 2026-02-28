@@ -26,7 +26,7 @@ func ExecInsert(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 
 	res := &Result{
 		AffectedRows: rows,
-		LastInsertID: id,
+		LastInsertId: id,
 		Created:      isCreated,
 		Exists:       isExists,
 	}
@@ -77,7 +77,7 @@ func ExecDelete(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 
 // FindOrCreateResult holds the outcome of a FindOrCreate operation.
 type FindOrCreateResult struct {
-	ID      int64
+	Id      int64
 	Created bool
 }
 
@@ -104,13 +104,13 @@ func FindOrCreate(
 			fields := mergeFields(ctx.Fields, OperationFields{
 				Table:     ctx.Table,
 				Operation: "FIND",
-				ID:        id,
+				Id:        id,
 				Exists:    true,
 			})
 			ctx.Logger.Debug("Record found (exists)", fields.toKeyvals()...)
 		}
 
-		return &FindOrCreateResult{ID: id, Created: false}, nil
+		return &FindOrCreateResult{Id: id, Created: false}, nil
 	}
 
 	isUnexpectedError := err != sql.ErrNoRows
@@ -145,22 +145,22 @@ func FindOrCreate(
 			fields := mergeFields(ctx.Fields, OperationFields{
 				Table:     ctx.Table,
 				Operation: "FIND_AFTER_RACE",
-				ID:        id,
+				Id:        id,
 				Exists:    true,
 			})
 			ctx.Logger.Debug("Record found after race condition", fields.toKeyvals()...)
 		}
 
-		return &FindOrCreateResult{ID: id, Created: false}, nil
+		return &FindOrCreateResult{Id: id, Created: false}, nil
 	}
 
 	res := &Result{
 		AffectedRows: rows,
-		LastInsertID: id,
+		LastInsertId: id,
 		Created:      true,
 	}
 	logSuccess(ctx, res)
-	return &FindOrCreateResult{ID: id, Created: true}, nil
+	return &FindOrCreateResult{Id: id, Created: true}, nil
 }
 
 // CreateMapping creates a many-to-many relationship record with proper logging
@@ -211,7 +211,7 @@ func CreateMapping(
 				Table:        ctx.Table,
 				Operation:    "INSERT_MAPPING",
 				AffectedRows: rows,
-				ID:           id,
+				Id:           id,
 				Created:      true,
 			})
 			ctx.Logger.Info("Mapping CREATED", fields.toKeyvals()...)

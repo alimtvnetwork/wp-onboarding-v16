@@ -89,7 +89,7 @@ func (s *Service) logBootstrapStart(id int64, site models.Site) {
 	})
 	s.broadcastBootstrapLog(bootstrapLogInput{
 		Level:   loglevel.Info,
-		SiteID:  id,
+		SiteId:  id,
 		Message: "Starting Riseup Asia Uploader deployment",
 		Details: contextDetails,
 	})
@@ -107,7 +107,7 @@ func (s *Service) buildProgressCallback(id int64, siteName string) func(string, 
 		})
 		s.broadcastBootstrapLog(bootstrapLogInput{
 			Level:   loglevel.Info,
-			SiteID:  id,
+		SiteId:  id,
 			Message: fmt.Sprintf("[%s] %s", step, message),
 			Details: logDetails,
 		})
@@ -138,7 +138,7 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, *a
 func (s *Service) logBootstrapZipStart(id int64, uploaderPath string) {
 	s.broadcastBootstrapLog(bootstrapLogInput{
 		Level:   loglevel.Info,
-		SiteID:  id,
+		SiteId:  id,
 		Message: "Creating plugin ZIP archive",
 		Details: toJson(ZipCreationDetails{SiteId: id, Path: uploaderPath}),
 	})
@@ -148,7 +148,7 @@ func (s *Service) logBootstrapZipStart(id int64, uploaderPath string) {
 func (s *Service) logBootstrapError(id int64, message string) {
 	s.broadcastBootstrapLog(bootstrapLogInput{
 		Level:   loglevel.Error,
-		SiteID:  id,
+		SiteId:  id,
 		Message: message,
 		Details: toJson(SiteIdDetail{SiteId: id}),
 	})
@@ -158,7 +158,7 @@ func (s *Service) logBootstrapError(id int64, message string) {
 func (s *Service) logBootstrapInfo(id int64, message string) {
 	s.broadcastBootstrapLog(bootstrapLogInput{
 		Level:   loglevel.Info,
-		SiteID:  id,
+		SiteId:  id,
 		Message: message,
 		Details: toJson(SiteIdDetail{SiteId: id}),
 	})
@@ -167,7 +167,7 @@ func (s *Service) logBootstrapInfo(id int64, message string) {
 // bootstrapLogInput bundles parameters for broadcastBootstrapLog.
 type bootstrapLogInput struct {
 	Level   loglevel.Variant
-	SiteID  int64
+	SiteId  int64
 	Message string
 	Details json.RawMessage
 }

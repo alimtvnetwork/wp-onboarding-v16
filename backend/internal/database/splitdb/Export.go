@@ -313,7 +313,7 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 		_, err = m.rootDB.Exec(`
 			INSERT INTO Databases (Id, ProjectId, Type, EntityId, Path, SizeBytes, Status, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`, generateID(), project.ID, dbType, entityID, relPath, info.Size())
+		`, generateID(), project.Id, dbType, entityID, relPath, info.Size())
 		if err != nil {
 			return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to register imported database").
 				WithDetails(fmt.Sprintf("path=%s, type=%s", relPath, dbType))

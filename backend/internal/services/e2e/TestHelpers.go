@@ -1,4 +1,3 @@
-// Package e2e - Test helper methods and utilities
 package e2e
 
 import (
@@ -6,11 +5,9 @@ import (
 	"fmt"
 )
 
-// --- Helper Methods ---
-
 func (s *serviceImpl) createTestPlugin() (int64, error) {
 	resp, err := s.api.post("/plugins", pluginCreateBody{
-		Name: "E2E Temp Plugin", Path: s.testPluginPath, ForceCreate: true,
+		Name: "E2E Test Plugin", Path: s.testPluginPath, ForceCreate: true,
 	})
 	if err != nil {
 		return 0, err
@@ -20,7 +17,7 @@ func (s *serviceImpl) createTestPlugin() (int64, error) {
 
 func (s *serviceImpl) createTestSite() (int64, error) {
 	resp, err := s.api.post("/sites", siteCreateBody{
-		Name: "E2E Temp Site", URL: s.testSiteURL,
+		Name: "E2E Temp Site", Url: s.testSiteURL,
 		Username: s.testSiteUsername, Password: s.testSitePassword,
 	})
 	if err != nil {
@@ -49,60 +46,64 @@ func (s *serviceImpl) createTestMapping() (*testIds, error) {
 		return nil, err
 	}
 
-	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginID), mappingCreateBody{
-		SiteID: ids.SiteID, RemoteSlug: "e2e-test-plugin",
+	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginId), mappingCreateBody{
+		SiteId: ids.SiteId, RemoteSlug: "e2e-test-plugin",
 	})
 	if err != nil {
-		s.cleanupPlugin(ids.PluginID)
-		s.cleanupSite(ids.SiteID)
+		s.cleanupPlugin(ids.PluginId)
+		s.cleanupSite(ids.SiteId)
 		return nil, fmt.Errorf("create mapping: %w", err)
 	}
 	return ids, nil
 }
 
 func (s *serviceImpl) cleanupPlugin(id int64) {
-	s.api.del(fmt.Sprintf("/plugins/%d", id))
+	s.api.delete(fmt.Sprintf("/plugins/%d", id))
 }
 
 func (s *serviceImpl) cleanupSite(id int64) {
-	s.api.del(fmt.Sprintf("/sites/%d", id))
+	s.api.delete(fmt.Sprintf("/sites/%d", id))
 }
 
-func (s *serviceImpl) setCleanupID(kind string, id int64) {
+// setCleanupID stores the resource id for later cleanup.
+func (s *serviceImpl) setCleanupID(resourceType string, id int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if s.cleanupIDs == nil {
-		s.cleanupIDs = make(map[string][]int64)
+		s.cleanupIDs = make(map[string]int64)
 	}
-	s.cleanupIDs[kind] = append(s.cleanupIDs[kind], id)
+	s.cleanupIDs[resourceType] = id
 }
 
-func (s *serviceImpl) runCleanup() {
-	s.mu.Lock()
-	ids := s.cleanupIDs
-	s.cleanupIDs = nil
-	s.mu.Unlock()
+// getCleanupID retrieves a stored resource id.
+func (s *serviceImpl) getCleanupID(resourceType string) (int64, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	isCleanupEmpty := ids == nil
-
-	if isCleanupEmpty {
-		return
-	}
-	for _, id := range ids["plugin"] {
-		s.cleanupPlugin(id)
-	}
-	for _, id := range ids["site"] {
-		s.cleanupSite(id)
-	}
+	id, ok := s.cleanupIDs[resourceType]
+	return id, ok
 }
 
-// expectSuccess returns an error if the response is not successful.
-func expectSuccess(resp *apiResponse) error {
-	isFailure := resp.StatusCode >= 400 || !resp.Success
-	if isFailure {
-		return fmt.Errorf("expected success, got HTTP %d: %s", resp.StatusCode, resp.errorCode())
+// cleanupAll removes all stored test resources.
+func (s *serviceImpl) cleanupAll() {
+	s.mu.RLock()
+	ids := make(map[string]int64)
+	for k, v := range s.cleanupIDs {
+		ids[k] = v
 	}
-	return nil
+	s.mu.RUnlock()
+
+	for resourceType, id := range ids {
+		switch resourceType {
+		case "plugin":
+			s.cleanupPlugin(id)
+		case "site":
+			s.cleanupSite(id)
+		}
+	}
+
+	return
 }
 
 func toJSON(v any) string {
@@ -112,7 +113,7 @@ func toJSON(v any) string {
 
 func redactSiteBody(body siteCreateBody) siteCreateBody {
 	return siteCreateBody{
-		Name: body.Name, URL: body.URL,
+		Name: body.Name, Url: body.Url,
 		Username: body.Username, Password: "***REDACTED***",
 	}
 }

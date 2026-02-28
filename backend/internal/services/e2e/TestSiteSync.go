@@ -11,7 +11,7 @@ import (
 
 func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) error {
 	body := siteCreateBody{
-		Name: "E2E Test Site", URL: s.testSiteURL,
+		Name: "E2E Test Site", Url: s.testSiteURL,
 		Username: s.testSiteUsername, Password: s.testSitePassword,
 	}
 	result.RequestData = toJSON(redactSiteBody(body))
@@ -60,7 +60,7 @@ func (s *serviceImpl) testSiteConnection(ctx context.Context, result *TestResult
 
 func (s *serviceImpl) testInvalidCredentials(ctx context.Context, result *TestResult) error {
 	body := credentialsTestBody{
-		URL: s.testSiteURL, Username: "invalid_user_e2e", Password: "invalid_password_e2e",
+		Url: s.testSiteURL, Username: "invalid_user_e2e", Password: "invalid_password_e2e",
 	}
 	result.RequestData = toJSON(body)
 
@@ -81,15 +81,15 @@ func (s *serviceImpl) testCreatePluginMapping(ctx context.Context, result *TestR
 	if err != nil {
 		return err
 	}
-	defer s.cleanupPlugin(ids.PluginID)
-	defer s.cleanupSite(ids.SiteID)
+	defer s.cleanupPlugin(ids.PluginId)
+	defer s.cleanupSite(ids.SiteId)
 
-	body := mappingCreateBody{SiteID: ids.SiteID, RemoteSlug: "e2e-test-plugin"}
+	body := mappingCreateBody{SiteId: ids.SiteId, RemoteSlug: "e2e-test-plugin"}
 	result.RequestData = toJSON(body)
 
-	resp, err := s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginID), body)
+	resp, err := s.api.post(fmt.Sprintf("/plugins/%d/mappings", ids.PluginId), body)
 	if err != nil {
-		return fmt.Errorf("POST /plugins/%d/mappings failed: %w", pluginID, err)
+		return fmt.Errorf("POST /plugins/%d/mappings failed: %w", ids.PluginId, err)
 	}
 	result.ResponseData = resp.RawBody
 
@@ -98,8 +98,8 @@ func (s *serviceImpl) testCreatePluginMapping(ctx context.Context, result *TestR
 
 // testIds holds IDs created during test setup.
 type testIds struct {
-	PluginID int64
-	SiteID   int64
+	PluginId int64
+	SiteId   int64
 }
 
 // setupPluginAndSite creates a test plugin and site, returning their IDs.
@@ -113,7 +113,7 @@ func (s *serviceImpl) setupPluginAndSite() (*testIds, error) {
 		s.cleanupPlugin(pluginID)
 		return nil, fmt.Errorf("setup site: %w", err)
 	}
-	return &testIds{PluginID: pluginID, SiteID: siteID}, nil
+	return &testIds{PluginId: pluginID, SiteId: siteID}, nil
 }
 
 // --- Sync Tests ---
@@ -160,10 +160,10 @@ func (s *serviceImpl) testPreviewPublish(ctx context.Context, result *TestResult
 	if err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
-	defer s.cleanupPlugin(ids.PluginID)
-	defer s.cleanupSite(ids.SiteID)
+	defer s.cleanupPlugin(ids.PluginId)
+	defer s.cleanupSite(ids.SiteId)
 
-	body := publishPreviewBody{PluginID: ids.PluginID, SiteID: ids.SiteID}
+	body := publishPreviewBody{PluginId: ids.PluginId, SiteId: ids.SiteId}
 	result.RequestData = toJSON(body)
 
 	resp, err := s.api.post("/publish/preview", body)

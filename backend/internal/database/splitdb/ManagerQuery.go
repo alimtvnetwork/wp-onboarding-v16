@@ -18,7 +18,7 @@ func (m *DBManager) ListProjects() ([]Project, error) {
 	var projects []Project
 	for rows.Next() {
 		var p Project
-		err := rows.Scan(&p.ID, &p.Slug, &p.DisplayName, &p.Path, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+		err := rows.Scan(&p.Id, &p.Slug, &p.DisplayName, &p.Path, &p.Status, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan project row")
@@ -50,7 +50,7 @@ func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
 	for rows.Next() {
 		var db Database
 		err := rows.Scan(
-			&db.ID, &db.ProjectID, &db.Type, &db.EntityID, &db.Path,
+			&db.Id, &db.ProjectId, &db.Type, &db.EntityId, &db.Path,
 			&db.SizeBytes, &db.RecordCount, &db.Status, &db.CreatedAt, &db.UpdatedAt,
 		)
 		if err != nil {

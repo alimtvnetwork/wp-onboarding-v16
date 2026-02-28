@@ -19,7 +19,7 @@ func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zip
 
 	if isUploaderReady {
 		input := bootstrapUploaderInput{
-			SiteID:    id,
+			SiteId:    id,
 			Client:    client,
 			ZipPath:   zipPath,
 			Namespace: availability.Namespace,
@@ -33,7 +33,7 @@ func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zip
 
 // bootstrapUploaderInput bundles parameters for bootstrapViaUploader.
 type bootstrapUploaderInput struct {
-	SiteID    int64
+	SiteId    int64
 	Client    *wordpress.Client
 	ZipPath   string
 	Namespace string
@@ -41,7 +41,7 @@ type bootstrapUploaderInput struct {
 
 // bootstrapViaUploader updates via an existing Riseup Asia Uploader.
 func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	s.logBootstrapInfo(input.SiteID, fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", input.Namespace))
+	s.logBootstrapInfo(input.SiteId, fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", input.Namespace))
 
 	uploadInput := wordpress.UploadInput{
 		ZipPath:      input.ZipPath,
@@ -50,7 +50,7 @@ func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress
 		UploadSource: uploadsource.RestAPI,
 	}
 
-	return s.executeUploaderUpload(input.SiteID, input.Client, uploadInput)
+	return s.executeUploaderUpload(input.SiteId, input.Client, uploadInput)
 }
 
 // executeUploaderUpload performs the upload and wraps errors.
@@ -110,7 +110,7 @@ func (s *Service) logBootstrapDeploySuccess(id int64, site models.Site, isActiva
 	})
 	s.broadcastBootstrapLog(bootstrapLogInput{
 		Level:   loglevel.Info,
-		SiteID:  id,
+		SiteId:  id,
 		Message: "Riseup Asia Uploader deployed successfully",
 		Details: deployDetails,
 	})

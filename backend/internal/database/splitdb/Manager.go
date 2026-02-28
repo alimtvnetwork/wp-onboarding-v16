@@ -31,7 +31,7 @@ type DBManager struct {
 
 // Project represents a project in the split database
 type Project struct {
-	ID          string
+	Id          string
 	Slug        string
 	DisplayName string
 	Path        string
@@ -42,10 +42,10 @@ type Project struct {
 
 // Database represents a child database record
 type Database struct {
-	ID           string
-	ProjectID    string
+	Id           string
+	ProjectId    string
 	Type         string
-	EntityID     string
+	EntityId     string
 	Path         string
 	SizeBytes    int64
 	RecordCount  int64
@@ -57,8 +57,8 @@ type Database struct {
 
 // DatabaseStats holds statistics for a database
 type DatabaseStats struct {
-	ID          string
-	DatabaseID  string
+	Id          string
+	DatabaseId  string
 	RecordedAt  time.Time
 	SizeBytes   int64
 	RecordCount int64

@@ -20,23 +20,23 @@ type pluginUpdateBody struct {
 
 type siteCreateBody struct {
 	Name     string
-	URL      string
+	Url      string
 	Username string
 	Password string
 }
 
 type mappingCreateBody struct {
-	SiteID     int64
+	SiteId     int64
 	RemoteSlug string
 }
 
 type publishPreviewBody struct {
-	PluginID int64
-	SiteID   int64
+	PluginId int64
+	SiteId   int64
 }
 
 type credentialsTestBody struct {
-	URL      string
+	Url      string
 	Username string
 	Password string
 }
