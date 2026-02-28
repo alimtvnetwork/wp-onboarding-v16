@@ -24,7 +24,9 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	}
 
 	run := s.createRunRecord(ctx, suitesToRun)
-	if run == nil {
+	isRunMissing := run == nil
+
+	if isRunMissing {
 		return nil, fmt.Errorf("failed to create run record")
 	}
 

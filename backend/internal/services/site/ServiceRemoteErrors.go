@@ -35,8 +35,9 @@ func (s *Service) extractErrorDetails(appErr *apperror.AppError) *ExtractedError
 	// Unwrap the cause chain to find the original WordPress APIError
 	cause := appErr.Unwrap()
 	apiErr := wordpress.ExtractAPIError(cause)
+	isApiErrorMissing := apiErr == nil
 
-	if apiErr == nil {
+	if isApiErrorMissing {
 
 		return details
 	}

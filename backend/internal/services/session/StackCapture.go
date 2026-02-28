@@ -63,7 +63,9 @@ var excludedPrefixes = []string{
 // isApplicationFrame returns true if the function belongs to application code
 // (not Go runtime, standard library, or third-party middleware).
 func isApplicationFrame(funcName string) bool {
-	if funcName == "" {
+	isNameEmpty := funcName == ""
+
+	if isNameEmpty {
 		return false
 	}
 	if hasExcludedPrefix(funcName) {

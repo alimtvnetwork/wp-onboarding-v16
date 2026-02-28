@@ -168,7 +168,9 @@ func (s *Service) attachMappings(ctx context.Context, p models.Plugin) models.Pl
 
 // parseDateTime parses SQLite datetime strings into time.Time.
 func parseDateTime(s string) time.Time {
-	if s == "" {
+	isEmpty := s == ""
+
+	if isEmpty {
 		return time.Time{}
 	}
 	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {

@@ -90,7 +90,9 @@ func GetRequestSession(w http.ResponseWriter, r *http.Request) {
 
 // DeleteRequestSession removes a request session
 func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
-	if RequestSessionStore == nil {
+	isStoreMissing := RequestSessionStore == nil
+
+	if isStoreMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -120,7 +122,9 @@ func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
 
 // ClearRequestSessions removes all request sessions
 func ClearRequestSessions(w http.ResponseWriter, r *http.Request) {
-	if RequestSessionStore == nil {
+	isStoreMissing := RequestSessionStore == nil
+
+	if isStoreMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -147,7 +151,9 @@ func ClearRequestSessions(w http.ResponseWriter, r *http.Request) {
 
 // GetRequestSessionsByError returns request sessions that resulted in errors
 func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
-	if RequestSessionStore == nil {
+	isStoreMissing := RequestSessionStore == nil
+
+	if isStoreMissing {
 		respondSuccess(w, PaginatedSessions{
 			Sessions: []*middleware.RequestSession{},
 			Total:    0,
@@ -196,7 +202,9 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 
 // ExportRequestSession exports a session as JSON for debugging
 func ExportRequestSession(w http.ResponseWriter, r *http.Request) {
-	if RequestSessionStore == nil {
+	isStoreMissing := RequestSessionStore == nil
+
+	if isStoreMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,

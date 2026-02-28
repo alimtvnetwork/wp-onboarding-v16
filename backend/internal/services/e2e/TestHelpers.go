@@ -83,7 +83,9 @@ func (s *serviceImpl) runCleanup() {
 	s.cleanupIDs = nil
 	s.mu.Unlock()
 
-	if ids == nil {
+	isCleanupEmpty := ids == nil
+
+	if isCleanupEmpty {
 		return
 	}
 	for _, id := range ids["plugin"] {

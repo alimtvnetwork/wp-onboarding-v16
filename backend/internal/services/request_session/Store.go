@@ -34,7 +34,9 @@ type Config struct {
 // New creates a new request session store
 func New(cfg Config) (*Store, *apperror.AppError) {
 	retentionDays := cfg.RetentionDays
-	if retentionDays <= 0 {
+	isRetentionUnset := retentionDays <= 0
+
+	if isRetentionUnset {
 		retentionDays = 1
 	}
 
@@ -153,7 +155,9 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, *apper
 		return nil, apperror.Wrap(walkErr, apperror.ErrSessionList, "search session")
 	}
 
-	if found == nil {
+	isSessionMissing := found == nil
+
+	if isSessionMissing {
 
 		return nil, apperror.New(apperror.ErrSessionNotFound, "session not found: "+id)
 	}
@@ -163,7 +167,9 @@ func (s *Store) GetRequestSession(id string) (*middleware.RequestSession, *apper
 
 // ListRequestSessions returns recent sessions with pagination
 func (s *Store) ListRequestSessions(limit, offset int) (*middleware.SessionListResult, *apperror.AppError) {
-	if limit <= 0 {
+	isLimitUnset := limit <= 0
+
+	if isLimitUnset {
 		limit = 100
 	}
 

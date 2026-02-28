@@ -56,7 +56,9 @@ func AllVariants() []Variant {
 }
 
 func ByIndex(i int) Variant {
-	if i < 0 || i >= len(variantLabels) {
+	isOutOfRange := i < 0 || i >= len(variantLabels)
+
+	if isOutOfRange {
 		return Invalid
 	}
 	return Variant(i)

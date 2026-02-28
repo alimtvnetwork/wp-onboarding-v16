@@ -134,7 +134,9 @@ func (s *serviceImpl) GetFileChanges(ctx context.Context, pluginId, siteId int64
 	}
 
 	changes := set.Items()
-	if changes == nil {
+	isChangesEmpty := changes == nil
+
+	if isChangesEmpty {
 		changes = []models.FileChange{}
 	}
 	return apperror.OkSlice(changes)
