@@ -26,9 +26,10 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
 	s.logInfoWithDetails(0, "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), toDetails(ExportInitDetails{SourceCount: len(sourcePaths)}))
 
-	zipWriter, cleanup, err := s.createExportZip(outputPath)
-	if err != nil {
-		return apperror.Fail[ExportResult](err)
+	zipWriter, cleanup, appErr := s.createExportZip(outputPath)
+	if appErr != nil {
+
+		return apperror.Fail[ExportResult](appErr)
 	}
 	defer cleanup()
 
@@ -44,18 +45,19 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 }
 
 // createExportZip creates the output directory and zip file.
-func (s *Service) createExportZip(outputPath string) (*zip.Writer, func(), error) {
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		s.logError(0, "prepare", fmt.Sprintf("Failed to create output directory: %v", err))
+func (s *Service) createExportZip(outputPath string) (*zip.Writer, func(), *apperror.AppError) {
+	mkErr := os.MkdirAll(filepath.Dir(outputPath), 0755)
+	if mkErr != nil {
+		s.logError(0, "prepare", fmt.Sprintf("Failed to create output directory: %v", mkErr))
 
-		return nil, nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory")
+		return nil, nil, apperror.Wrap(mkErr, apperror.ErrFSWrite, "failed to create output directory")
 	}
 
-	zipFile, err := os.Create(outputPath)
-	if err != nil {
-		s.logError(0, "create", fmt.Sprintf("Failed to create zip file: %v", err))
+	zipFile, createErr := os.Create(outputPath)
+	if createErr != nil {
+		s.logError(0, "create", fmt.Sprintf("Failed to create zip file: %v", createErr))
 
-		return nil, nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file")
+		return nil, nil, apperror.Wrap(createErr, apperror.ErrFSZip, "failed to create zip file")
 	}
 
 	zipWriter := zip.NewWriter(zipFile)
@@ -92,9 +94,11 @@ func (s *Service) exportSingleSource(zipWriter *zip.Writer, sourcePath string, s
 
 	if fi.Info.IsDir() {
 		s.exportDirectory(zipWriter, sourcePath, state)
-	} else {
-		s.exportFile(zipWriter, sourcePath, filepath.Base(sourcePath), state)
+
+		return
 	}
+
+	s.exportFile(zipWriter, sourcePath, filepath.Base(sourcePath), state)
 }
 
 // exportDirectory walks a directory and adds all files to the zip.
@@ -117,9 +121,9 @@ func (s *Service) exportDirectory(zipWriter *zip.Writer, sourcePath string, stat
 
 // exportFile adds a single file to the zip archive.
 func (s *Service) exportFile(zipWriter *zip.Writer, filePath, zipPath string, state *exportState) {
-	written, err := s.addFileToZip(zipWriter, filePath, zipPath)
-	if err != nil {
-		s.log.Warn("Failed to add file", "path", filePath, "error", err)
+	written, appErr := s.addFileToZip(zipWriter, filePath, zipPath)
+	if appErr != nil {
+		s.log.Warn("Failed to add file", "path", filePath, "error", appErr)
 
 		return
 	}
@@ -142,16 +146,20 @@ func (s *Service) logExportComplete(outputPath string, state *exportState, start
 }
 
 // addFileToZip adds a single file to a zip archive
-func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int64, error) {
+func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int64, *apperror.AppError) {
 	file, err := os.Open(sourcePath)
 	if err != nil {
-		return 0, err
+
+		return 0, apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for zipping").
+			WithFilePath(sourcePath)
 	}
 	defer file.Close()
 
-	info, err := file.Stat()
-	if err != nil {
-		return 0, err
+	info, statErr := file.Stat()
+	if statErr != nil {
+
+		return 0, apperror.Wrap(statErr, apperror.ErrFSRead, "failed to stat file for zipping").
+			WithFilePath(sourcePath)
 	}
 
 	header := &zip.FileHeader{
@@ -160,10 +168,19 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 		Modified: info.ModTime(),
 	}
 
-	writer, err := zw.CreateHeader(header)
-	if err != nil {
-		return 0, err
+	writer, headerErr := zw.CreateHeader(header)
+	if headerErr != nil {
+
+		return 0, apperror.Wrap(headerErr, apperror.ErrFSZip, "failed to create zip header").
+			WithFilePath(zipPath)
 	}
 
-	return io.Copy(writer, file)
+	written, copyErr := io.Copy(writer, file)
+	if copyErr != nil {
+
+		return 0, apperror.Wrap(copyErr, apperror.ErrFSZip, "failed to copy file into zip").
+			WithFilePath(sourcePath)
+	}
+
+	return written, nil
 }
