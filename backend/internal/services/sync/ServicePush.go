@@ -88,7 +88,8 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Pushing.Value(), Progress: 60,
 		Message: fmt.Sprintf("Pushing %d files to remote...", len(syncFiles))})
 
-	wpClient := s.wpClientFactory(siteInfoResult.Value().Url, siteInfoResult.Value().Username, password)
+	siteInfo := siteInfoResult.Value()
+	wpClient := s.wpClientFactory(siteInfo.Url, siteInfo.Username, password)
 	syncPushResult, err := wpClient.SyncPluginFilesViaUploader(mapping.RemoteSlug, syncFiles)
 	if err != nil {
 		result.ErrorMessage = err.Error()
