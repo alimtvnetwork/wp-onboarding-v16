@@ -26,8 +26,8 @@ This is the **master reference**. Every rule here is enforced across all languag
 | Element | Convention | PHP Example | Go Example | TS Example |
 |---------|-----------|-------------|------------|------------|
 | Class / Struct | PascalCase | `SnapshotManager` | `SnapshotManager` | `SnapshotManager` |
-| Enum type name | PascalCase + `Type` suffix | `StatusType` | `status.Variant` (package-scoped) | `StatusType` |
-| Enum case / constant | PascalCase | `StatusType::Success` | `status.Success` | `StatusType.Success` |
+| Enum type name | PascalCase + `Type` suffix | `StatusType` | `statustype.Variant` (package-scoped) | `StatusType` |
+| Enum case / constant | PascalCase | `StatusType::Success` | `statustype.Success` (or aliased `status.Success`) | `StatusType.Success` |
 | Method (exported) | camelCase (PHP) / PascalCase (Go) | `processUpload()` | `ProcessUpload()` | `processUpload()` |
 | Variable | camelCase | `$pluginSlug` | `pluginSlug` | `pluginSlug` |
 | Boolean variable | `is`/`has` + camelCase | `$isActive` | `isActive` | `isActive` |
@@ -207,9 +207,11 @@ These Go patterns are **exempt** from the no-negation rule:
 | Underlying type | `byte` (exception: `HttpStatusType` uses `int`) |
 | Zero value | `Invalid = iota` — mandatory |
 | Labels | `variantLabels` array with PascalCase strings |
-| Required methods | `String()`, `Label()`, `IsValid()`, `IsInvalid()`, `Is{Value}()`, `IsOther()`, `IsAnyOf()`, `All()`, `ByIndex()`, `Parse()`, `Values()`, `MarshalJSON()`, `UnmarshalJSON()` |
-| Package location | `internal/enums/{snake_case}/variant.go` |
-| Protocol exemption | `content_type`, `endpoint`, `header`, `response_key`, `response_message` preserve functional values |
+| Required methods | `String()`, `Label()`, `IsValid()`, `IsInvalid()`, `IsDefined()`, `IsDefinedAndValid()`, `Is{Value}()`, `IsOther()`, `IsAnyOf()`, `All()`, `ByIndex()`, `Parse()`, `Values()`, `MarshalJSON()`, `UnmarshalJSON()` |
+| Package directory | `internal/enums/{lowercasetype}/` — lowercase, no underscores, `type` suffix (e.g., `httpmethodtype`, `stagestatustype`, `actiontype`) |
+| Package files | `{packagename}.go` (type + methods) and `Variant.go` (constants) |
+| Import aliases | Use short aliases for verbose package names (e.g., `httpmethod "enums/httpmethodtype"`, `ep "enums/endpointtype"`) |
+| Protocol enums | `endpointtype`, `contenttype`, `headertype`, `responsekeytype`, `responsemessagetype` — provide `Value()` for wire format, `Label()` for PascalCase identity |
 
 ### Common Mistakes
 
