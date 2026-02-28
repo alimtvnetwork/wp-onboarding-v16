@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"sync"
 
+	_ "modernc.org/sqlite"
+
 	"wp-plugin-publish/internal/database/dbops"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
-
-	_ "modernc.org/sqlite"
 )
 
 // DB wraps the SQL database connection with Split DB support
