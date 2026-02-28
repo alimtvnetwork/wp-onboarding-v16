@@ -288,12 +288,51 @@ if isInvalidMode {
 }
 ```
 
-## 6. Enforcement
+## 6. Result Value Accessor Methods (Rule P10)
+
+Structs used as `Result[T]` value types **must not** expose boolean fields for direct access. Instead, provide nil-safe receiver methods following P9 (nil-safe receivers).
+
+### 6.1 — Prohibited Pattern
+
+```go
+// ❌ PROHIBITED — direct field access on Result value
+if result.Value().Available { ... }
+if result.Value().Success { ... }
+if !result.Value().Activated { ... }
+```
+
+### 6.2 — Required Pattern
+
+```go
+// ✅ CORRECT — nil-safe accessor methods
+if result.Value().IsAvailable() { ... }
+if result.Value().IsSuccessful() { ... }
+if result.Value().IsDeactivated() { ... }
+```
+
+### 6.3 — Required Method Pairs
+
+Every boolean field on a Result value struct must have both a positive and negative accessor:
+
+| Field | Positive Method | Negative Method |
+|-------|----------------|-----------------|
+| `Available` | `IsAvailable()` | `IsUnavailable()` |
+| `Success` / `IsSuccess` | `IsSuccessful()` | `IsFailed()` |
+| `Activated` | `IsActivated()` | `IsDeactivated()` |
+| `Connected` | `IsConnected()` | `IsDisconnected()` |
+
+All methods must be nil-safe (pointer receiver, check `r == nil`).
+
+### 6.4 — Exemption: External API DTOs
+
+Structs that are **only** used for JSON deserialization (never accessed via `Result.Value()`) are exempt. However, once a DTO is wrapped in a `Result[T]`, accessor methods become mandatory.
+
+## 7. Enforcement
 
 - **Automated**: `scripts/lint-negative.sh` flags `IsNot*`, `HasNo*` function declarations
-- **Manual review**: Inline `!` negation in compound boolean expressions; mixed-polarity conditions (P6)
+- **Manual review**: Inline `!` negation in compound boolean expressions; mixed-polarity conditions (P6); direct field access on Result values (P10)
 - **Enum exemption**: Variant checkers matching their constant name (e.g., `IsNotFound` for `NotFound` variant) are auto-excluded
 
-## 7. Cross-Language Alignment
+## 8. Cross-Language Alignment
 
 This standard mirrors the PHP Boolean Guard System (P1–P6) with Go-specific exemptions for idiomatic patterns (comma-ok, handler guards, error-nil checks). See `spec/06-php-standards/naming-conventions.md` for the PHP counterpart.

@@ -29,7 +29,7 @@ func TestCheckOnboardPluginAvailable_UsesOnboardNamespace(t *testing.T) {
 	if result.HasError() {
 		t.Fatalf("expected no error, got: %v", result.AppError())
 	}
-	if !result.Value().Available {
+	if result.Value().IsUnavailable() {
 		t.Fatalf("expected available=true")
 	}
 }
@@ -50,8 +50,7 @@ func TestCheckUploaderHelperAvailable_UsesUploaderNamespace(t *testing.T) {
 	if result.HasError() {
 		t.Fatalf("expected no error, got: %v", result.AppError())
 	}
-	avail := result.Value()
-	if avail == nil || !avail.Available {
+	if result.Value().IsUnavailable() {
 		t.Fatalf("expected available=true")
 	}
 }
@@ -136,7 +135,7 @@ func TestUploadPluginZip_PostsToOnboardUploadEndpoint(t *testing.T) {
 	if res.HasError() {
 		t.Fatalf("expected no error, got: %v", res.AppError())
 	}
-	if res.Value() == nil || !res.Value().Success {
+	if res.Value().IsFailed() {
 		t.Fatalf("expected success result")
 	}
 }
@@ -190,10 +189,10 @@ func TestUploadPluginViaUploader_PostsToUploaderEndpoint(t *testing.T) {
 	if res.HasError() {
 		t.Fatalf("expected no error, got: %v", res.AppError())
 	}
-	if res.Value() == nil || !res.Value().Success {
+	if res.Value().IsFailed() {
 		t.Fatalf("expected success result")
 	}
-	if !res.Value().Activated {
+	if res.Value().IsDeactivated() {
 		t.Fatalf("expected activated=true")
 	}
 }

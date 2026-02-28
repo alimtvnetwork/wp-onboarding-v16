@@ -50,6 +50,21 @@ type UploaderUploadResult struct {
 	ActivationError string `json:"activation_error,omitempty"` // external key
 }
 
+// IsDefined returns true if the result is not nil (nil-safe).
+func (r *UploaderUploadResult) IsDefined() bool { return r != nil }
+
+// IsSuccessful returns true if the upload succeeded (nil-safe).
+func (r *UploaderUploadResult) IsSuccessful() bool { return r != nil && r.Success }
+
+// IsFailed returns true if the result is nil or the upload failed (nil-safe).
+func (r *UploaderUploadResult) IsFailed() bool { return r == nil || !r.Success }
+
+// IsActivated returns true if the plugin was activated after upload (nil-safe).
+func (r *UploaderUploadResult) IsActivated() bool { return r != nil && r.Activated }
+
+// IsDeactivated returns true if the plugin was not activated (nil-safe).
+func (r *UploaderUploadResult) IsDeactivated() bool { return r == nil || !r.Activated }
+
 // UploaderPluginInfo represents plugin info from the list endpoint.
 type UploaderPluginInfo struct {
 	Slug        string `json:"slug"`        // external key (Riseup Asia Uploader API)
