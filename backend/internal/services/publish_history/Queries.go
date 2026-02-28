@@ -1,7 +1,7 @@
 // Package publishhistory — SQL query constants.
 package publishhistory
 
-const selectHistorySQL = `SELECT
+const selectHistorySql = `SELECT
 	Id,
 	PluginId,
 	PluginName,
@@ -20,7 +20,7 @@ const selectHistorySQL = `SELECT
 	CreatedAt
 FROM PublishHistory`
 
-const insertHistorySQL = `INSERT INTO PublishHistory (
+const insertHistorySql = `INSERT INTO PublishHistory (
 	PluginId,
 	PluginName,
 	SiteId,
@@ -37,7 +37,7 @@ const insertHistorySQL = `INSERT INTO PublishHistory (
 	DurationMs
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-const statsSQL = `SELECT
+const statsSql = `SELECT
 	COUNT(*),
 	COALESCE(SUM(CASE WHEN Status = 'success' THEN 1 ELSE 0 END), 0),
 	COALESCE(SUM(CASE WHEN Status = 'failed' THEN 1 ELSE 0 END), 0),

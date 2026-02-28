@@ -17,7 +17,7 @@ func (s *Service) broadcastRemoteActionStarted(ref *remoteActionRef) {
 		Level:   "info",
 		Step:    "start",
 		Message: fmt.Sprintf("Starting %s action for plugin: %s", ref.Action, ref.PluginSlug),
-		Details: session.ToJSON(buildRemoteActionContext(ref)),
+		Details: session.ToJson(buildRemoteActionContext(ref)),
 	}
 
 	s.logRemoteAction(ref, logInput)
@@ -92,7 +92,7 @@ func (s *Service) logRemoteErrorAction(ref *remoteActionRef, errDetails *Extract
 		Level:   "error",
 		Step:    ref.Action,
 		Message: fmt.Sprintf("Failed to %s plugin: %s", ref.Action, ref.PluginSlug),
-		Details: session.ToJSON(errDetails),
+		Details: session.ToJson(errDetails),
 	}
 
 	s.logRemoteAction(ref, logInput)
@@ -181,7 +181,7 @@ func (s *Service) saveRemoteErrorStackAndDetails(
 			Php:    phpFrames,
 		},
 		ErrorMsg: appErr.Error(),
-		Details:  session.ToJSON(errDetails),
+		Details:  session.ToJson(errDetails),
 	}
 
 	s.sessionService.SaveError(saveInput)
@@ -219,7 +219,7 @@ func (s *Service) logRemoteSuccessAction(ref *remoteActionRef, durationMs int64)
 		Level:   "info",
 		Step:    ref.Action,
 		Message: fmt.Sprintf("Successfully %sd plugin: %s", ref.Action, ref.PluginSlug),
-		Details: session.ToJSON(DurationDetail{DurationMs: durationMs}),
+		Details: session.ToJson(DurationDetail{DurationMs: durationMs}),
 	}
 
 	s.logRemoteAction(ref, logInput)

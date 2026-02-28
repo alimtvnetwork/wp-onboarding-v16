@@ -26,9 +26,9 @@ func (s *serviceImpl) insertDefaultSuites() {
 // insertDefaultCases inserts the standard test cases.
 func (s *serviceImpl) insertDefaultCases() {
 	for _, tc := range defaultCases() {
-		stepsJSON, _ := json.Marshal(tc.Steps)
-		preJSON, _ := json.Marshal(tc.Preconditions)
-		s.db.Exec(caseInsertQuery, tc.Id, tc.SuiteId, tc.Name, tc.Description, string(preJSON), string(stepsJSON), tc.ExpectedResult, tc.OrderIndex, true)
+		stepsJson, _ := json.Marshal(tc.Steps)
+		preJson, _ := json.Marshal(tc.Preconditions)
+		s.db.Exec(caseInsertQuery, tc.Id, tc.SuiteId, tc.Name, tc.Description, string(preJson), string(stepsJson), tc.ExpectedResult, tc.OrderIndex, true)
 	}
 }
 

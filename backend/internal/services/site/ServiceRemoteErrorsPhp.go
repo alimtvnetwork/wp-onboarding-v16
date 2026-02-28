@@ -97,7 +97,7 @@ func (s *Service) logPhpErrorAttachment(ref *remoteActionRef, result *wordpress.
 		Level:   "info",
 		Step:    "fetch_php_errors",
 		Message: fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
-		Details: session.ToJSON(countDetail),
+		Details: session.ToJson(countDetail),
 	}
 
 	s.logRemoteAction(ref, successLog)
@@ -169,7 +169,7 @@ func buildPhpErrorLogInput(sessionId string, entry wordpress.RemoteErrorSessionE
 		Level:     "error",
 		Step:      "remote_php_error",
 		Message:   entry.Message,
-		Details:   session.ToJSON(detail),
+		Details:   session.ToJson(detail),
 	}
 }
 
@@ -240,7 +240,7 @@ func (s *Service) applyStackTraceContent(ref *remoteActionRef, logsResult *wordp
 		Level:   "info",
 		Step:    "fetch_php_stacktrace",
 		Message: fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", stLog.Lines, stLog.TotalSize),
-		Details: session.ToJSON(logDetails),
+		Details: session.ToJson(logDetails),
 	})
 
 	s.logStackTraceToSession(ref, stLog)
@@ -263,6 +263,6 @@ func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.
 		Level:     "info",
 		Step:      "remote_php_stacktrace",
 		Message:   "PHP stacktrace.txt content from remote site",
-		Details:   session.ToJSON(contentDetail),
+		Details:   session.ToJson(contentDetail),
 	})
 }

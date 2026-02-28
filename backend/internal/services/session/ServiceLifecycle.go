@@ -208,11 +208,11 @@ func writeLogDetails(file *os.File, details json.RawMessage) {
 	if isDetailsEmpty {
 		return
 	}
-	var parsedJSON json.RawMessage
-	isParseable := json.Unmarshal(details, &parsedJSON) == nil
+	var parsedJson json.RawMessage
+	isParseable := json.Unmarshal(details, &parsedJson) == nil
 
 	if isParseable {
-		detailsJSON, _ := json.MarshalIndent(parsedJSON, "    ", "  ")
-		file.WriteString(fmt.Sprintf("    %s\n", string(detailsJSON)))
+		detailsJson, _ := json.MarshalIndent(parsedJson, "    ", "  ")
+		file.WriteString(fmt.Sprintf("    %s\n", string(detailsJson)))
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-// appErrorJSON is an alias used to prevent infinite recursion during JSON marshaling.
-type appErrorJSON struct {
+// appErrorJson is an alias used to prevent infinite recursion during JSON marshaling.
+type appErrorJson struct {
 	Code       ErrorCode
 	Message    string
 	Details    string            `json:",omitempty"`
@@ -18,7 +18,7 @@ type appErrorJSON struct {
 
 // MarshalJSON serializes AppError to JSON, converting Cause to a string message.
 func (e *AppError) MarshalJSON() ([]byte, error) {
-	alias := appErrorJSON{
+	alias := appErrorJson{
 		Code:       e.Code,
 		Message:    e.Message,
 		Details:    e.Details,
@@ -36,7 +36,7 @@ func (e *AppError) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON deserializes JSON into AppError, restoring Cause as a plain error.
 func (e *AppError) UnmarshalJSON(data []byte) error {
-	var alias appErrorJSON
+	var alias appErrorJson
 	err := json.Unmarshal(data, &alias)
 
 	if err != nil {

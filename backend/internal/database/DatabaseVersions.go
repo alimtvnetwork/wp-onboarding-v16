@@ -21,7 +21,7 @@ type PluginVersionInput struct {
 
 // CreatePluginVersion records a new version entry after a publish operation
 func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, error) {
-	result, err := db.Exec(insertVersionSQL,
+	result, err := db.Exec(insertVersionSql,
 		input.PluginId,
 		input.SiteId,
 		input.Version,
@@ -74,7 +74,7 @@ func (db *DB) GetPluginVersions(pluginId int64, siteId *int64, limit int) ([]Plu
 
 // buildVersionQuery constructs the version query with optional site filter.
 func buildVersionQuery(pluginId int64, siteId *int64, limit int) (string, []any) {
-	query := selectVersionSQL + " WHERE pv.PluginId = ?"
+	query := selectVersionSql + " WHERE pv.PluginId = ?"
 	args := []any{pluginId}
 
 	hasSiteFilter := siteId != nil && *siteId > 0
@@ -172,7 +172,7 @@ func (db *DB) GetPluginVersionById(versionId int64) (*PluginVersionRow, error) {
 	var m PluginVersionRow
 	var nf versionNullFields
 
-	err := db.QueryRow(selectVersionSQL+" WHERE pv.Id = ?", versionId).Scan(
+	err := db.QueryRow(selectVersionSql+" WHERE pv.Id = ?", versionId).Scan(
 		&m.Id,
 		&m.PluginId,
 		&m.SiteId,
@@ -231,7 +231,7 @@ func (db *DB) GetNextVersionNumber(pluginId, siteId int64) (string, error) {
 
 // SQL constants
 
-const selectVersionSQL = `SELECT
+const selectVersionSql = `SELECT
 	pv.Id,
 	pv.PluginId,
 	pv.SiteId,
@@ -247,7 +247,7 @@ const selectVersionSQL = `SELECT
 FROM PluginVersions pv
 LEFT JOIN Sites s ON pv.SiteId = s.Id`
 
-const insertVersionSQL = `INSERT INTO PluginVersions (
+const insertVersionSql = `INSERT INTO PluginVersions (
 	PluginId,
 	SiteId,
 	Version,
