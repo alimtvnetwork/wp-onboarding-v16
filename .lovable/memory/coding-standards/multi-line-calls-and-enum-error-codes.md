@@ -1,9 +1,29 @@
 # Memory: coding-standards/multi-line-calls-and-enum-error-codes
-Updated: 2026-02-26
+Updated: 2026-02-28
 
 ## Rule: Multi-Line Function Calls (3+ Arguments)
 
 All function/method calls with 3 or more arguments MUST use one argument per line. This applies across Go, PHP, and TypeScript.
+
+## Rule: Multi-Line Compound Boolean Assignments (Rule 3a)
+
+When a boolean variable assignment has 2+ conditions joined by `&&` or `||`, each condition MUST be on its own line. Line break after `=`/`:=`, indent each condition, blank line before the `if`.
+
+```go
+// ❌ FORBIDDEN — all conditions on one line
+isConflict := isDestExists && !isOverwrite
+
+// ✅ REQUIRED — each condition on its own line
+isConflict :=
+	isDestExists &&
+	!isOverwrite
+
+if isConflict {
+	...
+}
+```
+
+Single-condition assignments stay on one line: `isRuntime := strings.HasPrefix(fn, "runtime.")`
 
 ```go
 // ❌ FORBIDDEN

@@ -23,7 +23,11 @@ func formatLogFrames(frames *runtime.Frames) string {
 
 	for {
 		frame, more := frames.Next()
-		isRuntimeInternal := strings.Contains(frame.Function, "runtime.") && !strings.Contains(frame.Function, "runtime.main")
+		isRuntime := strings.Contains(frame.Function, "runtime.")
+		isMainFunc := strings.Contains(frame.Function, "runtime.main")
+		isRuntimeInternal :=
+			isRuntime &&
+			!isMainFunc
 		if isRuntimeInternal {
 			if !more {
 				break

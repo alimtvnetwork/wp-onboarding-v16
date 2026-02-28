@@ -77,7 +77,9 @@ func (r ResultSlice[T]) GetAt(index int) Result[T] {
 		return Fail[T](r.err)
 	}
 
-	isOutOfBounds := index < 0 || index >= len(r.items)
+	isOutOfBounds :=
+		index < 0 ||
+		index >= len(r.items)
 	if isOutOfBounds {
 		return Result[T]{}
 	}

@@ -129,28 +129,21 @@ When an `if` condition contains **two or more operators** (`&&`, `||`, `!`), it 
 
 The goal: every `if` reads as a **single intent**, not as implementation logic.
 
+### 3a: Multi-Line Formatting for Compound Boolean Assignments
+
+When a boolean assignment has **two or more conditions** joined by `&&` or `||`, each condition **must** be on its own line. Place a line break after the `=` (or `:=`), indent each condition, and leave a **blank line before the `if`** that uses the variable.
+
 ```php
 // ── PHP ──────────────────────────────────────────────────────
 
-// ❌ FORBIDDEN: Inline multi-part condition
-if ($error && in_array($error['type'], [E_ERROR, E_PARSE], true)) {
-    $this->logger->fatal($error);
-}
+// ❌ FORBIDDEN: All conditions on one line
+$hasFileParam = $request !== null && $request->hasParam('file') && $request->getParam('file') !== '';
 
-// ✅ REQUIRED: Extracted into a dedicated method
-if (ErrorChecker::isFatalError($error)) {
-    $this->logger->fatal($error);
-}
-
-// ❌ FORBIDDEN: Combinable conditions left inline
-if ($request !== null && $request->has_param('file') && $request->get_param('file') !== '') {
-    $this->process($request);
-}
-
-// ✅ REQUIRED: Named boolean for clarity
-$hasFileParam = $request !== null
-    && $request->hasParam('file')
-    && $request->getParam('file') !== '';
+// ✅ REQUIRED: Each condition on its own line
+$hasFileParam =
+    $request !== null &&
+    $request->hasParam('file') &&
+    $request->getParam('file') !== '';
 
 if ($hasFileParam) {
     $this->process($request);
@@ -160,26 +153,16 @@ if ($hasFileParam) {
 ```typescript
 // ── TypeScript ───────────────────────────────────────────────
 
-// ❌ FORBIDDEN: Inline multi-part condition
-if (response && response.status >= 400 && response.data?.code?.startsWith('E8')) {
-    showDelegatedError(response);
-}
+// ❌ FORBIDDEN: All conditions on one line
+const isDelegatedError = response != null && response.status >= 400 && response.data?.code?.startsWith('E8');
 
-// ✅ REQUIRED: Named boolean
-const isDelegatedError = response != null
-    && response.status >= 400
-    && response.data?.code?.startsWith('E8');
+// ✅ REQUIRED: Each condition on its own line
+const isDelegatedError =
+    response != null &&
+    response.status >= 400 &&
+    response.data?.code?.startsWith('E8');
 
 if (isDelegatedError) {
-    showDelegatedError(response);
-}
-
-// ✅ ALSO OK: Dedicated type-guard function for reusable checks
-function isDelegatedError(res: ApiResponse | null): res is DelegatedErrorResponse {
-    return res != null && res.status >= 400 && res.data?.code?.startsWith('E8');
-}
-
-if (isDelegatedError(response)) {
     showDelegatedError(response);
 }
 ```
@@ -187,17 +170,42 @@ if (isDelegatedError(response)) {
 ```go
 // ── Go ───────────────────────────────────────────────────────
 
-// ❌ FORBIDDEN: Inline multi-part condition
-if err != nil && resp != nil && resp.StatusCode >= 400 {
-    handleUpstreamError(resp)
-}
-
-// ✅ REQUIRED: Named boolean
+// ❌ FORBIDDEN: All conditions on one line
 isUpstreamError := err != nil && resp != nil && resp.StatusCode >= 400
 
+// ✅ REQUIRED: Each condition on its own line (tab-indented)
+isUpstreamError :=
+	err != nil &&
+	resp != nil &&
+	resp.StatusCode >= 400
+
 if isUpstreamError {
-    handleUpstreamError(resp)
+	handleUpstreamError(resp)
 }
+```
+
+### 3b: Single-Condition Assignments Stay on One Line
+
+When a boolean has only **one condition** (no `&&` or `||`), it stays on a single line:
+
+```go
+// ✅ OK: Single condition — one line
+isRuntime := strings.HasPrefix(fn, "runtime.")
+isMain := fn == "runtime.main"
+```
+
+```php
+// ✅ OK: Single condition — one line
+$isActive = $status === 'active';
+```
+
+### When to Use Which Extraction
+
+| Complexity | Extraction | Example |
+|------------|-----------|---------|
+| 2 conditions, used once | Named `$is_*` / `isX` variable (multi-line) | `$hasFile =\n    $req !== null &&\n    $req->hasParam('file');` |
+| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::isFatalError($error)` |
+| Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
 ```
 
 ### When to Use Which Extraction

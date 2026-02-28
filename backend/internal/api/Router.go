@@ -108,7 +108,11 @@ func resolveSpaStaticDir(dir string) string {
 func fileExists(path string) bool {
 	fi, appErr := pathutil.StatFile(path)
 	isValidStat := appErr == nil
-	isRegularFile := isValidStat && !fi.Info.IsDir()
+	isDirectory := fi.Info.IsDir()
+	isRegularFile :=
+		isValidStat &&
+		!isDirectory
+
 	return isRegularFile
 }
 

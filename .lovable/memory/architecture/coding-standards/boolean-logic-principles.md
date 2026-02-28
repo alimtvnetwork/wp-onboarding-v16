@@ -12,6 +12,8 @@ Strict boolean logic standards apply across all languages (PHP, TS, Go). Eight p
 7. **P7 — Extract negations to positive counterpart variables**: When a boolean must be negated, ALWAYS extract the negation into a new named variable with a positive semantic name on the preceding line. Then use only the positive variable in conditions. `== false` is NOT acceptable either — it's just a verbose negation with the same readability problem.
 8. **P8 — Extract numeric/comparison expressions**: Raw numeric comparisons (e.g., `statusCode < 400`, `totalDeleted > 0`) must be extracted into named boolean variables that describe intent (e.g., `isSuccessStatus`, `hasDeletions`).
 
+**Multi-line formatting rule (Rule 3a):** When a boolean assignment has 2+ conditions joined by `&&` or `||`, each condition MUST be on its own line. Place a line break after `=`/`:=`, indent each condition, and leave a blank line before the `if`.
+
 ---
 
 ## P7 — Extract negations to positive counterpart (CRITICAL)
@@ -25,10 +27,13 @@ isLiveRunWithDeletions := !isDryRun && totalDeleted > 0
 // ❌ ALSO WRONG — explicit comparison is just verbose negation
 isLiveRunWithDeletions := isDryRun == false && totalDeleted > 0
 
-// ✅ CORRECT — extract positive counterpart, then compose
+// ✅ CORRECT — extract positive counterpart, multi-line compound
 isLiveRun := !isDryRun           // positive counterpart on its own line
 hasDeletions := totalDeleted > 0  // P8: numeric comparison extracted
-isLiveRunWithDeletions := isLiveRun && hasDeletions
+isLiveRunWithDeletions :=
+	isLiveRun &&
+	hasDeletions
+
 if isLiveRunWithDeletions {
     ...
 }
@@ -59,9 +64,12 @@ if isDone && count > 0 {
     flush()
 }
 
-// ✅ CORRECT
+// ✅ CORRECT — multi-line compound
 hasItems := count > 0
-isReadyToFlush := isDone && hasItems
+isReadyToFlush :=
+	isDone &&
+	hasItems
+
 if isReadyToFlush {
     flush()
 }
@@ -130,9 +138,12 @@ if isEnabled && !isForceRefresh {
     return cached
 }
 
-// ✅ CORRECT — extract negation to positive variable first (P7), then compose
+// ✅ CORRECT — extract negation to positive variable first (P7), then compose multi-line
 isUsingCache := !isForceRefresh   // P7: positive counterpart
-isCacheUsable := isEnabled && isUsingCache
+isCacheUsable :=
+	isEnabled &&
+	isUsingCache
+
 if isCacheUsable {
     return cached
 }
@@ -277,7 +288,9 @@ All principles (P1–P8) apply equally to Go, PHP, and TypeScript. Language-spec
 // PHP — same principles
 $isLiveRun = !$isDryRun;
 $hasDeletions = $totalDeleted > 0;
-$isLiveRunWithDeletions = $isLiveRun && $hasDeletions;
+$isLiveRunWithDeletions =
+    $isLiveRun &&
+    $hasDeletions;
 
 if ($isLiveRunWithDeletions) {
     $this->logCleanupAudit($results);
@@ -288,7 +301,9 @@ if ($isLiveRunWithDeletions) {
 // TypeScript — same principles
 const isLiveRun = !isDryRun;
 const hasDeletions = totalDeleted > 0;
-const isLiveRunWithDeletions = isLiveRun && hasDeletions;
+const isLiveRunWithDeletions =
+    isLiveRun &&
+    hasDeletions;
 
 if (isLiveRunWithDeletions) {
     logCleanupAudit(results);
