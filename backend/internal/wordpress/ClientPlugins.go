@@ -10,7 +10,7 @@ import (
 )
 
 // GetPlugins returns a list of installed plugins
-func (c *Client) GetPlugins() ([]PluginInfo, error) {
+func (c *Client) GetPlugins() ([]PluginInfo, *apperror.AppError) {
 	data, err := c.doAPICallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
@@ -21,15 +21,15 @@ func (c *Client) GetPlugins() ([]PluginInfo, error) {
 	}
 
 	var plugins []PluginInfo
-	if err := json.Unmarshal(data, &plugins); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugins response").
+	if unmarshalErr := json.Unmarshal(data, &plugins); unmarshalErr != nil {
+		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode plugins response").
 			WithEndpoint(WPCorePlugins)
 	}
 	return plugins, nil
 }
 
 // GetPlugin returns information about a specific plugin
-func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
+func (c *Client) GetPlugin(slug string) (*PluginInfo, *apperror.AppError) {
 	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(slug))
 
 	data, err := c.doAPICallRaw(apiCallInput{
@@ -43,8 +43,8 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 	}
 
 	var plugin PluginInfo
-	if err := json.Unmarshal(data, &plugin); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode plugin response").
+	if unmarshalErr := json.Unmarshal(data, &plugin); unmarshalErr != nil {
+		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode plugin response").
 			WithSlug(slug)
 	}
 	return &plugin, nil
@@ -53,7 +53,7 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 // ResolvePluginIdentifier attempts to map a short slug (e.g. "akismet") to the full plugin
 // identifier used by WP REST API (e.g. "akismet/akismet.php").
 // If slug already looks like a full identifier (contains "/"), it is returned as-is.
-func (c *Client) ResolvePluginIdentifier(slug string) (string, error) {
+func (c *Client) ResolvePluginIdentifier(slug string) (string, *apperror.AppError) {
 	slug = strings.TrimSpace(slug)
 	if slug == "" {
 		return "", apperror.New(apperror.ErrValidation, "empty plugin slug")

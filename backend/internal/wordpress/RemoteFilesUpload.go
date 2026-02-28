@@ -20,17 +20,17 @@ import (
 
 // UploadPluginZip uploads a plugin ZIP file to WordPress via the legacy Onboard companion plugin.
 // Deprecated: Use UploadPluginViaUploader instead (Riseup Asia Uploader).
-func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
-	mutationToken, err := c.requestUploadMutationToken(pluginSlug)
-	if err != nil {
-		return nil, err
+func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, *apperror.AppError) {
+	mutationToken, tokenErr := c.requestUploadMutationToken(pluginSlug)
+	if tokenErr != nil {
+		return nil, tokenErr
 	}
 
 	c.reportMutationTokenObtained(zipPath, mutationToken)
 
-	form, err := c.buildZipMultipartForm(zipPath, pluginSlug)
-	if err != nil {
-		return nil, err
+	form, formErr := c.buildZipMultipartForm(zipPath, pluginSlug)
+	if formErr != nil {
+		return nil, formErr
 	}
 
 	endpoint := OnboardMutationUploadEndpoint(OnboardNamespace, mutationToken)
@@ -39,7 +39,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 }
 
 // requestUploadMutationToken requests and returns a mutation token for upload.
-func (c *Client) requestUploadMutationToken(pluginSlug string) (string, error) {
+func (c *Client) requestUploadMutationToken(pluginSlug string) (string, *apperror.AppError) {
 	c.progress(ProgressEvent{
 		Step:    "upload",
 		Status:  stagestatustype.Running.String(),
@@ -72,10 +72,10 @@ type zipMultipartForm struct {
 }
 
 // buildZipMultipartForm opens the ZIP file and builds the multipart form body.
-func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*zipMultipartForm, error) {
-	opened, err := openAndStatFile(zipPath)
-	if err != nil {
-		return nil, err
+func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*zipMultipartForm, *apperror.AppError) {
+	opened, openErr := openAndStatFile(zipPath)
+	if openErr != nil {
+		return nil, openErr
 	}
 	defer opened.File.Close()
 
@@ -83,7 +83,7 @@ func (c *Client) buildZipMultipartForm(zipPath, pluginSlug string) (*zipMultipar
 }
 
 // buildFormFromOpenedFile constructs the multipart form from an opened file.
-func (c *Client) buildFormFromOpenedFile(opened *openedFile, zipPath, pluginSlug string) (*zipMultipartForm, error) {
+func (c *Client) buildFormFromOpenedFile(opened *openedFile, zipPath, pluginSlug string) (*zipMultipartForm, *apperror.AppError) {
 	var reqBody bytes.Buffer
 	writer := multipart.NewWriter(&reqBody)
 
@@ -94,16 +94,16 @@ func (c *Client) buildFormFromOpenedFile(opened *openedFile, zipPath, pluginSlug
 		PluginSlug: pluginSlug,
 	}
 
-	err := writeZipFormFields(formInput)
-	if err != nil {
+	writeErr := writeZipFormFields(formInput)
+	if writeErr != nil {
 
-		return nil, err
+		return nil, writeErr
 	}
 
-	err = writer.Close()
-	if err != nil {
+	closeErr := writer.Close()
+	if closeErr != nil {
 
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to close multipart writer")
+		return nil, apperror.Wrap(closeErr, apperror.ErrInternal, "failed to close multipart writer")
 	}
 
 	return &zipMultipartForm{Body: &reqBody, ContentType: writer.FormDataContentType(), FileSize: opened.Info.Size()}, nil
@@ -116,18 +116,18 @@ type openedFile struct {
 }
 
 // openAndStatFile opens a file and returns it with its FileInfo.
-func openAndStatFile(path string) (*openedFile, error) {
+func openAndStatFile(path string) (*openedFile, *apperror.AppError) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to open zip file for upload").
 			WithValue("zipPath", path)
 	}
 
-	stat, err := file.Stat()
-	if err != nil {
+	stat, statErr := file.Stat()
+	if statErr != nil {
 		file.Close()
 
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to stat zip file").
+		return nil, apperror.Wrap(statErr, apperror.ErrFSRead, "failed to stat zip file").
 			WithValue("zipPath", path)
 	}
 
@@ -143,29 +143,35 @@ type zipFormInput struct {
 }
 
 // writeZipFormFields writes the ZIP file and metadata fields to the multipart writer.
-func writeZipFormFields(input zipFormInput) error {
+func writeZipFormFields(input zipFormInput) *apperror.AppError {
 	part, err := input.Writer.CreateFormFile("plugin_zip", filepath.Base(input.ZipPath))
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file for upload")
 	}
 
-	_, err = io.Copy(part, input.File)
-	if err != nil {
+	_, copyErr := io.Copy(part, input.File)
+	if copyErr != nil {
 
-		return apperror.Wrap(err, apperror.ErrInternal, "failed to copy file to multipart form")
+		return apperror.Wrap(copyErr, apperror.ErrInternal, "failed to copy file to multipart form")
 	}
 
-	err = input.Writer.WriteField("pluginSlug", input.PluginSlug)
-	if err != nil {
+	fieldErr := input.Writer.WriteField("pluginSlug", input.PluginSlug)
+	if fieldErr != nil {
 
-		return apperror.Wrap(err, apperror.ErrInternal, "failed to write pluginSlug field")
+		return apperror.Wrap(fieldErr, apperror.ErrInternal, "failed to write pluginSlug field")
 	}
 
-	return input.Writer.WriteField("overwrite", "true")
+	overwriteErr := input.Writer.WriteField("overwrite", "true")
+	if overwriteErr != nil {
+
+		return apperror.Wrap(overwriteErr, apperror.ErrInternal, "failed to write overwrite field")
+	}
+
+	return nil
 }
 
 // executeOnboardZipUpload sends the multipart upload and parses the response.
-func (c *Client) executeOnboardZipUpload(endpoint string, form *zipMultipartForm, zipPath, pluginSlug string) (*OnboardUploadResult, error) {
+func (c *Client) executeOnboardZipUpload(endpoint string, form *zipMultipartForm, zipPath, pluginSlug string) (*OnboardUploadResult, *apperror.AppError) {
 	url := BuildWPJSONURL(c.baseURL, endpoint)
 
 	c.reportOnboardUploadStart(url, endpoint, form, zipPath)
@@ -239,25 +245,22 @@ func (c *Client) sendMultipartUpload(endpoint string, form *zipMultipartForm) (*
 }
 
 // parseOnboardUploadResponse validates the status code and unmarshals the result.
-func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint, url, pluginSlug string) (*OnboardUploadResult, error) {
+func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint, url, pluginSlug string) (*OnboardUploadResult, *apperror.AppError) {
 	isSuccess := mpResp.StatusCode == HttpStatusOk.Int() ||
 		mpResp.StatusCode == HttpStatusCreated.Int()
 
 	if !isSuccess {
-		return nil, &APIError{
-			Operation:    "upload plugin zip",
-			Method:       httpmethod.Post.Value(),
-			Endpoint:     endpoint,
-			Url:          url,
-			StatusCode:   mpResp.StatusCode,
-			ResponseBody: truncateBody(mpResp.Body, 8192),
-			PluginSlugIn: pluginSlug,
-		}
+		return nil, apperror.New(apperror.ErrWPPluginUpload, "upload plugin zip failed").
+			WithEndpoint(endpoint).
+			WithURL(url).
+			WithSlug(pluginSlug).
+			WithValue("statusCode", fmt.Sprintf("%d", mpResp.StatusCode)).
+			WithValue("responseBody", truncateBody(mpResp.Body, 8192))
 	}
 
 	var result OnboardUploadResult
-	err := json.Unmarshal([]byte(mpResp.Body), &result)
-	if err != nil {
+	unmarshalErr := json.Unmarshal([]byte(mpResp.Body), &result)
+	if unmarshalErr != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}
@@ -268,18 +271,18 @@ func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint,
 // --- Legacy compatibility aliases ---
 
 // EnablePlugin activates/enables a plugin on the remote WordPress site.
-func (c *Client) EnablePlugin(pluginSlug string) error {
+func (c *Client) EnablePlugin(pluginSlug string) *apperror.AppError {
 	return c.EnablePluginViaUploader(pluginSlug)
 }
 
 // CheckOnboardPluginAvailable checks if the companion plugin is installed and available.
 // Deprecated: Now checks for Riseup Asia Uploader availability instead.
-func (c *Client) CheckOnboardPluginAvailable() (*UploaderAvailability, error) {
+func (c *Client) CheckOnboardPluginAvailable() (*UploaderAvailability, *apperror.AppError) {
 	return c.CheckRiseupAsiaAvailable()
 }
 
 // CheckOnboardAvailable is an alias for CheckOnboardPluginAvailable
-func (c *Client) CheckOnboardAvailable() (*UploaderAvailability, error) {
+func (c *Client) CheckOnboardAvailable() (*UploaderAvailability, *apperror.AppError) {
 	return c.CheckOnboardPluginAvailable()
 }
 
