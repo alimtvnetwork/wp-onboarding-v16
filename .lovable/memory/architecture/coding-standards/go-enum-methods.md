@@ -1,5 +1,33 @@
 # Memory: architecture/coding-standards/go-enum-methods
-Updated: 2026-02-25
+Updated: 2026-02-28
+
+---
+
+## Package Naming Convention
+
+Go enum packages live under `backend/internal/enums/` and MUST use a **lowercase `type` suffix** for the directory name:
+
+| Package Directory | Import Alias (if needed) | Example Constants |
+|---|---|---|
+| `actiontype` | `action` | `action.Upload` |
+| `endpointtype` | `ep` | `ep.Upload` |
+| `httpmethodtype` | `httpmethod` | `httpmethod.Get` |
+| `stagestatustype` | `stagestatus` | `stagestatus.Running` |
+| `logleveltype` | `loglevel` | `loglevel.Info` |
+| `publishsteptype` | `publishstep` | `publishstep.Upload` |
+| `uploadsourcetype` | `uploadsource` | `uploadsource.Script` |
+| `statustype` | `enumstatus` | `enumstatus.Success` |
+| `connectionsteptype` | `connectionstep` | `connectionstep.Validate` |
+| `healthstatustype` | `healthstatus` | `healthstatus.Healthy` |
+| `responsemessagetype` | `responsemessage` | `responsemessage.Ok` |
+| `publishtype` | (same) | `publishtype.Full` |
+| `backuptype` | (same) | `backuptype.Full` |
+
+**Rules:**
+- Directory name = all-lowercase, no underscores, ends with `type` (e.g., `httpmethodtype`)
+- Each package contains two files: `{packagename}.go` (type + methods) and `Variant.go` (constants)
+- Use import aliases to keep call sites readable when the full package name is verbose
+- PHP counterpart classes use PascalCase `Type` suffix (e.g., `HttpMethodType`)
 
 ---
 
@@ -29,7 +57,7 @@ Every Go enum `Variant` type under `backend/internal/enums/` MUST implement thes
 
 **All** `variantLabels` entries MUST use PascalCase matching the Go constant name. No exceptions.
 
-For enums whose variants carry a technical wire value (URL paths, MIME types, HTTP headers, JSON keys, display messages), a separate `variantValues` array stores the wire string. These are called **protocol enums** and include: `endpoint`, `content_type`, `header`, `connection_step`, `response_key`, `response_message`.
+For enums whose variants carry a technical wire value (URL paths, MIME types, HTTP headers, JSON keys, display messages), a separate `variantValues` array stores the wire string. These are called **protocol enums** and include: `endpointtype`, `contenttype`, `headertype`, `connectionsteptype`, `responsekeytype`, `responsemessagetype`.
 
 - `String()` delegates to `Value()` for backwards compatibility with callers using Stringer
 - `Label()` returns PascalCase from `variantLabels`

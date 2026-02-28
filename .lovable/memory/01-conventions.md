@@ -102,6 +102,7 @@ File names MUST use PascalCase matching the primary definition name. This applie
 | TypeScript | `PascalCase.ts(x)` | `RemotePluginFileBrowser.tsx` |
 
 > **Go package directories** remain `snake_case` (e.g., `site_health/`). Only file names change.
+> **Go enum package directories** use lowercase `type` suffix with no underscores (e.g., `httpmethodtype/`, `stagestatustype/`).
 
 ### Class Naming
 | Type | Convention | Example |
