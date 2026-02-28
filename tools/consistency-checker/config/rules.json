@@ -67,6 +67,16 @@
       "reference": "spec/03-rules.md#go-param-count"
     },
     {
+      "id": "go-inline-if",
+      "name": "Go Inline If-Init",
+      "enabled": true,
+      "severity": "error",
+      "languages": ["go"],
+      "params": {},
+      "exclude": ["*_test.go"],
+      "reference": "spec/03-rules.md#go-inline-if"
+    },
+    {
       "id": "file-naming",
       "name": "Go File Naming Convention",
       "enabled": true,

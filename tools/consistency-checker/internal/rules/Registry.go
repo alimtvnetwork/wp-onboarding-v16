@@ -10,6 +10,7 @@ func RegisterAll(eng *engine.Engine) {
 	eng.Register(&GoSingleReturn{})
 	eng.Register(&GoImportGroups{})
 	eng.Register(&GoParamCount{})
+	eng.Register(&GoInlineIf{})
 	eng.Register(&FileNaming{})
 	eng.Register(&PhpFileSize{})
 	eng.Register(&MdHeading{})
