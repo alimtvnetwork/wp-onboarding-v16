@@ -15,11 +15,19 @@ import (
 func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) apperror.Result[SyncResult] {
 	result := SyncResult{PluginId: pluginID, SiteId: siteID, CheckedAt: time.Now()}
 
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Starting sync check..."})
+	startProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Checking.Value(),
+		Progress: 0,
+		Message:  "Starting sync check...",
+	}
+	s.broadcastProgress(startProgress)
 
 	localFiles, errMsg := s.scanLocalForCheck(ctx, pluginID, siteID)
 	if errMsg != "" {
 		result.ErrorMessage = errMsg
+
 		return apperror.Ok(result)
 	}
 	result.LocalFiles = len(localFiles)
@@ -27,12 +35,21 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) app
 	remoteFiles, errMsg := s.fetchRemoteManifest(ctx, pluginID, siteID)
 	if errMsg != "" {
 		result.ErrorMessage = errMsg
-		s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: errMsg})
+		errorProgress := SyncProgressInput{
+			PluginId: pluginID,
+			SiteId:   siteID,
+			Step:     syncstep.Error.Value(),
+			Progress: 100,
+			Message:  errMsg,
+		}
+		s.broadcastProgress(errorProgress)
+
 		return apperror.Ok(result)
 	}
 	result.RemoteFiles = len(remoteFiles)
 
 	s.finalizeCheckResult(&result, localFiles, remoteFiles, pluginID, siteID)
+
 	return apperror.Ok(result)
 }
 
@@ -44,7 +61,15 @@ func (s *serviceImpl) scanLocalForCheck(ctx context.Context, pluginID, siteID in
 	}
 	plug := plugResult.Value()
 
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Scanning.Value(), Progress: 20, Message: "Scanning local files..."})
+	scanProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Scanning.Value(),
+		Progress: 20,
+		Message:  "Scanning local files...",
+	}
+	s.broadcastProgress(scanProgress)
+
 	localFiles, err := s.scanLocalFiles(plug.Path, plug.ExcludePatterns)
 	if err != nil {
 		return nil, err.Error()
@@ -55,7 +80,15 @@ func (s *serviceImpl) scanLocalForCheck(ctx context.Context, pluginID, siteID in
 
 // finalizeCheckResult computes changes, updates mapping status, and broadcasts completion.
 func (s *serviceImpl) finalizeCheckResult(result *SyncResult, localFiles, remoteFiles map[string]FileEntry, pluginID, siteID int64) {
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 70, Message: "Comparing files..."})
+	compareProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Comparing.Value(),
+		Progress: 70,
+		Message:  "Comparing files...",
+	}
+	s.broadcastProgress(compareProgress)
+
 	changes := s.compareFiles(localFiles, remoteFiles)
 
 	result.Changes = changes
@@ -65,7 +98,15 @@ func (s *serviceImpl) finalizeCheckResult(result *SyncResult, localFiles, remote
 	result.IsInSync = len(changes) == 0
 
 	s.updateMappingSyncStatus(context.Background(), pluginID, siteID, result.IsInSync)
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "Sync check complete"})
+
+	completeProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Complete.Value(),
+		Progress: 100,
+		Message:  "Sync check complete",
+	}
+	s.broadcastProgress(completeProgress)
 
 	s.log.Info("Sync check completed", "pluginId", pluginID, "siteId", siteID, "isInSync", result.IsInSync, "changes", len(changes))
 }
@@ -87,6 +128,7 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) apperro
 	}
 
 	s.aggregateSiteResults(&result, ctx, pluginID, mappingsResult.Items())
+
 	return apperror.Ok(result)
 }
 
@@ -133,5 +175,6 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) apperror.ResultSlice[
 	if results == nil {
 		results = []SyncResult{}
 	}
+
 	return apperror.OkSlice(results)
 }
