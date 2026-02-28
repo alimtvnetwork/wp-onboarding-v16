@@ -31,7 +31,9 @@ func (s *serviceImpl) createTestSite() (int64, error) {
 
 // extractID pulls an int64 id from an API response.
 func extractID(resp *apiResponse, action string) (int64, error) {
-	if resp.StatusCode >= 400 {
+	isErrorStatus := resp.StatusCode >= 400
+
+	if isErrorStatus {
 		return 0, fmt.Errorf("%s failed: HTTP %d - %s", action, resp.StatusCode, resp.RawBody)
 	}
 	id, ok := resp.dataFieldFloat("id")

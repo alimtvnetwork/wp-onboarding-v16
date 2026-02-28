@@ -39,7 +39,10 @@ func (s *serviceImpl) checkNoActiveRun() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.activeRun != nil && s.activeRun.Status == teststatus.Running.String() {
+	hasActiveRun := s.activeRun != nil
+	isRunning := hasActiveRun && s.activeRun.Status == teststatus.Running.String()
+
+	if isRunning {
 		return apperror.New(apperror.ErrE2ERunning, "test run already in progress").
 			WithRunId(s.activeRun.ID)
 	}
@@ -53,7 +56,9 @@ func (s *serviceImpl) resolveSuites(ctx context.Context, opts RunOptions) ([]Tes
 		return nil, err
 	}
 
-	if len(opts.Suites) > 0 {
+	hasSuiteFilter := len(opts.Suites) > 0
+
+	if hasSuiteFilter {
 		return filterSuitesByID(suites, opts.Suites), nil
 	}
 	return filterEnabledSuites(suites), nil
@@ -165,7 +170,9 @@ type RunSingleCaseInput struct {
 
 // runSingleCase executes one test case. Returns true if run should stop.
 func (s *serviceImpl) runSingleCase(ctx context.Context, input RunSingleCaseInput) bool {
-	if !input.Case.Enabled {
+	isDisabled := !input.Case.Enabled
+
+	if isDisabled {
 		input.Run.SkippedTests++
 		return false
 	}
@@ -179,7 +186,10 @@ func (s *serviceImpl) runSingleCase(ctx context.Context, input RunSingleCaseInpu
 	s.tallyResult(input.Run, result)
 	s.broadcastTestResult(input.Run.ID, input.Case.ID, result)
 
-	return input.Opts.StopOnFailure && result.Status == teststatus.Failed.String()
+	isFailed := result.Status == teststatus.Failed.String()
+	shouldStop := input.Opts.StopOnFailure && isFailed
+
+	return shouldStop
 }
 
 // isRunAborted checks whether the active run has been aborted.
@@ -240,7 +250,9 @@ func (s *serviceImpl) finalizeRun(run *TestRun) {
 
 // resolveRunStatus returns "Failed" if any test failed, else "Passed".
 func (s *serviceImpl) resolveRunStatus(run *TestRun) string {
-	if run.FailedTests > 0 {
+	hasFailedTests := run.FailedTests > 0
+
+	if hasFailedTests {
 		return teststatus.Failed.String()
 	}
 	return teststatus.Passed.String()

@@ -76,7 +76,9 @@ func (s *serviceImpl) verifyPluginInList() error {
 	if err != nil {
 		return fmt.Errorf("GET /plugins failed: %w", err)
 	}
-	if !listResp.isDataArray() {
+	isListEmpty := !listResp.isDataArray()
+
+	if isListEmpty {
 		return fmt.Errorf("plugin list is empty after creation")
 	}
 	return nil
@@ -92,10 +94,15 @@ func (s *serviceImpl) testRegisterInvalidPath(ctx context.Context, result *TestR
 	}
 	result.ResponseData = resp.RawBody
 
-	if resp.StatusCode < 400 {
+	isSuccessStatus := resp.StatusCode < 400
+
+	if isSuccessStatus {
 		return fmt.Errorf("expected error response, got HTTP %d", resp.StatusCode)
 	}
-	if resp.errorCode() == "" {
+
+	isErrorCodeMissing := resp.errorCode() == ""
+
+	if isErrorCodeMissing {
 		return fmt.Errorf("expected error code in response")
 	}
 	return nil
@@ -131,7 +138,9 @@ func (s *serviceImpl) verifyPluginName(id int64, expected string) error {
 		return fmt.Errorf("GET /plugins/%d failed: %w", id, err)
 	}
 	name := getResp.dataField("name")
-	if name != expected {
+	isNameMismatch := name != expected
+
+	if isNameMismatch {
 		return fmt.Errorf("expected name '%s', got '%s'", expected, name)
 	}
 	return nil
@@ -151,7 +160,9 @@ func (s *serviceImpl) testDeletePlugin(ctx context.Context, result *TestResult) 
 	}
 	result.ResponseData = resp.RawBody
 
-	if resp.StatusCode >= 400 {
+	isErrorStatus := resp.StatusCode >= 400
+
+	if isErrorStatus {
 		return fmt.Errorf("expected success, got HTTP %d", resp.StatusCode)
 	}
 
@@ -164,7 +175,9 @@ func (s *serviceImpl) verifyPluginDeleted(id int64) error {
 	if err != nil {
 		return fmt.Errorf("GET /plugins/%d failed: %w", id, err)
 	}
-	if getResp.StatusCode < 400 {
+	isSuccessStatus := getResp.StatusCode < 400
+
+	if isSuccessStatus {
 		return fmt.Errorf("expected 404 after delete, got HTTP %d", getResp.StatusCode)
 	}
 	return nil
@@ -185,8 +198,11 @@ func (s *serviceImpl) testScanPluginFiles(ctx context.Context, result *TestResul
 	}
 	result.ResponseData = resp.RawBody
 
-	if resp.StatusCode >= 400 {
+	isErrorStatus := resp.StatusCode >= 400
+
+	if isErrorStatus {
 		return fmt.Errorf("expected success, got HTTP %d", resp.StatusCode)
 	}
+
 	return nil
 }

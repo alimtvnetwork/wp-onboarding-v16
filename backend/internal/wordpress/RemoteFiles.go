@@ -134,7 +134,9 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 		return "", err
 	}
 
-	if result.MutationToken == "" {
+	isTokenEmpty := result.MutationToken == ""
+
+	if isTokenEmpty {
 		return "", apperror.New(apperror.ErrWPConnection, "empty mutation token in response")
 	}
 	return result.MutationToken, nil
@@ -168,7 +170,9 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		return "", err
 	}
 
-	if !result.Success {
+	isFailure := !result.Success
+
+	if isFailure {
 		return "", apperror.New(apperror.ErrWPConnection, "remote API returned failure for file content").
 			WithValue("filePath", filePath)
 	}

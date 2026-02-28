@@ -114,7 +114,9 @@ func (s *Service) broadcastPackageStartLog(pctx *publishContext) {
 
 // logZipIfCreated logs ZIP creation details if a ZIP was produced.
 func (s *Service) logZipIfCreated(pctx *publishContext, buildResult *PackageBuildResult) {
-	if buildResult.ZipPath == "" {
+	isZipPathEmpty := buildResult.ZipPath == ""
+
+	if isZipPathEmpty {
 		return
 	}
 
@@ -212,7 +214,9 @@ func (s *Service) exportRemoteForRollback(pctx *publishContext) string {
 		return ""
 	}
 
-	if exportResult == nil || exportResult.PluginZip == "" {
+	isExportEmpty := exportResult == nil || exportResult.PluginZip == ""
+
+	if isExportEmpty {
 		return ""
 	}
 

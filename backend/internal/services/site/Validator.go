@@ -20,13 +20,16 @@ var (
 // ValidateSiteURL validates a WordPress site URL
 func ValidateSiteURL(siteURL string) *apperror.AppError {
 	siteURL = strings.TrimSpace(siteURL)
+	isURLEmpty := siteURL == ""
 
-	if siteURL == "" {
+	if isURLEmpty {
 		return apperror.New(apperror.ErrValidation, "URL is required")
 	}
 
 	// Add https if no scheme
-	if !urlSchemeRegex.MatchString(siteURL) {
+	isSchemeMissing := !urlSchemeRegex.MatchString(siteURL)
+
+	if isSchemeMissing {
 		siteURL = "https://" + siteURL
 	}
 
@@ -35,7 +38,9 @@ func ValidateSiteURL(siteURL string) *apperror.AppError {
 		return apperror.Wrap(err, apperror.ErrValidation, "invalid URL format")
 	}
 
-	if parsed.Host == "" {
+	isHostEmpty := parsed.Host == ""
+
+	if isHostEmpty {
 		return apperror.New(apperror.ErrValidation, "URL must include a host")
 	}
 
@@ -50,12 +55,15 @@ func ValidateSiteURL(siteURL string) *apperror.AppError {
 // ValidateUsername validates a WordPress username
 func ValidateUsername(username string) *apperror.AppError {
 	username = strings.TrimSpace(username)
+	isUsernameEmpty := username == ""
 
-	if username == "" {
+	if isUsernameEmpty {
 		return apperror.New(apperror.ErrValidation, "username is required")
 	}
 
-	if len(username) < 1 || len(username) > 60 {
+	isUsernameTooLong := len(username) > 60
+
+	if isUsernameTooLong {
 		return apperror.New(apperror.ErrValidation, "username must be between 1 and 60 characters")
 	}
 
@@ -67,11 +75,15 @@ func ValidateApplicationPassword(password string) *apperror.AppError {
 	// Remove spaces (WordPress displays app passwords with spaces)
 	password = strings.ReplaceAll(password, " ", "")
 
-	if password == "" {
+	isPasswordEmpty := password == ""
+
+	if isPasswordEmpty {
 		return apperror.New(apperror.ErrValidation, "application password is required")
 	}
 
-	if len(password) < minPasswordLength {
+	isPasswordTooShort := len(password) < minPasswordLength
+
+	if isPasswordTooShort {
 		return apperror.New(apperror.ErrValidation, "application password appears too short")
 	}
 
@@ -81,12 +93,15 @@ func ValidateApplicationPassword(password string) *apperror.AppError {
 // ValidateSiteName validates a site display name
 func ValidateSiteName(name string) *apperror.AppError {
 	name = strings.TrimSpace(name)
+	isNameEmpty := name == ""
 
-	if name == "" {
+	if isNameEmpty {
 		return apperror.New(apperror.ErrValidation, "name is required")
 	}
 
-	if len(name) > 100 {
+	isNameTooLong := len(name) > 100
+
+	if isNameTooLong {
 		return apperror.New(apperror.ErrValidation, "name must be 100 characters or less")
 	}
 

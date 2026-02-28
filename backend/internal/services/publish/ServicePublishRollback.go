@@ -15,7 +15,9 @@ import (
 
 // handleRollback performs rollback when activation fails
 func (s *Service) handleRollback(ctx context.Context, pctx *publishContext, preUploadBackupZip string, activateStage Stage) {
-	if !pctx.Options.IsRollbackOnFailure {
+	isRollbackDisabled := !pctx.Options.IsRollbackOnFailure
+
+	if isRollbackDisabled {
 		pctx.Result.RollbackStatus = stagestatus.Skipped.String()
 		pctx.Result.RollbackMessage = "Rollback disabled by user"
 
@@ -69,7 +71,9 @@ func (s *Service) rollbackDeactivate(pctx *publishContext) {
 
 // rollbackRestore re-uploads the pre-upload backup if available.
 func (s *Service) rollbackRestore(ctx context.Context, pctx *publishContext, preUploadBackupZip string) error {
-	if preUploadBackupZip == "" {
+	isBackupMissing := preUploadBackupZip == ""
+
+	if isBackupMissing {
 		return s.reportNoBackupAvailable(pctx)
 	}
 

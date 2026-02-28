@@ -236,11 +236,16 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	}
 	p := pResult.Value()
 
-	if !p.AutoPublish {
+	isAutoPublishDisabled := !p.AutoPublish
+
+	if isAutoPublishDisabled {
 		return
 	}
 
-	if len(p.Mappings) == 0 {
+	hasMappings := len(p.Mappings) > 0
+	isMappingsMissing := !hasMappings
+
+	if isMappingsMissing {
 		s.log.Debug("Auto-publish skipped: no site mappings", "plugin", p.Name, "pluginId", pluginID)
 		return
 	}

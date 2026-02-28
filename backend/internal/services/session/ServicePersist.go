@@ -86,7 +86,11 @@ func (s *Service) SetMetadata(sessionID, key string, value json.RawMessage) {
 
 	session.mu.Lock()
 	var m map[string]json.RawMessage
-	if len(session.Metadata) == 0 || json.Unmarshal(session.Metadata, &m) != nil {
+	isMetadataEmpty := len(session.Metadata) == 0
+	isUnmarshalFailed := json.Unmarshal(session.Metadata, &m) != nil
+	isMetadataInvalid := isMetadataEmpty || isUnmarshalFailed
+
+	if isMetadataInvalid {
 		m = make(map[string]json.RawMessage)
 	}
 	m[key] = value

@@ -193,7 +193,9 @@ func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) error {
 	}
 
 	rows, _ := result.RowsAffected()
-	if rows == 0 {
+	isNotFound := rows == 0
+
+	if isNotFound {
 		return apperror.New(apperror.ErrNotFound, "mapping not found")
 	}
 
@@ -249,7 +251,9 @@ func (s *Service) buildSlugMap(ctx context.Context, siteID int64) map[int64]stri
 	existingResult := s.GetMappingsBySite(ctx, siteID)
 	slugByPluginID := make(map[int64]string)
 
-	if !existingResult.HasError() {
+	hasExistingMappings := !existingResult.HasError()
+
+	if hasExistingMappings {
 		for _, m := range existingResult.Items() {
 			slugByPluginID[m.PluginID] = m.RemoteSlug
 		}
