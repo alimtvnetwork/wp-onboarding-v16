@@ -39,7 +39,7 @@ func buildStageHeader(stageName string) string {
 
 // StageEndInput bundles parameters for LogStageEnd.
 type StageEndInput struct {
-	SessionID  string
+	SessionId  string
 	StageName  string
 	Status     string
 	DurationMs int64
@@ -47,7 +47,7 @@ type StageEndInput struct {
 
 // LogStageEnd writes a stage completion marker
 func (s *Service) LogStageEnd(input StageEndInput) {
-	session := s.getActiveSession(input.SessionID)
+	session := s.getActiveSession(input.SessionId)
 	isSessionMissing := session == nil
 
 	if isSessionMissing {

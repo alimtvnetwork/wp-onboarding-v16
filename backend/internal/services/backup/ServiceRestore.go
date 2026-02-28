@@ -12,7 +12,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) apperror.Result[R
 	s.log.Info("Restoring backup", "backupId", backupID)
 
 	restoreLog := BackupLogInput{
-		PluginID: backupID,
+		PluginId: backupID,
 		Step:     "init",
 		Message:  "Starting backup restore",
 		Details:  toDetails(InitDetails{BackupID: backupID}),
@@ -33,7 +33,7 @@ func (s *Service) Delete(ctx context.Context, id int64) *apperror.AppError {
 	s.log.Info("Deleting backup", "id", id)
 
 	deleteLog := BackupLogInput{
-		PluginID: id,
+		PluginId: id,
 		Step:     "delete",
 		Message:  "Deleting backup",
 		Details:  toDetails(InitDetails{BackupID: id}),
@@ -52,7 +52,7 @@ func (s *Service) Cleanup(ctx context.Context) *apperror.AppError {
 	s.log.Info("Running backup cleanup")
 
 	cleanupLog := BackupLogInput{
-		PluginID: 0,
+		PluginId: 0,
 		Step:     "init",
 		Message:  "Starting backup cleanup",
 		Details:  toDetails(CleanupInitDetails{RetentionDays: s.retentionDays}),
@@ -77,7 +77,7 @@ func (s *Service) logCleanupComplete(removedCount int) {
 	completeDetails := toDetails(CleanupCompleteDetails{RemovedCount: removedCount})
 
 	completeLog := BackupLogInput{
-		PluginID: 0,
+		PluginId: 0,
 		Step:     "complete",
 		Message:  fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount),
 		Details:  completeDetails,

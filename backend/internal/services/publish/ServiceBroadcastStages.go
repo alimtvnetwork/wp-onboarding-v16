@@ -29,8 +29,8 @@ func (s *Service) broadcastStageStatus(input StageStatusInput) {
 // buildStageStatusData constructs the WebSocket stage status data.
 func buildStageStatusData(input StageStatusInput) ws.PublishStageStatusData {
 	return ws.PublishStageStatusData{
-		PluginID: input.PluginId,
-		SiteID:   input.SiteId,
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
 		Stage:    input.Stage.Value(),
 		Step:     input.Stage.Value(),
 		Status:   input.Status,
@@ -63,8 +63,8 @@ func resolveStageStatusLevel(status string) loglevel.Variant {
 // buildStageStatusLogEntry constructs an operation log entry for stage status.
 func buildStageStatusLogEntry(input StageStatusInput, level loglevel.Variant) ws.OperationLogInput {
 	return ws.OperationLogInput{
-		PluginID: input.PluginId,
-		SiteID:   input.SiteId,
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
 		Entry: ws.OperationLogEntry{
 			Level:   level.Lower(),
 			Step:    input.Stage.Value(),
@@ -84,12 +84,12 @@ func (s *Service) broadcastStageComplete(input StageCompleteInput) {
 
 	completeData := ws.PublishStageCompleteData{
 		Type:      "stage_complete",
-		SessionID: input.SessionId,
+		SessionId: input.SessionId,
 		Stage:     input.StageName.Value(),
 		Status:    input.Status,
 		Duration:  input.DurationMs,
-		PluginID:  input.PluginId,
-		SiteID:    input.SiteId,
+		PluginId:  input.PluginId,
+		SiteId:    input.SiteId,
 		Details:   input.Details,
 	}
 	ws.Broadcast(s.wsHub, ws.EventPublishProgress, completeData)
@@ -155,8 +155,8 @@ func (s *Service) broadcastDetailedLog(input DetailedLogInput) {
 // emitDetailedLogEntry broadcasts the log entry to WebSocket.
 func (s *Service) emitDetailedLogEntry(input DetailedLogInput) {
 	logEntry := ws.OperationLogInput{
-		PluginID: input.PluginId,
-		SiteID:   input.SiteId,
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
 		Entry: ws.OperationLogEntry{
 			Level:   input.Level.Lower(),
 			Step:    input.Step.Value(),

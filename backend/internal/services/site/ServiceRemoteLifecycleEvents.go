@@ -105,7 +105,7 @@ func (s *Service) logRemoteErrorStageEnd(ref *remoteActionRef, durationMs int64)
 	}
 
 	stageInput := session.StageEndInput{
-		SessionID:  ref.SessionId,
+		SessionId:  ref.SessionId,
 		StageName:  ref.Action,
 		Status:     "error",
 		DurationMs: durationMs,
@@ -175,7 +175,7 @@ func (s *Service) saveRemoteErrorStackAndDetails(
 	goFrames := session.CaptureGoStack(2)
 
 	saveInput := session.SaveErrorInput{
-		SessionID: sessionId,
+		SessionId: sessionId,
 		StackTrace: &session.SessionStackTrace{
 			Golang: goFrames,
 			Php:    phpFrames,
@@ -272,7 +272,7 @@ func (s *Service) saveRemoteSuccessHttpResponse(ref *remoteActionRef) {
 // logRemoteSuccessStageEnd logs the stage end for a successful action.
 func (s *Service) logRemoteSuccessStageEnd(ref *remoteActionRef, durationMs int64) {
 	stageInput := session.StageEndInput{
-		SessionID:  ref.SessionId,
+		SessionId:  ref.SessionId,
 		StageName:  ref.Action,
 		Status:     "success",
 		DurationMs: durationMs,

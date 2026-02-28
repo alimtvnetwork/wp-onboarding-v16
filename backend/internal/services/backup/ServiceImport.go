@@ -25,7 +25,7 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, is
 	startTime := time.Now()
 	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", isOverwrite)
 	initLog := BackupLogInput{
-		PluginID: 0,
+		PluginId: 0,
 		Step:     "init",
 		Message:  fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)),
 		Details:  toDetails(ImportInitDetails{Destination: destDir, IsOverwrite: isOverwrite}),
@@ -199,7 +199,7 @@ func (s *Service) logImportComplete(destDir string, state *importState, startTim
 		DurationMs: duration.Milliseconds(),
 	})
 	completeLog := BackupLogInput{
-		PluginID: 0,
+		PluginId: 0,
 		Step:     "complete",
 		Message:  fmt.Sprintf("Import complete: %d files, %d bytes", state.FilesCount, state.TotalBytes),
 		Details:  completeDetails,

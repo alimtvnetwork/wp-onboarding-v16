@@ -57,7 +57,7 @@ func (s *Service) removeIfExpired(input expiredCheckInput) error {
 	s.log.Debug("Removing expired backup", "path", input.Path, "modified", input.Info.ModTime())
 	expiredDetails := toDetails(ExpiredBackupDetails{ModifiedAt: input.Info.ModTime().Format(time.RFC3339)})
 	s.broadcastLog(BackupLogInput{
-		PluginID: 0,
+		PluginId: 0,
 		Level:    loglevel.Debug.Lower(),
 		Step:     "remove",
 		Message:  fmt.Sprintf("Removing expired backup: %s", filepath.Base(input.Path)),

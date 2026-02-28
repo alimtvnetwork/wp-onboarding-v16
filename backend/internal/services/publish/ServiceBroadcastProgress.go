@@ -131,8 +131,8 @@ func (s *Service) broadcastProgress(input ProgressInput) {
 // buildProgressData constructs the WebSocket progress event data.
 func buildProgressData(input ProgressInput) ws.PublishStageProgressData {
 	return ws.PublishStageProgressData{
-		PluginID: input.PluginId,
-		SiteID:   input.SiteId,
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
 		Stage:    input.Step.Stage(),
 		Step:     input.Step.Value(),
 		Status:   mapStepToStatus(input.Step),
@@ -169,8 +169,8 @@ func (s *Service) emitProgressLog(input ProgressInput, stage string) {
 // buildProgressLogEntry constructs a log entry for progress events.
 func buildProgressLogEntry(input ProgressInput, stage string, logLevel loglevel.Variant) ws.OperationLogInput {
 	return ws.OperationLogInput{
-		PluginID: input.PluginId,
-		SiteID:   input.SiteId,
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
 		Entry: ws.OperationLogEntry{
 			Level:   logLevel.Lower(),
 			Step:    stage,
@@ -204,9 +204,9 @@ func (s *Service) emitSessionProgressLog(input ProgressInput, stage string) {
 // buildSessionProgressLogEntry constructs a session-scoped log entry.
 func buildSessionProgressLogEntry(input ProgressInput, stage string, logLevel loglevel.Variant) ws.OperationLogInput {
 	return ws.OperationLogInput{
-		PluginID:  input.PluginId,
-		SiteID:    input.SiteId,
-		SessionID: input.SessionId,
+		PluginId:  input.PluginId,
+		SiteId:    input.SiteId,
+		SessionId: input.SessionId,
 		Entry: ws.OperationLogEntry{
 			Level:   logLevel.Lower(),
 			Step:    stage,

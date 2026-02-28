@@ -16,7 +16,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 	s.log.Info("Creating backup", "mappingId", mappingID)
 
 	initLog := BackupLogInput{
-		PluginID: mappingID,
+		PluginId: mappingID,
 		Step:     "init",
 		Message:  "Starting backup creation",
 		Details:  toDetails(InitDetails{MappingID: mappingID}),
@@ -57,7 +57,7 @@ func (s *Service) createBackupFile(mappingID int64) apperror.Result[string] {
 	file.Close()
 
 	writeLog := BackupLogInput{
-		PluginID: mappingID,
+		PluginId: mappingID,
 		Step:     "write",
 		Message:  "Backup file created successfully",
 		Details:  toDetails(PathDetails{Path: backupPath}),
@@ -84,7 +84,7 @@ func (s *Service) runRetentionPolicy(ctx context.Context, mappingID int64) {
 		RetentionDays: s.retentionDays,
 	})
 	retentionLog := BackupLogInput{
-		PluginID: mappingID,
+		PluginId: mappingID,
 		Step:     "retention",
 		Message:  "Enforcing retention policy",
 		Details:  retentionDetails,
@@ -104,7 +104,7 @@ func (s *Service) logBackupComplete(mappingID int64, backupPath string, size int
 	completeDetails := toDetails(BackupCompleteDetails{Path: backupPath, FileSize: size})
 
 	completeLog := BackupLogInput{
-		PluginID: mappingID,
+		PluginId: mappingID,
 		Step:     "complete",
 		Message:  "Backup created successfully",
 		Details:  completeDetails,

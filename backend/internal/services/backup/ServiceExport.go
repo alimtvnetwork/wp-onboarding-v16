@@ -25,7 +25,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
 	initLog := BackupLogInput{
-		PluginID: 0,
+		PluginId: 0,
 		Step:     "init",
 		Message:  fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)),
 		Details:  toDetails(ExportInitDetails{SourceCount: len(sourcePaths)}),
@@ -174,7 +174,7 @@ func (s *Service) logExportComplete(outputPath string, state *exportState, start
 		DurationMs: duration.Milliseconds(),
 	})
 	completeLog := BackupLogInput{
-		PluginID: 0,
+		PluginId: 0,
 		Step:     "complete",
 		Message:  fmt.Sprintf("Export complete: %d files, %d bytes", state.FilesCount, state.TotalBytes),
 		Details:  completeDetails,

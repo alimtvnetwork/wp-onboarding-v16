@@ -38,7 +38,7 @@ func (s *Service) StartSession(input StartSessionInput) apperror.Result[string] 
 func (s *Service) finalizeSessionStart(sessionID string, session *Session, input StartSessionInput) apperror.Result[string] {
 	writeSessionHeader(sessionHeaderInput{
 		File:      session.logFile,
-		SessionID: sessionID,
+		SessionId: sessionID,
 		Input:     input,
 		StartedAt: session.StartedAt,
 	})
@@ -116,7 +116,7 @@ func (s *Service) createSessionLogFile(sessionID string) apperror.Result[*os.Fil
 // sessionHeaderInput bundles parameters for writeSessionHeader.
 type sessionHeaderInput struct {
 	File      *os.File
-	SessionID string
+	SessionId string
 	Input     StartSessionInput
 	StartedAt time.Time
 }
@@ -124,7 +124,7 @@ type sessionHeaderInput struct {
 // writeSessionHeader writes the formatted session header to the log file.
 func writeSessionHeader(shi sessionHeaderInput) {
 	header := "═══════════════════════════════════════════════════════════════════════════════\n"
-	header += fmt.Sprintf(" SESSION: %s\n", shi.SessionID)
+	header += fmt.Sprintf(" SESSION: %s\n", shi.SessionId)
 	header += fmt.Sprintf(" TYPE: %s\n", shi.Input.Type)
 	header += fmt.Sprintf(" STARTED: %s\n", shi.StartedAt.Format("2006-01-02 15:04:05 UTC"))
 	hasPluginName := shi.Input.PluginName != ""
@@ -144,7 +144,7 @@ func writeSessionHeader(shi sessionHeaderInput) {
 
 // LogInput bundles parameters for Log.
 type LogInput struct {
-	SessionID string
+	SessionId string
 	Level     string
 	Step      string
 	Message   string
@@ -153,7 +153,7 @@ type LogInput struct {
 
 // Log writes a log entry to the session
 func (s *Service) Log(input LogInput) {
-	session := s.getActiveSession(input.SessionID)
+	session := s.getActiveSession(input.SessionId)
 	isSessionMissing := session == nil
 
 	if isSessionMissing {

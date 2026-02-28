@@ -267,7 +267,7 @@ func (s *Service) buildSlugMap(ctx context.Context, siteID int64) map[int64]stri
 
 	if hasExistingMappings {
 		for _, m := range existingResult.Items() {
-			slugByPluginID[m.PluginID] = m.RemoteSlug
+			slugByPluginID[m.PluginId] = m.RemoteSlug
 		}
 	}
 	return slugByPluginID
@@ -275,7 +275,7 @@ func (s *Service) buildSlugMap(ctx context.Context, siteID int64) map[int64]stri
 
 // insertSiteMappingsInput bundles parameters for insertMappingsForSite.
 type insertSiteMappingsInput struct {
-	SiteID    int64
+	SiteId    int64
 	PluginIDs []int64
 	SlugMap   map[int64]string
 }
@@ -288,9 +288,9 @@ func (s *Service) insertMappingsForSite(ctx context.Context, input insertSiteMap
 		_, err := s.db.ExecContext(ctx, `
 			INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-		`, pluginID, input.SiteID, remoteSlug)
+		`, pluginID, input.SiteId, remoteSlug)
 		if err != nil {
-			s.log.Warn("Failed to create site mapping", "siteId", input.SiteID, "pluginId", pluginID, "error", err)
+			s.log.Warn("Failed to create site mapping", "siteId", input.SiteId, "pluginId", pluginID, "error", err)
 		}
 	}
 }
