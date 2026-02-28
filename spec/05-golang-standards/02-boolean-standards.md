@@ -143,7 +143,21 @@ if isNonApiRoute {
 }
 ```
 
-### 3.5 — File-Not-Found Error Guard
+### 3.5 — Auto-Generated Enum ByIndex Bounds Check
+
+The `ByIndex` function in all `enums/*/Variant.go` files uses a raw `||` with `<` and `>=` comparisons for bounds checking. This is exempt because it is an auto-generated, mechanical pattern identical across all 24+ enum packages:
+
+```go
+// ✅ Exempt — auto-generated enum bounds check
+func ByIndex(i int) Variant {
+	if i < 0 || i >= len(variantLabels) {
+		return Invalid
+	}
+	return Variant(i)
+}
+```
+
+### 3.6 — File-Not-Found Error Guard
 
 The `err != nil && !os.IsNotExist(err)` pattern is exempt because it's an idiomatic Go error-filtering pattern (ignore "file not found", act on real errors):
 
@@ -224,7 +238,7 @@ if isEnabledWithMissingDir {
 
 ### 5.4 — Exemptions
 
-Mixed-polarity is **permitted** in these idiomatic patterns (already covered in §3):
+Mixed-polarity is **permitted** in these idiomatic patterns (already covered in §3) and auto-generated code (§3.5):
 
 ```go
 // ✅ Exempt — error-nil + stdlib negation (§3.5)
