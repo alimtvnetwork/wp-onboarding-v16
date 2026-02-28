@@ -26,7 +26,7 @@ func (c *Client) ReplaceFileViaUploader(input ReplaceFileInput) *apperror.AppErr
 	endpoint := "/" + namespace + ep.Files.String()
 	contentStr := base64.StdEncoding.EncodeToString(input.Content)
 
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginFileReplaceRequest{Plugin: input.Slug, Path: input.RelPath, Content: contentStr},
@@ -43,7 +43,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) *apperror.AppError 
 	namespace := c.resolveNamespace()
 	endpoint := "/" + namespace + ep.Files.String()
 
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginFileDeleteRequest{Plugin: slug, Path: relPath, Action: "delete"},
@@ -91,7 +91,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) apper
 
 	endpoint := "/" + namespace + ep.Sync.String()
 
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       SyncRequestBody{Plugin: slug, Files: files},
@@ -103,7 +103,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) apper
 		return apperror.Fail[SyncResult](rawResult.AppError())
 	}
 
-	return decodeAPIResponse[SyncResult](rawResult.Value(), operation.SyncFiles.Value())
+	return decodeApiResponse[SyncResult](rawResult.Value(), operation.SyncFiles.Value())
 }
 
 // reportSyncStart emits a progress event for the start of a delta sync operation.

@@ -74,7 +74,7 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			}
 
 			// Skip health checks and other high-frequency endpoints to reduce noise
-			isHealthCheck := r.URL.Path == wordpress.GoAPIHealth
+			isHealthCheck := r.URL.Path == wordpress.GoApiHealth
 
 			if isHealthCheck {
 				next.ServeHTTP(w, r)

@@ -102,7 +102,7 @@ func (a *UploaderAvailability) IsNamespaceMissing() bool { return a == nil || a.
 func (c *Client) CheckRiseupAsiaAvailable() apperror.Result[*UploaderAvailability] {
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
-		callResp := c.doAPICallWithStatus(apiCallInput{
+		callResp := c.doApiCallWithStatus(apiCallInput{
 			Method: httpmethod.Get, Endpoint: endpoint, Operation: "check uploader namespace",
 		})
 		if callResp.HasError() {
@@ -138,7 +138,7 @@ func (c *Client) GetUploaderStatus() apperror.Result[*UploaderStatus] {
 	namespace := c.resolveNamespace()
 	endpoint := BuildNamespacedEndpoint(namespace, ep.Status)
 
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: "get uploader status", ErrorCode: apperror.ErrWPConnection,
@@ -245,8 +245,8 @@ func (c *Client) reportMultipartBodyReady(uc *uploadContext, input UploadInput, 
 	})
 }
 
-// uploadAPIErrorInput bundles parameters for buildUploadAPIError.
-type uploadAPIErrorInput struct {
+// uploadApiErrorInput bundles parameters for buildUploadApiError.
+type uploadApiErrorInput struct {
 	AbsZipPath      string
 	UploadURL       string
 	UploadEndpoint  string
@@ -256,15 +256,15 @@ type uploadAPIErrorInput struct {
 	StackTraceDepth int
 }
 
-// buildUploadAPIError constructs a detailed APIError for upload failures.
-func buildUploadAPIError(input uploadAPIErrorInput) *APIError {
+// buildUploadApiError constructs a detailed ApiError for upload failures.
+func buildUploadApiError(input uploadApiErrorInput) *ApiError {
 	stackTrace := captureStackTraceN(4, input.StackTraceDepth)
 	diagnosticBody := buildUploadDiagnosticBody(input.RespBody)
 
 	fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n",
 		input.UploadURL, input.AbsZipPath, input.StatusCode, truncateBody(input.RespBody, 4000), stackTrace)
 
-	return &APIError{
+	return &ApiError{
 		Operation:    "upload plugin via RiseupAsia Uploader",
 		Method:       httpmethod.Post.Value(),
 		Endpoint:     input.UploadEndpoint,

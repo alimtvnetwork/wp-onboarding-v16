@@ -45,7 +45,7 @@ func (c *Client) ExportPlugin(slug string) apperror.Result[*ExportPluginResult] 
 		return apperror.Fail[*ExportPluginResult](rawResult.AppError())
 	}
 
-	decodeResult := decodeAPIResponse[ExportPluginResult](rawResult.Value(), "export plugin")
+	decodeResult := decodeApiResponse[ExportPluginResult](rawResult.Value(), "export plugin")
 	if decodeResult.HasError() {
 		return apperror.Fail[*ExportPluginResult](decodeResult.AppError())
 	}
@@ -109,7 +109,7 @@ func (c *Client) callExportSelf(namespace string) apperror.Result[*ExportSelfRes
 		return apperror.Fail[*ExportSelfResult](rawResult.AppError())
 	}
 
-	decodeResult := decodeAPIResponse[ExportSelfResult](rawResult.Value(), "export self")
+	decodeResult := decodeApiResponse[ExportSelfResult](rawResult.Value(), "export self")
 	if decodeResult.HasError() {
 		return apperror.Fail[*ExportSelfResult](decodeResult.AppError())
 	}

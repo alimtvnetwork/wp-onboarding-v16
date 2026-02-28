@@ -59,8 +59,8 @@ const (
 // =============================================================================
 
 const (
-	// WPCoreAPIRoot is the root path for WordPress REST API.
-	WPCoreAPIRoot = "/wp-json"
+	// WPCoreApiRoot is the root path for WordPress REST API.
+	WPCoreApiRoot = "/wp-json"
 
 	// WPCoreUsersMe is the endpoint for current user info.
 	WPCoreUsersMe = "/wp/v2/users/me"
@@ -99,26 +99,26 @@ const (
 // =============================================================================
 
 const (
-	// GoAPIPrefix is the base prefix for all Go backend API routes.
-	GoAPIPrefix = "/api/v1"
+	// GoApiPrefix is the base prefix for all Go backend API routes.
+	GoApiPrefix = "/api/v1"
 
-	// GoAPIHealth is the health check endpoint.
-	GoAPIHealth = GoAPIPrefix + "/health"
+	// GoApiHealth is the health check endpoint.
+	GoApiHealth = GoApiPrefix + "/health"
 
-	// GoAPISitesPrefix is the prefix for site-scoped routes.
-	GoAPISitesPrefix = GoAPIPrefix + "/sites"
+	// GoApiSitesPrefix is the prefix for site-scoped routes.
+	GoApiSitesPrefix = GoApiPrefix + "/sites"
 
-	// GoAPIWebSocket is the WebSocket endpoint.
-	GoAPIWebSocket = "/ws"
+	// GoApiWebSocket is the WebSocket endpoint.
+	GoApiWebSocket = "/ws"
 )
 
-// GoAPISiteRoute constructs a site-scoped Go API route: /api/v1/sites/{siteID}/{suffix}.
-func GoAPISiteRoute(siteID int64, suffix string) string {
-	return fmt.Sprintf("%s/%d/%s", GoAPISitesPrefix, siteID, suffix)
+// GoApiSiteRoute constructs a site-scoped Go API route: /api/v1/sites/{siteID}/{suffix}.
+func GoApiSiteRoute(siteID int64, suffix string) string {
+	return fmt.Sprintf("%s/%d/%s", GoApiSitesPrefix, siteID, suffix)
 }
 
-// GoAPISitePluginRoute constructs a site+plugin Go API route:
+// GoApiSitePluginRoute constructs a site+plugin Go API route:
 // /api/v1/sites/{siteID}/remote-plugins/{pluginSlug}/{action}.
-func GoAPISitePluginRoute(siteID int64, pluginSlug, action string) string {
-	return fmt.Sprintf("%s/%d/remote-plugins/%s/%s", GoAPISitesPrefix, siteID, pluginSlug, action)
+func GoApiSitePluginRoute(siteID int64, pluginSlug, action string) string {
+	return fmt.Sprintf("%s/%d/remote-plugins/%s/%s", GoApiSitesPrefix, siteID, pluginSlug, action)
 }

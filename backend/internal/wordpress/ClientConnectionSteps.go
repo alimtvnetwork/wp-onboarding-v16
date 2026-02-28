@@ -190,14 +190,14 @@ func (c *Client) reportAuthStart() {
 }
 
 // fetchAuthResponse sends the authentication API call.
-func (c *Client) fetchAuthResponse() apperror.Result[APICallResponse] {
+func (c *Client) fetchAuthResponse() apperror.Result[ApiCallResponse] {
 	authInput := apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCoreUsersMe,
 		Operation: "authenticate user",
 	}
 
-	return c.doAPICallWithStatus(authInput)
+	return c.doApiCallWithStatus(authInput)
 }
 
 // reportAuthRequestFailed sends an auth request failure event.

@@ -201,7 +201,7 @@ func (c *Client) reportUploadResponseProgress(statusCode int, respBody, uploadUR
 
 // buildUploadFailureAppError constructs an *apperror.AppError wrapping the structured APIError.
 func (c *Client) buildUploadFailureAppError(uc *uploadContext, statusCode int, respBytes []byte, respBody string) *apperror.AppError {
-	errInput := uploadAPIErrorInput{
+	errInput := uploadApiErrorInput{
 		AbsZipPath:      uc.AbsZipPath,
 		UploadURL:       uc.UploadURL,
 		UploadEndpoint:  uc.UploadEndpoint,
@@ -211,7 +211,7 @@ func (c *Client) buildUploadFailureAppError(uc *uploadContext, statusCode int, r
 		StackTraceDepth: c.stackTraceDepth,
 	}
 
-	apiErr := buildUploadAPIError(errInput)
+	apiErr := buildUploadApiError(errInput)
 
 	return apperror.WrapWithSkip(apiErr, apperror.ErrWPPluginUpload, "upload plugin failed", 1).
 		WithURL(uc.UploadURL).

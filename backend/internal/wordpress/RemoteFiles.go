@@ -61,12 +61,12 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) apperro
 		Operation: "get sync manifest",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
 		return apperror.Fail[[]RemoteFile](rawResult.AppError())
 	}
 
-	decodeResult := decodeAPIResponse[syncManifestResult](rawResult.Value(), "sync manifest")
+	decodeResult := decodeApiResponse[syncManifestResult](rawResult.Value(), "sync manifest")
 	if decodeResult.HasError() {
 		return apperror.Fail[[]RemoteFile](decodeResult.AppError())
 	}
@@ -95,12 +95,12 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) apper
 		Operation: "get plugin files",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
 		return apperror.Fail[[]RemoteFile](mapNotFoundError(rawResult.AppError(), "plugin not found on remote", slug))
 	}
 
-	decodeResult := decodeAPIResponse[pluginFilesResult](rawResult.Value(), "plugin files")
+	decodeResult := decodeApiResponse[pluginFilesResult](rawResult.Value(), "plugin files")
 	if decodeResult.HasError() {
 		return apperror.Fail[[]RemoteFile](decodeResult.AppError())
 	}
@@ -127,12 +127,12 @@ func (c *Client) RequestMutationToken(action string) apperror.Result[string] {
 		Operation: "request mutation token",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
 		return apperror.Fail[string](rawResult.AppError())
 	}
 
-	decodeResult := decodeAPIResponse[mutationTokenResult](rawResult.Value(), "mutation token")
+	decodeResult := decodeApiResponse[mutationTokenResult](rawResult.Value(), "mutation token")
 	if decodeResult.HasError() {
 		return apperror.Fail[string](decodeResult.AppError())
 	}
@@ -165,12 +165,12 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		Operation: "get file content",
 		ErrorCode: apperror.ErrWPConnection,
 	}
-	rawResult := c.doAPICallRaw(callInput)
+	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
 		return apperror.Fail[string](mapNotFoundError(rawResult.AppError(), "file not found on remote", filePath))
 	}
 
-	decodeResult := decodeAPIResponse[fileContentResult](rawResult.Value(), "file content")
+	decodeResult := decodeApiResponse[fileContentResult](rawResult.Value(), "file content")
 	if decodeResult.HasError() {
 		return apperror.Fail[string](decodeResult.AppError())
 	}

@@ -28,13 +28,13 @@ func (s *Service) buildPhpStackFrames(details *ExtractedErrorDetails) []session.
 }
 
 // extractErrorDetails extracts PHP stack trace frames and other details from WordPress API errors.
-// Accepts *apperror.AppError and unwraps the cause chain to find the underlying WordPress APIError.
+// Accepts *apperror.AppError and unwraps the cause chain to find the underlying WordPress ApiError.
 func (s *Service) extractErrorDetails(appErr *apperror.AppError) *ExtractedErrorDetails {
 	details := &ExtractedErrorDetails{Error: appErr.Error()}
 
-	// Unwrap the cause chain to find the original WordPress APIError
+	// Unwrap the cause chain to find the original WordPress ApiError
 	cause := appErr.Unwrap()
-	apiErr := wordpress.ExtractAPIError(cause)
+	apiErr := wordpress.ExtractApiError(cause)
 	isApiErrorMissing := apiErr == nil
 
 	if isApiErrorMissing {
@@ -49,7 +49,7 @@ func (s *Service) extractErrorDetails(appErr *apperror.AppError) *ExtractedError
 }
 
 // populateApiErrorFields copies API error fields into the details struct.
-func (s *Service) populateApiErrorFields(details *ExtractedErrorDetails, apiErr *wordpress.APIError) {
+func (s *Service) populateApiErrorFields(details *ExtractedErrorDetails, apiErr *wordpress.ApiError) {
 	details.Method = apiErr.Method
 	details.Endpoint = apiErr.Endpoint
 	details.Url = apiErr.URL

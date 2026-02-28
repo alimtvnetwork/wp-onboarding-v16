@@ -43,7 +43,7 @@ type SnapshotDownloadResult struct {
 // ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response] {
-	return c.doAPICallStream(apiCallInput{
+	return c.doApiCallStream(apiCallInput{
 		Method:    httpmethodtype.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsExport),
 		Body:      SnapshotIdRequest{Id: snapshotId},
@@ -53,7 +53,7 @@ func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
 func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotDownloadResult] {
-	return doAPICall[SnapshotDownloadResult](c, apiCallInput{
+	return doApiCall[SnapshotDownloadResult](c, apiCallInput{
 		Method:    httpmethodtype.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsDownload),
 		Body:      SnapshotIdRequest{Id: snapshotId},
@@ -82,7 +82,7 @@ func buildStreamZipAppError(resp *http.Response, downloadURL string) *apperror.A
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	apiErr := &APIError{
+	apiErr := &ApiError{
 		Operation:    operationtype.StreamSnapshotZip.Value(),
 		Method:       httpmethodtype.Get.Value(),
 ...
@@ -91,7 +91,7 @@ func buildStreamZipAppError(resp *http.Response, downloadURL string) *apperror.A
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() apperror.Result[[]SnapshotProvider] {
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethodtype.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsProviders),
 		Operation: operationtype.GetSnapshotProviders,
@@ -120,7 +120,7 @@ type AvailableTable struct {
 
 // GetAvailableTables returns the list of database tables available for snapshotting.
 func (c *Client) GetAvailableTables() apperror.Result[[]AvailableTable] {
-	rawResult := c.doAPICallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethodtype.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsTables),
 		Operation: operationtype.GetAvailableTables,

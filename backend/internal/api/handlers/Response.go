@@ -174,28 +174,28 @@ func decodeJSONSilent(r *http.Request, target any) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
-// resolveHTTPStatus extracts the HTTP status code from a WordPress APIError
-// wrapped inside an apperror chain. Returns fallback if no APIError is found.
+// resolveHTTPStatus extracts the HTTP status code from a WordPress ApiError
+// wrapped inside an apperror chain. Returns fallback if no ApiError is found.
 // This ensures that PHP-side 404s are forwarded to the frontend instead of
 // being masked as 500 Internal Server Error.
 func resolveHTTPStatus(err error, fallback wordpress.HttpStatusType) wordpress.HttpStatusType {
-	// Check direct APIError
-	var apiErr *wordpress.APIError
-	isDirectAPIError := errors.As(err, &apiErr)
-	hasDirectStatus := isDirectAPIError && apiErr.StatusCode > 0
+	// Check direct ApiError
+	var apiErr *wordpress.ApiError
+	isDirectApiError := errors.As(err, &apiErr)
+	hasDirectStatus := isDirectApiError && apiErr.StatusCode > 0
 
 	if hasDirectStatus {
 		return wordpress.HttpStatusType(apiErr.StatusCode)
 	}
 
-	// Check apperror wrapping an APIError
+	// Check apperror wrapping an ApiError
 	var appErr *apperror.AppError
 	isWrappedError := errors.As(err, &appErr) && appErr.Unwrap() != nil
 
 	if isWrappedError {
-		var inner *wordpress.APIError
-		isInnerAPIError := errors.As(appErr.Unwrap(), &inner)
-		hasInnerStatus := isInnerAPIError && inner.StatusCode > 0
+		var inner *wordpress.ApiError
+		isInnerApiError := errors.As(appErr.Unwrap(), &inner)
+		hasInnerStatus := isInnerApiError && inner.StatusCode > 0
 
 		if hasInnerStatus {
 			return wordpress.HttpStatusType(inner.StatusCode)

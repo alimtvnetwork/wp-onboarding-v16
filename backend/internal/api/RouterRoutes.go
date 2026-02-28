@@ -39,8 +39,8 @@ func registerRoutes(api *mux.Router, cfg ServerConfig) {
 }
 
 func registerCoreRoutes(api *mux.Router) {
-	api.HandleFunc("", handlers.APIIndex).Methods("GET")
-	api.HandleFunc("/", handlers.APIIndex).Methods("GET")
+	api.HandleFunc("", handlers.ApiIndex).Methods("GET")
+	api.HandleFunc("/", handlers.ApiIndex).Methods("GET")
 	api.HandleFunc("/health", handlers.Health).Methods("GET")
 	api.HandleFunc("/openapi", handlers.ServeOpenAPISpec).Methods("GET")
 	api.HandleFunc("/settings", handlers.GetSettings).Methods("GET")
