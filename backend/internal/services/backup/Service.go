@@ -120,8 +120,8 @@ func (s *Service) List(ctx context.Context, mappingID int64) apperror.ResultSlic
 	return apperror.OkSlice([]models.Backup{})
 }
 
-// GetByID returns a specific backup
-func (s *Service) GetByID(ctx context.Context, id int64) apperror.Result[models.Backup] {
+// GetById returns a specific backup
+func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.Backup] {
 	return apperror.Ok(models.Backup{})
 }
 

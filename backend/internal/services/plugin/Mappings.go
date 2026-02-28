@@ -39,7 +39,7 @@ const mappingsBySiteQuery = `
 	WHERE pm.SiteId = ?
 	ORDER BY p.Name ASC`
 
-const mappingByIDQuery = `
+const mappingByIdQuery = `
 	SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
 	       pm.CreatedAt, pm.UpdatedAt, s.Name, s.Url
 	FROM PluginMappings pm
@@ -140,7 +140,7 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) a
 		return apperror.Fail[models.PluginMapping](insertErr)
 	}
 
-	m := s.loadMappingByID(ctx, id)
+	m := s.loadMappingById(ctx, id)
 	s.log.Info("Plugin mapping created", "mappingId", id)
 	return apperror.Ok(m)
 }
@@ -174,12 +174,12 @@ func (s *Service) insertMapping(ctx context.Context, input CreateMappingInput) (
 	return id, nil
 }
 
-// loadMappingByID fetches a mapping by its ID.
-func (s *Service) loadMappingByID(ctx context.Context, id int64) models.PluginMapping {
+// loadMappingById fetches a mapping by its ID.
+func (s *Service) loadMappingById(ctx context.Context, id int64) models.PluginMapping {
 	var m models.PluginMapping
 	var createdAtStr, updatedAtStr sql.NullString
 
-	s.db.QueryRowContext(ctx, mappingByIDQuery, id).Scan(
+	s.db.QueryRowContext(ctx, mappingByIdQuery, id).Scan(
 		&m.Id, &m.PluginId, &m.SiteId, &m.RemoteSlug, &m.SyncStatus,
 		&createdAtStr, &updatedAtStr, &m.SiteName, &m.SiteUrl,
 	)

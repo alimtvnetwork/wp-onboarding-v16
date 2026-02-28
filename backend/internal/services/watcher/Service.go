@@ -93,7 +93,7 @@ func (s *Service) SetPublishService(ps PublishService) {
 
 // InitializeCache loads the current file state for a plugin
 func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
-	pResult := s.pluginService.GetByID(ctx, pluginID)
+	pResult := s.pluginService.GetById(ctx, pluginID)
 	if pResult.HasError() {
 		return pResult.AppError()
 	}
