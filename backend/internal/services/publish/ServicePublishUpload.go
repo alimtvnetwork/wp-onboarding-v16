@@ -21,15 +21,19 @@ func (s *Service) executeUploadStage(ctx context.Context, pctx *publishContext, 
 	uploadStartTime := time.Now()
 
 	stage := s.runStageWithSession(pctx.SessionId, "upload", func() error {
-		var err error
-		isAlreadyActivated, err = s.performUpload(performUploadInput{
+		activated, appErr := s.performUpload(performUploadInput{
 			Ctx:       ctx,
 			Pctx:      pctx,
 			ZipPath:   zipPath,
 			StartTime: uploadStartTime,
 		})
+		if appErr != nil {
+			return appErr
+		}
 
-		return err
+		isAlreadyActivated = activated
+
+		return nil
 	})
 
 	return isAlreadyActivated, stage
@@ -44,13 +48,14 @@ type performUploadInput struct {
 }
 
 // performUpload handles the upload retry and result logging.
-func (s *Service) performUpload(input performUploadInput) (bool, error) {
+func (s *Service) performUpload(input performUploadInput) (bool, *apperror.AppError) {
 	zipSize := getFileSize(input.ZipPath)
 	s.broadcastProgress(input.Pctx.progress(publishstep.Uploading, 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
 
 	uploadOutcome, retryResult := s.attemptUploadWithRetry(input.Ctx, input.Pctx, input.ZipPath)
 
 	if retryResult.LastError != nil {
+
 		return false, s.handleUploadRetryFailure(input.Pctx, retryResult)
 	}
 
@@ -143,15 +148,22 @@ func (s *Service) executeActivateStage(pctx *publishContext, isAlreadyActivated 
 		s.broadcastProgress(pctx.progress(publishstep.Activating, 80, "Activating plugin..."))
 
 		if isAlreadyActivated {
-			return s.logActivateSkipped(pctx)
+			s.logActivateSkipped(pctx)
+
+			return nil
 		}
 
-		return s.activateViaUploader(pctx, activateStartTime)
+		appErr := s.activateViaUploader(pctx, activateStartTime)
+		if appErr != nil {
+			return appErr
+		}
+
+		return nil
 	})
 }
 
 // logActivateSkipped logs when activation was already done during upload.
-func (s *Service) logActivateSkipped(pctx *publishContext) error {
+func (s *Service) logActivateSkipped(pctx *publishContext) {
 	skipCtx := StageContext{
 		What:   "Activate plugin on WordPress",
 		Why:    "Enable plugin functionality after upload",
@@ -164,15 +176,14 @@ func (s *Service) logActivateSkipped(pctx *publishContext) error {
 	}
 	skipLog := pctx.stageLog(loglevel.Info, publishstep.Activate, skipCtx)
 	s.broadcastStageLog(skipLog)
-
-	return nil
 }
 
 // activateViaUploader attempts plugin activation via the Riseup Asia Uploader
-func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time) error {
+func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time) *apperror.AppError {
 	availability, _ := pctx.WPClient.CheckRiseupAsiaAvailable()
 
 	if availability.IsUnavailable() {
+
 		return s.failActivateNoUploader(pctx)
 	}
 
@@ -188,7 +199,7 @@ func buildActivateEndpointURL(siteURL string) string {
 }
 
 // executeActivation performs the actual plugin activation call.
-func (s *Service) executeActivation(pctx *publishContext, endpointURL string, startTime time.Time) error {
+func (s *Service) executeActivation(pctx *publishContext, endpointURL string, startTime time.Time) *apperror.AppError {
 	enableErr := pctx.WPClient.EnablePluginViaUploader(pctx.Mapping.RemoteSlug)
 	if enableErr != nil {
 		activateErr := apperror.Wrap(enableErr, apperror.ErrWPConnection, "plugin activation failed")
@@ -209,7 +220,7 @@ func (s *Service) executeActivation(pctx *publishContext, endpointURL string, st
 }
 
 // failActivateNoUploader reports that activation failed because no uploader is available.
-func (s *Service) failActivateNoUploader(pctx *publishContext) error {
+func (s *Service) failActivateNoUploader(pctx *publishContext) *apperror.AppError {
 	failCtx := StageContext{
 		What:   "Activate plugin failed",
 		Why:    "Riseup Asia Uploader is not available on the remote site",
