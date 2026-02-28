@@ -116,7 +116,9 @@ func (s *Service) buildProgressCallback(id int64, siteName string) func(string, 
 
 // prepareBootstrapZip creates the uploader ZIP archive.
 func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, error) {
-	if uploaderPath == "" {
+	isUploaderPathEmpty := uploaderPath == ""
+
+	if isUploaderPathEmpty {
 		uploaderPath = "plugins-uploader-helper"
 	}
 
@@ -221,7 +223,9 @@ func (s *Service) executeUploaderUpload(siteID int64, client *wordpress.Client, 
 func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, error) {
 	s.logBootstrapInfo(id, "First-time installation - checking for Onboard plugin")
 
-	if !s.checkOnboardAvailable(client) {
+	isOnboardUnavailable := !s.checkOnboardAvailable(client)
+
+	if isOnboardUnavailable {
 		s.logBootstrapError(id, "No upload helper plugin found.")
 
 		return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site.")

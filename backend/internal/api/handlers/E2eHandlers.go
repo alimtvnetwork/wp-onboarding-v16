@@ -94,7 +94,10 @@ func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
 
 	limit := 20
 
-	if l := r.URL.Query().Get("limit"); l != "" {
+	l := r.URL.Query().Get("limit")
+	hasLimitParam := l != ""
+
+	if hasLimitParam {
 		if parsed, err := strconv.Atoi(l); err == nil {
 			limit = parsed
 		}

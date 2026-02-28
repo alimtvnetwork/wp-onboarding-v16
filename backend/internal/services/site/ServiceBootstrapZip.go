@@ -47,7 +47,9 @@ func resolveUploaderDir(uploaderPath string) (string, error) {
 		return "", apperror.Wrap(err, apperror.ErrFSNotFound, "uploader path not found").WithPath(pathutil.ForDisplay(absPath))
 	}
 
-	if !info.IsDir() {
+	isNotDirectory := !info.IsDir()
+
+	if isNotDirectory {
 		return "", apperror.New(apperror.ErrFSInvalid, "uploader path is not a directory").WithPath(pathutil.ForDisplay(absPath))
 	}
 

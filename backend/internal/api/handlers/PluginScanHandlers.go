@@ -55,7 +55,9 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Path == "" {
+	isPathEmpty := input.Path == ""
+
+	if isPathEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -137,7 +139,9 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(input.Paths) == 0 {
+	isPathsEmpty := len(input.Paths) == 0
+
+	if isPathsEmpty {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,
@@ -238,7 +242,10 @@ func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 
 // parseSiteIDFromQuery extracts the optional siteId query parameter.
 func parseSiteIDFromQuery(r *http.Request) int64 {
-	if s := r.URL.Query().Get("siteId"); s != "" {
+	s := r.URL.Query().Get("siteId")
+	hasSiteId := s != ""
+
+	if hasSiteId {
 		id, _ := strconv.ParseInt(s, 10, 64)
 
 		return id
