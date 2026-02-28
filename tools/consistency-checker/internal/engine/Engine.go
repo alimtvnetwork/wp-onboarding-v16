@@ -8,7 +8,7 @@ import (
 
 // Finding represents a single violation found by a rule.
 type Finding struct {
-	RuleID     string
+	RuleId     string
 	RuleName   string
 	Severity   string
 	FilePath   string
@@ -31,7 +31,7 @@ type CheckContext struct {
 
 // Rule is the interface all rule checkers must implement.
 type Rule interface {
-	ID() string
+	Id() string
 	Name() string
 	Languages() []string
 	Check(ctx CheckContext) []Finding

@@ -30,7 +30,7 @@ type Finding struct {
 	Context    string
 }
 
-// StartRun inserts a new run record and returns its ID.
+// StartRun inserts a new run record and returns its Id.
 func (db *DB) StartRun(directory, configPath string) apperror.Result[int64] {
 	result, err := db.conn.Exec(
 		"INSERT INTO Runs (Directory, Config) VALUES (?, ?)",

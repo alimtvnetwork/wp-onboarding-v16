@@ -11,8 +11,8 @@ import (
 // MdHeading checks that Markdown files contain exactly one H1 heading.
 type MdHeading struct{}
 
-// ID returns the rule identifier.
-func (r *MdHeading) ID() string { return "md-heading" }
+// Id returns the rule identifier.
+func (r *MdHeading) Id() string { return "md-heading" }
 
 // Name returns the rule display name.
 func (r *MdHeading) Name() string { return "Single H1 Heading" }
@@ -60,7 +60,7 @@ func buildH1Findings(ctx engine.CheckContext, h1Lines []int) []engine.Finding {
 // buildH1Finding constructs a finding for a duplicate H1.
 func buildH1Finding(ctx engine.CheckContext, lineNum, total int) engine.Finding {
 	return engine.Finding{
-		RuleID:     "md-heading",
+		RuleId:     "md-heading",
 		RuleName:   "Single H1 Heading",
 		Severity:   ctx.Spec.Severity,
 		FilePath:   ctx.FilePath,

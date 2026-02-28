@@ -11,8 +11,8 @@ import (
 // GoFuncSize checks that Go function bodies do not exceed a maximum line count.
 type GoFuncSize struct{}
 
-// ID returns the rule identifier.
-func (r *GoFuncSize) ID() string { return "go-func-size" }
+// Id returns the rule identifier.
+func (r *GoFuncSize) Id() string { return "go-func-size" }
 
 // Name returns the rule display name.
 func (r *GoFuncSize) Name() string { return "Go Function Body Size" }
@@ -122,7 +122,7 @@ func updateBraceDepth(line string, depth int) int {
 // buildFuncSizeFinding constructs a finding for an oversized function.
 func buildFuncSizeFinding(ctx engine.CheckContext, fn parsedFunction, maxLines int) engine.Finding {
 	return engine.Finding{
-		RuleID:     "go-func-size",
+		RuleId:     "go-func-size",
 		RuleName:   "Go Function Body Size",
 		Severity:   ctx.Spec.Severity,
 		FilePath:   ctx.FilePath,

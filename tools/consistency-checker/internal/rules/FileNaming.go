@@ -13,8 +13,8 @@ import (
 // FileNaming checks that files follow the configured naming convention.
 type FileNaming struct{}
 
-// ID returns the rule identifier.
-func (r *FileNaming) ID() string { return "file-naming" }
+// Id returns the rule identifier.
+func (r *FileNaming) Id() string { return "file-naming" }
 
 // Name returns the rule display name.
 func (r *FileNaming) Name() string { return "File Naming Convention" }
@@ -89,7 +89,7 @@ func isCamelCase(name string) bool {
 // buildNamingFinding constructs a finding for a naming violation.
 func buildNamingFinding(ctx engine.CheckContext, name, convention string) engine.Finding {
 	return engine.Finding{
-		RuleID:     "file-naming",
+		RuleId:     "file-naming",
 		RuleName:   "File Naming Convention",
 		Severity:   ctx.Spec.Severity,
 		FilePath:   ctx.FilePath,

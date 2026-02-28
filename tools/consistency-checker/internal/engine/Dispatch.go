@@ -36,7 +36,7 @@ func (e *Engine) checkFile(file *scanner.ScannedFile, specs []config.RuleSpec) [
 
 // checkRule runs a single rule against a file if it matches.
 func (e *Engine) checkRule(file *scanner.ScannedFile, spec config.RuleSpec, content []byte, lines []string) []Finding {
-	rule := e.findRule(spec.ID)
+	rule := e.findRule(spec.Id)
 	if rule == nil || !matchesLanguage(rule, file.Language) {
 		return nil
 	}
@@ -48,10 +48,10 @@ func (e *Engine) checkRule(file *scanner.ScannedFile, spec config.RuleSpec, cont
 	return rule.Check(ctx)
 }
 
-// findRule looks up a registered rule by ID.
+// findRule looks up a registered rule by Id.
 func (e *Engine) findRule(id string) Rule {
 	for _, r := range e.rules {
-		if r.ID() == id {
+		if r.Id() == id {
 			return r
 		}
 	}

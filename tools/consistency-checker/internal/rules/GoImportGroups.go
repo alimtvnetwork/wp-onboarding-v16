@@ -12,8 +12,8 @@ import (
 // stdlib, third-party, internal.
 type GoImportGroups struct{}
 
-// ID returns the rule identifier.
-func (r *GoImportGroups) ID() string { return "go-import-groups" }
+// Id returns the rule identifier.
+func (r *GoImportGroups) Id() string { return "go-import-groups" }
 
 // Name returns the rule display name.
 func (r *GoImportGroups) Name() string { return "Go Import Grouping" }
@@ -95,7 +95,7 @@ func countImportGroups(lines []string) int {
 // buildImportGroupFinding constructs a finding for wrong import grouping.
 func buildImportGroupFinding(ctx engine.CheckContext, block *importBlock, actual, expected int) engine.Finding {
 	return engine.Finding{
-		RuleID:     "go-import-groups",
+		RuleId:     "go-import-groups",
 		RuleName:   "Go Import Grouping",
 		Severity:   ctx.Spec.Severity,
 		FilePath:   ctx.FilePath,

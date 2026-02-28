@@ -10,8 +10,8 @@ import (
 // GoFileSize checks that Go files do not exceed a maximum line count.
 type GoFileSize struct{}
 
-// ID returns the rule identifier.
-func (r *GoFileSize) ID() string { return "go-file-size" }
+// Id returns the rule identifier.
+func (r *GoFileSize) Id() string { return "go-file-size" }
 
 // Name returns the rule display name.
 func (r *GoFileSize) Name() string { return "Go File Size Limit" }
@@ -34,7 +34,7 @@ func (r *GoFileSize) Check(ctx engine.CheckContext) []engine.Finding {
 // buildFileSizeFinding constructs the finding for an oversized file.
 func buildFileSizeFinding(ctx engine.CheckContext, lineCount, maxLines int) engine.Finding {
 	return engine.Finding{
-		RuleID:     "go-file-size",
+		RuleId:     "go-file-size",
 		RuleName:   "Go File Size Limit",
 		Severity:   ctx.Spec.Severity,
 		FilePath:   ctx.FilePath,
