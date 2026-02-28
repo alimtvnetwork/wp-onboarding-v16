@@ -64,9 +64,10 @@ func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotD
 // StreamSnapshotZip downloads the actual ZIP file from the WordPress download-file endpoint.
 // Returns the raw HTTP response; caller must close the body.
 func (c *Client) StreamSnapshotZip(downloadURL string) apperror.Result[*http.Response] {
-	resp, err := c.rawGet(downloadURL)
-	if err != nil {
-		return apperror.FailWrap[*http.Response](err, apperror.ErrInternal, operationtype.StreamSnapshotZip.Value())
+	resp, appErr := c.rawGet(downloadURL)
+	if appErr != nil {
+
+		return apperror.Fail[*http.Response](appErr)
 	}
 
 	if resp.StatusCode != HttpStatusOk.Int() {

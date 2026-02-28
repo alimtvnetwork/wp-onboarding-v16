@@ -26,7 +26,12 @@ var sourceMachineHostname string
 func init() {
 	var err error
 	sourceMachineHostname, err = os.Hostname()
-	if err != nil || sourceMachineHostname == "" {
+
+	hasHostnameError :=
+		err != nil ||
+		sourceMachineHostname == ""
+
+	if hasHostnameError {
 		sourceMachineHostname = "unknown"
 	}
 }
@@ -57,9 +62,12 @@ type Client struct {
 // NewClient creates a new WordPress API client
 func NewClient(cfg ClientConfig) *Client {
 	depth := cfg.StackTraceDepth
-	if depth <= 0 {
+	isDepthMissing := depth <= 0
+
+	if isDepthMissing {
 		depth = DefaultStackTraceDepth
 	}
+
 	return &Client{
 		baseURL:  strings.TrimSuffix(cfg.BaseURL, "/"),
 		username: cfg.Username,
@@ -90,13 +98,15 @@ func (c *Client) setStandardHeaders(req *http.Request, contentType string) {
 }
 
 // marshalBody encodes the body to JSON if non-nil.
-func marshalBody(body any) (io.Reader, error) {
+func marshalBody(body any) (io.Reader, *apperror.AppError) {
 	if body == nil {
+
 		return nil, nil
 	}
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body")
 	}
 
@@ -104,28 +114,38 @@ func marshalBody(body any) (io.Reader, error) {
 }
 
 // request makes an authenticated HTTP request to the WordPress API
-func (c *Client) request(method, endpoint string, body any) (*http.Response, error) {
-	bodyReader, err := marshalBody(body)
-	if err != nil {
-		return nil, err
+func (c *Client) request(method, endpoint string, body any) (*http.Response, *apperror.AppError) {
+	bodyReader, appErr := marshalBody(body)
+	if appErr != nil {
+
+		return nil, appErr
 	}
 
 	return c.buildAndSendRequest(method, endpoint, bodyReader)
 }
 
 // buildAndSendRequest creates and sends an HTTP request with standard headers.
-func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*http.Response, error) {
-	url := BuildWPJSONURL(c.baseURL, endpoint)
-	req, err := http.NewRequest(method, url, body)
+func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*http.Response, *apperror.AppError) {
+	fullUrl := BuildWPJSONURL(c.baseURL, endpoint)
+	req, err := http.NewRequest(method, fullUrl, body)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
-			WithURL(url).
+			WithURL(fullUrl).
 			WithMethod(method)
 	}
 
 	c.setStandardHeaders(req, contenttype.JSON.Value())
 
-	return c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "HTTP request failed").
+			WithURL(fullUrl).
+			WithMethod(method)
+	}
+
+	return resp, nil
 }
 
 // multipartInput bundles parameters for requestMultipart.
@@ -137,38 +157,63 @@ type multipartInput struct {
 }
 
 // requestMultipart sends a multipart HTTP request (for file uploads).
-func (c *Client) requestMultipart(input multipartInput) (*http.Response, error) {
-	url := BuildWPJSONURL(c.baseURL, input.Endpoint)
-	req, err := http.NewRequest(input.Method.Value(), url, input.Body)
+func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperror.AppError) {
+	fullUrl := BuildWPJSONURL(c.baseURL, input.Endpoint)
+	req, err := http.NewRequest(input.Method.Value(), fullUrl, input.Body)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
-			WithURL(url).
+			WithURL(fullUrl).
 			WithMethod(input.Method.Value())
 	}
 
 	c.setStandardHeaders(req, input.ContentType)
-	return c.httpClient.Do(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "multipart HTTP request failed").
+			WithURL(fullUrl).
+			WithMethod(input.Method.Value())
+	}
+
+	return resp, nil
 }
 
 func (c *Client) fullURL(endpoint string) string {
+
 	return BuildWPJSONURL(c.baseURL, endpoint)
 }
 
 // rawGet performs an authenticated GET request to an arbitrary full URL on the same WordPress host.
-func (c *Client) rawGet(fullURL string) (*http.Response, error) {
+func (c *Client) rawGet(fullURL string) (*http.Response, *apperror.AppError) {
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
+
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
 			WithURL(fullURL)
 	}
+
 	c.setStandardHeaders(req, contenttype.JSON.Value())
-	return c.httpClient.Do(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "raw GET request failed").
+			WithURL(fullURL)
+	}
+
+	return resp, nil
 }
 
 func escapePathSegmentPreservingPercent(s string) string {
-	if strings.Contains(strings.ToLower(s), "%2f") {
+	hasEncodedSlash := strings.Contains(strings.ToLower(s), "%2f")
+
+	if hasEncodedSlash {
+
 		return s
 	}
+
 	return url.PathEscape(s)
 }
 

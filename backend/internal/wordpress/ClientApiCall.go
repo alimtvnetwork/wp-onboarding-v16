@@ -31,11 +31,11 @@ type APICallResponse struct {
 // Unlike doAPICallRaw, it does NOT validate the status code — the caller decides how to handle it.
 // The error return is only for transport-level failures (DNS, timeout, request creation).
 func (c *Client) doAPICallWithStatus(input apiCallInput) apperror.Result[APICallResponse] {
-	resp, err := c.request(input.Method.Value(), input.Endpoint, input.Body)
-	if err != nil {
+	resp, appErr := c.request(input.Method.Value(), input.Endpoint, input.Body)
+	if appErr != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
-		return apperror.FailWrap[APICallResponse](err, code, input.Operation.Value())
+		return apperror.FailWrap[APICallResponse](appErr, code, input.Operation.Value())
 	}
 	defer resp.Body.Close()
 
@@ -66,11 +66,11 @@ func (c *Client) doAPICallRaw(input apiCallInput) apperror.Result[[]byte] {
 // doAPICallStream sends the request, validates the status code, and returns the raw HTTP response.
 // The caller is responsible for closing the response body. Use this for streaming responses (e.g. ZIP downloads).
 func (c *Client) doAPICallStream(input apiCallInput) apperror.Result[*http.Response] {
-	resp, err := c.request(input.Method.Value(), input.Endpoint, input.Body)
-	if err != nil {
+	resp, appErr := c.request(input.Method.Value(), input.Endpoint, input.Body)
+	if appErr != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
 
-		return apperror.FailWrap[*http.Response](err, code, input.Operation.Value())
+		return apperror.FailWrap[*http.Response](appErr, code, input.Operation.Value())
 	}
 
 	if isErrorStatus(resp.StatusCode, input.OkStatuses) {

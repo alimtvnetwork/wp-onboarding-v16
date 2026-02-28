@@ -13,11 +13,12 @@ import (
 )
 
 // testPluginAccess checks plugin management permissions (Step 4).
-func (c *Client) testPluginAccess(result *ConnectionInfo) error {
+func (c *Client) testPluginAccess(result *ConnectionInfo) *apperror.AppError {
 	c.reportPluginAccessStart()
 
 	pluginResp := c.fetchPluginAccessResponse()
 	if pluginResp.HasError() {
+
 		return c.reportPluginAccessRequestFailed(pluginResp.AppError())
 	}
 
@@ -48,7 +49,7 @@ func (c *Client) fetchPluginAccessResponse() apperror.Result[APICallResponse] {
 }
 
 // reportPluginAccessRequestFailed sends a plugin access request failure event.
-func (c *Client) reportPluginAccessRequestFailed(err *apperror.AppError) error {
+func (c *Client) reportPluginAccessRequestFailed(err *apperror.AppError) *apperror.AppError {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.PluginAccessCheck.Value(),
 		Status:  stagestatus.Failed.String(),
@@ -60,10 +61,13 @@ func (c *Client) reportPluginAccessRequestFailed(err *apperror.AppError) error {
 }
 
 // evaluatePluginAccess checks plugin access based on status code.
-func (c *Client) evaluatePluginAccess(statusCode int, result *ConnectionInfo) error {
-	isUnauthorized := statusCode == HttpStatusUnauthorized.Int() || statusCode == HttpStatusForbidden.Int()
+func (c *Client) evaluatePluginAccess(statusCode int, result *ConnectionInfo) *apperror.AppError {
+	isUnauthorized :=
+		statusCode == HttpStatusUnauthorized.Int() ||
+		statusCode == HttpStatusForbidden.Int()
 
 	if isUnauthorized {
+
 		return c.reportInsufficientPluginPermissions(result, statusCode)
 	}
 
@@ -73,7 +77,7 @@ func (c *Client) evaluatePluginAccess(statusCode int, result *ConnectionInfo) er
 }
 
 // reportInsufficientPluginPermissions sends permission failure event.
-func (c *Client) reportInsufficientPluginPermissions(result *ConnectionInfo, statusCode int) error {
+func (c *Client) reportInsufficientPluginPermissions(result *ConnectionInfo, statusCode int) *apperror.AppError {
 	c.progress(ProgressEvent{
 		Step:    connectionstep.PluginAccessCheck.Value(),
 		Status:  stagestatus.Failed.String(),
@@ -88,12 +92,16 @@ func (c *Client) reportInsufficientPluginPermissions(result *ConnectionInfo, sta
 
 // reportPluginAccessByStatus logs the plugin access check outcome.
 func (c *Client) reportPluginAccessByStatus(statusCode int, result *ConnectionInfo) {
-	if statusCode == HttpStatusOk.Int() {
+	isOk := statusCode == HttpStatusOk.Int()
+
+	if isOk {
 		result.CanManagePlugins = true
 		c.reportPluginAccessConfirmed()
-	} else {
-		c.reportPluginAccessWarning(statusCode)
+
+		return
 	}
+
+	c.reportPluginAccessWarning(statusCode)
 }
 
 // reportPluginAccessConfirmed sends the plugin access confirmed event.
@@ -171,7 +179,9 @@ func (c *Client) reportWriteTestRequestFailed(err *apperror.AppError) {
 
 // evaluateWriteTestByStatus handles the write test response based on status code.
 func (c *Client) evaluateWriteTestByStatus(statusCode int, body []byte, result *ConnectionInfo) {
-	if statusCode == HttpStatusCreated.Int() {
+	isCreated := statusCode == HttpStatusCreated.Int()
+
+	if isCreated {
 		c.handleWriteTestCleanup(body, result)
 
 		return
@@ -182,9 +192,12 @@ func (c *Client) evaluateWriteTestByStatus(statusCode int, body []byte, result *
 
 // reportWriteTestNonCreated sends events for non-201 write test responses.
 func (c *Client) reportWriteTestNonCreated(statusCode int) {
-	isUnauthorized := statusCode == HttpStatusUnauthorized.Int() || statusCode == HttpStatusForbidden.Int()
+	isUnauthorized :=
+		statusCode == HttpStatusUnauthorized.Int() ||
+		statusCode == HttpStatusForbidden.Int()
 
 	msg := fmt.Sprintf("Write test returned %d", statusCode)
+
 	if isUnauthorized {
 		msg = "User cannot create posts"
 	}
@@ -200,7 +213,13 @@ func (c *Client) reportWriteTestNonCreated(statusCode int) {
 // handleWriteTestCleanup cleans up the test post and reports success.
 func (c *Client) handleWriteTestCleanup(body []byte, result *ConnectionInfo) {
 	var createdPost wpCreatedPost
-	if err := json.Unmarshal(body, &createdPost); err != nil || createdPost.Id <= 0 {
+	decodeErr := json.Unmarshal(body, &createdPost)
+	hasDecodeError :=
+		decodeErr != nil ||
+		createdPost.Id <= 0
+
+	if hasDecodeError {
+
 		return
 	}
 
