@@ -113,8 +113,10 @@ func isTransientAppError(appErr *apperror.AppError) bool {
 		return isTransientMessage(appErr.Error())
 	}
 
-	netErr, ok := cause.(net.Error)
-	if ok && netErr != nil {
+	netErr, isNetError := cause.(net.Error)
+
+	if isNetError && netErr != nil {
+
 		return true
 	}
 
