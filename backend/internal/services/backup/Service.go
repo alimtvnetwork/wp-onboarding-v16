@@ -81,12 +81,13 @@ func (s *Service) broadcastLog(input BackupLogInput) {
 
 // logInfo broadcasts an info-level log entry.
 func (s *Service) logInfo(pluginID int64, step, message string) {
-	s.broadcastLog(BackupLogInput{
+	infoLog := BackupLogInput{
 		PluginId: pluginID,
 		Level:    loglevel.Info.Lower(),
 		Step:     step,
 		Message:  message,
-	})
+	}
+	s.broadcastLog(infoLog)
 }
 
 // logInfoWithDetails broadcasts an info-level log entry with details.
@@ -97,22 +98,24 @@ func (s *Service) logInfoWithDetails(input BackupLogInput) {
 
 // logError broadcasts an error-level log entry.
 func (s *Service) logError(pluginID int64, step, message string) {
-	s.broadcastLog(BackupLogInput{
+	errorLog := BackupLogInput{
 		PluginId: pluginID,
 		Level:    loglevel.Error.Lower(),
 		Step:     step,
 		Message:  message,
-	})
+	}
+	s.broadcastLog(errorLog)
 }
 
 // logWarn broadcasts a warn-level log entry.
 func (s *Service) logWarn(pluginID int64, step, message string) {
-	s.broadcastLog(BackupLogInput{
+	warnLog := BackupLogInput{
 		PluginId: pluginID,
 		Level:    loglevel.Warn.Lower(),
 		Step:     step,
 		Message:  message,
-	})
+	}
+	s.broadcastLog(warnLog)
 }
 
 // List returns all backups for a plugin mapping
