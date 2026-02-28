@@ -109,9 +109,9 @@ func Load(path string) (*Config, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
-		isNotFound := os.IsNotExist(err)
+		isMissing := os.IsNotExist(err)
 
-		if isNotFound {
+		if isMissing {
 			return cfg, nil
 		}
 

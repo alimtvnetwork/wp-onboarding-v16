@@ -65,8 +65,8 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Skip if session logging is disabled or for non-API routes
 			isDisabled := !isEnabled
-			isNonApiRoute := !strings.HasPrefix(r.URL.Path, "/api/")
-			isSkippable := isDisabled || isNonApiRoute
+			isExternalRoute := !strings.HasPrefix(r.URL.Path, "/api/")
+			isSkippable := isDisabled || isExternalRoute
 
 			if isSkippable {
 				next.ServeHTTP(w, r)
@@ -87,9 +87,8 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			// Capture request body
 			var requestBody string
 			hasBody := r.Body != nil
-			isNotGet := r.Method != "GET"
-			isNotHead := r.Method != "HEAD"
-			isBodyCapturable := hasBody && isNotGet && isNotHead
+			isMutatingMethod := r.Method != "GET" && r.Method != "HEAD"
+			isBodyCapturable := hasBody && isMutatingMethod
 
 			if isBodyCapturable {
 				bodyBytes, err := io.ReadAll(r.Body)

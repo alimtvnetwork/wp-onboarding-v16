@@ -164,9 +164,9 @@ func (s *Service) getActiveSession(sessionID string) *Session {
 	session, isFound := s.sessions[sessionID]
 	s.mu.RUnlock()
 
-	isNotFound := !isFound
+	isMissing := !isFound
 
-	if isNotFound {
+	if isMissing {
 		return nil
 	}
 	return session
@@ -279,9 +279,9 @@ func (s *Service) EndSession(sessionID, status, errorMsg string) {
 	session, isFound := s.sessions[sessionID]
 	s.mu.Unlock()
 
-	isNotFound := !isFound
+	isMissing := !isFound
 
-	if isNotFound {
+	if isMissing {
 		return
 	}
 

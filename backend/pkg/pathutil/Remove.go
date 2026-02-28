@@ -22,9 +22,9 @@ func RemoveFile(path string, varName string) *apperror.AppError {
 		return nil
 	}
 
-	isNotFound := os.IsNotExist(err)
+	isMissing := os.IsNotExist(err)
 
-	if isNotFound {
+	if isMissing {
 		return nil
 	}
 
@@ -48,9 +48,9 @@ func RemoveDir(path string, varName string) *apperror.AppError {
 		return nil
 	}
 
-	isNotFound := os.IsNotExist(err)
+	isMissing := os.IsNotExist(err)
 
-	if isNotFound {
+	if isMissing {
 		return nil
 	}
 

@@ -34,9 +34,9 @@ func (s *Service) removeExpiredBackups() (int, *apperror.AppError) {
 
 // removeIfExpired removes a file if it's older than the cutoff.
 func (s *Service) removeIfExpired(path string, info os.FileInfo, cutoff time.Time, count *int) error {
-	isNotExpired := !info.ModTime().Before(cutoff)
+	isFresh := !info.ModTime().Before(cutoff)
 
-	if isNotExpired {
+	if isFresh {
 		return nil
 	}
 

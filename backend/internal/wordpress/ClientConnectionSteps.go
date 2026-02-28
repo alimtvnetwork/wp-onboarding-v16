@@ -126,9 +126,9 @@ func (c *Client) reportProbeSuccess(result *ConnectionInfo) {
 
 // validateRestApiStatus checks the REST API response status and parses site info.
 func (c *Client) validateRestApiStatus(resp *http.Response, result *ConnectionInfo) *apperror.AppError {
-	isNotFound := resp.StatusCode == HttpStatusNotFound.Int()
+	isMissing := resp.StatusCode == HttpStatusNotFound.Int()
 
-	if isNotFound {
+	if isMissing {
 
 		return c.reportRestApiNotFound()
 	}

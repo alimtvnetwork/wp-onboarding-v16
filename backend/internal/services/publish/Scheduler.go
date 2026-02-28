@@ -124,9 +124,9 @@ func (s *PublishScheduler) ToggleJob(jobId string, isEnabled bool) bool {
 	defer s.mu.Unlock()
 
 	job, isFound := s.jobs[jobId]
-	isNotFound := !isFound
+	isMissing := !isFound
 
-	if isNotFound {
+	if isMissing {
 		return false
 	}
 
@@ -166,9 +166,9 @@ func (s *PublishScheduler) GetJob(jobId string) (*ScheduledJob, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	job, isFound := s.jobs[jobId]
-	isNotFound := !isFound
+	isMissing := !isFound
 
-	if isNotFound {
+	if isMissing {
 
 		return nil, false
 	}
