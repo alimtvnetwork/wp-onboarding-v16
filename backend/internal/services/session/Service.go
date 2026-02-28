@@ -29,10 +29,10 @@ const (
 
 // Session represents an active or completed operation session
 type Session struct {
-	ID         string          `json:",omitempty"`
+	Id         string          `json:",omitempty"`
 	Type       SessionType
-	PluginID   int64           `json:",omitempty"`
-	SiteID     int64           `json:",omitempty"`
+	PluginId   int64           `json:",omitempty"`
+	SiteId     int64           `json:",omitempty"`
 	PluginName string          `json:",omitempty"`
 	SiteName   string          `json:",omitempty"`
 	Status     string          // running, success, error
@@ -241,10 +241,10 @@ func (s *Service) getErrorLogPath(sessionID string) apperror.Result[string] {
 
 // SessionSummary provides a brief overview of a session
 type SessionSummary struct {
-	ID         string
+	Id         string
 	Type       SessionType
-	PluginID   int64      `json:",omitempty"`
-	SiteID     int64      `json:",omitempty"`
+	PluginId   int64      `json:",omitempty"`
+	SiteId     int64      `json:",omitempty"`
 	PluginName string     `json:",omitempty"`
 	SiteName   string     `json:",omitempty"`
 	Status     string

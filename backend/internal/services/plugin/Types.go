@@ -12,7 +12,7 @@ type CreateInput struct {
 	AutoPublish     bool
 	ExcludePatterns []string
 	GitEnabled      bool
-	GitRemoteURL    string
+	GitRemoteUrl    string
 	BuildCommand    string
 	ForceCreate     bool // Skip path validation errors
 }
@@ -26,14 +26,14 @@ type UpdateInput struct {
 	AutoPublish     *bool     `json:",omitempty"`
 	ExcludePatterns *[]string `json:",omitempty"`
 	GitEnabled      *bool     `json:",omitempty"`
-	GitRemoteURL    *string   `json:",omitempty"`
+	GitRemoteUrl    *string   `json:",omitempty"`
 	BuildCommand    *string   `json:",omitempty"`
 }
 
 // CreateMappingInput holds data for creating a plugin-site mapping
 type CreateMappingInput struct {
-	PluginID   int64
-	SiteID     int64
+	PluginId   int64
+	SiteId     int64
 	RemoteSlug string
 }
 

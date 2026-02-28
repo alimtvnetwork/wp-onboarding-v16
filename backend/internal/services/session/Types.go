@@ -20,8 +20,8 @@ func ToJson[T any](v T) json.RawMessage {
 // StartSessionInput bundles parameters for StartSession.
 type StartSessionInput struct {
 	Type       SessionType
-	PluginID   int64
-	SiteID     int64
+	PluginId   int64
+	SiteId     int64
 	PluginName string
 	SiteName   string
 }

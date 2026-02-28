@@ -95,10 +95,10 @@ func (s *Service) buildSingleSummary(d dirInfo) *SessionSummary {
 // summaryFromSession builds a SessionSummary from an in-memory Session.
 func summaryFromSession(session *Session) *SessionSummary {
 	return &SessionSummary{
-		ID:         session.ID,
+		Id:         session.Id,
 		Type:       session.Type,
-		PluginID:   session.PluginID,
-		SiteID:     session.SiteID,
+		PluginId:   session.PluginId,
+		SiteId:     session.SiteId,
 		PluginName: session.PluginName,
 		SiteName:   session.SiteName,
 		Status:     session.Status,
