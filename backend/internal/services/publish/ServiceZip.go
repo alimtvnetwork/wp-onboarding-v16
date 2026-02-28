@@ -100,21 +100,28 @@ func (zs *zipSession) Finalize() *apperror.AppError {
 func (zs *zipSession) CleanupOnError(err error) (string, error) {
 	zs.Writer.Close()
 	zs.File.Close()
-	os.Remove(zs.Ctx.AbsZipPath)
+	pathutil.RemoveFileUnchecked(zs.Ctx.AbsZipPath)
+
 	return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip archive")
 }
 
 // finalizeZip closes the zip writer and file, validates the result.
 func finalizeZip(zw *zip.Writer, zf *os.File, absZipPath string) *apperror.AppError {
-	if err := zw.Close(); err != nil {
+	zwErr := zw.Close()
+	if zwErr != nil {
 		zf.Close()
-		os.Remove(absZipPath)
-		return apperror.Wrap(err, apperror.ErrFSZip, "failed to finalize zip archive")
+		pathutil.RemoveFileUnchecked(absZipPath)
+
+		return apperror.Wrap(zwErr, apperror.ErrFSZip, "failed to finalize zip archive")
 	}
-	if err := zf.Close(); err != nil {
-		os.Remove(absZipPath)
-		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to close zip file")
+
+	zfErr := zf.Close()
+	if zfErr != nil {
+		pathutil.RemoveFileUnchecked(absZipPath)
+
+		return apperror.Wrap(zfErr, apperror.ErrFSWrite, "failed to close zip file")
 	}
+
 	return validateZipFile(absZipPath)
 }
 
@@ -125,8 +132,10 @@ func validateZipFile(absZipPath string) *apperror.AppError {
 		return apperror.Wrap(appErr, apperror.ErrFSRead, "zip file not found after creation")
 	}
 
-	if fi.Info.Size() == 0 {
-		os.Remove(absZipPath)
+	isEmpty := fi.Info.Size() == 0
+
+	if isEmpty {
+		pathutil.RemoveFileUnchecked(absZipPath)
 
 		return apperror.New(apperror.ErrFSZip, "zip file is empty after creation")
 	}

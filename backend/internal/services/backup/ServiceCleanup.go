@@ -8,6 +8,7 @@ import (
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // removeExpiredBackups walks the backup directory and removes files past retention.
@@ -48,7 +49,8 @@ func (s *Service) removeIfExpired(path string, info os.FileInfo, cutoff time.Tim
 		Details:  expiredDetails,
 	})
 
-	if err := os.Remove(path); err == nil {
+	appErr := pathutil.RemoveFile(path, "path")
+	if appErr == nil {
 		*count++
 	}
 

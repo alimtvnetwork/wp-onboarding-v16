@@ -129,10 +129,13 @@ func ensureSessionsDir(dataDir string) (string, error) {
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrSessionInit, "resolve sessions directory")
 	}
-	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
-		return "", apperror.Wrap(err, apperror.ErrSessionInit, "create sessions directory").
+
+	mkErr := os.MkdirAll(sessionsDir, 0755)
+	if mkErr != nil {
+		return "", apperror.Wrap(mkErr, apperror.ErrSessionInit, "create sessions directory").
 			WithPath(sessionsDir)
 	}
+
 	return sessionsDir, nil
 }
 

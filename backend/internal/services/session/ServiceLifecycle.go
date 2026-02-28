@@ -19,8 +19,9 @@ func (s *Service) StartSession(input StartSessionInput) (string, error) {
 	sessionID := uuid.New().String()
 	session := buildNewSession(sessionID, input)
 
-	if err := s.initSessionDir(sessionID); err != nil {
-		return "", err
+	initErr := s.initSessionDir(sessionID)
+	if initErr != nil {
+		return "", initErr
 	}
 
 	file, err := s.createSessionLogFile(sessionID)
@@ -67,10 +68,12 @@ func (s *Service) initSessionDir(sessionID string) error {
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrSessionInit, "resolve session directory")
 	}
-	if err := os.MkdirAll(sessionDir, 0755); err != nil {
-		return apperror.Wrap(err, apperror.ErrSessionInit, "create session directory").
+	mkErr := os.MkdirAll(sessionDir, 0755)
+	if mkErr != nil {
+		return apperror.Wrap(mkErr, apperror.ErrSessionInit, "create session directory").
 			WithPath(sessionDir)
 	}
+
 	return nil
 }
 

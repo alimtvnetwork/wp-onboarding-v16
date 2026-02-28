@@ -26,10 +26,11 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, *apperror.AppE
 	}
 	tempPath := tempFile.Name()
 
-	if err := writeUploaderZipContent(tempFile, absUploaderPath); err != nil {
-		os.Remove(tempPath)
+	writeErr := writeUploaderZipContent(tempFile, absUploaderPath)
+	if writeErr != nil {
+		pathutil.RemoveFileUnchecked(tempPath)
 
-		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP").WithPath(pathutil.ForDisplay(absUploaderPath))
+		return "", apperror.Wrap(writeErr, apperror.ErrFSZip, "failed to create uploader ZIP").WithPath(pathutil.ForDisplay(absUploaderPath))
 	}
 
 	return tempPath, nil

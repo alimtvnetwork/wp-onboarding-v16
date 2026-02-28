@@ -2,7 +2,6 @@ package publish
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
@@ -66,7 +65,7 @@ func (s *Service) removeZipFile(input cleanupZipInput) {
 		Details:  toDetails(CleanupDetails{IsKeepZipFiles: input.IsKeepZipFiles}),
 	}
 	s.broadcastDetailedLog(removeLog)
-	os.Remove(input.ZipPath)
+	pathutil.RemoveFileUnchecked(input.ZipPath)
 }
 
 // logZipInput bundles parameters for logZipCreated.

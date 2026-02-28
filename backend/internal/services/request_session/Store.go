@@ -200,7 +200,8 @@ func (s *Store) DeleteRequestSession(id string) error {
 		if d.IsDir() || d.Name() != id+".json" {
 			return nil
 		}
-		if err := os.Remove(path); err == nil {
+		removeErr := pathutil.RemoveFile(path, "path")
+		if removeErr == nil {
 			isDeleted = true
 		}
 		return filepath.SkipAll
@@ -236,8 +237,9 @@ func (s *Store) ClearRequestSessions() error {
 			s.log.Error("Failed to resolve session entry path", "entry", entry.Name(), "error", err)
 			continue
 		}
-		if err := os.RemoveAll(path); err != nil {
-			s.log.Error("Failed to remove session entry", "path", path, "error", err)
+		removeErr := pathutil.RemoveDir(path, "path")
+		if removeErr != nil {
+			s.log.Error("Failed to remove session entry", "path", path, "error", removeErr)
 		}
 	}
 
@@ -274,9 +276,7 @@ func (s *Store) cleanupOldSessions() {
 		}
 		if entry.Name() < cutoffDate {
 			path, err := pathutil.Join(s.dataDir, entry.Name())
-			if err == nil {
-				os.RemoveAll(path)
-			}
+			pathutil.RemoveFileUnchecked(path)
 		}
 	}
 }

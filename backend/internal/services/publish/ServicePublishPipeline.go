@@ -3,7 +3,6 @@ package publish
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
@@ -11,6 +10,7 @@ import (
 	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // ─── Pipeline ────────────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ func (s *Service) uploadActivateAndCleanup(ctx context.Context, pctx *publishCon
 	hasBackupZip := preUploadBackupZip != ""
 
 	if hasBackupZip {
-		defer os.Remove(preUploadBackupZip)
+		defer pathutil.RemoveFileUnchecked(preUploadBackupZip)
 	}
 
 	defer s.deferCleanupZip(pctx, pkgResult.ZipPath)
