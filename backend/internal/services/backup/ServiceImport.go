@@ -69,7 +69,9 @@ func (s *Service) openImportZip(zipPath, destDir string, isOverwrite bool) (*zip
 func (s *Service) validateImportDest(destDir string, isOverwrite bool) error {
 	_, statErr := pathutil.StatDir(destDir)
 	isDestExists := statErr == nil
-	isConflict := isDestExists && !isOverwrite
+	isConflict :=
+		isDestExists &&
+		!isOverwrite
 
 	if isConflict {
 		s.logError(0, "check", "Destination exists, overwrite not enabled")

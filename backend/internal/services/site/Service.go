@@ -163,7 +163,9 @@ func normalizeUrl(rawUrl string) string {
 func ensureScheme(rawUrl string) string {
 	hasHttpPrefix := strings.HasPrefix(rawUrl, "http://")
 	hasHttpsPrefix := strings.HasPrefix(rawUrl, "https://")
-	isMissingScheme := !hasHttpPrefix && !hasHttpsPrefix
+	isMissingScheme :=
+		!hasHttpPrefix &&
+		!hasHttpsPrefix
 
 	if isMissingScheme {
 		return "https://" + rawUrl

@@ -16,7 +16,9 @@ import (
 // isSiteServiceMissing checks that the site service is available, responding with an error if not.
 // Returns true if the service is missing (positive guard for failure).
 func isSiteServiceMissing(w http.ResponseWriter) bool {
-	isMissing := Services == nil || Services.SiteService == nil
+	isMissing :=
+		Services == nil ||
+		Services.SiteService == nil
 	if isMissing {
 		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", responsemessage.ServiceNotAvailable.String())
 

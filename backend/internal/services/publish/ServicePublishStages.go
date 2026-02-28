@@ -129,7 +129,11 @@ func (s *Service) logZipIfCreated(pctx *publishContext, buildResult *PackageBuil
 
 // buildZip delegates to selective or full zip creation.
 func (s *Service) buildZip(pctx *publishContext) (*PackageBuildResult, error) {
-	isSelectiveMode := pctx.Options.Mode.IsSelected() && len(pctx.Options.Files) > 0
+	hasSelectedMode := pctx.Options.Mode.IsSelected()
+	hasFiles := len(pctx.Options.Files) > 0
+	isSelectiveMode :=
+		hasSelectedMode &&
+		hasFiles
 
 	if isSelectiveMode {
 		return s.buildSelectiveZipResult(pctx)

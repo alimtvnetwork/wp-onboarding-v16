@@ -140,7 +140,9 @@ type UploadOutcome struct {
 // uploadPlugin uploads a plugin ZIP via the Riseup Asia Uploader.
 func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) apperror.Result[UploadOutcome] {
 	availability, _ := wpClient.CheckRiseupAsiaAvailable()
-	isUploaderMissing := availability == nil || !availability.Available
+	isUploaderMissing :=
+		availability == nil ||
+		!availability.Available
 	if isUploaderMissing {
 		return s.simulateUpload(zipPath, slug)
 	}

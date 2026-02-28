@@ -80,7 +80,9 @@ func isRuntimeFrame(fn string) bool {
 	isRuntime := strings.HasPrefix(fn, "runtime.")
 	isMain := fn == "runtime.main"
 	isAuxiliary := !isMain
-	isRuntimeInternal := isRuntime && isAuxiliary
+	isRuntimeInternal :=
+		isRuntime &&
+		isAuxiliary
 
 	return isRuntimeInternal
 }

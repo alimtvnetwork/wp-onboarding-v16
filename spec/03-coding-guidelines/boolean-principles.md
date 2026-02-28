@@ -213,10 +213,11 @@ if ($request !== null && $request->hasParam('file') && $request->getParam('file'
     $this->process($request);
 }
 
-// ✅ REQUIRED
-$hasFileParam = $request !== null
-    && $request->hasParam('file')
-    && $request->getParam('file') !== '';
+// ✅ REQUIRED — each condition on its own line
+$hasFileParam =
+    $request !== null &&
+    $request->hasParam('file') &&
+    $request->getParam('file') !== '';
 
 if ($hasFileParam) {
     $this->process($request);
@@ -224,13 +225,18 @@ if ($hasFileParam) {
 ```
 
 ```go
+// ── Go ───────────────────────────────────────────────────────
+
 // ❌ FORBIDDEN
 if err != nil && resp != nil && resp.StatusCode >= 400 {
     handleUpstreamError(resp)
 }
 
-// ✅ REQUIRED
-isUpstreamError := err != nil && resp != nil && resp.StatusCode >= 400
+// ✅ REQUIRED — each condition on its own line
+isUpstreamError :=
+	err != nil &&
+	resp != nil &&
+	resp.StatusCode >= 400
 
 if isUpstreamError {
     handleUpstreamError(resp)
@@ -284,9 +290,11 @@ if isProjectExists && !isOverwrite {
     return fmt.Errorf("conflict")
 }
 
-// ✅ REQUIRED — Extract to single-intent named boolean
+// ✅ REQUIRED — Extract to single-intent named boolean, multi-line
 isReadOnly := !isOverwrite
-isConflict := isProjectExists && isReadOnly
+isConflict :=
+	isProjectExists &&
+	isReadOnly
 
 if isConflict {
     return fmt.Errorf("conflict")
@@ -317,7 +325,9 @@ if _, err := os.Stat(projectDir); isProjectConflict {
 _, statErr := pathutil.StatDir(projectDir)
 isProjectExists := statErr == nil
 isReadOnly := !isOverwrite
-isConflict := isProjectExists && isReadOnly
+isConflict :=
+	isProjectExists &&
+	isReadOnly
 
 if isConflict {
     return apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace").
@@ -331,8 +341,10 @@ if ($isAuthenticated && !$isAuthorized) {
     throw new ForbiddenException();
 }
 
-// ✅ REQUIRED — Single intent
-$isAccessDenied = $isAuthenticated && !$isAuthorized;
+// ✅ REQUIRED — Single intent, multi-line
+$isAccessDenied =
+    $isAuthenticated &&
+    !$isAuthorized;
 
 if ($isAccessDenied) {
     throw new ForbiddenException();
@@ -345,8 +357,10 @@ if (isLoggedIn && !hasPermission) {
     redirect('/unauthorized');
 }
 
-// ✅ REQUIRED — Single intent
-const isUnauthorized = isLoggedIn && !hasPermission;
+// ✅ REQUIRED — Single intent, multi-line
+const isUnauthorized =
+    isLoggedIn &&
+    !hasPermission;
 
 if (isUnauthorized) {
     redirect('/unauthorized');
@@ -446,8 +460,11 @@ if (isLoggedIn && !hasPermission) {
     redirect('/unauthorized');
 }
 
-// ✅ CORRECT — extract to single-intent name
-const isUnauthorized = isLoggedIn && !hasPermission;
+// ✅ CORRECT — extract to single-intent name, multi-line
+const isUnauthorized =
+    isLoggedIn &&
+    !hasPermission;
+
 if (isUnauthorized) {
     redirect('/unauthorized');
 }

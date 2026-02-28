@@ -71,7 +71,15 @@ func (s *Service) processWalkEntry(ws *walkState, filePath string, info os.FileI
 // shouldSkipEntry returns SkipDir for hidden/vendor dirs, nil otherwise.
 func shouldSkipEntry(filePath string, info os.FileInfo) *error {
 	base := filepath.Base(filePath)
-	isNormalEntry := !strings.HasPrefix(base, ".") && base != "node_modules" && base != "vendor"
+	isHidden := strings.HasPrefix(base, ".")
+	isNodeModules := base == "node_modules"
+	isVendor := base == "vendor"
+	isSkippable :=
+		isHidden ||
+		isNodeModules ||
+		isVendor
+	isNormalEntry := !isSkippable
+
 	if isNormalEntry {
 		return nil
 	}

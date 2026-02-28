@@ -187,7 +187,9 @@ func scanSingleDirectory(r *http.Request, path string, createDetection bool) Dir
 		}
 	}
 
-	isPlugin := result != nil && result.IsValid
+	isPlugin :=
+		result != nil &&
+		result.IsValid
 
 	sr := DirectoryScanResult{
 		Path:     path,
