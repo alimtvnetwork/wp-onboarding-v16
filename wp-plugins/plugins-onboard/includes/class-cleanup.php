@@ -118,7 +118,9 @@ class OnboardCleanup {
         $deleted_count = 0;
         $deleted_size = 0;
 
-        if (empty($temp_path) || !is_dir($temp_path)) {
+        $isTempDirMissing = OnboardBooleanHelpers::is_dir_missing($temp_path);
+
+        if ($isTempDirMissing) {
             return array(
                 'files_deleted' => 0,
                 'space_freed' => 0,
@@ -308,7 +310,9 @@ class OnboardCleanup {
         // Use function with safe default.
         $temp_path = OnboardPaths::get(OnboardPaths::DIR_TEMP_UPLOADS);
 
-        if (empty($temp_path) || !is_dir($temp_path)) {
+        $isTempDirMissing = OnboardBooleanHelpers::is_dir_missing($temp_path);
+
+        if ($isTempDirMissing) {
             return array(
                 'files_deleted' => 0,
                 'space_freed' => 0,
@@ -379,7 +383,9 @@ class OnboardCleanup {
         $old_temp_count = 0;
         $cutoff_time = $now - ($cleanup_days * 86400);
 
-        if (!empty($temp_path) && is_dir($temp_path)) {
+        $isTempDirExists = OnboardBooleanHelpers::is_dir_exists($temp_path);
+
+        if ($isTempDirExists) {
             $iterator = new RecursiveIteratorIterator(
                 new RecursiveDirectoryIterator($temp_path, RecursiveDirectoryIterator::SKIP_DOTS)
             );

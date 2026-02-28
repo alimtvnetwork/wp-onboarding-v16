@@ -182,7 +182,10 @@ class OnboardPaths {
      */
     public static function is_directory_writable($dir_type) {
         $path = self::get($dir_type);
-        return !empty($path) && is_writable($path);
+        $hasPath    = !empty($path);
+        $isWritable = $hasPath && is_writable($path);
+
+        return $isWritable;
     }
 
     /**
@@ -193,7 +196,10 @@ class OnboardPaths {
      */
     public static function file_exists($file_type) {
         $path = self::get($file_type);
-        return !empty($path) && file_exists($path);
+        $hasPath    = !empty($path);
+        $fileExists = $hasPath && file_exists($path);
+
+        return $fileExists;
     }
 
     /**
@@ -204,9 +210,13 @@ class OnboardPaths {
      */
     public static function get_file_size($file_type) {
         $path = self::get($file_type);
-        if (!empty($path) && file_exists($path)) {
+        $hasPath    = !empty($path);
+        $fileExists = $hasPath && file_exists($path);
+
+        if ($fileExists) {
             return filesize($path);
         }
+
         return 0;
     }
 

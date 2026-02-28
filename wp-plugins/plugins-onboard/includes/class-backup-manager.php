@@ -393,7 +393,11 @@ class OnboardBackupManager {
         $imported = 0;
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $filename = $zip->getNameIndex($i);
-            if (strpos($filename, 'snapshots/') === 0 && substr($filename, -4) === '.zip') {
+            $isSnapshotPath = (strpos($filename, 'snapshots/') === 0);
+            $isZipFile      = (substr($filename, -4) === '.zip');
+            $isSnapshotZip  = $isSnapshotPath && $isZipFile;
+
+            if ($isSnapshotZip) {
                 $relative_path = substr($filename, strlen('snapshots/'));
                 $dest_path = OnboardPaths::get(OnboardPaths::DIR_PLUGIN_SNAPSHOTS) . $relative_path;
                 $dest_dir = dirname($dest_path);
