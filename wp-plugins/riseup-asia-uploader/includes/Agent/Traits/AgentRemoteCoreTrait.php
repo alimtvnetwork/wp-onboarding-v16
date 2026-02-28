@@ -40,7 +40,9 @@ trait AgentRemoteCoreTrait {
             }
         }
 
-        if (strpos($url, 'http://') === 0) {
+        $isHttpOnly = (strpos($url, 'http://') === 0);
+
+        if ($isHttpOnly) {
             $url = 'https://' . substr($url, 7);
         }
 

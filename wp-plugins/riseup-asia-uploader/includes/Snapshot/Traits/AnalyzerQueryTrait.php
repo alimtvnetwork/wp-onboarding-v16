@@ -34,7 +34,9 @@ trait AnalyzerQueryTrait {
 
         if ($isWordPress) {
             $tables = array_filter($tables, function($t) use ($prefix) {
-                return strpos($t, $prefix) === 0;
+                $isWpTable = (strpos($t, $prefix) === 0);
+
+                return $isWpTable;
             });
         }
 

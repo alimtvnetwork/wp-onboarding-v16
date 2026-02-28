@@ -85,7 +85,9 @@ trait StatusPayloadTrait {
         $nsPrefix = '/' . PluginConfigType::apiFullNamespace();
 
         foreach (rest_get_server()->get_routes() as $route => $handlers) {
-            if (strpos($route, $nsPrefix) !== 0) {
+            $isOtherNamespace = (strpos($route, $nsPrefix) !== 0);
+
+            if ($isOtherNamespace) {
                 continue;
             }
 

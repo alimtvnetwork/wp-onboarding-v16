@@ -56,11 +56,15 @@ class UploadIgnore {
             foreach ($lines as $line) {
                 $line = trim($line);
 
-                if ($line === '' || strpos($line, '#') === 0) {
+                $isEmptyOrComment = ($line === '' || strpos($line, '#') === 0);
+
+                if ($isEmptyOrComment) {
                     continue;
                 }
 
-                if (strpos($line, '!') === 0) {
+                $isNegationPattern = (strpos($line, '!') === 0);
+
+                if ($isNegationPattern) {
                     $pattern = substr($line, 1);
                     $this->negations[] = $this->compilePattern($pattern);
                 } else {

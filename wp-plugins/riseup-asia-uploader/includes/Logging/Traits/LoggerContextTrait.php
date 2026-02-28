@@ -37,7 +37,9 @@ trait LoggerContextTrait {
 
             $ip = $_SERVER[$key];
 
-            if (strpos($ip, ',') !== false) {
+            $hasMultipleIps = (strpos($ip, ',') !== false);
+
+            if ($hasMultipleIps) {
                 $parts = explode(',', $ip);
                 $ip = trim($parts[0]);
             }

@@ -154,8 +154,11 @@ trait UploadZipTrait
     ): bool {
         $hasMatchingTextDomain = (isset($pdata['TextDomain']) && $pdata['TextDomain'] === $slug);
         $hasMatchingSlugInPath = (isset($pdata['Name']) && strpos(strtolower($pfile), $slug) !== false);
+        $isDuplicate =
+            $hasMatchingTextDomain ||
+            $hasMatchingSlugInPath;
 
-        return $hasMatchingTextDomain || $hasMatchingSlugInPath;
+        return $isDuplicate;
     }
 
     /** Pre-log self-update activity before files are replaced. */

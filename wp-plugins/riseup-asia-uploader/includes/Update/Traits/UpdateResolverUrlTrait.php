@@ -70,7 +70,9 @@ trait UpdateResolverUrlTrait {
             return new WP_Error(WpErrorCodeType::NoLocation->value, 'Redirect response missing Location header');
         }
 
-        if (strpos($location, 'http') !== 0) {
+        $isRelativeLocation = (strpos($location, 'http') !== 0);
+
+        if ($isRelativeLocation) {
             $parsed = parse_url($url);
             $location = $parsed['scheme'] . '://' . $parsed['host'] . $location;
         }

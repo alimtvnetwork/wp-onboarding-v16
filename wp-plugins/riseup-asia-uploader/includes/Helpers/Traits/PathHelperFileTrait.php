@@ -34,7 +34,9 @@ trait PathHelperFileTrait {
         $fullPath = str_replace('\\', '/', $fullPath);
         $base = str_replace('\\', '/', $base);
 
-        if (strpos($fullPath, $base) === 0) {
+        $isUnderBase = (strpos($fullPath, $base) === 0);
+
+        if ($isUnderBase) {
             return ltrim(substr($fullPath, strlen($base)), '/');
         }
 

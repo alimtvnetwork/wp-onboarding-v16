@@ -162,9 +162,12 @@ trait ErrorSessionHandlerTrait {
         $funcPart = $m[3];
         $class = '';
         $function = $funcPart;
-        if (strpos($funcPart, '->') !== false) {
+        $hasInstanceCall = (strpos($funcPart, '->') !== false);
+        $hasStaticCall = (strpos($funcPart, '::') !== false);
+
+        if ($hasInstanceCall) {
             list($class, $function) = explode('->', $funcPart, 2);
-        } elseif (strpos($funcPart, '::') !== false) {
+        } elseif ($hasStaticCall) {
             list($class, $function) = explode('::', $funcPart, 2);
         }
 

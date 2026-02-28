@@ -73,7 +73,11 @@ class FatalErrorHandler
         }
 
         $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-        $isPluginRequest = str_contains($requestUri, PluginConfigType::Slug->value) || str_contains($requestUri, self::WP_JSON_PATH);
+        $hasPluginSlug = str_contains($requestUri, PluginConfigType::Slug->value);
+        $hasWpJsonPath = str_contains($requestUri, self::WP_JSON_PATH);
+        $isPluginRequest =
+            $hasPluginSlug ||
+            $hasWpJsonPath;
 
         return $isPluginRequest;
     }

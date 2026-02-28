@@ -22,7 +22,9 @@ trait UploadIgnorePatternTrait {
             'regex'      => '',
         );
 
-        if (strpos($pattern, '/') === 0) {
+        $isAnchored = (strpos($pattern, '/') === 0);
+
+        if ($isAnchored) {
             $info['anchored'] = true;
             $pattern = substr($pattern, 1);
         }
