@@ -196,9 +196,9 @@ func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) *apperror.
 	}
 
 	rows, _ := result.RowsAffected()
-	isNotFound := rows == 0
+	isMissing := rows == 0
 
-	if isNotFound {
+	if isMissing {
 		return apperror.New(apperror.ErrNotFound, "mapping not found")
 	}
 

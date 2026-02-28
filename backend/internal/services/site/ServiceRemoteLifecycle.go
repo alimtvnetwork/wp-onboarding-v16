@@ -125,9 +125,9 @@ func (s *Service) preDeleteDisable(client *wordpress.Client, pluginSlug string) 
 	}
 
 	apiErr := wordpress.ExtractAPIError(disableErr)
-	isNotFoundError := apiErr != nil && apiErr.StatusCode == http.StatusNotFound
+	isMissingError := apiErr != nil && apiErr.StatusCode == http.StatusNotFound
 
-	if isNotFoundError {
+	if isMissingError {
 		s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
 	} else {
 		s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())

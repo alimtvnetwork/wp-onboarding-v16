@@ -4,7 +4,7 @@ Updated: 2026-02-28
 Strict boolean logic standards apply across all languages (PHP, TS, Go). Nine principles are enforced (spec: `spec/03-coding-guidelines/boolean-principles.md` v3.0.0):
 
 1. **P1 — `is`/`has` prefix**: All boolean identifiers must use `is` or `has` prefixes.
-2. **P2 — No negative words in names**: The words `not`, `no`, `non` are absolutely banned from boolean variable/function/method names. Always use a positive semantic synonym instead (e.g., `isPending` not `isNotReady`, `isAbsentFromList` not `isNotInList`, `isErrorListClear` not `isNoRecentErrors`). Double negatives (`!isNot...`) are the worst form.
+2. **P2 — No negative words in names**: The words `not`, `no`, `non` are absolutely banned from boolean variable/function/method names — including prefixed forms like `isNot*`, `hasNo*`, `isNon*`. Always use a positive semantic synonym instead (e.g., `isMissing` not `isNotFound`, `isCallersEmpty` not `hasNoCallers`, `isFresh` not `isNotExpired`). Double negatives (`!isNot...`) are the worst form.
 3. **P3 — Named guards over raw negation**: Never use `!` on function calls at call sites; use positively named guard functions (e.g., `isFileMissing()` not `!file_exists()`).
 4. **P4 — Extract complex expressions**: Conditions with 2+ operators must be extracted into named boolean variables.
 5. **P5 — Explicit boolean parameters**: No bare `true`/`false` at call sites; use separate named methods or options objects.

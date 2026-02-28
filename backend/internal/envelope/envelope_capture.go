@@ -12,9 +12,9 @@ import (
 func CaptureMethodFrames(skip int) []MethodFrame {
 	maxFrames := resolveMaxFrames()
 	pcs := captureCallers(skip+1, 64)
-	hasNoCallers := pcs == nil
+	isCallersEmpty := pcs == nil
 
-	if hasNoCallers {
+	if isCallersEmpty {
 		return nil
 	}
 
@@ -60,9 +60,9 @@ func buildMethodFrame(frame runtime.Frame) MethodFrame {
 func CaptureBackendTrace(skip int) []string {
 	maxFrames := resolveMaxFrames()
 	pcs := captureCallers(skip+1, 64)
-	hasNoCallers := pcs == nil
+	isCallersEmpty := pcs == nil
 
-	if hasNoCallers {
+	if isCallersEmpty {
 		return nil
 	}
 
@@ -123,9 +123,9 @@ func resolveMaxFrames() int {
 func captureCallers(skip, maxPCs int) []uintptr {
 	pcs := make([]uintptr, maxPCs)
 	n := runtime.Callers(skip+1, pcs)
-	hasNoCallers := n == 0
+	isCallersEmpty := n == 0
 
-	if hasNoCallers {
+	if isCallersEmpty {
 		return nil
 	}
 

@@ -55,9 +55,9 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 
 // extractReportFromBody reads the optional report field from a POST body.
 func extractReportFromBody(r *http.Request) string {
-	isNotPost := r.Method != http.MethodPost
+	isReadOnly := r.Method != http.MethodPost
 
-	if isNotPost {
+	if isReadOnly {
 
 		return ""
 	}

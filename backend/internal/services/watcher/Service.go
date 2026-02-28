@@ -183,9 +183,9 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 	// Get or create cache
 	s.mu.Lock()
 	cache, isFound := s.cache[pluginID]
-	isNotCached := !isFound
+	isCacheMissing := !isFound
 
-	if isNotCached {
+	if isCacheMissing {
 		// Initialize cache first
 		s.mu.Unlock()
 

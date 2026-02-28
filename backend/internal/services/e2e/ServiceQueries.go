@@ -104,9 +104,9 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	hasNoActiveRun := s.activeRun == nil
-	isRunMismatch := !hasNoActiveRun && s.activeRun.ID != runID
-	isAbortInvalid := hasNoActiveRun || isRunMismatch
+	isIdle := s.activeRun == nil
+	isRunMismatch := !isIdle && s.activeRun.ID != runID
+	isAbortInvalid := isIdle || isRunMismatch
 
 	if isAbortInvalid {
 
