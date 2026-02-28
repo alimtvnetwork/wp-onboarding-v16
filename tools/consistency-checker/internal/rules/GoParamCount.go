@@ -53,8 +53,15 @@ func checkParamCount(ctx engine.CheckContext, line string, lineNum, maxParams in
 }
 
 // extractParams extracts parameter names from a func signature.
+// For method declarations (e.g. "func (s *Service) Foo(a, b int)"),
+// the receiver group is skipped so only the function params are returned.
 func extractParams(line string) []string {
 	openIdx := strings.Index(line, "(")
+	if openIdx < 0 {
+		return nil
+	}
+
+	openIdx = skipReceiverGroup(line, openIdx)
 	if openIdx < 0 {
 		return nil
 	}
@@ -65,6 +72,50 @@ func extractParams(line string) []string {
 	}
 
 	return splitParams(inner)
+}
+
+// skipReceiverGroup advances past the receiver parens for method declarations.
+// For "func (s *Service) Foo(a int)", the first '(' is the receiver;
+// this function returns the index of the second '(' (the params).
+// For plain functions like "func Foo(a int)", returns openIdx unchanged.
+func skipReceiverGroup(line string, openIdx int) int {
+	prefix := strings.TrimSpace(line[:openIdx])
+	isMethodReceiver := prefix == "func"
+
+	if !isMethodReceiver {
+		return openIdx
+	}
+
+	// Skip past the closing ')' of the receiver group.
+	closeIdx := findMatchingClose(line, openIdx)
+	if closeIdx < 0 {
+		return -1
+	}
+
+	nextOpen := strings.Index(line[closeIdx+1:], "(")
+	if nextOpen < 0 {
+		return -1
+	}
+
+	return closeIdx + 1 + nextOpen
+}
+
+// findMatchingClose finds the index of the closing ')' matching the '(' at openIdx.
+func findMatchingClose(line string, openIdx int) int {
+	depth := 0
+	for i := openIdx; i < len(line); i++ {
+		switch line[i] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+
+	return -1
 }
 
 // extractInnerParams gets the content between the first pair of parens.
