@@ -399,26 +399,71 @@ type PluginDetails struct {
 }
 ```
 
-### Function Parameters — Max 2-3
+### Function Parameters — Max 3 (including receiver context)
 
-Functions should have **2-3 parameters maximum**. Use config/options structs for more:
+Functions MUST have **3 parameters maximum** (excluding `context.Context` which doesn't count). When a function has 4+ parameters, refactor to an input struct.
 
 ```go
-// ❌ Bad: Too many parameters
-func StartSession(sessionType SessionType, pluginId, siteId int64, pluginName, siteName string) (string, error)
+// ❌ FORBIDDEN: 5 parameters
+func logPerformedUpload(pctx *publishContext, outcome UploadOutcome, zipSize int64, startTime time.Time, attempts int) {
 
-// ✅ Good: Use a struct
-type StartSessionInput struct {
-    Type       SessionType
-    PluginId   int64
-    SiteId     int64
-    PluginName string
-    SiteName   string
+// ✅ REQUIRED: input struct
+type logPerformedUploadInput struct {
+    Pctx      *publishContext
+    Outcome   UploadOutcome
+    ZipSize   int64
+    StartTime time.Time
+    Attempts  int
 }
-func StartSession(input StartSessionInput) (string, error)
+func logPerformedUpload(input logPerformedUploadInput) {
+```
 
-// ✅ Acceptable: 2-3 essential parameters (context doesn't count)
-func GetById(ctx context.Context, id int64) (*Model, error)
+### Function Declaration Formatting — One Parameter Per Line (3+)
+
+When a function declaration has **3 or more parameters**, each parameter MUST be on its own line. This mirrors the existing rule for function calls (Rule P3).
+
+```go
+// ❌ FORBIDDEN: 3+ params on one line
+func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64, result *PublishResult) (*publishInitResult, error) {
+
+// ✅ REQUIRED: one param per line
+func (s *Service) initPublishContext(
+    ctx context.Context,
+    pluginID int64,
+    siteID int64,
+    result *PublishResult,
+) (*publishInitResult, error) {
+```
+
+**Note:** When params are split to multi-line AND there are 4+ params (excluding ctx), the function should be refactored to use an input struct instead.
+
+```go
+// ✅ BEST: input struct eliminates multi-line params
+type initPublishInput struct {
+    PluginID int64
+    SiteID   int64
+    Result   *PublishResult
+}
+func (s *Service) initPublishContext(ctx context.Context, input initPublishInput) (*publishInitResult, error) {
+```
+
+### Grouped Parameter Declarations
+
+Go allows `pluginID, siteID int64` to declare two params of the same type. This is **allowed only when both params are on the same line** (i.e., 2-param functions). For 3+ param functions where each param is on its own line, each param MUST have its own explicit type:
+
+```go
+// ❌ FORBIDDEN in multi-line declarations
+func foo(
+    pluginID, siteID int64,  // grouped — hard to scan
+    name string,
+) { ... }
+
+// ✅ REQUIRED
+func foo(
+    pluginID int64,
+    siteID int64,
+    name string,
+) { ... }
 ```
 
 ---

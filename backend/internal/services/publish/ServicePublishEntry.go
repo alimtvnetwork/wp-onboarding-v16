@@ -30,7 +30,11 @@ type publishContext struct {
 }
 
 // stageLog builds a StageLogInput from the context fields.
-func (p *publishContext) stageLog(level loglevel.Variant, stage publishstep.Variant, ctx StageContext) StageLogInput {
+func (p *publishContext) stageLog(
+	level loglevel.Variant,
+	stage publishstep.Variant,
+	ctx StageContext,
+) StageLogInput {
 	return StageLogInput{
 		PluginId:  p.PluginId,
 		SiteId:    p.SiteId,
@@ -42,7 +46,11 @@ func (p *publishContext) stageLog(level loglevel.Variant, stage publishstep.Vari
 }
 
 // progress builds a ProgressInput from the context fields.
-func (p *publishContext) progress(step publishstep.Variant, pct int, message string) ProgressInput {
+func (p *publishContext) progress(
+	step publishstep.Variant,
+	pct int,
+	message string,
+) ProgressInput {
 	return ProgressInput{
 		PluginId:  p.PluginId,
 		SiteId:    p.SiteId,
@@ -53,16 +61,24 @@ func (p *publishContext) progress(step publishstep.Variant, pct int, message str
 	}
 }
 
+// stageCompleteInput bundles parameters for stageComplete.
+type stageCompleteInput struct {
+	StageName  publishstep.Variant
+	Status     string
+	DurationMs int64
+	Details    []byte
+}
+
 // stageComplete builds a StageCompleteInput from the context fields.
-func (p *publishContext) stageComplete(stageName publishstep.Variant, status string, durationMs int64, details []byte) StageCompleteInput {
+func (p *publishContext) stageComplete(input stageCompleteInput) StageCompleteInput {
 	return StageCompleteInput{
 		PluginId:   p.PluginId,
 		SiteId:     p.SiteId,
 		SessionId:  p.SessionId,
-		StageName:  stageName,
-		Status:     status,
-		DurationMs: durationMs,
-		Details:    details,
+		StageName:  input.StageName,
+		Status:     input.Status,
+		DurationMs: input.DurationMs,
+		Details:    input.Details,
 	}
 }
 
@@ -83,7 +99,11 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		Stages:           []Stage{},
 	}
 
-	initResult, err := s.initPublishContext(ctx, pluginID, siteID, result)
+	initResult, err := s.initPublishContext(ctx, initPublishInput{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Result:   result,
+	})
 	if err != nil {
 		return apperror.Ok(*result)
 	}
@@ -103,13 +123,21 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 }
 
 // broadcastPublishStart sends the initial progress and session log.
-func (s *Service) broadcastPublishStart(pluginID, siteID int64, initResult *publishInitResult) {
+func (s *Service) broadcastPublishStart(
+	pluginID int64,
+	siteID int64,
+	initResult *publishInitResult,
+) {
 	s.broadcastPublishStartProgress(pluginID, siteID, initResult)
 	s.logPublishStartSession(initResult)
 }
 
 // broadcastPublishStartProgress sends the started progress event.
-func (s *Service) broadcastPublishStartProgress(pluginID, siteID int64, initResult *publishInitResult) {
+func (s *Service) broadcastPublishStartProgress(
+	pluginID int64,
+	siteID int64,
+	initResult *publishInitResult,
+) {
 	startProgress := ProgressInput{
 		PluginId:  pluginID,
 		SiteId:    siteID,
@@ -165,28 +193,45 @@ func (s *Service) executeAndFinalize(ctx context.Context, pctx *publishContext, 
 	return apperror.Ok(*pctx.Result)
 }
 
+// initPublishInput bundles parameters for initPublishContext.
+type initPublishInput struct {
+	PluginID int64
+	SiteID   int64
+	Result   *PublishResult
+}
+
 // initPublishContext loads plugin, site, credentials, and starts a session.
-func (s *Service) initPublishContext(ctx context.Context, pluginID, siteID int64, result *PublishResult) (*publishInitResult, error) {
-	pluginInfo, err := s.loadPublishPlugin(ctx, pluginID, siteID, result)
+func (s *Service) initPublishContext(ctx context.Context, input initPublishInput) (*publishInitResult, error) {
+	pluginInfo, err := s.loadPublishPlugin(ctx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	creds, err := s.loadPublishCredentials(ctx, pluginID, siteID, result)
+	creds, err := s.loadPublishCredentials(ctx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	sessionID, _ := s.startPublishSession(pluginID, siteID, pluginInfo, creds.Site)
+	sessionID, _ := s.startPublishSession(startPublishSessionInput{
+		PluginID:   input.PluginID,
+		SiteID:     input.SiteID,
+		PluginInfo: pluginInfo,
+		SiteInfo:   creds.Site,
+	})
 
 	return &publishInitResult{PluginInfo: pluginInfo, SiteInfo: creds.Site, Password: creds.Password, SessionID: sessionID}, nil
 }
 
 // loadPublishPlugin loads the plugin and handles init failure.
-func (s *Service) loadPublishPlugin(ctx context.Context, pluginID, siteID int64, result *PublishResult) (models.Plugin, error) {
-	pluginResult := s.pluginService.GetByID(ctx, pluginID)
+func (s *Service) loadPublishPlugin(ctx context.Context, input initPublishInput) (models.Plugin, error) {
+	pluginResult := s.pluginService.GetByID(ctx, input.PluginID)
 	if pluginResult.HasError() {
-		s.failInit(pluginID, siteID, pluginResult.AppError(), result)
+		s.failInit(failInitInput{
+			PluginID: input.PluginID,
+			SiteID:   input.SiteID,
+			Err:      pluginResult.AppError(),
+			Result:   input.Result,
+		})
 
 		return models.Plugin{}, pluginResult.AppError()
 	}
@@ -195,10 +240,15 @@ func (s *Service) loadPublishPlugin(ctx context.Context, pluginID, siteID int64,
 }
 
 // loadPublishCredentials loads site credentials and handles init failure.
-func (s *Service) loadPublishCredentials(ctx context.Context, pluginID, siteID int64, result *PublishResult) (*SiteCredentialsResult, error) {
-	creds, err := s.getSiteCredentials(ctx, siteID)
+func (s *Service) loadPublishCredentials(ctx context.Context, input initPublishInput) (*SiteCredentialsResult, error) {
+	creds, err := s.getSiteCredentials(ctx, input.SiteID)
 	if err != nil {
-		s.failInit(pluginID, siteID, err, result)
+		s.failInit(failInitInput{
+			PluginID: input.PluginID,
+			SiteID:   input.SiteID,
+			Err:      err,
+			Result:   input.Result,
+		})
 
 		return nil, err
 	}
@@ -206,16 +256,24 @@ func (s *Service) loadPublishCredentials(ctx context.Context, pluginID, siteID i
 	return creds, nil
 }
 
+// failInitInput bundles parameters for failInit.
+type failInitInput struct {
+	PluginID int64
+	SiteID   int64
+	Err      error
+	Result   *PublishResult
+}
+
 // failInit records error and broadcasts failure for init context.
-func (s *Service) failInit(pluginID, siteID int64, err error, result *PublishResult) {
-	result.ErrorMessage = err.Error()
+func (s *Service) failInit(input failInitInput) {
+	input.Result.ErrorMessage = input.Err.Error()
 
 	failProgress := ProgressInput{
-		PluginId: pluginID,
-		SiteId:   siteID,
+		PluginId: input.PluginID,
+		SiteId:   input.SiteID,
 		Step:     publishstep.Failed,
 		Progress: 0,
-		Message:  err.Error(),
+		Message:  input.Err.Error(),
 	}
 	s.broadcastProgress(failProgress)
 }
@@ -231,18 +289,26 @@ func (s *Service) PublishFiles(ctx context.Context, pluginID, siteID int64, file
 	return s.Publish(ctx, pluginID, siteID, opts)
 }
 
+// startPublishSessionInput bundles parameters for startPublishSession.
+type startPublishSessionInput struct {
+	PluginID   int64
+	SiteID     int64
+	PluginInfo models.Plugin
+	SiteInfo   *models.Site
+}
+
 // startPublishSession initializes a session for the publish operation
-func (s *Service) startPublishSession(pluginID, siteID int64, pluginInfo models.Plugin, siteInfo *models.Site) (string, error) {
+func (s *Service) startPublishSession(input startPublishSessionInput) (string, error) {
 	if s.sessionService == nil {
 		return "", nil
 	}
 
 	startInput := session.StartSessionInput{
 		Type:       session.SessionTypePublish,
-		PluginID:   pluginID,
-		SiteID:     siteID,
-		PluginName: pluginInfo.Name,
-		SiteName:   siteInfo.Name,
+		PluginID:   input.PluginID,
+		SiteID:     input.SiteID,
+		PluginName: input.PluginInfo.Name,
+		SiteName:   input.SiteInfo.Name,
 	}
 
 	return s.executeStartSession(startInput)

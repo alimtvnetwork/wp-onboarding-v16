@@ -13,31 +13,39 @@ import (
 
 // ─── Rollback ────────────────────────────────────────────────────────────────
 
+// rollbackInput bundles parameters for handleRollback and executeRollbackSteps.
+type rollbackInput struct {
+	Ctx                context.Context
+	Pctx               *publishContext
+	PreUploadBackupZip string
+	ActivateStage      Stage
+}
+
 // handleRollback performs rollback when activation fails
-func (s *Service) handleRollback(ctx context.Context, pctx *publishContext, preUploadBackupZip string, activateStage Stage) {
-	isRollbackDisabled := !pctx.Options.IsRollbackOnFailure
+func (s *Service) handleRollback(input rollbackInput) {
+	isRollbackDisabled := !input.Pctx.Options.IsRollbackOnFailure
 
 	if isRollbackDisabled {
-		pctx.Result.RollbackStatus = stagestatus.Skipped.String()
-		pctx.Result.RollbackMessage = "Rollback disabled by user"
+		input.Pctx.Result.RollbackStatus = stagestatus.Skipped.String()
+		input.Pctx.Result.RollbackMessage = "Rollback disabled by user"
 
 		return
 	}
 
-	rollbackStage := s.runStageWithSession(pctx.SessionId, "rollback", func() error {
-		return s.executeRollbackSteps(ctx, pctx, preUploadBackupZip, activateStage)
+	rollbackStage := s.runStageWithSession(input.Pctx.SessionId, "rollback", func() error {
+		return s.executeRollbackSteps(input)
 	})
-	pctx.Result.Stages = append(pctx.Result.Stages, rollbackStage)
-	s.reportRollbackOutcome(pctx, rollbackStage, pctx.Result)
+	input.Pctx.Result.Stages = append(input.Pctx.Result.Stages, rollbackStage)
+	s.reportRollbackOutcome(input.Pctx, rollbackStage, input.Pctx.Result)
 }
 
 // executeRollbackSteps deactivates the broken plugin and optionally re-uploads the backup.
-func (s *Service) executeRollbackSteps(ctx context.Context, pctx *publishContext, preUploadBackupZip string, activateStage Stage) error {
-	s.broadcastProgress(pctx.progress(publishstep.Rollback, 85, "Activation failed — rolling back..."))
-	s.broadcastRollbackStartLog(pctx, activateStage)
-	s.rollbackDeactivate(pctx)
+func (s *Service) executeRollbackSteps(input rollbackInput) error {
+	s.broadcastProgress(input.Pctx.progress(publishstep.Rollback, 85, "Activation failed — rolling back..."))
+	s.broadcastRollbackStartLog(input.Pctx, input.ActivateStage)
+	s.rollbackDeactivate(input.Pctx)
 
-	return s.rollbackRestore(ctx, pctx, preUploadBackupZip)
+	return s.rollbackRestore(input.Ctx, input.Pctx, input.PreUploadBackupZip)
 }
 
 // broadcastRollbackStartLog sends the rollback initiation log.

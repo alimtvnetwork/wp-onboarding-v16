@@ -12,7 +12,12 @@ func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
 	if req == nil {
 		return
 	}
-	s.writeSessionArtifact(sessionID, "request.json", req, s.getRequestPath)
+	s.writeSessionArtifact(sessionArtifactInput{
+		SessionID: sessionID,
+		Filename:  "request.json",
+		Data:      req,
+		PathFn:    s.getRequestPath,
+	})
 }
 
 // SaveResponse persists the delegated response as response.json in the session folder
@@ -20,25 +25,40 @@ func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
 	if resp == nil {
 		return
 	}
-	s.writeSessionArtifact(sessionID, "response.json", resp, s.getResponsePath)
+	s.writeSessionArtifact(sessionArtifactInput{
+		SessionID: sessionID,
+		Filename:  "response.json",
+		Data:      resp,
+		PathFn:    s.getResponsePath,
+	})
+}
+
+// sessionArtifactInput bundles parameters for writeSessionArtifact.
+type sessionArtifactInput struct {
+	SessionID string
+	Filename  string
+	Data      any
+	PathFn    func(string) (string, error)
 }
 
 // writeSessionArtifact marshals data and writes it to a session file.
-func (s *Service) writeSessionArtifact(sessionID, filename string, data any, pathFn func(string) (string, error)) {
-	jsonData, err := json.MarshalIndent(data, "", "  ")
+func (s *Service) writeSessionArtifact(input sessionArtifactInput) {
+	jsonData, err := json.MarshalIndent(input.Data, "", "  ")
 	if err != nil {
-		s.logPersistError("Failed to marshal "+filename, sessionID, err)
+		s.logPersistError("Failed to marshal "+input.Filename, input.SessionID, err)
+
 		return
 	}
 
-	path, err := pathFn(sessionID)
+	path, err := input.PathFn(input.SessionID)
 	if err != nil {
-		s.logPersistError("Failed to resolve "+filename+" path", sessionID, err)
+		s.logPersistError("Failed to resolve "+input.Filename+" path", input.SessionID, err)
+
 		return
 	}
 
 	if err := os.WriteFile(path, jsonData, 0644); err != nil {
-		s.logPersistError("Failed to write "+filename, sessionID, err)
+		s.logPersistError("Failed to write "+input.Filename, input.SessionID, err)
 	}
 }
 
@@ -74,7 +94,12 @@ func (s *Service) SaveError(input SaveErrorInput) {
 		Details:    input.Details,
 	}
 
-	s.writeSessionArtifact(input.SessionID, "error.log", errorData, s.getErrorLogPath)
+	s.writeSessionArtifact(sessionArtifactInput{
+		SessionID: input.SessionID,
+		Filename:  "error.log",
+		Data:      errorData,
+		PathFn:    s.getErrorLogPath,
+	})
 }
 
 // SetMetadata sets a key-value pair on a session's metadata JSON object.
