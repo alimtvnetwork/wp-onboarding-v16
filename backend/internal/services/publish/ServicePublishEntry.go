@@ -185,7 +185,7 @@ func (s *Service) buildPublishContext(input buildPublishContextInput) *publishCo
 
 // executeAndFinalize runs the pipeline and finalizes the result.
 func (s *Service) executeAndFinalize(ctx context.Context, pctx *publishContext, initResult *publishInitResult) apperror.Result[PublishResult] {
-	appErr := s.runPublishPipeline(ctx, pctx, initResult.SiteInfo, initResult.Password)
+	appErr := s.runPublishPipeline(ctx, pctx, pipelineCredentials{SiteInfo: initResult.SiteInfo, Password: initResult.Password})
 	if appErr != nil {
 
 		return apperror.Ok(*pctx.Result)

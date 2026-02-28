@@ -74,7 +74,7 @@ func scanMappingWithSite(rows *sql.Rows) (models.PluginMapping, error) {
 		return m, err
 	}
 
-	applyMappingTimestamps(&m, lastSyncAt, lastBackupAt, createdAtStr, updatedAtStr)
+	applyMappingTimestamps(&m, mappingTimestamps{LastSync: lastSyncAt, LastBackup: lastBackupAt, Created: createdAtStr, Updated: updatedAtStr})
 	return m, nil
 }
 
@@ -208,28 +208,35 @@ func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) *apperror.
 	return nil
 }
 
-// UpdateMappingsForPlugin replaces all site mappings for a plugin.
-func (s *Service) UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) *apperror.AppError {
-	s.log.Info("Updating plugin mappings", "pluginId", pluginID, "sites", len(siteIDs))
+// UpdatePluginMappingsInput bundles parameters for UpdateMappingsForPlugin.
+type UpdatePluginMappingsInput struct {
+	PluginID   int64
+	SiteIDs    []int64
+	RemoteSlug string
+}
 
-	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE PluginId = ?", pluginID)
+// UpdateMappingsForPlugin replaces all site mappings for a plugin.
+func (s *Service) UpdateMappingsForPlugin(ctx context.Context, input UpdatePluginMappingsInput) *apperror.AppError {
+	s.log.Info("Updating plugin mappings", "pluginId", input.PluginID, "sites", len(input.SiteIDs))
+
+	_, err := s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE PluginId = ?", input.PluginID)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to clear existing mappings")
 	}
 
-	s.insertMappingsForPlugin(ctx, pluginID, siteIDs, remoteSlug)
+	s.insertMappingsForPlugin(ctx, input)
 	return nil
 }
 
 // insertMappingsForPlugin inserts a mapping for each siteID.
-func (s *Service) insertMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) {
-	for _, siteID := range siteIDs {
+func (s *Service) insertMappingsForPlugin(ctx context.Context, input UpdatePluginMappingsInput) {
+	for _, siteID := range input.SiteIDs {
 		_, err := s.db.ExecContext(ctx, `
 			INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-		`, pluginID, siteID, remoteSlug)
+		`, input.PluginID, siteID, input.RemoteSlug)
 		if err != nil {
-			s.log.Warn("Failed to create mapping", "pluginId", pluginID, "siteId", siteID, "error", err)
+			s.log.Warn("Failed to create mapping", "pluginId", input.PluginID, "siteId", siteID, "error", err)
 		}
 	}
 }
@@ -245,7 +252,7 @@ func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, plugi
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to clear existing site mappings")
 	}
 
-	s.insertMappingsForSite(ctx, siteID, pluginIDs, slugByPluginID)
+	s.insertMappingsForSite(ctx, insertSiteMappingsInput{SiteID: siteID, PluginIDs: pluginIDs, SlugMap: slugByPluginID})
 
 	s.log.Info("Site mappings updated", "siteId", siteID, "pluginsLinked", len(pluginIDs))
 	return nil
@@ -266,17 +273,24 @@ func (s *Service) buildSlugMap(ctx context.Context, siteID int64) map[int64]stri
 	return slugByPluginID
 }
 
+// insertSiteMappingsInput bundles parameters for insertMappingsForSite.
+type insertSiteMappingsInput struct {
+	SiteID    int64
+	PluginIDs []int64
+	SlugMap   map[int64]string
+}
+
 // insertMappingsForSite inserts mappings for each pluginID using resolved slugs.
-func (s *Service) insertMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64, slugMap map[int64]string) {
-	for _, pluginID := range pluginIDs {
-		remoteSlug := s.resolveRemoteSlug(ctx, pluginID, slugMap)
+func (s *Service) insertMappingsForSite(ctx context.Context, input insertSiteMappingsInput) {
+	for _, pluginID := range input.PluginIDs {
+		remoteSlug := s.resolveRemoteSlug(ctx, pluginID, input.SlugMap)
 
 		_, err := s.db.ExecContext(ctx, `
 			INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
 			VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-		`, pluginID, siteID, remoteSlug)
+		`, pluginID, input.SiteID, remoteSlug)
 		if err != nil {
-			s.log.Warn("Failed to create site mapping", "siteId", siteID, "pluginId", pluginID, "error", err)
+			s.log.Warn("Failed to create site mapping", "siteId", input.SiteID, "pluginId", pluginID, "error", err)
 		}
 	}
 }

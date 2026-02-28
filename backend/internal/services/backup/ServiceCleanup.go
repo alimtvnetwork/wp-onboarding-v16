@@ -21,7 +21,7 @@ func (s *Service) removeExpiredBackups() apperror.Result[int] {
 			return nil
 		}
 
-		return s.removeIfExpired(path, info, cutoff, &removedCount)
+		return s.removeIfExpired(expiredCheckInput{Path: path, Info: info, Cutoff: cutoff, Count: &removedCount})
 	})
 
 	if err != nil {
@@ -31,27 +31,35 @@ func (s *Service) removeExpiredBackups() apperror.Result[int] {
 	return apperror.Ok(removedCount)
 }
 
+// expiredCheckInput bundles parameters for removeIfExpired.
+type expiredCheckInput struct {
+	Path   string
+	Info   os.FileInfo
+	Cutoff time.Time
+	Count  *int
+}
+
 // removeIfExpired removes a file if it's older than the cutoff.
-func (s *Service) removeIfExpired(path string, info os.FileInfo, cutoff time.Time, count *int) error {
-	isFresh := !info.ModTime().Before(cutoff)
+func (s *Service) removeIfExpired(input expiredCheckInput) error {
+	isFresh := !input.Info.ModTime().Before(input.Cutoff)
 
 	if isFresh {
 		return nil
 	}
 
-	s.log.Debug("Removing expired backup", "path", path, "modified", info.ModTime())
-	expiredDetails := toDetails(ExpiredBackupDetails{ModifiedAt: info.ModTime().Format(time.RFC3339)})
+	s.log.Debug("Removing expired backup", "path", input.Path, "modified", input.Info.ModTime())
+	expiredDetails := toDetails(ExpiredBackupDetails{ModifiedAt: input.Info.ModTime().Format(time.RFC3339)})
 	s.broadcastLog(BackupLogInput{
 		PluginID: 0,
 		Level:    loglevel.Debug.Lower(),
 		Step:     "remove",
-		Message:  fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)),
+		Message:  fmt.Sprintf("Removing expired backup: %s", filepath.Base(input.Path)),
 		Details:  expiredDetails,
 	})
 
-	appErr := pathutil.RemoveFile(path, "path")
+	appErr := pathutil.RemoveFile(input.Path, "path")
 	if appErr == nil {
-		*count++
+		*input.Count++
 	}
 
 	return nil

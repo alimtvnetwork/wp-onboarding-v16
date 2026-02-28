@@ -68,7 +68,7 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	}
 
 	// 5. Build sync files
-	syncFilesResult := s.buildSyncFiles(plug.Path, sr, pluginID, siteID)
+	syncFilesResult := s.buildSyncFiles(buildSyncFilesInput{PluginPath: plug.Path, SyncResult: sr, PluginID: pluginID, SiteID: siteID})
 	if syncFilesResult.HasError() {
 		return apperror.Fail[PushSyncResult](syncFilesResult.AppError())
 	}
@@ -122,17 +122,25 @@ func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) appe
 	return apperror.Ok(result)
 }
 
-// buildSyncFiles constructs SyncFile array from changes.
-func (s *serviceImpl) buildSyncFiles(pluginPath string, sr SyncResult, pluginID, siteID int64) apperror.ResultSlice[wordpress.SyncFile] {
-	s.broadcastProgress(SyncProgressInput{PluginID: pluginID, SiteID: siteID, Step: syncstep.Packaging.Value(), Progress: 40, Message: "Packaging file changes..."})
+// buildSyncFilesInput bundles parameters for buildSyncFiles.
+type buildSyncFilesInput struct {
+	PluginPath string
+	SyncResult SyncResult
+	PluginID   int64
+	SiteID     int64
+}
 
-	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
+// buildSyncFiles constructs SyncFile array from changes.
+func (s *serviceImpl) buildSyncFiles(input buildSyncFilesInput) apperror.ResultSlice[wordpress.SyncFile] {
+	s.broadcastProgress(SyncProgressInput{PluginID: input.PluginID, SiteID: input.SiteID, Step: syncstep.Packaging.Value(), Progress: 40, Message: "Packaging file changes..."})
+
+	absPluginPath, err := pathutil.ToAbsolute(input.PluginPath)
 	if err != nil {
 		return apperror.FailSliceWrap[wordpress.SyncFile](err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
 	var syncFiles []wordpress.SyncFile
-	for _, change := range sr.Changes {
+	for _, change := range input.SyncResult.Changes {
 		switch change.ChangeType {
 		case changetype.Added.Value(), changetype.Modified.Value():
 			if change.Direction == syncdirection.RemoteNewer.Value() {

@@ -105,7 +105,7 @@ func applyEndState(session *Session, status, errorMsg string) {
 	session.Status = status
 	session.EndedAt = &now
 	session.ErrorMsg = errorMsg
-	writeSessionFooter(session, now, status, errorMsg)
+	writeSessionFooter(sessionFooterInput{Session: session, Now: now, Status: status, ErrorMsg: errorMsg})
 }
 
 // logSessionEnd logs session end if logger is available.
@@ -117,31 +117,47 @@ func (s *Service) logSessionEnd(sessionID, status string) {
 	}
 }
 
+// sessionFooterInput bundles parameters for writeSessionFooter.
+type sessionFooterInput struct {
+	Session  *Session
+	Now      time.Time
+	Status   string
+	ErrorMsg string
+}
+
 // writeSessionFooter writes the end-of-session footer and closes the log file.
-func writeSessionFooter(session *Session, now time.Time, status, errorMsg string) {
-	isLogFileMissing := session.logFile == nil
+func writeSessionFooter(input sessionFooterInput) {
+	isLogFileMissing := input.Session.logFile == nil
 
 	if isLogFileMissing {
 		return
 	}
 
-	footer := buildFooterString(session.StartedAt, now, status, errorMsg)
-	session.logFile.WriteString(footer)
-	session.logFile.Close()
-	session.logFile = nil
+	footer := buildFooterString(footerStringInput{StartedAt: input.Session.StartedAt, Now: input.Now, Status: input.Status, ErrorMsg: input.ErrorMsg})
+	input.Session.logFile.WriteString(footer)
+	input.Session.logFile.Close()
+	input.Session.logFile = nil
+}
+
+// footerStringInput bundles parameters for buildFooterString.
+type footerStringInput struct {
+	StartedAt time.Time
+	Now       time.Time
+	Status    string
+	ErrorMsg  string
 }
 
 // buildFooterString formats the session end footer.
-func buildFooterString(startedAt, now time.Time, status, errorMsg string) string {
-	duration := now.Sub(startedAt)
+func buildFooterString(input footerStringInput) string {
+	duration := input.Now.Sub(input.StartedAt)
 	footer := "\n═══════════════════════════════════════════════════════════════════════════════\n"
-	footer += fmt.Sprintf(" SESSION ENDED: %s\n", now.Format("2006-01-02 15:04:05 UTC"))
-	footer += fmt.Sprintf(" STATUS: %s\n", status)
+	footer += fmt.Sprintf(" SESSION ENDED: %s\n", input.Now.Format("2006-01-02 15:04:05 UTC"))
+	footer += fmt.Sprintf(" STATUS: %s\n", input.Status)
 	footer += fmt.Sprintf(" DURATION: %v\n", duration.Round(time.Millisecond))
-	hasErrorMsg := errorMsg != ""
+	hasErrorMsg := input.ErrorMsg != ""
 
 	if hasErrorMsg {
-		footer += fmt.Sprintf(" ERROR: %s\n", errorMsg)
+		footer += fmt.Sprintf(" ERROR: %s\n", input.ErrorMsg)
 	}
 	footer += "═══════════════════════════════════════════════════════════════════════════════\n"
 	return footer

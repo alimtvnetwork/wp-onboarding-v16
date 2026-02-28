@@ -55,41 +55,50 @@ func (p Pagination) NavigationURLs(basePath string) Navigation {
 	total := p.TotalPages()
 	nav := Navigation{}
 
-	nav.NextPage = buildNextPageURL(basePath, p.Page, p.PerPage, total)
-	nav.PrevPage = buildPrevPageURL(basePath, p.Page, p.PerPage)
-	nav.CloserLinks = buildCloserLinks(basePath, p.Page, p.PerPage, total)
+	pageCtx := pageURLContext{BasePath: basePath, Page: p.Page, PerPage: p.PerPage, Total: total}
+	nav.NextPage = buildNextPageURL(pageCtx)
+	nav.PrevPage = buildPrevPageURL(pageCtx)
+	nav.CloserLinks = buildCloserLinks(pageCtx)
 
 	return nav
 }
 
+// pageURLContext bundles pagination URL parameters.
+type pageURLContext struct {
+	BasePath string
+	Page     int
+	PerPage  int
+	Total    int
+}
+
 // buildNextPageURL returns the next page URL or nil.
-func buildNextPageURL(basePath string, page, perPage, total int) *string {
-	if page >= total {
+func buildNextPageURL(ctx pageURLContext) *string {
+	if ctx.Page >= ctx.Total {
 		return nil
 	}
-	next := fmt.Sprintf("%s?page=%d&perPage=%d", basePath, page+1, perPage)
+	next := fmt.Sprintf("%s?page=%d&perPage=%d", ctx.BasePath, ctx.Page+1, ctx.PerPage)
 	return &next
 }
 
 // buildPrevPageURL returns the previous page URL or nil.
-func buildPrevPageURL(basePath string, page, perPage int) *string {
-	isFirstPage := page <= 1
+func buildPrevPageURL(ctx pageURLContext) *string {
+	isFirstPage := ctx.Page <= 1
 
 	if isFirstPage {
 		return nil
 	}
-	prev := fmt.Sprintf("%s?page=%d&perPage=%d", basePath, page-1, perPage)
+	prev := fmt.Sprintf("%s?page=%d&perPage=%d", ctx.BasePath, ctx.Page-1, ctx.PerPage)
 	return &prev
 }
 
 // buildCloserLinks generates a 5-page sliding window of links.
-func buildCloserLinks(basePath string, page, perPage, total int) []string {
+func buildCloserLinks(ctx pageURLContext) []string {
 	windowSize := 5
-	start, end := computeWindow(page, windowSize, total)
+	start, end := computeWindow(ctx.Page, windowSize, ctx.Total)
 
 	links := make([]string, 0, windowSize)
 	for i := start; i <= end; i++ {
-		links = append(links, fmt.Sprintf("%s?page=%d&perPage=%d", basePath, i, perPage))
+		links = append(links, fmt.Sprintf("%s?page=%d&perPage=%d", ctx.BasePath, i, ctx.PerPage))
 	}
 	return links
 }
