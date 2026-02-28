@@ -24,7 +24,7 @@ type UploaderStatus struct {
 	Message          string            `json:"message"`           // external key
 	Version          string            `json:"version"`           // external key
 	WordPressVersion string            `json:"wordpress_version"` // external key
-	PHPVersion       string            `json:"php_version"`       // external key
+	PhpVersion       string            `json:"php_version"`       // external key
 	Endpoints        map[string]string `json:"endpoints,omitempty"` // external key
 	// Envelope PascalCase fields (populated when parsing from envelope Results)
 	EnvVersion  string `json:"Version,omitempty"`  // external key (envelope format)
@@ -201,11 +201,11 @@ func normalizeUploaderEnvelopeFields(status *UploaderStatus) {
 		status.WordPressVersion = status.EnvWp
 	}
 
-	isPhpVersionMissing := status.PHPVersion == ""
+	isPhpVersionMissing := status.PhpVersion == ""
 	hasEnvPhp           := status.EnvPhp != ""
 
 	if isPhpVersionMissing && hasEnvPhp {
-		status.PHPVersion = status.EnvPhp
+		status.PhpVersion = status.EnvPhp
 	}
 }
 
@@ -242,9 +242,9 @@ func (c *Client) UploadPluginViaUploader(input UploadInput) apperror.Result[*Upl
 func (c *Client) reportUploadInitProgress(uc *uploadContext) {
 	c.progress(ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
-		Message: fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(uc.AbsZipPath), uc.ZipSize, uc.UploadURL),
+		Message: fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(uc.AbsZipPath), uc.ZipSize, uc.UploadUrl),
 		Details: toProgress(UploadInitProgress{
-			ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, URL: uc.UploadURL, Method: "multipart/form-data",
+			ZipSize: uc.ZipSize, ZipPath: uc.AbsZipPath, Namespace: uc.Namespace, Endpoint: uc.UploadEndpoint, Url: uc.UploadUrl, Method: "multipart/form-data",
 		}),
 	})
 }

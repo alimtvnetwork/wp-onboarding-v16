@@ -28,7 +28,7 @@ type uploadContext struct {
 	ZipSize        int64
 	Namespace      string
 	UploadEndpoint string
-	UploadURL      string
+	UploadUrl      string
 	ZipFile        *os.File
 }
 
@@ -54,7 +54,7 @@ func (c *Client) prepareUploadContext(zipPath, slug string) (*uploadContext, *ap
 func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle) *uploadContext {
 	namespace := c.resolveNamespace()
 	uploadEndpoint := BuildNamespacedEndpoint(namespace, ep.Upload)
-	uploadURL := BuildWPJSONURL(c.baseURL, uploadEndpoint)
+	uploadUrl := BuildWPJSONURL(c.baseURL, uploadEndpoint)
 
 	return &uploadContext{
 		AbsZipPath:     absZipPath,
@@ -62,7 +62,7 @@ func (c *Client) buildUploadContext(absZipPath, slug string, zfh *zipFileHandle)
 		ZipSize:        zfh.Size,
 		Namespace:      namespace,
 		UploadEndpoint: uploadEndpoint,
-		UploadURL:      uploadURL,
+		UploadUrl:      uploadUrl,
 		ZipFile:        zfh.File,
 	}
 }
@@ -169,7 +169,7 @@ func writeUploadFields(input uploadFieldsInput) {
 
 // executeUploadHTTP sends the multipart upload request and parses the response.
 func (c *Client) executeUploadHTTP(uc *uploadContext, body *bytes.Buffer, contentType string) apperror.Result[*UploaderUploadResult] {
-	req, err := http.NewRequest("POST", uc.UploadURL, body)
+	req, err := http.NewRequest("POST", uc.UploadUrl, body)
 	if err != nil {
 		return apperror.FailWrap[*UploaderUploadResult](err, apperror.ErrInternal, "create upload HTTP request")
 	}
@@ -190,7 +190,7 @@ func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) app
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.reportUploadResponseProgress(resp.StatusCode, respBody, uc.UploadURL)
+	c.reportUploadResponseProgress(resp.StatusCode, respBody, uc.UploadUrl)
 
 	isErrorResponse := resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated
 
@@ -202,12 +202,12 @@ func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) app
 }
 
 // reportUploadResponseProgress logs the upload response progress.
-func (c *Client) reportUploadResponseProgress(statusCode int, respBody, uploadURL string) {
+func (c *Client) reportUploadResponseProgress(statusCode int, respBody, uploadUrl string) {
 	c.progress(ProgressEvent{
 		Step: action.Upload.String(), Status: stagestatus.Running.String(),
-		Message: fmt.Sprintf("Upload response: %d from %s", statusCode, uploadURL),
+		Message: fmt.Sprintf("Upload response: %d from %s", statusCode, uploadUrl),
 		Details: toProgress(ResponseProgress{
-			URL:    uploadURL,
+			Url:    uploadUrl,
 			Status: statusCode,
 			Body:   truncateBody(respBody, 2000),
 		}),
@@ -218,7 +218,7 @@ func (c *Client) reportUploadResponseProgress(statusCode int, respBody, uploadUR
 func (c *Client) buildUploadFailureAppError(uc *uploadContext, statusCode int, respBytes []byte, respBody string) *apperror.AppError {
 	errInput := uploadApiErrorInput{
 		AbsZipPath:      uc.AbsZipPath,
-		UploadURL:       uc.UploadURL,
+		UploadUrl:       uc.UploadUrl,
 		UploadEndpoint:  uc.UploadEndpoint,
 		StatusCode:      statusCode,
 		RespBytes:       respBytes,
@@ -229,7 +229,7 @@ func (c *Client) buildUploadFailureAppError(uc *uploadContext, statusCode int, r
 	apiErr := buildUploadApiError(errInput)
 
 	return apperror.WrapWithSkip(apiErr, apperror.ErrWPPluginUpload, "upload plugin failed", 1).
-		WithURL(uc.UploadURL).
+		WithURL(uc.UploadUrl).
 		WithStatusCode(statusCode)
 }
 
