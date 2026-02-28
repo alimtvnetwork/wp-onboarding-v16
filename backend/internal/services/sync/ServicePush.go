@@ -19,9 +19,9 @@ import (
 
 // pushDeps bundles resolved dependencies for a push operation.
 type pushDeps struct {
-	Plugin  models.Plugin
-	Mapping models.PluginMapping
-	SiteUrl string
+	Plugin   models.Plugin
+	Mapping  models.PluginMapping
+	SiteUrl  string
 	SiteUser string
 	Password string
 }
@@ -47,23 +47,49 @@ func (s *serviceImpl) runCheckAndValidate(
 	pluginID int64,
 	siteID int64,
 ) (SyncResult, *apperror.Result[PushSyncResult]) {
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Checking.Value(), Progress: 0, Message: "Running sync comparison..."})
+	checkProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Checking.Value(),
+		Progress: 0,
+		Message:  "Running sync comparison...",
+	}
+	s.broadcastProgress(checkProgress)
 
 	syncResult := s.CheckSync(ctx, pluginID, siteID)
 	if syncResult.HasError() {
 		r := apperror.FailWrap[PushSyncResult](syncResult.AppError(), apperror.ErrInternal, "sync comparison failed")
+
 		return SyncResult{}, &r
 	}
 
 	sr := syncResult.Value()
 	if sr.ErrorMessage != "" {
-		r := apperror.Ok(PushSyncResult{PluginId: pluginID, SiteId: siteID, ErrorMessage: sr.ErrorMessage})
+		r := apperror.Ok(PushSyncResult{
+			PluginId:     pluginID,
+			SiteId:       siteID,
+			ErrorMessage: sr.ErrorMessage,
+		})
+
 		return SyncResult{}, &r
 	}
 
 	if sr.IsInSync {
-		s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "Already in sync, nothing to push"})
-		r := apperror.Ok(PushSyncResult{PluginId: pluginID, SiteId: siteID, IsSuccess: true})
+		inSyncProgress := SyncProgressInput{
+			PluginId: pluginID,
+			SiteId:   siteID,
+			Step:     syncstep.Complete.Value(),
+			Progress: 100,
+			Message:  "Already in sync, nothing to push",
+		}
+		s.broadcastProgress(inSyncProgress)
+
+		r := apperror.Ok(PushSyncResult{
+			PluginId:  pluginID,
+			SiteId:    siteID,
+			IsSuccess: true,
+		})
+
 		return SyncResult{}, &r
 	}
 
@@ -93,6 +119,7 @@ func (s *serviceImpl) resolvePushDeps(ctx context.Context, pluginID, siteID int6
 	}
 
 	siteInfo := siteInfoResult.Value()
+
 	return apperror.Ok(pushDeps{
 		Plugin:   plugResult.Value(),
 		Mapping:  mappingResult.Value(),
@@ -110,15 +137,35 @@ func (s *serviceImpl) executePush(
 	pluginID int64,
 	siteID int64,
 ) apperror.Result[PushSyncResult] {
-	syncFilesResult := s.buildSyncFiles(buildSyncFilesInput{PluginPath: deps.Plugin.Path, SyncResult: sr, PluginId: pluginID, SiteId: siteID})
+	buildInput := buildSyncFilesInput{
+		PluginPath: deps.Plugin.Path,
+		SyncResult: sr,
+		PluginId:   pluginID,
+		SiteId:     siteID,
+	}
+	syncFilesResult := s.buildSyncFiles(buildInput)
 	if syncFilesResult.HasError() {
 		return apperror.Fail[PushSyncResult](syncFilesResult.AppError())
 	}
 
 	syncFiles := syncFilesResult.Items()
-	if len(syncFiles) == 0 {
-		s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Complete.Value(), Progress: 100, Message: "No pushable changes found"})
-		return apperror.Ok(PushSyncResult{PluginId: pluginID, SiteId: siteID, IsSuccess: true})
+	isEmpty := len(syncFiles) == 0
+
+	if isEmpty {
+		noPushProgress := SyncProgressInput{
+			PluginId: pluginID,
+			SiteId:   siteID,
+			Step:     syncstep.Complete.Value(),
+			Progress: 100,
+			Message:  "No pushable changes found",
+		}
+		s.broadcastProgress(noPushProgress)
+
+		return apperror.Ok(PushSyncResult{
+			PluginId:  pluginID,
+			SiteId:    siteID,
+			IsSuccess: true,
+		})
 	}
 
 	return s.pushFilesToRemote(ctx, deps, syncFiles, pluginID, siteID)
@@ -132,14 +179,33 @@ func (s *serviceImpl) pushFilesToRemote(
 	pluginID int64,
 	siteID int64,
 ) apperror.Result[PushSyncResult] {
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Pushing.Value(), Progress: 60,
-		Message: fmt.Sprintf("Pushing %d files to remote...", len(syncFiles))})
+	pushProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Pushing.Value(),
+		Progress: 60,
+		Message:  fmt.Sprintf("Pushing %d files to remote...", len(syncFiles)),
+	}
+	s.broadcastProgress(pushProgress)
 
 	wpClient := s.wpClientFactory(deps.SiteUrl, deps.SiteUser, deps.Password)
 	pushResult, err := wpClient.SyncPluginFilesViaUploader(deps.Mapping.RemoteSlug, syncFiles)
 	if err != nil {
-		s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Error.Value(), Progress: 100, Message: "Sync push failed: " + err.Error()})
-		return apperror.Ok(PushSyncResult{PluginId: pluginID, SiteId: siteID, TotalChanges: len(syncFiles), ErrorMessage: err.Error()})
+		errorProgress := SyncProgressInput{
+			PluginId: pluginID,
+			SiteId:   siteID,
+			Step:     syncstep.Error.Value(),
+			Progress: 100,
+			Message:  "Sync push failed: " + err.Error(),
+		}
+		s.broadcastProgress(errorProgress)
+
+		return apperror.Ok(PushSyncResult{
+			PluginId:     pluginID,
+			SiteId:       siteID,
+			TotalChanges: len(syncFiles),
+			ErrorMessage: err.Error(),
+		})
 	}
 
 	result := PushSyncResult{
@@ -157,6 +223,7 @@ func (s *serviceImpl) pushFilesToRemote(
 	}
 
 	s.broadcastPushComplete(deps.Plugin.Name, result, pluginID, siteID)
+
 	return apperror.Ok(result)
 }
 
@@ -167,9 +234,15 @@ func (s *serviceImpl) broadcastPushComplete(
 	pluginID int64,
 	siteID int64,
 ) {
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Complete.Value(), Progress: 100,
+	completeProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Complete.Value(),
+		Progress: 100,
 		Message: fmt.Sprintf("Sync complete: %d updated, %d deleted, %d ignored",
-			result.FilesUpdated, result.FilesDeleted, result.FilesIgnored)})
+			result.FilesUpdated, result.FilesDeleted, result.FilesIgnored),
+	}
+	s.broadcastProgress(completeProgress)
 
 	s.log.Info("Sync push completed",
 		"pluginId", pluginID,
@@ -190,7 +263,14 @@ type buildSyncFilesInput struct {
 
 // buildSyncFiles constructs SyncFile array from changes.
 func (s *serviceImpl) buildSyncFiles(input buildSyncFilesInput) apperror.ResultSlice[wordpress.SyncFile] {
-	s.broadcastProgress(SyncProgressInput{PluginId: input.PluginId, SiteId: input.SiteId, Step: syncstep.Packaging.Value(), Progress: 40, Message: "Packaging file changes..."})
+	packageProgress := SyncProgressInput{
+		PluginId: input.PluginId,
+		SiteId:   input.SiteId,
+		Step:     syncstep.Packaging.Value(),
+		Progress: 40,
+		Message:  "Packaging file changes...",
+	}
+	s.broadcastProgress(packageProgress)
 
 	absPluginPath, err := pathutil.ToAbsolute(input.PluginPath)
 	if err != nil {
@@ -212,15 +292,20 @@ func (s *serviceImpl) buildSyncFiles(input buildSyncFilesInput) apperror.ResultS
 func (s *serviceImpl) buildSyncFileEntry(change models.FileChange, absPluginPath string) *wordpress.SyncFile {
 	switch change.ChangeType {
 	case changetype.Added.Value(), changetype.Modified.Value():
-		if change.Direction == syncdirection.RemoteNewer.Value() {
+		isRemoteNewer := change.Direction == syncdirection.RemoteNewer.Value()
+
+		if isRemoteNewer {
 			return nil
 		}
+
 		localPath := filepath.Join(absPluginPath, filepath.FromSlash(change.FilePath))
 		content, readErr := os.ReadFile(localPath)
 		if readErr != nil {
 			s.log.Warn("Failed to read file for sync, skipping", "path", change.FilePath, "error", readErr)
+
 			return nil
 		}
+
 		return &wordpress.SyncFile{
 			Path:    change.FilePath,
 			Content: base64.StdEncoding.EncodeToString(content),
