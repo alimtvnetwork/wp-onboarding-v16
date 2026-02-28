@@ -61,41 +61,59 @@ func initRequestSessionStore(cfg *config.Config, log *logger.Logger) *requestses
 	return store
 }
 
+// e2eInput bundles dependencies for initE2EService.
+type e2eInput struct {
+	Cfg   *config.Config
+	DB    *database.DB
+	WSHub *ws.Hub
+	Log   *logger.Logger
+}
+
 // initE2EService initializes the E2E test service if enabled.
-func initE2EService(cfg *config.Config, db *database.DB, wsHub *ws.Hub, log *logger.Logger) {
-	if !cfg.E2E.Enabled {
+func initE2EService(input e2eInput) {
+	if !input.Cfg.E2E.Enabled {
 		return
 	}
 	e2eSvc := e2e.New(e2e.Config{
-		DB:               db.DB,
-		Broadcast:        func(event string, data any) { ws.Broadcast(wsHub, event, data) },
-		BaseURL:          fmt.Sprintf("http://localhost:%d", cfg.Server.Port),
-		TestPluginPath:   cfg.E2E.TestPluginPath,
-		TestSiteURL:      cfg.E2E.TestSiteURL,
-		TestSiteUsername:  cfg.E2E.TestSiteUsername,
-		TestSitePassword: cfg.E2E.TestSitePassword,
+		DB:               input.DB.DB,
+		Broadcast:        func(event string, data any) { ws.Broadcast(input.WSHub, event, data) },
+		BaseURL:          fmt.Sprintf("http://localhost:%d", input.Cfg.Server.Port),
+		TestPluginPath:   input.Cfg.E2E.TestPluginPath,
+		TestSiteURL:      input.Cfg.E2E.TestSiteURL,
+		TestSiteUsername:  input.Cfg.E2E.TestSiteUsername,
+		TestSitePassword: input.Cfg.E2E.TestSitePassword,
 	})
 	handlers.E2EService = &E2EServiceAdapter{e2eSvc}
-	log.Info("E2E test service enabled")
+	input.Log.Info("E2E test service enabled")
+}
+
+// serverBuildInput bundles dependencies for buildServer and buildServerConfig.
+type serverBuildInput struct {
+	Cfg      *config.Config
+	Services *Services
+	WSHub    *ws.Hub
+	Log      *logger.Logger
+	ReqStore *requestsession.Store
 }
 
 // buildServer creates the HTTP server with all service handlers wired.
-func buildServer(cfg *config.Config, services *Services, wsHub *ws.Hub, log *logger.Logger, reqStore *requestsession.Store) *api.Server {
+func buildServer(input serverBuildInput) *api.Server {
 	registry := handlers.NewServiceRegistry(
-		services.Site, services.Plugin, services.Sync, nil,
-		services.Watcher, services.Publish, services.Backup,
-		services.Session, services.ErrorHistory, services.PublishHistory, services.SiteHealth,
+		input.Services.Site, input.Services.Plugin, input.Services.Sync, nil,
+		input.Services.Watcher, input.Services.Publish, input.Services.Backup,
+		input.Services.Session, input.Services.ErrorHistory, input.Services.PublishHistory, input.Services.SiteHealth,
 	)
-	serverCfg := buildServerConfig(cfg, registry, wsHub, log, reqStore)
+	serverCfg := buildServerConfig(input, registry)
 
 	return api.NewServer(serverCfg)
 }
 
 // buildServerConfig constructs the api.ServerConfig from the registry and dependencies.
-func buildServerConfig(cfg *config.Config, registry *handlers.ServiceRegistry, wsHub *ws.Hub, log *logger.Logger, reqStore *requestsession.Store) api.ServerConfig {
+func buildServerConfig(input serverBuildInput, registry *handlers.ServiceRegistry) api.ServerConfig {
+
 	return api.ServerConfig{
-		Port:      cfg.Server.Port,
-		StaticDir: cfg.Server.StaticDir,
+		Port:      input.Cfg.Server.Port,
+		StaticDir: input.Cfg.Server.StaticDir,
 		Services: &api.ServiceRegistry{
 			Site: registry.SiteService, Plugin: registry.PluginService,
 			Sync: registry.SyncService, Git: registry.GitService,
@@ -104,9 +122,9 @@ func buildServerConfig(cfg *config.Config, registry *handlers.ServiceRegistry, w
 			ErrorHistory: registry.ErrorHistoryService, PublishHistory: registry.PublishHistoryService,
 			SiteHealth: registry.SiteHealthService,
 		},
-		WSHub: wsHub, Logger: log,
-		RequestSessionStore:   reqStore,
-		SessionLoggingEnabled: cfg.Logging.SessionLoggingEnabled,
+		WSHub: input.WSHub, Logger: input.Log,
+		RequestSessionStore:   input.ReqStore,
+		SessionLoggingEnabled: input.Cfg.Logging.SessionLoggingEnabled,
 	}
 }
 

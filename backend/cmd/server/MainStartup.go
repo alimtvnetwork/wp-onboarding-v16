@@ -55,10 +55,25 @@ func clearStartupSessions(dbPath string, log *logger.Logger) {
 	}
 }
 
+// logFileHandles holds opened log file handles.
+type logFileHandles struct {
+	allFile *os.File
+	errFile *os.File
+	paths   logPaths
+	log     *logger.Logger
+}
+
 // openLogFiles opens on-disk log files and returns a multi-writer for the logger output.
 func openLogFiles(paths logPaths, log *logger.Logger) (io.Writer, func()) {
 	allFile, err1 := os.OpenFile(paths.allLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	errFile, err2 := os.OpenFile(paths.errLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+
+	handles := logFileHandles{
+		allFile: allFile,
+		errFile: errFile,
+		paths:   paths,
+		log:     log,
+	}
 
 	hasOpenError :=
 		err1 != nil ||
@@ -66,37 +81,39 @@ func openLogFiles(paths logPaths, log *logger.Logger) (io.Writer, func()) {
 
 	if hasOpenError {
 
-		return handleLogFileErrors(allFile, errFile, paths, log)
+		return handleLogFileErrors(handles)
 	}
 
-	return buildLogWriters(allFile, errFile, paths, log)
+	return buildLogWriters(handles)
 }
 
 // handleLogFileErrors handles failures opening log files.
-func handleLogFileErrors(allFile, errFile *os.File, paths logPaths, log *logger.Logger) (io.Writer, func()) {
-	log.Error("Failed to open on-disk log files", "allLog", paths.allLogPath, "errorLog", paths.errLogPath)
-	if allFile != nil {
-		allFile.Close()
+func handleLogFileErrors(h logFileHandles) (io.Writer, func()) {
+	h.log.Error("Failed to open on-disk log files", "allLog", h.paths.allLogPath, "errorLog", h.paths.errLogPath)
+
+	if h.allFile != nil {
+		h.allFile.Close()
 	}
-	if errFile != nil {
-		errFile.Close()
+
+	if h.errFile != nil {
+		h.errFile.Close()
 	}
 
 	return os.Stdout, func() {}
 }
 
 // buildLogWriters builds the multi-writer for stdout + on-disk logging.
-func buildLogWriters(allFile, errFile *os.File, paths logPaths, log *logger.Logger) (io.Writer, func()) {
+func buildLogWriters(h logFileHandles) (io.Writer, func()) {
 	logOutput := io.MultiWriter(
 		os.Stdout,
-		stripAnsiWriter{w: allFile},
-		errorOnlyWriter{w: stripAnsiWriter{w: errFile}},
+		stripAnsiWriter{w: h.allFile},
+		errorOnlyWriter{w: stripAnsiWriter{w: h.errFile}},
 	)
-	log.Info("On-disk logs enabled", "log", paths.allLogPath, "errorLog", paths.errLogPath)
+	h.log.Info("On-disk logs enabled", "log", h.paths.allLogPath, "errorLog", h.paths.errLogPath)
 
 	cleanup := func() {
-		allFile.Close()
-		errFile.Close()
+		h.allFile.Close()
+		h.errFile.Close()
 	}
 
 	return logOutput, cleanup
