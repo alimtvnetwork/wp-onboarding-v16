@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"wp-plugin-publish/internal/database/dbops"
-	uploadsource "wp-plugin-publish/internal/enums/upload_source"
+	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"

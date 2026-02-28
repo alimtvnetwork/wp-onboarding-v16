@@ -8,7 +8,7 @@ import (
 	"context"
 	"net/http"
 
-	"wp-plugin-publish/internal/enums/response_message"
+	responsemessage "wp-plugin-publish/internal/enums/responsemessagetype"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )

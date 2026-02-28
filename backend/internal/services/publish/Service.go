@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 
 	"wp-plugin-publish/internal/database"
-	"wp-plugin-publish/internal/enums/publish_type"
-	"wp-plugin-publish/internal/enums/stage_status"
+	"wp-plugin-publish/internal/enums/publishtype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/backup"

@@ -13,10 +13,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"wp-plugin-publish/internal/enums/action"
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/stage_status"
-	"wp-plugin-publish/internal/enums/upload_source"
+	action "wp-plugin-publish/internal/enums/actiontype"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
+	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )

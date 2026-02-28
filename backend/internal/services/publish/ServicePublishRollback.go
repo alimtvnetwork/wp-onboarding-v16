@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	publishstep "wp-plugin-publish/internal/enums/publish_step"
-	stagestatus "wp-plugin-publish/internal/enums/stage_status"
-	enumstatus "wp-plugin-publish/internal/enums/status"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
+	enumstatus "wp-plugin-publish/internal/enums/statustype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

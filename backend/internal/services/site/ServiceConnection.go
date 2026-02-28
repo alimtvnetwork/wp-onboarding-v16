@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 
-	"wp-plugin-publish/internal/enums/connection_status"
-	"wp-plugin-publish/internal/enums/connection_step"
-	"wp-plugin-publish/internal/enums/stage_status"
+	connectionstatus "wp-plugin-publish/internal/enums/connectionstatustype"
+	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
+	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"

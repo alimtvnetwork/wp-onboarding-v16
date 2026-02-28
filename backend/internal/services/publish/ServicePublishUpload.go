@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"wp-plugin-publish/internal/enums/endpoint"
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	publishstep "wp-plugin-publish/internal/enums/publish_step"
+	"wp-plugin-publish/internal/enums/endpointtype"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"

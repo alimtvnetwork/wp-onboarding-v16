@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	ep "wp-plugin-publish/internal/enums/endpoint"
-	"wp-plugin-publish/internal/enums/http_method"
+	ep "wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

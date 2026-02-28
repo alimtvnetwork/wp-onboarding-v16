@@ -6,10 +6,10 @@ import (
 	"os"
 	"strconv"
 
-	"wp-plugin-publish/internal/enums/backup_type"
-	"wp-plugin-publish/internal/enums/log_level"
-	"wp-plugin-publish/internal/enums/plugin_selection"
-	"wp-plugin-publish/internal/enums/snapshot_mode"
+	"wp-plugin-publish/internal/enums/backuptype"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	pluginselection "wp-plugin-publish/internal/enums/pluginselectiontype"
+	snapshotmode "wp-plugin-publish/internal/enums/snapshotmodetype"
 )
 
 // Config represents the application configuration

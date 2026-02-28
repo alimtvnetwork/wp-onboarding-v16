@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"wp-plugin-publish/internal/enums/http_method"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 

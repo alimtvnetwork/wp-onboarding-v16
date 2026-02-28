@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	loglevel "wp-plugin-publish/internal/enums/log_level"
-	publishstep "wp-plugin-publish/internal/enums/publish_step"
+	loglevel "wp-plugin-publish/internal/enums/logleveltype"
+	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )

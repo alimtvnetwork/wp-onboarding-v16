@@ -6,7 +6,7 @@ package publish
 import (
 	"encoding/json"
 
-	"wp-plugin-publish/internal/enums/publish_type"
+	"wp-plugin-publish/internal/enums/publishtype"
 )
 
 // toDetails marshals a typed struct into json.RawMessage for WS broadcast boundaries.
