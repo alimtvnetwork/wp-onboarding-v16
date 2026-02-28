@@ -24,7 +24,9 @@ type FileContentRequest struct {
 
 // GetLocalFileContent returns the content of a local file in a plugin
 func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PluginService == nil {
+	isServiceMissing := Services == nil || Services.PluginService == nil
+
+	if isServiceMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,
@@ -122,7 +124,12 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 
 // GetFileDiff returns both local and remote content for a file
 func GetFileDiff(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PluginService == nil || Services.PublishService == nil {
+	isServiceMissing :=
+		Services == nil ||
+		Services.PluginService == nil ||
+		Services.PublishService == nil
+
+	if isServiceMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,

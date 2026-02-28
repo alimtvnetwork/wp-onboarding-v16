@@ -19,10 +19,15 @@ func DefaultPagination() Pagination {
 
 // NewPagination creates a Pagination with computed totals.
 func NewPagination(totalRecords, page, perPage int) Pagination {
-	if page < 1 {
+	isPageInvalid := page < 1
+
+	if isPageInvalid {
 		page = 1
 	}
-	if perPage < 1 {
+
+	isPerPageInvalid := perPage < 1
+
+	if isPerPageInvalid {
 		perPage = 20
 	}
 	return Pagination{
@@ -68,7 +73,9 @@ func buildNextPageURL(basePath string, page, perPage, total int) *string {
 
 // buildPrevPageURL returns the previous page URL or nil.
 func buildPrevPageURL(basePath string, page, perPage int) *string {
-	if page <= 1 {
+	isFirstPage := page <= 1
+
+	if isFirstPage {
 		return nil
 	}
 	prev := fmt.Sprintf("%s?page=%d&perPage=%d", basePath, page-1, perPage)
@@ -90,14 +97,21 @@ func buildCloserLinks(basePath string, page, perPage, total int) []string {
 // computeWindow calculates the start/end of a sliding page window.
 func computeWindow(page, windowSize, total int) (int, int) {
 	start := page - windowSize/2
-	if start < 1 {
+	isStartUnderflow := start < 1
+
+	if isStartUnderflow {
 		start = 1
 	}
+
 	end := start + windowSize - 1
-	if end > total {
+	isEndOverflow := end > total
+
+	if isEndOverflow {
 		end = total
 		start = end - windowSize + 1
-		if start < 1 {
+		isStartUnderflow = start < 1
+
+		if isStartUnderflow {
 			start = 1
 		}
 	}

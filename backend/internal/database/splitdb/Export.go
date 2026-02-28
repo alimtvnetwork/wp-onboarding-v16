@@ -303,7 +303,9 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 		// Check if already registered
 		var exists int
 		m.rootDB.QueryRow(`SELECT 1 FROM Databases WHERE Path = ?`, relPath).Scan(&exists)
-		if exists == 1 {
+		isAlreadyRegistered := exists == 1
+
+		if isAlreadyRegistered {
 			return nil
 		}
 

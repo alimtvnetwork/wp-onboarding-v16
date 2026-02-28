@@ -115,7 +115,9 @@ func formatDiagnostic(d ErrorDiagnostic) string {
 
 // writeStringField writes a diagnostic field if non-empty.
 func writeStringField(b *strings.Builder, name, value string) {
-	if value == "" {
+	isValueEmpty := value == ""
+
+	if isValueEmpty {
 		return
 	}
 
@@ -124,7 +126,9 @@ func writeStringField(b *strings.Builder, name, value string) {
 
 // writeInt64Field writes a diagnostic field if non-zero.
 func writeInt64Field(b *strings.Builder, name string, value int64) {
-	if value == 0 {
+	isValueZero := value == 0
+
+	if isValueZero {
 		return
 	}
 
@@ -133,7 +137,9 @@ func writeInt64Field(b *strings.Builder, name string, value int64) {
 
 // writeIntField writes a diagnostic field if non-zero.
 func writeIntField(b *strings.Builder, name string, value int) {
-	if value == 0 {
+	isValueZero := value == 0
+
+	if isValueZero {
 		return
 	}
 

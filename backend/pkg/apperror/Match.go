@@ -23,7 +23,9 @@ func Extract(err error) *AppError {
 // Recover extracts an *AppError from a panic value (used with recover()).
 // Returns nil if the panic value is not an *AppError.
 func Recover(panicValue any) *AppError {
-	if panicValue == nil {
+	isPanicMissing := panicValue == nil
+
+	if isPanicMissing {
 		return nil
 	}
 

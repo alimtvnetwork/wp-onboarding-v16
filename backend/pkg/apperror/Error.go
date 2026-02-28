@@ -174,7 +174,9 @@ func WrapWithSkip(cause error, code ErrorCode, message string, skip int) *AppErr
 
 // mergeIfAppError preserves the original stack trace when re-wrapping an AppError.
 func mergeIfAppError(stack StackTrace, cause error) StackTrace {
-	if cause == nil {
+	isCauseMissing := cause == nil
+
+	if isCauseMissing {
 		return stack
 	}
 
@@ -190,7 +192,9 @@ func mergeIfAppError(stack StackTrace, cause error) StackTrace {
 
 // setCauseDetails sets Details from cause if present.
 func setCauseDetails(err *AppError, cause error) {
-	if cause == nil {
+	isCauseMissing := cause == nil
+
+	if isCauseMissing {
 		return
 	}
 

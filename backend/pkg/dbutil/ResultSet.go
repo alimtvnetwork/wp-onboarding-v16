@@ -63,7 +63,9 @@ func (r ResultSet[T]) ToAppResultSlice() apperror.ResultSlice[T] {
 		return apperror.FailSlice[T](r.err)
 	}
 	items := r.items
-	if items == nil {
+	isItemsEmpty := items == nil
+
+	if isItemsEmpty {
 		items = []T{}
 	}
 	return apperror.OkSlice(items)

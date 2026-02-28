@@ -16,7 +16,9 @@ var RequestSessionStore middleware.SessionStore
 
 // GetRequestSessions returns paginated request sessions
 func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
-	if RequestSessionStore == nil {
+	isStoreMissing := RequestSessionStore == nil
+
+	if isStoreMissing {
 		respondSuccess(w, PaginatedSessions{
 			Sessions: []*middleware.RequestSession{},
 			Total:    0,
@@ -55,7 +57,9 @@ func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 
 // GetRequestSession returns a single request session by ID
 func GetRequestSession(w http.ResponseWriter, r *http.Request) {
-	if RequestSessionStore == nil {
+	isStoreMissing := RequestSessionStore == nil
+
+	if isStoreMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,

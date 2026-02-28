@@ -139,7 +139,11 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, indexPath)
 	}
 
-	if requestedPath == "" || requestedPath == "." {
+	isRootPath :=
+		requestedPath == "" ||
+		requestedPath == "."
+
+	if isRootPath {
 		serveIndex()
 		return
 	}

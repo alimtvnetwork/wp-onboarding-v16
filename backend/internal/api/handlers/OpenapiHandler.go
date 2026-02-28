@@ -35,7 +35,9 @@ func ServeOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
-	if openAPISpec == nil {
+	isSpecMissing := openAPISpec == nil
+
+	if isSpecMissing {
 		respondError(
 			w,
 			wordpress.HttpStatusNotFound,

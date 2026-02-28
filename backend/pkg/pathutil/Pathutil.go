@@ -18,7 +18,9 @@ const (
 // On Windows, if the resulting path exceeds 260 characters, the long path prefix is added.
 // This function MUST be used when providing paths to external systems (uploads, logs, etc.).
 func ToAbsolute(path string) (string, error) {
-	if path == "" {
+	isPathEmpty := path == ""
+
+	if isPathEmpty {
 		return "", nil
 	}
 

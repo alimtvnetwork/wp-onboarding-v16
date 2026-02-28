@@ -214,7 +214,9 @@ func scanSingleDirectory(r *http.Request, path string, createDetection bool) Dir
 
 // GetFileChanges returns detected file changes for a plugin
 func GetFileChanges(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SyncService == nil {
+	isServiceMissing := Services == nil || Services.SyncService == nil
+
+	if isServiceMissing {
 		respondSuccess(w, []struct{}{})
 
 		return

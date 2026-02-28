@@ -135,11 +135,14 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 
 // resolveChildPath builds the filesystem path for a child database.
 func resolveChildPath(dataDir, dbType, entityID string) (string, error) {
-	if entityID == "" {
+	isGlobalDB := entityID == ""
+
+	if isGlobalDB {
 		p, err := pathutil.Join(dataDir, dbType+".db")
 		if err != nil {
 			return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db path")
 		}
+
 		return p, nil
 	}
 
