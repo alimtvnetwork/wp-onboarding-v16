@@ -7,23 +7,25 @@ import (
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/backup"
 	"wp-plugin-publish/internal/services/publish"
+	"wp-plugin-publish/pkg/apperror"
 )
 
-// PublishServiceInterface defines publish service methods
+// PublishServiceInterface defines publish service methods.
+// All methods return *apperror.AppError — never raw error.
 type PublishServiceInterface interface {
-	Publish(ctx context.Context, pluginID, siteID int64, opts publish.PublishOptions) (*publish.PublishResult, error)
-	PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (*publish.PublishResult, error)
-	PreviewPublish(ctx context.Context, pluginID, siteID int64) (*publish.PublishPreviewResult, error)
-	GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*publish.FileDiffResult, error)
+	Publish(ctx context.Context, pluginID, siteID int64, opts publish.PublishOptions) (*publish.PublishResult, *apperror.AppError)
+	PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (*publish.PublishResult, *apperror.AppError)
+	PreviewPublish(ctx context.Context, pluginID, siteID int64) (*publish.PublishPreviewResult, *apperror.AppError)
+	GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*publish.FileDiffResult, *apperror.AppError)
 }
 
 // BackupServiceInterface defines backup service methods for HTTP handlers.
-// Returns (T, error) tuples — the adapter unwraps Result types from the service layer.
+// All methods return *apperror.AppError — never raw error.
 type BackupServiceInterface interface {
-	List(ctx context.Context, pluginID int64) ([]models.Backup, error)
-	Create(ctx context.Context, pluginID, siteID int64) (*models.Backup, error)
-	Restore(ctx context.Context, backupID int64) error
-	Delete(ctx context.Context, backupID int64) error
+	List(ctx context.Context, pluginID int64) ([]models.Backup, *apperror.AppError)
+	Create(ctx context.Context, pluginID, siteID int64) (*models.Backup, *apperror.AppError)
+	Restore(ctx context.Context, backupID int64) *apperror.AppError
+	Delete(ctx context.Context, backupID int64) *apperror.AppError
 }
 
 // PublishServiceAdapter wraps *publish.Service to implement PublishServiceInterface
@@ -31,7 +33,7 @@ type PublishServiceAdapter struct {
 	*publish.Service
 }
 
-func (a *PublishServiceAdapter) Publish(ctx context.Context, pluginID, siteID int64, opts publish.PublishOptions) (*publish.PublishResult, error) {
+func (a *PublishServiceAdapter) Publish(ctx context.Context, pluginID, siteID int64, opts publish.PublishOptions) (*publish.PublishResult, *apperror.AppError) {
 	result := a.Service.Publish(ctx, pluginID, siteID, opts)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -40,7 +42,7 @@ func (a *PublishServiceAdapter) Publish(ctx context.Context, pluginID, siteID in
 	return &v, nil
 }
 
-func (a *PublishServiceAdapter) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (*publish.PublishResult, error) {
+func (a *PublishServiceAdapter) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (*publish.PublishResult, *apperror.AppError) {
 	result := a.Service.PublishFiles(ctx, pluginID, siteID, files)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -49,7 +51,7 @@ func (a *PublishServiceAdapter) PublishFiles(ctx context.Context, pluginID, site
 	return &v, nil
 }
 
-func (a *PublishServiceAdapter) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*publish.PublishPreviewResult, error) {
+func (a *PublishServiceAdapter) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*publish.PublishPreviewResult, *apperror.AppError) {
 	result := a.Service.PreviewPublish(ctx, pluginID, siteID)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -58,7 +60,7 @@ func (a *PublishServiceAdapter) PreviewPublish(ctx context.Context, pluginID, si
 	return &v, nil
 }
 
-func (a *PublishServiceAdapter) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*publish.FileDiffResult, error) {
+func (a *PublishServiceAdapter) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*publish.FileDiffResult, *apperror.AppError) {
 	result := a.Service.GetFileDiff(ctx, pluginID, siteID, filePath)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -72,7 +74,7 @@ type BackupServiceAdapter struct {
 	*backup.Service
 }
 
-func (a *BackupServiceAdapter) List(ctx context.Context, pluginID int64) ([]models.Backup, error) {
+func (a *BackupServiceAdapter) List(ctx context.Context, pluginID int64) ([]models.Backup, *apperror.AppError) {
 	result := a.Service.List(ctx, pluginID)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -80,7 +82,7 @@ func (a *BackupServiceAdapter) List(ctx context.Context, pluginID int64) ([]mode
 	return result.Items(), nil
 }
 
-func (a *BackupServiceAdapter) Create(ctx context.Context, pluginID, siteID int64) (*models.Backup, error) {
+func (a *BackupServiceAdapter) Create(ctx context.Context, pluginID, siteID int64) (*models.Backup, *apperror.AppError) {
 	result := a.Service.Create(ctx, pluginID)
 	if result.HasError() {
 		return nil, result.AppError()
@@ -89,7 +91,7 @@ func (a *BackupServiceAdapter) Create(ctx context.Context, pluginID, siteID int6
 	return &v, nil
 }
 
-func (a *BackupServiceAdapter) Restore(ctx context.Context, backupID int64) error {
+func (a *BackupServiceAdapter) Restore(ctx context.Context, backupID int64) *apperror.AppError {
 	result := a.Service.Restore(ctx, backupID)
 	if result.HasError() {
 		return result.AppError()
@@ -97,6 +99,6 @@ func (a *BackupServiceAdapter) Restore(ctx context.Context, backupID int64) erro
 	return nil
 }
 
-func (a *BackupServiceAdapter) Delete(ctx context.Context, backupID int64) error {
+func (a *BackupServiceAdapter) Delete(ctx context.Context, backupID int64) *apperror.AppError {
 	return a.Service.Delete(ctx, backupID)
 }

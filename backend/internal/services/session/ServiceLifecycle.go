@@ -15,7 +15,7 @@ import (
 )
 
 // StartSession creates a new session directory and returns its ID
-func (s *Service) StartSession(input StartSessionInput) (string, error) {
+func (s *Service) StartSession(input StartSessionInput) (string, *apperror.AppError) {
 	sessionID := uuid.New().String()
 	session := buildNewSession(sessionID, input)
 
