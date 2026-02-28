@@ -33,7 +33,7 @@ type pluginLifecycleInput struct {
 }
 
 // pluginLifecycleAction is the shared implementation for Enable, Disable, and Delete.
-func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
+func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.AppError {
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(input.Slug)
 	endpoint := "/" + namespace + input.Endpoint.String()
@@ -58,7 +58,7 @@ type PluginExistsResult struct {
 }
 
 // CheckPluginExistsViaUploader checks if a plugin slug is installed on the remote site.
-func (c *Client) CheckPluginExistsViaUploader(slug string) (*PluginExistsResult, error) {
+func (c *Client) CheckPluginExistsViaUploader(slug string) (*PluginExistsResult, *apperror.AppError) {
 	namespace := c.resolveNamespace()
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
@@ -88,7 +88,7 @@ type pluginExistsResult struct {
 }
 
 // parsePluginExistsResponse tries envelope format, then legacy flat format.
-func parsePluginExistsResponse(data []byte) (*PluginExistsResult, error) {
+func parsePluginExistsResponse(data []byte) (*PluginExistsResult, *apperror.AppError) {
 	if results, ok := UnwrapResults[pluginExistsResult](data); ok && len(results) > 0 {
 		result := &PluginExistsResult{
 			Exists:     results[0].Exists,
@@ -102,7 +102,7 @@ func parsePluginExistsResponse(data []byte) (*PluginExistsResult, error) {
 }
 
 // parsePluginExistsLegacy decodes the legacy flat format for plugin-exists.
-func parsePluginExistsLegacy(data []byte) (*PluginExistsResult, error) {
+func parsePluginExistsLegacy(data []byte) (*PluginExistsResult, *apperror.AppError) {
 	var legacy pluginExistsResult
 	if err := json.Unmarshal(data, &legacy); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
@@ -117,7 +117,7 @@ func parsePluginExistsLegacy(data []byte) (*PluginExistsResult, error) {
 }
 
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
-func (c *Client) EnablePluginViaUploader(slug string) error {
+func (c *Client) EnablePluginViaUploader(slug string) *apperror.AppError {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
 		Slug:          slug,
 		Endpoint:      ep.Enable,
@@ -127,7 +127,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 }
 
 // DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
-func (c *Client) DisablePluginViaUploader(slug string) error {
+func (c *Client) DisablePluginViaUploader(slug string) *apperror.AppError {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
 		Slug:          slug,
 		Endpoint:      ep.Disable,
@@ -137,7 +137,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 }
 
 // DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
-func (c *Client) DeletePluginViaUploader(slug string) error {
+func (c *Client) DeletePluginViaUploader(slug string) *apperror.AppError {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
 		Slug:          slug,
 		Endpoint:      ep.Delete,
@@ -147,7 +147,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 }
 
 // ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.
-func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
+func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, *apperror.AppError) {
 	namespace := c.resolveNamespace()
 	endpoint := BuildNamespacedEndpoint(namespace, ep.Plugins)
 
@@ -166,7 +166,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 }
 
 // parsePluginListResponse tries envelope format, then legacy flat format.
-func parsePluginListResponse(data []byte) ([]UploaderPluginInfo, error) {
+func parsePluginListResponse(data []byte) ([]UploaderPluginInfo, *apperror.AppError) {
 	if plugins, ok := UnwrapResults[UploaderPluginInfo](data); ok {
 		return plugins, nil
 	}
@@ -192,7 +192,7 @@ type listFilesResult struct {
 }
 
 // ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
-func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
+func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, *apperror.AppError) {
 	endpoint := "/" + c.resolveNamespace() + ep.Files.String()
 
 	callInput := apiCallInput{
@@ -208,9 +208,18 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 		return nil, err
 	}
 
-	result, err := decodeAPIResponse[listFilesResult](data, "plugin files list")
-	if err != nil {
-		return nil, err
+	result, decodeErr := decodeAPIResponseTyped[listFilesResult](data, "plugin files list")
+	if decodeErr != nil {
+		return nil, decodeErr
 	}
 	return result.Files, nil
+}
+
+// decodeAPIResponseTyped unmarshals raw JSON bytes into *T, returning *apperror.AppError on failure.
+func decodeAPIResponseTyped[T any](data []byte, label string) (*T, *apperror.AppError) {
+	var result T
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, fmt.Sprintf("decode %s response", label))
+	}
+	return &result, nil
 }

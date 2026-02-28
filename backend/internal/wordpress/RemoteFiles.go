@@ -35,7 +35,7 @@ type OnboardUploadResult struct {
 
 // GetPluginFiles retrieves the list of files for a remote plugin.
 // Delegates to GetPluginFilesViaRiseup (Riseup Asia Uploader).
-func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile, error) {
+func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile, *apperror.AppError) {
 	return c.GetPluginFilesViaRiseup(ctx, slug)
 }
 
@@ -52,7 +52,7 @@ type syncManifestResult struct {
 }
 
 // GetPluginSyncManifest retrieves the cached file manifest for a remote plugin via Riseup Asia Uploader.
-func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
+func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, *apperror.AppError) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
 
 	callInput := apiCallInput{
@@ -67,9 +67,9 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 		return nil, err
 	}
 
-	result, err := decodeAPIResponse[syncManifestResult](data, "sync manifest")
-	if err != nil {
-		return nil, err
+	result, decodeErr := decodeAPIResponseTyped[syncManifestResult](data, "sync manifest")
+	if decodeErr != nil {
+		return nil, decodeErr
 	}
 
 	return validateSuccessAndReturn(result.Success, result.Data.Files, successCheckContext{Operation: "sync manifest", Slug: slug})
@@ -84,7 +84,7 @@ type pluginFilesResult struct {
 }
 
 // GetPluginFilesViaRiseup retrieves the list of files for a remote plugin via Riseup Asia Uploader.
-func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
+func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, *apperror.AppError) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
 
 	callInput := apiCallInput{
@@ -99,9 +99,9 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 		return nil, mapNotFoundError(err, "plugin not found on remote", slug)
 	}
 
-	result, err := decodeAPIResponse[pluginFilesResult](data, "plugin files")
-	if err != nil {
-		return nil, err
+	result, decodeErr := decodeAPIResponseTyped[pluginFilesResult](data, "plugin files")
+	if decodeErr != nil {
+		return nil, decodeErr
 	}
 
 	return validateSuccessAndReturn(result.Success, result.Files, successCheckContext{Operation: "plugin files", Slug: slug})
@@ -115,7 +115,7 @@ type mutationTokenResult struct {
 
 // RequestMutationToken requests a mutation token from the legacy Onboard companion plugin.
 // Deprecated: The Riseup Asia Uploader does not use mutation tokens.
-func (c *Client) RequestMutationToken(action string) (string, error) {
+func (c *Client) RequestMutationToken(action string) (string, *apperror.AppError) {
 	endpoint := fmt.Sprintf("/%s%s?action=%s", OnboardNamespace, OnboardRequestMutationPath, action)
 
 	callInput := apiCallInput{
@@ -129,9 +129,9 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 		return "", err
 	}
 
-	result, err := decodeAPIResponse[mutationTokenResult](data, "mutation token")
-	if err != nil {
-		return "", err
+	result, decodeErr := decodeAPIResponseTyped[mutationTokenResult](data, "mutation token")
+	if decodeErr != nil {
+		return "", decodeErr
 	}
 
 	isTokenEmpty := result.MutationToken == ""
@@ -150,7 +150,7 @@ type fileContentResult struct {
 }
 
 // GetPluginFileContent retrieves the content of a specific file from a remote plugin.
-func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
+func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, *apperror.AppError) {
 	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
 
 	callInput := apiCallInput{
@@ -165,9 +165,9 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		return "", mapNotFoundError(err, "file not found on remote", filePath)
 	}
 
-	result, err := decodeAPIResponse[fileContentResult](data, "file content")
-	if err != nil {
-		return "", err
+	result, decodeErr := decodeAPIResponseTyped[fileContentResult](data, "file content")
+	if decodeErr != nil {
+		return "", decodeErr
 	}
 
 	isFailure := !result.Success
@@ -186,7 +186,7 @@ type successCheckContext struct {
 }
 
 // validateSuccessAndReturn checks the success flag and returns data or an error.
-func validateSuccessAndReturn[T any](isSuccess bool, data T, ctx successCheckContext) (T, error) {
+func validateSuccessAndReturn[T any](isSuccess bool, data T, ctx successCheckContext) (T, *apperror.AppError) {
 	isFailure := !isSuccess
 
 	if isFailure {
@@ -198,7 +198,7 @@ func validateSuccessAndReturn[T any](isSuccess bool, data T, ctx successCheckCon
 }
 
 // mapNotFoundError checks if err is an APIError with 404 status and returns a typed not-found error.
-func mapNotFoundError(err error, message, identifier string) error {
+func mapNotFoundError(err *apperror.AppError, message, identifier string) *apperror.AppError {
 	apiErr := ExtractAPIError(err)
 	isNotFound := apiErr != nil && apiErr.StatusCode == HttpStatusNotFound.Int()
 
