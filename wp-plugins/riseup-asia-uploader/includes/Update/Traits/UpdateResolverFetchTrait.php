@@ -120,7 +120,9 @@ trait UpdateResolverFetchTrait {
         $body = wp_remote_retrieve_body($response);
         $contentType = wp_remote_retrieve_header($response, 'content-type');
 
-        if (strpos($contentType, 'application/json') === false) {
+        $isNonJsonResponse = (strpos($contentType, 'application/json') === false);
+
+        if ($isNonJsonResponse) {
             return array('version' => '', 'package' => $updateUrl);
         }
 

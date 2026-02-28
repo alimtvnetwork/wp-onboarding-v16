@@ -342,14 +342,19 @@ class OnboardAPI {
 		}
 
         $auth_header = $request->get_header('Authorization');
-        if (!$auth_header || strpos($auth_header, 'Bearer ') !== 0) {
+        $isAuthHeaderMissing = !$auth_header;
+        $isBearerFormatInvalid = $auth_header && strpos($auth_header, 'Bearer ') !== 0;
+        $isAuthInvalid = $isAuthHeaderMissing || $isBearerFormatInvalid;
+
+        if ($isAuthInvalid) {
             return new WP_Error('missing_token', 'Missing Authorization header', array('status' => 401));
         }
 
         $token = substr($auth_header, 7);
         $decoded = $this->oauth->validate_access_token($token);
+        $isTokenInvalid = !$decoded;
 
-        if (!$decoded) {
+        if ($isTokenInvalid) {
             return new WP_Error('invalid_token', 'Invalid or expired access token', array('status' => 401));
         }
 
@@ -369,7 +374,9 @@ class OnboardAPI {
     private function create_mutation_verifier($expected_action) {
         return function($request) use ($expected_action) {
             $token = $request->get_param('mutation_token');
-            if (!$token) {
+            $isTokenMissing = !$token;
+
+            if ($isTokenMissing) {
                 return new WP_Error('missing_mutation_token', 'Missing mutation token', array('status' => 401));
             }
 
@@ -470,11 +477,13 @@ class OnboardAPI {
 
         // Validate client.
         $app = $this->oauth->get_application_by_client_id($client_id);
-        if (!$app) {
+        $isAppMissing = !$app;
+
+        if ($isAppMissing) {
             return new WP_Error('invalid_client', 'Invalid client ID', array('status' => 400));
         }
 
-        if ($app['redirect_uri'] !== $redirect_uri) {
+        $isRedirectMismatch = $app['redirect_uri'] !== $redirect_uri;
             return new WP_Error('invalid_redirect', 'Redirect URI mismatch', array('status' => 400));
         }
 

@@ -218,7 +218,9 @@ class OnboardAdminUI {
      * @param string $hook Current admin page hook.
      */
     public function enqueue_assets($hook) {
-        if (strpos($hook, 'plugins-onboard') === false) {
+        $isOtherPage = strpos($hook, 'plugins-onboard') === false;
+
+        if ($isOtherPage) {
             return;
         }
 
@@ -252,7 +254,11 @@ class OnboardAdminUI {
      * Handle admin actions.
      */
     public function handle_actions() {
-        if (!isset($_GET['page']) || strpos($_GET['page'], 'plugins-onboard') === false) {
+        $isPageMissing = !isset($_GET['page']);
+        $isOtherPage = !$isPageMissing && strpos($_GET['page'], 'plugins-onboard') === false;
+        $isNotOnboardPage = $isPageMissing || $isOtherPage;
+
+        if ($isNotOnboardPage) {
             return;
         }
 

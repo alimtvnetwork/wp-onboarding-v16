@@ -168,7 +168,9 @@ trait AgentCrudWriteTrait {
         ];
 
         foreach ($fieldMap as $field => $transform) {
-            if (!array_key_exists($field, $data)) {
+            $isFieldAbsent = !array_key_exists($field, $data);
+
+            if ($isFieldAbsent) {
                 continue;
             }
 
@@ -185,8 +187,9 @@ trait AgentCrudWriteTrait {
     ): void {
         $passwordKey = AgentFieldType::AppPassword->value;
         $hasPassword = BooleanHelpers::hasFilterValue($data, $passwordKey);
+        $isMissingPassword = !$hasPassword;
 
-        if (!$hasPassword) {
+        if ($isMissingPassword) {
             return;
         }
 

@@ -304,7 +304,9 @@ class OnboardBackupManager {
         $has_plugin_db = $zip->locateName('plugin-manager.sqlite') !== false;
         $has_audit_db = $zip->locateName('audit.sqlite') !== false;
 
-        if (!$has_metadata) {
+        $isMissingMetadata = !$has_metadata;
+
+        if ($isMissingMetadata) {
             $zip->close();
             return new WP_Error('invalid_export', 'Invalid export file - missing metadata');
         }
@@ -372,13 +374,17 @@ class OnboardBackupManager {
 
         // Read metadata.
         $metadata_content = $zip->getFromName('metadata.json');
-        if (!$metadata_content) {
+        $isMetadataMissing = !$metadata_content;
+
+        if ($isMetadataMissing) {
             $zip->close();
             return new WP_Error('invalid_export', 'Invalid export file - missing metadata');
         }
 
         $metadata = json_decode($metadata_content, true);
-        if ($metadata['export_type'] !== 'snapshots') {
+        $isWrongExportType = ($metadata['export_type'] !== 'snapshots');
+
+        if ($isWrongExportType) {
             $zip->close();
             return new WP_Error('invalid_export_type', 'This is not a snapshots export file');
         }
@@ -411,8 +417,9 @@ class OnboardBackupManager {
                     $snapshot_data['backup_date']
                 );
 
-                if (!$existing) {
-                    $this->db->query(
+                $isNewSnapshot = !$existing;
+
+                if ($isNewSnapshot) {
                         'INSERT INTO snapshots (snapshot_id, plugin_slug, version, backup_date, file_path, file_size, checksum, trigger_action, created_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         array(
                             $snapshot_data['snapshot_id'],

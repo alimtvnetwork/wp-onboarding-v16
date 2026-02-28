@@ -87,13 +87,17 @@ trait InvalidRouteTrait
         WP_REST_Request $request,
     ): WP_REST_Response {
         $route = $request->get_route();
-        if (strpos($route, '/' . PluginConfigType::apiFullNamespace()) === false) {
+        $isOtherNamespace = (strpos($route, '/' . PluginConfigType::apiFullNamespace()) === false);
+
+        if ($isOtherNamespace) {
 
             return $response;
         }
 
         $status = $response->get_status();
-        if ($status < 400) {
+        $isSuccessStatus = ($status < 400);
+
+        if ($isSuccessStatus) {
 
             return $response;
         }

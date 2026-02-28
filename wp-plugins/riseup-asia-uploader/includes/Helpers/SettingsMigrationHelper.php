@@ -136,15 +136,17 @@ class SettingsMigrationHelper {
 
         foreach (self::SNAPSHOT_FIELDS as $field) {
             $hasField = isset($settings[$field]) && is_string($settings[$field]);
+            $isMissingField = !$hasField;
 
-            if (!$hasField) {
+            if ($isMissingField) {
                 continue;
             }
 
             $oldValue = $settings[$field];
             $hasMapping = isset(self::VALUE_MAP[$oldValue]);
+            $isMissingMapping = !$hasMapping;
 
-            if (!$hasMapping) {
+            if ($isMissingMapping) {
                 continue;
             }
 
