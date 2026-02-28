@@ -1,4 +1,4 @@
-// Package git — Pull, PullAll, Status, Commit, Push operations.
+// Package git — Pull, PullAll, and Status operations.
 package git
 
 import (
@@ -7,10 +7,18 @@ import (
 	"strings"
 	"time"
 
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
+
+// pullContext bundles parameters for executePull.
+type pullContext struct {
+	Path      string
+	Result    *PullResult
+	StartTime time.Time
+}
 
 // Pull performs a git pull for a single plugin
 func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[PullResult] {
@@ -45,43 +53,52 @@ func (s *Service) Pull(ctx context.Context, pluginId int64) apperror.Result[Pull
 		return apperror.Fail[PullResult](repoErr)
 	}
 
-	return s.executePull(ctx, p.Path, &result, startTime)
+	return s.executePull(pullContext{
+		Path:      p.Path,
+		Result:    &result,
+		StartTime: startTime,
+	})
 }
 
 // executePull runs the actual git pull and populates the result.
-func (s *Service) executePull(
-	ctx context.Context,
-	path string,
-	result *PullResult,
-	startTime time.Time,
-) apperror.Result[PullResult] {
-	branch, err := s.runGitCommand(path, "rev-parse", "--abbrev-ref", "HEAD")
+func (s *Service) executePull(pc pullContext) apperror.Result[PullResult] {
+	branch, err := s.runGitCommand(pc.Path, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
-		result.IsSuccess = false
-		result.Error = err.Error()
-		result.Duration = time.Since(startTime).Milliseconds()
+		pc.Result.IsSuccess = false
+		pc.Result.Error = err.Error()
+		pc.Result.Duration = time.Since(pc.StartTime).Milliseconds()
 
 		return apperror.FailWrap[PullResult](err, apperror.ErrGitCommand, "failed to get current branch")
 	}
 
-	result.Branch = strings.TrimSpace(branch)
+	pc.Result.Branch = strings.TrimSpace(branch)
 
-	output, err := s.runGitCommand(path, "pull", "origin", result.Branch)
-	result.Output = output
-	result.Duration = time.Since(startTime).Milliseconds()
+	output, err := s.runGitCommand(pc.Path, "pull", "origin", pc.Result.Branch)
+	pc.Result.Output = output
+	pc.Result.Duration = time.Since(pc.StartTime).Milliseconds()
 
 	if err != nil {
-		result.IsSuccess = false
-		result.Error = err.Error()
-
-		ws.Broadcast(s.wsHub, ws.EventGitPullFailed, ws.GitPullFailedData{
-			PluginId: result.PluginId,
-			Error:    result.Error,
-		})
-
-		return apperror.FailWrap[PullResult](err, apperror.ErrGitCommand, "git pull failed")
+		return s.handlePullFailure(pc.Result, err)
 	}
 
+	return s.finalizePullSuccess(pc.Path, pc.Result, output)
+}
+
+// handlePullFailure broadcasts failure and returns error result.
+func (s *Service) handlePullFailure(result *PullResult, err error) apperror.Result[PullResult] {
+	result.IsSuccess = false
+	result.Error = err.Error()
+
+	ws.Broadcast(s.wsHub, ws.EventGitPullFailed, ws.GitPullFailedData{
+		PluginId: result.PluginId,
+		Error:    result.Error,
+	})
+
+	return apperror.FailWrap[PullResult](err, apperror.ErrGitCommand, "git pull failed")
+}
+
+// finalizePullSuccess parses output, fetches commit info, and broadcasts success.
+func (s *Service) finalizePullSuccess(path string, result *PullResult, output string) apperror.Result[PullResult] {
 	result.IsSuccess = true
 	parseGitPullOutput(output, result)
 
@@ -119,11 +136,21 @@ func (s *Service) PullAll(ctx context.Context) apperror.Result[BatchPullResult] 
 		return apperror.Fail[BatchPullResult](pluginsResult.AppError())
 	}
 
-	plugins := pluginsResult.Items()
+	batch := s.pullEachPlugin(ctx, pluginsResult.Items())
+	batch.Duration = time.Since(startTime).Milliseconds()
 
-	batch := BatchPullResult{
-		Results: make([]PullResult, 0),
-	}
+	ws.Broadcast(s.wsHub, ws.EventGitPullAllComplete, ws.GitPullAllCompleteData{
+		Succeeded: batch.Succeeded,
+		Failed:    batch.Failed,
+		Duration:  batch.Duration,
+	})
+
+	return apperror.Ok(batch)
+}
+
+// pullEachPlugin iterates over plugins and pulls those with git repos.
+func (s *Service) pullEachPlugin(ctx context.Context, plugins []models.Plugin) BatchPullResult {
+	batch := BatchPullResult{Results: make([]PullResult, 0)}
 
 	for _, p := range plugins {
 		gitDir, err := pathutil.Join(p.Path, ".git")
@@ -146,15 +173,7 @@ func (s *Service) PullAll(ctx context.Context) apperror.Result[BatchPullResult] 
 		}
 	}
 
-	batch.Duration = time.Since(startTime).Milliseconds()
-
-	ws.Broadcast(s.wsHub, ws.EventGitPullAllComplete, ws.GitPullAllCompleteData{
-		Succeeded: batch.Succeeded,
-		Failed:    batch.Failed,
-		Duration:  batch.Duration,
-	})
-
-	return apperror.Ok(batch)
+	return batch
 }
 
 // Status returns git status for a plugin
@@ -165,7 +184,6 @@ func (s *Service) Status(ctx context.Context, pluginId int64) apperror.Result[St
 	}
 
 	p := pResult.Value()
-
 	result := StatusResult{PluginId: pluginId}
 
 	repoErr := requireGitRepo(p.Path)
@@ -173,11 +191,27 @@ func (s *Service) Status(ctx context.Context, pluginId int64) apperror.Result[St
 		return apperror.Fail[StatusResult](repoErr)
 	}
 
-	branch, _ := s.runGitCommand(p.Path, "rev-parse", "--abbrev-ref", "HEAD")
+	return s.collectStatus(p.Path, &result)
+}
+
+// collectStatus gathers branch, ahead/behind, and file counts.
+func (s *Service) collectStatus(path string, result *StatusResult) apperror.Result[StatusResult] {
+	branch, _ := s.runGitCommand(path, "rev-parse", "--abbrev-ref", "HEAD")
 	result.Branch = strings.TrimSpace(branch)
 
-	s.runGitCommand(p.Path, "fetch", "--quiet")
-	revList, _ := s.runGitCommand(p.Path, "rev-list", "--left-right", "--count", result.Branch+"...origin/"+result.Branch)
+	s.runGitCommand(path, "fetch", "--quiet")
+	s.populateAheadBehind(path, result)
+	s.populateFileCountsFromStatus(path, result)
+
+	lastCommit, _ := s.runGitCommand(path, "log", "-1", "--format=%s")
+	result.LastCommit = strings.TrimSpace(lastCommit)
+
+	return apperror.Ok(*result)
+}
+
+// populateAheadBehind fills ahead/behind counts from rev-list.
+func (s *Service) populateAheadBehind(path string, result *StatusResult) {
+	revList, _ := s.runGitCommand(path, "rev-list", "--left-right", "--count", result.Branch+"...origin/"+result.Branch)
 	parts := strings.Fields(revList)
 	hasAheadBehind := len(parts) == 2
 
@@ -185,17 +219,10 @@ func (s *Service) Status(ctx context.Context, pluginId int64) apperror.Result[St
 		result.Ahead, _ = strconv.Atoi(parts[0])
 		result.Behind, _ = strconv.Atoi(parts[1])
 	}
-
-	populateFileCountsFromStatus(s, p.Path, &result)
-
-	lastCommit, _ := s.runGitCommand(p.Path, "log", "-1", "--format=%s")
-	result.LastCommit = strings.TrimSpace(lastCommit)
-
-	return apperror.Ok(result)
 }
 
 // populateFileCountsFromStatus fills staged, modified, untracked counts.
-func populateFileCountsFromStatus(s *Service, path string, result *StatusResult) {
+func (s *Service) populateFileCountsFromStatus(path string, result *StatusResult) {
 	staged, _ := s.runGitCommand(path, "diff", "--cached", "--name-only")
 	hasStagedFiles := staged != ""
 
@@ -218,107 +245,4 @@ func populateFileCountsFromStatus(s *Service, path string, result *StatusResult)
 	}
 
 	result.HasChanges = result.Staged > 0 || result.Modified > 0 || result.Untracked > 0
-}
-
-// Commit stages all changes and commits with the given message
-func (s *Service) Commit(ctx context.Context, pluginId int64, message string) apperror.Result[CommitResult] {
-	pResult := s.pluginService.GetById(ctx, pluginId)
-	if pResult.HasError() {
-		return apperror.Fail[CommitResult](pResult.AppError())
-	}
-
-	p := pResult.Value()
-	result := CommitResult{PluginId: pluginId}
-
-	repoErr := requireGitRepo(p.Path)
-	if repoErr != nil {
-		return apperror.Fail[CommitResult](repoErr)
-	}
-
-	return s.executeCommit(p.Path, p.Name, &result, message)
-}
-
-// executeCommit runs git add + commit and populates the result.
-func (s *Service) executeCommit(
-	path string,
-	pluginName string,
-	result *CommitResult,
-	message string,
-) apperror.Result[CommitResult] {
-	_, err := s.runGitCommand(path, "add", "-A")
-	if err != nil {
-		result.IsSuccess = false
-		result.Message = "Failed to stage changes"
-
-		return apperror.FailWrap[CommitResult](err, apperror.ErrGitCommand, "failed to stage changes")
-	}
-
-	output, err := s.runGitCommand(path, "commit", "-m", message)
-	if err != nil {
-		result.IsSuccess = false
-		result.Message = "Failed to commit: " + output
-
-		return apperror.FailWrap[CommitResult](err, apperror.ErrGitCommand, "failed to commit")
-	}
-
-	hash, _ := s.runGitCommand(path, "rev-parse", "--short", "HEAD")
-	result.CommitHash = strings.TrimSpace(hash)
-	result.IsSuccess = true
-
-	ws.Broadcast(s.wsHub, ws.EventGitCommitComplete, ws.GitCommitCompleteData{
-		PluginId:   result.PluginId,
-		IsSuccess:  true,
-		CommitHash: result.CommitHash,
-	})
-
-	s.log.Info("Git commit complete", "plugin", pluginName, "pluginId", result.PluginId, "hash", result.CommitHash)
-
-	return apperror.Ok(*result)
-}
-
-// Push pushes commits to remote
-func (s *Service) Push(ctx context.Context, pluginId int64) apperror.Result[PushResult] {
-	pResult := s.pluginService.GetById(ctx, pluginId)
-	if pResult.HasError() {
-		return apperror.Fail[PushResult](pResult.AppError())
-	}
-
-	p := pResult.Value()
-	result := PushResult{PluginId: pluginId}
-
-	repoErr := requireGitRepo(p.Path)
-	if repoErr != nil {
-		return apperror.Fail[PushResult](repoErr)
-	}
-
-	return s.executePush(p.Path, p.Name, &result)
-}
-
-// executePush runs the actual git push and populates the result.
-func (s *Service) executePush(path string, pluginName string, result *PushResult) apperror.Result[PushResult] {
-	branch, _ := s.runGitCommand(path, "rev-parse", "--abbrev-ref", "HEAD")
-	branch = strings.TrimSpace(branch)
-
-	revList, _ := s.runGitCommand(path, "rev-list", "--count", branch+"...origin/"+branch)
-	result.Pushed, _ = strconv.Atoi(strings.TrimSpace(revList))
-
-	output, err := s.runGitCommand(path, "push", "origin", branch)
-	if err != nil {
-		result.IsSuccess = false
-		result.Message = "Failed to push: " + output
-
-		return apperror.FailWrap[PushResult](err, apperror.ErrGitCommand, "git push failed")
-	}
-
-	result.IsSuccess = true
-
-	ws.Broadcast(s.wsHub, ws.EventGitPushComplete, ws.GitPushCompleteData{
-		PluginId:  result.PluginId,
-		IsSuccess: true,
-		Pushed:    result.Pushed,
-	})
-
-	s.log.Info("Git push complete", "plugin", pluginName, "pluginId", result.PluginId, "pushed", result.Pushed)
-
-	return apperror.Ok(*result)
 }
