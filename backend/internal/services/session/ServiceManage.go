@@ -76,10 +76,10 @@ func (s *Service) buildSummaries(dirs []dirInfo) []*SessionSummary {
 // buildSingleSummary builds a summary for one session entry.
 func (s *Service) buildSingleSummary(d dirInfo) *SessionSummary {
 	s.mu.RLock()
-	session, exists := s.sessions[d.name]
+	session, isFound := s.sessions[d.name]
 	s.mu.RUnlock()
 
-	if exists {
+	if isFound {
 		return summaryFromSession(session)
 	}
 
@@ -129,7 +129,7 @@ func (s *Service) DeleteSession(sessionID string) *apperror.AppError {
 // closeAndRemoveSession closes the log file and removes from in-memory map.
 func (s *Service) closeAndRemoveSession(sessionID string) {
 	s.mu.Lock()
-	if session, exists := s.sessions[sessionID]; exists {
+	if session, isFound := s.sessions[sessionID]; isFound {
 		session.mu.Lock()
 		if session.logFile != nil {
 			session.logFile.Close()
