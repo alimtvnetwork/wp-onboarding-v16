@@ -129,7 +129,7 @@ func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*
 	req, err := http.NewRequest(method, fullUrl, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
-			WithURL(fullUrl).
+			WithUrl(fullUrl).
 			WithMethod(method)
 	}
 
@@ -138,7 +138,7 @@ func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "HTTP request failed").
-			WithURL(fullUrl).
+			WithUrl(fullUrl).
 			WithMethod(method)
 	}
 
@@ -159,7 +159,7 @@ func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperr
 	req, err := http.NewRequest(input.Method.Value(), fullUrl, input.Body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
-			WithURL(fullUrl).
+			WithUrl(fullUrl).
 			WithMethod(input.Method.Value())
 	}
 
@@ -168,7 +168,7 @@ func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperr
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "multipart HTTP request failed").
-			WithURL(fullUrl).
+			WithUrl(fullUrl).
 			WithMethod(input.Method.Value())
 	}
 
@@ -180,11 +180,11 @@ func (c *Client) fullUrl(endpoint string) string {
 }
 
 // rawGet performs an authenticated GET request to an arbitrary full URL on the same WordPress host.
-func (c *Client) rawGet(fullURL string) (*http.Response, *apperror.AppError) {
-	req, err := http.NewRequest("GET", fullURL, nil)
+func (c *Client) rawGet(fullUrl string) (*http.Response, *apperror.AppError) {
+	req, err := http.NewRequest("GET", fullUrl, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
-			WithURL(fullURL)
+			WithUrl(fullUrl)
 	}
 
 	c.setStandardHeaders(req, contenttype.JSON.Value())
@@ -192,7 +192,7 @@ func (c *Client) rawGet(fullURL string) (*http.Response, *apperror.AppError) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "raw GET request failed").
-			WithURL(fullURL)
+			WithUrl(fullUrl)
 	}
 
 	return resp, nil
