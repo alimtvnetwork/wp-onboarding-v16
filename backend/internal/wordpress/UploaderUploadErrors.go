@@ -10,7 +10,7 @@ import (
 // uploadApiErrorInput bundles parameters for buildUploadApiError.
 type uploadApiErrorInput struct {
 	AbsZipPath      string
-	UploadURL       string
+	UploadUrl       string
 	UploadEndpoint  string
 	StatusCode      int
 	RespBytes       []byte
@@ -24,13 +24,13 @@ func buildUploadApiError(input uploadApiErrorInput) *ApiError {
 	diagnosticBody := buildUploadDiagnosticBody(input.RespBody)
 
 	fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n",
-		input.UploadURL, input.AbsZipPath, input.StatusCode, truncateBody(input.RespBody, 4000), stackTrace)
+		input.UploadUrl, input.AbsZipPath, input.StatusCode, truncateBody(input.RespBody, 4000), stackTrace)
 
 	return &ApiError{
 		Operation:    "upload plugin via RiseupAsia Uploader",
 		Method:       httpmethod.Post.Value(),
 		Endpoint:     input.UploadEndpoint,
-		Url:          input.UploadURL,
+		Url:          input.UploadUrl,
 		StatusCode:   input.StatusCode,
 		ResponseBody: diagnosticBody + ExtractPhpStackTrace(input.RespBytes),
 		StackTrace:   stackTrace,
