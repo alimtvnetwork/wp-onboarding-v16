@@ -7,13 +7,10 @@ import (
 	"sync"
 	"time"
 
-	connectionstatus "wp-plugin-publish/internal/enums/connectionstatustype"
-
 	"github.com/gorilla/websocket"
 )
 
 func utcTimestamp() string {
-	// Human-readable UTC format: YYYY-MM-DD HH:MM:SS
 	return time.Now().UTC().Format("2006-01-02 15:04:05")
 }
 
@@ -32,7 +29,6 @@ func formatLogTimestamp() string {
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		// Allow connections from local development
 		return true
 	},
 	ReadBufferSize:  1024,
@@ -63,7 +59,7 @@ type Message struct {
 	SessionId string `json:",omitempty"`
 }
 
-// --- Typed broadcast data structs (GE pattern: no raw map[string]any in business logic) ---
+// --- Typed broadcast data structs ---
 
 // SyncProgressData holds sync progress broadcast payload.
 type SyncProgressData struct {
@@ -137,71 +133,49 @@ type ConnectionConfirmation struct {
 }
 
 // IncomingMessage represents a parsed incoming WebSocket message.
-// Data is kept as json.RawMessage (parse boundary) to be narrowed per msg.Type.
 type IncomingMessage struct {
-	Type string          `json:"type"` // external key (WebSocket client JSON)
+	Type string          `json:"type"` // external key
 	Data json.RawMessage `json:"data"` // external key
 }
 
 // Event types for WebSocket messages
 const (
-	// File and sync events
 	EventFileChange     = "fileChange"
 	EventSyncStarted    = "syncStarted"
 	EventSyncProgress   = "syncProgress"
 	EventSyncComplete   = "syncComplete"
-	
-	// Publish events
 	EventPublishStarted  = "publishStarted"
 	EventPublishProgress = "publishProgress"
 	EventPublishComplete = "publishComplete"
-	
-	// Auto-publish events
 	EventAutoPublishTriggered = "autoPublishTriggered"
 	EventAutoPublishComplete  = "autoPublishComplete"
 	EventAutoPublishFailed    = "autoPublishFailed"
-	
-	// Scan events
 	EventScanStarted  = "scanStarted"
 	EventScanProgress = "scanProgress"
 	EventScanComplete = "scanComplete"
-	
-	// Git events
 	EventGitPullStarted    = "gitPullStarted"
 	EventGitPullComplete   = "gitPullComplete"
 	EventGitPullFailed     = "gitPullFailed"
 	EventGitPullAllComplete = "gitPullAllComplete"
 	EventGitCommitComplete = "gitCommitComplete"
 	EventGitPushComplete   = "gitPushComplete"
-	
-	// Build events
 	EventBuildStarted  = "buildStarted"
 	EventBuildComplete = "buildComplete"
 	EventBuildFailed   = "buildFailed"
-	
-	// Connection test events
 	EventConnectionTestStarted  = "connectionTestStarted"
 	EventConnectionTestProgress = "connectionTestProgress"
 	EventConnectionTestComplete = "connectionTestComplete"
-	
-	// Remote plugin action events
 	EventRemotePluginActionStarted  = "remotePluginActionStarted"
 	EventRemotePluginActionProgress = "remotePluginActionProgress"
 	EventRemotePluginActionComplete = "remotePluginActionComplete"
-	
-	// Version history events
 	EventVersionCreated   = "versionCreated"
 	EventRollbackStarted  = "rollbackStarted"
 	EventRollbackComplete = "rollbackComplete"
 	EventRollbackFailed   = "rollbackFailed"
-	
-	// E2E test events
 	EventE2ERunStarted    = "e2eRunStarted"
 	EventE2ETestStarted   = "e2eTestStarted"
 	EventE2ETestCompleted = "e2eTestCompleted"
 	EventE2ERunCompleted  = "e2eRunCompleted"
-	
-	// General events
 	EventError      = "error"
 	EventConnection = "connection"
 	EventLog        = "log"
@@ -257,13 +231,11 @@ func (h *Hub) Run() {
 }
 
 // Broadcast sends a typed message to all connected clients.
-// Generic: callers get compile-time type checking on the data parameter.
-// Note: Go methods cannot have type parameters, so this is a package-level function.
 func Broadcast[T any](h *Hub, eventType string, data T) {
 	BroadcastWithSession(h, eventType, data, "")
 }
 
-// BroadcastWithSession sends a typed message to all connected clients with a session ID.
+// BroadcastWithSession sends a typed message with a session ID.
 func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionId string) {
 	h.broadcast <- &Message{
 		Type:      eventType,
@@ -273,62 +245,15 @@ func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionId str
 	}
 }
 
-// BroadcastSyncProgress sends a sync progress update
-func (h *Hub) BroadcastSyncProgress(data SyncProgressData) {
-	Broadcast(h, EventSyncProgress, data)
-}
-
-// BroadcastScanProgress sends a scan progress update
-func (h *Hub) BroadcastScanProgress(data ScanProgressData) {
-	Broadcast(h, EventScanProgress, data)
-}
-
-// BroadcastPublishProgress sends a publish progress update
-func (h *Hub) BroadcastPublishProgress(data PublishProgressData) {
-	Broadcast(h, EventPublishProgress, data)
-}
-
-// BroadcastFileChange notifies clients of a file change
-func (h *Hub) BroadcastFileChange(pluginId int64, filePath, changeType string) {
-	Broadcast(h, EventFileChange, FileChangeData{
-		PluginId:   pluginId,
-		FilePath:   filePath,
-		ChangeType: changeType,
-	})
-}
-
-// BroadcastError sends an error notification
-func (h *Hub) BroadcastError(code, message string, context json.RawMessage) {
-	Broadcast(h, EventError, ErrorData{
-		Code:    code,
-		Message: message,
-		Context: context,
-	})
-}
-
-// BroadcastConnectionTestProgress sends a connection test progress update
-func (h *Hub) BroadcastConnectionTestProgress(data ConnectionTestProgressData) {
-	Broadcast(h, EventConnectionTestProgress, data)
-}
-
-// BroadcastLog sends a log message to all clients
-func (h *Hub) BroadcastLog(level string, message string, context json.RawMessage) {
-	Broadcast(h, EventLog, LogData{
-		Level:   level,
-		Message: message,
-		Context: context,
-	})
-}
-
 // OperationLogEntry represents a single log entry for an operation
 type OperationLogEntry struct {
-	Timestamp string          // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
-	Level     string          // debug, info, warn, error
-	Step      string          // backup, package, upload, activate, etc.
+	Timestamp string
+	Level     string
+	Step      string
 	Message   string
 	Details   json.RawMessage `json:",omitempty"`
-	File      string          `json:",omitempty"` // Source file path
-	Line      int             `json:",omitempty"` // Source line number
+	File      string          `json:",omitempty"`
+	Line      int             `json:",omitempty"`
 }
 
 // OperationLogInput holds parameters for operation log broadcasts.
@@ -340,62 +265,6 @@ type OperationLogInput struct {
 	Entry         OperationLogEntry
 }
 
-// BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
-func (h *Hub) BroadcastOperationLog(input OperationLogInput) {
-	input.SessionID = ""
-	h.BroadcastOperationLogWithSession(input)
-}
-
-// BroadcastOperationLogWithSession sends a detailed operation log entry with session ID
-func (h *Hub) BroadcastOperationLogWithSession(input OperationLogInput) {
-	if input.Entry.Timestamp == "" {
-		input.Entry.Timestamp = formatLogTimestamp()
-	}
-	BroadcastWithSession(h, EventLog, OperationLogData{
-		OperationType: input.OperationType,
-		PluginId:      input.PluginID,
-		SiteId:        input.SiteID,
-		SessionId:     input.SessionID,
-		Log:           input.Entry,
-	}, input.SessionID)
-}
-
-// BroadcastPublishLog is a convenience method for publish operation logs
-func (h *Hub) BroadcastPublishLog(input OperationLogInput) {
-	input.OperationType = "publish"
-	h.BroadcastOperationLog(input)
-}
-
-// BroadcastPublishLogWithSession is a convenience method for publish operation logs with session
-func (h *Hub) BroadcastPublishLogWithSession(input OperationLogInput) {
-	input.OperationType = "publish"
-	h.BroadcastOperationLogWithSession(input)
-}
-
-// BroadcastSyncLog is a convenience method for sync operation logs
-func (h *Hub) BroadcastSyncLog(input OperationLogInput) {
-	input.OperationType = "sync"
-	h.BroadcastOperationLog(input)
-}
-
-// BroadcastSyncLogWithSession is a convenience method for sync operation logs with session
-func (h *Hub) BroadcastSyncLogWithSession(input OperationLogInput) {
-	input.OperationType = "sync"
-	h.BroadcastOperationLogWithSession(input)
-}
-
-// BroadcastBackupLog is a convenience method for backup operation logs
-func (h *Hub) BroadcastBackupLog(input OperationLogInput) {
-	input.OperationType = "backup"
-	h.BroadcastOperationLog(input)
-}
-
-// BroadcastBackupLogWithSession is a convenience method for backup operation logs with session
-func (h *Hub) BroadcastBackupLogWithSession(input OperationLogInput) {
-	input.OperationType = "backup"
-	h.BroadcastOperationLogWithSession(input)
-}
-
 // RemotePluginLogInput holds parameters for remote plugin log broadcasts.
 type RemotePluginLogInput struct {
 	SiteID    int64
@@ -405,144 +274,4 @@ type RemotePluginLogInput struct {
 	Step      string
 	Message   string
 	Details   json.RawMessage
-}
-
-// BroadcastRemotePluginLog is a convenience method for remote plugin action logs
-func (h *Hub) BroadcastRemotePluginLog(input RemotePluginLogInput) {
-	input.SessionID = ""
-	h.BroadcastRemotePluginLogWithSession(input)
-}
-
-// BroadcastRemotePluginLogWithSession is a convenience method for remote plugin action logs with session
-func (h *Hub) BroadcastRemotePluginLogWithSession(input RemotePluginLogInput) {
-	h.BroadcastOperationLogWithSession(OperationLogInput{
-		OperationType: "remote_plugin_" + input.Action,
-		SiteID:        input.SiteID,
-		SessionID:     input.SessionID,
-		Entry: OperationLogEntry{
-			Level: input.Level, Step: input.Step, Message: input.Message, Details: input.Details,
-		},
-	})
-}
-
-// BroadcastWithSession is a method wrapper for the package-level generic BroadcastWithSession function,
-// satisfying interfaces that require a method on *Hub.
-func (h *Hub) BroadcastWithSession(eventType string, data any, sessionId string) {
-	h.broadcast <- &Message{
-		Type:      eventType,
-		Data:      data,
-		SessionId: sessionId,
-	}
-}
-
-// HandleWebSocket handles WebSocket upgrade requests
-func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return
-	}
-
-	client := &Client{
-		hub:  h,
-		conn: conn,
-		send: make(chan []byte, 256),
-	}
-
-	h.register <- client
-
-	// Send connection confirmation
-	Broadcast(h, EventConnection, ConnectionConfirmation{
-		Status:   connectionstatus.Connected.DBValue(),
-		ClientId: conn.RemoteAddr().String(),
-	})
-
-	// Start goroutines for reading and writing
-	go client.writePump()
-	go client.readPump()
-}
-
-// readPump pumps messages from the WebSocket connection to the hub
-func (c *Client) readPump() {
-	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
-	}()
-
-	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
-	})
-
-	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			break
-		}
-		
-		// Handle incoming messages (e.g., subscription requests)
-		c.handleMessage(message)
-	}
-}
-
-// handleMessage processes incoming WebSocket messages
-func (c *Client) handleMessage(message []byte) {
-	var msg IncomingMessage
-
-	err := json.Unmarshal(message, &msg)
-
-	if err != nil {
-		return
-	}
-
-	switch msg.Type {
-	case "subscribe_plugin":
-		// Handle plugin subscription
-	case "unsubscribe_plugin":
-		// Handle plugin unsubscription
-	case "ping":
-		// Respond to ping
-		c.send <- []byte(`{"type":"pong"}`)
-	}
-}
-
-// writePump pumps messages from the hub to the WebSocket connection
-func (c *Client) writePump() {
-	ticker := time.NewTicker(30 * time.Second)
-	defer func() {
-		ticker.Stop()
-		c.conn.Close()
-	}()
-
-	for {
-		select {
-		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			writeErr := c.conn.WriteMessage(websocket.TextMessage, message)
-
-			if writeErr != nil {
-				return
-			}
-
-		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-			pingErr := c.conn.WriteMessage(websocket.PingMessage, nil)
-
-			if pingErr != nil {
-				return
-			}
-		}
-	}
-}
-
-// ClientCount returns the number of connected clients
-func (h *Hub) ClientCount() int {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	return len(h.clients)
 }
