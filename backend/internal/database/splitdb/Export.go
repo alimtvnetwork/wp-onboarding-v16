@@ -178,9 +178,9 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, isOverwrit
 
 	// Remove existing directory if overwriting
 	if isOverwrite {
-		err := os.RemoveAll(projectDir)
-		if err != nil {
-			m.log.Warn("Failed to remove existing project directory", "error", err)
+		appErr := pathutil.RemoveDir(projectDir, "projectDir")
+		if appErr != nil {
+			m.log.Warn("Failed to remove existing project directory", "error", appErr)
 		}
 	}
 
