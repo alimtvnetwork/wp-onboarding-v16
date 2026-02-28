@@ -62,7 +62,10 @@ trait AuthCredentialTrait
 
         $credentials = base64_decode(substr($authHeader, 6));
         $isCredentialsMissing = ($credentials === false);
-        $isFormatInvalid = ($isCredentialsMissing || strpos($credentials, ':') === false);
+        $isColonMissing = (!$isCredentialsMissing && strpos($credentials, ':') === false);
+        $isFormatInvalid =
+            $isCredentialsMissing ||
+            $isColonMissing;
 
         if ($isFormatInvalid) {
             return $this->buildAuthError('Invalid credentials format');
@@ -83,7 +86,9 @@ trait AuthCredentialTrait
     }
 
     private function validateAuthFormat(string $authHeader): ?WP_Error {
-        if (strpos($authHeader, 'Basic ') === 0) {
+        $isBasicAuth = (strpos($authHeader, 'Basic ') === 0);
+
+        if ($isBasicAuth) {
             return null;
         }
 

@@ -130,7 +130,9 @@ trait DatabaseConvenienceTrait {
      * @return PDOStatement|false
      */
     private function prepareAndExecute(string $sql, array $params = []) {
-        if (!$this->pdo) {
+        $isPdoMissing = !$this->pdo;
+
+        if ($isPdoMissing) {
             return false;
         }
 

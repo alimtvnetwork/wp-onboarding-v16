@@ -235,9 +235,9 @@ trait PluginListTrait
 
         $filePath = ltrim($filePath, '/\\');
 
-        if (strpos($filePath, '..') !== false) {
+        $hasTraversal = (strpos($filePath, '..') !== false);
 
-            return $this->errorResponse('Invalid file path', HttpStatusType::BadRequest->value);
+        if ($hasTraversal) {
         }
 
         $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
@@ -248,8 +248,13 @@ trait PluginListTrait
 
         $realPluginDir = realpath($pluginDir);
         $realFilePath = realpath($pluginDir . '/' . $filePath);
+        $isResolveFailed = ($realFilePath === false);
+        $isOutsidePluginDir = (!$isResolveFailed && strpos($realFilePath, $realPluginDir) !== 0);
+        $isPathInvalid =
+            $isResolveFailed ||
+            $isOutsidePluginDir;
 
-        if ($realFilePath === false || strpos($realFilePath, $realPluginDir) !== 0) {
+        if ($isPathInvalid) {
 
             return $this->errorResponse('File not found or invalid path', HttpStatusType::NotFound->value);
         }

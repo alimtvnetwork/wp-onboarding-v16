@@ -96,7 +96,7 @@ trait NativeTableExportConvertTrait {
             case SnapshotScopeType::All->value:
                 return $allTables;
             case SnapshotScopeType::WordPress->value:
-                return array_filter($allTables, function($table) use ($prefix) { return strpos($table, $prefix) === 0; });
+                return array_filter($allTables, function($table) use ($prefix) { $isWpTable = (strpos($table, $prefix) === 0); return $isWpTable; });
             case SnapshotScopeType::Content->value:
                 return $this->getContentTables($allTables, $prefix);
             case SnapshotScopeType::Custom->value:

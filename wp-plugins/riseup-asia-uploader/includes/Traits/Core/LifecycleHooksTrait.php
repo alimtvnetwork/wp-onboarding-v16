@@ -116,8 +116,12 @@ trait LifecycleHooksTrait
             return true;
         }
 
-        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/wp-json/') !== false) {
-            return true;
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $isRestApiRequest = (strpos($_SERVER['REQUEST_URI'], '/wp-json/') !== false);
+
+            if ($isRestApiRequest) {
+                return true;
+            }
         }
 
         return false;
@@ -127,7 +131,9 @@ trait LifecycleHooksTrait
      * Extract plugin slug from full plugin file path.
      */
     private function extractPluginSlug(string $pluginFile): string {
-        if (strpos($pluginFile, '/') !== false) {
+        $hasSubdirectory = (strpos($pluginFile, '/') !== false);
+
+        if ($hasSubdirectory) {
             $parts = explode('/', $pluginFile);
 
             return $parts[0];

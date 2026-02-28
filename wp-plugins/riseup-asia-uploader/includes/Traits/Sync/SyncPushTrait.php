@@ -156,8 +156,12 @@ trait SyncPushTrait
         if ($resolved === false) { $resolved = $pluginDir; }
         $syncAction = SyncActionType::tryFrom($action);
         $isActionOtherThanDelete = ($syncAction === null || $syncAction->isOtherThan(SyncActionType::Delete));
+        $isOutsidePluginDir = (strpos($resolved, $realPluginDir) !== 0);
+        $isTraversal =
+            $isOutsidePluginDir &&
+            $isActionOtherThanDelete;
 
-        return (strpos($resolved, $realPluginDir) !== 0 && $isActionOtherThanDelete);
+        return $isTraversal;
     }
 
     /** Replace (create/update) a file during sync. */

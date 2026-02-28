@@ -116,7 +116,11 @@ trait IncrementalDiscoveryTrait {
         $columns = $this->wpdb->get_results("SHOW COLUMNS FROM `{$table}`", ARRAY_A);
 
         foreach ($columns as $col) {
-            if ($col['Key'] === 'PRI' && str_contains($col['Extra'], 'auto_increment')) {
+            $isPrimaryAutoIncrement =
+                $col['Key'] === 'PRI' &&
+                str_contains($col['Extra'], 'auto_increment');
+
+            if ($isPrimaryAutoIncrement) {
                 return $col['Field'];
             }
         }

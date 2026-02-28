@@ -115,7 +115,9 @@ trait DetectorProviderTrait {
                     $result[ResponseKeyType::Available->value] = true;
                     $result[ResponseKeyType::DetectionMethod->value] = 'plugin_active';
 
-                    if (strpos($pluginFile, 'premium') !== false) {
+                    $isPremiumPlugin = (strpos($pluginFile, 'premium') !== false);
+
+                    if ($isPremiumPlugin) {
                         $result[ResponseKeyType::Name->value] = 'UpdraftPlus Premium';
                     }
 
