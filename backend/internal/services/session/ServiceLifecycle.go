@@ -153,9 +153,12 @@ func (s *Service) Log(input LogInput) {
 // getActiveSession returns the in-memory session or nil if not found.
 func (s *Service) getActiveSession(sessionID string) *Session {
 	s.mu.RLock()
-	session, exists := s.sessions[sessionID]
+	session, isFound := s.sessions[sessionID]
 	s.mu.RUnlock()
-	if !exists {
+
+	isNotFound := !isFound
+
+	if isNotFound {
 		return nil
 	}
 	return session
@@ -251,10 +254,12 @@ func resolveStageIcon(status string) string {
 // EndSession marks a session as complete
 func (s *Service) EndSession(sessionID, status, errorMsg string) {
 	s.mu.Lock()
-	session, exists := s.sessions[sessionID]
+	session, isFound := s.sessions[sessionID]
 	s.mu.Unlock()
 
-	if !exists {
+	isNotFound := !isFound
+
+	if isNotFound {
 		return
 	}
 

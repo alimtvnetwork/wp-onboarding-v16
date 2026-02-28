@@ -14,10 +14,10 @@ import (
 // GetSession returns session info
 func (s *Service) GetSession(sessionID string) apperror.Result[*Session] {
 	s.mu.RLock()
-	session, exists := s.sessions[sessionID]
+	session, isFound := s.sessions[sessionID]
 	s.mu.RUnlock()
 
-	if exists {
+	if isFound {
 		return apperror.Ok(session)
 	}
 
