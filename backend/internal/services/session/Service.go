@@ -58,7 +58,7 @@ type SessionDiagnostics struct {
 	Request          *SessionRequest    `json:",omitempty"`
 	Response         *SessionResponse   `json:",omitempty"`
 	StackTrace       *SessionStackTrace `json:",omitempty"`
-	PHPStackTraceLog string             `json:",omitempty"`
+	PhpStackTraceLog string             `json:",omitempty"`
 }
 
 // SessionRequest captures the original inbound request
@@ -81,7 +81,7 @@ type SessionResponse struct {
 // SessionStackTrace holds dual Go + PHP stack traces
 type SessionStackTrace struct {
 	Golang []StackFrame `json:",omitempty"`
-	PHP    []StackFrame `json:",omitempty"`
+	Php    []StackFrame `json:",omitempty"`
 }
 
 // StackFrame represents a single frame in a stack trace

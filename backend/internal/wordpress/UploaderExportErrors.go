@@ -35,7 +35,7 @@ type RemoteErrorLogsResult struct {
 	ErrorLog         *RemoteLogFile       `json:"errorLog,omitempty"`         // external key
 	FullLog          *RemoteLogFile       `json:"fullLog,omitempty"`          // external key
 	StackTraceLog    *RemoteLogFile       `json:"stacktraceLog,omitempty"`    // external key
-	StackTraceFrames []PHPStackTraceFrame `json:"stackTraceFrames,omitempty"` // external key
+	StackTraceFrames []PhpStackTraceFrame `json:"stackTraceFrames,omitempty"` // external key
 }
 
 // FetchRemoteErrorLogs retrieves the PHP error and log files from the WordPress plugin.
@@ -77,7 +77,7 @@ type RemoteErrorSessionEntry struct {
 	FileBase         string               `json:"fileBase"`                  // external key
 	Line             *int                 `json:"line"`                      // external key
 	StackTrace       string               `json:"stackTrace,omitempty"`      // external key
-	StackTraceFrames []PHPStackTraceFrame `json:"stackTraceFrames,omitempty"` // external key
+	StackTraceFrames []PhpStackTraceFrame `json:"stackTraceFrames,omitempty"` // external key
 	Context          json.RawMessage      `json:"context,omitempty"`         // external key
 	CreatedAt        string               `json:"createdAt"`                 // external key
 }
@@ -99,7 +99,7 @@ type RemoteErrorSessionsResult struct {
 	Limit            int                       `json:"limit"`                      // external key
 	Offset           int                       `json:"offset"`                     // external key
 	Flash            RemoteFlashState          `json:"flash"`                      // external key
-	StackTraceFrames []PHPStackTraceFrame      `json:"stackTraceFrames,omitempty"` // external key
+	StackTraceFrames []PhpStackTraceFrame      `json:"stackTraceFrames,omitempty"` // external key
 }
 
 // ErrorSessionsInput bundles parameters for FetchRemoteErrorSessions.
