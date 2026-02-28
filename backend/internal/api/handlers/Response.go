@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"wp-plugin-publish/internal/enums/response_message"
+	"wp-plugin-publish/internal/enums/responsemessagetype"
 	"wp-plugin-publish/internal/envelope"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -116,7 +116,7 @@ func isServiceMissing(w http.ResponseWriter, service any, name string) bool {
 			w,
 			wordpress.HttpStatusServiceUnavailable,
 			apperror.ErrNotFound,
-			responsemessage.ServiceNotAvailable.String(),
+			responsemessagetype.ServiceNotAvailable.String(),
 		)
 
 		return true
@@ -133,7 +133,7 @@ func isBodyInvalid(w http.ResponseWriter, r *http.Request, target any) bool {
 			w,
 			wordpress.HttpStatusBadRequest,
 			apperror.ErrConfigLoad,
-			responsemessage.InvalidRequestBody.String(),
+			responsemessagetype.InvalidRequestBody.String(),
 		)
 
 		return true
@@ -150,7 +150,7 @@ func parseID(w http.ResponseWriter, r *http.Request, paramName string) (int64, b
 			w,
 			wordpress.HttpStatusBadRequest,
 			apperror.ErrConfigParse,
-			responsemessage.InvalidId.String(),
+			responsemessagetype.InvalidId.String(),
 		)
 
 		return 0, false

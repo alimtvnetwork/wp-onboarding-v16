@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"wp-plugin-publish/internal/enums/http_method"
-	"wp-plugin-publish/internal/enums/stage_status"
-	"wp-plugin-publish/internal/enums/upload_source"
+	"wp-plugin-publish/internal/enums/httpmethodtype"
+	"wp-plugin-publish/internal/enums/stagestatustype"
+	"wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -43,7 +43,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 func (c *Client) requestUploadMutationToken(pluginSlug string) (string, error) {
 	c.progress(ProgressEvent{
 		Step:    "upload",
-		Status:  stagestatus.Running.String(),
+		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug),
 	})
 
@@ -59,7 +59,7 @@ func (c *Client) requestUploadMutationToken(pluginSlug string) (string, error) {
 func (c *Client) reportMutationTokenObtained(zipPath, mutationToken string) {
 	c.progress(ProgressEvent{
 		Step:    "upload",
-		Status:  stagestatus.Running.String(),
+		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)),
 		Details: toProgress(TokenProgress{TokenLength: len(mutationToken)}),
 	})
@@ -191,7 +191,7 @@ func (c *Client) reportOnboardUploadStart(url, endpoint string, form *zipMultipa
 	}
 	c.progress(ProgressEvent{
 		Step:    "upload",
-		Status:  stagestatus.Running.String(),
+		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("POSTing %d bytes to %s", form.FileSize, url),
 		Details: toProgress(uploadProgress),
 	})
@@ -205,7 +205,7 @@ func (c *Client) reportOnboardUploadResponse(mpResp *multipartResponse) {
 	}
 	c.progress(ProgressEvent{
 		Step:    "upload",
-		Status:  stagestatus.Running.String(),
+		Status:  stagestatustype.Running.String(),
 		Message: fmt.Sprintf("Upload response: %d", mpResp.StatusCode),
 		Details: toProgress(responseProgress),
 	})
@@ -219,7 +219,7 @@ type multipartResponse struct {
 
 // doMultipartRequest sends a POST with multipart body and returns status + body.
 func (c *Client) doMultipartRequest(url string, body *bytes.Buffer, contentType string) (*multipartResponse, error) {
-	req, err := http.NewRequest(httpmethod.Post.Value(), url, body)
+	req, err := http.NewRequest(httpmethodtype.Post.Value(), url, body)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create upload HTTP request").WithURL(url)
 	}
@@ -242,7 +242,7 @@ func (c *Client) parseOnboardUploadResponse(mpResp *multipartResponse, endpoint,
 	if mpResp.StatusCode != http.StatusOK && mpResp.StatusCode != http.StatusCreated {
 		return nil, &APIError{
 			Operation:    "upload plugin zip",
-			Method:       httpmethod.Post.Value(),
+			Method:       httpmethodtype.Post.Value(),
 			Endpoint:     endpoint,
 			Url:          url,
 			StatusCode:   mpResp.StatusCode,
@@ -286,7 +286,7 @@ func (c *Client) UploadPluginViaOnboard(zipPath string, isActivate bool) (*Uploa
 		ZipPath:      zipPath,
 		Slug:         slug,
 		IsActivate:   isActivate,
-		UploadSource: uploadsource.RestAPI,
+		UploadSource: uploadsourcetype.RestAPI,
 	}
 
 	return c.UploadPluginViaUploader(uploadInput)

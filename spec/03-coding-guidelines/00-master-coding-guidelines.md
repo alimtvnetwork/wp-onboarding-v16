@@ -579,7 +579,7 @@ Any modification to an enum must follow the [enum-consumer-checklist.md](../01-a
 [ ] JSON/API keys: PascalCase (e.g., "PluginSlug", "SiteId" — never "SITE_ID" or "siteId")
 [ ] Abbreviations: Id (not ID), Url (not URL), Md5 (not MD5), Json (not JSON), Api (not API)
 [ ] Booleans: is/has prefix, no negative words, no raw ! on calls
-[ ] Enums: Type suffix, isEqual() not ===, PascalCase case names
+[ ] Enums: Type suffix (PHP: PascalCase `Type`, Go: lowercase `type` pkg suffix), isEqual() not ===, PascalCase case names
 [ ] DB: PascalCase tables/columns, PascalCase array keys for inserts
 [ ] Formatting: braces always, zero nesting, blank before return, 15-line max
 [ ] Errors: apperror.Wrap (Go), Throwable imported (PHP), no fmt.Errorf

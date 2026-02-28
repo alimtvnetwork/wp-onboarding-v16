@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"wp-plugin-publish/internal/enums/upload_source"
+	"wp-plugin-publish/internal/enums/uploadsourcetype"
 )
 
 func TestCheckOnboardPluginAvailable_UsesOnboardNamespace(t *testing.T) {
@@ -185,7 +185,7 @@ func TestUploadPluginViaUploader_PostsToUploaderEndpoint(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	res, err := c.UploadPluginViaUploader(UploadInput{ZipPath: zipPath, Slug: "test-plugin", IsActivate: true, UploadSource: uploadsource.RestAPI})
+	res, err := c.UploadPluginViaUploader(UploadInput{ZipPath: zipPath, Slug: "test-plugin", IsActivate: true, UploadSource: uploadsourcetype.RestAPI})
 	if err != nil {
 		t.Fatalf("expected nil error, got: %v", err)
 	}

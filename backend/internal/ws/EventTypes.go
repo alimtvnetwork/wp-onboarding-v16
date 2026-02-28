@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"wp-plugin-publish/internal/enums/publish_type"
+	"wp-plugin-publish/internal/enums/publishtype"
 )
 
 // --- Auto-publish events ---
