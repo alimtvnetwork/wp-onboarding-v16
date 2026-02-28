@@ -273,34 +273,34 @@ func resolveRemoteSessionType(action string) session.SessionType {
 // connectForRemoteAction decrypts credentials and creates a WordPress client.
 func (s *Service) connectForRemoteAction(ref *remoteActionRef) (*wordpress.Client, *apperror.AppError) {
 	s.logRemoteAction(ref, RemoteActionLogInput{
-		Level:   "info",
-		Step:    "decrypt",
-		Message: "Decrypting site credentials...",
+		Level: "info", Step: "decrypt", Message: "Decrypting site credentials...",
 	})
 
 	password, decryptErr := decrypt(ref.Site.PasswordEncrypted, s.encryptionKey)
-
 	if decryptErr != nil {
-		errMsg := "failed to decrypt password"
-		appErr := apperror.Wrap(decryptErr, apperror.ErrInternal, errMsg)
-		s.logRemoteAction(ref, RemoteActionLogInput{
-			Level:   "error",
-			Step:    "decrypt",
-			Message: errMsg,
-			Details: session.ToJSON(AppErrorDetail{Error: appErr.Error()}),
-		})
-		s.endRemoteSession(ref.SessionID, "error", errMsg)
-
-		return nil, appErr
+		return nil, s.handleDecryptFailure(ref, decryptErr)
 	}
 
 	s.logRemoteAction(ref, RemoteActionLogInput{
-		Level:   "info",
-		Step:    "connect",
+		Level: "info", Step: "connect",
 		Message: fmt.Sprintf("Connecting to WordPress site: %s", ref.Site.Url),
 	})
 
 	return s.wpClientFactory(ref.Site.Url, ref.Site.Username, string(password), nil), nil
+}
+
+// handleDecryptFailure logs and returns the decryption error.
+func (s *Service) handleDecryptFailure(ref *remoteActionRef, decryptErr error) *apperror.AppError {
+	errMsg := "failed to decrypt password"
+	appErr := apperror.Wrap(decryptErr, apperror.ErrInternal, errMsg)
+
+	s.logRemoteAction(ref, RemoteActionLogInput{
+		Level: "error", Step: "decrypt", Message: errMsg,
+		Details: session.ToJSON(AppErrorDetail{Error: appErr.Error()}),
+	})
+	s.endRemoteSession(ref.SessionID, "error", errMsg)
+
+	return appErr
 }
 
 // logRemoteStageStart logs the stage start for the remote action execution.

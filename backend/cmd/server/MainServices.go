@@ -48,13 +48,36 @@ type InitServicesInput struct {
 func initServices(input InitServicesInput) *Services {
 	wpFactories := buildWPFactories(input)
 	sessionService := initSessionService(input)
+	core := buildCoreServices(input, wpFactories, sessionService)
+
+	return buildServicesBundle(coreServicesInput{
+		Init:      input,
+		Site:      core.Site,
+		Plugin:    core.Plugin,
+		Backup:    core.Backup,
+		Sync:      core.Sync,
+		Session:   sessionService,
+		WPFactory: wpFactories.simple,
+	})
+}
+
+// coreServicesDeps holds the core services built during init.
+type coreServicesDeps struct {
+	Site   *site.Service
+	Plugin *plugin.Service
+	Backup *backup.Service
+	Sync   sync.Service
+}
+
+// buildCoreServices creates the site, plugin, backup, and sync services.
+func buildCoreServices(input InitServicesInput, wf wpFactories, sessionSvc *session.Service) coreServicesDeps {
 	siteWSHub := &SiteWSHubAdapter{hub: input.WSHub}
 
 	siteService := initSiteService(siteDepsInput{
 		Init:      input,
-		WPFactory: wpFactories.withProgress,
+		WPFactory: wf.withProgress,
 		WSHub:     siteWSHub,
-		Session:   sessionService,
+		Session:   sessionSvc,
 	})
 	pluginService := plugin.New(plugin.Config{DB: input.DB, Logger: input.Log})
 	backupService := initBackupService(input)
@@ -62,18 +85,13 @@ func initServices(input InitServicesInput) *Services {
 		Init:      input,
 		Plugin:    pluginService,
 		Site:      siteService,
-		WPFactory: wpFactories.simple,
+		WPFactory: wf.simple,
 	})
 
-	return buildServicesBundle(coreServicesInput{
-		Init:      input,
-		Site:      siteService,
-		Plugin:    pluginService,
-		Backup:    backupService,
-		Sync:      syncService,
-		Session:   sessionService,
-		WPFactory: wpFactories.simple,
-	})
+	return coreServicesDeps{
+		Site: siteService, Plugin: pluginService,
+		Backup: backupService, Sync: syncService,
+	}
 }
 
 // coreServicesInput bundles dependencies for buildServicesBundle.
@@ -91,21 +109,24 @@ type coreServicesInput struct {
 func buildServicesBundle(input coreServicesInput) *Services {
 	publishHistorySvc := publishhistory.New(publishhistory.Config{DB: input.Init.DB, Logger: input.Init.Log})
 	siteHealthSvc := sitehealth.New(sitehealth.Config{DB: input.Init.DB, Logger: input.Init.Log})
-
-	publishSvc := initPublishService(publishDepsInput{
-		Init:      input.Init,
-		Plugin:    input.Plugin,
-		Backup:    input.Backup,
-		Sync:      input.Sync,
-		Site:      input.Site,
-		WPFactory: input.WPFactory,
-		Session:   input.Session,
-		History:   publishHistorySvc,
-	})
-
+	publishSvc := initPublishService(buildPublishDeps(input, publishHistorySvc))
 	watcherSvc := watcher.New(watcher.Config{DB: input.Init.DB, Logger: input.Init.Log, PluginService: input.Plugin, WSHub: input.Init.WSHub})
 	errorHistorySvc := errorhistory.New(errorhistory.Config{DB: input.Init.DB, Logger: input.Init.Log})
 
+	return assembleServices(input, publishSvc, watcherSvc, errorHistorySvc, publishHistorySvc, siteHealthSvc)
+}
+
+// buildPublishDeps constructs the publish service dependency input.
+func buildPublishDeps(input coreServicesInput, history *publishhistory.Service) publishDepsInput {
+	return publishDepsInput{
+		Init: input.Init, Plugin: input.Plugin, Backup: input.Backup,
+		Sync: input.Sync, Site: input.Site, WPFactory: input.WPFactory,
+		Session: input.Session, History: history,
+	}
+}
+
+// assembleServices builds the final Services struct from all service instances.
+func assembleServices(input coreServicesInput, publishSvc *publish.Service, watcherSvc *watcher.Service, errorHistorySvc *errorhistory.Service, publishHistorySvc *publishhistory.Service, siteHealthSvc *sitehealth.Service) *Services {
 	return &Services{
 		Site: input.Site, Plugin: input.Plugin, Watcher: watcherSvc, Sync: input.Sync,
 		Publish: publishSvc, Backup: input.Backup, Session: input.Session,

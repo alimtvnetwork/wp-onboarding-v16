@@ -155,33 +155,42 @@ func (s *Service) logRemoteAction(ref *remoteActionRef, input RemoteActionLogInp
 
 // emitRemoteActionToSession sends logs to session service and WebSocket.
 func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, input RemoteActionLogInput) {
-	hasSessionService := s.sessionService != nil
-	hasSessionID := ref.SessionID != ""
-	isSessionLoggable := hasSessionService && hasSessionID
+	s.emitToSessionService(ref, input)
+	s.emitToWSHub(ref, input)
+}
 
-	if isSessionLoggable {
-		s.sessionService.Log(session.LogInput{
-			SessionID: ref.SessionID,
-			Level:     input.Level,
-			Step:      input.Step,
-			Message:   input.Message,
-			Details:   input.Details,
-		})
+// emitToSessionService logs the remote action to the session service.
+func (s *Service) emitToSessionService(ref *remoteActionRef, input RemoteActionLogInput) {
+	isUnavailable := s.sessionService == nil || ref.SessionID == ""
+
+	if isUnavailable {
+		return
 	}
 
-	hasWsHub := s.wsHub != nil
+	s.sessionService.Log(session.LogInput{
+		SessionID: ref.SessionID,
+		Level:     input.Level,
+		Step:      input.Step,
+		Message:   input.Message,
+		Details:   input.Details,
+	})
+}
 
-	if hasWsHub {
-		s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
-			SiteID:    ref.SiteID,
-			Action:    ref.Action,
-			SessionID: ref.SessionID,
-			Level:     input.Level,
-			Step:      input.Step,
-			Message:   input.Message,
-			Details:   input.Details,
-		})
+// emitToWSHub broadcasts the remote action log via WebSocket.
+func (s *Service) emitToWSHub(ref *remoteActionRef, input RemoteActionLogInput) {
+	if s.wsHub == nil {
+		return
 	}
+
+	s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
+		SiteID:    ref.SiteID,
+		Action:    ref.Action,
+		SessionID: ref.SessionID,
+		Level:     input.Level,
+		Step:      input.Step,
+		Message:   input.Message,
+		Details:   input.Details,
+	})
 }
 
 // remoteActionResolvedContext holds resolved context for log output.
