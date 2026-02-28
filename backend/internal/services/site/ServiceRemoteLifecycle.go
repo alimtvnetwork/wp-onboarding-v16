@@ -14,8 +14,8 @@ import (
 // remoteActionRef bundles the recurring identifiers and dependencies that flow
 // through every remote plugin action (enable/disable/delete).
 type remoteActionRef struct {
-	SessionID  string
-	SiteID     int64
+	SessionId  string
+	SiteId     int64
 	Action     string
 	PluginSlug string
 	Site       *models.Site

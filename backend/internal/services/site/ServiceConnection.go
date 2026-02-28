@@ -40,7 +40,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 // broadcastStartProgress sends the initial connection test progress.
 func (s *Service) broadcastStartProgress(id int64) {
 	startProgress := ConnectionProgressInput{
-		SiteID:  id,
+		SiteId:  id,
 		Step:    "start",
 		Status:  stagestatus.Running.String(),
 		Message: "Starting connection test...",
@@ -52,7 +52,7 @@ func (s *Service) broadcastStartProgress(id int64) {
 func (s *Service) buildProgressCallback(id int64) func(wordpress.ProgressEvent) {
 	return func(msg wordpress.ProgressEvent) {
 		s.broadcastProgress(ConnectionProgressInput{
-			SiteID:  id,
+			SiteId:  id,
 			Step:    "connecting",
 			Status:  stagestatus.Running.String(),
 			Message: msg.Message,
@@ -101,7 +101,7 @@ func (s *Service) loadSiteWithProgress(ctx context.Context, id int64) (*models.S
 // broadcastSiteLoadFailure sends a site load failure progress event.
 func (s *Service) broadcastSiteLoadFailure(id int64, appErr *apperror.AppError) {
 	failProgress := ConnectionProgressInput{
-		SiteID:  id,
+		SiteId:  id,
 		Step:    connectionstep.FetchSite.String(),
 		Status:  stagestatus.Failed.String(),
 		Message: "Failed to retrieve site info",
@@ -113,7 +113,7 @@ func (s *Service) broadcastSiteLoadFailure(id int64, appErr *apperror.AppError) 
 // broadcastSiteLoadSuccess sends a site load success progress event.
 func (s *Service) broadcastSiteLoadSuccess(id int64, siteName string) {
 	successProgress := ConnectionProgressInput{
-		SiteID:  id,
+		SiteId:  id,
 		Step:    connectionstep.FetchSite.String(),
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("Retrieved site: %s", siteName),
@@ -142,7 +142,7 @@ func (s *Service) decryptWithProgress(siteId int64, encrypted string) ([]byte, *
 // broadcastDecryptStart sends decrypt start progress.
 func (s *Service) broadcastDecryptStart(siteId int64) {
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  siteId,
+		SiteId:  siteId,
 		Step:    "decrypt",
 		Status:  stagestatus.Running.String(),
 		Message: "Decrypting credentials...",
@@ -152,7 +152,7 @@ func (s *Service) broadcastDecryptStart(siteId int64) {
 // broadcastDecryptFailure sends decrypt failure progress.
 func (s *Service) broadcastDecryptFailure(siteId int64, appErr *apperror.AppError) {
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  siteId,
+		SiteId:  siteId,
 		Step:    "decrypt",
 		Status:  stagestatus.Failed.String(),
 		Message: "Failed to decrypt credentials",
@@ -163,7 +163,7 @@ func (s *Service) broadcastDecryptFailure(siteId int64, appErr *apperror.AppErro
 // broadcastDecryptSuccess sends decrypt success progress.
 func (s *Service) broadcastDecryptSuccess(siteId int64) {
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  siteId,
+		SiteId:  siteId,
 		Step:    "decrypt",
 		Status:  stagestatus.Completed.String(),
 		Message: "Credentials decrypted",
@@ -172,7 +172,7 @@ func (s *Service) broadcastDecryptSuccess(siteId int64) {
 
 // connTestRef holds shared context for connection test handling.
 type connTestRef struct {
-	ID   int64
+	Id   int64
 	Site *models.Site
 }
 
@@ -180,7 +180,7 @@ type connTestRef struct {
 func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *models.Site, client *wordpress.Client) (*ConnectionResult, *apperror.AppError) {
 	s.broadcastConnecting(id, site.Url)
 
-	ref := connTestRef{ID: id, Site: site}
+	ref := connTestRef{Id: id, Site: site}
 	connResult := client.TestConnection()
 	if connResult.HasError() {
 
@@ -193,7 +193,7 @@ func (s *Service) executeConnectionTest(ctx context.Context, id int64, site *mod
 // broadcastConnecting sends a "connecting" progress event.
 func (s *Service) broadcastConnecting(id int64, siteUrl string) {
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  id,
+		SiteId:  id,
 		Step:    "connect",
 		Status:  stagestatus.Running.String(),
 		Message: fmt.Sprintf("Connecting to %s...", siteUrl),
@@ -208,8 +208,8 @@ func (s *Service) handleConnectionFailure(ctx context.Context, ref connTestRef, 
 	}
 
 	s.broadcastApiTestFailure(ref, err)
-	s.updateConnectionStatus(ctx, ref.ID, connectionstatus.Disconnected.DBValue())
-	s.broadcastCompleteStep(ref.ID, stagestatus.Failed.String(), "Connection test failed")
+	s.updateConnectionStatus(ctx, ref.Id, connectionstatus.Disconnected.DBValue())
+	s.broadcastCompleteStep(ref.Id, stagestatus.Failed.String(), "Connection test failed")
 	return result
 }
 
@@ -220,7 +220,7 @@ func (s *Service) broadcastApiTestFailure(ref connTestRef, err error) {
 		Username: ref.Site.Username,
 	})
 	failProgress := ConnectionProgressInput{
-		SiteID:  ref.ID,
+		SiteId:  ref.Id,
 		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Failed.String(),
 		Message: fmt.Sprintf("Connection failed: %s", err.Error()),
@@ -232,10 +232,10 @@ func (s *Service) broadcastApiTestFailure(ref connTestRef, err error) {
 // handleConnectionSuccess processes a successful connection test.
 func (s *Service) handleConnectionSuccess(ctx context.Context, ref connTestRef, connInfo *wordpress.ConnectionInfo) *ConnectionResult {
 	result := buildSuccessResult(connInfo)
-	s.broadcastApiTestSuccess(ref.ID, connInfo.WPVersion)
-	s.updateConnectionStatus(ctx, ref.ID, connectionstatus.Connected.DBValue())
-	s.broadcastCompleteStep(ref.ID, stagestatus.Completed.String(), "Connection test completed successfully")
-	s.log.Info("Site connection tested", "id", ref.ID, "success", result.IsSuccess)
+	s.broadcastApiTestSuccess(ref.Id, connInfo.WPVersion)
+	s.updateConnectionStatus(ctx, ref.Id, connectionstatus.Connected.DBValue())
+	s.broadcastCompleteStep(ref.Id, stagestatus.Completed.String(), "Connection test completed successfully")
+	s.log.Info("Site connection tested", "id", ref.Id, "success", result.IsSuccess)
 	return result
 }
 
@@ -253,7 +253,7 @@ func buildSuccessResult(connInfo *wordpress.ConnectionInfo) *ConnectionResult {
 func (s *Service) broadcastApiTestSuccess(id int64, wpVersion string) {
 	successDetails := toJson(ConnectionSuccessDetails{WPVersion: wpVersion})
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  id,
+		SiteId:  id,
 		Step:    connectionstep.ApiTest.String(),
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("WordPress %s detected, REST API accessible", wpVersion),
@@ -264,7 +264,7 @@ func (s *Service) broadcastApiTestSuccess(id int64, wpVersion string) {
 // broadcastCompleteStep broadcasts a completion step.
 func (s *Service) broadcastCompleteStep(id int64, status, message string) {
 	s.broadcastProgress(ConnectionProgressInput{
-		SiteID:  id,
+		SiteId:  id,
 		Step:    connectionstep.Complete.String(),
 		Status:  status,
 		Message: message,

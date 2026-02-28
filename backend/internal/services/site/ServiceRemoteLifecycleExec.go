@@ -47,13 +47,13 @@ func (s *Service) setupRemoteActionRef(ctx context.Context, input remoteActionIn
 	}
 
 	ref := &remoteActionRef{
-		SiteID:     input.SiteId,
+		SiteId:     input.SiteId,
 		Action:     input.Action,
 		PluginSlug: input.PluginSlug,
 		Site:       &site,
 	}
 
-	ref.SessionID = s.initRemoteActionSession(ref)
+	ref.SessionId = s.initRemoteActionSession(ref)
 	s.broadcastRemoteActionStarted(ref)
 
 	return ref, nil
@@ -96,7 +96,7 @@ func (s *Service) initRemoteActionSession(ref *remoteActionRef) string {
 	startInput := session.StartSessionInput{
 		Type:       sessionType,
 		PluginID:   0,
-		SiteID:     ref.SiteID,
+		SiteID:     ref.SiteId,
 		PluginName: ref.PluginSlug,
 		SiteName:   ref.Site.Name,
 	}
@@ -136,7 +136,7 @@ func (s *Service) handleDecryptFailure(ref *remoteActionRef, decryptErr error) *
 		Level: "error", Step: "decrypt", Message: errMsg,
 		Details: session.ToJSON(AppErrorDetail{Error: appErr.Error()}),
 	})
-	s.endRemoteSession(ref.SessionID, "error", errMsg)
+	s.endRemoteSession(ref.SessionId, "error", errMsg)
 
 	return appErr
 }
@@ -144,10 +144,10 @@ func (s *Service) handleDecryptFailure(ref *remoteActionRef, decryptErr error) *
 // logRemoteStageStart logs the stage start for the remote action execution.
 func (s *Service) logRemoteStageStart(ref *remoteActionRef) {
 	hasSessionService := s.sessionService != nil
-	hasSessionId := ref.SessionID != ""
+	hasSessionId := ref.SessionId != ""
 
 	if hasSessionService && hasSessionId {
-		s.sessionService.LogStageStart(ref.SessionID, ref.Action)
+		s.sessionService.LogStageStart(ref.SessionId, ref.Action)
 	}
 
 	s.logRemoteAction(ref, RemoteActionLogInput{

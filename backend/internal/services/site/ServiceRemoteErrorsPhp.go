@@ -101,7 +101,7 @@ func (s *Service) logPhpErrorAttachment(ref *remoteActionRef, result *wordpress.
 	}
 
 	s.logRemoteAction(ref, successLog)
-	s.logPhpErrorsToSession(ref.SessionID, result.Entries)
+	s.logPhpErrorsToSession(ref.SessionId, result.Entries)
 }
 
 // collectPhpErrorEntries converts remote error entries to PhpErrorEntry slice.
@@ -248,7 +248,7 @@ func (s *Service) applyStackTraceContent(ref *remoteActionRef, logsResult *wordp
 
 // logStackTraceToSession writes the stack trace content to the session log.
 func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.StackTraceLog) {
-	isSessionUnavailable := s.sessionService == nil || ref.SessionID == ""
+	isSessionUnavailable := s.sessionService == nil || ref.SessionId == ""
 
 	if isSessionUnavailable {
 		return
@@ -259,7 +259,7 @@ func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.
 	}
 
 	s.sessionService.Log(session.LogInput{
-		SessionID: ref.SessionID,
+		SessionID: ref.SessionId,
 		Level:     "info",
 		Step:      "remote_php_stacktrace",
 		Message:   "PHP stacktrace.txt content from remote site",

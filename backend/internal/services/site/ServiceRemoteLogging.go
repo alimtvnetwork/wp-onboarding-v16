@@ -13,11 +13,11 @@ import (
 // logRemoteAction logs a remote plugin action to session and WebSocket.
 func (s *Service) logRemoteAction(ref *remoteActionRef, input RemoteActionLogInput) {
 	s.emitRemoteActionToSession(ref, input)
-	logCtx := s.resolveRemoteActionLogContext(ref.SiteID, input.Details)
+	logCtx := s.resolveRemoteActionLogContext(ref.SiteId, input.Details)
 	s.emitRemoteActionToLogger(loggerEmitInput{
 		Level:   input.Level,
 		Message: input.Message,
-		SiteID:  ref.SiteID,
+		SiteId:  ref.SiteId,
 		Action:  ref.Action,
 		Step:    input.Step,
 		Ctx:     logCtx,
@@ -32,14 +32,14 @@ func (s *Service) emitRemoteActionToSession(ref *remoteActionRef, input RemoteAc
 
 // emitToSessionService logs the remote action to the session service.
 func (s *Service) emitToSessionService(ref *remoteActionRef, input RemoteActionLogInput) {
-	isUnavailable := s.sessionService == nil || ref.SessionID == ""
+	isUnavailable := s.sessionService == nil || ref.SessionId == ""
 
 	if isUnavailable {
 		return
 	}
 
 	s.sessionService.Log(session.LogInput{
-		SessionID: ref.SessionID,
+		SessionID: ref.SessionId,
 		Level:     input.Level,
 		Step:      input.Step,
 		Message:   input.Message,
@@ -54,9 +54,9 @@ func (s *Service) emitToWSHub(ref *remoteActionRef, input RemoteActionLogInput) 
 	}
 
 	s.wsHub.BroadcastRemotePluginLogWithSession(RemotePluginLogInput{
-		SiteID:    ref.SiteID,
+		SiteId:    ref.SiteId,
 		Action:    ref.Action,
-		SessionID: ref.SessionID,
+		SessionId: ref.SessionId,
 		Level:     input.Level,
 		Step:      input.Step,
 		Message:   input.Message,
@@ -149,7 +149,7 @@ func applySiteFields(ctx *remoteActionResolvedContext, site *models.Site) {
 type loggerEmitInput struct {
 	Level   string
 	Message string
-	SiteID  int64
+	SiteId  int64
 	Action  string
 	Step    string
 	Ctx     remoteActionResolvedContext
@@ -177,7 +177,7 @@ func buildRemoteActionLogFields(input loggerEmitInput) []any {
 		logFields = append(logFields, "siteUrl", input.Ctx.SiteUrl)
 	}
 
-	logFields = append(logFields, "siteId", input.SiteID, "action", input.Action, "step", input.Step)
+	logFields = append(logFields, "siteId", input.SiteId, "action", input.Action, "step", input.Step)
 
 	hasPluginSlug := input.Ctx.PluginSlug != ""
 	if hasPluginSlug {
@@ -190,8 +190,8 @@ func buildRemoteActionLogFields(input loggerEmitInput) []any {
 // endRemoteSession ends the session if service is available
 func (s *Service) endRemoteSession(sessionId, status, errorMsg string) {
 	hasSessionService := s.sessionService != nil
-	hasSessionID := sessionId != ""
-	isSessionEndable := hasSessionService && hasSessionID
+	hasSessionId := sessionId != ""
+	isSessionEndable := hasSessionService && hasSessionId
 
 	if isSessionEndable {
 		s.sessionService.EndSession(sessionId, status, errorMsg)

@@ -42,7 +42,7 @@ type WSHub interface {
 
 // ConnectionProgressInput holds connection test progress broadcast parameters.
 type ConnectionProgressInput struct {
-	SiteID  int64
+	SiteId  int64
 	Step    string
 	Status  string
 	Message string
@@ -51,9 +51,9 @@ type ConnectionProgressInput struct {
 
 // RemotePluginLogInput holds remote plugin log broadcast parameters.
 type RemotePluginLogInput struct {
-	SiteID    int64
+	SiteId    int64
 	Action    string
-	SessionID string
+	SessionId string
 	Level     string
 	Step      string
 	Message   string
@@ -129,7 +129,7 @@ func (s *Service) broadcastProgress(input ConnectionProgressInput) {
 	if s.wsHub != nil {
 		s.wsHub.BroadcastConnectionTestProgress(input)
 	}
-	s.log.Debug("Connection test progress", "siteId", input.SiteID, "step", input.Step, "status", input.Status, "message", input.Message)
+	s.log.Debug("Connection test progress", "siteId", input.SiteId, "step", input.Step, "status", input.Status, "message", input.Message)
 }
 
 // GetDecryptedPassword returns the decrypted password for a site
