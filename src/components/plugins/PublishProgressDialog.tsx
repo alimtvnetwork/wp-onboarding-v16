@@ -286,7 +286,7 @@ export function PublishProgressDialog({
       }
     });
 
-    const unsub2 = wsClient.on("publish_progress", (data: unknown) => {
+    const unsub2 = wsClient.on(WS_EVENTS.PUBLISH_PROGRESS, (data: unknown) => {
       const payload = data as PublishProgressPayload;
       if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompletedRef.current) {
         // Use provided log OR generate a synthetic one from the progress message

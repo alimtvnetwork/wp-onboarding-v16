@@ -180,7 +180,9 @@ func DeleteE2ERun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	runID := vars["id"]
 
-	if err := E2EService.DeleteRun(r.Context(), runID); err != nil {
+	err := E2EService.DeleteRun(r.Context(), runID)
+
+	if err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

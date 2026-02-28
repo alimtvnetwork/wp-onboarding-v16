@@ -98,7 +98,9 @@ func parseSnapshotsResponse(c *Client, endpoint string, data []byte) ([]Snapshot
 	var result struct {
 		Snapshots []SnapshotRecord `json:"snapshots"` // external key
 	}
-	if unmarshalErr := json.Unmarshal(data, &result); unmarshalErr == nil {
+	unmarshalErr := json.Unmarshal(data, &result)
+
+	if unmarshalErr == nil {
 		return result.Snapshots, nil
 	}
 
@@ -117,7 +119,9 @@ func trySnapshotArrayFallback(c *Client, endpoint string) ([]SnapshotRecord, *ap
 	}
 
 	var snapshots []SnapshotRecord
-	if unmarshalErr := json.Unmarshal(fallbackData, &snapshots); unmarshalErr != nil {
+	unmarshalErr := json.Unmarshal(fallbackData, &snapshots)
+
+	if unmarshalErr != nil {
 		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to decode snapshots response")
 	}
 

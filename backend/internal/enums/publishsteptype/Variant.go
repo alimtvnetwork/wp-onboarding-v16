@@ -100,7 +100,9 @@ var stageMap = map[Variant]Variant{
 // Stage returns the base stage value for this step.
 // Action-in-progress variants (e.g. Packaging) resolve to their base stage (Package).
 func (v Variant) Stage() string {
-	if base, isFound := stageMap[v]; isFound {
+	base, isFound := stageMap[v]
+
+	if isFound {
 
 		return base.Value()
 	}
@@ -187,7 +189,9 @@ func (v Variant) MarshalJSON() ([]byte, error) {
 
 func (v *Variant) UnmarshalJSON(data []byte) error {
 	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+	err := json.Unmarshal(data, &s)
+
+	if err != nil {
 		return err
 	}
 	parsed, err := Parse(s)

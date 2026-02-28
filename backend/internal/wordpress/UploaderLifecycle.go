@@ -91,12 +91,16 @@ type pluginExistsResult struct {
 
 // parsePluginExistsResponse tries envelope format, then legacy flat format.
 func parsePluginExistsResponse(data []byte) (*PluginExistsResult, *apperror.AppError) {
-	if results, ok := UnwrapResults[pluginExistsResult](data); ok && len(results) > 0 {
+	results, ok := UnwrapResults[pluginExistsResult](data)
+	isEnvelopeMatch := ok && len(results) > 0
+
+	if isEnvelopeMatch {
 		result := &PluginExistsResult{
 			Exists:     results[0].Exists,
 			Status:     results[0].Status,
 			PluginFile: results[0].PluginFile,
 		}
+
 		return result, nil
 	}
 
@@ -106,7 +110,9 @@ func parsePluginExistsResponse(data []byte) (*PluginExistsResult, *apperror.AppE
 // parsePluginExistsLegacy decodes the legacy flat format for plugin-exists.
 func parsePluginExistsLegacy(data []byte) (*PluginExistsResult, *apperror.AppError) {
 	var legacy pluginExistsResult
-	if err := json.Unmarshal(data, &legacy); err != nil {
+	err := json.Unmarshal(data, &legacy)
+
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
 	}
 
@@ -169,7 +175,9 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, *apperror.AppEr
 
 // parsePluginListResponse tries envelope format, then legacy flat format.
 func parsePluginListResponse(data []byte) ([]UploaderPluginInfo, *apperror.AppError) {
-	if plugins, ok := UnwrapResults[UploaderPluginInfo](data); ok {
+	plugins, ok := UnwrapResults[UploaderPluginInfo](data)
+
+	if ok {
 		return plugins, nil
 	}
 
@@ -178,7 +186,9 @@ func parsePluginListResponse(data []byte) ([]UploaderPluginInfo, *apperror.AppEr
 		Count   int                  `json:"count"`   // external key
 		Plugins []UploaderPluginInfo `json:"plugins"` // external key
 	}
-	if err := json.Unmarshal(data, &response); err != nil {
+	err := json.Unmarshal(data, &response)
+
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugins response")
 	}
 
@@ -220,7 +230,9 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, *a
 // decodeAPIResponseTyped unmarshals raw JSON bytes into *T, returning *apperror.AppError on failure.
 func decodeAPIResponseTyped[T any](data []byte, label string) (*T, *apperror.AppError) {
 	var result T
-	if err := json.Unmarshal(data, &result); err != nil {
+	err := json.Unmarshal(data, &result)
+
+	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, fmt.Sprintf("decode %s response", label))
 	}
 	return &result, nil

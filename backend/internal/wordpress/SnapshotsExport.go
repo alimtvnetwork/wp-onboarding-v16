@@ -101,7 +101,9 @@ func (c *Client) GetSnapshotProviders() apperror.Result[[]SnapshotProvider] {
 	}
 
 	var providers []SnapshotProvider
-	if err := json.Unmarshal(rawResult.Value(), &providers); err != nil {
+	err := json.Unmarshal(rawResult.Value(), &providers)
+
+	if err != nil {
 		return apperror.FailWrap[[]SnapshotProvider](err, apperror.ErrInternal, "failed to decode providers response")
 	}
 
@@ -135,13 +137,18 @@ func parseAvailableTablesResult(data []byte) apperror.Result[[]AvailableTable] {
 	var wrapper struct {
 		Tables []AvailableTable `json:"tables"` // external key
 	}
-	if err := json.Unmarshal(data, &wrapper); err == nil && len(wrapper.Tables) > 0 {
+	wrapperErr := json.Unmarshal(data, &wrapper)
+	isWrappedFormat := wrapperErr == nil && len(wrapper.Tables) > 0
+
+	if isWrappedFormat {
 		return apperror.Ok(wrapper.Tables)
 	}
 
 	var tables []AvailableTable
-	if err := json.Unmarshal(data, &tables); err != nil {
-		return apperror.FailWrap[[]AvailableTable](err, apperror.ErrInternal, "failed to decode tables response")
+	tablesErr := json.Unmarshal(data, &tables)
+
+	if tablesErr != nil {
+		return apperror.FailWrap[[]AvailableTable](tablesErr, apperror.ErrInternal, "failed to decode tables response")
 	}
 
 	return apperror.Ok(tables)

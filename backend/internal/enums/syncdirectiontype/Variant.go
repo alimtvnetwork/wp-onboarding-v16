@@ -81,7 +81,9 @@ func (v Variant) MarshalJSON() ([]byte, error) {
 func (v *Variant) UnmarshalJSON(data []byte) error {
 	var s string
 
-	if err := json.Unmarshal(data, &s); err != nil {
+	err := json.Unmarshal(data, &s)
+
+	if err != nil {
 		return err
 	}
 

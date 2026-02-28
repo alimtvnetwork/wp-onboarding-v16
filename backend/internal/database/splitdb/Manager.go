@@ -287,8 +287,11 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 
 	// Check if already open
 	key := fmt.Sprintf("%s/%s/%s", projectSlug, dbType, entityID)
-	if db, ok := m.openDBs[key]; ok {
+	db, isCached := m.openDBs[key]
+
+	if isCached {
 		m.log.Debug("Database cached", "key", key, "durationMs", time.Since(startTime).Milliseconds())
+
 		return db, nil
 	}
 

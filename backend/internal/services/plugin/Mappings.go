@@ -129,7 +129,9 @@ func (s *Service) GetMappingsBySite(ctx context.Context, siteID int64) apperror.
 func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) apperror.Result[models.PluginMapping] {
 	s.log.Info("Creating plugin mapping", "pluginId", input.PluginID, "siteId", input.SiteID)
 
-	if err := s.checkDuplicateMapping(ctx, input); err != nil {
+	err := s.checkDuplicateMapping(ctx, input)
+
+	if err != nil {
 		return apperror.Fail[models.PluginMapping](err)
 	}
 

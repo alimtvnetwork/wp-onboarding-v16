@@ -127,7 +127,9 @@ func (s *Service) CheckAllSites(ctx context.Context) apperror.ResultSlice[models
 	var siteIDs []int64
 	for rows.Next() {
 		var id int64
-		if err := rows.Scan(&id); err != nil {
+		scanErr := rows.Scan(&id)
+
+		if scanErr != nil {
 			continue
 		}
 		siteIDs = append(siteIDs, id)
@@ -172,7 +174,9 @@ func (s *Service) GetHistory(siteID int64, limit int) apperror.ResultSlice[model
 		var c models.SiteHealthCheck
 		var createdAt string
 		var errMsg *string
-		if err := rows.Scan(&c.ID, &c.SiteID, &c.SiteName, &c.SiteURL, &c.Status, &c.ResponseMs, &c.StatusCode, &errMsg, &c.UploaderOk, &createdAt); err != nil {
+		scanErr := rows.Scan(&c.ID, &c.SiteID, &c.SiteName, &c.SiteURL, &c.Status, &c.ResponseMs, &c.StatusCode, &errMsg, &c.UploaderOk, &createdAt)
+
+		if scanErr != nil {
 			continue
 		}
 		if errMsg != nil {

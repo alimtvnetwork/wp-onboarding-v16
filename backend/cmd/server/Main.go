@@ -129,11 +129,16 @@ func initDatabase(cfg *config.Config, log *logger.Logger) *database.DB {
 	if err != nil {
 		log.Fatal("Failed to connect to database", "error", err)
 	}
-	if err := database.Migrate(db, log); err != nil {
-		log.Fatal("Failed to run migrations", "error", err)
+	migrateErr := database.Migrate(db, log)
+
+	if migrateErr != nil {
+		log.Fatal("Failed to run migrations", "error", migrateErr)
 	}
-	if err := config.SeedIfNeeded(db, cfg, log); err != nil {
-		log.Fatal("Failed to seed database", "error", err)
+
+	seedErr := config.SeedIfNeeded(db, cfg, log)
+
+	if seedErr != nil {
+		log.Fatal("Failed to seed database", "error", seedErr)
 	}
 	return db
 }

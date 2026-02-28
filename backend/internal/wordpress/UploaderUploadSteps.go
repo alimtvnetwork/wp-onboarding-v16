@@ -116,14 +116,18 @@ func buildMultipartBody(uc *uploadContext, isActivate bool, source uploadsource.
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "create multipart form file")
 	}
-	if _, err := io.Copy(part, uc.ZipFile); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stream zip to multipart")
+	_, copyErr := io.Copy(part, uc.ZipFile)
+
+	if copyErr != nil {
+		return nil, apperror.Wrap(copyErr, apperror.ErrFSRead, "stream zip to multipart")
 	}
 
 	writeUploadFields(uploadFieldsInput{Writer: writer, Slug: uc.Slug, IsActivate: isActivate, Source: source})
 
-	if err := writer.Close(); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
+	closeErr := writer.Close()
+
+	if closeErr != nil {
+		return nil, apperror.Wrap(closeErr, apperror.ErrInternal, "close multipart writer")
 	}
 
 	return &multipartResult{Body: &requestBody, ContentType: writer.FormDataContentType()}, nil
@@ -218,7 +222,9 @@ func (c *Client) buildUploadFailureAppError(uc *uploadContext, statusCode int, r
 // This function never errors — on unmarshal failure it returns a default success result.
 func decodeUploadResult(respBytes []byte) *UploaderUploadResult {
 	var result UploaderUploadResult
-	if err := json.Unmarshal(respBytes, &result); err != nil {
+	err := json.Unmarshal(respBytes, &result)
+
+	if err != nil {
 		result.Success = true
 		result.Message = "Upload completed"
 	}

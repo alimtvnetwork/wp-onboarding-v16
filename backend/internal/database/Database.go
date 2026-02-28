@@ -96,8 +96,11 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 	key := fmt.Sprintf("%s/%s", dbType, entityID)
 
 	db.mu.RLock()
-	if child, ok := db.childDBs[key]; ok {
+	child, isCached := db.childDBs[key]
+
+	if isCached {
 		db.mu.RUnlock()
+
 		return child, nil
 	}
 	db.mu.RUnlock()
@@ -106,7 +109,9 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 	defer db.mu.Unlock()
 
 	// Double-check after acquiring write lock
-	if child, ok := db.childDBs[key]; ok {
+	child, isCached = db.childDBs[key]
+
+	if isCached {
 		return child, nil
 	}
 

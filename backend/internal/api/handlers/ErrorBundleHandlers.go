@@ -74,7 +74,9 @@ func extractReportFromBody(r *http.Request) string {
 
 	hasBody := len(bodyBytes) > 0
 	if hasBody {
-		if unmarshalErr := json.Unmarshal(bodyBytes, &payload); unmarshalErr != nil {
+		unmarshalErr := json.Unmarshal(bodyBytes, &payload)
+
+		if unmarshalErr != nil {
 			log.Printf("[WARN] Failed to unmarshal report body: %v", unmarshalErr)
 		}
 	}
@@ -99,14 +101,18 @@ func writeErrorBundleZip(w http.ResponseWriter, input errorBundleInput) {
 // addBundleLogFiles adds the log and error files to the ZIP.
 func addBundleLogFiles(zipWriter *zip.Writer, input errorBundleInput) {
 	if input.LogExists {
-		if err := addFileToZip(zipWriter, input.LogFile, logfile.AllLog); err != nil {
-			log.Printf("[WARN] Failed to add log file to bundle: path=%s error=%v", input.LogFile, err)
+		addErr := addFileToZip(zipWriter, input.LogFile, logfile.AllLog)
+
+		if addErr != nil {
+			log.Printf("[WARN] Failed to add log file to bundle: path=%s error=%v", input.LogFile, addErr)
 		}
 	}
 
 	if input.ErrorExists {
-		if err := addFileToZip(zipWriter, input.ErrorFile, logfile.ErrorLog); err != nil {
-			log.Printf("[WARN] Failed to add error file to bundle: path=%s error=%v", input.ErrorFile, err)
+		addErr := addFileToZip(zipWriter, input.ErrorFile, logfile.ErrorLog)
+
+		if addErr != nil {
+			log.Printf("[WARN] Failed to add error file to bundle: path=%s error=%v", input.ErrorFile, addErr)
 		}
 	}
 }
@@ -127,7 +133,9 @@ func addBundleReport(zipWriter *zip.Writer, report string) {
 		return
 	}
 
-	if _, writeErr := io.WriteString(reportWriter, report); writeErr != nil {
+	_, writeErr := io.WriteString(reportWriter, report)
+
+	if writeErr != nil {
 		log.Printf("[WARN] Failed to write report to bundle: %v", writeErr)
 	}
 }
@@ -143,7 +151,9 @@ func addBundleManifest(zipWriter *zip.Writer, input errorBundleInput) {
 		return
 	}
 
-	if encodeErr := json.NewEncoder(manifestWriter).Encode(manifest); encodeErr != nil {
+	encodeErr := json.NewEncoder(manifestWriter).Encode(manifest)
+
+	if encodeErr != nil {
 		log.Printf("[WARN] Failed to encode manifest in bundle: %v", encodeErr)
 	}
 }

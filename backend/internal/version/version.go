@@ -34,10 +34,16 @@ func Load(frontendDistDir string) (*Info, error) {
 	}
 
 	// Try frontend/dist first, then fall back to public/
-	if _, err := os.Stat(versionFile); os.IsNotExist(err) {
+	_, statErr := os.Stat(versionFile)
+	isDistMissing := os.IsNotExist(statErr)
+
+	if isDistMissing {
 		// Try current directory public folder
 		versionFile = "public/version.json"
-		if _, err := os.Stat(versionFile); os.IsNotExist(err) {
+		_, publicStatErr := os.Stat(versionFile)
+		isPublicMissing := os.IsNotExist(publicStatErr)
+
+		if isPublicMissing {
 			// Try relative to working directory
 			versionFile = "frontend/dist/version.json"
 		}
@@ -50,7 +56,9 @@ func Load(frontendDistDir string) (*Info, error) {
 	defer file.Close()
 
 	var info Info
-	if err := json.NewDecoder(file).Decode(&info); err != nil {
+	decodeErr := json.NewDecoder(file).Decode(&info)
+
+	if decodeErr != nil {
 		return Default(), nil // Return defaults on parse error
 	}
 

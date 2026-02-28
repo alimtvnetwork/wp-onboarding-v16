@@ -49,7 +49,9 @@ func parsePHPErrorFrames(respBytes []byte) []PHPStackTraceFrame {
 	}
 
 	var parsed phpErrorResponse
-	if err := json.Unmarshal(respBytes, &parsed); err != nil {
+	err := json.Unmarshal(respBytes, &parsed)
+
+	if err != nil {
 		return nil
 	}
 
