@@ -26,7 +26,6 @@ type cacheTimestampStrings struct {
 func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteId int64) (*CacheStatus, *apperror.AppError) {
 	timestamps, queryErr := s.queryCacheTimestamps(ctx, siteId)
 	if queryErr != nil {
-
 		return nil, queryErr
 	}
 
@@ -45,8 +44,7 @@ func (s *Service) queryCacheTimestamps(ctx context.Context, siteId int64) (*cach
 	var cachedAtStr, expiresAtStr string
 	err := s.db.QueryRowContext(ctx, query, siteId).Scan(&cachedAtStr, &expiresAtStr)
 	if err != nil {
-		if err == sql.ErrNoRows {
-
+	if err == sql.ErrNoRows {
 			return &cacheTimestampStrings{}, nil
 		}
 

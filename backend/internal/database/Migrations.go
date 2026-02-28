@@ -15,7 +15,6 @@ func Migrate(db *DB, log *logger.Logger) error {
 
 	err := ensureMigrationsTable(db, log)
 	if err != nil {
-
 		return err
 	}
 
@@ -70,9 +69,8 @@ func applyPendingMigrations(db *DB, log *logger.Logger, currentVersion int) (int
 			continue
 		}
 		err := applySingleMigration(db, log, m)
-		if err != nil {
-
-			return applied, err
+	if err != nil {
+		return applied, err
 		}
 		applied++
 	}
@@ -97,7 +95,6 @@ func applySingleMigration(db *DB, log *logger.Logger, m Migration) error {
 
 	err = tx.Commit()
 	if err != nil {
-
 		return wrapMigrationError(err, "failed to commit migration", m.Version)
 	}
 
@@ -109,14 +106,12 @@ func applySingleMigration(db *DB, log *logger.Logger, m Migration) error {
 func executeMigrationTx(tx *sql.Tx, m Migration) error {
 	_, err := tx.Exec(m.SQL)
 	if err != nil {
-
 		return wrapMigrationError(err, "failed to apply migration SQL", m.Version).
 			WithDetails(fmt.Sprintf("description=%s", m.Description))
 	}
 
 	_, err = tx.Exec("INSERT INTO _migrations (Version, Description) VALUES (?, ?)", m.Version, m.Description)
 	if err != nil {
-
 		return wrapMigrationError(err, "failed to record migration", m.Version)
 	}
 	return nil

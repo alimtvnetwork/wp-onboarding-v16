@@ -23,8 +23,7 @@ func scanHealthCheckRows(rows *sql.Rows) []models.SiteHealthCheck {
 
 	for rows.Next() {
 		m, err := scanHealthCheckRow(rows)
-		if err != nil {
-
+	if err != nil {
 			continue
 		}
 
@@ -54,7 +53,6 @@ func scanHealthCheckRow(rows *sql.Rows) (models.SiteHealthCheck, error) {
 	)
 
 	if err != nil {
-
 		return m, err
 	}
 
@@ -73,8 +71,7 @@ func scanSummaryRows(rows *sql.Rows) []models.SiteHealthSummary {
 
 	for rows.Next() {
 		m, err := scanSummaryRow(rows)
-		if err != nil {
-
+	if err != nil {
 			continue
 		}
 

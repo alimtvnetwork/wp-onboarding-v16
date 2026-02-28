@@ -101,13 +101,11 @@ func (c *Client) buildFormFromOpenedFile(opened *openedFile, zipPath, pluginSlug
 
 	writeErr := writeZipFormFields(formInput)
 	if writeErr != nil {
-
 		return apperror.Fail[*zipMultipartForm](writeErr)
 	}
 
 	closeErr := writer.Close()
 	if closeErr != nil {
-
 		return apperror.FailWrap[*zipMultipartForm](closeErr, apperror.ErrInternal, "failed to close multipart writer")
 	}
 
@@ -154,19 +152,16 @@ func writeZipFormFields(input zipFormInput) *apperror.AppError {
 
 	_, copyErr := io.Copy(part, input.File)
 	if copyErr != nil {
-
 		return apperror.Wrap(copyErr, apperror.ErrInternal, "failed to copy file to multipart form")
 	}
 
 	fieldErr := input.Writer.WriteField("pluginSlug", input.PluginSlug)
 	if fieldErr != nil {
-
 		return apperror.Wrap(fieldErr, apperror.ErrInternal, "failed to write pluginSlug field")
 	}
 
 	overwriteErr := input.Writer.WriteField("overwrite", "true")
 	if overwriteErr != nil {
-
 		return apperror.Wrap(overwriteErr, apperror.ErrInternal, "failed to write overwrite field")
 	}
 

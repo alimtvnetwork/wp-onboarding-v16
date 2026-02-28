@@ -167,7 +167,6 @@ func (s *serviceImpl) RecordFileChange(ctx context.Context, change *models.FileC
 // MarkSynced marks specific files as synced.
 func (s *serviceImpl) MarkSynced(ctx context.Context, pluginId, siteId int64, files []string) *apperror.AppError {
 	if len(files) == 0 {
-
 		return nil
 	}
 

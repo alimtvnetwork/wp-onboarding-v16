@@ -28,7 +28,6 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 
 	handleResult := s.createExportZip(outputPath)
 	if handleResult.HasError() {
-
 		return apperror.Fail[ExportResult](handleResult.AppError())
 	}
 
@@ -175,7 +174,6 @@ func (s *Service) logExportComplete(outputPath string, state *exportState, start
 func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int64, *apperror.AppError) {
 	file, err := os.Open(sourcePath)
 	if err != nil {
-
 		return 0, apperror.Wrap(err, apperror.ErrFSRead, "failed to open file for zipping").
 			WithFilePath(sourcePath)
 	}
@@ -183,7 +181,6 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 
 	info, statErr := file.Stat()
 	if statErr != nil {
-
 		return 0, apperror.Wrap(statErr, apperror.ErrFSRead, "failed to stat file for zipping").
 			WithFilePath(sourcePath)
 	}
@@ -196,14 +193,12 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 
 	writer, headerErr := zw.CreateHeader(header)
 	if headerErr != nil {
-
 		return 0, apperror.Wrap(headerErr, apperror.ErrFSZip, "failed to create zip header").
 			WithFilePath(zipPath)
 	}
 
 	written, copyErr := io.Copy(writer, file)
 	if copyErr != nil {
-
 		return 0, apperror.Wrap(copyErr, apperror.ErrFSZip, "failed to copy file into zip").
 			WithFilePath(sourcePath)
 	}

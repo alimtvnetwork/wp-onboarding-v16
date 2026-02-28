@@ -18,7 +18,6 @@ func (s *Service) Create(ctx context.Context, mappingID int64) apperror.Result[m
 
 	backupPath, appErr := s.createBackupFile(mappingID)
 	if appErr != nil {
-
 		return apperror.Fail[models.Backup](appErr)
 	}
 
@@ -36,7 +35,6 @@ func (s *Service) createBackupFile(mappingID int64) (string, *apperror.AppError)
 
 	backupPath, err := pathutil.Join(s.backupDir, filename)
 	if err != nil {
-
 		return "", apperror.Wrap(err, apperror.ErrBackupCreate, "resolve backup path")
 	}
 

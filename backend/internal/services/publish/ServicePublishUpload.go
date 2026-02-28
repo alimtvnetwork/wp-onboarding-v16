@@ -55,7 +55,6 @@ func (s *Service) performUpload(input performUploadInput) (bool, *apperror.AppEr
 	uploadOutcome, retryResult := s.attemptUploadWithRetry(input.Ctx, input.Pctx, input.ZipPath)
 
 	if retryResult.LastError != nil {
-
 		return false, s.handleUploadRetryFailure(input.Pctx, retryResult)
 	}
 
@@ -184,7 +183,6 @@ func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time)
 	availability := availResult.ValueOr(nil)
 
 	if availability.IsUnavailable() {
-
 		return s.failActivateNoUploader(pctx)
 	}
 

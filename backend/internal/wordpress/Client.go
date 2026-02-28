@@ -102,13 +102,11 @@ func marshalBody(body any) (io.Reader, *apperror.AppError) {
 	isBodyEmpty := body == nil
 
 	if isBodyEmpty {
-
 		return nil, nil
 	}
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body")
 	}
 
@@ -119,7 +117,6 @@ func marshalBody(body any) (io.Reader, *apperror.AppError) {
 func (c *Client) request(method, endpoint string, body any) (*http.Response, *apperror.AppError) {
 	bodyReader, appErr := marshalBody(body)
 	if appErr != nil {
-
 		return nil, appErr
 	}
 
@@ -131,7 +128,6 @@ func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*
 	fullUrl := BuildWPJSONURL(c.baseURL, endpoint)
 	req, err := http.NewRequest(method, fullUrl, body)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
 			WithURL(fullUrl).
 			WithMethod(method)
@@ -141,7 +137,6 @@ func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "HTTP request failed").
 			WithURL(fullUrl).
 			WithMethod(method)
@@ -163,7 +158,6 @@ func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperr
 	fullUrl := BuildWPJSONURL(c.baseURL, input.Endpoint)
 	req, err := http.NewRequest(input.Method.Value(), fullUrl, input.Body)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
 			WithURL(fullUrl).
 			WithMethod(input.Method.Value())
@@ -173,7 +167,6 @@ func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperr
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "multipart HTTP request failed").
 			WithURL(fullUrl).
 			WithMethod(input.Method.Value())
@@ -183,7 +176,6 @@ func (c *Client) requestMultipart(input multipartInput) (*http.Response, *apperr
 }
 
 func (c *Client) fullURL(endpoint string) string {
-
 	return BuildWPJSONURL(c.baseURL, endpoint)
 }
 
@@ -191,7 +183,6 @@ func (c *Client) fullURL(endpoint string) string {
 func (c *Client) rawGet(fullURL string) (*http.Response, *apperror.AppError) {
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
 			WithURL(fullURL)
 	}
@@ -200,7 +191,6 @@ func (c *Client) rawGet(fullURL string) (*http.Response, *apperror.AppError) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "raw GET request failed").
 			WithURL(fullURL)
 	}
@@ -212,7 +202,6 @@ func escapePathSegmentPreservingPercent(s string) string {
 	hasEncodedSlash := strings.Contains(strings.ToLower(s), "%2f")
 
 	if hasEncodedSlash {
-
 		return s
 	}
 

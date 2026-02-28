@@ -38,7 +38,6 @@ func (s *Service) extractErrorDetails(appErr *apperror.AppError) *ExtractedError
 	isApiErrorMissing := apiErr == nil
 
 	if isApiErrorMissing {
-
 		return details
 	}
 
@@ -80,7 +79,6 @@ func (s *Service) parseErrorResponseEnvelope(details *ExtractedErrorDetails, res
 	isUnmarshalFailed := json.Unmarshal([]byte(responseBody), &envResp) != nil
 
 	if isUnmarshalFailed {
-
 		return
 	}
 
@@ -109,7 +107,6 @@ func applyEnvelopeErrors(details *ExtractedErrorDetails, errors *envelopeErrors)
 // parseLegacyStackFrames extracts PHP stack trace frames from the legacy error format.
 func (s *Service) parseLegacyStackFrames(details *ExtractedErrorDetails, envResp *errorResponseEnvelope) {
 	if envResp.ErrorLegacy.Details.StackTraceFrames == nil {
-
 		return
 	}
 

@@ -28,14 +28,12 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, is
 
 	reader, appErr := s.openImportZip(zipPath, destDir, isOverwrite)
 	if appErr != nil {
-
 		return apperror.Fail[ImportResult](appErr)
 	}
 	defer reader.Close()
 
 	state, extractErr := s.extractAllFiles(reader, destDir)
 	if extractErr != nil {
-
 		return apperror.Fail[ImportResult](extractErr)
 	}
 
@@ -103,9 +101,8 @@ func (s *Service) extractAllFiles(reader *zip.ReadCloser, destDir string) (*impo
 		}
 
 		appErr := s.extractSingleFile(file, destDir, state)
-		if appErr != nil {
-
-			return state, appErr
+	if appErr != nil {
+		return state, appErr
 		}
 	}
 
@@ -165,14 +162,12 @@ func (s *Service) resolveExtractPath(name, destDir string) (string, bool) {
 func (s *Service) extractFile(file *zip.File, destPath string) (int64, *apperror.AppError) {
 	src, err := file.Open()
 	if err != nil {
-
 		return 0, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip entry")
 	}
 	defer src.Close()
 
 	dst, createErr := os.Create(destPath)
 	if createErr != nil {
-
 		return 0, apperror.Wrap(createErr, apperror.ErrFSWrite, "failed to create destination file").
 			WithFilePath(destPath)
 	}
@@ -180,7 +175,6 @@ func (s *Service) extractFile(file *zip.File, destPath string) (int64, *apperror
 
 	written, copyErr := io.Copy(dst, src)
 	if copyErr != nil {
-
 		return 0, apperror.Wrap(copyErr, apperror.ErrFSWrite, "failed to copy file content").
 			WithFilePath(destPath)
 	}
