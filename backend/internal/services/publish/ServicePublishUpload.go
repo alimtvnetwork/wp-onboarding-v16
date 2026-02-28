@@ -80,7 +80,7 @@ func (s *Service) attemptUploadWithRetry(ctx context.Context, pctx *publishConte
 }
 
 // handleUploadRetryFailure logs the error and returns an AppError.
-func (s *Service) handleUploadRetryFailure(pctx *publishContext, retryResult RetryResult[UploadOutcome]) error {
+func (s *Service) handleUploadRetryFailure(pctx *publishContext, retryResult RetryResult[UploadOutcome]) *apperror.AppError {
 	s.logUploadError(pctx, retryResult.Attempts, retryResult.LastError)
 
 	return apperror.Wrap(retryResult.LastError, apperror.ErrWPConnection, "plugin upload failed")
@@ -189,8 +189,9 @@ func buildActivateEndpointURL(siteURL string) string {
 
 // executeActivation performs the actual plugin activation call.
 func (s *Service) executeActivation(pctx *publishContext, endpointURL string, startTime time.Time) error {
-	if err := pctx.WPClient.EnablePluginViaUploader(pctx.Mapping.RemoteSlug); err != nil {
-		activateErr := apperror.Wrap(err, apperror.ErrWPConnection, "plugin activation failed")
+	enableErr := pctx.WPClient.EnablePluginViaUploader(pctx.Mapping.RemoteSlug)
+	if enableErr != nil {
+		activateErr := apperror.Wrap(enableErr, apperror.ErrWPConnection, "plugin activation failed")
 
 		errInput := activationErrorInput{
 			EndpointURL: endpointURL,

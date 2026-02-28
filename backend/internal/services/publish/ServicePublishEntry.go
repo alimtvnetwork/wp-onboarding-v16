@@ -99,12 +99,13 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts Publ
 		Stages:           []Stage{},
 	}
 
-	initResult, err := s.initPublishContext(ctx, initPublishInput{
+	initResult, appErr := s.initPublishContext(ctx, initPublishInput{
 		PluginID: pluginID,
 		SiteID:   siteID,
 		Result:   result,
 	})
-	if err != nil {
+	if appErr != nil {
+
 		return apperror.Ok(*result)
 	}
 
@@ -184,7 +185,9 @@ func (s *Service) buildPublishContext(input buildPublishContextInput) *publishCo
 
 // executeAndFinalize runs the pipeline and finalizes the result.
 func (s *Service) executeAndFinalize(ctx context.Context, pctx *publishContext, initResult *publishInitResult) apperror.Result[PublishResult] {
-	if err := s.runPublishPipeline(ctx, pctx, initResult.SiteInfo, initResult.Password); err != nil {
+	appErr := s.runPublishPipeline(ctx, pctx, initResult.SiteInfo, initResult.Password)
+	if appErr != nil {
+
 		return apperror.Ok(*pctx.Result)
 	}
 
@@ -201,15 +204,17 @@ type initPublishInput struct {
 }
 
 // initPublishContext loads plugin, site, credentials, and starts a session.
-func (s *Service) initPublishContext(ctx context.Context, input initPublishInput) (*publishInitResult, error) {
-	pluginInfo, err := s.loadPublishPlugin(ctx, input)
-	if err != nil {
-		return nil, err
+func (s *Service) initPublishContext(ctx context.Context, input initPublishInput) (*publishInitResult, *apperror.AppError) {
+	pluginInfo, appErr := s.loadPublishPlugin(ctx, input)
+	if appErr != nil {
+
+		return nil, appErr
 	}
 
-	creds, err := s.loadPublishCredentials(ctx, input)
-	if err != nil {
-		return nil, err
+	creds, appErr := s.loadPublishCredentials(ctx, input)
+	if appErr != nil {
+
+		return nil, appErr
 	}
 
 	sessionID, _ := s.startPublishSession(startPublishSessionInput{
@@ -223,7 +228,7 @@ func (s *Service) initPublishContext(ctx context.Context, input initPublishInput
 }
 
 // loadPublishPlugin loads the plugin and handles init failure.
-func (s *Service) loadPublishPlugin(ctx context.Context, input initPublishInput) (models.Plugin, error) {
+func (s *Service) loadPublishPlugin(ctx context.Context, input initPublishInput) (models.Plugin, *apperror.AppError) {
 	pluginResult := s.pluginService.GetByID(ctx, input.PluginID)
 	if pluginResult.HasError() {
 		s.failInit(failInitInput{
@@ -240,17 +245,18 @@ func (s *Service) loadPublishPlugin(ctx context.Context, input initPublishInput)
 }
 
 // loadPublishCredentials loads site credentials and handles init failure.
-func (s *Service) loadPublishCredentials(ctx context.Context, input initPublishInput) (*SiteCredentialsResult, error) {
+func (s *Service) loadPublishCredentials(ctx context.Context, input initPublishInput) (*SiteCredentialsResult, *apperror.AppError) {
 	creds, err := s.getSiteCredentials(ctx, input.SiteID)
 	if err != nil {
+		appErr := apperror.Wrap(err, apperror.ErrInternal, "failed to load site credentials")
 		s.failInit(failInitInput{
 			PluginID: input.PluginID,
 			SiteID:   input.SiteID,
-			Err:      err,
+			Err:      appErr,
 			Result:   input.Result,
 		})
 
-		return nil, err
+		return nil, appErr
 	}
 
 	return creds, nil
@@ -299,7 +305,10 @@ type startPublishSessionInput struct {
 
 // startPublishSession initializes a session for the publish operation
 func (s *Service) startPublishSession(input startPublishSessionInput) (string, error) {
-	if s.sessionService == nil {
+	isSessionServiceMissing := s.sessionService == nil
+
+	if isSessionServiceMissing {
+
 		return "", nil
 	}
 
