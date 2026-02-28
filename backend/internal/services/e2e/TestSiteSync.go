@@ -22,14 +22,16 @@ func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) 
 	}
 	result.ResponseData = resp.RawBody
 
-	if err := expectSuccess(resp); err != nil {
+	err = expectSuccess(resp)
+	if err != nil {
 		return err
 	}
 	if resp.isDataMissing("id") {
 		return fmt.Errorf("expected data object in response")
 	}
 
-	if id, ok := resp.dataFieldFloat("id"); ok {
+	id, ok := resp.dataFieldFloat("id")
+	if ok {
 		s.setCleanupID("site", int64(id))
 	}
 	return nil

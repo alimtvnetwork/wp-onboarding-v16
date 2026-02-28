@@ -134,7 +134,8 @@ func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ap
 	// Get total count
 	var total int
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM ErrorHistory %s", whereClause)
-	if err := s.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+	err := s.db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
 		return apperror.FailWrap[ErrorHistoryListResult](err, apperror.ErrDatabaseQuery, "count error history")
 	}
 
@@ -219,11 +220,13 @@ func (s *Service) GetById(id int64) apperror.Result[models.ErrorHistory] {
 func (s *Service) GetByErrorId(errorId string) apperror.Result[models.ErrorHistory] {
 	query := `SELECT Id FROM ErrorHistory WHERE ErrorId = ?`
 	var id int64
-	if err := s.db.QueryRow(query, errorId).Scan(&id); err != nil {
+	err := s.db.QueryRow(query, errorId).Scan(&id)
+	if err != nil {
 		if err == sql.ErrNoRows {
 			return apperror.FailNew[models.ErrorHistory](apperror.ErrNotFound, "error not found").
 				WithValue("errorId", errorId)
 		}
+
 		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "query error by error ID").
 			WithValue("errorId", errorId)
 	}
@@ -307,7 +310,8 @@ func (s *Service) GetStats() apperror.Result[models.ErrorHistoryStats] {
 	}
 
 	// Total count
-	if err := s.db.QueryRow("SELECT COUNT(*) FROM ErrorHistory").Scan(&stats.Total); err != nil {
+	err := s.db.QueryRow("SELECT COUNT(*) FROM ErrorHistory").Scan(&stats.Total)
+	if err != nil {
 		return apperror.FailWrap[models.ErrorHistoryStats](err, apperror.ErrDatabaseQuery, "count error history total")
 	}
 

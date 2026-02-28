@@ -66,7 +66,8 @@ func (s *Service) List(limit, offset int, filters models.PublishHistoryFilters) 
 	// Count total
 	var total int
 	countQuery := "SELECT COUNT(*) FROM PublishHistory" + where
-	if err := s.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+	err := s.db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
 		return apperror.FailWrap[PublishHistoryListResult](err, errDBRead, "failed to count publish history")
 	}
 
@@ -83,8 +84,9 @@ func (s *Service) List(limit, offset int, filters models.PublishHistoryFilters) 
 	var entries []models.PublishHistory
 	for rows.Next() {
 		var e models.PublishHistory
-		if err := rows.Scan(&e.Id, &e.PluginId, &e.PluginName, &e.SiteId, &e.SiteName, &e.SiteUrl, &e.SessionId, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt); err != nil {
-			s.log.Warn("Failed to scan publish history row", "error", err)
+		scanErr := rows.Scan(&e.Id, &e.PluginId, &e.PluginName, &e.SiteId, &e.SiteName, &e.SiteUrl, &e.SessionId, &e.Status, &e.Mode, &e.FilesUpdated, &e.ActivationStatus, &e.RollbackStatus, &e.RollbackMessage, &e.ErrorMessage, &e.DurationMs, &e.CreatedAt)
+		if scanErr != nil {
+			s.log.Warn("Failed to scan publish history row", "error", scanErr)
 			continue
 		}
 		entries = append(entries, e)

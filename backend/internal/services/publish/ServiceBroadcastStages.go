@@ -267,7 +267,8 @@ func (s *Service) resolveSiteNames(siteId int64, name, url string) (string, stri
 	hasSiteId     := siteId > 0
 
 	if hasIncomplete && hasSiteId {
-		if creds, err := s.getSiteCredentials(context.Background(), siteId); err == nil {
+		creds, err := s.getSiteCredentials(context.Background(), siteId)
+		if err == nil {
 			if isNameMissing {
 				name = creds.Site.Name
 			}

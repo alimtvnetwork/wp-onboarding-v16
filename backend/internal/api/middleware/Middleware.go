@@ -78,10 +78,10 @@ func Recovery(log *logger.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
-				if err := recover(); err != nil {
+				if recovered := recover(); recovered != nil {
 					stack := debug.Stack()
 					log.Error("Panic recovered",
-						"error", err,
+						"error", recovered,
 						"stack", string(stack),
 					)
 					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -124,14 +124,16 @@ func (rw *responseWriter) Unwrap() http.ResponseWriter {
 
 // Flush implements http.Flusher for streaming responses.
 func (rw *responseWriter) Flush() {
-	if flusher, ok := rw.ResponseWriter.(http.Flusher); ok {
+	flusher, ok := rw.ResponseWriter.(http.Flusher)
+	if ok {
 		flusher.Flush()
 	}
 }
 
 // Hijack implements http.Hijacker for WebSocket upgrade support
 func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	if hijacker, ok := rw.ResponseWriter.(http.Hijacker); ok {
+	hijacker, ok := rw.ResponseWriter.(http.Hijacker)
+	if ok {
 		return hijacker.Hijack()
 	}
 	return nil, nil, http.ErrNotSupported
@@ -139,7 +141,8 @@ func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // Push implements http.Pusher (HTTP/2).
 func (rw *responseWriter) Push(target string, opts *http.PushOptions) error {
-	if pusher, ok := rw.ResponseWriter.(http.Pusher); ok {
+	pusher, ok := rw.ResponseWriter.(http.Pusher)
+	if ok {
 		return pusher.Push(target, opts)
 	}
 	return http.ErrNotSupported

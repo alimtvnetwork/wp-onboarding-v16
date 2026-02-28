@@ -22,11 +22,13 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 		return "", err
 	}
 
-	if err := s.writeSelectiveEntries(zs.Writer, zs.Ctx, files); err != nil {
-		return zs.CleanupOnError(err)
+	writeErr := s.writeSelectiveEntries(zs.Writer, zs.Ctx, files)
+	if writeErr != nil {
+		return zs.CleanupOnError(writeErr)
 	}
 
-	if appErr := zs.Finalize(); appErr != nil {
+	appErr := zs.Finalize()
+	if appErr != nil {
 		return "", appErr
 	}
 	return zc.AbsZipPath, nil
@@ -35,7 +37,8 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 // writeSelectiveEntries adds each selected file to the zip.
 func (s *Service) writeSelectiveEntries(zw *zip.Writer, zc *zipContext, files []string) error {
 	for _, relPath := range files {
-		if err := addSelectiveEntry(zw, zc, relPath); err != nil {
+		err := addSelectiveEntry(zw, zc, relPath)
+		if err != nil {
 			return err
 		}
 	}

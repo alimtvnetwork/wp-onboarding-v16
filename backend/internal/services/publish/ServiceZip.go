@@ -61,8 +61,9 @@ func resolveZipPaths(tempDir, pluginPath string) (*resolvedPaths, error) {
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
 	}
-	if err := os.MkdirAll(absTempDir, 0755); err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
+	mkdirErr := os.MkdirAll(absTempDir, 0755)
+	if mkdirErr != nil {
+		return nil, apperror.Wrap(mkdirErr, apperror.ErrFSWrite, "failed to create temp directory")
 	}
 
 	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
@@ -156,11 +157,13 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 	}
 
 	zs.ExcludePatterns = excludePatterns
-	if walkErr := s.walkAndAddEntries(zs); walkErr != nil {
+	walkErr := s.walkAndAddEntries(zs)
+	if walkErr != nil {
 		return zs.CleanupOnError(walkErr)
 	}
 
-	if appErr := zs.Finalize(); appErr != nil {
+	appErr := zs.Finalize()
+	if appErr != nil {
 		return "", appErr
 	}
 	return zc.AbsZipPath, nil
@@ -194,7 +197,8 @@ func (s *Service) addFullZipEntry(zs *zipSession, path string, info os.FileInfo)
 // isExcludedByPatterns checks if a file matches any exclude pattern.
 func isExcludedByPatterns(relPath, fullPath string, patterns []string) bool {
 	for _, pattern := range patterns {
-		if matched, _ := filepath.Match(pattern, filepath.Base(fullPath)); matched {
+		matched, _ := filepath.Match(pattern, filepath.Base(fullPath))
+		if matched {
 			return true
 		}
 		if strings.Contains(relPath, pattern) {
@@ -216,8 +220,9 @@ func addFileToZip(zw *zip.Writer, srcPath, zipEntryPath string) error {
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(writer, file); err != nil {
-		return apperror.Wrap(err, apperror.ErrFSZip, "failed to copy file into zip").WithFilePath(srcPath)
+	_, copyErr := io.Copy(writer, file)
+	if copyErr != nil {
+		return apperror.Wrap(copyErr, apperror.ErrFSZip, "failed to copy file into zip").WithFilePath(srcPath)
 	}
 	return nil
 }

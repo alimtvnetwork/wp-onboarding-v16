@@ -44,7 +44,8 @@ func LoadUploadIgnore(pluginDir string) (*UploadIgnore, error) {
 	}
 	defer file.Close()
 
-	if err := parseIgnoreFile(file, ui); err != nil {
+	err = parseIgnoreFile(file, ui)
+	if err != nil {
 		return nil, err
 	}
 

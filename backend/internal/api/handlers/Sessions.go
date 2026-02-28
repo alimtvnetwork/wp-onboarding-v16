@@ -26,7 +26,8 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 	hasLimitParam := limitStr != ""
 
 	if hasLimitParam {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+		l, err := strconv.Atoi(limitStr)
+		if err == nil && l > 0 {
 			limit = l
 		}
 	}

@@ -144,7 +144,8 @@ func (s *Service) recordHistory(pluginInfo models.Plugin, siteInfo *models.Site,
 		Result:     result,
 	}
 	entry := buildHistoryEntry(input)
-	if _, err := s.historyService.Record(entry); err != nil {
+	_, err := s.historyService.Record(entry)
+	if err != nil {
 		s.log.Error("Failed to record publish history", "error", err)
 	}
 }

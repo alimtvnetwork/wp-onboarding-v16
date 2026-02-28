@@ -98,7 +98,8 @@ func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
 	hasLimitParam := l != ""
 
 	if hasLimitParam {
-		if parsed, err := strconv.Atoi(l); err == nil {
+		parsed, err := strconv.Atoi(l)
+		if err == nil {
 			limit = parsed
 		}
 	}
@@ -151,7 +152,8 @@ func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	runID := vars["id"]
 
-	if err := E2EService.AbortRun(r.Context(), runID); err != nil {
+	err := E2EService.AbortRun(r.Context(), runID)
+	if err != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

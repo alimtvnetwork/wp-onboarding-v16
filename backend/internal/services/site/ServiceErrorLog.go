@@ -40,7 +40,8 @@ func (s *Service) isDuplicateErrorLog(ref *remoteActionRef, details *ExtractedEr
 	s.errorLogHashesMu.Lock()
 	defer s.errorLogHashesMu.Unlock()
 
-	if _, isDuplicate := s.errorLogHashes[hashHex]; isDuplicate {
+	_, isDuplicate := s.errorLogHashes[hashHex]
+	if isDuplicate {
 		s.log.Debug("Duplicate error log entry suppressed", "action", ref.Action, "siteId", ref.SiteID, "plugin", ref.PluginSlug, "hash", hashHex)
 
 		return true
@@ -56,9 +57,10 @@ func (s *Service) openErrorLogFile() (*os.File, error) {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(logPaths.Dir, 0755); err != nil {
-		s.log.Error("Failed to create errors directory", "error", err)
-		return nil, err
+	mkdirErr := os.MkdirAll(logPaths.Dir, 0755)
+	if mkdirErr != nil {
+		s.log.Error("Failed to create errors directory", "error", mkdirErr)
+		return nil, mkdirErr
 	}
 
 	return s.openLogFileForAppend(logPaths.FilePath)

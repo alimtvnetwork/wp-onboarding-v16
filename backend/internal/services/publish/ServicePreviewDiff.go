@@ -92,7 +92,8 @@ func checkDirExclusion(path string, patterns []string) error {
 // isExcludedFile checks if a file should be excluded from scanning.
 func isExcludedFile(path, relPath string, patterns []string) bool {
 	for _, pattern := range patterns {
-		if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
+		matched, _ := filepath.Match(pattern, filepath.Base(path))
+		if matched {
 			return true
 		}
 	}
@@ -152,7 +153,8 @@ func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string
 	var added, modified, deleted int
 
 	for path, lf := range localFiles {
-		if remoteHash, isFound := remoteFileMap[path]; isFound {
+		remoteHash, isFound := remoteFileMap[path]
+		if isFound {
 			if lf.LocalHash != remoteHash {
 				lf.ChangeType = "modified"
 				modified++

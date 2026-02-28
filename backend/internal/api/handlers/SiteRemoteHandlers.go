@@ -32,8 +32,9 @@ func parseRemotePluginInput(r *http.Request) (*remotePluginParsed, error) {
 	}
 
 	var input remotePluginInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		return nil, err
+	decodeErr := json.NewDecoder(r.Body).Decode(&input)
+	if decodeErr != nil {
+		return nil, decodeErr
 	}
 
 	return &remotePluginParsed{SiteID: id, PluginSlug: input.Plugin}, nil
@@ -99,7 +100,8 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 
 // clearCacheOrFail invalidates the remote plugins cache and writes the response.
 func clearCacheOrFail(w http.ResponseWriter, r *http.Request, id int64) {
-	if err := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id); err != nil {
+	err := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id)
+	if err != nil {
 		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, err.Error())
 
 		return

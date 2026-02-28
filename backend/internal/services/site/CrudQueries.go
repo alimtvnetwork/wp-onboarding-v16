@@ -100,18 +100,24 @@ func (r *siteRaw) toSite() models.Site {
 // scanSiteRow is a dbutil.RowScanner[models.Site] for QueryOne.
 func scanSiteRow(row *sql.Row) (models.Site, error) {
 	var raw siteRaw
-	if err := scanSiteColumns(&raw, row.Scan); err != nil {
+
+	err := scanSiteColumns(&raw, row.Scan)
+	if err != nil {
 		return models.Site{}, err
 	}
+
 	return raw.toSite(), nil
 }
 
 // scanSiteRows is a dbutil.RowsScanner[models.Site] for QueryMany.
 func scanSiteRows(rows *sql.Rows) (models.Site, error) {
 	var raw siteRaw
-	if err := scanSiteColumns(&raw, rows.Scan); err != nil {
+
+	err := scanSiteColumns(&raw, rows.Scan)
+	if err != nil {
 		return models.Site{}, err
 	}
+
 	return raw.toSite(), nil
 }
 
