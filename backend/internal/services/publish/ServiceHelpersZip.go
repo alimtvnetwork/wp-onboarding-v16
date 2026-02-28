@@ -49,7 +49,11 @@ func (s *Service) logCleanupKeep(input cleanupZipInput, reason, message string) 
 		Level:    loglevel.Info,
 		Step:     publishstep.Cleanup,
 		Message:  fmt.Sprintf("%s: %s", message, input.ZipPath),
-		Details:  toDetails(CleanupDetails{ZipPath: input.ZipPath, Reason: reason, IsKeepZipFiles: input.IsKeepZipFiles}),
+		Details:  toDetails(CleanupDetails{
+			ZipPath:        input.ZipPath,
+			Reason:         reason,
+			IsKeepZipFiles: input.IsKeepZipFiles,
+		}),
 	}
 	s.broadcastDetailedLog(keepLog)
 }

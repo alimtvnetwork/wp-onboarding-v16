@@ -44,7 +44,13 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 
 	// Get or create database record
 	dbPath := m.buildDBPath(projectSlug, dbType, entityID)
-	dbRecord, err := m.getOrCreateDatabase(GetOrCreateDBInput{ProjectId: project.Id, DBType: dbType, EntityId: entityID, Path: dbPath})
+	dbInput := GetOrCreateDBInput{
+		ProjectId: project.Id,
+		DBType:    dbType,
+		EntityId:  entityID,
+		Path:      dbPath,
+	}
+	dbRecord, err := m.getOrCreateDatabase(dbInput)
 	if err != nil {
 		m.log.Error("Failed to get/create database record", "error", err)
 		return nil, err

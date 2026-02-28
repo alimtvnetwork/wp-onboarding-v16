@@ -130,7 +130,13 @@ func (s *Service) buildUpdateFields(_ context.Context, id int64, input UpdateInp
 	var args []any
 
 	appendNameUpdate(&updates, &args, input.Name)
-	appendUrlUpdate(urlUpdateInput{Updates: &updates, Args: &args, UrlInput: input.Url, ExistingUrl: existing.Url})
+	urlInput := urlUpdateInput{
+		Updates:     &updates,
+		Args:        &args,
+		UrlInput:    input.Url,
+		ExistingUrl: existing.Url,
+	}
+	appendUrlUpdate(urlInput)
 	appendUsernameUpdate(&updates, &args, input.Username)
 	s.appendPasswordUpdate(&updates, &args, input.Password)
 

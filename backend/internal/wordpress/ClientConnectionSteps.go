@@ -198,11 +198,17 @@ func (c *Client) reportAuthRequestFailed(err *apperror.AppError) *apperror.AppEr
 
 // reportAuthSuccess sends the auth success event.
 func (c *Client) reportAuthSuccess(result *ConnectionInfo) {
+	authProgress := UserAuthProgress{
+		Url:    c.baseURL,
+		UserId: result.UserId,
+		Roles:  result.UserRoles,
+	}
+
 	c.progress(ProgressEvent{
 		Step:    connectionstep.AuthCheck.Value(),
 		Status:  stagestatus.Completed.String(),
 		Message: fmt.Sprintf("Authenticated as %s (ID: %d)", result.UserDisplayName, result.UserId),
-		Details: toProgress(UserAuthProgress{Url: c.baseURL, UserId: result.UserId, Roles: result.UserRoles}),
+		Details: toProgress(authProgress),
 	})
 }
 

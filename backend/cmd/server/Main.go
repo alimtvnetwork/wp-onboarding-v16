@@ -62,7 +62,13 @@ func bootstrapServer(cfg *config.Config, log *logger.Logger, versionInfo *versio
 	db := initDatabase(cfg, log)
 
 	wsHub := initWebSocket(versionInfo)
-	services := initServices(InitServicesInput{DB: db, Cfg: cfg, WSHub: wsHub, Log: log})
+	servicesInput := InitServicesInput{
+		DB:    db,
+		Cfg:   cfg,
+		WSHub: wsHub,
+		Log:   log,
+	}
+	services := initServices(servicesInput)
 	initPluginCaches(services, log)
 
 	reqStore := initRequestSessionStore(cfg, log)

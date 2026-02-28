@@ -163,7 +163,14 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginID, siteID 
 	}
 	mapping := mappingResult.Value()
 
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 40, Message: "Retrieving site credentials..."})
+	credProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Comparing.Value(),
+		Progress: 40,
+		Message:  "Retrieving site credentials...",
+	}
+	s.broadcastProgress(credProgress)
 	siteInfoResult := s.getSiteInfo(ctx, siteID)
 	if siteInfoResult.HasError() {
 		return nil, "Failed to get site info: " + siteInfoResult.AppError().Error()
@@ -187,7 +194,14 @@ func (s *serviceImpl) fetchAndParseManifest(
 	siteID int64,
 	password string,
 ) (map[string]FileEntry, string) {
-	s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 50, Message: "Fetching remote file manifest..."})
+	fetchProgress := SyncProgressInput{
+		PluginId: pluginID,
+		SiteId:   siteID,
+		Step:     syncstep.Comparing.Value(),
+		Progress: 50,
+		Message:  "Fetching remote file manifest...",
+	}
+	s.broadcastProgress(fetchProgress)
 
 	wpClient := s.wpClientFactory(info.Url, info.Username, password)
 	manifestResult := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
@@ -196,7 +210,14 @@ func (s *serviceImpl) fetchAndParseManifest(
 	if manifestResult.HasError() {
 		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
 			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", manifestResult.AppError())
-		s.broadcastProgress(SyncProgressInput{PluginId: pluginID, SiteId: siteID, Step: syncstep.Comparing.Value(), Progress: 60, Message: "Remote manifest unavailable, comparing local only..."})
+		fallbackProgress := SyncProgressInput{
+			PluginId: pluginID,
+			SiteId:   siteID,
+			Step:     syncstep.Comparing.Value(),
+			Progress: 60,
+			Message:  "Remote manifest unavailable, comparing local only...",
+		}
+		s.broadcastProgress(fallbackProgress)
 	} else {
 		for _, rf := range manifestResult.Value() {
 			remoteFiles[rf.Path] = FileEntry{Path: rf.Path, Hash: rf.Hash, ModifiedAt: rf.ModifiedAt, Size: rf.Size}

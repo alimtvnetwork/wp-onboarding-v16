@@ -24,7 +24,13 @@ type importState struct {
 func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, isOverwrite bool) apperror.Result[ImportResult] {
 	startTime := time.Now()
 	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", isOverwrite)
-	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "init", Message: fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), Details: toDetails(ImportInitDetails{Destination: destDir, IsOverwrite: isOverwrite})})
+	initLog := BackupLogInput{
+		PluginID: 0,
+		Step:     "init",
+		Message:  fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)),
+		Details:  toDetails(ImportInitDetails{Destination: destDir, IsOverwrite: isOverwrite}),
+	}
+	s.logInfoWithDetails(initLog)
 
 	readerResult := s.openImportZip(zipPath, destDir, isOverwrite)
 	if readerResult.HasError() {
@@ -192,5 +198,11 @@ func (s *Service) logImportComplete(destDir string, state *importState, startTim
 		TotalBytes: state.TotalBytes,
 		DurationMs: duration.Milliseconds(),
 	})
-	s.logInfoWithDetails(BackupLogInput{PluginID: 0, Step: "complete", Message: fmt.Sprintf("Import complete: %d files, %d bytes", state.FilesCount, state.TotalBytes), Details: completeDetails})
+	completeLog := BackupLogInput{
+		PluginID: 0,
+		Step:     "complete",
+		Message:  fmt.Sprintf("Import complete: %d files, %d bytes", state.FilesCount, state.TotalBytes),
+		Details:  completeDetails,
+	}
+	s.logInfoWithDetails(completeLog)
 }
