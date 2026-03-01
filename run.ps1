@@ -572,8 +572,9 @@ if ($zip) {
 
     if (Test-Path $mainFilePath) {
         $headerContent = Get-Content $mainFilePath -Raw -ErrorAction SilentlyContinue
-        if ($headerContent -match '\*\s*Version:\s*([0-9]+\.[0-9]+\.[0-9]+)') {
-            $pluginVersion = $Matches[1]
+        $versionMatch = [regex]::Match($headerContent, "\*\s*Version:\s*(\d+\.\d+\.\d+)")
+        if ($versionMatch.Success) {
+            $pluginVersion = $versionMatch.Groups[1].Value
         }
     }
 
