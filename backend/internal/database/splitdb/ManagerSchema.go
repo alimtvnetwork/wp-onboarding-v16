@@ -1,8 +1,10 @@
 // Package splitdb — root schema initialization and migrations.
 package splitdb
 
+import "wp-plugin-publish/pkg/apperror"
+
 // initRootSchema creates the root database schema and runs migrations
-func (m *DBManager) initRootSchema() error {
+func (m *DBManager) initRootSchema() *apperror.AppError {
 	schema := `
 		CREATE TABLE IF NOT EXISTS Projects (
 			Id TEXT PRIMARY KEY,
@@ -60,7 +62,7 @@ func (m *DBManager) initRootSchema() error {
 }
 
 // migrateToPascalCase renames legacy snake_case tables and columns to PascalCase
-func (m *DBManager) migrateToPascalCase() error {
+func (m *DBManager) migrateToPascalCase() *apperror.AppError {
 	// Check if legacy tables exist
 	var exists int
 	err := m.rootDB.QueryRow(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='projects'`).Scan(&exists)
