@@ -12,6 +12,7 @@ func RegisterAll(eng *engine.Engine) {
 	eng.Register(&GoParamCount{})
 	eng.Register(&GoInlineIf{})
 	eng.Register(&GoAbbrCasing{})
+	eng.Register(&GoRawError{})
 	eng.Register(&FileNaming{})
 	eng.Register(&PhpFileSize{})
 	eng.Register(&MdHeading{})

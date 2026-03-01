@@ -12,6 +12,7 @@
 | `go-import-groups` | Import Grouping    | 3 groups         | warning  | Imports: stdlib, third-party, internal      |
 | `go-file-naming` | File Naming         | PascalCase       | warning  | Go files must follow naming convention      |
 | `go-param-count` | Parameter Count     | max: 3           | warning  | Max params excluding context.Context        |
+| `go-raw-error`   | Raw Error Return    | —                | error    | Functions must not return raw `error`; use `*apperror.AppError` |
 
 ### PHP Rules
 
