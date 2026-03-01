@@ -1,39 +1,52 @@
 # Memory: architecture/dev-environment/powershell-versioning
-Updated: 2026-02-04
+Updated: 2026-03-01
 
 ---
 
 ## Overview
 
-The PowerShell runner script (`run.ps1`) and its configuration (`powershell.json`) now include version tracking to ensure changes are documented and traceable.
+Version numbers are tracked across multiple files. The `bump-version.ps1` script automates syncing them.
 
 ---
 
-## Version Locations
+## Version Targets
 
-| File | Field | Purpose |
-|------|-------|---------|
-| `run.ps1` | `# Version: X.X.X` (line 2) | Script version in header comment |
-| `powershell.json` | `"version": "X.X.X"` | Configuration version |
-| `spec/powershell-integration/CHANGELOG.md` | Version history | Detailed changelog for script |
-| `spec/powershell-integration/00-overview.md` | `Script Version:` header | Spec documentation |
+| Target | Files Updated |
+|--------|---------------|
+| `app` | `public/version.json` → `version`, `releaseDate` |
+| `script` | `run.ps1` header, `powershell.json`, `public/version.json` → `scriptVersion`, `spec/12-powershell-integration/00-overview.md` |
+| `plugin` | `PluginConfigType.php` → `Version` case, `public/version.json` → `wpPluginVersion` |
+| `all` | All of the above |
+
+---
+
+## Bump Script Usage
+
+```powershell
+.\wp-plugins\scripts\bump-version.ps1 -Target app -Bump patch
+.\wp-plugins\scripts\bump-version.ps1 -Target all -Bump minor
+.\wp-plugins\scripts\bump-version.ps1 -Target plugin -Set "2.0.0"
+.\wp-plugins\scripts\bump-version.ps1 -Target all -Bump patch -DryRun
+```
 
 ---
 
 ## Versioning Rules
 
-1. **When to bump version**: Any functional change to `run.ps1` or significant config schema change
-2. **Sync locations**: Update all 4 locations when version changes
-3. **Changelog entry**: Add entry to `spec/powershell-integration/CHANGELOG.md`
-4. **Spec update**: Update version in `00-overview.md` and relevant spec files
+1. **When to bump**: Any functional change to a target area
+2. **Use the script**: Always use `bump-version.ps1` instead of manual edits
+3. **DryRun first**: Use `-DryRun` to preview before applying
+4. **Changelog**: Manually add entry to `spec/12-powershell-integration/changelog.md` after script bumps
 
 ---
 
-## Current Version
+## Current Versions
 
+- **App Version**: 1.19.4
 - **Script Version**: 1.2.0
+- **Plugin Version**: 1.63.0
 - **Spec Version**: 2.1.0
 
 ---
 
-*Single source of truth for script version: `run.ps1` header comment (line 2)*
+*Automation script: `wp-plugins/scripts/bump-version.ps1`*
