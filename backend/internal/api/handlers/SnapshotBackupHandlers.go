@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -95,10 +96,13 @@ func receiveUploadToTemp(w http.ResponseWriter, r *http.Request) (string, bool) 
 }
 
 // copyToTemp copies data from src to dst.
-func copyToTemp(dst *os.File, src io.Reader) error {
+func copyToTemp(dst *os.File, src io.Reader) *apperror.AppError {
 	_, err := io.Copy(dst, src)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to copy to temp file")
+	}
 
-	return err
+	return nil
 }
 
 // extractFormFileToTemp reads the "file" field and writes it to a temporary file.

@@ -25,7 +25,7 @@ func (db *DB) GetSeedVersion() (string, error) {
 }
 
 // SetSeedVersion sets the seed version in the database
-func (db *DB) SetSeedVersion(version string) error {
+func (db *DB) SetSeedVersion(version string) *apperror.AppError {
 	_, err := db.Exec(`
 		INSERT INTO AppConfig (Key, Value, UpdatedAt) 
 		VALUES ('seed_version', ?, datetime('now'))
@@ -38,7 +38,7 @@ func (db *DB) SetSeedVersion(version string) error {
 }
 
 // SetSettingIfNotExists creates a setting only if it doesn't already exist
-func (db *DB) SetSettingIfNotExists(key string, value any) error {
+func (db *DB) SetSettingIfNotExists(key string, value any) *apperror.AppError {
 	_, err := db.Exec(`
 		INSERT OR IGNORE INTO AppConfig (Key, Value, UpdatedAt) 
 		VALUES (?, ?, datetime('now'))
@@ -65,7 +65,7 @@ func (db *DB) GetSetting(key string) (string, error) {
 }
 
 // SetSetting updates or creates a setting
-func (db *DB) SetSetting(key, value string) error {
+func (db *DB) SetSetting(key, value string) *apperror.AppError {
 	_, err := db.Exec(`
 		INSERT INTO AppConfig (Key, Value, UpdatedAt) 
 		VALUES (?, ?, datetime('now'))
@@ -92,7 +92,7 @@ func (db *DB) GetDbVersion() (string, error) {
 }
 
 // SetDbVersion sets the database version
-func (db *DB) SetDbVersion(version string) error {
+func (db *DB) SetDbVersion(version string) *apperror.AppError {
 	_, err := db.Exec(`
 		INSERT INTO AppConfig (Key, Value, UpdatedAt) 
 		VALUES ('db.version', ?, datetime('now'))

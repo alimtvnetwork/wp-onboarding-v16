@@ -30,7 +30,7 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, *apperror.AppE
 	if writeErr != nil {
 		pathutil.RemoveFileUnchecked(tempPath)
 
-		return "", apperror.Wrap(writeErr, apperror.ErrFSZip, "failed to create uploader ZIP").WithPath(pathutil.ForDisplay(absUploaderPath))
+		return "", writeErr
 	}
 
 	return tempPath, nil
@@ -58,7 +58,7 @@ func resolveUploaderDir(uploaderPath string) (string, *apperror.AppError) {
 }
 
 // writeUploaderZipContent walks the uploader directory and writes files into the ZIP.
-func writeUploaderZipContent(tempFile *os.File, absUploaderPath string) error {
+func writeUploaderZipContent(tempFile *os.File, absUploaderPath string) *apperror.AppError {
 	zipWriter := zip.NewWriter(tempFile)
 	ziputil.RegisterBestCompression(zipWriter)
 
@@ -76,7 +76,11 @@ func writeUploaderZipContent(tempFile *os.File, absUploaderPath string) error {
 	zipWriter.Close()
 	tempFile.Close()
 
-	return err
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrFSZip, "failed to walk uploader directory")
+	}
+
+	return nil
 }
 
 // uploaderZipEntryInput bundles parameters for addFileToUploaderZip.

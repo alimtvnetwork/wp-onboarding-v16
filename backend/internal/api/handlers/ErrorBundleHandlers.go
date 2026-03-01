@@ -184,7 +184,7 @@ func buildManifestFiles(input errorBundleInput) bundleManifest {
 }
 
 // addFileToZip adds a file from disk into the ZIP archive.
-func addFileToZip(zipWriter *zip.Writer, srcPath string, destName string) error {
+func addFileToZip(zipWriter *zip.Writer, srcPath string, destName string) *apperror.AppError {
 	file, err := os.Open(srcPath)
 	if err != nil {
 
