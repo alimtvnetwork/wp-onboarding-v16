@@ -99,6 +99,15 @@
       "reference": "spec/03-rules.md#go-abbr-casing"
     },
     {
+      "id": "go-raw-error",
+      "name": "Go Raw Error Return",
+      "enabled": true,
+      "severity": "error",
+      "languages": ["go"],
+      "params": {},
+      "exclude": ["*_test.go", "pkg/apperror/**", "pkg/pathutil/**", "internal/database/dbops/**", "internal/enums/**", "cmd/**"],
+      "reference": "spec/03-rules.md#go-raw-error"
+    },
       "id": "php-file-size",
       "name": "PHP File Size Limit",
       "enabled": true,
