@@ -3,7 +3,6 @@ package version
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"wp-plugin-publish/internal/database"
@@ -46,20 +45,18 @@ func (s *Service) GetVersions(ctx context.Context, pluginId int64, siteId *int64
 	if isLimitUnset {
 		limit = 50
 	}
-	rows, err := s.db.GetPluginVersions(pluginId, siteId, limit)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin versions").
-			WithPluginId(pluginId)
+	rows, appErr := s.db.GetPluginVersions(pluginId, siteId, limit)
+	if appErr != nil {
+		return nil, appErr
 	}
 	return rows, nil
 }
 
 // GetVersion returns a specific version entry
 func (s *Service) GetVersion(ctx context.Context, versionId int64) (*PluginVersionRow, *apperror.AppError) {
-	row, err := s.db.GetPluginVersionById(versionId)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
-			WithVersionId(versionId)
+	row, appErr := s.db.GetPluginVersionById(versionId)
+	if appErr != nil {
+		return nil, appErr
 	}
 	return row, nil
 }
@@ -77,12 +74,9 @@ type RecordVersionInput struct {
 
 // RecordVersion saves a new version entry after a publish operation
 func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (int64, *apperror.AppError) {
-	version, err := s.db.GetNextVersionNumber(input.PluginId, input.SiteId)
-	if err != nil {
-		version = fmt.Sprintf("1.0.%d", time.Now().Unix())
-	}
+	version, _ := s.db.GetNextVersionNumber(input.PluginId, input.SiteId)
 
-	versionId, err := s.db.CreatePluginVersion(database.PluginVersionInput{
+	versionId, appErr := s.db.CreatePluginVersion(database.PluginVersionInput{
 		PluginId:      input.PluginId,
 		SiteId:        input.SiteId,
 		Version:       version,
@@ -92,11 +86,8 @@ func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (
 		PublishType:   input.PublishType.Value(),
 		Notes:         input.Notes,
 	})
-	if err != nil {
-		appErr := apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to record version").
-			WithPluginId(input.PluginId).
-			WithSiteId(input.SiteId)
-		s.log.Error("Failed to record version", "pluginId", input.PluginId, "siteId", input.SiteId, "error", err)
+	if appErr != nil {
+		s.log.Error("Failed to record version", "pluginId", input.PluginId, "siteId", input.SiteId, "error", appErr)
 		return 0, appErr
 	}
 
@@ -118,10 +109,9 @@ func (s *Service) RecordVersion(ctx context.Context, input RecordVersionInput) (
 
 // Rollback restores a plugin to a previous version
 func (s *Service) Rollback(ctx context.Context, versionId int64) (*ws.RollbackCompleteData, *apperror.AppError) {
-	ver, err := s.db.GetPluginVersionById(versionId)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
-			WithVersionId(versionId)
+	ver, appErr := s.db.GetPluginVersionById(versionId)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	if ver.BackupPath == "" {
