@@ -199,7 +199,7 @@ func (db *DB) GetPluginVersionById(versionId int64) (*PluginVersionRow, error) {
 }
 
 // DeletePluginVersion removes a version entry
-func (db *DB) DeletePluginVersion(versionId int64) error {
+func (db *DB) DeletePluginVersion(versionId int64) *apperror.AppError {
 	_, err := db.Exec("DELETE FROM PluginVersions WHERE Id = ?", versionId)
 
 	if err != nil {

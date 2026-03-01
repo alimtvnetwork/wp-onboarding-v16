@@ -43,7 +43,7 @@ func New(cfg Config) *Service {
 }
 
 // Record saves a new publish history entry
-func (s *Service) Record(entry models.PublishHistory) (*models.PublishHistory, error) {
+func (s *Service) Record(entry models.PublishHistory) (*models.PublishHistory, *apperror.AppError) {
 	result, err := s.db.Exec(insertHistorySql,
 		entry.PluginId,
 		entry.PluginName,
@@ -154,7 +154,7 @@ func (s *Service) GetStats() apperror.Result[models.PublishHistoryStats] {
 }
 
 // Delete removes a publish history entry
-func (s *Service) Delete(id int64) error {
+func (s *Service) Delete(id int64) *apperror.AppError {
 	_, err := s.db.Exec("DELETE FROM PublishHistory WHERE Id = ?", id)
 	if err != nil {
 

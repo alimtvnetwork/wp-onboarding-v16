@@ -33,7 +33,7 @@ func (s *Service) buildSelectiveZipArchive(zc *zipContext, files []string) apper
 	if writeErr != nil {
 		zs.CleanupOnError(writeErr)
 
-		return apperror.FailWrap[string](writeErr, apperror.ErrFSZip, "failed to create selective zip archive")
+		return apperror.Fail[string](writeErr)
 	}
 
 	appErr := zs.Finalize()
@@ -45,18 +45,18 @@ func (s *Service) buildSelectiveZipArchive(zc *zipContext, files []string) apper
 }
 
 // writeSelectiveEntries adds each selected file to the zip.
-func (s *Service) writeSelectiveEntries(zw *zip.Writer, zc *zipContext, files []string) error {
+func (s *Service) writeSelectiveEntries(zw *zip.Writer, zc *zipContext, files []string) *apperror.AppError {
 	for _, relPath := range files {
-		err := addSelectiveEntry(zw, zc, relPath)
-		if err != nil {
-			return err
+		appErr := addSelectiveEntry(zw, zc, relPath)
+		if appErr != nil {
+			return appErr
 		}
 	}
 	return nil
 }
 
 // addSelectiveEntry adds a single file to the selective zip, skipping missing/directory entries.
-func addSelectiveEntry(zw *zip.Writer, zc *zipContext, relPath string) error {
+func addSelectiveEntry(zw *zip.Writer, zc *zipContext, relPath string) *apperror.AppError {
 	fullPath, err := pathutil.Join(zc.AbsPluginPath, relPath)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to resolve file path").WithFilePath(relPath)
@@ -76,7 +76,12 @@ func addSelectiveEntry(zw *zip.Writer, zc *zipContext, relPath string) error {
 		return nil
 	}
 
-	return addFileToZip(zw, fullPath, filepath.ToSlash(filepath.Join(zc.Slug, relPath)))
+	zipErr := addFileToZip(zw, fullPath, filepath.ToSlash(filepath.Join(zc.Slug, relPath)))
+	if zipErr != nil {
+		return apperror.Wrap(zipErr, apperror.ErrFSZip, "failed to add file to selective zip").WithFilePath(relPath)
+	}
+
+	return nil
 }
 
 // shouldExclude checks if a file should be excluded from the zip

@@ -163,10 +163,9 @@ func (s *Service) Rollback(ctx context.Context, versionId int64) (*ws.RollbackCo
 
 // DeleteVersion removes a version entry
 func (s *Service) DeleteVersion(ctx context.Context, versionId int64) *apperror.AppError {
-	err := s.db.DeletePluginVersion(versionId)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete version").
-			WithVersionId(versionId)
+	appErr := s.db.DeletePluginVersion(versionId)
+	if appErr != nil {
+		return appErr
 	}
 	return nil
 }

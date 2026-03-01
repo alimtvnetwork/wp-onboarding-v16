@@ -22,7 +22,7 @@ func (s *Service) performScan(ctx context.Context, pluginId int64, triggerType s
 
 	cache, cacheErr := s.ensureScanCache(ctx, pluginId)
 	if cacheErr != nil {
-		return apperror.FailWrap[ScanResult](cacheErr, apperror.ErrInternal, "failed to initialize watcher cache")
+		return apperror.Fail[ScanResult](cacheErr)
 	}
 
 	changes := s.scanAndCompare(cache)
@@ -34,7 +34,7 @@ func (s *Service) performScan(ctx context.Context, pluginId int64, triggerType s
 }
 
 // ensureScanCache returns the existing cache or initializes a new one.
-func (s *Service) ensureScanCache(ctx context.Context, pluginId int64) (*pluginScanCache, error) {
+func (s *Service) ensureScanCache(ctx context.Context, pluginId int64) (*pluginScanCache, *apperror.AppError) {
 	s.mu.Lock()
 	cache, isFound := s.cache[pluginId]
 	s.mu.Unlock()
@@ -43,9 +43,9 @@ func (s *Service) ensureScanCache(ctx context.Context, pluginId int64) (*pluginS
 		return cache, nil
 	}
 
-	err := s.InitializeCache(ctx, pluginId)
-	if err != nil {
-		return nil, err
+	appErr := s.InitializeCache(ctx, pluginId)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	s.mu.Lock()
