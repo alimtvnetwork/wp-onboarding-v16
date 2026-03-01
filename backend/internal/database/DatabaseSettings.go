@@ -12,7 +12,7 @@ import (
 // ─── Settings ────────────────────────────────────────────────────────────────
 
 // GetSeedVersion returns the current seed version from the database
-func (db *DB) GetSeedVersion() (string, error) {
+func (db *DB) GetSeedVersion() (string, *apperror.AppError) {
 	var version string
 	err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = 'seed_version'").Scan(&version)
 	if err == sql.ErrNoRows {
@@ -51,7 +51,7 @@ func (db *DB) SetSettingIfNotExists(key string, value any) *apperror.AppError {
 }
 
 // GetSetting retrieves a setting value by key
-func (db *DB) GetSetting(key string) (string, error) {
+func (db *DB) GetSetting(key string) (string, *apperror.AppError) {
 	var value string
 	err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = ?", key).Scan(&value)
 	if err == sql.ErrNoRows {
@@ -79,7 +79,7 @@ func (db *DB) SetSetting(key, value string) *apperror.AppError {
 }
 
 // GetDbVersion returns the stored database version for changelog comparison
-func (db *DB) GetDbVersion() (string, error) {
+func (db *DB) GetDbVersion() (string, *apperror.AppError) {
 	var version string
 	err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = 'db.version'").Scan(&version)
 	if err == sql.ErrNoRows {
@@ -107,7 +107,7 @@ func (db *DB) SetDbVersion(version string) *apperror.AppError {
 // ─── Lookup ──────────────────────────────────────────────────────────────────
 
 // GetSiteIdByUrl returns the site ID for a given URL
-func (db *DB) GetSiteIdByUrl(url string) (int64, error) {
+func (db *DB) GetSiteIdByUrl(url string) (int64, *apperror.AppError) {
 	var id int64
 	err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", url).Scan(&id)
 	if err != nil {
@@ -118,7 +118,7 @@ func (db *DB) GetSiteIdByUrl(url string) (int64, error) {
 }
 
 // GetPluginIdByPath returns the plugin ID for a given path
-func (db *DB) GetPluginIdByPath(path string) (int64, error) {
+func (db *DB) GetPluginIdByPath(path string) (int64, *apperror.AppError) {
 	var id int64
 	err := db.QueryRow("SELECT Id FROM Plugins WHERE Path = ?", path).Scan(&id)
 	if err != nil {
@@ -141,7 +141,7 @@ type SeedSiteInput struct {
 
 // CreateSeedSite creates a site for seeding (password must be pre-encrypted by caller)
 // Seeded sites default to ConnectionStatus = 'connected' for quick testing
-func (db *DB) CreateSeedSite(input SeedSiteInput) (int64, error) {
+func (db *DB) CreateSeedSite(input SeedSiteInput) (int64, *apperror.AppError) {
 	result, err := db.Exec(`
 		INSERT INTO Sites (Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, 'connected', datetime('now'), datetime('now'))
@@ -150,7 +150,13 @@ func (db *DB) CreateSeedSite(input SeedSiteInput) (int64, error) {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed site").
 			WithUrl(input.Url)
 	}
-	return result.LastInsertId()
+
+	id, lastIdErr := result.LastInsertId()
+	if lastIdErr != nil {
+		return 0, apperror.Wrap(lastIdErr, apperror.ErrDatabaseQuery, "failed to get last insert ID for seed site")
+	}
+
+	return id, nil
 }
 
 // SeedPluginInput bundles parameters for CreateSeedPlugin.
@@ -163,7 +169,7 @@ type SeedPluginInput struct {
 }
 
 // CreateSeedPlugin creates a plugin for seeding
-func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, error) {
+func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, *apperror.AppError) {
 	autoPublishInt := 0
 	if input.AutoPublish {
 		autoPublishInt = 1
@@ -208,8 +214,8 @@ type SeedMappingInput struct {
 }
 
 // CreateSeedMapping creates a plugin-site mapping for seeding
-// Returns (created bool, error) - created is true only if a new row was inserted
-func (db *DB) CreateSeedMapping(input SeedMappingInput) (bool, error) {
+// Returns (created bool, appErr) - created is true only if a new row was inserted
+func (db *DB) CreateSeedMapping(input SeedMappingInput) (bool, *apperror.AppError) {
 	ctx := dbops.Context{
 		Table:  "PluginMappings",
 		Logger: input.Logger,
@@ -220,8 +226,13 @@ func (db *DB) CreateSeedMapping(input SeedMappingInput) (bool, error) {
 		},
 	}
 
-	return dbops.CreateMapping(db.DB, ctx, `
+	created, mappingErr := dbops.CreateMapping(db.DB, ctx, `
 		INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, datetime('now'), datetime('now'))
 	`, input.PluginId, input.SiteId, input.RemoteSlug)
+	if mappingErr != nil {
+		return false, apperror.Wrap(mappingErr, apperror.ErrDatabaseInsert, "failed to create seed mapping")
+	}
+
+	return created, nil
 }

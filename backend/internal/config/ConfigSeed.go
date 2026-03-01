@@ -14,10 +14,10 @@ import (
 func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 	log.Info("Checking seed requirements", "configVersion", cfg.Version, "seedEnabled", cfg.Seed.Enabled)
 
-	currentVersion, err := db.GetSeedVersion()
-	if err != nil {
-		log.Error("Failed to get seed version from database", "error", err)
-		return apperror.Wrap(err, apperror.ErrConfigSeed, "get seed version from database")
+	currentVersion, appErr := db.GetSeedVersion()
+	if appErr != nil {
+		log.Error("Failed to get seed version from database", "error", appErr)
+		return appErr
 	}
 
 	log.Debug("Current seed version", "version", currentVersion)
@@ -33,10 +33,10 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 			return apperror.Wrap(err, apperror.ErrConfigSeed, "seed from config")
 		}
 
-		err = db.SetSeedVersion(cfg.Version)
-		if err != nil {
-			log.Error("Failed to update seed version", "error", err)
-			return apperror.Wrap(err, apperror.ErrConfigSeed, "update seed version")
+		seedErr := db.SetSeedVersion(cfg.Version)
+		if seedErr != nil {
+			log.Error("Failed to update seed version", "error", seedErr)
+			return seedErr
 		}
 
 		log.Info("Seed version updated", "version", cfg.Version)

@@ -20,7 +20,7 @@ type PluginVersionInput struct {
 }
 
 // CreatePluginVersion records a new version entry after a publish operation
-func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, error) {
+func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, *apperror.AppError) {
 	result, err := db.Exec(insertVersionSql,
 		input.PluginId,
 		input.SiteId,
@@ -38,7 +38,12 @@ func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, error) {
 			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", input.PluginId, input.SiteId))
 	}
 
-	return result.LastInsertId()
+	id, lastIdErr := result.LastInsertId()
+	if lastIdErr != nil {
+		return 0, apperror.Wrap(lastIdErr, apperror.ErrDatabaseQuery, "failed to get last insert ID for plugin version")
+	}
+
+	return id, nil
 }
 
 // PluginVersionRow holds a single plugin version record from the database.
@@ -58,7 +63,7 @@ type PluginVersionRow struct {
 }
 
 // GetPluginVersions returns version history for a plugin, optionally filtered by site
-func (db *DB) GetPluginVersions(pluginId int64, siteId *int64, limit int) ([]PluginVersionRow, error) {
+func (db *DB) GetPluginVersions(pluginId int64, siteId *int64, limit int) ([]PluginVersionRow, *apperror.AppError) {
 	query, args := buildVersionQuery(pluginId, siteId, limit)
 
 	rows, err := db.Query(query, args...)
@@ -91,12 +96,12 @@ func buildVersionQuery(pluginId int64, siteId *int64, limit int) (string, []any)
 }
 
 // scanPluginVersionRows scans all rows into PluginVersionRow slices.
-func scanPluginVersionRows(rows *sql.Rows) ([]PluginVersionRow, error) {
+func scanPluginVersionRows(rows *sql.Rows) ([]PluginVersionRow, *apperror.AppError) {
 	var versions []PluginVersionRow
 
 	for rows.Next() {
-		m, err := scanVersionRow(rows)
-		if err != nil {
+		m, scanErr := scanVersionRow(rows)
+		if scanErr != nil {
 
 			continue
 		}
@@ -126,7 +131,7 @@ type versionNullFields struct {
 }
 
 // scanVersionRow scans a single version row from *sql.Rows.
-func scanVersionRow(rows *sql.Rows) (PluginVersionRow, error) {
+func scanVersionRow(rows *sql.Rows) (PluginVersionRow, *apperror.AppError) {
 	var m PluginVersionRow
 	var nf versionNullFields
 
@@ -147,7 +152,7 @@ func scanVersionRow(rows *sql.Rows) (PluginVersionRow, error) {
 
 	if err != nil {
 
-		return m, err
+		return m, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan version row")
 	}
 
 	applyVersionNullFields(&m, &nf)
@@ -168,7 +173,7 @@ func applyVersionNullFields(m *PluginVersionRow, nf *versionNullFields) {
 }
 
 // GetPluginVersionById returns a specific version entry
-func (db *DB) GetPluginVersionById(versionId int64) (*PluginVersionRow, error) {
+func (db *DB) GetPluginVersionById(versionId int64) (*PluginVersionRow, *apperror.AppError) {
 	var m PluginVersionRow
 	var nf versionNullFields
 
@@ -212,7 +217,7 @@ func (db *DB) DeletePluginVersion(versionId int64) *apperror.AppError {
 }
 
 // GetNextVersionNumber generates the next version number for a plugin-site combination
-func (db *DB) GetNextVersionNumber(pluginId, siteId int64) (string, error) {
+func (db *DB) GetNextVersionNumber(pluginId, siteId int64) (string, *apperror.AppError) {
 	var count int
 
 	err := db.QueryRow(
