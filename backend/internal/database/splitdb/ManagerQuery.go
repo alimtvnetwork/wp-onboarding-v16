@@ -4,7 +4,7 @@ package splitdb
 import "wp-plugin-publish/pkg/apperror"
 
 // ListProjects returns all active projects
-func (m *DBManager) ListProjects() ([]Project, error) {
+func (m *DBManager) ListProjects() ([]Project, *apperror.AppError) {
 	rows, err := m.rootDB.Query(`
 		SELECT Id, Slug, DisplayName, Path, Status, CreatedAt, UpdatedAt
 		FROM Projects WHERE Status = 'active'
@@ -20,7 +20,6 @@ func (m *DBManager) ListProjects() ([]Project, error) {
 		var p Project
 		err := rows.Scan(&p.Id, &p.Slug, &p.DisplayName, &p.Path, &p.Status, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
-
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan project row")
 		}
 		projects = append(projects, p)
@@ -30,7 +29,7 @@ func (m *DBManager) ListProjects() ([]Project, error) {
 }
 
 // ListDatabases returns all databases for a project
-func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
+func (m *DBManager) ListDatabases(projectSlug string) ([]Database, *apperror.AppError) {
 	query := `
 		SELECT d.Id, d.ProjectId, d.Type, d.EntityId, d.Path, 
 		       d.SizeBytes, d.RecordCount, d.Status, d.CreatedAt, d.UpdatedAt
@@ -54,7 +53,6 @@ func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
 			&db.SizeBytes, &db.RecordCount, &db.Status, &db.CreatedAt, &db.UpdatedAt,
 		)
 		if err != nil {
-
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan database row")
 		}
 		dbs = append(dbs, db)

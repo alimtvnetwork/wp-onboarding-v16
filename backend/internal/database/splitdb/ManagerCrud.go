@@ -13,7 +13,7 @@ import (
 )
 
 // GetOrCreateDB returns a database, creating it if it doesn't exist
-func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityId string) (*sql.DB, error) {
+func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityId string) (*sql.DB, *apperror.AppError) {
 	startTime := time.Now()
 
 	m.log.Debug("GetOrCreateDB called",
@@ -36,10 +36,11 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityId string) (*sql.DB
 	}
 
 	// Ensure project exists
-	project, err := m.getOrCreateProject(projectSlug)
-	if err != nil {
-		m.log.Error("Failed to get/create project", "error", err, "project", projectSlug)
-		return nil, err
+	project, appErr := m.getOrCreateProject(projectSlug)
+	if appErr != nil {
+		m.log.Error("Failed to get/create project", "error", appErr, "project", projectSlug)
+
+		return nil, appErr
 	}
 
 	// Get or create database record
@@ -50,16 +51,16 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityId string) (*sql.DB
 		EntityId:  entityId,
 		Path:      dbPath,
 	}
-	dbRecord, err := m.getOrCreateDatabase(dbInput)
-	if err != nil {
-		m.log.Error("Failed to get/create database record", "error", err)
-		return nil, err
+	dbRecord, appErr := m.getOrCreateDatabase(dbInput)
+	if appErr != nil {
+		m.log.Error("Failed to get/create database record", "error", appErr)
+
+		return nil, appErr
 	}
 
-	db, err = m.openAndConfigure(dbRecord, key)
-	if err != nil {
-
-		return nil, err
+	db, appErr = m.openAndConfigure(dbRecord, key)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	m.log.Info("Database ready",
@@ -73,7 +74,7 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityId string) (*sql.DB
 }
 
 // openAndConfigure opens and configures a SQLite database file.
-func (m *DBManager) openAndConfigure(dbRecord *Database, key string) (*sql.DB, error) {
+func (m *DBManager) openAndConfigure(dbRecord *Database, key string) (*sql.DB, *apperror.AppError) {
 	fullPath, err := pathutil.Join(m.dataDir, dbRecord.Path)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to resolve db path").
@@ -81,25 +82,25 @@ func (m *DBManager) openAndConfigure(dbRecord *Database, key string) (*sql.DB, e
 	}
 
 	dir := filepath.Dir(fullPath)
-	err = os.MkdirAll(dir, 0755)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create db dir").
+	mkdirErr := os.MkdirAll(dir, 0755)
+	if mkdirErr != nil {
+		return nil, apperror.Wrap(mkdirErr, apperror.ErrDatabaseConnect, "failed to create db dir").
 			WithPath(dir)
 	}
 
-	db, err := sql.Open("sqlite3", fullPath+"?_foreign_keys=on&_journal_mode=WAL")
-	if err != nil {
-		m.log.Error("Failed to open database", "error", err, "path", fullPath)
+	db, openErr := sql.Open("sqlite3", fullPath+"?_foreign_keys=on&_journal_mode=WAL")
+	if openErr != nil {
+		m.log.Error("Failed to open database", "error", openErr, "path", fullPath)
 
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open db").
+		return nil, apperror.Wrap(openErr, apperror.ErrDatabaseConnect, "failed to open db").
 			WithPath(fullPath)
 	}
 
-	err = configureDB(db)
-	if err != nil {
+	appErr := configureDB(db)
+	if appErr != nil {
 		db.Close()
 
-		return nil, err
+		return nil, appErr
 	}
 
 	m.openDBs[key] = db
@@ -109,7 +110,7 @@ func (m *DBManager) openAndConfigure(dbRecord *Database, key string) (*sql.DB, e
 }
 
 // getOrCreateProject ensures a project exists and returns it
-func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
+func (m *DBManager) getOrCreateProject(slug string) (*Project, *apperror.AppError) {
 	var project Project
 
 	err := m.rootDB.QueryRow(`
@@ -133,7 +134,7 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 }
 
 // insertProject creates a new project record.
-func (m *DBManager) insertProject(slug string) (*Project, error) {
+func (m *DBManager) insertProject(slug string) (*Project, *apperror.AppError) {
 	project := Project{
 		Id:          generateId(),
 		Slug:        slug,
@@ -169,7 +170,7 @@ type GetOrCreateDBInput struct {
 }
 
 // getOrCreateDatabase ensures a database record exists
-func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, error) {
+func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, *apperror.AppError) {
 	var db Database
 
 	query := `SELECT Id, ProjectId, Type, EntityId, Path, SizeBytes, RecordCount, 
@@ -194,7 +195,7 @@ func (m *DBManager) getOrCreateDatabase(input GetOrCreateDBInput) (*Database, er
 }
 
 // insertDatabase creates a new database record.
-func (m *DBManager) insertDatabase(input GetOrCreateDBInput) (*Database, error) {
+func (m *DBManager) insertDatabase(input GetOrCreateDBInput) (*Database, *apperror.AppError) {
 	db := Database{
 		Id:        generateId(),
 		ProjectId: input.ProjectId,

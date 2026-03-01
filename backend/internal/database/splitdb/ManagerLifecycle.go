@@ -2,6 +2,7 @@
 package splitdb
 
 import (
+	"database/sql"
 	"strings"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 )
 
 // ArchiveStale archives databases not accessed within maxAge
-func (m *DBManager) ArchiveStale(maxAge time.Duration) error {
+func (m *DBManager) ArchiveStale(maxAge time.Duration) *apperror.AppError {
 	cutoff := time.Now().Add(-maxAge)
 
 	result, err := m.rootDB.Exec(`
@@ -33,17 +34,16 @@ func (m *DBManager) ArchiveStale(maxAge time.Duration) error {
 }
 
 // PurgeArchived deletes archived databases older than retention period
-func (m *DBManager) PurgeArchived(retention time.Duration) error {
+func (m *DBManager) PurgeArchived(retention time.Duration) *apperror.AppError {
 	cutoff := time.Now().Add(-retention)
 
-	deleted, err := m.deleteArchivedFiles(cutoff)
-	if err != nil {
-
-		return err
+	deleted, appErr := m.deleteArchivedFiles(cutoff)
+	if appErr != nil {
+		return appErr
 	}
 
 	// Remove records
-	_, err = m.rootDB.Exec(`
+	_, err := m.rootDB.Exec(`
 		DELETE FROM Databases 
 		WHERE Status = 'archived' AND UpdatedAt < ?
 	`, cutoff)
@@ -61,7 +61,7 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 }
 
 // deleteArchivedFiles removes on-disk files for archived databases.
-func (m *DBManager) deleteArchivedFiles(cutoff time.Time) (int, error) {
+func (m *DBManager) deleteArchivedFiles(cutoff time.Time) (int, *apperror.AppError) {
 	rows, err := m.rootDB.Query(`
 		SELECT Path FROM Databases 
 		WHERE Status = 'archived' AND UpdatedAt < ?
@@ -103,7 +103,7 @@ func (m *DBManager) closeProjectDBs(projectSlug string) {
 }
 
 // Close closes all open databases
-func (m *DBManager) Close() error {
+func (m *DBManager) Close() *apperror.AppError {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -112,5 +112,10 @@ func (m *DBManager) Close() error {
 	}
 	m.openDBs = make(map[string]*sql.DB)
 
-	return m.rootDB.Close()
+	err := m.rootDB.Close()
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to close root database")
+	}
+
+	return nil
 }

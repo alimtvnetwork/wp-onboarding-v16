@@ -76,7 +76,7 @@ type Config struct {
 }
 
 // NewDBManager creates a new split database manager
-func NewDBManager(cfg Config) (*DBManager, error) {
+func NewDBManager(cfg Config) (*DBManager, *apperror.AppError) {
 	if cfg.MaxOpen == 0 {
 		cfg.MaxOpen = 50
 	}
@@ -93,20 +93,20 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 			WithPath(cfg.DataDir)
 	}
 
-	rootPath, err := pathutil.Join(cfg.DataDir, "root.db")
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to resolve root db path")
+	rootPath, pathErr := pathutil.Join(cfg.DataDir, "root.db")
+	if pathErr != nil {
+		return nil, apperror.Wrap(pathErr, apperror.ErrDatabaseConnect, "failed to resolve root db path")
 	}
+
 	rootDB, err := sql.Open("sqlite3", rootPath+"?_foreign_keys=on&_journal_mode=WAL")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open root db").
 			WithPath(rootPath)
 	}
 
-	err = configureDB(rootDB)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to configure root db").
-			WithPath(rootPath)
+	appErr := configureDB(rootDB)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	manager := &DBManager{
@@ -119,17 +119,16 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 		connLife: cfg.ConnLife,
 	}
 
-	err = manager.initRootSchema()
-	if err != nil {
-
-		return nil, err
+	appErr = manager.initRootSchema()
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	return manager, nil
 }
 
 // configureDB sets up SQLite for optimal concurrent access
-func configureDB(db *sql.DB) error {
+func configureDB(db *sql.DB) *apperror.AppError {
 	pragmas := []string{
 		"PRAGMA journal_mode=WAL",
 		"PRAGMA busy_timeout=5000",
