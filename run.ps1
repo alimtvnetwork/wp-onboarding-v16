@@ -28,6 +28,26 @@ if ($rebuild) {
 $ErrorActionPreference = "Stop"
 
 # ============================================================================
+# SELF-LINT CHECK: Validate script syntax before execution
+# ============================================================================
+$scriptFile = $MyInvocation.MyCommand.Path
+if ($scriptFile -and (Test-Path $scriptFile)) {
+    $lintErrors = $null
+    [void][System.Management.Automation.Language.Parser]::ParseFile(
+        $scriptFile, [ref]$null, [ref]$lintErrors
+    )
+    if ($lintErrors -and $lintErrors.Count -gt 0) {
+        Write-Host "SCRIPT LINT FAILED: run.ps1 has parse errors" -ForegroundColor Red
+        foreach ($e in $lintErrors) {
+            Write-Host "  Line $($e.Extent.StartLineNumber): $($e.Message)" -ForegroundColor Yellow
+        }
+        Write-Host ""
+        Write-Host "Common fix: Ensure the file is saved as UTF-8 (no BOM) with straight ASCII quotes." -ForegroundColor Cyan
+        exit 1
+    }
+}
+
+# ============================================================================
 # PATH RESOLUTION: Script location is the working directory
 # ============================================================================
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
