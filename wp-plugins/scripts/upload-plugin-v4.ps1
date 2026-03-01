@@ -41,6 +41,25 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# --- Self-lint: detect parse errors before execution ---
+$_lintScriptFile = $MyInvocation.MyCommand.Path
+if ($_lintScriptFile -and (Test-Path $_lintScriptFile)) {
+    $_lintErrors = $null
+    [void][System.Management.Automation.Language.Parser]::ParseFile(
+        $_lintScriptFile, [ref]$null, [ref]$_lintErrors
+    )
+    if ($_lintErrors -and $_lintErrors.Count -gt 0) {
+        $scriptName = Split-Path $_lintScriptFile -Leaf
+        Write-Host "LINT FAILED: $scriptName has parse errors" -ForegroundColor Red
+        foreach ($e in $_lintErrors) {
+            Write-Host "  Line $($e.Extent.StartLineNumber): $($e.Message)" -ForegroundColor Yellow
+        }
+        Write-Host "Fix: Ensure UTF-8 (no BOM) encoding with straight ASCII quotes." -ForegroundColor Cyan
+        exit 1
+    }
+}
+
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # ============================================================================
