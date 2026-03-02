@@ -278,6 +278,11 @@ trait UploadInstallExtractTrait
 
         $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
+        // Use the correct diagnostics key based on the failure phase
+        $diagnosticsKey = $reason->isHealthCheckError() || $reason === SelfUpdateStatusType::HealthCheckFailed
+            ? ResponseKeyType::HealthCheck->value
+            : ResponseKeyType::Validation->value;
+
         return EnvelopeBuilder::error($reason->label(), HttpStatusType::ServerError->value)
             ->setRequestedAt($requestedAt)
             ->setSingleResult(array(
@@ -288,7 +293,7 @@ trait UploadInstallExtractTrait
                     ResponseKeyType::RollbackSuccess->value   => $rolledBack,
                     ResponseKeyType::RestoredVersion->value   => $restoredVersion,
                 ),
-                ResponseKeyType::Validation->value => $diagnostics,
+                $diagnosticsKey => $diagnostics,
             ))
             ->toResponse();
     }
