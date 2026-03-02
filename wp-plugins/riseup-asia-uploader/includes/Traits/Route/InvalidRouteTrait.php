@@ -59,11 +59,11 @@ trait InvalidRouteTrait
     private function formatBacktraceLines(array $backtrace): array {
         $lines = array();
         foreach ($backtrace as $i => $frame) {
-            $file  = isset($frame['file']) ? basename($frame['file']) : '[internal]';
-            $line  = isset($frame['line']) ? $frame['line'] : '?';
-            $func  = isset($frame['function']) ? $frame['function'] : '';
+            $file  = $frame['file'] ?? '[internal]';
+            $line  = $frame['line'] ?? '?';
+            $func  = $frame['function'] ?? '';
             $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
-            $lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
+            $lines[] = "#{$i} " . basename($file) . "({$line}): {$class}{$func}()";
         }
 
         return $lines;
@@ -72,9 +72,9 @@ trait InvalidRouteTrait
     private function formatFramesSummary(array $frames): array {
 
         return array_map(function($f) {
-            $file = isset($f['fileBase']) ? $f['fileBase'] : '';
-            $line = isset($f['line']) ? $f['line'] : 0;
-            $fn   = isset($f['function']) ? $f['function'] : '';
+            $file = $f['fileBase'] ?? '';
+            $line = $f['line'] ?? 0;
+            $fn   = $f['function'] ?? '';
             $cls  = isset($f['class']) ? $f['class'] . '::' : '';
 
             return "{$file}:{$line} {$cls}{$fn}";
