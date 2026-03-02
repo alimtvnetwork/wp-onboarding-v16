@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotScopeType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait AnalyzerQueryTrait {
     /**
@@ -140,7 +140,7 @@ trait AnalyzerQueryTrait {
         $context = array(),
     ) {
         $full = '[SNAPSHOT] [DEPENDENCY] ' . $message;
-        if (BooleanHelpers::hasValue($context)) {
+        if (!empty($context)) {
             $full .= ' ' . json_encode($context);
         }
 

@@ -19,7 +19,7 @@ use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreValidationTrait {
@@ -82,7 +82,7 @@ trait ManagerRestoreValidationTrait {
 
         $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', array(ResponseKeyType::Error->value => $backupResult[ResponseKeyType::Error->value]));
 
-        if (BooleanHelpers::hasValue($options['require_backup'])) {
+        if (!empty($options['require_backup'])) {
             return ResultHelper::error('Pre-restore backup failed: ' . $backupResult[ResponseKeyType::Error->value]);
         }
 
@@ -93,7 +93,7 @@ trait ManagerRestoreValidationTrait {
         $allTables = json_decode($snapshot['tables_json'], true);
         $mode = $options['mode'] ?? RestoreModeType::Full->value;
 
-        $isSelective = ($mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($options['tables']));
+        $isSelective = ($mode === RestoreModeType::Selective->value && !empty($options['tables']));
 
         if ($isSelective) {
             return array_intersect($allTables, $options['tables']);

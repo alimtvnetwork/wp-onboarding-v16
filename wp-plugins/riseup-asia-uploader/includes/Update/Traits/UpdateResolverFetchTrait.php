@@ -18,7 +18,7 @@ use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\HttpHeaderType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait UpdateResolverFetchTrait {
 
@@ -82,7 +82,7 @@ trait UpdateResolverFetchTrait {
         bool $forceCheck,
         WP_Error $error,
     ) {
-        $isRetryable = ($forceCheck === false) && BooleanHelpers::hasValue($settings['resolved_url'] ?? null);
+        $isRetryable = ($forceCheck === false) && !empty($settings['resolved_url'] ?? null);
 
         if ($isRetryable) {
             $this->fileLogger->info('Cached URL failed, resolving fresh');
@@ -104,7 +104,7 @@ trait UpdateResolverFetchTrait {
         $errorMsg = "HTTP $statusCode from update server";
         $this->fileLogger->error('Update server error', array('status' => $statusCode));
 
-        $isRetryable = ($forceCheck === false) && BooleanHelpers::hasValue($settings['resolved_url'] ?? null);
+        $isRetryable = ($forceCheck === false) && !empty($settings['resolved_url'] ?? null);
 
         if ($isRetryable) {
             $this->fileLogger->info('Cached URL returned error, resolving fresh');

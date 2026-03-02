@@ -222,7 +222,7 @@ trait OrchestratorBackupTrait {
     }
 
     private function resolveMasterDir(array $options, object $incremental): ?string {
-        $hasMasterSnapshotId = BooleanHelpers::hasValue($options[ResponseKeyType::MasterSnapshotId->value] ?? null);
+        $hasMasterSnapshotId = !empty($options[ResponseKeyType::MasterSnapshotId->value] ?? null);
 
         if ($hasMasterSnapshotId) {
             $pdo = $this->db->getPdo();

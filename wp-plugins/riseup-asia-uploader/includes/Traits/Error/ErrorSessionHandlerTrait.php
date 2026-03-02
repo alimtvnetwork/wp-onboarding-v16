@@ -71,11 +71,11 @@ trait ErrorSessionHandlerTrait {
 
         $where  = array();
         $params = array();
-        if (BooleanHelpers::hasValue($level))  { $where[] = 'Level = ?';      $params[] = strtoupper($level); }
-        if (BooleanHelpers::hasValue($search)) { $where[] = 'Message LIKE ?'; $params[] = '%' . $search . '%'; }
+        if (!empty($level))  { $where[] = 'Level = ?';      $params[] = strtoupper($level); }
+        if (!empty($search)) { $where[] = 'Message LIKE ?'; $params[] = '%' . $search . '%'; }
         if ($sinceId > 0)   { $where[] = 'Id > ?';         $params[] = $sinceId; }
 
-        $hasWhereClause = BooleanHelpers::hasValue($where);
+        $hasWhereClause = !empty($where);
         return array(
             'whereSql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
             'params' => $params, 'limit' => $limit, 'offset' => $offset,
@@ -110,7 +110,7 @@ trait ErrorSessionHandlerTrait {
                 'line' => $row['Line'] ? (int) $row['Line'] : null, 'stackTrace' => $row['StackTrace'],
                 'context' => $this->parseContextJson($row['ContextJson'] ?? ''), 'createdAt' => $row['CreatedAt'],
             );
-            if (BooleanHelpers::hasValue($row['StackTrace'])) {
+            if (!empty($row['StackTrace'])) {
                 $entry['stackTraceFrames'] = $this->parseStackTraceString($row['StackTrace']);
             }
             $entries[] = $entry;

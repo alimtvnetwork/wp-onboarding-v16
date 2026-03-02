@@ -38,7 +38,7 @@ trait UploadZipTrait
             return $detectedSlug;
         }
 
-        $hasSlug = BooleanHelpers::hasValue($slug);
+        $hasSlug = !empty($slug);
         $finalSlug = $hasSlug ? $slug : $detectedSlug;
         $this->fileLogger->info('Plugin slug determined', array('slug' => $finalSlug));
 

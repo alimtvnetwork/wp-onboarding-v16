@@ -26,7 +26,7 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\SnapshotOrchestrator;
 use RiseupAsia\Snapshot\RestoreEngine;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait SnapshotCrudRestoreTrait {
 
@@ -79,9 +79,9 @@ trait SnapshotCrudRestoreTrait {
     }
 
     private function parseRestoreOptions(array $body): array {
-        $hasConfirm = BooleanHelpers::hasValue($body[ResponseKeyType::Confirm->value] ?? null);
-        $hasRequireBackup = BooleanHelpers::hasValue($body[ResponseKeyType::RequireBackup->value] ?? null);
-        $hasStrict = BooleanHelpers::hasValue($body[ResponseKeyType::Strict->value] ?? null);
+        $hasConfirm = !empty($body[ResponseKeyType::Confirm->value] ?? null);
+        $hasRequireBackup = !empty($body[ResponseKeyType::RequireBackup->value] ?? null);
+        $hasStrict = !empty($body[ResponseKeyType::Strict->value] ?? null);
 
         return array(
             ResponseKeyType::Confirm->value            => $hasConfirm,
@@ -128,7 +128,7 @@ trait SnapshotCrudRestoreTrait {
         }
 
         $dir = $snapshot[ResponseKeyType::Directory->value] ?? '';
-        $hasDirWithRootDb = BooleanHelpers::hasValue($dir) && is_dir($dir);
+        $hasDirWithRootDb = !empty($dir) && is_dir($dir);
 
         if ($hasDirWithRootDb) {
             return file_exists($dir . '/' . SnapshotConfigType::RootDbFilename);
@@ -145,13 +145,13 @@ trait SnapshotCrudRestoreTrait {
         }
 
         $dir = $snapshot[ResponseKeyType::Directory->value] ?? '';
-        $hasValidDir = BooleanHelpers::hasValue($dir) && is_dir($dir);
+        $hasValidDir = !empty($dir) && is_dir($dir);
 
         if ($hasValidDir) {
             return $dir;
         }
 
-        $hasFilepathWithRootDb = BooleanHelpers::hasValue($filepath) && file_exists(dirname($filepath) . '/' . SnapshotConfigType::RootDbFilename);
+        $hasFilepathWithRootDb = !empty($filepath) && file_exists(dirname($filepath) . '/' . SnapshotConfigType::RootDbFilename);
 
         if ($hasFilepathWithRootDb) {
             return dirname($filepath);

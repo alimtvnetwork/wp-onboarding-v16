@@ -139,7 +139,7 @@ trait LoggerWriteTrait {
         string $stackTrace,
     ): void {
         $now = DateHelper::nowUtc();
-        $hasContext = BooleanHelpers::hasValue($context);
+        $hasContext = !empty($context);
         $contextJson = $hasContext ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 
         $stmt = $pdo->prepare(

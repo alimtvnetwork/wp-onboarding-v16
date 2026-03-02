@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\HookType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait AdminNoticesTrait {
 
@@ -32,7 +32,7 @@ trait AdminNoticesTrait {
      */
     public function renderBootDiagnosticsNotice(): void {
         $diagnostics = get_transient(self::DIAGNOSTICS_TRANSIENT);
-        $hasDiagnostics = BooleanHelpers::hasValue($diagnostics);
+        $hasDiagnostics = !empty($diagnostics);
         $isDiagnosticsMissing = !$hasDiagnostics;
 
         if ($isDiagnosticsMissing) {

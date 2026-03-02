@@ -25,7 +25,7 @@ use RiseupAsia\Snapshot\Traits\CleanerHelperTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use RiseupAsia\Helpers\ResultHelper;
 
 class SnapshotCleaner {
@@ -45,7 +45,7 @@ class SnapshotCleaner {
 
     public function execute(array $options = array()): array {
         $start = microtime(true);
-        $isDryRun = BooleanHelpers::hasValue($options[ResponseKeyType::DryRun->value] ?? null);
+        $isDryRun = !empty($options[ResponseKeyType::DryRun->value] ?? null);
 
         $results = ResultHelper::ok(array(
             ResponseKeyType::Retention->value       => array(

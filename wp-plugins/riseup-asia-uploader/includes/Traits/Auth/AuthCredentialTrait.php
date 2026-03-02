@@ -26,15 +26,15 @@ trait AuthCredentialTrait
 {
     private function resolveAuthHeader(WP_REST_Request $request): ?string {
         $authHeader = $request->get_header('Authorization');
-        if (BooleanHelpers::hasValue($authHeader)) {
+        if (!empty($authHeader)) {
             return $authHeader;
         }
 
-        if (BooleanHelpers::hasValue($_SERVER['HTTP_AUTHORIZATION'] ?? null)) {
+        if (!empty($_SERVER['HTTP_AUTHORIZATION'] ?? null)) {
             return $_SERVER['HTTP_AUTHORIZATION'];
         }
 
-        if (BooleanHelpers::hasValue($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null)) {
+        if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null)) {
             return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }
 

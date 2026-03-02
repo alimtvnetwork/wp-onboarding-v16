@@ -18,7 +18,7 @@ use RiseupAsia\Database\Orm;
 
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use RiseupAsia\Helpers\DateHelper;
 
 trait DatabaseQueryLogTrait {
@@ -88,7 +88,7 @@ trait DatabaseQueryLogTrait {
         string $status,
         ?string $errorMsg,
     ) {
-        $hasDetails = BooleanHelpers::hasValue($details);
+        $hasDetails = !empty($details);
         $detailsJson = $hasDetails ? json_encode($details) : null;
 
         return Orm::forTable(TableType::Transactions->value)
@@ -115,14 +115,14 @@ trait DatabaseQueryLogTrait {
         );
 
         foreach ($fieldMap as $paramKey => $dbColumn) {
-            $hasField = BooleanHelpers::hasValue($enhanced[$paramKey] ?? null);
+            $hasField = !empty($enhanced[$paramKey] ?? null);
 
             if ($hasField) {
                 $record->set($dbColumn, $enhanced[$paramKey]);
             }
         }
 
-        $hasAgentSiteId = BooleanHelpers::hasValue($enhanced['agentSiteId'] ?? null);
+        $hasAgentSiteId = !empty($enhanced['agentSiteId'] ?? null);
 
         if ($hasAgentSiteId) {
             $record->set('AgentSiteId', (int) $enhanced['agentSiteId']);
@@ -166,7 +166,7 @@ trait DatabaseQueryLogTrait {
             $log = Orm::forTable(TableType::Transactions->value)
                 ->findOne($id);
 
-            $hasLogDetails = $log && BooleanHelpers::hasValue($log['Details'] ?? null);
+            $hasLogDetails = $log && !empty($log['Details'] ?? null);
 
             if ($hasLogDetails) {
                 $log['Details'] = json_decode($log['Details'], true);

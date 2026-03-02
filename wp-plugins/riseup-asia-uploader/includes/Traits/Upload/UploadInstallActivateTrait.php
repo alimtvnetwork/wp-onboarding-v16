@@ -19,7 +19,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait UploadInstallActivateTrait
 {
@@ -30,7 +30,7 @@ trait UploadInstallActivateTrait
         }
 
         $pluginFile = $this->findPluginFile($slug);
-        $hasPluginFile = BooleanHelpers::hasValue($pluginFile);
+        $hasPluginFile = !empty($pluginFile);
 
         if ($hasPluginFile) {
             $this->invalidatePluginCache($pluginFile, $slug);

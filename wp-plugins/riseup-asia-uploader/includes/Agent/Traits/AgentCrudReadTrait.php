@@ -129,7 +129,7 @@ trait AgentCrudReadTrait {
             $params[] = $filters[FilterKeyType::Status->value];
         }
 
-        $hasConditions = BooleanHelpers::hasValue($conditions);
+        $hasConditions = !empty($conditions);
 
         return [
             ResponseKeyType::Sql->value    => $hasConditions ? 'WHERE ' . implode(' AND ', $conditions) : '',

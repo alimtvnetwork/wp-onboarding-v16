@@ -80,7 +80,7 @@ trait RestoreIncrementalTrait {
             $result = $this->applySingleIncremental($inc, $snapshotDir, $restoreOrder);
             $totalRows += $result[ResponseKeyType::Rows->value];
             $applied++;
-            $hasErrors = BooleanHelpers::hasValue($result[ResponseKeyType::Errors->value]);
+            $hasErrors = !empty($result[ResponseKeyType::Errors->value]);
 
             if ($hasErrors) {
                 $errors = array_merge($errors, $result[ResponseKeyType::Errors->value]);

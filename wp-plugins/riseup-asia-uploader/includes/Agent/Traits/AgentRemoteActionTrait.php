@@ -106,7 +106,7 @@ trait AgentRemoteActionTrait {
         ));
 
         $location = wp_remote_retrieve_header($response, HttpHeaderType::Location->value);
-        $hasNoLocation = !BooleanHelpers::hasValue($location);
+        $hasNoLocation = empty($location);
 
         if ($hasNoLocation) {
             return null;

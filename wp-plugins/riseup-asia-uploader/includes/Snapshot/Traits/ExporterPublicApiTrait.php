@@ -22,7 +22,7 @@ use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ExporterPublicApiTrait {
@@ -115,7 +115,7 @@ trait ExporterPublicApiTrait {
         $exports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($exports as $export) {
-            $hasZipPath = (BooleanHelpers::hasValue($export['ZipPath']) && file_exists($export['ZipPath']));
+            $hasZipPath = (!empty($export['ZipPath']) && file_exists($export['ZipPath']));
 
             if ($hasZipPath) {
                 @unlink($export['ZipPath']);

@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use RiseupAsia\Helpers\ResultHelper;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
@@ -35,14 +35,14 @@ trait PostQueryTrait {
                 'order'          => 'DESC',
             );
 
-            $hasStatus = BooleanHelpers::hasValue($params['status'] ?? null);
+            $hasStatus = !empty($params['status'] ?? null);
             if ($hasStatus) {
                 $args['post_status'] = $this->validatePostStatus($params['status']);
             } else {
                 $args['post_status'] = PostStatusType::validValues();
             }
 
-            $hasSearch = BooleanHelpers::hasValue($params['search'] ?? null);
+            $hasSearch = !empty($params['search'] ?? null);
             if ($hasSearch) {
                 $args['s'] = sanitize_text_field($params['search']);
             }
