@@ -105,7 +105,7 @@ func FindOrCreate(
 				Table:     ctx.Table,
 				Operation: "FIND",
 				Id:        id,
-				Exists:    true,
+				IsExists:  true,
 			})
 			ctx.Logger.Debug("Record found (exists)", fields.toKeyvals()...)
 		}
@@ -153,7 +153,7 @@ func FindOrCreate(
 				Table:     ctx.Table,
 				Operation: "FIND_AFTER_RACE",
 				Id:        id,
-				Exists:    true,
+				IsExists:  true,
 			})
 			ctx.Logger.Debug("Record found after race condition", fields.toKeyvals()...)
 		}
@@ -193,7 +193,7 @@ func CreateMapping(
 				fields := mergeFields(ctx.Fields, OperationFields{
 					Table:     ctx.Table,
 					Operation: "INSERT_MAPPING",
-					Exists:    true,
+				IsExists:  true,
 					Note:      "Mapping already exists (constraint)",
 				})
 				ctx.Logger.Debug("Mapping exists", fields.toKeyvals()...)
@@ -219,7 +219,7 @@ func CreateMapping(
 				Operation:    "INSERT_MAPPING",
 				AffectedRows: rows,
 				Id:           id,
-				Created:      true,
+				IsCreated:    true,
 			})
 			ctx.Logger.Info("Mapping CREATED", fields.toKeyvals()...)
 		}
@@ -230,7 +230,7 @@ func CreateMapping(
 			fields := mergeFields(ctx.Fields, OperationFields{
 				Table:     ctx.Table,
 				Operation: "INSERT_MAPPING",
-				Exists:    true,
+				IsExists:  true,
 				Note:      "Mapping already exists (INSERT OR IGNORE)",
 			})
 			ctx.Logger.Debug("Mapping EXISTS", fields.toKeyvals()...)

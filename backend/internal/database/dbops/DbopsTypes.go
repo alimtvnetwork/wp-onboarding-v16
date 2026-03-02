@@ -186,12 +186,12 @@ func (f OperationFields) toKeyvals() []any {
 		kv = append(kv, "id", f.Id)
 	}
 
-	if f.Created {
-		kv = append(kv, "created", f.Created)
+	if f.IsCreated {
+		kv = append(kv, "created", f.IsCreated)
 	}
 
-	if f.Exists {
-		kv = append(kv, "exists", f.Exists)
+	if f.IsExists {
+		kv = append(kv, "exists", f.IsExists)
 	}
 
 	hasLastInsertId := f.LastInsertId != 0

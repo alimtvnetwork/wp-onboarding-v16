@@ -25,11 +25,11 @@ func logSuccess(ctx Context, res *Result) {
 		fields.LastInsertId = res.LastInsertId
 	}
 
-	if res.IsCreated {
+	if res.Created {
 		fields.IsCreated = true
 	}
 
-	if res.IsExists {
+	if res.Exists {
 		fields.IsExists = true
 	}
 

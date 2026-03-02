@@ -49,22 +49,19 @@ func (s *Service) readLogFileOrLegacy(sessionId, logPath string) apperror.Result
 	if os.IsNotExist(err) {
 		return s.readLegacySessionLog(sessionId)
 	}
-	return apperror.FailWrap[string](err, apperror.ErrFSRead, "read session log").
-		WithValue("sessionId", sessionId)
+	return apperror.FailWrap[string](err, apperror.ErrFSRead, "read session log: "+sessionId)
 }
 
 // readLegacySessionLog attempts to read a legacy flat-file session log.
 func (s *Service) readLegacySessionLog(sessionId string) apperror.Result[string] {
 	legacyPath, legacyErr := pathutil.Join(s.sessionsDir, sessionId+".log")
 	if legacyErr != nil {
-		return apperror.FailNew[string](apperror.ErrNotFound, "session not found").
-			WithValue("sessionId", sessionId)
+		return apperror.FailNew[string](apperror.ErrNotFound, "session not found: "+sessionId)
 	}
 
 	data, err := os.ReadFile(legacyPath)
 	if err != nil {
-		return apperror.FailNew[string](apperror.ErrNotFound, "session not found").
-			WithValue("sessionId", sessionId)
+		return apperror.FailNew[string](apperror.ErrNotFound, "session not found: "+sessionId)
 	}
 	return apperror.Ok(string(data))
 }

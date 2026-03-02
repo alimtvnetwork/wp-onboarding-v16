@@ -4,7 +4,6 @@ package e2e
 import (
 	"database/sql"
 	"sync"
-	"time"
 
 	"wp-plugin-publish/pkg/apperror"
 )
