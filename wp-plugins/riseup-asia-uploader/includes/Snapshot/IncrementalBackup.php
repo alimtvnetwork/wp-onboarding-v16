@@ -171,7 +171,7 @@ class IncrementalBackup {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [INCREMENTAL] ' . $message;
-        $hasContext = BooleanHelpers::hasValue($context);
+        $hasContext = !empty($context);
 
         if ($hasContext) {
             $full .= ' ' . json_encode($context);

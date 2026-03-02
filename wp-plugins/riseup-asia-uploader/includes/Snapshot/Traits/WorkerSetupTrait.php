@@ -20,7 +20,6 @@ use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerSetupTrait {
@@ -29,7 +28,7 @@ trait WorkerSetupTrait {
         $scope = $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value;
         $type  = $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value;
 
-        $hasPoolSize = BooleanHelpers::hasValue($config[ResponseKeyType::Settings->value]['worker_pool_size'] ?? null);
+        $hasPoolSize = !empty($config[ResponseKeyType::Settings->value]['worker_pool_size'] ?? null);
 
         if ($hasPoolSize) {
             $this->setPoolSize($config[ResponseKeyType::Settings->value]['worker_pool_size']);
@@ -95,7 +94,7 @@ trait WorkerSetupTrait {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [WORKER] ' . $message;
-        $hasContext = BooleanHelpers::hasValue($context);
+        $hasContext = !empty($context);
 
         if ($hasContext) {
             $full .= ' ' . json_encode($context);
