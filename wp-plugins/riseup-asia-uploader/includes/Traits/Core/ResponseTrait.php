@@ -79,7 +79,8 @@ trait ResponseTrait {
             return;
         }
 
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
+        $maxDepth = $this->fileLogger->getStackTraceDepth();
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $maxDepth > 0 ? $maxDepth : 15);
         $this->fileLogger->error('Error response', array(
             'message'    => $message,
             'status'     => $status,

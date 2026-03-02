@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Logging\FileLogger;
 
 trait EnvelopeFactoryTrait {
     public static function success(string $message = 'OK', int $code = HttpStatusType::Ok->value): static {
@@ -68,7 +69,8 @@ trait EnvelopeFactoryTrait {
     }
 
     private static function buildBacktraceErrors(array $errors): array {
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
+        $depth = class_exists(FileLogger::class, false) ? FileLogger::getInstance()->getStackTraceDepth() : 15;
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $depth > 0 ? $depth : 15);
 
         if (class_exists(FrameBuilder::class)) {
             $frames = FrameBuilder::backtraceToFrames($backtrace);
