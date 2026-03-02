@@ -9,7 +9,7 @@ import (
 
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/dbutil"
-	"wp-plugin-publish/pkg/wordpress"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // RemotePlugin represents a plugin installed on a remote WordPress site
