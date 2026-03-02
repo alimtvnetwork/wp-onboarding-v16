@@ -33,7 +33,7 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 			return apperror.Wrap(seedErr, apperror.ErrConfigSeed, "seed from config")
 		}
 
-		seedErr := db.SetSeedVersion(cfg.Version)
+		seedErr = db.SetSeedVersion(cfg.Version)
 		if seedErr != nil {
 			log.Error("Failed to update seed version", "error", seedErr)
 			return seedErr

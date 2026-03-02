@@ -7,6 +7,7 @@ import (
 	"io"
 	"path/filepath"
 
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 )

@@ -2,7 +2,7 @@ package wordpress
 
 import (
 	"bytes"
-	"encoding/json"
+	"bytes"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/pkg/apperror"
