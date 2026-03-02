@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\ErrorHandling\BootErrorCollector;
 use RiseupAsia\Logging\FileLogger;
 
@@ -23,7 +24,7 @@ class SelfUpdateHealthCheck
 {
     private FileLogger $fileLogger;
 
-    /** @var array<string> Collected health check warnings/errors. */
+    /** @var array<int, array{code: string, message: string}> Collected health check issues. */
     private array $issues = array();
 
     public function __construct(FileLogger $fileLogger)
@@ -65,7 +66,7 @@ class SelfUpdateHealthCheck
     /**
      * Get structured diagnostics for REST API responses.
      *
-     * @return array{healthy: bool, issueCount: int, issues: array<string>, bootErrors: array}
+     * @return array{healthy: bool, issueCount: int, issues: array<int, array{code: string, message: string}>, bootErrors: array}
      */
     public function getDiagnostics(): array
     {
@@ -99,7 +100,7 @@ class SelfUpdateHealthCheck
         $errors = $collector->getErrors();
 
         foreach ($errors as $error) {
-            $this->issues[] = 'Boot error [' . $error['context'] . ']: ' . $error['message'];
+            $this->addIssue(SelfUpdateStatusType::BootErrorDetected, 'Boot error [' . $error['context'] . ']: ' . $error['message']);
         }
 
         $this->fileLogger->warn('BootErrorCollector has errors after activation', array(
@@ -122,7 +123,7 @@ class SelfUpdateHealthCheck
 
         foreach ($criticalClasses as $className) {
             if (class_exists($className, false) === false) {
-                $this->issues[] = 'Critical class not loaded after activation: ' . $className;
+                $this->addIssue(SelfUpdateStatusType::CriticalClassMissing, 'Critical class not loaded after activation: ' . $className);
             }
         }
     }
@@ -135,7 +136,18 @@ class SelfUpdateHealthCheck
         $hasRestRoutes = has_action('rest_api_init');
 
         if ($hasRestRoutes === false) {
-            $this->issues[] = 'rest_api_init hook has no registered handlers after activation';
+            $this->addIssue(SelfUpdateStatusType::RestHookMissing, 'rest_api_init hook has no registered handlers after activation');
         }
+    }
+
+    /**
+     * Record a typed health check issue.
+     */
+    private function addIssue(SelfUpdateStatusType $code, string $message): void
+    {
+        $this->issues[] = array(
+            'code'    => $code->value,
+            'message' => $message,
+        );
     }
 }
