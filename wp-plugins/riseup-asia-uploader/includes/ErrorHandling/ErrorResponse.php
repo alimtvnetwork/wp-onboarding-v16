@@ -40,7 +40,7 @@ class ErrorResponse {
         string $context = '',
         int $skipFrames = 1,
     ): array {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, max($skipFrames + 5, 10));
         $frame = $trace[$skipFrames] ?? $trace[0];
         $file = $frame['file'] ?? $e->getFile();
         $line = $frame['line'] ?? $e->getLine();
