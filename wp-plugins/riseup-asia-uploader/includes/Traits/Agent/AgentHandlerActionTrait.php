@@ -58,6 +58,29 @@ trait AgentHandlerActionTrait {
         }, 'sync_agent');
     }
 
+    /** Handle listing plugins from agent (read-only, no sync side-effects). */
+    public function handleAgentPlugins(WP_REST_Request $request): WP_REST_Response {
+        return $this->safeExecute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $this->fileLogger->info('Listing plugins from agent', array('id' => $id));
+            $manager = AgentManager::getInstance();
+            $result = $manager->getAgentPlugins($id);
+
+            if (is_wp_error($result)) {
+                return $this->errorResponse($result->get_error_message(), HttpStatusType::BadRequest->value);
+            }
+
+            return new WP_REST_Response(
+                array(
+                    ResponseKeyType::Success->value => true,
+                    ResponseKeyType::Plugins->value => $result,
+                    ResponseKeyType::Count->value   => count($result),
+                ),
+                HttpStatusType::Ok->value,
+            );
+        }, 'agent_plugins');
+    }
+
     /** Handle executing action on agent plugin. */
     public function handleAgentAction(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {

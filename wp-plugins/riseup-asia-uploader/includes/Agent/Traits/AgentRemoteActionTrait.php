@@ -213,6 +213,29 @@ trait AgentRemoteActionTrait {
         return $plugins;
     }
 
+    /**
+     * Fetch plugins from agent without sync side-effects (no status update, no action log).
+     *
+     * @since 2.1.0
+     */
+    public function getAgentPlugins(int $agentId): array|WP_Error {
+        $this->fileLogger->info('Fetching plugins from agent (read-only)', array('id' => $agentId));
+
+        $result = $this->apiRequest(
+            $agentId,
+            HttpMethodType::Get->value,
+            PluginConfigType::apiFullNamespace() . '/' . EndpointType::Plugins->value,
+        );
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return isset($result[ResponseKeyType::Plugins->value])
+            ? $result[ResponseKeyType::Plugins->value]
+            : $result;
+    }
+
     public function executePluginAction(
         int $agentId,
         string $action,
