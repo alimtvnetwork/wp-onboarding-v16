@@ -1,4 +1,14 @@
 <?php
+/**
+ * FatalErrorHandler — Detects fatal PHP errors during REST requests and emits structured JSON.
+ *
+ * Registers a shutdown function to catch fatal errors and return proper JSON
+ * error responses instead of blank pages or HTML error output.
+ *
+ * @package RiseupAsia\ErrorHandling
+ * @since   1.57.0
+ */
+
 namespace RiseupAsia\ErrorHandling;
 
 if (!defined('ABSPATH')) {
@@ -11,6 +21,7 @@ use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\PathHelper;
 
 /**
  * Detects fatal PHP errors during REST requests and emits structured JSON responses.
@@ -50,9 +61,9 @@ class FatalErrorHandler
     public static function handle(): void {
         $error = error_get_last();
 
-        $isNonFatalRestError = (self::isFatalRestError($error) === false);
+        $isFatalRestError = self::isFatalRestError($error);
 
-        if ($isNonFatalRestError) {
+        if (!$isFatalRestError) {
             return;
         }
 
@@ -67,9 +78,15 @@ class FatalErrorHandler
         }
 
         $isFatalType = in_array($error['type'], self::FATAL_TYPES, true);
-        $isNonFatalType = ($isFatalType === false);
 
-        if ($isNonFatalType) {
+        if (!$isFatalType) {
+            return false;
+        }
+
+        // Guard: CLI context has no REQUEST_URI — skip REST detection
+        $isCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server');
+
+        if ($isCli) {
             return false;
         }
 
@@ -111,10 +128,8 @@ class FatalErrorHandler
             $error['message'],
             self::errorTypeToString($error['type']),
         );
-        $uploads = wp_upload_dir();
-        $logFile = $uploads['basedir']
-            . '/' . PluginConfigType::Slug->value
-            . PathLogFileType::FatalError->value;
+
+        $logFile = PathHelper::getLogsDir() . PathLogFileType::FatalError->value;
 
         @file_put_contents(
             $logFile,
@@ -168,4 +183,9 @@ class FatalErrorHandler
     }
 }
 
-register_shutdown_function([FatalErrorHandler::class, 'handle']);
+// Guard: Only register shutdown handler in web context (not CLI)
+$isWebContext = (PHP_SAPI !== 'cli' && PHP_SAPI !== 'cli-server');
+
+if ($isWebContext) {
+    register_shutdown_function([FatalErrorHandler::class, 'handle']);
+}
