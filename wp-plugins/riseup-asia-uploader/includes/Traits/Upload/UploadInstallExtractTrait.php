@@ -281,14 +281,14 @@ trait UploadInstallExtractTrait
         return EnvelopeBuilder::error($reason->label(), HttpStatusType::ServerError->value)
             ->setRequestedAt($requestedAt)
             ->setSingleResult(array(
-                'selfUpdateStatus' => $outcome->value,
-                'rollbackReason'   => $reason->value,
+                ResponseKeyType::SelfUpdateStatus->value => $outcome->value,
+                ResponseKeyType::RollbackReason->value   => $reason->value,
                 'rollback' => array(
-                    'attempted'       => ($backupDir !== null),
-                    'success'         => $rolledBack,
-                    'restoredVersion' => $restoredVersion,
+                    ResponseKeyType::RollbackAttempted->value => ($backupDir !== null),
+                    ResponseKeyType::RollbackSuccess->value   => $rolledBack,
+                    ResponseKeyType::RestoredVersion->value   => $restoredVersion,
                 ),
-                'validation' => $diagnostics,
+                ResponseKeyType::Validation->value => $diagnostics,
             ))
             ->toResponse();
     }

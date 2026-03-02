@@ -21,6 +21,7 @@ use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 
@@ -121,15 +122,25 @@ trait UploadPipelineTrait
     }
 
     private function buildUploadEnvelope(array $result, array $input): WP_REST_Response {
+        $payload = array(
+            ResponseKeyType::PluginSlug->value     => $result[ResponseKeyType::Slug->value],
+            ResponseKeyType::IsUpdate->value       => $result[ResponseKeyType::IsUpdate->value],
+            ResponseKeyType::Activated->value      => $result[ResponseKeyType::Activated->value],
+            ResponseKeyType::PluginVersion->value  => $result[ResponseKeyType::PluginVersion->value],
+            'uploadSource'                         => $input['uploadSource'],
+        );
+
+        // Phase 6: Include self-update success diagnostics
+        $isSelfUpdate = ($result[ResponseKeyType::IsSelfUpdate->value] === true);
+
+        if ($isSelfUpdate) {
+            $payload[ResponseKeyType::SelfUpdateStatus->value] = SelfUpdateStatusType::Success->value;
+            $payload[ResponseKeyType::IsSelfUpdate->value]     = true;
+        }
+
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route())
-            ->setSingleResult(array(
-                ResponseKeyType::PluginSlug->value => $result[ResponseKeyType::Slug->value],
-                ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
-                ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
-                ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
-                'uploadSource' => $input['uploadSource'],
-            ))
+            ->setSingleResult($payload)
             ->toResponse();
     }
 }

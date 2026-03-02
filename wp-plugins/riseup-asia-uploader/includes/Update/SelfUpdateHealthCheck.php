@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\ErrorHandling\BootErrorCollector;
 use RiseupAsia\Logging\FileLogger;
@@ -66,7 +67,7 @@ class SelfUpdateHealthCheck
     /**
      * Get structured diagnostics for REST API responses.
      *
-     * @return array{healthy: bool, issueCount: int, issues: array<int, array{code: string, message: string}>, bootErrors: array}
+     * @return array{Healthy: bool, IssueCount: int, Issues: array<int, array{code: string, message: string}>, BootErrors: array}
      */
     public function getDiagnostics(): array
     {
@@ -79,10 +80,10 @@ class SelfUpdateHealthCheck
         }
 
         return array(
-            'healthy'    => empty($this->issues),
-            'issueCount' => count($this->issues),
-            'issues'     => $this->issues,
-            'bootErrors' => $bootErrors,
+            ResponseKeyType::Healthy->value    => empty($this->issues),
+            ResponseKeyType::IssueCount->value => count($this->issues),
+            ResponseKeyType::Issues->value     => $this->issues,
+            ResponseKeyType::BootErrors->value => $bootErrors,
         );
     }
 
