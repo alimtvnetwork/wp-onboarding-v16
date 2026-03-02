@@ -35,7 +35,7 @@ func Exec(ctx context.Context, db *DB, query string, args ...any) ExecResult {
 	result, err := db.conn.ExecContext(ctx, query, args...)
 	if err != nil {
 		wrapped := apperror.Wrap(err, "E5014", "Exec failed")
-		return ExecResult{err: wrapped, stackTrace: wrapped.StackTrace}
+		return ExecResult{err: wrapped, stackTrace: wrapped.Stack.String()}
 	}
 
 	rows, _ := result.RowsAffected()

@@ -85,7 +85,11 @@ func buildStreamZipAppError(resp *http.Response, downloadUrl string) *apperror.A
 	apiErr := &ApiError{
 		Operation:    operationtype.StreamSnapshotZip.Value(),
 		Method:       httpmethodtype.Get.Value(),
-...
+		Url:          downloadUrl,
+		StatusCode:   resp.StatusCode,
+		ResponseBody: string(bodyBytes),
+	}
+
 	return apperror.Wrap(apiErr, apperror.ErrWPConnection, operationtype.StreamSnapshotZip.Value())
 }
 

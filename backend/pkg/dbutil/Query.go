@@ -24,7 +24,7 @@ func QueryOne[T any](ctx context.Context, db *DB, query string, scan RowScanner[
 	}
 	if err != nil {
 		wrapped := apperror.Wrap(err, "E5010", "QueryOne failed")
-		return NewResultError[T](wrapped, wrapped.StackTrace)
+		return NewResultError[T](wrapped, wrapped.Stack.String())
 	}
 	return NewResult(value)
 }
@@ -34,7 +34,7 @@ func QueryMany[T any](ctx context.Context, db *DB, query string, scan RowsScanne
 	rows, err := db.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		wrapped := apperror.Wrap(err, "E5011", "QueryMany failed")
-		return NewResultSetError[T](wrapped, wrapped.StackTrace)
+		return NewResultSetError[T](wrapped, wrapped.Stack.String())
 	}
 	defer rows.Close()
 
@@ -48,7 +48,7 @@ func collectRows[T any](rows *sql.Rows, scan RowsScanner[T]) ResultSet[T] {
 		item, err := scan(rows)
 		if err != nil {
 			wrapped := apperror.Wrap(err, "E5012", "row scan failed")
-			return NewResultSetError[T](wrapped, wrapped.StackTrace)
+			return NewResultSetError[T](wrapped, wrapped.Stack.String())
 		}
 		items = append(items, item)
 	}
@@ -56,7 +56,7 @@ func collectRows[T any](rows *sql.Rows, scan RowsScanner[T]) ResultSet[T] {
 
 	if rowsErr != nil {
 		wrapped := apperror.Wrap(rowsErr, "E5013", "rows iteration failed")
-		return NewResultSetError[T](wrapped, wrapped.StackTrace)
+		return NewResultSetError[T](wrapped, wrapped.Stack.String())
 	}
 	return NewResultSet(items)
 }
