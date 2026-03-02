@@ -100,6 +100,21 @@ func shouldSkipEntry(filePath string, info os.FileInfo) *error {
 	return &noErr
 }
 
+// applyPluginInfo copies plugin header metadata into the scan result.
+func applyPluginInfo(scan *ScanResult, info *pluginHeaderInfo) {
+	scan.IsValid = true
+	scan.PluginName = info.PluginName
+	scan.Version = info.Version
+	scan.MainFile = info.MainFile
+	scan.Description = info.Description
+	scan.Author = info.Author
+	scan.AuthorUri = info.AuthorUri
+	scan.PluginUri = info.PluginUri
+	scan.TextDomain = info.TextDomain
+	scan.RequiresPhp = info.RequiresPhp
+	scan.RequiresWP = info.RequiresWP
+}
+
 // buildFileInfo creates a FileInfo from path and os.FileInfo.
 func buildFileInfo(relPath string, info os.FileInfo) FileInfo {
 	return FileInfo{

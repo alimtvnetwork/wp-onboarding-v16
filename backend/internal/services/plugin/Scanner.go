@@ -40,10 +40,10 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) apperror.Resul
 
 	applyPluginInfo(&scan, pluginInfo)
 
-	err := s.walkDirectory(path, &scan)
-	if err != nil {
+	walkErr := s.walkDirectory(path, &scan)
+	if walkErr != nil {
 
-		return apperror.FailWrap[ScanResult](err, apperror.ErrDirRead, "failed to scan directory")
+		return apperror.FailWrap[ScanResult](walkErr, apperror.ErrDirRead, "failed to scan directory")
 	}
 
 	s.log.Info("Directory scanned", "path", path, "pluginName", scan.PluginName, "files", scan.FileCount)

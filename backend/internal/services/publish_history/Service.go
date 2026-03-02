@@ -2,7 +2,6 @@
 package publishhistory
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 

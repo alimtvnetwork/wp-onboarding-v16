@@ -27,10 +27,10 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 	if isNewer {
 		log.Info("Seeding database", "from", currentVersion, "to", cfg.Version)
 
-		err = seedFromConfig(db, cfg, log)
-		if err != nil {
-			log.Error("Seeding failed", "error", err)
-			return apperror.Wrap(err, apperror.ErrConfigSeed, "seed from config")
+		seedErr := seedFromConfig(db, cfg, log)
+		if seedErr != nil {
+			log.Error("Seeding failed", "error", seedErr)
+			return apperror.Wrap(seedErr, apperror.ErrConfigSeed, "seed from config")
 		}
 
 		seedErr := db.SetSeedVersion(cfg.Version)
@@ -47,10 +47,10 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 	if cfg.Seed.Enabled {
 		log.Info("Ensuring all plugin→site mappings exist")
 
-		err = ensureMappingsExist(db, cfg, log)
-		if err != nil {
-			log.Error("Mapping verification failed", "error", err)
-			return apperror.Wrap(err, apperror.ErrConfigSeed, "ensure mappings exist")
+		mapErr := ensureMappingsExist(db, cfg, log)
+		if mapErr != nil {
+			log.Error("Mapping verification failed", "error", mapErr)
+			return apperror.Wrap(mapErr, apperror.ErrConfigSeed, "ensure mappings exist")
 		}
 	}
 
