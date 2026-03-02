@@ -17,6 +17,7 @@ use ZipArchive;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Update\SelfUpdateBackupHelper;
 use RiseupAsia\Update\SelfUpdateHealthCheck;
@@ -71,7 +72,7 @@ trait UploadInstallExtractTrait
 
             if ($backupDir === false) {
                 return $this->errorResponse(
-                    'Self-update aborted: failed to create pre-update backup',
+                    SelfUpdateStatusType::BackupCreationFailed->label(),
                     HttpStatusType::ServerError->value,
                 );
             }
@@ -131,7 +132,7 @@ trait UploadInstallExtractTrait
         $extractResult = $this->extractToPluginsDir($ctx[ResponseKeyType::TempFile->value], $ctx[ResponseKeyType::Slug->value], $ctx['targetDir']);
 
         if ($extractResult instanceof WP_REST_Response) {
-            return $this->rollbackIfNeeded($backupDir, $extractResult, 'Extraction failed');
+            return $this->rollbackIfNeeded($backupDir, $extractResult, SelfUpdateStatusType::ExtractionFailed);
         }
 
         // Phase 2: Validate new files before activation (self-update only)
@@ -150,7 +151,7 @@ trait UploadInstallExtractTrait
                 $rollbackResponse = $this->performRollbackAndBuildResponse(
                     $backupDir,
                     $ctx[ResponseKeyType::Slug->value],
-                    'Self-update validation failed',
+                    SelfUpdateStatusType::ValidationFailed,
                     $diagnostics,
                 );
 
@@ -161,13 +162,13 @@ trait UploadInstallExtractTrait
         $pluginFile = $this->resetOpcacheAndFindPlugin($ctx[ResponseKeyType::Slug->value]);
 
         if ($pluginFile instanceof WP_REST_Response) {
-            return $this->rollbackIfNeeded($backupDir, $pluginFile, 'Plugin file not found after extraction');
+            return $this->rollbackIfNeeded($backupDir, $pluginFile, SelfUpdateStatusType::PluginFileNotFound);
         }
 
         $activation = $this->activateIfNeeded($pluginFile, $ctx[ResponseKeyType::Slug->value], $input['activate'], $isPreviouslyActive, $ctx[ResponseKeyType::IsUpdate->value]);
 
         if ($activation instanceof WP_REST_Response) {
-            return $this->rollbackIfNeeded($backupDir, $activation, 'Activation failed');
+            return $this->rollbackIfNeeded($backupDir, $activation, SelfUpdateStatusType::ActivationException);
         }
 
         // Phase 4: Post-activation health check (self-update only)
@@ -189,7 +190,7 @@ trait UploadInstallExtractTrait
                 $rollbackResponse = $this->performRollbackAndBuildResponse(
                     $backupDir,
                     $ctx[ResponseKeyType::Slug->value],
-                    'Post-activation health check failed',
+                    SelfUpdateStatusType::HealthCheckFailed,
                     $diagnostics,
                 );
 
@@ -211,13 +212,16 @@ trait UploadInstallExtractTrait
     /**
      * Attempt rollback from backup if available, then return the original error response.
      */
-    private function rollbackIfNeeded(?string $backupDir, WP_REST_Response $errorResponse, string $reason): WP_REST_Response
+    private function rollbackIfNeeded(?string $backupDir, WP_REST_Response $errorResponse, SelfUpdateStatusType $reason): WP_REST_Response
     {
         if ($backupDir === null) {
             return $errorResponse;
         }
 
-        $this->fileLogger->warn('Triggering self-update rollback', array('reason' => $reason));
+        $this->fileLogger->warn('Triggering self-update rollback', array(
+            'reason'     => $reason->value,
+            'reasonLabel' => $reason->label(),
+        ));
 
         $backupHelper = new SelfUpdateBackupHelper($this->fileLogger);
         $rollbackSuccess = $backupHelper->rollback($backupDir);
@@ -244,11 +248,12 @@ trait UploadInstallExtractTrait
     private function performRollbackAndBuildResponse(
         ?string $backupDir,
         string $slug,
-        string $reason,
+        SelfUpdateStatusType $reason,
         array $diagnostics,
     ): WP_REST_Response {
         $rolledBack = false;
         $restoredVersion = '';
+        $outcome = SelfUpdateStatusType::RollbackFailed;
 
         if ($backupDir !== null) {
             $backupHelper = new SelfUpdateBackupHelper($this->fileLogger);
@@ -256,6 +261,8 @@ trait UploadInstallExtractTrait
             $rolledBack = $backupHelper->rollback($backupDir);
 
             if ($rolledBack) {
+                $outcome = SelfUpdateStatusType::RolledBack;
+
                 $this->fileLogger->info('Self-update rollback succeeded', array(
                     'restoredVersion' => $restoredVersion,
                 ));
@@ -271,9 +278,11 @@ trait UploadInstallExtractTrait
 
         $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
-        return EnvelopeBuilder::error($reason, HttpStatusType::ServerError->value)
+        return EnvelopeBuilder::error($reason->label(), HttpStatusType::ServerError->value)
             ->setRequestedAt($requestedAt)
             ->setSingleResult(array(
+                'selfUpdateStatus' => $outcome->value,
+                'rollbackReason'   => $reason->value,
                 'rollback' => array(
                     'attempted'       => ($backupDir !== null),
                     'success'         => $rolledBack,

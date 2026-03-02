@@ -18,6 +18,7 @@ if (!defined('ABSPATH')) {
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
 use Throwable;
@@ -37,7 +38,7 @@ class SelfUpdateValidator
 
     private FileLogger $fileLogger;
 
-    /** @var array<string> Collected validation errors. */
+    /** @var array<int, array{code: string, message: string}> Collected validation errors. */
     private array $errors = array();
 
     public function __construct(FileLogger $fileLogger)
@@ -59,7 +60,7 @@ class SelfUpdateValidator
         $this->fileLogger->info('Starting self-update validation', array('dir' => $pluginDir));
 
         if (PathHelper::isDirMissing($pluginDir)) {
-            $this->errors[] = 'Plugin directory does not exist: ' . $pluginDir;
+            $this->addError(SelfUpdateStatusType::DirectoryMissing, 'Plugin directory does not exist: ' . $pluginDir);
             $this->fileLogger->error('Self-update validation failed: directory missing', array('dir' => $pluginDir));
 
             return false;
@@ -87,7 +88,7 @@ class SelfUpdateValidator
     /**
      * Get the list of validation errors from the last run.
      *
-     * @return array<string>
+     * @return array<int, array{code: string, message: string}>
      */
     public function getErrors(): array
     {
@@ -97,7 +98,7 @@ class SelfUpdateValidator
     /**
      * Get a structured diagnostics array for REST API responses.
      *
-     * @return array{passed: bool, errorCount: int, errors: array<string>}
+     * @return array{passed: bool, errorCount: int, errors: array<int, array{code: string, message: string}>}
      */
     public function getDiagnostics(): array
     {
@@ -117,7 +118,7 @@ class SelfUpdateValidator
             $fullPath = $pluginDir . '/' . $relativeFile;
 
             if (!file_exists($fullPath)) {
-                $this->errors[] = 'Critical file missing: ' . $relativeFile;
+                $this->addError(SelfUpdateStatusType::CriticalFileMissing, 'Critical file missing: ' . $relativeFile);
                 $this->fileLogger->error('Critical file missing after extraction', array(
                     'file' => $relativeFile,
                     'path' => $fullPath,
@@ -162,7 +163,7 @@ class SelfUpdateValidator
 
         if ($content === false) {
             $relativePath = str_replace($pluginDir . '/', '', $filePath);
-            $this->errors[] = 'Cannot read file: ' . $relativePath;
+            $this->addError(SelfUpdateStatusType::FileUnreadable, 'Cannot read file: ' . $relativePath);
 
             return;
         }
@@ -171,13 +172,24 @@ class SelfUpdateValidator
             @token_get_all($content, TOKEN_PARSE);
         } catch (Throwable $e) {
             $relativePath = str_replace($pluginDir . '/', '', $filePath);
-            $this->errors[] = 'Syntax error in ' . $relativePath . ': ' . $e->getMessage();
+            $this->addError(SelfUpdateStatusType::SyntaxError, 'Syntax error in ' . $relativePath . ': ' . $e->getMessage());
             $this->fileLogger->error('Syntax error detected in new version', array(
                 'file'    => $relativePath,
                 'message' => $e->getMessage(),
                 'line'    => $e->getLine(),
             ));
         }
+    }
+
+    /**
+     * Record a typed validation error.
+     */
+    private function addError(SelfUpdateStatusType $code, string $message): void
+    {
+        $this->errors[] = array(
+            'code'    => $code->value,
+            'message' => $message,
+        );
     }
 
     /**
