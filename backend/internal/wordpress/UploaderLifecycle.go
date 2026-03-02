@@ -32,7 +32,7 @@ type pluginLifecycleInput struct {
 	Slug      string
 	Endpoint  ep.Variant
 	Operation operationtype.Variant
-	ErrorCode string
+	ErrorCode apperror.ErrorCode
 }
 
 // pluginLifecycleAction is the shared implementation for Enable, Disable, and Delete.
