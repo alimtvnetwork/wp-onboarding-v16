@@ -18,7 +18,6 @@ use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
 
 trait OrchestratorHelpersTrait {
     private function buildPhaseError(string $phase, array $result): array {
@@ -82,7 +81,7 @@ trait OrchestratorHelpersTrait {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [ORCHESTRATOR] ' . $message;
-        $hasContext = BooleanHelpers::hasValue($context);
+        $hasContext = !empty($context);
 
         if ($hasContext) {
             $full .= ' ' . json_encode($context);

@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
-use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AnalyzerGraphTrait {
     /** Build adjacency list from dependency edges. */
@@ -60,7 +59,7 @@ trait AnalyzerGraphTrait {
         sort($queue);
 
         $sorted = array();
-        while (BooleanHelpers::hasValue($queue)) {
+        while (!empty($queue)) {
             $current = array_shift($queue);
             $sorted[] = $current;
 

@@ -29,7 +29,7 @@ trait LoggerFormatTrait {
 
         $entry = sprintf("[%s] [%s] %s (%s:%d)", $timestamp, $level, $message, $basename, $line);
 
-        if (BooleanHelpers::hasValue($context)) {
+        if (!empty($context)) {
             $entry .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES);
         }
 
@@ -123,7 +123,7 @@ trait LoggerFormatTrait {
         }
 
         $chain = $this->buildInvocationChain($trace);
-        if (BooleanHelpers::hasValue($chain)) {
+        if (!empty($chain)) {
             $context['_invocation_chain'] = $chain;
         }
 
@@ -140,7 +140,7 @@ trait LoggerFormatTrait {
             }
 
             $entry = $this->extractChainEntry($frame);
-            if (BooleanHelpers::hasValue($entry)) {
+            if (!empty($entry)) {
                 $chain[] = $entry;
             }
         }

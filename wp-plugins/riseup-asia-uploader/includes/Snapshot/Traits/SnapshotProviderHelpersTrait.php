@@ -16,7 +16,6 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SnapshotProviderHelpersTrait {
     protected function log(
@@ -27,7 +26,7 @@ trait SnapshotProviderHelpersTrait {
         $prefix = '[SNAPSHOT] [' . strtoupper($this->providerId) . ']';
         $fullMessage = $prefix . ' ' . $message;
 
-        $hasContext = BooleanHelpers::hasValue($context);
+        $hasContext = !empty($context);
 
         if ($hasContext) {
             $fullMessage .= ' ' . json_encode($context);

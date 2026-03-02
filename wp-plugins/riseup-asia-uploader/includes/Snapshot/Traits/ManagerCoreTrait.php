@@ -17,7 +17,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerCoreTrait {
@@ -72,7 +71,7 @@ trait ManagerCoreTrait {
         return $this->getSnapshot($snapshotId);
     }
 
-    public function listSnapshots(int $limit = 50, int $offset = 0): array { // PaginationConfigType::DefaultLimit
+    public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
             array($limit, $offset)
@@ -107,7 +106,7 @@ trait ManagerCoreTrait {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [MANAGER] ' . $message;
-        $hasContext = BooleanHelpers::hasValue($context);
+        $hasContext = !empty($context);
 
         if ($hasContext) {
             $full .= ' ' . json_encode($context);

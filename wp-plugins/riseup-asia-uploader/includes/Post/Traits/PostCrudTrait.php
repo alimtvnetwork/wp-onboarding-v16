@@ -18,7 +18,6 @@ use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
-use RiseupAsia\Helpers\BooleanHelpers;
 
 trait PostCrudTrait {
 
@@ -98,7 +97,7 @@ trait PostCrudTrait {
             'post_type'    => 'post',
         );
 
-        $hasSlug = BooleanHelpers::hasValue($data['slug'] ?? null);
+        $hasSlug = !empty($data['slug'] ?? null);
         if ($hasSlug) {
             $postData['post_name'] = sanitize_title($data['slug']);
         }
@@ -129,7 +128,7 @@ trait PostCrudTrait {
         array $data = array(),
     ): array {
         $this->fileLogger->error('Post operation failed', array('error' => $errorMsg));
-        $hasTitle = BooleanHelpers::hasValue($title);
+        $hasTitle = !empty($title);
         $details = $hasTitle ? array('title' => $title) : $data;
         $this->logger->logPostAction($action, $postId, StatusType::Failed->value, $details, $errorMsg);
 
@@ -137,7 +136,7 @@ trait PostCrudTrait {
     }
 
     private function assignCategories(int $postId, ?array $categories): void {
-        $hasCategories = BooleanHelpers::hasValue($categories) && is_array($categories);
+        $hasCategories = !empty($categories) && is_array($categories);
         if ($hasCategories) {
             wp_set_post_categories($postId, array_map('intval', $categories));
         }
