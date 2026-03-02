@@ -16,7 +16,7 @@ use PDO;
 use PDOException;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use RiseupAsia\Helpers\DateHelper;
 
 trait AgentLoggingTrait {
@@ -142,7 +142,7 @@ trait AgentLoggingTrait {
 
     private function decodeActionDetails(array &$actions): void {
         foreach ($actions as &$action) {
-            if (BooleanHelpers::hasValue($action['Details'])) {
+            if (!empty($action['Details'])) {
                 $action['Details'] = json_decode($action['Details'], true);
             }
         }

@@ -27,7 +27,7 @@ use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait CleanerHelperTrait {
     private function loadSettings(array $overrides): array {
@@ -128,7 +128,7 @@ trait CleanerHelperTrait {
     ): void {
         $prefix = '[SNAPSHOT] [CLEANER]';
         $fullMessage = $prefix . ' ' . $message;
-        $hasContext = BooleanHelpers::hasValue($context);
+        $hasContext = !empty($context);
 
         if ($hasContext) {
             $fullMessage .= ' ' . json_encode($context);

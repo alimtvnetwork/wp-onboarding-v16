@@ -54,7 +54,7 @@ trait RestoreTableTrait {
             $errors[] = $table . ': ' . $result[ResponseKeyType::Error->value];
             $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
 
-            $isStrictMode = BooleanHelpers::hasValue($options[ResponseKeyType::Strict->value] ?? null);
+            $isStrictMode = !empty($options[ResponseKeyType::Strict->value] ?? null);
 
             if ($isStrictMode) {
                 throw new Exception('Strict mode: table restore failed for ' . $table);

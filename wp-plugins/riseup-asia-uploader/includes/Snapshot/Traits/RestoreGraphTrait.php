@@ -120,7 +120,7 @@ trait RestoreGraphTrait {
 
         $sorted = array();
 
-        while (BooleanHelpers::hasValue($queue)) {
+        while (!empty($queue)) {
             sort($queue);
             $table = array_shift($queue);
             $sorted[] = $table;

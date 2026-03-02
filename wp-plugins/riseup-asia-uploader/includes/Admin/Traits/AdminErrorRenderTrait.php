@@ -17,7 +17,7 @@ use Throwable;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait AdminErrorRenderTrait {
 
@@ -101,21 +101,21 @@ trait AdminErrorRenderTrait {
         $where = array();
         $params = array();
 
-        $hasLevelFilter = BooleanHelpers::hasValue($defaults['filterLevel']);
+        $hasLevelFilter = !empty($defaults['filterLevel']);
 
         if ($hasLevelFilter) {
             $where[] = 'Level = ?';
             $params[] = $defaults['filterLevel'];
         }
 
-        $hasSearchFilter = BooleanHelpers::hasValue($defaults['filterSearch']);
+        $hasSearchFilter = !empty($defaults['filterSearch']);
 
         if ($hasSearchFilter) {
             $where[] = 'Message LIKE ?';
             $params[] = '%' . $defaults['filterSearch'] . '%';
         }
 
-        $hasWhereClause = BooleanHelpers::hasValue($where);
+        $hasWhereClause = !empty($where);
         $whereSql = $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '';
 
         return array('whereSql' => $whereSql, 'params' => $params);

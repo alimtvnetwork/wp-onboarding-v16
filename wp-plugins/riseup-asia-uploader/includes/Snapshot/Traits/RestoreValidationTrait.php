@@ -24,12 +24,12 @@ use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait RestoreValidationTrait {
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
         $confirmKey    = ResponseKeyType::Confirm->value;
-        $isConfirmSet  = BooleanHelpers::hasValue($options[$confirmKey] ?? null);
+        $isConfirmSet  = !empty($options[$confirmKey] ?? null);
         $isConfirmed   = $isConfirmSet && $options[$confirmKey] === true;
         $isUnconfirmed = !$isConfirmed;
 
@@ -60,7 +60,7 @@ trait RestoreValidationTrait {
         $tableInventory = $this->getTableInventory($rootPdo);
         $restoreOrder = $this->getRestoreOrder($rootPdo, $tableInventory);
 
-        $isSelectiveWithTables = $mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($selectedTables);
+        $isSelectiveWithTables = $mode === RestoreModeType::Selective->value && !empty($selectedTables);
 
         if ($isSelectiveWithTables) {
             $restoreOrder = array_values(array_filter($restoreOrder, function($t) use ($selectedTables) {
@@ -116,7 +116,7 @@ trait RestoreValidationTrait {
             ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? 'Unknown',
         ));
 
-        $isBackupRequired = BooleanHelpers::hasValue($options[ResponseKeyType::RequireBackup->value] ?? null);
+        $isBackupRequired = !empty($options[ResponseKeyType::RequireBackup->value] ?? null);
 
         if ($isBackupRequired) {
 

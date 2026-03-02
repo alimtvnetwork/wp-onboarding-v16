@@ -20,7 +20,6 @@ use RiseupAsia\Update\Traits\UpdateResolverBackupTrait;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\UpdateConfigType;
-use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Database\Database;
 
@@ -49,7 +48,7 @@ class UpdateResolver {
         $this->db = Database::getInstance();
 
         $settings = $this->getSettings();
-        if (BooleanHelpers::hasValue($settings['enabled'])) {
+        if (!empty($settings['enabled'])) {
             add_filter(HookType::PreSetSiteTransientUpdatePlugins->value, array($this, 'checkForPluginUpdate'));
             add_filter(HookType::PluginsApi->value, array($this, 'pluginInfo'), 10, 3);
             $this->fileLogger->info('Auto-update hooks registered');

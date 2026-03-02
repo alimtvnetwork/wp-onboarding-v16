@@ -18,7 +18,7 @@ use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait CleanerRetentionTrait {
     private function cleanByRetention(array $settings, bool $dryRun = false): array {
@@ -37,7 +37,7 @@ trait CleanerRetentionTrait {
     }
 
     private function resolveRetentionSnapshots(array $settings): array {
-        $isDaysRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Days->value && BooleanHelpers::hasValue($settings[SettingsKeyType::RetentionDays->value]));
+        $isDaysRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Days->value && !empty($settings[SettingsKeyType::RetentionDays->value]));
 
         if ($isDaysRetention) {
             return array(
@@ -46,7 +46,7 @@ trait CleanerRetentionTrait {
             );
         }
 
-        $isCountRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Count->value && BooleanHelpers::hasValue($settings[SettingsKeyType::RetentionCount->value]));
+        $isCountRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Count->value && !empty($settings[SettingsKeyType::RetentionCount->value]));
 
         if ($isCountRetention) {
             return array(

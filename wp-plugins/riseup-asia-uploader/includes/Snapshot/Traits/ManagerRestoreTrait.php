@@ -20,7 +20,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreTrait {
@@ -35,7 +35,7 @@ trait ManagerRestoreTrait {
 
         $snapshot = $this->getProvider()->getSnapshot($snapshotId);
 
-        $hasBackupOption = BooleanHelpers::hasValue($options['create_backup']);
+        $hasBackupOption = !empty($options['create_backup']);
         $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Filename->value => $snapshot[ResponseKeyType::Filename->value],
@@ -164,7 +164,7 @@ trait ManagerRestoreTrait {
             }
 
             $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array(ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value]));
-            if (BooleanHelpers::hasValue($options['strict'])) {
+            if (!empty($options['strict'])) {
                 throw new Exception('Table restore failed: ' . $table);
             }
         }

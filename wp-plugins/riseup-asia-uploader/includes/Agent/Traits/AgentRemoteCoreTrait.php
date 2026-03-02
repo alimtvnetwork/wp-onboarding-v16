@@ -21,7 +21,7 @@ use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\WpErrorCodeType;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 
 trait AgentRemoteCoreTrait {
     private function normalizeUrl(string $url): string {
@@ -83,7 +83,7 @@ trait AgentRemoteCoreTrait {
     private function resolveAgentBaseUrl(AgentSite $agent, string $endpoint): string {
         $baseUrl = $agent->url;
 
-        if (BooleanHelpers::hasValue($agent->redirectUrl)) {
+        if (!empty($agent->redirectUrl)) {
             $resolved = $this->resolveRedirectUrl($agent);
             $isResolved = is_wp_error($resolved) === false;
 
@@ -102,7 +102,7 @@ trait AgentRemoteCoreTrait {
     ): array {
         $args = HttpConfigType::authenticatedOptions($method, $this->buildAuthHeader($agent));
 
-        $hasBody = BooleanHelpers::hasValue($body);
+        $hasBody = !empty($body);
         $isBodyMethod = in_array($method, array(
             HttpMethodType::Post->value,
             HttpMethodType::Put->value,

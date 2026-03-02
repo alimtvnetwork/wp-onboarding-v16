@@ -72,7 +72,7 @@ trait DatabaseQuerySearchTrait {
 
     private function decodeLogDetails(array &$logs): void {
         foreach ($logs as &$log) {
-            $hasDetails = BooleanHelpers::hasValue($log['Details'] ?? null);
+            $hasDetails = !empty($log['Details'] ?? null);
 
             if ($hasDetails) {
                 $log['Details'] = json_decode($log['Details'], true);

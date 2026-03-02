@@ -18,7 +18,6 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
-use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait CategoryTrait {
@@ -37,7 +36,7 @@ trait CategoryTrait {
                 'description' => sanitize_textarea_field($data['description'] ?? ''),
                 'parent'      => (int) ($data['parent'] ?? 0),
             );
-            $hasSlug = BooleanHelpers::hasValue($data['slug'] ?? null);
+            $hasSlug = !empty($data['slug'] ?? null);
             if ($hasSlug) {
                 $args['slug'] = sanitize_title($data['slug']);
             }
@@ -78,7 +77,7 @@ trait CategoryTrait {
                 'orderby'    => 'name',
                 'order'      => 'ASC',
             );
-            $hasSearch = BooleanHelpers::hasValue($params['search'] ?? null);
+            $hasSearch = !empty($params['search'] ?? null);
             if ($hasSearch) {
                 $args['search'] = sanitize_text_field($params['search']);
             }

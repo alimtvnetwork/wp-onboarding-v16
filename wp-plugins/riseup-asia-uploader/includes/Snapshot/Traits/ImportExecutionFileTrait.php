@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\BooleanHelpers;
+
 use Exception;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
@@ -28,7 +28,7 @@ trait ImportExecutionFileTrait {
             if (PathHelper::isFileMissing($sqlitePath)) {
                 throw new Exception("Missing table file: {$table['sqliteFile']}");
             }
-            if (BooleanHelpers::hasValue($table['checksumMd5'])) {
+            if (!empty($table['checksumMd5'])) {
                 $actualMd5 = md5_file($sqlitePath);
 
                 if ($actualMd5 !== $table['checksumMd5']) {
@@ -62,7 +62,7 @@ trait ImportExecutionFileTrait {
                 $this->log(LogLevelType::Warn->value, 'Plugin archive missing, skipping', array('plugin' => $plugin['plugin_slug']));
                 continue;
             }
-            if (BooleanHelpers::hasValue($plugin['checksumMd5'])) {
+            if (!empty($plugin['checksumMd5'])) {
                 $actualMd5 = md5_file($zipPath);
 
                 if ($actualMd5 !== $plugin['checksumMd5']) {
