@@ -2,7 +2,6 @@ package wordpress
 
 import (
 	"bytes"
-	"bytes"
 	"fmt"
 	"io"
 	"mime/multipart"
