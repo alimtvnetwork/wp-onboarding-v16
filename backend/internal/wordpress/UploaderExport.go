@@ -6,6 +6,7 @@ import (
 	action "wp-plugin-publish/internal/enums/actiontype"
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -37,7 +38,7 @@ func (c *Client) ExportPlugin(slug string) apperror.Result[*ExportPluginResult] 
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: slug},
-		Operation:  "export plugin for rollback",
+		Operation:  operationtype.ExportPlugin,
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPConnection,
 	})
@@ -103,7 +104,7 @@ func (c *Client) callExportSelf(namespace string) apperror.Result[*ExportSelfRes
 	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "export self via Riseup Asia Uploader",
+		Operation: operationtype.ExportSelf,
 		ErrorCode: apperror.ErrWPConnection,
 	})
 	if rawResult.HasError() {

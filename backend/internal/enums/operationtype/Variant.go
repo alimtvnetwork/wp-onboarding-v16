@@ -53,6 +53,8 @@ const (
 	CheckNamespace
 	GetUploaderStatus
 	UploadPlugin
+	GetSnapshotsFallback
+	CheckUploaderNamespace
 )
 
 var variantLabels = [...]string{
@@ -99,6 +101,8 @@ var variantLabels = [...]string{
 	CheckNamespace:         "CheckNamespace",
 	GetUploaderStatus:      "GetUploaderStatus",
 	UploadPlugin:           "UploadPlugin",
+	GetSnapshotsFallback:   "GetSnapshotsFallback",
+	CheckUploaderNamespace: "CheckUploaderNamespace",
 }
 
 var variantValues = [...]string{
@@ -145,6 +149,8 @@ var variantValues = [...]string{
 	CheckNamespace:         "check namespace",
 	GetUploaderStatus:      "get uploader status",
 	UploadPlugin:           "upload plugin",
+	GetSnapshotsFallback:   "get snapshots (array fallback)",
+	CheckUploaderNamespace: "check uploader namespace",
 }
 
 func (v Variant) String() string  { return v.Value() }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 )
 
 // uploadApiErrorInput bundles parameters for buildUploadApiError.
@@ -27,7 +28,7 @@ func buildUploadApiError(input uploadApiErrorInput) *ApiError {
 		input.UploadUrl, input.AbsZipPath, input.StatusCode, truncateBody(input.RespBody, 4000), stackTrace)
 
 	return &ApiError{
-		Operation:    "upload plugin via RiseupAsia Uploader",
+		Operation:    operationtype.UploadPlugin.Value(),
 		Method:       httpmethod.Post.Value(),
 		Endpoint:     input.UploadEndpoint,
 		Url:          input.UploadUrl,

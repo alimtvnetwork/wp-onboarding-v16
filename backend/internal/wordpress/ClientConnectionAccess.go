@@ -247,7 +247,7 @@ func (c *Client) deleteTestPost(postId int) {
 	deleteInput := apiCallInput{
 		Method:     httpmethod.Delete,
 		Endpoint:   fmt.Sprintf(WPCorePostById+"?force=true", postId),
-		Operation:  "delete test post",
+		Operation:  operationtype.DeleteTestPost,
 		OkStatuses: []int{HttpStatusOk.Int(), HttpStatusNoContent.Int()},
 	}
 	c.doApiCallRaw(deleteInput)

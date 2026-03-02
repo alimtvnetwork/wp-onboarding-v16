@@ -8,6 +8,7 @@ import (
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -51,7 +52,7 @@ func (c *Client) FetchRemoteErrorLogs() apperror.Result[*RemoteErrorLogsResult] 
 	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "fetch remote error logs",
+		Operation: operationtype.FetchErrorLogs,
 		ErrorCode: apperror.ErrWPConnection,
 	})
 	if rawResult.HasError() {
@@ -132,7 +133,7 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) apperror.Res
 	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "fetch remote error sessions",
+		Operation: operationtype.FetchErrorSessions,
 		ErrorCode: apperror.ErrWPConnection,
 	})
 	if rawResult.HasError() {

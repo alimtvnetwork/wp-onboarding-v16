@@ -8,6 +8,7 @@ import (
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -28,10 +29,10 @@ func normalizePluginSlug(slug string) string {
 
 // pluginLifecycleInput holds the parameters for a plugin lifecycle action.
 type pluginLifecycleInput struct {
-	Slug          string
-	Endpoint      ep.Variant
-	OperationName string
-	ErrorCode     string
+	Slug      string
+	Endpoint  ep.Variant
+	Operation operationtype.Variant
+	ErrorCode string
 }
 
 // pluginLifecycleAction is the shared implementation for Enable, Disable, and Delete.
@@ -44,7 +45,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.App
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
-		Operation:  input.OperationName + " via RiseupAsia Uploader",
+		Operation:  input.Operation,
 		PluginSlug: normalizedSlug,
 		ErrorCode:  input.ErrorCode,
 	}
@@ -70,7 +71,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) apperror.Result[*Plug
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
-		Operation:  "check plugin exists via RiseupAsia Uploader",
+		Operation:  operationtype.CheckPluginExists,
 		PluginSlug: normalizedSlug,
 		ErrorCode:  apperror.ErrWPConnection,
 	}
@@ -128,30 +129,30 @@ func parsePluginExistsLegacy(data []byte) apperror.Result[*PluginExistsResult] {
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
 func (c *Client) EnablePluginViaUploader(slug string) *apperror.AppError {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug:          slug,
-		Endpoint:      ep.Enable,
-		OperationName: "enable plugin",
-		ErrorCode:     apperror.ErrWPPluginActivate,
+		Slug:      slug,
+		Endpoint:  ep.Enable,
+		Operation: operationtype.EnablePlugin,
+		ErrorCode: apperror.ErrWPPluginActivate,
 	})
 }
 
 // DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
 func (c *Client) DisablePluginViaUploader(slug string) *apperror.AppError {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug:          slug,
-		Endpoint:      ep.Disable,
-		OperationName: "disable plugin",
-		ErrorCode:     apperror.ErrWPPluginActivate,
+		Slug:      slug,
+		Endpoint:  ep.Disable,
+		Operation: operationtype.DisablePlugin,
+		ErrorCode: apperror.ErrWPPluginActivate,
 	})
 }
 
 // DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
 func (c *Client) DeletePluginViaUploader(slug string) *apperror.AppError {
 	return c.pluginLifecycleAction(pluginLifecycleInput{
-		Slug:          slug,
-		Endpoint:      ep.Delete,
-		OperationName: "delete plugin",
-		ErrorCode:     apperror.ErrWPConnection,
+		Slug:      slug,
+		Endpoint:  ep.Delete,
+		Operation: operationtype.DeletePlugin,
+		ErrorCode: apperror.ErrWPConnection,
 	})
 }
 
@@ -163,7 +164,7 @@ func (c *Client) ListPluginsViaUploader() apperror.Result[[]UploaderPluginInfo] 
 	callInput := apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "list plugins",
+		Operation: operationtype.ListPlugins,
 		ErrorCode: apperror.ErrWPPluginList,
 	}
 	rawResult := c.doApiCallRaw(callInput)
@@ -212,7 +213,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) apperror.Result[[]Uploa
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: slug},
-		Operation:  "list plugin files",
+		Operation:  operationtype.ListPluginFiles,
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPPluginGet,
 	}

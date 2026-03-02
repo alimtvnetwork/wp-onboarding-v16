@@ -9,6 +9,7 @@ import (
 	action "wp-plugin-publish/internal/enums/actiontype"
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/pkg/apperror"
@@ -118,7 +119,7 @@ func (c *Client) CheckRiseupAsiaAvailable() apperror.Result[*UploaderAvailabilit
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
 		callResp := c.doApiCallWithStatus(apiCallInput{
-			Method: httpmethod.Get, Endpoint: endpoint, Operation: "check uploader namespace",
+			Method: httpmethod.Get, Endpoint: endpoint, Operation: operationtype.CheckUploaderNamespace,
 		})
 		if callResp.HasError() {
 			return apperror.Fail[*UploaderAvailability](callResp.AppError())
@@ -156,7 +157,7 @@ func (c *Client) GetUploaderStatus() apperror.Result[*UploaderStatus] {
 	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "get uploader status", ErrorCode: apperror.ErrWPConnection,
+		Operation: operationtype.GetUploaderStatus, ErrorCode: apperror.ErrWPConnection,
 	})
 	if rawResult.HasError() {
 		return apperror.Fail[*UploaderStatus](rawResult.AppError())
