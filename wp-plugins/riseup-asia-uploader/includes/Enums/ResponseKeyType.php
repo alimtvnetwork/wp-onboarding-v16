@@ -110,6 +110,22 @@ enum ResponseKeyType: string
     case Inventory       = 'Inventory';
     case PluginFile      = 'PluginFile';
 
+    /** Self-update diagnostics keys. */
+    case SelfUpdateStatus  = 'SelfUpdateStatus';
+    case RollbackReason    = 'RollbackReason';
+    case RollbackAttempted = 'RollbackAttempted';
+    case RollbackSuccess   = 'RollbackSuccess';
+    case RestoredVersion   = 'RestoredVersion';
+    case RootCause         = 'RootCause';
+    case Validation        = 'Validation';
+    case HealthCheck       = 'HealthCheck';
+    case Passed            = 'Passed';
+    case ErrorCount        = 'ErrorCount';
+    case Healthy           = 'Healthy';
+    case IssueCount        = 'IssueCount';
+    case Issues            = 'Issues';
+    case BootErrors        = 'BootErrors';
+
     /** General-purpose entity keys. */
     case Slug    = 'Slug';
     case Title   = 'Title';

@@ -17,7 +17,9 @@ use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 
@@ -101,6 +103,7 @@ trait UploadInstallActivateTrait
             return $this->buildActivationFailureResponse(
                 $slug,
                 $isUpdate,
+                SelfUpdateStatusType::ActivationException,
                 'Activation exception: ' . $e->getMessage(),
                 $e,
             );
@@ -116,6 +119,7 @@ trait UploadInstallActivateTrait
             return $this->buildActivationFailureResponse(
                 $slug,
                 $isUpdate,
+                SelfUpdateStatusType::ActivationWpError,
                 $result->get_error_message(),
             );
         }
@@ -131,24 +135,26 @@ trait UploadInstallActivateTrait
     private function buildActivationFailureResponse(
         string $slug,
         bool $isUpdate,
+        SelfUpdateStatusType $statusCode,
         string $errorMsg,
         ?Throwable $exception = null,
     ): WP_REST_Response {
         $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $errorMsg);
 
         $resultPayload = array(
-            'pluginSlug'      => $slug,
-            'isUpdate'        => $isUpdate,
-            'activated'       => false,
-            'activationError' => $errorMsg,
+            ResponseKeyType::PluginSlug->value      => $slug,
+            ResponseKeyType::IsUpdate->value        => $isUpdate,
+            ResponseKeyType::Activated->value       => false,
+            ResponseKeyType::ActivationError->value => $errorMsg,
+            ResponseKeyType::SelfUpdateStatus->value => $statusCode->value,
         );
 
         if ($exception !== null) {
-            $resultPayload['rootCause'] = array(
-                'message' => $exception->getMessage(),
-                'file'    => $exception->getFile(),
-                'line'    => $exception->getLine(),
-                'trace'   => $this->buildSafeStackTrace($exception),
+            $resultPayload[ResponseKeyType::RootCause->value] = array(
+                ResponseKeyType::Message->value => $exception->getMessage(),
+                'file'                          => $exception->getFile(),
+                'line'                          => $exception->getLine(),
+                ResponseKeyType::Trace->value   => $this->buildSafeStackTrace($exception),
             );
         }
 

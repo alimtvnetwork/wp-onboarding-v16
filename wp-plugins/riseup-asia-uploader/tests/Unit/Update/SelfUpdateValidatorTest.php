@@ -146,11 +146,11 @@ final class SelfUpdateValidatorTest extends TestCase
 
         $diagnostics = $this->validator->getDiagnostics();
 
-        $this->assertArrayHasKey('passed', $diagnostics);
-        $this->assertArrayHasKey('errorCount', $diagnostics);
-        $this->assertArrayHasKey('errors', $diagnostics);
-        $this->assertTrue($diagnostics['passed']);
-        $this->assertSame(0, $diagnostics['errorCount']);
+        $this->assertArrayHasKey('Passed', $diagnostics);
+        $this->assertArrayHasKey('ErrorCount', $diagnostics);
+        $this->assertArrayHasKey('Errors', $diagnostics);
+        $this->assertTrue($diagnostics['Passed']);
+        $this->assertSame(0, $diagnostics['ErrorCount']);
     }
 
     public function testGetDiagnosticsReflectsFailures(): void
@@ -160,9 +160,9 @@ final class SelfUpdateValidatorTest extends TestCase
 
         $diagnostics = $this->validator->getDiagnostics();
 
-        $this->assertFalse($diagnostics['passed']);
-        $this->assertGreaterThan(0, $diagnostics['errorCount']);
-        $this->assertCount($diagnostics['errorCount'], $diagnostics['errors']);
+        $this->assertFalse($diagnostics['Passed']);
+        $this->assertGreaterThan(0, $diagnostics['ErrorCount']);
+        $this->assertCount($diagnostics['ErrorCount'], $diagnostics['Errors']);
     }
 
     public function testGetDiagnosticsErrorsHaveCodeAndMessage(): void
@@ -171,7 +171,7 @@ final class SelfUpdateValidatorTest extends TestCase
 
         $diagnostics = $this->validator->getDiagnostics();
 
-        foreach ($diagnostics['errors'] as $error) {
+        foreach ($diagnostics['Errors'] as $error) {
             $this->assertArrayHasKey('code', $error);
             $this->assertArrayHasKey('message', $error);
             $this->assertNotEmpty($error['code']);

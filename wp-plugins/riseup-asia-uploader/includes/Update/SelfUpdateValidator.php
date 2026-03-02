@@ -18,6 +18,7 @@ if (!defined('ABSPATH')) {
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
@@ -98,14 +99,14 @@ class SelfUpdateValidator
     /**
      * Get a structured diagnostics array for REST API responses.
      *
-     * @return array{passed: bool, errorCount: int, errors: array<int, array{code: string, message: string}>}
+     * @return array{Passed: bool, ErrorCount: int, Errors: array<int, array{code: string, message: string}>}
      */
     public function getDiagnostics(): array
     {
         return array(
-            'passed'     => empty($this->errors),
-            'errorCount' => count($this->errors),
-            'errors'     => $this->errors,
+            ResponseKeyType::Passed->value     => empty($this->errors),
+            ResponseKeyType::ErrorCount->value => count($this->errors),
+            ResponseKeyType::Errors->value     => $this->errors,
         );
     }
 
