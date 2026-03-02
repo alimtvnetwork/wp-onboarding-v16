@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -14,7 +15,7 @@ func (c *Client) GetPlugins() apperror.Result[[]PluginInfo] {
 	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
-		Operation: "get plugins list",
+		Operation: operationtype.GetPluginsList,
 	})
 	if rawResult.HasError() {
 		return apperror.Fail[[]PluginInfo](rawResult.AppError())
@@ -37,7 +38,7 @@ func (c *Client) GetPlugin(slug string) apperror.Result[PluginInfo] {
 	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:     httpmethod.Get,
 		Endpoint:   endpoint,
-		Operation:  "get plugin",
+		Operation:  operationtype.GetPlugin,
 		PluginSlug: slug,
 	})
 	if rawResult.HasError() {

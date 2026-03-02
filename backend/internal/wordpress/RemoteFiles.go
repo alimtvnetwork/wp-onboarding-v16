@@ -7,6 +7,7 @@ import (
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -67,7 +68,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) apperro
 		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginSlugRequest{Plugin: slug},
-		Operation: "get sync manifest",
+		Operation: operationtype.GetSyncManifest,
 		ErrorCode: apperror.ErrWPConnection,
 	}
 	rawResult := c.doApiCallRaw(callInput)
@@ -101,7 +102,7 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) apper
 		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginSlugRequest{Plugin: slug},
-		Operation: "get plugin files",
+		Operation: operationtype.GetPluginFiles,
 		ErrorCode: apperror.ErrWPConnection,
 	}
 	rawResult := c.doApiCallRaw(callInput)
@@ -133,7 +134,7 @@ func (c *Client) RequestMutationToken(action string) apperror.Result[string] {
 	callInput := apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "request mutation token",
+		Operation: operationtype.RequestMutationToken,
 		ErrorCode: apperror.ErrWPConnection,
 	}
 	rawResult := c.doApiCallRaw(callInput)
@@ -171,7 +172,7 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginFileRequest{Plugin: pluginSlug, Path: filePath},
-		Operation: "get file content",
+		Operation: operationtype.GetFileContent,
 		ErrorCode: apperror.ErrWPConnection,
 	}
 	rawResult := c.doApiCallRaw(callInput)

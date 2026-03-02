@@ -8,6 +8,7 @@ import (
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -84,7 +85,7 @@ func (c *Client) GetSnapshots() apperror.Result[[]SnapshotRecord] {
 	rawResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "get snapshots",
+		Operation: operationtype.GetSnapshots,
 	})
 	if rawResult.HasError() {
 		return apperror.Fail[[]SnapshotRecord](rawResult.AppError())
@@ -112,7 +113,7 @@ func trySnapshotArrayFallback(c *Client, endpoint string) apperror.Result[[]Snap
 	fallbackResult := c.doApiCallRaw(apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
-		Operation: "get snapshots (array fallback)",
+		Operation: operationtype.GetSnapshotsFallback,
 	})
 	if fallbackResult.HasError() {
 		return apperror.Fail[[]SnapshotRecord](
@@ -135,7 +136,7 @@ func (c *Client) GetSnapshot(snapshotId int64) apperror.Result[SnapshotRecord] {
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsInfo),
 		Body:      SnapshotIdRequest{Id: snapshotId},
-		Operation: "get snapshot",
+		Operation: operationtype.GetSnapshot,
 	})
 }
 
@@ -145,7 +146,7 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) apperror.Result[Snap
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsSchedule),
 		Body:       opts,
-		Operation:  "create snapshot",
+		Operation:  operationtype.CreateSnapshot,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
 	})
 }
@@ -156,7 +157,7 @@ func (c *Client) DeleteSnapshot(snapshotId int64) *apperror.AppError {
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsDelete),
 		Body:       SnapshotIdRequest{Id: snapshotId},
-		Operation:  "delete snapshot",
+		Operation:  operationtype.DeleteSnapshot,
 		OkStatuses: []int{http.StatusOK, http.StatusNoContent},
 	})
 
@@ -169,7 +170,7 @@ func (c *Client) RestoreSnapshot(snapshotId int64) apperror.Result[SnapshotResto
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsRestore),
 		Body:      SnapshotRestoreOptions{Id: snapshotId, Confirm: true},
-		Operation: "restore snapshot",
+		Operation: operationtype.RestoreSnapshot,
 	})
 }
 
@@ -178,7 +179,7 @@ func (c *Client) GetSnapshotSettings() apperror.Result[SnapshotSettings] {
 	return doApiCall[SnapshotSettings](c, apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),
-		Operation: "get snapshot settings",
+		Operation: operationtype.GetSnapshotSettings,
 	})
 }
 
@@ -188,6 +189,6 @@ func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) apperror.Resu
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),
 		Body:      settings,
-		Operation: "update snapshot settings",
+		Operation: operationtype.UpdateSnapshotSettings,
 	})
 }

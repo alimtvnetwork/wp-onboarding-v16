@@ -9,6 +9,7 @@ import (
 
 	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -181,7 +182,7 @@ func (c *Client) fetchAuthResponse() apperror.Result[ApiCallResponse] {
 	authInput := apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCoreUsersMe,
-		Operation: "authenticate user",
+		Operation: operationtype.AuthenticateUser,
 	}
 
 	return c.doApiCallWithStatus(authInput)
