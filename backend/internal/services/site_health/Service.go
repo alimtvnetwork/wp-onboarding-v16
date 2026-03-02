@@ -11,6 +11,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	endpoint "wp-plugin-publish/internal/enums/endpointtype"
 	healthstatus "wp-plugin-publish/internal/enums/healthstatustype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
@@ -95,7 +96,7 @@ func (s *Service) performHealthProbe(ctx context.Context, site *siteCheckInfo) m
 	}
 
 	statusUrl := wordpress.BuildWpPluginUrl(site.Url, wordpress.RiseupAsiaNamespace, endpoint.Status)
-	req, err := http.NewRequestWithContext(ctx, "GET", statusUrl, nil)
+	req, err := http.NewRequestWithContext(ctx, httpmethod.Get.Value(), statusUrl, nil)
 
 	if err != nil {
 		check.Status = healthstatus.Down.DBValue()

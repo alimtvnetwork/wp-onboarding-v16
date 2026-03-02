@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -87,7 +88,8 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 			// Capture request body
 			var requestBody string
 			hasBody := r.Body != nil
-			isMutatingMethod := r.Method != "GET" && r.Method != "HEAD"
+			isReadOnly := r.Method == httpmethod.Get.Value() || r.Method == httpmethod.Head.Value()
+			isMutatingMethod := !isReadOnly
 			isBodyCapturable := hasBody && isMutatingMethod
 
 			if isBodyCapturable {

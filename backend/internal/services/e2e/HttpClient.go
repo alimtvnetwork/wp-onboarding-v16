@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -41,22 +42,22 @@ type apiErrorPayload struct {
 
 // get performs a GET request
 func (c *apiClient) get(path string) (*apiResponse, *apperror.AppError) {
-	return c.do("GET", path, nil)
+	return c.do(httpmethod.Get.Value(), path, nil)
 }
 
 // post performs a POST request with JSON body
 func (c *apiClient) post(path string, body any) (*apiResponse, *apperror.AppError) {
-	return c.do("POST", path, body)
+	return c.do(httpmethod.Post.Value(), path, body)
 }
 
 // put performs a PUT request with JSON body
 func (c *apiClient) put(path string, body any) (*apiResponse, *apperror.AppError) {
-	return c.do("PUT", path, body)
+	return c.do(httpmethod.Put.Value(), path, body)
 }
 
 // del performs a DELETE request
 func (c *apiClient) del(path string) (*apiResponse, *apperror.AppError) {
-	return c.do("DELETE", path, nil)
+	return c.do(httpmethod.Delete.Value(), path, nil)
 }
 
 // dataField extracts a string field from the data JSON object.

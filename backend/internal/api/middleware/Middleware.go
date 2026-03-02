@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/logger"
 )
 
@@ -32,7 +33,9 @@ func CORS(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-		if r.Method == "OPTIONS" {
+		isOptionsRequest := r.Method == httpmethod.Options.Value()
+
+		if isOptionsRequest {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}

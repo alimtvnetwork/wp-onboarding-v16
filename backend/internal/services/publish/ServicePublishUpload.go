@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
 	"wp-plugin-publish/internal/wordpress"
@@ -236,7 +237,7 @@ func (s *Service) failActivateNoUploader(pctx *publishContext) *apperror.AppErro
 // logActivateRequest broadcasts the activation request details.
 func (s *Service) logActivateRequest(pctx *publishContext, endpointUrl string) {
 	reqDetails := toDetails(ActivateRequestDetails{
-		Method:     "POST",
+		Method:     httpmethod.Post.Value(),
 		RemoteSlug: pctx.Mapping.RemoteSlug,
 	})
 	reqCtx := StageContext{
