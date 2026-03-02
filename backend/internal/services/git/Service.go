@@ -87,7 +87,7 @@ func (s *Service) GetConfig(ctx context.Context, pluginId int64) apperror.Result
 }
 
 // UpdateConfig saves git configuration for a plugin
-func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) error {
+func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) *apperror.AppError {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT OR REPLACE INTO PluginGitConfig (PluginId, GitEnabled, GitBranch, GitRemoteUrl, BuildEnabled, BuildCommand, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
@@ -99,6 +99,7 @@ func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) erro
 		config.BuildEnabled,
 		config.BuildCommand,
 	)
+
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update git config")
 	}

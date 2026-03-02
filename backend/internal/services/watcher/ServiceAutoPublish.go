@@ -123,11 +123,12 @@ func (s *Service) broadcastChanges(pluginId int64, changes []FileChange, trigger
 }
 
 // RecordFileChange records a file change in the database
-func (s *Service) RecordFileChange(ctx context.Context, change *models.FileChange) error {
+func (s *Service) RecordFileChange(ctx context.Context, change *models.FileChange) *apperror.AppError {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, DetectedAt)
 		VALUES (?, ?, ?, ?, datetime('now'))
 	`, change.PluginId, change.FilePath, change.ChangeType, change.LocalHash)
+
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to record file change")
 	}

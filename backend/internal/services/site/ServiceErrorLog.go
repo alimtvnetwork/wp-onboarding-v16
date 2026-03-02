@@ -21,8 +21,9 @@ func (s *Service) logToErrorFile(ref *remoteActionRef, details *ExtractedErrorDe
 		return
 	}
 
-	f, err := s.openErrorLogFile()
-	if err != nil {
+	f, appErr := s.openErrorLogFile()
+
+	if appErr != nil {
 		return
 	}
 	defer f.Close()
@@ -51,16 +52,19 @@ func (s *Service) isDuplicateErrorLog(ref *remoteActionRef, details *ExtractedEr
 }
 
 // openErrorLogFile creates the errors directory and opens the log file for appending.
-func (s *Service) openErrorLogFile() (*os.File, error) {
-	logPaths, err := s.resolveErrorLogPaths()
-	if err != nil {
-		return nil, err
+func (s *Service) openErrorLogFile() (*os.File, *apperror.AppError) {
+	logPaths, appErr := s.resolveErrorLogPaths()
+
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	mkdirErr := os.MkdirAll(logPaths.Dir, 0755)
+
 	if mkdirErr != nil {
 		s.log.Error("Failed to create errors directory", "error", mkdirErr)
-		return nil, mkdirErr
+
+		return nil, apperror.Wrap(mkdirErr, apperror.ErrFSWrite, "failed to create errors directory")
 	}
 
 	return s.openLogFileForAppend(logPaths.FilePath)
@@ -73,27 +77,36 @@ type errorLogPaths struct {
 }
 
 // resolveErrorLogPaths resolves the errors directory and log file paths.
-func (s *Service) resolveErrorLogPaths() (*errorLogPaths, error) {
+func (s *Service) resolveErrorLogPaths() (*errorLogPaths, *apperror.AppError) {
 	errorsDir, err := pathutil.Join(filepath.Dir(s.db.Path()), "errors")
+
 	if err != nil {
 		s.log.Error("Failed to resolve errors directory path", "error", err)
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve errors directory path")
 	}
+
 	errorLogPath, err := pathutil.Join(errorsDir, logfile.ErrorLog)
+
 	if err != nil {
 		s.log.Error("Failed to resolve error log path", "error", err)
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve error log path")
 	}
+
 	return &errorLogPaths{Dir: errorsDir, FilePath: errorLogPath}, nil
 }
 
 // openLogFileForAppend opens the log file for appending.
-func (s *Service) openLogFileForAppend(errorLogPath string) (*os.File, error) {
+func (s *Service) openLogFileForAppend(errorLogPath string) (*os.File, *apperror.AppError) {
 	f, err := os.OpenFile(errorLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
 	if err != nil {
 		s.log.Error("Failed to open error log file", "error", err)
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to open error log file")
 	}
+
 	return f, nil
 }
 

@@ -85,8 +85,9 @@ func (s *Service) GetByErrorId(errorId string) apperror.Result[models.ErrorHisto
 }
 
 // Delete removes an error from history
-func (s *Service) Delete(id int64) error {
+func (s *Service) Delete(id int64) *apperror.AppError {
 	result, err := s.db.Exec("DELETE FROM ErrorHistory WHERE Id = ?", id)
+
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete error history")
 	}
