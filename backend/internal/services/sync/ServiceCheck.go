@@ -168,7 +168,7 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) apperror.ResultSlice[
 
 	var results []SyncResult
 	for _, plug := range pluginListResult.Items() {
-		batchResult := s.CheckAllSites(ctx, plug.ID)
+		batchResult := s.CheckAllSites(ctx, plug.Id)
 		if batchResult.IsSafe() {
 			results = append(results, batchResult.Value().Results...)
 		}

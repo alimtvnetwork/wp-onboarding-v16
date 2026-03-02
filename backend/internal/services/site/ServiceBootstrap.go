@@ -74,7 +74,7 @@ func (s *Service) buildBootstrapClient(id int64, site models.Site) (*bootstrapCo
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
 	}
 
-	callback := s.buildProgressCallback(id, site.Name)
+	callback := s.buildBootstrapProgressCallback(id, site.Name)
 	client := s.wpClientFactory(site.Url, site.Username, string(decrypted), callback)
 
 	return &bootstrapContext{Site: site, Client: client}, nil
@@ -97,21 +97,21 @@ func (s *Service) logBootstrapStart(id int64, site models.Site) {
 	s.broadcastBootstrapLog(startLog)
 }
 
-// buildProgressCallback creates a progress callback for WordPress client operations.
-func (s *Service) buildProgressCallback(id int64, siteName string) func(string, string, string, wordpress.ProgressDetails) {
-	return func(step, status, message string, details wordpress.ProgressDetails) {
+// buildBootstrapProgressCallback creates a progress callback for WordPress client operations.
+func (s *Service) buildBootstrapProgressCallback(id int64, siteName string) func(wordpress.ProgressEvent) {
+	return func(event wordpress.ProgressEvent) {
 		bootstrapDetails := BootstrapLogDetails{
 			SiteId:   id,
 			SiteName: siteName,
-			Step:     step,
-			Status:   status,
-			Details:  details,
+			Step:     event.Step,
+			Status:   event.Status,
+			Details:  event.Details,
 		}
 		logDetails := toJson(bootstrapDetails)
 		progressLog := bootstrapLogInput{
 			Level:   loglevel.Info,
 			SiteId:  id,
-			Message: fmt.Sprintf("[%s] %s", step, message),
+			Message: fmt.Sprintf("[%s] %s", event.Step, event.Message),
 			Details: logDetails,
 		}
 		s.broadcastBootstrapLog(progressLog)
@@ -188,6 +188,10 @@ func (s *Service) broadcastBootstrapLog(input bootstrapLogInput) {
 
 // checkOnboardAvailable checks if the Onboard plugin is available
 func (s *Service) checkOnboardAvailable(client *wordpress.Client) bool {
-	resp, err := client.CheckOnboardAvailable()
-	return err == nil && resp
+	result := client.CheckOnboardAvailable()
+	if result.HasError() {
+		return false
+	}
+	avail := result.Value()
+	return avail != nil && avail.IsAvailable()
 }

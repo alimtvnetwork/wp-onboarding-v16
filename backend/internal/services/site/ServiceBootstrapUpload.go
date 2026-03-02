@@ -12,17 +12,18 @@ import (
 
 // executeBootstrapUpload uploads the uploader plugin to the remote site.
 func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	availability, _ := client.CheckRiseupAsiaAvailable()
+	availResult := client.CheckRiseupAsiaAvailable()
 	isUploaderReady :=
-		availability.IsAvailable() &&
-			availability.HasNamespace()
+		!availResult.HasError() &&
+			availResult.Value().IsAvailable() &&
+			availResult.Value().HasNamespace()
 
 	if isUploaderReady {
 		input := bootstrapUploaderInput{
 			SiteId:    id,
 			Client:    client,
 			ZipPath:   zipPath,
-			Namespace: availability.Namespace,
+		Namespace: availResult.Value().Namespace,
 		}
 
 		return s.bootstrapViaUploader(input)
@@ -55,14 +56,14 @@ func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress
 
 // executeUploaderUpload performs the upload and wraps errors.
 func (s *Service) executeUploaderUpload(siteId int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	result, err := client.UploadPluginViaUploader(input)
-	if err != nil {
-		s.logBootstrapError(siteId, fmt.Sprintf("Upload failed: %v", err))
+	result := client.UploadPluginViaUploader(input)
+	if result.HasError() {
+		s.logBootstrapError(siteId, fmt.Sprintf("Upload failed: %v", result.AppError()))
 
-		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
+		return nil, apperror.Wrap(result.AppError(), apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
-	return result, nil
+	return result.Value(), nil
 }
 
 // bootstrapViaOnboard installs via the Onboard plugin for first-time setup.
@@ -84,14 +85,14 @@ func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPat
 func (s *Service) uploadViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
 	s.logBootstrapInfo(id, "Using Onboard plugin for installation")
 
-	result, err := client.UploadPluginViaOnboard(zipPath, true)
-	if err != nil {
-		s.logBootstrapError(id, fmt.Sprintf("Upload failed: %v", err))
+	result := client.UploadPluginViaOnboard(zipPath, true)
+	if result.HasError() {
+		s.logBootstrapError(id, fmt.Sprintf("Upload failed: %v", result.AppError()))
 
-		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
+		return nil, apperror.Wrap(result.AppError(), apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
-	return result, nil
+	return result.Value(), nil
 }
 
 // finalizeBootstrap logs success and returns the result.
