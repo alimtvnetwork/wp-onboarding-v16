@@ -87,8 +87,10 @@ func (s *Service) Save(input models.ErrorHistoryInput) apperror.Result[models.Er
 		input.MarkdownReport,
 	)
 	if err != nil {
-		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "insert error history").
+		appErr := apperror.Wrap(err, apperror.ErrDatabaseQuery, "insert error history").
 			WithValue("errorId", input.ErrorId)
+
+		return apperror.Fail[models.ErrorHistory](appErr)
 	}
 
 	id, _ := result.LastInsertId()

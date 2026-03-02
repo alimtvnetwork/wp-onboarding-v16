@@ -7,6 +7,7 @@ import (
 
 	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
+	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	poststatus "wp-plugin-publish/internal/enums/poststatustype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	"wp-plugin-publish/pkg/apperror"

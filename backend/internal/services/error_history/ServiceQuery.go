@@ -51,12 +51,16 @@ func (s *Service) GetById(id int64) apperror.Result[models.ErrorHistory] {
 		&scanned.createdAt,
 	)
 	if err == sql.ErrNoRows {
-		return apperror.FailNew[models.ErrorHistory](apperror.ErrNotFound, "error not found").
+		appErr := apperror.New(apperror.ErrNotFound, "error not found").
 			WithValue("id", fmt.Sprintf("%d", id))
+
+		return apperror.Fail[models.ErrorHistory](appErr)
 	}
 	if err != nil {
-		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "query error history").
+		appErr := apperror.Wrap(err, apperror.ErrDatabaseQuery, "query error history").
 			WithValue("id", fmt.Sprintf("%d", id))
+
+		return apperror.Fail[models.ErrorHistory](appErr)
 	}
 
 	populateFromNullFields(&scanned)
@@ -73,12 +77,16 @@ func (s *Service) GetByErrorId(errorId string) apperror.Result[models.ErrorHisto
 	err := s.db.QueryRow(query, errorId).Scan(&id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return apperror.FailNew[models.ErrorHistory](apperror.ErrNotFound, "error not found").
+			appErr := apperror.New(apperror.ErrNotFound, "error not found").
 				WithValue("errorId", errorId)
+
+			return apperror.Fail[models.ErrorHistory](appErr)
 		}
 
-		return apperror.FailWrap[models.ErrorHistory](err, apperror.ErrDatabaseQuery, "query error by error ID").
+		appErr := apperror.Wrap(err, apperror.ErrDatabaseQuery, "query error by error ID").
 			WithValue("errorId", errorId)
+
+		return apperror.Fail[models.ErrorHistory](appErr)
 	}
 
 	return s.GetById(id)
