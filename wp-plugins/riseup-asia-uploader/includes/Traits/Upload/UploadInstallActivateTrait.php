@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
@@ -65,7 +66,13 @@ trait UploadInstallActivateTrait
         wp_cache_delete('plugins', 'plugins');
     }
 
-    /** Activate the plugin if requested or if it was previously active. */
+    /**
+     * Activate the plugin if requested or if it was previously active.
+     *
+     * Phase 3: Wraps activate_plugin() in try-catch for safe activation.
+     * Captures fatal errors, WP_Error, and uncaught exceptions with full
+     * stack trace so the caller gets actionable diagnostics.
+     */
     private function activateIfNeeded(
         string $pluginFile,
         string $slug,
@@ -79,30 +86,100 @@ trait UploadInstallActivateTrait
             return array('activated' => false);
         }
 
-        $result = activate_plugin($pluginFile);
+        try {
+            $result = activate_plugin($pluginFile);
+        } catch (Throwable $e) {
+            $this->fileLogger->error('Plugin activation threw an exception', array(
+                'slug'       => $slug,
+                'pluginFile' => $pluginFile,
+                'exception'  => $e->getMessage(),
+                'file'       => $e->getFile(),
+                'line'       => $e->getLine(),
+                'trace'      => $this->buildSafeStackTrace($e),
+            ));
+
+            return $this->buildActivationFailureResponse(
+                $slug,
+                $isUpdate,
+                'Activation exception: ' . $e->getMessage(),
+                $e,
+            );
+        }
 
         if (is_wp_error($result)) {
-            return $this->buildActivationFailureResponse($slug, $isUpdate, $result->get_error_message());
+            $this->fileLogger->error('Plugin activation returned WP_Error', array(
+                'slug'      => $slug,
+                'errorCode' => $result->get_error_code(),
+                'errorMsg'  => $result->get_error_message(),
+            ));
+
+            return $this->buildActivationFailureResponse(
+                $slug,
+                $isUpdate,
+                $result->get_error_message(),
+            );
         }
 
         return array('activated' => true);
     }
 
-    /** Build response for failed activation after upload. */
+    /**
+     * Build response for failed activation after upload.
+     *
+     * Includes stack trace and root-cause diagnostics when a Throwable is provided.
+     */
     private function buildActivationFailureResponse(
         string $slug,
         bool $isUpdate,
         string $errorMsg,
+        ?Throwable $exception = null,
     ): WP_REST_Response {
         $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $errorMsg);
 
+        $resultPayload = array(
+            'pluginSlug'      => $slug,
+            'isUpdate'        => $isUpdate,
+            'activated'       => false,
+            'activationError' => $errorMsg,
+        );
+
+        if ($exception !== null) {
+            $resultPayload['rootCause'] = array(
+                'message' => $exception->getMessage(),
+                'file'    => $exception->getFile(),
+                'line'    => $exception->getLine(),
+                'trace'   => $this->buildSafeStackTrace($exception),
+            );
+        }
+
         return EnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Upload->value)
-            ->setSingleResult(array(
-                'pluginSlug' => $slug, 'isUpdate' => $isUpdate,
-                'activated' => false, 'activationError' => $errorMsg,
-            ))
+            ->setSingleResult($resultPayload)
             ->toResponse();
+    }
+
+    /**
+     * Build a safe, serializable stack trace from a Throwable (max 15 frames).
+     *
+     * @return array<int, array{file: string, line: int, function: string}>
+     */
+    private function buildSafeStackTrace(Throwable $e): array
+    {
+        $trace = array();
+        $frames = $e->getTrace();
+        $maxFrames = min(count($frames), 15);
+
+        for ($i = 0; $i < $maxFrames; $i++) {
+            $frame = $frames[$i];
+
+            $trace[] = array(
+                'file'     => $frame['file'] ?? '(internal)',
+                'line'     => $frame['line'] ?? 0,
+                'function' => ($frame['class'] ?? '') . ($frame['type'] ?? '') . ($frame['function'] ?? ''),
+            );
+        }
+
+        return $trace;
     }
 
     /** Detect the installed plugin version from disk. */

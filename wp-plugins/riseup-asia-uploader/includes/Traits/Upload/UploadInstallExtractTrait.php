@@ -19,6 +19,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Update\SelfUpdateBackupHelper;
+use RiseupAsia\Update\SelfUpdateHealthCheck;
 use RiseupAsia\Update\SelfUpdateValidator;
 
 trait UploadInstallExtractTrait
@@ -169,12 +170,39 @@ trait UploadInstallExtractTrait
             return $this->rollbackIfNeeded($backupDir, $activation, 'Activation failed');
         }
 
+        // Phase 4: Post-activation health check (self-update only)
+        if ($ctx[ResponseKeyType::IsSelfUpdate->value] && $activation['activated'] === true) {
+            $healthCheck = new SelfUpdateHealthCheck($this->fileLogger);
+            $isHealthy = $healthCheck->check();
+
+            if ($isHealthy === false) {
+                $diagnostics = $healthCheck->getDiagnostics();
+
+                $this->fileLogger->error('Post-activation health check failed — triggering rollback', array(
+                    'slug'        => $ctx[ResponseKeyType::Slug->value],
+                    'diagnostics' => $diagnostics,
+                ));
+
+                // Deactivate the broken new version before rollback
+                deactivate_plugins($pluginFile);
+
+                $rollbackResponse = $this->performRollbackAndBuildResponse(
+                    $backupDir,
+                    $ctx[ResponseKeyType::Slug->value],
+                    'Post-activation health check failed',
+                    $diagnostics,
+                );
+
+                return $rollbackResponse;
+            }
+        }
+
         $versionInfo = $this->detectInstalledVersion($pluginFile, $ctx[ResponseKeyType::Slug->value], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['clientPluginVersion']);
 
         return array(
             ResponseKeyType::Slug->value => $ctx[ResponseKeyType::Slug->value],
             ResponseKeyType::IsUpdate->value => $ctx[ResponseKeyType::IsUpdate->value],
-            ResponseKeyType::Activated->value => $activation[ResponseKeyType::Activated->value],
+            ResponseKeyType::Activated->value => $activation['activated'],
             ResponseKeyType::PluginVersion->value => $versionInfo[ResponseKeyType::Version->value],
             ResponseKeyType::IsSelfUpdate->value => $ctx[ResponseKeyType::IsSelfUpdate->value],
         );
