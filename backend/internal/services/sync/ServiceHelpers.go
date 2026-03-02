@@ -182,7 +182,9 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId 
 	}
 	password := passwordResult.Value()
 
-	return s.fetchAndParseManifest(ctx, siteInfoResult.Value(), mapping, pluginId, siteId, password)
+	si := siteInfoResult.Value()
+	site := models.Site{Url: si.Url, Username: si.Username}
+	return s.fetchAndParseManifest(ctx, site, mapping, pluginId, siteId, password)
 }
 
 // fetchAndParseManifest calls the remote API and converts the manifest to FileEntry map.

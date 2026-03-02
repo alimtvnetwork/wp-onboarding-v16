@@ -195,14 +195,15 @@ func (s *serviceImpl) pushFilesToRemote(
 	s.broadcastProgress(pushProgress)
 
 	wpClient := s.wpClientFactory(deps.SiteUrl, deps.SiteUser, deps.Password)
-	pushResult, err := wpClient.SyncPluginFilesViaUploader(deps.Mapping.RemoteSlug, syncFiles)
-	if err != nil {
+	pushResult := wpClient.SyncPluginFilesViaUploader(deps.Mapping.RemoteSlug, syncFiles)
+	if pushResult.HasError() {
+		pushErr := pushResult.AppError()
 		errorProgress := SyncProgressInput{
 			PluginId: pluginId,
 			SiteId:   siteId,
 			Step:     syncstep.Error.Value(),
 			Progress: 100,
-			Message:  "Sync push failed: " + err.Error(),
+			Message:  "Sync push failed: " + pushErr.Error(),
 		}
 		s.broadcastProgress(errorProgress)
 
@@ -210,20 +211,22 @@ func (s *serviceImpl) pushFilesToRemote(
 			PluginId:     pluginId,
 			SiteId:       siteId,
 			TotalChanges: len(syncFiles),
-			ErrorMessage: err.Error(),
+			ErrorMessage: pushErr.Error(),
 		}
 
 		return apperror.Ok(pushErrorResult)
 	}
 
+	pushData := pushResult.Value()
+
 	result := PushSyncResult{
 		PluginId:     pluginId,
 		SiteId:       siteId,
 		TotalChanges: len(syncFiles),
-		FilesUpdated: pushResult.FilesUpdated,
-		FilesDeleted: pushResult.FilesDeleted,
-		FilesIgnored: pushResult.FilesIgnored,
-		IsSuccess:    pushResult.IsSuccess,
+		FilesUpdated: pushData.FilesUpdated,
+		FilesDeleted: pushData.FilesDeleted,
+		FilesIgnored: pushData.FilesIgnored,
+		IsSuccess:    pushData.Success,
 	}
 
 	if result.IsSuccess {

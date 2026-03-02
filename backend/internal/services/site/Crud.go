@@ -55,9 +55,9 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 	}
 
 	normalizedUrl := normalizeUrl(input.Url)
-	dupErr := s.checkDuplicateUrl(ctx, normalizedUrl)
-	if dupErr != nil {
-		return dupErr
+	dupResult := s.checkDuplicateUrl(ctx, normalizedUrl)
+	if dupResult.HasError() {
+		return dupResult
 	}
 
 	encryptedPassword, err := encrypt([]byte(input.Password), s.encryptionKey)
@@ -65,7 +65,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		return apperror.FailWrap[models.Site](err, apperror.ErrInternal, "failed to encrypt password")
 	}
 
-	return s.insertSite(ctx, input, normalizedUrl, encryptedPassword)
+	return s.insertSite(ctx, input, normalizedUrl, string(encryptedPassword))
 }
 
 // checkDuplicateUrl verifies no existing site has the same URL.

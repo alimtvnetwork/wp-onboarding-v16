@@ -132,7 +132,7 @@ func buildPhpErrorEntry(entry wordpress.RemoteErrorSessionEntry) PhpErrorEntry {
 }
 
 // marshalStackFrames serializes stack trace frames into the PHP error entry.
-func marshalStackFrames(phpErr *PhpErrorEntry, frames []wordpress.RemoteStackTraceFrame) {
+func marshalStackFrames(phpErr *PhpErrorEntry, frames []wordpress.PhpStackTraceFrame) {
 	hasNoFrames := len(frames) == 0
 
 	if hasNoFrames {
@@ -247,7 +247,7 @@ func (s *Service) applyStackTraceContent(ref *remoteActionRef, logsResult *wordp
 }
 
 // logStackTraceToSession writes the stack trace content to the session log.
-func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.StackTraceLog) {
+func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.RemoteLogFile) {
 	isSessionUnavailable := s.sessionService == nil || ref.SessionId == ""
 
 	if isSessionUnavailable {

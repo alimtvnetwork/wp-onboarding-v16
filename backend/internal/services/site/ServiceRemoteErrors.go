@@ -96,7 +96,7 @@ func (s *Service) parseErrorResponseEnvelope(details *ExtractedErrorDetails, res
 }
 
 // applyEnvelopeErrors copies envelope error fields into the details struct.
-func applyEnvelopeErrors(details *ExtractedErrorDetails, errors *envelopeErrors) {
+func applyEnvelopeErrors(details *ExtractedErrorDetails, errors *errorEnvelopeErrors) {
 	hasBackendMessage := errors.BackendMessage != ""
 	if hasBackendMessage {
 		details.ErrorMessage = errors.BackendMessage

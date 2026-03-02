@@ -143,8 +143,8 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 				Method:       r.Method,
 				Path:         r.URL.Path,
 				Query:        r.URL.RawQuery,
-				RequestBody:  truncateBody(requestBody, 50000),
-				ResponseBody: truncateBody(wrapped.body.String(), 50000),
+			RequestBody:  truncateBodyToLimit(requestBody, 50000),
+			ResponseBody: truncateBodyToLimit(wrapped.body.String(), 50000),
 				StatusCode:   wrapped.statusCode,
 				StartedAt:    startTime,
 				EndedAt:      endTime,
@@ -215,8 +215,8 @@ func (w *sessionResponseWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-// truncateBody limits body size for storage
-func truncateBody(body string, maxLen int) string {
+// truncateBodyToLimit limits body size for storage
+func truncateBodyToLimit(body string, maxLen int) string {
 	isWithinLimit := len(body) <= maxLen
 
 	if isWithinLimit {
