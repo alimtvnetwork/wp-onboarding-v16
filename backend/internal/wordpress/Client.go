@@ -133,7 +133,7 @@ func (c *Client) buildAndSendRequest(method, endpoint string, body io.Reader) (*
 			WithMethod(method)
 	}
 
-	c.setStandardHeaders(req, contenttype.JSON.Value())
+	c.setStandardHeaders(req, contenttype.Json.Value())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -187,7 +187,7 @@ func (c *Client) rawGet(fullUrl string) (*http.Response, *apperror.AppError) {
 			WithUrl(fullUrl)
 	}
 
-	c.setStandardHeaders(req, contenttype.JSON.Value())
+	c.setStandardHeaders(req, contenttype.Json.Value())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

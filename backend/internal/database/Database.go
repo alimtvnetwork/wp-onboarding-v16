@@ -10,8 +10,6 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"wp-plugin-publish/internal/database/dbops"
-	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
@@ -121,7 +119,7 @@ func (db *DB) GetChildDB(dbType, entityId string) (*sql.DB, error) {
 	}
 
 	// Open child database
-	child, err := sql.Open("sqlite", childPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
+	child, err = sql.Open("sqlite", childPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open child database").
 			WithPath(childPath)
