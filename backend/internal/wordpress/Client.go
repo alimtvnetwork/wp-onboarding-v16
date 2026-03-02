@@ -181,7 +181,7 @@ func (c *Client) fullUrl(endpoint string) string {
 
 // rawGet performs an authenticated GET request to an arbitrary full URL on the same WordPress host.
 func (c *Client) rawGet(fullUrl string) (*http.Response, *apperror.AppError) {
-	req, err := http.NewRequest("GET", fullUrl, nil)
+	req, err := http.NewRequest(httpmethod.Get.Value(), fullUrl, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
 			WithUrl(fullUrl)

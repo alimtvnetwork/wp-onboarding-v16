@@ -16,6 +16,8 @@ const (
 	Put
 	Delete
 	Patch
+	Head
+	Options
 )
 
 var variantLabels = [...]string{
@@ -25,6 +27,8 @@ var variantLabels = [...]string{
 	Put:     "Put",
 	Delete:  "Delete",
 	Patch:   "Patch",
+	Head:    "Head",
+	Options: "Options",
 }
 
 var variantValues = [...]string{
@@ -34,6 +38,8 @@ var variantValues = [...]string{
 	Put:     "PUT",
 	Delete:  "DELETE",
 	Patch:   "PATCH",
+	Head:    "HEAD",
+	Options: "OPTIONS",
 }
 
 func (v Variant) String() string {
@@ -66,6 +72,8 @@ func (v Variant) IsPost() bool              { return v == Post }
 func (v Variant) IsPut() bool               { return v == Put }
 func (v Variant) IsDelete() bool            { return v == Delete }
 func (v Variant) IsPatch() bool             { return v == Patch }
+func (v Variant) IsHead() bool              { return v == Head }
+func (v Variant) IsOptions() bool           { return v == Options }
 func (v Variant) IsOther(other Variant) bool { return v != other }
 
 func (v Variant) IsAnyOf(others ...Variant) bool {
@@ -78,7 +86,7 @@ func (v Variant) IsAnyOf(others ...Variant) bool {
 }
 
 func All() []Variant {
-	return []Variant{Get, Post, Put, Delete, Patch}
+	return []Variant{Get, Post, Put, Delete, Patch, Head, Options}
 }
 
 func ByIndex(i int) Variant {

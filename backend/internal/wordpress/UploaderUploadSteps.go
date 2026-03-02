@@ -15,6 +15,7 @@ import (
 
 	action "wp-plugin-publish/internal/enums/actiontype"
 	ep "wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
 	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/pkg/apperror"
@@ -195,7 +196,7 @@ func writeUploadFields(input uploadFieldsInput) *apperror.AppError {
 
 // executeUploadHttp sends the multipart upload request and parses the response.
 func (c *Client) executeUploadHttp(uc *uploadContext, body *bytes.Buffer, contentType string) apperror.Result[*UploaderUploadResult] {
-	req, err := http.NewRequest("POST", uc.UploadUrl, body)
+	req, err := http.NewRequest(httpmethod.Post.Value(), uc.UploadUrl, body)
 	if err != nil {
 		return apperror.FailWrap[*UploaderUploadResult](err, apperror.ErrInternal, "create upload HTTP request")
 	}

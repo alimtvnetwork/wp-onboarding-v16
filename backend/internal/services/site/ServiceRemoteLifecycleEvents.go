@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
+	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -66,7 +67,7 @@ func (s *Service) saveRemoteActionRequest(ref *remoteActionRef) {
 
 	s.sessionService.SaveRequest(ref.SessionId, &session.SessionRequest{
 		URL:    wordpress.GoApiSitePluginRoute(ref.SiteId, ref.PluginSlug, ref.Action),
-		Method: "POST",
+		Method: httpmethod.Post.Value(),
 		Body:   body,
 	})
 }
