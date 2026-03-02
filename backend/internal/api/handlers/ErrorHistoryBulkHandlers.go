@@ -22,9 +22,10 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = Services.ErrorHistoryService.Delete(id)
-	if err != nil {
-		respondNotFound(w, apperror.ErrNotFound, err.Error())
+	appErr := Services.ErrorHistoryService.Delete(id)
+
+	if appErr != nil {
+		respondNotFound(w, apperror.ErrNotFound, appErr.Error())
 
 		return
 	}

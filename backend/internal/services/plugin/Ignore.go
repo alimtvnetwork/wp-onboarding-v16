@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // UploadIgnoreFilename is the name of the ignore file
@@ -28,7 +30,7 @@ type compiledPattern struct {
 }
 
 // LoadUploadIgnore loads and parses an .uploadignore file from a plugin directory.
-func LoadUploadIgnore(pluginDir string) (*UploadIgnore, error) {
+func LoadUploadIgnore(pluginDir string) (*UploadIgnore, *apperror.AppError) {
 	ui := &UploadIgnore{
 		patterns:  make([]compiledPattern, 0),
 		negations: make([]compiledPattern, 0),
@@ -36,25 +38,31 @@ func LoadUploadIgnore(pluginDir string) (*UploadIgnore, error) {
 
 	ignorePath := filepath.Join(pluginDir, UploadIgnoreFilename)
 	file, err := os.Open(ignorePath)
+
 	if err != nil {
-		if os.IsNotExist(err) {
+		isNotFound := os.IsNotExist(err)
+
+		if isNotFound {
 			return ui, nil
 		}
-		return nil, err
+
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to open .uploadignore file")
 	}
 	defer file.Close()
 
-	err = parseIgnoreFile(file, ui)
-	if err != nil {
-		return nil, err
+	appErr := parseIgnoreFile(file, ui)
+
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	ui.loaded = true
+
 	return ui, nil
 }
 
 // parseIgnoreFile reads lines from the file and populates patterns.
-func parseIgnoreFile(file *os.File, ui *UploadIgnore) error {
+func parseIgnoreFile(file *os.File, ui *UploadIgnore) *apperror.AppError {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -63,7 +71,14 @@ func parseIgnoreFile(file *os.File, ui *UploadIgnore) error {
 		}
 		addIgnoreLine(ui, line)
 	}
-	return scanner.Err()
+
+	scanErr := scanner.Err()
+
+	if scanErr != nil {
+		return apperror.Wrap(scanErr, apperror.ErrFSRead, "failed to parse .uploadignore file")
+	}
+
+	return nil
 }
 
 // addIgnoreLine compiles and appends a single ignore line.
