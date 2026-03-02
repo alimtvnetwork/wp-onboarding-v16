@@ -77,8 +77,8 @@ final class SelfUpdateValidatorTest extends TestCase
             }
         }
 
-        // All 4 critical files should be reported
-        $this->assertSame(4, $criticalMissingCount);
+        // All 16 critical files should be reported
+        $this->assertSame(16, $criticalMissingCount);
     }
 
     // ── Syntax checking ─────────────────────────────────────────────
@@ -199,7 +199,14 @@ final class SelfUpdateValidatorTest extends TestCase
     {
         $dirs = [
             $this->pluginDir . '/includes',
+            $this->pluginDir . '/includes/Core',
             $this->pluginDir . '/includes/Enums',
+            $this->pluginDir . '/includes/Logging',
+            $this->pluginDir . '/includes/ErrorHandling',
+            $this->pluginDir . '/includes/Database',
+            $this->pluginDir . '/includes/Post',
+            $this->pluginDir . '/includes/Update',
+            $this->pluginDir . '/includes/Helpers',
         ];
 
         foreach ($dirs as $dir) {
@@ -208,11 +215,25 @@ final class SelfUpdateValidatorTest extends TestCase
             }
         }
 
+        $stub = "<?php\n// stub\n";
+
         $files = [
             'riseup-asia-uploader.php' => "<?php\n/**\n * Plugin Name: Riseup Asia Uploader\n * Version: 2.4.0\n */\n",
-            'includes/Autoloader.php' => "<?php\nclass RiseupAsiaAutoloader {}\n",
-            'includes/Plugin.php' => "<?php\nnamespace RiseupAsia\\Core;\nclass Plugin {}\n",
+            'includes/Autoloader.php' => $stub,
+            'includes/Core/Plugin.php' => $stub,
             'includes/Enums/PluginConfigType.php' => "<?php\nnamespace RiseupAsia\\Enums;\nenum PluginConfigType: string { case Slug = 'test'; }\n",
+            'includes/Enums/HookType.php' => $stub,
+            'includes/Enums/ResponseKeyType.php' => $stub,
+            'includes/Logging/FileLogger.php' => $stub,
+            'includes/Logging/Logger.php' => $stub,
+            'includes/ErrorHandling/BootErrorCollector.php' => $stub,
+            'includes/ErrorHandling/FatalErrorHandler.php' => $stub,
+            'includes/Database/Database.php' => $stub,
+            'includes/Post/PostManager.php' => $stub,
+            'includes/Update/UpdateResolver.php' => $stub,
+            'includes/Helpers/PathHelper.php' => $stub,
+            'includes/Helpers/InitHelpers.php' => $stub,
+            'includes/Helpers/EnvelopeBuilder.php' => $stub,
         ];
 
         foreach ($files as $relativePath => $content) {

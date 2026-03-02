@@ -112,14 +112,43 @@ class SelfUpdateHealthCheck
 
     /**
      * Verify that critical classes are still available after activation.
+     *
+     * Covers: core shell, logging, error handling, database, post management,
+     * update resolution, helpers, and notification subsystems.
      */
     private function checkCriticalClasses(): void
     {
         $criticalClasses = array(
+            // Core
             'RiseupAsia\\Core\\Plugin',
+
+            // Logging
             'RiseupAsia\\Logging\\FileLogger',
+            'RiseupAsia\\Logging\\Logger',
+
+            // Error handling
             'RiseupAsia\\ErrorHandling\\BootErrorCollector',
+            'RiseupAsia\\ErrorHandling\\FatalErrorHandler',
+
+            // Database
             'RiseupAsia\\Database\\Database',
+
+            // Domain managers
+            'RiseupAsia\\Post\\PostManager',
+            'RiseupAsia\\Update\\UpdateResolver',
+
+            // Helpers
+            'RiseupAsia\\Helpers\\PathHelper',
+            'RiseupAsia\\Helpers\\InitHelpers',
+            'RiseupAsia\\Helpers\\EnvelopeBuilder',
+
+            // Notification
+            'RiseupAsia\\Notification\\AdminMailer',
+
+            // Enums (boot-critical)
+            'RiseupAsia\\Enums\\PluginConfigType',
+            'RiseupAsia\\Enums\\ResponseKeyType',
+            'RiseupAsia\\Enums\\HookType',
         );
 
         foreach ($criticalClasses as $className) {
@@ -130,14 +159,32 @@ class SelfUpdateHealthCheck
     }
 
     /**
-     * Verify that critical WordPress integration functions are still registered.
+     * Verify that critical WordPress hooks are still registered after activation.
+     *
+     * Checks REST API route registration, plugin lifecycle hooks,
+     * and the error response enrichment filter.
      */
     private function checkCriticalFunctions(): void
     {
-        $hasRestRoutes = has_action('rest_api_init');
+        $requiredActions = array(
+            'rest_api_init'      => 'REST API route registration',
+            'activated_plugin'   => 'Plugin activation lifecycle hook',
+            'deactivated_plugin' => 'Plugin deactivation lifecycle hook',
+        );
 
-        if ($hasRestRoutes === false) {
-            $this->addIssue(SelfUpdateStatusType::RestHookMissing, 'rest_api_init hook has no registered handlers after activation');
+        foreach ($requiredActions as $hook => $description) {
+            $hasHook = has_action($hook);
+
+            if ($hasHook === false) {
+                $this->addIssue(SelfUpdateStatusType::RestHookMissing, $description . ' (' . $hook . ') has no registered handlers after activation');
+            }
+        }
+
+        // Check the REST response enrichment filter
+        $hasFilter = has_filter('rest_post_dispatch');
+
+        if ($hasFilter === false) {
+            $this->addIssue(SelfUpdateStatusType::RestHookMissing, 'rest_post_dispatch filter has no registered handlers after activation');
         }
     }
 

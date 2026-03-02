@@ -30,8 +30,20 @@ class SelfUpdateValidator
     private const CRITICAL_FILES = array(
         'riseup-asia-uploader.php',
         'includes/Autoloader.php',
-        'includes/Plugin.php',
+        'includes/Core/Plugin.php',
         'includes/Enums/PluginConfigType.php',
+        'includes/Enums/HookType.php',
+        'includes/Enums/ResponseKeyType.php',
+        'includes/Logging/FileLogger.php',
+        'includes/Logging/Logger.php',
+        'includes/ErrorHandling/BootErrorCollector.php',
+        'includes/ErrorHandling/FatalErrorHandler.php',
+        'includes/Database/Database.php',
+        'includes/Post/PostManager.php',
+        'includes/Update/UpdateResolver.php',
+        'includes/Helpers/PathHelper.php',
+        'includes/Helpers/InitHelpers.php',
+        'includes/Helpers/EnvelopeBuilder.php',
     );
 
     /** Maximum number of PHP files to syntax-check (safety limit). */
