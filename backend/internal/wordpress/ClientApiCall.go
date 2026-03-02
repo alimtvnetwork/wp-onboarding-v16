@@ -18,7 +18,7 @@ type apiCallInput struct {
 	Operation  operationtype.Variant
 	OkStatuses []int  // defaults to [200] if empty
 	PluginSlug string // optional: populates ApiError.PluginSlugIn
-	ErrorCode  string // optional: apperror wrap code (defaults to ErrInternal)
+	ErrorCode  apperror.ErrorCode // optional: apperror wrap code (defaults to ErrInternal)
 }
 
 // ApiCallResponse holds the raw body and status code from an API call.
@@ -142,8 +142,8 @@ func decodeApiResponse[T any](data []byte, operationDesc string) apperror.Result
 	return apperror.Ok(result)
 }
 
-// firstNonEmpty returns the first non-empty string argument.
-func firstNonEmpty(values ...string) string {
+// firstNonEmpty returns the first non-empty ErrorCode argument.
+func firstNonEmpty(values ...apperror.ErrorCode) apperror.ErrorCode {
 	for _, v := range values {
 		isNonEmpty := v != ""
 

@@ -42,7 +42,7 @@ func (c *Client) fetchPluginAccessResponse() apperror.Result[ApiCallResponse] {
 	pluginAccessInput := apiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
-		Operation: "check plugin access",
+		Operation: operationtype.CheckPluginAccess,
 	}
 
 	return c.doApiCallWithStatus(pluginAccessInput)
@@ -166,7 +166,7 @@ func (c *Client) sendWriteTestPost() apperror.Result[ApiCallResponse] {
 		Method:    httpmethod.Post,
 		Endpoint:  WPCorePosts,
 		Body:      testPost,
-		Operation: "test write permissions",
+		Operation: operationtype.TestWritePermissions,
 	}
 
 	return c.doApiCallWithStatus(writeTestInput)

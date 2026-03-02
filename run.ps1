@@ -13,6 +13,7 @@ param(
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
     [Alias('z')][switch]$zip,
+    [Alias('t')][switch]$test,
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose,
     [Alias('d')][switch]$debug,
@@ -45,6 +46,77 @@ if ($scriptFile -and (Test-Path $scriptFile)) {
         Write-Host "Common fix: Ensure the file is saved as UTF-8 (no BOM) with straight ASCII quotes." -ForegroundColor Cyan
         exit 1
     }
+}
+
+# ============================================================================
+# TEST MODE: Run Go tests and exit early
+# ============================================================================
+if ($test) {
+    $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    if ([string]::IsNullOrWhiteSpace($ScriptDir)) {
+        $ScriptDir = Get-Location
+    }
+
+    $ConfigPath = Join-Path $ScriptDir "powershell.json"
+    $Config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+
+    function Resolve-RelativePathForTest($Path) {
+        if ([string]::IsNullOrWhiteSpace($Path) -or $Path -eq ".") { return $ScriptDir }
+        if ($Path -match '^[A-Za-z]:' -or $Path -match '^\\\\') { return $Path -replace '/', '\' }
+        return Join-Path $ScriptDir $Path
+    }
+
+    $BackendDirTest = Resolve-RelativePathForTest $Config.backendDir
+    $DataDirTest = if ($Config.dataDir) { Resolve-RelativePathForTest $Config.dataDir } else { Join-Path $BackendDirTest "data" }
+
+    if (-not (Test-Path $DataDirTest)) {
+        New-Item -ItemType Directory -Path $DataDirTest -Force | Out-Null
+    }
+
+    $TestLogFile = Join-Path $DataDirTest "tests.log.txt"
+    $ErrorLogFile = Join-Path $DataDirTest "error.txt"
+
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Running Go Tests..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    Push-Location $BackendDirTest
+    try {
+        $testOutput = go test -v -count=1 ./... 2>&1 | Out-String
+        $testExitCode = $LASTEXITCODE
+
+        # Write full test log
+        $testOutput | Out-File -FilePath $TestLogFile -Encoding UTF8
+
+        # Extract failures for error log
+        $failLines = ($testOutput -split "`n") | Where-Object { $_ -match '--- FAIL|FAIL\s' }
+
+        if ($testExitCode -ne 0) {
+            $failLines -join "`n" | Out-File -FilePath $ErrorLogFile -Encoding UTF8
+
+            Write-Host $testOutput
+            Write-Host ""
+            Write-Host "  TESTS FAILED" -ForegroundColor Red
+            Write-Host "  Full log:  $TestLogFile" -ForegroundColor Yellow
+            Write-Host "  Errors:    $ErrorLogFile" -ForegroundColor Yellow
+        } else {
+            # Clear error file on success
+            if (Test-Path $ErrorLogFile) { Remove-Item $ErrorLogFile -Force }
+
+            Write-Host $testOutput
+            Write-Host ""
+            Write-Host "  ALL TESTS PASSED" -ForegroundColor Green
+            Write-Host "  Full log:  $TestLogFile" -ForegroundColor DarkGray
+        }
+    }
+    finally {
+        Pop-Location
+    }
+
+    Write-Host ""
+    exit $testExitCode
 }
 
 # ============================================================================
