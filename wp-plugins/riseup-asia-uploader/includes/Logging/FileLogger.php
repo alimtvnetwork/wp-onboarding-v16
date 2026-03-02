@@ -51,6 +51,12 @@ class FileLogger {
     private ?string $stacktraceFile = null;
     private bool $isInitialized = false;
 
+    /**
+     * Maximum stack frames to capture in debug_backtrace().
+     * 0 = unlimited (PHP default). Seeded from config: logging.phpStackTraceDepth.
+     */
+    private int $stackTraceDepth = 0;
+
     /** @var array<string, bool> */
     private array $dedupHashes = array();
     private ?array $requestMetadataCache = null;
@@ -64,5 +70,15 @@ class FileLogger {
     }
 
     private function __construct() {
+    }
+
+    /** Set the maximum stack trace depth for debug_backtrace() calls. */
+    public function setStackTraceDepth(int $depth): void {
+        $this->stackTraceDepth = $depth;
+    }
+
+    /** Get the configured stack trace depth (0 = unlimited). */
+    public function getStackTraceDepth(): int {
+        return $this->stackTraceDepth;
     }
 }

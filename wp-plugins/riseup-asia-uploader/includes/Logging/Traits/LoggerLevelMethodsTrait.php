@@ -100,7 +100,8 @@ trait LoggerLevelMethodsTrait {
 
     /** Log an error message. */
     public function error(string $message, array $context = array()): bool {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
+        $depth = $this->stackTraceDepth > 0 ? $this->stackTraceDepth : 0;
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $depth);
         [$file, $line] = $this->resolveCaller($trace);
 
         if ($this->isDuplicate(LogLevelType::Error->value, $message, $file, $line)) {
