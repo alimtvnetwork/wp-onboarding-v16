@@ -18,6 +18,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
@@ -78,7 +79,7 @@ trait RestoreHelperTrait {
             );
             $this->insertAuditRecord($pdo, $details);
         } catch (Throwable $e) {
-            error_log('RestoreHelperTrait::logRestoreAudit() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'RestoreHelperTrait::logRestoreAudit() failed:');
         }
     }
 

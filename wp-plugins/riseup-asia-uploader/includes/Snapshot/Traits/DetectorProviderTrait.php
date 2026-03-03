@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 
@@ -182,7 +183,7 @@ trait DetectorProviderTrait {
 
                 return $pdo->query('SELECT sqlite_version()')->fetchColumn();
             } catch (Throwable $e) {
-                error_log('DetectorProviderTrait: SQLite version check failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+                InitHelpers::errorLog($e, 'DetectorProviderTrait: SQLite version check failed:');
                 return null;
             }
         }

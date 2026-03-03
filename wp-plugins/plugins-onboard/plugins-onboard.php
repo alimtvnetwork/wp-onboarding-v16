@@ -32,6 +32,7 @@ define('ONBOARD_PLUGIN_BASENAME', plugin_basename(__FILE__));
  */
 require_once ONBOARD_PLUGIN_DIR . 'includes/constants.php';
 require_once ONBOARD_PLUGIN_DIR . 'includes/class-logger.php';
+require_once ONBOARD_PLUGIN_DIR . 'includes/class-error-log.php';
 
 // Log plugin initialization start.
 OnboardLogger::debug('=== PLUGIN INITIALIZATION STARTED ===');
@@ -319,7 +320,7 @@ class PluginsOnboard {
 
         } catch (Exception $e) {
             OnboardLogger::critical('Plugin activation failed', $e);
-            error_log('Plugins Onboard Activation Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            OnboardErrorLog::errorLog($e, 'Plugins Onboard Activation Error:');
 
             // Get dynamic log paths for error display.
             $log_dir = $this->get_log_dir_for_display();
@@ -353,7 +354,7 @@ class PluginsOnboard {
                 return dirname($base) . '/';
             }
         } catch (Exception $e) {
-            error_log('Plugins Onboard: get_base_path_for_display failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            OnboardErrorLog::errorLog($e, 'Plugins Onboard: get_base_path_for_display failed:');
         }
 
         if (defined('WP_CONTENT_DIR')) {
@@ -374,7 +375,7 @@ class PluginsOnboard {
                 return OnboardPaths::get(OnboardPaths::DIR_SECURITY_LOGS);
             }
         } catch (Exception $e) {
-            error_log('Plugins Onboard: get_log_dir_for_display failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            OnboardErrorLog::errorLog($e, 'Plugins Onboard: get_log_dir_for_display failed:');
         }
 
         if (defined('WP_CONTENT_DIR')) {
@@ -427,7 +428,7 @@ class PluginsOnboard {
                     $this->db->save_setting($key, $value);
                 }
             } catch (Exception $e) {
-                error_log('Plugins Onboard: Failed to save setting ' . $key . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+                OnboardErrorLog::errorLog($e, 'Plugins Onboard: Failed to save setting ' . $key . ':');
             }
         }
     }
@@ -526,7 +527,7 @@ class PluginsOnboard {
         } catch (Exception $e) {
             $this->init_error = $e->getMessage();
             OnboardLogger::critical('Plugin init() failed', $e);
-            error_log('Plugins Onboard Init Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            OnboardErrorLog::errorLog($e, 'Plugins Onboard Init Error:');
         }
     }
 
@@ -623,7 +624,7 @@ class PluginsOnboard {
             try {
                 $this->cleanup->run_all();
             } catch (Exception $e) {
-                error_log('Plugins Onboard Cleanup Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+                OnboardErrorLog::errorLog($e, 'Plugins Onboard Cleanup Error:');
             }
         }
     }

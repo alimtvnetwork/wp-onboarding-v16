@@ -17,6 +17,7 @@ use PDOStatement;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait IncrementalExportTrait {
@@ -42,7 +43,7 @@ trait IncrementalExportTrait {
                 ResponseKeyType::Checksum->value => md5_file($filepath),
             );
         } catch (Throwable $e) {
-            error_log('IncrementalExportTrait::exportTableFull() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'IncrementalExportTrait::exportTableFull() failed:');
 
             return array(
                 ResponseKeyType::Success->value => false,

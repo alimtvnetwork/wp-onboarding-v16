@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -37,7 +38,7 @@ trait AdminErrorStateTrait {
 
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
-            error_log('AdminErrorStateTrait::getUnseenErrorCount() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'AdminErrorStateTrait::getUnseenErrorCount() failed:');
             return 0;
         }
     }
@@ -60,7 +61,7 @@ trait AdminErrorStateTrait {
 
             return $isFound ? $val : $default;
         } catch (Throwable $e) {
-            error_log('AdminErrorStateTrait::getFlashValue() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'AdminErrorStateTrait::getFlashValue() failed:');
             return $default;
         }
     }

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use PDOException;
+use Throwable;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\Traits\InitDirTrait;
 use RiseupAsia\Helpers\Traits\InitStartupTrait;
@@ -91,6 +92,16 @@ class InitHelpers {
      */
     public static function errorLogWithPrefix(string $message): void {
         error_log(PluginConfigType::LogPrefix->value . ' ' . $message);
+    }
+
+    /**
+     * Log an exception with context message to PHP's native error_log.
+     *
+     * Internally appends $e->getMessage() and $e->getTraceAsString().
+     * Use this in catch blocks where FileLogger is not available.
+     */
+    public static function errorLog(Throwable $e, string $context): void {
+        error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 
     public static function reset(): void {

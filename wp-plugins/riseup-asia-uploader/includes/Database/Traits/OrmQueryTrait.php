@@ -13,8 +13,7 @@ namespace RiseupAsia\Database\Traits;
 if (!defined('ABSPATH')) {
     exit;
 }
-
-
+use RiseupAsia\Helpers\InitHelpers;
 
 trait OrmQueryTrait {
 
@@ -98,7 +97,7 @@ trait OrmQueryTrait {
 
             return $result ?: null;
         } catch (PDOException $e) {
-            error_log('OrmQueryTrait::findOne() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'OrmQueryTrait::findOne() failed:');
             return null;
         }
     }
@@ -119,7 +118,7 @@ trait OrmQueryTrait {
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log('OrmQueryTrait::findMany() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'OrmQueryTrait::findMany() failed:');
             return array();
         }
     }
@@ -147,7 +146,7 @@ trait OrmQueryTrait {
 
             return (int) ($result['count'] ?? 0);
         } catch (PDOException $e) {
-            error_log('OrmQueryTrait::count() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'OrmQueryTrait::count() failed:');
             return 0;
         }
     }
