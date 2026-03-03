@@ -8,9 +8,9 @@
 // ---------------------------------------------------------------------------
 
 export const ConnectionStatus = {
-  Connected: "Connected",
-  Disconnected: "Disconnected",
-  Unknown: "Unknown",
+  Connected: "connected",
+  Disconnected: "disconnected",
+  Unknown: "unknown",
 } as const;
 
 export type ConnectionStatus = (typeof ConnectionStatus)[keyof typeof ConnectionStatus];

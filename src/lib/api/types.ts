@@ -238,7 +238,7 @@ export interface Site {
   url: string;
   username: string;
   category: string | null;
-  connectionStatus: "Connected" | "Disconnected" | "Unknown";
+  connectionStatus: "connected" | "disconnected" | "unknown";
   lastTestedAt: string | null;
   lastSyncAt: string | null;
   createdAt: string;
