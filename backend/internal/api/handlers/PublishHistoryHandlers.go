@@ -180,13 +180,13 @@ func DeletePublishHistoryEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = Services.PublishHistoryService.Delete(id)
-	if err != nil {
+	deleteErr := Services.PublishHistoryService.Delete(id)
+	if deleteErr != nil {
 		respondError(
 			w,
 			wordpress.HttpStatusServerError,
 			"E8004",
-			err.Error(),
+			deleteErr.Error(),
 		)
 
 		return
