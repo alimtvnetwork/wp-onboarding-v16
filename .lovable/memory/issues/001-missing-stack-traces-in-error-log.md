@@ -2,7 +2,7 @@
 
 **Severity:** Critical  
 **Discovered:** 2026-03-03  
-**Status:** Fixed (Phase 1 + Phase 2)  
+**Status:** ✅ Complete (All phases)
 
 ## Root Cause
 
@@ -46,6 +46,38 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 - `Snapshot/Traits/WorkerTableExportTrait.php` — added log call + `'trace'` (1)
 - `Snapshot/Traits/UpdraftCrudTrait.php` — added `'trace'` (1)
 - `Snapshot/SnapshotCleaner.php` — added `'trace'` to 3 phases (3)
+
+## Phase 3 Fix (7 blocks — Plugins Onboard audit)
+
+- `includes/class-database.php` — 5 PDOException catches: added `getTraceAsString()` to `error_log()` (5)
+- `plugins-onboard.php` — 2 empty catches converted to `error_log()` with traces (2)
+- `includes/class-paths.php` — added `error_log()` with trace alongside existing error collection (1)
+
+## Phase 4 Fix (8 blocks — silent catch elimination)
+
+### Riseup Asia Uploader
+- `Database/Traits/OrmQueryTrait.php` — `findOne()`, `findMany()`, `count()`: added `error_log()` with traces (3)
+- `Snapshot/Traits/ImportValidationTrait.php` — `readRootDbTables()`, `readRootDbIncrementals()`, `readRootDbPlugins()`: added `error_log()` with traces (3)
+- `Snapshot/Traits/WorkerJobProgressTrait.php` — `loadTableProgress()`: added `error_log()` with trace (1)
+- `Snapshot/Traits/DetectorProviderTrait.php` — SQLite version check: added `error_log()` with trace (1)
+
+## Remaining Known Silent Catches (intentional / accepted)
+
+### Intentional Recursion Guards (no fix needed)
+- `Logging/Traits/LoggerWriteTrait.php` line 106 — logger recursion guard, correctly silent
+- `plugins-onboard/includes/class-logger.php` line 137 — same pattern
+
+### Accepted Admin UI Catches (low-risk, non-critical path)
+- `Admin/Traits/AdminErrorStateTrait.php` — `getUnseenErrorCount()` returns 0, `getFlashValue()` returns default — admin badge count only
+- `Traits/Plugin/PluginRouteRegistrationTrait.php` — optional media endpoint registration, comment-documented
+
+## Final Audit Summary
+
+| Plugin | Total Catches | Logging | Silent (intentional) | Silent (accepted) |
+|---|---|---|---|---|
+| QUpload | 7 | 7 ✅ | 0 | 0 |
+| Plugins Onboard | ~20 | 19 ✅ | 1 (logger) | 0 |
+| Riseup Asia | ~700+ | 697+ ✅ | 1 (logger) | 3 (admin UI) |
 
 ## Safe Paths (already compliant — no changes needed)
 
