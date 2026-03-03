@@ -51,7 +51,7 @@ trait IncrementalRegistrationTrait {
 
             return $this->insertIncrementalRecord($pdo, $snapSequence, $folderName, $incrementalDir, $tablesJson, $totalNewRows, $dirSize);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to register incremental snapshot', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logError($e, 'Failed to register incremental snapshot');
 
             return false;
         }
@@ -140,7 +140,7 @@ trait IncrementalRegistrationTrait {
 
             $this->doInvalidateZip($parent, $masterDir);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to invalidate parent ZIP export', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logWarn($e, 'Failed to invalidate parent ZIP export');
         }
     }
 

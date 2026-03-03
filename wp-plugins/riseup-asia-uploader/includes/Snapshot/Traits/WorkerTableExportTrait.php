@@ -39,7 +39,7 @@ trait WorkerTableExportTrait {
 
             return $this->buildExportResult($filename, $filepath, $exported);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Table export failed for ' . $table, array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logError($e, 'Table export failed for ' . $table);
 
             return array(
                 ResponseKeyType::Success->value  => false,

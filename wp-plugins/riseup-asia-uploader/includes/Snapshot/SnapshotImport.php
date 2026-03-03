@@ -115,11 +115,13 @@ class SnapshotImport {
             $this->deleteDirectory($tempDir);
         }
 
-        $this->log(
-            LogLevelType::Error->value,
-            'Snapshot import failed',
-            array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()),
-        );
+        $this->logError($e, 'Snapshot import failed');
+    }
+
+    private function logError(Throwable $e, string $message, array $context = array()): void {
+        $context['error'] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Error->value, $message, $context);
     }
 
     private function log(

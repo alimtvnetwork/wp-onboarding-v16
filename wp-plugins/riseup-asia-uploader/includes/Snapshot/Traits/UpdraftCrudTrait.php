@@ -35,7 +35,7 @@ trait UpdraftCrudTrait {
         try {
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus integration not yet implemented');
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'UpdraftPlus snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'UpdraftPlus snapshot failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return array(
                 ResponseKeyType::Success->value => false,

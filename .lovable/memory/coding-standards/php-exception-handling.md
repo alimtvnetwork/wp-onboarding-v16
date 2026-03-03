@@ -54,7 +54,21 @@ When FileLogger is not available but namespaced helpers are loaded:
 
 This is the **only** context where manual `getMessage()` + `getTraceAsString()` concatenation is acceptable.
 
-### Pattern 4: safeExecute / errorResponse
+### Pattern 4: Snapshot trait logError/logWarn
+
+When inside Snapshot traits/classes that have a `log()` method (via `OrchestratorHelpersTrait`, `CleanerHelperTrait`, `ManagerCoreTrait`, or `SnapshotImport`):
+
+```php
+} catch (Throwable $e) {
+    $this->logError($e, 'Context message');
+    // or with extra context:
+    $this->logWarn($e, 'Context message', array('table' => $tableName));
+}
+```
+
+`logError()`/`logWarn()` auto-inject `'error' => $e->getMessage()` and `'trace' => $e->getTraceAsString()` into the context array before delegating to `$this->log()`. Never manually build these context arrays.
+
+### Pattern 5: safeExecute / errorResponse
 
 These already capture `$e` internally and include `stackTraceFrames` — no action needed at the call site.
 

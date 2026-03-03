@@ -44,7 +44,7 @@ trait WorkerProgressTrait {
                     " SET RowsTotal = {$count} WHERE SnapshotId = 0 AND TableName = '{$table}'");
             }
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to init progress records', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logWarn($e, 'Failed to init progress records');
         }
     }
 
@@ -76,7 +76,7 @@ trait WorkerProgressTrait {
                 $table,
             ));
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to update progress', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logWarn($e, 'Failed to update progress');
         }
     }
 }

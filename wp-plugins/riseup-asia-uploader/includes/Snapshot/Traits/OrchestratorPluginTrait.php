@@ -229,7 +229,7 @@ trait OrchestratorPluginTrait {
 
             return $pdo;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Could not open a-root.db for plugin registration', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logWarn($e, 'Could not open a-root.db for plugin registration');
 
             return null;
         }

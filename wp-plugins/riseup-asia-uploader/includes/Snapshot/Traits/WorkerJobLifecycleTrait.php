@@ -70,7 +70,7 @@ trait WorkerJobLifecycleTrait {
 
             return (int) $pdo->lastInsertId();
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to create snapshot job', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logError($e, 'Failed to create snapshot job');
 
             return false;
         }
@@ -154,7 +154,7 @@ trait WorkerJobLifecycleTrait {
                 $this->rootDb->updateStats($rootPdo, (int) $job['TablesExported'], (int) $job['TotalRows']);
                 $rootPdo = null;
             } catch (Throwable $e) {
-                $this->log(LogLevelType::Warn->value, 'Failed to finalize a-root.db stats', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+                $this->logWarn($e, 'Failed to finalize a-root.db stats');
             }
         }
 

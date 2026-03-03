@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Enums\ResponseKeyType;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
@@ -120,6 +121,18 @@ trait CleanerHelperTrait {
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'CleanerHelperTrait::logCleanupAction() failed:');
         }
+    }
+
+    private function logError(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Error->value, $message, $context);
+    }
+
+    private function logWarn(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Warn->value, $message, $context);
     }
 
     private function log(
