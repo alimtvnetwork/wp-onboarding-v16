@@ -35,10 +35,10 @@ func initPluginCaches(services *Services, log *logger.Logger) {
 		return
 	}
 	for _, p := range pluginResult.Items() {
-		cacheErr := services.Watcher.InitializeCache(ctx, p.ID)
+		cacheErr := services.Watcher.InitializeCache(ctx, p.Id)
 
 		if cacheErr != nil {
-			log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", cacheErr)
+			log.Error("Failed to initialize watcher cache", "pluginId", p.Id, "error", cacheErr)
 		}
 	}
 }
