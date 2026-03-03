@@ -1,0 +1,150 @@
+<?php
+/**
+ * UploadHandlerTrait — Upload endpoint handler for QUpload.
+ *
+ * Accepts a plugin ZIP, extracts, replaces existing version, and activates.
+ *
+ * @package QUpload\Traits\Upload
+ * @since   1.0.0
+ */
+
+namespace QUpload\Traits\Upload;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
+use QUpload\Enums\EndpointType;
+use QUpload\Enums\HttpStatusType;
+use QUpload\Enums\PluginConfigType;
+use QUpload\Enums\ResponseKeyType;
+use QUpload\Helpers\EnvelopeBuilder;
+
+trait UploadHandlerTrait
+{
+    use UploadExtractTrait;
+
+    /** Handle POST /upload endpoint. */
+    public function handleUpload(WP_REST_Request $request): WP_REST_Response {
+        $this->fileLogger->info('Upload endpoint called');
+
+        try {
+            return $this->executeUploadPipeline($request);
+        } catch (Throwable $e) {
+            $this->fileLogger->logException($e, 'Upload failed');
+
+            return $this->errorResponse('Upload failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+        }
+    }
+
+    private function executeUploadPipeline(WP_REST_Request $request): WP_REST_Response {
+        $input = $this->parseUploadInput($request);
+
+        if ($input instanceof WP_REST_Response) {
+            return $input;
+        }
+
+        $this->fileLogger->info('Upload initiated', [
+            'slug' => $input['slug'],
+            'activate' => $input['activate'],
+            'fileSize' => strlen($input['zipContent']),
+        ]);
+
+        $zipResult = $this->validateAndWriteZip($input['zipContent'], $input['slug']);
+
+        if ($zipResult instanceof WP_REST_Response) {
+            return $zipResult;
+        }
+
+        $result = $this->processExtraction($input, $zipResult);
+
+        if ($result instanceof WP_REST_Response) {
+            return $result;
+        }
+
+        return $this->buildUploadResponse($result);
+    }
+
+    private function parseUploadInput(WP_REST_Request $request): array|WP_REST_Response {
+        $files = $request->get_file_params();
+        $isMultipart = !empty($files['plugin_zip']);
+
+        if ($isMultipart) {
+            return $this->parseMultipartUpload($files, $request);
+        }
+
+        return $this->parseBase64Upload($request);
+    }
+
+    private function parseMultipartUpload(array $files, WP_REST_Request $request): array|WP_REST_Response {
+        $this->fileLogger->info('Processing multipart upload');
+        $upload = $files['plugin_zip'];
+
+        if ($upload['error'] !== UPLOAD_ERR_OK) {
+            $this->fileLogger->error('Upload error', ['code' => $upload['error']]);
+
+            return $this->errorResponse('File upload failed (error code: ' . $upload['error'] . ')', HttpStatusType::BadRequest->value);
+        }
+
+        $zipContent = file_get_contents($upload['tmp_name']);
+
+        if ($zipContent === false) {
+            $this->fileLogger->error('Failed to read uploaded file');
+
+            return $this->errorResponse('Failed to read uploaded file', HttpStatusType::ServerError->value);
+        }
+
+        $bodyParams = $request->get_body_params();
+
+        return $this->buildUploadParams($zipContent, $bodyParams);
+    }
+
+    private function parseBase64Upload(WP_REST_Request $request): array|WP_REST_Response {
+        $data = $request->get_json_params();
+
+        if (empty($data['plugin_zip'])) {
+            $this->fileLogger->warn('Missing plugin_zip in request');
+
+            return $this->errorResponse('plugin_zip is required (multipart file or base64 JSON)', HttpStatusType::BadRequest->value);
+        }
+
+        $this->fileLogger->info('Processing base64 JSON upload');
+        $zipContent = base64_decode($data['plugin_zip']);
+
+        if ($zipContent === false) {
+            $this->fileLogger->error('Invalid base64 data');
+
+            return $this->errorResponse('Invalid base64 data', HttpStatusType::BadRequest->value);
+        }
+
+        return $this->buildUploadParams($zipContent, $data);
+    }
+
+    private function buildUploadParams(string $zipContent, array $data): array {
+        $slug = sanitize_file_name($data['slug'] ?? '');
+        $activate = !isset($data['activate']) || !empty($data['activate']);
+
+        return ['zipContent' => $zipContent, 'slug' => $slug, 'activate' => $activate];
+    }
+
+    private function buildUploadResponse(array $result): WP_REST_Response {
+        $this->fileLogger->info('Upload complete', [
+            'slug' => $result[ResponseKeyType::Slug->value],
+            'isUpdate' => $result[ResponseKeyType::IsUpdate->value],
+            'activated' => $result[ResponseKeyType::Activated->value],
+        ]);
+
+        return EnvelopeBuilder::success()
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route())
+            ->setSingleResult([
+                ResponseKeyType::PluginSlug->value    => $result[ResponseKeyType::Slug->value],
+                ResponseKeyType::IsUpdate->value      => $result[ResponseKeyType::IsUpdate->value],
+                ResponseKeyType::Activated->value     => $result[ResponseKeyType::Activated->value],
+                ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
+            ])
+            ->toResponse();
+    }
+}
