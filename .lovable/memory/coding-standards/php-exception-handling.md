@@ -5,19 +5,11 @@ Updated: 2026-03-03
 
 Every error logging call **MUST** accept the `Throwable` object as the primary input — not a string message. The message is secondary; the **stack trace is the most important part**.
 
-### Mandatory Pattern: `error_log` with Throwable
+## Mandatory Patterns (by context)
 
-```php
-} catch (Throwable $e) {
-    error_log('Context message: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-}
-```
+### Pattern 1: FileLogger — `logException()`
 
-The method internally:
-1. Logs `$e->getMessage()` first (the human-readable summary)
-2. Appends `"\n" . $e->getTraceAsString()` (the full call stack — **this is the critical part**)
-
-### Mandatory Pattern: FileLogger with Throwable
+When `$this->fileLogger` is available (Plugin classes, managers, services):
 
 ```php
 } catch (Throwable $e) {
@@ -25,23 +17,50 @@ The method internally:
 }
 ```
 
-`logException()` accepts `Throwable $e` as its **first parameter**. Internally it:
-1. Logs `$e->getMessage()` (the summary)
-2. Logs `$e->getTraceAsString()` in the context array and dedicated stacktrace file
-3. Persists to error sessions DB (Riseup Asia)
+`logException()` internally extracts `$e->getMessage()`, `$e->getTraceAsString()`, file, and line. One call does everything.
 
-### Mandatory Pattern: safeExecute / errorResponse
+### Pattern 2: Snapshot Traits — `logError()` (NEW)
+
+When using the `$this->log()` pattern (Snapshot orchestrators, workers, cleaners):
+
+```php
+} catch (Throwable $e) {
+    $this->logError($e, 'Context message', ['extra_key' => $value]);
+}
+```
+
+`logError()` internally calls `$this->log()` and auto-injects `'error' => $e->getMessage()` and `'trace' => $e->getTraceAsString()` into the context array. The third parameter is optional extra context that gets merged in.
+
+**NEVER do this:**
+```php
+// ❌ WRONG — manual getMessage/getTraceAsString is verbose and error-prone
+$this->log(LogLevelType::Error->value, 'Failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+```
+
+### Pattern 3: Bootstrap/Autoloader — `error_log()`
+
+When no class infrastructure is available (autoloaders, bootstrap files, activation hooks):
+
+```php
+} catch (Throwable $e) {
+    error_log('Prefix: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+}
+```
+
+This is the only context where manual `getMessage()` + `getTraceAsString()` concatenation is acceptable.
+
+### Pattern 4: safeExecute / errorResponse
 
 These already capture `$e` internally and include `stackTraceFrames` — no action needed at the call site.
 
 ## Rules
 
-1. **Throwable is the primary input** — every error logging method must accept `Throwable` as its first parameter, not a string message
-2. **Stack trace is the most important output** — `$e->getTraceAsString()` must always be logged after `$e->getMessage()`
-3. **Never** log `$e->getMessage()` alone — always append `"\n" . $e->getTraceAsString()`
-4. `$e->getMessage()` returns ONLY the message string, never the trace
-5. `$e->getTraceAsString()` returns the full call stack as a formatted string
-6. `$e->getTrace()` returns the structured array (used for REST API frame arrays)
+1. **Throwable is the primary input** — every error logging method must accept `Throwable` as its first parameter
+2. **Stack trace is the most important output** — must always be logged, never omitted
+3. **Never** manually add `'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()` in context arrays — use `logError($e, msg)` instead
+4. **Never** log `$e->getMessage()` alone without the trace
+5. The `logError()` method handles level (Error), message extraction, and trace inclusion automatically
+6. For warn-level exceptions, use `logWarn($e, msg, context)` (same pattern, Warn level)
 7. This applies to ALL plugins: `riseup-asia-uploader`, `qupload`, `plugins-onboard`
 8. No exceptions to this rule — even in autoloaders, bootstrap, deactivation hooks
 9. Only permitted silent catch: logger recursion guards (to prevent infinite loops)
