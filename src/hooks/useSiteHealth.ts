@@ -34,6 +34,7 @@ export function useSiteHealthStats(pollInterval = 30000) {
 export function useCheckAllSitesHealth() {
   const queryClient = useQueryClient();
   return useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: () => api.checkAllSitesHealth(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["site-health-summaries"] });

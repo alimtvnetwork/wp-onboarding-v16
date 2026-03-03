@@ -21,6 +21,7 @@ export function useErrorHistory() {
 
   // Save error to backend
   const saveMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: (input: ErrorHistoryInput) => api.saveErrorHistory(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["error-history"] });
@@ -29,6 +30,7 @@ export function useErrorHistory() {
 
   // Delete error from backend
   const deleteMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: (id: number) => api.deleteErrorHistory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["error-history"] });
@@ -37,6 +39,7 @@ export function useErrorHistory() {
 
   // Clear all errors
   const clearMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: () => api.clearErrorHistory(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["error-history"] });
@@ -45,6 +48,7 @@ export function useErrorHistory() {
 
   // Bulk export errors
   const exportMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: (ids: number[]) => api.bulkExportErrorHistory(ids),
   });
 
@@ -110,6 +114,7 @@ export function useErrorHistorySync() {
   
   // Save error to backend
   const saveMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: (input: ErrorHistoryInput) => api.saveErrorHistory(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["error-history"] });
