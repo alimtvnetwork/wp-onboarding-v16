@@ -146,6 +146,7 @@ trait DatabaseConvenienceTrait {
             $this->fileLogger->error('DB query failed', [
                 'sql'   => $sql,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
             return false;
         }

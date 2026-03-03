@@ -27,7 +27,7 @@ trait DatabaseMigrationsV4V5Trait {
         try {
             $this->pdo->exec("ALTER TABLE {$table} ADD COLUMN SourceMachine TEXT");
         } catch (PDOException $e) {
-            $this->fileLogger->debug("Column might exist: SourceMachine", array('error' => $e->getMessage()));
+            $this->fileLogger->debug("Column might exist: SourceMachine", array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         }
 
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS IdxTransactions_SourceMachine ON {$table}(SourceMachine)");
