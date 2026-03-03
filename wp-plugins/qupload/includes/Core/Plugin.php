@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use QUpload\Enums\HookType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Logging\FileLogger;
 
@@ -49,7 +50,7 @@ class Plugin {
         $this->fileLogger = FileLogger::getInstance();
         $this->fileLogger->info('Plugin constructor starting', ['version' => PluginConfigType::Version->value]);
 
-        add_action('rest_api_init', [$this, 'registerRoutes']);
+        add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
         $this->registerAdminPage();
 
         $this->fileLogger->info('Plugin constructor complete');
