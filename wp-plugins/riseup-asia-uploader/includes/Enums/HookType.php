@@ -45,6 +45,7 @@ enum HookType: string
     case CronSnapshotWorkerBatch = 'riseup_snapshot_worker_batch';
     case CronSnapshotRestore     = 'riseup_snapshot_restore';
     case CronSnapshotIncremental = 'riseup_snapshot_incremental';
+    case CronLicenseRevalidate   = 'riseup_license_revalidate';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

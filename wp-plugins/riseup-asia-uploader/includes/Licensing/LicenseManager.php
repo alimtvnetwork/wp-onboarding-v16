@@ -17,10 +17,12 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LicenseOptionType;
 use RiseupAsia\Enums\LicenseStatusType;
+use RiseupAsia\Enums\HookType;
 
 class LicenseManager
 {
     private const CACHE_TTL_HOURS = 12;
+    private const CRON_INTERVAL = 'twicedaily';
 
     private LicenseClient $client;
     private static ?self $instance = null;
@@ -45,6 +47,40 @@ class LicenseManager
             : '';
 
         $this->client = new LicenseClient($baseUrl, $hmacSecret);
+
+        $this->scheduleCron();
+        add_action(HookType::CronLicenseRevalidate->value, [self::class, 'cronRevalidate']);
+    }
+
+    /**
+     * WP-Cron callback — revalidate the stored license key.
+     */
+    public static function cronRevalidate(): void
+    {
+        $manager = self::getInstance();
+        $manager->validateLicense();
+    }
+
+    /**
+     * Ensure the revalidation cron event is scheduled.
+     */
+    private function scheduleCron(): void
+    {
+        $hook = HookType::CronLicenseRevalidate->value;
+
+        if (!function_exists('wp_next_scheduled')) {
+            return;
+        }
+
+        $hasKey = !empty($this->getStoredKey());
+
+        if ($hasKey && !wp_next_scheduled($hook)) {
+            wp_schedule_event(time(), self::CRON_INTERVAL, $hook);
+        }
+
+        if (!$hasKey && wp_next_scheduled($hook)) {
+            wp_clear_scheduled_hook($hook);
+        }
     }
 
     /**
@@ -170,6 +206,7 @@ class LicenseManager
         $sanitized = sanitize_text_field(trim($key));
         update_option(LicenseOptionType::LicenseKey->value, $sanitized);
         $this->clearCache();
+        $this->scheduleCron();
 
         return $this->validateLicense();
     }
@@ -182,6 +219,7 @@ class LicenseManager
         $this->deactivateLicense();
         delete_option(LicenseOptionType::LicenseKey->value);
         $this->clearCache();
+        $this->scheduleCron();
     }
 
     /**
