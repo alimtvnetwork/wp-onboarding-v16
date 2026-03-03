@@ -68,7 +68,12 @@ func (a *SiteSessionAdapter) LogStageEnd(sessionId, stageName, status string, du
 		return
 	}
 
-	a.service.LogStageEnd(sessionId, stageName, status, durationMs)
+	a.service.LogStageEnd(session.StageEndInput{
+		SessionId:  sessionId,
+		StageName:  stageName,
+		Status:     status,
+		DurationMs: durationMs,
+	})
 }
 
 // EndSession delegates to session.Service.EndSession.
@@ -112,7 +117,12 @@ func (a *SiteSessionAdapter) SaveError(sessionId string, stackTrace *session.Ses
 		return
 	}
 
-	a.service.SaveError(sessionId, stackTrace, errorMsg, details)
+	a.service.SaveError(session.SaveErrorInput{
+		SessionId:  sessionId,
+		StackTrace: stackTrace,
+		ErrorMsg:   errorMsg,
+		Details:    details,
+	})
 }
 
 // PublishHistoryRecorderAdapter bridges *publishhistory.Service to publish.PublishHistoryRecorder.
