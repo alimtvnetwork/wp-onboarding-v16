@@ -267,7 +267,7 @@ func (s *Service) exportRemoteForRollback(pctx *publishContext) string {
 }
 
 // saveRollbackZip decodes and writes the rollback zip to disk.
-func (s *Service) saveRollbackZip(pctx *publishContext, exportResult *wordpress.ExportResult) string {
+func (s *Service) saveRollbackZip(pctx *publishContext, exportResult *wordpress.ExportPluginResult) string {
 	zipData, decErr := base64.StdEncoding.DecodeString(exportResult.PluginZip)
 	if decErr != nil {
 		return ""
