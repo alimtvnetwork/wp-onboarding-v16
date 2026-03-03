@@ -175,6 +175,27 @@ export interface PublishResponse {
   backupId?: number;
 }
 
+/** Result for a single item in a bulk publish operation */
+export interface BulkPublishItemResult {
+  pluginId: number;
+  pluginName: string;
+  siteId: number;
+  siteName: string;
+  isSuccess: boolean;
+  errorMessage?: string;
+  backupId?: number;
+  durationMs: number;
+}
+
+/** Response from bulk publish operations */
+export interface BulkPublishResponse {
+  totalOperations: number;
+  succeeded: number;
+  failed: number;
+  durationMs: number;
+  items: BulkPublishItemResult[];
+}
+
 // ---------------------------------------------------------------------------
 // Core API types
 // ---------------------------------------------------------------------------

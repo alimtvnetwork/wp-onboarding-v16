@@ -78,7 +78,7 @@ Before any plugin update/publish, automatically create a backup of the current p
 
 ---
 
-### 7B: Bulk Quick Publish (Multi-select)
+### ✅ 7B: Bulk Quick Publish (Multi-select) — Go + React complete
 
 **Decision:** "Quick Publish Selected" enabled for bulk updates.  
 **Priority:** Medium  

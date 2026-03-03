@@ -442,6 +442,20 @@ export const api = {
       });
     };
   })(),
+
+  // Bulk Publish — publishes multiple plugins to multiple sites sequentially
+  bulkPublish: (input: {
+    pluginIds: number[];
+    siteIds: number[];
+    mode?: string;
+    createBackup?: boolean;
+    keepZipFiles?: boolean;
+  }) =>
+    request<import('./types').BulkPublishResponse>("/publish/bulk", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
   previewPublish: (pluginId: number, siteId: number) =>
     request<PublishPreview>(`/plugins/${pluginId}/sites/${siteId}/preview`),
 
