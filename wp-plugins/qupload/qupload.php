@@ -35,7 +35,7 @@ function qupload_init(): void {
     try {
         Plugin::getInstance();
     } catch (Throwable $e) {
-        error_log(PluginConfigType::LogPrefix->value . ' Plugin init failed: ' . $e->getMessage());
+        error_log(PluginConfigType::LogPrefix->value . ' Plugin init failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }
 
@@ -48,7 +48,7 @@ function qupload_deactivate(): void {
     try {
         Plugin::getInstance()->handleDeactivate();
     } catch (Throwable $e) {
-        error_log(PluginConfigType::LogPrefix->value . ' Deactivation cleanup failed: ' . $e->getMessage());
+        error_log(PluginConfigType::LogPrefix->value . ' Deactivation cleanup failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }
 

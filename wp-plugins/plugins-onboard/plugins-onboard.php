@@ -319,7 +319,7 @@ class PluginsOnboard {
 
         } catch (Exception $e) {
             OnboardLogger::critical('Plugin activation failed', $e);
-            error_log('Plugins Onboard Activation Error: ' . $e->getMessage());
+            error_log('Plugins Onboard Activation Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
 
             // Get dynamic log paths for error display.
             $log_dir = $this->get_log_dir_for_display();
@@ -427,7 +427,7 @@ class PluginsOnboard {
                     $this->db->save_setting($key, $value);
                 }
             } catch (Exception $e) {
-                error_log('Plugins Onboard: Failed to save setting ' . $key . ': ' . $e->getMessage());
+                error_log('Plugins Onboard: Failed to save setting ' . $key . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             }
         }
     }
@@ -526,7 +526,7 @@ class PluginsOnboard {
         } catch (Exception $e) {
             $this->init_error = $e->getMessage();
             OnboardLogger::critical('Plugin init() failed', $e);
-            error_log('Plugins Onboard Init Error: ' . $e->getMessage());
+            error_log('Plugins Onboard Init Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 
@@ -623,7 +623,7 @@ class PluginsOnboard {
             try {
                 $this->cleanup->run_all();
             } catch (Exception $e) {
-                error_log('Plugins Onboard Cleanup Error: ' . $e->getMessage());
+                error_log('Plugins Onboard Cleanup Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             }
         }
     }

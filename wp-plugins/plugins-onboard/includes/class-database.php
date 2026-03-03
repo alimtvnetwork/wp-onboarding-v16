@@ -494,7 +494,7 @@ class OnboardDatabase {
             }
             return null;
         } catch (Exception $e) {
-            error_log('Onboard get_setting error: ' . $e->getMessage());
+            error_log('Onboard get_setting error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return null;
         }
     }
@@ -536,7 +536,7 @@ class OnboardDatabase {
             }
             return true;
         } catch (Exception $e) {
-            error_log('Onboard save_setting error: ' . $e->getMessage());
+            error_log('Onboard save_setting error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return false;
         }
     }
@@ -566,7 +566,7 @@ class OnboardDatabase {
             }
             return $settings;
         } catch (Exception $e) {
-            error_log('Onboard get_all_settings error: ' . $e->getMessage());
+            error_log('Onboard get_all_settings error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return array();
         }
     }

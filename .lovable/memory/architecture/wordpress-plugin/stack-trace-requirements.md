@@ -1,5 +1,5 @@
 # Memory: architecture/wordpress-plugin/stack-trace-requirements
-Updated: 2026-02-06
+Updated: 2026-03-03
 
 ## Critical Requirement
 
@@ -83,7 +83,12 @@ When WordPress returns an empty response body with status 500, the Go backend no
 - Points to relevant WordPress log files
 - Parses PHP stack trace frames from error responses when available
 
+## Additional Rule: error_log() Must Include Stack Traces
+
+Every `error_log()` call inside a `catch` block that has access to `$e` **MUST** append `"\n" . $e->getTraceAsString()`. Logging only `$e->getMessage()` is a critical defect. See `.lovable/memory/coding-standards/php-exception-handling.md` and issue `001-missing-stack-traces-in-error-log.md`.
+
 ## Version History
 
+- 2026-03-03: Added mandatory error_log stack trace rule; fixed 14 catch blocks across all 3 plugins (Issue #001)
 - v1.7.0: Added Throwable catching, safe_execute(), enhanced shutdown handler, empty response diagnostics
 - v1.6.0: Initial stack trace implementation with string-only format
