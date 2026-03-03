@@ -96,6 +96,22 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 - `Traits/Route/RouteRegistrationTrait.php` — route registration: switched `fileLogger->error()` → `logException($e)` (1)
 - `Traits/Plugin/PluginRouteRegistrationTrait.php` — agent route registration: switched `fileLogger->error()` → `logException($e)` (1)
 
+## Phase 7 (planned): Refactor to `logError($e, msg)` pattern
+
+**Problem:** All Phase 2–6 fixes manually inject `'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()` into context arrays. This is verbose, repetitive, and the exact pattern that caused violations in the first place.
+
+**Solution:** Create `logError(Throwable $e, string $message, array $context = [])` and `logWarn(Throwable $e, string $message, array $context = [])` methods that auto-inject error+trace. Then refactor all `$this->log()` catch blocks to use them.
+
+**Scope:**
+- Snapshot traits (~30+ catch blocks using `$this->log()` with manual error/trace)
+- All `$this->log(LogLevelType::Error->value, msg, ['error' => $e->getMessage(), 'trace' => ...])` → `$this->logError($e, msg)`
+- All `$this->log(LogLevelType::Warn->value, msg, ['error' => $e->getMessage(), 'trace' => ...])` → `$this->logWarn($e, msg)`
+
+**Three authorized patterns after Phase 7:**
+1. `$this->fileLogger->logException($e, 'context')` — FileLogger users
+2. `$this->logError($e, 'context', $extra)` — Snapshot trait users (NEW)
+3. `error_log('prefix: ' . $e->getMessage() . "\n" . $e->getTraceAsString())` — bootstrap only
+
 ## Remaining Silent Catches (intentional — no fix needed)
 
 - `Logging/Traits/LoggerWriteTrait.php` line 106 — logger recursion guard, correctly silent
@@ -116,7 +132,9 @@ These patterns inherently log stack traces via `logException()`:
 - `$this->errorResponse(msg, status, $e)` ✅
 - `$this->safeExecute(callback, context)` ✅
 - `$this->fileLogger->logException($e, context)` ✅
+- `$this->logError($e, msg, context)` ✅ (Phase 7)
+- `$this->logWarn($e, msg, context)` ✅ (Phase 7)
 
 ## Prevention
 
-Coding standard `.lovable/memory/coding-standards/php-exception-handling.md` mandates that **every catch block with `$e` must include `$e->getTraceAsString()`**. This is non-negotiable.
+Coding standard `.lovable/memory/coding-standards/php-exception-handling.md` mandates that **every catch block with `$e` must use one of the three authorized patterns**. Manual `getMessage()` + `getTraceAsString()` in context arrays is now prohibited.
