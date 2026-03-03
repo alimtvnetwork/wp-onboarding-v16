@@ -137,6 +137,7 @@ trait ErrorSessionHandlerTrait {
         } catch (Throwable $e) {
             $this->fileLogger->warn('Failed to count unseen errors', array(
                 'exception' => $e->getMessage(),
+                'trace'      => $e->getTraceAsString(),
                 'lastSeenId' => $lastSeenId,
             ));
 

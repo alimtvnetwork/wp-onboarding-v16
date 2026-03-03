@@ -97,7 +97,7 @@ trait PluginLifecycleEnableTrait {
                 return $this->errorResponse(ResponseMessageType::ActivationFailed->value . ': ' . $result->get_error_message(), HttpStatusType::ServerError->value);
             }
         } catch (Throwable $e) {
-            $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage()));
+            $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return $this->errorResponse('Exception during activation: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
@@ -115,7 +115,7 @@ trait PluginLifecycleEnableTrait {
         try {
             deactivate_plugins($pluginFile);
         } catch (Throwable $e) {
-            $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage()));
+            $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return $this->errorResponse('Exception during deactivation: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }

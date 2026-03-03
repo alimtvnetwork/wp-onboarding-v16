@@ -32,7 +32,7 @@ class DependencyLoader {
 
             return true;
         } catch (Throwable $e) {
-            self::recordResult($label, $path, false, $e->getMessage());
+            self::recordResult($label, $path, false, $e->getMessage() . "\n" . $e->getTraceAsString());
 
             return false;
         }
