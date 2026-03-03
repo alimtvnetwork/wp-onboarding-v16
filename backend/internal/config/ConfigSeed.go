@@ -123,14 +123,14 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 		normalizedUrl := normalizeUrl(site.URL)
 		log.Info("Processing site", "index", i+1, "name", site.Name, "rawUrl", site.URL, "normalizedUrl", normalizedUrl)
 
-		passwordPlaintext, err := base64.StdEncoding.DecodeString(site.ApplicationPassword)
-		if err != nil {
+		passwordPlaintext, decodeErr := base64.StdEncoding.DecodeString(site.ApplicationPassword)
+		if decodeErr != nil {
 			log.Warn("Base64 decode failed for site password, using raw", "site", site.Name)
 			passwordPlaintext = []byte(site.ApplicationPassword)
 		}
 
-		existingId, err := db.GetSiteIdByUrl(normalizedUrl)
-		isExisting := err == nil && existingId > 0
+		existingId, lookupErr := db.GetSiteIdByUrl(normalizedUrl)
+		isExisting := lookupErr == nil && existingId > 0
 
 		if isExisting {
 			log.Info("Site exists in DB", "id", existingId, "name", site.Name)
@@ -138,15 +138,15 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 			continue
 		}
 
-		encryptedPassword, err := crypto.Encrypt(passwordPlaintext, encryptionKey)
-		if err != nil {
-			log.Error("Failed to encrypt password for site", "site", site.Name, "error", err)
+		encryptedPassword, encryptErr := crypto.Encrypt(passwordPlaintext, encryptionKey)
+		if encryptErr != nil {
+			log.Error("Failed to encrypt password for site", "site", site.Name, "error", encryptErr)
 			continue
 		}
 
-		id, err := db.CreateSeedSite(database.SeedSiteInput{Name: site.Name, Url: normalizedUrl, Username: site.Username, PasswordEncrypted: encryptedPassword, Category: site.Category})
-		if err != nil {
-			log.Error("Failed to create seed site", "name", site.Name, "error", err)
+		id, createErr := db.CreateSeedSite(database.SeedSiteInput{Name: site.Name, Url: normalizedUrl, Username: site.Username, PasswordEncrypted: encryptedPassword, Category: site.Category})
+		if createErr != nil {
+			log.Error("Failed to create seed site", "name", site.Name, "error", createErr)
 			continue
 		}
 
@@ -163,16 +163,17 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 
 		var pluginId int64
 
-		existingId, err := db.GetPluginIdByPath(plugin.Path)
-		isExisting := err == nil && existingId > 0
+		existingId, pluginLookupErr := db.GetPluginIdByPath(plugin.Path)
+		isExisting := pluginLookupErr == nil && existingId > 0
 
 		if isExisting {
 			log.Info("Plugin exists in DB", "id", existingId, "name", plugin.Name)
 			pluginId = existingId
 		} else {
-			pluginId, err = db.CreateSeedPlugin(database.SeedPluginInput{Name: plugin.Name, Path: plugin.Path, Category: plugin.Category, GitEnabled: plugin.GitEnabled, AutoPublish: plugin.AutoPublish})
-			if err != nil {
-				log.Error("Failed to create seed plugin", "name", plugin.Name, "path", plugin.Path, "error", err)
+			var createPluginErr *apperror.AppError
+			pluginId, createPluginErr = db.CreateSeedPlugin(database.SeedPluginInput{Name: plugin.Name, Path: plugin.Path, Category: plugin.Category, GitEnabled: plugin.GitEnabled, AutoPublish: plugin.AutoPublish})
+			if createPluginErr != nil {
+				log.Error("Failed to create seed plugin", "name", plugin.Name, "path", plugin.Path, "error", createPluginErr)
 				continue
 			}
 
@@ -182,9 +183,9 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error
 		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
 
 		for _, siteId := range allSiteIds {
-			created, err := db.CreateSeedMapping(database.SeedMappingInput{PluginId: pluginId, SiteId: siteId, RemoteSlug: remoteSlug, Logger: log})
-			if err != nil {
-				log.Warn("Failed to create mapping", "pluginId", pluginId, "siteId", siteId, "error", err)
+			created, mapErr := db.CreateSeedMapping(database.SeedMappingInput{PluginId: pluginId, SiteId: siteId, RemoteSlug: remoteSlug, Logger: log})
+			if mapErr != nil {
+				log.Warn("Failed to create mapping", "pluginId", pluginId, "siteId", siteId, "error", mapErr)
 			} else if created {
 				totalMappingsCreated++
 			}
