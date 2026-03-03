@@ -89,6 +89,13 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 - `Database/Traits/DatabaseMigrationsV4V5Trait.php` — column existence check (1)
 - `Database/Traits/DatabaseMigrationsV9V11Trait.php` — column existence check (1)
 
+### Riseup Asia Uploader — Final sweep: trace-incomplete `$this->log()` and `fileLogger->error()` calls (6)
+- `Snapshot/Traits/CleanerStorageTrait.php` — `getStorageStats()` + `estimateCleanup()`: added `'trace'` to context (2)
+- `Snapshot/Traits/OrchestratorPluginTrait.php` — `openRootDb()`: added `'trace'` to context (1)
+- `Snapshot/Traits/ManagerImportTrait.php` — `importSnapshot()`: added `'trace'` to context (1)
+- `Traits/Route/RouteRegistrationTrait.php` — route registration: switched `fileLogger->error()` → `logException($e)` (1)
+- `Traits/Plugin/PluginRouteRegistrationTrait.php` — agent route registration: switched `fileLogger->error()` → `logException($e)` (1)
+
 ## Remaining Silent Catches (intentional — no fix needed)
 
 - `Logging/Traits/LoggerWriteTrait.php` line 106 — logger recursion guard, correctly silent
