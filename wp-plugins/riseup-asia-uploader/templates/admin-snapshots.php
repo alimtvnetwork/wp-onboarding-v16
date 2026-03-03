@@ -38,7 +38,7 @@ $pluginSlug = PluginConfigType::Slug->value;
     </h1>
 
     <p class="description">
-        <?php esc_html_e('Create, manage, and restore database snapshots. Snapshots are stored as SQLite files and can be exported/imported as ZIP archives.', 'riseup-asia-uploader'); ?>
+        <?php esc_html_e('Create, manage, and restore database snapshots. Snapshots are stored as SQLite files and can be exported/imported as ZIP archives.', $pluginSlug); ?>
     </p>
 
     <!-- Actions Bar -->
@@ -46,22 +46,22 @@ $pluginSlug = PluginConfigType::Slug->value;
         <div class="riseup-actions-row">
             <button type="button" id="btn_snapshot_now" class="button button-primary">
                 <span class="dashicons dashicons-camera"></span>
-                <?php esc_html_e('Snapshot Now', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Snapshot Now', $pluginSlug); ?>
             </button>
 
             <button type="button" id="btn_incremental_now" class="button button-secondary">
                 <span class="dashicons dashicons-randomize"></span>
-                <?php esc_html_e('Incremental Backup', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Incremental Backup', $pluginSlug); ?>
             </button>
 
             <button type="button" id="btn_import_snapshot" class="button button-secondary">
                 <span class="dashicons dashicons-upload"></span>
-                <?php esc_html_e('Import Snapshot', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Import Snapshot', $pluginSlug); ?>
             </button>
 
             <button type="button" id="btn_refresh_list" class="button button-secondary">
                 <span class="dashicons dashicons-update"></span>
-                <?php esc_html_e('Refresh', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Refresh', $pluginSlug); ?>
             </button>
 
             <span id="snapshot_action_status" class="riseup-inline-status"></span>
@@ -69,39 +69,39 @@ $pluginSlug = PluginConfigType::Slug->value;
 
         <!-- Snapshot Now Options (hidden by default) -->
         <div id="snapshot_options" class="riseup-snapshot-options" style="display: none;">
-            <h3><?php esc_html_e('Snapshot Options', 'riseup-asia-uploader'); ?></h3>
+            <h3><?php esc_html_e('Snapshot Options', $pluginSlug); ?></h3>
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="snapshot_scope"><?php esc_html_e('Scope', 'riseup-asia-uploader'); ?></label>
+                        <label for="snapshot_scope"><?php esc_html_e('Scope', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <select id="snapshot_scope">
-                            <option value="<?php echo esc_attr(SnapshotScopeType::All->value); ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotScopeType::WordPress->value); ?>"><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotScopeType::Content->value); ?>"><?php esc_html_e('Content Only (Posts, Terms, Comments)', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotScopeType::Custom->value); ?>"><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::All->value); ?>"><?php esc_html_e('All Tables', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::WordPress->value); ?>"><?php esc_html_e('WordPress Core Only', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Content->value); ?>"><?php esc_html_e('Content Only (Posts, Terms, Comments)', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Custom->value); ?>"><?php esc_html_e('Custom Selection', $pluginSlug); ?></option>
                         </select>
                     </td>
                 </tr>
                 <tr id="custom_tables_row" style="display: none;">
                     <th scope="row">
-                        <label for="snapshot_tables"><?php esc_html_e('Tables', 'riseup-asia-uploader'); ?></label>
+                        <label for="snapshot_tables"><?php esc_html_e('Tables', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <div id="snapshot_tables_list" class="riseup-tables-list">
-                            <em><?php esc_html_e('Loading tables...', 'riseup-asia-uploader'); ?></em>
+                            <em><?php esc_html_e('Loading tables...', $pluginSlug); ?></em>
                         </div>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="snapshot_provider"><?php esc_html_e('Provider', 'riseup-asia-uploader'); ?></label>
+                        <label for="snapshot_provider"><?php esc_html_e('Provider', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <select id="snapshot_provider">
-                            <option value="<?php echo esc_attr(SnapshotProviderType::Auto->value); ?>"><?php esc_html_e('Auto-Detect (Recommended)', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotProviderType::Native->value); ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Auto->value); ?>"><?php esc_html_e('Auto-Detect (Recommended)', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Native->value); ?>"><?php esc_html_e('Native SQLite', $pluginSlug); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -109,26 +109,26 @@ $pluginSlug = PluginConfigType::Slug->value;
             <p>
                 <button type="button" id="btn_confirm_snapshot" class="button button-primary">
                     <span class="dashicons dashicons-yes"></span>
-                    <?php esc_html_e('Create Snapshot', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Create Snapshot', $pluginSlug); ?>
                 </button>
                 <button type="button" id="btn_cancel_snapshot" class="button button-secondary">
-                    <?php esc_html_e('Cancel', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Cancel', $pluginSlug); ?>
                 </button>
             </p>
         </div>
 
         <!-- Import form (hidden by default) -->
         <div id="import_form" style="display: none;">
-            <h3><?php esc_html_e('Import Snapshot', 'riseup-asia-uploader'); ?></h3>
-            <p class="description"><?php esc_html_e('Upload a snapshot ZIP archive to import.', 'riseup-asia-uploader'); ?></p>
+            <h3><?php esc_html_e('Import Snapshot', $pluginSlug); ?></h3>
+            <p class="description"><?php esc_html_e('Upload a snapshot ZIP archive to import.', $pluginSlug); ?></p>
             <input type="file" id="import_file" accept=".zip">
             <p>
                 <button type="button" id="btn_confirm_import" class="button button-primary" disabled>
                     <span class="dashicons dashicons-upload"></span>
-                    <?php esc_html_e('Upload & Import', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Upload & Import', $pluginSlug); ?>
                 </button>
                 <button type="button" id="btn_cancel_import" class="button button-secondary">
-                    <?php esc_html_e('Cancel', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Cancel', $pluginSlug); ?>
                 </button>
             </p>
         </div>
@@ -138,7 +138,7 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div id="progress_panel" class="riseup-card" style="display: none;">
         <h2>
             <span class="dashicons dashicons-performance" style="color: #dba617;"></span>
-            <?php esc_html_e('Snapshot In Progress', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Snapshot In Progress', $pluginSlug); ?>
             <span id="progress_percent_badge" class="riseup-badge" style="background: #2271b1; margin-left: 10px;">0%</span>
         </h2>
         <div class="riseup-progress-bar-wrap">
@@ -148,22 +148,22 @@ $pluginSlug = PluginConfigType::Slug->value;
             <span id="progress_status_text"></span>
         </div>
         <div id="progress_tables" class="riseup-progress-tables" style="display: none;">
-            <h4><?php esc_html_e('Table Progress', 'riseup-asia-uploader'); ?></h4>
+            <h4><?php esc_html_e('Table Progress', $pluginSlug); ?></h4>
             <div id="progress_tables_list"></div>
         </div>
     </div>
 
     <!-- Snapshot List -->
     <div class="riseup-card">
-        <h2><?php esc_html_e('Snapshots', 'riseup-asia-uploader'); ?></h2>
+        <h2><?php esc_html_e('Snapshots', $pluginSlug); ?></h2>
 
         <div id="snapshots_loading" style="display: none;">
             <span class="spinner is-active" style="float: none;"></span>
-            <?php esc_html_e('Loading snapshots...', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Loading snapshots...', $pluginSlug); ?>
         </div>
 
         <div id="snapshots_empty" style="display: none;">
-            <p><em><?php esc_html_e('No snapshots found. Click "Snapshot Now" to create your first backup.', 'riseup-asia-uploader'); ?></em></p>
+            <p><em><?php esc_html_e('No snapshots found. Click "Snapshot Now" to create your first backup.', $pluginSlug); ?></em></p>
         </div>
 
         <table id="snapshots_table" class="wp-list-table widefat fixed striped" style="display: none;">
@@ -171,15 +171,15 @@ $pluginSlug = PluginConfigType::Slug->value;
                 <tr>
                     <th class="column-id" style="width: 50px;">#</th>
                     <th class="column-type" style="width: 40px;"></th>
-                    <th class="column-filename"><?php esc_html_e('Filename', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-scope"><?php esc_html_e('Scope', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-provider"><?php esc_html_e('Provider', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-tables" style="width: 60px;"><?php esc_html_e('Tables', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-rows" style="width: 80px;"><?php esc_html_e('Rows', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-size" style="width: 80px;"><?php esc_html_e('Size', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-status" style="width: 100px;"><?php esc_html_e('Status', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-date"><?php esc_html_e('Created', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-actions" style="width: 200px;"><?php esc_html_e('Actions', 'riseup-asia-uploader'); ?></th>
+                    <th class="column-filename"><?php esc_html_e('Filename', $pluginSlug); ?></th>
+                    <th class="column-scope"><?php esc_html_e('Scope', $pluginSlug); ?></th>
+                    <th class="column-provider"><?php esc_html_e('Provider', $pluginSlug); ?></th>
+                    <th class="column-tables" style="width: 60px;"><?php esc_html_e('Tables', $pluginSlug); ?></th>
+                    <th class="column-rows" style="width: 80px;"><?php esc_html_e('Rows', $pluginSlug); ?></th>
+                    <th class="column-size" style="width: 80px;"><?php esc_html_e('Size', $pluginSlug); ?></th>
+                    <th class="column-status" style="width: 100px;"><?php esc_html_e('Status', $pluginSlug); ?></th>
+                    <th class="column-date"><?php esc_html_e('Created', $pluginSlug); ?></th>
+                    <th class="column-actions" style="width: 200px;"><?php esc_html_e('Actions', $pluginSlug); ?></th>
                 </tr>
             </thead>
             <tbody id="snapshots_tbody">
@@ -200,29 +200,29 @@ $pluginSlug = PluginConfigType::Slug->value;
         <div class="riseup-card riseup-analytics-chart-card">
             <h2>
                 <span class="dashicons dashicons-chart-bar"></span>
-                <?php esc_html_e('Storage Analytics', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Storage Analytics', $pluginSlug); ?>
             </h2>
             <div id="analytics_loading">
                 <span class="spinner is-active" style="float: none;"></span>
-                <?php esc_html_e('Loading analytics...', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Loading analytics...', $pluginSlug); ?>
             </div>
             <div id="analytics_content" style="display: none;">
                 <div class="riseup-analytics-summary">
                     <div class="riseup-stat-card">
                         <span class="riseup-stat-value" id="stat_total_size">—</span>
-                        <span class="riseup-stat-label"><?php esc_html_e('Total Size', 'riseup-asia-uploader'); ?></span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Total Size', $pluginSlug); ?></span>
                     </div>
                     <div class="riseup-stat-card">
                         <span class="riseup-stat-value" id="stat_total_count">—</span>
-                        <span class="riseup-stat-label"><?php esc_html_e('Snapshots', 'riseup-asia-uploader'); ?></span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Snapshots', $pluginSlug); ?></span>
                     </div>
                     <div class="riseup-stat-card">
                         <span class="riseup-stat-value" id="stat_avg_size">—</span>
-                        <span class="riseup-stat-label"><?php esc_html_e('Avg Size', 'riseup-asia-uploader'); ?></span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Avg Size', $pluginSlug); ?></span>
                     </div>
                     <div class="riseup-stat-card">
                         <span class="riseup-stat-value" id="stat_largest">—</span>
-                        <span class="riseup-stat-label"><?php esc_html_e('Largest', 'riseup-asia-uploader'); ?></span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Largest', $pluginSlug); ?></span>
                     </div>
                 </div>
                 <div class="riseup-chart-container">
@@ -230,12 +230,12 @@ $pluginSlug = PluginConfigType::Slug->value;
                     <div class="riseup-chart-bars" id="chart_bars"></div>
                 </div>
                 <div class="riseup-chart-legend">
-                    <span class="riseup-legend-item"><span class="riseup-legend-dot" style="background:#2271b1;"></span> <?php esc_html_e('Full', 'riseup-asia-uploader'); ?></span>
-                    <span class="riseup-legend-item"><span class="riseup-legend-dot" style="background:#7b1fa2;"></span> <?php esc_html_e('Incremental', 'riseup-asia-uploader'); ?></span>
+                    <span class="riseup-legend-item"><span class="riseup-legend-dot" style="background:#2271b1;"></span> <?php esc_html_e('Full', $pluginSlug); ?></span>
+                    <span class="riseup-legend-item"><span class="riseup-legend-dot" style="background:#7b1fa2;"></span> <?php esc_html_e('Incremental', $pluginSlug); ?></span>
                 </div>
             </div>
             <div id="analytics_empty" style="display: none;">
-                <p><em><?php esc_html_e('No snapshot data available for analytics.', 'riseup-asia-uploader'); ?></em></p>
+                <p><em><?php esc_html_e('No snapshot data available for analytics.', $pluginSlug); ?></em></p>
             </div>
         </div>
 
@@ -243,7 +243,7 @@ $pluginSlug = PluginConfigType::Slug->value;
         <div class="riseup-card riseup-calendar-card">
             <h2>
                 <span class="dashicons dashicons-calendar-alt"></span>
-                <?php esc_html_e('Backup Calendar', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Backup Calendar', $pluginSlug); ?>
             </h2>
             <div class="riseup-calendar-nav">
                 <button type="button" id="cal_prev" class="button button-small">
@@ -257,21 +257,21 @@ $pluginSlug = PluginConfigType::Slug->value;
             <table class="riseup-calendar-table">
                 <thead>
                     <tr>
-                        <th><?php esc_html_e('Sun', 'riseup-asia-uploader'); ?></th>
-                        <th><?php esc_html_e('Mon', 'riseup-asia-uploader'); ?></th>
-                        <th><?php esc_html_e('Tue', 'riseup-asia-uploader'); ?></th>
-                        <th><?php esc_html_e('Wed', 'riseup-asia-uploader'); ?></th>
-                        <th><?php esc_html_e('Thu', 'riseup-asia-uploader'); ?></th>
-                        <th><?php esc_html_e('Fri', 'riseup-asia-uploader'); ?></th>
-                        <th><?php esc_html_e('Sat', 'riseup-asia-uploader'); ?></th>
+                        <th><?php esc_html_e('Sun', $pluginSlug); ?></th>
+                        <th><?php esc_html_e('Mon', $pluginSlug); ?></th>
+                        <th><?php esc_html_e('Tue', $pluginSlug); ?></th>
+                        <th><?php esc_html_e('Wed', $pluginSlug); ?></th>
+                        <th><?php esc_html_e('Thu', $pluginSlug); ?></th>
+                        <th><?php esc_html_e('Fri', $pluginSlug); ?></th>
+                        <th><?php esc_html_e('Sat', $pluginSlug); ?></th>
                     </tr>
                 </thead>
                 <tbody id="cal_body"></tbody>
             </table>
             <div class="riseup-calendar-legend">
-                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-full"></span> <?php esc_html_e('Full', 'riseup-asia-uploader'); ?></span>
-                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-incr"></span> <?php esc_html_e('Incremental', 'riseup-asia-uploader'); ?></span>
-                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-scheduled"></span> <?php esc_html_e('Scheduled', 'riseup-asia-uploader'); ?></span>
+                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-full"></span> <?php esc_html_e('Full', $pluginSlug); ?></span>
+                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-incr"></span> <?php esc_html_e('Incremental', $pluginSlug); ?></span>
+                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-scheduled"></span> <?php esc_html_e('Scheduled', $pluginSlug); ?></span>
             </div>
         </div>
     </div>
@@ -280,45 +280,45 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div class="riseup-card">
         <h2>
             <span class="dashicons dashicons-admin-generic"></span>
-            <?php esc_html_e('Snapshot Settings', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Snapshot Settings', $pluginSlug); ?>
         </h2>
 
         <div id="settings_loading">
             <span class="spinner is-active" style="float: none;"></span>
-            <?php esc_html_e('Loading settings...', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Loading settings...', $pluginSlug); ?>
         </div>
 
         <div id="settings_form" style="display: none;">
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="setting_schedule"><?php esc_html_e('Schedule', 'riseup-asia-uploader'); ?></label>
+                        <label for="setting_schedule"><?php esc_html_e('Schedule', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <select id="setting_schedule">
-                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Manual->value); ?>"><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Hourly->value); ?>"><?php esc_html_e('Hourly', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Daily->value); ?>"><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Weekly->value); ?>"><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Monthly->value); ?>"><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Manual->value); ?>"><?php esc_html_e('Manual Only', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Hourly->value); ?>"><?php esc_html_e('Hourly', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Daily->value); ?>"><?php esc_html_e('Daily', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Weekly->value); ?>"><?php esc_html_e('Weekly', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotFrequencyType::Monthly->value); ?>"><?php esc_html_e('Monthly', $pluginSlug); ?></option>
                         </select>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="setting_retention_type"><?php esc_html_e('Retention Policy', 'riseup-asia-uploader'); ?></label>
+                        <label for="setting_retention_type"><?php esc_html_e('Retention Policy', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <select id="setting_retention_type">
-                            <option value="<?php echo esc_attr(RetentionType::None->value); ?>"><?php esc_html_e('None (Manual Cleanup)', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(RetentionType::Days->value); ?>"><?php esc_html_e('Keep for N Days', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(RetentionType::Count->value); ?>"><?php esc_html_e('Keep Last N Snapshots', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::None->value); ?>"><?php esc_html_e('None (Manual Cleanup)', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::Days->value); ?>"><?php esc_html_e('Keep for N Days', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(RetentionType::Count->value); ?>"><?php esc_html_e('Keep Last N Snapshots', $pluginSlug); ?></option>
                         </select>
                     </td>
                 </tr>
                 <tr id="retention_value_row" style="display: none;">
                     <th scope="row">
-                        <label for="setting_retention_value"><?php esc_html_e('Retention Value', 'riseup-asia-uploader'); ?></label>
+                        <label for="setting_retention_value"><?php esc_html_e('Retention Value', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <input type="number" id="setting_retention_value" min="1" max="365" value="30" class="small-text">
@@ -327,24 +327,24 @@ $pluginSlug = PluginConfigType::Slug->value;
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="setting_scope"><?php esc_html_e('Default Scope', 'riseup-asia-uploader'); ?></label>
+                        <label for="setting_scope"><?php esc_html_e('Default Scope', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <select id="setting_scope">
-                            <option value="<?php echo esc_attr(SnapshotScopeType::All->value); ?>"><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotScopeType::WordPress->value); ?>"><?php esc_html_e('WordPress Core', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotScopeType::Content->value); ?>"><?php esc_html_e('Content Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::All->value); ?>"><?php esc_html_e('All Tables', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::WordPress->value); ?>"><?php esc_html_e('WordPress Core', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotScopeType::Content->value); ?>"><?php esc_html_e('Content Only', $pluginSlug); ?></option>
                         </select>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="setting_provider"><?php esc_html_e('Default Provider', 'riseup-asia-uploader'); ?></label>
+                        <label for="setting_provider"><?php esc_html_e('Default Provider', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <select id="setting_provider">
-                            <option value="<?php echo esc_attr(SnapshotProviderType::Auto->value); ?>"><?php esc_html_e('Auto-Detect', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo esc_attr(SnapshotProviderType::Native->value); ?>"><?php esc_html_e('Native SQLite', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Auto->value); ?>"><?php esc_html_e('Auto-Detect', $pluginSlug); ?></option>
+                            <option value="<?php echo esc_attr(SnapshotProviderType::Native->value); ?>"><?php esc_html_e('Native SQLite', $pluginSlug); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -353,13 +353,13 @@ $pluginSlug = PluginConfigType::Slug->value;
             <!-- Worker Pool & Storage Mode -->
             <h3 style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee;">
                 <span class="dashicons dashicons-performance"></span>
-                <?php esc_html_e('Worker Pool & Storage', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Worker Pool & Storage', $pluginSlug); ?>
             </h3>
 
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="setting_storage_mode"><?php esc_html_e('Storage Mode', 'riseup-asia-uploader'); ?></label>
+                        <label for="setting_storage_mode"><?php esc_html_e('Storage Mode', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <div class="riseup-storage-cards">
@@ -367,16 +367,16 @@ $pluginSlug = PluginConfigType::Slug->value;
                                 <input type="radio" name="setting_storage_mode" value="<?php echo esc_attr(StorageModeType::Single->value); ?>">
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-media-archive" style="font-size: 24px; width: 24px; height: 24px;"></span>
-                                    <strong><?php esc_html_e('Single File', 'riseup-asia-uploader'); ?></strong>
-                                    <span class="description"><?php esc_html_e('One SQLite file per snapshot', 'riseup-asia-uploader'); ?></span>
+                                    <strong><?php esc_html_e('Single File', $pluginSlug); ?></strong>
+                                    <span class="description"><?php esc_html_e('One SQLite file per snapshot', $pluginSlug); ?></span>
                                 </div>
                             </label>
                             <label class="riseup-storage-card active" data-mode="<?php echo esc_attr(StorageModeType::PerTable->value); ?>">
                                 <input type="radio" name="setting_storage_mode" value="<?php echo esc_attr(StorageModeType::PerTable->value); ?>" checked>
                                 <div class="riseup-storage-card-inner">
                                     <span class="dashicons dashicons-grid-view" style="font-size: 24px; width: 24px; height: 24px;"></span>
-                                    <strong><?php esc_html_e('Per-Table', 'riseup-asia-uploader'); ?></strong>
-                                    <span class="description"><?php esc_html_e('Separate file per table (faster)', 'riseup-asia-uploader'); ?></span>
+                                    <strong><?php esc_html_e('Per-Table', $pluginSlug); ?></strong>
+                                    <span class="description"><?php esc_html_e('Separate file per table (faster)', $pluginSlug); ?></span>
                                 </div>
                             </label>
                         </div>
@@ -384,21 +384,21 @@ $pluginSlug = PluginConfigType::Slug->value;
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="setting_worker_pool"><?php esc_html_e('Worker Pool Size', 'riseup-asia-uploader'); ?></label>
+                        <label for="setting_worker_pool"><?php esc_html_e('Worker Pool Size', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <div class="riseup-slider-row">
                             <input type="range" id="setting_worker_pool" min="1" max="10" value="5" class="riseup-range-slider">
                             <span id="worker_pool_display" class="riseup-slider-value">5</span>
                         </div>
-                        <p class="description"><?php esc_html_e('Number of tables to export in parallel per batch.', 'riseup-asia-uploader'); ?></p>
+                        <p class="description"><?php esc_html_e('Number of tables to export in parallel per batch.', $pluginSlug); ?></p>
                     </td>
                 </tr>
             </table>
 
             <p>
                 <button type="button" id="btn_save_settings" class="button button-primary">
-                    <?php esc_html_e('Save Settings', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Save Settings', $pluginSlug); ?>
                 </button>
                 <span id="settings_status" class="riseup-inline-status"></span>
             </p>
@@ -409,11 +409,11 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div class="riseup-card">
         <h2>
             <span class="dashicons dashicons-plugins-checked"></span>
-            <?php esc_html_e('Available Providers', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Available Providers', $pluginSlug); ?>
         </h2>
         <div id="providers_loading">
             <span class="spinner is-active" style="float: none;"></span>
-            <?php esc_html_e('Detecting providers...', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Detecting providers...', $pluginSlug); ?>
         </div>
         <div id="providers_list" style="display: none;"></div>
     </div>
@@ -425,31 +425,31 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div class="riseup-modal-content">
         <h2>
             <span class="dashicons dashicons-warning" style="color: #d63638;"></span>
-            <?php esc_html_e('Restore Database', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Restore Database', $pluginSlug); ?>
         </h2>
         <p class="riseup-warning-text">
-            <?php esc_html_e('This will replace your current database tables with the snapshot data. A pre-restore backup will be created automatically.', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('This will replace your current database tables with the snapshot data. A pre-restore backup will be created automatically.', $pluginSlug); ?>
         </p>
         <div id="restore_incremental_warning" style="display: none;">
             <p class="riseup-warning-text" style="background: #fff8e5; border-left: 4px solid #dba617; padding: 10px 14px; color: #664d03;">
                 <span class="dashicons dashicons-randomize" style="vertical-align: middle;"></span>
-                <?php esc_html_e('This is an incremental snapshot. It will be merged with its parent full snapshot during restoration.', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('This is an incremental snapshot. It will be merged with its parent full snapshot during restoration.', $pluginSlug); ?>
             </p>
         </div>
         <div id="restore_options">
             <table class="form-table">
                 <tr>
-                    <th scope="row"><?php esc_html_e('Snapshot', 'riseup-asia-uploader'); ?></th>
+                    <th scope="row"><?php esc_html_e('Snapshot', $pluginSlug); ?></th>
                     <td><strong id="restore_snapshot_name"></strong></td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="restore_mode"><?php esc_html_e('Mode', 'riseup-asia-uploader'); ?></label>
+                        <label for="restore_mode"><?php esc_html_e('Mode', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <select id="restore_mode">
-                            <option value="<?php echo RestoreModeType::Full->value; ?>"><?php esc_html_e('Full Restore (All Tables)', 'riseup-asia-uploader'); ?></option>
-                            <option value="<?php echo RestoreModeType::Selective->value; ?>"><?php esc_html_e('Selective (Choose Tables)', 'riseup-asia-uploader'); ?></option>
+                            <option value="<?php echo RestoreModeType::Full->value; ?>"><?php esc_html_e('Full Restore (All Tables)', $pluginSlug); ?></option>
+                            <option value="<?php echo RestoreModeType::Selective->value; ?>"><?php esc_html_e('Selective (Choose Tables)', $pluginSlug); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -457,11 +457,11 @@ $pluginSlug = PluginConfigType::Slug->value;
                     <th scope="row">
                         <label>
                             <input type="checkbox" id="restore_create_backup" checked>
-                            <?php esc_html_e('Create Pre-Restore Backup', 'riseup-asia-uploader'); ?>
+                            <?php esc_html_e('Create Pre-Restore Backup', $pluginSlug); ?>
                         </label>
                     </th>
                     <td>
-                        <p class="description"><?php esc_html_e('Strongly recommended. Creates a snapshot before restoring.', 'riseup-asia-uploader'); ?></p>
+                        <p class="description"><?php esc_html_e('Strongly recommended. Creates a snapshot before restoring.', $pluginSlug); ?></p>
                     </td>
                 </tr>
             </table>
@@ -469,10 +469,10 @@ $pluginSlug = PluginConfigType::Slug->value;
         <p class="riseup-modal-actions">
             <button type="button" id="btn_confirm_restore" class="button button-primary" style="background: #d63638; border-color: #d63638;">
                 <span class="dashicons dashicons-database-import"></span>
-                <?php esc_html_e('Restore Now', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Restore Now', $pluginSlug); ?>
             </button>
             <button type="button" id="btn_cancel_restore" class="button button-secondary">
-                <?php esc_html_e('Cancel', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Cancel', $pluginSlug); ?>
             </button>
         </p>
     </div>
@@ -484,21 +484,21 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div class="riseup-modal-content" style="max-width: 640px;">
         <h2>
             <span class="dashicons dashicons-warning" style="color: #d63638;"></span>
-            <?php esc_html_e('Download Failed', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Download Failed', $pluginSlug); ?>
         </h2>
         <div id="download_error_summary" style="margin-bottom: 12px;">
             <p id="download_error_message" style="color: #d63638; font-weight: 500;"></p>
             <table class="form-table" style="margin: 0;">
                 <tr>
-                    <th scope="row" style="padding: 6px 10px 6px 0; width: 120px;"><?php esc_html_e('HTTP Status', 'riseup-asia-uploader'); ?></th>
+                    <th scope="row" style="padding: 6px 10px 6px 0; width: 120px;"><?php esc_html_e('HTTP Status', $pluginSlug); ?></th>
                     <td style="padding: 6px 0;"><code id="download_error_status"></code></td>
                 </tr>
                 <tr>
-                    <th scope="row" style="padding: 6px 10px 6px 0;"><?php esc_html_e('Plugin Version', 'riseup-asia-uploader'); ?></th>
+                    <th scope="row" style="padding: 6px 10px 6px 0;"><?php esc_html_e('Plugin Version', $pluginSlug); ?></th>
                     <td style="padding: 6px 0;"><code id="download_error_version"></code></td>
                 </tr>
                 <tr>
-                    <th scope="row" style="padding: 6px 10px 6px 0;"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></th>
+                    <th scope="row" style="padding: 6px 10px 6px 0;"><?php esc_html_e('Timestamp', $pluginSlug); ?></th>
                     <td style="padding: 6px 0;"><code id="download_error_timestamp"></code></td>
                 </tr>
             </table>
@@ -506,24 +506,24 @@ $pluginSlug = PluginConfigType::Slug->value;
         <div id="download_error_stack_section" style="display: none;">
             <h3 style="margin: 10px 0 6px; font-size: 13px; color: #7b1fa2;">
                 <span class="dashicons dashicons-editor-code" style="vertical-align: middle; color: #7b1fa2;"></span>
-                <?php esc_html_e('PHP Stack Trace', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('PHP Stack Trace', $pluginSlug); ?>
             </h3>
             <pre id="download_error_stack" class="riseup-stack-trace"></pre>
         </div>
         <div id="download_error_backend_section" style="display: none;">
             <h3 style="margin: 10px 0 6px; font-size: 13px; color: #b45309;">
                 <span class="dashicons dashicons-admin-tools" style="vertical-align: middle; color: #b45309;"></span>
-                <?php esc_html_e('Backend Details', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Backend Details', $pluginSlug); ?>
             </h3>
             <pre id="download_error_backend" class="riseup-stack-trace" style="border-color: #fbbf24; background: #fffbeb;"></pre>
         </div>
         <p class="riseup-modal-actions">
             <button type="button" id="btn_copy_download_error" class="button button-secondary">
                 <span class="dashicons dashicons-clipboard" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle;"></span>
-                <?php esc_html_e('Copy Report', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Copy Report', $pluginSlug); ?>
             </button>
             <button type="button" id="btn_close_download_error" class="button button-primary">
-                <?php esc_html_e('Close', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Close', $pluginSlug); ?>
             </button>
         </p>
     </div>
@@ -535,7 +535,7 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div class="riseup-modal-content">
         <h2>
             <span class="dashicons dashicons-trash" style="color: #d63638;"></span>
-            <?php esc_html_e('Delete Snapshot', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Delete Snapshot', $pluginSlug); ?>
         </h2>
         <p id="delete_message"></p>
         <div id="delete_cascade_warning" style="display: none;">
@@ -547,10 +547,10 @@ $pluginSlug = PluginConfigType::Slug->value;
         <p class="riseup-modal-actions">
             <button type="button" id="btn_confirm_delete" class="button button-primary" style="background: #d63638; border-color: #d63638;">
                 <span class="dashicons dashicons-trash"></span>
-                <?php esc_html_e('Delete', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Delete', $pluginSlug); ?>
             </button>
             <button type="button" id="btn_cancel_delete" class="button button-secondary">
-                <?php esc_html_e('Cancel', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Cancel', $pluginSlug); ?>
             </button>
         </p>
     </div>
@@ -638,62 +638,62 @@ jQuery(document).ready(function($) {
     };
 
     var SNAP_LABELS = {
-        copied:              '<?php echo esc_js(__("Copied!", "riseup-asia-uploader")); ?>',
-        copy:                '<?php echo esc_js(__("Copy", "riseup-asia-uploader")); ?>',
-        copyReport:          '<?php echo esc_js(__("Copy Report", "riseup-asia-uploader")); ?>',
-        provider:            '<?php echo esc_js(__("Provider", "riseup-asia-uploader")); ?>',
-        available:           '<?php echo esc_js(__("Available", "riseup-asia-uploader")); ?>',
-        priority:            '<?php echo esc_js(__("Priority", "riseup-asia-uploader")); ?>',
-        importing:           '<?php echo esc_js(__("Importing...", "riseup-asia-uploader")); ?>',
-        uploadImport:        '<?php echo esc_js(__("Upload & Import", "riseup-asia-uploader")); ?>',
-        restoring:           '<?php echo esc_js(__("Restoring...", "riseup-asia-uploader")); ?>',
-        restoreNow:          '<?php echo esc_js(__("Restore Now", "riseup-asia-uploader")); ?>',
-        cached:              '<?php echo esc_js(__("Cached", "riseup-asia-uploader")); ?>',
-        built:               '<?php echo esc_js(__("Built", "riseup-asia-uploader")); ?>',
-        confirmDeleteSnap:   '<?php echo esc_js(__("Are you sure you want to delete snapshot \"%s\"? This cannot be undone.", "riseup-asia-uploader")); ?>',
-        fullBackup:          '<?php echo esc_js(__("Full backup", "riseup-asia-uploader")); ?>',
-        incrementalBackup:   '<?php echo esc_js(__("Incremental", "riseup-asia-uploader")); ?>',
-        scheduledBackup:     '<?php echo esc_js(__("Scheduled backup", "riseup-asia-uploader")); ?>',
-        snapshotCompleted:   '<?php echo esc_js(__("Snapshot completed successfully", "riseup-asia-uploader")); ?>',
-        snapshotJobFailed:   '<?php echo esc_js(__("Snapshot job failed", "riseup-asia-uploader")); ?>',
-        failedLoadSnapshots: '<?php echo esc_js(__("Failed to load snapshots", "riseup-asia-uploader")); ?>',
-        snapshotQueued:      '<?php echo esc_js(__("Snapshot job queued — running in background", "riseup-asia-uploader")); ?>',
-        snapshotCreateFailed:'<?php echo esc_js(__("Snapshot creation failed", "riseup-asia-uploader")); ?>',
-        noFullSnapshot:      '<?php echo esc_js(__("No full snapshot found — create a full snapshot first", "riseup-asia-uploader")); ?>',
-        incrementalQueued:   '<?php echo esc_js(__("Incremental backup queued", "riseup-asia-uploader")); ?>',
-        incrementalFailed:   '<?php echo esc_js(__("Incremental backup failed", "riseup-asia-uploader")); ?>',
-        importSuccess:       '<?php echo esc_js(__("Snapshot imported successfully", "riseup-asia-uploader")); ?>',
-        importFailed:        '<?php echo esc_js(__("Import failed", "riseup-asia-uploader")); ?>',
-        restoreQueued:       '<?php echo esc_js(__("Restore queued — running in background", "riseup-asia-uploader")); ?>',
-        restoreFailed:       '<?php echo esc_js(__("Restore failed", "riseup-asia-uploader")); ?>',
-        noDownloadUrl:       '<?php echo esc_js(__("No download URL returned", "riseup-asia-uploader")); ?>',
-        snapshotDeleted:     '<?php echo esc_js(__("Snapshot deleted", "riseup-asia-uploader")); ?>',
-        deleteFailed:        '<?php echo esc_js(__("Delete failed", "riseup-asia-uploader")); ?>',
-        cascadeWarning:      '<?php echo esc_js(__("This full snapshot has %d incremental backup(s). Deleting it will also permanently remove all %d incremental snapshot(s).", "riseup-asia-uploader")); ?>',
-        settingsSaved:       '<?php echo esc_js(__("Settings saved", "riseup-asia-uploader")); ?>',
-        saveFailed:          '<?php echo esc_js(__("Save failed", "riseup-asia-uploader")); ?>',
-        networkError:        '<?php echo esc_js(__("Network error", "riseup-asia-uploader")); ?>',
-        failedLoadSettings:  '<?php echo esc_js(__("Failed to load settings.", "riseup-asia-uploader")); ?>',
-        noProvidersDetected: '<?php echo esc_js(__("No providers detected yet.", "riseup-asia-uploader")); ?>',
-        failedDetectProviders:'<?php echo esc_js(__("Failed to detect providers.", "riseup-asia-uploader")); ?>',
-        checkLogs:           '<?php echo esc_js(__("Check Logs", "riseup-asia-uploader")); ?>',
-        incrementalSuffix:   '<?php echo esc_js(__("incremental", "riseup-asia-uploader")); ?>',
-        incrementalsSuffix:  '<?php echo esc_js(__("incrementals", "riseup-asia-uploader")); ?>'
+        copied:              '<?php echo esc_js(__("Copied!", $pluginSlug)); ?>',
+        copy:                '<?php echo esc_js(__("Copy", $pluginSlug)); ?>',
+        copyReport:          '<?php echo esc_js(__("Copy Report", $pluginSlug)); ?>',
+        provider:            '<?php echo esc_js(__("Provider", $pluginSlug)); ?>',
+        available:           '<?php echo esc_js(__("Available", $pluginSlug)); ?>',
+        priority:            '<?php echo esc_js(__("Priority", $pluginSlug)); ?>',
+        importing:           '<?php echo esc_js(__("Importing...", $pluginSlug)); ?>',
+        uploadImport:        '<?php echo esc_js(__("Upload & Import", $pluginSlug)); ?>',
+        restoring:           '<?php echo esc_js(__("Restoring...", $pluginSlug)); ?>',
+        restoreNow:          '<?php echo esc_js(__("Restore Now", $pluginSlug)); ?>',
+        cached:              '<?php echo esc_js(__("Cached", $pluginSlug)); ?>',
+        built:               '<?php echo esc_js(__("Built", $pluginSlug)); ?>',
+        confirmDeleteSnap:   '<?php echo esc_js(__("Are you sure you want to delete snapshot \"%s\"? This cannot be undone.", $pluginSlug)); ?>',
+        fullBackup:          '<?php echo esc_js(__("Full backup", $pluginSlug)); ?>',
+        incrementalBackup:   '<?php echo esc_js(__("Incremental", $pluginSlug)); ?>',
+        scheduledBackup:     '<?php echo esc_js(__("Scheduled backup", $pluginSlug)); ?>',
+        snapshotCompleted:   '<?php echo esc_js(__("Snapshot completed successfully", $pluginSlug)); ?>',
+        snapshotJobFailed:   '<?php echo esc_js(__("Snapshot job failed", $pluginSlug)); ?>',
+        failedLoadSnapshots: '<?php echo esc_js(__("Failed to load snapshots", $pluginSlug)); ?>',
+        snapshotQueued:      '<?php echo esc_js(__("Snapshot job queued — running in background", $pluginSlug)); ?>',
+        snapshotCreateFailed:'<?php echo esc_js(__("Snapshot creation failed", $pluginSlug)); ?>',
+        noFullSnapshot:      '<?php echo esc_js(__("No full snapshot found — create a full snapshot first", $pluginSlug)); ?>',
+        incrementalQueued:   '<?php echo esc_js(__("Incremental backup queued", $pluginSlug)); ?>',
+        incrementalFailed:   '<?php echo esc_js(__("Incremental backup failed", $pluginSlug)); ?>',
+        importSuccess:       '<?php echo esc_js(__("Snapshot imported successfully", $pluginSlug)); ?>',
+        importFailed:        '<?php echo esc_js(__("Import failed", $pluginSlug)); ?>',
+        restoreQueued:       '<?php echo esc_js(__("Restore queued — running in background", $pluginSlug)); ?>',
+        restoreFailed:       '<?php echo esc_js(__("Restore failed", $pluginSlug)); ?>',
+        noDownloadUrl:       '<?php echo esc_js(__("No download URL returned", $pluginSlug)); ?>',
+        snapshotDeleted:     '<?php echo esc_js(__("Snapshot deleted", $pluginSlug)); ?>',
+        deleteFailed:        '<?php echo esc_js(__("Delete failed", $pluginSlug)); ?>',
+        cascadeWarning:      '<?php echo esc_js(__("This full snapshot has %d incremental backup(s). Deleting it will also permanently remove all %d incremental snapshot(s).", $pluginSlug)); ?>',
+        settingsSaved:       '<?php echo esc_js(__("Settings saved", $pluginSlug)); ?>',
+        saveFailed:          '<?php echo esc_js(__("Save failed", $pluginSlug)); ?>',
+        networkError:        '<?php echo esc_js(__("Network error", $pluginSlug)); ?>',
+        failedLoadSettings:  '<?php echo esc_js(__("Failed to load settings.", $pluginSlug)); ?>',
+        noProvidersDetected: '<?php echo esc_js(__("No providers detected yet.", $pluginSlug)); ?>',
+        failedDetectProviders:'<?php echo esc_js(__("Failed to detect providers.", $pluginSlug)); ?>',
+        checkLogs:           '<?php echo esc_js(__("Check Logs", $pluginSlug)); ?>',
+        incrementalSuffix:   '<?php echo esc_js(__("incremental", $pluginSlug)); ?>',
+        incrementalsSuffix:  '<?php echo esc_js(__("incrementals", $pluginSlug)); ?>'
     };
 
     var MONTH_NAMES = [
-        '<?php echo esc_js(__("January", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("February", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("March", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("April", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("May", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("June", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("July", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("August", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("September", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("October", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("November", "riseup-asia-uploader")); ?>',
-        '<?php echo esc_js(__("December", "riseup-asia-uploader")); ?>'
+        '<?php echo esc_js(__("January", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("February", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("March", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("April", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("May", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("June", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("July", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("August", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("September", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("October", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("November", $pluginSlug)); ?>',
+        '<?php echo esc_js(__("December", $pluginSlug)); ?>'
     ];
 
     // =========================================================================
