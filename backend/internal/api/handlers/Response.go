@@ -69,7 +69,7 @@ func respondErrorWithSession(
 	message string,
 	err error,
 ) {
-	resp := envelope.ErrorWithStack(status.Int(), code, message)
+	resp := envelope.ErrorWithStack(status.Int(), code.String(), message)
 
 	appErr := apperror.Extract(err)
 

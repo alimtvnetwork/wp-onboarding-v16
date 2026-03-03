@@ -120,7 +120,7 @@ func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{IsDeleted: true, ID: id})
+	respondSuccess(w, ActionResponse{IsDeleted: true, Id: id})
 }
 
 // ClearRequestSessions removes all request sessions

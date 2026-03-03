@@ -29,7 +29,7 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	decodeErr := json.NewDecoder(r.Body).Decode(&input)
 
 	if decodeErr != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, apperror.ErrInvalidInput, "Invalid request body: "+decodeErr.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, apperror.ErrValidation, "Invalid request body: "+decodeErr.Error())
 
 		return
 	}
