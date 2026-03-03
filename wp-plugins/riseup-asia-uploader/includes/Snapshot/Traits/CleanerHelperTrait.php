@@ -117,7 +117,7 @@ trait CleanerHelperTrait {
                 TriggerSourceType::Api->value,
             );
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to log cleanup action', array('error' => $e->getMessage()));
+            error_log('CleanerHelperTrait::logCleanupAction() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 
