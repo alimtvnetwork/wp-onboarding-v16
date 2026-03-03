@@ -7,7 +7,6 @@ import (
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	"wp-plugin-publish/internal/models"
-	"wp-plugin-publish/internal/services/session"
 )
 
 // logRemoteAction logs a remote plugin action to session and WebSocket.
