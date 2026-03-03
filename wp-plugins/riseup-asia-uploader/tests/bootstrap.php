@@ -152,5 +152,40 @@ if (!function_exists('wp_remote_retrieve_body')) {
     }
 }
 
+// --- WP-Cron stubs ---
+global $_wp_test_scheduled_events;
+$_wp_test_scheduled_events = [];
+
+if (!function_exists('wp_next_scheduled')) {
+    function wp_next_scheduled(string $hook): int|false {
+        global $_wp_test_scheduled_events;
+        return $_wp_test_scheduled_events[$hook] ?? false;
+    }
+}
+
+if (!function_exists('wp_schedule_event')) {
+    function wp_schedule_event(int $timestamp, string $recurrence, string $hook): bool {
+        global $_wp_test_scheduled_events;
+        $_wp_test_scheduled_events[$hook] = $timestamp;
+        return true;
+    }
+}
+
+if (!function_exists('wp_clear_scheduled_hook')) {
+    function wp_clear_scheduled_hook(string $hook): int {
+        global $_wp_test_scheduled_events;
+        unset($_wp_test_scheduled_events[$hook]);
+        return 1;
+    }
+}
+
+if (!function_exists('wp_unschedule_event')) {
+    function wp_unschedule_event(int $timestamp, string $hook): bool {
+        global $_wp_test_scheduled_events;
+        unset($_wp_test_scheduled_events[$hook]);
+        return true;
+    }
+}
+
 // PSR-4 autoloader via Composer.
 require_once __DIR__ . '/../vendor/autoload.php';

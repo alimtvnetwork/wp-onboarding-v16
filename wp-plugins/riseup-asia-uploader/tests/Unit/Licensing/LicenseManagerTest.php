@@ -18,9 +18,10 @@ class LicenseManagerTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue(null, null);
 
-        global $_wp_test_options, $_wp_test_remote_handler;
+        global $_wp_test_options, $_wp_test_remote_handler, $_wp_test_scheduled_events;
         $_wp_test_options = [];
         $_wp_test_remote_handler = null;
+        $_wp_test_scheduled_events = [];
 
         // Define constants the constructor needs (only once per process).
         if (!defined('RISEUP_LICENSE_API_URL')) {
@@ -271,5 +272,40 @@ class LicenseManagerTest extends TestCase
         $this->assertNotNull($result);
         $this->assertArrayHasKey('license', $result);
         $this->assertArrayHasKey('activations', $result);
+    }
+
+    // ------------------------------------------------------------------
+    // Cron scheduling
+    // ------------------------------------------------------------------
+
+    public function testSetLicenseKeySchedulesCron(): void
+    {
+        global $_wp_test_options, $_wp_test_remote_handler, $_wp_test_scheduled_events;
+
+        $_wp_test_remote_handler = fn() => [
+            'response' => ['code' => 200],
+            'body' => json_encode(['valid' => true, 'status' => 'active']),
+        ];
+
+        $this->manager->setLicenseKey('RISEUP-CRON-CRON-CRON-CRON');
+
+        $this->assertArrayHasKey('riseup_license_revalidate', $_wp_test_scheduled_events);
+    }
+
+    public function testRemoveLicenseKeyUnschedulesCron(): void
+    {
+        global $_wp_test_options, $_wp_test_remote_handler, $_wp_test_scheduled_events;
+
+        $_wp_test_options['riseup_license_key'] = 'RISEUP-REM1-REM2-REM3-REM4';
+        $_wp_test_scheduled_events['riseup_license_revalidate'] = time();
+
+        $_wp_test_remote_handler = fn() => [
+            'response' => ['code' => 200],
+            'body' => json_encode(['deactivated' => true]),
+        ];
+
+        $this->manager->removeLicenseKey();
+
+        $this->assertArrayNotHasKey('riseup_license_revalidate', $_wp_test_scheduled_events);
     }
 }
