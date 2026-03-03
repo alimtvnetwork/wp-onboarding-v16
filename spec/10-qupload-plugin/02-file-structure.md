@@ -3,6 +3,7 @@
 ```
 wp-plugins/qupload/
 ├── qupload.php                          # Entry point (autoloader + hooks only)
+├── uninstall.php                        # Uninstall handler (removes all plugin data)
 ├── includes/
 │   ├── Autoloader.php                   # PSR-4 autoloader for QUpload\ namespace
 │   ├── Core/
