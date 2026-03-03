@@ -9,7 +9,6 @@ import (
 	"riseup-licensing/internal/enums/auditaction"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
-	"riseup-licensing/internal/enums/producttype"
 	"riseup-licensing/internal/models"
 	"riseup-licensing/internal/services"
 )
