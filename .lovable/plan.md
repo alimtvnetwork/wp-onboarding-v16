@@ -195,10 +195,12 @@ Build a self-hosted licensing server in Go that issues, validates, and manages l
 - All 247 Go files within 300-line limit; all functions within 15-line body limit
 - All package directories use correct naming conventions
 
-### 🔲 Go Phase 6: CI Lint Scripts & Integration
-- Integrate all lint scripts into CI pipeline
-- Add pre-commit hooks for import ordering
-- Automated quality gates for PRs
+### ✅ Go Phase 6: CI Lint Scripts & Integration
+- Added `json-tags` and `inline-if` lints to CI workflow (previously missing)
+- Added separate `lint-licensing` CI job covering all lint scripts for `licensing/` module
+- Created `scripts/pre-commit.sh` — runs all quality gates locally across backend, licensing, and tools
+- Created `scripts/install-hooks.sh` — one-command hook installation via symlink
+- All 7 lint scripts now enforced in CI for both backend and licensing modules
 
 ---
 
