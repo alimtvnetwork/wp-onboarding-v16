@@ -21,13 +21,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+$pluginName = PluginConfigType::Name->value;
+$pluginSlug = PluginConfigType::Slug->value;
+
 // Trigger source labels for display
 $triggerLabels = array(
-    TriggerSourceType::Api->value       => __('API', 'riseup-asia-uploader'),
-    TriggerSourceType::Dashboard->value => __('Dashboard', 'riseup-asia-uploader'),
-    TriggerSourceType::Agent->value     => __('Agent Push', 'riseup-asia-uploader'),
-    TriggerSourceType::Cron->value      => __('Cron', 'riseup-asia-uploader'),
-    TriggerSourceType::Cli->value       => __('WP-CLI', 'riseup-asia-uploader'),
+    TriggerSourceType::Api->value       => __('API', $pluginSlug),
+    TriggerSourceType::Dashboard->value => __('Dashboard', $pluginSlug),
+    TriggerSourceType::Agent->value     => __('Agent Push', $pluginSlug),
+    TriggerSourceType::Cron->value      => __('Cron', $pluginSlug),
+    TriggerSourceType::Cli->value       => __('WP-CLI', $pluginSlug),
 );
 
 // Trigger source CSS classes for color coding
@@ -41,10 +44,10 @@ $triggerClasses = array(
 
 // Upload source labels for display
 $uploadSourceLabels = array(
-    UploadSourceType::Script->value  => __('Upload Script', 'riseup-asia-uploader'),
-    UploadSourceType::RestApi->value => __('REST API', 'riseup-asia-uploader'),
-    UploadSourceType::AdminUi->value => __('Admin UI', 'riseup-asia-uploader'),
-    UploadSourceType::WpCli->value   => __('WP-CLI', 'riseup-asia-uploader'),
+    UploadSourceType::Script->value  => __('Upload Script', $pluginSlug),
+    UploadSourceType::RestApi->value => __('REST API', $pluginSlug),
+    UploadSourceType::AdminUi->value => __('Admin UI', $pluginSlug),
+    UploadSourceType::WpCli->value   => __('WP-CLI', $pluginSlug),
 );
 
 // Upload source CSS classes for color coding
@@ -55,10 +58,6 @@ $uploadSourceClasses = array(
     UploadSourceType::WpCli->value   => 'source-cli',
 );
 ?>
-<?php
-$pluginName = PluginConfigType::Name->value;
-$pluginSlug = PluginConfigType::Slug->value;
-?>
 <div class="wrap riseup-admin" style="padding: 10px 20px 20px 10px;">
     <h1>
         <span class="dashicons dashicons-list-view"></span>
@@ -67,7 +66,7 @@ $pluginSlug = PluginConfigType::Slug->value;
     </h1>
     
     <p class="description">
-        <?php esc_html_e('View all API activity and operations performed through this plugin.', 'riseup-asia-uploader'); ?>
+        <?php esc_html_e('View all API activity and operations performed through this plugin.', $pluginSlug); ?>
     </p>
 
     <!-- Filters -->
@@ -77,9 +76,9 @@ $pluginSlug = PluginConfigType::Slug->value;
             
             <div class="filter-row">
                 <label>
-                    <span><?php esc_html_e('Action:', 'riseup-asia-uploader'); ?></span>
+                    <span><?php esc_html_e('Action:', $pluginSlug); ?></span>
                     <select name="filter_action">
-                        <option value=""><?php esc_html_e('All Actions', 'riseup-asia-uploader'); ?></option>
+                        <option value=""><?php esc_html_e('All Actions', $pluginSlug); ?></option>
                         <?php foreach ($actionLabels as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected($filters['action'], $key); ?>>
                                 <?php echo esc_html($label); ?>
@@ -89,18 +88,18 @@ $pluginSlug = PluginConfigType::Slug->value;
                 </label>
 
                 <label>
-                    <span><?php esc_html_e('Status:', 'riseup-asia-uploader'); ?></span>
+                    <span><?php esc_html_e('Status:', $pluginSlug); ?></span>
                     <select name="filter_status">
-                        <option value=""><?php esc_html_e('All Statuses', 'riseup-asia-uploader'); ?></option>
-                        <option value="<?php echo esc_attr(StatusType::Success->value); ?>" <?php selected($filters['status'], StatusType::Success->value); ?>><?php esc_html_e('Success', 'riseup-asia-uploader'); ?></option>
-                        <option value="<?php echo esc_attr(StatusType::Failed->value); ?>" <?php selected($filters['status'], StatusType::Failed->value); ?>><?php esc_html_e('Failed', 'riseup-asia-uploader'); ?></option>
+                        <option value=""><?php esc_html_e('All Statuses', $pluginSlug); ?></option>
+                        <option value="<?php echo esc_attr(StatusType::Success->value); ?>" <?php selected($filters['status'], StatusType::Success->value); ?>><?php esc_html_e('Success', $pluginSlug); ?></option>
+                        <option value="<?php echo esc_attr(StatusType::Failed->value); ?>" <?php selected($filters['status'], StatusType::Failed->value); ?>><?php esc_html_e('Failed', $pluginSlug); ?></option>
                     </select>
                 </label>
 
                 <label>
-                    <span><?php esc_html_e('Trigger:', 'riseup-asia-uploader'); ?></span>
+                    <span><?php esc_html_e('Trigger:', $pluginSlug); ?></span>
                     <select name="filter_triggered_by">
-                        <option value=""><?php esc_html_e('All Sources', 'riseup-asia-uploader'); ?></option>
+                        <option value=""><?php esc_html_e('All Sources', $pluginSlug); ?></option>
                         <?php foreach ($triggerLabels as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected(isset($filters['triggered_by']) ? $filters['triggered_by'] : '', $key); ?>>
                                 <?php echo esc_html($label); ?>
@@ -110,9 +109,9 @@ $pluginSlug = PluginConfigType::Slug->value;
                 </label>
 
                 <label>
-                    <span><?php esc_html_e('Upload Via:', 'riseup-asia-uploader'); ?></span>
+                    <span><?php esc_html_e('Upload Via:', $pluginSlug); ?></span>
                     <select name="filter_upload_source">
-                        <option value=""><?php esc_html_e('All Methods', 'riseup-asia-uploader'); ?></option>
+                        <option value=""><?php esc_html_e('All Methods', $pluginSlug); ?></option>
                         <?php foreach ($uploadSourceLabels as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected(isset($filters['upload_source']) ? $filters['upload_source'] : '', $key); ?>>
                                 <?php echo esc_html($label); ?>
@@ -122,34 +121,34 @@ $pluginSlug = PluginConfigType::Slug->value;
                 </label>
 
                 <label>
-                    <span><?php esc_html_e('User:', 'riseup-asia-uploader'); ?></span>
-                    <input type="text" name="filter_user" value="<?php echo esc_attr($filters['user']); ?>" placeholder="<?php esc_attr_e('Username', 'riseup-asia-uploader'); ?>">
+                    <span><?php esc_html_e('User:', $pluginSlug); ?></span>
+                    <input type="text" name="filter_user" value="<?php echo esc_attr($filters['user']); ?>" placeholder="<?php esc_attr_e('Username', $pluginSlug); ?>">
                 </label>
 
                 <label>
-                    <span><?php esc_html_e('Plugin:', 'riseup-asia-uploader'); ?></span>
-                    <input type="text" name="filter_plugin" value="<?php echo esc_attr($filters['plugin']); ?>" placeholder="<?php esc_attr_e('Plugin slug', 'riseup-asia-uploader'); ?>">
+                    <span><?php esc_html_e('Plugin:', $pluginSlug); ?></span>
+                    <input type="text" name="filter_plugin" value="<?php echo esc_attr($filters['plugin']); ?>" placeholder="<?php esc_attr_e('Plugin slug', $pluginSlug); ?>">
                 </label>
 
                 <label>
-                    <span><?php esc_html_e('Source Machine:', 'riseup-asia-uploader'); ?></span>
-                    <input type="text" name="filter_source_machine" value="<?php echo esc_attr(isset($filters['source_machine']) ? $filters['source_machine'] : ''); ?>" placeholder="<?php esc_attr_e('Hostname', 'riseup-asia-uploader'); ?>">
+                    <span><?php esc_html_e('Source Machine:', $pluginSlug); ?></span>
+                    <input type="text" name="filter_source_machine" value="<?php echo esc_attr(isset($filters['source_machine']) ? $filters['source_machine'] : ''); ?>" placeholder="<?php esc_attr_e('Hostname', $pluginSlug); ?>">
                 </label>
             </div>
             
             <div class="filter-row filter-row-secondary">
                 <label>
-                    <span><?php esc_html_e('From:', 'riseup-asia-uploader'); ?></span>
+                    <span><?php esc_html_e('From:', $pluginSlug); ?></span>
                     <input type="date" name="filter_from" value="<?php echo esc_attr($filters['from']); ?>">
                 </label>
 
                 <label>
-                    <span><?php esc_html_e('To:', 'riseup-asia-uploader'); ?></span>
+                    <span><?php esc_html_e('To:', $pluginSlug); ?></span>
                     <input type="date" name="filter_to" value="<?php echo esc_attr($filters['to']); ?>">
                 </label>
 
-                <button type="submit" class="button button-primary"><?php esc_html_e('Filter', 'riseup-asia-uploader'); ?></button>
-                <a href="<?php echo esc_url(AdminPageType::Logs->adminUrl()); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
+                <button type="submit" class="button button-primary"><?php esc_html_e('Filter', $pluginSlug); ?></button>
+                <a href="<?php echo esc_url(AdminPageType::Logs->adminUrl()); ?>" class="button"><?php esc_html_e('Reset', $pluginSlug); ?></a>
             </div>
         </form>
     </div>
@@ -158,12 +157,12 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div class="riseup-stats">
         <span class="stat-item">
             <strong><?php echo esc_html($total); ?></strong>
-            <?php esc_html_e('total records', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('total records', $pluginSlug); ?>
         </span>
         <?php if ($page > 1 || $page < $totalPages): ?>
             <span class="stat-item">
-                <?php esc_html_e('Page', 'riseup-asia-uploader'); ?> <?php echo esc_html($page); ?> 
-                <?php esc_html_e('of', 'riseup-asia-uploader'); ?> <?php echo esc_html($totalPages); ?>
+                <?php esc_html_e('Page', $pluginSlug); ?> <?php echo esc_html($page); ?> 
+                <?php esc_html_e('of', $pluginSlug); ?> <?php echo esc_html($totalPages); ?>
             </span>
         <?php endif; ?>
     </div>
@@ -172,23 +171,23 @@ $pluginSlug = PluginConfigType::Slug->value;
     <table class="wp-list-table widefat fixed striped riseup-logs-table">
         <thead>
             <tr>
-                <th class="column-id"><?php esc_html_e('ID', 'riseup-asia-uploader'); ?></th>
-                <th class="column-timestamp"><?php esc_html_e('Time', 'riseup-asia-uploader'); ?></th>
-                <th class="column-action"><?php esc_html_e('Action', 'riseup-asia-uploader'); ?></th>
-                <th class="column-plugin"><?php esc_html_e('Plugin/Target', 'riseup-asia-uploader'); ?></th>
-                <th class="column-version"><?php esc_html_e('Version', 'riseup-asia-uploader'); ?></th>
-                <th class="column-trigger"><?php esc_html_e('Trigger', 'riseup-asia-uploader'); ?></th>
-                <th class="column-upload-source"><?php esc_html_e('Upload Via', 'riseup-asia-uploader'); ?></th>
-                <th class="column-source"><?php esc_html_e('Source', 'riseup-asia-uploader'); ?></th>
-                <th class="column-user"><?php esc_html_e('User', 'riseup-asia-uploader'); ?></th>
-                <th class="column-status"><?php esc_html_e('Status', 'riseup-asia-uploader'); ?></th>
-                <th class="column-details"><?php esc_html_e('Details', 'riseup-asia-uploader'); ?></th>
+                <th class="column-id"><?php esc_html_e('ID', $pluginSlug); ?></th>
+                <th class="column-timestamp"><?php esc_html_e('Time', $pluginSlug); ?></th>
+                <th class="column-action"><?php esc_html_e('Action', $pluginSlug); ?></th>
+                <th class="column-plugin"><?php esc_html_e('Plugin/Target', $pluginSlug); ?></th>
+                <th class="column-version"><?php esc_html_e('Version', $pluginSlug); ?></th>
+                <th class="column-trigger"><?php esc_html_e('Trigger', $pluginSlug); ?></th>
+                <th class="column-upload-source"><?php esc_html_e('Upload Via', $pluginSlug); ?></th>
+                <th class="column-source"><?php esc_html_e('Source', $pluginSlug); ?></th>
+                <th class="column-user"><?php esc_html_e('User', $pluginSlug); ?></th>
+                <th class="column-status"><?php esc_html_e('Status', $pluginSlug); ?></th>
+                <th class="column-details"><?php esc_html_e('Details', $pluginSlug); ?></th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($logs)): ?>
                 <tr>
-                    <td colspan="11" class="no-items"><?php esc_html_e('No activity logs found.', 'riseup-asia-uploader'); ?></td>
+                    <td colspan="11" class="no-items"><?php esc_html_e('No activity logs found.', $pluginSlug); ?></td>
                 </tr>
             <?php else: ?>
                 <?php 
@@ -228,9 +227,9 @@ $pluginSlug = PluginConfigType::Slug->value;
                         $currentDateGroup = $logDate;
                         $relativeDayKey = DateHelper::relativeDayKey($logTimestamp);
                         if ($relativeDayKey === 'today') {
-                            $dateLabel = __('Today', 'riseup-asia-uploader') . ' — ' . $logDateDisplay;
+                            $dateLabel = __('Today', $pluginSlug) . ' — ' . $logDateDisplay;
                         } elseif ($relativeDayKey === 'yesterday') {
-                            $dateLabel = __('Yesterday', 'riseup-asia-uploader') . ' — ' . $logDateDisplay;
+                            $dateLabel = __('Yesterday', $pluginSlug) . ' — ' . $logDateDisplay;
                         } else {
                             $dateLabel = $logDateDisplay;
                         }
@@ -265,7 +264,7 @@ $pluginSlug = PluginConfigType::Slug->value;
                                     <br><small class="plugin-file" title="<?php echo esc_attr($log[LogColumnType::PluginFile->value]); ?>"><?php echo esc_html($log[LogColumnType::PluginFile->value]); ?></small>
                                 <?php endif; ?>
                             <?php elseif ($hasPostId): ?>
-                                <span class="plugin-target-badge target-post"><?php esc_html_e('Post', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log[LogColumnType::PostId->value]); ?></span>
+                                <span class="plugin-target-badge target-post"><?php esc_html_e('Post', $pluginSlug); ?> #<?php echo esc_html($log[LogColumnType::PostId->value]); ?></span>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
@@ -302,7 +301,7 @@ $pluginSlug = PluginConfigType::Slug->value;
                         </td>
                         <td class="column-source">
                             <?php if ($hasSourceMachine): ?>
-                                <span class="source-badge" title="<?php esc_attr_e('Management Server Hostname', 'riseup-asia-uploader'); ?>">
+                                <span class="source-badge" title="<?php esc_attr_e('Management Server Hostname', $pluginSlug); ?>">
                                     <?php echo esc_html($sourceMachine); ?>
                                 </span>
                             <?php else: ?>
@@ -332,7 +331,7 @@ $pluginSlug = PluginConfigType::Slug->value;
                                 </span>
                             <?php elseif ($hasLogDetails): ?>
                                 <button type="button" class="button button-small toggle-details" data-details="<?php echo esc_attr(json_encode($log[LogColumnType::Details->value])); ?>">
-                                    <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
+                                    <?php esc_html_e('View', $pluginSlug); ?>
                                 </button>
                             <?php else: ?>
                                 <span class="na">—</span>
@@ -367,7 +366,7 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div id="riseup-details-modal" class="riseup-modal" style="display: none;">
         <div class="riseup-modal-content">
             <div class="riseup-modal-header">
-                <h3><?php esc_html_e('Details', 'riseup-asia-uploader'); ?></h3>
+                <h3><?php esc_html_e('Details', $pluginSlug); ?></h3>
                 <button type="button" class="riseup-modal-close">&times;</button>
             </div>
             <div class="riseup-modal-body">
