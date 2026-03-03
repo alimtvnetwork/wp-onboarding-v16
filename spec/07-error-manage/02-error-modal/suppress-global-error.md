@@ -136,12 +136,12 @@ All queries and mutations with `suppressGlobalError: true`:
 | `src/pages/Sessions.tsx` | deleteMutation |
 | `src/pages/RequestSessions.tsx` | deleteMutation, clearMutation |
 | `src/pages/Tests.tsx` | startRun, rerunCase |
+| `src/hooks/useSettings.ts` | `useSaveSettings` mutation (called with inline `onError` toasts throughout Settings.tsx) |
 
 ### Intentionally NOT Suppressed
 
 | File | Query/Mutation | Reason |
 |------|---------------|--------|
-| `src/hooks/useSettings.ts` | `useSaveSettings` mutation | No local error handling — intentionally uses global modal |
 | `src/hooks/useTheme.ts` | `updateSettingMutation` | Comment says "Ensure errors surface in GlobalErrorModal" |
 | `src/hooks/useDashboardStats.ts` | dashboard-stats query | No local error handling |
 | `src/pages/PublishHistory.tsx` | publish history queries | No local error handling |

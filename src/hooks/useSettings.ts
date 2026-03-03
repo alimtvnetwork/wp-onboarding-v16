@@ -15,6 +15,7 @@ export function useSettings() {
 export function useSaveSettings() {
   const queryClient = useQueryClient();
   return useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (patch: DeepPartial<Settings>) => {
       const response = await api.updateSettings(patch as Partial<Settings>);
       return requireSuccess(response, { endpoint: "/settings", method: "PUT" });
