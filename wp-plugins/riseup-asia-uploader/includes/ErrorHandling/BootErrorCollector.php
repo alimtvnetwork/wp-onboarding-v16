@@ -111,6 +111,7 @@ class BootErrorCollector {
                 self::COLLECTOR_PREFIX
                 . 'failed to send boot error report — '
                 . $e->getMessage()
+                . "\n" . $e->getTraceAsString()
             );
         }
 

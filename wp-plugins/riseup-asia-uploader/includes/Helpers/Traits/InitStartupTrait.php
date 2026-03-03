@@ -27,6 +27,7 @@ trait InitStartupTrait {
             $result = $initFn();
         } catch (Throwable $e) {
             $error = $e->getMessage();
+            error_log('InitStartupTrait::trackInit(' . $name . ') failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             BootErrorCollector::getInstance()->addError('component_init:' . $name, $error);
         }
 

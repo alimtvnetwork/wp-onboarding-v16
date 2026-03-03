@@ -75,6 +75,7 @@ trait ManagerSettingsTrait {
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to read SnapshotSettings from SQLite', array(
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ));
 
             return array();
@@ -123,6 +124,7 @@ trait ManagerSettingsTrait {
             } catch (Throwable $e) {
                 $this->log(LogLevelType::Error->value, 'Failed to update SnapshotSettings', array(
                     'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                 ));
             }
         }

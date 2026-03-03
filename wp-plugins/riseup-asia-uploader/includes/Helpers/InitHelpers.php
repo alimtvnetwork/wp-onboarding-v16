@@ -68,7 +68,7 @@ class InitHelpers {
 
             return $pdo;
         } catch (PDOException $e) {
-            $logger->error('[INIT] SQLite connection failed: ' . $e->getMessage(), array('path' => $dbPath, 'code' => $e->getCode()));
+            $logger->error('[INIT] SQLite connection failed: ' . $e->getMessage(), array('path' => $dbPath, 'code' => $e->getCode(), 'trace' => $e->getTraceAsString()));
 
             return null;
         }
