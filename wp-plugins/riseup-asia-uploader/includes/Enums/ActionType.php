@@ -39,6 +39,11 @@ enum ActionType: string
     case ExportSelf       = 'ExportSelf';
     case ExportPlugin     = 'ExportPlugin';
 
+    // Plugin backup actions
+    case PluginBackup        = 'PluginBackup';
+    case PluginBackupRestore = 'PluginBackupRestore';
+    case PluginBackupDelete  = 'PluginBackupDelete';
+
     // Agent actions
     case AgentAdd           = 'AgentAdd';
     case AgentRemove        = 'AgentRemove';

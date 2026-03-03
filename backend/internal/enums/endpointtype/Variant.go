@@ -31,6 +31,10 @@ const (
 	Media
 	ExportSelf
 	ExportPlugin
+	PluginBackup
+	PluginBackupRestore
+	PluginBackupList
+	PluginBackupDelete
 	SyncManifest
 	ErrorLogs
 	ErrorSessions
@@ -86,6 +90,10 @@ var variantLabels = [...]string{
 	Media:                   "Media",
 	ExportSelf:              "ExportSelf",
 	ExportPlugin:            "ExportPlugin",
+	PluginBackup:            "PluginBackup",
+	PluginBackupRestore:     "PluginBackupRestore",
+	PluginBackupList:        "PluginBackupList",
+	PluginBackupDelete:      "PluginBackupDelete",
 	SyncManifest:            "SyncManifest",
 	ErrorLogs:               "ErrorLogs",
 	ErrorSessions:           "ErrorSessions",
@@ -141,6 +149,10 @@ var variantValues = [...]string{
 	Media:                   "/media",
 	ExportSelf:              "/export-self",
 	ExportPlugin:            "/plugins/export",
+	PluginBackup:            "/plugins/backup",
+	PluginBackupRestore:     "/plugins/backup-restore",
+	PluginBackupList:        "/plugins/backup-list",
+	PluginBackupDelete:      "/plugins/backup-delete",
 	SyncManifest:            "/plugins/sync-manifest",
 	ErrorLogs:               "/error-logs",
 	ErrorSessions:           "/error-sessions",

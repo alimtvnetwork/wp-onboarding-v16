@@ -11,30 +11,27 @@
 - Extracted 15 `!positiveVar` patterns to named positive intermediate variables
 - Zero violations remain in non-test Go files
 
+### ✅ Magic Strings Elimination in Template JS
+- Replaced hardcoded action strings in `admin-agents.php` with `ActionType` enum
+- Added `SNAP_RETENTION` and `SNAP_AJAX` JS constant blocks in `admin-snapshots.php`
+- Replaced 5 inline PHP enum calls with JS constants
+
+### ✅ Phase 7A: Remote Plugin Backups (PHP + Go endpoints)
+- Created `BackupType`, `BackupStatusType`, `BackupConfigType` enums
+- Added 4 new `EndpointType` cases: `PluginBackup`, `PluginBackupRestore`, `PluginBackupList`, `PluginBackupDelete`
+- Added `Backups` to `PathSubdirType` and `getBackupsDir()` to `PathHelperCoreTrait`
+- Implemented `PluginBackupHandlerTrait` with full CRUD (create zip, restore, list, delete)
+- Registered 4 routes in `PluginRouteRegistrationTrait`
+- Wired trait into `Plugin.php`
+- Added 4 matching Go `Variant` constants to keep drift test in sync
+- Auto-retention enforces max 5 backups per plugin
+- **Remaining:** Go pre-publish hook integration (calls backup before upload)
+
 ---
 
 ## Active / Queued Work
 
-### 🔲 Task: Eliminate Magic Strings in Template JS
-
-**Status:** Ready to implement  
-**Scope:** 2 files, ~45 replacements  
-**Priority:** High (code quality debt)
-
-Replace hardcoded REST paths, status strings, response keys, and UI labels in `admin-agents.php` and `admin-snapshots.php` inline `<script>` blocks with PHP enum-driven JS constant blocks.
-
-**Files:**
-- `admin-agents.php` — Add `ENDPOINTS`, `AGENT_STATUS`, `STATUS`, `LABELS` JS blocks; replace ~30 magic strings
-- `admin-snapshots.php` — Add `use EndpointType;`, `SNAP_ENDPOINTS`, `SNAP_LABELS` JS blocks; replace ~26 magic strings
-
-**Key rule:** The text domain `'riseup-asia-uploader'` must also come from `PluginConfigType::TextDomain->value` (or equivalent constant), not as a magic string.
-
-**Acceptance criteria:**
-1. Zero hardcoded REST paths in JS — all use PHP-echoed `EndpointType` values
-2. Zero hardcoded status strings — all use PHP-echoed `StatusType`/`AgentStatusType` values
-3. Zero hardcoded UI labels — all use `__()` localized strings via PHP-echoed JS constants
-4. Zero hardcoded response keys — all use `ResponseKeyType` values
-5. Existing functionality unchanged (manual test: agents CRUD, snapshot operations)
+### ✅ Task: Eliminate Magic Strings in Template JS (completed)
 
 ---
 
@@ -42,7 +39,7 @@ Replace hardcoded REST paths, status strings, response keys, and UI labels in `a
 
 > Architecture decisions resolved. Implementation details below.
 
-### 7A: Remote Plugin Backups (WP-site storage)
+### ✅ 7A: Remote Plugin Backups (WP-site storage) — PHP + Go endpoints complete
 
 **Decision:** Backups stored on the WordPress site only (no local copies).  
 **Priority:** High  

@@ -108,6 +108,31 @@ trait PluginRouteRegistrationTrait {
             'permission_callback' => $this->buildPermissionCallback('plugin_export', $perm),
         ));
 
+        // Plugin backup routes
+        $safeRegister(EndpointType::PluginBackup->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handlePluginBackup'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_backup', $perm),
+        ));
+
+        $safeRegister(EndpointType::PluginBackupRestore->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handlePluginBackupRestore'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_backup_restore', $perm),
+        ));
+
+        $safeRegister(EndpointType::PluginBackupList->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handlePluginBackupList'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_backup_list', $perm),
+        ));
+
+        $safeRegister(EndpointType::PluginBackupDelete->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handlePluginBackupDelete'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_backup_delete', $perm),
+        ));
+
         try {
             $safeRegister(EndpointType::Media->route(), array(
                 'methods'             => HttpMethodType::Post->value,
