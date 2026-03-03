@@ -94,7 +94,7 @@ Uses `ZipArchive::CM_DEFLATE` at maximum compression level, matching Go's `flate
 ### WordPress Admin (PHP)
 
 - **`btn-download-zip`**: Replaces legacy `btn-export` for full snapshots. Spinner during build, cached/built badge on success.
-- **Error modal**: HTTP status, plugin version, timestamp, PHP stack trace (purple-themed), backend details (amber-themed), Copy Report button.
+- **Error modal**: HTTP status, plugin version, timestamp, PHP stack trace (orange-themed), backend details (amber-themed), Copy Report button.
 
 ## Activity Log Color Coding
 
