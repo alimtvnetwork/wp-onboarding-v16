@@ -41,7 +41,7 @@ final class QUploadAutoloader {
         try {
             require_once $file;
         } catch (Throwable $e) {
-            error_log(self::LOG_PREFIX . 'failed to load "' . $class . '" — ' . $e->getMessage());
+            error_log(self::LOG_PREFIX . 'failed to load "' . $class . '" — ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 }

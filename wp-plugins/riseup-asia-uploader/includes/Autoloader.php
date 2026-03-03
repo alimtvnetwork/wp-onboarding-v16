@@ -46,7 +46,7 @@ final class RiseupAsiaAutoloader {
         try {
             require_once $file;
         } catch (Throwable $e) {
-            error_log(self::LOG_PREFIX . 'failed to load "' . $class . '" — ' . $e->getMessage());
+            error_log(self::LOG_PREFIX . 'failed to load "' . $class . '" — ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             self::$failedClasses[] = ['class' => $class, 'file' => $file, 'error' => $e->getMessage()];
             self::reportToBootCollector('autoloader', 'Failed to load ' . $class . ': ' . $e->getMessage());
         }
@@ -112,7 +112,7 @@ final class RiseupAsiaAutoloader {
 
                 $loaded[] = $filePath;
             } catch (Throwable $e) {
-                $failed[] = ['file' => $filePath, 'error' => 'Parse error: ' . $e->getMessage()];
+                $failed[] = ['file' => $filePath, 'error' => 'Parse error: ' . $e->getMessage() . "\n" . $e->getTraceAsString()];
             }
         }
 
