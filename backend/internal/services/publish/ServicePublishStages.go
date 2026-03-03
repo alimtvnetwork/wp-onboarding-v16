@@ -7,20 +7,50 @@ import (
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
 // ─── Stage Execution ─────────────────────────────────────────────────────────
 
-// executeBackupStage runs the backup stage of the publish pipeline
-func (s *Service) executeBackupStage(pctx *publishContext) Stage {
+// executeBackupStage runs the backup stage of the publish pipeline.
+// It delegates to backupService.Create to persist a real backup ZIP.
+func (s *Service) executeBackupStage(ctx context.Context, pctx *publishContext) Stage {
 	return s.runStage("backup", func() error {
 		s.broadcastProgress(pctx.progress(publishstep.Backup, 10, "Creating backup..."))
 		s.broadcastBackupInitLog(pctx)
 
+		backupResult := s.backupService.Create(ctx, pctx.Mapping.Id)
+		if backupResult.HasError() {
+			return backupResult.AppError()
+		}
+
+		backup := backupResult.Value()
+		pctx.Result.BackupId = &backup.Id
+
+		s.broadcastBackupCompleteLog(pctx, backup)
+
 		return nil
 	})
+}
+
+// broadcastBackupCompleteLog sends the backup completion log.
+func (s *Service) broadcastBackupCompleteLog(pctx *publishContext, backup models.Backup) {
+	completeDetails := toDetails(BackupCompleteDetails{
+		BackupId: backup.Id,
+		FilePath: backup.FilePath,
+		FileSize: backup.FileSize,
+	})
+	completeLog := DetailedLogInput{
+		PluginId: pctx.PluginId,
+		SiteId:   pctx.SiteId,
+		Level:    loglevel.Info,
+		Step:     publishstep.Backup,
+		Message:  fmt.Sprintf("Backup created (ID: %d, size: %s)", backup.Id, formatBytes(backup.FileSize)),
+		Details:  completeDetails,
+	}
+	s.broadcastDetailedLog(completeLog)
 }
 
 // broadcastBackupInitLog sends the backup initiation log.

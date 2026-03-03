@@ -58,6 +58,13 @@ type BackupStageDetails struct {
 	RemoteSlug string `json:",omitempty"`
 }
 
+// BackupCompleteDetails carries backup completion context.
+type BackupCompleteDetails struct {
+	BackupId int64  `json:",omitempty"`
+	FilePath string `json:",omitempty"`
+	FileSize int64  `json:",omitempty"`
+}
+
 // PackageDetails carries packaging stage context.
 type PackageDetails struct {
 	PluginPath      string                `json:",omitempty"`
