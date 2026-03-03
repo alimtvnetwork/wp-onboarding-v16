@@ -75,5 +75,82 @@ if (!function_exists('is_wp_error')) {
     }
 }
 
+// --- In-memory option store for testing ---
+global $_wp_test_options;
+$_wp_test_options = [];
+
+if (!function_exists('get_option')) {
+    function get_option(string $key, mixed $default = false): mixed {
+        global $_wp_test_options;
+        return $_wp_test_options[$key] ?? $default;
+    }
+}
+
+if (!function_exists('update_option')) {
+    function update_option(string $key, mixed $value): bool {
+        global $_wp_test_options;
+        $_wp_test_options[$key] = $value;
+        return true;
+    }
+}
+
+if (!function_exists('delete_option')) {
+    function delete_option(string $key): bool {
+        global $_wp_test_options;
+        unset($_wp_test_options[$key]);
+        return true;
+    }
+}
+
+if (!function_exists('sanitize_text_field')) {
+    function sanitize_text_field(string $str): string {
+        return trim(strip_tags($str));
+    }
+}
+
+if (!function_exists('get_site_url')) {
+    function get_site_url(): string {
+        return 'https://example.com';
+    }
+}
+
+if (!function_exists('wp_parse_url')) {
+    function wp_parse_url(string $url): array|false {
+        return parse_url($url);
+    }
+}
+
+if (!function_exists('wp_json_encode')) {
+    function wp_json_encode(mixed $data): string|false {
+        return json_encode($data);
+    }
+}
+
+// Remote request stubs — overridable via global callback.
+global $_wp_test_remote_handler;
+$_wp_test_remote_handler = null;
+
+if (!function_exists('wp_remote_request')) {
+    function wp_remote_request(string $url, array $args = []): array|WP_Error {
+        global $_wp_test_remote_handler;
+        if (is_callable($_wp_test_remote_handler)) {
+            return ($_wp_test_remote_handler)($url, $args);
+        }
+        return new WP_Error('no_handler', 'No test handler configured');
+    }
+}
+
+if (!function_exists('wp_remote_retrieve_response_code')) {
+    function wp_remote_retrieve_response_code(array $response): int {
+        return $response['response']['code'] ?? 0;
+    }
+}
+
+if (!function_exists('wp_remote_retrieve_body')) {
+    function wp_remote_retrieve_body(array $response): string {
+        return $response['body'] ?? '';
+    }
+}
+
 // PSR-4 autoloader via Composer.
 require_once __DIR__ . '/../vendor/autoload.php';
