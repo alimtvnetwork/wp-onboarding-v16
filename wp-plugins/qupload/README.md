@@ -4,7 +4,7 @@ Minimal WordPress plugin for remote plugin upload and activation via REST API.
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.1+
 - WordPress 5.6+
 
 ## Endpoints
@@ -40,11 +40,28 @@ curl -X POST https://your-site.com/wp-json/qupload/v1/activate \
   -d '{"slug": "my-plugin"}'
 ```
 
+## Admin Page
+
+**Tools → Quick Upload** — displays plugin status, recent logs/errors, endpoint reference, and authentication guidance.
+
 ## Logs
 
 - `wp-content/uploads/qupload/logs/log.txt` — General log
 - `wp-content/uploads/qupload/logs/error.txt` — Error-only log
 - `wp-content/uploads/qupload/logs/stacktrace.txt` — Stack traces
+
+## Version Management
+
+```powershell
+# Bump QUpload version
+.\wp-plugins\scripts\bump-version.ps1 -Target qupload -Bump patch
+
+# Set exact version
+.\wp-plugins\scripts\bump-version.ps1 -Target qupload -Set "2.0.0"
+
+# Bump everything (app, script, plugin, qupload)
+.\wp-plugins\scripts\bump-version.ps1 -Target all -Bump minor
+```
 
 ## Author
 

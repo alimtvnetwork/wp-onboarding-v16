@@ -16,9 +16,9 @@ enum PluginConfigType: string
 {
     case Slug          = 'qupload';
     case Name          = 'Quick Upload';
-    case Version       = '1.0.0';
+    case Version       = '1.1.0';
     case MinWpVersion  = '5.6';
-    case MinPhpVersion = '8.2';
+    case MinPhpVersion = '8.1';
     case UploadsSubdir = 'qupload';
     case ApiNamespace  = 'qupload';
     case ApiVersion    = 'v1';
