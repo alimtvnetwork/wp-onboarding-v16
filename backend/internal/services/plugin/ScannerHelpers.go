@@ -96,8 +96,8 @@ func shouldSkipEntry(filePath string, info os.FileInfo) *error {
 		skip := filepath.SkipDir
 		return &skip
 	}
-	var noErr error
-	return &noErr
+
+	return nil
 }
 
 // applyPluginInfo copies plugin header metadata into the scan result.

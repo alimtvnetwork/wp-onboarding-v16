@@ -6,10 +6,11 @@ import (
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // ensureMappingsExist ensures all plugin→site mappings exist (idempotent, runs every startup)
-func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error {
+func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) *apperror.AppError {
 	log.Debug("Verifying mappings exist for all seeded plugins")
 
 	var siteIds []int64
