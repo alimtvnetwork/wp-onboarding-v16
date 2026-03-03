@@ -624,6 +624,16 @@ jQuery(document).ready(function($) {
         success:   '<?php echo esc_js(ResponseKeyType::Success->value); ?>'
     };
 
+    var SNAP_RETENTION = {
+        none:  '<?php echo esc_js(RetentionType::None->value); ?>',
+        days:  '<?php echo esc_js(RetentionType::Days->value); ?>',
+        count: '<?php echo esc_js(RetentionType::Count->value); ?>'
+    };
+
+    var SNAP_AJAX = {
+        saveSettings: '<?php echo esc_js(AjaxActionType::SaveSnapshotSettings->value); ?>'
+    };
+
     var SNAP_LABELS = {
         copied:              '<?php echo esc_js(__("Copied!", "riseup-asia-uploader")); ?>',
         copy:                '<?php echo esc_js(__("Copy", "riseup-asia-uploader")); ?>',
@@ -1180,7 +1190,7 @@ jQuery(document).ready(function($) {
 
     // Scope change - show/hide custom tables
     $('#snapshot_scope').on('change', function() {
-        if ($(this).val() === '<?php echo SnapshotScopeType::Custom->value; ?>') {
+        if ($(this).val() === SNAP_SCOPE.custom) {
             $('#custom_tables_row').show();
             loadTables();
         } else {
@@ -1214,7 +1224,7 @@ jQuery(document).ready(function($) {
             scope: $('#snapshot_scope').val(),
             provider: $('#snapshot_provider').val()
         };
-        if (data.scope === '<?php echo SnapshotScopeType::Custom->value; ?>') {
+        if (data.scope === SNAP_SCOPE.custom) {
             data.tables = [];
             $('#snapshot_tables_list input:checked').each(function() {
                 data.tables.push($(this).val());
@@ -1599,9 +1609,9 @@ jQuery(document).ready(function($) {
     // Retention type change
     $('#setting_retention_type').on('change', function() {
         var val = $(this).val();
-        if (val === '<?php echo RetentionType::Days->value; ?>' || val === '<?php echo RetentionType::Count->value; ?>') {
+        if (val === SNAP_RETENTION.days || val === SNAP_RETENTION.count) {
             $('#retention_value_row').show();
-            $('#retention_value_label').text(val === '<?php echo RetentionType::Days->value; ?>' ? 'days' : 'snapshots');
+            $('#retention_value_label').text(val === SNAP_RETENTION.days ? 'days' : 'snapshots');
         } else {
             $('#retention_value_row').hide();
         }
@@ -1613,7 +1623,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true);
 
         var data = {
-            action: '<?php echo AjaxActionType::SaveSnapshotSettings->value; ?>',
+            action: SNAP_AJAX.saveSettings,
             nonce: ajaxNonce,
             schedule_frequency: $('#setting_schedule').val(),
             retention_type: $('#setting_retention_type').val(),
@@ -1624,9 +1634,9 @@ jQuery(document).ready(function($) {
         };
 
         var retType = data.retention_type;
-        if (retType === '<?php echo RetentionType::Days->value; ?>') {
+        if (retType === SNAP_RETENTION.days) {
             data.retention_days = parseInt($('#setting_retention_value').val()) || 30;
-        } else if (retType === '<?php echo RetentionType::Count->value; ?>') {
+        } else if (retType === SNAP_RETENTION.count) {
             data.retention_count = parseInt($('#setting_retention_value').val()) || 10;
         }
 
