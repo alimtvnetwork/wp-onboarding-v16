@@ -29,7 +29,7 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 
 	fi, statErr := pathutil.StatFile(logPath)
 	if statErr != nil {
-		respondSuccess(w, LogFileResponse{Content: "", Path: logPath, Exists: false, LogType: logType})
+		respondSuccess(w, LogFileResponse{Content: "", Path: logPath, IsExists: false, LogType: logType})
 		return
 	}
 
@@ -54,7 +54,7 @@ func resolveErrorLogPath(logType string) string {
 type logContentInput struct {
 	LogPath  string
 	LogType  string
-	FileStat *pathutil.FileStatResult
+	FileStat *pathutil.FileInfo
 }
 
 // respondErrorLogContent reads and responds with log file content.
@@ -69,7 +69,7 @@ func respondErrorLogContent(w http.ResponseWriter, input logContentInput) {
 	respondSuccess(w, LogFileResponse{
 		Content:    string(content),
 		Path:       input.LogPath,
-		Exists:     true,
+		IsExists:   true,
 		LogType:    input.LogType,
 		Size:       input.FileStat.Info.Size(),
 		ModifiedAt: input.FileStat.Info.ModTime().Format(time.RFC3339),
@@ -195,7 +195,7 @@ type logLinesResponseInput struct {
 	LogType  string
 	AllLines []string
 	Lines    []string
-	FileStat *pathutil.FileStatResult
+	FileStat *pathutil.FileInfo
 }
 
 // buildLogLinesResponse constructs the LogLinesResponse from parts.
@@ -204,7 +204,7 @@ func buildLogLinesResponse(input logLinesResponseInput) LogLinesResponse {
 		Lines:      input.Lines,
 		TotalLines: len(input.AllLines),
 		Path:       input.LogPath,
-		Exists:     true,
+		IsExists:   true,
 		LogType:    input.LogType,
 	}
 	if input.FileStat != nil {
@@ -253,7 +253,7 @@ func respondLogFileStatError(w http.ResponseWriter, statErr error, filename stri
 type logFileContentInput struct {
 	Path     string
 	Filename string
-	FileStat *pathutil.FileStatResult
+	FileStat *pathutil.FileInfo
 }
 
 // respondLogFileContent reads file and responds with LogFileResponse.
