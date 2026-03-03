@@ -139,12 +139,13 @@ Replace the current local-only file change detection with remote hash comparison
 
 ---
 
-### ✅ 7D: Licensing System (Custom Go Server) — Architecture document complete
+### ✅ 7D: Licensing System (Custom Go Server) — Architecture + scaffold complete
 
 **Decision:** In-house custom Go licensing server.  
-**Priority:** Low (architecture complete — implementation deferred)  
+**Priority:** Low (scaffold complete — handlers/services next)  
 **Dependencies:** None (standalone service)  
-**Architecture doc:** `.lovable/memory/features/licensing/architecture.md`
+**Architecture doc:** `.lovable/memory/features/licensing/architecture.md`  
+**Module:** `licensing/` at repo root
 
 #### Objective
 Build a self-hosted licensing server in Go that issues, validates, and manages license keys for the plugin ecosystem.
