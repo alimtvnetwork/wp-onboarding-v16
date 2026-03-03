@@ -48,7 +48,7 @@ trait ImportValidationTrait {
 
             return $row ?: null;
         } catch (PDOException $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to read a-root.db metadata', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to read a-root.db metadata', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return null;
         }
