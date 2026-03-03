@@ -132,6 +132,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
   // Force sync mutation (bypasses cache)
   const forceSyncMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async () => {
       const response = await api.forceSyncRemotePlugins(site.id);
       return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/force-sync`, method: "POST" });
@@ -202,6 +203,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   }, [queryClient, queryKey, site.id]);
 
   const toggleMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async ({ plugin, enable }: { plugin: RemotePlugin; enable: boolean }) => {
       const action = enable ? "activate" : "deactivate";
       if (!(await validatePluginExists(plugin.plugin, action))) {
@@ -268,6 +270,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   });
 
   const deleteMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (plugin: RemotePlugin) => {
       if (!(await validatePluginExists(plugin.plugin, "delete"))) {
         throw new Error(`Plugin "${plugin.plugin}" not found — delete blocked by pre-flight check`);

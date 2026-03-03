@@ -94,6 +94,8 @@ const queryClient = new QueryClient({
   }),
   mutationCache: new MutationCache({
     onError: (error, _variables, _context, mutation) => {
+      // Skip global error modal for mutations that opt out
+      if (mutation.meta?.suppressGlobalError) return;
       showGlobalError(error, { endpoint: String(mutation.options.mutationKey?.[0] ?? "mutation") });
     },
   }),

@@ -258,6 +258,8 @@ export function RemotePluginFileBrowser({
     },
     enabled: open,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false,
+    meta: { suppressGlobalError: true },
   });
 
   const tree = useMemo(() => {

@@ -120,6 +120,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const createMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (opts?: CreateSnapshotOptions) => {
       const res = await api.createRemoteSnapshot(siteId, opts);
       return throwIfFailed(res, "Failed to create snapshot");
@@ -132,6 +133,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const deleteMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (snapshotId: number) => {
       const res = await api.deleteRemoteSnapshot(siteId, snapshotId);
       return throwIfFailed(res, "Failed to delete snapshot");
@@ -144,6 +146,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const restoreMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async ({ snapshotId, opts }: { snapshotId: number; opts?: Omit<import("@/lib/api").RestoreSnapshotOptions, "confirm"> }) => {
       const res = await api.restoreRemoteSnapshot(siteId, snapshotId, { confirm: true, ...opts });
       return throwIfFailed(res, "Failed to restore snapshot");
@@ -156,6 +159,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const updateSettingsMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (settings: Partial<SnapshotSettings>) => {
       const res = await api.updateRemoteSnapshotSettings(siteId, settings);
       return throwIfFailed(res, "Failed to update settings");
@@ -178,6 +182,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const fullBackupMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (opts?: CreateSnapshotOptions) => {
       const res = await api.fullBackupRemoteSnapshot(siteId, opts);
       return throwIfFailed(res, "Failed to trigger full backup");
@@ -190,6 +195,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const incrementalBackupMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (opts?: CreateSnapshotOptions) => {
       const res = await api.incrementalBackupRemoteSnapshot(siteId, opts);
       return throwIfFailed(res, "Failed to trigger incremental backup");
@@ -202,6 +208,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const importMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (file: File) => {
       const res = await api.importRemoteSnapshot(siteId, file);
       return throwIfFailed(res, "Failed to import snapshot");
@@ -214,6 +221,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const cleanupMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (opts?: import("@/lib/api").CleanupSnapshotOptions) => {
       const res = await api.cleanupRemoteSnapshots(siteId, opts);
       return throwIfFailed(res, "Failed to run cleanup");
