@@ -25,6 +25,7 @@ use QUpload\Traits\Core\StatusHandlerTrait;
 use QUpload\Traits\Core\ResponseTrait;
 use QUpload\Traits\Upload\UploadHandlerTrait;
 use QUpload\Traits\Activate\ActivateHandlerTrait;
+use QUpload\Traits\Deactivate\DeactivateHandlerTrait;
 
 class Plugin {
     use AdminTrait;
@@ -34,6 +35,7 @@ class Plugin {
     use ResponseTrait;
     use UploadHandlerTrait;
     use ActivateHandlerTrait;
+    use DeactivateHandlerTrait;
 
     private FileLogger $fileLogger;
     private static ?self $instance = null;
