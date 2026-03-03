@@ -80,7 +80,7 @@ func (s *PublishScheduler) AddJob(job ScheduledJob) (string, error) {
 	job.Id = fmt.Sprintf("sj-%d-%d", job.PluginId, time.Now().UnixMilli())
 	job.CreatedAt = time.Now()
 	job.LastStatus = "never"
-	job.Enabled = true
+	job.IsEnabled = true
 
 	// Calculate next run
 	nextRun, err := s.calculateNextRun(job.Schedule)
@@ -178,7 +178,7 @@ func (s *PublishScheduler) GetJob(jobId string) (*ScheduledJob, bool) {
 
 // scheduleTimer sets up a timer for the job's next run
 func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
-	isDisabled := !job.Enabled
+	isDisabled := !job.IsEnabled
 	isUnscheduled := job.NextRunAt == nil
 	if isDisabled || isUnscheduled {
 		return
@@ -207,7 +207,7 @@ func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
 func (s *PublishScheduler) executeJob(jobId string) {
 	s.mu.Lock()
 	job, isFound := s.jobs[jobId]
-	isJobMissing := !isFound || !job.Enabled
+	isJobMissing := !isFound || !job.IsEnabled
 
 	if isJobMissing {
 		s.mu.Unlock()
@@ -405,7 +405,7 @@ func (s *PublishScheduler) collectJobSummaries() []ws.ScheduledJobSummary {
 func buildJobSummary(job *ScheduledJob) ws.ScheduledJobSummary {
 	j := ws.ScheduledJobSummary{
 		Id: job.Id, PluginId: job.PluginId, PluginName: job.PluginName,
-		IsEnabled: job.Enabled, Schedule: job.Schedule.CronExpr, LastStatus: job.LastStatus,
+		IsEnabled: job.IsEnabled, Schedule: job.Schedule.CronExpr, LastStatus: job.LastStatus,
 	}
 	if job.NextRunAt != nil {
 		j.NextRunAt = job.NextRunAt.Format(time.RFC3339)

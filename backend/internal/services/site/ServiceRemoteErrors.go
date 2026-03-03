@@ -54,7 +54,7 @@ func (s *Service) populateApiErrorFields(details *ExtractedErrorDetails, apiErr 
 func copyRequiredApiFields(details *ExtractedErrorDetails, apiErr *wordpress.ApiError) {
 	details.Method = apiErr.Method
 	details.Endpoint = apiErr.Endpoint
-	details.Url = apiErr.URL
+	details.Url = apiErr.Url
 	details.StatusCode = apiErr.StatusCode
 	details.RequestBody = apiErr.RequestBody
 	details.ResponseBody = apiErr.ResponseBody

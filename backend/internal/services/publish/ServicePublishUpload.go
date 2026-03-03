@@ -71,7 +71,7 @@ func (s *Service) performUpload(input performUploadInput) (bool, *apperror.AppEr
 }
 
 // attemptUploadWithRetry runs the upload with retry logic.
-func (s *Service) attemptUploadWithRetry(ctx context.Context, pctx *publishContext, zipPath string) (UploadOutcome, RetryResult[UploadOutcome]) {
+func (s *Service) attemptUploadWithRetry(ctx context.Context, pctx *publishContext, zipPath string) (UploadOutcome, RetryResult) {
 	retryCfg := DefaultRetryConfig()
 
 	return withRetry(ctx, retryCfg, "upload", func(attempt int) (UploadOutcome, *apperror.AppError) {
@@ -85,7 +85,7 @@ func (s *Service) attemptUploadWithRetry(ctx context.Context, pctx *publishConte
 }
 
 // handleUploadRetryFailure logs the error and returns an AppError.
-func (s *Service) handleUploadRetryFailure(pctx *publishContext, retryResult RetryResult[UploadOutcome]) *apperror.AppError {
+func (s *Service) handleUploadRetryFailure(pctx *publishContext, retryResult RetryResult) *apperror.AppError {
 	s.logUploadError(pctx, retryResult.Attempts, retryResult.LastError)
 
 	return apperror.Wrap(retryResult.LastError, apperror.ErrWPConnection, "plugin upload failed")

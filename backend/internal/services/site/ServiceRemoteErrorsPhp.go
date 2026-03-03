@@ -30,18 +30,20 @@ func (s *Service) fetchAndAttachPhpErrorSessions(ref *remoteActionRef, errDetail
 		Limit: 10,
 	}
 
-	result, fetchErr := ref.Client.FetchRemoteErrorSessions(fetchInput)
-	if fetchErr != nil {
+	fetchResult := ref.Client.FetchRemoteErrorSessions(fetchInput)
+	if fetchResult.HasError() {
 		errLog := RemoteActionLogInput{
 			Level:   "warn",
 			Step:    "fetch_php_errors",
-			Message: fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()),
+			Message: fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchResult.AppError().Error()),
 		}
 
 		s.logRemoteAction(ref, errLog)
 
 		return
 	}
+
+	result := fetchResult.Value()
 
 	if s.isPhpErrorResultEmpty(ref, result) {
 		return
@@ -154,7 +156,8 @@ func (s *Service) logPhpErrorsToSession(sessionId string, entries []wordpress.Re
 	}
 
 	for _, entry := range entries {
-		s.sessionService.Log(buildPhpErrorLogInput(sessionId, entry))
+		logInput := buildPhpErrorLogInput(sessionId, entry)
+		s.sessionService.Log(logInput.SessionId, logInput.Level, logInput.Step, logInput.Message, logInput.Details)
 	}
 }
 
@@ -184,12 +187,12 @@ func (s *Service) fetchAndAttachPhpStackTrace(ref *remoteActionRef, errDetails *
 
 	s.logRemoteAction(ref, startLog)
 
-	logsResult, logsErr := ref.Client.FetchRemoteErrorLogs()
-	if logsErr != nil {
+	logsResult := ref.Client.FetchRemoteErrorLogs()
+	if logsResult.HasError() {
 		errLog := RemoteActionLogInput{
 			Level:   "warn",
 			Step:    "fetch_php_stacktrace",
-			Message: fmt.Sprintf("Could not fetch remote error logs: %s", logsErr.Error()),
+			Message: fmt.Sprintf("Could not fetch remote error logs: %s", logsResult.AppError().Error()),
 		}
 
 		s.logRemoteAction(ref, errLog)
@@ -197,7 +200,9 @@ func (s *Service) fetchAndAttachPhpStackTrace(ref *remoteActionRef, errDetails *
 		return
 	}
 
-	s.applyStackTraceIfPresent(ref, logsResult, errDetails)
+	fetchedLogs := logsResult.Value()
+
+	s.applyStackTraceIfPresent(ref, fetchedLogs, errDetails)
 }
 
 // applyStackTraceIfPresent applies the stack trace if it exists, otherwise logs absence.
@@ -259,11 +264,5 @@ func (s *Service) logStackTraceToSession(ref *remoteActionRef, stLog *wordpress.
 		Content: stLog.Content, Lines: stLog.Lines, Truncated: stLog.Truncated,
 	}
 
-	s.sessionService.Log(session.LogInput{
-		SessionId: ref.SessionId,
-		Level:     "info",
-		Step:      "remote_php_stacktrace",
-		Message:   "PHP stacktrace.txt content from remote site",
-		Details:   session.ToJson(contentDetail),
-	})
+	s.sessionService.Log(ref.SessionId, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", session.ToJson(contentDetail))
 }

@@ -66,7 +66,7 @@ func (s *Service) saveRemoteActionRequest(ref *remoteActionRef) {
 	})
 
 	s.sessionService.SaveRequest(ref.SessionId, &session.SessionRequest{
-		URL:    wordpress.GoApiSitePluginRoute(ref.SiteId, ref.PluginSlug, ref.Action),
+		Url:    wordpress.GoApiSitePluginRoute(ref.SiteId, ref.PluginSlug, ref.Action),
 		Method: httpmethod.Post.Value(),
 		Body:   body,
 	})
@@ -105,14 +105,7 @@ func (s *Service) logRemoteErrorStageEnd(ref *remoteActionRef, durationMs int64)
 		return
 	}
 
-	stageInput := session.StageEndInput{
-		SessionId:  ref.SessionId,
-		StageName:  ref.Action,
-		Status:     "error",
-		DurationMs: durationMs,
-	}
-
-	s.sessionService.LogStageEnd(stageInput)
+	s.sessionService.LogStageEnd(ref.SessionId, ref.Action, "error", durationMs)
 }
 
 // finalizeRemoteError handles PHP errors, error file, session end, and broadcast.
@@ -175,17 +168,12 @@ func (s *Service) saveRemoteErrorStackAndDetails(
 	phpFrames := s.buildPhpStackFrames(errDetails)
 	goFrames := session.CaptureGoStack(2)
 
-	saveInput := session.SaveErrorInput{
-		SessionId: sessionId,
-		StackTrace: &session.SessionStackTrace{
-			Golang: goFrames,
-			Php:    phpFrames,
-		},
-		ErrorMsg: appErr.Error(),
-		Details:  session.ToJson(errDetails),
+	stackTrace := &session.SessionStackTrace{
+		Golang: goFrames,
+		Php:    phpFrames,
 	}
 
-	s.sessionService.SaveError(saveInput)
+	s.sessionService.SaveError(sessionId, stackTrace, appErr.Error(), session.ToJson(errDetails))
 }
 
 // buildErrorBodyJson converts a response body string to JSON.

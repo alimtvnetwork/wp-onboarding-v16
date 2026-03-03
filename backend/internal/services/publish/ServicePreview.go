@@ -109,7 +109,7 @@ func (s *Service) loadMappingForPreview(ctx context.Context, pluginId, siteId in
 }
 
 // buildPreviewLoadResult constructs the previewLoadResult from credentials and mapping.
-func buildPreviewLoadResult(creds siteCredentials, mapping models.PluginMapping) *previewLoadResult {
+func buildPreviewLoadResult(creds SiteCredentialsResult, mapping models.PluginMapping) *previewLoadResult {
 	return &previewLoadResult{
 		Site:     &sitePreviewInfo{Url: creds.Site.Url, Username: creds.Site.Username},
 		Password: creds.Password,
