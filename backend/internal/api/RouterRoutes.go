@@ -124,6 +124,7 @@ func registerPublishRoutes(api *mux.Router) {
 	api.HandleFunc("/publish/bulk", handlers.BulkPublishPlugin).Methods("POST")
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/publish", handlers.PublishPlugin).Methods("POST")
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/preview", handlers.PreviewPublish).Methods("GET")
+	api.HandleFunc("/plugins/{id}/sites/{siteId}/diff", handlers.ComputeDiff).Methods("GET")
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/file-diff", handlers.GetFileDiff).Methods("POST")
 	api.HandleFunc("/plugins/{id}/backups", handlers.GetBackups).Methods("GET")
 	api.HandleFunc("/backups/{id}/restore", handlers.RestoreBackup).Methods("POST")

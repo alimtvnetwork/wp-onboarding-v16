@@ -459,6 +459,9 @@ export const api = {
   previewPublish: (pluginId: number, siteId: number) =>
     request<PublishPreview>(`/plugins/${pluginId}/sites/${siteId}/preview`),
 
+  computeDiff: (pluginId: number, siteId: number) =>
+    request<import('./types').DiffResult>(`/plugins/${pluginId}/sites/${siteId}/diff`),
+
   // Publish History
   getPublishHistory: (params?: { limit?: number; offset?: number; status?: string; pluginId?: number; siteId?: number; search?: string }) =>
     request<{ entries: PublishHistoryEntry[]; total: number }>(`/publish-history${buildQuery(params || {})}`),

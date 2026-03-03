@@ -1,89 +1,82 @@
 # Memory: features/publish/diff-preview
-Updated: 2026-02-05
+Updated: 2026-03-03
 
-The publish flow includes a **true diff comparison** feature that compares local files with remote WordPress files to accurately identify added, modified, and deleted files before deployment. Users can review the file list, filter by change type, search, and selectively choose which files to deploy.
+The publish flow includes a **true diff comparison** feature that compares local files with remote WordPress files via the sync-manifest endpoint to accurately identify added, modified, deleted, and unchanged files before deployment. Users can review the file list, filter by change type, search, and selectively choose which files to deploy.
 
 ## Diff Comparison Logic
 
 1. **Local scan**: Backend scans the local plugin directory and calculates MD5 hashes
-2. **Remote fetch**: Backend calls the WordPress plugin's `/plugins/{slug}/files` endpoint to get remote file hashes
-3. **Comparison**: Files are categorized as:
+2. **Remote fetch**: Backend calls the sync-manifest endpoint first (cached on both PHP and Go sides), falls back to files endpoint
+3. **Manifest caching**: Go-side in-memory TTL cache (default 5 min) per plugin+site avoids redundant API calls
+4. **Comparison**: Files are categorized as:
    - **Added**: Exists locally but not on remote
    - **Modified**: Exists on both but hash differs
    - **Deleted**: Exists on remote but not locally
-4. **Fallback**: If remote files can't be fetched (plugin not installed), all files show as "added"
+   - **Unchanged**: Exists on both with matching hash
+5. **Fallback**: If remote files can't be fetched (plugin not installed), all files show as "added"
+
+## Endpoints
+
+### Preview (cached manifest)
+```
+GET /api/v1/plugins/{id}/sites/{siteId}/preview
+```
+Uses cached manifest. Returns `PublishPreviewResult` with unchanged count.
+
+### Compute Diff (fresh comparison)
+```
+GET /api/v1/plugins/{id}/sites/{siteId}/diff
+```
+Invalidates cache, fetches fresh manifest. Returns `DiffResult`.
+
+### File Content Diff
+```
+POST /api/v1/plugins/{id}/sites/{siteId}/file-diff
+```
+Returns local and remote file content for side-by-side comparison.
+
+## WordPress Plugin Endpoint
+
+```
+POST /wp-json/riseup-asia-uploader/v1/sync-manifest
+Body: {"plugin": "my-plugin"}
+```
+
+Returns cached file manifest with MD5 hashes.
 
 ## UI Flow
 
 1. User clicks "Publish" on a plugin card
 2. In the publish dialog, each site shows a "Files" preview button
-3. Clicking the preview button opens the DiffPreviewDialog
+3. Clicking opens the DiffPreviewDialog with "Changed" tab as default
 4. Dialog shows: total files, file sizes, grouped by directory with checkboxes
-5. User can filter by change type, search, and toggle file selection
-6. Selection controls: "All" / "None" buttons + per-file checkboxes
-7. "Publish X Files" button shows count and proceeds with deployment
-
-## WordPress Plugin Endpoint
-
-```
-GET /wp-json/riseup-asia-uploader/v1/plugins/{slug}/files
-```
-
-Returns:
-```json
-{
-  "Success": true,
-  "Plugin": "my-plugin",
-  "TotalFiles": 42,
-  "Files": [
-    { "Path": "includes/class-main.php", "Hash": "abc123def456", "Size": 4500, "ModifiedAt": "2026-02-05T10:30:00Z" }
-  ]
-}
-```
-
-## Backend Preview Endpoint
-
-```
-GET /api/v1/plugins/{id}/sites/{siteId}/preview
-```
-
-Returns:
-```json
-{
-  "PluginId": 3,
-  "PluginName": "My Plugin",
-  "SiteId": 1,
-  "SiteName": "Production",
-  "SiteUrl": "https://example.com",
-  "RemoteSlug": "my-plugin",
-  "TotalFiles": 42,
-  "TotalSize": 156789,
-  "Added": 10,
-  "Modified": 5,
-  "Deleted": 2,
-  "Files": [
-    { "Path": "includes/class-main.php", "ChangeType": "modified", "Size": 4500, "LocalHash": "abc123" }
-  ]
-}
-```
+5. Tabs: All | Changed | Added | Modified | Unchanged
+6. Selection defaults to changed files only (unchanged excluded)
+7. User can filter by change type, search, and toggle file selection
+8. "Publish X Files" button shows count and proceeds with deployment
 
 ## Components
 
-- `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php` - `handle_plugin_files()` and `handle_plugin_file_content()` endpoints
-- `backend/internal/wordpress/remote_files.go` - `GetPluginFilesViaRiseup()` and `GetPluginFileContent()` methods
-- `backend/internal/services/publish/service.go` - `PreviewPublish()` and `GetFileDiff()` methods
-- `backend/internal/api/handlers/files.go` - File content handlers
-- `src/components/plugins/DiffPreviewDialog.tsx` - UI with file selection
+- `backend/internal/services/publish/ManifestCache.go` - In-memory TTL cache for remote manifests
+- `backend/internal/services/publish/ServiceDiff.go` - Standalone `ComputeDiff()` method
+- `backend/internal/services/publish/ServicePreviewDiff.go` - File scanning and diff logic with unchanged tracking
+- `backend/internal/services/publish/ServicePreview.go` - Preview with cached manifest fetching
+- `backend/internal/api/handlers/PublishBackupHandlers.go` - `ComputeDiff` handler
+- `wp-plugins/riseup-asia-uploader/includes/Traits/Sync/SyncManifestTrait.php` - PHP sync manifest endpoint
+- `wp-plugins/riseup-asia-uploader/includes/Database/FileCache.php` - PHP-side file hash cache
+- `src/components/plugins/DiffPreviewDialog.tsx` - UI with file selection and unchanged tab
 - `src/components/plugins/ContentDiffViewer.tsx` - Content diff viewer for modified files
-- `src/lib/api.ts` - `previewPublish()`, `getFileDiff()`, and `getLocalFileContent()` methods
+- `src/lib/api/types.ts` - `FilePreview`, `PublishPreview`, `DiffResult` types
+- `src/lib/api/methods.ts` - `previewPublish()`, `computeDiff()`, `getFileDiff()` methods
 
 ## Selection Features
 
 - Checkbox per file with click-to-toggle
-- "Select All" / "Select None" buttons
+- "Select All" / "Select None" buttons (Select All excludes unchanged)
 - "Select all visible" checkbox (respects current filter)
 - Selection count and size displayed in header
 - Disabled confirm button when no files selected
+- Default: only changed files selected
 
 ## Content Diff Viewer
 

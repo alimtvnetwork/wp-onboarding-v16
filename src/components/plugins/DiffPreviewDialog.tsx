@@ -62,6 +62,8 @@ function getFileIcon(changeType: string) {
       return <FileEdit className="h-4 w-4 text-yellow-500" />;
     case "deleted":
       return <FileX className="h-4 w-4 text-red-500" />;
+    case "unchanged":
+      return <Files className="h-4 w-4 text-muted-foreground opacity-50" />;
     default:
       return <Files className="h-4 w-4 text-muted-foreground" />;
   }
@@ -75,6 +77,8 @@ function getChangeTypeLabel(changeType: string) {
       return "Modified";
     case "deleted":
       return "Deleted";
+    case "unchanged":
+      return "Unchanged";
     default:
       return changeType;
   }
@@ -88,6 +92,8 @@ function getChangeTypeColor(changeType: string) {
       return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
     case "deleted":
       return "bg-red-500/10 text-red-600 border-red-500/20";
+    case "unchanged":
+      return "bg-muted text-muted-foreground border-muted-foreground/20";
     default:
       return "";
   }
@@ -103,7 +109,7 @@ export function DiffPreviewDialog({
   onConfirm,
 }: DiffPreviewDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<string>("changed");
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [diffViewerOpen, setDiffViewerOpen] = useState(false);
   const [diffViewerFile, setDiffViewerFile] = useState<FilePreview | null>(null);
@@ -121,10 +127,10 @@ export function DiffPreviewDialog({
     staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Initialize all files as selected when preview loads
+  // Initialize changed files as selected (exclude unchanged)
   useEffect(() => {
     if (preview?.files) {
-      setSelectedFiles(new Set(preview.files.map(f => f.path)));
+      setSelectedFiles(new Set(preview.files.filter(f => f.changeType !== "unchanged").map(f => f.path)));
     }
   }, [preview]);
 
@@ -132,7 +138,7 @@ export function DiffPreviewDialog({
   useEffect(() => {
     if (!open) {
       setSearchQuery("");
-      setActiveTab("all");
+      setActiveTab("changed");
     }
   }, [open]);
 
@@ -142,9 +148,11 @@ export function DiffPreviewDialog({
       const matchesSearch = file.path.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTab =
         activeTab === "all" ||
+        (activeTab === "changed" && file.changeType !== "unchanged") ||
         (activeTab === "added" && file.changeType === "added") ||
         (activeTab === "modified" && file.changeType === "modified") ||
-        (activeTab === "deleted" && file.changeType === "deleted");
+        (activeTab === "deleted" && file.changeType === "deleted") ||
+        (activeTab === "unchanged" && file.changeType === "unchanged");
       return matchesSearch && matchesTab;
     }) || [];
   }, [preview, searchQuery, activeTab]);
@@ -212,15 +220,16 @@ export function DiffPreviewDialog({
 
   const handleSelectAllFiles = () => {
     if (preview?.files) {
-      setSelectedFiles(new Set(preview.files.map(f => f.path)));
+      setSelectedFiles(new Set(preview.files.filter(f => f.changeType !== "unchanged").map(f => f.path)));
     }
   };
 
   const handleConfirm = () => {
     const selected = Array.from(selectedFiles);
     onOpenChange(false);
-    // If all files are selected, pass undefined to indicate full publish
-    if (preview && selected.length === preview.files.length) {
+    // If all changed files are selected, pass undefined to indicate full publish
+    const changedFiles = preview?.files.filter(f => f.changeType !== "unchanged") || [];
+    if (preview && selected.length === changedFiles.length) {
       onConfirm();
     } else {
       onConfirm(selected);
@@ -355,18 +364,21 @@ export function DiffPreviewDialog({
             {/* Tabs for filtering - horizontally scrollable on mobile */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden min-h-0">
               <div className="overflow-x-auto touch-pan-x shrink-0 -mx-4 sm:mx-0 px-4 sm:px-0">
-                <TabsList className="grid w-full min-w-[320px] grid-cols-4">
-                  <TabsTrigger value="all" className="text-xs px-2">
+                <TabsList className="grid w-full min-w-[400px] grid-cols-5">
+                  <TabsTrigger value="all" className="text-xs px-1.5">
                     All ({preview.totalFiles})
                   </TabsTrigger>
-                  <TabsTrigger value="added" className="text-xs px-2">
+                  <TabsTrigger value="changed" className="text-xs px-1.5">
+                    Changed ({preview.added + preview.modified + preview.deleted})
+                  </TabsTrigger>
+                  <TabsTrigger value="added" className="text-xs px-1.5">
                     <span className="hidden sm:inline">Added</span> ({preview.added})
                   </TabsTrigger>
-                  <TabsTrigger value="modified" className="text-xs px-2">
+                  <TabsTrigger value="modified" className="text-xs px-1.5">
                     <span className="hidden sm:inline">Mod</span> ({preview.modified})
                   </TabsTrigger>
-                  <TabsTrigger value="deleted" className="text-xs px-2">
-                    <span className="hidden sm:inline">Del</span> ({preview.deleted})
+                  <TabsTrigger value="unchanged" className="text-xs px-1.5">
+                    <span className="hidden sm:inline">Same</span> ({preview.unchanged ?? 0})
                   </TabsTrigger>
                 </TabsList>
               </div>

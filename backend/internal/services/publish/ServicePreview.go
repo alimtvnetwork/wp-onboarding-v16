@@ -32,7 +32,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginId, siteId int64) ap
 
 	wpClient := s.wpClientFactory(previewLoad.Site.Url, previewLoad.Site.Username, previewLoad.Password)
 	result.RemoteVersion = s.fetchRemoteVersion(wpClient, previewLoad.Mapping.RemoteSlug)
-	remoteFileMap, fetchFailed := s.fetchRemoteFileMap(ctx, wpClient, previewLoad.Mapping.RemoteSlug)
+	remoteFileMap, fetchFailed := s.fetchRemoteFileMap(ctx, wpClient, previewLoad.Mapping.RemoteSlug, pluginId, siteId)
 
 	diffSummary := s.compareFiles(scanResult.Files, remoteFileMap, fetchFailed)
 	result.Files = diffSummary.Files
@@ -41,6 +41,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginId, siteId int64) ap
 	result.Added = diffSummary.Added
 	result.Modified = diffSummary.Modified
 	result.Deleted = diffSummary.Deleted
+	result.Unchanged = diffSummary.Unchanged
 
 	return apperror.Ok(*result)
 }
@@ -199,20 +200,41 @@ func (s *Service) readRemoteFileContent(ctx context.Context, wpClient *wordpress
 	return result.Value()
 }
 
-// fetchRemoteFileMap fetches the remote file map for diff comparison.
-func (s *Service) fetchRemoteFileMap(ctx context.Context, wpClient *wordpress.Client, remoteSlug string) (map[string]string, bool) {
+// fetchRemoteFileMap fetches the remote file map for diff comparison, using sync-manifest with caching.
+func (s *Service) fetchRemoteFileMap(ctx context.Context, wpClient *wordpress.Client, remoteSlug string, pluginId, siteId int64) (map[string]string, bool) {
 	remoteFileMap := make(map[string]string)
 
-	filesResult := wpClient.GetPluginFilesViaRiseup(ctx, remoteSlug)
-	if filesResult.HasError() {
-		filesResult = wpClient.GetPluginFiles(ctx, remoteSlug)
-		if filesResult.HasError() {
-			s.log.Debug("Could not fetch remote files, falling back to local-only preview", "error", filesResult.AppError())
-			return remoteFileMap, true
+	// Check manifest cache first
+	cachedFiles, isCached := s.manifestCache.Get(pluginId, siteId)
+	if isCached {
+		s.log.Debug("Using cached manifest", "pluginId", pluginId, "siteId", siteId, "files", len(cachedFiles))
+		for _, rf := range cachedFiles {
+			remoteFileMap[rf.Path] = rf.Hash
 		}
+		return remoteFileMap, false
 	}
 
-	for _, rf := range filesResult.Value() {
+	// Try sync-manifest endpoint first (cached on PHP side too)
+	manifestResult := wpClient.GetPluginSyncManifest(ctx, remoteSlug)
+	if manifestResult.IsSafe() {
+		files := manifestResult.Value()
+		s.manifestCache.Set(pluginId, siteId, files)
+		for _, rf := range files {
+			remoteFileMap[rf.Path] = rf.Hash
+		}
+		return remoteFileMap, false
+	}
+
+	// Fallback to files endpoint
+	filesResult := wpClient.GetPluginFilesViaRiseup(ctx, remoteSlug)
+	if filesResult.HasError() {
+		s.log.Debug("Could not fetch remote files, falling back to local-only preview", "error", filesResult.AppError())
+		return remoteFileMap, true
+	}
+
+	files := filesResult.Value()
+	s.manifestCache.Set(pluginId, siteId, files)
+	for _, rf := range files {
 		remoteFileMap[rf.Path] = rf.Hash
 	}
 

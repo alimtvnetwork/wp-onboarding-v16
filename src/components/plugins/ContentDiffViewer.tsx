@@ -32,7 +32,7 @@ interface ContentDiffViewerProps {
   pluginId: number;
   siteId: number;
   filePath: string;
-  changeType: "added" | "modified" | "deleted";
+  changeType: "added" | "modified" | "deleted" | "unchanged";
 }
 
 interface DiffLine {
