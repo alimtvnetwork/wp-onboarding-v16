@@ -139,6 +139,7 @@ export default function Sessions() {
 
   // Delete session mutation
   const deleteMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (sessionId: string) => {
       const response = await api.deleteSession(sessionId);
       return requireSuccess(response, { endpoint: `/sessions/${sessionId}`, method: "DELETE" });

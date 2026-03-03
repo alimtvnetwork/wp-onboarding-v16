@@ -149,6 +149,7 @@ export default function Tests() {
 
   // Start test run mutation
   const startRun = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (cases: string[]) => {
       const response = await api.startE2ERun({ suites: [], cases, parallel: false, stopOnFailure: false });
       if (!response.success) throw new Error(response.error?.message);
@@ -178,6 +179,7 @@ export default function Tests() {
 
   // Rerun single test case
   const rerunCase = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (caseId: string) => {
       setRerunningCase(caseId);
       const response = await api.rerunE2ECase(caseId);
