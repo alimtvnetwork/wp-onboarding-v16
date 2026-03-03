@@ -65,6 +65,11 @@ trait AdminMenuTrait {
                 'Snapshots',
                 'renderSnapshotsPage',
             ),
+            array(
+                AdminPageType::License->value,
+                'License',
+                'renderLicensePage',
+            ),
         );
 
         foreach ($submenus as $item) {

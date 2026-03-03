@@ -20,6 +20,7 @@ enum AdminPageType: string
     case Agents    = 'riseup-asia-agents';
     case Snapshots = 'riseup-asia-snapshots';
     case Errors    = 'riseup-asia-errors';
+    case License   = 'riseup-asia-license';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
