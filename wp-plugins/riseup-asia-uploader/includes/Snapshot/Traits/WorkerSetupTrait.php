@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use PDO;
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotConfigType;
@@ -111,5 +112,17 @@ trait WorkerSetupTrait {
             case LogLevelType::Error->value: $this->logger->error($full); break;
             default:      $this->logger->info($full);
         }
+    }
+
+    private function logError(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Error->value, $message, $context);
+    }
+
+    private function logWarn(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Warn->value, $message, $context);
     }
 }

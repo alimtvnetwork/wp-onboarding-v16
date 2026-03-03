@@ -57,10 +57,7 @@ trait WorkerExecuteTrait {
             return $this->buildAsyncSnapshotResult($prepared, $seedOrder, $jobId, $startTime);
         } catch (Throwable $e) {
             $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
-            $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
+            $this->logError($e, 'Per-table snapshot failed');
 
             return ResultHelper::errorFromException($e);
         }
@@ -94,10 +91,7 @@ trait WorkerExecuteTrait {
             return $this->buildSyncSnapshotResult($prepared, $export, $startTime);
         } catch (Throwable $e) {
             $this->cleanupOrphanedDir($prepared[ResponseKeyType::SnapshotDir->value]);
-            $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
+            $this->logError($e, 'Synchronous snapshot failed');
 
             return ResultHelper::errorFromException($e);
         }
