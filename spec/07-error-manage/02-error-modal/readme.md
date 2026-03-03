@@ -1,10 +1,15 @@
 # Error Modal — Frontend Specification
 
-> **Version:** 2.1.0  
-> **Updated:** 2026-02-17  
+> **Version:** 2.2.0  
+> **Updated:** 2026-03-03  
 > **Status:** Active  
 > **Location:** `src/components/errors/`  
 > **Purpose:** Comprehensive specification for the Global Error Modal — how errors are captured, enriched, displayed, and exported across the React → Go → Delegated Server request chain.
+> 
+> **See also:**
+> - [Color Theme Reference](./color-themes.md) — Exact Tailwind classes and HSL values for every error UI element
+> - [suppressGlobalError Pattern](./suppress-global-error.md) — React Query meta pattern for preventing duplicate error displays
+> - [Error History Persistence](./error-history-persistence.md) — Auto-save, ErrorQueueBadge, ErrorHistoryDrawer, AppErrorBoundary
 
 ---
 
@@ -1283,6 +1288,9 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 - [Error Handling Cross-Stack Spec](../01-error-handling/readme.md) — PHP, Go, frontend error chain + DelegatedRequestServer flow
 - [Copy Format Samples](./copy-formats.md) — Complete samples for all copy/export formats
 - [React Components Reference](./react-components.md) — Portable React code for rebuilding the modal
+- [Color Theme Reference](./color-themes.md) — Exact Tailwind classes and HSL values for every error UI element
+- [suppressGlobalError Pattern](./suppress-global-error.md) — React Query meta for preventing duplicate error displays
+- [Error History Persistence](./error-history-persistence.md) — Auto-save, ErrorQueueBadge, ErrorHistoryDrawer, AppErrorBoundary
 - [Response Envelope Schema](../05-response-envelope/envelope.schema.json) — JSON Schema for envelope (incl. DelegatedRequestServer)
 - [Envelope Configurability](../05-response-envelope/configurability.md) — DelegatedRequestServer presence rules
 - [Session-Based Logging](../04-logging-and-diagnostics/session-based-logging.md) — Backend session system
@@ -1291,4 +1299,4 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 ---
 
-*Error Modal specification v2.1.0 — updated: 2026-02-17*
+*Error Modal specification v2.2.0 — updated: 2026-03-03*
