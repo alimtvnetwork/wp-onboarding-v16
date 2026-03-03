@@ -64,6 +64,7 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
+            error_log('ImportValidationTrait::readRootDbTables() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return array();
         }
     }
@@ -78,6 +79,7 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
+            error_log('ImportValidationTrait::readRootDbIncrementals() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return array();
         }
     }
@@ -92,6 +94,7 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
+            error_log('ImportValidationTrait::readRootDbPlugins() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return array();
         }
     }

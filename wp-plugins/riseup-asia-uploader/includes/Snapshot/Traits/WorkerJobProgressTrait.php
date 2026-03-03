@@ -66,7 +66,7 @@ trait WorkerJobProgressTrait {
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
-
+            error_log('WorkerJobProgressTrait::loadTableProgress() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return array();
         }
     }

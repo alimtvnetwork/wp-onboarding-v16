@@ -182,6 +182,7 @@ trait DetectorProviderTrait {
 
                 return $pdo->query('SELECT sqlite_version()')->fetchColumn();
             } catch (Throwable $e) {
+                error_log('DetectorProviderTrait: SQLite version check failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
                 return null;
             }
         }
