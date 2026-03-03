@@ -169,7 +169,7 @@ func (s *Service) GetRemoteAvailableTables(ctx context.Context, siteId int64) ([
 		return nil, apperror.Wrap(tablesResult.AppError(), apperror.ErrWPConnection, "failed to fetch available tables").
 			WithSiteId(siteId)
 	}
-	ables := tablesResult.Value()
+	tables := tablesResult.Value()
 
 	s.log.Debug("Remote available tables fetched", "siteId", siteId, "count", len(tables))
 	return tables, nil
