@@ -32,7 +32,7 @@ func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, 
 	s.initPipelineContext(pctx, creds, &mapping)
 
 	if pctx.Options.IsCreateBackup {
-		appErr := s.runBackupStage(pctx)
+		appErr := s.runBackupStage(ctx, pctx)
 		if appErr != nil {
 
 			return appErr
@@ -89,8 +89,8 @@ func (s *Service) logConnect(pluginId, siteId int64, siteInfo *models.Site) {
 }
 
 // runBackupStage runs backup and appends the stage result.
-func (s *Service) runBackupStage(pctx *publishContext) *apperror.AppError {
-	stage := s.executeBackupStage(pctx)
+func (s *Service) runBackupStage(ctx context.Context, pctx *publishContext) *apperror.AppError {
+	stage := s.executeBackupStage(ctx, pctx)
 	pctx.Result.Stages = append(pctx.Result.Stages, stage)
 
 	if stage.Status.IsFailed() {
