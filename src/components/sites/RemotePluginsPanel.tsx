@@ -113,17 +113,20 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
 
-  const { data: plugins, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data: plugins, isLoading, isError, error: queryError, refetch, isFetching } = useQuery({
     queryKey,
     queryFn: async () => {
       const response = await api.getRemotePlugins(site.id);
-      const data = requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins`, method: "GET" });
+      if (!response.success) {
+        const msg = typeof response.error === "string" ? response.error : "Failed to fetch remote plugins";
+        throw new Error(msg);
+      }
       setLastFetchedAt(new Date());
-      // Check if response indicates cache usage (backend can include metadata)
-      setIsFromCache(false); // Will be set to true only on initial load
-      return data;
+      setIsFromCache(false);
+      return response.data as RemotePlugin[];
     },
     enabled: open,
+    retry: false,
   });
 
   // Force sync mutation (bypasses cache)
@@ -778,6 +781,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             <div className="flex-1 flex flex-col items-center justify-center py-8 sm:py-12 text-muted-foreground min-h-[200px]">
               <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 mb-2 sm:mb-3 text-destructive" />
               <p className="font-medium text-sm sm:text-base">Failed to load plugins</p>
+              {queryError && (
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm text-center">
+                  {queryError.message}
+                </p>
+              )}
               <Button variant="link" onClick={() => refetch()} className="mt-2 text-sm">
                 Try again
               </Button>
