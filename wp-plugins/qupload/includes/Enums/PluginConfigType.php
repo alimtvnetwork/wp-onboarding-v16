@@ -23,7 +23,8 @@ enum PluginConfigType: string
     case UploadsSubdir = 'qupload';
     case ApiNamespace  = 'qupload';
     case ApiVersion    = 'v1';
-    case LogPrefix     = '[QUpload]';
+    case LogPrefix      = '[QUpload]';
+    case SettingsGroup  = 'qupload_settings';
 
     public static function apiFullNamespace(): string
     {
