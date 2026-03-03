@@ -38,4 +38,4 @@ function qupload_init(): void {
     }
 }
 
-add_action('plugins_loaded', 'qupload_init');
+add_action(\QUpload\Enums\HookType::PluginsLoaded->value, 'qupload_init');

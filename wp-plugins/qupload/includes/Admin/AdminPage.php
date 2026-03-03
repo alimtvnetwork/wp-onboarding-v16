@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use QUpload\Enums\EndpointType;
+use QUpload\Enums\HookType;
 use QUpload\Enums\PathLogFileType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Helpers\DateHelper;
@@ -28,7 +29,7 @@ class AdminPage
 
     public static function register(): void
     {
-        add_action('admin_menu', [self::class, 'addMenuPage']);
+        add_action(HookType::AdminMenu->value, [self::class, 'addMenuPage']);
     }
 
     public static function addMenuPage(): void
