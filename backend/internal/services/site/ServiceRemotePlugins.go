@@ -83,13 +83,14 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteId int64) ([]Remot
 		return nil, clientErr
 	}
 
-	uploaderPlugins, uploaderErr := client.ListPluginsViaUploader()
-	if uploaderErr != nil {
+	uploaderResult := client.ListPluginsViaUploader()
+	if uploaderResult.HasError() {
 		site, _ := s.resolveRemoteSite(ctx, siteId)
-		s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteId, "siteUrl", site.Url, "error", uploaderErr)
+		s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteId, "siteUrl", site.Url, "error", uploaderResult.AppError())
 
-		return nil, apperror.Wrap(uploaderErr, apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site.")
+		return nil, apperror.Wrap(uploaderResult.AppError(), apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site.")
 	}
+	uploaderPlugins := uploaderResult.Value()
 
 	plugins := s.convertUploaderPlugins(siteId, uploaderPlugins)
 	s.log.Debug("Remote plugins fetched via Uploader API", "siteId", siteId, "count", len(plugins))

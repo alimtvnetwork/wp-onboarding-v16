@@ -263,14 +263,7 @@ func (s *Service) saveRemoteSuccessHttpResponse(ref *remoteActionRef) {
 
 // logRemoteSuccessStageEnd logs the stage end for a successful action.
 func (s *Service) logRemoteSuccessStageEnd(ref *remoteActionRef, durationMs int64) {
-	stageInput := session.StageEndInput{
-		SessionId:  ref.SessionId,
-		StageName:  ref.Action,
-		Status:     "success",
-		DurationMs: durationMs,
-	}
-
-	s.sessionService.LogStageEnd(stageInput)
+	s.sessionService.LogStageEnd(ref.SessionId, ref.Action, "success", durationMs)
 }
 
 // remoteActionCompleteInput bundles parameters for broadcastRemoteActionComplete.

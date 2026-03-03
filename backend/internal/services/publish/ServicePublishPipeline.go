@@ -139,7 +139,7 @@ func (s *Service) uploadActivateAndCleanup(ctx context.Context, pctx *publishCon
 		defer pathutil.RemoveFileUnchecked(preUploadBackupZip)
 	}
 
-	defer s.deferCleanupZip(pctx, pkgResult.ZipPath)
+	defer s.cleanupZip(cleanupZipInput{PluginId: pctx.PluginId, SiteId: pctx.SiteId, ZipPath: pkgResult.ZipPath, IsKeepZipFiles: pctx.Options.IsKeepZipFiles})
 
 	return s.executeUploadAndFinish(ctx, pctx, uploadFinishInput{PkgResult: pkgResult, PreUploadBackupZip: preUploadBackupZip})
 }

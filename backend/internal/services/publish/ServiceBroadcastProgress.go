@@ -145,7 +145,7 @@ func buildProgressData(input ProgressInput) ws.PublishStageProgressData {
 // broadcastSessionProgress sends progress with session context.
 func (s *Service) broadcastSessionProgress(input ProgressInput, data ws.PublishStageProgressData) {
 	eventType := resolveProgressEvent(input.Step)
-	ws.BroadcastWithSession(s.wsHub, eventType, data, input.SessionId)
+	ws.BroadcastWithSession(ws.BroadcastInput[ws.PublishStageProgressData]{Hub: s.wsHub, EventType: eventType, Data: data, SessionId: input.SessionId})
 	s.emitSessionProgressLog(input, input.Step.Stage())
 }
 
