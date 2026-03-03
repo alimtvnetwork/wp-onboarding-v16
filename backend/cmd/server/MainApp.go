@@ -109,7 +109,7 @@ func applyStartupCleanup(cfg *config.Config, paths logPaths, log *logger.Logger)
 // initLogger creates the configured logger.
 func initLogger(cfg *config.Config, vi *version.Info, output io.Writer) *logger.Logger {
 	return logger.New(logger.Config{
-		Level:      parseLogLevel(cfg.Logging.Level),
+		Level:      parseLogLevel(cfg.Logging.Level.String()),
 		Output:     output,
 		TimeFormat: cfg.Logging.TimeFormat,
 		AppName:    vi.AppName,

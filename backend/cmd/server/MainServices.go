@@ -198,7 +198,7 @@ func initSiteService(input siteDepsInput) *site.Service {
 
 	return site.New(site.Config{
 		DB: input.Init.DB, Logger: input.Init.Log, EncryptionKey: input.Init.Cfg.Security.EncryptionKey,
-		WPClientFactory: input.WPFactory, WSHub: input.WSHub, SessionService: input.Session,
+		WPClientFactory: input.WPFactory, WSHub: input.WSHub, SessionService: NewSiteSessionAdapter(input.Session),
 		IsCacheEnabled: input.Init.Cfg.RemotePlugins.CacheEnabled, CacheTTLMinutes: input.Init.Cfg.RemotePlugins.CacheTTLMinutes,
 	})
 }
@@ -247,6 +247,6 @@ func initPublishService(input publishDepsInput) *publish.Service {
 	return publish.New(publish.Config{
 		DB: input.Init.DB, Logger: input.Init.Log, PluginService: input.Plugin, BackupService: input.Backup,
 		SyncService: input.Sync, SitePasswordDecryptor: input.Site, WPClientFactory: input.WPFactory,
-		TempDir: input.Init.Cfg.TempDir, WSHub: input.Init.WSHub, SessionService: input.Session, HistoryService: input.History,
+		TempDir: input.Init.Cfg.TempDir, WSHub: input.Init.WSHub, SessionService: input.Session, HistoryService: NewPublishHistoryRecorderAdapter(input.History),
 	})
 }
