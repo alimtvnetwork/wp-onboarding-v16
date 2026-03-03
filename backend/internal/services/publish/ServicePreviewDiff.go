@@ -124,10 +124,11 @@ func (s *Service) fetchRemoteVersion(wpClient *wordpress.Client, remoteSlug stri
 
 // FileDiffSummary holds the comparison result between local and remote files.
 type FileDiffSummary struct {
-	Files    []FilePreview
-	Added    int
-	Modified int
-	Deleted  int
+	Files     []FilePreview
+	Added     int
+	Modified  int
+	Deleted   int
+	Unchanged int
 }
 
 // compareFiles compares local and remote files and returns the diff
@@ -150,40 +151,52 @@ func markAllAsAdded(localFiles map[string]FilePreview) FileDiffSummary {
 
 // diffLocalRemote compares local files against remote hashes.
 func diffLocalRemote(localFiles map[string]FilePreview, remoteFileMap map[string]string) FileDiffSummary {
-	files, added, modified := classifyLocalFiles(localFiles, remoteFileMap)
+	classified := classifyLocalFiles(localFiles, remoteFileMap)
 	deletedFiles := collectDeletedFiles(remoteFileMap)
-	files = append(files, deletedFiles...)
+	classified.Files = append(classified.Files, deletedFiles...)
 
 	return FileDiffSummary{
-		Files:    files,
-		Added:    added,
-		Modified: modified,
-		Deleted:  len(deletedFiles),
+		Files:     classified.Files,
+		Added:     classified.Added,
+		Modified:  classified.Modified,
+		Deleted:   len(deletedFiles),
+		Unchanged: classified.Unchanged,
 	}
 }
 
-// classifyLocalFiles classifies each local file as added or modified vs remote.
-func classifyLocalFiles(localFiles map[string]FilePreview, remoteFileMap map[string]string) ([]FilePreview, int, int) {
-	var files []FilePreview
-	var added, modified int
+// localClassification holds the result of classifying local files.
+type localClassification struct {
+	Files     []FilePreview
+	Added     int
+	Modified  int
+	Unchanged int
+}
+
+// classifyLocalFiles classifies each local file as added, modified, or unchanged vs remote.
+func classifyLocalFiles(localFiles map[string]FilePreview, remoteFileMap map[string]string) localClassification {
+	var result localClassification
 
 	for path, lf := range localFiles {
 		remoteHash, isFound := remoteFileMap[path]
 		if isFound {
 			if lf.LocalHash != remoteHash {
 				lf.ChangeType = "modified"
-				modified++
-				files = append(files, lf)
+				result.Modified++
+				result.Files = append(result.Files, lf)
+			} else {
+				lf.ChangeType = "unchanged"
+				result.Unchanged++
+				result.Files = append(result.Files, lf)
 			}
 			delete(remoteFileMap, path)
 		} else {
 			lf.ChangeType = "added"
-			added++
-			files = append(files, lf)
+			result.Added++
+			result.Files = append(result.Files, lf)
 		}
 	}
 
-	return files, added, modified
+	return result
 }
 
 // collectDeletedFiles returns FilePreview entries for remaining remote-only files.

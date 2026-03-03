@@ -17,6 +17,7 @@ type PublishServiceInterface interface {
 	PublishFiles(ctx context.Context, pluginId, siteId int64, files []string) (*publish.PublishResult, *apperror.AppError)
 	PreviewPublish(ctx context.Context, pluginId, siteId int64) (*publish.PublishPreviewResult, *apperror.AppError)
 	GetFileDiff(ctx context.Context, pluginId, siteId int64, filePath string) (*publish.FileDiffResult, *apperror.AppError)
+	ComputeDiff(ctx context.Context, pluginId, siteId int64) (*publish.DiffResult, *apperror.AppError)
 	BulkPublish(ctx context.Context, input publish.BulkPublishInput) (*publish.BulkPublishResult, *apperror.AppError)
 }
 
@@ -72,6 +73,15 @@ func (a *PublishServiceAdapter) GetFileDiff(ctx context.Context, pluginId, siteI
 
 func (a *PublishServiceAdapter) BulkPublish(ctx context.Context, input publish.BulkPublishInput) (*publish.BulkPublishResult, *apperror.AppError) {
 	result := a.Service.BulkPublish(ctx, input)
+	if result.HasError() {
+		return nil, result.AppError()
+	}
+	v := result.Value()
+	return &v, nil
+}
+
+func (a *PublishServiceAdapter) ComputeDiff(ctx context.Context, pluginId, siteId int64) (*publish.DiffResult, *apperror.AppError) {
+	result := a.Service.ComputeDiff(ctx, pluginId, siteId)
 	if result.HasError() {
 		return nil, result.AppError()
 	}

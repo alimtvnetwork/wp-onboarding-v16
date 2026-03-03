@@ -4,6 +4,7 @@ package publish
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/enums/publishtype"
@@ -51,6 +52,7 @@ type Config struct {
 	WSHub                 *ws.Hub
 	SessionService        SessionLogger
 	HistoryService        PublishHistoryRecorder
+	ManifestCacheTTL      time.Duration // TTL for remote manifest cache; default 5 minutes
 }
 
 // Service provides plugin publishing operations
@@ -66,10 +68,16 @@ type Service struct {
 	wsHub                 *ws.Hub
 	sessionService        SessionLogger
 	historyService        PublishHistoryRecorder
+	manifestCache         *ManifestCache
 }
 
 // New creates a new publish service
 func New(cfg Config) *Service {
+	cacheTTL := cfg.ManifestCacheTTL
+	if cacheTTL == 0 {
+		cacheTTL = 5 * time.Minute
+	}
+
 	return &Service{
 		db:                    cfg.DB,
 		log:                   cfg.Logger,
@@ -82,6 +90,7 @@ func New(cfg Config) *Service {
 		wsHub:                 cfg.WSHub,
 		sessionService:        cfg.SessionService,
 		historyService:        cfg.HistoryService,
+		manifestCache:         NewManifestCache(cacheTTL),
 	}
 }
 
@@ -119,7 +128,7 @@ type Stage struct {
 // FilePreview represents a file that will change during publish
 type FilePreview struct {
 	Path       string
-	ChangeType string // added, modified, deleted
+	ChangeType string // added, modified, deleted, unchanged
 	Size       int64
 	LocalHash  string `json:",omitempty"`
 }
@@ -139,6 +148,7 @@ type PublishPreviewResult struct {
 	Added         int
 	Modified      int
 	Deleted       int
+	Unchanged     int
 	Files         []FilePreview
 }
 

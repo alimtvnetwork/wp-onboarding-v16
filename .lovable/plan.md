@@ -112,7 +112,7 @@ Allow selecting multiple plugins from the dashboard and publishing them to one o
 
 ---
 
-### 7C: True Diff (Remote File Hash Comparison)
+### ✅ 7C: True Diff (Remote File Hash Comparison) — Go + React complete
 
 **Decision:** Use remote file hashes for accurate change detection.  
 **Priority:** Medium  
@@ -121,30 +121,21 @@ Allow selecting multiple plugins from the dashboard and publishing them to one o
 #### Objective
 Replace the current local-only file change detection with remote hash comparison, providing accurate "X files changed" counts before publish.
 
-#### Implementation Plan
-
-**PHP (Riseup Asia Uploader):**
-1. Ensure `sync-manifest` endpoint returns MD5/SHA256 hashes for all plugin files
-2. Add `fileCount` and `totalSize` summary fields to manifest response
+#### Implementation Summary
 
 **Go Backend:**
-1. New `DiffService` in `backend/internal/services/diff/`
-2. `ComputeDiff(localDir, remoteManifest)` → returns `DiffResult{Added, Modified, Deleted, Unchanged []FileDiff}`
-3. Each `FileDiff`: `{Path, LocalHash, RemoteHash, LocalSize, RemoteSize, ChangeType}`
-4. Cache remote manifest per site+plugin with TTL (avoid repeated API calls)
-5. Pre-publish step: compute diff → show summary → confirm → publish only changed files
+1. `ManifestCache.go` — in-memory TTL cache (default 5 min) for remote manifests per plugin+site
+2. `ServiceDiff.go` — standalone `ComputeDiff()` method with fresh manifest comparison
+3. `ServicePreviewDiff.go` — `FileDiffSummary` extended with `Unchanged` count; `classifyLocalFiles` now tracks unchanged files
+4. `ServicePreview.go` — `fetchRemoteFileMap` now uses sync-manifest endpoint first (cached on both PHP and Go sides), falls back to files endpoint
+5. `Service.go` — `PublishPreviewResult` and `FilePreview` extended with `Unchanged` field
+6. Route: `GET /plugins/{id}/sites/{siteId}/diff` → `ComputeDiff` handler
 
 **React Frontend:**
-1. "Show Changes" button on plugin card → calls diff endpoint
-2. Diff summary panel: added (green), modified (yellow), deleted (red), unchanged (gray)
-3. File-level expandable list with size delta
-4. Pre-publish confirmation dialog shows diff summary instead of generic "publish?"
-
-**Acceptance criteria:**
-1. Diff accurately identifies added, modified, deleted, and unchanged files
-2. Pre-publish shows exact change count matching actual file differences
-3. Manifest is cached to avoid redundant API calls within TTL
-4. User can review individual file changes before confirming publish
+1. `FilePreview` and `PublishPreview` types include `unchanged` field
+2. `DiffResult` type added for standalone diff endpoint
+3. `api.computeDiff()` method added
+4. `DiffPreviewDialog` — "Changed" tab as default, "Unchanged" tab added, selection excludes unchanged files by default
 
 ---
 

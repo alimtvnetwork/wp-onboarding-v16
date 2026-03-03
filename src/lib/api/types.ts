@@ -419,7 +419,7 @@ export interface SessionDiagnostics {
 
 export interface FilePreview {
   path: string;
-  changeType: "added" | "modified" | "deleted";
+  changeType: "added" | "modified" | "deleted" | "unchanged";
   size: number;
   localHash?: string;
 }
@@ -438,6 +438,23 @@ export interface PublishPreview {
   added: number;
   modified: number;
   deleted: number;
+  unchanged: number;
+  files: FilePreview[];
+}
+
+export interface DiffResult {
+  pluginId: number;
+  pluginName: string;
+  siteId: number;
+  siteName: string;
+  siteUrl: string;
+  remoteSlug: string;
+  totalFiles: number;
+  totalSize: number;
+  added: number;
+  modified: number;
+  deleted: number;
+  unchanged: number;
   files: FilePreview[];
 }
 

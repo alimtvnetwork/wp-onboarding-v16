@@ -80,6 +80,14 @@ var PreviewPublish = handleTwoIds(
 	},
 )
 
+// ComputeDiff returns a true diff between local and remote files
+var ComputeDiff = handleTwoIds(
+	twoIdConfig{GetService: publishService, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5008"},
+	func(ctx context.Context, pluginId, siteId int64) (any, *apperror.AppError) {
+		return Services.PublishService.ComputeDiff(ctx, pluginId, siteId)
+	},
+)
+
 // NOTE: GetFileDiff is defined in files.go
 
 // --- Backup Handlers ---
