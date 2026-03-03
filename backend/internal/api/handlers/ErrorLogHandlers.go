@@ -106,7 +106,7 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 	logPath := resolveStreamLogPath(logType)
 
 	if pathutil.IsFileMissing(logPath) {
-		respondSuccess(w, LogLinesResponse{Lines: []string{}, Path: logPath, Exists: false, LogType: logType})
+		respondSuccess(w, LogLinesResponse{Lines: []string{}, Path: logPath, IsExists: false, LogType: logType})
 		return
 	}
 
