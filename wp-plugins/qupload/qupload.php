@@ -39,3 +39,16 @@ function qupload_init(): void {
 }
 
 add_action(\QUpload\Enums\HookType::PluginsLoaded->value, 'qupload_init');
+
+/**
+ * Handle plugin deactivation — clear temp files.
+ */
+function qupload_deactivate(): void {
+    try {
+        Plugin::getInstance()->handleDeactivate();
+    } catch (\Throwable $e) {
+        error_log('[QUpload] Deactivation cleanup failed: ' . $e->getMessage());
+    }
+}
+
+register_deactivation_hook(__FILE__, 'qupload_deactivate');

@@ -33,6 +33,8 @@ wp-plugins/qupload/
 │       │   └── UploadExtractTrait.php   # ZIP extraction + activation
 │       ├── Activate/
 │       │   └── ActivateHandlerTrait.php # Activate endpoint handler
+│       ├── Deactivate/
+│       │   └── DeactivateHandlerTrait.php # Deactivation cleanup handler
 │       └── Core/
 │           ├── StatusHandlerTrait.php   # Status endpoint handler
 │           └── ResponseTrait.php        # Error response helpers
@@ -51,4 +53,5 @@ wp-plugins/qupload/
 | `QUpload\Traits\Route` | `includes/Traits/Route/` |
 | `QUpload\Traits\Upload` | `includes/Traits/Upload/` |
 | `QUpload\Traits\Activate` | `includes/Traits/Activate/` |
+| `QUpload\Traits\Deactivate` | `includes/Traits/Deactivate/` |
 | `QUpload\Traits\Core` | `includes/Traits/Core/` |
