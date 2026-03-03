@@ -98,6 +98,7 @@ trait OrmQueryTrait {
 
             return $result ?: null;
         } catch (PDOException $e) {
+            error_log('OrmQueryTrait::findOne() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return null;
         }
     }
@@ -118,6 +119,7 @@ trait OrmQueryTrait {
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log('OrmQueryTrait::findMany() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return array();
         }
     }
@@ -145,6 +147,7 @@ trait OrmQueryTrait {
 
             return (int) ($result['count'] ?? 0);
         } catch (PDOException $e) {
+            error_log('OrmQueryTrait::count() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return 0;
         }
     }
