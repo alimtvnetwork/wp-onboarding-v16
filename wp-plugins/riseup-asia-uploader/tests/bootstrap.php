@@ -187,5 +187,35 @@ if (!function_exists('wp_unschedule_event')) {
     }
 }
 
+// --- AJAX stubs (throw to simulate wp_die) ---
+class WpAjaxTestException extends \RuntimeException {
+    public bool $success;
+    public mixed $data;
+
+    public function __construct(bool $success, mixed $data) {
+        $this->success = $success;
+        $this->data    = $data;
+        parent::__construct('wp_send_json called');
+    }
+}
+
+if (!function_exists('check_ajax_referer')) {
+    function check_ajax_referer(string $action, string $queryArg = false): bool {
+        return true; // always pass in tests
+    }
+}
+
+if (!function_exists('wp_send_json_success')) {
+    function wp_send_json_success(mixed $data = null): void {
+        throw new WpAjaxTestException(true, $data);
+    }
+}
+
+if (!function_exists('wp_send_json_error')) {
+    function wp_send_json_error(mixed $data = null): void {
+        throw new WpAjaxTestException(false, $data);
+    }
+}
+
 // PSR-4 autoloader via Composer.
 require_once __DIR__ . '/../vendor/autoload.php';
