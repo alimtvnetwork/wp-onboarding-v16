@@ -45,9 +45,10 @@ type psJsonOutput struct {
 // RunPowerShellUpload executes the upload-plugin.ps1 script with the given configuration.
 // It passes config as inline JSON for direct invocation from the app.
 func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(line string)) (*PowerShellResult, error) {
-	isNotWindows := runtime.GOOS != "windows"
+	isWindows := runtime.GOOS == "windows"
+	isUnsupportedPlatform := !isWindows
 
-	if isNotWindows {
+	if isUnsupportedPlatform {
 
 		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
@@ -105,9 +106,10 @@ type DirectUploadInput struct {
 // RunPowerShellUploadDirect executes the upload script with direct command-line parameters.
 // This is simpler than JSON config and works well for programmatic invocation.
 func RunPowerShellUploadDirect(input DirectUploadInput) (*PowerShellResult, error) {
-	isNotWindows := runtime.GOOS != "windows"
+	isWindows := runtime.GOOS == "windows"
+	isUnsupportedPlatform := !isWindows
 
-	if isNotWindows {
+	if isUnsupportedPlatform {
 
 		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
@@ -205,9 +207,10 @@ func resolveScriptPath(path string) string {
 
 // IsPowerShellAvailable checks if PowerShell is available on the system.
 func IsPowerShellAvailable() bool {
-	isNotWindows := runtime.GOOS != "windows"
+	isWindows := runtime.GOOS == "windows"
+	isUnsupportedPlatform := !isWindows
 
-	if isNotWindows {
+	if isUnsupportedPlatform {
 
 		return false
 	}

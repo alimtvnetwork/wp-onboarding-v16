@@ -175,8 +175,9 @@ func (s *Service) pullEachPlugin(ctx context.Context, plugins []models.Plugin) B
 
 	for _, p := range plugins {
 		isGitRepo := hasGitDirectory(p.Path)
+		isSkippable := !isGitRepo
 
-		if !isGitRepo {
+		if isSkippable {
 			continue
 		}
 
@@ -282,9 +283,9 @@ func (s *Service) populateFileCountsFromStatus(path string, result *StatusResult
 // countGitFiles runs a git command and counts the resulting file lines.
 func (s *Service) countGitFiles(path string, args ...string) int {
 	output, _ := s.runGitCommand(path, args...)
-	hasNoFiles := output == ""
+	isEmpty := output == ""
 
-	if hasNoFiles {
+	if isEmpty {
 		return 0
 	}
 

@@ -190,8 +190,9 @@ func (s *Service) removeIfExpired(entry os.DirEntry, cutoff time.Time) {
 	if err != nil {
 		return
 	}
-	isNotExpired := !info.ModTime().Before(cutoff)
-	if isNotExpired {
+	isStillValid := !info.ModTime().Before(cutoff)
+
+	if isStillValid {
 		return
 	}
 	s.removeSessionEntry(entry)

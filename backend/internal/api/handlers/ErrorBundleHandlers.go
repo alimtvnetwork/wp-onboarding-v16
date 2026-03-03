@@ -39,7 +39,9 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	hasLogFiles :=
 		logExists ||
 			errorExists
-	if !hasLogFiles {
+	isLogFileMissing := !hasLogFiles
+
+	if isLogFileMissing {
 		respondError(w, wordpress.HttpStatusNotFound, "E9001", "No error log files found")
 
 		return

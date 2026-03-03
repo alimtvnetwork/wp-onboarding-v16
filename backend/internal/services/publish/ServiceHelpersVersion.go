@@ -61,8 +61,10 @@ func readPluginPhpFile(dirPath, fileName string) ([]byte, *apperror.AppError) {
 		return nil, apperror.Wrap(readErr, apperror.ErrFSRead, "failed to read plugin PHP file")
 	}
 
-	isNotPlugin := !strings.Contains(string(content), "Plugin Name:")
-	if isNotPlugin {
+	isPluginFile := strings.Contains(string(content), "Plugin Name:")
+	isMissingHeader := !isPluginFile
+
+	if isMissingHeader {
 		return nil, apperror.New(apperror.ErrValidation, "not a plugin file").WithFilePath(filePath)
 	}
 

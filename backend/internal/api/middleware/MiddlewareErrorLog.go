@@ -177,7 +177,9 @@ func writeEnvelopeDetails(sb *strings.Builder, env envelopeForParsing) {
 // writeEnvelopeAttributes writes RequestedAt and RequestDelegatedAt if present.
 func writeEnvelopeAttributes(sb *strings.Builder, env envelopeForParsing) {
 	hasAttributes := env.Attributes != nil
-	if !hasAttributes {
+	isMissingAttributes := !hasAttributes
+
+	if isMissingAttributes {
 		return
 	}
 
@@ -193,8 +195,9 @@ func writeEnvelopeAttributes(sb *strings.Builder, env envelopeForParsing) {
 func writeMethodsStack(sb *strings.Builder, env envelopeForParsing) {
 	hasMethodsStack := env.MethodsStack != nil
 	hasBackendMethods := hasMethodsStack && len(env.MethodsStack.Backend) > 0
+	isBackendStackEmpty := !hasBackendMethods
 
-	if !hasBackendMethods {
+	if isBackendStackEmpty {
 		return
 	}
 
