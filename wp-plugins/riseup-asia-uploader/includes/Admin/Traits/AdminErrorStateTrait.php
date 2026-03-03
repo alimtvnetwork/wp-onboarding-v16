@@ -37,6 +37,7 @@ trait AdminErrorStateTrait {
 
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
+            error_log('AdminErrorStateTrait::getUnseenErrorCount() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return 0;
         }
     }
@@ -58,6 +59,7 @@ trait AdminErrorStateTrait {
 
             return ($val !== false) ? $val : $default;
         } catch (Throwable $e) {
+            error_log('AdminErrorStateTrait::getFlashValue() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return $default;
         }
     }
