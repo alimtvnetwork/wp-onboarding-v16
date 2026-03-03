@@ -70,7 +70,7 @@ trait CleanerStorageTrait {
                 }
             }
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to get storage stats', array(ResponseKeyType::Error->value => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to get storage stats', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         }
 
         return $stats;
@@ -102,7 +102,7 @@ trait CleanerStorageTrait {
             $estimate[ResponseKeyType::Bytes->value] = array_sum(array_column($snapshots, 'size'));
             $estimate[ResponseKeyType::BytesFormatted->value] = PathHelper::formatBytes($estimate[ResponseKeyType::Bytes->value]);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array(ResponseKeyType::Error->value => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         }
 
         return $estimate;
