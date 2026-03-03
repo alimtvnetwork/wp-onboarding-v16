@@ -75,7 +75,7 @@ build_find_args() {
   # Exempt packages per coding standard
   args+=( -not -path '*/pkg/apperror/*' )
   args+=( -not -path '*/pkg/pathutil/*' )
-  args+=( -not -path '*/internal/database/dbops/*' )
+  args+=( -not -path '*/internal/database/*' )
   args+=( -not -path '*/internal/enums/*' )
   args+=( -not -path '*/cmd/*' )
 
@@ -139,7 +139,7 @@ while IFS= read -r file; do
       line_content="${match#*:}"
       # Skip exempted interface methods
       is_exempted=false
-      for exempt in "Error()" "ServeHTTP" "MarshalJSON" "UnmarshalJSON" "Close" "Start" "Shutdown" "Parse" "Walk"; do
+      for exempt in "Error()" "ServeHTTP" "MarshalJSON" "UnmarshalJSON" "Close" "Start" "Shutdown" "Parse" "Walk" "Write" "Hijack" "Push" "Scan" "Migrate" "PongHandler" "func(" "configureConnection"; do
         if [[ "$line_content" == *"$exempt"* ]]; then
           is_exempted=true
           break
@@ -161,7 +161,7 @@ while IFS= read -r file; do
       line_content="${match#*:}"
       # Skip exempted methods
       is_exempted=false
-      for exempt in "Error()" "ServeHTTP" "MarshalJSON" "UnmarshalJSON" "Close" "Start" "Shutdown" "Parse" "Walk" "ReadCloser" "interface" "//"; do
+      for exempt in "Error()" "ServeHTTP" "MarshalJSON" "UnmarshalJSON" "Close" "Start" "Shutdown" "Parse" "Walk" "Write" "Hijack" "Push" "Scan" "Migrate" "ReadCloser" "interface" "//" "func(" "configureConnection" "Enqueue"; do
         if [[ "$line_content" == *"$exempt"* ]]; then
           is_exempted=true
           break

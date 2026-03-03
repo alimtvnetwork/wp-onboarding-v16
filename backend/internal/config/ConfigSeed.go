@@ -11,7 +11,7 @@ import (
 )
 
 // SeedIfNeeded seeds the database from config if version is newer
-func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
+func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) *apperror.AppError {
 	log.Info("Checking seed requirements", "configVersion", cfg.Version, "seedEnabled", cfg.Seed.Enabled)
 
 	currentVersion, appErr := db.GetSeedVersion()
@@ -58,7 +58,7 @@ func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
 }
 
 // seedFromConfig populates database with default values from config
-func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
+func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) *apperror.AppError {
 	log.Debug("Seeding default settings")
 
 	// seedSetting is a typed key-value pair for seeding settings.
@@ -113,7 +113,7 @@ func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
 }
 
 // seedSitesAndPlugins seeds test sites and plugins from config
-func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error {
+func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) *apperror.AppError {
 	log.Info("=== SEEDING START ===", "sites", len(cfg.Seed.Sites), "plugins", len(cfg.Seed.Plugins))
 
 	var allSiteIds []int64
