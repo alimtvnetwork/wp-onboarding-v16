@@ -21,7 +21,7 @@ class ErrorLogHelper {
      * Internally appends $e->getMessage() and $e->getTraceAsString().
      * Use this in catch blocks where FileLogger is not available.
      */
-    public static function errorLog(Throwable $e, string $context): void {
+    public static function log(Throwable $e, string $context): void {
         error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }

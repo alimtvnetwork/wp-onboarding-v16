@@ -177,7 +177,7 @@ class OnboardConfig {
                 }
             } catch (Exception $e) {
                 // Database read failed, keep constant value.
-                OnboardErrorLog::errorLog($e, 'Onboard Config DB read error for ' . $key . ':');
+                OnboardErrorLog::log($e, 'Onboard Config DB read error for ' . $key . ':');
             }
         }
         
@@ -286,7 +286,7 @@ class OnboardConfig {
             $this->cache[$key] = $value;
             return true;
         } catch (Exception $e) {
-            OnboardErrorLog::errorLog($e, 'Onboard Config set error for ' . $key . ':');
+            OnboardErrorLog::log($e, 'Onboard Config set error for ' . $key . ':');
             return false;
         }
     }

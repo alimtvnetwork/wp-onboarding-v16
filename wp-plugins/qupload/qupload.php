@@ -36,7 +36,7 @@ function qupload_init(): void {
     try {
         Plugin::getInstance();
     } catch (Throwable $e) {
-        ErrorLogHelper::errorLog($e, PluginConfigType::LogPrefix->value . ' Plugin init failed:');
+        ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Plugin init failed:');
     }
 }
 
@@ -49,7 +49,7 @@ function qupload_deactivate(): void {
     try {
         Plugin::getInstance()->handleDeactivate();
     } catch (Throwable $e) {
-        ErrorLogHelper::errorLog($e, PluginConfigType::LogPrefix->value . ' Deactivation cleanup failed:');
+        ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Deactivation cleanup failed:');
     }
 }
 
