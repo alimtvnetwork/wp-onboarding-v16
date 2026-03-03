@@ -62,6 +62,7 @@ $pluginDataDir = rtrim($uploadDir['basedir'], '/') . '/qupload';
 qupload_delete_directory($pluginDataDir);
 
 // ---------------------------------------------------------------------------
-// 2. Remove any WordPress options (future-proofing — none stored currently)
+// 2. Remove stored WordPress options
 // ---------------------------------------------------------------------------
-// delete_option('qupload_settings');
+// Literal string required — enums unavailable during uninstall.
+delete_option('qupload_settings');
