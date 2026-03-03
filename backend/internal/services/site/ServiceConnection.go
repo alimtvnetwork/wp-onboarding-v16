@@ -123,7 +123,7 @@ func (s *Service) broadcastSiteLoadSuccess(id int64, siteName string) {
 }
 
 // decryptWithProgress decrypts a password with broadcast progress updates.
-func (s *Service) decryptWithProgress(siteId int64, encrypted string) ([]byte, *apperror.AppError) {
+func (s *Service) decryptWithProgress(siteId int64, encrypted []byte) ([]byte, *apperror.AppError) {
 	s.broadcastDecryptStart(siteId)
 
 	password, err := decrypt(encrypted, s.encryptionKey)

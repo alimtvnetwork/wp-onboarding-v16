@@ -2,7 +2,6 @@ package publish
 
 import (
 	"context"
-	"time"
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	pluginstatus "wp-plugin-publish/internal/enums/pluginstatustype"
@@ -90,28 +89,3 @@ func (s *Service) handleActivateResult(ctx context.Context, pctx *publishContext
 	pctx.Result.ActivationStatus = pluginstatus.Active.String()
 }
 
-// finalizePublishResult computes final metrics, broadcasts completion, and records history.
-func (s *Service) finalizePublishResult(pctx *publishContext) {
-	isActive := pctx.Result.ActivationStatus == pluginstatus.Active.String()
-	isInactive := pctx.Result.ActivationStatus == pluginstatus.Inactive.String()
-	pctx.Result.IsSuccess =
-		isActive ||
-			isInactive
-	pctx.Result.Duration = time.Since(pctx.StartTime).Milliseconds()
-
-	s.broadcastCompletion(pctx)
-	s.logPublishComplete(pctx)
-	s.recordHistory(pctx)
-}
-
-// logPublishComplete writes the final publish log entry.
-func (s *Service) logPublishComplete(pctx *publishContext) {
-	s.log.Info("Plugin published",
-		"pluginId", pctx.PluginId,
-		"siteId", pctx.SiteId,
-		"mode", pctx.Options.Mode,
-		"files", pctx.Result.FilesUpdated,
-		"duration", pctx.Result.Duration,
-		"success", pctx.Result.IsSuccess,
-	)
-}

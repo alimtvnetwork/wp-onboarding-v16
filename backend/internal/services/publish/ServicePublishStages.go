@@ -1,10 +1,13 @@
 package publish
 
 import (
+	"context"
+	"encoding/base64"
 	"fmt"
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
