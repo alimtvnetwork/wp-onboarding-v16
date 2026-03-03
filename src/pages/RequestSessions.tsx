@@ -216,6 +216,7 @@ export default function RequestSessions() {
 
   // Delete mutation
   const deleteMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async (id: string) => {
       const response = await api.deleteRequestSession(id);
       return requireSuccess(response, { endpoint: `/request-sessions/${id}`, method: "DELETE" });
@@ -230,6 +231,7 @@ export default function RequestSessions() {
 
   // Clear all mutation
   const clearMutation = useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: async () => {
       const response = await api.clearRequestSessions();
       return requireSuccess(response, { endpoint: "/request-sessions", method: "DELETE" });

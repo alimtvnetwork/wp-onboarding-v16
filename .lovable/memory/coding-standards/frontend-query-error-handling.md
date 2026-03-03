@@ -17,6 +17,10 @@ React Query's global `onError` handlers in `App.tsx` (both `queryCache` and `mut
 | `src/hooks/useSiteHealth.ts` | useCheckAllSitesHealth mutation |
 | `src/hooks/useErrorHistory.ts` | All mutations (save, delete, clear, export) in both useErrorHistory and useErrorHistorySync |
 | `src/components/settings/SnapshotSettingsTab.tsx` | Snapshot cron/settings queries |
+| `src/pages/Sessions.tsx` | deleteMutation |
+| `src/pages/RequestSessions.tsx` | deleteMutation, clearMutation |
+| `src/pages/Tests.tsx` | startRun, rerunCase |
+| `src/components/settings/SnapshotSettingsTab.tsx` | Snapshot cron/settings queries |
 
 ### Rule
 
