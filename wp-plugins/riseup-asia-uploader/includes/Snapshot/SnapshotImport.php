@@ -118,7 +118,7 @@ class SnapshotImport {
         $this->log(
             LogLevelType::Error->value,
             'Snapshot import failed',
-            array('error' => $e->getMessage()),
+            array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()),
         );
     }
 

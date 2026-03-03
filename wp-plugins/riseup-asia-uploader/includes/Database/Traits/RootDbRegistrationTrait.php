@@ -111,7 +111,7 @@ trait RootDbRegistrationTrait {
                 ResponseKeyType::Plugins->value => $plugins,
             );
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to read a-root.db', array('path' => $filepath, 'error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to read a-root.db', array('path' => $filepath, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return null;
         }

@@ -59,6 +59,7 @@ trait FileSystemPluginTrait {
         } catch (Throwable $e) {
             $this->fileLogger->warn('findPluginFile: Failed to clear plugin cache', array(
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ));
         }
     }

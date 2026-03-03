@@ -39,7 +39,7 @@ trait IncrementalDeltaTrait {
 
             return $this->exportTableDeltaInner($tableName, $info, $incDir, $rootPdo, $sequence);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to open master root DB', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to open master root DB', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return null;
         } finally {
@@ -192,6 +192,7 @@ trait IncrementalDeltaTrait {
             $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array(
                 'table'                       => $tableName,
                 ResponseKeyType::Error->value => $e->getMessage(),
+                'trace'                       => $e->getTraceAsString(),
             ));
 
             return (int) $info['rowCount'];
