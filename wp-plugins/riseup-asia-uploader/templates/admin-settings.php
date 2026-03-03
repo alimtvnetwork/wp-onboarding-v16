@@ -604,6 +604,13 @@ use RiseupAsia\Helpers\BooleanHelpers;
 </div>
 
 <script type="text/javascript">
+// --- JS Constants from PHP Enums (eliminates magic strings) ---
+var UPDATE_AJAX = {
+    TEST_CONNECTION: '<?php echo esc_js(AjaxActionType::TestUpdateConnection->value); ?>',
+    CLEAR_CACHE:     '<?php echo esc_js(AjaxActionType::ClearUpdateCache->value); ?>',
+    CHECK_UPDATES:   '<?php echo esc_js(AjaxActionType::CheckForUpdates->value); ?>'
+};
+
 jQuery(document).ready(function($) {
     var ajaxNonce = '<?php echo wp_create_nonce(NonceType::Admin->value); ?>';
     var $status = $('#update_action_status');
@@ -619,7 +626,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true).find('.dashicons').removeClass('dashicons-yes-alt').addClass('dashicons-update spin');
         
         $.post(ajaxurl, {
-            action: '<?php echo esc_js(AjaxActionType::TestUpdateConnection->value); ?>',
+            action: UPDATE_AJAX.TEST_CONNECTION,
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -642,7 +649,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true);
         
         $.post(ajaxurl, {
-            action: '<?php echo esc_js(AjaxActionType::ClearUpdateCache->value); ?>',
+            action: UPDATE_AJAX.CLEAR_CACHE,
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -663,7 +670,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true).find('.dashicons').addClass('spin');
         
         $.post(ajaxurl, {
-            action: '<?php echo esc_js(AjaxActionType::CheckForUpdates->value); ?>',
+            action: UPDATE_AJAX.CHECK_UPDATES,
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -697,6 +704,29 @@ jQuery(document).ready(function($) {
 </style>
 
 <script type="text/javascript">
+// --- JS Constants from PHP Enums (eliminates magic strings) ---
+var SNAP_FREQUENCY = {
+    MANUAL:  '<?php echo esc_js(SnapshotFrequencyType::Manual->value); ?>',
+    HOURLY:  '<?php echo esc_js(SnapshotFrequencyType::Hourly->value); ?>',
+    DAILY:   '<?php echo esc_js(SnapshotFrequencyType::Daily->value); ?>',
+    WEEKLY:  '<?php echo esc_js(SnapshotFrequencyType::Weekly->value); ?>',
+    MONTHLY: '<?php echo esc_js(SnapshotFrequencyType::Monthly->value); ?>'
+};
+var SNAP_RETENTION = {
+    NONE:  '<?php echo esc_js(RetentionType::None->value); ?>',
+    DAYS:  '<?php echo esc_js(RetentionType::Days->value); ?>',
+    COUNT: '<?php echo esc_js(RetentionType::Count->value); ?>'
+};
+var SNAP_STORAGE = {
+    SINGLE:   '<?php echo esc_js(StorageModeType::Single->value); ?>',
+    PERTABLE: '<?php echo esc_js(StorageModeType::PerTable->value); ?>'
+};
+var SNAP_AJAX = {
+    STORAGE_STATS:     '<?php echo esc_js(AjaxActionType::GetSnapshotStorageStats->value); ?>',
+    SAVE_SETTINGS:     '<?php echo esc_js(AjaxActionType::SaveSnapshotSettings->value); ?>',
+    RUN_CLEANUP:       '<?php echo esc_js(AjaxActionType::RunSnapshotCleanup->value); ?>'
+};
+
 jQuery(document).ready(function($) {
     var ajaxNonce = '<?php echo wp_create_nonce(NonceType::Admin->value); ?>';
     var $snapStatus = $('#snap_action_status');
@@ -709,28 +739,28 @@ jQuery(document).ready(function($) {
     // Toggle day row visibility based on frequency
     $('#snap_schedule_frequency').on('change', function() {
         var freq = $(this).val();
-        var isHourly = freq === '<?php echo esc_js(SnapshotFrequencyType::Hourly->value); ?>';
-        $('#snap_day_row').toggle(freq === '<?php echo esc_js(SnapshotFrequencyType::Weekly->value); ?>' || freq === '<?php echo esc_js(SnapshotFrequencyType::Monthly->value); ?>');
+        var isHourly = freq === SNAP_FREQUENCY.HOURLY;
+        $('#snap_day_row').toggle(freq === SNAP_FREQUENCY.WEEKLY || freq === SNAP_FREQUENCY.MONTHLY);
         $('#snap_schedule_time').closest('tr').toggle(!isHourly);
     });
 
     // Toggle retention rows based on type
     $('#snap_retention_type').on('change', function() {
         var type = $(this).val();
-        $('#snap_retention_days_row').toggle(type === '<?php echo esc_js(RetentionType::Days->value); ?>');
-        $('#snap_retention_count_row').toggle(type === '<?php echo esc_js(RetentionType::Count->value); ?>');
+        $('#snap_retention_days_row').toggle(type === SNAP_RETENTION.DAYS);
+        $('#snap_retention_count_row').toggle(type === SNAP_RETENTION.COUNT);
     });
 
     // Storage mode card selection
     $('input[name="snap_storage_mode"]').on('change', function() {
         var val = $(this).val();
         $('#mode_card_single').css({
-            'border-color': val === '<?php echo esc_js(StorageModeType::Single->value); ?>' ? '#2271b1' : '#dcdcde',
-            'background': val === '<?php echo esc_js(StorageModeType::Single->value); ?>' ? '#f0f6fc' : '#fff'
+            'border-color': val === SNAP_STORAGE.SINGLE ? '#2271b1' : '#dcdcde',
+            'background': val === SNAP_STORAGE.SINGLE ? '#f0f6fc' : '#fff'
         });
         $('#mode_card_pertable').css({
-            'border-color': val === '<?php echo esc_js(StorageModeType::PerTable->value); ?>' ? '#2271b1' : '#dcdcde',
-            'background': val === '<?php echo esc_js(StorageModeType::PerTable->value); ?>' ? '#f0f6fc' : '#fff'
+            'border-color': val === SNAP_STORAGE.PERTABLE ? '#2271b1' : '#dcdcde',
+            'background': val === SNAP_STORAGE.PERTABLE ? '#f0f6fc' : '#fff'
         });
     });
 
@@ -742,7 +772,7 @@ jQuery(document).ready(function($) {
     // Load storage stats on page load
     function loadStorageStats() {
         $.post(ajaxurl, {
-            action: '<?php echo esc_js(AjaxActionType::GetSnapshotStorageStats->value); ?>',
+            action: SNAP_AJAX.STORAGE_STATS,
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
@@ -767,7 +797,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true);
 
         $.post(ajaxurl, {
-            action: '<?php echo esc_js(AjaxActionType::SaveSnapshotSettings->value); ?>',
+            action: SNAP_AJAX.SAVE_SETTINGS,
             nonce: ajaxNonce,
             preferred_provider: $('#snap_preferred_provider').val(),
             schedule_enabled: $('#snap_schedule_enabled').is(':checked') ? '1' : '0',
@@ -798,7 +828,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true).find('.dashicons').addClass('spin');
 
         $.post(ajaxurl, {
-            action: '<?php echo esc_js(AjaxActionType::RunSnapshotCleanup->value); ?>',
+            action: SNAP_AJAX.RUN_CLEANUP,
             nonce: ajaxNonce
         }, function(response) {
             if (response.success) {
