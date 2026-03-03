@@ -69,6 +69,26 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 - `Admin/Traits/AdminErrorStateTrait.php` — `getFlashValue()`: added `error_log()` with trace (1)
 - `Traits/Plugin/PluginRouteRegistrationTrait.php` — media endpoint registration: replaced empty comment with `error_log()` with trace (1)
 
+## Phase 6 Fix (16 blocks — silent catches + trace-incomplete context arrays)
+
+### Riseup Asia Uploader — Silent catches converted to `error_log()` with trace (5)
+- `Snapshot/Traits/OrchestratorZipTrait.php` — `createZipExport()`: was returning error array with no logging (1)
+- `Snapshot/Traits/IncrementalDeltaTrait.php` — `getMaxIdFromMasterSqlite()`: was returning null with no logging (1)
+- `Snapshot/Traits/IncrementalExportTrait.php` — `exportTableFull()`: was returning error array with no logging (1)
+- `Snapshot/Traits/CleanerHelperTrait.php` — `logCleanupAction()`: replaced `$this->log()` with `error_log()` + trace (1)
+- `Snapshot/Traits/RestoreHelperTrait.php` — `logRestoreAudit()`: replaced `$this->log()` with `error_log()` + trace (1)
+
+### Riseup Asia Uploader — Trace-incomplete context arrays: added `'trace' => $e->getTraceAsString()` (11)
+- `Snapshot/Traits/IncrementalDeltaTrait.php` — `exportTableDelta()` + `getMaxIdFromTableSqlite()` (2)
+- `Snapshot/Traits/IncrementalRegistrationTrait.php` — `registerIncremental()` + `invalidateParentZipExport()` (2)
+- `Database/Traits/RootDbRegistrationTrait.php` — `readRootDbContents()` (1)
+- `Snapshot/SnapshotImport.php` — `cleanupOnFailure()` (1)
+- `Traits/FileSystem/FileSystemPluginTrait.php` — `findPluginFile()` cache clear (1)
+- `Database/Traits/DatabaseConvenienceTrait.php` — `queryRows()` (1)
+- `Database/Traits/DatabaseMigrationsV1V3Trait.php` — column existence check (1)
+- `Database/Traits/DatabaseMigrationsV4V5Trait.php` — column existence check (1)
+- `Database/Traits/DatabaseMigrationsV9V11Trait.php` — column existence check (1)
+
 ## Remaining Silent Catches (intentional — no fix needed)
 
 - `Logging/Traits/LoggerWriteTrait.php` line 106 — logger recursion guard, correctly silent
