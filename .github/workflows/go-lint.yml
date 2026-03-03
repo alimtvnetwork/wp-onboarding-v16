@@ -68,6 +68,9 @@ jobs:
       - name: Lint — Inline If
         run: bash scripts/lint-inline-if.sh
 
+      - name: Lint — Typed-Nil (error ← AppError)
+        run: bash scripts/lint-typed-nil.sh
+
       - name: Validate OpenAPI Spec
         working-directory: backend
         run: |
@@ -123,3 +126,6 @@ jobs:
 
       - name: Lint — Inline If
         run: bash scripts/lint-inline-if.sh --dir licensing
+
+      - name: Lint — Typed-Nil (error ← AppError)
+        run: bash scripts/lint-typed-nil.sh --dir licensing

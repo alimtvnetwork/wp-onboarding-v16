@@ -50,6 +50,7 @@ if [[ -d "backend" ]]; then
   run_check "Generic enforce (GE)"           bash "$SCRIPT_DIR/lint-ge.sh" --go
   run_check "JSON tags"                      bash "$SCRIPT_DIR/lint-json-tags.sh"
   run_check "Inline if"                      bash "$SCRIPT_DIR/lint-inline-if.sh"
+  run_check "Typed-nil (error ← AppError)"   bash "$SCRIPT_DIR/lint-typed-nil.sh"
   run_check "go vet"                         bash -c "cd backend && go vet ./..."
   echo ""
 fi
@@ -64,6 +65,7 @@ if [[ -d "licensing" ]]; then
   run_check "Import grouping"                bash "$SCRIPT_DIR/lint-imports.sh" --dir licensing
   run_check "JSON tags"                      bash "$SCRIPT_DIR/lint-json-tags.sh" licensing
   run_check "Inline if"                      bash "$SCRIPT_DIR/lint-inline-if.sh" --dir licensing
+  run_check "Typed-nil (error ← AppError)"   bash "$SCRIPT_DIR/lint-typed-nil.sh" --dir licensing
   run_check "go vet"                         bash -c "cd licensing && go vet ./..."
   echo ""
 fi
