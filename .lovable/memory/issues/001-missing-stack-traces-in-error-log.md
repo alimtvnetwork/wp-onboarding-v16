@@ -61,23 +61,26 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 - `Snapshot/Traits/WorkerJobProgressTrait.php` — `loadTableProgress()`: added `error_log()` with trace (1)
 - `Snapshot/Traits/DetectorProviderTrait.php` — SQLite version check: added `error_log()` with trace (1)
 
-## Remaining Known Silent Catches (intentional / accepted)
+## Phase 5 Fix (4 blocks — final silent catch cleanup)
 
-### Intentional Recursion Guards (no fix needed)
+### Riseup Asia Uploader
+- `Snapshot/Traits/ImportValidationTrait.php` — `readRootDbMetadata()`: added `'trace'` to `$this->log()` context (1)
+- `Admin/Traits/AdminErrorStateTrait.php` — `getUnseenErrorCount()`: added `error_log()` with trace (1)
+- `Admin/Traits/AdminErrorStateTrait.php` — `getFlashValue()`: added `error_log()` with trace (1)
+- `Traits/Plugin/PluginRouteRegistrationTrait.php` — media endpoint registration: replaced empty comment with `error_log()` with trace (1)
+
+## Remaining Silent Catches (intentional — no fix needed)
+
 - `Logging/Traits/LoggerWriteTrait.php` line 106 — logger recursion guard, correctly silent
 - `plugins-onboard/includes/class-logger.php` line 137 — same pattern
 
-### Accepted Admin UI Catches (low-risk, non-critical path)
-- `Admin/Traits/AdminErrorStateTrait.php` — `getUnseenErrorCount()` returns 0, `getFlashValue()` returns default — admin badge count only
-- `Traits/Plugin/PluginRouteRegistrationTrait.php` — optional media endpoint registration, comment-documented
-
 ## Final Audit Summary
 
-| Plugin | Total Catches | Logging | Silent (intentional) | Silent (accepted) |
-|---|---|---|---|---|
-| QUpload | 7 | 7 ✅ | 0 | 0 |
-| Plugins Onboard | ~20 | 19 ✅ | 1 (logger) | 0 |
-| Riseup Asia | ~700+ | 697+ ✅ | 1 (logger) | 3 (admin UI) |
+| Plugin | Total Catches | Logging | Silent (intentional) |
+|---|---|---|---|
+| QUpload | 7 | 7 ✅ | 0 |
+| Plugins Onboard | ~20 | 19 ✅ | 1 (logger) |
+| Riseup Asia | ~700+ | 700+ ✅ | 1 (logger) |
 
 ## Safe Paths (already compliant — no changes needed)
 
