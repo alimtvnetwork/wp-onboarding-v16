@@ -41,6 +41,7 @@ use RiseupAsia\Traits\Plugin\PluginListTrait;
 use RiseupAsia\Traits\Plugin\PluginExportTrait;
 use RiseupAsia\Traits\Core\PostHandlerTrait;
 use RiseupAsia\Traits\Plugin\PluginLifecycleTrait;
+use RiseupAsia\Traits\Plugin\PluginBackupHandlerTrait;
 use RiseupAsia\Traits\Sync\SyncHandlerTrait;
 use RiseupAsia\Traits\Core\ResponseTrait;
 use RiseupAsia\Traits\Error\ErrorLogTrait;
@@ -66,6 +67,7 @@ class Plugin {
     use PluginExportTrait;
     use PostHandlerTrait;
     use PluginLifecycleTrait;
+    use PluginBackupHandlerTrait;
     use SyncHandlerTrait;
 
     // Wave 3 traits

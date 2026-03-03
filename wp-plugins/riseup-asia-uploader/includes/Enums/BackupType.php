@@ -1,9 +1,9 @@
 <?php
 /**
- * PathSubdirType — Plugin subdirectory path fragments.
+ * BackupType — Plugin backup trigger types.
  *
  * @package RiseupAsia\Enums
- * @since   1.58.0
+ * @since   1.64.0
  */
 
 namespace RiseupAsia\Enums;
@@ -12,15 +12,19 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-enum PathSubdirType: string
+enum BackupType: string
 {
-    case Logs      = '/logs';
-    case Temp      = '/temp';
-    case Snapshots = '/snapshots';
-    case Exports   = '/exports';
-    case Backups   = '/backups';
+    case PreUpdate  = 'pre_update';
+    case PrePublish = 'pre_publish';
+    case Manual     = 'manual';
+    case Scheduled  = 'scheduled';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+
+    public function isAutomatic(): bool
+    {
+        return $this->isAnyOf(self::PreUpdate, self::PrePublish, self::Scheduled);
+    }
 }

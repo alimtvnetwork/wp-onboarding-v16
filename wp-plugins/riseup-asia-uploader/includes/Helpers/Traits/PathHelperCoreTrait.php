@@ -90,6 +90,7 @@ trait PathHelperCoreTrait {
 
     public static function getLogsDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Logs->value); }
     public static function getSnapshotsDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Snapshots->value); }
+    public static function getBackupsDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Backups->value); }
     public static function getTempDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Temp->value); }
     public static function getDbPath(): string { return self::join(self::getBaseDir(), PathDatabaseType::Plugin->value); }
 

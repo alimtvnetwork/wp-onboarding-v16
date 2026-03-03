@@ -38,6 +38,10 @@ enum EndpointType: string
     case PluginDelete  = 'plugins/delete';
     case PluginExists  = 'plugins/exists';
     case PluginExport  = 'plugins/export';
+    case PluginBackup        = 'plugins/backup';
+    case PluginBackupRestore = 'plugins/backup-restore';
+    case PluginBackupList    = 'plugins/backup-list';
+    case PluginBackupDelete  = 'plugins/backup-delete';
 
     // ── Sync ─────────────────────────────────────────────────────────
     case SyncManifest  = 'plugins/sync-manifest';
