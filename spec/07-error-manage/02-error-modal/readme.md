@@ -1,6 +1,6 @@
 # Error Modal — Frontend Specification
 
-> **Version:** 2.2.0  
+> **Version:** 2.3.0  
 > **Updated:** 2026-03-03  
 > **Status:** Active  
 > **Location:** `src/components/errors/`  
@@ -342,7 +342,7 @@ The Universal Response Envelope provides six top-level blocks. The error modal c
 **Mapping:**
 - `BackendMessage` → Overview tab red banner
 - `DelegatedServiceErrorStack` → Stack tab (orange-themed PHP trace) + Traversal tab (legacy)
-- `DelegatedRequestServer` → Stack tab (purple-themed delegated section) + Request tab (3rd hop) + Traversal tab (NEW v2.0.0)
+- `DelegatedRequestServer` → Stack tab (orange-themed delegated section) + Request tab (3rd hop) + Traversal tab (NEW v2.0.0)
 - `DelegatedRequestServer.AdditionalMessages` → Overview tab info banner
 - `DelegatedRequestServer.Response` → Request tab delegated response JSON viewer
 - `DelegatedRequestServer.StackTrace` → Stack tab delegated server stack trace
@@ -488,9 +488,9 @@ GlobalErrorModal.tsx
 │  │  service.go:1245       site.(*Service).EnableRemotePlugin   │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  ┌─ Delegated Server Stack (purple-themed, NEW v2.0.0) ───────┐  │
+│  ┌─ Delegated Server Stack (orange-themed, NEW v2.0.0) ───────┐  │
 │  │  ┌─ Header ─────────────────────────────────────────────┐   │  │
-│  │  │ 🟣 Delegated Server  GET  403                        │   │  │
+│  │  │ 🟠 Delegated Server  GET  403                        │   │  │
 │  │  │ https://example.com/wp-json/riseup.../snapshots/...  │   │  │
 │  │  └──────────────────────────────────────────────────────┘   │  │
 │  │  Stack Trace:                                               │  │
@@ -568,7 +568,7 @@ GlobalErrorModal.tsx
 │  │  3  │ api.Recovery                    │ middleware      │245│  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  ┌─ Delegated Server Details (purple, NEW v2.0.0) ─────────────┐ │
+│  ┌─ Delegated Server Details (orange, NEW v2.0.0) ────────────┐ │
 │  │  Endpoint: https://site.com/wp-json/riseup.../settings      │ │
 │  │  Method: GET │ Status: 403                                  │ │
 │  │  Stack Trace:                                                │ │
@@ -736,7 +736,7 @@ Plus environment diagnostics: API base, VITE_API_URL, resolved origin, UI origin
 
 - **Endpoint Flow** — Go endpoint → PHP endpoint with badges
 - **Methods Stack** — Table: #, Method, File, Line
-- **Delegated Server Details** — Purple-themed section with endpoint, method, status, stack trace, response JSON (NEW v2.0.0)
+- **Delegated Server Details** — Orange-themed section with endpoint, method, status, stack trace, response JSON (NEW v2.0.0)
 - **Delegated Service Error Stack** — Orange-themed PHP error lines (legacy)
 - **Backend Trace** — Go stack trace lines
 
@@ -744,7 +744,7 @@ Plus environment diagnostics: API base, VITE_API_URL, resolved origin, UI origin
 
 1. **Endpoint Flow** — React → Go → Delegated badges with full URLs (3-hop when DelegatedRequestServer present)
 2. **Methods Stack Table** — Go call chain from envelope
-3. **Delegated Server Details** — Purple-themed block with endpoint, method, status, stack trace, response (NEW v2.0.0)
+3. **Delegated Server Details** — Orange-themed block with endpoint, method, status, stack trace, response (NEW v2.0.0)
 4. **Delegated Service Error Stack** — Orange-themed PHP error lines (legacy, ScrollArea)
 5. **Backend Trace** — Go stack trace lines (ScrollArea)
 
@@ -855,8 +855,8 @@ const hasDelegatedServer = error.delegatedRequestServer || error.envelopeErrors?
     </div>
     <div className="border rounded-b-md bg-muted/50 p-3">
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-2 h-2 rounded-full bg-purple-500" />
-        <Badge variant="outline" className="font-mono bg-purple-500/10 border-purple-500/30 text-purple-600">
+        <div className="w-2 h-2 rounded-full bg-orange-500" />
+        <Badge variant="outline" className="font-mono bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400">
           Delegated Response
         </Badge>
       </div>
@@ -876,12 +876,12 @@ const hasDelegatedServer = error.delegatedRequestServer || error.envelopeErrors?
         <div className="mt-2">
           <p className="text-xs text-muted-foreground mb-1">Stack Trace:</p>
           {delegatedServer.StackTrace.map((line, i) => (
-            <p key={i} className="text-xs font-mono text-purple-600 ml-2">{line}</p>
+            <p key={i} className="text-xs font-mono text-orange-600 dark:text-orange-400 ml-2">{line}</p>
           ))}
         </div>
       )}
       {delegatedServer?.AdditionalMessages && (
-        <p className="mt-2 text-xs text-purple-600">
+        <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
           ℹ {delegatedServer.AdditionalMessages}
         </p>
       )}
@@ -914,7 +914,7 @@ const hasDelegatedServer = error.delegatedRequestServer || error.envelopeErrors?
 
 1. **Endpoint Flow** — 3-hop badges: React → Go → Delegated (with method + status for delegated hop)
 2. **Methods Stack Table** — Go call chain from envelope
-3. **Delegated Server Details** — Purple-themed block (NEW v2.0.0): endpoint, method, status, stack trace, response JSON, additional messages
+3. **Delegated Server Details** — Orange-themed block (NEW v2.0.0): endpoint, method, status, stack trace, response JSON, additional messages
 4. **Delegated Service Error Stack** — Orange-themed PHP error lines (legacy, ScrollArea)
 5. **Backend Trace** — Go stack trace lines (ScrollArea)
 
@@ -929,7 +929,7 @@ const hasDelegatedServer = error.delegatedRequestServer || error.envelopeErrors?
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-purple-500" />
+          <div className="w-2 h-2 rounded-full bg-orange-500" />
           Delegated Server Details
         </h4>
         <Button variant="ghost" size="sm" onClick={() => copySection("Delegated Server", 
@@ -939,21 +939,21 @@ const hasDelegatedServer = error.delegatedRequestServer || error.envelopeErrors?
           <Copy className="h-3 w-3" />
         </Button>
       </div>
-      <div className="bg-purple-500/5 border border-purple-500/20 rounded p-3 space-y-2">
+      <div className="bg-orange-500/5 border border-orange-500/20 rounded p-3 space-y-2">
         <div className="flex items-center gap-2 text-xs">
           <Badge variant="outline" className="font-mono">{ds.Method}</Badge>
           <Badge variant={ds.StatusCode >= 400 ? "destructive" : "secondary"}>{ds.StatusCode}</Badge>
         </div>
-        <p className="text-xs font-mono text-purple-600 break-all">{ds.DelegatedEndpoint}</p>
+        <p className="text-xs font-mono text-orange-600 dark:text-orange-400 break-all">{ds.DelegatedEndpoint}</p>
         {ds.StackTrace?.length > 0 && (
           <ScrollArea className="max-h-32">
             {ds.StackTrace.map((line, i) => (
-              <p key={i} className="text-xs font-mono text-purple-500">{line}</p>
+              <p key={i} className="text-xs font-mono text-orange-500 dark:text-orange-400">{line}</p>
             ))}
           </ScrollArea>
         )}
         {ds.AdditionalMessages && (
-          <p className="text-xs text-purple-600 border-t border-purple-500/20 pt-2">
+          <p className="text-xs text-orange-600 dark:text-orange-400 border-t border-orange-500/20 pt-2">
             ℹ {ds.AdditionalMessages}
           </p>
         )}
