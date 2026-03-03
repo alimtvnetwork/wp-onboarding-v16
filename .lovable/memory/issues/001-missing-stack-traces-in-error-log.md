@@ -123,11 +123,36 @@ All internally call `error_log($context . ' ' . $e->getMessage() . "\n" . $e->ge
 - `qupload/includes/Autoloader.php` — loaded before autoloader, can't use helpers
 - `riseup-asia-uploader/includes/Autoloader.php` — same reason
 
-## Phase 8 (planned): Refactor `$this->log()` context arrays to `logError($e, msg)`
+## Phase 8 ✅: `logError($e, msg)` / `logWarn($e, msg)` — eliminate manual context arrays
 
-**Problem:** Snapshot traits still manually inject `'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()` into `$this->log()` context arrays.
+**Problem:** Snapshot traits manually injected `'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()` into `$this->log()` context arrays — verbose, repetitive, error-prone.
 
-**Solution:** Create `logError(Throwable $e, string $msg, array $context = [])` and `logWarn()` methods that auto-inject error+trace into the context array.
+**Solution:** Created `logError(Throwable $e, string $msg, array $context = [])` and `logWarn()` methods in each log provider trait/class that auto-inject error+trace:
+- `OrchestratorHelpersTrait` — `logError()` + `logWarn()` (used by orchestrator/worker traits)
+- `CleanerHelperTrait` — `logError()` + `logWarn()` (used by cleaner traits)
+- `ManagerCoreTrait` — `logError()` + `logWarn()` (used by manager traits)
+- `SnapshotImport` — `logError()` (used by import class)
+- `SnapshotScheduler` — switched to `$this->logger->logException($e, msg)`
+
+**Refactored call sites (22 total):**
+- `OrchestratorHelpersTrait` — `buildExceptionResult()` (1)
+- `IncrementalDeltaTrait` — `exportTableDelta()` + `getMaxIdFromMasterSqlite()` (2)
+- `WorkerJobLifecycleTrait` — `createJob()` + `finalizeJob()` (2)
+- `WorkerTableExportTrait` — `exportTableToFile()` (1)
+- `WorkerProgressTrait` — `initProgressRecords()` + `updateProgress()` (2)
+- `IncrementalRegistrationTrait` — `registerIncrementalSnapshot()` + `invalidateParentZipExport()` (2)
+- `OrchestratorRegistrationTrait` — `registerSnapshot()` (1)
+- `OrchestratorPluginTrait` — `openRootDbForPlugins()` (1)
+- `ManagerImportTrait` — `importSnapshot()` (1)
+- `ManagerSettingsTrait` — `readSettingsFromDb()` + `updateSettings()` (2)
+- `ImportValidationTrait` — `readRootDbMetadata()` (1)
+- `SnapshotCleaner` — retention, orphan, stuck phases (3)
+- `CleanerStorageTrait` — `getStorageStats()` + `estimateCleanup()` (2)
+- `SnapshotImport` — `cleanupOnFailure()` (1)
+- `SnapshotScheduler` — `executeWorkerBatch()` (1)
+
+**Remaining manual pattern (intentional — different class hierarchy):**
+- `UpdraftCrudTrait` — uses parent class `log()`, only 1 catch block
 
 ## Remaining Silent Catches (intentional — no fix needed)
 
@@ -151,6 +176,7 @@ All internally call `error_log($context . ' ' . $e->getMessage() . "\n" . $e->ge
 - `InitHelpers::errorLog($e, context)` ✅
 - `ErrorLogHelper::errorLog($e, context)` ✅
 - `OnboardErrorLog::errorLog($e, context)` ✅
+- `$this->logError($e, msg)` / `$this->logWarn($e, msg)` ✅
 
 ## Prevention
 

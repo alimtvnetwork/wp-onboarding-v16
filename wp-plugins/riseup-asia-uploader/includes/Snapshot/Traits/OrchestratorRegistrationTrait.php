@@ -52,7 +52,7 @@ trait OrchestratorRegistrationTrait {
                 $dirSize,
             );
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logError($e, 'Failed to register snapshot');
 
             return false;
         }

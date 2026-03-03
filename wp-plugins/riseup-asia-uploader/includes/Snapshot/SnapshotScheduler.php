@@ -72,7 +72,7 @@ class SnapshotScheduler {
             $worker = SnapshotFactory::worker($this->logger, $this->db);
             $worker->processWorkerBatch($args);
         } catch (Throwable $e) {
-            $this->logger->error('[SCHEDULER] Worker batch exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logger->logException($e, '[SCHEDULER] Worker batch exception');
         }
     }
 

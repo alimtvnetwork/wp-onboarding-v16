@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Exception;
+use Throwable;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
@@ -29,16 +30,25 @@ trait OrchestratorHelpersTrait {
     }
 
     private function buildExceptionResult(Exception $e, string $phase): array {
-        $this->log(LogLevelType::Error->value, ucfirst(str_replace('_', ' ', $phase)) . ' failed', array(
-            ResponseKeyType::Error->value => $e->getMessage(),
-            'trace'                       => $e->getTraceAsString(),
-        ));
+        $this->logError($e, ucfirst(str_replace('_', ' ', $phase)) . ' failed');
 
         return array(
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => $e->getMessage(),
             ResponseKeyType::Phase->value   => $phase,
         );
+    }
+
+    private function logError(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Error->value, $message, $context);
+    }
+
+    private function logWarn(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Warn->value, $message, $context);
     }
 
     private function getDirectorySize(string $dir): int {
