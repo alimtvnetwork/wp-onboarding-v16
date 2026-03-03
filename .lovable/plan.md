@@ -1,222 +1,221 @@
-## Eliminate Magic Strings in All Template Files
+# Master Roadmap & Backlog
 
-### Problem
+> Updated: 2026-03-03
 
-The JavaScript sections of the template files — particularly `admin-agents.php` and partially `admin-snapshots.php` — still contain hardcoded REST endpoint paths, status strings, response keys, and UI labels that should be driven by PHP enums. The PHP/HTML portions are generally well-enumified, but the inline `<script>` blocks were not fully refactored.
+---
 
-### Audit Summary
+## Completed Phases
 
+### ✅ Go Phase 4: Positive Logic & Boolean Standards
+- Renamed 12 negative booleans (`isNot*`, `hasNo*`, `isNon*`) to positive polarity across 11 files
+- Extracted 15 `!positiveVar` patterns to named positive intermediate variables
+- Zero violations remain in non-test Go files
 
-| Template              | PHP/HTML | JavaScript                                                                                                         | Verdict    |
-| --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
-| `admin-settings.php`  | Clean    | Clean (uses `AjaxActionType`, `NonceType`, `SnapshotFrequencyType`, etc.)                                          | OK         |
-| `admin-errors.php`    | Clean    | Deferred to partials (not in repo yet)                                                                             | OK         |
-| `admin-logs.php`      | Clean    | No inline JS                                                                                                       | OK         |
-| `admin-snapshots.php` | Clean    | Mostly clean (has `SNAP_STATUS`/`SNAP_MODE`/`SNAP_SCOPE`/`SNAP_FREQ` constants block) but REST paths are hardcoded | Needs work |
-| `admin-agents.php`    | Clean    | **Major offender** — all REST paths, status strings, response keys, and UI labels are hardcoded magic strings      | Needs work |
+---
 
+## Active / Queued Work
 
-### Detailed Findings
+### 🔲 Task: Eliminate Magic Strings in Template JS
 
-#### 1. `admin-agents.php` — JavaScript (lines 279-556)
+**Status:** Ready to implement  
+**Scope:** 2 files, ~45 replacements  
+**Priority:** High (code quality debt)
 
-**A. REST endpoint paths (hardcoded strings instead of `EndpointType` values):**
+Replace hardcoded REST paths, status strings, response keys, and UI labels in `admin-agents.php` and `admin-snapshots.php` inline `<script>` blocks with PHP enum-driven JS constant blocks.
 
+**Files:**
+- `admin-agents.php` — Add `ENDPOINTS`, `AGENT_STATUS`, `STATUS`, `LABELS` JS blocks; replace ~30 magic strings
+- `admin-snapshots.php` — Add `use EndpointType;`, `SNAP_ENDPOINTS`, `SNAP_LABELS` JS blocks; replace ~26 magic strings
 
-| Line(s) | Magic String                              | Should Use                                                                    |
-| ------- | ----------------------------------------- | ----------------------------------------------------------------------------- |
-| 312     | `'agents'`                                | `EndpointType::Agents->value`                                                 |
-| 366     | `'agents'` (POST)                         | `EndpointType::AgentsAdd->value` (or `EndpointType::Agents->value` with POST) |
-| 386     | `'agents/' + id + '/test'`                | Constructed from `EndpointType::AgentsTest->value` pattern                    |
-| 402     | `'agents/' + id + '/sync'`                | Constructed from `EndpointType::AgentsSync->value` pattern                    |
-| 424     | `'agents/' + id + '/sync'` (view plugins) | `EndpointType::AgentsSync->value`                                             |
-| 472     | `'agents/' + currentAgentId + '/action'`  | `EndpointType::AgentAction->value`                                            |
-| 497     | `'agents/' + id + '/history'`             | `EndpointType::AgentHistory->value`                                           |
-| 533     | `'agents/' + id` (DELETE)                 | `EndpointType::AgentsRemove->value` pattern                                   |
+**Key rule:** The text domain `'riseup-asia-uploader'` must also come from `PluginConfigType::TextDomain->value` (or equivalent constant), not as a magic string.
 
+**Acceptance criteria:**
+1. Zero hardcoded REST paths in JS — all use PHP-echoed `EndpointType` values
+2. Zero hardcoded status strings — all use PHP-echoed `StatusType`/`AgentStatusType` values
+3. Zero hardcoded UI labels — all use `__()` localized strings via PHP-echoed JS constants
+4. Zero hardcoded response keys — all use `ResponseKeyType` values
+5. Existing functionality unchanged (manual test: agents CRUD, snapshot operations)
 
-**B. Status and UI label magic strings:**
+---
 
+## Phase 7: Feature Implementation
 
-| Line(s) | Magic String                                        | Should Use                             |
-| ------- | --------------------------------------------------- | -------------------------------------- |
-| 315     | `'agents'` (response key)                           | `ResponseKeyType`                      |
-| 431     | `'active'` (status check)                           | `StatusType` or `AgentStatusType`      |
-| 433     | `'Active'`, `'Inactive'` (labels)                   | Localized JS constants from PHP `__()` |
-| 442     | `'Disable'`, `'Enable'`, `'Delete'` (button labels) | Localized JS constants                 |
-| 451     | `'Failed to load plugins'`                          | Localized JS constant                  |
-| 466     | `'Are you sure you want to delete...'`              | Localized JS constant                  |
-| 500     | `'actions'` (response key)                          | `ResponseKeyType`                      |
-| 501     | `'No action history'`                               | Localized JS constant                  |
-| 504     | `'Success'` (status check)                          | `StatusType::Success->value`           |
-| 517     | `'Failed to load history'`                          | Localized JS constant                  |
-| 527     | `'Remove agent site...'`                            | Localized JS constant                  |
+> Architecture decisions resolved. Implementation details below.
 
+### 7A: Remote Plugin Backups (WP-site storage)
 
-**C. Response JSON keys used directly:**
+**Decision:** Backups stored on the WordPress site only (no local copies).  
+**Priority:** High  
+**Dependencies:** Snapshot infrastructure (already built)
 
-- `response.agents` (line 315) -- should match `ResponseKeyType::Agents`
-- `response.count` (line 403)
-- `response.plugins` (line 427)
-- `response.actions` (line 500)
-- `action.status`, `action.action`, `action.target_plugin` (lines 504-510)
+#### Objective
+Before any plugin update/publish, automatically create a backup of the current plugin version on the remote WP site, enabling one-click rollback if the update fails.
 
-#### 2. `admin-snapshots.php` — JavaScript (lines 553-1787)
+#### Implementation Plan
 
-**A. REST endpoint paths (hardcoded in `$.ajax` URL constructions):**
+**PHP (Riseup Asia Uploader):**
+1. New `BackupType` enum: `PreUpdate`, `PrePublish`, `Manual`, `Scheduled`
+2. New `BackupStatusType` enum: `Pending`, `InProgress`, `Complete`, `Failed`, `Restored`
+3. New endpoint `EndpointType::PluginBackup` → `'plugins/backup'`
+4. New endpoint `EndpointType::PluginBackupRestore` → `'plugins/backup-restore'`
+5. New endpoint `EndpointType::PluginBackupList` → `'plugins/backup-list'`
+6. New endpoint `EndpointType::PluginBackupDelete` → `'plugins/backup-delete'`
+7. Handler trait `PluginBackupTrait` — creates zip of current plugin dir, stores in `wp-content/riseup-backups/{slug}/{timestamp}.zip`
+8. Restore handler — extracts backup zip over current plugin dir, re-activates
+9. List handler — returns available backups with metadata (size, date, type, version)
+10. Auto-cleanup: retain last N backups per plugin (configurable, default 5)
 
-The snapshots template does NOT use a centralized `ENDPOINTS` constant block like it does for statuses/modes. All REST paths are inline:
+**Go Backend:**
+1. Add `PluginBackup`, `PluginBackupRestore`, `PluginBackupList`, `PluginBackupDelete` to `endpointtype.Variant`
+2. Update drift test known asymmetries if needed
+3. Pre-publish hook in `ServicePublish` → call backup endpoint before uploading
+4. Rollback integration: if publish fails, offer restore via backup endpoint
 
+**Acceptance criteria:**
+1. `POST /plugins/backup` creates a zip backup of a specified plugin on the WP site
+2. `POST /plugins/backup-restore` restores a plugin from a backup zip
+3. `GET /plugins/backup-list` returns backup metadata for a plugin
+4. Pre-publish automatically creates a backup before uploading
+5. Failed publishes log a "rollback available" message with backup ID
+6. Old backups auto-cleaned beyond retention limit
 
-| Line(s) | Magic String                  | Should Use     |
-| ------- | ----------------------------- | -------------- |
-| 775     | `'/snapshots/progress'`       | `EndpointType` |
-| 854     | `'/snapshots/list?limit=...'` | `EndpointType` |
-| 1004    | `'/snapshots/settings'` (GET) | `EndpointType` |
-| 1048    | `'/snapshots/providers'`      | `EndpointType` |
-| 1105    | `'/snapshots/tables'`         | `EndpointType` |
-| 1137    | `'/snapshots/schedule'`       | `EndpointType` |
-| 1180    | `'/snapshots/incremental'`    | `EndpointType` |
-| 1231    | `'/snapshots/import'`         | `EndpointType` |
-| 1295    | `'/snapshots/restore'`        | `EndpointType` |
-| 1343    | `'/snapshots/download'`       | `EndpointType` |
-| 1474    | `'/snapshots/delete'`         | `EndpointType` |
+---
 
+### 7B: Bulk Quick Publish (Multi-select)
 
-**B. Non-localized UI strings in JS:**
+**Decision:** "Quick Publish Selected" enabled for bulk updates.  
+**Priority:** Medium  
+**Dependencies:** Existing publish pipeline, backup system (7A recommended first)
 
+#### Objective
+Allow selecting multiple plugins from the dashboard and publishing them to one or more sites in a single batch operation with progress tracking.
 
-| Line(s)   | Magic String                                                            |
-| --------- | ----------------------------------------------------------------------- |
-| 749       | `'Copied!'`                                                             |
-| 1055-1056 | `'Provider'`, `'Available'`, `'Priority'` (table headers)               |
-| 1225      | `'Importing...'`                                                        |
-| 1249      | `'Upload & Import'` (button restore text)                               |
-| 1292      | `'Restoring...'`                                                        |
-| 1320      | `'Restore Now'` (button restore text)                                   |
-| 1363      | `'Cached'`, `'Built'`                                                   |
-| 1424      | `'Copy Report'`                                                         |
-| 1448      | `'Are you sure you want to delete snapshot...'`                         |
-| 1648-1651 | Month names array (not localized)                                       |
-| 1734-1736 | `'Full backup'`, `'Incremental'`, `'Scheduled backup'` (tooltip titles) |
+#### Implementation Plan
 
+**Go Backend:**
+1. New handler `BulkPublishHandler` accepting `{pluginSlugs: []string, siteIds: []int64}`
+2. Sequential publish per plugin-site pair (not parallel — avoids overwhelming remote)
+3. Progress tracking via existing session system — one session per bulk operation
+4. Per-plugin result: `{slug, siteId, status, error?, backupId?}`
+5. Pre-publish backup for each plugin (calls 7A)
 
-**C. Response JSON keys used directly:**
+**React Frontend:**
+1. Multi-select checkboxes on plugin list
+2. "Quick Publish Selected" button (disabled when 0 selected)
+3. Site selector modal (if multiple sites configured)
+4. Progress dialog showing per-plugin status with live updates
+5. Summary dialog: success count, failure count, rollback options for failures
 
-- `response.snapshots` (line 862)
-- `response.total` (line 922)
-- `response.job_id` (multiple lines)
-- `response.percent`, `response.status`, etc. (progress response)
+**Acceptance criteria:**
+1. User can select 2+ plugins and publish to a site in one action
+2. Progress updates appear in real-time per plugin
+3. Failures don't block remaining plugins
+4. Each published plugin has a pre-publish backup
+5. Summary shows actionable rollback links for any failures
 
-### Implementation Plan
+---
 
-#### Step 1: Add `CONSTANTS` block to `admin-agents.php` JS
+### 7C: True Diff (Remote File Hash Comparison)
 
-Add a PHP-to-JS constants block at the top of the `<script>` section (after the existing variable declarations), similar to how `admin-snapshots.php` already has `SNAP_STATUS`, `SNAP_MODE`, etc.:
+**Decision:** Use remote file hashes for accurate change detection.  
+**Priority:** Medium  
+**Dependencies:** Existing sync-manifest endpoint
 
-```javascript
-// ENUM CONSTANTS (from PHP -- prevents magic strings in JS)
-var ENDPOINTS = {
-    agents:       '<?php echo esc_js(EndpointType::Agents->value); ?>',
-    agentsAdd:    '<?php echo esc_js(EndpointType::AgentsAdd->value); ?>',
-    agentsRemove: '<?php echo esc_js(EndpointType::AgentsRemove->value); ?>',
-    agentsTest:   '<?php echo esc_js(EndpointType::AgentsTest->value); ?>',
-    agentsSync:   '<?php echo esc_js(EndpointType::AgentsSync->value); ?>',
-    agentsPlugins:'<?php echo esc_js(EndpointType::AgentsPlugins->value); ?>',
-    agentAction:  '<?php echo esc_js(EndpointType::AgentAction->value); ?>',
-    agentHistory: '<?php echo esc_js(EndpointType::AgentHistory->value); ?>'
-};
-var AGENT_STATUS = {
-    pending:   '<?php echo esc_js(AgentStatusType::Pending->value); ?>',
-    connected: '<?php echo esc_js(AgentStatusType::Connected->value); ?>',
-    error:     '<?php echo esc_js(AgentStatusType::Error->value); ?>'
-};
-var STATUS = {
-    success: '<?php echo esc_js(StatusType::Success->value); ?>'
-};
-var LABELS = {
-    active:              '<?php echo esc_js(__("Active", "riseup-asia-uploader")); ?>',
-    inactive:            '<?php echo esc_js(__("Inactive", "riseup-asia-uploader")); ?>',
-    enable:              '<?php echo esc_js(__("Enable", "riseup-asia-uploader")); ?>',
-    disable:             '<?php echo esc_js(__("Disable", "riseup-asia-uploader")); ?>',
-    deleteBtn:           '<?php echo esc_js(__("Delete", "riseup-asia-uploader")); ?>',
-    noPluginsFound:      '<?php echo esc_js(__("No plugins found", "riseup-asia-uploader")); ?>',
-    failedLoadPlugins:   '<?php echo esc_js(__("Failed to load plugins", "riseup-asia-uploader")); ?>',
-    confirmDeletePlugin: '<?php echo esc_js(__("Are you sure you want to delete this plugin from the remote site?", "riseup-asia-uploader")); ?>',
-    noActionHistory:     '<?php echo esc_js(__("No action history", "riseup-asia-uploader")); ?>',
-    failedLoadHistory:   '<?php echo esc_js(__("Failed to load history", "riseup-asia-uploader")); ?>',
-    confirmRemoveAgent:  '<?php echo esc_js(__("Remove agent site \"%s\"? This cannot be undone.", "riseup-asia-uploader")); ?>',
-    connectionSuccess:   '<?php echo esc_js(__("Connection successful!", "riseup-asia-uploader")); ?>',
-    connectionFailed:    '<?php echo esc_js(__("Connection failed:", "riseup-asia-uploader")); ?>',
-    testFailed:          '<?php echo esc_js(__("Test failed:", "riseup-asia-uploader")); ?>',
-    synced:              '<?php echo esc_js(__("Synced %d plugins", "riseup-asia-uploader")); ?>',
-    syncFailed:          '<?php echo esc_js(__("Sync failed:", "riseup-asia-uploader")); ?>',
-    actionFailed:        '<?php echo esc_js(__("Action failed:", "riseup-asia-uploader")); ?>',
-    failedToRemove:      '<?php echo esc_js(__("Failed to remove:", "riseup-asia-uploader")); ?>'
-};
-```
+#### Objective
+Replace the current local-only file change detection with remote hash comparison, providing accurate "X files changed" counts before publish.
 
-Then replace all hardcoded strings in the JS body with these constants.
+#### Implementation Plan
 
-Note: The agents template uses a pattern like `'agents/' + id + '/test'` for per-agent endpoints. Since `EndpointType` stores `'agents/test'`, we need a helper or we construct the URL as `ENDPOINTS.agents + '/' + id + '/test'`. We will keep the pattern but centralize the base segment.
+**PHP (Riseup Asia Uploader):**
+1. Ensure `sync-manifest` endpoint returns MD5/SHA256 hashes for all plugin files
+2. Add `fileCount` and `totalSize` summary fields to manifest response
 
-#### Step 2: Add `SNAP_ENDPOINTS` block to `admin-snapshots.php` JS
+**Go Backend:**
+1. New `DiffService` in `backend/internal/services/diff/`
+2. `ComputeDiff(localDir, remoteManifest)` → returns `DiffResult{Added, Modified, Deleted, Unchanged []FileDiff}`
+3. Each `FileDiff`: `{Path, LocalHash, RemoteHash, LocalSize, RemoteSize, ChangeType}`
+4. Cache remote manifest per site+plugin with TTL (avoid repeated API calls)
+5. Pre-publish step: compute diff → show summary → confirm → publish only changed files
 
-Add an endpoints constant block alongside the existing `SNAP_STATUS`/`SNAP_MODE` blocks:
+**React Frontend:**
+1. "Show Changes" button on plugin card → calls diff endpoint
+2. Diff summary panel: added (green), modified (yellow), deleted (red), unchanged (gray)
+3. File-level expandable list with size delta
+4. Pre-publish confirmation dialog shows diff summary instead of generic "publish?"
 
-```javascript
-var SNAP_ENDPOINTS = {
-    list:        '<?php echo esc_js(EndpointType::SnapshotsList->value); ?>',
-    schedule:    '<?php echo esc_js(EndpointType::SnapshotsSchedule->value); ?>',
-    info:        '<?php echo esc_js(EndpointType::SnapshotsInfo->value); ?>',
-    delete_:     '<?php echo esc_js(EndpointType::SnapshotsDelete->value); ?>',
-    restore:     '<?php echo esc_js(EndpointType::SnapshotsRestore->value); ?>',
-    export_:     '<?php echo esc_js(EndpointType::SnapshotsExport->value); ?>',
-    settings:    '<?php echo esc_js(EndpointType::SnapshotsSettings->value); ?>',
-    providers:   '<?php echo esc_js(EndpointType::SnapshotsProviders->value); ?>',
-    tables:      '<?php echo esc_js(EndpointType::SnapshotsTables->value); ?>',
-    fullBackup:  '<?php echo esc_js(EndpointType::SnapshotsFullBackup->value); ?>',
-    incremental: '<?php echo esc_js(EndpointType::SnapshotsIncremental->value); ?>',
-    import_:     '<?php echo esc_js(EndpointType::SnapshotsImport->value); ?>',
-    cleanup:     '<?php echo esc_js(EndpointType::SnapshotsCleanup->value); ?>',
-    download:    '<?php echo esc_js(EndpointType::SnapshotsDownload->value); ?>',
-    progress:    '<?php echo esc_js(EndpointType::SnapshotsProgress->value); ?>'
-};
-```
+**Acceptance criteria:**
+1. Diff accurately identifies added, modified, deleted, and unchanged files
+2. Pre-publish shows exact change count matching actual file differences
+3. Manifest is cached to avoid redundant API calls within TTL
+4. User can review individual file changes before confirming publish
 
-in your plan, you did not plan to update the Riseup- hyphen ASIA hyphen uploader in magic string, which should be the crucial to update, and this should not be-- come as a magic string anywhere. So make sure that you update this. This is not in the plan, uh, as I can see that you have generated code, but it's not there. But make sure that everything is actually constant or enum.
+---
 
-  
-  
-Add `use RiseupAsia\Enums\EndpointType;` to the imports if missing, then replace all `restBase + '/snapshots/...'` calls with `restBase + '/' + SNAP_ENDPOINTS.xxx`.
+### 7D: Licensing System (Custom Go Server)
 
-Also add a `SNAP_LABELS` block for the non-localized UI strings (month names, button text, confirmation messages, table headers).
+**Decision:** In-house custom Go licensing server.  
+**Priority:** Low (architecture phase — implementation deferred)  
+**Dependencies:** None (standalone service)
 
-#### Step 3: Add `EndpointType` import to `admin-snapshots.php`
+#### Objective
+Build a self-hosted licensing server in Go that issues, validates, and manages license keys for the plugin ecosystem.
 
-The snapshots template does not currently import `EndpointType`. Add it to the `use` block at the top.
+#### Architecture Plan
 
-### Files to Modify
+**Licensing Server (new Go service):**
+1. Separate Go module: `licensing/` at repo root
+2. SQLite database for license storage (portable, no external DB dependency)
+3. REST API endpoints:
+   - `POST /licenses` — create license (admin)
+   - `GET /licenses/{key}/validate` — validate license key
+   - `POST /licenses/{key}/activate` — activate on a domain
+   - `POST /licenses/{key}/deactivate` — deactivate from a domain
+   - `GET /licenses/{key}/status` — full license details
+4. License model: `{Key, Email, Product, MaxActivations, Activations[], ExpiresAt, Status}`
+5. Rate limiting and HMAC signature verification for API calls
+6. Admin dashboard (simple HTML/Go templates or React SPA)
 
+**PHP Integration:**
+1. New `LicenseType` enum for license status
+2. License check on plugin activation — call licensing server
+3. Periodic re-validation (daily cron via `wp_schedule_event`)
+4. Graceful degradation: plugin works but shows admin notice if license invalid
 
-| File                  | Changes                                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `admin-agents.php`    | Add `ENDPOINTS`, `AGENT_STATUS`, `STATUS`, `LABELS` JS constant blocks; replace ~30 hardcoded strings in JS with constants                       |
-| `admin-snapshots.php` | Add `use EndpointType;` import; add `SNAP_ENDPOINTS` and `SNAP_LABELS` JS constant blocks; replace ~15 endpoint strings and ~15 UI label strings |
+**Go Backend Integration:**
+1. License middleware for premium API endpoints
+2. License status cached locally with TTL
 
+**Acceptance criteria (architecture only — implementation in future phase):**
+1. Architecture document approved
+2. Database schema defined
+3. API contract documented (OpenAPI spec)
+4. Integration points identified in PHP and Go codebases
 
-### Files NOT Needing Changes
+---
 
+## Remaining Queued Phases
 
-| File                 | Reason                                                                                                                                   |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `admin-settings.php` | Already fully enumified (PHP and JS both use `AjaxActionType`, `NonceType`, `SnapshotFrequencyType`, `RetentionType`, `StorageModeType`) |
-| `admin-errors.php`   | PHP section fully enumified; JS deferred to partials                                                                                     |
-| `admin-logs.php`     | Fully enumified with `LogColumnType`, `StatusType`, `TriggerSourceType`, etc.; no inline JS                                              |
+### 🔲 Go Phase 5: Code Organization Standards
+- Enforce package directory snake_case
+- Validate import grouping (stdlib / third-party / internal)
+- Monitor function and file size limits
+- Run `lint-all` and fix violations
 
+### 🔲 Go Phase 6: CI Lint Scripts & Integration
+- Integrate all lint scripts into CI pipeline
+- Add pre-commit hooks for import ordering
+- Automated quality gates for PRs
 
-### Estimated Scope
+---
 
-- ~45 magic string replacements across 2 files
-- No structural changes, no new enums needed (all required enums already exist)
-- Pattern follows the existing `SNAP_STATUS`/`SNAP_MODE` approach already proven in `admin-snapshots.php`
+## Next Task Selection
+
+> For handoff to other AI models: pick the next task from the top of the "Active / Queued Work" section. The magic strings task is the highest priority and has no dependencies. Phase 7A (backups) should follow, then 7B (bulk publish) and 7C (true diff) can proceed in parallel. Phase 7D (licensing) is architecture-only for now.
+
+**Recommended order:**
+1. Eliminate magic strings in template JS (ready now)
+2. Phase 7A: Remote plugin backups
+3. Phase 7B: Bulk quick publish + Phase 7C: True diff (parallel)
+4. Go Phase 5: Code organization
+5. Go Phase 6: CI lint integration
+6. Phase 7D: Licensing (architecture doc first, implementation later)
