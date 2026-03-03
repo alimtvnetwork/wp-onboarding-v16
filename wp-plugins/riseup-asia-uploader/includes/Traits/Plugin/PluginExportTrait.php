@@ -87,8 +87,9 @@ trait PluginExportTrait
 
         $zipContent = file_get_contents($zipFile);
         @unlink($zipFile);
+        $isReadSuccess = ($zipContent !== false);
 
-        return ($zipContent !== false) ? $zipContent : null;
+        return $isReadSuccess ? $zipContent : null;
     }
 
     private function exportPluginBySlug(string $slug) {

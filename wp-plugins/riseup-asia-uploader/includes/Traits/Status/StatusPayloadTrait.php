@@ -123,8 +123,9 @@ trait StatusPayloadTrait {
         }
 
         $content = @file_get_contents($path);
+        $isReadSuccess = ($content !== false);
 
-        return ($content !== false) ? json_decode($content, true) : null;
+        return $isReadSuccess ? json_decode($content, true) : null;
     }
 
     /**

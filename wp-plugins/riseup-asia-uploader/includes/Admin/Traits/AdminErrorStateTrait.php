@@ -56,8 +56,9 @@ trait AdminErrorStateTrait {
             $stmt = $pdo->prepare('SELECT Value FROM ' . TableType::FlashState->value . ' WHERE Key = ?');
             $stmt->execute(array($key));
             $val = $stmt->fetchColumn();
+            $isFound = ($val !== false);
 
-            return ($val !== false) ? $val : $default;
+            return $isFound ? $val : $default;
         } catch (Throwable $e) {
             error_log('AdminErrorStateTrait::getFlashValue() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return $default;
