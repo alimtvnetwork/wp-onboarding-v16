@@ -170,6 +170,9 @@ $Ports = if ($Config.ports) { $Config.ports } else { @(8080) }
 $BuildCommand = if ($Config.buildCommand) { $Config.buildCommand } else { "pnpm run build" }
 $InstallCommand = if ($Config.installCommand) { $Config.installCommand } else { "pnpm install" }
 $RunCommand = if ($Config.runCommand) { $Config.runCommand } else { "go run ./cmd/server" }
+if ($RunCommand -match 'go\s+run\s+\.?/?cmd/server/main\.go') {
+    $RunCommand = "go run ./cmd/server"
+}
 $CleanPaths = if ($Config.cleanPaths) { $Config.cleanPaths } else { @("node_modules", "dist", ".vite") }
 $ConfigFile = if ($Config.configFile) { $Config.configFile } else { "config.json" }
 $ConfigExampleFile = if ($Config.configExampleFile) { $Config.configExampleFile } else { "config.example.json" }
