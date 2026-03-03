@@ -127,6 +127,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     },
     enabled: open,
     retry: false,
+    meta: { suppressGlobalError: true },
   });
 
   // Force sync mutation (bypasses cache)
