@@ -29,40 +29,40 @@ $pluginSlug = PluginConfigType::Slug->value;
     </h1>
 
     <p class="description">
-        <?php esc_html_e('Manage remote WordPress sites. Agent sites allow this plugin to control plugins on other WordPress installations.', 'riseup-asia-uploader'); ?>
+        <?php esc_html_e('Manage remote WordPress sites. Agent sites allow this plugin to control plugins on other WordPress installations.', $pluginSlug); ?>
     </p>
 
     <!-- Add Agent Form -->
     <div class="riseup-card">
         <h2>
             <span class="dashicons dashicons-plus-alt"></span>
-            <?php esc_html_e('Add New Agent Site', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Add New Agent Site', $pluginSlug); ?>
         </h2>
         
         <form id="add-agent-form" class="riseup-form">
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="agent_name"><?php esc_html_e('Name', 'riseup-asia-uploader'); ?> <span class="required">*</span></label>
+                        <label for="agent_name"><?php esc_html_e('Name', $pluginSlug); ?> <span class="required">*</span></label>
                     </th>
                     <td>
                         <input type="text" id="agent_name" name="name" class="regular-text" required 
-                               placeholder="<?php esc_attr_e('My Production Site', 'riseup-asia-uploader'); ?>">
+                               placeholder="<?php esc_attr_e('My Production Site', $pluginSlug); ?>">
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="agent_url"><?php esc_html_e('Site URL', 'riseup-asia-uploader'); ?> <span class="required">*</span></label>
+                        <label for="agent_url"><?php esc_html_e('Site URL', $pluginSlug); ?> <span class="required">*</span></label>
                     </th>
                     <td>
                         <input type="url" id="agent_url" name="url" class="regular-text" required 
                                placeholder="https://example.com">
-                        <p class="description"><?php esc_html_e('The WordPress site URL (without /wp-admin)', 'riseup-asia-uploader'); ?></p>
+                        <p class="description"><?php esc_html_e('The WordPress site URL (without /wp-admin)', $pluginSlug); ?></p>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="agent_username"><?php esc_html_e('Username', 'riseup-asia-uploader'); ?> <span class="required">*</span></label>
+                        <label for="agent_username"><?php esc_html_e('Username', $pluginSlug); ?> <span class="required">*</span></label>
                     </th>
                     <td>
                         <input type="text" id="agent_username" name="username" class="regular-text" required 
@@ -71,25 +71,25 @@ $pluginSlug = PluginConfigType::Slug->value;
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="agent_app_password"><?php esc_html_e('Application Password', 'riseup-asia-uploader'); ?> <span class="required">*</span></label>
+                        <label for="agent_app_password"><?php esc_html_e('Application Password', $pluginSlug); ?> <span class="required">*</span></label>
                     </th>
                     <td>
                         <input type="password" id="agent_app_password" name="app_password" class="regular-text" required 
                                placeholder="xxxx xxxx xxxx xxxx xxxx xxxx">
                         <p class="description">
-                            <?php esc_html_e('Generate at: Users → Your Profile → Application Passwords', 'riseup-asia-uploader'); ?>
+                            <?php esc_html_e('Generate at: Users → Your Profile → Application Passwords', $pluginSlug); ?>
                         </p>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="agent_redirect_url"><?php esc_html_e('Redirect URL (Optional)', 'riseup-asia-uploader'); ?></label>
+                        <label for="agent_redirect_url"><?php esc_html_e('Redirect URL (Optional)', $pluginSlug); ?></label>
                     </th>
                     <td>
                         <input type="url" id="agent_redirect_url" name="redirect_url" class="regular-text" 
                                placeholder="https://redirect.example.com/site">
                         <p class="description">
-                            <?php esc_html_e('If the site URL may change, provide a 301 redirect URL that will resolve to the current location.', 'riseup-asia-uploader'); ?>
+                            <?php esc_html_e('If the site URL may change, provide a 301 redirect URL that will resolve to the current location.', $pluginSlug); ?>
                         </p>
                     </td>
                 </tr>
@@ -98,7 +98,7 @@ $pluginSlug = PluginConfigType::Slug->value;
             <p class="submit">
                 <button type="submit" class="button button-primary">
                     <span class="dashicons dashicons-plus"></span>
-                    <?php esc_html_e('Add Agent Site', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Add Agent Site', $pluginSlug); ?>
                 </button>
                 <span id="add-agent-status" class="riseup-status"></span>
             </p>
@@ -109,31 +109,31 @@ $pluginSlug = PluginConfigType::Slug->value;
     <div class="riseup-card">
         <h2>
             <span class="dashicons dashicons-admin-site"></span>
-            <?php esc_html_e('Registered Agent Sites', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Registered Agent Sites', $pluginSlug); ?>
             <button type="button" id="btn-refresh-agents" class="button button-secondary" style="margin-left: 10px;">
                 <span class="dashicons dashicons-update"></span>
-                <?php esc_html_e('Refresh', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Refresh', $pluginSlug); ?>
             </button>
         </h2>
 
         <div id="agents-loading" style="display: none;">
             <span class="spinner is-active" style="float: none;"></span>
-            <?php esc_html_e('Loading...', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('Loading...', $pluginSlug); ?>
         </div>
 
         <table class="wp-list-table widefat fixed striped" id="agents-table">
             <thead>
                 <tr>
-                    <th class="column-name"><?php esc_html_e('Name', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-url"><?php esc_html_e('URL', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-status"><?php esc_html_e('Status', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-sync"><?php esc_html_e('Last Sync', 'riseup-asia-uploader'); ?></th>
-                    <th class="column-actions"><?php esc_html_e('Actions', 'riseup-asia-uploader'); ?></th>
+                    <th class="column-name"><?php esc_html_e('Name', $pluginSlug); ?></th>
+                    <th class="column-url"><?php esc_html_e('URL', $pluginSlug); ?></th>
+                    <th class="column-status"><?php esc_html_e('Status', $pluginSlug); ?></th>
+                    <th class="column-sync"><?php esc_html_e('Last Sync', $pluginSlug); ?></th>
+                    <th class="column-actions"><?php esc_html_e('Actions', $pluginSlug); ?></th>
                 </tr>
             </thead>
             <tbody id="agents-tbody">
                 <tr class="no-agents">
-                    <td colspan="5"><?php esc_html_e('No agent sites registered yet.', 'riseup-asia-uploader'); ?></td>
+                    <td colspan="5"><?php esc_html_e('No agent sites registered yet.', $pluginSlug); ?></td>
                 </tr>
             </tbody>
         </table>
@@ -152,15 +152,15 @@ $pluginSlug = PluginConfigType::Slug->value;
             <div class="riseup-modal-body">
                 <div id="plugins-loading" style="display: none;">
                     <span class="spinner is-active" style="float: none;"></span>
-                    <?php esc_html_e('Loading plugins...', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Loading plugins...', $pluginSlug); ?>
                 </div>
                 <table class="wp-list-table widefat fixed striped" id="plugins-table" style="display: none;">
                     <thead>
                         <tr>
-                            <th><?php esc_html_e('Plugin', 'riseup-asia-uploader'); ?></th>
-                            <th><?php esc_html_e('Version', 'riseup-asia-uploader'); ?></th>
-                            <th><?php esc_html_e('Status', 'riseup-asia-uploader'); ?></th>
-                            <th><?php esc_html_e('Actions', 'riseup-asia-uploader'); ?></th>
+                            <th><?php esc_html_e('Plugin', $pluginSlug); ?></th>
+                            <th><?php esc_html_e('Version', $pluginSlug); ?></th>
+                            <th><?php esc_html_e('Status', $pluginSlug); ?></th>
+                            <th><?php esc_html_e('Actions', $pluginSlug); ?></th>
                         </tr>
                     </thead>
                     <tbody id="plugins-tbody"></tbody>
@@ -183,10 +183,10 @@ $pluginSlug = PluginConfigType::Slug->value;
                 <table class="wp-list-table widefat fixed striped" id="history-table">
                     <thead>
                         <tr>
-                            <th><?php esc_html_e('Time', 'riseup-asia-uploader'); ?></th>
-                            <th><?php esc_html_e('Action', 'riseup-asia-uploader'); ?></th>
-                            <th><?php esc_html_e('Plugin', 'riseup-asia-uploader'); ?></th>
-                            <th><?php esc_html_e('Status', 'riseup-asia-uploader'); ?></th>
+                            <th><?php esc_html_e('Time', $pluginSlug); ?></th>
+                            <th><?php esc_html_e('Action', $pluginSlug); ?></th>
+                            <th><?php esc_html_e('Plugin', $pluginSlug); ?></th>
+                            <th><?php esc_html_e('Status', $pluginSlug); ?></th>
                         </tr>
                     </thead>
                     <tbody id="history-tbody"></tbody>
@@ -323,7 +323,7 @@ jQuery(document).ready(function($) {
     };
 
     var PLUGIN_STATUS = {
-        active: '<?php echo esc_js(__("active", "riseup-asia-uploader")); ?>'
+        active: '<?php echo esc_js(__("active", $pluginSlug)); ?>'
     };
 
     var ACTIONS = {
@@ -333,29 +333,29 @@ jQuery(document).ready(function($) {
     };
 
     var LABELS = {
-        active:              '<?php echo esc_js(__("Active", "riseup-asia-uploader")); ?>',
-        inactive:            '<?php echo esc_js(__("Inactive", "riseup-asia-uploader")); ?>',
-        enable:              '<?php echo esc_js(__("Enable", "riseup-asia-uploader")); ?>',
-        disable:             '<?php echo esc_js(__("Disable", "riseup-asia-uploader")); ?>',
-        deleteBtn:           '<?php echo esc_js(__("Delete", "riseup-asia-uploader")); ?>',
-        noPluginsFound:      '<?php echo esc_js(__("No plugins found", "riseup-asia-uploader")); ?>',
-        failedLoadPlugins:   '<?php echo esc_js(__("Failed to load plugins", "riseup-asia-uploader")); ?>',
-        confirmDeletePlugin: '<?php echo esc_js(__("Are you sure you want to delete this plugin from the remote site?", "riseup-asia-uploader")); ?>',
-        noActionHistory:     '<?php echo esc_js(__("No action history", "riseup-asia-uploader")); ?>',
-        failedLoadHistory:   '<?php echo esc_js(__("Failed to load history", "riseup-asia-uploader")); ?>',
-        confirmRemoveAgent:  '<?php echo esc_js(__("Remove agent site \"%s\"? This cannot be undone.", "riseup-asia-uploader")); ?>',
-        connectionSuccess:   '<?php echo esc_js(__("Connection successful!", "riseup-asia-uploader")); ?>',
-        connectionFailed:    '<?php echo esc_js(__("Connection failed:", "riseup-asia-uploader")); ?>',
-        testFailed:          '<?php echo esc_js(__("Test failed:", "riseup-asia-uploader")); ?>',
-        synced:              '<?php echo esc_js(__("Synced %d plugins", "riseup-asia-uploader")); ?>',
-        syncFailed:          '<?php echo esc_js(__("Sync failed:", "riseup-asia-uploader")); ?>',
-        actionFailed:        '<?php echo esc_js(__("Action failed:", "riseup-asia-uploader")); ?>',
-        failedToRemove:      '<?php echo esc_js(__("Failed to remove:", "riseup-asia-uploader")); ?>',
-        failedToLoadAgents:  '<?php echo esc_js(__("Failed to load agents:", "riseup-asia-uploader")); ?>',
-        failedToAddAgent:    '<?php echo esc_js(__("Failed to add agent", "riseup-asia-uploader")); ?>',
-        unknownError:        '<?php echo esc_js(__("Unknown error", "riseup-asia-uploader")); ?>',
-        pluginsSuffix:       '<?php echo esc_js(__("Plugins", "riseup-asia-uploader")); ?>',
-        historySuffix:       '<?php echo esc_js(__("Action History", "riseup-asia-uploader")); ?>'
+        active:              '<?php echo esc_js(__("Active", $pluginSlug)); ?>',
+        inactive:            '<?php echo esc_js(__("Inactive", $pluginSlug)); ?>',
+        enable:              '<?php echo esc_js(__("Enable", $pluginSlug)); ?>',
+        disable:             '<?php echo esc_js(__("Disable", $pluginSlug)); ?>',
+        deleteBtn:           '<?php echo esc_js(__("Delete", $pluginSlug)); ?>',
+        noPluginsFound:      '<?php echo esc_js(__("No plugins found", $pluginSlug)); ?>',
+        failedLoadPlugins:   '<?php echo esc_js(__("Failed to load plugins", $pluginSlug)); ?>',
+        confirmDeletePlugin: '<?php echo esc_js(__("Are you sure you want to delete this plugin from the remote site?", $pluginSlug)); ?>',
+        noActionHistory:     '<?php echo esc_js(__("No action history", $pluginSlug)); ?>',
+        failedLoadHistory:   '<?php echo esc_js(__("Failed to load history", $pluginSlug)); ?>',
+        confirmRemoveAgent:  '<?php echo esc_js(__("Remove agent site \"%s\"? This cannot be undone.", $pluginSlug)); ?>',
+        connectionSuccess:   '<?php echo esc_js(__("Connection successful!", $pluginSlug)); ?>',
+        connectionFailed:    '<?php echo esc_js(__("Connection failed:", $pluginSlug)); ?>',
+        testFailed:          '<?php echo esc_js(__("Test failed:", $pluginSlug)); ?>',
+        synced:              '<?php echo esc_js(__("Synced %d plugins", $pluginSlug)); ?>',
+        syncFailed:          '<?php echo esc_js(__("Sync failed:", $pluginSlug)); ?>',
+        actionFailed:        '<?php echo esc_js(__("Action failed:", $pluginSlug)); ?>',
+        failedToRemove:      '<?php echo esc_js(__("Failed to remove:", $pluginSlug)); ?>',
+        failedToLoadAgents:  '<?php echo esc_js(__("Failed to load agents:", $pluginSlug)); ?>',
+        failedToAddAgent:    '<?php echo esc_js(__("Failed to add agent", $pluginSlug)); ?>',
+        unknownError:        '<?php echo esc_js(__("Unknown error", $pluginSlug)); ?>',
+        pluginsSuffix:       '<?php echo esc_js(__("Plugins", $pluginSlug)); ?>',
+        historySuffix:       '<?php echo esc_js(__("Action History", $pluginSlug)); ?>'
     };
 
     // Helper: Build per-agent endpoint URL (agents/{id}/{suffix})
@@ -401,7 +401,7 @@ jQuery(document).ready(function($) {
             var $tbody = $('#agents-tbody').empty();
             
             if (!response[RESPONSE_KEYS.agents] || response[RESPONSE_KEYS.agents].length === 0) {
-                $tbody.append('<tr class="no-agents"><td colspan="5"><?php esc_html_e('No agent sites registered yet.', 'riseup-asia-uploader'); ?></td></tr>');
+                $tbody.append('<tr class="no-agents"><td colspan="5"><?php esc_html_e('No agent sites registered yet.', $pluginSlug); ?></td></tr>');
             } else {
                 response[RESPONSE_KEYS.agents].forEach(function(agent) {
                     var statusClass = 'status-' + agent.status; // AgentStatusType PascalCase values
