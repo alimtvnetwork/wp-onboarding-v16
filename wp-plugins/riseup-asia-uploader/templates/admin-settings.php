@@ -24,6 +24,9 @@ use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Admin\Admin;
 use RiseupAsia\Helpers\BooleanHelpers;
+<?php
+$pluginName = PluginConfigType::Name->value;
+$pluginSlug = PluginConfigType::Slug->value;
 ?>
 <style>
 .riseup-admin .button .dashicons {
@@ -35,7 +38,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 <div class="wrap riseup-admin">
     <h1>
         <span class="dashicons dashicons-admin-settings"></span>
-        <?php esc_html_e('Riseup Asia Uploader - Settings', 'riseup-asia-uploader'); ?>
+        <?php echo esc_html($pluginName . ' - ' . __('Settings', $pluginSlug)); ?>
         <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
 

@@ -55,10 +55,14 @@ $uploadSourceClasses = array(
     UploadSourceType::WpCli->value   => 'source-cli',
 );
 ?>
+<?php
+$pluginName = PluginConfigType::Name->value;
+$pluginSlug = PluginConfigType::Slug->value;
+?>
 <div class="wrap riseup-admin" style="padding: 10px 20px 20px 10px;">
     <h1>
         <span class="dashicons dashicons-list-view"></span>
-        <?php esc_html_e('Riseup Asia Uploader - Activity Logs', 'riseup-asia-uploader'); ?>
+        <?php echo esc_html($pluginName . ' - ' . __('Activity Logs', $pluginSlug)); ?>
         <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
     
