@@ -135,6 +135,11 @@ trait ErrorSessionHandlerTrait {
 
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
+            $this->fileLogger->warn('Failed to count unseen errors', array(
+                'exception' => $e->getMessage(),
+                'lastSeenId' => $lastSeenId,
+            ));
+
             return 0;
         }
     }
