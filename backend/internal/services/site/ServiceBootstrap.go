@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
-	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
