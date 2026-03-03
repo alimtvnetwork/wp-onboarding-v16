@@ -12,7 +12,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
@@ -45,6 +47,18 @@ trait SnapshotProviderHelpersTrait {
             return;
         }
         $this->logger->info($message);
+    }
+
+    protected function logError(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Error->value, $message, $context);
+    }
+
+    protected function logWarn(Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Warn->value, $message, $context);
     }
 
     protected function getSnapshotsDir(): string {

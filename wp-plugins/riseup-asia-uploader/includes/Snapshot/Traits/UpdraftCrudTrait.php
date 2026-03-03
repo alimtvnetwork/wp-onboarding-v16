@@ -13,7 +13,6 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
-use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
@@ -35,7 +34,7 @@ trait UpdraftCrudTrait {
         try {
             return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'UpdraftPlus integration not yet implemented');
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'UpdraftPlus snapshot failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logError($e, 'UpdraftPlus snapshot failed');
 
             return array(
                 ResponseKeyType::Success->value => false,
