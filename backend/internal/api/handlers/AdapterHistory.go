@@ -42,14 +42,7 @@ type PublishHistoryServiceAdapter struct {
 }
 
 func (a *PublishHistoryServiceAdapter) Record(entry models.PublishHistory) (*models.PublishHistory, *apperror.AppError) {
-	result := a.Service.Record(entry)
-	if result.HasError() {
-		return nil, result.AppError()
-	}
-
-	v := result.Value()
-
-	return &v, nil
+	return a.Service.Record(entry)
 }
 
 func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.PublishHistoryFilters) (*PublishHistoryListResult, *apperror.AppError) {

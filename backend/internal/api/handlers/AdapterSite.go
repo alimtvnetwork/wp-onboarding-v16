@@ -32,7 +32,7 @@ type SiteServiceInterface interface {
 	DisableRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError
 	CheckRemotePluginExists(ctx context.Context, siteId int64, pluginSlug string) (*wordpress.PluginExistsResult, *apperror.AppError)
 	DeleteRemotePlugin(ctx context.Context, siteId int64, pluginSlug string) *apperror.AppError
-	GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*site.RemotePluginFilesResult, *apperror.AppError)
+	GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) ([]wordpress.RemoteFile, *apperror.AppError)
 	GetRemotePluginFileContent(ctx context.Context, siteId int64, pluginSlug, filePath string) (string, *apperror.AppError)
 
 	// Snapshot proxy — typed returns
@@ -157,7 +157,7 @@ func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteId int6
 	return a.Service.DeleteRemotePlugin(ctx, siteId, pluginSlug)
 }
 
-func (a *SiteServiceAdapter) GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) (*site.RemotePluginFilesResult, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) ([]wordpress.RemoteFile, *apperror.AppError) {
 	return a.Service.GetRemotePluginFiles(ctx, siteId, pluginSlug)
 }
 
