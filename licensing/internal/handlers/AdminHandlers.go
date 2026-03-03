@@ -1,0 +1,156 @@
+package handlers
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
+
+	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/licensetype"
+	"riseup-licensing/internal/enums/producttype"
+	"riseup-licensing/internal/enums/producttype"
+	"riseup-licensing/internal/models"
+	"riseup-licensing/internal/services"
+)
+
+// AdminHandlers holds dependencies for admin license CRUD endpoints.
+type AdminHandlers struct {
+	Licenses *services.LicenseService
+	Audit    *services.AuditService
+}
+
+// createLicenseRequest is the JSON body for license creation.
+type createLicenseRequest struct {
+	Email          string `json:"email"`
+	Product        string `json:"product"`
+	Type           string `json:"type"`
+	MaxActivations int    `json:"maxActivations"`
+	Notes          string `json:"notes"`
+}
+
+// CreateLicense handles POST /admin/licenses.
+func (h *AdminHandlers) CreateLicense(w http.ResponseWriter, r *http.Request) {
+	var req createLicenseRequest
+
+	decodeErr := decodeJSON(r, &req)
+	if decodeErr != nil {
+		errorResponse(w, http.StatusBadRequest, "invalid request body")
+
+		return
+	}
+
+	isEmailMissing := req.Email == ""
+
+	if isEmailMissing {
+		errorResponse(w, http.StatusBadRequest, "email is required")
+
+		return
+	}
+
+	h.executeCreate(w, r, req)
+}
+
+// executeCreate generates a key and persists the license.
+func (h *AdminHandlers) executeCreate(
+	w http.ResponseWriter,
+	r *http.Request,
+	req createLicenseRequest,
+) {
+	key, keyErr := services.GenerateKey()
+	if keyErr != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to generate key")
+
+		return
+	}
+
+	input := buildCreateInput(key, req)
+
+	license, createErr := h.Licenses.Create(input)
+	if createErr != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to create license")
+
+		return
+	}
+
+	h.logAudit(r, &license.Id, auditaction.Created, "")
+	jsonResponse(w, http.StatusCreated, license)
+}
+
+// buildCreateInput converts a request into a CreateInput.
+func buildCreateInput(key string, req createLicenseRequest) services.CreateInput {
+	maxActivations := req.MaxActivations
+	isDefaultMax := maxActivations <= 0
+
+	if isDefaultMax {
+		maxActivations = 1
+	}
+
+	return services.CreateInput{
+		Key:            key,
+		Email:          req.Email,
+		Product:        producttype.Parse(req.Product),
+		Type:           licensetype.Parse(req.Type),
+		MaxActivations: maxActivations,
+		Notes:          req.Notes,
+	}
+}
+
+// ListLicenses handles GET /admin/licenses.
+func (h *AdminHandlers) ListLicenses(w http.ResponseWriter, r *http.Request) {
+	licenses, listErr := h.Licenses.List()
+	if listErr != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to list licenses")
+
+		return
+	}
+
+	isNilList := licenses == nil
+
+	if isNilList {
+		licenses = []models.License{}
+	}
+
+	jsonResponse(w, http.StatusOK, licenses)
+}
+
+// GetLicense handles GET /admin/licenses/{id}.
+func (h *AdminHandlers) GetLicense(w http.ResponseWriter, r *http.Request) {
+	id, parseErr := extractIdParam(r)
+	if parseErr != nil {
+		errorResponse(w, http.StatusBadRequest, "invalid license id")
+
+		return
+	}
+
+	license, getErr := h.Licenses.GetById(id)
+	if getErr != nil {
+		errorResponse(w, http.StatusNotFound, "license not found")
+
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, license)
+}
+
+// extractIdParam reads the {id} path variable as int64.
+func extractIdParam(r *http.Request) (int64, error) {
+	vars := mux.Vars(r)
+
+	return strconv.ParseInt(vars["id"], 10, 64)
+}
+
+// logAudit is a convenience wrapper for audit logging.
+func (h *AdminHandlers) logAudit(
+	r *http.Request,
+	licenseId *int64,
+	action auditaction.Variant,
+	domain string,
+) {
+	h.Audit.Log(services.LogInput{
+		LicenseId: licenseId,
+		Action:    action,
+		Domain:    domain,
+		IpAddress: r.RemoteAddr,
+	}) //nolint:errcheck
+}

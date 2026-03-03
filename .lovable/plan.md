@@ -139,10 +139,10 @@ Replace the current local-only file change detection with remote hash comparison
 
 ---
 
-### ✅ 7D: Licensing System (Custom Go Server) — Architecture + scaffold complete
+### ✅ 7D: Licensing System (Custom Go Server) — Architecture + scaffold + handlers complete
 
 **Decision:** In-house custom Go licensing server.  
-**Priority:** Low (scaffold complete — handlers/services next)  
+**Priority:** Low (handlers/services complete — integration next)  
 **Dependencies:** None (standalone service)  
 **Architecture doc:** `.lovable/memory/features/licensing/architecture.md`  
 **Module:** `licensing/` at repo root

@@ -29,6 +29,7 @@ func main() {
 		DB:         db,
 		HMACSecret: cfg.HMACSecret,
 		AdminToken: cfg.AdminToken,
+		RateLimit:  cfg.RateLimit,
 	})
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
