@@ -96,6 +96,13 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 - `Traits/Route/RouteRegistrationTrait.php` — route registration: switched `fileLogger->error()` → `logException($e)` (1)
 - `Traits/Plugin/PluginRouteRegistrationTrait.php` — agent route registration: switched `fileLogger->error()` → `logException($e)` (1)
 
+### Final verification sweep (5 blocks)
+
+- `Snapshot/Traits/ManagerSettingsTrait.php` — `readSnapshotSettings()` + `updateSnapshotSettings()`: added `'trace'` to `$this->log()` context (2)
+- `Helpers/InitHelpers.php` — SQLite connection failure: added `'trace'` to context array (1)
+- `Helpers/Traits/InitStartupTrait.php` — startup init: added missing `error_log()` with trace (1)
+- `ErrorHandling/BootErrorCollector.php` — boot error reporter: appended trace to `errorLogWithPrefix()` call (1)
+
 ## Phase 7 ✅: `errorLog($e, context)` helper — eliminate raw error_log boilerplate
 
 **Problem:** All catch blocks manually wrote `error_log('msg: ' . $e->getMessage() . "\n" . $e->getTraceAsString())` — verbose, repetitive, error-prone.
