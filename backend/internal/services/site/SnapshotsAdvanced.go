@@ -18,13 +18,15 @@ func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteId, snapshotId i
 		return nil, appErr
 	}
 
-	resp, err := client.ExportSnapshot(snapshotId)
-	if err != nil {
+	exportResult := client.ExportSnapshot(snapshotId)
+	if exportResult.HasError() {
 
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to export snapshot").
+		return nil, apperror.Wrap(exportResult.AppError(), apperror.ErrWPConnection, "failed to export snapshot").
 			WithSiteId(siteId).
 			WithSnapshotId(snapshotId)
 	}
+
+	resp := exportResult.Value()
 
 	s.log.Info("Remote snapshot export started", "siteId", siteId, "snapshotId", snapshotId)
 
@@ -59,6 +61,21 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteId, snapshotId in
 	})
 }
 
+// requestSnapshotMeta requests ZIP metadata/build info for a snapshot.
+func (s *Service) requestSnapshotMeta(client *wordpress.Client, siteId, snapshotId int64) (*wordpress.SnapshotDownloadResult, *apperror.AppError) {
+	metaResult := client.DownloadSnapshotZip(snapshotId)
+	if metaResult.HasError() {
+
+		return nil, apperror.Wrap(metaResult.AppError(), apperror.ErrWPConnection, "failed to request snapshot ZIP metadata").
+			WithSiteId(siteId).
+			WithSnapshotId(snapshotId)
+	}
+
+	meta := metaResult.Value()
+
+	return &meta, nil
+}
+
 // streamSnapshotInput bundles parameters for streamSnapshotFromMeta.
 type streamSnapshotInput struct {
 	Client     *wordpress.Client
@@ -69,14 +86,16 @@ type streamSnapshotInput struct {
 
 // streamSnapshotFromMeta streams the ZIP file from the download URL.
 func (s *Service) streamSnapshotFromMeta(input streamSnapshotInput) (*SnapshotZipDownload, *apperror.AppError) {
-	zipResp, err := input.Client.StreamSnapshotZip(input.Meta.Url)
-	if err != nil {
+	streamResult := input.Client.StreamSnapshotZip(input.Meta.Url)
+	if streamResult.HasError() {
 
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
+		return nil, apperror.Wrap(streamResult.AppError(), apperror.ErrWPConnection, "failed to stream snapshot ZIP").
 			WithSiteId(input.SiteId).
 			WithSnapshotId(input.SnapshotId).
 			WithUrl(input.Meta.Url)
 	}
+
+	zipResp := streamResult.Value()
 
 	s.log.Info("Remote snapshot ZIP download started", "siteId", input.SiteId, "snapshotId", input.SnapshotId, "cached", input.Meta.Cached)
 
@@ -91,16 +110,18 @@ func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteId int64, op
 		return nil, appErr
 	}
 
-	result, err := client.FullBackup(opts)
-	if err != nil {
+	backupResult := client.FullBackup(opts)
+	if backupResult.HasError() {
 
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger full backup").
+		return nil, apperror.Wrap(backupResult.AppError(), apperror.ErrWPConnection, "failed to trigger full backup").
 			WithSiteId(siteId)
 	}
 
+	result := backupResult.Value()
+
 	s.log.Info("Remote full backup triggered", "siteId", siteId)
 
-	return result, nil
+	return &result, nil
 }
 
 // IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote site.
@@ -111,16 +132,18 @@ func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteId in
 		return nil, appErr
 	}
 
-	result, err := client.IncrementalBackup(opts)
-	if err != nil {
+	backupResult := client.IncrementalBackup(opts)
+	if backupResult.HasError() {
 
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger incremental backup").
+		return nil, apperror.Wrap(backupResult.AppError(), apperror.ErrWPConnection, "failed to trigger incremental backup").
 			WithSiteId(siteId)
 	}
 
+	result := backupResult.Value()
+
 	s.log.Info("Remote incremental backup triggered", "siteId", siteId)
 
-	return result, nil
+	return &result, nil
 }
 
 // ImportRemoteSnapshot uploads a ZIP file to import as a snapshot on a remote site.
@@ -131,16 +154,18 @@ func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteId int64, zipPat
 		return nil, appErr
 	}
 
-	result, err := client.ImportSnapshot(zipPath)
-	if err != nil {
+	importResult := client.ImportSnapshot(zipPath)
+	if importResult.HasError() {
 
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to import snapshot").
+		return nil, apperror.Wrap(importResult.AppError(), apperror.ErrWPConnection, "failed to import snapshot").
 			WithSiteId(siteId)
 	}
 
+	result := importResult.Value()
+
 	s.log.Info("Remote snapshot imported", "siteId", siteId)
 
-	return result, nil
+	return &result, nil
 }
 
 // CleanupRemoteSnapshots triggers cleanup on a remote site.
@@ -151,14 +176,16 @@ func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteId int64, opts
 		return nil, appErr
 	}
 
-	result, err := client.CleanupSnapshots(opts)
-	if err != nil {
+	cleanupResult := client.CleanupSnapshots(opts)
+	if cleanupResult.HasError() {
 
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger snapshot cleanup").
+		return nil, apperror.Wrap(cleanupResult.AppError(), apperror.ErrWPConnection, "failed to trigger snapshot cleanup").
 			WithSiteId(siteId)
 	}
 
+	result := cleanupResult.Value()
+
 	s.log.Info("Remote snapshot cleanup triggered", "siteId", siteId)
 
-	return result, nil
+	return &result, nil
 }
