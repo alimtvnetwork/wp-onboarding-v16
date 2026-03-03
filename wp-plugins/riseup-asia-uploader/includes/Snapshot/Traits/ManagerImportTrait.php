@@ -62,7 +62,7 @@ trait ManagerImportTrait {
                 $this->deleteDirectory($tempDir);
             }
 
-            $this->log(LogLevelType::Error->value, 'Snapshot import failed', array(ResponseKeyType::Error->value => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Snapshot import failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
 
             return ResultHelper::errorFromException($e);
         }

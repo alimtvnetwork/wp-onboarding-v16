@@ -168,7 +168,7 @@ trait PluginRouteRegistrationTrait {
                 ));
             } catch (Throwable $e) {
                 $failed++;
-                $this->fileLogger->error('Agent route ' . $route['endpoint']->name . ' failed: ' . $e->getMessage());
+                $this->fileLogger->logException($e, 'Agent route ' . $route['endpoint']->name . ' failed');
             }
         }
     }
