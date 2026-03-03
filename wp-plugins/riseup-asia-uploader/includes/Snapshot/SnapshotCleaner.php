@@ -123,7 +123,7 @@ class SnapshotCleaner {
             }
         } catch (Throwable $e) {
             $results[ResponseKeyType::Errors->value][] = 'Retention cleanup: ' . $e->getMessage();
-            $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         }
 
         return $results;
@@ -136,7 +136,7 @@ class SnapshotCleaner {
             $results[ResponseKeyType::SpaceFreedBytes->value] += $orphans[ResponseKeyType::BytesFreed->value] ?? 0;
         } catch (Throwable $e) {
             $results[ResponseKeyType::Errors->value][] = 'Orphan cleanup: ' . $e->getMessage();
-            $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         }
 
         return $results;
@@ -148,7 +148,7 @@ class SnapshotCleaner {
             $results[ResponseKeyType::Stuck->value] = $stuck;
         } catch (Throwable $e) {
             $results[ResponseKeyType::Errors->value][] = 'Stuck cleanup: ' . $e->getMessage();
-            $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array(ResponseKeyType::Error->value => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         }
 
         return $results;

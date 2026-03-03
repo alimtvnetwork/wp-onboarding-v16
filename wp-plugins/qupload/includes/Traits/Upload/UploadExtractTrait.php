@@ -230,6 +230,7 @@ trait UploadExtractTrait
                 'exception' => $e->getMessage(),
                 'file'      => $e->getFile(),
                 'line'      => $e->getLine(),
+                'trace'     => $e->getTraceAsString(),
             ]);
             $this->fileLogger->logException($e, 'Activation exception');
 

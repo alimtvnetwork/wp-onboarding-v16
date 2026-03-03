@@ -41,14 +41,14 @@ function riseup_asia_init(): void {
     try {
         Plugin::getInstance();
     } catch (Throwable $e) {
-        BootErrorCollector::getInstance()->addError('plugin_init', $e->getMessage());
+        BootErrorCollector::getInstance()->addError('plugin_init', $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 
     if (is_admin()) {
         try {
             Admin::getInstance();
         } catch (Throwable $e) {
-            BootErrorCollector::getInstance()->addError('admin_init', $e->getMessage());
+            BootErrorCollector::getInstance()->addError('admin_init', $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 }

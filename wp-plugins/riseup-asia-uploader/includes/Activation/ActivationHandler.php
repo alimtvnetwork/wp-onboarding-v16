@@ -41,7 +41,7 @@ class ActivationHandler
             self::runBootDiagnostics();
             InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — activation complete');
         } catch (Throwable $e) {
-            InitHelpers::errorLogWithPrefix('Activation hook failed: ' . $e->getMessage());
+            InitHelpers::errorLogWithPrefix('Activation hook failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 
