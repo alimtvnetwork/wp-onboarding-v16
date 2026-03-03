@@ -66,7 +66,9 @@
 
 ## Rejected Suggestions
 
-*None.*
+| ID | Description | Date | Reason |
+|----|-------------|------|--------|
+| R-001 | Add rate limiting to QUpload upload endpoint | 2026-03-03 | User explicitly rejected — not wanted |
 
 ---
 
@@ -77,8 +79,8 @@
 | Open | 0 |
 | Completed | 39 |
 | Closed N/A | 1 |
-| Rejected | 0 |
-| **Total** | **40** |
+| Rejected | 1 |
+| **Total** | **41** |
 
 ---
 
