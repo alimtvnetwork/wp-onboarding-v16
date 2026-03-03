@@ -140,7 +140,7 @@ trait PluginRouteRegistrationTrait {
                 'permission_callback' => $this->buildPermissionCallback('media', $perm),
             ));
         } catch (Throwable $e) {
-            // Optional endpoint, ignore
+            error_log('PluginRouteRegistrationTrait: Optional media endpoint registration failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 
