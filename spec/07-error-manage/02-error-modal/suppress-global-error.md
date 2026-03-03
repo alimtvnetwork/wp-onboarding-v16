@@ -1,6 +1,6 @@
 # Error Modal — suppressGlobalError Meta Pattern
 
-> **Version:** 1.0.0  
+> **Version:** 1.1.0  
 > **Updated:** 2026-03-03  
 > **Status:** Active  
 > **Purpose:** Defines the `suppressGlobalError` React Query meta pattern that prevents duplicate error displays when queries/mutations handle errors locally.
@@ -29,37 +29,44 @@ Any React Query `useQuery` or `useMutation` that provides its own error feedback
 // src/App.tsx — QueryClient configuration
 import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 
+// showGlobalError() handles both ApiClientError and generic errors:
+// - ApiClientError → captures via captureError, shows toast with "View Details" action
+//   (E9005 errors open the modal immediately)
+// - Generic errors → captures via captureException, shows toast with "View Details" action
+function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string }) {
+  const { captureError, captureException, openErrorModal } = useErrorStore.getState();
+
+  if (isApiClientError(error)) {
+    const captured = captureError(error.apiError, { /* request metadata */ });
+    if (error.apiError.code === "E9005") { openErrorModal(captured); return; }
+    toast.error(error.apiError.message, {
+      action: { label: "View Details", onClick: () => openErrorModal(captured) },
+    });
+    return;
+  }
+
+  const captured = captureException(error, { source: "App.showGlobalError", /* ... */ });
+  toast.error(`Request failed: ${context?.endpoint}`, {
+    action: { label: "View Details", onClick: () => openErrorModal(captured) },
+  });
+}
+
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
-      // Skip global error modal for queries that handle errors locally
       if (query.meta?.suppressGlobalError) return;
-
-      const { captureException, openErrorModal } = useErrorStore.getState();
-      const captured = captureException(error, {
-        source: "App.showGlobalError",
-        triggerComponent: "QueryClient",
-        triggerAction: "async_operation",
-        endpoint: String(query.queryKey?.[0] ?? "query"),
-      });
-      openErrorModal(captured);
+      showGlobalError(error, { endpoint: String(query.queryKey?.[0] ?? "query") });
     },
   }),
   mutationCache: new MutationCache({
     onError: (error, _variables, _context, mutation) => {
-      // Skip global error modal for mutations that handle errors locally
       if (mutation.meta?.suppressGlobalError) return;
-
-      const { captureException, openErrorModal } = useErrorStore.getState();
-      const captured = captureException(error, {
-        source: "App.showGlobalError",
-        triggerComponent: "QueryClient",
-        triggerAction: "async_operation",
-        endpoint: String(mutation.options.mutationKey?.[0] ?? "mutation"),
-      });
-      openErrorModal(captured);
+      showGlobalError(error, { endpoint: String(mutation.options.mutationKey?.[0] ?? "mutation") });
     },
   }),
+  defaultOptions: {
+    queries: { staleTime: 5 * 60 * 1000, retry: false, refetchOnWindowFocus: false },
+  },
 });
 ```
 
@@ -132,7 +139,7 @@ All queries and mutations with `suppressGlobalError: true`:
 | `src/hooks/useRemoteSnapshots.ts` | All queries (snapshots, settings, providers) and all mutations (create, delete, restore, updateSettings, fullBackup, incrementalBackup, import, cleanup) |
 | `src/hooks/useSiteHealth.ts` | useCheckAllSitesHealth mutation |
 | `src/hooks/useErrorHistory.ts` | All mutations (save, delete, clear, export) in both useErrorHistory and useErrorHistorySync |
-| `src/components/settings/SnapshotSettingsTab.tsx` | Snapshot cron/settings queries |
+| `src/components/settings/SnapshotSettingsTab.tsx` | Snapshot cron queries (×2), snapshots query |
 | `src/pages/Sessions.tsx` | deleteMutation |
 | `src/pages/RequestSessions.tsx` | deleteMutation, clearMutation |
 | `src/pages/Tests.tsx` | startRun, rerunCase |
@@ -169,4 +176,4 @@ When creating a new `useQuery` or `useMutation`:
 
 ---
 
-*suppressGlobalError Pattern v1.0.0 — created: 2026-03-03*
+*suppressGlobalError Pattern v1.1.0 — updated: 2026-03-03*
