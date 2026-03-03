@@ -28,7 +28,7 @@ func buildUploadErrorInner(slug string, attempts int, appErr *apperror.AppError)
 	inner := UploadErrorInner{
 		RemoteSlug: slug,
 		Attempts:   attempts,
-		Code:       appErr.Code,
+		Code:       string(appErr.Code),
 	}
 
 	cause := appErr.Unwrap()

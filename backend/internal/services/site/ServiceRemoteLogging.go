@@ -38,13 +38,7 @@ func (s *Service) emitToSessionService(ref *remoteActionRef, input RemoteActionL
 		return
 	}
 
-	s.sessionService.Log(session.LogInput{
-		SessionId: ref.SessionId,
-		Level:     input.Level,
-		Step:      input.Step,
-		Message:   input.Message,
-		Details:   input.Details,
-	})
+	s.sessionService.Log(ref.SessionId, input.Level, input.Step, input.Message, input.Details)
 }
 
 // emitToWSHub broadcasts the remote action log via WebSocket.
