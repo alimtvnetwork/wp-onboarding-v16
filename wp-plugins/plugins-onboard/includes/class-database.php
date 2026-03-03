@@ -188,12 +188,12 @@ class OnboardDatabase {
         } catch (PDOException $e) {
             $this->last_error = 'Database connection failed: ' . $e->getMessage();
             OnboardLogger::critical('Database PDO exception', $e);
-            error_log('Onboard DB: ' . $this->last_error);
+            error_log('Onboard DB: ' . $this->last_error . "\n" . $e->getTraceAsString());
             $this->connected = false;
         } catch (Exception $e) {
             $this->last_error = 'Database error: ' . $e->getMessage();
             OnboardLogger::critical('Unexpected database exception', $e);
-            error_log('Onboard DB: ' . $this->last_error);
+            error_log('Onboard DB: ' . $this->last_error . "\n" . $e->getTraceAsString());
             $this->connected = false;
         }
     }
@@ -212,7 +212,7 @@ class OnboardDatabase {
             return true;
         } catch (Exception $e) {
             $this->last_error = 'Failed to create tables: ' . $e->getMessage();
-            error_log('Onboard DB: ' . $this->last_error);
+            error_log('Onboard DB: ' . $this->last_error . "\n" . $e->getTraceAsString());
             return false;
         }
     }
@@ -399,7 +399,7 @@ class OnboardDatabase {
             return $stmt;
         } catch (PDOException $e) {
             $this->last_error = 'Query failed: ' . $e->getMessage();
-            error_log('Onboard DB Query: ' . $this->last_error . ' SQL: ' . $sql);
+            error_log('Onboard DB Query: ' . $this->last_error . ' SQL: ' . $sql . "\n" . $e->getTraceAsString());
             return false;
         }
     }
@@ -422,7 +422,7 @@ class OnboardDatabase {
             return $stmt;
         } catch (PDOException $e) {
             $this->last_error = 'Audit query failed: ' . $e->getMessage();
-            error_log('Onboard DB Audit Query: ' . $this->last_error);
+            error_log('Onboard DB Audit Query: ' . $this->last_error . "\n" . $e->getTraceAsString());
             return false;
         }
     }

@@ -353,7 +353,7 @@ class PluginsOnboard {
                 return dirname($base) . '/';
             }
         } catch (Exception $e) {
-            // Fallback if OnboardPaths fails.
+            error_log('Plugins Onboard: get_base_path_for_display failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
 
         if (defined('WP_CONTENT_DIR')) {
@@ -374,7 +374,7 @@ class PluginsOnboard {
                 return OnboardPaths::get(OnboardPaths::DIR_SECURITY_LOGS);
             }
         } catch (Exception $e) {
-            // Fallback if OnboardPaths fails.
+            error_log('Plugins Onboard: get_log_dir_for_display failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
 
         if (defined('WP_CONTENT_DIR')) {
