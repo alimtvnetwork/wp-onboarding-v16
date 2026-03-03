@@ -42,6 +42,8 @@ trait IncrementalExportTrait {
                 ResponseKeyType::Checksum->value => md5_file($filepath),
             );
         } catch (Throwable $e) {
+            error_log('IncrementalExportTrait::exportTableFull() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value => $e->getMessage(),

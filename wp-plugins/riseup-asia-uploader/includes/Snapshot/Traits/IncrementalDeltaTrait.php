@@ -242,6 +242,8 @@ trait IncrementalDeltaTrait {
 
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
         } catch (Throwable $e) {
+            error_log('IncrementalDeltaTrait::getMaxIdFromMasterSqlite() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+
             return null;
         }
     }

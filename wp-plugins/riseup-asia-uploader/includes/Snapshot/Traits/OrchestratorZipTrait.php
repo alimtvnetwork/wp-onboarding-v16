@@ -40,6 +40,8 @@ trait OrchestratorZipTrait {
 
             return $this->validateZipExport($zipPath, $zipFilename, $fileCount);
         } catch (Throwable $e) {
+            error_log('OrchestratorZipTrait::createZipExport() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+
             return array(
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),

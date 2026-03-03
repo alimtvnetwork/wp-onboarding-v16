@@ -78,7 +78,7 @@ trait RestoreHelperTrait {
             );
             $this->insertAuditRecord($pdo, $details);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to log audit for restore', array(ResponseKeyType::Error->value => $e->getMessage()));
+            error_log('RestoreHelperTrait::logRestoreAudit() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 
