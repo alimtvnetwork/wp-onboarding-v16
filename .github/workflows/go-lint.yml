@@ -5,16 +5,18 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'licensing/**'
       - 'scripts/**'
   pull_request:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'licensing/**'
       - 'scripts/**'
 
 jobs:
-  lint:
-    name: Code Quality Checks
+  lint-backend:
+    name: Backend Quality Checks
     runs-on: ubuntu-latest
 
     steps:
@@ -60,6 +62,12 @@ jobs:
       - name: Lint — Generic Enforce (Go)
         run: bash scripts/lint-ge.sh --go
 
+      - name: Lint — JSON Tags
+        run: bash scripts/lint-json-tags.sh
+
+      - name: Lint — Inline If
+        run: bash scripts/lint-inline-if.sh
+
       - name: Validate OpenAPI Spec
         working-directory: backend
         run: |
@@ -68,3 +76,50 @@ jobs:
           else
             echo "No OpenAPI spec found, skipping"
           fi
+
+  lint-licensing:
+    name: Licensing Server Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: licensing/go.sum
+
+      - name: Go Build Check
+        working-directory: licensing
+        run: go build ./...
+
+      - name: Go Vet
+        working-directory: licensing
+        run: go vet ./...
+
+      - name: Go Tests
+        working-directory: licensing
+        run: go test ./...
+
+      - name: Lint — File Size
+        run: bash scripts/lint-file-size.sh --dir licensing
+
+      - name: Lint — Function Size
+        run: bash scripts/lint-func-size.sh --dir licensing
+
+      - name: Lint — Negative Naming
+        run: bash scripts/lint-negative.sh --dir licensing
+
+      - name: Lint — Import Grouping
+        run: bash scripts/lint-imports.sh --dir licensing
+
+      - name: Lint — Generic Enforce (Go)
+        run: bash scripts/lint-ge.sh --go
+
+      - name: Lint — JSON Tags
+        run: bash scripts/lint-json-tags.sh licensing
+
+      - name: Lint — Inline If
+        run: bash scripts/lint-inline-if.sh --dir licensing
