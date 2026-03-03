@@ -128,7 +128,7 @@ class OnboardIncludeFiles {
             OnboardLogger::debug("✓ Loaded [{$mode}]: {$fileConstant}");
             return true;
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $trace = $e->getTraceAsString();
             $errorMsg = "Failed to load {$fileConstant}: {$e->getMessage()}";
 

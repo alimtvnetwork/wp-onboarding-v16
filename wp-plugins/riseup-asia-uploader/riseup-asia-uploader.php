@@ -40,14 +40,14 @@ register_activation_hook(__FILE__, [ActivationHandler::class, 'activate']);
 function riseup_asia_init(): void {
     try {
         Plugin::getInstance();
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         BootErrorCollector::getInstance()->addError('plugin_init', $e->getMessage());
     }
 
     if (is_admin()) {
         try {
             Admin::getInstance();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             BootErrorCollector::getInstance()->addError('admin_init', $e->getMessage());
         }
     }
