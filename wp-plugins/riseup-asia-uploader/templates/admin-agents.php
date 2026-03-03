@@ -6,6 +6,7 @@
  * @since   1.8.0
  */
 
+use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\AgentStatusType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\NonceType;
@@ -323,9 +324,9 @@ jQuery(document).ready(function($) {
     };
 
     var ACTIONS = {
-        enable:  'enable',
-        disable: 'disable',
-        delete_: 'delete'
+        enable:  '<?php echo esc_js(strtolower(ActionType::Enable->value)); ?>',
+        disable: '<?php echo esc_js(strtolower(ActionType::Disable->value)); ?>',
+        delete_: '<?php echo esc_js(strtolower(ActionType::Delete->value)); ?>'
     };
 
     var LABELS = {
