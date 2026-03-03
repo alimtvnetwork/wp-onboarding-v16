@@ -166,7 +166,9 @@ func (s *Service) processScannedFile(cache *pluginScanCache, currentFiles map[st
 	if isFound && lastInfo.Hash != fi.Hash {
 		return &FileChange{Path: relPath, ChangeType: "modified", Hash: fi.Hash, Size: fi.Size, ModTime: info.ModTime()}
 	}
-	if !isFound {
+	isMissing := !isFound
+
+	if isMissing {
 		return &FileChange{Path: relPath, ChangeType: "created", Hash: fi.Hash, Size: fi.Size, ModTime: info.ModTime()}
 	}
 
@@ -178,7 +180,9 @@ func findDeletedFiles(lastScan, currentFiles map[string]fileInfo) []FileChange {
 	var changes []FileChange
 	for path := range lastScan {
 		_, isFound := currentFiles[path]
-		if !isFound {
+		isDeleted := !isFound
+
+		if isDeleted {
 			changes = append(changes, FileChange{Path: path, ChangeType: "deleted"})
 		}
 	}

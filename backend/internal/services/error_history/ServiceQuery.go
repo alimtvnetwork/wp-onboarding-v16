@@ -101,9 +101,10 @@ func (s *Service) Delete(id int64) *apperror.AppError {
 	}
 
 	rows, _ := result.RowsAffected()
-	isNotFound := rows == 0
+	isFound := rows > 0
+	isMissing := !isFound
 
-	if isNotFound {
+	if isMissing {
 		return apperror.New(apperror.ErrNotFound, "error history entry not found").
 			WithValue("id", fmt.Sprintf("%d", id))
 	}

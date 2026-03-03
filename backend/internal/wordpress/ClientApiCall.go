@@ -145,9 +145,9 @@ func decodeApiResponse[T any](data []byte, operationDesc string) apperror.Result
 // firstNonEmpty returns the first non-empty ErrorCode argument.
 func firstNonEmpty(values ...apperror.ErrorCode) apperror.ErrorCode {
 	for _, v := range values {
-		isNonEmpty := v != ""
+		hasValue := v != ""
 
-		if isNonEmpty {
+		if hasValue {
 			return v
 		}
 	}

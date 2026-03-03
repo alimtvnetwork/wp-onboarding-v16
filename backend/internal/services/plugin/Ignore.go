@@ -40,9 +40,9 @@ func LoadUploadIgnore(pluginDir string) (*UploadIgnore, *apperror.AppError) {
 	file, err := os.Open(ignorePath)
 
 	if err != nil {
-		isNotFound := os.IsNotExist(err)
+		isMissing := os.IsNotExist(err)
 
-		if isNotFound {
+		if isMissing {
 			return ui, nil
 		}
 

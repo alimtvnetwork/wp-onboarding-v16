@@ -133,9 +133,10 @@ func buildPhpErrorEntry(entry wordpress.RemoteErrorSessionEntry) PhpErrorEntry {
 
 // marshalStackFrames serializes stack trace frames into the PHP error entry.
 func marshalStackFrames(phpErr *PhpErrorEntry, frames []wordpress.PhpStackTraceFrame) {
-	hasNoFrames := len(frames) == 0
+	hasFrames := len(frames) > 0
+	isEmpty := !hasFrames
 
-	if hasNoFrames {
+	if isEmpty {
 		return
 	}
 
