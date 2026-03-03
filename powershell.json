@@ -30,7 +30,7 @@
   ],
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install",
-  "runCommand": "go run cmd/server/main.go",
+  "runCommand": "go run ./cmd/server",
   "configFile": "config.json",
   "configExampleFile": "config.example.json",
   "requiredModules": [
