@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 use QUpload\Core\Plugin;
+use QUpload\Enums\PluginConfigType;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all QUpload\ classes resolve automatically
@@ -34,7 +35,7 @@ function qupload_init(): void {
     try {
         Plugin::getInstance();
     } catch (\Throwable $e) {
-        error_log('[QUpload] Plugin init failed: ' . $e->getMessage());
+        error_log(PluginConfigType::LogPrefix->value . ' Plugin init failed: ' . $e->getMessage());
     }
 }
 
@@ -47,7 +48,7 @@ function qupload_deactivate(): void {
     try {
         Plugin::getInstance()->handleDeactivate();
     } catch (\Throwable $e) {
-        error_log('[QUpload] Deactivation cleanup failed: ' . $e->getMessage());
+        error_log(PluginConfigType::LogPrefix->value . ' Deactivation cleanup failed: ' . $e->getMessage());
     }
 }
 

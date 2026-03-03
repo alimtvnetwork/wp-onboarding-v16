@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 enum PluginConfigType: string
 {
     case Slug          = 'qupload';
+    case ShortName     = 'QUpload';
     case Name          = 'Quick Upload';
     case Version       = '1.1.0';
     case MinWpVersion  = '5.6';

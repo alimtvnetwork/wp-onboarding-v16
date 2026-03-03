@@ -22,6 +22,9 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 
+$pluginName = PluginConfigType::Name->value;
+$pluginSlug = PluginConfigType::Slug->value;
+
 $levelColors = array(
     LogLevelType::Error->value => '#dc3545',
     LogLevelType::Warn->value  => '#fd7e14',

@@ -17,11 +17,14 @@ use RiseupAsia\Enums\StatusType;
 if (!defined('ABSPATH')) {
     exit;
 }
+
+$pluginName = PluginConfigType::Name->value;
+$pluginSlug = PluginConfigType::Slug->value;
 ?>
 <div class="wrap riseup-admin">
     <h1>
         <span class="dashicons dashicons-networking"></span>
-        <?php esc_html_e('Riseup Asia Uploader - Agent Sites', 'riseup-asia-uploader'); ?>
+        <?php echo esc_html($pluginName . ' - ' . __('Agent Sites', $pluginSlug)); ?>
         <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
 

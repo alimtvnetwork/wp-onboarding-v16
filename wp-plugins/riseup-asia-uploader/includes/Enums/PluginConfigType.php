@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 enum PluginConfigType: string
 {
     case Slug            = 'riseup-asia-uploader';
+    case ShortName       = 'RiseupAsia';
     case Name            = 'Riseup Asia Uploader';
     case Version         = '1.63.0';
     case MinWpVersion    = '5.6';
