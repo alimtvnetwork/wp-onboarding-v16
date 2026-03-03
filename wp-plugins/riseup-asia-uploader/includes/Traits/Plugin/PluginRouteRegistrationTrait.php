@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\EndpointType;
 
@@ -140,7 +141,7 @@ trait PluginRouteRegistrationTrait {
                 'permission_callback' => $this->buildPermissionCallback('media', $perm),
             ));
         } catch (Throwable $e) {
-            error_log('PluginRouteRegistrationTrait: Optional media endpoint registration failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'PluginRouteRegistrationTrait: Optional media endpoint registration failed:');
         }
     }
 

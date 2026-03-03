@@ -20,6 +20,7 @@ use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\StatusType;
@@ -117,7 +118,7 @@ trait CleanerHelperTrait {
                 TriggerSourceType::Api->value,
             );
         } catch (Throwable $e) {
-            error_log('CleanerHelperTrait::logCleanupAction() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'CleanerHelperTrait::logCleanupAction() failed:');
         }
     }
 

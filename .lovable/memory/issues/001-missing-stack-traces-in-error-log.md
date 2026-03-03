@@ -96,21 +96,31 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 - `Traits/Route/RouteRegistrationTrait.php` — route registration: switched `fileLogger->error()` → `logException($e)` (1)
 - `Traits/Plugin/PluginRouteRegistrationTrait.php` — agent route registration: switched `fileLogger->error()` → `logException($e)` (1)
 
-## Phase 7 (planned): Refactor to `logError($e, msg)` pattern
+## Phase 7 ✅: `errorLog($e, context)` helper — eliminate raw error_log boilerplate
 
-**Problem:** All Phase 2–6 fixes manually inject `'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()` into context arrays. This is verbose, repetitive, and the exact pattern that caused violations in the first place.
+**Problem:** All catch blocks manually wrote `error_log('msg: ' . $e->getMessage() . "\n" . $e->getTraceAsString())` — verbose, repetitive, error-prone.
 
-**Solution:** Create `logError(Throwable $e, string $message, array $context = [])` and `logWarn(Throwable $e, string $message, array $context = [])` methods that auto-inject error+trace. Then refactor all `$this->log()` catch blocks to use them.
+**Solution:** Created `errorLog(Throwable $e, string $context)` static helpers in each plugin:
+- `RiseupAsia\Helpers\InitHelpers::errorLog($e, 'context:')` — added to existing class
+- `QUpload\Helpers\ErrorLogHelper::errorLog($e, 'context:')` — new file
+- `OnboardErrorLog::errorLog($e, 'context:')` — new file (`class-error-log.php`)
 
-**Scope:**
-- Snapshot traits (~30+ catch blocks using `$this->log()` with manual error/trace)
-- All `$this->log(LogLevelType::Error->value, msg, ['error' => $e->getMessage(), 'trace' => ...])` → `$this->logError($e, msg)`
-- All `$this->log(LogLevelType::Warn->value, msg, ['error' => $e->getMessage(), 'trace' => ...])` → `$this->logWarn($e, msg)`
+All internally call `error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString())`.
 
-**Three authorized patterns after Phase 7:**
-1. `$this->fileLogger->logException($e, 'context')` — FileLogger users
-2. `$this->logError($e, 'context', $extra)` — Snapshot trait users (NEW)
-3. `error_log('prefix: ' . $e->getMessage() . "\n" . $e->getTraceAsString())` — bootstrap only
+**Refactored call sites:**
+- Riseup Asia: 15 calls across 11 files → `InitHelpers::errorLog($e, msg)`
+- Plugins Onboard: 17 calls across 4 files → `OnboardErrorLog::errorLog($e, msg)`
+- QUpload: 2 calls in `qupload.php` → `ErrorLogHelper::errorLog($e, msg)`
+
+**Remaining raw `error_log()` (intentional — autoloaders only):**
+- `qupload/includes/Autoloader.php` — loaded before autoloader, can't use helpers
+- `riseup-asia-uploader/includes/Autoloader.php` — same reason
+
+## Phase 8 (planned): Refactor `$this->log()` context arrays to `logError($e, msg)`
+
+**Problem:** Snapshot traits still manually inject `'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()` into `$this->log()` context arrays.
+
+**Solution:** Create `logError(Throwable $e, string $msg, array $context = [])` and `logWarn()` methods that auto-inject error+trace into the context array.
 
 ## Remaining Silent Catches (intentional — no fix needed)
 
@@ -119,22 +129,22 @@ Multiple `catch (Throwable $e)` blocks across all WordPress plugins were logging
 
 ## Final Audit Summary
 
-| Plugin | Total Catches | Logging | Silent (intentional) |
-|---|---|---|---|
-| QUpload | 7 | 7 ✅ | 0 |
-| Plugins Onboard | ~20 | 19 ✅ | 1 (logger) |
-| Riseup Asia | ~700+ | 700+ ✅ | 1 (logger) |
+| Plugin | Total Catches | Logging | Silent (intentional) | Raw error_log (autoloader) |
+|---|---|---|---|---|
+| QUpload | 7 | 7 ✅ | 0 | 1 |
+| Plugins Onboard | ~20 | 19 ✅ | 1 (logger) | 0 |
+| Riseup Asia | ~700+ | 700+ ✅ | 1 (logger) | 1 |
 
 ## Safe Paths (already compliant — no changes needed)
 
-These patterns inherently log stack traces via `logException()`:
 - `ErrorResponse::logAndReturn*($logger, $e, ...)` ✅
 - `$this->errorResponse(msg, status, $e)` ✅
 - `$this->safeExecute(callback, context)` ✅
 - `$this->fileLogger->logException($e, context)` ✅
-- `$this->logError($e, msg, context)` ✅ (Phase 7)
-- `$this->logWarn($e, msg, context)` ✅ (Phase 7)
+- `InitHelpers::errorLog($e, context)` ✅
+- `ErrorLogHelper::errorLog($e, context)` ✅
+- `OnboardErrorLog::errorLog($e, context)` ✅
 
 ## Prevention
 
-Coding standard `.lovable/memory/coding-standards/php-exception-handling.md` mandates that **every catch block with `$e` must use one of the three authorized patterns**. Manual `getMessage()` + `getTraceAsString()` in context arrays is now prohibited.
+Coding standard `.lovable/memory/coding-standards/php-exception-handling.md` mandates that **every catch block with `$e` must use one of the authorized patterns**. Manual `error_log()` with `getMessage()` + `getTraceAsString()` is prohibited (except autoloaders).

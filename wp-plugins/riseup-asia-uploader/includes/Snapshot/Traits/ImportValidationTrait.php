@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use PDO;
 use PDOException;
@@ -64,7 +65,7 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
-            error_log('ImportValidationTrait::readRootDbTables() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'ImportValidationTrait::readRootDbTables() failed:');
             return array();
         }
     }
@@ -79,7 +80,7 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
-            error_log('ImportValidationTrait::readRootDbIncrementals() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'ImportValidationTrait::readRootDbIncrementals() failed:');
             return array();
         }
     }
@@ -94,7 +95,7 @@ trait ImportValidationTrait {
 
             return $rows ?: array();
         } catch (PDOException $e) {
-            error_log('ImportValidationTrait::readRootDbPlugins() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'ImportValidationTrait::readRootDbPlugins() failed:');
             return array();
         }
     }

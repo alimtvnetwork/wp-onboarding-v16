@@ -19,6 +19,7 @@ use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\InitHelpers;
 
 trait OrchestratorZipTrait {
     private function createZipExport(string $snapshotDir, string $title): array {
@@ -40,7 +41,7 @@ trait OrchestratorZipTrait {
 
             return $this->validateZipExport($zipPath, $zipFilename, $fileCount);
         } catch (Throwable $e) {
-            error_log('OrchestratorZipTrait::createZipExport() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'OrchestratorZipTrait::createZipExport() failed:');
 
             return array(
                 ResponseKeyType::Success->value => false,

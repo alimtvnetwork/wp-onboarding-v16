@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 use PDO;
@@ -243,7 +244,7 @@ trait IncrementalDeltaTrait {
 
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
         } catch (Throwable $e) {
-            error_log('IncrementalDeltaTrait::getMaxIdFromMasterSqlite() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'IncrementalDeltaTrait::getMaxIdFromMasterSqlite() failed:');
 
             return null;
         }

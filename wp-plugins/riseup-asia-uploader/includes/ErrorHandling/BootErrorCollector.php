@@ -107,12 +107,7 @@ class BootErrorCollector {
                 );
             }
         } catch (Throwable $e) {
-            InitHelpers::errorLogWithPrefix(
-                self::COLLECTOR_PREFIX
-                . 'failed to send boot error report — '
-                . $e->getMessage()
-                . "\n" . $e->getTraceAsString()
-            );
+            InitHelpers::errorLog($e, self::COLLECTOR_PREFIX . 'failed to send boot error report —');
         }
 
         $this->errors = [];

@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\InitHelpers;
 
 trait WorkerJobProgressTrait {
     public function getJobProgress(int $jobId): ?array {
@@ -66,7 +67,7 @@ trait WorkerJobProgressTrait {
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
-            error_log('WorkerJobProgressTrait::loadTableProgress() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            InitHelpers::errorLog($e, 'WorkerJobProgressTrait::loadTableProgress() failed:');
             return array();
         }
     }
