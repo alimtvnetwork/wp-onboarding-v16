@@ -37,7 +37,11 @@ func (e errorOnlyWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func main() {
+func init() {
+	runFunc = runApp
+}
+
+func runApp() {
 	bootstrapLog := logger.New(logger.Config{Level: logger.LevelInfo})
 
 	cfg := loadConfig(bootstrapLog)
