@@ -20,6 +20,8 @@ use RiseupAsia\Admin\Traits\AdminPagesTrait;
 use RiseupAsia\Admin\Traits\AdminAjaxTrait;
 use RiseupAsia\Admin\Traits\AdminErrorPageTrait;
 use RiseupAsia\Admin\Traits\AdminErrorAjaxTrait;
+use RiseupAsia\Admin\Traits\AdminLicensePageTrait;
+use RiseupAsia\Admin\Traits\AdminLicenseAjaxTrait;
 use RiseupAsia\Enums\AjaxActionType;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\HookType;
@@ -38,6 +40,8 @@ class Admin {
     use AdminAjaxTrait;
     use AdminErrorPageTrait;
     use AdminErrorAjaxTrait;
+    use AdminLicensePageTrait;
+    use AdminLicenseAjaxTrait;
 
     /**
      * Default settings.
@@ -96,5 +100,10 @@ class Admin {
         add_action(HookType::ajax(AjaxActionType::ClearErrorSessions->value), array($this, 'ajaxClearErrorSessions'));
         add_action(HookType::ajax(AjaxActionType::ReadLogFile->value), array($this, 'ajaxReadLogFile'));
         add_action(HookType::ajax(AjaxActionType::ClearLogFile->value), array($this, 'ajaxClearLogFile'));
+        add_action(HookType::ajax(AjaxActionType::LicenseSave->value), array($this, 'ajaxLicenseSave'));
+        add_action(HookType::ajax(AjaxActionType::LicenseActivate->value), array($this, 'ajaxLicenseActivate'));
+        add_action(HookType::ajax(AjaxActionType::LicenseDeactivate->value), array($this, 'ajaxLicenseDeactivate'));
+        add_action(HookType::ajax(AjaxActionType::LicenseRemove->value), array($this, 'ajaxLicenseRemove'));
+        add_action(HookType::ajax(AjaxActionType::LicenseRefresh->value), array($this, 'ajaxLicenseRefresh'));
     }
 }

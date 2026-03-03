@@ -32,6 +32,13 @@ enum AjaxActionType: string
     case ReadLogFile  = 'riseup_read_log_file';
     case ClearLogFile = 'riseup_clear_log_file';
 
+    // ── License Actions ─────────────────────────────────────────
+    case LicenseSave       = 'riseup_license_save';
+    case LicenseActivate   = 'riseup_license_activate';
+    case LicenseDeactivate = 'riseup_license_deactivate';
+    case LicenseRemove     = 'riseup_license_remove';
+    case LicenseRefresh    = 'riseup_license_refresh';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
