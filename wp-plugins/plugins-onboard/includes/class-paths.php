@@ -234,7 +234,7 @@ class OnboardPaths {
                 self::ensure_directory_exists($dir_type);
             } catch (Exception $e) {
                 $errors[] = $e->getMessage();
-                OnboardErrorLog::errorLog($e, 'Plugins Onboard: Directory creation failed:');
+                OnboardErrorLog::log($e, 'Plugins Onboard: Directory creation failed:');
             }
         }
 

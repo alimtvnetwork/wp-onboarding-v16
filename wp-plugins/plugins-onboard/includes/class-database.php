@@ -188,12 +188,12 @@ class OnboardDatabase {
         } catch (PDOException $e) {
             $this->last_error = 'Database connection failed: ' . $e->getMessage();
             OnboardLogger::critical('Database PDO exception', $e);
-            OnboardErrorLog::errorLog($e, 'Onboard DB:');
+            OnboardErrorLog::log($e, 'Onboard DB:');
             $this->connected = false;
         } catch (Exception $e) {
             $this->last_error = 'Database error: ' . $e->getMessage();
             OnboardLogger::critical('Unexpected database exception', $e);
-            OnboardErrorLog::errorLog($e, 'Onboard DB:');
+            OnboardErrorLog::log($e, 'Onboard DB:');
             $this->connected = false;
         }
     }
@@ -212,7 +212,7 @@ class OnboardDatabase {
             return true;
         } catch (Exception $e) {
             $this->last_error = 'Failed to create tables: ' . $e->getMessage();
-            OnboardErrorLog::errorLog($e, 'Onboard DB:');
+            OnboardErrorLog::log($e, 'Onboard DB:');
             return false;
         }
     }
@@ -399,7 +399,7 @@ class OnboardDatabase {
             return $stmt;
         } catch (PDOException $e) {
             $this->last_error = 'Query failed: ' . $e->getMessage();
-            OnboardErrorLog::errorLog($e, 'Onboard DB Query:');
+            OnboardErrorLog::log($e, 'Onboard DB Query:');
             return false;
         }
     }
@@ -422,7 +422,7 @@ class OnboardDatabase {
             return $stmt;
         } catch (PDOException $e) {
             $this->last_error = 'Audit query failed: ' . $e->getMessage();
-            OnboardErrorLog::errorLog($e, 'Onboard DB Audit Query:');
+            OnboardErrorLog::log($e, 'Onboard DB Audit Query:');
             return false;
         }
     }
@@ -494,7 +494,7 @@ class OnboardDatabase {
             }
             return null;
         } catch (Exception $e) {
-            OnboardErrorLog::errorLog($e, 'Onboard get_setting error:');
+            OnboardErrorLog::log($e, 'Onboard get_setting error:');
             return null;
         }
     }
@@ -536,7 +536,7 @@ class OnboardDatabase {
             }
             return true;
         } catch (Exception $e) {
-            OnboardErrorLog::errorLog($e, 'Onboard save_setting error:');
+            OnboardErrorLog::log($e, 'Onboard save_setting error:');
             return false;
         }
     }
@@ -566,7 +566,7 @@ class OnboardDatabase {
             }
             return $settings;
         } catch (Exception $e) {
-            OnboardErrorLog::errorLog($e, 'Onboard get_all_settings error:');
+            OnboardErrorLog::log($e, 'Onboard get_all_settings error:');
             return array();
         }
     }

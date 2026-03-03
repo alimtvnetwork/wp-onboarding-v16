@@ -22,7 +22,7 @@ class OnboardErrorLog {
      * @param Throwable $e       The exception to log.
      * @param string    $context Human-readable context message.
      */
-    public static function errorLog(Throwable $e, string $context): void {
+    public static function log(Throwable $e, string $context): void {
         error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }

@@ -19,28 +19,28 @@ When `$this->fileLogger` is available (Plugin classes, managers, services):
 
 `logException()` internally extracts `$e->getMessage()`, `$e->getTraceAsString()`, file, and line. One call does everything.
 
-### Pattern 2: ErrorLog helper — `errorLog($e, context)`
+### Pattern 2: ErrorLog helper — `log($e, context)` or `errorLog($e, context)`
 
-When FileLogger is not available but namespaced helpers are loaded:
+When FileLogger is not available but namespaced helpers are loaded. Method is named `log()` when the class name already implies error logging, `errorLog()` when it doesn't:
 
 ```php
-// Riseup Asia
+// Riseup Asia (InitHelpers is a general helper — keep "errorLog")
 } catch (Throwable $e) {
     InitHelpers::errorLog($e, 'ClassName::method() failed:');
 }
 
-// QUpload
+// QUpload (ErrorLogHelper — class name implies error logging)
 } catch (Throwable $e) {
-    ErrorLogHelper::errorLog($e, 'ClassName::method() failed:');
+    ErrorLogHelper::log($e, 'ClassName::method() failed:');
 }
 
-// Plugins Onboard
+// Plugins Onboard (OnboardErrorLog — class name implies error logging)
 } catch (Exception $e) {
-    OnboardErrorLog::errorLog($e, 'Context message:');
+    OnboardErrorLog::log($e, 'Context message:');
 }
 ```
 
-`errorLog()` internally calls `error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString())`.
+Internally calls `error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString())`.
 
 ### Pattern 3: Autoloaders — raw `error_log()`
 
@@ -89,5 +89,5 @@ These already capture `$e` internally and include `stackTraceFrames` — no acti
 | Plugin | Helper | Method |
 |---|---|---|
 | Riseup Asia | `RiseupAsia\Helpers\InitHelpers` | `::errorLog($e, $context)` |
-| QUpload | `QUpload\Helpers\ErrorLogHelper` | `::errorLog($e, $context)` |
-| Plugins Onboard | `OnboardErrorLog` (global) | `::errorLog($e, $context)` |
+| QUpload | `QUpload\Helpers\ErrorLogHelper` | `::log($e, $context)` |
+| Plugins Onboard | `OnboardErrorLog` (global) | `::log($e, $context)` |

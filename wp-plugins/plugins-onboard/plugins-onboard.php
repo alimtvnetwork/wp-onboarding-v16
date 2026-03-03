@@ -320,7 +320,7 @@ class PluginsOnboard {
 
         } catch (Exception $e) {
             OnboardLogger::critical('Plugin activation failed', $e);
-            OnboardErrorLog::errorLog($e, 'Plugins Onboard Activation Error:');
+            OnboardErrorLog::log($e, 'Plugins Onboard Activation Error:');
 
             // Get dynamic log paths for error display.
             $log_dir = $this->get_log_dir_for_display();
@@ -354,7 +354,7 @@ class PluginsOnboard {
                 return dirname($base) . '/';
             }
         } catch (Exception $e) {
-            OnboardErrorLog::errorLog($e, 'Plugins Onboard: get_base_path_for_display failed:');
+            OnboardErrorLog::log($e, 'Plugins Onboard: get_base_path_for_display failed:');
         }
 
         if (defined('WP_CONTENT_DIR')) {
@@ -375,7 +375,7 @@ class PluginsOnboard {
                 return OnboardPaths::get(OnboardPaths::DIR_SECURITY_LOGS);
             }
         } catch (Exception $e) {
-            OnboardErrorLog::errorLog($e, 'Plugins Onboard: get_log_dir_for_display failed:');
+            OnboardErrorLog::log($e, 'Plugins Onboard: get_log_dir_for_display failed:');
         }
 
         if (defined('WP_CONTENT_DIR')) {
@@ -428,7 +428,7 @@ class PluginsOnboard {
                     $this->db->save_setting($key, $value);
                 }
             } catch (Exception $e) {
-                OnboardErrorLog::errorLog($e, 'Plugins Onboard: Failed to save setting ' . $key . ':');
+                OnboardErrorLog::log($e, 'Plugins Onboard: Failed to save setting ' . $key . ':');
             }
         }
     }
@@ -527,7 +527,7 @@ class PluginsOnboard {
         } catch (Exception $e) {
             $this->init_error = $e->getMessage();
             OnboardLogger::critical('Plugin init() failed', $e);
-            OnboardErrorLog::errorLog($e, 'Plugins Onboard Init Error:');
+            OnboardErrorLog::log($e, 'Plugins Onboard Init Error:');
         }
     }
 
@@ -624,7 +624,7 @@ class PluginsOnboard {
             try {
                 $this->cleanup->run_all();
             } catch (Exception $e) {
-                OnboardErrorLog::errorLog($e, 'Plugins Onboard Cleanup Error:');
+                OnboardErrorLog::log($e, 'Plugins Onboard Cleanup Error:');
             }
         }
     }
