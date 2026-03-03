@@ -192,11 +192,15 @@ Build a self-hosted licensing server in Go that issues, validates, and manages l
 
 ## Remaining Queued Phases
 
-### 🔲 Go Phase 5: Code Organization Standards
-- Enforce package directory snake_case
-- Validate import grouping (stdlib / third-party / internal)
-- Monitor function and file size limits
-- Run `lint-all` and fix violations
+### ✅ Go Phase 5: Code Organization Standards
+- Renamed 5 files to PascalCase: `crypto.go`, `envelope.go`, `envelope_test.go`, `logger.go`, `version.go`
+- Split `envelope.go` (345→259 lines) → extracted fluent modifiers to `EnvelopeModifiers.go` (108 lines)
+- Split `logger.go` (304→139 lines) → extracted formatting helpers to `LoggerFormat.go` (173 lines)
+- Refactored `Crypto.go`: extracted shared `deriveGCM` and `decryptWithGCM` helpers (Encrypt/Decrypt now ≤15 lines)
+- Refactored `Version.go`: extracted `resolveVersionFile`, `resolveVersionFileFallback`, `parseVersionFile` (Load now ≤5 lines)
+- Fixed `Client.go` import grouping (removed blank line splitting stdlib group)
+- All 247 Go files within 300-line limit; all functions within 15-line body limit
+- All package directories use correct naming conventions
 
 ### 🔲 Go Phase 6: CI Lint Scripts & Integration
 - Integrate all lint scripts into CI pipeline
