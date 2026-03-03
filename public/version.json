@@ -6,6 +6,7 @@
   "buildTime": "2026-02-04T19:30:00Z",
   "scriptVersion": "1.1.0",
   "wpPluginVersion": "1.35.0",
+  "quploadVersion": "1.1.0",
   "changelog": [
     {
       "version": "1.19.4",

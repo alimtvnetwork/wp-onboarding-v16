@@ -3,14 +3,14 @@
  * Plugin Name: Quick Upload
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Minimal REST API plugin for remote plugin upload and activation with Application Password authentication.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: qupload
  * Requires at least: 5.6
- * Requires PHP: 8.2
+ * Requires PHP: 8.1
  *
  * @package QUpload
  */

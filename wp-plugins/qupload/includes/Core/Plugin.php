@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use QUpload\Enums\PluginConfigType;
 use QUpload\Logging\FileLogger;
 
+use QUpload\Traits\Admin\AdminTrait;
 use QUpload\Traits\Auth\AuthTrait;
 use QUpload\Traits\Route\RouteRegistrationTrait;
 use QUpload\Traits\Core\StatusHandlerTrait;
@@ -25,6 +26,7 @@ use QUpload\Traits\Upload\UploadHandlerTrait;
 use QUpload\Traits\Activate\ActivateHandlerTrait;
 
 class Plugin {
+    use AdminTrait;
     use AuthTrait;
     use RouteRegistrationTrait;
     use StatusHandlerTrait;
@@ -48,6 +50,7 @@ class Plugin {
         $this->fileLogger->info('Plugin constructor starting', ['version' => PluginConfigType::Version->value]);
 
         add_action('rest_api_init', [$this, 'registerRoutes']);
+        $this->registerAdminPage();
 
         $this->fileLogger->info('Plugin constructor complete');
     }
