@@ -22,15 +22,21 @@ if (!defined('ABSPATH')) {
 namespace RiseupAsia\Enums;
 
 enum PluginConfigType: string {
-    case Slug       = 'riseup-asia-uploader';
-    case Name       = 'Riseup Asia Uploader';
-    case Version    = '1.56.0';
-    case LogPrefix  = '[RiseupAsia]';
-    case ApiBase    = 'riseup-asia-uploader';
-    case ApiVersion = 'v1';
+    case Slug          = 'riseup-asia-uploader';
+    case ShortName     = 'RiseupAsia';
+    case Name          = 'Riseup Asia Uploader';
+    case Version       = '1.63.0';
+    case LogPrefix     = '[Riseup Asia]';
+    case ApiNamespace  = 'riseup-asia-uploader';
+    case ApiVersion    = 'v1';
+    case SettingsGroup = 'riseup_asia_settings_group';
 
     public function isEqual(self $other): bool {
         return $this === $other;
+    }
+
+    public static function apiFullNamespace(): string {
+        return self::ApiNamespace->value . '/' . self::ApiVersion->value;
     }
 }
 ```

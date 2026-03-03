@@ -1,9 +1,9 @@
 # Memory: architecture/php/core-enum-inventory
-Updated: 2026-02-23
+Updated: 2026-03-03
 
 Core enums in the `RiseupAsia\Enums` namespace include:
 
-- **PluginConfigType**: Identity (Slug, Name, Version, LogPrefix, SettingsGroup).
+- **PluginConfigType**: Identity (Slug, ShortName, Name, Version, LogPrefix, SettingsGroup). Must include `ShortName` and `LogPrefix` cases — see `plugin-identity-standard.md`.
 - **OptionNameType** & **HookType**: WordPress keys and hooks.
 - **HttpStatusType**: HTTP status codes including redirect (301–308) with helpers `isSuccess()`, `isClientError()`, `isServerError()`, `isRetryable()`, `isRedirect()`.
 - **HttpHeaderType**: HTTP header name constants (Location, ContentType). All `wp_remote_retrieve_header()` calls must use this enum.
