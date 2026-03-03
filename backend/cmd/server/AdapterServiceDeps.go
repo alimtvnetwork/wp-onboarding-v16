@@ -49,6 +49,72 @@ func (a *SiteSessionAdapter) Log(sessionId, level, step, message string, details
 	})
 }
 
+// LogStageStart delegates to session.Service.LogStageStart.
+func (a *SiteSessionAdapter) LogStageStart(sessionId, stageName string) {
+	isServiceMissing := a == nil || a.service == nil
+
+	if isServiceMissing {
+		return
+	}
+
+	a.service.LogStageStart(sessionId, stageName)
+}
+
+// LogStageEnd delegates to session.Service.LogStageEnd.
+func (a *SiteSessionAdapter) LogStageEnd(sessionId, stageName, status string, durationMs int64) {
+	isServiceMissing := a == nil || a.service == nil
+
+	if isServiceMissing {
+		return
+	}
+
+	a.service.LogStageEnd(sessionId, stageName, status, durationMs)
+}
+
+// EndSession delegates to session.Service.EndSession.
+func (a *SiteSessionAdapter) EndSession(sessionId, status, errorMsg string) {
+	isServiceMissing := a == nil || a.service == nil
+
+	if isServiceMissing {
+		return
+	}
+
+	a.service.EndSession(sessionId, status, errorMsg)
+}
+
+// SaveRequest delegates to session.Service.SaveRequest.
+func (a *SiteSessionAdapter) SaveRequest(sessionId string, req *session.SessionRequest) {
+	isServiceMissing := a == nil || a.service == nil
+
+	if isServiceMissing {
+		return
+	}
+
+	a.service.SaveRequest(sessionId, req)
+}
+
+// SaveResponse delegates to session.Service.SaveResponse.
+func (a *SiteSessionAdapter) SaveResponse(sessionId string, resp *session.SessionResponse) {
+	isServiceMissing := a == nil || a.service == nil
+
+	if isServiceMissing {
+		return
+	}
+
+	a.service.SaveResponse(sessionId, resp)
+}
+
+// SaveError delegates to session.Service.SaveError.
+func (a *SiteSessionAdapter) SaveError(sessionId string, stackTrace *session.SessionStackTrace, errorMsg string, details json.RawMessage) {
+	isServiceMissing := a == nil || a.service == nil
+
+	if isServiceMissing {
+		return
+	}
+
+	a.service.SaveError(sessionId, stackTrace, errorMsg, details)
+}
+
 // PublishHistoryRecorderAdapter bridges *publishhistory.Service to publish.PublishHistoryRecorder.
 type PublishHistoryRecorderAdapter struct {
 	service *publishhistory.Service
