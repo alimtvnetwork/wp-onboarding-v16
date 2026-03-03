@@ -224,6 +224,36 @@ type QueueStatusData struct {
 	Failed    int
 }
 
+// --- Bulk publish events ---
+
+// BulkPublishStartedData is broadcast when a bulk publish operation begins.
+type BulkPublishStartedData struct {
+	Type            string
+	TotalOperations int
+	PluginCount     int
+	SiteCount       int
+}
+
+// BulkPublishProgressData is broadcast for each item in a bulk publish.
+type BulkPublishProgressData struct {
+	Type     string
+	PluginId int64
+	SiteId   int64
+	Current  int
+	Total    int
+	Progress int
+	Message  string
+}
+
+// BulkPublishCompleteData is broadcast when a bulk publish finishes.
+type BulkPublishCompleteData struct {
+	Type       string
+	Succeeded  int
+	Failed     int
+	Total      int
+	DurationMs int64
+}
+
 // --- Version events ---
 
 // VersionCreatedData is broadcast when a new plugin version is recorded.

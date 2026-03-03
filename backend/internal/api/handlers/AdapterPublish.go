@@ -17,6 +17,7 @@ type PublishServiceInterface interface {
 	PublishFiles(ctx context.Context, pluginId, siteId int64, files []string) (*publish.PublishResult, *apperror.AppError)
 	PreviewPublish(ctx context.Context, pluginId, siteId int64) (*publish.PublishPreviewResult, *apperror.AppError)
 	GetFileDiff(ctx context.Context, pluginId, siteId int64, filePath string) (*publish.FileDiffResult, *apperror.AppError)
+	BulkPublish(ctx context.Context, input publish.BulkPublishInput) (*publish.BulkPublishResult, *apperror.AppError)
 }
 
 // BackupServiceInterface defines backup service methods for HTTP handlers.
@@ -62,6 +63,15 @@ func (a *PublishServiceAdapter) PreviewPublish(ctx context.Context, pluginId, si
 
 func (a *PublishServiceAdapter) GetFileDiff(ctx context.Context, pluginId, siteId int64, filePath string) (*publish.FileDiffResult, *apperror.AppError) {
 	result := a.Service.GetFileDiff(ctx, pluginId, siteId, filePath)
+	if result.HasError() {
+		return nil, result.AppError()
+	}
+	v := result.Value()
+	return &v, nil
+}
+
+func (a *PublishServiceAdapter) BulkPublish(ctx context.Context, input publish.BulkPublishInput) (*publish.BulkPublishResult, *apperror.AppError) {
+	result := a.Service.BulkPublish(ctx, input)
 	if result.HasError() {
 		return nil, result.AppError()
 	}

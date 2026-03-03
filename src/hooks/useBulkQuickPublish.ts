@@ -7,7 +7,8 @@ import { useExecutionLoggerStore } from '@/hooks/useExecutionLogger';
 
 /**
  * Hook for bulk quick publish operations.
- * Publishes multiple selected plugins to all their mapped sites.
+ * Publishes multiple selected plugins to all their mapped sites
+ * via the server-side bulk publish endpoint for sequential processing.
  */
 export function useBulkQuickPublish() {
   const queryClient = useQueryClient();
@@ -20,18 +21,17 @@ export function useBulkQuickPublish() {
 
   /**
    * Bulk quick publish: deploy multiple plugins to all their mapped sites
-   * with configurable concurrency to prevent WordPress overload
+   * via the server-side bulk endpoint with sequential processing.
    */
   const bulkQuickPublish = useCallback(async (
     plugins: Plugin[],
-    options?: {
-      concurrency?: number; // Max simultaneous publishes (default: 2)
+    _options?: {
+      concurrency?: number; // Kept for API compat but unused (server controls sequencing)
     }
   ) => {
-    const concurrency = options?.concurrency ?? 2;
     const execLogger = useExecutionLoggerStore.getState();
     const chainId = execLogger.startChain(`BulkQuickPublish → ${plugins.length} plugins`);
-    execLogger.log({ type: 'handler', name: 'bulkQuickPublish', args: `${plugins.length} plugins, concurrency=${concurrency}` });
+    execLogger.log({ type: 'handler', name: 'bulkQuickPublish', args: `${plugins.length} plugins` });
 
     // Filter plugins that have mappings and aren't already publishing
     const publishablePlugins = plugins.filter(
@@ -43,108 +43,110 @@ export function useBulkQuickPublish() {
       return;
     }
 
-    // Build all publish tasks
-    const tasks: Array<{
-      plugin: Plugin;
-      siteId: number;
-      siteName: string;
-      siteUrl: string;
-      operationId: string;
-    }> = [];
+    // Collect unique site IDs and create operation tracking entries
+    const pluginIds: number[] = [];
+    const siteIdSet = new Set<number>();
 
     for (const plugin of publishablePlugins) {
+      pluginIds.push(plugin.id);
       for (const mapping of plugin.mappings) {
-        const operationId = startOperation({
+        siteIdSet.add(mapping.siteId);
+
+        // Track each plugin-site pair in the store for UI progress
+        startOperation({
           pluginId: plugin.id,
           pluginName: plugin.name,
           siteId: mapping.siteId,
           siteName: mapping.siteName,
           siteUrl: mapping.siteUrl,
         });
-        tasks.push({
-          plugin,
-          siteId: mapping.siteId,
-          siteName: mapping.siteName,
-          siteUrl: mapping.siteUrl,
-          operationId,
-        });
       }
     }
 
-    const totalSites = tasks.length;
-    toast.info(`Publishing ${publishablePlugins.length} plugin(s) to ${totalSites} site(s)...`);
+    const siteIds = Array.from(siteIdSet);
+    const totalPairs = publishablePlugins.reduce((sum, p) => sum + p.mappings.length, 0);
+    toast.info(`Publishing ${publishablePlugins.length} plugin(s) to ${totalPairs} site(s)...`);
 
-    // Execute with concurrency limit
-    let completed = 0;
-    let succeeded = 0;
-    let failed = 0;
+    // Get user preferences
+    let uploadMode: "file" | "zip" = "file";
+    try {
+      const saved = localStorage.getItem("wppp_upload_mode");
+      if (saved === "zip") uploadMode = "zip";
+    } catch { /* default */ }
 
-    const executeTask = async (task: typeof tasks[0]) => {
-      // Get upload mode from localStorage
-      let uploadMode: "file" | "zip" = "file";
-      try {
-        const saved = localStorage.getItem("wppp_upload_mode");
-        if (saved === "zip") uploadMode = "zip";
-      } catch { /* default */ }
+    let keepZipFiles = false;
+    try {
+      const saved = localStorage.getItem("wppp_keep_zip_files");
+      keepZipFiles = saved === "true";
+    } catch { /* default */ }
 
-      let keepZipFiles = false;
-      try {
-        const saved = localStorage.getItem("wppp_keep_zip_files");
-        keepZipFiles = saved === "true";
-      } catch { /* default */ }
+    const publishMode = uploadMode === "zip" ? "full" : "selected";
 
-      const publishMode = uploadMode === "zip" ? "full" : "selected";
-
-      try {
-        const response = await api.publishPlugin(task.plugin.id, task.siteId, {
-          mode: publishMode,
-          createBackup: true,
-          keepZipFiles,
-        });
-
-        if (response.success) {
-          succeeded++;
-          completeOperation(task.operationId, true, undefined, response.data?.filesUpdated || 0);
-        } else {
-          failed++;
-          completeOperation(task.operationId, false, response.error?.message);
-        }
-      } catch (error: unknown) {
-        failed++;
-        completeOperation(
-          task.operationId,
-          false,
-          error instanceof Error ? error.message : 'Unknown error'
-        );
-      }
-      completed++;
-    };
-
-    // Process tasks with concurrency limit
-    const executing = new Set<Promise<void>>();
-    for (const task of tasks) {
-      const promise = executeTask(task).then(() => {
-        executing.delete(promise);
+    try {
+      const response = await api.bulkPublish({
+        pluginIds,
+        siteIds,
+        mode: publishMode,
+        createBackup: true,
+        keepZipFiles,
       });
-      executing.add(promise);
 
-      if (executing.size >= concurrency) {
-        await Promise.race(executing);
+      if (response.success && response.data) {
+        const result = response.data;
+
+        // Complete each tracked operation based on server results
+        for (const item of result.items) {
+          const operations = usePublishStore.getState().operations;
+          for (const [opId, op] of operations) {
+            const isMatch = op.pluginId === item.pluginId && op.siteId === item.siteId;
+            if (isMatch) {
+              completeOperation(opId, item.isSuccess, item.errorMessage, 0);
+              break;
+            }
+          }
+        }
+
+        // Summary toast
+        if (result.failed === 0) {
+          toast.success(`Published ${publishablePlugins.length} plugin(s) to ${result.succeeded} site(s)`);
+        } else if (result.succeeded === 0) {
+          toast.error(`Failed to publish to all ${result.totalOperations} sites`);
+        } else {
+          toast.warning(`Published to ${result.succeeded} sites, failed on ${result.failed}`);
+        }
+      } else {
+        // Complete all operations as failed
+        const errorMsg = response.error?.message || 'Bulk publish failed';
+        completeAllOperationsAsFailed(publishablePlugins, errorMsg, completeOperation);
+        toast.error(errorMsg);
       }
-    }
-    await Promise.all(executing);
-
-    // Summary toast
-    if (failed === 0) {
-      toast.success(`Published ${publishablePlugins.length} plugin(s) to ${succeeded} site(s)`);
-    } else if (succeeded === 0) {
-      toast.error(`Failed to publish to all ${totalSites} sites`);
-    } else {
-      toast.warning(`Published to ${succeeded} sites, failed on ${failed}`);
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      completeAllOperationsAsFailed(publishablePlugins, errorMsg, completeOperation);
+      toast.error(`Bulk publish failed: ${errorMsg}`);
     }
 
     queryClient.invalidateQueries({ queryKey: ["plugins"] });
+    execLogger.endChain(chainId);
   }, [hasActiveOperation, startOperation, completeOperation, queryClient]);
 
   return { bulkQuickPublish };
+}
+
+/**
+ * Marks all tracked operations for the given plugins as failed.
+ */
+function completeAllOperationsAsFailed(
+  plugins: Plugin[],
+  errorMsg: string,
+  completeOperation: (id: string, success: boolean, error?: string) => void,
+) {
+  const operations = usePublishStore.getState().operations;
+  for (const plugin of plugins) {
+    for (const [opId, op] of operations) {
+      if (op.pluginId === plugin.id) {
+        completeOperation(opId, false, errorMsg);
+      }
+    }
+  }
 }
