@@ -10,6 +10,8 @@
 
 namespace RiseupAsia\Database\Traits;
 
+use RiseupAsia\Helpers\InitHelpers;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -40,6 +42,8 @@ trait OrmMutationTrait {
         try {
             return $this->isNew ? $this->doInsert() : $this->doUpdate();
         } catch (PDOException $e) {
+            InitHelpers::errorLog($e, 'Orm::save() failed:');
+
             return false;
         }
     }
@@ -121,6 +125,8 @@ trait OrmMutationTrait {
 
             return $stmt->rowCount();
         } catch (PDOException $e) {
+            InitHelpers::errorLog($e, 'Orm::delete() failed:');
+
             return 0;
         }
     }
