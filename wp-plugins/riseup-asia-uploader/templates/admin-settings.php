@@ -36,15 +36,12 @@ $pluginSlug = PluginConfigType::Slug->value;
 }
 </style>
 <div class="wrap riseup-admin">
-    <h1>
-        <span class="dashicons dashicons-admin-settings"></span>
-        <?php echo esc_html($pluginName . ' - ' . __('Settings', $pluginSlug)); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
-    </h1>
-
-    <p class="description">
-        <?php esc_html_e('Configure API endpoints, authentication requirements, and auto-update settings.', $pluginSlug); ?>
-    </p>
+    <?php
+    $pageIcon = 'dashicons-admin-settings';
+    $pageTitle = $pluginName . ' - ' . __('Settings', $pluginSlug);
+    $pageDescription = __('Configure API endpoints, authentication requirements, and auto-update settings.', $pluginSlug);
+    include __DIR__ . '/partials/shared/page-header.php';
+    ?>
 
     <?php if (isset($_GET['settings-updated']) && $_GET['settings-updated']): ?>
         <div class="notice notice-success is-dismissible">

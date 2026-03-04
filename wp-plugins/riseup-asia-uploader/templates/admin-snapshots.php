@@ -23,15 +23,12 @@ $pluginName = PluginConfigType::Name->value;
 $pluginSlug = PluginConfigType::Slug->value;
 ?>
 <div class="wrap riseup-admin">
-    <h1>
-        <span class="dashicons dashicons-database"></span>
-        <?php echo esc_html(__('Database Snapshots', $pluginSlug)); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
-    </h1>
-
-    <p class="description">
-        <?php esc_html_e('Create, manage, and restore database snapshots. Snapshots are stored as SQLite files and can be exported/imported as ZIP archives.', $pluginSlug); ?>
-    </p>
+    <?php
+    $pageIcon = 'dashicons-database';
+    $pageTitle = __('Database Snapshots', $pluginSlug);
+    $pageDescription = __('Create, manage, and restore database snapshots. Snapshots are stored as SQLite files and can be exported/imported as ZIP archives.', $pluginSlug);
+    include __DIR__ . '/partials/shared/page-header.php';
+    ?>
 
     <!-- Actions Bar -->
     <div class="riseup-card riseup-snapshots-actions">

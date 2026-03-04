@@ -36,15 +36,12 @@ $hasValidationPlan = BooleanHelpers::hasValue($validationPlan);
 $hasValidationExpiry = BooleanHelpers::hasValue($validationExpiry);
 ?>
 <div class="wrap riseup-admin">
-    <h1>
-        <span class="dashicons dashicons-admin-network"></span>
-        <?php echo esc_html($pluginName . ' - ' . __('License', $pluginSlug)); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
-    </h1>
-
-    <p class="description">
-        <?php esc_html_e('Manage your license key to unlock premium features and receive automatic updates.', $pluginSlug); ?>
-    </p>
+    <?php
+    $pageIcon = 'dashicons-admin-network';
+    $pageTitle = $pluginName . ' - ' . __('License', $pluginSlug);
+    $pageDescription = __('Manage your license key to unlock premium features and receive automatic updates.', $pluginSlug);
+    include __DIR__ . '/partials/shared/page-header.php';
+    ?>
 
     <!-- License Status Card -->
     <div class="riseup-card">
