@@ -225,14 +225,7 @@ trait UploadExtractTrait
         try {
             $result = activate_plugin($pluginFile);
         } catch (Throwable $e) {
-            $this->fileLogger->error('Plugin activation threw an exception', [
-                'slug'      => $slug,
-                'exception' => $e->getMessage(),
-                'file'      => $e->getFile(),
-                'line'      => $e->getLine(),
-                'trace'     => $e->getTraceAsString(),
-            ]);
-            $this->fileLogger->logException($e, 'Activation exception');
+            $this->fileLogger->logException($e, 'Plugin activation threw an exception for slug: ' . $slug);
 
             return $this->errorResponse(
                 'Plugin uploaded but activation failed: ' . $e->getMessage(),
