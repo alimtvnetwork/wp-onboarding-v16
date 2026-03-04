@@ -18,7 +18,6 @@ use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\AdminTabType;
 use RiseupAsia\Enums\ColorGroupType;
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\ColorConfig;
@@ -30,7 +29,6 @@ $pluginSlug = PluginConfigType::Slug->value;
 $levelColors = ColorConfig::getGroup(ColorGroupType::LogLevel);
 
 $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
-$nonce = wp_create_nonce(NonceType::Admin->value);
 ?>
 <div class="wrap riseup-admin riseup-error-log">
 
@@ -363,8 +361,3 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
     </div>
 </div>
 
-<?php
-// Include the error log styles and scripts
-require_once __DIR__ . '/partials/admin-errors-styles.php';
-require_once __DIR__ . '/partials/admin-errors-scripts.php';
-?>
