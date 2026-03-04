@@ -71,7 +71,7 @@ trait PluginLifecycleDeleteTrait {
                 return $this->errorResponse(ResponseMessageType::DeleteFailed->value . ': ' . $error, HttpStatusType::ServerError->value);
             }
         } catch (Throwable $e) {
-            $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logPluginLifecycleException($e, ActionType::Delete->value, $slug);
 
             return $this->errorResponse('Exception during deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }

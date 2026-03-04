@@ -17,10 +17,12 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait PluginLifecycleHelpersTrait
@@ -123,5 +125,18 @@ trait PluginLifecycleHelpersTrait
         );
 
         $this->logActivity(PluginConfigType::LogPrefix->value . ' Plugin lifecycle', $entry);
+    }
+
+    /**
+     * Log a plugin lifecycle failure caused by an exception.
+     *
+     * Standardised helper that injects exception message and trace into the context
+     * array, avoiding manual concatenation in every catch block.
+     */
+    private function logPluginLifecycleException(Throwable $e, string $action, string $slug): void {
+        $this->logPluginLifecycle($action, $slug, StatusType::Failed->value, array(
+            'exception' => $e->getMessage(),
+            'trace'     => $e->getTraceAsString(),
+        ));
     }
 }

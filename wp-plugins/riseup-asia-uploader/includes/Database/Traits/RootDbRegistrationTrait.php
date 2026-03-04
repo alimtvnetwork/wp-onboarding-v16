@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use Throwable;
-use RiseupAsia\Enums\LogLevelType;
+
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\DateHelper;
@@ -111,7 +111,7 @@ trait RootDbRegistrationTrait {
                 ResponseKeyType::Plugins->value => $plugins,
             );
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to read a-root.db', array('path' => $filepath, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->logError($e, 'Failed to read a-root.db', array('path' => $filepath));
 
             return null;
         }
