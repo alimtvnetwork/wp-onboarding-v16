@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\AjaxActionType;
 use RiseupAsia\Enums\AdminPageType;
+use RiseupAsia\Enums\LicenseStatusType;
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
@@ -21,9 +23,9 @@ $pluginSlug = PluginConfigType::Slug->value;
 $hasLicenseKey = BooleanHelpers::hasValue($licenseKey ?? null);
 $hasStatus = BooleanHelpers::hasValue($licenseStatus ?? null);
 $hasCheckedAt = BooleanHelpers::hasValue($checkedAt ?? null);
-$isActive = ($licenseStatus === 'active');
-$isInactive = ($licenseStatus === 'inactive');
-$isExpired = ($licenseStatus === 'expired');
+$isActive = ($licenseStatus === LicenseStatusType::Active->value);
+$isInactive = ($licenseStatus === LicenseStatusType::Inactive->value);
+$isExpired = ($licenseStatus === LicenseStatusType::Expired->value);
 
 // Validation result from LicenseManager::validateLicense()
 $hasValidation = isset($validation) && is_array($validation);
@@ -223,10 +225,10 @@ var LICENSE_AJAX = {
     REFRESH:    '<?php echo esc_js(AjaxActionType::LicenseRefresh->value); ?>'
 };
 
-var LICENSE_NONCE = 'riseup_license_nonce';
+var LICENSE_NONCE = '<?php echo esc_js(NonceType::License->value); ?>';
 
 jQuery(document).ready(function($) {
-    var nonce = '<?php echo wp_create_nonce('riseup_license_nonce'); ?>';
+    var nonce = '<?php echo wp_create_nonce(NonceType::License->value); ?>';
     var $status = $('#license-action-status');
 
     function showStatus(message, isError) {
@@ -246,7 +248,7 @@ jQuery(document).ready(function($) {
     $('#btn-license-save').on('click', function() {
         var key = $('#license_key_input').val().trim();
         if (!key) {
-            showStatus('<?php echo esc_js(__('Please enter a license key.', 'riseup-asia-uploader')); ?>', true);
+            showStatus('<?php echo esc_js(__('Please enter a license key.', $pluginSlug)); ?>', true);
             return;
         }
 
@@ -254,10 +256,10 @@ jQuery(document).ready(function($) {
 
         licenseRequest(LICENSE_AJAX.SAVE, { license_key: key })
             .done(function(r) {
-                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Validation failed.', 'riseup-asia-uploader')); ?>'), !r.success);
+                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Validation failed.', $pluginSlug)); ?>'), !r.success);
                 if (r.success) setTimeout(function() { location.reload(); }, 1500);
             })
-            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', 'riseup-asia-uploader')); ?>', true); })
+            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', $pluginSlug)); ?>', true); })
             .always(function() { $btn.prop('disabled', false); });
     });
 
@@ -267,40 +269,40 @@ jQuery(document).ready(function($) {
 
         licenseRequest(LICENSE_AJAX.ACTIVATE)
             .done(function(r) {
-                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Activation failed.', 'riseup-asia-uploader')); ?>'), !r.success);
+                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Activation failed.', $pluginSlug)); ?>'), !r.success);
                 if (r.success) setTimeout(function() { location.reload(); }, 1500);
             })
-            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', 'riseup-asia-uploader')); ?>', true); })
+            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', $pluginSlug)); ?>', true); })
             .always(function() { $btn.prop('disabled', false); });
     });
 
     // Deactivate
     $('#btn-license-deactivate').on('click', function() {
-        if (!confirm('<?php echo esc_js(__('Are you sure you want to deactivate this license?', 'riseup-asia-uploader')); ?>')) return;
+        if (!confirm('<?php echo esc_js(__('Are you sure you want to deactivate this license?', $pluginSlug)); ?>')) return;
 
         var $btn = $(this).prop('disabled', true);
 
         licenseRequest(LICENSE_AJAX.DEACTIVATE)
             .done(function(r) {
-                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Deactivation failed.', 'riseup-asia-uploader')); ?>'), !r.success);
+                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Deactivation failed.', $pluginSlug)); ?>'), !r.success);
                 if (r.success) setTimeout(function() { location.reload(); }, 1500);
             })
-            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', 'riseup-asia-uploader')); ?>', true); })
+            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', $pluginSlug)); ?>', true); })
             .always(function() { $btn.prop('disabled', false); });
     });
 
     // Remove
     $('#btn-license-remove').on('click', function() {
-        if (!confirm('<?php echo esc_js(__('Remove the license key entirely? This cannot be undone.', 'riseup-asia-uploader')); ?>')) return;
+        if (!confirm('<?php echo esc_js(__('Remove the license key entirely? This cannot be undone.', $pluginSlug)); ?>')) return;
 
         var $btn = $(this).prop('disabled', true);
 
         licenseRequest(LICENSE_AJAX.REMOVE)
             .done(function(r) {
-                showStatus(r.success ? r.data.message : '<?php echo esc_js(__('Removal failed.', 'riseup-asia-uploader')); ?>', !r.success);
+                showStatus(r.success ? r.data.message : '<?php echo esc_js(__('Removal failed.', $pluginSlug)); ?>', !r.success);
                 if (r.success) setTimeout(function() { location.reload(); }, 1500);
             })
-            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', 'riseup-asia-uploader')); ?>', true); })
+            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', $pluginSlug)); ?>', true); })
             .always(function() { $btn.prop('disabled', false); });
     });
 
@@ -311,10 +313,10 @@ jQuery(document).ready(function($) {
 
         licenseRequest(LICENSE_AJAX.REFRESH)
             .done(function(r) {
-                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Refresh failed.', 'riseup-asia-uploader')); ?>'), !r.success);
+                showStatus(r.success ? r.data.message : (r.data ? r.data.message : '<?php echo esc_js(__('Refresh failed.', $pluginSlug)); ?>'), !r.success);
                 if (r.success) setTimeout(function() { location.reload(); }, 1500);
             })
-            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', 'riseup-asia-uploader')); ?>', true); })
+            .fail(function() { showStatus('<?php echo esc_js(__('Request failed.', $pluginSlug)); ?>', true); })
             .always(function() { $btn.prop('disabled', false).find('.dashicons').removeClass('spin'); });
     });
 });

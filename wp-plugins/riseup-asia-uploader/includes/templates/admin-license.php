@@ -13,8 +13,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\AjaxActionType;
+use RiseupAsia\Enums\LicenseStatusType;
+use RiseupAsia\Enums\NonceType;
+use RiseupAsia\Enums\PluginConfigType;
+
+$pluginSlug    = PluginConfigType::Slug->value;
 $hasKey        = !empty($licenseKey);
-$isActive      = ($licenseStatus === 'active');
+$isActive      = ($licenseStatus === LicenseStatusType::Active->value);
 $maskedKey     = $hasKey ? substr($licenseKey, 0, 10) . str_repeat('•', max(0, strlen($licenseKey) - 14)) . substr($licenseKey, -4) : '';
 $activations   = $status['activations'] ?? [];
 $maxAct        = $validation['maxActivations'] ?? '—';
@@ -32,28 +38,28 @@ foreach ($activations as $act) {
 }
 
 $statusColor = match ($licenseStatus) {
-    'active'    => '#00a32a',
-    'expired'   => '#d63638',
-    'suspended' => '#dba617',
-    'revoked'   => '#d63638',
-    default     => '#787c82',
+    LicenseStatusType::Active->value    => '#00a32a',
+    LicenseStatusType::Expired->value   => '#d63638',
+    LicenseStatusType::Suspended->value => '#dba617',
+    LicenseStatusType::Revoked->value   => '#d63638',
+    default                             => '#787c82',
 };
 
-$nonce = wp_create_nonce('riseup_license_nonce');
+$nonce = wp_create_nonce(NonceType::License->value);
 ?>
 
 <div class="wrap">
-    <h1><?php esc_html_e('License Settings', 'riseup-asia-uploader'); ?></h1>
+    <h1><?php esc_html_e('License Settings', $pluginSlug); ?></h1>
 
     <div id="riseup-license-notice" style="display:none;" class="notice is-dismissible"><p></p></div>
 
     <!-- License Key Input -->
     <div class="card" style="max-width:720px; margin-top:20px; padding:20px;">
-        <h2 style="margin-top:0;"><?php esc_html_e('License Key', 'riseup-asia-uploader'); ?></h2>
+        <h2 style="margin-top:0;"><?php esc_html_e('License Key', $pluginSlug); ?></h2>
 
         <?php if ($hasKey): ?>
             <p>
-                <strong><?php esc_html_e('Current Key:', 'riseup-asia-uploader'); ?></strong>
+                <strong><?php esc_html_e('Current Key:', $pluginSlug); ?></strong>
                 <code style="font-size:14px;"><?php echo esc_html($maskedKey); ?></code>
             </p>
         <?php endif; ?>
@@ -61,7 +67,7 @@ $nonce = wp_create_nonce('riseup_license_nonce');
         <table class="form-table" role="presentation">
             <tr>
                 <th scope="row">
-                    <label for="riseup-license-key"><?php echo $hasKey ? esc_html__('Replace Key', 'riseup-asia-uploader') : esc_html__('Enter Key', 'riseup-asia-uploader'); ?></label>
+                    <label for="riseup-license-key"><?php echo $hasKey ? esc_html__('Replace Key', $pluginSlug) : esc_html__('Enter Key', $pluginSlug); ?></label>
                 </th>
                 <td>
                     <input
@@ -72,11 +78,11 @@ $nonce = wp_create_nonce('riseup_license_nonce');
                         autocomplete="off"
                     />
                     <button type="button" id="riseup-license-save" class="button button-primary">
-                        <?php esc_html_e('Save & Validate', 'riseup-asia-uploader'); ?>
+                        <?php esc_html_e('Save & Validate', $pluginSlug); ?>
                     </button>
                     <?php if ($hasKey): ?>
                         <button type="button" id="riseup-license-remove" class="button" style="color:#d63638; border-color:#d63638;">
-                            <?php esc_html_e('Remove Key', 'riseup-asia-uploader'); ?>
+                            <?php esc_html_e('Remove Key', $pluginSlug); ?>
                         </button>
                     <?php endif; ?>
                 </td>
@@ -88,40 +94,40 @@ $nonce = wp_create_nonce('riseup_license_nonce');
     <!-- Status Display -->
     <div class="card" style="max-width:720px; margin-top:20px; padding:20px;">
         <h2 style="margin-top:0;">
-            <?php esc_html_e('License Status', 'riseup-asia-uploader'); ?>
+            <?php esc_html_e('License Status', $pluginSlug); ?>
             <span style="display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600; color:#fff; background:<?php echo esc_attr($statusColor); ?>; vertical-align:middle; margin-left:8px;">
-                <?php echo esc_html(strtoupper($licenseStatus ?: 'unknown')); ?>
+                <?php echo esc_html(strtoupper($licenseStatus ?: LicenseStatusType::Unknown->value)); ?>
             </span>
         </h2>
 
         <table class="widefat striped" style="max-width:500px;">
             <tbody>
                 <tr>
-                    <td><strong><?php esc_html_e('Product', 'riseup-asia-uploader'); ?></strong></td>
+                    <td><strong><?php esc_html_e('Product', $pluginSlug); ?></strong></td>
                     <td><?php echo esc_html($product); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php esc_html_e('License Type', 'riseup-asia-uploader'); ?></strong></td>
+                    <td><strong><?php esc_html_e('License Type', $pluginSlug); ?></strong></td>
                     <td><?php echo esc_html($licenseType); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php esc_html_e('Activations', 'riseup-asia-uploader'); ?></strong></td>
+                    <td><strong><?php esc_html_e('Activations', $pluginSlug); ?></strong></td>
                     <td><?php echo esc_html($currentAct . ' / ' . $maxAct); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php esc_html_e('This Domain', 'riseup-asia-uploader'); ?></strong></td>
+                    <td><strong><?php esc_html_e('This Domain', $pluginSlug); ?></strong></td>
                     <td>
                         <code><?php echo esc_html($domain); ?></code>
                         <?php if ($domainActive): ?>
-                            <span style="color:#00a32a; margin-left:6px;">✓ <?php esc_html_e('Activated', 'riseup-asia-uploader'); ?></span>
+                            <span style="color:#00a32a; margin-left:6px;">✓ <?php esc_html_e('Activated', $pluginSlug); ?></span>
                         <?php else: ?>
-                            <span style="color:#787c82; margin-left:6px;">— <?php esc_html_e('Not activated', 'riseup-asia-uploader'); ?></span>
+                            <span style="color:#787c82; margin-left:6px;">— <?php esc_html_e('Not activated', $pluginSlug); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
                 <?php if (!empty($checkedAt)): ?>
                 <tr>
-                    <td><strong><?php esc_html_e('Last Checked', 'riseup-asia-uploader'); ?></strong></td>
+                    <td><strong><?php esc_html_e('Last Checked', $pluginSlug); ?></strong></td>
                     <td><?php echo esc_html(date('Y-m-d H:i:s', (int) $checkedAt)); ?></td>
                 </tr>
                 <?php endif; ?>
@@ -131,15 +137,15 @@ $nonce = wp_create_nonce('riseup_license_nonce');
         <p style="margin-top:16px;">
             <?php if ($domainActive): ?>
                 <button type="button" id="riseup-license-deactivate" class="button">
-                    <?php esc_html_e('Deactivate on This Site', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Deactivate on This Site', $pluginSlug); ?>
                 </button>
             <?php else: ?>
                 <button type="button" id="riseup-license-activate" class="button button-primary">
-                    <?php esc_html_e('Activate on This Site', 'riseup-asia-uploader'); ?>
+                    <?php esc_html_e('Activate on This Site', $pluginSlug); ?>
                 </button>
             <?php endif; ?>
             <button type="button" id="riseup-license-refresh" class="button" style="margin-left:8px;">
-                <?php esc_html_e('Refresh Status', 'riseup-asia-uploader'); ?>
+                <?php esc_html_e('Refresh Status', $pluginSlug); ?>
             </button>
         </p>
     </div>
@@ -147,12 +153,12 @@ $nonce = wp_create_nonce('riseup_license_nonce');
     <!-- Activations List -->
     <?php if (!empty($activations)): ?>
     <div class="card" style="max-width:720px; margin-top:20px; padding:20px;">
-        <h2 style="margin-top:0;"><?php esc_html_e('Active Domains', 'riseup-asia-uploader'); ?></h2>
+        <h2 style="margin-top:0;"><?php esc_html_e('Active Domains', $pluginSlug); ?></h2>
         <table class="widefat striped" style="max-width:500px;">
             <thead>
                 <tr>
-                    <th><?php esc_html_e('Domain', 'riseup-asia-uploader'); ?></th>
-                    <th><?php esc_html_e('Activated', 'riseup-asia-uploader'); ?></th>
+                    <th><?php esc_html_e('Domain', $pluginSlug); ?></th>
+                    <th><?php esc_html_e('Activated', $pluginSlug); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -211,25 +217,25 @@ $nonce = wp_create_nonce('riseup_license_nonce');
     $('#riseup-license-save').on('click', function() {
         var key = $('#riseup-license-key').val().trim();
         if (!key) { showNotice('Please enter a license key.', 'warning'); return; }
-        licenseAjax('riseup_license_save', {license_key: key}, this);
+        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseSave->value); ?>', {license_key: key}, this);
     });
 
     $('#riseup-license-activate').on('click', function() {
-        licenseAjax('riseup_license_activate', {}, this);
+        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseActivate->value); ?>', {}, this);
     });
 
     $('#riseup-license-deactivate').on('click', function() {
         if (!confirm('Deactivate license on this site?')) return;
-        licenseAjax('riseup_license_deactivate', {}, this);
+        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseDeactivate->value); ?>', {}, this);
     });
 
     $('#riseup-license-remove').on('click', function() {
         if (!confirm('Remove the license key? This will also deactivate this site.')) return;
-        licenseAjax('riseup_license_remove', {}, this);
+        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseRemove->value); ?>', {}, this);
     });
 
     $('#riseup-license-refresh').on('click', function() {
-        licenseAjax('riseup_license_refresh', {}, this);
+        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseRefresh->value); ?>', {}, this);
     });
 })(jQuery);
 </script>
