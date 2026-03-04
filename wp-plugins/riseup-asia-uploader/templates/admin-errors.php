@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\AdminPageType;
 use RiseupAsia\Enums\AdminTabType;
+use RiseupAsia\Enums\ColorGroupType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -26,7 +27,7 @@ use RiseupAsia\Helpers\DateHelper;
 $pluginName = PluginConfigType::Name->value;
 $pluginSlug = PluginConfigType::Slug->value;
 
-$levelColors = ColorConfig::getGroup('logLevel');
+$levelColors = ColorConfig::getGroup(ColorGroupType::LogLevel);
 
 $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
 $nonce = wp_create_nonce(NonceType::Admin->value);
