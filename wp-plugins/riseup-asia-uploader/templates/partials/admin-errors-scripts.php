@@ -56,7 +56,7 @@ jQuery(document).ready(function($) {
     // =====================================================================
     $('#riseup-dismiss-flash').on('click', function() {
         var $btn = $(this);
-        $btn.prop('disabled', true).text('<?php echo esc_js(__('Dismissing...', 'riseup-asia-uploader')); ?>');
+        $btn.prop('disabled', true).text('<?php echo esc_js(__('Dismissing...', $pluginSlug)); ?>');
 
         $.post(ajaxurl, {
             action: ERROR_AJAX.DISMISS_FLASH,
@@ -67,7 +67,7 @@ jQuery(document).ready(function($) {
                 $('.tab-badge, .error-count-badge').fadeOut(200);
             }
         }).fail(function() {
-            $btn.prop('disabled', false).text('<?php echo esc_js(__('Mark as Seen', 'riseup-asia-uploader')); ?>');
+            $btn.prop('disabled', false).text('<?php echo esc_js(__('Mark as Seen', $pluginSlug)); ?>');
         });
     });
 
@@ -75,7 +75,7 @@ jQuery(document).ready(function($) {
     // CLEAR ALL ERRORS
     // =====================================================================
     $('#riseup-clear-errors').on('click', function() {
-        if (!confirm('<?php echo esc_js(__('Are you sure you want to clear all error sessions? This cannot be undone.', 'riseup-asia-uploader')); ?>')) {
+        if (!confirm('<?php echo esc_js(__('Are you sure you want to clear all error sessions? This cannot be undone.', $pluginSlug)); ?>')) {
             return;
         }
 
@@ -91,7 +91,7 @@ jQuery(document).ready(function($) {
             }
         }).fail(function() {
             $btn.prop('disabled', false);
-            alert('<?php echo esc_js(__('Failed to clear errors.', 'riseup-asia-uploader')); ?>');
+            alert('<?php echo esc_js(__('Failed to clear errors.', $pluginSlug)); ?>');
         });
     });
 
@@ -153,7 +153,7 @@ jQuery(document).ready(function($) {
 
         if (navigator.clipboard) {
             navigator.clipboard.writeText(content).then(function() {
-                showBtnFeedback('#btn-copy-log', '<?php echo esc_js(__('Copied!', 'riseup-asia-uploader')); ?>');
+                showBtnFeedback('#btn-copy-log', '<?php echo esc_js(__('Copied!', $pluginSlug)); ?>');
             });
         }
     });
@@ -176,7 +176,7 @@ jQuery(document).ready(function($) {
 
     // Clear log file
     $('#btn-clear-log').on('click', function() {
-        if (!confirm('<?php echo esc_js(__('Are you sure you want to clear this log file?', 'riseup-asia-uploader')); ?>')) {
+        if (!confirm('<?php echo esc_js(__('Are you sure you want to clear this log file?', $pluginSlug)); ?>')) {
             return;
         }
 
@@ -234,7 +234,7 @@ jQuery(document).ready(function($) {
 
         // Stack trace
         var $stackContent = $('#modal-stack-content');
-        $stackContent.text(stackTrace || '<?php echo esc_js(__('No stack trace available.', 'riseup-asia-uploader')); ?>');
+        $stackContent.text(stackTrace || '<?php echo esc_js(__('No stack trace available.', $pluginSlug)); ?>');
 
         // Raw JSON
         var rawData = { context: context, stackTrace: stackTrace };
@@ -264,7 +264,7 @@ jQuery(document).ready(function($) {
         var rawContent = $('#modal-raw-content').text();
         if (navigator.clipboard) {
             navigator.clipboard.writeText(rawContent).then(function() {
-                showBtnFeedback('#modal-copy-all', '<?php echo esc_js(__('Copied!', 'riseup-asia-uploader')); ?>');
+                showBtnFeedback('#modal-copy-all', '<?php echo esc_js(__('Copied!', $pluginSlug)); ?>');
             });
         }
     });
@@ -304,7 +304,7 @@ jQuery(document).ready(function($) {
 
     function renderContextTree(obj) {
         if (!obj || typeof obj !== 'object') {
-            return '<span class="ctx-null"><?php echo esc_js(__('No context data', 'riseup-asia-uploader')); ?></span>';
+            return '<span class="ctx-null"><?php echo esc_js(__('No context data', $pluginSlug)); ?></span>';
         }
 
         var html = '<div style="padding-left: 0;">';
