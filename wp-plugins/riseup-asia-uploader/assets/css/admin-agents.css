@@ -1,0 +1,40 @@
+/* ================================================================
+   ADMIN AGENTS PAGE STYLES
+   ================================================================ */
+
+.riseup-form .required { color: #dc3232; }
+.riseup-status { margin-left: 10px; }
+.riseup-status.success { color: #46b450; }
+.riseup-status.error { color: #dc3232; }
+
+.riseup-admin.riseup-agents .column-name { width: 20%; }
+.riseup-admin.riseup-agents .column-url { width: 30%; }
+.riseup-admin.riseup-agents .column-status { width: 10%; }
+.riseup-admin.riseup-agents .column-sync { width: 15%; }
+.riseup-admin.riseup-agents .column-actions { width: 25%; }
+
+.status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Agent-specific modal overrides */
+.riseup-admin.riseup-agents .riseup-modal-content {
+    max-width: 800px;
+}
+
+.riseup-admin .button .dashicons {
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 2px;
+}
+.action-btn { margin-right: 5px; }
+.action-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
