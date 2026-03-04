@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 enum LicenseStatusType: string
 {
     case Active    = 'active';
+    case Inactive  = 'inactive';
     case Expired   = 'expired';
     case Suspended = 'suspended';
     case Revoked   = 'revoked';

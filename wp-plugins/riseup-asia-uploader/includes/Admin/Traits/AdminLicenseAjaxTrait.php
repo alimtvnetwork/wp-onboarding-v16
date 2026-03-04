@@ -12,13 +12,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Licensing\LicenseManager;
 
 trait AdminLicenseAjaxTrait {
 
     /** Save a new license key and validate it. */
     public function ajaxLicenseSave(): void {
-        check_ajax_referer('riseup_license_nonce', '_nonce');
+        check_ajax_referer(NonceType::License->value, '_nonce');
 
         $key = isset($_POST['license_key']) ? sanitize_text_field($_POST['license_key']) : '';
 
@@ -41,7 +42,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Activate the stored license on this domain. */
     public function ajaxLicenseActivate(): void {
-        check_ajax_referer('riseup_license_nonce', '_nonce');
+        check_ajax_referer(NonceType::License->value, '_nonce');
 
         $manager = LicenseManager::getInstance();
         $result  = $manager->activateLicense();
@@ -58,7 +59,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Deactivate the stored license from this domain. */
     public function ajaxLicenseDeactivate(): void {
-        check_ajax_referer('riseup_license_nonce', '_nonce');
+        check_ajax_referer(NonceType::License->value, '_nonce');
 
         $manager = LicenseManager::getInstance();
         $result  = $manager->deactivateLicense();
@@ -75,7 +76,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Remove the license key entirely. */
     public function ajaxLicenseRemove(): void {
-        check_ajax_referer('riseup_license_nonce', '_nonce');
+        check_ajax_referer(NonceType::License->value, '_nonce');
 
         $manager = LicenseManager::getInstance();
         $manager->removeLicenseKey();
@@ -85,7 +86,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Refresh validation status from the API. */
     public function ajaxLicenseRefresh(): void {
-        check_ajax_referer('riseup_license_nonce', '_nonce');
+        check_ajax_referer(NonceType::License->value, '_nonce');
 
         $manager = LicenseManager::getInstance();
         $result  = $manager->validateLicense();

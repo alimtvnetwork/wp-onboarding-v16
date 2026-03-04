@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 enum NonceType: string
 {
     case Admin            = 'riseup_admin_nonce';
+    case License          = 'riseup_license_nonce';
     case SnapshotDownload = 'riseup_snapshot_download_';
     case WpRest           = 'wp_rest';
 
