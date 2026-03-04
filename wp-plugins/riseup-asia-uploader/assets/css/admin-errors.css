@@ -1,0 +1,387 @@
+/* ================================================================
+   ERROR LOG PAGE STYLES
+   ================================================================ */
+
+/* Flash Banner */
+.riseup-flash-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    border: 1px solid #ffc107;
+    border-left: 4px solid #ff9800;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.15);
+}
+.riseup-flash-banner .flash-icon { font-size: 20px; }
+.riseup-flash-banner .flash-content { flex: 1; }
+.riseup-flash-banner .flash-time {
+    display: block;
+    font-size: 12px;
+    color: #856404;
+    margin-top: 2px;
+}
+.riseup-flash-banner .flash-dismiss { white-space: nowrap; }
+
+/* Tabs */
+.riseup-tabs { margin-bottom: 0; }
+.riseup-tab-content {
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 16px;
+    background: #fff;
+}
+
+/* Tab badge */
+.tab-badge {
+    display: inline-block;
+    background: #dc3545;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+/* Filters */
+.riseup-error-log .riseup-filters {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f8f9fa;
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+}
+.riseup-error-log .riseup-filters .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+}
+.riseup-error-log .riseup-filters label span {
+    display: block;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+/* Stats */
+.riseup-error-log .riseup-stats {
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #666;
+}
+.riseup-error-log .riseup-stats .stat-item {
+    margin-right: 16px;
+}
+
+/* Error table */
+.riseup-error-table .column-id { text-align: center; }
+.riseup-error-table .column-timestamp .timestamp {
+    font-family: monospace;
+    font-size: 12px;
+    color: #555;
+}
+
+/* Level badges */
+.level-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Source file */
+.source-file {
+    font-size: 11px;
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* New row highlight */
+.error-row-new {
+    background-color: #fff8e1 !important;
+}
+.new-badge {
+    display: inline-block;
+    background: #ff9800;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+/* Error count badge (header) */
+.error-count-badge {
+    display: inline-block;
+    background: #dc3545;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* Version badge */
+.riseup-version-badge {
+    font-size: 11px;
+    font-weight: 400;
+    color: #666;
+    margin-left: 8px;
+    background: #f0f0f1;
+    padding: 2px 8px;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+/* NA placeholder */
+.na { color: #c0c0c0; }
+
+/* ── File Viewer ──────────────────────────────────── */
+.riseup-file-viewer-card {
+    background: #fff;
+    border: 1px solid #e2e4e7;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.file-viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e2e4e7;
+}
+.file-viewer-header h2 { margin: 0; font-size: 14px; }
+.file-viewer-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.file-size-label {
+    font-size: 12px;
+    color: #666;
+    margin-right: 8px;
+}
+.file-viewer-body { padding: 0; }
+.file-content-pre {
+    margin: 0;
+    padding: 16px;
+    max-height: 600px;
+    overflow: auto;
+    font-size: 12px;
+    line-height: 1.5;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+.file-loading {
+    padding: 40px;
+    text-align: center;
+    color: #666;
+}
+.file-empty {
+    padding: 40px;
+    text-align: center;
+    color: #999;
+}
+.file-empty .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #46b450;
+    display: block;
+    margin: 0 auto 8px;
+}
+
+/* Auto-refresh toggle */
+.auto-refresh-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+.auto-refresh-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+}
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+    display: inline-block;
+    transition: background 0.3s;
+}
+.live-dot.active {
+    background: #46b450;
+    animation: livePulse 1.5s infinite;
+}
+@keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ── Modal ────────────────────────────────────────── */
+.riseup-error-log .riseup-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.riseup-modal-fullscreen {
+    background: #fff;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 85vh;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+.riseup-error-log .riseup-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #ddd;
+    background: #f8f9fa;
+}
+.riseup-error-log .riseup-modal-header .modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.riseup-error-log .riseup-modal-header .modal-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.riseup-error-log .riseup-modal-header h3 { margin: 0; }
+.riseup-error-log .riseup-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    line-height: 1;
+}
+.riseup-error-log .riseup-modal-close:hover { color: #dc3232; }
+.riseup-error-log .riseup-modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Error summary bar */
+.error-summary-bar {
+    display: flex;
+    gap: 20px;
+    padding: 12px 20px;
+    background: #f0f0f1;
+    border-bottom: 1px solid #e2e4e7;
+    flex-wrap: wrap;
+}
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.summary-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #666;
+    letter-spacing: 0.5px;
+}
+.summary-value {
+    font-size: 13px;
+    color: #1e1e1e;
+}
+
+/* Modal tabs */
+.modal-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e2e4e7;
+    padding: 0 20px;
+    background: #fafafa;
+}
+.modal-tab {
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.modal-tab:hover { color: #2271b1; }
+.modal-tab.active {
+    color: #2271b1;
+    border-bottom-color: #2271b1;
+    font-weight: 600;
+}
+.modal-tab-pane { padding: 16px 20px; }
+
+/* Context tree */
+.context-tree {
+    font-family: 'SFMono-Regular', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+}
+.context-tree .ctx-key {
+    color: #0451a5;
+    font-weight: 600;
+}
+.context-tree .ctx-value { color: #1e1e1e; }
+.context-tree .ctx-null { color: #999; font-style: italic; }
+
+/* Stack trace & raw JSON */
+.stack-trace-pre,
+.raw-json-pre {
+    margin: 0;
+    padding: 16px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 400px;
+    overflow: auto;
+}
+
+/* Modal level badge */
+.modal-level-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+}

@@ -1,0 +1,50 @@
+/* ================================================================
+   ADMIN LICENSE PAGE STYLES
+   ================================================================ */
+
+.license-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.license-active {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #a3d9a5;
+}
+.license-inactive {
+    background: #f0f0f1;
+    color: #50575e;
+    border: 1px solid #c3c4c7;
+}
+.license-expired {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+.license-none {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+.license-key-display {
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+.riseup-inline-status {
+    margin-left: 10px;
+    font-size: 13px;
+}
+.riseup-inline-status.success { color: #46b450; }
+.riseup-inline-status.error { color: #dc3232; }
+
+.dashicons.spin {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}

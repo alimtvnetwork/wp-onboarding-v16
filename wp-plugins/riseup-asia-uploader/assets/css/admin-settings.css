@@ -1,0 +1,18 @@
+/* ================================================================
+   ADMIN SETTINGS PAGE STYLES
+   ================================================================ */
+
+.riseup-admin .button .dashicons {
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 2px;
+}
+.riseup-error-text {
+    color: #dc3232;
+}
+.dashicons.spin {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
