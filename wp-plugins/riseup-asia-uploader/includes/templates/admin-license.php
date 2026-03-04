@@ -182,6 +182,26 @@ $nonce = wp_create_nonce(NonceType::License->value);
 
 <script>
 (function($) {
+    // =========================================================================
+    // ENUM CONSTANTS (from PHP — prevents magic strings in JS)
+    // =========================================================================
+    var LICENSE_AJAX = {
+        SAVE:       '<?php echo esc_js(AjaxActionType::LicenseSave->value); ?>',
+        ACTIVATE:   '<?php echo esc_js(AjaxActionType::LicenseActivate->value); ?>',
+        DEACTIVATE: '<?php echo esc_js(AjaxActionType::LicenseDeactivate->value); ?>',
+        REMOVE:     '<?php echo esc_js(AjaxActionType::LicenseRemove->value); ?>',
+        REFRESH:    '<?php echo esc_js(AjaxActionType::LicenseRefresh->value); ?>'
+    };
+
+    var LICENSE_I18N = {
+        WORKING:              '<?php echo esc_js(__('Working…', $pluginSlug)); ?>',
+        ERROR_GENERIC:        '<?php echo esc_js(__('An error occurred.', $pluginSlug)); ?>',
+        REQUEST_FAILED:       '<?php echo esc_js(__('Request failed. Please try again.', $pluginSlug)); ?>',
+        ENTER_KEY:            '<?php echo esc_js(__('Please enter a license key.', $pluginSlug)); ?>',
+        CONFIRM_DEACTIVATE:   '<?php echo esc_js(__('Deactivate license on this site?', $pluginSlug)); ?>',
+        CONFIRM_REMOVE:       '<?php echo esc_js(__('Remove the license key? This will also deactivate this site.', $pluginSlug)); ?>'
+    };
+
     var nonce = <?php echo wp_json_encode($nonce); ?>;
 
     function showNotice(msg, type) {
@@ -196,7 +216,7 @@ $nonce = wp_create_nonce(NonceType::License->value);
     function licenseAjax(action, data, btn) {
         var $btn = $(btn);
         var origText = $btn.text();
-        $btn.prop('disabled', true).text('Working…');
+        $btn.prop('disabled', true).text(LICENSE_I18N.WORKING);
 
         $.post(ajaxurl, $.extend({action: action, _nonce: nonce}, data))
             .done(function(resp) {
@@ -204,38 +224,38 @@ $nonce = wp_create_nonce(NonceType::License->value);
                     showNotice(resp.data.message, 'success');
                     setTimeout(function() { location.reload(); }, 800);
                 } else {
-                    showNotice(resp.data.message || 'An error occurred.', 'error');
+                    showNotice(resp.data.message || LICENSE_I18N.ERROR_GENERIC, 'error');
                     $btn.prop('disabled', false).text(origText);
                 }
             })
             .fail(function() {
-                showNotice('Request failed. Please try again.', 'error');
+                showNotice(LICENSE_I18N.REQUEST_FAILED, 'error');
                 $btn.prop('disabled', false).text(origText);
             });
     }
 
     $('#riseup-license-save').on('click', function() {
         var key = $('#riseup-license-key').val().trim();
-        if (!key) { showNotice('Please enter a license key.', 'warning'); return; }
-        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseSave->value); ?>', {license_key: key}, this);
+        if (!key) { showNotice(LICENSE_I18N.ENTER_KEY, 'warning'); return; }
+        licenseAjax(LICENSE_AJAX.SAVE, {license_key: key}, this);
     });
 
     $('#riseup-license-activate').on('click', function() {
-        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseActivate->value); ?>', {}, this);
+        licenseAjax(LICENSE_AJAX.ACTIVATE, {}, this);
     });
 
     $('#riseup-license-deactivate').on('click', function() {
-        if (!confirm('Deactivate license on this site?')) return;
-        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseDeactivate->value); ?>', {}, this);
+        if (!confirm(LICENSE_I18N.CONFIRM_DEACTIVATE)) return;
+        licenseAjax(LICENSE_AJAX.DEACTIVATE, {}, this);
     });
 
     $('#riseup-license-remove').on('click', function() {
-        if (!confirm('Remove the license key? This will also deactivate this site.')) return;
-        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseRemove->value); ?>', {}, this);
+        if (!confirm(LICENSE_I18N.CONFIRM_REMOVE)) return;
+        licenseAjax(LICENSE_AJAX.REMOVE, {}, this);
     });
 
     $('#riseup-license-refresh').on('click', function() {
-        licenseAjax('<?php echo esc_js(AjaxActionType::LicenseRefresh->value); ?>', {}, this);
+        licenseAjax(LICENSE_AJAX.REFRESH, {}, this);
     });
 })(jQuery);
 </script>
