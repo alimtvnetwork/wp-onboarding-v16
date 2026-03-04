@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LicenseOptionType;
 use RiseupAsia\Licensing\LicenseManager;
 
 trait AdminLicensePageTrait {
@@ -22,9 +23,9 @@ trait AdminLicensePageTrait {
         $status  = $manager->getLicenseStatus();
         $validation = $manager->validateLicense();
 
-        $licenseKey    = get_option('riseup_license_key', '');
-        $licenseStatus = get_option('riseup_license_status', '');
-        $checkedAt     = get_option('riseup_license_checked_at', '');
+        $licenseKey    = get_option(LicenseOptionType::LicenseKey->value, '');
+        $licenseStatus = get_option(LicenseOptionType::LicenseStatus->value, '');
+        $checkedAt     = get_option(LicenseOptionType::LicenseCheckedAt->value, '');
 
         include dirname(__FILE__) . '/../../templates/admin-license.php';
     }
