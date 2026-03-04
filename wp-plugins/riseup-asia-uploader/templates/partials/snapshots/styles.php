@@ -1,0 +1,457 @@
+<?php
+/**
+ * Snapshot Dashboard — Styles Partial
+ *
+ * Included by admin-snapshots.php. Inherits $pluginSlug from parent scope.
+ *
+ * @package RiseupAsiaUploader
+ * @since   2.6.0
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
+<style>
+/* Actions bar */
+.riseup-actions-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.riseup-actions-row .button .dashicons {
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 2px;
+}
+.riseup-inline-status {
+    font-weight: 500;
+    margin-left: 10px;
+}
+
+/* Badges */
+.riseup-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Snapshot actions column */
+.riseup-snapshot-actions .button {
+    padding: 2px 6px;
+    min-height: 28px;
+}
+.riseup-snapshot-actions .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+/* Snapshot options & import forms */
+.riseup-snapshot-options,
+#import_form {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+.riseup-tables-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 8px;
+    background: #f9f9f9;
+}
+.riseup-table-checkbox {
+    display: inline-block;
+    margin: 2px 10px 2px 0;
+}
+
+/* Modal (shared) */
+.riseup-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.riseup-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+}
+.riseup-modal-content {
+    position: relative;
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 4px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+.riseup-modal-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+.riseup-warning-text {
+    color: #d63638;
+    font-weight: 500;
+}
+
+/* Progress bar */
+.riseup-progress-bar-wrap {
+    background: #e0e0e0;
+    border-radius: 4px;
+    height: 20px;
+    overflow: hidden;
+    margin: 12px 0 8px;
+}
+.riseup-progress-bar {
+    background: linear-gradient(90deg, #2271b1, #135e96);
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    min-width: 0;
+}
+.riseup-progress-meta {
+    font-size: 12px;
+    color: #50575e;
+    margin-bottom: 6px;
+}
+.riseup-progress-tables {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+.riseup-progress-tables h4 {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.riseup-table-status {
+    display: inline-block;
+    font-size: 11px;
+    font-family: monospace;
+    margin: 2px 8px 2px 0;
+    white-space: nowrap;
+}
+
+/* Spin animation */
+@keyframes riseup-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.riseup-spin {
+    animation: riseup-spin 1.5s linear infinite;
+    display: inline-block;
+}
+
+/* Nested snapshot rows */
+.riseup-nested-row td {
+    background: #f8f9fa !important;
+}
+.riseup-nested-row td:first-child {
+    border-left: 3px solid #7b1fa2;
+}
+.riseup-indent {
+    color: #7b1fa2;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+/* Storage mode cards */
+.riseup-storage-cards {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.riseup-storage-card {
+    cursor: pointer;
+    border: 2px solid #dcdcde;
+    border-radius: 6px;
+    padding: 0;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    flex: 1;
+    min-width: 160px;
+    max-width: 220px;
+}
+.riseup-storage-card input[type="radio"] {
+    display: none;
+}
+.riseup-storage-card-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 12px;
+    text-align: center;
+}
+.riseup-storage-card-inner strong {
+    font-size: 13px;
+}
+.riseup-storage-card-inner .description {
+    font-size: 11px;
+    margin: 0;
+    font-style: normal;
+    color: #646970;
+}
+.riseup-storage-card:hover {
+    border-color: #2271b1;
+}
+.riseup-storage-card.active {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    background: #f0f6fc;
+}
+
+/* Worker pool slider */
+.riseup-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.riseup-range-slider {
+    flex: 1;
+    max-width: 300px;
+    accent-color: #2271b1;
+}
+.riseup-slider-value {
+    display: inline-block;
+    background: #1d2327;
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 700;
+    min-width: 30px;
+    text-align: center;
+}
+/* Analytics Row Layout */
+.riseup-analytics-row {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    margin-bottom: 0;
+}
+@media (max-width: 1100px) {
+    .riseup-analytics-row { grid-template-columns: 1fr; }
+}
+
+/* Stat Cards */
+.riseup-analytics-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.riseup-stat-card {
+    flex: 1;
+    min-width: 90px;
+    background: #f6f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px 14px;
+    text-align: center;
+}
+.riseup-stat-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1d2327;
+    font-family: monospace;
+}
+.riseup-stat-label {
+    display: block;
+    font-size: 11px;
+    color: #646970;
+    margin-top: 2px;
+}
+
+/* Chart */
+.riseup-chart-container {
+    display: flex;
+    gap: 6px;
+    height: 160px;
+    margin-bottom: 8px;
+}
+.riseup-chart-y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 55px;
+    text-align: right;
+    padding-right: 6px;
+}
+.riseup-chart-y-axis span {
+    font-size: 10px;
+    color: #888;
+    font-family: monospace;
+    line-height: 1;
+}
+.riseup-chart-bars {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    border-left: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    padding: 0 4px 0 6px;
+    overflow-x: auto;
+}
+.riseup-bar-group {
+    flex: 1;
+    min-width: 14px;
+    max-width: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.riseup-bar-stack {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 130px;
+}
+.riseup-bar {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+}
+.riseup-bar-full { background: #2271b1; }
+.riseup-bar-incr { background: #7b1fa2; }
+.riseup-bar-label {
+    font-size: 9px;
+    color: #888;
+    margin-top: 3px;
+    transform: rotate(-45deg);
+    white-space: nowrap;
+}
+.riseup-chart-legend,
+.riseup-calendar-legend {
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+    color: #646970;
+    margin-top: 6px;
+}
+.riseup-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.riseup-legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+/* Calendar */
+.riseup-calendar-card {
+    min-width: 300px;
+}
+.riseup-calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.riseup-calendar-nav .button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+.riseup-calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.riseup-calendar-table th {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #646970;
+    padding: 4px 0;
+    border-bottom: 1px solid #ddd;
+}
+.riseup-calendar-table td {
+    text-align: center;
+    vertical-align: top;
+    height: 42px;
+    padding: 3px 2px;
+    border: 1px solid #f0f0f1;
+    position: relative;
+}
+.riseup-cal-empty {
+    background: #fafafa;
+}
+.riseup-cal-num {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1d2327;
+}
+.riseup-cal-today {
+    background: #f0f6fc !important;
+    border-color: #2271b1 !important;
+}
+.riseup-cal-today .riseup-cal-num {
+    color: #2271b1;
+    font-weight: 700;
+}
+.riseup-cal-dots {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 2px;
+}
+.riseup-cal-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+.riseup-cal-dot-full { background: #2271b1; }
+.riseup-cal-dot-incr { background: #7b1fa2; }
+.riseup-cal-dot-scheduled { background: #dba617; }
+.riseup-cal-count {
+    display: block;
+    font-size: 9px;
+    color: #888;
+    font-family: monospace;
+}
+.riseup-calendar-legend {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+/* Stack trace in download error modal */
+.riseup-stack-trace {
+    background: #faf5ff;
+    border: 1px solid #d8b4fe;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: #581c87;
+}
+</style>
