@@ -311,6 +311,81 @@ PHPDoc `@package` headers and file-level doc block comments (e.g., `* Riseup Asi
 
 ---
 
+## 10. Hardcoded Text Domain — Use `$pluginSlug` Variable
+
+> **Added:** 2026-03-04 — Eliminates hardcoded `'riseup-asia-uploader'` text domain strings in `__()`, `_e()`, `esc_html__()`, `esc_html_e()`, `esc_js(__())`, `_n()`, and all other WordPress i18n functions.
+
+### Why This Matters
+
+WordPress translation functions require a text domain string as the second argument. Hardcoding `'riseup-asia-uploader'` (or any plugin slug literal) across templates, traits, and classes creates:
+- **Rebrand debt** — renaming the plugin requires a full codebase grep
+- **Inconsistency risk** — typos in the domain string silently break translations
+- **Duplication** — the slug is already defined in `PluginConfigType::Slug`
+
+The project uses a `$pluginSlug` variable pattern instead, which requires manual text domain passing during POT generation but ensures a single source of truth.
+
+### Forbidden Patterns
+
+| # | ❌ Forbidden | ✅ Required | Why |
+|---|-------------|------------|-----|
+| 10.1 | `__('Text', 'riseup-asia-uploader')` | `__('Text', $pluginSlug)` | Hardcoded text domain |
+| 10.2 | `_e('Text', 'riseup-asia-uploader')` | `_e('Text', $pluginSlug)` | Hardcoded text domain |
+| 10.3 | `esc_html__('Text', 'riseup-asia-uploader')` | `esc_html__('Text', $pluginSlug)` | Hardcoded text domain |
+| 10.4 | `esc_html_e('Text', 'riseup-asia-uploader')` | `esc_html_e('Text', $pluginSlug)` | Hardcoded text domain |
+| 10.5 | `esc_js(__('Text', 'riseup-asia-uploader'))` | `esc_js(__('Text', $pluginSlug))` | Hardcoded text domain in JS strings |
+| 10.6 | `_n('singular', 'plural', $n, 'riseup-asia-uploader')` | `_n('singular', 'plural', $n, $pluginSlug)` | Hardcoded text domain |
+| 10.7 | `sprintf(__('Text %s', 'riseup-asia-uploader'), $v)` | `sprintf(__('Text %s', $pluginSlug), $v)` | Hardcoded text domain inside sprintf |
+
+### Required Setup
+
+Every file that calls translation functions must initialize the variable from the enum:
+
+```php
+// In classes/traits — at the top of each method using i18n
+$pluginSlug = PluginConfigType::Slug->value;
+
+// In templates — at the top of the file, after use statements
+$pluginSlug = PluginConfigType::Slug->value;
+```
+
+### Template Partials
+
+Partials included via `include`/`require` from a parent template **inherit** the parent's `$pluginSlug` variable. They do **not** need to redefine it, but they **must not** use the hardcoded string either.
+
+```php
+// ❌ FORBIDDEN in partial — hardcoded domain
+echo esc_js(__('Copied!', 'riseup-asia-uploader'));
+
+// ✅ REQUIRED in partial — uses inherited $pluginSlug
+echo esc_js(__('Copied!', $pluginSlug));
+```
+
+### Scope — What This Applies To
+
+- All PHP files in `includes/` (traits, classes, handlers)
+- All template files in `templates/` and `templates/partials/`
+- All JavaScript strings wrapped in PHP i18n functions
+
+### Exceptions
+
+- **Enum value definitions** in `PluginConfigType.php` and `AdminPageType.php` — these *define* the slug, they don't *use* it as a text domain
+- **`@package` PHPDoc headers** — documentation strings, not runtime logic
+- **POT generation commands** — the CLI tool may require the literal string; this is a build-time concern
+
+### Pre-Release Verification
+
+Run this grep before every release to catch regressions:
+
+```bash
+# Must return ZERO results (excluding Enums/ definitions)
+grep -rn "'riseup-asia-uploader'" --include="*.php" \
+  --exclude-dir=vendor \
+  wp-plugins/riseup-asia-uploader/ \
+  | grep -v 'includes/Enums/'
+```
+
+---
+
 ## 11. Hardcoded Display Values — Use `ColorConfig` / JSON Data Files
 
 > **Added:** 2026-03-04 — Eliminates hardcoded color hex codes and display configuration arrays scattered across templates.
@@ -397,6 +472,8 @@ The `DateHelper` class itself is the sole place where raw `gmdate()` calls are p
 [ ] Cold activation tested after adding new trait compositions
 [ ] No magic string array keys matching ResponseKeyType cases — use enum->value
 [ ] Every new repeated key (3+ files) added to ResponseKeyType enum
+[ ] No hardcoded 'riseup-asia-uploader' text domain — use $pluginSlug variable
+[ ] grep verification: zero hits outside includes/Enums/ for hardcoded slug in i18n calls
 [ ] No hardcoded color hex arrays — use ColorConfig::getGroup() / ColorConfig::logLevel()
 [ ] No inline status/theme colors in PHP logic — use ColorConfig::status() / ColorConfig::wpAdmin()
 [ ] No raw gmdate() outside DateHelper — use DateHelper::now*() or DateHelper::format*()
