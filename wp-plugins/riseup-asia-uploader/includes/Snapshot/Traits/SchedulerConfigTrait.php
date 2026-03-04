@@ -13,29 +13,32 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SchedulerConfigTrait {
     public function registerCronSchedules(array $schedules): array {
+        $pluginSlug = PluginConfigType::Slug->value;
+
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Hourly->value)) {
             $schedules[SnapshotFrequencyType::Hourly->value] = array(
                 'interval' => HOUR_IN_SECONDS,
-                'display'  => __('Once Hourly', 'riseup-asia-uploader'),
+                'display'  => __('Once Hourly', $pluginSlug),
             );
         }
 
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Weekly->value)) {
             $schedules[SnapshotFrequencyType::Weekly->value] = array(
                 'interval' => WEEK_IN_SECONDS,
-                'display'  => __('Once Weekly', 'riseup-asia-uploader'),
+                'display'  => __('Once Weekly', $pluginSlug),
             );
         }
 
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Monthly->value)) {
             $schedules[SnapshotFrequencyType::Monthly->value] = array(
                 'interval' => 30 * DAY_IN_SECONDS,
-                'display'  => __('Once Monthly', 'riseup-asia-uploader'),
+                'display'  => __('Once Monthly', $pluginSlug),
             );
         }
 

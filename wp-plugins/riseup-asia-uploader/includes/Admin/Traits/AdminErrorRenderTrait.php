@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\TableType;
 
 
@@ -30,8 +31,9 @@ trait AdminErrorRenderTrait {
             $result = $this->fetchErrorsForPage($defaults);
             extract($result);
         } catch (Throwable $e) {
+            $pluginSlug = PluginConfigType::Slug->value;
             $dbErrorMessage = sprintf(
-                __('Database error: %s', 'riseup-asia-uploader'),
+                __('Database error: %s', $pluginSlug),
                 esc_html($e->getMessage())
             );
         }
@@ -63,7 +65,7 @@ trait AdminErrorRenderTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-            $defaults['dbErrorMessage'] = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
+            $defaults['dbErrorMessage'] = __('Database connection unavailable. The SQLite database may not be initialized yet.', PluginConfigType::Slug->value);
 
             return $defaults;
         }
@@ -74,7 +76,7 @@ trait AdminErrorRenderTrait {
         $isTableMissing = ($tableExists === false || $tableExists === null);
 
         if ($isTableMissing) {
-            $defaults['dbErrorMessage'] = __('The ErrorSessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
+            $defaults['dbErrorMessage'] = __('The ErrorSessions table does not exist yet. Errors will appear here once the plugin captures its first error.', PluginConfigType::Slug->value);
 
             return $defaults;
         }

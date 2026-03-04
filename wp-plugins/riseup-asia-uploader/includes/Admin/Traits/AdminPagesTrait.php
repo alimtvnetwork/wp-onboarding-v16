@@ -18,6 +18,7 @@ use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\FilterKeyType;
 use RiseupAsia\Enums\PaginationConfigType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Update\UpdateResolver;
 use RiseupAsia\Snapshot\SnapshotFactory;
@@ -105,9 +106,11 @@ trait AdminPagesTrait {
 
     /** Build endpoint group metadata for display. */
     private function buildEndpointGroups(): array {
+        $pluginSlug = PluginConfigType::Slug->value;
+
         return array(
             'core' => array(
-                'label' => __('Core Operations', 'riseup-asia-uploader'),
+                'label' => __('Core Operations', $pluginSlug),
                 'icon'  => 'dashicons-admin-tools',
                 'endpoints' => array(
                     'status'       => array('label' => 'Status Check', 'desc' => 'Returns plugin status and version'),
@@ -119,7 +122,7 @@ trait AdminPagesTrait {
                 ),
             ),
             'content' => array(
-                'label' => __('Content Management', 'riseup-asia-uploader'),
+                'label' => __('Content Management', $pluginSlug),
                 'icon'  => 'dashicons-edit-page',
                 'endpoints' => array(
                     'posts'      => array('label' => 'Blog Posts', 'desc' => 'Create and manage posts'),
@@ -127,7 +130,7 @@ trait AdminPagesTrait {
                 ),
             ),
             'monitoring' => array(
-                'label' => __('Monitoring & Logs', 'riseup-asia-uploader'),
+                'label' => __('Monitoring & Logs', $pluginSlug),
                 'icon'  => 'dashicons-chart-area',
                 'endpoints' => array(
                     'logs'       => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
@@ -136,14 +139,14 @@ trait AdminPagesTrait {
                 ),
             ),
             'backup' => array(
-                'label' => __('Backups & Snapshots', 'riseup-asia-uploader'),
+                'label' => __('Backups & Snapshots', $pluginSlug),
                 'icon'  => 'dashicons-database',
                 'endpoints' => array(
                     'snapshots' => array('label' => 'Snapshots', 'desc' => 'Database snapshot operations and scheduling'),
                 ),
             ),
             'docs' => array(
-                'label' => __('Documentation', 'riseup-asia-uploader'),
+                'label' => __('Documentation', $pluginSlug),
                 'icon'  => 'dashicons-media-document',
                 'endpoints' => array(
                     'openapi' => array('label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'),

@@ -28,10 +28,11 @@ trait AdminMenuTrait {
     /** Register the main admin menu page. */
     private function registerMainMenu() {
         $slug = PluginConfigType::Slug->value;
+        $pluginSlug = $slug;
 
         add_menu_page(
-            __('Riseup Asia Uploader', 'riseup-asia-uploader'),
-            __('Riseup Uploader', 'riseup-asia-uploader'),
+            __('Riseup Asia Uploader', $pluginSlug),
+            __('Riseup Uploader', $pluginSlug),
             CapabilityType::ManageOptions->value,
             $slug,
             array($this, 'renderLogsPage'),
@@ -43,6 +44,7 @@ trait AdminMenuTrait {
     /** Register standard submenus. */
     private function registerSubmenus() {
         $slug = PluginConfigType::Slug->value;
+        $pluginSlug = $slug;
 
         $submenus = array(
             array(
@@ -75,8 +77,8 @@ trait AdminMenuTrait {
         foreach ($submenus as $item) {
             add_submenu_page(
                 $slug,
-                __($item[1], 'riseup-asia-uploader'),
-                __($item[1], 'riseup-asia-uploader'),
+                __($item[1], $pluginSlug),
+                __($item[1], $pluginSlug),
                 CapabilityType::ManageOptions->value,
                 $item[0],
                 array($this, $item[2]),
@@ -87,12 +89,13 @@ trait AdminMenuTrait {
     /** Register the error log submenu with notification bubble. */
     private function registerErrorSubmenu() {
         $slug = PluginConfigType::Slug->value;
+        $pluginSlug = $slug;
         $errorBubble = $this->buildErrorBubble();
 
         add_submenu_page(
             $slug,
-            __('Error Log', 'riseup-asia-uploader'),
-            __('Error Log', 'riseup-asia-uploader') . $errorBubble,
+            __('Error Log', $pluginSlug),
+            __('Error Log', $pluginSlug) . $errorBubble,
             CapabilityType::ManageOptions->value,
             AdminPageType::Errors->value,
             array($this, 'renderErrorsPage'),
