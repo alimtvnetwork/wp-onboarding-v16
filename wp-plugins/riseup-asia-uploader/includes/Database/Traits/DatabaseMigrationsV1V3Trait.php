@@ -119,7 +119,7 @@ trait DatabaseMigrationsV1V3Trait {
             try {
                 $this->pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
             } catch (PDOException $e) {
-                $this->fileLogger->debug("Column might exist: {$column}", array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+                $this->fileLogger->logDebugException($e, "Column might exist: {$column}");
             }
         }
 

@@ -206,4 +206,22 @@ trait LoggerLevelMethodsTrait {
 
         return $this->write($entry, true);
     }
+
+    /** Log an exception at debug level (for expected/recoverable exceptions). */
+    public function logDebugException(Throwable $e, string $context = ''): bool {
+        $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        [$file, $line] = $this->resolveCaller($trace);
+        $ctx = $this->prepareContext(array('trace' => $e->getTraceAsString()));
+
+        $entry = $this->formatEntry(
+            LogLevelType::Debug->value,
+            $message,
+            $file,
+            $line,
+            $ctx,
+        );
+
+        return $this->write($entry, false);
+    }
 }
