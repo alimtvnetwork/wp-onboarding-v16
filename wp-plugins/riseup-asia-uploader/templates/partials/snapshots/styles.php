@@ -11,7 +11,7 @@
 if (!defined('ABSPATH')) {
     exit;
 }
-?>
+<?php include __DIR__ . '/../shared/modal-styles.php'; ?>
 <style>
 /* Actions bar */
 .riseup-actions-row {
@@ -70,43 +70,10 @@ if (!defined('ABSPATH')) {
     margin: 2px 10px 2px 0;
 }
 
-/* Modal (shared) */
-.riseup-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 100000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.riseup-modal-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-}
+/* NOTE: Base modal styles (.riseup-modal, .riseup-modal-overlay, etc.) are in shared/modal-styles.php */
+/* Snapshot-specific modal overrides */
 .riseup-modal-content {
-    position: relative;
-    background: #fff;
     padding: 20px 30px;
-    border-radius: 4px;
-    max-width: 600px;
-    width: 90%;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-}
-.riseup-modal-actions {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-}
-.riseup-warning-text {
-    color: #d63638;
-    font-weight: 500;
 }
 
 /* Progress bar */

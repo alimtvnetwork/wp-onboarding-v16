@@ -59,18 +59,13 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
     </div>
     <?php endif; ?>
 
-    <h1>
-        <span class="dashicons dashicons-warning"></span>
-        <?php esc_html_e('Error Log', $pluginSlug); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
-        <?php if ($unseenCount > 0): ?>
-            <span class="error-count-badge"><?php echo esc_html($unseenCount); ?></span>
-        <?php endif; ?>
-    </h1>
-
-    <p class="description">
-        <?php esc_html_e('View all errors, warnings, and log files captured by the plugin.', $pluginSlug); ?>
-    </p>
+    <?php
+    $pageIcon = 'dashicons-warning';
+    $pageTitle = __('Error Log', $pluginSlug);
+    $pageDescription = __('View all errors, warnings, and log files captured by the plugin.', $pluginSlug);
+    $headerExtra = ($unseenCount > 0) ? '<span class="error-count-badge">' . esc_html($unseenCount) . '</span>' : '';
+    include __DIR__ . '/partials/shared/page-header.php';
+    ?>
 
     <!-- Tab Navigation -->
     <nav class="nav-tab-wrapper riseup-tabs">
@@ -224,22 +219,17 @@ $nonce = wp_create_nonce(NonceType::Admin->value);
         </table>
 
         <!-- Pagination -->
-        <?php if ($totalPages > 1): ?>
-            <div class="tablenav bottom">
-                <div class="tablenav-pages">
-                    <?php
-                    echo paginate_links(array(
-                        'base'      => add_query_arg(array('paged' => '%#%', 'tab' => AdminTabType::Sessions->value)),
-                        'format'    => '',
-                        'prev_text' => '&laquo;',
-                        'next_text' => '&raquo;',
-                        'total'     => $totalPages,
-                        'current'   => $page,
-                    ));
-                    ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php
+        $paginationArgs = array(
+            'base'      => add_query_arg(array('paged' => '%#%', 'tab' => AdminTabType::Sessions->value)),
+            'format'    => '',
+            'prev_text' => '&laquo;',
+            'next_text' => '&raquo;',
+            'total'     => $totalPages,
+            'current'   => $page,
+        );
+        include __DIR__ . '/partials/shared/pagination.php';
+        ?>
 
     <?php else: ?>
         <!-- ============================================================ -->

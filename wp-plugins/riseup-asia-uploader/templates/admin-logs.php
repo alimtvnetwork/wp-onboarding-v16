@@ -59,15 +59,12 @@ $uploadSourceClasses = array(
 );
 ?>
 <div class="wrap riseup-admin" style="padding: 10px 20px 20px 10px;">
-    <h1>
-        <span class="dashicons dashicons-list-view"></span>
-        <?php echo esc_html($pluginName . ' - ' . __('Activity Logs', $pluginSlug)); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
-    </h1>
-    
-    <p class="description">
-        <?php esc_html_e('View all API activity and operations performed through this plugin.', $pluginSlug); ?>
-    </p>
+    <?php
+    $pageIcon = 'dashicons-list-view';
+    $pageTitle = $pluginName . ' - ' . __('Activity Logs', $pluginSlug);
+    $pageDescription = __('View all API activity and operations performed through this plugin.', $pluginSlug);
+    include __DIR__ . '/partials/shared/page-header.php';
+    ?>
 
     <!-- Filters -->
     <div class="riseup-filters">
@@ -344,23 +341,7 @@ $uploadSourceClasses = array(
     </table>
 
     <!-- Pagination -->
-    <?php if ($totalPages > 1): ?>
-        <div class="tablenav bottom">
-            <div class="tablenav-pages">
-                <?php
-                $paginationArgs = array(
-                    'base'      => add_query_arg('paged', '%#%'),
-                    'format'    => '',
-                    'prev_text' => '&laquo;',
-                    'next_text' => '&raquo;',
-                    'total'     => $totalPages,
-                    'current'   => $page,
-                );
-                echo paginate_links($paginationArgs);
-                ?>
-            </div>
-        </div>
-    <?php endif; ?>
+    <?php include __DIR__ . '/partials/shared/pagination.php'; ?>
 
     <!-- Details Modal -->
     <div id="riseup-details-modal" class="riseup-modal" style="display: none;">

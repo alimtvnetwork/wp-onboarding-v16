@@ -22,15 +22,12 @@ $pluginName = PluginConfigType::Name->value;
 $pluginSlug = PluginConfigType::Slug->value;
 ?>
 <div class="wrap riseup-admin">
-    <h1>
-        <span class="dashicons dashicons-networking"></span>
-        <?php echo esc_html($pluginName . ' - ' . __('Agent Sites', $pluginSlug)); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
-    </h1>
-
-    <p class="description">
-        <?php esc_html_e('Manage remote WordPress sites. Agent sites allow this plugin to control plugins on other WordPress installations.', $pluginSlug); ?>
-    </p>
+    <?php
+    $pageIcon = 'dashicons-networking';
+    $pageTitle = $pluginName . ' - ' . __('Agent Sites', $pluginSlug);
+    $pageDescription = __('Manage remote WordPress sites. Agent sites allow this plugin to control plugins on other WordPress installations.', $pluginSlug);
+    include __DIR__ . '/partials/shared/page-header.php';
+    ?>
 
     <!-- Add Agent Form -->
     <div class="riseup-card">
@@ -196,6 +193,7 @@ $pluginSlug = PluginConfigType::Slug->value;
     </div>
 </div>
 
+<?php include __DIR__ . '/partials/shared/modal-styles.php'; ?>
 <style>
 .riseup-form .required { color: #dc3232; }
 .riseup-status { margin-left: 10px; }
@@ -219,52 +217,9 @@ $pluginSlug = PluginConfigType::Slug->value;
 .status-<?php echo AgentStatusType::Connected->value; ?> { background: #d4edda; color: #155724; }
 .status-<?php echo AgentStatusType::Error->value; ?> { background: #f8d7da; color: #721c24; }
 
-.riseup-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 100000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+/* Agent-specific modal overrides */
 .riseup-modal-content {
-    background: #fff;
-    width: 90%;
     max-width: 800px;
-    max-height: 80vh;
-    border-radius: 4px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-.riseup-modal-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #ddd;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.riseup-modal-header h3 {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.riseup-modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-}
-.riseup-modal-close:hover { color: #dc3232; }
-.riseup-modal-body {
-    padding: 20px;
-    overflow-y: auto;
 }
 
 .riseup-admin .button .dashicons {
