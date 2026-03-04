@@ -411,6 +411,4 @@ $pluginSlug = PluginConfigType::Slug->value;
 <?php
 // ── Partials ────────────────────────────────────────────────────────────────
 include __DIR__ . '/partials/snapshots/modals.php';
-include __DIR__ . '/partials/snapshots/scripts.php';
-include __DIR__ . '/partials/snapshots/styles.php';
 ?>
