@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\PluginConfigType;
 
 
 trait AdminNoticesTrait {
@@ -59,15 +60,16 @@ trait AdminNoticesTrait {
      * Output the HTML for the boot diagnostics admin notice.
      */
     private function outputBootNoticeHtml(array $diagnostics): void {
+        $pluginSlug = PluginConfigType::Slug->value;
         $failedCount = (int) ($diagnostics['failed_count'] ?? 0);
         $runtimeCount = count($diagnostics['runtime_failures'] ?? []);
         $totalIssues = $failedCount + $runtimeCount;
 
         echo '<div class="notice notice-error is-dismissible">';
-        echo '<p><strong>' . esc_html__('Riseup Asia Uploader — Boot Diagnostics', 'riseup-asia-uploader') . '</strong></p>';
+        echo '<p><strong>' . esc_html__('Riseup Asia Uploader — Boot Diagnostics', $pluginSlug) . '</strong></p>';
         echo '<p>' . sprintf(
             /* translators: %d is the number of issues found */
-            esc_html__('Found %d file(s) with issues during plugin initialization:', 'riseup-asia-uploader'),
+            esc_html__('Found %d file(s) with issues during plugin initialization:', $pluginSlug),
             $totalIssues,
         ) . '</p>';
 
@@ -88,7 +90,7 @@ trait AdminNoticesTrait {
         echo '</ul>';
         echo '<p><em>' . sprintf(
             /* translators: %s is the timestamp */
-            esc_html__('Diagnostics run at: %s', 'riseup-asia-uploader'),
+            esc_html__('Diagnostics run at: %s', $pluginSlug),
             esc_html($diagnostics['timestamp'] ?? 'unknown'),
         ) . '</em></p>';
         echo '</div>';

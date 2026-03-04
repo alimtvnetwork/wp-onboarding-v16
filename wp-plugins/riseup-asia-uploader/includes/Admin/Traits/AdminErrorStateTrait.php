@@ -87,16 +87,18 @@ trait AdminErrorStateTrait {
     private function buildErrorNoticeHtml(int $unseen): string {
         $url = AdminPageType::Errors->adminUrl();
 
+        $pluginSlug = PluginConfigType::Slug->value;
+
         return sprintf(
             '<div class="notice notice-error is-dismissible" style="border-left-color: #dc3545;">
                 <p><strong>⚠️ ' . esc_html(PluginConfigType::Name->value) . ':</strong> %s <a href="%s" style="font-weight:600;">%s →</a></p>
             </div>',
             esc_html(sprintf(
-                _n('%d new error detected.', '%d new errors detected.', $unseen, 'riseup-asia-uploader'),
+                _n('%d new error detected.', '%d new errors detected.', $unseen, $pluginSlug),
                 $unseen,
             )),
             esc_url($url),
-            esc_html__('View Error Log', 'riseup-asia-uploader'),
+            esc_html__('View Error Log', $pluginSlug),
         );
     }
 }
