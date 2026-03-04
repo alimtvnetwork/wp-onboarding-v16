@@ -19,6 +19,7 @@ use RiseupAsia\Database\Traits\RootDbSchemaTrait;
 use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
@@ -89,5 +90,11 @@ class RootDb {
         } else {
             $this->logger->info($full);
         }
+    }
+
+    private function logError(\Throwable $e, string $message, array $context = array()): void {
+        $context[ResponseKeyType::Error->value] = $e->getMessage();
+        $context['trace'] = $e->getTraceAsString();
+        $this->log(LogLevelType::Error->value, $message, $context);
     }
 }
