@@ -311,7 +311,31 @@ PHPDoc `@package` headers and file-level doc block comments (e.g., `* Riseup Asi
 
 ---
 
-## 10. Magic Date Format Strings — Use `DateHelper` Constants
+## 11. Hardcoded Display Values — Use `ColorConfig` / JSON Data Files
+
+> **Added:** 2026-03-04 — Eliminates hardcoded color hex codes and display configuration arrays scattered across templates.
+
+### Why This Matters
+
+Inline color arrays (`$levelColors = array('#dc3545', ...)`) and hardcoded hex codes in PHP templates create maintenance debt. A theme change or color update requires grepping the entire codebase. `ColorConfig` centralizes all display colors in `data/colors.json` with a static-cached loader.
+
+### Forbidden Patterns
+
+| # | ❌ Forbidden | ✅ Required | Why |
+|---|-------------|------------|-----|
+| 11.1 | `$levelColors = array('Error' => '#dc3545', ...)` | `ColorConfig::getGroup('logLevel')` | Hardcoded color array; use JSON data file |
+| 11.2 | `style="color: #dc3232;"` (inline status color) | `style="color: <?php echo esc_attr(ColorConfig::status('error')); ?>;"` | Hardcoded hex; use `ColorConfig::status()` |
+| 11.3 | `style="color: #46b450;"` (inline success color) | `style="color: <?php echo esc_attr(ColorConfig::status('success')); ?>;"` | Hardcoded hex; use `ColorConfig::status()` |
+| 11.4 | `style="color: #2271b1;"` (inline WP primary) | `style="color: <?php echo esc_attr(ColorConfig::wpAdmin('primary')); ?>;"` | Hardcoded hex; use `ColorConfig::wpAdmin()` |
+| 11.5 | `.css('color', isError ? '#dc3232' : '#46b450')` in JS | Use PHP-injected JS constants from `ColorConfig` | Hardcoded hex in JS; centralize via PHP constants block |
+
+### Exception
+
+Single-use colors in CSS `<style>` blocks within templates (e.g., gradient backgrounds, CSS class definitions) are **exempt** when they are purely presentational and not referenced in PHP logic. If a CSS color is also used in PHP logic or appears in 2+ templates, it must be in `data/colors.json`.
+
+---
+
+## 12. Magic Date Format Strings — Use `DateHelper` Constants
 
 > **Added:** 2026-02-25 — Eliminates raw `gmdate()` calls with magic format strings.
 
@@ -323,13 +347,13 @@ Scattered `gmdate('c')`, `gmdate('Y-m-d H:i:s')`, and similar calls make it impo
 
 | # | ❌ Forbidden | ✅ Required | Constant/Method |
 |---|-------------|------------|-----------------|
-| 10.1 | `gmdate('c')` | `DateHelper::nowIso()` | `DateHelper::ISO_8601` |
-| 10.2 | `gmdate('Y-m-d\TH:i:s\Z')` | `DateHelper::nowUtc()` | `DateHelper::ISO_8601_UTC` |
-| 10.3 | `gmdate('Y-m-d H:i:s')` | `DateHelper::nowDatetime()` | `DateHelper::DATETIME` |
-| 10.4 | `gmdate('Y-m-d')` | `DateHelper::nowDateOnly()` | `DateHelper::DATE_ONLY` |
-| 10.5 | `gmdate('Ymd-His')` | `DateHelper::nowCompact()` | `DateHelper::COMPACT` |
-| 10.6 | `gmdate('c', $ts)` | `DateHelper::formatIso($ts)` | `DateHelper::ISO_8601` |
-| 10.7 | `gmdate('Y-m-d H:i:s', $ts)` | `DateHelper::formatDatetime($ts)` | `DateHelper::DATETIME` |
+| 12.1 | `gmdate('c')` | `DateHelper::nowIso()` | `DateHelper::ISO_8601` |
+| 12.2 | `gmdate('Y-m-d\TH:i:s\Z')` | `DateHelper::nowUtc()` | `DateHelper::ISO_8601_UTC` |
+| 12.3 | `gmdate('Y-m-d H:i:s')` | `DateHelper::nowDatetime()` | `DateHelper::DATETIME` |
+| 12.4 | `gmdate('Y-m-d')` | `DateHelper::nowDateOnly()` | `DateHelper::DATE_ONLY` |
+| 12.5 | `gmdate('Ymd-His')` | `DateHelper::nowCompact()` | `DateHelper::COMPACT` |
+| 12.6 | `gmdate('c', $ts)` | `DateHelper::formatIso($ts)` | `DateHelper::ISO_8601` |
+| 12.7 | `gmdate('Y-m-d H:i:s', $ts)` | `DateHelper::formatDatetime($ts)` | `DateHelper::DATETIME` |
 
 ### Exception
 
@@ -373,6 +397,8 @@ The `DateHelper` class itself is the sole place where raw `gmdate()` calls are p
 [ ] Cold activation tested after adding new trait compositions
 [ ] No magic string array keys matching ResponseKeyType cases — use enum->value
 [ ] Every new repeated key (3+ files) added to ResponseKeyType enum
+[ ] No hardcoded color hex arrays — use ColorConfig::getGroup() / ColorConfig::logLevel()
+[ ] No inline status/theme colors in PHP logic — use ColorConfig::status() / ColorConfig::wpAdmin()
 [ ] No raw gmdate() outside DateHelper — use DateHelper::now*() or DateHelper::format*()
 ```
 

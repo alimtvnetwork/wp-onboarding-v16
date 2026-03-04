@@ -20,17 +20,13 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\ColorConfig;
 use RiseupAsia\Helpers\DateHelper;
 
 $pluginName = PluginConfigType::Name->value;
 $pluginSlug = PluginConfigType::Slug->value;
 
-$levelColors = array(
-    LogLevelType::Error->value => '#dc3545',
-    LogLevelType::Warn->value  => '#fd7e14',
-    LogLevelType::Info->value  => '#0d6efd',
-    LogLevelType::Debug->value => '#6c757d',
-);
+$levelColors = ColorConfig::getGroup('logLevel');
 
 $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
 $nonce = wp_create_nonce(NonceType::Admin->value);
