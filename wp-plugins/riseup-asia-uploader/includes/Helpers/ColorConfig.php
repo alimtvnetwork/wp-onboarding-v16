@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ColorGroupType;
+
 class ColorConfig {
 
     /** @var array<string, array<string, string>>|null */
@@ -56,15 +58,16 @@ class ColorConfig {
     }
 
     /** Get a color by group and key. */
-    public static function get(string $group, string $key, string $fallback = self::FALLBACK): string {
+    public static function get(ColorGroupType $group, string $key, string $fallback = self::FALLBACK): string {
         $colors = self::load();
-        $hasGroup = isset($colors[$group]);
+        $g = $group->value;
+        $hasGroup = isset($colors[$g]);
 
         if ($hasGroup) {
-            $hasKey = isset($colors[$group][$key]);
+            $hasKey = isset($colors[$g][$key]);
 
             if ($hasKey) {
-                return $colors[$group][$key];
+                return $colors[$g][$key];
             }
         }
 
@@ -72,12 +75,13 @@ class ColorConfig {
     }
 
     /** Get an entire color group as an associative array. */
-    public static function getGroup(string $group): array {
+    public static function getGroup(ColorGroupType $group): array {
         $colors = self::load();
-        $hasGroup = isset($colors[$group]);
+        $g = $group->value;
+        $hasGroup = isset($colors[$g]);
 
         if ($hasGroup) {
-            return $colors[$group];
+            return $colors[$g];
         }
 
         return array();
@@ -85,17 +89,17 @@ class ColorConfig {
 
     /** Get a log level color by level value. */
     public static function logLevel(string $level): string {
-        return self::get('logLevel', $level);
+        return self::get(ColorGroupType::LogLevel, $level);
     }
 
     /** Get a status color (success, error, warning). */
     public static function status(string $status): string {
-        return self::get('status', $status);
+        return self::get(ColorGroupType::Status, $status);
     }
 
     /** Get a WP admin theme color. */
     public static function wpAdmin(string $key): string {
-        return self::get('wpAdmin', $key);
+        return self::get(ColorGroupType::WpAdmin, $key);
     }
 
     /** Reset the static cache (for testing). */
