@@ -108,4 +108,7 @@ trait PathHelperCoreTrait {
 
     /** OpenAPI spec JSON ({pluginDir}/data/openapi.json). */
     public static function getOpenApiJsonPath(): string { return self::getPluginDir() . '/data/openapi.json'; }
+
+    /** Colors config JSON ({pluginDir}/data/colors.json). */
+    public static function getColorsJsonPath(): string { return self::getPluginDir() . '/data/colors.json'; }
 }

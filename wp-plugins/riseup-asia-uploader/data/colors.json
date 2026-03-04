@@ -1,0 +1,22 @@
+{
+    "logLevel": {
+        "Error": "#dc3545",
+        "Warn": "#fd7e14",
+        "Info": "#0d6efd",
+        "Debug": "#6c757d"
+    },
+    "status": {
+        "success": "#46b450",
+        "error": "#dc3232",
+        "warning": "#dba617"
+    },
+    "wpAdmin": {
+        "primary": "#2271b1",
+        "primaryDark": "#135e96",
+        "primaryBg": "#f0f6fc",
+        "border": "#dcdcde",
+        "textMuted": "#646970",
+        "snapshotIncremental": "#7b1fa2",
+        "headerAccent": "#667eea"
+    }
+}

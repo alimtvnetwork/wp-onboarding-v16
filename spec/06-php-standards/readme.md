@@ -149,6 +149,74 @@ public function logException(Throwable $e, string $context = '') {
 
 ---
 
+## JSON-Driven Configuration — No Hardcoded Display Values
+
+### Rule: Externalize display configuration to `data/*.json`
+
+Hardcoded arrays of display values (colors, labels, icons, CSS classes) in PHP templates or classes are **forbidden**. These values must live in JSON files under `data/` and be loaded via `ColorConfig` (or a similar typed loader class).
+
+### Architecture
+
+```
+data/colors.json              ← Single source of truth for color hex codes
+    ↓
+ColorConfig::load()            ← Reads JSON once, caches in static variable
+    ↓
+ColorConfig::logLevel('Error') ← Returns '#dc3545' from cached data
+```
+
+### Required Pattern
+
+```php
+// ❌ FORBIDDEN: Hardcoded color arrays in templates or classes
+$levelColors = array(
+    LogLevelType::Error->value => '#dc3545',
+    LogLevelType::Warn->value  => '#fd7e14',
+    LogLevelType::Info->value  => '#0d6efd',
+    LogLevelType::Debug->value => '#6c757d',
+);
+
+// ✅ REQUIRED: Load from JSON via ColorConfig
+$levelColors = ColorConfig::getGroup('logLevel');
+
+// ✅ REQUIRED: Single color lookup
+$color = ColorConfig::logLevel($level);
+$statusColor = ColorConfig::status('success');
+$primary = ColorConfig::wpAdmin('primary');
+```
+
+### ColorConfig API
+
+| Method | Purpose |
+|--------|---------|
+| `ColorConfig::get($group, $key, $fallback)` | Generic lookup by group and key |
+| `ColorConfig::getGroup($group)` | Get entire group as associative array |
+| `ColorConfig::logLevel($level)` | Shorthand for log level colors |
+| `ColorConfig::status($status)` | Shorthand for status colors (success/error/warning) |
+| `ColorConfig::wpAdmin($key)` | Shorthand for WP admin theme colors |
+
+### JSON Structure (`data/colors.json`)
+
+```json
+{
+    "logLevel": { "Error": "#dc3545", "Warn": "#fd7e14", "Info": "#0d6efd", "Debug": "#6c757d" },
+    "status":   { "success": "#46b450", "error": "#dc3232", "warning": "#dba617" },
+    "wpAdmin":  { "primary": "#2271b1", "primaryDark": "#135e96", "primaryBg": "#f0f6fc", "border": "#dcdcde", "textMuted": "#646970" }
+}
+```
+
+### When to Add New Configs
+
+If a new display value (color, label, icon mapping) appears in 2+ templates, add it to `data/colors.json` (or create a new `data/*.json` + loader). Single-use CSS colors in `<style>` blocks within templates are exempt — they are presentation, not configuration.
+
+### PathHelper Accessor
+
+```php
+PathHelper::getColorsJsonPath()  // → {pluginDir}/data/colors.json
+```
+
+---
+
 ## Constants & Enums — No Magic Strings
 
 ### Rule: All identifiers in `constants.php` or native backed enums
@@ -645,6 +713,8 @@ public function handleUpload(WP_REST_Request $request): WP_REST_Response {
 | Untyped return values | No contract enforcement | Add return type declarations |
 | Redundant `@param` on typed signatures | Noisy duplication | Remove; keep summary only (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
 | Boolean flag changing operation meaning | Unreadable call sites | Split into named methods (see [Function Naming](../01-coding-guidelines/function-naming.md)) |
+| Hardcoded color hex arrays in templates | Unmaintainable, scattered | `ColorConfig::getGroup()` / `ColorConfig::logLevel()` from `data/colors.json` |
+| Inline `#hex` status/theme colors in PHP logic | Theme changes require grep | `ColorConfig::status()` / `ColorConfig::wpAdmin()` |
 
 ---
 
