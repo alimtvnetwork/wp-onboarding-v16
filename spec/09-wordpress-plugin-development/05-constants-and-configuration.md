@@ -25,7 +25,7 @@ enum PluginConfigType: string {
     case Slug          = 'riseup-asia-uploader';
     case ShortName     = 'RiseupAsia';
     case Name          = 'Riseup Asia Uploader';
-    case Version       = '1.63.0';
+    case Version       = '1.64.0';
     case LogPrefix     = '[Riseup Asia]';
     case ApiNamespace  = 'riseup-asia-uploader';
     case ApiVersion    = 'v1';
