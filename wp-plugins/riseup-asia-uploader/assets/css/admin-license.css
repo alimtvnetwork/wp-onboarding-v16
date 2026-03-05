@@ -41,6 +41,11 @@
 }
 .riseup-inline-status.success { color: #46b450; }
 .riseup-inline-status.error { color: #dc3232; }
+.riseup-admin .button .dashicons {
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 2px;
+}
 
 .dashicons.spin {
     animation: spin 1s linear infinite;
