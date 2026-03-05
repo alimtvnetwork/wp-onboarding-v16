@@ -356,14 +356,21 @@ trait UploadInstallExtractTrait
     }
 
     /** Move extracted plugin folder to target, with copy fallback. */
-    private function moveExtractedPlugin(string $extractedFolder, string $targetDir) {
+    private function moveExtractedPlugin(string $extractedFolder, string $targetDir): bool {
         if (rename($extractedFolder, $targetDir)) {
             $this->fileLogger->info('Plugin installed to correct location');
 
-            return;
+            return true;
         }
 
-        $this->copyDirectory($extractedFolder, $targetDir);
+        $this->fileLogger->info('Rename failed, falling back to copy');
+        $isCopied = $this->copyDirectory($extractedFolder, $targetDir);
         $this->deleteDirectory($extractedFolder);
+
+        if ($isCopied === false) {
+            $this->fileLogger->error('Copy fallback failed during plugin move');
+        }
+
+        return $isCopied;
     }
 }
