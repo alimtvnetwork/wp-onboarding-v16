@@ -43,8 +43,8 @@ Version numbers are tracked across multiple files. The `bump-version.ps1` script
 ## Current Versions
 
 - **App Version**: 1.19.4
-- **Script Version**: 1.2.0
-- **Plugin Version**: 1.63.0
+- **Plugin Version (QUpload)**: 1.2.0
+- **Plugin Version (Riseup)**: 1.64.0
 - **Spec Version**: 2.1.0
 
 ---
