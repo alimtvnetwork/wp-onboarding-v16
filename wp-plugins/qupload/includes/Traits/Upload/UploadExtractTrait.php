@@ -180,8 +180,12 @@ trait UploadExtractTrait
             return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::ServerError->value);
         }
 
-        $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
+        $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
         $this->deleteDirectory($tempExtractDir);
+
+        if ($isMoved === false) {
+            return $this->errorResponse('Failed to move plugin to target directory', HttpStatusType::ServerError->value);
+        }
 
         return true;
     }
