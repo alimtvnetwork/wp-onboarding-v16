@@ -379,8 +379,16 @@ class OnboardSnapshot {
             );
         }
 
-        $zip->extractTo(WP_PLUGIN_DIR);
+        $isExtracted = $zip->extractTo(WP_PLUGIN_DIR);
         $zip->close();
+
+        if ($isExtracted === false) {
+            return new WP_Error(
+                'zip_extract_failed',
+                'Failed to extract snapshot ZIP contents',
+                array('status' => 500)
+            );
+        }
 
         // Activate plugin.
         $plugin_file = $this->find_plugin_file($plugin_slug);

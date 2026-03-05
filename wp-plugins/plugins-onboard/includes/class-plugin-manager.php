@@ -363,8 +363,12 @@ class OnboardPluginManager {
             return new WP_Error('zip_open_failed', 'Failed to open ZIP file', array('status' => 500));
         }
 
-        $zip->extractTo(WP_PLUGIN_DIR);
+        $isExtracted = $zip->extractTo(WP_PLUGIN_DIR);
         $zip->close();
+
+        if ($isExtracted === false) {
+            return new WP_Error('zip_extract_failed', 'Failed to extract ZIP contents', array('status' => 500));
+        }
 
         // Find and activate plugin.
         $plugin_file = $this->find_plugin_file($slug);
