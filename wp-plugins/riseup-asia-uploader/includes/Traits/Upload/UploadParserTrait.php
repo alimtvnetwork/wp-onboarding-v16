@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\RequestFieldType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\UploadSourceType;
 
@@ -28,7 +29,7 @@ trait UploadParserTrait {
      */
     private function parseUploadInput($request) {
         $files = $request->get_file_params();
-        $isMultipart = !empty($files['plugin_zip']);
+        $isMultipart = !empty($files[RequestFieldType::PluginZip->value]);
 
         if ($isMultipart) {
             return $this->parseMultipartInput($files, $request);
@@ -46,7 +47,7 @@ trait UploadParserTrait {
      */
     private function parseMultipartInput($files, $request) {
         $this->fileLogger->info('Processing multipart upload');
-        $upload = $files['plugin_zip'];
+        $upload = $files[RequestFieldType::PluginZip->value];
 
         if ($upload['error'] !== UPLOAD_ERR_OK) {
             $this->fileLogger->error('Multipart upload error', array('code' => $upload['error']));
@@ -74,13 +75,13 @@ trait UploadParserTrait {
     private function parseBase64Input($request) {
         $data = $request->get_json_params();
 
-        if (empty($data['plugin_zip'])) {
+        if (empty($data[RequestFieldType::PluginZip->value])) {
             $this->fileLogger->warn('Upload failed: plugin_zip required');
-            return $this->errorResponse(ResponseMessageType::InvalidRequest->value . ': plugin_zip is required (send as multipart file or base64 JSON)', HttpStatusType::BadRequest->value);
+            return $this->errorResponse(ResponseMessageType::InvalidRequest->value . ': ' . RequestFieldType::PluginZip->value . ' is required (send as multipart file or base64 JSON)', HttpStatusType::BadRequest->value);
         }
 
         $this->fileLogger->info('Processing base64 JSON upload');
-        $zipContent = base64_decode($data['plugin_zip']);
+        $zipContent = base64_decode($data[RequestFieldType::PluginZip->value]);
 
         if ($zipContent === false) {
             $this->fileLogger->error('Invalid base64 data');
@@ -98,10 +99,10 @@ trait UploadParserTrait {
      * @return array Normalized upload parameters.
      */
     private function buildUploadParams($zipContent, $data) {
-        $slug     = sanitize_file_name($data['slug'] ?? '');
-        $activate = !empty($data['activate']);
+        $slug     = sanitize_file_name($data[RequestFieldType::Slug->value] ?? '');
+        $activate = !empty($data[RequestFieldType::Activate->value]);
         $uploadSource = $this->resolveUploadSource($data);
-        $clientPluginVersion = isset($data['plugin_version']) ? sanitize_text_field($data['plugin_version']) : '';
+        $clientPluginVersion = isset($data[RequestFieldType::PluginVersion->value]) ? sanitize_text_field($data[RequestFieldType::PluginVersion->value]) : '';
 
         $this->fileLogger->debug('Upload parameters', array(
             'slug' => $slug, 'activate' => $activate,
@@ -122,7 +123,7 @@ trait UploadParserTrait {
      * @return string Validated upload source.
      */
     private function resolveUploadSource(array $data): string {
-        $source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UploadSourceType::RestApi->value;
+        $source = isset($data[RequestFieldType::UploadSource->value]) ? sanitize_text_field($data[RequestFieldType::UploadSource->value]) : UploadSourceType::RestApi->value;
         $validSources = UploadSourceType::validValues();
 
         return in_array($source, $validSources, true) ? $source : UploadSourceType::RestApi->value;
