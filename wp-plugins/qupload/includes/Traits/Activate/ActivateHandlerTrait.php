@@ -18,6 +18,7 @@ use Throwable;
 use QUpload\Enums\EndpointType;
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\PluginConfigType;
+use QUpload\Enums\RequestFieldType;
 use QUpload\Enums\ResponseKeyType;
 use QUpload\Helpers\EnvelopeBuilder;
 
@@ -38,12 +39,12 @@ trait ActivateHandlerTrait
 
     private function executeActivation(WP_REST_Request $request): WP_REST_Response {
         $data = $request->get_json_params();
-        $slug = sanitize_file_name($data['slug'] ?? '');
+        $slug = sanitize_file_name($data[RequestFieldType::Slug->value] ?? '');
 
         if (empty($slug)) {
             $this->fileLogger->warn('Activate called without slug');
 
-            return $this->errorResponse('slug is required', HttpStatusType::BadRequest->value);
+            return $this->errorResponse(RequestFieldType::Slug->value . ' is required', HttpStatusType::BadRequest->value);
         }
 
         $this->fileLogger->info('Activating plugin', ['slug' => $slug]);

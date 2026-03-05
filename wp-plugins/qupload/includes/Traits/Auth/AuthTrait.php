@@ -18,6 +18,7 @@ use WP_Error;
 use Throwable;
 use QUpload\Enums\CapabilityType;
 use QUpload\Enums\HttpStatusType;
+use QUpload\Enums\WpErrorCodeType;
 
 trait AuthTrait
 {
@@ -47,7 +48,7 @@ trait AuthTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Authentication error');
 
-            return new WP_Error('InternalError', $e->getMessage(), ['status' => HttpStatusType::ServerError->value]);
+            return new WP_Error(WpErrorCodeType::InternalError->value, $e->getMessage(), ['status' => HttpStatusType::ServerError->value]);
         }
     }
 
@@ -65,11 +66,11 @@ trait AuthTrait
 
             $this->fileLogger->warn('Insufficient permissions', ['username' => $authResult->user_login, 'required' => $capability]);
 
-            return new WP_Error('rest_forbidden', 'Insufficient permissions', ['status' => HttpStatusType::Forbidden->value]);
+            return new WP_Error(WpErrorCodeType::RestForbidden->value, 'Insufficient permissions', ['status' => HttpStatusType::Forbidden->value]);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Authentication error');
 
-            return new WP_Error('InternalError', $e->getMessage(), ['status' => HttpStatusType::ServerError->value]);
+            return new WP_Error(WpErrorCodeType::InternalError->value, $e->getMessage(), ['status' => HttpStatusType::ServerError->value]);
         }
     }
 
@@ -79,7 +80,7 @@ trait AuthTrait
         if (empty($authHeader)) {
             $this->fileLogger->warn('Missing Authorization header');
 
-            return new WP_Error('rest_forbidden', 'Authentication required', [
+            return new WP_Error(WpErrorCodeType::RestForbidden->value, 'Authentication required', [
                 'status' => HttpStatusType::Unauthorized->value,
                 'headers' => ['WWW-Authenticate' => 'Basic realm="WordPress Application Password"'],
             ]);
@@ -112,14 +113,14 @@ trait AuthTrait
         if ($isNotBasic) {
             $this->fileLogger->warn('Invalid Authorization header format');
 
-            return new WP_Error('rest_forbidden', 'Authentication required', ['status' => HttpStatusType::Unauthorized->value]);
+            return new WP_Error(WpErrorCodeType::RestForbidden->value, 'Authentication required', ['status' => HttpStatusType::Unauthorized->value]);
         }
 
         $credentials = base64_decode(substr($authHeader, 6));
         $isFormatInvalid = ($credentials === false) || (strpos($credentials, ':') === false);
 
         if ($isFormatInvalid) {
-            return new WP_Error('rest_forbidden', 'Invalid credentials format', ['status' => HttpStatusType::Unauthorized->value]);
+            return new WP_Error(WpErrorCodeType::RestForbidden->value, 'Invalid credentials format', ['status' => HttpStatusType::Unauthorized->value]);
         }
 
         [$username, $password] = explode(':', $credentials, 2);
@@ -129,7 +130,7 @@ trait AuthTrait
         if ($isAuthFailed) {
             $this->fileLogger->warn('Invalid credentials', ['username' => $username]);
 
-            return new WP_Error('rest_forbidden', 'Authentication required', ['status' => HttpStatusType::Unauthorized->value]);
+            return new WP_Error(WpErrorCodeType::RestForbidden->value, 'Authentication required', ['status' => HttpStatusType::Unauthorized->value]);
         }
 
         wp_set_current_user($user->ID);
