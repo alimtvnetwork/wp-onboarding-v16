@@ -18,6 +18,7 @@ use Throwable;
 use QUpload\Enums\EndpointType;
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\PluginConfigType;
+use QUpload\Enums\RequestFieldType;
 use QUpload\Enums\ResponseKeyType;
 use QUpload\Helpers\EnvelopeBuilder;
 
