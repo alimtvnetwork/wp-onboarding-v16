@@ -106,8 +106,12 @@ class SnapshotImport {
             throw new Exception('Failed to open ZIP file');
         }
 
-        $zip->extractTo($destDir);
+        $isExtracted = $zip->extractTo($destDir);
         $zip->close();
+
+        if ($isExtracted === false) {
+            throw new Exception('Failed to extract ZIP contents to: ' . $destDir);
+        }
     }
 
     private function cleanupOnFailure(string $tempDir, Throwable $e): void {

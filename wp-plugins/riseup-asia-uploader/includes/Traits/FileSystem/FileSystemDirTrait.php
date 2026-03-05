@@ -72,10 +72,15 @@ trait FileSystemDirTrait {
         foreach ($files as $file) {
             $srcPath = $src . '/' . $file;
             $dstPath = $dst . '/' . $file;
+
             if (is_dir($srcPath)) {
-                $this->copyDirectory($srcPath, $dstPath);
+                $isCopied = $this->copyDirectory($srcPath, $dstPath);
             } else {
-                copy($srcPath, $dstPath);
+                $isCopied = copy($srcPath, $dstPath);
+            }
+
+            if ($isCopied === false) {
+                return false;
             }
         }
 

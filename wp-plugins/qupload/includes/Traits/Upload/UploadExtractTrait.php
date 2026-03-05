@@ -314,7 +314,7 @@ trait UploadExtractTrait
     }
 
     /** Recursively copy a directory. */
-    private function copyDirectory(string $source, string $dest): void {
+    private function copyDirectory(string $source, string $dest): bool {
         wp_mkdir_p($dest);
         $items = array_diff(scandir($source), ['.', '..']);
 
@@ -323,10 +323,18 @@ trait UploadExtractTrait
             $dstPath = $dest . '/' . $item;
 
             if (is_dir($srcPath)) {
-                $this->copyDirectory($srcPath, $dstPath);
+                $isCopied = $this->copyDirectory($srcPath, $dstPath);
             } else {
-                copy($srcPath, $dstPath);
+                $isCopied = copy($srcPath, $dstPath);
+            }
+
+            if ($isCopied === false) {
+                $this->fileLogger->error('Failed to copy file during extraction', ['source' => $srcPath, 'dest' => $dstPath]);
+
+                return false;
             }
         }
+
+        return true;
     }
 }

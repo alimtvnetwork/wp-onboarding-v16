@@ -341,9 +341,16 @@ trait UploadInstallExtractTrait
             return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
         }
 
-        $zip->extractTo($tempExtractDir);
+        $isExtracted = $zip->extractTo($tempExtractDir);
         $zip->close();
         @unlink($tempFile);
+
+        if ($isExtracted === false) {
+            $this->deleteDirectory($tempExtractDir);
+            $this->fileLogger->error('ZIP extraction failed');
+
+            return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
+        }
 
         return null;
     }
