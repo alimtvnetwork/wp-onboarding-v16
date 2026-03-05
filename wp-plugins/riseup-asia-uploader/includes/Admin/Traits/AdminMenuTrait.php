@@ -265,7 +265,8 @@ trait AdminMenuTrait {
 
     /** Enqueue Agent Sites page assets. */
     private function enqueueAgentsAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-agents', plugins_url('assets/css/admin-agents.css', $pluginFile), array(), $version);
+        wp_enqueue_style('riseup-admin-shared', plugins_url('assets/css/admin-shared.css', $pluginFile), array(), $version);
+        wp_enqueue_style('riseup-admin-agents', plugins_url('assets/css/admin-agents.css', $pluginFile), array('riseup-admin-shared'), $version);
         wp_enqueue_script('riseup-admin-agents', plugins_url('assets/js/admin-agents.js', $pluginFile), array('jquery'), $version, true);
 
         wp_localize_script('riseup-admin-agents', 'RiseupAgents', array(
@@ -337,7 +338,8 @@ trait AdminMenuTrait {
 
     /** Enqueue Snapshots page assets. */
     private function enqueueSnapshotsAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-snapshots', plugins_url('assets/css/admin-snapshots.css', $pluginFile), array(), $version);
+        wp_enqueue_style('riseup-admin-shared', plugins_url('assets/css/admin-shared.css', $pluginFile), array(), $version);
+        wp_enqueue_style('riseup-admin-snapshots', plugins_url('assets/css/admin-snapshots.css', $pluginFile), array('riseup-admin-shared'), $version);
         wp_enqueue_script('riseup-admin-snapshots', plugins_url('assets/js/admin-snapshots.js', $pluginFile), array('jquery'), $version, true);
 
         wp_localize_script('riseup-admin-snapshots', 'RiseupSnapshots', array(
