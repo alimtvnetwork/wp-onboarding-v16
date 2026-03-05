@@ -324,8 +324,14 @@ trait UploadInstallExtractTrait
             return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::ServerError->value);
         }
 
-        $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
+        $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
         $this->deleteDirectory($tempExtractDir);
+
+        if ($isMoved === false) {
+            $this->logger->logUploadFailed($slug, 'Failed to move plugin to target directory');
+
+            return $this->errorResponse('Failed to move plugin to target directory', HttpStatusType::ServerError->value);
+        }
 
         return true;
     }
@@ -341,22 +347,36 @@ trait UploadInstallExtractTrait
             return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
         }
 
-        $zip->extractTo($tempExtractDir);
+        $isExtracted = $zip->extractTo($tempExtractDir);
         $zip->close();
         @unlink($tempFile);
+
+        if ($isExtracted === false) {
+            $this->deleteDirectory($tempExtractDir);
+            $this->fileLogger->error('ZIP extraction failed');
+
+            return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
+        }
 
         return null;
     }
 
     /** Move extracted plugin folder to target, with copy fallback. */
-    private function moveExtractedPlugin(string $extractedFolder, string $targetDir) {
+    private function moveExtractedPlugin(string $extractedFolder, string $targetDir): bool {
         if (rename($extractedFolder, $targetDir)) {
             $this->fileLogger->info('Plugin installed to correct location');
 
-            return;
+            return true;
         }
 
-        $this->copyDirectory($extractedFolder, $targetDir);
+        $this->fileLogger->info('Rename failed, falling back to copy');
+        $isCopied = $this->copyDirectory($extractedFolder, $targetDir);
         $this->deleteDirectory($extractedFolder);
+
+        if ($isCopied === false) {
+            $this->fileLogger->error('Copy fallback failed during plugin move');
+        }
+
+        return $isCopied;
     }
 }

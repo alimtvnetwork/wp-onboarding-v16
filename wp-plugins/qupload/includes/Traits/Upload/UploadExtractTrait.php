@@ -160,8 +160,16 @@ trait UploadExtractTrait
             return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
         }
 
-        $zip->extractTo($tempExtractDir);
+        $isExtracted = $zip->extractTo($tempExtractDir);
         $zip->close();
+
+        if ($isExtracted === false) {
+            @unlink($tempFile);
+            $this->deleteDirectory($tempExtractDir);
+            $this->fileLogger->error('ZIP extraction failed');
+
+            return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
+        }
         @unlink($tempFile);
 
         $extractedFolders = glob($tempExtractDir . '/*', GLOB_ONLYDIR);
@@ -172,22 +180,33 @@ trait UploadExtractTrait
             return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::ServerError->value);
         }
 
-        $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
+        $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
         $this->deleteDirectory($tempExtractDir);
+
+        if ($isMoved === false) {
+            return $this->errorResponse('Failed to move plugin to target directory', HttpStatusType::ServerError->value);
+        }
 
         return true;
     }
 
     /** Move extracted folder to target, with copy fallback. */
-    private function moveExtractedPlugin(string $extractedFolder, string $targetDir): void {
+    private function moveExtractedPlugin(string $extractedFolder, string $targetDir): bool {
         if (rename($extractedFolder, $targetDir)) {
             $this->fileLogger->info('Plugin installed to correct location');
 
-            return;
+            return true;
         }
 
-        $this->copyDirectory($extractedFolder, $targetDir);
+        $this->fileLogger->info('Rename failed, falling back to copy');
+        $isCopied = $this->copyDirectory($extractedFolder, $targetDir);
         $this->deleteDirectory($extractedFolder);
+
+        if ($isCopied === false) {
+            $this->fileLogger->error('Copy fallback failed during plugin move');
+        }
+
+        return $isCopied;
     }
 
     /** Reset OPcache and locate the plugin's main file. */
@@ -306,7 +325,7 @@ trait UploadExtractTrait
     }
 
     /** Recursively copy a directory. */
-    private function copyDirectory(string $source, string $dest): void {
+    private function copyDirectory(string $source, string $dest): bool {
         wp_mkdir_p($dest);
         $items = array_diff(scandir($source), ['.', '..']);
 
@@ -315,10 +334,18 @@ trait UploadExtractTrait
             $dstPath = $dest . '/' . $item;
 
             if (is_dir($srcPath)) {
-                $this->copyDirectory($srcPath, $dstPath);
+                $isCopied = $this->copyDirectory($srcPath, $dstPath);
             } else {
-                copy($srcPath, $dstPath);
+                $isCopied = copy($srcPath, $dstPath);
+            }
+
+            if ($isCopied === false) {
+                $this->fileLogger->error('Failed to copy file during extraction', ['source' => $srcPath, 'dest' => $dstPath]);
+
+                return false;
             }
         }
+
+        return true;
     }
 }

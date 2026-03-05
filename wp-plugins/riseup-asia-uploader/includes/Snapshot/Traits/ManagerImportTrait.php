@@ -82,8 +82,12 @@ trait ManagerImportTrait {
         if ($zip->open($uploadedPath) !== true) {
             throw new Exception('Failed to open ZIP file');
         }
-        $zip->extractTo($tempDir);
+        $isExtracted = $zip->extractTo($tempDir);
         $zip->close();
+
+        if ($isExtracted === false) {
+            throw new Exception('Failed to extract ZIP contents to: ' . $tempDir);
+        }
     }
 
     private function loadAndValidateManifest(string $tempDir): array {
