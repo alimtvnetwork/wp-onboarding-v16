@@ -1,6 +1,6 @@
 <?php
 /**
- * Snapshot Restore Trait — Restore from snapshot and filesystem helpers.
+ * Snapshot Restore Trait — Restore from snapshot using shared filesystem utils.
  *
  * @package PluginsOnboard
  * @since   1.0.0
@@ -13,8 +13,7 @@ if (!defined('ABSPATH')) {
 /**
  * Trait OnboardSnapshotRestoreTrait
  *
- * Handles restoring a plugin from a snapshot ZIP, plus shared
- * filesystem utilities (find_plugin_file, delete_directory).
+ * Handles restoring a plugin from a snapshot ZIP.
  */
 trait OnboardSnapshotRestoreTrait {
 
@@ -69,7 +68,7 @@ trait OnboardSnapshotRestoreTrait {
 
         // Delete current plugin directory.
         if (is_dir($plugin_dir)) {
-            $this->delete_directory($plugin_dir);
+            OnboardFilesystemUtils::delete_directory($plugin_dir);
         }
 
         // Extract snapshot.
@@ -95,7 +94,7 @@ trait OnboardSnapshotRestoreTrait {
         }
 
         // Activate plugin.
-        $plugin_file = $this->find_plugin_file($plugin_slug);
+        $plugin_file = OnboardFilesystemUtils::find_plugin_file($plugin_slug);
 
         if ($plugin_file) {
             activate_plugin($plugin_file);
@@ -124,62 +123,5 @@ trait OnboardSnapshotRestoreTrait {
             'backup_of_current_created' => $isBackupCreated,
             'backup_location' => $isBackupCreated ? $current_backup['file_path'] : null,
         );
-    }
-
-    /**
-     * Find plugin main file.
-     *
-     * @param string $plugin_slug Plugin slug.
-     * @return string|null
-     */
-    private function find_plugin_file($plugin_slug) {
-        $possible_files = array(
-            $plugin_slug . '/' . $plugin_slug . '.php',
-            $plugin_slug . '/plugin.php',
-            $plugin_slug . '/index.php',
-        );
-
-        foreach ($possible_files as $file) {
-            if (file_exists(WP_PLUGIN_DIR . '/' . $file)) {
-                return $file;
-            }
-        }
-
-        // Search for PHP file with plugin headers.
-        $files = glob(WP_PLUGIN_DIR . '/' . $plugin_slug . '/*.php');
-
-        foreach ($files as $file) {
-            $data = get_file_data($file, array('Name' => 'Plugin Name'));
-
-            if (!empty($data['Name'])) {
-                return $plugin_slug . '/' . basename($file);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Delete directory recursively.
-     *
-     * @param string $dir Directory path.
-     */
-    private function delete_directory($dir) {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $files = array_diff(scandir($dir), array('.', '..'));
-
-        foreach ($files as $file) {
-            $path = $dir . '/' . $file;
-
-            if (is_dir($path)) {
-                $this->delete_directory($path);
-            } else {
-                unlink($path);
-            }
-        }
-        rmdir($dir);
     }
 }
