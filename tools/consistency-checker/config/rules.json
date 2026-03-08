@@ -117,8 +117,20 @@
       "params": {
         "max_lines": 500
       },
-      "exclude": [],
+      "exclude": ["**/plugins-onboard/**"],
       "reference": "spec/03-rules.md#php-file-size"
+    },
+    {
+      "id": "php-func-size",
+      "name": "PHP Function Body Size",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["php"],
+      "params": {
+        "max_lines": 20
+      },
+      "exclude": ["**/plugins-onboard/**"],
+      "reference": "spec/03-rules.md#php-func-size"
     },
     {
       "id": "md-heading",
