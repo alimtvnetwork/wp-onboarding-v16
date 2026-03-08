@@ -28,6 +28,10 @@ jobs:
         working-directory: tools/consistency-checker
         run: go build -o checker ./cmd/checker
 
-      - name: Run consistency checks
+      - name: Run consistency checks (backend)
         working-directory: tools/consistency-checker
         run: ./checker --dir ../../backend --format json --dry-run
+
+      - name: Run consistency checks (wp-plugins)
+        working-directory: tools/consistency-checker
+        run: ./checker --dir ../../wp-plugins --format json --dry-run
