@@ -15,5 +15,6 @@ func RegisterAll(eng *engine.Engine) {
 	eng.Register(&GoRawError{})
 	eng.Register(&FileNaming{})
 	eng.Register(&PhpFileSize{})
+	eng.Register(&PhpFuncSize{})
 	eng.Register(&MdHeading{})
 }

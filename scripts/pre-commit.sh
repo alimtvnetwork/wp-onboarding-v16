@@ -84,6 +84,7 @@ fi
 if [[ -d "wp-plugins" ]]; then
   echo -e "${CYAN}PHP (wp-plugins):${NC}"
   run_check "File size (≤500 lines)"         bash "$SCRIPT_DIR/lint-php-file-size.sh"
+  run_check "Function size (≤20 lines)"      bash "$SCRIPT_DIR/lint-php-func-size.sh"
   echo ""
 fi
 
