@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/class-filesystem-utils.php';
 require_once __DIR__ . '/traits/trait-plugin-manager-upload.php';
 require_once __DIR__ . '/traits/trait-plugin-manager-filesystem.php';
 

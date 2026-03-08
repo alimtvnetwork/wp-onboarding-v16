@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/class-filesystem-utils.php';
 require_once __DIR__ . '/traits/trait-snapshot-restore.php';
 require_once __DIR__ . '/traits/trait-snapshot-query.php';
 
