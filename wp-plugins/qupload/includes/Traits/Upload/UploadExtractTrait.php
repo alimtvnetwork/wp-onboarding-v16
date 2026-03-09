@@ -263,6 +263,17 @@ trait UploadExtractTrait
             return ['activated' => false];
         }
 
+        $activationError = $this->tryActivatePlugin($pluginFile, $slug);
+
+        if ($activationError !== null) {
+            return $activationError;
+        }
+
+        return ['activated' => true];
+    }
+
+    /** Attempt plugin activation, returning error response on failure. */
+    private function tryActivatePlugin(string $pluginFile, string $slug): ?WP_REST_Response {
         try {
             $result = activate_plugin($pluginFile);
         } catch (Throwable $e) {
@@ -276,18 +287,23 @@ trait UploadExtractTrait
         }
 
         if (is_wp_error($result)) {
-            $this->fileLogger->error('Plugin activation returned WP_Error', [
-                'slug'     => $slug,
-                'errorMsg' => $result->get_error_message(),
-            ]);
-
-            return $this->errorResponse(
-                'Plugin uploaded but activation failed: ' . $result->get_error_message(),
-                HttpStatusType::ServerError->value,
-            );
+            return $this->buildActivationWpError($slug, $result);
         }
 
-        return ['activated' => true];
+        return null;
+    }
+
+    /** Build error response from WP_Error activation result. */
+    private function buildActivationWpError(string $slug, object $result): WP_REST_Response {
+        $this->fileLogger->error('Plugin activation returned WP_Error', [
+            'slug'     => $slug,
+            'errorMsg' => $result->get_error_message(),
+        ]);
+
+        return $this->errorResponse(
+            'Plugin uploaded but activation failed: ' . $result->get_error_message(),
+            HttpStatusType::ServerError->value,
+        );
     }
 
     /** Detect the installed plugin version from disk. */
