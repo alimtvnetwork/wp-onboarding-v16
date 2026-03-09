@@ -35,11 +35,8 @@ type CreateInput struct {
 
 // Create inserts a new license into the database.
 func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.License] {
-	query := `INSERT INTO licenses (key, email, product, type, status, max_activations, notes, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-
 	result, execErr := s.db.Exec(
-		query,
+		licenseInsertSql,
 		input.Key,
 		input.Email,
 		input.Product.String(),
