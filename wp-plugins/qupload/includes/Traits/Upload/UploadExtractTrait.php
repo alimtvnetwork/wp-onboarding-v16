@@ -93,32 +93,39 @@ trait UploadExtractTrait
         $isUpdate = is_dir($targetDir);
 
         $isPreviouslyActive = $this->deactivateIfUpdating($slug, $isUpdate, $targetDir);
-
         $extractResult = $this->extractToPluginsDir($tempFile, $slug, $targetDir);
 
         if ($extractResult instanceof WP_REST_Response) {
             return $extractResult;
         }
 
+        return $this->resolvePluginAfterExtract($slug, $isUpdate, $input['activate'], $isPreviouslyActive);
+    }
+
+    /** Find plugin file, activate if needed, and build the result. */
+    private function resolvePluginAfterExtract(string $slug, bool $isUpdate, bool $activate, bool $wasActive): array|WP_REST_Response {
         $pluginFile = $this->resetOpcacheAndFindPlugin($slug);
 
         if ($pluginFile instanceof WP_REST_Response) {
             return $pluginFile;
         }
 
-        $activation = $this->activateIfNeeded($pluginFile, $slug, $input['activate'], $isPreviouslyActive);
+        $activation = $this->activateIfNeeded($pluginFile, $slug, $activate, $wasActive);
 
         if ($activation instanceof WP_REST_Response) {
             return $activation;
         }
 
-        $version = $this->detectInstalledVersion($pluginFile);
+        return $this->buildExtractionResult($slug, $isUpdate, $activation, $pluginFile);
+    }
 
+    /** Build the final extraction result array. */
+    private function buildExtractionResult(string $slug, bool $isUpdate, array $activation, string $pluginFile): array {
         return [
             ResponseKeyType::Slug->value          => $slug,
             ResponseKeyType::IsUpdate->value      => $isUpdate,
             ResponseKeyType::Activated->value     => $activation['activated'],
-            ResponseKeyType::PluginVersion->value => $version,
+            ResponseKeyType::PluginVersion->value => $this->detectInstalledVersion($pluginFile),
         ];
     }
 
