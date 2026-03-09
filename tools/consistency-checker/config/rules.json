@@ -133,6 +133,18 @@
       "reference": "spec/03-rules.md#php-func-size"
     },
     {
+      "id": "php-import-groups",
+      "name": "PHP Import Grouping",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["php"],
+      "params": {
+        "groups": 2
+      },
+      "exclude": ["**/plugins-onboard/**", "**/unused/**"],
+      "reference": "spec/03-rules.md#php-import-groups"
+    },
+    {
       "id": "md-heading",
       "name": "Single H1 Heading",
       "enabled": true,
