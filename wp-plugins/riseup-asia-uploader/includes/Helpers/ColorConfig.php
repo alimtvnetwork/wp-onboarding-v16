@@ -42,7 +42,14 @@ class ColorConfig {
             return self::$colors;
         }
 
-        $json = file_get_contents($path);
+        $json = @file_get_contents($path);
+
+        if ($json === false) {
+            self::$colors = array();
+
+            return self::$colors;
+        }
+
         $decoded = json_decode($json, true);
         $isDecodeFailed = ($decoded === null);
 

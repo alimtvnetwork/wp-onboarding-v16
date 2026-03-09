@@ -146,7 +146,11 @@ trait AdminErrorAjaxTrait {
         }
 
         if (file_exists($path)) {
-            file_put_contents($path, '');
+            $isWriteFailed = (file_put_contents($path, '') === false);
+
+            if ($isWriteFailed) {
+                wp_send_json_error(array(ResponseKeyType::Message->value => 'Failed to clear file'));
+            }
         }
 
         wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', ResponseKeyType::FileType->value => $type));

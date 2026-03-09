@@ -116,11 +116,15 @@ trait ImportExecutionFileTrait {
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             } else {
-                unlink($path);
+                if (!@unlink($path)) {
+                    $this->log(LogLevelType::Warn->value, 'Failed to delete file during cleanup', array('path' => $path));
+                }
             }
         }
 
-        rmdir($dir);
+        if (!@rmdir($dir)) {
+            $this->log(LogLevelType::Warn->value, 'Failed to remove directory during cleanup', array('dir' => $dir));
+        }
     }
 
     private function getDirectorySize(string $dir): int {

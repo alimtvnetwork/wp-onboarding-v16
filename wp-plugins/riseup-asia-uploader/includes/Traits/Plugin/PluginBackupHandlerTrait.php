@@ -204,12 +204,22 @@ trait PluginBackupHandlerTrait
             $metaPath = $zipPath . '.json';
 
             if (file_exists($metaPath)) {
-                $meta = json_decode(file_get_contents($metaPath), true);
+                $rawMeta = @file_get_contents($metaPath);
 
-                if (is_array($meta)) {
-                    $meta['status'] = BackupStatusType::Restored->value;
-                    $meta['restored_at'] = DateHelper::nowIso();
-                    file_put_contents($metaPath, wp_json_encode($meta, JSON_PRETTY_PRINT));
+                if ($rawMeta !== false) {
+                    $meta = json_decode($rawMeta, true);
+
+                    if (is_array($meta)) {
+                        $meta['status'] = BackupStatusType::Restored->value;
+                        $meta['restored_at'] = DateHelper::nowIso();
+                        $isWriteFailed = (file_put_contents($metaPath, wp_json_encode($meta, JSON_PRETTY_PRINT)) === false);
+
+                        if ($isWriteFailed) {
+                            $this->fileLogger->warn('Failed to update backup metadata after restore', array('path' => $metaPath));
+                        }
+                    }
+                } else {
+                    $this->fileLogger->warn('Failed to read backup metadata', array('path' => $metaPath));
                 }
             }
 
@@ -430,7 +440,8 @@ trait PluginBackupHandlerTrait
             $filename = basename($zipFile);
 
             if (file_exists($metaFile)) {
-                $meta = json_decode(file_get_contents($metaFile), true);
+                $rawMeta = @file_get_contents($metaFile);
+                $meta = ($rawMeta !== false) ? json_decode($rawMeta, true) : null;
 
                 if (is_array($meta)) {
                     $meta['filename'] = $filename;
