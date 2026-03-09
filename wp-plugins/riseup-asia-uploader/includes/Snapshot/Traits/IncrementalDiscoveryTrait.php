@@ -47,19 +47,7 @@ trait IncrementalDiscoveryTrait {
         }
 
         try {
-            $stmt = $pdo->query("SELECT Filepath FROM " . TableType::Snapshots->value . "
-                WHERE Scope != '" . SnapshotModeType::Incremental->value . "' AND Status = '" . SnapshotStatusType::Complete->value . "'
-                ORDER BY CreatedAt DESC LIMIT 1");
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $hasFilepath = $row && isset($row['Filepath']) && $row['Filepath'] !== '';
-            $isValidSnapshotDir = $hasFilepath && is_dir($row['Filepath']) && file_exists($row['Filepath'] . PathDatabaseType::Root->value);
-
-            if ($isValidSnapshotDir) {
-                return $row['Filepath'];
-            }
-
-            return null;
+            return $this->queryLatestMasterDir($pdo);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to find master snapshot from DB', array(
                 'error' => $e->getMessage(),
@@ -67,6 +55,22 @@ trait IncrementalDiscoveryTrait {
 
             return null;
         }
+    }
+
+    private function queryLatestMasterDir(PDO $pdo): ?string {
+        $stmt = $pdo->query("SELECT Filepath FROM " . TableType::Snapshots->value . "
+            WHERE Scope != '" . SnapshotModeType::Incremental->value . "' AND Status = '" . SnapshotStatusType::Complete->value . "'
+            ORDER BY CreatedAt DESC LIMIT 1");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $this->validateMasterRow($row);
+    }
+
+    private function validateMasterRow(?array $row): ?string {
+        $hasFilepath = $row && isset($row['Filepath']) && $row['Filepath'] !== '';
+        $isValidDir = $hasFilepath && is_dir($row['Filepath']) && file_exists($row['Filepath'] . PathDatabaseType::Root->value);
+
+        return $isValidDir ? $row['Filepath'] : null;
     }
 
     private function findMasterFromFilesystem(): ?string {
@@ -82,6 +86,10 @@ trait IncrementalDiscoveryTrait {
             return null;
         }
 
+        return $this->findFirstDirWithRootDb($dirs);
+    }
+
+    private function findFirstDirWithRootDb(array $dirs): ?string {
         rsort($dirs);
 
         foreach ($dirs as $dir) {
@@ -100,6 +108,10 @@ trait IncrementalDiscoveryTrait {
 
         $rows = $rootPdo->query("SELECT {$tableNameCol} AS TableName, {$rowCountCol} AS RowCount FROM {$table} ORDER BY {$tableNameCol}")->fetchAll(PDO::FETCH_ASSOC);
 
+        return $this->buildInventoryFromRows($rows);
+    }
+
+    private function buildInventoryFromRows(array $rows): array {
         $inventory = array();
 
         foreach ($rows as $row) {
@@ -115,7 +127,16 @@ trait IncrementalDiscoveryTrait {
 
     private function detectPrimaryKey(string $table): ?string {
         $columns = $this->wpdb->get_results("SHOW COLUMNS FROM `{$table}`", ARRAY_A);
+        $autoIncrementPk = $this->findAutoIncrementPk($columns);
 
+        if ($autoIncrementPk !== null) {
+            return $autoIncrementPk;
+        }
+
+        return $this->findIntPrimaryKey($columns);
+    }
+
+    private function findAutoIncrementPk(array $columns): ?string {
         foreach ($columns as $col) {
             $isPrimaryAutoIncrement =
                 $col['Key'] === 'PRI' &&
@@ -126,18 +147,14 @@ trait IncrementalDiscoveryTrait {
             }
         }
 
+        return null;
+    }
+
+    private function findIntPrimaryKey(array $columns): ?string {
         foreach ($columns as $col) {
-            $isIntPrimaryKey = $col['Key'] === 'PRI' && in_array(strtolower($col['Type']), array(
-                'bigint',
-                'int',
-                'mediumint',
-                'smallint',
-                'tinyint',
-            ));
+            $isIntPrimary = $col['Key'] === 'PRI' && str_contains(strtolower($col['Type']), 'int');
 
-            $isIntTypePrimary = str_contains(strtolower($col['Type']), 'int') && $col['Key'] === 'PRI';
-
-            if ($isIntPrimaryKey || $isIntTypePrimary) {
+            if ($isIntPrimary) {
                 return $col['Field'];
             }
         }

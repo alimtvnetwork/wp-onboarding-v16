@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use Throwable;
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
@@ -25,6 +26,11 @@ use RiseupAsia\Helpers\DateHelper;
 trait RootDbSchemaTrait {
 
     private function createSchema(PDO $pdo): void {
+        $this->createCoreTables($pdo);
+        $this->createAuxTables($pdo);
+    }
+
+    private function createCoreTables(PDO $pdo): void {
         $pdo->exec("CREATE TABLE IF NOT EXISTS SnapshotMeta (
             Id              INTEGER PRIMARY KEY,
             Title           TEXT NOT NULL,
@@ -57,7 +63,9 @@ trait RootDbSchemaTrait {
             RefColumn       TEXT NOT NULL,
             UNIQUE(ChildTable, FkColumn)
         )");
+    }
 
+    private function createAuxTables(PDO $pdo): void {
         $pdo->exec("CREATE TABLE IF NOT EXISTS IncrementalBackups (
             Id              INTEGER PRIMARY KEY,
             SequenceNum     INTEGER NOT NULL,
@@ -81,25 +89,19 @@ trait RootDbSchemaTrait {
 
     /**
      * Resolve the actual table name in a root DB, handling backward compatibility.
-     *
-     * Old snapshots use snake_case (e.g. snapshot_meta), new ones use PascalCase (SnapshotMeta).
-     * Detects which naming convention exists and returns the correct table name.
      */
     public function resolveRootDbTableName(PDO $pdo, string $pascalName): string {
-        $legacyMap = array(
-            'SnapshotMeta'       => 'snapshot_meta',
-            'SnapshotTables'     => 'snapshot_tables',
-            'TableDependencies'  => 'table_dependencies',
-            'IncrementalBackups' => 'incremental_backups',
-            'PluginSnapshots'    => 'plugin_snapshots',
-        );
-
         $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$pascalName}'");
 
         if ($check->fetch() !== false) {
             return $pascalName;
         }
 
+        return $this->resolveLegacyTableName($pdo, $pascalName);
+    }
+
+    private function resolveLegacyTableName(PDO $pdo, string $pascalName): string {
+        $legacyMap = $this->getLegacyTableMap();
         $legacy = $legacyMap[$pascalName] ?? null;
 
         if ($legacy !== null) {
@@ -113,14 +115,44 @@ trait RootDbSchemaTrait {
         return $pascalName;
     }
 
+    private function getLegacyTableMap(): array {
+        return array(
+            'SnapshotMeta'       => 'snapshot_meta',
+            'SnapshotTables'     => 'snapshot_tables',
+            'TableDependencies'  => 'table_dependencies',
+            'IncrementalBackups' => 'incremental_backups',
+            'PluginSnapshots'    => 'plugin_snapshots',
+        );
+    }
+
     /**
      * Resolve a column name for backward compatibility.
-     *
-     * Old snapshots use snake_case columns; new ones use PascalCase.
-     * Returns the legacy column name if the PascalCase column is absent.
      */
     public function resolveRootDbColumnName(PDO $pdo, string $table, string $pascalColumn): string {
-        $legacyColumnMap = array(
+        $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
+        $hasPascalColumn = $this->columnExists($columns, $pascalColumn);
+
+        if ($hasPascalColumn) {
+            return $pascalColumn;
+        }
+
+        $legacyMap = $this->getLegacyColumnMap();
+
+        return $legacyMap[$pascalColumn] ?? $pascalColumn;
+    }
+
+    private function columnExists(array $columns, string $name): bool {
+        foreach ($columns as $col) {
+            if ($col['name'] === $name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getLegacyColumnMap(): array {
+        return array(
             'Id'              => 'id',
             'Title'           => 'title',
             'Type'            => 'type',
@@ -151,16 +183,6 @@ trait RootDbSchemaTrait {
             'PluginName'      => 'plugin_name',
             'ZipFile'         => 'zip_file',
         );
-
-        $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($columns as $col) {
-            if ($col['name'] === $pascalColumn) {
-                return $pascalColumn;
-            }
-        }
-
-        return $legacyColumnMap[$pascalColumn] ?? $pascalColumn;
     }
 
     /**
@@ -177,11 +199,20 @@ trait RootDbSchemaTrait {
         $mysqlVersion = $wpdb->get_var("SELECT VERSION()");
         $wpVersion = get_bloginfo('version');
 
-        $stmt = $pdo->prepare("INSERT OR REPLACE INTO SnapshotMeta
+        $stmt = $this->prepareMetadataInsert($pdo);
+        $stmt->execute($this->buildMetadataValues($config, $mysqlVersion, $wpVersion));
+
+        $this->logMetadataPopulated($config, $mysqlVersion, $wpVersion);
+    }
+
+    private function prepareMetadataInsert(PDO $pdo): \PDOStatement {
+        return $pdo->prepare("INSERT OR REPLACE INTO SnapshotMeta
             (Id, Title, Type, CreatedAt, CreatedBy, MysqlVersion, WpVersion, PluginVersion, TableCount, TotalRows, ConfigJson)
             VALUES (1, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
+    }
 
-        $stmt->execute(array(
+    private function buildMetadataValues(array $config, string $mysqlVersion, string $wpVersion): array {
+        return array(
             $config[ResponseKeyType::Title->value] ?? SnapshotConfigType::UntitledTitle,
             $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
             DateHelper::nowIso(),
@@ -190,8 +221,10 @@ trait RootDbSchemaTrait {
             $wpVersion,
             PluginConfigType::Version->value,
             isset($config[ResponseKeyType::Settings->value]) ? json_encode($config[ResponseKeyType::Settings->value]) : null,
-        ));
+        );
+    }
 
+    private function logMetadataPopulated(array $config, string $mysqlVersion, string $wpVersion): void {
         $this->log(LogLevelType::Info->value, 'Metadata populated', array(
             ResponseKeyType::Title->value => $config[ResponseKeyType::Title->value] ?? 'Untitled',
             'mysqlVersion' => $mysqlVersion,
@@ -199,15 +232,22 @@ trait RootDbSchemaTrait {
         ));
     }
 
-    public function populateDependencies(PDO $pdo, string $scope = 'all'): array { // Default 'all' matches SnapshotScopeType::All->value
+    public function populateDependencies(PDO $pdo, string $scope = 'all'): array {
         $analysis = $this->analyzer->analyze($scope);
 
+        $this->insertDependencies($pdo, $analysis[ResponseKeyType::Dependencies->value]);
+        $this->logDependenciesPopulated($analysis);
+
+        return $analysis;
+    }
+
+    private function insertDependencies(PDO $pdo, array $dependencies): void {
         $stmt = $pdo->prepare("INSERT OR IGNORE INTO TableDependencies
             (ParentTable, ChildTable, FkColumn, RefColumn) VALUES (?, ?, ?, ?)");
 
         $pdo->beginTransaction();
 
-        foreach ($analysis[ResponseKeyType::Dependencies->value] as $dep) {
+        foreach ($dependencies as $dep) {
             $stmt->execute(array(
                 $dep['parent_table'],
                 $dep['child_table'],
@@ -216,12 +256,12 @@ trait RootDbSchemaTrait {
             ));
         }
         $pdo->commit();
+    }
 
+    private function logDependenciesPopulated(array $analysis): void {
         $this->log(LogLevelType::Info->value, 'Dependencies populated', array(
             'edges' => count($analysis[ResponseKeyType::Dependencies->value]),
             ResponseKeyType::Tables->value => count($analysis[ResponseKeyType::Tables->value]),
         ));
-
-        return $analysis;
     }
 }

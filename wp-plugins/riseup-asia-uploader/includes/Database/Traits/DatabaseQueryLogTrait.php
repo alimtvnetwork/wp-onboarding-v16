@@ -47,24 +47,23 @@ trait DatabaseQueryLogTrait {
             return false;
         }
 
-        try {
-            $this->fileLogger->debug('Logging transaction', array(
-                'action' => $action,
-                'status' => $status,
-                'enhanced' => $enhanced,
-            ));
+        return $this->executeLogTransaction($action, $pluginSlug, $postId, $userLogin, $userId, $ipAddress, $details, $status, $errorMsg, $enhanced);
+    }
 
-            $record = $this->buildTransactionRecord(
-                $action,
-                $pluginSlug,
-                $postId,
-                $userLogin,
-                $userId,
-                $ipAddress,
-                $details,
-                $status,
-                $errorMsg,
-            );
+    private function executeLogTransaction(
+        string $action,
+        ?string $pluginSlug,
+        ?int $postId,
+        string $userLogin,
+        ?int $userId,
+        string $ipAddress,
+        array $details,
+        string $status,
+        ?string $errorMsg,
+        array $enhanced,
+    ): int|false {
+        try {
+            $record = $this->buildTransactionRecord($action, $pluginSlug, $postId, $userLogin, $userId, $ipAddress, $details, $status, $errorMsg);
             $this->applyEnhancedFields($record, $enhanced);
 
             $result = $record->save();
@@ -90,6 +89,20 @@ trait DatabaseQueryLogTrait {
         $hasDetails = !empty($details);
         $detailsJson = $hasDetails ? json_encode($details) : null;
 
+        return $this->createTransactionOrm($action, $pluginSlug, $postId, $userLogin, $userId, $ipAddress, $detailsJson, $status, $errorMsg);
+    }
+
+    private function createTransactionOrm(
+        string $action,
+        ?string $pluginSlug,
+        ?int $postId,
+        string $userLogin,
+        ?int $userId,
+        string $ipAddress,
+        ?string $detailsJson,
+        string $status,
+        ?string $errorMsg,
+    ) {
         return Orm::forTable(TableType::Transactions->value)
             ->create()
             ->set('Action', $action)
@@ -105,12 +118,17 @@ trait DatabaseQueryLogTrait {
     }
 
     private function applyEnhancedFields($record, array $enhanced): void {
+        $this->applyStringEnhancedFields($record, $enhanced);
+        $this->applySpecialEnhancedFields($record, $enhanced);
+    }
+
+    private function applyStringEnhancedFields($record, array $enhanced): void {
         $fieldMap = array(
-            'pluginFile' => 'PluginFile',
-            'triggeredBy' => 'TriggeredBy',
+            'pluginFile'    => 'PluginFile',
+            'triggeredBy'   => 'TriggeredBy',
             'sourceMachine' => 'SourceMachine',
             'pluginVersion' => 'PluginVersion',
-            'uploadSource' => 'UploadSource',
+            'uploadSource'  => 'UploadSource',
         );
 
         foreach ($fieldMap as $paramKey => $dbColumn) {
@@ -120,7 +138,9 @@ trait DatabaseQueryLogTrait {
                 $record->set($dbColumn, $enhanced[$paramKey]);
             }
         }
+    }
 
+    private function applySpecialEnhancedFields($record, array $enhanced): void {
         $hasAgentSiteId = !empty($enhanced['agentSiteId'] ?? null);
 
         if ($hasAgentSiteId) {
@@ -143,14 +163,18 @@ trait DatabaseQueryLogTrait {
             $params['details'] ?? array(),
             $params['status'] ?? StatusType::Success->value,
             $params['errorMsg'] ?? null,
-            array(
-                'pluginFile'    => $params['pluginFile'] ?? null,
-                'wasActive'     => $params['wasActive'] ?? null,
-                'triggeredBy'   => $params['triggeredBy'] ?? null,
-                'agentSiteId'   => $params['agentSiteId'] ?? null,
-                'pluginVersion' => $params['pluginVersion'] ?? null,
-                'uploadSource'  => $params['uploadSource'] ?? null,
-            ),
+            $this->buildEnhancedArray($params),
+        );
+    }
+
+    private function buildEnhancedArray(array $params): array {
+        return array(
+            'pluginFile'    => $params['pluginFile'] ?? null,
+            'wasActive'     => $params['wasActive'] ?? null,
+            'triggeredBy'   => $params['triggeredBy'] ?? null,
+            'agentSiteId'   => $params['agentSiteId'] ?? null,
+            'pluginVersion' => $params['pluginVersion'] ?? null,
+            'uploadSource'  => $params['uploadSource'] ?? null,
         );
     }
 
@@ -162,20 +186,22 @@ trait DatabaseQueryLogTrait {
         }
 
         try {
-            $log = Orm::forTable(TableType::Transactions->value)
-                ->findOne($id);
-
-            $hasLogDetails = $log && !empty($log['Details'] ?? null);
-
-            if ($hasLogDetails) {
-                $log['Details'] = json_decode($log['Details'], true);
-            }
-
-            return $log;
+            return $this->fetchAndDecodeTransaction($id);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get transaction');
 
             return null;
         }
+    }
+
+    private function fetchAndDecodeTransaction(int $id): ?array {
+        $log = Orm::forTable(TableType::Transactions->value)->findOne($id);
+        $hasLogDetails = $log && !empty($log['Details'] ?? null);
+
+        if ($hasLogDetails) {
+            $log['Details'] = json_decode($log['Details'], true);
+        }
+
+        return $log;
     }
 }

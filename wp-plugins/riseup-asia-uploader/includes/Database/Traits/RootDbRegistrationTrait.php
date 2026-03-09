@@ -43,11 +43,7 @@ trait RootDbRegistrationTrait {
     }
 
     /** Update final stats in SnapshotMeta. */
-    public function updateStats(
-        PDO $pdo,
-        int $tableCount,
-        int $totalRows,
-    ): void {
+    public function updateStats(PDO $pdo, int $tableCount, int $totalRows): void {
         $stmt = $pdo->prepare("UPDATE SnapshotMeta SET TableCount = ?, TotalRows = ? WHERE Id = 1");
         $stmt->execute(array($tableCount, $totalRows));
     }
@@ -80,41 +76,56 @@ trait RootDbRegistrationTrait {
         ));
     }
 
-    /** Read metadata from an existing a-root.db (supports both old snake_case and new PascalCase schemas). */
+    /** Read metadata from an existing a-root.db. */
     public function readMetadata(string $filepath): ?array {
         if (PathHelper::isFileMissing($filepath)) {
             return null;
         }
 
         try {
-            $pdo = new PDO('sqlite:' . $filepath);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            $metaTable = $this->resolveRootDbTableName($pdo, 'SnapshotMeta');
-            $tablesTable = $this->resolveRootDbTableName($pdo, 'SnapshotTables');
-            $depsTable = $this->resolveRootDbTableName($pdo, 'TableDependencies');
-            $incTable = $this->resolveRootDbTableName($pdo, 'IncrementalBackups');
-            $pluginsTable = $this->resolveRootDbTableName($pdo, 'PluginSnapshots');
-
-            $meta = $pdo->query("SELECT * FROM {$metaTable} WHERE {$this->resolveCol($pdo, $metaTable, 'Id')} = 1")->fetch(PDO::FETCH_ASSOC);
-            $tables = $pdo->query("SELECT * FROM {$tablesTable} ORDER BY {$this->resolveCol($pdo, $tablesTable, 'TableName')}")->fetchAll(PDO::FETCH_ASSOC);
-            $deps = $pdo->query("SELECT * FROM {$depsTable} ORDER BY {$this->resolveCol($pdo, $depsTable, 'ParentTable')}, {$this->resolveCol($pdo, $depsTable, 'ChildTable')}")->fetchAll(PDO::FETCH_ASSOC);
-            $incrementals = $pdo->query("SELECT * FROM {$incTable} ORDER BY {$this->resolveCol($pdo, $incTable, 'SequenceNum')}")->fetchAll(PDO::FETCH_ASSOC);
-            $plugins = $pdo->query("SELECT * FROM {$pluginsTable} ORDER BY {$this->resolveCol($pdo, $pluginsTable, 'PluginSlug')}")->fetchAll(PDO::FETCH_ASSOC);
-            $pdo = null;
-
-            return array(
-                ResponseKeyType::Meta->value => $meta,
-                ResponseKeyType::Tables->value => $tables,
-                ResponseKeyType::Dependencies->value => $deps,
-                ResponseKeyType::Incrementals->value => $incrementals,
-                ResponseKeyType::Plugins->value => $plugins,
-            );
+            return $this->readMetadataFromPdo($filepath);
         } catch (Throwable $e) {
             $this->logError($e, 'Failed to read a-root.db', array('path' => $filepath));
 
             return null;
         }
+    }
+
+    private function readMetadataFromPdo(string $filepath): array {
+        $pdo = new PDO('sqlite:' . $filepath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $resolved = $this->resolveAllTableNames($pdo);
+        $result = $this->queryAllMetadata($pdo, $resolved);
+        $pdo = null;
+
+        return $result;
+    }
+
+    private function resolveAllTableNames(PDO $pdo): array {
+        return array(
+            'meta'         => $this->resolveRootDbTableName($pdo, 'SnapshotMeta'),
+            'tables'       => $this->resolveRootDbTableName($pdo, 'SnapshotTables'),
+            'deps'         => $this->resolveRootDbTableName($pdo, 'TableDependencies'),
+            'incrementals' => $this->resolveRootDbTableName($pdo, 'IncrementalBackups'),
+            'plugins'      => $this->resolveRootDbTableName($pdo, 'PluginSnapshots'),
+        );
+    }
+
+    private function queryAllMetadata(PDO $pdo, array $t): array {
+        $meta = $pdo->query("SELECT * FROM {$t['meta']} WHERE {$this->resolveCol($pdo, $t['meta'], 'Id')} = 1")->fetch(PDO::FETCH_ASSOC);
+        $tables = $pdo->query("SELECT * FROM {$t['tables']} ORDER BY {$this->resolveCol($pdo, $t['tables'], 'TableName')}")->fetchAll(PDO::FETCH_ASSOC);
+        $deps = $pdo->query("SELECT * FROM {$t['deps']} ORDER BY {$this->resolveCol($pdo, $t['deps'], 'ParentTable')}, {$this->resolveCol($pdo, $t['deps'], 'ChildTable')}")->fetchAll(PDO::FETCH_ASSOC);
+        $incrementals = $pdo->query("SELECT * FROM {$t['incrementals']} ORDER BY {$this->resolveCol($pdo, $t['incrementals'], 'SequenceNum')}")->fetchAll(PDO::FETCH_ASSOC);
+        $plugins = $pdo->query("SELECT * FROM {$t['plugins']} ORDER BY {$this->resolveCol($pdo, $t['plugins'], 'PluginSlug')}")->fetchAll(PDO::FETCH_ASSOC);
+
+        return array(
+            ResponseKeyType::Meta->value          => $meta,
+            ResponseKeyType::Tables->value        => $tables,
+            ResponseKeyType::Dependencies->value  => $deps,
+            ResponseKeyType::Incrementals->value  => $incrementals,
+            ResponseKeyType::Plugins->value       => $plugins,
+        );
     }
 
     /** Shorthand for resolveRootDbColumnName. */

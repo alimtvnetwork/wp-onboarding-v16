@@ -29,12 +29,6 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TriggerSourceType;
 
 trait SchedulerCronTrait {
-    /**
-     * Shared cron-job wrapper: try-catch + audit trail.
-     *
-     * @param string   $label Human label for logging.
-     * @param callable $work  Returns a standardized cron result array.
-     */
     private function executeCronJob(string $label, callable $work) {
         $this->logger->info("[SCHEDULER] Executing {$label}");
 
@@ -49,21 +43,19 @@ trait SchedulerCronTrait {
         }
     }
 
-    /**
-     * Log the outcome of a cron job and optionally write an audit trail.
-     *
-     * @param string $label  Human label.
-     * @param array  $result Standardized cron result.
-     */
     private function logCronResult(string $label, array $result) {
         $isSuccess = $result[ResponseKeyType::Success->value] ?? false;
-        $level = $isSuccess ? 'info' : 'error';
         $suffix = $isSuccess ? 'completed' : 'failed';
+        $level = $isSuccess ? 'info' : 'error';
 
         $this->logger->{$level}("[SCHEDULER] {$label} {$suffix}", $result[ResponseKeyType::LogDataKey->value] ?? array());
+        $this->writeCronAuditTrail($result, $isSuccess);
+    }
 
-        if ($result[ResponseKeyType::SkipAudit->value] ?? false) {
+    private function writeCronAuditTrail(array $result, bool $isSuccess): void {
+        $shouldSkip = $result[ResponseKeyType::SkipAudit->value] ?? false;
 
+        if ($shouldSkip) {
             return;
         }
 
@@ -83,15 +75,6 @@ trait SchedulerCronTrait {
         );
     }
 
-    /**
-     * Build a standardized cron result array from a raw operation result.
-     *
-     * @param array  $result      Raw operation result.
-     * @param string $action      Audit action constant.
-     * @param string $triggeredBy Trigger source constant.
-     * @param array  $auditData   Extra audit data.
-     * @return array Standardized result.
-     */
     private function buildCronResult(
         array $result,
         string $action,
@@ -109,11 +92,6 @@ trait SchedulerCronTrait {
         );
     }
 
-    /**
-     * Create manager + orchestrator instances via factory.
-     *
-     * @return array{0: SnapshotManager, 1: SnapshotOrchestrator}
-     */
     private function createOrchestrator(): array {
         $manager = SnapshotFactory::manager($this->logger, $this->db);
         $orchestrator = SnapshotFactory::orchestrator($this->logger, $this->db, $manager);
@@ -121,24 +99,24 @@ trait SchedulerCronTrait {
         return array($manager, $orchestrator);
     }
 
-    /**
-     * Invoke a backup through the orchestrator, branching on snapshot type.
-     *
-     * @param object $orchestrator Orchestrator instance.
-     * @param array  $args         Snapshot arguments including snapshot_type.
-     * @return array Raw orchestrator result.
-     */
     private function invokeBackup(object $orchestrator, array $args): array {
         $snapshotType = $args[ResponseKeyType::SnapshotType->value] ?? SnapshotModeType::Full->value;
 
         if ($snapshotType === SnapshotModeType::Incremental->value) {
-
-            return $orchestrator->executeIncrementalBackup(array(
-                ResponseKeyType::Title->value             => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
-                ResponseKeyType::MasterSnapshotId->value  => $args[ResponseKeyType::MasterSnapshotId->value] ?? null,
-            ));
+            return $this->invokeIncrementalBackup($orchestrator, $args);
         }
 
+        return $this->invokeFullBackup($orchestrator, $args);
+    }
+
+    private function invokeIncrementalBackup(object $orchestrator, array $args): array {
+        return $orchestrator->executeIncrementalBackup(array(
+            ResponseKeyType::Title->value            => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
+            ResponseKeyType::MasterSnapshotId->value => $args[ResponseKeyType::MasterSnapshotId->value] ?? null,
+        ));
+    }
+
+    private function invokeFullBackup(object $orchestrator, array $args): array {
         return $orchestrator->executeFullBackup(array(
             ResponseKeyType::Title->value   => $args[ResponseKeyType::Title->value] ?? 'Manual Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::Scope->value   => $args[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
