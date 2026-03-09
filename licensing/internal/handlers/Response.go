@@ -4,7 +4,25 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+
+	"riseup-licensing/internal/models"
 )
+
+// errorBody is the JSON response for error messages.
+type errorBody struct {
+	Error string `json:"error"`
+}
+
+// statusBody is the JSON response for simple status messages.
+type statusBody struct {
+	Status string `json:"status"`
+}
+
+// licenseStatusResponse is the JSON response for the license status endpoint.
+type licenseStatusResponse struct {
+	License     *models.License      `json:"license"`
+	Activations []models.Activation  `json:"activations"`
+}
 
 // jsonResponse writes a JSON response with the given status code.
 func jsonResponse(
@@ -23,7 +41,7 @@ func errorResponse(
 	status int,
 	message string,
 ) {
-	jsonResponse(w, status, map[string]string{"error": message})
+	jsonResponse(w, status, errorBody{Error: message})
 }
 
 // decodeJSON reads and parses a JSON request body into the target.

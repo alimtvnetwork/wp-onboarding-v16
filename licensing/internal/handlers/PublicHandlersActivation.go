@@ -133,8 +133,10 @@ func (h *PublicHandlers) Status(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, map[string]any{
-		"license":     license,
-		"activations": activations,
-	})
+	resp := licenseStatusResponse{
+		License:     license,
+		Activations: activations,
+	}
+
+	jsonResponse(w, http.StatusOK, resp)
 }
