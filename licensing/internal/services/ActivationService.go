@@ -46,12 +46,9 @@ func (s *ActivationService) Activate(input ActivateInput) apperror.Result[*model
 
 // findExisting checks if an activation already exists for a license+domain pair.
 func (s *ActivationService) findExisting(licenseId int64, domain string) (*models.Activation, *apperror.AppError) {
-	query := `SELECT id, license_id, domain, ip_address, user_agent, activated_at, deactivated_at
-		FROM activations WHERE license_id = ? AND domain = ?`
-
 	var a models.Activation
 
-	scanErr := s.db.QueryRow(query, licenseId, domain).Scan(
+	scanErr := s.db.QueryRow(activationFindExistingSql, licenseId, domain).Scan(
 		&a.Id, &a.LicenseId, &a.Domain, &a.IpAddress, &a.UserAgent, &a.ActivatedAt, &a.DeactivatedAt,
 	)
 
