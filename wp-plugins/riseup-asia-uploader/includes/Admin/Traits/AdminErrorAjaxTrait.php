@@ -111,12 +111,17 @@ trait AdminErrorAjaxTrait {
             $size = filesize($path);
             $maxBytes = 512 * 1024;
             if ($size > $maxBytes) {
-                $fp = fopen($path, 'r');
-                fseek($fp, -$maxBytes, SEEK_END);
-                fgets($fp);
-                $content = fread($fp, $maxBytes);
-                fclose($fp);
-                $content = '... (truncated, showing last ' . round($maxBytes / 1024) . 'KB) ...' . PHP_EOL . $content;
+                $fp = @fopen($path, 'r');
+
+                if ($fp !== false) {
+                    fseek($fp, -$maxBytes, SEEK_END);
+                    fgets($fp);
+                    $content = fread($fp, $maxBytes);
+                    fclose($fp);
+                    $content = '... (truncated, showing last ' . round($maxBytes / 1024) . 'KB) ...' . PHP_EOL . $content;
+                } else {
+                    $content = '(Failed to open log file for reading)';
+                }
             } else {
                 $content = file_get_contents($path);
             }
