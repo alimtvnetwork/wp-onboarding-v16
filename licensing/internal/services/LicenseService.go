@@ -3,13 +3,13 @@ package services
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	"riseup-licensing/internal/enums/licensestatus"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 	"riseup-licensing/internal/models"
+	"riseup-licensing/pkg/apperror"
 )
 
 // LicenseService manages license CRUD operations against the database.
@@ -34,7 +34,7 @@ type CreateInput struct {
 }
 
 // Create inserts a new license into the database.
-func (s *LicenseService) Create(input CreateInput) (*models.License, error) {
+func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.License] {
 	query := `INSERT INTO licenses (key, email, product, type, status, max_activations, notes, expires_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -51,20 +51,20 @@ func (s *LicenseService) Create(input CreateInput) (*models.License, error) {
 	)
 	if execErr != nil {
 
-		return nil, fmt.Errorf("insert license: %w", execErr)
+		return apperror.FailWrap[*models.License](execErr, apperror.ErrDatabaseInsert, "insert license")
 	}
 
 	id, idErr := result.LastInsertId()
 	if idErr != nil {
 
-		return nil, fmt.Errorf("get inserted id: %w", idErr)
+		return apperror.FailWrap[*models.License](idErr, apperror.ErrDatabaseQuery, "get inserted id")
 	}
 
 	return s.GetById(id)
 }
 
 // GetById retrieves a license by its database ID.
-func (s *LicenseService) GetById(id int64) (*models.License, error) {
+func (s *LicenseService) GetById(id int64) apperror.Result[*models.License] {
 	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
 		FROM licenses WHERE id = ?`
 
@@ -72,7 +72,7 @@ func (s *LicenseService) GetById(id int64) (*models.License, error) {
 }
 
 // GetByKey retrieves a license by its license key string.
-func (s *LicenseService) GetByKey(key string) (*models.License, error) {
+func (s *LicenseService) GetByKey(key string) apperror.Result[*models.License] {
 	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
 		FROM licenses WHERE key = ?`
 
@@ -80,14 +80,14 @@ func (s *LicenseService) GetByKey(key string) (*models.License, error) {
 }
 
 // List returns all licenses, ordered by creation date descending.
-func (s *LicenseService) List() ([]models.License, error) {
+func (s *LicenseService) List() apperror.Result[[]models.License] {
 	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
 		FROM licenses ORDER BY created_at DESC`
 
 	rows, queryErr := s.db.Query(query)
 	if queryErr != nil {
 
-		return nil, fmt.Errorf("query licenses: %w", queryErr)
+		return apperror.FailWrap[[]models.License](queryErr, apperror.ErrDatabaseQuery, "query licenses")
 	}
 	defer rows.Close()
 
@@ -95,7 +95,7 @@ func (s *LicenseService) List() ([]models.License, error) {
 }
 
 // scanOne scans a single license row.
-func (s *LicenseService) scanOne(row *sql.Row) (*models.License, error) {
+func (s *LicenseService) scanOne(row *sql.Row) apperror.Result[*models.License] {
 	var l models.License
 	var product, ltype, status string
 
@@ -105,12 +105,12 @@ func (s *LicenseService) scanOne(row *sql.Row) (*models.License, error) {
 	)
 	if scanErr != nil {
 
-		return nil, fmt.Errorf("scan license: %w", scanErr)
+		return apperror.FailWrap[*models.License](scanErr, apperror.ErrDatabaseScan, "scan license")
 	}
 
 	l.Product = producttype.Parse(product)
 	l.Type = licensetype.Parse(ltype)
 	l.Status = licensestatus.Parse(status)
 
-	return &l, nil
+	return apperror.Ok(&l)
 }

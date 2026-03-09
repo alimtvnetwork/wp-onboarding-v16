@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/pkg/apperror"
 )
 
 // AuditService manages audit log entries.
@@ -28,11 +29,11 @@ type LogInput struct {
 }
 
 // Log records an audit trail entry.
-func (s *AuditService) Log(input LogInput) error {
+func (s *AuditService) Log(input LogInput) *apperror.AppError {
 	detailsJson, marshalErr := marshalDetails(input.Details)
 	if marshalErr != nil {
 
-		return marshalErr
+		return apperror.Wrap(marshalErr, apperror.ErrMarshal, "marshal audit details")
 	}
 
 	query := `INSERT INTO audit_log (license_id, action, domain, ip_address, details) VALUES (?, ?, ?, ?, ?)`
@@ -40,7 +41,7 @@ func (s *AuditService) Log(input LogInput) error {
 	_, execErr := s.db.Exec(query, input.LicenseId, input.Action.String(), input.Domain, input.IpAddress, detailsJson)
 	if execErr != nil {
 
-		return fmt.Errorf("insert audit log: %w", execErr)
+		return apperror.Wrap(execErr, apperror.ErrDatabaseInsert, "insert audit log")
 	}
 
 	return nil

@@ -2,10 +2,10 @@ package services
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	"riseup-licensing/internal/models"
+	"riseup-licensing/pkg/apperror"
 )
 
 // ActivationService manages domain activation operations.
@@ -27,11 +27,11 @@ type ActivateInput struct {
 }
 
 // Activate creates or reactivates a domain activation for a license.
-func (s *ActivationService) Activate(input ActivateInput) (*models.Activation, error) {
+func (s *ActivationService) Activate(input ActivateInput) apperror.Result[*models.Activation] {
 	existing, findErr := s.findExisting(input.LicenseId, input.Domain)
 	if findErr != nil {
 
-		return nil, findErr
+		return apperror.Fail[*models.Activation](findErr)
 	}
 
 	isReactivation := existing != nil
@@ -45,7 +45,7 @@ func (s *ActivationService) Activate(input ActivateInput) (*models.Activation, e
 }
 
 // findExisting checks if an activation already exists for a license+domain pair.
-func (s *ActivationService) findExisting(licenseId int64, domain string) (*models.Activation, error) {
+func (s *ActivationService) findExisting(licenseId int64, domain string) (*models.Activation, *apperror.AppError) {
 	query := `SELECT id, license_id, domain, ip_address, user_agent, activated_at, deactivated_at
 		FROM activations WHERE license_id = ? AND domain = ?`
 
@@ -63,7 +63,7 @@ func (s *ActivationService) findExisting(licenseId int64, domain string) (*model
 
 	if scanErr != nil {
 
-		return nil, fmt.Errorf("find activation: %w", scanErr)
+		return nil, apperror.Wrap(scanErr, apperror.ErrDatabaseScan, "find activation")
 	}
 
 	return &a, nil
@@ -73,7 +73,7 @@ func (s *ActivationService) findExisting(licenseId int64, domain string) (*model
 func (s *ActivationService) reactivate(
 	id int64,
 	input ActivateInput,
-) (*models.Activation, error) {
+) apperror.Result[*models.Activation] {
 	query := `UPDATE activations SET deactivated_at = NULL, ip_address = ?, user_agent = ?, activated_at = ?
 		WHERE id = ?`
 
@@ -82,40 +82,52 @@ func (s *ActivationService) reactivate(
 	_, execErr := s.db.Exec(query, input.IpAddress, input.UserAgent, now, id)
 	if execErr != nil {
 
-		return nil, fmt.Errorf("reactivate: %w", execErr)
+		return apperror.FailWrap[*models.Activation](execErr, apperror.ErrDatabaseUpdate, "reactivate")
 	}
 
-	return s.findExisting(input.LicenseId, input.Domain)
+	existing, findErr := s.findExisting(input.LicenseId, input.Domain)
+	if findErr != nil {
+
+		return apperror.Fail[*models.Activation](findErr)
+	}
+
+	return apperror.Ok(existing)
 }
 
 // createNew inserts a brand-new activation record.
-func (s *ActivationService) createNew(input ActivateInput) (*models.Activation, error) {
+func (s *ActivationService) createNew(input ActivateInput) apperror.Result[*models.Activation] {
 	query := `INSERT INTO activations (license_id, domain, ip_address, user_agent) VALUES (?, ?, ?, ?)`
 
 	_, execErr := s.db.Exec(query, input.LicenseId, input.Domain, input.IpAddress, input.UserAgent)
 	if execErr != nil {
 
-		return nil, fmt.Errorf("insert activation: %w", execErr)
+		return apperror.FailWrap[*models.Activation](execErr, apperror.ErrDatabaseInsert, "insert activation")
 	}
 
-	return s.findExisting(input.LicenseId, input.Domain)
+	existing, findErr := s.findExisting(input.LicenseId, input.Domain)
+	if findErr != nil {
+
+		return apperror.Fail[*models.Activation](findErr)
+	}
+
+	return apperror.Ok(existing)
 }
 
 // Deactivate marks an activation as deactivated by license ID and domain.
-func (s *ActivationService) Deactivate(licenseId int64, domain string) error {
+func (s *ActivationService) Deactivate(licenseId int64, domain string) *apperror.AppError {
 	query := `UPDATE activations SET deactivated_at = ? WHERE license_id = ? AND domain = ? AND deactivated_at IS NULL`
 
 	_, execErr := s.db.Exec(query, time.Now(), licenseId, domain)
 	if execErr != nil {
 
-		return fmt.Errorf("deactivate: %w", execErr)
+		return apperror.Wrap(execErr, apperror.ErrDatabaseUpdate, "deactivate")
 	}
 
 	return nil
 }
 
 // CountActive returns the number of active (non-deactivated) activations for a license.
-func (s *ActivationService) CountActive(licenseId int64) (int, error) {
+func (s *ActivationService) CountActive(licenseId int64) apperror.Result[int] {
 	query := `SELECT COUNT(*) FROM activations WHERE license_id = ? AND deactivated_at IS NULL`
 
 	var count int
@@ -123,21 +135,21 @@ func (s *ActivationService) CountActive(licenseId int64) (int, error) {
 	scanErr := s.db.QueryRow(query, licenseId).Scan(&count)
 	if scanErr != nil {
 
-		return 0, fmt.Errorf("count active: %w", scanErr)
+		return apperror.FailWrap[int](scanErr, apperror.ErrDatabaseScan, "count active")
 	}
 
-	return count, nil
+	return apperror.Ok(count)
 }
 
 // ListByLicense returns all activations for a license.
-func (s *ActivationService) ListByLicense(licenseId int64) ([]models.Activation, error) {
+func (s *ActivationService) ListByLicense(licenseId int64) apperror.Result[[]models.Activation] {
 	query := `SELECT id, license_id, domain, ip_address, user_agent, activated_at, deactivated_at
 		FROM activations WHERE license_id = ? ORDER BY activated_at DESC`
 
 	rows, queryErr := s.db.Query(query, licenseId)
 	if queryErr != nil {
 
-		return nil, fmt.Errorf("query activations: %w", queryErr)
+		return apperror.FailWrap[[]models.Activation](queryErr, apperror.ErrDatabaseQuery, "query activations")
 	}
 	defer rows.Close()
 
@@ -145,7 +157,7 @@ func (s *ActivationService) ListByLicense(licenseId int64) ([]models.Activation,
 }
 
 // scanAll scans multiple activation rows.
-func (s *ActivationService) scanAll(rows interface{ Next() bool; Scan(...any) error; Err() error }) ([]models.Activation, error) {
+func (s *ActivationService) scanAll(rows interface{ Next() bool; Scan(...any) error; Err() error }) apperror.Result[[]models.Activation] {
 	var activations []models.Activation
 
 	for rows.Next() {
@@ -156,7 +168,7 @@ func (s *ActivationService) scanAll(rows interface{ Next() bool; Scan(...any) er
 		)
 		if scanErr != nil {
 
-			return nil, fmt.Errorf("scan activation: %w", scanErr)
+			return apperror.FailWrap[[]models.Activation](scanErr, apperror.ErrDatabaseScan, "scan activation")
 		}
 
 		activations = append(activations, a)
@@ -164,8 +176,8 @@ func (s *ActivationService) scanAll(rows interface{ Next() bool; Scan(...any) er
 
 	if rows.Err() != nil {
 
-		return nil, fmt.Errorf("iterate activation rows: %w", rows.Err())
+		return apperror.FailWrap[[]models.Activation](rows.Err(), apperror.ErrDatabaseQuery, "iterate activation rows")
 	}
 
-	return activations, nil
+	return apperror.Ok(activations)
 }
