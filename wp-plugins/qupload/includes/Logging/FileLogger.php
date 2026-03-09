@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use QUpload\Enums\LogLevelType;
 use QUpload\Enums\PathLogFileType;
 use QUpload\Enums\PluginConfigType;

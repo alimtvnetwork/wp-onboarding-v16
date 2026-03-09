@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use WP_REST_Response;
+
 use QUpload\Enums\HttpStatusType;
 
 class EnvelopeBuilder {

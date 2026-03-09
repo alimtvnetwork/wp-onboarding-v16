@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use QUpload\Enums\EndpointType;
 use QUpload\Enums\HttpMethodType;
 use QUpload\Enums\PluginConfigType;

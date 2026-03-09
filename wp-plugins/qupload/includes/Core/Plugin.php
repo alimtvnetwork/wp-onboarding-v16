@@ -17,7 +17,6 @@ if (!defined('ABSPATH')) {
 use QUpload\Enums\HookType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Logging\FileLogger;
-
 use QUpload\Traits\Admin\AdminTrait;
 use QUpload\Traits\Auth\AuthTrait;
 use QUpload\Traits\Route\RouteRegistrationTrait;
