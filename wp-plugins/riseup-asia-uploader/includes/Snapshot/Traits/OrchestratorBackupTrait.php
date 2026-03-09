@@ -117,18 +117,22 @@ trait OrchestratorBackupTrait {
                 return $this->buildPhaseError(SnapshotPhaseType::TableExport->value, $workerResult);
             }
 
-            $context = $this->finalizeSyncExport($resolved, $workerResult);
-            $context[ResponseKeyType::Duration->value] = microtime(true) - $startTime;
-            $context[ResponseKeyType::Errors->value] = $workerResult[ResponseKeyType::Errors->value] ?? array();
-
-            return $context;
+            return $this->finalizeSyncExport($resolved, $workerResult, $startTime);
         } catch (Throwable $e) {
             return $this->buildExceptionResult($e, SnapshotPhaseType::SyncOrchestration->value);
         }
     }
 
+    private function finalizeSyncExport(array $resolved, array $workerResult, float $startTime): array {
+        $context = $this->buildSyncContext($resolved, $workerResult);
+        $context[ResponseKeyType::Duration->value] = microtime(true) - $startTime;
+        $context[ResponseKeyType::Errors->value] = $workerResult[ResponseKeyType::Errors->value] ?? array();
+
+        return $context;
+    }
+
     /** Register snapshot, snapshot plugins, and create ZIP for sync backup. */
-    private function finalizeSyncExport(array $resolved, array $workerResult): array {
+    private function buildSyncContext(array $resolved, array $workerResult): array {
         $snapshotDir = $workerResult[ResponseKeyType::Path->value];
         $pluginStats = $this->resolvePluginStats($resolved, $snapshotDir);
 
@@ -201,17 +205,29 @@ trait OrchestratorBackupTrait {
         $zipResult = $this->createZipExport($snapshotDir, $resolved[ResponseKeyType::Title->value]);
 
         if ($zipResult[ResponseKeyType::Success->value]) {
-            return array(
-                ResponseKeyType::Path->value      => $zipResult[ResponseKeyType::Path->value],
-                ResponseKeyType::Size->value      => $zipResult[ResponseKeyType::Size->value],
-                ResponseKeyType::ZipFailed->value => false,
-            );
+            return $this->buildSuccessfulZipResult($zipResult);
         }
 
+        $this->logZipFailure($zipResult);
+
+        return $this->buildFailedZipResult();
+    }
+
+    private function buildSuccessfulZipResult(array $zipResult): array {
+        return array(
+            ResponseKeyType::Path->value      => $zipResult[ResponseKeyType::Path->value],
+            ResponseKeyType::Size->value      => $zipResult[ResponseKeyType::Size->value],
+            ResponseKeyType::ZipFailed->value => false,
+        );
+    }
+
+    private function logZipFailure(array $zipResult): void {
         $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array(
             ResponseKeyType::Error->value => $zipResult[ResponseKeyType::Error->value],
         ));
+    }
 
+    private function buildFailedZipResult(): array {
         return array(
             ResponseKeyType::Path->value      => null,
             ResponseKeyType::Size->value      => 0,
@@ -226,21 +242,25 @@ trait OrchestratorBackupTrait {
         $this->log(LogLevelType::Info->value, 'Starting incremental backup orchestration', $options);
 
         try {
-            $incremental = IncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
-            $masterDir = $this->resolveMasterDir($options, $incremental);
-            $isMasterDirMissing = ($masterDir === null);
-
-            if ($isMasterDirMissing) {
-                return $this->buildNoMasterError();
-            }
-
-            $result = $incremental->execute($masterDir, $options);
-            $this->logIncrementalComplete($result, $masterDir);
-
-            return $result;
+            return $this->runIncrementalBackup($options);
         } catch (Throwable $e) {
             return $this->buildExceptionResult($e, SnapshotPhaseType::IncrementalOrchestration->value);
         }
+    }
+
+    private function runIncrementalBackup(array $options): array {
+        $incremental = IncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
+        $masterDir = $this->resolveMasterDir($options, $incremental);
+        $isMasterDirMissing = ($masterDir === null);
+
+        if ($isMasterDirMissing) {
+            return $this->buildNoMasterError();
+        }
+
+        $result = $incremental->execute($masterDir, $options);
+        $this->logIncrementalComplete($result, $masterDir);
+
+        return $result;
     }
 
     private function buildNoMasterError(): array {
@@ -265,19 +285,29 @@ trait OrchestratorBackupTrait {
         $hasMasterSnapshotId = !empty($options[ResponseKeyType::MasterSnapshotId->value] ?? null);
 
         if ($hasMasterSnapshotId) {
-            $pdo = $this->db->getPdo();
+            $resolved = $this->resolveMasterFromId($options[ResponseKeyType::MasterSnapshotId->value]);
 
-            if ($pdo) {
-                $stmt = $pdo->prepare("SELECT Filepath FROM " . TableType::Snapshots->value . " WHERE Id = ?");
-                $stmt->execute(array($options[ResponseKeyType::MasterSnapshotId->value]));
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                if ($row && is_dir($row['Filepath'])) {
-                    return $row['Filepath'];
-                }
+            if ($resolved !== null) {
+                return $resolved;
             }
         }
 
         return $incremental->findLatestMasterSnapshot();
+    }
+
+    private function resolveMasterFromId(int $masterSnapshotId): ?string {
+        $pdo = $this->db->getPdo();
+
+        if ($pdo === null) {
+            return null;
+        }
+
+        $stmt = $pdo->prepare("SELECT Filepath FROM " . TableType::Snapshots->value . " WHERE Id = ?");
+        $stmt->execute(array($masterSnapshotId));
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $isValid = ($row && is_dir($row['Filepath']));
+
+        return $isValid ? $row['Filepath'] : null;
     }
 }
