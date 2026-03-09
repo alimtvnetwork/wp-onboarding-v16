@@ -16,7 +16,6 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotScopeType;
 
-
 trait AnalyzerQueryTrait {
     /**
      * Get all tables in the current database.
@@ -25,43 +24,51 @@ trait AnalyzerQueryTrait {
      * @return array Table names.
      */
     public function getTables($scope = 'all') { // Default matches SnapshotScopeType::All->value
-        $prefix = $this->wpdb->prefix;
-
         $tables = $this->wpdb->get_col("SHOW TABLES");
-
         $resolvedScope = SnapshotScopeType::tryFrom($scope);
-        $isWordPress = ($resolvedScope !== null && $resolvedScope->isWordPress());
+
+        return array_values($this->filterByScope($tables, $resolvedScope));
+    }
+
+    private function filterByScope(array $tables, ?SnapshotScopeType $scope): array {
+        $isWordPress = ($scope !== null && $scope->isWordPress());
 
         if ($isWordPress) {
-            $tables = array_filter($tables, function($t) use ($prefix) {
-                $isWpTable = (strpos($t, $prefix) === 0);
-
-                return $isWpTable;
-            });
+            return $this->filterWordPressTables($tables);
         }
 
-        $isContent = ($resolvedScope !== null && $resolvedScope->isContent());
+        $isContent = ($scope !== null && $scope->isContent());
 
         if ($isContent) {
-            $contentSuffixes = array(
-                'posts',
-                'postmeta',
-                'terms',
-                'term_taxonomy',
-                'term_relationships',
-                'comments',
-                'commentmeta',
-                'options',
-                'users',
-                'usermeta',
-            );
-            $contentTables = array_map(function($s) use ($prefix) {
-                return $prefix . $s;
-            }, $contentSuffixes);
-            $tables = array_intersect($tables, $contentTables);
+            return $this->filterContentTables($tables);
         }
 
-        return array_values($tables);
+        return $tables;
+    }
+
+    private function filterWordPressTables(array $tables): array {
+        $prefix = $this->wpdb->prefix;
+
+        return array_filter($tables, function($t) use ($prefix) {
+            $isWpTable = (strpos($t, $prefix) === 0);
+
+            return $isWpTable;
+        });
+    }
+
+    private function filterContentTables(array $tables): array {
+        $prefix = $this->wpdb->prefix;
+        $contentSuffixes = array(
+            'posts', 'postmeta', 'terms', 'term_taxonomy',
+            'term_relationships', 'comments', 'commentmeta',
+            'options', 'users', 'usermeta',
+        );
+
+        $contentTables = array_map(function($s) use ($prefix) {
+            return $prefix . $s;
+        }, $contentSuffixes);
+
+        return array_intersect($tables, $contentTables);
     }
 
     /**
@@ -71,17 +78,7 @@ trait AnalyzerQueryTrait {
      */
     public function detectDependencies() {
         $dbName = $this->wpdb->dbname;
-
-        $sql = $this->wpdb->prepare(
-            "SELECT TABLE_NAME AS child_table, COLUMN_NAME AS fk_column,
-                    REFERENCED_TABLE_NAME AS parent_table, REFERENCED_COLUMN_NAME AS ref_column
-             FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-             WHERE TABLE_SCHEMA = %s AND REFERENCED_TABLE_NAME IS NOT NULL
-             ORDER BY TABLE_NAME, COLUMN_NAME",
-            $dbName
-        );
-
-        $rows = $this->wpdb->get_results($sql, ARRAY_A);
+        $rows = $this->queryForeignKeys($dbName);
 
         if (empty($rows)) {
             $this->log(LogLevelType::Info->value, 'No foreign key dependencies detected', array('database' => $dbName));
@@ -89,7 +86,28 @@ trait AnalyzerQueryTrait {
             return array();
         }
 
+        $deps = $this->mapDependencyRows($rows);
+        $this->log(LogLevelType::Info->value, 'Dependencies detected', array('count' => count($deps), 'database' => $dbName));
+
+        return $deps;
+    }
+
+    private function queryForeignKeys(string $dbName): array {
+        $sql = $this->wpdb->prepare(
+            "SELECT TABLE_NAME AS child_table, COLUMN_NAME AS fk_column,
+                    REFERENCED_TABLE_NAME AS parent_table, REFERENCED_COLUMN_NAME AS ref_column
+             FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+             WHERE TABLE_SCHEMA = %s AND REFERENCED_TABLE_NAME IS NOT NULL
+             ORDER BY TABLE_NAME, COLUMN_NAME",
+            $dbName,
+        );
+
+        return $this->wpdb->get_results($sql, ARRAY_A) ?: array();
+    }
+
+    private function mapDependencyRows(array $rows): array {
         $deps = array();
+
         foreach ($rows as $row) {
             $deps[] = array(
                 ResponseKeyType::ParentTable->value => $row['parent_table'],
@@ -98,8 +116,6 @@ trait AnalyzerQueryTrait {
                 ResponseKeyType::RefColumn->value   => $row['ref_column'],
             );
         }
-
-        $this->log(LogLevelType::Info->value, 'Dependencies detected', array('count' => count($deps), 'database' => $dbName));
 
         return $deps;
     }

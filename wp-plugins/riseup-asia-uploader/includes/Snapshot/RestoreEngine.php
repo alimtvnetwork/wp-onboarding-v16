@@ -18,6 +18,7 @@ use LogicException;
 use PDO;
 use Throwable;
 use wpdb;
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\ResponseKeyType;
@@ -101,7 +102,6 @@ class RestoreEngine {
         $rootPdo = $this->openRootPdo($snapshotDir);
         $meta = $this->getSnapshotMeta($rootPdo);
         $restoreOrder = $this->prepareRestoreOrder($rootPdo, $options);
-
         $isRestoreOrderFailed = BooleanHelpers::isResultFailed($restoreOrder);
 
         if ($isRestoreOrderFailed) {
@@ -110,33 +110,25 @@ class RestoreEngine {
             return $restoreOrder;
         }
 
+        return $this->runAndFinalizeRestore($rootPdo, $snapshotDir, $restoreOrder, $options, $meta, $startTime);
+    }
+
+    private function runAndFinalizeRestore(
+        PDO $rootPdo,
+        string $snapshotDir,
+        array $restoreOrder,
+        array $options,
+        array $meta,
+        float $startTime,
+    ): array {
         $backupId = $this->createSafetyBackup($options);
-        $results = $this->runRestoreWithFkDisabled(
-            $rootPdo,
-            $snapshotDir,
-            $restoreOrder,
-            $options,
-        );
-
+        $results = $this->runRestoreWithFkDisabled($rootPdo, $snapshotDir, $restoreOrder, $options);
         $rootPdo = null;
-
         $duration = microtime(true) - $startTime;
-        $this->logAuditRestore(
-            $snapshotDir,
-            $results['master'][ResponseKeyType::TablesRestored->value],
-            $results[ResponseKeyType::TotalRows->value],
-            $duration,
-        );
 
-        return $this->buildRestoreResult(
-            $results['master'],
-            $results['inc'],
-            $backupId,
-            $results[ResponseKeyType::Errors->value],
-            $duration,
-            $meta,
-            $results[ResponseKeyType::TotalRows->value],
-        );
+        $this->logAuditRestore($snapshotDir, $results['master'][ResponseKeyType::TablesRestored->value], $results[ResponseKeyType::TotalRows->value], $duration);
+
+        return $this->buildRestoreResult($results['master'], $results['inc'], $backupId, $results[ResponseKeyType::Errors->value], $duration, $meta, $results[ResponseKeyType::TotalRows->value]);
     }
 
     private function openRootPdo(string $snapshotDir): PDO {
@@ -171,14 +163,15 @@ class RestoreEngine {
 
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
 
+        return $this->combineRestoreResults($master, $inc);
+    }
+
+    private function combineRestoreResults(array $master, array $inc): array {
         return array(
             'master' => $master,
             'inc' => $inc,
             ResponseKeyType::TotalRows->value => $master[ResponseKeyType::TotalRows->value] + $inc[ResponseKeyType::TotalRows->value],
-            ResponseKeyType::Errors->value => array_merge(
-                $master[ResponseKeyType::Errors->value],
-                $inc[ResponseKeyType::Errors->value],
-            ),
+            ResponseKeyType::Errors->value => array_merge($master[ResponseKeyType::Errors->value], $inc[ResponseKeyType::Errors->value]),
         );
     }
 

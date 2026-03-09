@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use Throwable;
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotStatusType;
@@ -22,52 +23,64 @@ use RiseupAsia\Helpers\PathHelper;
 trait NativeSnapshotExecTrait {
     public function executeSnapshot(int $snapshotId, array $tables): array {
         $startTime = microtime(true);
-
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
 
         if ($isSnapshotMissing) {
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => 'Snapshot record not found',
-            );
+            return $this->snapshotNotFoundError();
         }
 
         $isLockFailed = ($this->acquireLock() === false);
 
         if ($isLockFailed) {
-            $this->updateSnapshotStatus(
-                $snapshotId,
-                SnapshotStatusType::Failed->value,
-                'Failed to acquire lock',
-            );
-
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => 'Failed to acquire lock',
-            );
+            return $this->handleLockFailure($snapshotId);
         }
 
         try {
             return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $startTime);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Snapshot failed', array(
-                ResponseKeyType::Error->value => $e->getMessage(),
-                'trace'                       => $e->getTraceAsString(),
-            ));
-            $this->updateSnapshotStatus(
-                $snapshotId,
-                SnapshotStatusType::Failed->value,
-                $e->getMessage(),
-            );
-
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            );
+            return $this->handleSnapshotException($snapshotId, $e);
         } finally {
             $this->releaseLock();
         }
+    }
+
+    private function snapshotNotFoundError(): array {
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => 'Snapshot record not found',
+        );
+    }
+
+    private function handleLockFailure(int $snapshotId): array {
+        $this->updateSnapshotStatus(
+            $snapshotId,
+            SnapshotStatusType::Failed->value,
+            'Failed to acquire lock',
+        );
+
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => 'Failed to acquire lock',
+        );
+    }
+
+    private function handleSnapshotException(int $snapshotId, Throwable $e): array {
+        $this->log(LogLevelType::Error->value, 'Snapshot failed', array(
+            ResponseKeyType::Error->value => $e->getMessage(),
+            'trace'                       => $e->getTraceAsString(),
+        ));
+
+        $this->updateSnapshotStatus(
+            $snapshotId,
+            SnapshotStatusType::Failed->value,
+            $e->getMessage(),
+        );
+
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => $e->getMessage(),
+        );
     }
 
     private function runSnapshotExport(
@@ -132,35 +145,48 @@ trait NativeSnapshotExecTrait {
         array $tableCounts,
         float $startTime,
     ): array {
+        $totals = $this->sumTableCounts($tableCounts);
+        $duration = microtime(true) - $startTime;
+
+        $this->logSnapshotComplete($snapshotId, $tables, $totals, $duration);
+        $this->markSnapshotComplete($snapshotId, $tables, $totals['bytes']);
+
+        return array(
+            ResponseKeyType::Success->value  => true,
+            ResponseKeyType::Tables->value   => count($tables),
+            ResponseKeyType::Rows->value     => $totals['rows'],
+            ResponseKeyType::Bytes->value    => $totals['bytes'],
+            ResponseKeyType::FilePath->value => $filepath,
+        );
+    }
+
+    private function sumTableCounts(array $tableCounts): array {
         $totalRows = 0;
         $totalBytes = 0;
 
-        foreach ($tableCounts as $table => $result) {
+        foreach ($tableCounts as $result) {
             $totalRows += $result[ResponseKeyType::Rows->value];
             $totalBytes += $result[ResponseKeyType::Bytes->value];
         }
 
-        $duration = microtime(true) - $startTime;
+        return array('rows' => $totalRows, 'bytes' => $totalBytes);
+    }
+
+    private function logSnapshotComplete(int $snapshotId, array $tables, array $totals, float $duration): void {
         $this->log(LogLevelType::Info->value, 'Snapshot complete', array(
-            'id' => $snapshotId,
-            ResponseKeyType::Tables->value => count($tables),
-            ResponseKeyType::Rows->value => $totalRows,
-            ResponseKeyType::Bytes->value => PathHelper::formatBytes($totalBytes),
+            'id'                             => $snapshotId,
+            ResponseKeyType::Tables->value   => count($tables),
+            ResponseKeyType::Rows->value     => $totals['rows'],
+            ResponseKeyType::Bytes->value    => PathHelper::formatBytes($totals['bytes']),
             ResponseKeyType::Duration->value => round($duration, 2) . 's',
         ));
+    }
 
+    private function markSnapshotComplete(int $snapshotId, array $tables, int $totalBytes): void {
         $this->updateSnapshotStatus(
             $snapshotId,
             SnapshotStatusType::Complete->value,
-            sprintf('Exported %d tables (%s)', count($tables), PathHelper::formatBytes($totalBytes))
-        );
-
-        return array(
-            ResponseKeyType::Success->value => true,
-            ResponseKeyType::Tables->value => count($tables),
-            ResponseKeyType::Rows->value => $totalRows,
-            ResponseKeyType::Bytes->value => $totalBytes,
-            ResponseKeyType::FilePath->value => $filepath,
+            sprintf('Exported %d tables (%s)', count($tables), PathHelper::formatBytes($totalBytes)),
         );
     }
 }
