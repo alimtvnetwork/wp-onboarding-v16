@@ -92,7 +92,7 @@ func (s *LicenseService) executeUpdate(
 
 // Delete removes a license by ID.
 func (s *LicenseService) Delete(id int64) *apperror.AppError {
-	_, execErr := s.db.Exec("DELETE FROM licenses WHERE id = ?", id)
+	_, execErr := s.db.Exec(licenseDeleteSql, id)
 	if execErr != nil {
 
 		return apperror.Wrap(execErr, apperror.ErrDatabaseDelete, "delete license")

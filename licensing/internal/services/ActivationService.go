@@ -46,12 +46,9 @@ func (s *ActivationService) Activate(input ActivateInput) apperror.Result[*model
 
 // findExisting checks if an activation already exists for a license+domain pair.
 func (s *ActivationService) findExisting(licenseId int64, domain string) (*models.Activation, *apperror.AppError) {
-	query := `SELECT id, license_id, domain, ip_address, user_agent, activated_at, deactivated_at
-		FROM activations WHERE license_id = ? AND domain = ?`
-
 	var a models.Activation
 
-	scanErr := s.db.QueryRow(query, licenseId, domain).Scan(
+	scanErr := s.db.QueryRow(activationFindExistingSql, licenseId, domain).Scan(
 		&a.Id, &a.LicenseId, &a.Domain, &a.IpAddress, &a.UserAgent, &a.ActivatedAt, &a.DeactivatedAt,
 	)
 
@@ -74,12 +71,9 @@ func (s *ActivationService) reactivate(
 	id int64,
 	input ActivateInput,
 ) apperror.Result[*models.Activation] {
-	query := `UPDATE activations SET deactivated_at = NULL, ip_address = ?, user_agent = ?, activated_at = ?
-		WHERE id = ?`
-
 	now := time.Now()
 
-	_, execErr := s.db.Exec(query, input.IpAddress, input.UserAgent, now, id)
+	_, execErr := s.db.Exec(activationReactivateSql, input.IpAddress, input.UserAgent, now, id)
 	if execErr != nil {
 
 		return apperror.FailWrap[*models.Activation](execErr, apperror.ErrDatabaseUpdate, "reactivate")
@@ -96,9 +90,7 @@ func (s *ActivationService) reactivate(
 
 // createNew inserts a brand-new activation record.
 func (s *ActivationService) createNew(input ActivateInput) apperror.Result[*models.Activation] {
-	query := `INSERT INTO activations (license_id, domain, ip_address, user_agent) VALUES (?, ?, ?, ?)`
-
-	_, execErr := s.db.Exec(query, input.LicenseId, input.Domain, input.IpAddress, input.UserAgent)
+	_, execErr := s.db.Exec(activationInsertSql, input.LicenseId, input.Domain, input.IpAddress, input.UserAgent)
 	if execErr != nil {
 
 		return apperror.FailWrap[*models.Activation](execErr, apperror.ErrDatabaseInsert, "insert activation")
@@ -115,9 +107,7 @@ func (s *ActivationService) createNew(input ActivateInput) apperror.Result[*mode
 
 // Deactivate marks an activation as deactivated by license ID and domain.
 func (s *ActivationService) Deactivate(licenseId int64, domain string) *apperror.AppError {
-	query := `UPDATE activations SET deactivated_at = ? WHERE license_id = ? AND domain = ? AND deactivated_at IS NULL`
-
-	_, execErr := s.db.Exec(query, time.Now(), licenseId, domain)
+	_, execErr := s.db.Exec(activationDeactivateSql, time.Now(), licenseId, domain)
 	if execErr != nil {
 
 		return apperror.Wrap(execErr, apperror.ErrDatabaseUpdate, "deactivate")
@@ -128,11 +118,9 @@ func (s *ActivationService) Deactivate(licenseId int64, domain string) *apperror
 
 // CountActive returns the number of active (non-deactivated) activations for a license.
 func (s *ActivationService) CountActive(licenseId int64) apperror.Result[int] {
-	query := `SELECT COUNT(*) FROM activations WHERE license_id = ? AND deactivated_at IS NULL`
-
 	var count int
 
-	scanErr := s.db.QueryRow(query, licenseId).Scan(&count)
+	scanErr := s.db.QueryRow(activationCountActiveSql, licenseId).Scan(&count)
 	if scanErr != nil {
 
 		return apperror.FailWrap[int](scanErr, apperror.ErrDatabaseScan, "count active")
@@ -143,10 +131,7 @@ func (s *ActivationService) CountActive(licenseId int64) apperror.Result[int] {
 
 // ListByLicense returns all activations for a license.
 func (s *ActivationService) ListByLicense(licenseId int64) apperror.Result[[]models.Activation] {
-	query := `SELECT id, license_id, domain, ip_address, user_agent, activated_at, deactivated_at
-		FROM activations WHERE license_id = ? ORDER BY activated_at DESC`
-
-	rows, queryErr := s.db.Query(query, licenseId)
+	rows, queryErr := s.db.Query(activationListByLicenseSql, licenseId)
 	if queryErr != nil {
 
 		return apperror.FailWrap[[]models.Activation](queryErr, apperror.ErrDatabaseQuery, "query activations")

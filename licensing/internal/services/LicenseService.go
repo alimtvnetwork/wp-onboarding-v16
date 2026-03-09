@@ -35,11 +35,8 @@ type CreateInput struct {
 
 // Create inserts a new license into the database.
 func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.License] {
-	query := `INSERT INTO licenses (key, email, product, type, status, max_activations, notes, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-
 	result, execErr := s.db.Exec(
-		query,
+		licenseInsertSql,
 		input.Key,
 		input.Email,
 		input.Product.String(),
@@ -65,26 +62,17 @@ func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.Licen
 
 // GetById retrieves a license by its database ID.
 func (s *LicenseService) GetById(id int64) apperror.Result[*models.License] {
-	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
-		FROM licenses WHERE id = ?`
-
-	return s.scanOne(s.db.QueryRow(query, id))
+	return s.scanOne(s.db.QueryRow(licenseSelectByIdSql, id))
 }
 
 // GetByKey retrieves a license by its license key string.
 func (s *LicenseService) GetByKey(key string) apperror.Result[*models.License] {
-	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
-		FROM licenses WHERE key = ?`
-
-	return s.scanOne(s.db.QueryRow(query, key))
+	return s.scanOne(s.db.QueryRow(licenseSelectByKeySql, key))
 }
 
 // List returns all licenses, ordered by creation date descending.
 func (s *LicenseService) List() apperror.Result[[]models.License] {
-	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
-		FROM licenses ORDER BY created_at DESC`
-
-	rows, queryErr := s.db.Query(query)
+	rows, queryErr := s.db.Query(licenseListSql)
 	if queryErr != nil {
 
 		return apperror.FailWrap[[]models.License](queryErr, apperror.ErrDatabaseQuery, "query licenses")
