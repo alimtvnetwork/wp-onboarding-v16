@@ -13,8 +13,9 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
-use RiseupAsia\Enums\TableType;
+
 use RiseupAsia\Database\Orm;
+use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
 
 trait FileCacheStoreTrait {
