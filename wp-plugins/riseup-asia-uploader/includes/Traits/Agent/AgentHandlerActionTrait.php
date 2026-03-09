@@ -15,11 +15,12 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use Throwable;
+
+use RiseupAsia\Agent\AgentManager;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Agent\AgentManager;
 
 trait AgentHandlerActionTrait {
     /** Handle testing agent connection. */
