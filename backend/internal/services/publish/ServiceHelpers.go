@@ -2,11 +2,8 @@ package publish
 
 import (
 	"context"
-	"crypto/md5"
 	"database/sql"
 	"fmt"
-	"io"
-	"os"
 
 	"wp-plugin-publish/internal/database/dbops"
 	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
