@@ -112,7 +112,7 @@ func (h *PublicHandlers) Deactivate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logPublicAudit(r, &license.Id, auditaction.Deactivated, req.Domain)
-	jsonResponse(w, http.StatusOK, map[string]string{"status": "deactivated"})
+	jsonResponse(w, http.StatusOK, statusBody{Status: "deactivated"})
 }
 
 // Status handles GET /licenses/{key}/status.
