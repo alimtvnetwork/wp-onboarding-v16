@@ -29,28 +29,52 @@ trait ManagerImportTrait {
     use ManagerImportRecordTrait;
 
     public function importSnapshot(string $uploadedPath): array {
+        $guardError = $this->guardImportFile($uploadedPath);
+
+        if ($guardError !== null) {
+            return $guardError;
+        }
+
+        $this->logImportStart($uploadedPath);
+        $tempDir = $this->createImportTempDir();
+
+        if ($tempDir === null) {
+            return ResultHelper::error(ResponseMessageType::TempDirCreateFailed->value);
+        }
+
+        return $this->extractValidateAndImport($uploadedPath, $tempDir);
+    }
+
+    private function guardImportFile(string $uploadedPath): ?array {
         if (PathHelper::isFileMissing($uploadedPath)) {
             return ResultHelper::error(ResponseMessageType::UploadedFileMissing->value);
         }
 
         $ext = strtolower(pathinfo($uploadedPath, PATHINFO_EXTENSION));
+        $isNotZip = ($ext !== 'zip');
 
-        if ($ext !== 'zip') {
+        if ($isNotZip) {
             return ResultHelper::error(ResponseMessageType::InvalidFileTypeZip->value);
         }
 
+        return null;
+    }
+
+    private function logImportStart(string $uploadedPath): void {
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
             ResponseKeyType::Path->value => $uploadedPath,
             ResponseKeyType::Size->value => PathHelper::formatBytes(filesize($uploadedPath)),
         ));
+    }
 
+    private function createImportTempDir(): ?string {
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
         $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
 
-        if ($isDirCreationFailed) {
-            return ResultHelper::error(ResponseMessageType::TempDirCreateFailed->value);
-        }
+        return $isDirCreationFailed ? null : $tempDir;
+    }
 
+    private function extractValidateAndImport(string $uploadedPath, string $tempDir): array {
         try {
             $extracted = $this->extractAndValidateZip($uploadedPath, $tempDir);
             $result = $this->moveAndRecordSnapshot($extracted[ResponseKeyType::Manifest->value], $extracted[ResponseKeyType::SqlitePath->value], $tempDir);
@@ -59,13 +83,16 @@ trait ManagerImportTrait {
 
             return $result;
         } catch (Throwable $e) {
-            if (PathHelper::dirExists($tempDir)) {
-                $this->deleteDirectory($tempDir);
-            }
-
+            $this->cleanupTempDir($tempDir);
             $this->logError($e, 'Snapshot import failed');
 
             return ResultHelper::errorFromException($e);
+        }
+    }
+
+    private function cleanupTempDir(string $tempDir): void {
+        if (PathHelper::dirExists($tempDir)) {
+            $this->deleteDirectory($tempDir);
         }
     }
 
@@ -83,6 +110,7 @@ trait ManagerImportTrait {
         if ($zip->open($uploadedPath) !== true) {
             throw new Exception('Failed to open ZIP file');
         }
+
         $isExtracted = $zip->extractTo($tempDir);
         $zip->close();
 
@@ -98,6 +126,13 @@ trait ManagerImportTrait {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }
 
+        $manifest = $this->parseManifestJson($manifestPath);
+        $this->validateParsedManifest($manifest);
+
+        return $manifest;
+    }
+
+    private function parseManifestJson(string $manifestPath): array {
         $manifest = json_decode(file_get_contents($manifestPath), true);
         $isManifestInvalid = ($manifest === null || $manifest === false);
 
@@ -105,14 +140,16 @@ trait ManagerImportTrait {
             throw new Exception('Invalid manifest.json format');
         }
 
+        return $manifest;
+    }
+
+    private function validateParsedManifest(array $manifest): void {
         $validation = $this->validateManifest($manifest);
         $isValidationFailed = ($validation[ResponseKeyType::Valid->value] === false);
 
         if ($isValidationFailed) {
             throw new Exception('Manifest validation failed: ' . $validation[ResponseKeyType::Error->value]);
         }
-
-        return $manifest;
     }
 
     private function validateSnapshotSqlite(
@@ -141,6 +178,15 @@ trait ManagerImportTrait {
         string $sqlitePath,
         string $tempDir,
     ): array {
+        $destPath = $this->prepareDestination();
+        $snapshotId = $this->copyAndCreateRecord($manifest, $sqlitePath, $destPath);
+
+        $this->logImportSuccess($snapshotId, $destPath[ResponseKeyType::Filename->value]);
+
+        return $this->buildImportSuccessResult($snapshotId, $destPath[ResponseKeyType::Filename->value], $manifest);
+    }
+
+    private function prepareDestination(): array {
         $snapshotsDir = PathHelper::getSnapshotsDir();
         $isDirCreationFailed = (PathHelper::makeDirectory($snapshotsDir, true) === false);
 
@@ -150,29 +196,48 @@ trait ManagerImportTrait {
 
         $sequence = $this->getNextImportSequence();
         $newFilename = sprintf('%03d_%s', $sequence, DateHelper::nowFilenameDatetime()) . '.sqlite';
-        $destPath = PathHelper::join($snapshotsDir, $newFilename);
 
-        if (PathHelper::isCopyFailed($sqlitePath, $destPath)) {
+        return array(
+            ResponseKeyType::Sequence->value => $sequence,
+            ResponseKeyType::Filename->value => $newFilename,
+            ResponseKeyType::Path->value     => PathHelper::join($snapshotsDir, $newFilename),
+        );
+    }
+
+    private function copyAndCreateRecord(array $manifest, string $sqlitePath, array $destPath): int {
+        if (PathHelper::isCopyFailed($sqlitePath, $destPath[ResponseKeyType::Path->value])) {
             throw new Exception('Failed to copy snapshot file to destination');
         }
 
-        $snapshotId = $this->createImportedSnapshotRecord($manifest, $sequence, $newFilename, $destPath);
+        $snapshotId = $this->createImportedSnapshotRecord(
+            $manifest,
+            $destPath[ResponseKeyType::Sequence->value],
+            $destPath[ResponseKeyType::Filename->value],
+            $destPath[ResponseKeyType::Path->value],
+        );
+
         $isRecordCreationFailed = ($snapshotId === null || $snapshotId === false || $snapshotId === 0);
 
         if ($isRecordCreationFailed) {
-            PathHelper::deleteFile($destPath);
+            PathHelper::deleteFile($destPath[ResponseKeyType::Path->value]);
 
             throw new Exception('Failed to create snapshot record');
         }
 
+        return $snapshotId;
+    }
+
+    private function logImportSuccess(int $snapshotId, string $filename): void {
         $this->log(LogLevelType::Info->value, 'Snapshot imported successfully', array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
-            ResponseKeyType::Filename->value   => $newFilename,
+            ResponseKeyType::Filename->value   => $filename,
         ));
+    }
 
+    private function buildImportSuccessResult(int $snapshotId, string $filename, array $manifest): array {
         return ResultHelper::ok(array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
-            ResponseKeyType::Filename->value   => $newFilename,
+            ResponseKeyType::Filename->value   => $filename,
             ResponseKeyType::Tables->value     => count($manifest['snapshot'][ResponseKeyType::Tables->value]),
             ResponseKeyType::Rows->value       => $manifest['snapshot'][ResponseKeyType::TotalRows->value],
         ));

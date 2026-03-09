@@ -23,6 +23,24 @@ use RiseupAsia\Helpers\PathHelper;
 trait NativeSnapshotExecTrait {
     public function executeSnapshot(int $snapshotId, array $tables): array {
         $startTime = microtime(true);
+        $guardError = $this->guardSnapshotReady($snapshotId);
+
+        if ($guardError !== null) {
+            return $guardError;
+        }
+
+        try {
+            $snapshot = $this->getSnapshot($snapshotId);
+
+            return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $startTime);
+        } catch (Throwable $e) {
+            return $this->handleSnapshotException($snapshotId, $e);
+        } finally {
+            $this->releaseLock();
+        }
+    }
+
+    private function guardSnapshotReady(int $snapshotId): ?array {
         $snapshot = $this->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null);
 
@@ -36,13 +54,7 @@ trait NativeSnapshotExecTrait {
             return $this->handleLockFailure($snapshotId);
         }
 
-        try {
-            return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $startTime);
-        } catch (Throwable $e) {
-            return $this->handleSnapshotException($snapshotId, $e);
-        } finally {
-            $this->releaseLock();
-        }
+        return null;
     }
 
     private function snapshotNotFoundError(): array {
@@ -90,10 +102,7 @@ trait NativeSnapshotExecTrait {
         float $startTime,
     ): array {
         $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Running->value, 'Exporting');
-
-        $sqlite = new PDO('sqlite:' . $filepath);
-        $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $sqlite->beginTransaction();
+        $sqlite = $this->initSqliteForExport($filepath);
 
         try {
             $tableCounts = $this->exportAllTables($sqlite, $tables, $snapshotId);
@@ -105,6 +114,14 @@ trait NativeSnapshotExecTrait {
 
             throw $e;
         }
+    }
+
+    private function initSqliteForExport(string $filepath): PDO {
+        $sqlite = new PDO('sqlite:' . $filepath);
+        $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $sqlite->beginTransaction();
+
+        return $sqlite;
     }
 
     private function exportAllTables(
@@ -126,16 +143,18 @@ trait NativeSnapshotExecTrait {
     private function logTableExportResult(string $table, array $result): void {
         if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Debug->value, 'Exported table', array(
-                'table' => $table,
-                ResponseKeyType::Rows->value => $result[ResponseKeyType::Rows->value],
-                ResponseKeyType::Bytes->value => PathHelper::formatBytes($result[ResponseKeyType::Bytes->value]),
+                'table'                           => $table,
+                ResponseKeyType::Rows->value      => $result[ResponseKeyType::Rows->value],
+                ResponseKeyType::Bytes->value     => PathHelper::formatBytes($result[ResponseKeyType::Bytes->value]),
             ));
-        } else {
-            $this->log(LogLevelType::Error->value, 'Failed to export table', array(
-                'table' => $table,
-                ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
-            ));
+
+            return;
         }
+
+        $this->log(LogLevelType::Error->value, 'Failed to export table', array(
+            'table'                           => $table,
+            ResponseKeyType::Error->value     => $result[ResponseKeyType::Error->value],
+        ));
     }
 
     private function buildExportResult(
@@ -151,6 +170,10 @@ trait NativeSnapshotExecTrait {
         $this->logSnapshotComplete($snapshotId, $tables, $totals, $duration);
         $this->markSnapshotComplete($snapshotId, $tables, $totals['bytes']);
 
+        return $this->buildExportResultArray($filepath, $tables, $totals);
+    }
+
+    private function buildExportResultArray(string $filepath, array $tables, array $totals): array {
         return array(
             ResponseKeyType::Success->value  => true,
             ResponseKeyType::Tables->value   => count($tables),
