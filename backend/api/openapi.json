@@ -3,7 +3,7 @@
   "info": {
     "title": "WP Plugin Publish API",
     "description": "REST API for managing WordPress plugin deployments, site connections, sync operations, backups, and monitoring.",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "contact": {
       "name": "WP Plugin Publish"
     }
