@@ -49,7 +49,13 @@ trait DeactivateHandlerTrait
             return false;
         }
 
-        $entries = array_diff(scandir($dir), ['.', '..']);
+        $scanned = scandir($dir);
+
+        if ($scanned === false) {
+            return false;
+        }
+
+        $entries = array_diff($scanned, ['.', '..']);
 
         foreach ($entries as $entry) {
             $path = $dir . '/' . $entry;

@@ -38,7 +38,7 @@ trait UploadHandlerTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Upload failed');
 
-            return $this->errorResponse('Upload failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Upload failed: ' . $e->getMessage(), HttpStatusType::ServerError->value);
         }
     }
 

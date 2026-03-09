@@ -353,7 +353,15 @@ trait UploadExtractTrait
             return true;
         }
 
-        $items = array_diff(scandir($dir), ['.', '..']);
+        $entries = scandir($dir);
+
+        if ($entries === false) {
+            $this->fileLogger->error('Failed to read directory for deletion', ['dir' => $dir]);
+
+            return false;
+        }
+
+        $items = array_diff($entries, ['.', '..']);
 
         foreach ($items as $item) {
             $path = $dir . '/' . $item;
@@ -366,7 +374,15 @@ trait UploadExtractTrait
     /** Recursively copy a directory. */
     private function copyDirectory(string $source, string $dest): bool {
         wp_mkdir_p($dest);
-        $items = array_diff(scandir($source), ['.', '..']);
+        $entries = scandir($source);
+
+        if ($entries === false) {
+            $this->fileLogger->error('Failed to read source directory for copy', ['source' => $source]);
+
+            return false;
+        }
+
+        $items = array_diff($entries, ['.', '..']);
 
         foreach ($items as $item) {
             $srcPath = $source . '/' . $item;

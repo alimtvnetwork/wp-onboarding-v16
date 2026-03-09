@@ -34,7 +34,7 @@ trait ActivateHandlerTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Activate failed');
 
-            return $this->errorResponse('Activate failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Activate failed: ' . $e->getMessage(), HttpStatusType::ServerError->value);
         }
     }
 
@@ -67,7 +67,7 @@ trait ActivateHandlerTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Activation exception for ' . $slug);
 
-            return $this->errorResponse('Activation failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Activation failed: ' . $e->getMessage(), HttpStatusType::ServerError->value);
         }
 
         if (is_wp_error($result)) {
