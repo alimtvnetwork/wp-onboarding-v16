@@ -158,6 +158,17 @@ trait UploadExtractTrait
         $tempExtractDir = PathHelper::getTempDir() . '/extract_' . uniqid();
         wp_mkdir_p($tempExtractDir);
 
+        $extractError = $this->extractZipToTemp($tempFile, $tempExtractDir);
+
+        if ($extractError !== null) {
+            return $extractError;
+        }
+
+        return $this->moveExtractedToTarget($tempExtractDir, $targetDir);
+    }
+
+    /** Open and extract the ZIP, cleaning up temp file. */
+    private function extractZipToTemp(string $tempFile, string $tempExtractDir): ?WP_REST_Response {
         $zip = new ZipArchive();
 
         if ($zip->open($tempFile) !== true) {
@@ -169,16 +180,20 @@ trait UploadExtractTrait
 
         $isExtracted = $zip->extractTo($tempExtractDir);
         $zip->close();
+        @unlink($tempFile);
 
         if ($isExtracted === false) {
-            @unlink($tempFile);
             $this->deleteDirectory($tempExtractDir);
             $this->fileLogger->error('ZIP extraction failed');
 
             return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
         }
-        @unlink($tempFile);
 
+        return null;
+    }
+
+    /** Locate extracted folder and move it to the target plugin directory. */
+    private function moveExtractedToTarget(string $tempExtractDir, string $targetDir): true|WP_REST_Response {
         $extractedFolders = glob($tempExtractDir . '/*', GLOB_ONLYDIR);
 
         if (empty($extractedFolders)) {
