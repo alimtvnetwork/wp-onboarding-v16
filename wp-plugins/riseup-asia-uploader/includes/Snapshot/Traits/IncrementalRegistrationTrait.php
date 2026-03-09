@@ -46,16 +46,28 @@ trait IncrementalRegistrationTrait {
         }
 
         try {
-            $snapSequence = $this->getNextTrackingSequence($pdo);
-            $tablesJson = $this->buildIncrementalMetaJson($masterDir, $folderName, $sequence, $tablesChanged, $totalNewRows);
-            $dirSize = $this->calculateDirectorySize($incrementalDir);
-
-            return $this->insertIncrementalRecord($pdo, $snapSequence, $folderName, $incrementalDir, $tablesJson, $totalNewRows, $dirSize);
+            return $this->createIncrementalRecord($pdo, $masterDir, $folderName, $sequence, $tablesChanged, $totalNewRows, $incrementalDir);
         } catch (Throwable $e) {
             $this->logError($e, 'Failed to register incremental snapshot');
 
             return false;
         }
+    }
+
+    private function createIncrementalRecord(
+        PDO $pdo,
+        string $masterDir,
+        string $folderName,
+        int $sequence,
+        int $tablesChanged,
+        int $totalNewRows,
+        string $incrementalDir,
+    ): int {
+        $snapSequence = $this->getNextTrackingSequence($pdo);
+        $tablesJson = $this->buildIncrementalMetaJson($masterDir, $folderName, $sequence, $tablesChanged, $totalNewRows);
+        $dirSize = $this->calculateDirectorySize($incrementalDir);
+
+        return $this->insertIncrementalRecord($pdo, $snapSequence, $folderName, $incrementalDir, $tablesJson, $totalNewRows, $dirSize);
     }
 
     private function getNextTrackingSequence(PDO $pdo): int {
@@ -72,12 +84,12 @@ trait IncrementalRegistrationTrait {
         int $totalNewRows,
     ): string {
         return json_encode(array(
-            ResponseKeyType::Type->value => SnapshotModeType::Incremental->value,
-            'master' => basename($masterDir),
-            'sequence' => $sequence,
-            ResponseKeyType::Folder->value => $folderName,
-            ResponseKeyType::TablesChanged->value => $tablesChanged,
-            ResponseKeyType::TotalNewRows->value => $totalNewRows,
+            ResponseKeyType::Type->value           => SnapshotModeType::Incremental->value,
+            'master'                               => basename($masterDir),
+            'sequence'                             => $sequence,
+            ResponseKeyType::Folder->value         => $folderName,
+            ResponseKeyType::TablesChanged->value  => $tablesChanged,
+            ResponseKeyType::TotalNewRows->value   => $totalNewRows,
         ));
     }
 
@@ -107,12 +119,27 @@ trait IncrementalRegistrationTrait {
         int $dirSize,
     ): int {
         $now = DateHelper::nowIso();
+
         $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "
             (Sequence, Filename, Filepath, Provider, Scope, TablesJson, TotalRows,
              FileSize, TriggerSource, Status, CreatedAt, CompletedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $stmt->execute(array(
+        $stmt->execute($this->buildIncrementalInsertValues($sequence, $filename, $filepath, $tablesJson, $totalRows, $dirSize, $now));
+
+        return (int)$pdo->lastInsertId();
+    }
+
+    private function buildIncrementalInsertValues(
+        int $sequence,
+        string $filename,
+        string $filepath,
+        string $tablesJson,
+        int $totalRows,
+        int $dirSize,
+        string $now,
+    ): array {
+        return array(
             $sequence,
             $filename,
             $filepath,
@@ -125,9 +152,7 @@ trait IncrementalRegistrationTrait {
             SnapshotStatusType::Complete->value,
             $now,
             $now,
-        ));
-
-        return (int)$pdo->lastInsertId();
+        );
     }
 
     private function invalidateParentZipExport(string $masterDir): void {

@@ -24,52 +24,56 @@ use RiseupAsia\Enums\SnapshotConfigType;
 trait NativeTableExportTrait {
     use NativeTableExportConvertTrait;
 
-    private function exportTable(
-        PDO $sqlite,
-        string $table,
-        int $snapshotId,
-    ): array {
+    private function exportTable(PDO $sqlite, string $table, int $snapshotId): array {
         try {
-            $createSql = $this->getCreateTableSql($table);
-            $isCreateSqlMissing = ($createSql === null || $createSql === false);
-
-            if ($isCreateSqlMissing) {
-                throw new Exception('Failed to get table structure');
-            }
-
-            $sqliteCreate = $this->convertCreateStatement($createSql, $table);
-            $sqlite->exec($sqliteCreate);
-
-            $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
-
-            if ($count === 0) {
-                return array(
-                    ResponseKeyType::Success->value => true,
-                    ResponseKeyType::Rows->value    => 0,
-                    ResponseKeyType::Bytes->value   => 0,
-                );
-            }
-
-            return $this->exportTableRows($sqlite, $table, $count);
+            return $this->attemptTableExport($sqlite, $table);
         } catch (Throwable $e) {
-            if ($sqlite->inTransaction()) {
-                $sqlite->rollBack();
-            }
-
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-                ResponseKeyType::Rows->value    => 0,
-                ResponseKeyType::Bytes->value   => 0,
-            );
+            return $this->handleTableExportFailure($sqlite, $e);
         }
     }
 
-    private function exportTableRows(
-        PDO $sqlite,
-        string $table,
-        int $count,
-    ): array {
+    private function attemptTableExport(PDO $sqlite, string $table): array {
+        $createSql = $this->getCreateTableSql($table);
+        $isCreateSqlMissing = ($createSql === null || $createSql === false);
+
+        if ($isCreateSqlMissing) {
+            throw new Exception('Failed to get table structure');
+        }
+
+        $sqliteCreate = $this->convertCreateStatement($createSql, $table);
+        $sqlite->exec($sqliteCreate);
+
+        $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
+
+        if ($count === 0) {
+            return $this->buildEmptyTableResult();
+        }
+
+        return $this->exportTableRows($sqlite, $table, $count);
+    }
+
+    private function handleTableExportFailure(PDO $sqlite, Throwable $e): array {
+        if ($sqlite->inTransaction()) {
+            $sqlite->rollBack();
+        }
+
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => $e->getMessage(),
+            ResponseKeyType::Rows->value    => 0,
+            ResponseKeyType::Bytes->value   => 0,
+        );
+    }
+
+    private function buildEmptyTableResult(): array {
+        return array(
+            ResponseKeyType::Success->value => true,
+            ResponseKeyType::Rows->value    => 0,
+            ResponseKeyType::Bytes->value   => 0,
+        );
+    }
+
+    private function exportTableRows(PDO $sqlite, string $table, int $count): array {
         $insert = $this->prepareInsertStatement($sqlite, $table);
 
         $sqlite->beginTransaction();
@@ -94,29 +98,18 @@ trait NativeTableExportTrait {
         return array(ResponseKeyType::Stmt->value => $stmt);
     }
 
-    private function executeBatchExport(
-        PDOStatement $stmt,
-        string $table,
-        int $count,
-    ): array {
+    private function executeBatchExport(PDOStatement $stmt, string $table, int $count): array {
         $batchSize = SnapshotConfigType::BatchSize->value;
         $offset = 0;
         $exported = 0;
         $bytes = 0;
 
         while ($offset < $count) {
-            $rows = $this->wpdb->get_results(
-                $this->wpdb->prepare("SELECT * FROM `{$table}` LIMIT %d OFFSET %d", $batchSize, $offset),
-                ARRAY_N
-            );
-
-            foreach ($rows as $row) {
-                $stmt->execute($row);
-                $exported++;
-                $bytes += strlen(implode('', array_map('strval', $row)));
-            }
-
+            $batchResult = $this->exportSingleBatch($stmt, $table, $batchSize, $offset);
+            $exported += $batchResult['exported'];
+            $bytes += $batchResult['bytes'];
             $offset += $batchSize;
+
             $this->logExportProgress($table, $offset, $count, $batchSize);
         }
 
@@ -126,12 +119,25 @@ trait NativeTableExportTrait {
         );
     }
 
-    private function logExportProgress(
-        string $table,
-        int $offset,
-        int $count,
-        int $batchSize,
-    ): void {
+    private function exportSingleBatch(PDOStatement $stmt, string $table, int $batchSize, int $offset): array {
+        $rows = $this->wpdb->get_results(
+            $this->wpdb->prepare("SELECT * FROM `{$table}` LIMIT %d OFFSET %d", $batchSize, $offset),
+            ARRAY_N
+        );
+
+        $exported = 0;
+        $bytes = 0;
+
+        foreach ($rows as $row) {
+            $stmt->execute($row);
+            $exported++;
+            $bytes += strlen(implode('', array_map('strval', $row)));
+        }
+
+        return array('exported' => $exported, 'bytes' => $bytes);
+    }
+
+    private function logExportProgress(string $table, int $offset, int $count, int $batchSize): void {
         $progress = ($offset / $count) * 100;
         $prev = (($offset - $batchSize) / $count) * 100;
 

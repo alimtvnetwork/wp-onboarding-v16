@@ -37,23 +37,31 @@ trait IncrementalExportTrait {
             $exported = $this->batchExportDelta($sqlite, $table, $pkColumn, $lastMaxId);
             $sqlite = null;
 
-            return array(
-                ResponseKeyType::Success->value => true,
-                ResponseKeyType::Rows->value => $exported,
-                ResponseKeyType::FileSize->value => filesize($filepath),
-                ResponseKeyType::Checksum->value => md5_file($filepath),
-            );
+            return $this->buildDeltaExportSuccess($exported, $filepath);
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'IncrementalExportTrait::exportTableFull() failed:');
 
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value => $e->getMessage(),
-                ResponseKeyType::Rows->value => 0,
-                ResponseKeyType::FileSize->value => 0,
-                ResponseKeyType::Checksum->value => '',
-            );
+            return $this->buildDeltaExportFailure($e);
         }
+    }
+
+    private function buildDeltaExportSuccess(int $exported, string $filepath): array {
+        return array(
+            ResponseKeyType::Success->value  => true,
+            ResponseKeyType::Rows->value     => $exported,
+            ResponseKeyType::FileSize->value => filesize($filepath),
+            ResponseKeyType::Checksum->value => md5_file($filepath),
+        );
+    }
+
+    private function buildDeltaExportFailure(Throwable $e): array {
+        return array(
+            ResponseKeyType::Success->value  => false,
+            ResponseKeyType::Error->value    => $e->getMessage(),
+            ResponseKeyType::Rows->value     => 0,
+            ResponseKeyType::FileSize->value => 0,
+            ResponseKeyType::Checksum->value => '',
+        );
     }
 
     private function createIncrementalSqliteTable(string $filepath, string $table): PDO {
@@ -74,17 +82,11 @@ trait IncrementalExportTrait {
         return $sqlite;
     }
 
-    private function batchExportDelta(
-        PDO $sqlite,
-        string $table,
-        string $pkColumn,
-        int $lastMaxId,
-    ): int {
+    private function batchExportDelta(PDO $sqlite, string $table, string $pkColumn, int $lastMaxId): int {
         $prepared = $this->prepareDeltaBatchStatement($sqlite, $table);
         $sqlite->beginTransaction();
 
         $exported = $this->executeDeltaBatchLoop($prepared[ResponseKeyType::Stmt->value], $table, $pkColumn, $lastMaxId);
-
         $sqlite->commit();
 
         return $exported;
@@ -101,34 +103,41 @@ trait IncrementalExportTrait {
         return array(ResponseKeyType::Stmt->value => $stmt, ResponseKeyType::Columns->value => $columnNames);
     }
 
-    private function executeDeltaBatchLoop(
-        PDOStatement $stmt,
-        string $table,
-        string $pkColumn,
-        int $lastMaxId,
-    ): int {
+    private function executeDeltaBatchLoop(PDOStatement $stmt, string $table, string $pkColumn, int $lastMaxId): int {
         $offset = 0;
         $exported = 0;
 
         while (true) {
-            $rows = $this->wpdb->get_results(
-                $this->wpdb->prepare(
-                    "SELECT * FROM `{$table}` WHERE `{$pkColumn}` > %d ORDER BY `{$pkColumn}` ASC LIMIT %d OFFSET %d",
-                    $lastMaxId, $this->batchSize, $offset
-                ), ARRAY_N
-            );
+            $rows = $this->fetchDeltaBatchRows($table, $pkColumn, $lastMaxId, $offset);
 
             if (empty($rows)) {
                 break;
             }
 
-            foreach ($rows as $row) {
-                $stmt->execute($row);
-                $exported++;
-            }
+            $exported += $this->insertDeltaBatchRows($stmt, $rows);
             $offset += $this->batchSize;
         }
 
         return $exported;
+    }
+
+    private function fetchDeltaBatchRows(string $table, string $pkColumn, int $lastMaxId, int $offset): array {
+        return $this->wpdb->get_results(
+            $this->wpdb->prepare(
+                "SELECT * FROM `{$table}` WHERE `{$pkColumn}` > %d ORDER BY `{$pkColumn}` ASC LIMIT %d OFFSET %d",
+                $lastMaxId, $this->batchSize, $offset
+            ), ARRAY_N
+        );
+    }
+
+    private function insertDeltaBatchRows(PDOStatement $stmt, array $rows): int {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $stmt->execute($row);
+            $count++;
+        }
+
+        return $count;
     }
 }

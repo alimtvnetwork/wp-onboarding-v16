@@ -31,16 +31,24 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?');
-        $stmt->execute(array($snapshotId));
-        $snapshot = $stmt->fetch(PDO::FETCH_ASSOC);
-
+        $snapshot = $this->fetchSnapshotById($pdo, $snapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
 
         if ($isSnapshotMissing) {
             return null;
         }
 
+        return $this->validateSnapshotEligibility($snapshot, $snapshotId);
+    }
+
+    private function fetchSnapshotById(PDO $pdo, int $snapshotId): array|false {
+        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?');
+        $stmt->execute(array($snapshotId));
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function validateSnapshotEligibility(array $snapshot, int $snapshotId): ?array {
         if ($snapshot['Scope'] === SnapshotModeType::Incremental->value) {
             $this->log(LogLevelType::Warn->value, 'Cannot export incremental snapshot directly', array('id' => $snapshotId));
 
@@ -106,26 +114,19 @@ trait ExporterHelpersTrait {
     }
 
     /** Log helper. */
-    private function log(
-        string $level,
-        string $message,
-        array $context = array(),
-    ): void {
+    private function log(string $level, string $message, array $context = array()): void {
         $context['class'] = 'RiseupSnapshotExporter';
+        $prefixed = '[SnapshotExporter] ' . $message;
 
+        $this->dispatchExporterLog($level, $prefixed, $context);
+    }
+
+    private function dispatchExporterLog(string $level, string $message, array $context): void {
         switch ($level) {
-            case LogLevelType::Error->value:
-                $this->logger->error('[SnapshotExporter] ' . $message, $context);
-                break;
-            case LogLevelType::Warn->value:
-                $this->logger->warn('[SnapshotExporter] ' . $message, $context);
-                break;
-            case LogLevelType::Debug->value:
-                $this->logger->debug('[SnapshotExporter] ' . $message, $context);
-                break;
-            default:
-                $this->logger->info('[SnapshotExporter] ' . $message, $context);
-                break;
+            case LogLevelType::Error->value: $this->logger->error($message, $context); break;
+            case LogLevelType::Warn->value:  $this->logger->warn($message, $context); break;
+            case LogLevelType::Debug->value: $this->logger->debug($message, $context); break;
+            default:                         $this->logger->info($message, $context);
         }
     }
 
