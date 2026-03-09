@@ -133,7 +133,13 @@ trait ManagerImportTrait {
     }
 
     private function parseManifestJson(string $manifestPath): array {
-        $manifest = json_decode(file_get_contents($manifestPath), true);
+        $rawContent = @file_get_contents($manifestPath);
+
+        if ($rawContent === false) {
+            throw new Exception('Failed to read manifest.json');
+        }
+
+        $manifest = json_decode($rawContent, true);
         $isManifestInvalid = ($manifest === null || $manifest === false);
 
         if ($isManifestInvalid) {

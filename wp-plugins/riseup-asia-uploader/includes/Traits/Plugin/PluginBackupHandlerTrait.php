@@ -440,7 +440,8 @@ trait PluginBackupHandlerTrait
             $filename = basename($zipFile);
 
             if (file_exists($metaFile)) {
-                $meta = json_decode(file_get_contents($metaFile), true);
+                $rawMeta = @file_get_contents($metaFile);
+                $meta = ($rawMeta !== false) ? json_decode($rawMeta, true) : null;
 
                 if (is_array($meta)) {
                     $meta['filename'] = $filename;
