@@ -72,10 +72,7 @@ func (s *LicenseService) GetByKey(key string) apperror.Result[*models.License] {
 
 // List returns all licenses, ordered by creation date descending.
 func (s *LicenseService) List() apperror.Result[[]models.License] {
-	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
-		FROM licenses ORDER BY created_at DESC`
-
-	rows, queryErr := s.db.Query(query)
+	rows, queryErr := s.db.Query(licenseListSql)
 	if queryErr != nil {
 
 		return apperror.FailWrap[[]models.License](queryErr, apperror.ErrDatabaseQuery, "query licenses")
