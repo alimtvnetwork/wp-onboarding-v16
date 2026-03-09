@@ -27,13 +27,14 @@ func (h *PublicHandlers) Activate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	license, getErr := h.Licenses.GetByKey(key)
-	if getErr != nil {
+	getResult := h.Licenses.GetByKey(key)
+	if getResult.HasError() {
 		errorResponse(w, http.StatusNotFound, "license not found")
 
 		return
 	}
 
+	license := getResult.Value()
 	isLicenseUnusable := !license.IsUsable()
 
 	if isLicenseUnusable {
@@ -53,14 +54,14 @@ func (h *PublicHandlers) executeActivation(
 	maxActivations int,
 	domain string,
 ) {
-	activeCount, countErr := h.Activations.CountActive(licenseId)
-	if countErr != nil {
+	countResult := h.Activations.CountActive(licenseId)
+	if countResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "failed to check activations")
 
 		return
 	}
 
-	isAtLimit := activeCount >= maxActivations
+	isAtLimit := countResult.Value() >= maxActivations
 
 	if isAtLimit {
 		errorResponse(w, http.StatusConflict, "activation limit reached")
@@ -68,20 +69,20 @@ func (h *PublicHandlers) executeActivation(
 		return
 	}
 
-	activation, actErr := h.Activations.Activate(services.ActivateInput{
+	actResult := h.Activations.Activate(services.ActivateInput{
 		LicenseId: licenseId,
 		Domain:    domain,
 		IpAddress: r.RemoteAddr,
 		UserAgent: r.UserAgent(),
 	})
-	if actErr != nil {
+	if actResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "activation failed")
 
 		return
 	}
 
 	h.logPublicAudit(r, &licenseId, auditaction.Activated, domain)
-	jsonResponse(w, http.StatusOK, activation)
+	jsonResponse(w, http.StatusOK, actResult.Value())
 }
 
 // Deactivate handles POST /licenses/{key}/deactivate.
@@ -97,12 +98,14 @@ func (h *PublicHandlers) Deactivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	license, getErr := h.Licenses.GetByKey(key)
-	if getErr != nil {
+	getResult := h.Licenses.GetByKey(key)
+	if getResult.HasError() {
 		errorResponse(w, http.StatusNotFound, "license not found")
 
 		return
 	}
+
+	license := getResult.Value()
 
 	deactErr := h.Activations.Deactivate(license.Id, req.Domain)
 	if deactErr != nil {
@@ -119,15 +122,17 @@ func (h *PublicHandlers) Deactivate(w http.ResponseWriter, r *http.Request) {
 func (h *PublicHandlers) Status(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
 
-	license, getErr := h.Licenses.GetByKey(key)
-	if getErr != nil {
+	getResult := h.Licenses.GetByKey(key)
+	if getResult.HasError() {
 		errorResponse(w, http.StatusNotFound, "license not found")
 
 		return
 	}
 
-	activations, listErr := h.Activations.ListByLicense(license.Id)
-	if listErr != nil {
+	license := getResult.Value()
+
+	listResult := h.Activations.ListByLicense(license.Id)
+	if listResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "failed to list activations")
 
 		return
@@ -135,7 +140,7 @@ func (h *PublicHandlers) Status(w http.ResponseWriter, r *http.Request) {
 
 	resp := licenseStatusResponse{
 		License:     license,
-		Activations: activations,
+		Activations: listResult.Value(),
 	}
 
 	jsonResponse(w, http.StatusOK, resp)

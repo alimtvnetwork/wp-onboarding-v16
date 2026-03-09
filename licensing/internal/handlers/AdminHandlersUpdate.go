@@ -37,12 +37,14 @@ func (h *AdminHandlers) UpdateLicense(w http.ResponseWriter, r *http.Request) {
 
 	input := buildUpdateInput(req)
 
-	license, updateErr := h.Licenses.Update(id, input)
-	if updateErr != nil {
+	updateResult := h.Licenses.Update(id, input)
+	if updateResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "failed to update license")
 
 		return
 	}
+
+	license := updateResult.Value()
 
 	h.logAudit(r, &license.Id, auditaction.Updated, "")
 	jsonResponse(w, http.StatusOK, license)

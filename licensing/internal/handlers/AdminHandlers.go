@@ -56,21 +56,23 @@ func (h *AdminHandlers) executeCreate(
 	r *http.Request,
 	req createLicenseRequest,
 ) {
-	key, keyErr := services.GenerateKey()
-	if keyErr != nil {
+	keyResult := services.GenerateKey()
+	if keyResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "failed to generate key")
 
 		return
 	}
 
-	input := buildCreateInput(key, req)
+	input := buildCreateInput(keyResult.Value(), req)
 
-	license, createErr := h.Licenses.Create(input)
-	if createErr != nil {
+	createResult := h.Licenses.Create(input)
+	if createResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "failed to create license")
 
 		return
 	}
+
+	license := createResult.Value()
 
 	h.logAudit(r, &license.Id, auditaction.Created, "")
 	jsonResponse(w, http.StatusCreated, license)
@@ -97,13 +99,14 @@ func buildCreateInput(key string, req createLicenseRequest) services.CreateInput
 
 // ListLicenses handles GET /admin/licenses.
 func (h *AdminHandlers) ListLicenses(w http.ResponseWriter, r *http.Request) {
-	licenses, listErr := h.Licenses.List()
-	if listErr != nil {
+	listResult := h.Licenses.List()
+	if listResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "failed to list licenses")
 
 		return
 	}
 
+	licenses := listResult.Value()
 	isNilList := licenses == nil
 
 	if isNilList {
@@ -122,14 +125,14 @@ func (h *AdminHandlers) GetLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	license, getErr := h.Licenses.GetById(id)
-	if getErr != nil {
+	getResult := h.Licenses.GetById(id)
+	if getResult.HasError() {
 		errorResponse(w, http.StatusNotFound, "license not found")
 
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, license)
+	jsonResponse(w, http.StatusOK, getResult.Value())
 }
 
 // extractIdParam reads the {id} path variable as int64.
