@@ -9,6 +9,22 @@
   "quploadVersion": "2.0.0",
   "changelog": [
     {
+      "version": "2.0.0",
+      "date": "2026-03-09",
+      "title": "Major Version 2.0 — Full Codebase Audit & Hardening",
+      "changes": [
+        "🎯 Major version bump across all components: App, WP Plugin, QUpload, and PowerShell script",
+        "🛡️ Full PHP reliability audit: guarded all filesystem operations (scandir, copy, fopen, extractTo)",
+        "🔒 Eliminated silent catch blocks and ensured Throwable-first logging with stack traces",
+        "📏 Enforced 500-line PHP file limit across all plugins with trait decomposition",
+        "🧹 Removed double exception logging in error response pipelines",
+        "📦 QUpload plugin hardened: ZIP extraction, directory operations, and activation flows",
+        "🔧 Riseup Asia Uploader hardened: snapshot imports, sync push, admin log reading",
+        "📋 Centralized plugin identity via PluginConfigType enums (no literal log prefixes)",
+        "✅ All PHP enums standardized with PascalCase values and typed backing"
+      ]
+    },
+    {
       "version": "1.19.4",
       "date": "2026-02-04",
       "title": "Detailed Backend Logging & UI Fixes",
