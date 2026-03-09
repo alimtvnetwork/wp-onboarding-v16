@@ -107,9 +107,7 @@ func (s *ActivationService) createNew(input ActivateInput) apperror.Result[*mode
 
 // Deactivate marks an activation as deactivated by license ID and domain.
 func (s *ActivationService) Deactivate(licenseId int64, domain string) *apperror.AppError {
-	query := `UPDATE activations SET deactivated_at = ? WHERE license_id = ? AND domain = ? AND deactivated_at IS NULL`
-
-	_, execErr := s.db.Exec(query, time.Now(), licenseId, domain)
+	_, execErr := s.db.Exec(activationDeactivateSql, time.Now(), licenseId, domain)
 	if execErr != nil {
 
 		return apperror.Wrap(execErr, apperror.ErrDatabaseUpdate, "deactivate")
