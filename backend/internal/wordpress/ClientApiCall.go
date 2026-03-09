@@ -39,7 +39,12 @@ func (c *Client) doApiCallWithStatus(input apiCallInput) apperror.Result[ApiCall
 	}
 	defer resp.Body.Close()
 
-	bodyBytes, _ := io.ReadAll(resp.Body)
+	bodyBytes, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
+
+		return apperror.FailWrap[ApiCallResponse](readErr, code, "read response body")
+	}
 
 	return apperror.Ok(ApiCallResponse{
 		Body:       bodyBytes,
