@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SettingsKeyType;

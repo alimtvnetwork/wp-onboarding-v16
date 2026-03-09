@@ -17,9 +17,10 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use PDOException;
-use RiseupAsia\Database\Traits\OrmWhereTrait;
-use RiseupAsia\Database\Traits\OrmQueryTrait;
+
 use RiseupAsia\Database\Traits\OrmMutationTrait;
+use RiseupAsia\Database\Traits\OrmQueryTrait;
+use RiseupAsia\Database\Traits\OrmWhereTrait;
 use RiseupAsia\Logging\FileLogger;
 
 /**

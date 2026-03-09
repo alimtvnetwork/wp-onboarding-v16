@@ -13,12 +13,11 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
-use RiseupAsia\ErrorHandling\ErrorResponse;
-use RiseupAsia\Database\Orm;
 
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TableType;
-
+use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\DateHelper;
 
 trait DatabaseQueryLogTrait {
