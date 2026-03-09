@@ -18,27 +18,29 @@ type PublicHandlers struct {
 
 // validateResponse is the JSON response for license validation.
 type validateResponse struct {
-	Valid      bool   `json:"valid"`
-	Status     string `json:"status"`
-	Product    string `json:"product"`
-	Type       string `json:"type"`
-	Activations int  `json:"activations"`
-	MaxActivations int `json:"maxActivations"`
+	Valid          bool   `json:"valid"`
+	Status         string `json:"status"`
+	Product        string `json:"product"`
+	Type           string `json:"type"`
+	Activations    int    `json:"activations"`
+	MaxActivations int    `json:"maxActivations"`
 }
 
 // Validate handles GET /licenses/{key}/validate.
 func (h *PublicHandlers) Validate(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
 
-	license, getErr := h.Licenses.GetByKey(key)
-	if getErr != nil {
+	getResult := h.Licenses.GetByKey(key)
+	if getResult.HasError() {
 		jsonResponse(w, http.StatusOK, validateResponse{Valid: false, Status: "not_found"})
 
 		return
 	}
 
-	activeCount, countErr := h.Activations.CountActive(license.Id)
-	if countErr != nil {
+	license := getResult.Value()
+
+	countResult := h.Activations.CountActive(license.Id)
+	if countResult.HasError() {
 		errorResponse(w, http.StatusInternalServerError, "failed to check activations")
 
 		return
@@ -51,7 +53,7 @@ func (h *PublicHandlers) Validate(w http.ResponseWriter, r *http.Request) {
 		Status:         license.Status.String(),
 		Product:        license.Product.String(),
 		Type:           license.Type.String(),
-		Activations:    activeCount,
+		Activations:    countResult.Value(),
 		MaxActivations: license.MaxActivations,
 	})
 }

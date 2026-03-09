@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"strings"
+
+	"riseup-licensing/pkg/apperror"
 )
 
 // KeyPrefix is the standard license key prefix.
@@ -15,13 +17,14 @@ const KeyPrefix = "RISEUP"
 const keyChars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 
 // GenerateKey creates a new license key in format RISEUP-XXXX-XXXX-XXXX-XXXX.
-func GenerateKey() (string, error) {
+func GenerateKey() apperror.Result[string] {
 	segments := make([]string, 4)
 
 	for i := range segments {
 		segment, segErr := generateSegment(4)
 		if segErr != nil {
-			return "", fmt.Errorf("generate segment %d: %w", i, segErr)
+
+			return apperror.FailWrap[string](segErr, apperror.ErrKeyGeneration, fmt.Sprintf("generate segment %d", i))
 		}
 
 		segments[i] = segment
@@ -29,7 +32,7 @@ func GenerateKey() (string, error) {
 
 	key := KeyPrefix + "-" + strings.Join(segments, "-")
 
-	return key, nil
+	return apperror.Ok(key)
 }
 
 // generateSegment creates a random alphanumeric segment of the given length.

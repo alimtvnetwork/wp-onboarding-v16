@@ -1,12 +1,11 @@
 package services
 
 import (
-	"fmt"
-
 	"riseup-licensing/internal/enums/licensestatus"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 	"riseup-licensing/internal/models"
+	"riseup-licensing/pkg/apperror"
 )
 
 // UpdateInput holds parameters for updating an existing license.
@@ -21,7 +20,7 @@ type UpdateInput struct {
 func (s *LicenseService) Update(
 	id int64,
 	input UpdateInput,
-) (*models.License, error) {
+) apperror.Result[*models.License] {
 	setClauses, args := buildUpdateClauses(input)
 
 	isNothingToUpdate := len(setClauses) == 0
@@ -66,7 +65,7 @@ func (s *LicenseService) executeUpdate(
 	id int64,
 	setClauses []string,
 	args []any,
-) (*models.License, error) {
+) apperror.Result[*models.License] {
 	query := "UPDATE licenses SET "
 
 	for i, clause := range setClauses {
@@ -85,32 +84,32 @@ func (s *LicenseService) executeUpdate(
 	_, execErr := s.db.Exec(query, args...)
 	if execErr != nil {
 
-		return nil, fmt.Errorf("update license: %w", execErr)
+		return apperror.FailWrap[*models.License](execErr, apperror.ErrDatabaseUpdate, "update license")
 	}
 
 	return s.GetById(id)
 }
 
 // Delete removes a license by ID.
-func (s *LicenseService) Delete(id int64) error {
+func (s *LicenseService) Delete(id int64) *apperror.AppError {
 	_, execErr := s.db.Exec("DELETE FROM licenses WHERE id = ?", id)
 	if execErr != nil {
 
-		return fmt.Errorf("delete license: %w", execErr)
+		return apperror.Wrap(execErr, apperror.ErrDatabaseDelete, "delete license")
 	}
 
 	return nil
 }
 
 // scanAll scans multiple license rows.
-func (s *LicenseService) scanAll(rows interface{ Next() bool; Scan(...any) error; Err() error }) ([]models.License, error) {
+func (s *LicenseService) scanAll(rows interface{ Next() bool; Scan(...any) error; Err() error }) apperror.Result[[]models.License] {
 	var licenses []models.License
 
 	for rows.Next() {
 		l, scanErr := s.scanRow(rows)
 		if scanErr != nil {
 
-			return nil, scanErr
+			return apperror.FailWrap[[]models.License](scanErr, apperror.ErrDatabaseScan, "scan license row")
 		}
 
 		licenses = append(licenses, *l)
@@ -118,10 +117,10 @@ func (s *LicenseService) scanAll(rows interface{ Next() bool; Scan(...any) error
 
 	if rows.Err() != nil {
 
-		return nil, fmt.Errorf("iterate license rows: %w", rows.Err())
+		return apperror.FailWrap[[]models.License](rows.Err(), apperror.ErrDatabaseQuery, "iterate license rows")
 	}
 
-	return licenses, nil
+	return apperror.Ok(licenses)
 }
 
 // scanRow scans a single row from an iterator into a License.
@@ -135,7 +134,7 @@ func (s *LicenseService) scanRow(row interface{ Scan(...any) error }) (*models.L
 	)
 	if scanErr != nil {
 
-		return nil, fmt.Errorf("scan license row: %w", scanErr)
+		return nil, scanErr
 	}
 
 	l.Product = producttype.Parse(product)
