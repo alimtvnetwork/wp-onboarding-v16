@@ -32,14 +32,9 @@ trait WorkerBatchExportTrait {
         $batches = array_chunk($seedOrder, $this->poolSize);
 
         foreach ($batches as $batchIndex => $batchTables) {
-            $this->log(LogLevelType::Info->value, sprintf(
-                'Processing batch %d/%d (%d tables)',
-                $batchIndex + 1,
-                count($batches),
-                count($batchTables),
-            ));
-
+            $this->logBatchProgress($batchIndex, $batches, $batchTables);
             $result = $this->exportBatchTables($batchTables, $snapshotDir, $rootPdo);
+
             $totalRows += $result[ResponseKeyType::Rows->value];
             $exportedTables += $result[ResponseKeyType::Exported->value];
             $errors = array_merge($errors, $result[ResponseKeyType::Errors->value]);
@@ -50,6 +45,15 @@ trait WorkerBatchExportTrait {
             ResponseKeyType::ExportedTables->value => $exportedTables,
             ResponseKeyType::Errors->value         => $errors,
         );
+    }
+
+    private function logBatchProgress(int $batchIndex, array $batches, array $batchTables): void {
+        $this->log(LogLevelType::Info->value, sprintf(
+            'Processing batch %d/%d (%d tables)',
+            $batchIndex + 1,
+            count($batches),
+            count($batchTables),
+        ));
     }
 
     private function exportBatchTables(
@@ -66,33 +70,12 @@ trait WorkerBatchExportTrait {
             $result = $this->exportTableToFile($snapshotDir, $table);
 
             if ($result[ResponseKeyType::Success->value]) {
+                $this->handleSuccessfulTableExport($table, $result, $rootPdo);
                 $rows += $result[ResponseKeyType::Rows->value];
                 $exported++;
-
-                if ($rootPdo) {
-                    $this->rootDb->registerTable(
-                        $rootPdo,
-                        $table,
-                        $result[ResponseKeyType::Rows->value],
-                        $result[ResponseKeyType::Filename->value],
-                        $result[ResponseKeyType::FileSize->value],
-                        $result[ResponseKeyType::Checksum->value],
-                    );
-                }
-
-                $this->updateProgress(
-                    $table,
-                    SnapshotStatusType::Complete->value,
-                    $result[ResponseKeyType::Rows->value],
-                );
             } else {
+                $this->handleFailedTableExport($table, $result);
                 $errors[] = $table . ': ' . $result[ResponseKeyType::Error->value];
-                $this->updateProgress(
-                    $table,
-                    SnapshotStatusType::Failed->value,
-                    0,
-                    $result[ResponseKeyType::Error->value],
-                );
             }
         }
 
@@ -103,6 +86,34 @@ trait WorkerBatchExportTrait {
         );
     }
 
+    private function handleSuccessfulTableExport(string $table, array $result, ?PDO $rootPdo): void {
+        if ($rootPdo) {
+            $this->rootDb->registerTable(
+                $rootPdo,
+                $table,
+                $result[ResponseKeyType::Rows->value],
+                $result[ResponseKeyType::Filename->value],
+                $result[ResponseKeyType::FileSize->value],
+                $result[ResponseKeyType::Checksum->value],
+            );
+        }
+
+        $this->updateProgress(
+            $table,
+            SnapshotStatusType::Complete->value,
+            $result[ResponseKeyType::Rows->value],
+        );
+    }
+
+    private function handleFailedTableExport(string $table, array $result): void {
+        $this->updateProgress(
+            $table,
+            SnapshotStatusType::Failed->value,
+            0,
+            $result[ResponseKeyType::Error->value],
+        );
+    }
+
     private function buildAsyncSnapshotResult(
         array $prepared,
         array $seedOrder,
@@ -110,7 +121,12 @@ trait WorkerBatchExportTrait {
         float $startTime,
     ): array {
         $duration = microtime(true) - $startTime;
+        $this->logAsyncJobSetup($prepared, $seedOrder, $jobId, $duration);
 
+        return $this->buildAsyncResultArray($prepared, $seedOrder, $jobId, $duration);
+    }
+
+    private function logAsyncJobSetup(array $prepared, array $seedOrder, int $jobId, float $duration): void {
         $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
             ResponseKeyType::JobId->value       => $jobId,
             ResponseKeyType::Directory->value   => $prepared[ResponseKeyType::DirName->value],
@@ -118,7 +134,9 @@ trait WorkerBatchExportTrait {
             ResponseKeyType::PoolSize->value    => $this->poolSize,
             'setupTime'                         => round($duration, 2) . 's',
         ));
+    }
 
+    private function buildAsyncResultArray(array $prepared, array $seedOrder, int $jobId, float $duration): array {
         return ResultHelper::ok(array(
             ResponseKeyType::Directory->value   => $prepared[ResponseKeyType::DirName->value],
             ResponseKeyType::Path->value        => $prepared[ResponseKeyType::SnapshotDir->value],
@@ -129,7 +147,7 @@ trait WorkerBatchExportTrait {
             ResponseKeyType::TotalRows->value   => 0,
             ResponseKeyType::Errors->value      => array(),
             ResponseKeyType::Duration->value    => $duration,
-            ResponseKeyType::Status->value              => SnapshotJobStatusType::Queued->value,
+            ResponseKeyType::Status->value      => SnapshotJobStatusType::Queued->value,
         ));
     }
 

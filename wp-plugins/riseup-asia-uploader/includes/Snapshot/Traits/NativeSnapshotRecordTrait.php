@@ -27,6 +27,16 @@ trait NativeSnapshotRecordTrait {
     use NativeSnapshotCrudTrait;
 
     private function createSqliteDatabase(string $filepath): ?PDO {
+        $guardResult = $this->guardSqlitePath($filepath);
+
+        if ($guardResult !== null) {
+            return $guardResult;
+        }
+
+        return $this->initializeSqlitePdo($filepath);
+    }
+
+    private function guardSqlitePath(string $filepath): ?PDO {
         $snapshotsDir = $this->getSnapshotsDir();
 
         if (PathHelper::isPathMissing($filepath, $snapshotsDir)) {
@@ -49,6 +59,12 @@ trait NativeSnapshotRecordTrait {
             return null;
         }
 
+        // Return non-null PDO only from initializeSqlitePdo; null here means "proceed"
+        // Using a sentinel pattern: null means guards passed
+        return null;
+    }
+
+    private function initializeSqlitePdo(string $filepath): ?PDO {
         try {
             $this->log(LogLevelType::Debug->value, 'Creating SQLite database', array('filepath' => $filepath));
             $pdo = new PDO('sqlite:' . $filepath);
@@ -61,13 +77,17 @@ trait NativeSnapshotRecordTrait {
 
             return $pdo;
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to create SQLite database', array(
-                'filepath' => $filepath,
-                'error'    => $e->getMessage(),
-            ));
+            $this->logSqliteCreationError($filepath, $e);
 
             return null;
         }
+    }
+
+    private function logSqliteCreationError(string $filepath, Throwable $e): void {
+        $this->log(LogLevelType::Error->value, 'Failed to create SQLite database', array(
+            'filepath' => $filepath,
+            'error'    => $e->getMessage(),
+        ));
     }
 
     private function insertSnapshotMeta(PDO $pdo): void {
@@ -115,6 +135,16 @@ trait NativeSnapshotRecordTrait {
         string $status,
         ?string $error = null,
     ): void {
+        $data = $this->buildStatusUpdateData($status, $error);
+
+        $this->db->update(
+            TableType::Snapshots->value,
+            $data,
+            array('Id' => $snapshotId),
+        );
+    }
+
+    private function buildStatusUpdateData(string $status, ?string $error): array {
         $data = array(
             'Status'    => $status,
             'UpdatedAt' => DateHelper::nowIso(),
@@ -128,11 +158,7 @@ trait NativeSnapshotRecordTrait {
             $data['StartedAt'] = DateHelper::nowIso();
         }
 
-        $this->db->update(
-            TableType::Snapshots->value,
-            $data,
-            array('Id' => $snapshotId),
-        );
+        return $data;
     }
 
     private function finalizeSnapshot(int $snapshotId, array $details): void {

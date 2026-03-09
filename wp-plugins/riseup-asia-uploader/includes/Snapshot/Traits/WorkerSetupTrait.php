@@ -26,39 +26,56 @@ use RiseupAsia\Helpers\ResultHelper;
 
 trait WorkerSetupTrait {
     private function prepareSnapshotDir(array $config): array {
-        $title = $config[ResponseKeyType::Title->value] ?? (SnapshotConfigType::DefaultTitle . ' ' . DateHelper::nowCompactDatetime());
-        $scope = $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value;
-        $type  = $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value;
+        $resolved = $this->resolveSnapshotConfig($config);
+        $this->logSnapshotStart($resolved);
 
-        $hasPoolSize = !empty($config[ResponseKeyType::Settings->value]['worker_pool_size'] ?? null);
-
-        if ($hasPoolSize) {
-            $this->setPoolSize($config[ResponseKeyType::Settings->value]['worker_pool_size']);
-        }
-
-        $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
-            ResponseKeyType::Title->value         => $title,
-            ResponseKeyType::Scope->value         => $scope,
-            ResponseKeyType::Type->value          => $type,
-            ResponseKeyType::PoolSize->value      => $this->poolSize,
-        ));
-
-        $baseDir = $this->getSnapshotsBaseDir();
-        $dirName = DateHelper::nowDateOnly() . '_' . $type . '_' . sanitize_title($title);
-        $snapshotDir = $baseDir . '/' . $dirName;
-
+        $snapshotDir = $this->buildSnapshotDirPath($resolved);
         $isDirCreateFailed = (PathHelper::makeDirectory($snapshotDir, true) === false);
 
         if ($isDirCreateFailed) {
             return ResultHelper::error('Failed to create snapshot directory');
         }
 
+        return $this->buildSnapshotDirResult($snapshotDir, $resolved);
+    }
+
+    private function resolveSnapshotConfig(array $config): array {
+        $hasPoolSize = !empty($config[ResponseKeyType::Settings->value]['worker_pool_size'] ?? null);
+
+        if ($hasPoolSize) {
+            $this->setPoolSize($config[ResponseKeyType::Settings->value]['worker_pool_size']);
+        }
+
+        return array(
+            ResponseKeyType::Title->value => $config[ResponseKeyType::Title->value] ?? (SnapshotConfigType::DefaultTitle . ' ' . DateHelper::nowCompactDatetime()),
+            ResponseKeyType::Scope->value => $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
+            ResponseKeyType::Type->value  => $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
+        );
+    }
+
+    private function logSnapshotStart(array $resolved): void {
+        $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
+            ResponseKeyType::Title->value    => $resolved[ResponseKeyType::Title->value],
+            ResponseKeyType::Scope->value    => $resolved[ResponseKeyType::Scope->value],
+            ResponseKeyType::Type->value     => $resolved[ResponseKeyType::Type->value],
+            ResponseKeyType::PoolSize->value => $this->poolSize,
+        ));
+    }
+
+    private function buildSnapshotDirPath(array $resolved): string {
+        $baseDir = $this->getSnapshotsBaseDir();
+        $dirName = DateHelper::nowDateOnly() . '_' . $resolved[ResponseKeyType::Type->value] . '_' . sanitize_title($resolved[ResponseKeyType::Title->value]);
+
+        return $baseDir . '/' . $dirName;
+    }
+
+    private function buildSnapshotDirResult(string $snapshotDir, array $resolved): array {
         return ResultHelper::ok(array(
             ResponseKeyType::SnapshotDir->value => $snapshotDir,
-            ResponseKeyType::DirName->value     => $dirName,
-            ResponseKeyType::Title->value       => $title,
-            ResponseKeyType::Scope->value       => $scope,
-            ResponseKeyType::Type->value        => $type,
+            ResponseKeyType::DirName->value     => basename($snapshotDir),
+            ResponseKeyType::Title->value       => $resolved[ResponseKeyType::Title->value],
+            ResponseKeyType::Scope->value       => $resolved[ResponseKeyType::Scope->value],
+            ResponseKeyType::Type->value        => $resolved[ResponseKeyType::Type->value],
         ));
     }
 
@@ -75,8 +92,9 @@ trait WorkerSetupTrait {
 
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value);
+
         $this->log(LogLevelType::Info->value, 'Export order determined', array(
-            ResponseKeyType::Tables->value => count($analysis[ResponseKeyType::SeedOrder->value]),
+            ResponseKeyType::Tables->value   => count($analysis[ResponseKeyType::SeedOrder->value]),
             ResponseKeyType::PoolSize->value => $this->poolSize,
         ));
 
@@ -95,6 +113,17 @@ trait WorkerSetupTrait {
         string $message,
         array $context = array(),
     ): void {
+        $full = $this->formatLogMessage($message, $context);
+        $isLoggerMissing = ($this->logger === null);
+
+        if ($isLoggerMissing) {
+            return;
+        }
+
+        $this->dispatchLogLevel($level, $full);
+    }
+
+    private function formatLogMessage(string $message, array $context): string {
         $full = '[SNAPSHOT] [WORKER] ' . $message;
         $hasContext = !empty($context);
 
@@ -102,16 +131,14 @@ trait WorkerSetupTrait {
             $full .= ' ' . json_encode($context);
         }
 
-        $isLoggerMissing = ($this->logger === null);
+        return $full;
+    }
 
-        if ($isLoggerMissing) {
-            return;
-        }
-
+    private function dispatchLogLevel(string $level, string $message): void {
         switch ($level) {
-            case LogLevelType::Warn->value:  $this->logger->warn($full); break;
-            case LogLevelType::Error->value: $this->logger->error($full); break;
-            default:      $this->logger->info($full);
+            case LogLevelType::Warn->value:  $this->logger->warn($message); break;
+            case LogLevelType::Error->value: $this->logger->error($message); break;
+            default:                         $this->logger->info($message);
         }
     }
 

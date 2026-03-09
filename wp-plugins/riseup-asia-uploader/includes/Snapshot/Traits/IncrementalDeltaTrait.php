@@ -36,8 +36,7 @@ trait IncrementalDeltaTrait {
         }
 
         try {
-            $rootPdo = new PDO('sqlite:' . $rootDbPath);
-            $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $rootPdo = $this->openRootPdo($rootDbPath);
 
             return $this->exportTableDeltaInner($tableName, $info, $incDir, $rootPdo, $sequence);
         } catch (Throwable $e) {
@@ -49,6 +48,13 @@ trait IncrementalDeltaTrait {
                 $rootPdo = null;
             }
         }
+    }
+
+    private function openRootPdo(string $rootDbPath): PDO {
+        $rootPdo = new PDO('sqlite:' . $rootDbPath);
+        $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        return $rootPdo;
     }
 
     private function exportTableDeltaInner(
@@ -66,16 +72,25 @@ trait IncrementalDeltaTrait {
             return null;
         }
 
-        $newCount = (int) $this->wpdb->get_var(
-            $this->wpdb->prepare("SELECT COUNT(*) FROM `{$tableName}` WHERE `{$info['pkColumn']}` > %d", $lastMaxId)
-        );
+        $newCount = $this->countNewRows($tableName, $info['pkColumn'], $lastMaxId);
 
         if ($newCount === 0) {
             return null;
         }
 
         $result = $this->exportDeltaRows($incDir, $tableName, $info['pkColumn'], $lastMaxId, $newCount);
+        $this->logDeltaExportResult($tableName, $result);
 
+        return $result;
+    }
+
+    private function countNewRows(string $tableName, string $pkColumn, int $lastMaxId): int {
+        return (int) $this->wpdb->get_var(
+            $this->wpdb->prepare("SELECT COUNT(*) FROM `{$tableName}` WHERE `{$pkColumn}` > %d", $lastMaxId)
+        );
+    }
+
+    private function logDeltaExportResult(string $tableName, array $result): void {
         if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Info->value, sprintf(
                 'Incremental export: %s (+%d rows, %s)',
@@ -83,18 +98,19 @@ trait IncrementalDeltaTrait {
                 $result[ResponseKeyType::Rows->value],
                 $this->formatBytes($result[ResponseKeyType::FileSize->value]),
             ));
+
             $result[ResponseKeyType::Entry->value] = array(
-                'table'    => $tableName,
+                'table'                         => $tableName,
                 ResponseKeyType::NewRows->value => $result[ResponseKeyType::Rows->value],
-                ResponseKeyType::Size->value => $result[ResponseKeyType::FileSize->value],
+                ResponseKeyType::Size->value    => $result[ResponseKeyType::FileSize->value],
             );
-        } else {
-            $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array(
-                ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
-            ));
+
+            return;
         }
 
-        return $result;
+        $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array(
+            ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
+        ));
     }
 
     private function exportDeltaRows(
@@ -108,49 +124,89 @@ trait IncrementalDeltaTrait {
         $filepath = $incDir . '/' . $filename;
 
         try {
-            $sqlite = new PDO('sqlite:' . $filepath);
-            $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $sqlite->exec('PRAGMA journal_mode = WAL');
-            $sqlite->exec('PRAGMA synchronous = OFF');
-
-            $createSql = $this->getCreateTableSql($table);
-            $sqlite->exec($createSql);
-
-            $offset = 0;
-            $exported = 0;
-            $batchSize = 250;
-
-            while ($offset < $newCount) {
-                $rows = $this->wpdb->get_results(
-                    $this->wpdb->prepare("SELECT * FROM `{$table}` WHERE `{$pkColumn}` > %d ORDER BY `{$pkColumn}` ASC LIMIT %d OFFSET %d", $lastMaxId, $batchSize, $offset),
-                    ARRAY_A
-                );
-                foreach ($rows as $row) {
-                    $columns = array_keys($row);
-                    $placeholders = implode(', ', array_fill(0, count($columns), '?'));
-                    $columnList = implode(', ', array_map(function($c) { return "`{$c}`"; }, $columns));
-                    $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
-                    $stmt->execute(array_values($row));
-                    $exported++;
-                }
-                $offset += $batchSize;
-            }
+            $sqlite = $this->initDeltaSqlite($filepath, $table);
+            $exported = $this->batchExportDeltaLoop($sqlite, $table, $pkColumn, $lastMaxId, $newCount);
             $sqlite = null;
 
-            return ResultHelper::ok(array(
-                ResponseKeyType::Rows->value     => $exported,
-                ResponseKeyType::Filename->value => $filename,
-                ResponseKeyType::FileSize->value => filesize($filepath),
-                ResponseKeyType::Checksum->value => md5_file($filepath),
-            ));
+            return $this->buildDeltaSuccessResult($exported, $filename, $filepath);
         } catch (Throwable $e) {
-            return ResultHelper::errorFromException($e, array(
-                ResponseKeyType::Rows->value     => 0,
-                ResponseKeyType::Filename->value => $filename,
-                ResponseKeyType::FileSize->value => 0,
-                ResponseKeyType::Checksum->value => '',
-            ));
+            return $this->buildDeltaErrorResult($e, $filename);
         }
+    }
+
+    private function initDeltaSqlite(string $filepath, string $table): PDO {
+        $sqlite = new PDO('sqlite:' . $filepath);
+        $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $sqlite->exec('PRAGMA journal_mode = WAL');
+        $sqlite->exec('PRAGMA synchronous = OFF');
+
+        $createSql = $this->getCreateTableSql($table);
+        $sqlite->exec($createSql);
+
+        return $sqlite;
+    }
+
+    private function batchExportDeltaLoop(
+        PDO $sqlite,
+        string $table,
+        string $pkColumn,
+        int $lastMaxId,
+        int $newCount,
+    ): int {
+        $offset = 0;
+        $exported = 0;
+        $batchSize = 250;
+
+        while ($offset < $newCount) {
+            $rows = $this->fetchDeltaBatch($table, $pkColumn, $lastMaxId, $batchSize, $offset);
+
+            foreach ($rows as $row) {
+                $this->insertDeltaRow($sqlite, $table, $row);
+                $exported++;
+            }
+
+            $offset += $batchSize;
+        }
+
+        return $exported;
+    }
+
+    private function fetchDeltaBatch(string $table, string $pkColumn, int $lastMaxId, int $batchSize, int $offset): array {
+        return $this->wpdb->get_results(
+            $this->wpdb->prepare(
+                "SELECT * FROM `{$table}` WHERE `{$pkColumn}` > %d ORDER BY `{$pkColumn}` ASC LIMIT %d OFFSET %d",
+                $lastMaxId,
+                $batchSize,
+                $offset,
+            ),
+            ARRAY_A
+        );
+    }
+
+    private function insertDeltaRow(PDO $sqlite, string $table, array $row): void {
+        $columns = array_keys($row);
+        $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+        $columnList = implode(', ', array_map(function($c) { return "`{$c}`"; }, $columns));
+        $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
+        $stmt->execute(array_values($row));
+    }
+
+    private function buildDeltaSuccessResult(int $exported, string $filename, string $filepath): array {
+        return ResultHelper::ok(array(
+            ResponseKeyType::Rows->value     => $exported,
+            ResponseKeyType::Filename->value => $filename,
+            ResponseKeyType::FileSize->value => filesize($filepath),
+            ResponseKeyType::Checksum->value => md5_file($filepath),
+        ));
+    }
+
+    private function buildDeltaErrorResult(Throwable $e, string $filename): array {
+        return ResultHelper::errorFromException($e, array(
+            ResponseKeyType::Rows->value     => 0,
+            ResponseKeyType::Filename->value => $filename,
+            ResponseKeyType::FileSize->value => 0,
+            ResponseKeyType::Checksum->value => '',
+        ));
     }
 
     private function getLastMaxId(
@@ -183,20 +239,28 @@ trait IncrementalDeltaTrait {
             return (int) $info['rowCount'];
         }
 
-        try {
-            $tablePdo = new PDO('sqlite:' . $sqliteFile);
-            $tablePdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $maxId = $tablePdo->query("SELECT MAX(`{$pk}`) FROM `{$tableName}`")->fetchColumn();
-            $tablePdo = null;
+        return $this->readMaxIdOrFallback($sqliteFile, $tableName, $pk, $info);
+    }
 
-            return ($maxId !== false && $maxId !== null) ? (int) $maxId : 0;
+    private function readMaxIdOrFallback(string $sqliteFile, string $tableName, string $pk, array $info): int {
+        try {
+            $maxId = $this->readMaxIdFromSqliteFile($sqliteFile, $tableName, $pk);
+
+            return ($maxId !== null) ? $maxId : 0;
         } catch (Throwable $e) {
-            $this->logWarn($e, 'Could not read master SQLite for max ID', array(
-                'table' => $tableName,
-            ));
+            $this->logWarn($e, 'Could not read master SQLite for max ID', array('table' => $tableName));
 
             return (int) $info['rowCount'];
         }
+    }
+
+    private function readMaxIdFromSqliteFile(string $sqliteFile, string $tableName, string $pk): ?int {
+        $tablePdo = new PDO('sqlite:' . $sqliteFile);
+        $tablePdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $maxId = $tablePdo->query("SELECT MAX(`{$pk}`) FROM `{$tableName}`")->fetchColumn();
+        $tablePdo = null;
+
+        return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
     }
 
     private function getMaxIdFromPreviousIncremental(
@@ -206,12 +270,7 @@ trait IncrementalDeltaTrait {
         int $sequence,
         array $info,
     ): int {
-        $table = $this->resolveRootTable($rootPdo, 'IncrementalBackups', 'incremental_backups');
-        $seqCol = $this->resolveRootCol($rootPdo, $table, 'SequenceNum', 'sequence_num');
-        $folderCol = $this->resolveRootCol($rootPdo, $table, 'FolderName', 'folder_name');
-
-        $prevSeq = $sequence - 1;
-        $prevFolder = $rootPdo->query("SELECT {$folderCol} FROM {$table} WHERE {$seqCol} = {$prevSeq}")->fetchColumn();
+        $prevFolder = $this->getPreviousIncrementalFolder($rootPdo, $sequence);
 
         if ($prevFolder) {
             $rootDir = $this->getRootDirFromPdo($rootPdo);
@@ -226,6 +285,17 @@ trait IncrementalDeltaTrait {
         return $this->getMaxIdFromMasterSqlite($rootPdo, $tableName, $pk, $info);
     }
 
+    private function getPreviousIncrementalFolder(PDO $rootPdo, int $sequence): ?string {
+        $table = $this->resolveRootTable($rootPdo, 'IncrementalBackups', 'incremental_backups');
+        $seqCol = $this->resolveRootCol($rootPdo, $table, 'SequenceNum', 'sequence_num');
+        $folderCol = $this->resolveRootCol($rootPdo, $table, 'FolderName', 'folder_name');
+
+        $prevSeq = $sequence - 1;
+        $result = $rootPdo->query("SELECT {$folderCol} FROM {$table} WHERE {$seqCol} = {$prevSeq}")->fetchColumn();
+
+        return ($result !== false) ? $result : null;
+    }
+
     private function readMaxIdFromSqlite(
         string $sqlitePath,
         string $tableName,
@@ -236,14 +306,9 @@ trait IncrementalDeltaTrait {
         }
 
         try {
-            $pdo = new PDO('sqlite:' . $sqlitePath);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $maxId = $pdo->query("SELECT MAX(`{$pk}`) FROM `{$tableName}`")->fetchColumn();
-            $pdo = null;
-
-            return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
+            return $this->readMaxIdFromSqliteFile($sqlitePath, $tableName, $pk);
         } catch (Throwable $e) {
-            InitHelpers::errorLog($e, 'IncrementalDeltaTrait::getMaxIdFromMasterSqlite() failed:');
+            InitHelpers::errorLog($e, 'IncrementalDeltaTrait::readMaxIdFromSqlite() failed:');
 
             return null;
         }
@@ -272,6 +337,7 @@ trait IncrementalDeltaTrait {
 
     private function getRootDirFromPdo(PDO $rootPdo): string {
         $result = $rootPdo->query("PRAGMA database_list")->fetch(PDO::FETCH_ASSOC);
+
         if ($result && isset($result['file'])) {
             return dirname($result['file']);
         }

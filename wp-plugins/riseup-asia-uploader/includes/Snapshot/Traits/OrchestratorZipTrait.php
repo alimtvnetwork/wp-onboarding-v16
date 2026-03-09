@@ -28,13 +28,10 @@ trait OrchestratorZipTrait {
             $zipFilename = sanitize_title($title) . '_' . DateHelper::nowFilenameDatetime() . '.zip';
             $zipPath = dirname($snapshotDir) . '/' . $zipFilename;
 
-            $zip = new ZipArchive();
+            $zip = $this->openZipForCreation($zipPath);
 
-            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-                return array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Failed to create ZIP',
-                );
+            if ($zip === null) {
+                return $this->buildZipOpenError();
             }
 
             $fileCount = $this->addDirectoryToZip($zip, $snapshotDir);
@@ -44,11 +41,32 @@ trait OrchestratorZipTrait {
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'OrchestratorZipTrait::createZipExport() failed:');
 
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            );
+            return $this->buildZipExceptionError($e);
         }
+    }
+
+    private function openZipForCreation(string $zipPath): ?ZipArchive {
+        $zip = new ZipArchive();
+
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return null;
+        }
+
+        return $zip;
+    }
+
+    private function buildZipOpenError(): array {
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => 'Failed to create ZIP',
+        );
+    }
+
+    private function buildZipExceptionError(Throwable $e): array {
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => $e->getMessage(),
+        );
     }
 
     private function addDirectoryToZip(ZipArchive $zip, string $dir): int {
@@ -79,22 +97,35 @@ trait OrchestratorZipTrait {
         int $files,
     ): array {
         $size = filesize($path);
+        $isEmptyZip = ($size === 0);
 
-        if ($size === 0) {
+        if ($isEmptyZip) {
             @unlink($path);
 
-            return array(
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => 'ZIP export is empty',
-            );
+            return $this->buildEmptyZipError();
         }
 
+        $this->logZipCreated($filename, $files, $size);
+
+        return $this->buildValidatedZipResult($path, $filename, $size, $files);
+    }
+
+    private function buildEmptyZipError(): array {
+        return array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => 'ZIP export is empty',
+        );
+    }
+
+    private function logZipCreated(string $filename, int $files, int $size): void {
         $this->log(LogLevelType::Info->value, 'ZIP export created', array(
             ResponseKeyType::Filename->value => $filename,
             ResponseKeyType::Files->value    => $files,
             ResponseKeyType::Size->value     => $this->formatBytes($size),
         ));
+    }
 
+    private function buildValidatedZipResult(string $path, string $filename, int $size, int $files): array {
         return array(
             ResponseKeyType::Success->value  => true,
             ResponseKeyType::Path->value     => $path,

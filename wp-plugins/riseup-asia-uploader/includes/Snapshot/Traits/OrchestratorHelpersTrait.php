@@ -53,12 +53,11 @@ trait OrchestratorHelpersTrait {
     }
 
     private function getDirectorySize(string $dir): int {
-        $size = 0;
-
         if (PathHelper::isDirMissing($dir)) {
             return 0;
         }
 
+        $size = 0;
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS));
 
         foreach ($iterator as $file) {
@@ -91,6 +90,17 @@ trait OrchestratorHelpersTrait {
         string $message,
         array $context = array(),
     ): void {
+        $full = $this->formatOrchestratorLogMessage($message, $context);
+        $isLoggerMissing = ($this->logger === null);
+
+        if ($isLoggerMissing) {
+            return;
+        }
+
+        $this->dispatchOrchestratorLog($level, $full);
+    }
+
+    private function formatOrchestratorLogMessage(string $message, array $context): string {
         $full = '[SNAPSHOT] [ORCHESTRATOR] ' . $message;
         $hasContext = !empty($context);
 
@@ -98,16 +108,14 @@ trait OrchestratorHelpersTrait {
             $full .= ' ' . json_encode($context);
         }
 
-        $isLoggerMissing = ($this->logger === null);
+        return $full;
+    }
 
-        if ($isLoggerMissing) {
-            return;
-        }
-
+    private function dispatchOrchestratorLog(string $level, string $message): void {
         switch ($level) {
-            case LogLevelType::Warn->value:  $this->logger->warn($full); break;
-            case LogLevelType::Error->value: $this->logger->error($full); break;
-            default:      $this->logger->info($full);
+            case LogLevelType::Warn->value:  $this->logger->warn($message); break;
+            case LogLevelType::Error->value: $this->logger->error($message); break;
+            default:                         $this->logger->info($message);
         }
     }
 }

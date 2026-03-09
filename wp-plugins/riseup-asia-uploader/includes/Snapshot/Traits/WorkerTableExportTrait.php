@@ -26,31 +26,39 @@ trait WorkerTableExportTrait {
         $filepath = $snapshotDir . '/' . $filename;
 
         try {
-            $sqlite = $this->createSqliteAndSchema($filepath, $table);
-            $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
-
-            if ($count === 0) {
-                $sqlite = null;
-
-                return $this->buildExportResult($filename, $filepath, 0);
-            }
-
-            $exported = $this->batchExportRows($sqlite, $table, $count);
-            $sqlite = null;
-
-            return $this->buildExportResult($filename, $filepath, $exported);
+            return $this->executeTableExport($filepath, $table, $filename);
         } catch (Throwable $e) {
             $this->logError($e, 'Table export failed for ' . $table);
 
-            return array(
-                ResponseKeyType::Success->value  => false,
-                ResponseKeyType::Error->value    => $e->getMessage(),
-                ResponseKeyType::Rows->value     => 0,
-                ResponseKeyType::Filename->value => $filename,
-                ResponseKeyType::FileSize->value => 0,
-                ResponseKeyType::Checksum->value => '',
-            );
+            return $this->buildExportError($filename, $e);
         }
+    }
+
+    private function executeTableExport(string $filepath, string $table, string $filename): array {
+        $sqlite = $this->createSqliteAndSchema($filepath, $table);
+        $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
+
+        if ($count === 0) {
+            $sqlite = null;
+
+            return $this->buildExportResult($filename, $filepath, 0);
+        }
+
+        $exported = $this->batchExportRows($sqlite, $table, $count);
+        $sqlite = null;
+
+        return $this->buildExportResult($filename, $filepath, $exported);
+    }
+
+    private function buildExportError(string $filename, Throwable $e): array {
+        return array(
+            ResponseKeyType::Success->value  => false,
+            ResponseKeyType::Error->value    => $e->getMessage(),
+            ResponseKeyType::Rows->value     => 0,
+            ResponseKeyType::Filename->value => $filename,
+            ResponseKeyType::FileSize->value => 0,
+            ResponseKeyType::Checksum->value => '',
+        );
     }
 
     private function createSqliteAndSchema(string $filepath, string $table): PDO {
