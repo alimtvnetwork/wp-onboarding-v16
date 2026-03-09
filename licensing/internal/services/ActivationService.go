@@ -71,12 +71,9 @@ func (s *ActivationService) reactivate(
 	id int64,
 	input ActivateInput,
 ) apperror.Result[*models.Activation] {
-	query := `UPDATE activations SET deactivated_at = NULL, ip_address = ?, user_agent = ?, activated_at = ?
-		WHERE id = ?`
-
 	now := time.Now()
 
-	_, execErr := s.db.Exec(query, input.IpAddress, input.UserAgent, now, id)
+	_, execErr := s.db.Exec(activationReactivateSql, input.IpAddress, input.UserAgent, now, id)
 	if execErr != nil {
 
 		return apperror.FailWrap[*models.Activation](execErr, apperror.ErrDatabaseUpdate, "reactivate")
