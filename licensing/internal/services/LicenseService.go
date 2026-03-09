@@ -62,10 +62,7 @@ func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.Licen
 
 // GetById retrieves a license by its database ID.
 func (s *LicenseService) GetById(id int64) apperror.Result[*models.License] {
-	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
-		FROM licenses WHERE id = ?`
-
-	return s.scanOne(s.db.QueryRow(query, id))
+	return s.scanOne(s.db.QueryRow(licenseSelectByIdSql, id))
 }
 
 // GetByKey retrieves a license by its license key string.
