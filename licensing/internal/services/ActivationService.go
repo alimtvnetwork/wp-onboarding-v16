@@ -90,9 +90,7 @@ func (s *ActivationService) reactivate(
 
 // createNew inserts a brand-new activation record.
 func (s *ActivationService) createNew(input ActivateInput) apperror.Result[*models.Activation] {
-	query := `INSERT INTO activations (license_id, domain, ip_address, user_agent) VALUES (?, ?, ?, ?)`
-
-	_, execErr := s.db.Exec(query, input.LicenseId, input.Domain, input.IpAddress, input.UserAgent)
+	_, execErr := s.db.Exec(activationInsertSql, input.LicenseId, input.Domain, input.IpAddress, input.UserAgent)
 	if execErr != nil {
 
 		return apperror.FailWrap[*models.Activation](execErr, apperror.ErrDatabaseInsert, "insert activation")
