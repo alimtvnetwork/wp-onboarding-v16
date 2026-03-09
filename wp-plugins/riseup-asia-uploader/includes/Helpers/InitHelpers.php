@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use PDOException;
 use Throwable;
+
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\Traits\InitDirTrait;
 use RiseupAsia\Helpers\Traits\InitStartupTrait;

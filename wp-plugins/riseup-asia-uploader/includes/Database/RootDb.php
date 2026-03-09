@@ -15,9 +15,10 @@ if (!defined('ABSPATH')) {
 }
 
 use LogicException;
-use RiseupAsia\Database\Traits\RootDbSchemaTrait;
-use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
 use PDO;
+
+use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
+use RiseupAsia\Database\Traits\RootDbSchemaTrait;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\PathHelper;

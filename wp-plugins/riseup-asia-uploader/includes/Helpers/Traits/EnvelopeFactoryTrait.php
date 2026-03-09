@@ -13,8 +13,9 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
-use RiseupAsia\ErrorHandling\FrameBuilder;
+
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Logging\FileLogger;
 
 trait EnvelopeFactoryTrait {
