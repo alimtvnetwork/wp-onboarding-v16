@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TriggerSourceType;
