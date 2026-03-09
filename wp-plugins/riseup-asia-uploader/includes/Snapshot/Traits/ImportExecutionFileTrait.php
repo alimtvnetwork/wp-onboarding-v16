@@ -79,7 +79,11 @@ trait ImportExecutionFileTrait {
             throw new Exception("Failed to create directory: {$dest}");
         }
 
-        $entries = scandir($src);
+        $entries = @scandir($src);
+
+        if ($entries === false) {
+            throw new Exception("Failed to read directory: {$src}");
+        }
 
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') {

@@ -204,8 +204,12 @@ trait SyncPushTrait
     /** Remove empty parent directories up to the plugin root. */
     private function cleanEmptyParentDirs(string $filepath, string $stopDir): void {
         $parent = dirname($filepath);
+
         while ($parent !== $stopDir && is_dir($parent) && count(scandir($parent)) <= 2) {
-            rmdir($parent);
+            if (!@rmdir($parent)) {
+                break;
+            }
+
             $parent = dirname($parent);
         }
     }
