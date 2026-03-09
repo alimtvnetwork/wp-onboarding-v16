@@ -2,9 +2,9 @@
 # Keeps all version numbers in sync across the project.
 #
 # Usage:
-#   .\bump-version.ps1 -Target app -Bump patch          # 1.19.4 -> 1.19.5
-#   .\bump-version.ps1 -Target app -Bump minor          # 1.19.4 -> 1.20.0
-#   .\bump-version.ps1 -Target app -Bump major          # 1.19.4 -> 2.0.0
+#   .\bump-version.ps1 -Target app -Bump patch          # 2.0.0 -> 2.0.1
+#   .\bump-version.ps1 -Target app -Bump minor          # 2.0.0 -> 2.1.0
+#   .\bump-version.ps1 -Target app -Bump major          # 2.0.0 -> 3.0.0
 #   .\bump-version.ps1 -Target plugin -Bump patch       # bump plugin version
 #   .\bump-version.ps1 -Target script -Bump minor       # bump script version
 #   .\bump-version.ps1 -Target all -Bump patch          # bump everything
