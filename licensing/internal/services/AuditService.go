@@ -36,9 +36,7 @@ func (s *AuditService) Log(input LogInput) *apperror.AppError {
 		return apperror.Wrap(marshalErr, apperror.ErrMarshal, "marshal audit details")
 	}
 
-	query := `INSERT INTO audit_log (license_id, action, domain, ip_address, details) VALUES (?, ?, ?, ?, ?)`
-
-	_, execErr := s.db.Exec(query, input.LicenseId, input.Action.String(), input.Domain, input.IpAddress, detailsJson)
+	_, execErr := s.db.Exec(auditInsertSql, input.LicenseId, input.Action.String(), input.Domain, input.IpAddress, detailsJson)
 	if execErr != nil {
 
 		return apperror.Wrap(execErr, apperror.ErrDatabaseInsert, "insert audit log")

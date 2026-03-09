@@ -131,10 +131,7 @@ func (s *ActivationService) CountActive(licenseId int64) apperror.Result[int] {
 
 // ListByLicense returns all activations for a license.
 func (s *ActivationService) ListByLicense(licenseId int64) apperror.Result[[]models.Activation] {
-	query := `SELECT id, license_id, domain, ip_address, user_agent, activated_at, deactivated_at
-		FROM activations WHERE license_id = ? ORDER BY activated_at DESC`
-
-	rows, queryErr := s.db.Query(query, licenseId)
+	rows, queryErr := s.db.Query(activationListByLicenseSql, licenseId)
 	if queryErr != nil {
 
 		return apperror.FailWrap[[]models.Activation](queryErr, apperror.ErrDatabaseQuery, "query activations")
