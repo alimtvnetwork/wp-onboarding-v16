@@ -67,10 +67,7 @@ func (s *LicenseService) GetById(id int64) apperror.Result[*models.License] {
 
 // GetByKey retrieves a license by its license key string.
 func (s *LicenseService) GetByKey(key string) apperror.Result[*models.License] {
-	query := `SELECT id, key, email, product, type, status, max_activations, notes, created_at, expires_at, updated_at
-		FROM licenses WHERE key = ?`
-
-	return s.scanOne(s.db.QueryRow(query, key))
+	return s.scanOne(s.db.QueryRow(licenseSelectByKeySql, key))
 }
 
 // List returns all licenses, ordered by creation date descending.
