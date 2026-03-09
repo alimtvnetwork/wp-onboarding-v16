@@ -214,7 +214,10 @@ func (c *Client) executeUploadHttp(uc *uploadContext, body *bytes.Buffer, conten
 
 // parseUploadResponse reads and processes the upload HTTP response.
 func (c *Client) parseUploadResponse(resp *http.Response, uc *uploadContext) apperror.Result[*UploaderUploadResult] {
-	respBytes, _ := io.ReadAll(resp.Body)
+	respBytes, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return apperror.FailWrap[*UploaderUploadResult](readErr, apperror.ErrInternal, "read upload response body")
+	}
 	respBody := string(respBytes)
 
 	c.reportUploadResponseProgress(resp.StatusCode, respBody, uc.UploadUrl)

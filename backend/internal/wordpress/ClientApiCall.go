@@ -79,7 +79,12 @@ func (c *Client) doApiCallStream(input apiCallInput) apperror.Result[*http.Respo
 	}
 
 	if isErrorStatus(resp.StatusCode, input.OkStatuses) {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			resp.Body.Close()
+
+			return apperror.FailWrap[*http.Response](readErr, apperror.ErrInternal, "read error response body")
+		}
 		resp.Body.Close()
 
 		return apperror.Fail[*http.Response](c.buildCallError(input, resp.StatusCode, bodyBytes))
