@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use WP_Error;
 use WP_REST_Response;
+
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\WpErrorCodeType;

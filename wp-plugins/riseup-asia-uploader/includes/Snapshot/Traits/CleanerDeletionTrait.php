@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;

@@ -14,13 +14,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use Throwable;
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
-use PDO;
-use Throwable;
 
 trait IncrementalDeltaTrait {
     use RootDbCompatTrait;

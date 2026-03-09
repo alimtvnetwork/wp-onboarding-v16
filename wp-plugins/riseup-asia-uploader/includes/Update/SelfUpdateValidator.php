@@ -17,12 +17,13 @@ if (!defined('ABSPATH')) {
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Throwable;
+
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SelfUpdateStatusType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
-use Throwable;
 
 class SelfUpdateValidator
 {
