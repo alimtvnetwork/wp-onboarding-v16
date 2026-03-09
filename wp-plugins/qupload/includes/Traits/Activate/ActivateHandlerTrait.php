@@ -34,7 +34,7 @@ trait ActivateHandlerTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Activate failed');
 
-            return $this->errorResponse('Activate failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Activate failed: ' . $e->getMessage(), HttpStatusType::ServerError->value);
         }
     }
 
