@@ -118,11 +118,9 @@ func (s *ActivationService) Deactivate(licenseId int64, domain string) *apperror
 
 // CountActive returns the number of active (non-deactivated) activations for a license.
 func (s *ActivationService) CountActive(licenseId int64) apperror.Result[int] {
-	query := `SELECT COUNT(*) FROM activations WHERE license_id = ? AND deactivated_at IS NULL`
-
 	var count int
 
-	scanErr := s.db.QueryRow(query, licenseId).Scan(&count)
+	scanErr := s.db.QueryRow(activationCountActiveSql, licenseId).Scan(&count)
 	if scanErr != nil {
 
 		return apperror.FailWrap[int](scanErr, apperror.ErrDatabaseScan, "count active")
