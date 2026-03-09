@@ -93,32 +93,39 @@ trait UploadExtractTrait
         $isUpdate = is_dir($targetDir);
 
         $isPreviouslyActive = $this->deactivateIfUpdating($slug, $isUpdate, $targetDir);
-
         $extractResult = $this->extractToPluginsDir($tempFile, $slug, $targetDir);
 
         if ($extractResult instanceof WP_REST_Response) {
             return $extractResult;
         }
 
+        return $this->resolvePluginAfterExtract($slug, $isUpdate, $input['activate'], $isPreviouslyActive);
+    }
+
+    /** Find plugin file, activate if needed, and build the result. */
+    private function resolvePluginAfterExtract(string $slug, bool $isUpdate, bool $activate, bool $wasActive): array|WP_REST_Response {
         $pluginFile = $this->resetOpcacheAndFindPlugin($slug);
 
         if ($pluginFile instanceof WP_REST_Response) {
             return $pluginFile;
         }
 
-        $activation = $this->activateIfNeeded($pluginFile, $slug, $input['activate'], $isPreviouslyActive);
+        $activation = $this->activateIfNeeded($pluginFile, $slug, $activate, $wasActive);
 
         if ($activation instanceof WP_REST_Response) {
             return $activation;
         }
 
-        $version = $this->detectInstalledVersion($pluginFile);
+        return $this->buildExtractionResult($slug, $isUpdate, $activation, $pluginFile);
+    }
 
+    /** Build the final extraction result array. */
+    private function buildExtractionResult(string $slug, bool $isUpdate, array $activation, string $pluginFile): array {
         return [
             ResponseKeyType::Slug->value          => $slug,
             ResponseKeyType::IsUpdate->value      => $isUpdate,
             ResponseKeyType::Activated->value     => $activation['activated'],
-            ResponseKeyType::PluginVersion->value => $version,
+            ResponseKeyType::PluginVersion->value => $this->detectInstalledVersion($pluginFile),
         ];
     }
 
@@ -151,6 +158,17 @@ trait UploadExtractTrait
         $tempExtractDir = PathHelper::getTempDir() . '/extract_' . uniqid();
         wp_mkdir_p($tempExtractDir);
 
+        $extractError = $this->extractZipToTemp($tempFile, $tempExtractDir);
+
+        if ($extractError !== null) {
+            return $extractError;
+        }
+
+        return $this->moveExtractedToTarget($tempExtractDir, $targetDir);
+    }
+
+    /** Open and extract the ZIP, cleaning up temp file. */
+    private function extractZipToTemp(string $tempFile, string $tempExtractDir): ?WP_REST_Response {
         $zip = new ZipArchive();
 
         if ($zip->open($tempFile) !== true) {
@@ -162,16 +180,20 @@ trait UploadExtractTrait
 
         $isExtracted = $zip->extractTo($tempExtractDir);
         $zip->close();
+        @unlink($tempFile);
 
         if ($isExtracted === false) {
-            @unlink($tempFile);
             $this->deleteDirectory($tempExtractDir);
             $this->fileLogger->error('ZIP extraction failed');
 
             return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
         }
-        @unlink($tempFile);
 
+        return null;
+    }
+
+    /** Locate extracted folder and move it to the target plugin directory. */
+    private function moveExtractedToTarget(string $tempExtractDir, string $targetDir): true|WP_REST_Response {
         $extractedFolders = glob($tempExtractDir . '/*', GLOB_ONLYDIR);
 
         if (empty($extractedFolders)) {
@@ -241,6 +263,17 @@ trait UploadExtractTrait
             return ['activated' => false];
         }
 
+        $activationError = $this->tryActivatePlugin($pluginFile, $slug);
+
+        if ($activationError !== null) {
+            return $activationError;
+        }
+
+        return ['activated' => true];
+    }
+
+    /** Attempt plugin activation, returning error response on failure. */
+    private function tryActivatePlugin(string $pluginFile, string $slug): ?WP_REST_Response {
         try {
             $result = activate_plugin($pluginFile);
         } catch (Throwable $e) {
@@ -254,18 +287,23 @@ trait UploadExtractTrait
         }
 
         if (is_wp_error($result)) {
-            $this->fileLogger->error('Plugin activation returned WP_Error', [
-                'slug'     => $slug,
-                'errorMsg' => $result->get_error_message(),
-            ]);
-
-            return $this->errorResponse(
-                'Plugin uploaded but activation failed: ' . $result->get_error_message(),
-                HttpStatusType::ServerError->value,
-            );
+            return $this->buildActivationWpError($slug, $result);
         }
 
-        return ['activated' => true];
+        return null;
+    }
+
+    /** Build error response from WP_Error activation result. */
+    private function buildActivationWpError(string $slug, object $result): WP_REST_Response {
+        $this->fileLogger->error('Plugin activation returned WP_Error', [
+            'slug'     => $slug,
+            'errorMsg' => $result->get_error_message(),
+        ]);
+
+        return $this->errorResponse(
+            'Plugin uploaded but activation failed: ' . $result->get_error_message(),
+            HttpStatusType::ServerError->value,
+        );
     }
 
     /** Detect the installed plugin version from disk. */
