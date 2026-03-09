@@ -16,16 +16,17 @@ use PDO;
 use Throwable;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
-use RiseupAsia\Snapshot\SnapshotExporter;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait IncrementalRegistrationTrait {
     private function registerIncrementalSnapshot(

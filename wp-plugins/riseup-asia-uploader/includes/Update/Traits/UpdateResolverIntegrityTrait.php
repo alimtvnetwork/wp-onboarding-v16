@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+
 use RiseupAsia\Enums\WpErrorCodeType;
 
 trait UpdateResolverIntegrityTrait {

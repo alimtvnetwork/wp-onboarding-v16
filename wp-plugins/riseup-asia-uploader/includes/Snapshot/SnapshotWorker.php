@@ -16,16 +16,17 @@ if (!defined('ABSPATH')) {
 
 use LogicException;
 use wpdb;
-use RiseupAsia\Snapshot\Traits\WorkerExecuteTrait;
-use RiseupAsia\Snapshot\Traits\WorkerSetupTrait;
-use RiseupAsia\Snapshot\Traits\WorkerBatchTrait;
-use RiseupAsia\Snapshot\Traits\WorkerJobTrait;
-use RiseupAsia\Snapshot\Traits\WorkerTableExportTrait;
-use RiseupAsia\Snapshot\Traits\WorkerProgressTrait;
+
 use RiseupAsia\Database\Database;
 use RiseupAsia\Database\RootDb;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Snapshot\Traits\WorkerBatchTrait;
+use RiseupAsia\Snapshot\Traits\WorkerExecuteTrait;
+use RiseupAsia\Snapshot\Traits\WorkerJobTrait;
+use RiseupAsia\Snapshot\Traits\WorkerProgressTrait;
+use RiseupAsia\Snapshot\Traits\WorkerSetupTrait;
+use RiseupAsia\Snapshot\Traits\WorkerTableExportTrait;
 
 class SnapshotWorker {
     use WorkerExecuteTrait;

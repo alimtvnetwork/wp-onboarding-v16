@@ -12,13 +12,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use RiseupAsia\Enums\PathSubdirType;
-use RiseupAsia\Enums\PathLogFileType;
-use RiseupAsia\Enums\PluginConfigType;
 use Throwable;
-use RiseupAsia\Helpers\PathHelper;
-use RiseupAsia\Helpers\InitHelpers;
+
+use RiseupAsia\Enums\PathLogFileType;
+use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 class ActivationHandler
 {

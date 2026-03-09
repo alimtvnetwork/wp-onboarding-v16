@@ -12,11 +12,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
+
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
-use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\ResultHelper;
 

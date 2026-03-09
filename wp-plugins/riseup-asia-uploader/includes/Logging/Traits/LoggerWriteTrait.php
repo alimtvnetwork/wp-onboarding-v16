@@ -14,10 +14,11 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use Throwable;
+
+use RiseupAsia\Database\Database;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
-use RiseupAsia\Database\Database;
 
 trait LoggerWriteTrait {
     /** Write to log file. */

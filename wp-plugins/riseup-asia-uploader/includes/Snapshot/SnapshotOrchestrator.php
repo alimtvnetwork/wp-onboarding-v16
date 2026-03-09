@@ -16,14 +16,15 @@ if (!defined('ABSPATH')) {
 
 use LogicException;
 use wpdb;
-use RiseupAsia\Snapshot\Traits\OrchestratorBackupTrait;
-use RiseupAsia\Snapshot\Traits\OrchestratorHelpersTrait;
-use RiseupAsia\Snapshot\Traits\OrchestratorPluginTrait;
-use RiseupAsia\Snapshot\Traits\OrchestratorZipTrait;
-use RiseupAsia\Snapshot\Traits\OrchestratorRegistrationTrait;
+
 use RiseupAsia\Database\Database;
 use RiseupAsia\Database\RootDb;
 use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Snapshot\Traits\OrchestratorBackupTrait;
+use RiseupAsia\Snapshot\Traits\OrchestratorHelpersTrait;
+use RiseupAsia\Snapshot\Traits\OrchestratorPluginTrait;
+use RiseupAsia\Snapshot\Traits\OrchestratorRegistrationTrait;
+use RiseupAsia\Snapshot\Traits\OrchestratorZipTrait;
 
 class SnapshotOrchestrator {
     use OrchestratorBackupTrait;

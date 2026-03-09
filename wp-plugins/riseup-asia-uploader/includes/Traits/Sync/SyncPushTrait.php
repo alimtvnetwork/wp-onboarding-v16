@@ -13,10 +13,10 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_REST_Request;
-use RiseupAsia\Upload\UploadIgnore;
-use RiseupAsia\Database\FileCache;
 use WP_REST_Response;
 use Throwable;
+
+use RiseupAsia\Database\FileCache;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
@@ -25,9 +25,10 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SyncActionType;
 use RiseupAsia\Enums\SyncEntryStatusType;
 use RiseupAsia\Enums\TriggerSourceType;
-use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
+use RiseupAsia\Upload\UploadIgnore;
 
 trait SyncPushTrait
 {

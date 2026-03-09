@@ -14,14 +14,15 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use WP_REST_Response;
+
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SelfUpdateStatusType;
-use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Helpers\PathHelper;
 
 
 trait UploadInstallActivateTrait

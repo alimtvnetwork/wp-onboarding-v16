@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV12Trait {

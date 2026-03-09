@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
+
 use QUpload\Enums\EndpointType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\ResponseKeyType;

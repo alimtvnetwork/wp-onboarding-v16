@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use RiseupAsia\Enums\ResponseKeyType;
 
 class ResultHelper

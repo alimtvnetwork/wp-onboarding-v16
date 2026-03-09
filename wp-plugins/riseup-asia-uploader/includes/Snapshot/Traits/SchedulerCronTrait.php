@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+
 use RiseupAsia\Enums\LogCategoryType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;

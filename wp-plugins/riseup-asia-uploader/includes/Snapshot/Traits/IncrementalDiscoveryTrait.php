@@ -14,15 +14,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use Throwable;
+
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\PathDatabaseType;
+use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
-use PDO;
-use Throwable;
 
 trait IncrementalDiscoveryTrait {
     use RootDbCompatTrait;

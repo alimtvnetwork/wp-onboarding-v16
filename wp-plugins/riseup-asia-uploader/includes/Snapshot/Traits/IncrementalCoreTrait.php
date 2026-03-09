@@ -8,13 +8,14 @@
 
 namespace RiseupAsia\Snapshot\Traits;
 
+use PDO;
+use Throwable;
+
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
-use PDO;
-use Throwable;
 
 trait IncrementalCoreTrait {
     private function prepareIncrementalDir(string $rootPath): array {
