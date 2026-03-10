@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/models"
 	"riseup-licensing/pkg/apperror"
 )
 
@@ -43,6 +45,72 @@ func (s *AuditService) Log(input LogInput) *apperror.AppError {
 	}
 
 	return nil
+}
+
+// ListFilter holds optional filters for listing audit logs.
+type ListFilter struct {
+	Action    *auditaction.Variant
+	LicenseId *int64
+}
+
+// List returns audit log entries matching the given filters.
+func (s *AuditService) List(filter ListFilter) apperror.Result[[]models.AuditLog] {
+	query, args := buildAuditListQuery(filter)
+
+	rows, queryErr := s.db.Query(query, args...)
+	if queryErr != nil {
+
+		return apperror.FailWrap[[]models.AuditLog](queryErr, apperror.ErrDatabaseQuery, "query audit logs")
+	}
+	defer rows.Close()
+
+	return scanAuditRows(rows)
+}
+
+// buildAuditListQuery constructs the audit list query with optional filters.
+func buildAuditListQuery(filter ListFilter) (string, []any) {
+	var clauses []string
+	var args []any
+
+	if filter.LicenseId != nil {
+		clauses = append(clauses, "license_id = ?")
+		args = append(args, *filter.LicenseId)
+	}
+
+	if filter.Action != nil {
+		clauses = append(clauses, "action = ?")
+		args = append(args, filter.Action.String())
+	}
+
+	hasClauses := len(clauses) > 0
+
+	if hasClauses {
+
+		return auditSelectSql + " WHERE " + strings.Join(clauses, " AND ") + " ORDER BY created_at DESC", args
+	}
+
+	return auditListSql, args
+}
+
+// scanAuditRows scans multiple audit log rows.
+func scanAuditRows(rows *sql.Rows) apperror.Result[[]models.AuditLog] {
+	var logs []models.AuditLog
+
+	for rows.Next() {
+		var log models.AuditLog
+		var action string
+
+		scanErr := rows.Scan(&log.Id, &log.LicenseId, &action, &log.Domain, &log.IpAddress, &log.Details, &log.CreatedAt)
+		if scanErr != nil {
+
+			return apperror.FailWrap[[]models.AuditLog](scanErr, apperror.ErrDatabaseScan, "scan audit log")
+		}
+
+		log.Action = auditaction.Variant(action)
+		logs = append(logs, log)
+	}
+
+	return apperror.Ok(logs)
 }
 
 // marshalDetails converts audit details to JSON, or nil if no details.

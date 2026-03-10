@@ -142,6 +142,49 @@ func extractIdParam(r *http.Request) (int64, error) {
 	return strconv.ParseInt(vars["id"], 10, 64)
 }
 
+// ListAuditLogs handles GET /admin/audit.
+func (h *AdminHandlers) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
+	filter := services.ListFilter{}
+
+	actionParam := r.URL.Query().Get("action")
+	hasAction := actionParam != ""
+
+	if hasAction {
+		action := auditaction.Variant(actionParam)
+		filter.Action = &action
+	}
+
+	licenseParam := r.URL.Query().Get("license_id")
+	hasLicense := licenseParam != ""
+
+	if hasLicense {
+		id, parseErr := strconv.ParseInt(licenseParam, 10, 64)
+		if parseErr != nil {
+			errorResponse(w, http.StatusBadRequest, "invalid license_id")
+
+			return
+		}
+
+		filter.LicenseId = &id
+	}
+
+	listResult := h.Audit.List(filter)
+	if listResult.HasError() {
+		errorResponse(w, http.StatusInternalServerError, "failed to list audit logs")
+
+		return
+	}
+
+	logs := listResult.Value()
+	isNilList := logs == nil
+
+	if isNilList {
+		logs = []models.AuditLog{}
+	}
+
+	jsonResponse(w, http.StatusOK, logs)
+}
+
 // logAudit is a convenience wrapper for audit logging.
 func (h *AdminHandlers) logAudit(
 	r *http.Request,

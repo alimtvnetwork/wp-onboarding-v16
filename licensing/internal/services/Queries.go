@@ -45,3 +45,9 @@ const activationCountActiveSql = `
 const auditInsertSql = `
 	INSERT INTO audit_log (license_id, action, domain, ip_address, details)
 	VALUES (?, ?, ?, ?, ?)`
+
+const auditSelectSql = `
+	SELECT id, license_id, action, domain, ip_address, details, created_at
+	FROM audit_log`
+
+const auditListSql = auditSelectSql + ` ORDER BY created_at DESC`

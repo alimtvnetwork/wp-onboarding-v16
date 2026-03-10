@@ -99,6 +99,7 @@ func registerAdminRoutes(
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.GetLicense).Methods("GET")
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.UpdateLicense).Methods("PATCH")
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.DeleteLicense).Methods("DELETE")
+	admin.HandleFunc("/audit", h.ListAuditLogs).Methods("GET")
 }
 
 // resolveRateLimit returns the configured rate or a sensible default.
