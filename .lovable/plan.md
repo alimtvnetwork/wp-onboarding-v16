@@ -1,6 +1,6 @@
 # Master Roadmap & Backlog
 
-> Updated: 2026-03-03
+> Updated: 2026-03-10
 
 ---
 
@@ -29,9 +29,53 @@
 
 ---
 
-## Active / Queued Work
+## Remaining Work
 
-### ✅ Task: Eliminate Magic Strings in Template JS (completed)
+### 🔲 7A Remaining: Pre-Publish Backup Hook (Go)
+**Priority:** High  
+**Dependencies:** 7A PHP endpoints (complete)  
+**Status:** Not started
+
+Wire the remote backup endpoint into the Go publish pipeline so a backup is automatically created before each upload.
+
+**Implementation:**
+1. In `ServicePublishPipeline.go` → `runPublishPipeline`, call backup endpoint via `wpClient` before `runUploadAndActivate`
+2. Add `createRemoteBackup(ctx, pctx)` method that POSTs to `EndpointType::PluginBackup`
+3. On backup failure: log warning but don't block publish (configurable via `Options.IsRequireBackup`)
+4. On publish failure: log "rollback available" message with backup metadata
+5. Store backup ID in `PublishResult` for UI rollback button
+
+**Acceptance criteria:**
+1. Pre-publish backup is created on remote site before upload begins
+2. Backup failure logs a warning but doesn't block publish (default behavior)
+3. Failed publishes include rollback-available info in result
+4. Backup step appears in publish session logs
+
+---
+
+### 🔲 Type-Safety Migration: `interface{}` → `any`
+**Priority:** Medium  
+**Dependencies:** None  
+**Status:** Partially complete (see `.lovable/memory/architecture/backend/go-type-remediation-progress`)
+
+Migrate remaining ~2,680 `interface{}` instances across ~58 Go files to typed alternatives (`any` alias or named types).
+
+**Approach:**
+1. Work package-by-package, starting with highest-count packages
+2. Replace `interface{}` → `any` for simple cases
+3. Create named type aliases for `map[string]any` patterns
+4. Create typed structs for `map[string]interface{}` literals with known keys
+5. Skip test files (acceptable per GE-5 standard)
+
+**Packages by priority (estimated instance count):**
+- `handlers` (~999) — ✅ Complete
+- `services` (~942) — ✅ Complete  
+- `ws` (~30) — ✅ Complete
+- `envelope`, `models`, `config`, `database`, `dbops`, `logger`, `apperror` — ✅ Complete
+- `wordpress/client` — ✅ Complete
+- `wordpress` — ✅ Complete
+- `cmd/server/main` — ✅ Complete
+- Remaining packages — 🔲 Audit needed to confirm scope
 
 ---
 
@@ -206,12 +250,12 @@ Build a self-hosted licensing server in Go that issues, validates, and manages l
 
 ## Next Task Selection
 
-> For handoff to other AI models: pick the next task from the top of the "Active / Queued Work" section. The magic strings task is the highest priority and has no dependencies. Phase 7A (backups) should follow, then 7B (bulk publish) and 7C (true diff) can proceed in parallel. Phase 7D (licensing) is architecture-only for now.
+> For handoff to other AI models: pick the next unchecked (🔲) task from "Remaining Work" above.
 
 **Recommended order:**
-1. Eliminate magic strings in template JS (ready now)
-2. Phase 7A: Remote plugin backups
-3. Phase 7B: Bulk quick publish + Phase 7C: True diff (parallel)
-4. Go Phase 5: Code organization
-5. Go Phase 6: CI lint integration
-6. Phase 7D: Licensing (architecture doc first, implementation later)
+1. **Pre-publish backup hook** (7A remaining) — wire backup call into Go publish pipeline
+2. **Type-safety audit** — confirm remaining `interface{}` scope, migrate any outstanding packages
+3. **Future considerations** (not yet scoped):
+   - Admin dashboard for licensing server (React SPA or Go templates)
+   - Publish analytics / history reporting
+   - Plugin dependency graph visualization
