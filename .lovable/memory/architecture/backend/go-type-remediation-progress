@@ -1,5 +1,5 @@
 # Memory: architecture/backend/go-type-remediation-progress
-Updated: 2026-02-25
+Updated: 2026-03-10
 
 The Go backend remediation (Feature F) is now COMPLETE across all packages with ZERO remaining exceptions:
 
@@ -26,6 +26,18 @@ The final `map[string]any` exception (`ProgressDetails //nolint:ge2`) has been e
 - All ~30 call sites in `client.go`, `uploader.go`, `uploader_files.go`, `remote_files.go` updated to use `toProgress()` with typed structs
 - All `map[string]string{}` literals across `uploader_lifecycle.go`, `uploader_export.go`, `uploader_files.go`, `remote_files.go` replaced with typed request structs
 - Callback consumers in `site/service.go` and `site/service_bootstrap.go` simplified (no redundant `json.Marshal`)
+
+## CleanupRetentionDetail Fix (2026-03-10)
+- `CleanupRetentionResult.Details` changed from `[]any` to `[]CleanupRetentionDetail`
+- `CleanupRetentionDetail` struct created with typed fields: `SnapshotId int64`, `Filename string`, `Size int64`, `Reason string`
+- This was the last `[]any` / `map[string]any` violation in backend production code
+
+## Final Audit (2026-03-10)
+- **0** `interface{}` instances in production code
+- **0** `map[string]any` in production code (49 matches are comments only)
+- **0** `[]any` in production code
+- **1** acceptable `map[string]any` in `tools/consistency-checker` (schema-less config params, per GE-5)
+- **Full GE-1 compliance confirmed**
 
 ## Remaining (test files only — acceptable per GE-5)
 - `envelope_test.go` — 3 instances (type assertions in test assertions)
