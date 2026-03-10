@@ -65,6 +65,19 @@ type BackupCompleteDetails struct {
 	FileSize int64  `json:",omitempty"`
 }
 
+// RemoteBackupInitDetails carries remote backup initiation context.
+type RemoteBackupInitDetails struct {
+	RemoteSlug string `json:",omitempty"`
+	SiteUrl    string `json:",omitempty"`
+}
+
+// RemoteBackupCompleteDetails carries remote backup completion context.
+type RemoteBackupCompleteDetails struct {
+	RemoteSlug string `json:",omitempty"`
+	Filename   string `json:",omitempty"`
+	FileSize   int64  `json:",omitempty"`
+}
+
 // PackageDetails carries packaging stage context.
 type PackageDetails struct {
 	PluginPath      string                `json:",omitempty"`
