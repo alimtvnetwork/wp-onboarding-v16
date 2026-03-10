@@ -64,7 +64,7 @@ func (s *AuditService) List(filter ListFilter) apperror.Result[[]models.AuditLog
 	}
 	defer rows.Close()
 
-	return scanAuditRows(rows)
+	return scanAuditLogRows(rows)
 }
 
 // buildAuditListQuery constructs the audit list query with optional filters.
