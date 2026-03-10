@@ -64,7 +64,7 @@ func (s *AuditService) List(filter ListFilter) apperror.Result[[]models.AuditLog
 	}
 	defer rows.Close()
 
-	return scanAuditRows(rows)
+	return scanAuditLogRows(rows)
 }
 
 // buildAuditListQuery constructs the audit list query with optional filters.
@@ -90,27 +90,6 @@ func buildAuditListQuery(filter ListFilter) (string, []any) {
 	}
 
 	return auditListSql, args
-}
-
-// scanAuditRows scans multiple audit log rows.
-func scanAuditRows(rows *sql.Rows) apperror.Result[[]models.AuditLog] {
-	var logs []models.AuditLog
-
-	for rows.Next() {
-		var log models.AuditLog
-		var action string
-
-		scanErr := rows.Scan(&log.Id, &log.LicenseId, &action, &log.Domain, &log.IpAddress, &log.Details, &log.CreatedAt)
-		if scanErr != nil {
-
-			return apperror.FailWrap[[]models.AuditLog](scanErr, apperror.ErrDatabaseScan, "scan audit log")
-		}
-
-		log.Action = auditaction.Variant(action)
-		logs = append(logs, log)
-	}
-
-	return apperror.Ok(logs)
 }
 
 // marshalDetails converts audit details to JSON, or nil if no details.

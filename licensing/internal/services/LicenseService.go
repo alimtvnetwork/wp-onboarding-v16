@@ -62,12 +62,14 @@ func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.Licen
 
 // GetById retrieves a license by its database ID.
 func (s *LicenseService) GetById(id int64) apperror.Result[*models.License] {
-	return s.scanOne(s.db.QueryRow(licenseSelectByIdSql, id))
+
+	return scanLicense(s.db.QueryRow(licenseSelectByIdSql, id))
 }
 
 // GetByKey retrieves a license by its license key string.
 func (s *LicenseService) GetByKey(key string) apperror.Result[*models.License] {
-	return s.scanOne(s.db.QueryRow(licenseSelectByKeySql, key))
+
+	return scanLicense(s.db.QueryRow(licenseSelectByKeySql, key))
 }
 
 // List returns all licenses, ordered by creation date descending.
@@ -79,26 +81,5 @@ func (s *LicenseService) List() apperror.Result[[]models.License] {
 	}
 	defer rows.Close()
 
-	return s.scanAll(rows)
-}
-
-// scanOne scans a single license row.
-func (s *LicenseService) scanOne(row *sql.Row) apperror.Result[*models.License] {
-	var l models.License
-	var product, ltype, status string
-
-	scanErr := row.Scan(
-		&l.Id, &l.Key, &l.Email, &product, &ltype, &status,
-		&l.MaxActivations, &l.Notes, &l.CreatedAt, &l.ExpiresAt, &l.UpdatedAt,
-	)
-	if scanErr != nil {
-
-		return apperror.FailWrap[*models.License](scanErr, apperror.ErrDatabaseScan, "scan license")
-	}
-
-	l.Product = producttype.Parse(product)
-	l.Type = licensetype.Parse(ltype)
-	l.Status = licensestatus.Parse(status)
-
-	return apperror.Ok(&l)
+	return scanLicenseRows(rows)
 }

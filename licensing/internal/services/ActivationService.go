@@ -45,12 +45,13 @@ func (s *ActivationService) Activate(input ActivateInput) apperror.Result[*model
 }
 
 // findExisting checks if an activation already exists for a license+domain pair.
-func (s *ActivationService) findExisting(licenseId int64, domain string) (*models.Activation, *apperror.AppError) {
-	var a models.Activation
+func (s *ActivationService) findExisting(
+	licenseId int64,
+	domain string,
+) (*models.Activation, *apperror.AppError) {
+	row := s.db.QueryRow(activationFindExistingSql, licenseId, domain)
 
-	scanErr := s.db.QueryRow(activationFindExistingSql, licenseId, domain).Scan(
-		&a.Id, &a.LicenseId, &a.Domain, &a.IpAddress, &a.UserAgent, &a.ActivatedAt, &a.DeactivatedAt,
-	)
+	a, scanErr := scanActivation(row)
 
 	isNotFound := scanErr == sql.ErrNoRows
 	if isNotFound {
@@ -63,7 +64,7 @@ func (s *ActivationService) findExisting(licenseId int64, domain string) (*model
 		return nil, apperror.Wrap(scanErr, apperror.ErrDatabaseScan, "find activation")
 	}
 
-	return &a, nil
+	return a, nil
 }
 
 // reactivate updates an existing deactivated activation.
@@ -138,31 +139,5 @@ func (s *ActivationService) ListByLicense(licenseId int64) apperror.Result[[]mod
 	}
 	defer rows.Close()
 
-	return s.scanAll(rows)
-}
-
-// scanAll scans multiple activation rows.
-func (s *ActivationService) scanAll(rows interface{ Next() bool; Scan(...any) error; Err() error }) apperror.Result[[]models.Activation] {
-	var activations []models.Activation
-
-	for rows.Next() {
-		var a models.Activation
-
-		scanErr := rows.Scan(
-			&a.Id, &a.LicenseId, &a.Domain, &a.IpAddress, &a.UserAgent, &a.ActivatedAt, &a.DeactivatedAt,
-		)
-		if scanErr != nil {
-
-			return apperror.FailWrap[[]models.Activation](scanErr, apperror.ErrDatabaseScan, "scan activation")
-		}
-
-		activations = append(activations, a)
-	}
-
-	if rows.Err() != nil {
-
-		return apperror.FailWrap[[]models.Activation](rows.Err(), apperror.ErrDatabaseQuery, "iterate activation rows")
-	}
-
-	return apperror.Ok(activations)
+	return scanActivationRows(rows)
 }
