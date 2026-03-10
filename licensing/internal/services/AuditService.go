@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/models"
 	"riseup-licensing/pkg/apperror"
 )
 
