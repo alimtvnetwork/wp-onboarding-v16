@@ -104,6 +104,7 @@ var variantLabels = [...]string{
 	UploadPlugin:           "UploadPlugin",
 	GetSnapshotsFallback:   "GetSnapshotsFallback",
 	CheckUploaderNamespace: "CheckUploaderNamespace",
+	RemotePluginBackup:     "RemotePluginBackup",
 }
 
 var variantValues = [...]string{
