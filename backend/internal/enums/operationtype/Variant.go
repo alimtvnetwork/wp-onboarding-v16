@@ -55,6 +55,7 @@ const (
 	UploadPlugin
 	GetSnapshotsFallback
 	CheckUploaderNamespace
+	RemotePluginBackup
 )
 
 var variantLabels = [...]string{
