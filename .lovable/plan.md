@@ -250,12 +250,12 @@ Build a self-hosted licensing server in Go that issues, validates, and manages l
 
 ## Next Task Selection
 
-> For handoff to other AI models: pick the next task from the top of the "Active / Queued Work" section. The magic strings task is the highest priority and has no dependencies. Phase 7A (backups) should follow, then 7B (bulk publish) and 7C (true diff) can proceed in parallel. Phase 7D (licensing) is architecture-only for now.
+> For handoff to other AI models: pick the next unchecked (🔲) task from "Remaining Work" above.
 
 **Recommended order:**
-1. Eliminate magic strings in template JS (ready now)
-2. Phase 7A: Remote plugin backups
-3. Phase 7B: Bulk quick publish + Phase 7C: True diff (parallel)
-4. Go Phase 5: Code organization
-5. Go Phase 6: CI lint integration
-6. Phase 7D: Licensing (architecture doc first, implementation later)
+1. **Pre-publish backup hook** (7A remaining) — wire backup call into Go publish pipeline
+2. **Type-safety audit** — confirm remaining `interface{}` scope, migrate any outstanding packages
+3. **Future considerations** (not yet scoped):
+   - Admin dashboard for licensing server (React SPA or Go templates)
+   - Publish analytics / history reporting
+   - Plugin dependency graph visualization
