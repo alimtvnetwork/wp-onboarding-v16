@@ -110,7 +110,7 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPSyncPush:          {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/sync/push"},
 	EPStatus:            {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/status"},
 	EPExportSelf:        {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/export-self"},
-
+	EPPluginBackup:      {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-plugins/backup"},
 	// System operations
 	EPOpenapi:      {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/openapi"},
 	EPOpcacheReset: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/opcache-reset"},
