@@ -3,7 +3,6 @@ package publish
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"wp-plugin-publish/internal/database/dbops"
 	uploadsource "wp-plugin-publish/internal/enums/uploadsourcetype"
