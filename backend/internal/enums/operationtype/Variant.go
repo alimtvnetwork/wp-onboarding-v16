@@ -153,6 +153,7 @@ var variantValues = [...]string{
 	UploadPlugin:           "upload plugin",
 	GetSnapshotsFallback:   "get snapshots (array fallback)",
 	CheckUploaderNamespace: "check uploader namespace",
+	RemotePluginBackup:     "remote plugin backup",
 }
 
 func (v Variant) String() string  { return v.Value() }
