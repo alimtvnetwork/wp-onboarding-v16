@@ -37,7 +37,7 @@ const (
 	EPSyncPush          WPEndpointName = "SyncPush"
 	EPStatus            WPEndpointName = "Status"
 	EPExportSelf        WPEndpointName = "ExportSelf"
-
+	EPPluginBackup      WPEndpointName = "PluginBackup"
 	// System endpoints
 	EPOpenapi       WPEndpointName = "Openapi"
 	EPOpcacheReset  WPEndpointName = "OpcacheReset"
