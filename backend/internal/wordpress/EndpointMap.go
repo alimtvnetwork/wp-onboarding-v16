@@ -171,7 +171,7 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPSyncPush:          {Method: httpmethod.Post, Endpoint: ep.Sync},
 	EPStatus:            {Method: httpmethod.Get, Endpoint: ep.Status},
 	EPExportSelf:        {Method: httpmethod.Get, Endpoint: ep.ExportSelf},
-
+	EPPluginBackup:      {Method: httpmethod.Post, Endpoint: ep.PluginBackup},
 	// System operations
 	EPOpenapi:      {Method: httpmethod.Get, Endpoint: ep.Openapi},
 	EPOpcacheReset: {Method: httpmethod.Post, Endpoint: ep.OpcacheReset},
