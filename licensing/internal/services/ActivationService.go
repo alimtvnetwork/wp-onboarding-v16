@@ -139,31 +139,5 @@ func (s *ActivationService) ListByLicense(licenseId int64) apperror.Result[[]mod
 	}
 	defer rows.Close()
 
-	return s.scanAll(rows)
-}
-
-// scanAll scans multiple activation rows.
-func (s *ActivationService) scanAll(rows interface{ Next() bool; Scan(...any) error; Err() error }) apperror.Result[[]models.Activation] {
-	var activations []models.Activation
-
-	for rows.Next() {
-		var a models.Activation
-
-		scanErr := rows.Scan(
-			&a.Id, &a.LicenseId, &a.Domain, &a.IpAddress, &a.UserAgent, &a.ActivatedAt, &a.DeactivatedAt,
-		)
-		if scanErr != nil {
-
-			return apperror.FailWrap[[]models.Activation](scanErr, apperror.ErrDatabaseScan, "scan activation")
-		}
-
-		activations = append(activations, a)
-	}
-
-	if rows.Err() != nil {
-
-		return apperror.FailWrap[[]models.Activation](rows.Err(), apperror.ErrDatabaseQuery, "iterate activation rows")
-	}
-
-	return apperror.Ok(activations)
+	return scanActivationRows(rows)
 }
