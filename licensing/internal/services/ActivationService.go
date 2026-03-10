@@ -45,12 +45,13 @@ func (s *ActivationService) Activate(input ActivateInput) apperror.Result[*model
 }
 
 // findExisting checks if an activation already exists for a license+domain pair.
-func (s *ActivationService) findExisting(licenseId int64, domain string) (*models.Activation, *apperror.AppError) {
-	var a models.Activation
+func (s *ActivationService) findExisting(
+	licenseId int64,
+	domain string,
+) (*models.Activation, *apperror.AppError) {
+	row := s.db.QueryRow(activationFindExistingSql, licenseId, domain)
 
-	scanErr := s.db.QueryRow(activationFindExistingSql, licenseId, domain).Scan(
-		&a.Id, &a.LicenseId, &a.Domain, &a.IpAddress, &a.UserAgent, &a.ActivatedAt, &a.DeactivatedAt,
-	)
+	a, scanErr := scanActivation(row)
 
 	isNotFound := scanErr == sql.ErrNoRows
 	if isNotFound {
@@ -63,7 +64,7 @@ func (s *ActivationService) findExisting(licenseId int64, domain string) (*model
 		return nil, apperror.Wrap(scanErr, apperror.ErrDatabaseScan, "find activation")
 	}
 
-	return &a, nil
+	return a, nil
 }
 
 // reactivate updates an existing deactivated activation.
