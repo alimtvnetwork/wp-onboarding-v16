@@ -55,6 +55,7 @@ const (
 	UploadPlugin
 	GetSnapshotsFallback
 	CheckUploaderNamespace
+	RemotePluginBackup
 )
 
 var variantLabels = [...]string{
@@ -103,6 +104,7 @@ var variantLabels = [...]string{
 	UploadPlugin:           "UploadPlugin",
 	GetSnapshotsFallback:   "GetSnapshotsFallback",
 	CheckUploaderNamespace: "CheckUploaderNamespace",
+	RemotePluginBackup:     "RemotePluginBackup",
 }
 
 var variantValues = [...]string{
@@ -151,6 +153,7 @@ var variantValues = [...]string{
 	UploadPlugin:           "upload plugin",
 	GetSnapshotsFallback:   "get snapshots (array fallback)",
 	CheckUploaderNamespace: "check uploader namespace",
+	RemotePluginBackup:     "remote plugin backup",
 }
 
 func (v Variant) String() string  { return v.Value() }

@@ -31,10 +31,10 @@
 
 ## Remaining Work
 
-### 🔲 7A Remaining: Pre-Publish Backup Hook (Go)
+### ✅ 7A Remaining: Pre-Publish Backup Hook (Go)
 **Priority:** High  
 **Dependencies:** 7A PHP endpoints (complete)  
-**Status:** Not started
+**Status:** Complete
 
 Wire the remote backup endpoint into the Go publish pipeline so a backup is automatically created before each upload.
 

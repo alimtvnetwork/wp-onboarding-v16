@@ -28,48 +28,51 @@ const (
 	Completed
 	Failed
 	Running
+	RemoteBackup
 )
 
 var variantLabels = [...]string{
-	Invalid:    "Invalid",
-	Init:       "Init",
-	Backup:     "Backup",
-	Package:    "Package",
-	Packaging:  "Packaging",
-	Connect:    "Connect",
-	Upload:     "Upload",
-	Uploading:  "Uploading",
-	Activate:   "Activate",
-	Activating: "Activating",
-	Cleanup:    "Cleanup",
-	PreBackup:  "PreBackup",
-	Complete:   "Complete",
-	Rollback:   "Rollback",
-	Started:    "Started",
-	Completed:  "Completed",
-	Failed:     "Failed",
-	Running:    "Running",
+	Invalid:      "Invalid",
+	Init:         "Init",
+	Backup:       "Backup",
+	Package:      "Package",
+	Packaging:    "Packaging",
+	Connect:      "Connect",
+	Upload:       "Upload",
+	Uploading:    "Uploading",
+	Activate:     "Activate",
+	Activating:   "Activating",
+	Cleanup:      "Cleanup",
+	PreBackup:    "PreBackup",
+	Complete:     "Complete",
+	Rollback:     "Rollback",
+	Started:      "Started",
+	Completed:    "Completed",
+	Failed:       "Failed",
+	Running:      "Running",
+	RemoteBackup: "RemoteBackup",
 }
 
 var variantValues = [...]string{
-	Invalid:    "invalid",
-	Init:       "init",
-	Backup:     "backup",
-	Package:    "package",
-	Packaging:  "packaging",
-	Connect:    "connect",
-	Upload:     "upload",
-	Uploading:  "uploading",
-	Activate:   "activate",
-	Activating: "activating",
-	Cleanup:    "cleanup",
-	PreBackup:  "pre-backup",
-	Complete:   "complete",
-	Rollback:   "rollback",
-	Started:    "started",
-	Completed:  "completed",
-	Failed:     "failed",
-	Running:    "running",
+	Invalid:      "invalid",
+	Init:         "init",
+	Backup:       "backup",
+	Package:      "package",
+	Packaging:    "packaging",
+	Connect:      "connect",
+	Upload:       "upload",
+	Uploading:    "uploading",
+	Activate:     "activate",
+	Activating:   "activating",
+	Cleanup:      "cleanup",
+	PreBackup:    "pre-backup",
+	Complete:     "complete",
+	Rollback:     "rollback",
+	Started:      "started",
+	Completed:    "completed",
+	Failed:       "failed",
+	Running:      "running",
+	RemoteBackup: "remote-backup",
 }
 
 func (v Variant) String() string {
@@ -132,7 +135,8 @@ func (v Variant) IsRollback() bool   { return v == Rollback }
 func (v Variant) IsStarted() bool    { return v == Started }
 func (v Variant) IsCompleted() bool  { return v == Completed }
 func (v Variant) IsFailed() bool     { return v == Failed }
-func (v Variant) IsRunning() bool    { return v == Running }
+func (v Variant) IsRunning() bool       { return v == Running }
+func (v Variant) IsRemoteBackup() bool  { return v == RemoteBackup }
 
 func (v Variant) IsAnyOf(others ...Variant) bool {
 	for _, o := range others {
@@ -148,6 +152,7 @@ func All() []Variant {
 		Init, Backup, Package, Packaging, Connect,
 		Upload, Uploading, Activate, Activating, Cleanup,
 		PreBackup, Complete, Rollback, Started, Completed, Failed, Running,
+		RemoteBackup,
 	}
 }
 
