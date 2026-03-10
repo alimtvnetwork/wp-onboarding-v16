@@ -135,7 +135,8 @@ func (v Variant) IsRollback() bool   { return v == Rollback }
 func (v Variant) IsStarted() bool    { return v == Started }
 func (v Variant) IsCompleted() bool  { return v == Completed }
 func (v Variant) IsFailed() bool     { return v == Failed }
-func (v Variant) IsRunning() bool    { return v == Running }
+func (v Variant) IsRunning() bool       { return v == Running }
+func (v Variant) IsRemoteBackup() bool  { return v == RemoteBackup }
 
 func (v Variant) IsAnyOf(others ...Variant) bool {
 	for _, o := range others {
@@ -151,6 +152,7 @@ func All() []Variant {
 		Init, Backup, Package, Packaging, Connect,
 		Upload, Uploading, Activate, Activating, Cleanup,
 		PreBackup, Complete, Rollback, Started, Completed, Failed, Running,
+		RemoteBackup,
 	}
 }
 
