@@ -145,12 +145,20 @@ type SnapshotCleanupResult struct {
 	Errors    []string
 }
 
+// CleanupRetentionDetail holds a single retention deletion entry.
+type CleanupRetentionDetail struct {
+	SnapshotId int64  `json:"snapshotId,omitempty"`
+	Filename   string `json:"filename,omitempty"`
+	Size       int64  `json:"size,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+}
+
 // CleanupRetentionResult holds retention-phase cleanup details.
 type CleanupRetentionResult struct {
 	Deleted       int
 	SkippedMaster int
 	BytesFreed    int64
-	Details       []any
+	Details       []CleanupRetentionDetail
 }
 
 // CleanupOrphansResult holds orphan-phase cleanup details.
