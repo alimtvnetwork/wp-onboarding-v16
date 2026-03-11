@@ -447,6 +447,7 @@ trait UploadExtractTrait
 
     /** Attempt plugin activation, returning error response on failure. */
     private function tryActivatePlugin(string $pluginFile, string $slug): ?WP_REST_Response {
+        $this->traceStage('tryActivatePlugin:start', ['slug' => $slug, 'pluginFile' => $pluginFile]);
         $this->fileLogger->info('Attempting plugin activation', ['slug' => $slug, 'file' => $pluginFile]);
 
         // Register a shutdown handler to capture fatal errors during activation.
