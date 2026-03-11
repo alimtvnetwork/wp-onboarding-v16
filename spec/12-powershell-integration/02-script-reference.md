@@ -1,8 +1,8 @@
 # PowerShell Script Reference
 
-> **Spec Version:** 2.2.0  
-> **Script Version:** run.ps1 1.2.0, upload-plugin-v2.ps1 2.1.0  
-> **Updated:** 2026-02-10  
+> **Spec Version:** 2.3.0  
+> **Script Version:** run.ps1 2.1.0, upload-plugin-v2.ps1 2.1.0, upload-plugin-U-Q.ps1 1.1.0  
+> **Updated:** 2026-03-11  
 > **Status:** Active
 
 ---
@@ -20,7 +20,11 @@
 | `-r` | `-rebuild` | Switch | Full reset: clean build artifacts, sessions, logs, and error data first, then install, then build/run (frontend install happens after the clean) |
 | `-fw` | `-openfirewall` | Switch | Add Windows Firewall rules (requires Admin) |
 | `-u` | `-upload` | Switch | Upload default plugin to WordPress via upload-plugin-v2 |
-| `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`) |
+| `-q` | `-qupload` | Switch | Upload plugin to WordPress via QUpload API (upload-plugin-U-Q.ps1) |
+| `-z` | `-zip` | Switch | Create versioned ZIPs with best compression. With `-pp`: specific plugin. Without: all plugins in `wp-plugins/` |
+| `-t` | `-test` | Switch | Run Go backend tests and exit |
+| `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`, `-q`, or `-z`) |
+| `-d` | `-debug` | Switch | Enable debug logging for upload |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
 ---
