@@ -544,7 +544,7 @@ Config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
 
 ## No Raw Negations — Use Positive Guard Functions
 
-> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+> **Canonical source:** [No Raw Negations](../03-coding-guidelines/no-negatives.md)
 
 ```go
 // ❌ FORBIDDEN
