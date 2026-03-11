@@ -22,7 +22,7 @@ Documents the cross-language alignment between PHP (WordPress plugin) and Go (ba
 | Abbreviations | `Id`, `Url`, `Md5` | `Id`, `Url`, `Md5` | ✅ Aligned |
 | WP core tables | snake_case (exempt) | N/A | ✅ Exempt |
 
-**Reference:** [database-naming.md](../01-coding-guidelines/database-naming.md)
+**Reference:** [database-naming.md](../03-coding-guidelines/database-naming.md)
 
 ---
 
