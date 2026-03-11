@@ -299,7 +299,7 @@ if (response.status >= 400) {
 
 ---
 
-## 9. Generics Reference — When to Use What
+## 8. Generics Reference — When to Use What
 
 | Scenario | Pattern |
 |----------|---------|
