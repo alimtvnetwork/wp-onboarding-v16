@@ -867,17 +867,17 @@ if isBuildMissing {
 
 ## Cross-References
 
-- [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules
-- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters
-- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules
-- [DRY Principles](../01-coding-guidelines/dry-principles.md)
+- [No Raw Negations](../03-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
+- [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Braces, nesting & spacing rules
+- [Function Naming](../03-coding-guidelines/function-naming.md) — No boolean flag parameters
+- [Strict Typing](../03-coding-guidelines/strict-typing.md) — Type declarations & docblock rules
+- [DRY Principles](../03-coding-guidelines/dry-principles.md)
 - [Boolean Standards](02-boolean-standards.md) — Go-specific positive logic rules and exemptions
-- [apperror Package Spec](../05-error-manage/06-apperror-package/readme.md) — Full StackTrace, AppError, Result types specification
+- [apperror Package Spec](../07-error-manage/06-apperror-package/readme.md) — Full StackTrace, AppError, Result types specification
 - [Enum Specification](01-enum-specification/00-overview.md) — Byte-based enum pattern, required methods, folder structure
-- [Master Coding Guidelines](../01-coding-guidelines/00-master-coding-guidelines.md) — Consolidated cross-language reference
-- [Issues & Fixes Log](../01-coding-guidelines/01-issues-and-fixes-log.md) — Full historical fixes
+- [Master Coding Guidelines](../03-coding-guidelines/00-master-coding-guidelines.md) — Consolidated cross-language reference
+- [Issues & Fixes Log](../03-coding-guidelines/01-issues-and-fixes-log.md) — Full historical fixes
 
 ---
 
-*Golang standards specification v3.3.0 — 2026-02-23*
+*Golang standards specification v3.5.0 — 2026-03-11*
