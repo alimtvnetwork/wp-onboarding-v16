@@ -24,7 +24,7 @@
 
 | File | Line | Before | After |
 |---|---|---|---|
-| `spec/08-wp-plugin-publish/01-backend/16-split-db-architecture.md` | ~809 | `projectExists := !os.IsNotExist(statErr(projectDir))` | `_, err := os.Stat(projectDir)` + `isProjectExists := err == nil` |
+| `spec/10-wp-plugin-publish/01-backend/16-split-db-architecture.md` | ~809 | `projectExists := !os.IsNotExist(statErr(projectDir))` | `_, err := os.Stat(projectDir)` + `isProjectExists := err == nil` |
 
 **Additional cleanup:** Removed unused `statErr()` helper function.
 
