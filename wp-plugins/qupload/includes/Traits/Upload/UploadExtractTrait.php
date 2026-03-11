@@ -386,21 +386,82 @@ trait UploadExtractTrait
         return null;
     }
 
-    /** Locate extracted folder and move it to the target plugin directory. */
+    /** Locate extracted content and move it to the target plugin directory. */
     private function moveExtractedToTarget(string $tempExtractDir, string $targetDir): true|WP_REST_Response {
-        $extractedFolders = glob($tempExtractDir . '/*', GLOB_ONLYDIR);
+        $extractedEntries = glob($tempExtractDir . '/*');
 
-        if (empty($extractedFolders)) {
+        if ($extractedEntries === false || empty($extractedEntries)) {
             $this->deleteDirectory($tempExtractDir);
 
-            return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::ServerError->value);
+            return $this->errorResponse('No content found in extracted ZIP', HttpStatusType::ServerError->value);
         }
 
-        $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
+        $extractedFolders = array_values(array_filter($extractedEntries, 'is_dir'));
+        $isSingleFolder = count($extractedFolders) === 1 && count($extractedEntries) === 1;
+
+        if ($isSingleFolder) {
+            $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
+        } else {
+            $isMoved = $this->moveExtractedContentsToTarget($tempExtractDir, $targetDir);
+        }
+
         $this->deleteDirectory($tempExtractDir);
 
         if ($isMoved === false) {
             return $this->errorResponse('Failed to move plugin to target directory', HttpStatusType::ServerError->value);
+        }
+
+        return true;
+    }
+
+    /** Move extracted root contents into the target plugin directory. */
+    private function moveExtractedContentsToTarget(string $sourceDir, string $targetDir): bool {
+        $isTargetReady = PathHelper::ensureDirectory($targetDir);
+
+        if ($isTargetReady === false) {
+            $this->fileLogger->error('Failed to create target directory for extracted contents', ['dir' => $targetDir]);
+
+            return false;
+        }
+
+        $entries = scandir($sourceDir);
+
+        if ($entries === false) {
+            $this->fileLogger->error('Failed to read extracted source directory', ['dir' => $sourceDir]);
+
+            return false;
+        }
+
+        $items = array_diff($entries, ['.', '..']);
+
+        foreach ($items as $item) {
+            $srcPath = $sourceDir . '/' . $item;
+            $dstPath = $targetDir . '/' . $item;
+
+            if (is_dir($srcPath)) {
+                $isMoved = @rename($srcPath, $dstPath);
+
+                if ($isMoved === false) {
+                    $isMoved = $this->copyDirectory($srcPath, $dstPath);
+                    $this->deleteDirectory($srcPath);
+                }
+            } else {
+                $isMoved = @rename($srcPath, $dstPath);
+
+                if ($isMoved === false) {
+                    $isMoved = copy($srcPath, $dstPath);
+
+                    if ($isMoved !== false) {
+                        @unlink($srcPath);
+                    }
+                }
+            }
+
+            if ($isMoved === false) {
+                $this->fileLogger->error('Failed to move extracted item to target directory', ['source' => $srcPath, 'dest' => $dstPath]);
+
+                return false;
+            }
         }
 
         return true;
