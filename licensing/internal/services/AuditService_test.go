@@ -80,7 +80,7 @@ func TestLogAllActions(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewAuditService(db)
 
-	for _, action := range auditaction.All() {
+	for _, action := range auditactiontype.All() {
 		err := svc.Log(LogInput{
 			Action:    action,
 			Domain:    "all-actions.com",
