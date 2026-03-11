@@ -552,13 +552,22 @@ $this->db->insert(TableType::Transactions->value, array('PluginSlug' => $slug));
 
 ---
 
-## 11. Lint Scripts (Go)
+## 11. Lint Scripts
 
 | Script | Rule | Status |
 |--------|------|--------|
-| `scripts/lint-file-size.sh` | No `.go` file > 300 lines | ✅ Active |
+| `scripts/lint-file-size.sh` | No `.go` file > 300 lines (400 hard limit) | ✅ Active |
 | `scripts/lint-func-size.sh` | No function body > 15 lines | ✅ Active |
 | `scripts/lint-negative.sh` | No `IsNot*`, `HasNo*` function names | ✅ Active |
+| `scripts/lint-imports.sh` | Import grouping: stdlib → internal → third-party | ✅ Active |
+| `scripts/lint-ge.sh` | GE-2 zero loose types (`any`, `interface{}`, `map[string]any`) | ✅ Active |
+| `scripts/lint-json-tags.sh` | Redundant JSON tag detection | ✅ Active |
+| `scripts/lint-inline-if.sh` | No single-line if statements | ✅ Active |
+| `scripts/lint-typed-nil.sh` | Typed-nil detection (`error ← *AppError`) | ✅ Active |
+| `scripts/lint-php-file-size.sh` | No `.php` file exceeding size limit | ✅ Active |
+| `scripts/lint-php-func-size.sh` | No PHP function body exceeding size limit | ✅ Active |
+| `scripts/lint-php-import-groups.sh` | PHP import grouping validation | ✅ Active |
+| `scripts/pre-commit.sh` | Unified pre-commit hook running all checks | ✅ Active |
 
 ---
 

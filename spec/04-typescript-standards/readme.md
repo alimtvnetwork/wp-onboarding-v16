@@ -312,7 +312,7 @@ if (response.status >= 400) {
 
 ---
 
-## 8. No Raw Negations — Use Positive Guard Functions
+## 9. No Raw Negations — Use Positive Guard Functions
 
 > **Canonical source:** [No Raw Negations](../03-coding-guidelines/no-negatives.md)
 
