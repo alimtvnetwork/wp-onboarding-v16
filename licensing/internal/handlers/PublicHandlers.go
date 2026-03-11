@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 	"riseup-licensing/internal/services"
 )
 
