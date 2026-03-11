@@ -28,7 +28,7 @@ This file provides essential context for AI agents working on this codebase. For
 
 ### 1. Split Database System
 
-**Memory:** `.lovable/memories/architecture/split-database-system.md`
+**Memory:** `.lovable/memory/architecture/database/split-database-system.md`
 
 The application uses a **four-tier SQLite architecture** for data isolation:
 
