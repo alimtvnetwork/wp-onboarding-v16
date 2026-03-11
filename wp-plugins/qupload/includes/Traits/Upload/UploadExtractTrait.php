@@ -92,6 +92,7 @@ trait UploadExtractTrait
         }
 
         $finalSlug = !empty($slug) ? $slug : $detectedSlug;
+        $this->traceStage('validateAndWriteZip:slug-detected', ['slug' => $finalSlug]);
         $this->fileLogger->info('Plugin slug determined', ['slug' => $finalSlug]);
 
         return [ResponseKeyType::TempFile->value => $tempFile, ResponseKeyType::Slug->value => $finalSlug];
