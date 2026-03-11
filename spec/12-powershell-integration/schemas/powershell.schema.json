@@ -148,6 +148,56 @@
       "additionalProperties": {"type": "string"},
       "description": "Environment variables to set before running commands",
       "examples": [{"NODE_ENV": "production", "GO_ENV": "development"}]
+    },
+    "wpPlugins": {
+      "type": "object",
+      "description": "WordPress plugin management configuration",
+      "properties": {
+        "defaultUploader": {
+          "type": "string",
+          "description": "Key in plugins map used by -u (upload) flag when no -pp is provided",
+          "examples": ["riseup-asia-uploader"]
+        },
+        "defaultQUploader": {
+          "type": "string",
+          "description": "Key in plugins map used by -q (qupload) flag when no -pp is provided. Falls back to defaultUploader if not set.",
+          "examples": ["qupload"]
+        },
+        "pluginsDir": {
+          "type": "string",
+          "default": "wp-plugins",
+          "description": "Directory containing WordPress plugin folders"
+        },
+        "plugins": {
+          "type": "object",
+          "description": "Map of plugin keys to their configuration",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["name", "path", "mainFile"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Human-readable plugin name"
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path to the plugin folder"
+              },
+              "mainFile": {
+                "type": "string",
+                "description": "Main PHP file of the plugin"
+              },
+              "autoUpload": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether to auto-upload after build"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
