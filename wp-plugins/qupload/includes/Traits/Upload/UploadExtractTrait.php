@@ -275,6 +275,32 @@ trait UploadExtractTrait
 
     /** Attempt plugin activation, returning error response on failure. */
     private function tryActivatePlugin(string $pluginFile, string $slug): ?WP_REST_Response {
+        $this->fileLogger->info('Attempting plugin activation', ['slug' => $slug, 'file' => $pluginFile]);
+
+        // Register a shutdown handler to capture fatal errors during activation.
+        // activate_plugin() loads the target plugin's code, which may trigger
+        // a fatal error (parse error, missing class, etc.) that kills PHP
+        // before the try/catch below can execute.
+        $fatalLogged = false;
+        $logger = $this->fileLogger;
+        $shutdownHandler = register_shutdown_function(function () use ($slug, $pluginFile, $logger, &$fatalLogged) {
+            $error = error_get_last();
+            $isFatal = $error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true);
+
+            if ($isFatal && $fatalLogged === false) {
+                $fatalLogged = true;
+                $message = sprintf(
+                    'FATAL during activation of "%s" (%s): %s in %s on line %d',
+                    $slug,
+                    $pluginFile,
+                    $error['message'],
+                    $error['file'],
+                    $error['line'],
+                );
+                $logger->error($message);
+            }
+        });
+
         try {
             $result = activate_plugin($pluginFile);
         } catch (Throwable $e) {
@@ -287,9 +313,13 @@ trait UploadExtractTrait
             );
         }
 
+        $fatalLogged = true; // Prevent shutdown handler from firing on normal exit
+
         if (is_wp_error($result)) {
             return $this->buildActivationWpError($slug, $result);
         }
+
+        $this->fileLogger->info('Plugin activated successfully', ['slug' => $slug]);
 
         return null;
     }
