@@ -150,7 +150,7 @@ func (h *AdminHandlers) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
 	hasAction := actionParam != ""
 
 	if hasAction {
-		action := auditaction.Variant(actionParam)
+		action := auditactiontype.Variant(actionParam)
 		filter.Action = &action
 	}
 
