@@ -46,6 +46,8 @@ trait UploadExtractTrait
 
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip(string $zipContent, string $slug): array|WP_REST_Response {
+        $this->traceStage('validateAndWriteZip:start', ['slug' => $slug, 'bytes' => strlen($zipContent)]);
+
         // Ensure base uploads dir exists first
         $baseDir = PathHelper::getBaseDir();
         $isBaseDirReady = PathHelper::ensureDirectory($baseDir);
