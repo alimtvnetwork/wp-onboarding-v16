@@ -51,3 +51,5 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 13 | wpreset-class-name-case-mismatch | PHP/Naming Convention | SnapshotProviderWPReset class name didn't match filename on case-sensitive FS |
 | 14 | php-full-audit-structural-violations | PHP/Audit | ErrorResponse ABSPATH-before-namespace, DbResult duplicate guard, 4 missing PHPDoc headers |
 | 15 | r10-full-codebase-audit | Code Style / R10 | 19 missing blank lines before control structures across 8 trait files |
+| 16 | unused-php-enum-cases | PHP/Audit | Unused enum cases identified across codebase |
+| 17 | coverage-report-wrong-package-filtering | Tooling / Coverage | Coverage reported test packages instead of source packages |
