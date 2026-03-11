@@ -28,7 +28,7 @@ This file provides essential context for AI agents working on this codebase. For
 
 ### 1. Split Database System
 
-**Memory:** `.lovable/memories/architecture/split-database-system.md`
+**Memory:** System memory `architecture/database/split-database-system`
 
 The application uses a **four-tier SQLite architecture** for data isolation:
 
@@ -108,7 +108,7 @@ db.Raw("SELECT * FROM projects.db JOIN settings.db...")
 
 ### 2. Seedable Configuration Pattern
 
-**Memory:** `.lovable/memories/patterns/seedable-configuration.md`
+**Memory:** `.lovable/memory/features/seedable-configuration.md`
 
 Configuration values are managed through versioned JSON seed files with database persistence.
 
