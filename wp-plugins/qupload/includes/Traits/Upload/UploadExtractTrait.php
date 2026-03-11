@@ -342,6 +342,7 @@ trait UploadExtractTrait
             return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
         }
 
+        $this->traceStage('extractZipToTemp:success', ['extractDir' => $tempExtractDir]);
         return null;
     }
 
