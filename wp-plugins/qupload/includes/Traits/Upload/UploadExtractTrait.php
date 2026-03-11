@@ -28,13 +28,36 @@ trait UploadExtractTrait
 
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip(string $zipContent, string $slug): array|WP_REST_Response {
+        // Ensure base uploads dir exists first
+        $baseDir = PathHelper::getBaseDir();
+        $isBaseDirReady = PathHelper::ensureDirectory($baseDir);
+
+        if ($isBaseDirReady === false) {
+            $this->fileLogger->error('Failed to create base uploads directory', ['dir' => $baseDir]);
+
+            return $this->errorResponse('Upload failed: could not create base directory', HttpStatusType::ServerError->value);
+        }
+
+        // Ensure logs dir exists so all subsequent logging works
+        $logsDir = PathHelper::getLogsDir();
+        PathHelper::ensureDirectory($logsDir);
+
+        // Ensure temp dir exists
         $tempDir = PathHelper::getTempDir();
-        PathHelper::ensureDirectory($tempDir);
+        $isTempDirReady = PathHelper::ensureDirectory($tempDir);
+
+        if ($isTempDirReady === false) {
+            $this->fileLogger->error('Failed to create temp directory', ['dir' => $tempDir]);
+
+            return $this->errorResponse('Upload failed: could not create temp directory', HttpStatusType::ServerError->value);
+        }
+
+        $this->fileLogger->info('Directories verified', ['base' => $baseDir, 'temp' => $tempDir]);
 
         $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
         if (file_put_contents($tempFile, $zipContent) === false) {
-            $this->fileLogger->error('Failed to write temp file');
+            $this->fileLogger->error('Failed to write temp file', ['path' => $tempFile]);
 
             return $this->errorResponse('Upload failed: could not write temp file', HttpStatusType::ServerError->value);
         }
