@@ -407,7 +407,7 @@ $result = $this->compute($data);
 return $result;
 ```
 
-**Prevention:** Rule 4 in [code-style.md](../01-coding-guidelines/code-style.md). Exception: if `return`/`throw` is the only statement, no blank line needed.
+**Prevention:** Rule 4 in [code-style.md](./code-style.md). Exception: if `return`/`throw` is the only statement, no blank line needed.
 
 ---
 

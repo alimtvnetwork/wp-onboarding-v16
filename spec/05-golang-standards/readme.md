@@ -319,7 +319,7 @@ func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
 
 ## Database Naming Convention — PascalCase
 
-> **Canonical source:** [Database Naming Convention](../01-coding-guidelines/database-naming.md)
+> **Canonical source:** [Database Naming Convention](../03-coding-guidelines/database-naming.md)
 
 All custom SQLite table names, column names, and index names MUST use **PascalCase**. Go struct `db` tags must match column names. JSON tags are only needed for `omitempty` — see [JSON Tags](#json-tags--pascalcase-convention).
 
