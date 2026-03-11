@@ -21,7 +21,7 @@ Every `.go` file targets **300 lines**. Up to **400 lines is acceptable** but mu
 
 ## Function Size — Max 15 Lines
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 6
 
 Every function body must be **15 lines or fewer**. Extract logic into small, well-named helpers.
 
