@@ -45,4 +45,4 @@ All WebSocket messages include `SessionId` for frontend correlation:
 
 - `backend/internal/services/session/service.go` - Service implementation
 - `backend/internal/api/handlers/sessions.go` - HTTP handlers
-- `spec/wp-plugin-publish/01-backend/17-session-management.md` - Full specification
+- `spec/10-wp-plugin-publish/01-backend/17-session-management.md` - Full specification

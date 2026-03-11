@@ -15,7 +15,7 @@
 | WebSocket upgrade failures in middleware | Backend/WebSocket | [03-websocket-middleware.md](./03-websocket-middleware.md) |
 | Global error modal not capturing API failures | Frontend/UX | [04-global-error-reporting.md](./04-global-error-reporting.md) |
 | SQLite datetime scanning issues | Backend/Database | [06-sqlite-datetime-scanning.md](./06-sqlite-datetime-scanning.md) |
-| Health endpoint format mismatch | Frontend/Backend | [See spec/error-resolution/01-health-endpoint-mismatch.md](../../../spec/error-resolution/01-health-endpoint-mismatch.md) |
+| Health endpoint format mismatch | Frontend/Backend | [See spec/07-error-manage/03-error-resolution/01-health-endpoint-mismatch.md](../../../spec/07-error-manage/03-error-resolution/01-health-endpoint-mismatch.md) |
 | ZIP finalization race condition | Backend/Publish | [10-zip-finalization-race.md](./10-zip-finalization-race.md) |
 | Activation endpoint 404 mismatch | Backend/Publish | [11-activation-endpoint-mismatch.md](./11-activation-endpoint-mismatch.md) |
 | Deactivate plugin 404 | Backend/WordPress | [deactivate-plugin-404.md](./deactivate-plugin-404.md) |

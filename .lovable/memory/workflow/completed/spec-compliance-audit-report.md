@@ -54,10 +54,10 @@
 
 Per the [documentation-forbidden-examples-strategy](../../memory/workflow/documentation-forbidden-examples-strategy), the following files contain raw negations **strictly inside ❌ FORBIDDEN blocks** as anti-pattern documentation:
 
-- `spec/01-coding-guidelines/no-negatives.md` — reference tables and forbidden examples
-- `spec/04-php-standards/forbidden-patterns.md` — forbidden pattern catalog
-- `spec/04-php-standards/readme.md` — guard method replacement tables
-- `spec/07-wordpress-plugin-development/11-coding-guidelines.md` — forbidden vs required tables
+- `spec/03-coding-guidelines/no-negatives.md` — reference tables and forbidden examples
+- `spec/06-php-standards/forbidden-patterns.md` — forbidden pattern catalog
+- `spec/06-php-standards/readme.md` — guard method replacement tables
+- `spec/09-wordpress-plugin-development/11-coding-guidelines.md` — forbidden vs required tables
 
 ### 3.2 Idiomatic Patterns (Acceptable)
 

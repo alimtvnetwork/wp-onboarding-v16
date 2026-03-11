@@ -5,7 +5,7 @@ Custom database tables and columns must follow the PascalCase naming convention 
 
 ## Canonical Spec
 
-The single source of truth is `spec/01-coding-guidelines/database-naming.md`, which defines:
+The single source of truth is `spec/03-coding-guidelines/database-naming.md`, which defines:
 - PascalCase for all custom SQLite table and column names
 - `Idx` prefix for index names (e.g., `IdxTransactions_CreatedAt`)
 - Abbreviation casing: only first letter capitalized (`Id`, `Url`, `Md5`, not `ID`, `URL`, `MD5`)

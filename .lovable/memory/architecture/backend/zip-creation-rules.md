@@ -105,6 +105,6 @@
 
  ## References
 
- - Error resolution: `spec/error-resolution/02-zip-finalization-before-return.md`
+ - Error resolution: `spec/07-error-manage/03-error-resolution/02-zip-finalization-before-return.md`
  - Compression helper: `backend/pkg/ziputil/ziputil.go`
  - Working reference: `wp-plugins/scripts/upload-plugin.ps1`

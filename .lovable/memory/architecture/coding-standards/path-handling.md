@@ -89,6 +89,6 @@ Sensitive directories get:
 
 ## Related Files
 
-- Spec: `spec/wordpress-plugin-development/08-path-handling.md`
+- Spec: `spec/09-wordpress-plugin-development/08-path-handling.md`
 - PHP: `wp-plugins/riseup-asia-uploader/includes/class-path-utils.php`
 - Go: `backend/internal/pathutil/pathutil.go`

@@ -42,4 +42,4 @@ WordPress user must have `activate_plugins` and `delete_plugins` capabilities.
 - `src/components/sites/SiteCard.tsx` - Card with Plugins button
 - `backend/internal/wordpress/client.go` - WordPress client methods
 - `backend/internal/services/site/service.go` - Site service proxy methods
-- `spec/wp-plugin-publish/02-frontend/28-remote-plugins.md` - Full specification
+- `spec/10-wp-plugin-publish/02-frontend/28-remote-plugins.md` - Full specification

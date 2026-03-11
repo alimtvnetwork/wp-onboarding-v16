@@ -83,7 +83,7 @@ This repository contains **three projects**:
 
 | Type | Location |
 |------|----------|
-| Master Spec | `spec/wp-plugin-publish/00-overview.md` |
+| Master Spec | `spec/10-wp-plugin-publish/00-overview.md` |
 | DRY Plan | `.lovable/plan.md` |
 | Active Phases | `.lovable/plan/active.md` |
 | Completed Phases | `.lovable/plan/completed-phases-1-14.md`, `completed-phases-33-40.md`, `completed/` |

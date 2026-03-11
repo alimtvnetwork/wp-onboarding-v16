@@ -85,7 +85,7 @@ The `RemoteSnapshotsPanel` groups snapshots visually:
 
 ## Related Files
 
-- Spec: `spec/wordpress-plugin/database-snapshots.md`
+- Spec: `spec/08-wordpress-plugin/database-snapshots.md`
 - Orchestrator: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-orchestrator.php`
 - Worker: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-worker.php`
 - Incremental: `wp-plugins/riseup-asia-uploader/includes/class-incremental-backup.php`
