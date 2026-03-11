@@ -1,7 +1,7 @@
 # Memory: architecture/wordpress-plugin-development-spec
 Updated: 2026-02-04
 
-A comprehensive WordPress plugin development specification is maintained in `spec/wordpress-plugin-development/`. This 10-document guide covers:
+A comprehensive WordPress plugin development specification is maintained in `spec/09-wordpress-plugin-development/`. This 10-document guide covers:
 
 1. **Initialization Patterns** - Safe loading order, lazy initialization, avoiding WordPress function calls in constructors
 2. **Logging Standards** - Two-tier logging (file + database), UTC timestamps with milliseconds, file:line context

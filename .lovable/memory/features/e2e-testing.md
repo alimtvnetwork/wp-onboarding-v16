@@ -63,7 +63,7 @@ The project includes a comprehensive Go-based end-to-end (E2E) testing suite tha
 
 ## Spec Document
 
-Full specification at: `spec/wp-plugin-publish/04-testing/40-e2e-test-spec.md`
+Full specification at: `spec/10-wp-plugin-publish/04-testing/40-e2e-test-spec.md`
 
 ---
 

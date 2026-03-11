@@ -19,4 +19,4 @@ Every PHP file must explicitly import every cross-namespace symbol it references
 
 ## Fix Applied
 
-Added the missing `use` imports to both files. Bumped version to 1.59.0. Updated spec/04-php-standards/forbidden-patterns.md with section 5A covering this exact failure mode, dos/don'ts, and pre-release checklist items.
+Added the missing `use` imports to both files. Bumped version to 1.59.0. Updated spec/06-php-standards/forbidden-patterns.md with section 5A covering this exact failure mode, dos/don'ts, and pre-release checklist items.

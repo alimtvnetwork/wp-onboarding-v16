@@ -24,7 +24,7 @@
 
 | File | Line | Before | After |
 |---|---|---|---|
-| `spec/08-wp-plugin-publish/01-backend/16-split-db-architecture.md` | ~809 | `projectExists := !os.IsNotExist(statErr(projectDir))` | `_, err := os.Stat(projectDir)` + `isProjectExists := err == nil` |
+| `spec/10-wp-plugin-publish/01-backend/16-split-db-architecture.md` | ~809 | `projectExists := !os.IsNotExist(statErr(projectDir))` | `_, err := os.Stat(projectDir)` + `isProjectExists := err == nil` |
 
 **Additional cleanup:** Removed unused `statErr()` helper function.
 
@@ -32,7 +32,7 @@
 
 | File | Line | Before | After |
 |---|---|---|---|
-| `spec/04-php-standards/readme.md` | ~301 | `private $initialized = false` | `private bool $isInitialized = false` |
+| `spec/06-php-standards/readme.md` | ~301 | `private $initialized = false` | `private bool $isInitialized = false` |
 
 **Additional cleanup:** Added missing `bool` type hint per PHP 8.2+ standards.
 
@@ -40,9 +40,9 @@
 
 | File | Line | Before | After |
 |---|---|---|---|
-| `spec/07-wordpress-plugin-development/07-error-handling.md` | ~652 | `!is_writable($dir)` | `PathHelper::isDirReadonly($dir)` |
-| `spec/08-wp-plugin-publish/01-backend/06-file-watcher.md` | ~101 | `!file_exists($path)` | `PathHelper::isFileMissing($path)` |
-| `spec/07-wordpress-plugin-development/08-compatibility.md` | ~155 | `!is_dir($path)` | `PathHelper::isDirMissing($path)` |
+| `spec/09-wordpress-plugin-development/07-error-handling.md` | ~652 | `!is_writable($dir)` | `PathHelper::isDirReadonly($dir)` |
+| `spec/10-wp-plugin-publish/01-backend/06-file-watcher.md` | ~101 | `!file_exists($path)` | `PathHelper::isFileMissing($path)` |
+| `spec/09-wordpress-plugin-development/08-compatibility.md` | ~155 | `!is_dir($path)` | `PathHelper::isDirMissing($path)` |
 
 **Additional cleanup:** Added `use RiseupAsia\Helpers\PathHelper` import where missing.
 
@@ -54,10 +54,10 @@
 
 Per the [documentation-forbidden-examples-strategy](../../memory/workflow/documentation-forbidden-examples-strategy), the following files contain raw negations **strictly inside ❌ FORBIDDEN blocks** as anti-pattern documentation:
 
-- `spec/01-coding-guidelines/no-negatives.md` — reference tables and forbidden examples
-- `spec/04-php-standards/forbidden-patterns.md` — forbidden pattern catalog
-- `spec/04-php-standards/readme.md` — guard method replacement tables
-- `spec/07-wordpress-plugin-development/11-coding-guidelines.md` — forbidden vs required tables
+- `spec/03-coding-guidelines/no-negatives.md` — reference tables and forbidden examples
+- `spec/06-php-standards/forbidden-patterns.md` — forbidden pattern catalog
+- `spec/06-php-standards/readme.md` — guard method replacement tables
+- `spec/09-wordpress-plugin-development/11-coding-guidelines.md` — forbidden vs required tables
 
 ### 3.2 Idiomatic Patterns (Acceptable)
 

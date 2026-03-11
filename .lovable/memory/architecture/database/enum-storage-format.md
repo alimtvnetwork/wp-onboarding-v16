@@ -5,4 +5,4 @@ Enums stored in the database (SQLite tables and WordPress options) follow a Pasc
 
 ## Relationship to Database Naming
 
-Enum values stored in PascalCase columns (per the PascalCase database naming convention in `spec/01-coding-guidelines/database-naming.md`) maintain PascalCase for both the column name and the stored value. For example: column `Status` stores values like `'Pending'`, `'Active'`, `'Error'`.
+Enum values stored in PascalCase columns (per the PascalCase database naming convention in `spec/03-coding-guidelines/database-naming.md`) maintain PascalCase for both the column name and the stored value. For example: column `Status` stores values like `'Pending'`, `'Active'`, `'Error'`.

@@ -53,4 +53,4 @@ The store listens for events: `publish_progress`, `publish_complete`, `publish_e
 - `src/stores/publishStore.ts` - State store
 - `src/hooks/useQuickPublish.ts` - Quick publish hook
 - `src/components/plugins/GlobalPublishProgress.tsx` - Header component
-- `spec/wp-plugin-publish/02-frontend/27-quick-publish.md` - Full specification
+- `spec/10-wp-plugin-publish/02-frontend/27-quick-publish.md` - Full specification

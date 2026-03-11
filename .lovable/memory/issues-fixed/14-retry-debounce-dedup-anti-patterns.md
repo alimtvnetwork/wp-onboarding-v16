@@ -41,4 +41,4 @@ NEVER fire polling queries for speculative targets (e.g., siteId=0) without `met
 Always wrap polling and health-check calls in the circuit breaker (`withCircuitBreaker`) to prevent error storms against persistently failing endpoints.
 
 ## Related
-- Full retrospective with code examples: `spec/error-resolution/02-retry-debounce-dedup-fixes.md`
+- Full retrospective with code examples: `spec/07-error-manage/03-error-resolution/02-retry-debounce-dedup-fixes.md`

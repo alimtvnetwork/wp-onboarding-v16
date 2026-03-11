@@ -121,7 +121,7 @@ The repository contains **3 projects** with **28+ spec documents**, **40 complet
 | 1 | ~~Fix `CONTEXT-FOR-AI.md` stale `.lovable/memories/` paths~~ | `CONTEXT-FOR-AI.md` | ✅ Fixed 2026-02-24 |
 | 2 | ~~Clean up stale `rule-10-sweep.md` pending items~~ | `.lovable/plans/rule-10-sweep.md` | ✅ Fixed 2026-02-24 |
 | 3 | ~~Document 4 open questions with decision criteria~~ | `.lovable/plan/active.md` | ✅ Fixed 2026-02-24 |
-| 4 | ~~Add WordPress version compatibility matrix~~ | `spec/07-wordpress-plugin-development/08-compatibility.md` | ✅ Fixed 2026-02-24 |
+| 4 | ~~Add WordPress version compatibility matrix~~ | `spec/09-wordpress-plugin-development/08-compatibility.md` | ✅ Fixed 2026-02-24 |
 | 5 | ~~Add PHP memory/timeout requirements~~ | Same file | ✅ Fixed 2026-02-24 |
 | 6 | Create automated grep-based validation for define() alias migration | Scripts | 📋 Recommended before A1 execution |
 
