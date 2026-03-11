@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 )
 
 // AuditLog represents an audit trail entry.
