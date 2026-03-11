@@ -1,40 +1,98 @@
-# Quick Upload Plugin Uploader - PowerShell Script
-# Uploads a plugin ZIP to a WordPress site via the QUpload plugin API
-# Script name: upload-plugin-U-Q.ps1
+# =============================================================================
+# Quick Upload Plugin Uploader — PowerShell Script
+# Uploads a plugin ZIP to a WordPress site via the QUpload REST API.
+#
+# Script: upload-plugin-U-Q.ps1
+# Version: 1.1.0
+#
+# USAGE:
+#   .\upload-plugin-U-Q.ps1 -h                      # Show help
+#   .\upload-plugin-U-Q.ps1                          # Use qupload-config.json
+#   .\upload-plugin-U-Q.ps1 -pp 'C:\plugin' -s 'https://site.com' -u 'admin' -pw 'pass'
+#   .\upload-plugin-U-Q.ps1 -jc '{"pluginFolderPath":"...","wordPressSiteURL":"..."}'
+#   .\upload-plugin-U-Q.ps1 -z -pp 'C:\plugin'      # ZIP only (no upload)
+#
+# FLAGS:
+#   -h,  -help          Show help and exit
+#   -cp, -configpath    Path to qupload-config.json
+#   -pp, -pluginpath    Plugin folder path
+#   -s,  -siteurl       WordPress site URL
+#   -u,  -user          WordPress username
+#   -pw, -password      WordPress application password
+#   -sl, -slug          Plugin slug override
+#   -a,  -activate      Activate plugin after install
+#   -dz, -deletezip     Delete ZIP file after upload
+#   -q,  -quiet         Suppress output (JSON-only output)
+#   -jc, -jsonconfig    Inline JSON config string (overrides all other config)
+#   -z,  -ziponly       Create ZIP only, do not upload
+#
+# CONFIGURATION (qupload-config.json):
+#   {
+#     "pluginFolderPath": "path/to/plugin",
+#     "wordPressSiteURL": "https://yoursite.com",
+#     "username": "admin",
+#     "appPassword": "xxxx xxxx xxxx xxxx",
+#     "activateAfterInstall": true,
+#     "deleteZipAfterUpload": false
+#   }
+#
+# COMPRESSION:
+#   Uses System.IO.Compression with SmallestSize (level 9) for best compression.
+# =============================================================================
 
 param(
-    [Parameter(Mandatory=$false)]
+    # ── Help ─────────────────────────────────────────────────────────────────
+    [Alias('h')]
+    [switch]$Help,
+
+    # ── Config file path ─────────────────────────────────────────────────────
+    [Alias('cp')]
     [string]$ConfigPath = "",
 
-    [Parameter(Mandatory=$false)]
+    # ── Plugin folder path ───────────────────────────────────────────────────
+    [Alias('pp')]
     [string]$PluginPath = "",
 
-    [Parameter(Mandatory=$false)]
+    # ── WordPress site URL ───────────────────────────────────────────────────
+    [Alias('s')]
     [string]$SiteUrl = "",
 
-    [Parameter(Mandatory=$false)]
+    # ── WordPress username ───────────────────────────────────────────────────
+    [Alias('u')]
     [string]$User = "",
 
-    [Parameter(Mandatory=$false)]
+    # ── WordPress application password ───────────────────────────────────────
+    [Alias('pw')]
     [string]$Password = "",
 
-    [Parameter(Mandatory=$false)]
+    # ── Plugin slug override ─────────────────────────────────────────────────
+    [Alias('sl')]
     [string]$Slug = "",
 
-    [Parameter(Mandatory=$false)]
+    # ── Activate plugin after install ────────────────────────────────────────
+    [Alias('a')]
     [switch]$Activate = $false,
 
-    [Parameter(Mandatory=$false)]
+    # ── Delete ZIP after upload ──────────────────────────────────────────────
+    [Alias('dz')]
     [switch]$DeleteZip = $false,
 
-    [Parameter(Mandatory=$false)]
+    # ── Suppress output (JSON-only) ──────────────────────────────────────────
+    [Alias('q')]
     [switch]$Quiet = $false,
 
-    [Parameter(Mandatory=$false)]
-    [string]$JsonConfig = ""
+    # ── Inline JSON config (overrides file config) ───────────────────────────
+    [Alias('jc')]
+    [string]$JsonConfig = "",
+
+    # ── ZIP-only mode: create ZIP without uploading ──────────────────────────
+    [Alias('z')]
+    [switch]$ZipOnly = $false
 )
 
-# --- Self-lint: detect parse errors before execution ---
+# =============================================================================
+# SELF-LINT: Detect parse errors before execution
+# =============================================================================
 $_lintScriptFile = $MyInvocation.MyCommand.Path
 if ($_lintScriptFile -and (Test-Path $_lintScriptFile)) {
     $_lintErrors = $null
@@ -52,7 +110,61 @@ if ($_lintScriptFile -and (Test-Path $_lintScriptFile)) {
     }
 }
 
-# Helper function for output
+# =============================================================================
+# HELP MODE
+# =============================================================================
+if ($Help) {
+    Write-Host ""
+    Write-Host "Quick Upload - Plugin Uploader (QUpload API)" -ForegroundColor Cyan
+    Write-Host "=============================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "USAGE:" -ForegroundColor Yellow
+    Write-Host "  .\upload-plugin-U-Q.ps1 [flags]"
+    Write-Host ""
+    Write-Host "FLAGS:" -ForegroundColor Yellow
+    Write-Host "  -h,  -help          Show this help and exit"
+    Write-Host "  -cp, -configpath    Path to qupload-config.json"
+    Write-Host "  -pp, -pluginpath    Plugin folder path"
+    Write-Host "  -s,  -siteurl       WordPress site URL"
+    Write-Host "  -u,  -user          WordPress username"
+    Write-Host "  -pw, -password      WordPress application password"
+    Write-Host "  -sl, -slug          Plugin slug override (default: folder name)"
+    Write-Host "  -a,  -activate      Activate plugin after install"
+    Write-Host "  -dz, -deletezip     Delete ZIP after successful upload"
+    Write-Host "  -q,  -quiet         JSON-only output (for scripting)"
+    Write-Host "  -jc, -jsonconfig    Inline JSON config string"
+    Write-Host "  -z,  -ziponly       Create ZIP only, skip upload"
+    Write-Host ""
+    Write-Host "EXAMPLES:" -ForegroundColor Yellow
+    Write-Host "  .\upload-plugin-U-Q.ps1                          # Use qupload-config.json"
+    Write-Host "  .\upload-plugin-U-Q.ps1 -pp 'wp-plugins/qupload' -s 'https://site.com' -u admin -pw 'pass' -a"
+    Write-Host "  .\upload-plugin-U-Q.ps1 -jc '{...}'             # Inline JSON config"
+    Write-Host "  .\upload-plugin-U-Q.ps1 -z -pp 'wp-plugins/qupload'  # ZIP only, no upload"
+    Write-Host "  .\upload-plugin-U-Q.ps1 -z                       # ZIP default plugin only"
+    Write-Host ""
+    Write-Host "ZIP BEHAVIOR:" -ForegroundColor Yellow
+    Write-Host "  ZIPs are created with maximum compression (SmallestSize)."
+    Write-Host "  The ZIP filename includes the version from the PHP header:"
+    Write-Host "    qupload-v1.0.0.zip, riseup-asia-uploader-v1.36.0.zip"
+    Write-Host ""
+    Write-Host "CONFIG FILE (qupload-config.json):" -ForegroundColor Yellow
+    Write-Host "  {" -ForegroundColor Gray
+    Write-Host "    ""pluginFolderPath"": ""path/to/plugin""," -ForegroundColor Gray
+    Write-Host "    ""wordPressSiteURL"": ""https://yoursite.com""," -ForegroundColor Gray
+    Write-Host "    ""username"": ""admin""," -ForegroundColor Gray
+    Write-Host "    ""appPassword"": ""xxxx xxxx xxxx xxxx""," -ForegroundColor Gray
+    Write-Host "    ""activateAfterInstall"": true," -ForegroundColor Gray
+    Write-Host "    ""deleteZipAfterUpload"": false" -ForegroundColor Gray
+    Write-Host "  }" -ForegroundColor Gray
+    Write-Host ""
+    exit 0
+}
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+# Write-Status: Conditional output helper (suppressed in -Quiet mode)
 function Write-Status {
     param([string]$Message, [string]$Color = "White", [switch]$NoNewline)
     if (-not $Quiet) {
@@ -64,7 +176,59 @@ function Write-Status {
     }
 }
 
-# Initialize variables
+# Get-PluginVersionFromHeader: Extracts version from WordPress plugin PHP header
+function Get-PluginVersionFromHeader($PluginDir) {
+    $mainFiles = Get-ChildItem $PluginDir -Filter "*.php" | Where-Object {
+        (Get-Content $_.FullName -Head 5) -match "Plugin Name:"
+    } | Select-Object -First 1
+
+    if ($mainFiles) {
+        $content = Get-Content $mainFiles.FullName -Raw
+        $match = [regex]::Match($content, "Version:\s*(\d+\.\d+\.\d+)")
+        if ($match.Success) { return $match.Groups[1].Value }
+    }
+
+    return "unknown"
+}
+
+# New-PluginZipFile: Creates a versioned ZIP with best compression
+function New-PluginZipFile($PluginDir, $PluginSlug) {
+    $version = Get-PluginVersionFromHeader $PluginDir
+    $zipFileName = "$PluginSlug-v$version.zip"
+    $zipOutputPath = Join-Path $env:TEMP "qupload-$PluginSlug-$(Get-Date -Format 'yyyyMMddHHmmss').zip"
+
+    if (Test-Path $zipOutputPath) {
+        Remove-Item $zipOutputPath -Force
+    }
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $tempDir = Join-Path $env:TEMP "qupload-zip-$(Get-Random)"
+    $pluginTempDir = Join-Path $tempDir $PluginSlug
+    New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
+    Copy-Item -Path "$PluginDir\*" -Destination $pluginTempDir -Recurse
+
+    # Best compression: SmallestSize (level 9)
+    [System.IO.Compression.ZipFile]::CreateFromDirectory(
+        $tempDir,
+        $zipOutputPath,
+        [System.IO.Compression.CompressionLevel]::SmallestSize,
+        $false
+    )
+
+    Remove-Item $tempDir -Recurse -Force
+
+    return @{
+        Path = $zipOutputPath
+        FileName = $zipFileName
+        Version = $version
+    }
+}
+
+# =============================================================================
+# CONFIGURATION LOADING
+# Priority: 1) -JsonConfig  2) CLI params  3) Config file
+# =============================================================================
+
 $PluginFolderPath = ""
 $WordPressSiteURL = ""
 $Username = ""
@@ -73,7 +237,7 @@ $ActivateAfterInstall = $true
 $DeleteZipAfterUpload = $false
 $PluginSlug = ""
 
-# Priority 1: JSON config string from command line
+# Priority 1: Inline JSON config string
 if ($JsonConfig -ne "") {
     Write-Status "Parsing inline JSON config..." -Color Gray
     try {
@@ -90,7 +254,7 @@ if ($JsonConfig -ne "") {
         exit 1
     }
 }
-# Priority 2: Direct command-line parameters
+# Priority 2: Direct CLI parameters
 elseif ($PluginPath -ne "" -and $SiteUrl -ne "" -and $User -ne "" -and $Password -ne "") {
     Write-Status "Using command-line parameters..." -Color Gray
     $PluginFolderPath = $PluginPath
@@ -101,7 +265,7 @@ elseif ($PluginPath -ne "" -and $SiteUrl -ne "" -and $User -ne "" -and $Password
     $DeleteZipAfterUpload = $DeleteZip.IsPresent
     if ($Slug -ne "") { $PluginSlug = $Slug }
 }
-# Priority 3: Config file
+# Priority 3: Config file (qupload-config.json)
 else {
     if ($ConfigPath -eq "") {
         $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -113,10 +277,11 @@ else {
         Write-Host "Quick Upload - Plugin Uploader" -ForegroundColor Cyan
         Write-Host "==============================" -ForegroundColor Cyan
         Write-Host ""
-        Write-Host "Usage:" -ForegroundColor Yellow
-        Write-Host "  .\upload-plugin-U-Q.ps1 -PluginPath 'C:\path\to\plugin' -SiteUrl 'https://site.com' -User 'admin' -Password 'app-password' [-Activate]" -ForegroundColor Gray
+        Write-Host "No config found. Run with -h for usage, or create:" -ForegroundColor Yellow
+        Write-Host "  $ConfigPath" -ForegroundColor Gray
         Write-Host ""
-        Write-Host "Or create a config file at: $ConfigPath" -ForegroundColor Yellow
+        Write-Host "Or pass params directly:" -ForegroundColor Yellow
+        Write-Host "  .\upload-plugin-U-Q.ps1 -pp 'path' -s 'https://site.com' -u 'admin' -pw 'pass'" -ForegroundColor Gray
         exit 1
     }
 
@@ -131,20 +296,29 @@ else {
     if ($config.pluginSlug) { $PluginSlug = $config.pluginSlug }
 }
 
-# Validate required parameters
-if ($PluginFolderPath -eq "" -or $WordPressSiteURL -eq "" -or $Username -eq "" -or $AppPassword -eq "") {
-    Write-Host "Error: Missing required parameters (PluginPath, SiteUrl, User, Password)" -ForegroundColor Red
-    exit 1
+# =============================================================================
+# VALIDATION
+# =============================================================================
+
+# For ZIP-only mode, we only need the plugin path
+if ($ZipOnly) {
+    if ($PluginFolderPath -eq "" -and $PluginPath -ne "") {
+        $PluginFolderPath = $PluginPath
+    }
+    if ($PluginFolderPath -eq "") {
+        Write-Host "Error: Plugin path required for ZIP mode. Use -pp <path>" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    # Full upload mode requires all credentials
+    if ($PluginFolderPath -eq "" -or $WordPressSiteURL -eq "" -or $Username -eq "" -or $AppPassword -eq "") {
+        Write-Host "Error: Missing required parameters (PluginPath, SiteUrl, User, Password)" -ForegroundColor Red
+        Write-Host "Run with -h for usage." -ForegroundColor Yellow
+        exit 1
+    }
 }
 
-Write-Status ""
-Write-Status "========================================" -Color Cyan
-Write-Status "  Quick Upload - Plugin Uploader" -Color Cyan
-Write-Status "  Using QUpload API" -Color Cyan
-Write-Status "========================================" -Color Cyan
-Write-Status ""
-
-# Step 1: Verify plugin folder exists
+# Verify plugin folder exists
 if (-not (Test-Path $PluginFolderPath)) {
     Write-Host "Error: Plugin folder not found at: $PluginFolderPath" -ForegroundColor Red
     exit 1
@@ -153,60 +327,72 @@ if (-not (Test-Path $PluginFolderPath)) {
 $folderName = Split-Path $PluginFolderPath -Leaf
 if ($PluginSlug -eq "") { $PluginSlug = $folderName }
 
+# =============================================================================
+# BANNER
+# =============================================================================
+$modeLabel = if ($ZipOnly) { "ZIP Only" } else { "Upload" }
+
+Write-Status ""
+Write-Status "========================================" -Color Cyan
+Write-Status "  Quick Upload - Plugin $modeLabel" -Color Cyan
+Write-Status "  Using QUpload API" -Color Cyan
+Write-Status "========================================" -Color Cyan
+Write-Status ""
+
+# =============================================================================
+# STEP 1: Read plugin info
+# =============================================================================
 Write-Status "[1/4] Plugin: $folderName" -Color Yellow
 Write-Status "      Path: $PluginFolderPath" -Color Gray
 Write-Status "      Slug: $PluginSlug" -Color Gray
 
-# Read local version from plugin header
-$LocalVersion = "unknown"
-$mainFiles = Get-ChildItem $PluginFolderPath -Filter "*.php" | Where-Object {
-    (Get-Content $_.FullName -Head 5) -match "Plugin Name:"
-} | Select-Object -First 1
-
-if ($mainFiles) {
-    $verContent = Get-Content $mainFiles.FullName -Raw
-    if ($verContent -match "Version:\s*([0-9]+\.[0-9]+\.[0-9]+)") {
-        $LocalVersion = $Matches[1]
-    }
-}
-
+$LocalVersion = Get-PluginVersionFromHeader $PluginFolderPath
 Write-Status "      Version: $LocalVersion" -Color Gray
 
-# Step 2: Create ZIP file
-$OutputZipPath = Join-Path $env:TEMP "qupload-$PluginSlug-$(Get-Date -Format 'yyyyMMddHHmmss').zip"
-
-if (Test-Path $OutputZipPath) {
-    Remove-Item $OutputZipPath -Force
-}
-
+# =============================================================================
+# STEP 2: Create ZIP file (best compression)
+# =============================================================================
 Write-Status ""
-Write-Status "[2/4] Creating ZIP file..." -Color Yellow
+Write-Status "[2/4] Creating ZIP file (SmallestSize compression)..." -Color Yellow
 
 try {
-    $tempDir = Join-Path $env:TEMP "qupload-zip-$(Get-Random)"
-    $pluginTempDir = Join-Path $tempDir $folderName
-    New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
-    Copy-Item -Path "$PluginFolderPath\*" -Destination $pluginTempDir -Recurse
-
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::CreateFromDirectory(
-        $tempDir,
-        $OutputZipPath,
-        [System.IO.Compression.CompressionLevel]::SmallestSize,
-        $false
-    )
-
-    Remove-Item $tempDir -Recurse -Force
-
+    $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
+    $OutputZipPath = $zipResult.Path
     $zipSize = (Get-Item $OutputZipPath).Length
     $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
-    Write-Status "      ZIP created: $OutputZipPath ($zipSizeMB MB)" -Color Green
+    Write-Status "      ZIP created: $($zipResult.FileName) ($zipSizeMB MB)" -Color Green
 } catch {
     Write-Host "Error creating ZIP: $_" -ForegroundColor Red
     exit 1
 }
 
-# Step 3: Upload to QUpload API
+# =============================================================================
+# ZIP-ONLY MODE: Exit after creating ZIP
+# =============================================================================
+if ($ZipOnly) {
+    # Copy ZIP to plugin parent directory with versioned name
+    $finalZipPath = Join-Path (Split-Path $PluginFolderPath -Parent) $zipResult.FileName
+    Copy-Item $OutputZipPath $finalZipPath -Force
+    Remove-Item $OutputZipPath -Force
+
+    $finalSize = (Get-Item $finalZipPath).Length
+    $finalSizeKB = [math]::Round($finalSize / 1024, 1)
+    $finalSizeMB = [math]::Round($finalSize / 1048576, 2)
+    $sizeLabel = if ($finalSizeMB -ge 1) { "$finalSizeMB MB" } else { "$finalSizeKB KB" }
+
+    Write-Status ""
+    Write-Status "  ZIP saved: $finalZipPath" -Color Green
+    Write-Status "  Size: $sizeLabel" -Color White
+    Write-Status ""
+    Write-Status "========================================" -Color Cyan
+    Write-Status "  Done! (ZIP only)" -Color Green
+    Write-Status "========================================" -Color Cyan
+    exit 0
+}
+
+# =============================================================================
+# STEP 3: Upload to QUpload API
+# =============================================================================
 Write-Status ""
 Write-Status "[3/4] Uploading to QUpload API..." -Color Yellow
 Write-Status "      Site: $WordPressSiteURL" -Color Gray
@@ -278,7 +464,6 @@ try {
     Write-Host "[4/4] Upload request failed!" -ForegroundColor Red
     Write-Host "      Error: $($_.Exception.Message)" -ForegroundColor Yellow
 
-    # Try to extract response body
     if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
         Write-Host "      Response: $($_.ErrorDetails.Message)" -ForegroundColor Gray
     }
@@ -294,7 +479,9 @@ try {
     exit 1
 }
 
-# Cleanup ZIP if requested
+# =============================================================================
+# CLEANUP: Delete ZIP if requested
+# =============================================================================
 if ($DeleteZipAfterUpload -or $DeleteZip) {
     if (Test-Path $OutputZipPath) {
         Remove-Item $OutputZipPath -Force
