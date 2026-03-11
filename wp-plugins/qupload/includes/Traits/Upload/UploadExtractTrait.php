@@ -12,9 +12,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use ZipArchive;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Throwable;
 use WP_REST_Response;
+use ZipArchive;
 
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\ResponseKeyType;
@@ -22,6 +24,8 @@ use QUpload\Helpers\PathHelper;
 
 trait UploadExtractTrait
 {
+    private const MAX_SYNTAX_CHECK_FILES = 500;
+
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip(string $zipContent, string $slug): array|WP_REST_Response {
         $tempDir = PathHelper::getTempDir();
