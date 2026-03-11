@@ -141,6 +141,7 @@ trait UploadExtractTrait
     private function processExtraction(array $input, array $zipResult): array|WP_REST_Response {
         $slug     = $zipResult[ResponseKeyType::Slug->value];
         $tempFile = $zipResult[ResponseKeyType::TempFile->value];
+        $this->traceStage('processExtraction:start', ['slug' => $slug, 'tempFile' => $tempFile]);
         $targetDir = WP_PLUGIN_DIR . '/' . $slug;
         $isUpdate = is_dir($targetDir);
 
