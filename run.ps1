@@ -12,6 +12,7 @@ param(
     [Alias('r')][switch]$rebuild,
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
+    [Alias('q')][switch]$qupload,
     [Alias('z')][switch]$zip,
     [Alias('t')][switch]$test,
     [Alias('h')][switch]$help,
