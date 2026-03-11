@@ -44,14 +44,8 @@ jobs:
       - name: Lint — File Size (backend)
         run: bash scripts/lint-file-size.sh
 
-      - name: Lint — File Size (tools)
-        run: bash scripts/lint-file-size.sh --dir tools/consistency-checker
-
       - name: Lint — Function Size (backend)
         run: bash scripts/lint-func-size.sh
-
-      - name: Lint — Function Size (tools)
-        run: bash scripts/lint-func-size.sh --dir tools/consistency-checker
 
       - name: Lint — Negative Naming
         run: bash scripts/lint-negative.sh
@@ -79,6 +73,40 @@ jobs:
           else
             echo "No OpenAPI spec found, skipping"
           fi
+
+  lint-tools:
+    name: Tools Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: tools/consistency-checker/go.sum
+
+      - name: Go Build Check
+        working-directory: tools/consistency-checker
+        run: go build ./...
+
+      - name: Go Vet
+        working-directory: tools/consistency-checker
+        run: go vet ./...
+
+      - name: Lint — File Size (tools)
+        run: bash scripts/lint-file-size.sh --dir tools/consistency-checker
+
+      - name: Lint — Function Size (tools)
+        run: bash scripts/lint-func-size.sh --dir tools/consistency-checker
+
+      - name: Lint — Negative Naming (tools)
+        run: bash scripts/lint-negative.sh --dir tools/consistency-checker
+
+      - name: Lint — Inline If (tools)
+        run: bash scripts/lint-inline-if.sh --dir tools/consistency-checker
 
   lint-licensing:
     name: Licensing Server Quality Checks
