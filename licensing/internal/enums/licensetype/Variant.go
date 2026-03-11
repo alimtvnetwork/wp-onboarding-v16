@@ -22,6 +22,24 @@ func (v Variant) IsProfessional() bool { return v == Professional }
 // IsEnterprise returns true for the enterprise tier.
 func (v Variant) IsEnterprise() bool { return v == Enterprise }
 
+// IsDefined returns true if the variant is a known value.
+func (v Variant) IsDefined() bool {
+	for _, valid := range All() {
+		if v == valid {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsDefinedAndValid returns true if the variant is both defined and non-empty.
+func (v Variant) IsDefinedAndValid() bool {
+	isNonEmpty := v != ""
+
+	return isNonEmpty && v.IsDefined()
+}
+
 // All returns all valid license type variants.
 func All() []Variant {
 	return []Variant{Standard, Professional, Enterprise}

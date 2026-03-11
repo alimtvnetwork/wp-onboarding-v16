@@ -14,6 +14,24 @@ func (v Variant) String() string { return string(v) }
 // IsRiseupUploader returns true for the Riseup Uploader product.
 func (v Variant) IsRiseupUploader() bool { return v == RiseupUploader }
 
+// IsDefined returns true if the variant is a known value.
+func (v Variant) IsDefined() bool {
+	for _, valid := range All() {
+		if v == valid {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsDefinedAndValid returns true if the variant is both defined and non-empty.
+func (v Variant) IsDefinedAndValid() bool {
+	isNonEmpty := v != ""
+
+	return isNonEmpty && v.IsDefined()
+}
+
 // All returns all valid product type variants.
 func All() []Variant {
 	return []Variant{RiseupUploader}
