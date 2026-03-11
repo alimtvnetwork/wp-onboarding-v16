@@ -340,18 +340,37 @@ trait UploadExtractTrait
 
     /** Move extracted folder to target, with copy fallback. */
     private function moveExtractedPlugin(string $extractedFolder, string $targetDir): bool {
+        // Ensure parent directory of target exists (WP_PLUGIN_DIR)
+        $parentDir = dirname($targetDir);
+
+        if (!is_dir($parentDir)) {
+            $this->fileLogger->error('Plugin parent directory missing', ['dir' => $parentDir]);
+
+            return false;
+        }
+
         if (rename($extractedFolder, $targetDir)) {
-            $this->fileLogger->info('Plugin installed to correct location');
+            $this->fileLogger->info('Plugin installed to correct location', ['target' => $targetDir]);
 
             return true;
         }
 
-        $this->fileLogger->info('Rename failed, falling back to copy');
+        $this->fileLogger->warn('Rename failed, falling back to copy', ['from' => $extractedFolder, 'to' => $targetDir]);
+
+        // Ensure target dir exists for copy fallback
+        $isTargetReady = PathHelper::ensureDirectory($targetDir);
+
+        if ($isTargetReady === false) {
+            $this->fileLogger->error('Failed to create target directory for copy fallback', ['dir' => $targetDir]);
+
+            return false;
+        }
+
         $isCopied = $this->copyDirectory($extractedFolder, $targetDir);
         $this->deleteDirectory($extractedFolder);
 
         if ($isCopied === false) {
-            $this->fileLogger->error('Copy fallback failed during plugin move');
+            $this->fileLogger->error('Copy fallback failed during plugin move', ['from' => $extractedFolder, 'to' => $targetDir]);
         }
 
         return $isCopied;
