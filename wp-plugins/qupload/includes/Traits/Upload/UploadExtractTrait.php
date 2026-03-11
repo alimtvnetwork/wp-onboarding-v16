@@ -335,6 +335,7 @@ trait UploadExtractTrait
         @unlink($tempFile);
 
         if ($isExtracted === false) {
+            $this->traceStage('extractZipToTemp:extract-failed', ['tempFile' => $tempFile, 'extractDir' => $tempExtractDir]);
             $this->deleteDirectory($tempExtractDir);
             $this->fileLogger->error('ZIP extraction failed');
 
