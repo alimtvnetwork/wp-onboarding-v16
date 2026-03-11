@@ -124,17 +124,57 @@ trait UploadExtractTrait
 
     /** Detect plugin slug from ZIP archive contents. */
     private function detectPluginSlugFromZip(ZipArchive $zip): ?string {
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $name = $zip->getNameIndex($i);
-            $parts = explode('/', $name);
-            $hasPluginFolder = (count($parts) >= 2 && !empty($parts[0]));
+        $fallbackSlug = null;
 
-            if ($hasPluginFolder) {
-                return $parts[0];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = trim((string) $zip->getNameIndex($i), '/');
+
+            if ($name === '' || str_ends_with($name, '/')) {
+                continue;
+            }
+
+            if ($fallbackSlug === null) {
+                $fallbackSlug = $this->extractSlugFromZipPath($name);
+            }
+
+            if (strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) !== 'php') {
+                continue;
+            }
+
+            $contents = $zip->getFromIndex($i);
+
+            if ($contents === false) {
+                continue;
+            }
+
+            if ($this->hasWordPressPluginHeader($contents)) {
+                return $this->extractSlugFromZipPath($name);
             }
         }
 
-        return null;
+        return $fallbackSlug;
+    }
+
+    /** Extract plugin slug from a ZIP entry path. */
+    private function extractSlugFromZipPath(string $path): ?string {
+        $normalizedPath = trim(str_replace('\\', '/', $path), '/');
+
+        if ($normalizedPath === '') {
+            return null;
+        }
+
+        $parts = explode('/', $normalizedPath);
+        $slug = count($parts) > 1 ? $parts[0] : pathinfo($normalizedPath, PATHINFO_FILENAME);
+        $slug = sanitize_file_name($slug);
+
+        return $slug !== '' ? $slug : null;
+    }
+
+    /** Check whether PHP contents contain a WordPress plugin header. */
+    private function hasWordPressPluginHeader(string $contents): bool {
+        $headerSample = substr($contents, 0, 8192);
+
+        return preg_match('/^[ \t\/*#@]*Plugin Name:\s*.+$/mi', $headerSample) === 1;
     }
 
     /** Process extraction, activation, and version detection. */
