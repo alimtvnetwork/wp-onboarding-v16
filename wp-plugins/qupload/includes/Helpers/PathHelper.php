@@ -36,6 +36,10 @@ class PathHelper {
         return self::getBaseDir() . '/temp';
     }
 
+    public static function getStageTraceFile(): string {
+        return self::getBaseDir() . '/stage-trace.log';
+    }
+
     public static function isFileMissing(string $path): bool {
         return !file_exists($path);
     }
@@ -48,3 +52,4 @@ class PathHelper {
         return wp_mkdir_p($dir);
     }
 }
+

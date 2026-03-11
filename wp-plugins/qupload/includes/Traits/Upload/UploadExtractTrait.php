@@ -20,14 +20,34 @@ use ZipArchive;
 
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\ResponseKeyType;
+use QUpload\Helpers\DateHelper;
 use QUpload\Helpers\PathHelper;
 
 trait UploadExtractTrait
 {
     private const MAX_SYNTAX_CHECK_FILES = 500;
 
+    /** Write emergency stage trace outside the main logger path. */
+    private function traceStage(string $stage, array $context = []): void {
+        $baseDir = PathHelper::getBaseDir();
+        PathHelper::ensureDirectory($baseDir);
+
+        $line = sprintf(
+            "[%s] %s %s%s",
+            DateHelper::nowUtc(),
+            $stage,
+            empty($context) ? '' : json_encode($context, JSON_UNESCAPED_SLASHES),
+            PHP_EOL,
+        );
+
+        @file_put_contents(PathHelper::getStageTraceFile(), $line, FILE_APPEND | LOCK_EX);
+        @error_log('[QUpload Stage] ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)));
+    }
+
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip(string $zipContent, string $slug): array|WP_REST_Response {
+        $this->traceStage('validateAndWriteZip:start', ['slug' => $slug, 'bytes' => strlen($zipContent)]);
+
         // Ensure base uploads dir exists first
         $baseDir = PathHelper::getBaseDir();
         $isBaseDirReady = PathHelper::ensureDirectory($baseDir);
@@ -53,22 +73,26 @@ trait UploadExtractTrait
         }
 
         $this->fileLogger->info('Directories verified', ['base' => $baseDir, 'temp' => $tempDir]);
+        $this->traceStage('validateAndWriteZip:directories-ready', ['base' => $baseDir, 'temp' => $tempDir]);
 
         $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
         if (file_put_contents($tempFile, $zipContent) === false) {
+            $this->traceStage('validateAndWriteZip:temp-write-failed', ['path' => $tempFile]);
             $this->fileLogger->error('Failed to write temp file', ['path' => $tempFile]);
 
             return $this->errorResponse('Upload failed: could not write temp file', HttpStatusType::ServerError->value);
         }
 
         $detectedSlug = $this->validateZipStructure($tempFile, $slug);
+        $this->traceStage('validateAndWriteZip:zip-written', ['path' => $tempFile]);
 
         if ($detectedSlug instanceof WP_REST_Response) {
             return $detectedSlug;
         }
 
         $finalSlug = !empty($slug) ? $slug : $detectedSlug;
+        $this->traceStage('validateAndWriteZip:slug-detected', ['slug' => $finalSlug]);
         $this->fileLogger->info('Plugin slug determined', ['slug' => $finalSlug]);
 
         return [ResponseKeyType::TempFile->value => $tempFile, ResponseKeyType::Slug->value => $finalSlug];
@@ -117,6 +141,7 @@ trait UploadExtractTrait
     private function processExtraction(array $input, array $zipResult): array|WP_REST_Response {
         $slug     = $zipResult[ResponseKeyType::Slug->value];
         $tempFile = $zipResult[ResponseKeyType::TempFile->value];
+        $this->traceStage('processExtraction:start', ['slug' => $slug, 'tempFile' => $tempFile]);
         $targetDir = WP_PLUGIN_DIR . '/' . $slug;
         $isUpdate = is_dir($targetDir);
 
@@ -295,6 +320,7 @@ trait UploadExtractTrait
 
     /** Open and extract the ZIP, cleaning up temp file. */
     private function extractZipToTemp(string $tempFile, string $tempExtractDir): ?WP_REST_Response {
+        $this->traceStage('extractZipToTemp:start', ['tempFile' => $tempFile, 'extractDir' => $tempExtractDir]);
         $zip = new ZipArchive();
 
         if ($zip->open($tempFile) !== true) {
@@ -309,12 +335,14 @@ trait UploadExtractTrait
         @unlink($tempFile);
 
         if ($isExtracted === false) {
+            $this->traceStage('extractZipToTemp:extract-failed', ['tempFile' => $tempFile, 'extractDir' => $tempExtractDir]);
             $this->deleteDirectory($tempExtractDir);
             $this->fileLogger->error('ZIP extraction failed');
 
             return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
         }
 
+        $this->traceStage('extractZipToTemp:success', ['extractDir' => $tempExtractDir]);
         return null;
     }
 
@@ -419,6 +447,7 @@ trait UploadExtractTrait
 
     /** Attempt plugin activation, returning error response on failure. */
     private function tryActivatePlugin(string $pluginFile, string $slug): ?WP_REST_Response {
+        $this->traceStage('tryActivatePlugin:start', ['slug' => $slug, 'pluginFile' => $pluginFile]);
         $this->fileLogger->info('Attempting plugin activation', ['slug' => $slug, 'file' => $pluginFile]);
 
         // Register a shutdown handler to capture fatal errors during activation.
@@ -433,6 +462,15 @@ trait UploadExtractTrait
 
             if ($isFatal && $fatalLogged === false) {
                 $fatalLogged = true;
+                $thisStage = [
+                    'slug' => $slug,
+                    'pluginFile' => $pluginFile,
+                    'message' => $error['message'],
+                    'file' => $error['file'],
+                    'line' => $error['line'],
+                ];
+                @file_put_contents(PathHelper::getStageTraceFile(), sprintf("[%s] %s %s%s", DateHelper::nowUtc(), 'tryActivatePlugin:fatal', json_encode($thisStage, JSON_UNESCAPED_SLASHES), PHP_EOL), FILE_APPEND | LOCK_EX);
+                @error_log('[QUpload Stage] tryActivatePlugin:fatal ' . json_encode($thisStage, JSON_UNESCAPED_SLASHES));
                 $message = sprintf(
                     'FATAL during activation of "%s" (%s): %s in %s on line %d',
                     $slug,
@@ -460,9 +498,11 @@ trait UploadExtractTrait
         $fatalLogged = true; // Prevent shutdown handler from firing on normal exit
 
         if (is_wp_error($result)) {
+            $this->traceStage('tryActivatePlugin:wp-error', ['slug' => $slug, 'message' => $result->get_error_message()]);
             return $this->buildActivationWpError($slug, $result);
         }
 
+        $this->traceStage('tryActivatePlugin:success', ['slug' => $slug]);
         $this->fileLogger->info('Plugin activated successfully', ['slug' => $slug]);
 
         return null;
