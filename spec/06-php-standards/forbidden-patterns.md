@@ -64,7 +64,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 ## 4. Boolean Logic & No Raw Negations
 
-> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+> **Canonical source:** [No Raw Negations](../03-coding-guidelines/no-negatives.md)
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
