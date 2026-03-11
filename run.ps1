@@ -855,23 +855,27 @@ if ($qupload) {
         }
         Write-Host "  Using custom plugin path: $qPluginPath" -ForegroundColor Cyan
     } else {
-        $defaultUploader = $null
-        if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
-            $defaultUploader = $Config.wpPlugins.defaultUploader
+        # Use defaultQUploader first, fall back to defaultUploader
+        $defaultQUploader = $null
+        if ($Config.wpPlugins -and $Config.wpPlugins.defaultQUploader) {
+            $defaultQUploader = $Config.wpPlugins.defaultQUploader
         }
-        if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
-            Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+        if (-not $defaultQUploader -and $Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+            $defaultQUploader = $Config.wpPlugins.defaultUploader
+        }
+        if (-not $defaultQUploader -or -not $Config.wpPlugins.plugins.$defaultQUploader) {
+            Write-Host "ERROR: No default QUploader configured in powershell.json (wpPlugins.defaultQUploader)" -ForegroundColor Red
             exit 1
         }
 
-        $pluginCfg = $Config.wpPlugins.plugins.$defaultUploader
+        $pluginCfg = $Config.wpPlugins.plugins.$defaultQUploader
         $qPluginPath = Resolve-RelativePath $pluginCfg.path
 
         if (-not (Test-Path $qPluginPath)) {
             Write-Host "ERROR: Plugin folder not found: $qPluginPath" -ForegroundColor Red
             exit 1
         }
-        Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
+        Write-Host "  Plugin: $defaultQUploader" -ForegroundColor Yellow
     }
 
     # Find the QUpload script
