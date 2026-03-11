@@ -52,7 +52,7 @@ $this->fileLogger->warn('Upload conflict', array('duplicateDir' => $path));
 - `IncrementalBackup.php`: `master_dir` → `masterDir`
 - `UploadInstallExtractTrait.php`: `target_dir` → `targetDir`
 
-**Prevention:** All log context array keys must use camelCase. See [naming-conventions.md § Array Key Conventions](../04-php-standards/naming-conventions.md#array-key-conventions).
+**Prevention:** All log context array keys must use camelCase. See [naming-conventions.md § Array Key Conventions](../06-php-standards/naming-conventions.md#array-key-conventions).
 
 ---
 

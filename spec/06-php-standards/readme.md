@@ -709,10 +709,10 @@ public function handleUpload(WP_REST_Request $request): WP_REST_Response {
 | `!file_exists()` / `!is_dir()` | Raw negation | `isFileMissing()` / `isDirMissing()` |
 | `current_user_can('manage_options')` | Magic string | `CapabilityType::ManageOptions->value` |
 | `'POST'` in routes | Inconsistent | `HttpMethodType::Post->value` |
-| Untyped function parameters | No runtime safety | Add type declarations (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
+| Untyped function parameters | No runtime safety | Add type declarations (see [Strict Typing](../03-coding-guidelines/strict-typing.md)) |
 | Untyped return values | No contract enforcement | Add return type declarations |
-| Redundant `@param` on typed signatures | Noisy duplication | Remove; keep summary only (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
-| Boolean flag changing operation meaning | Unreadable call sites | Split into named methods (see [Function Naming](../01-coding-guidelines/function-naming.md)) |
+| Redundant `@param` on typed signatures | Noisy duplication | Remove; keep summary only (see [Strict Typing](../03-coding-guidelines/strict-typing.md)) |
+| Boolean flag changing operation meaning | Unreadable call sites | Split into named methods (see [Function Naming](../03-coding-guidelines/function-naming.md)) |
 | Hardcoded color hex arrays in templates | Unmaintainable, scattered | `ColorConfig::getGroup()` / `ColorConfig::logLevel()` from `data/colors.json` |
 | Inline `#hex` status/theme colors in PHP logic | Theme changes require grep | `ColorConfig::status()` / `ColorConfig::wpAdmin()` |
 
