@@ -85,6 +85,7 @@ trait UploadExtractTrait
         }
 
         $detectedSlug = $this->validateZipStructure($tempFile, $slug);
+        $this->traceStage('validateAndWriteZip:zip-written', ['path' => $tempFile]);
 
         if ($detectedSlug instanceof WP_REST_Response) {
             return $detectedSlug;
