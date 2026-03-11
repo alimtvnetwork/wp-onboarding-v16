@@ -48,7 +48,7 @@ func scanLicense(row scannable) apperror.Result[*models.License] {
 
 	m.Product = producttype.Parse(product)
 	m.Type = licensetype.Parse(ltype)
-	m.Status = licensestatus.Parse(status)
+	m.Status = licensestatustype.Parse(status)
 
 	return apperror.Ok(&m)
 }
