@@ -95,6 +95,18 @@ Categories:
 | E6005 | ErrValidationLength | Field exceeds max length |
 | E6006 | ErrValidationFormat | Invalid format |
 
+### Git Errors (E7xxx)
+
+| Code | Name | Description |
+|------|------|-------------|
+| E7xxx | ErrGit* | Git operation errors |
+
+### Build Errors (E8xxx)
+
+| Code | Name | Description |
+|------|------|-------------|
+| E8xxx | ErrBuild* | Build/packaging errors |
+
 ### Internal Errors (E9xxx)
 
 | Code | Name | Description |
@@ -103,6 +115,36 @@ Categories:
 | E9002 | ErrPanic | Recovered from panic |
 | E9003 | ErrNotImpl | Feature not implemented |
 | E9004 | ErrTimeout | Operation timed out |
+
+### E2E Test Errors (E10xxx)
+
+| Code | Name | Description |
+|------|------|-------------|
+| E10xxx | ErrE2E* | End-to-end test errors |
+
+### Publish Errors (E11xxx)
+
+| Code | Name | Description |
+|------|------|-------------|
+| E11xxx | ErrPublish* | Publish pipeline errors |
+
+### Version Errors (E12xxx)
+
+| Code | Name | Description |
+|------|------|-------------|
+| E12xxx | ErrVersion* | Version management errors |
+
+### Session Errors (E13xxx)
+
+| Code | Name | Description |
+|------|------|-------------|
+| E13xxx | ErrSession* | Request session errors |
+
+### Crypto Errors (E14xxx)
+
+| Code | Name | Description |
+|------|------|-------------|
+| E14xxx | ErrCrypto* | Encryption/decryption errors |
 
 ---
 
