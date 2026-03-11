@@ -1,7 +1,7 @@
 # Golang Coding Standards
 
-> **Version:** 3.4.0
-> **Updated:** 2026-02-28
+> **Version:** 3.5.0
+> **Updated:** 2026-03-11
 > **Applies to:** All Go backend code
 
 ---
