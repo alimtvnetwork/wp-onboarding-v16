@@ -59,11 +59,26 @@
 # First-time setup with firewall
 .\run.ps1 -fw
 
-# Upload default plugin to WordPress
+# Upload default plugin to WordPress (V2 uploader)
 .\run.ps1 -u
 
 # Upload custom plugin path
 .\run.ps1 -u -pp "C:\path\to\custom-plugin"
+
+# Upload via QUpload API
+.\run.ps1 -q
+
+# Upload specific plugin via QUpload
+.\run.ps1 -q -pp "wp-plugins/qupload"
+
+# ZIP all plugins in wp-plugins/ with version numbers (best compression)
+.\run.ps1 -z
+
+# ZIP a specific plugin
+.\run.ps1 -z -pp "wp-plugins/qupload"
+
+# Run Go backend tests
+.\run.ps1 -t
 
 # Verbose output for debugging
 .\run.ps1 -v
