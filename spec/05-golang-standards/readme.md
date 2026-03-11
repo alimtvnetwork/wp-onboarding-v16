@@ -50,7 +50,7 @@ func ProcessUpload(ctx context.Context, req UploadRequest) error {
 
 ## Zero Nested `if` — Absolute Ban
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 2 & 7
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 2 & 7
 
 Nested `if` blocks are **absolutely forbidden** — zero tolerance. Flatten with combined conditions or early returns.
 
