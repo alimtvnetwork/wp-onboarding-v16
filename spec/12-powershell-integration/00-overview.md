@@ -1,7 +1,7 @@
 # PowerShell Integration for Project Runner
 
 > **Spec Version:** 2.1.0  
-> **Script Version:** 2.0.1  
+> **Script Version:** 2.0.2  
 > **Updated:** 2026-02-09  
 > **Status:** Active  
 > **Location:** `spec/powershell-integration/`  
