@@ -498,9 +498,11 @@ trait UploadExtractTrait
         $fatalLogged = true; // Prevent shutdown handler from firing on normal exit
 
         if (is_wp_error($result)) {
+            $this->traceStage('tryActivatePlugin:wp-error', ['slug' => $slug, 'message' => $result->get_error_message()]);
             return $this->buildActivationWpError($slug, $result);
         }
 
+        $this->traceStage('tryActivatePlugin:success', ['slug' => $slug]);
         $this->fileLogger->info('Plugin activated successfully', ['slug' => $slug]);
 
         return null;
