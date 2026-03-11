@@ -39,7 +39,7 @@ Documents the cross-language alignment between PHP (WordPress plugin) and Go (ba
 | Zero value | N/A (PHP enums have no zero) | `Invalid = iota` | ✅ By design |
 | Protocol-driven exemptions | N/A | Preserve functional values (`application/json`) | ✅ Documented |
 
-**Reference:** [PHP enums.md](./enums.md), [Go 02-required-methods.md](../03-golang-standards/01-enum-specification/02-required-methods.md)
+**Reference:** [PHP enums.md](./enums.md), [Go 02-required-methods.md](../05-golang-standards/01-enum-specification/02-required-methods.md)
 
 ---
 
