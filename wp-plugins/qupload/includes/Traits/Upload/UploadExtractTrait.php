@@ -12,9 +12,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use ZipArchive;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Throwable;
 use WP_REST_Response;
+use ZipArchive;
 
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\ResponseKeyType;
@@ -22,6 +24,8 @@ use QUpload\Helpers\PathHelper;
 
 trait UploadExtractTrait
 {
+    private const MAX_SYNTAX_CHECK_FILES = 500;
+
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip(string $zipContent, string $slug): array|WP_REST_Response {
         $tempDir = PathHelper::getTempDir();
@@ -111,6 +115,12 @@ trait UploadExtractTrait
             return $pluginFile;
         }
 
+        $validationError = $this->validateExtractedPluginBeforeActivation($slug);
+
+        if ($validationError instanceof WP_REST_Response) {
+            return $validationError;
+        }
+
         $activation = $this->activateIfNeeded($pluginFile, $slug, $activate, $wasActive);
 
         if ($activation instanceof WP_REST_Response) {
@@ -118,6 +128,90 @@ trait UploadExtractTrait
         }
 
         return $this->buildExtractionResult($slug, $isUpdate, $activation, $pluginFile);
+    }
+
+    /** Validate extracted plugin PHP files before activation to prevent fatal crashes. */
+    private function validateExtractedPluginBeforeActivation(string $slug): ?WP_REST_Response {
+        $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+
+        if (!is_dir($pluginDir)) {
+            $this->fileLogger->error('Plugin directory missing before activation validation', ['slug' => $slug, 'dir' => $pluginDir]);
+
+            return $this->errorResponse('Plugin directory missing before activation', HttpStatusType::ServerError->value);
+        }
+
+        $phpFiles = $this->collectPhpFiles($pluginDir);
+        $checkedCount = 0;
+
+        foreach ($phpFiles as $filePath) {
+            if ($checkedCount >= self::MAX_SYNTAX_CHECK_FILES) {
+                $this->fileLogger->warn('Syntax check limit reached before activation', [
+                    'slug' => $slug,
+                    'limit' => self::MAX_SYNTAX_CHECK_FILES,
+                    'checked' => $checkedCount,
+                ]);
+
+                break;
+            }
+
+            $syntaxError = $this->checkPhpFileSyntax($filePath, $pluginDir, $slug);
+
+            if ($syntaxError instanceof WP_REST_Response) {
+                return $syntaxError;
+            }
+
+            $checkedCount++;
+        }
+
+        $this->fileLogger->info('Pre-activation syntax validation passed', ['slug' => $slug, 'filesChecked' => $checkedCount]);
+
+        return null;
+    }
+
+    /** Check one PHP file for parse errors without executing it. */
+    private function checkPhpFileSyntax(string $filePath, string $pluginDir, string $slug): ?WP_REST_Response {
+        $content = @file_get_contents($filePath);
+        $relativePath = str_replace($pluginDir . '/', '', $filePath);
+
+        if ($content === false) {
+            $this->fileLogger->error('Cannot read extracted PHP file before activation', ['slug' => $slug, 'file' => $relativePath]);
+
+            return $this->errorResponse('Cannot read plugin file before activation: ' . $relativePath, HttpStatusType::ServerError->value);
+        }
+
+        try {
+            @token_get_all($content, TOKEN_PARSE);
+        } catch (Throwable $e) {
+            $this->fileLogger->logException($e, 'Plugin syntax validation failed for ' . $slug . ' file: ' . $relativePath);
+
+            return $this->errorResponse(
+                'Plugin uploaded but activation was blocked due to PHP syntax error in ' . $relativePath . ': ' . $e->getMessage(),
+                HttpStatusType::BadRequest->value,
+                $e,
+            );
+        }
+
+        return null;
+    }
+
+    /** Collect all PHP files from a plugin directory. */
+    private function collectPhpFiles(string $pluginDir): array {
+        $files = [];
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($pluginDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::LEAVES_ONLY,
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if ($fileInfo->isFile() && strtolower($fileInfo->getExtension()) === 'php') {
+                $files[] = $fileInfo->getPathname();
+            }
+        }
+
+        sort($files);
+
+        return $files;
     }
 
     /** Build the final extraction result array. */
