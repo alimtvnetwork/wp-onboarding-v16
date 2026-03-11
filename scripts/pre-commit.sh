@@ -76,6 +76,8 @@ if [[ -d "tools/consistency-checker" ]]; then
   echo -e "${CYAN}Consistency Checker:${NC}"
   run_check "File size (≤300 lines)"         bash "$SCRIPT_DIR/lint-file-size.sh" --dir tools/consistency-checker
   run_check "Function size (≤15 lines)"      bash "$SCRIPT_DIR/lint-func-size.sh" --dir tools/consistency-checker
+  run_check "Negative naming"                bash "$SCRIPT_DIR/lint-negative.sh" --dir tools/consistency-checker
+  run_check "Inline if"                      bash "$SCRIPT_DIR/lint-inline-if.sh" --dir tools/consistency-checker
   echo ""
 fi
 
