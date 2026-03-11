@@ -55,7 +55,7 @@ func buildUpdateInput(req updateLicenseRequest) services.UpdateInput {
 	var input services.UpdateInput
 
 	if req.Status != nil {
-		status := licensestatus.Parse(*req.Status)
+		status := licensestatustype.Parse(*req.Status)
 		input.Status = &status
 	}
 
