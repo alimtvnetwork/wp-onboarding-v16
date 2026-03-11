@@ -49,7 +49,7 @@ func (s *AuditService) Log(input LogInput) *apperror.AppError {
 
 // ListFilter holds optional filters for listing audit logs.
 type ListFilter struct {
-	Action    *auditaction.Variant
+	Action    *auditactiontype.Variant
 	LicenseId *int64
 }
 

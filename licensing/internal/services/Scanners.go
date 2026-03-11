@@ -180,7 +180,7 @@ func scanAuditLogRows(rows *sql.Rows) apperror.Result[[]models.AuditLog] {
 			return apperror.FailWrap[[]models.AuditLog](scanErr, apperror.ErrDatabaseScan, "scan audit log")
 		}
 
-		m.Action = auditaction.Variant(action)
+		m.Action = auditactiontype.Variant(action)
 		logs = append(logs, m)
 	}
 

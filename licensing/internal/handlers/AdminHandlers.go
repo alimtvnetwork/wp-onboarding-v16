@@ -189,7 +189,7 @@ func (h *AdminHandlers) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandlers) logAudit(
 	r *http.Request,
 	licenseId *int64,
-	action auditaction.Variant,
+	action auditactiontype.Variant,
 	domain string,
 ) {
 	h.Audit.Log(services.LogInput{

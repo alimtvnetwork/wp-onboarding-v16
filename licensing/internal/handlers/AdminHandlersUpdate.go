@@ -86,6 +86,6 @@ func (h *AdminHandlers) DeleteLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logAudit(r, &id, auditaction.Deleted, "")
+	h.logAudit(r, &id, auditactiontype.Deleted, "")
 	jsonResponse(w, http.StatusOK, statusBody{Status: "deleted"})
 }

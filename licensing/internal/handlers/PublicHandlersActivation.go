@@ -114,7 +114,7 @@ func (h *PublicHandlers) Deactivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logPublicAudit(r, &license.Id, auditaction.Deactivated, req.Domain)
+	h.logPublicAudit(r, &license.Id, auditactiontype.Deactivated, req.Domain)
 	jsonResponse(w, http.StatusOK, statusBody{Status: "deactivated"})
 }
 

@@ -94,7 +94,7 @@ func TestLogAllActions(t *testing.T) {
 	var count int
 	db.QueryRow("SELECT COUNT(*) FROM audit_log WHERE domain = 'all-actions.com'").Scan(&count)
 
-	expected := len(auditaction.All())
+	expected := len(auditactiontype.All())
 	if count != expected {
 		t.Errorf("count = %d, want %d", count, expected)
 	}

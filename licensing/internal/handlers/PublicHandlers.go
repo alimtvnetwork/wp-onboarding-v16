@@ -62,7 +62,7 @@ func (h *PublicHandlers) Validate(w http.ResponseWriter, r *http.Request) {
 func (h *PublicHandlers) logPublicAudit(
 	r *http.Request,
 	licenseId *int64,
-	action auditaction.Variant,
+	action auditactiontype.Variant,
 	domain string,
 ) {
 	h.Audit.Log(services.LogInput{
