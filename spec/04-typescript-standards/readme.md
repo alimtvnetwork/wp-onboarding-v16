@@ -261,7 +261,7 @@ const handleSubmit = async (data: FormData) => {
 
 ## 6. Zero Nested `if` — Absolute Ban
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 2 & 7
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 2 & 7
 
 Nested `if` blocks are **absolutely forbidden** — zero tolerance, no exceptions. Flatten with early returns or combined conditions.
 
