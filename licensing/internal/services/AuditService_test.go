@@ -15,7 +15,7 @@ func TestLogBasicEntry(t *testing.T) {
 
 	err := svc.Log(LogInput{
 		LicenseId: &licId,
-		Action:    auditaction.Activated,
+		Action:    auditactiontype.Activated,
 		Domain:    "audit.com",
 		IpAddress: "1.2.3.4",
 		Details:   map[string]string{"reason": "test"},
