@@ -385,7 +385,7 @@ class MyPlugin {
 
 ### Rule: No raw negations — use positive guard functions
 
-> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+> **Canonical source:** [No Raw Negations](../03-coding-guidelines/no-negatives.md)
 
 **Never use `!` on a function call in a condition.** Every negative check must be wrapped in a positively named guard function that reads as a single intent. See the canonical spec for the full cross-language rule and all guard function tables.
 
