@@ -46,7 +46,7 @@ func (h *PublicHandlers) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logPublicAudit(r, &license.Id, auditaction.Validated, "")
+	h.logPublicAudit(r, &license.Id, auditactiontype.Validated, "")
 
 	jsonResponse(w, http.StatusOK, validateResponse{
 		Valid:          license.IsUsable(),
