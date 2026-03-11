@@ -474,23 +474,24 @@ func foo(
 
 | Rule | Convention | Example |
 |------|-----------|---------|
-| File name | `snake_case.go` | `server_config.go`, `status_type.go` |
-| Maps to primary type | File name derived from its exported type | `ServerConfig` → `server_config.go` |
+| File name | `PascalCase.go` | `ServerConfig.go`, `StatusType.go` |
+| Maps to primary type | File name = primary exported type name | `ServerConfig` → `ServerConfig.go` |
 | One exported type per file | Each struct/interface/enum gets its own file | Don't combine `Config` + `ServerConfig` |
-| Related methods stay together | All methods on a type live in its file | `StatusType.IsValid()` stays in `status_type.go` |
-| Suffix convention | Split large types using suffixes | `_crud.go`, `_helpers.go`, `_validation.go` |
+| Related methods stay together | All methods on a type live in its file | `StatusType.IsValid()` stays in `StatusType.go` |
+| Suffix convention | Split large types using PascalCase suffixes | `Crud.go`, `Helpers.go`, `Validation.go` |
 | Package directory | `snake_case` for multi-word services | `site_health/`, `search_mode/` |
 | Enum package directory | lowercase, no underscores, `type` suffix | `httpmethodtype/`, `statustype/` |
+| Test files | `PascalCase_test.go` | `RemoteFiles_test.go` |
 
 ### Splitting Convention (When Files Exceed 300 Lines)
 
 | Suffix | Purpose | Example |
 |--------|---------|---------|
-| `{type}.go` | Struct + constructors | `config.go` |
-| `{type}_crud.go` | Database CRUD operations | `plugin_crud.go` |
-| `{type}_helpers.go` | Private utility functions | `config_helpers.go` |
-| `{type}_validation.go` | Input/business rule validation | `upload_validation.go` |
-| `{type}_json.go` | JSON marshal/unmarshal methods | `error_json.go` |
+| `{Type}.go` | Struct + constructors | `Config.go` |
+| `{Type}Crud.go` | Database CRUD operations | `PluginCrud.go` |
+| `{Type}Helpers.go` | Private utility functions | `ConfigHelpers.go` |
+| `{Type}Validation.go` | Input/business rule validation | `UploadValidation.go` |
+| `{Type}Json.go` | JSON marshal/unmarshal methods | `ErrorJson.go` |
 
 ### Package Directory Naming
 
