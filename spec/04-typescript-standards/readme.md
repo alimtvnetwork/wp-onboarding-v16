@@ -238,7 +238,7 @@ type ActivityMetadata = PublishMetadata | SnapshotMetadata | PluginMetadata | Co
 
 ## 5. Function Size — Max 15 Lines
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 6
 
 Every function/method body must be **15 lines or fewer**. Extract logic into small, well-named helper functions.
 
