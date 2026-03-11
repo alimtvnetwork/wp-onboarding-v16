@@ -11,7 +11,7 @@ This repository contains **three projects**:
 
 | Project | Location | Status | Technology |
 |---------|----------|--------|------------|
-| WP Plugin Publish | `backend/`, `src/`, `spec/wp-plugin-publish/` | 🔄 Active | Go + React |
+| WP Plugin Publish | `backend/`, `src/`, `spec/10-wp-plugin-publish/` | 🔄 Active | Go + React |
 | Plugins Onboard | `plugins-onboard/` | ✅ Complete | WordPress PHP |
 | Spec Builder v3 | (Referenced only) | 📝 Dormant | Mentioned in CONTEXT-FOR-AI.md |
 
