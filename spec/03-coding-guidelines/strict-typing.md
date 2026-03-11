@@ -299,12 +299,12 @@ func (a *Adapter) GetById(ctx context.Context, id int64) (*models.Plugin, error)
 
 ## Cross-References
 
-- [PHP Standards](../04-php-standards/readme.md)
-- [TypeScript Standards](../02-typescript-standards/readme.md)
-- [Go Standards](../03-golang-standards/readme.md)
+- [PHP Standards](../06-php-standards/readme.md)
+- [TypeScript Standards](../04-typescript-standards/readme.md)
+- [Go Standards](../05-golang-standards/readme.md)
 - [Function Naming](./function-naming.md)
-- [Generic Enforce](../12-generic-enforce/readme.md)
-- [apperror Package — Result Guard Rule](../05-error-manage/06-apperror-package/readme.md#12-result-guard-rule--mandatory-error-check-before-value-access)
+- [Generic Enforce](../14-generic-enforce/readme.md)
+- [apperror Package — Result Guard Rule](../07-error-manage/06-apperror-package/readme.md#12-result-guard-rule--mandatory-error-check-before-value-access)
 - [Master Guidelines — Section 6.1](./00-master-coding-guidelines.md#61--result-guard-rule-zero-silent-failures)
 
 ---
