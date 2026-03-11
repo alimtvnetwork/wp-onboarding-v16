@@ -252,7 +252,7 @@ $isBaseDirFailed = !self::makeDirectory($dir);
 if ($isBaseDirFailed) { throw new Exception('...'); }
 ```
 
-**Prevention:** Use `PathHelper` and `BooleanHelpers` guard functions. See [no-negatives.md](../01-coding-guidelines/no-negatives.md).
+**Prevention:** Use `PathHelper` and `BooleanHelpers` guard functions. See [no-negatives.md](./no-negatives.md).
 
 ---
 
