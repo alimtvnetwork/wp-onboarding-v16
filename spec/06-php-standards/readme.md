@@ -662,7 +662,7 @@ add_action(Hook::Init->value, [$this, 'setup']);
 
 ### Rule 6: Maximum 15 lines per function
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 6
 
 Every function/method body must be **15 lines or fewer** (excluding blank lines, comments, and the signature). Extract logic into small, well-named helper functions.
 
