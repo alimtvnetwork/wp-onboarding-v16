@@ -74,7 +74,7 @@ func (h *AdminHandlers) executeCreate(
 
 	license := createResult.Value()
 
-	h.logAudit(r, &license.Id, auditaction.Created, "")
+	h.logAudit(r, &license.Id, auditactiontype.Created, "")
 	jsonResponse(w, http.StatusCreated, license)
 }
 
