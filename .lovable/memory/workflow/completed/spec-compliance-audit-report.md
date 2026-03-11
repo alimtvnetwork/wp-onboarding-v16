@@ -32,7 +32,7 @@
 
 | File | Line | Before | After |
 |---|---|---|---|
-| `spec/04-php-standards/readme.md` | ~301 | `private $initialized = false` | `private bool $isInitialized = false` |
+| `spec/06-php-standards/readme.md` | ~301 | `private $initialized = false` | `private bool $isInitialized = false` |
 
 **Additional cleanup:** Added missing `bool` type hint per PHP 8.2+ standards.
 
