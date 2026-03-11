@@ -624,7 +624,9 @@ Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 Write-Host ""
 
 # ============================================================================
-# ZIP MODE: Create a versioned ZIP of the default plugin (-z / -zip)
+# ZIP MODE: Create versioned ZIPs with best compression (-z / -zip)
+#   -z              → ZIP all plugin folders under wp-plugins/
+#   -z -pp <name>   → ZIP a specific plugin folder (name or path)
 # ============================================================================
 if ($zip) {
     Write-Host ""
@@ -633,11 +635,76 @@ if ($zip) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    # Determine plugin path: use -pp override or default from config
-    $zipPluginPath = $null
-    $zipPluginName = $null
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
 
+    # ── Helper: Extract version from PHP plugin header ──────────────────────
+    function Get-PluginVersion($PluginDir) {
+        $phpFiles = Get-ChildItem $PluginDir -Filter "*.php" -File | Where-Object {
+            (Get-Content $_.FullName -Head 5 -ErrorAction SilentlyContinue) -match "Plugin Name:"
+        } | Select-Object -First 1
+
+        if ($phpFiles) {
+            $content = Get-Content $phpFiles.FullName -Raw -ErrorAction SilentlyContinue
+            $match = [regex]::Match($content, "\*?\s*Version:\s*(\d+\.\d+\.\d+)")
+            if ($match.Success) { return $match.Groups[1].Value }
+        }
+
+        return "unknown"
+    }
+
+    # ── Helper: Create a single versioned ZIP ───────────────────────────────
+    function New-PluginZip($PluginDir) {
+        $pluginName = Split-Path $PluginDir -Leaf
+        $version = Get-PluginVersion $PluginDir
+        $zipFileName = "$pluginName-v$version.zip"
+        $zipOutputPath = Join-Path (Split-Path $PluginDir -Parent) $zipFileName
+
+        Write-Host "  Plugin:  $pluginName" -ForegroundColor Yellow
+        Write-Host "  Version: v$version" -ForegroundColor Yellow
+        Write-Host "  Source:  $PluginDir" -ForegroundColor Gray
+        Write-Host "  Output:  $zipOutputPath" -ForegroundColor Gray
+
+        # Remove existing ZIP if present
+        if (Test-Path $zipOutputPath) {
+            Remove-Item $zipOutputPath -Force
+            Write-Host "  Replaced existing ZIP" -ForegroundColor DarkGray
+        }
+
+        # Create ZIP with best compression (SmallestSize)
+        try {
+            $tempDir = Join-Path $env:TEMP "wp-zip-$(Get-Random)"
+            $pluginTempDir = Join-Path $tempDir $pluginName
+            New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
+            Copy-Item -Path "$PluginDir\*" -Destination $pluginTempDir -Recurse
+
+            [System.IO.Compression.ZipFile]::CreateFromDirectory(
+                $pluginTempDir,
+                $zipOutputPath,
+                [System.IO.Compression.CompressionLevel]::SmallestSize,
+                $true
+            )
+
+            Remove-Item $tempDir -Recurse -Force
+
+            if (Test-Path $zipOutputPath) {
+                $zipSize = (Get-Item $zipOutputPath).Length
+                $zipSizeKB = [math]::Round($zipSize / 1024, 1)
+                $zipSizeMB = [math]::Round($zipSize / 1048576, 2)
+                $sizeLabel = if ($zipSizeMB -ge 1) { "$zipSizeMB MB" } else { "$zipSizeKB KB" }
+                Write-Host "  Created: $zipFileName ($sizeLabel)" -ForegroundColor Green
+            } else {
+                Write-Host "  ERROR: ZIP file was not created for $pluginName" -ForegroundColor Red
+            }
+        } catch {
+            Write-Host "  ERROR: Failed to create ZIP for $pluginName`: $_" -ForegroundColor Red
+        }
+
+        Write-Host ""
+    }
+
+    # ── Determine what to ZIP ───────────────────────────────────────────────
     if ($pluginpath -ne "") {
+        # Specific plugin via -pp (path or name)
         $zipPluginPath = $pluginpath
         if (-not [System.IO.Path]::IsPathRooted($zipPluginPath)) {
             $zipPluginPath = Join-Path $ScriptDir $zipPluginPath
@@ -646,94 +713,46 @@ if ($zip) {
             Write-Host "ERROR: Plugin folder not found: $zipPluginPath" -ForegroundColor Red
             exit 1
         }
-        $zipPluginName = Split-Path $zipPluginPath -Leaf
+
+        New-PluginZip $zipPluginPath
     } else {
-        $defaultUploader = $null
-        if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
-            $defaultUploader = $Config.wpPlugins.defaultUploader
-        }
-        if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
-            Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+        # ZIP all plugin folders under wp-plugins/
+        $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
+        if (-not (Test-Path $wpPluginsDir)) {
+            Write-Host "ERROR: wp-plugins/ directory not found" -ForegroundColor Red
             exit 1
         }
-        $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
-        $zipPluginPath = Resolve-RelativePath $pluginConfig.path
-        $zipPluginName = $defaultUploader
 
-        if (-not (Test-Path $zipPluginPath)) {
-            Write-Host "ERROR: Plugin folder not found: $zipPluginPath" -ForegroundColor Red
-            exit 1
-        }
-    }
-
-    # Extract version from main PHP file header
-    $mainFile = if ($pluginConfig -and $pluginConfig.mainFile) { $pluginConfig.mainFile } else { "$zipPluginName.php" }
-    $mainFilePath = Join-Path $zipPluginPath $mainFile
-    $pluginVersion = "unknown"
-
-    if (Test-Path $mainFilePath) {
-        $headerContent = Get-Content $mainFilePath -Raw -ErrorAction SilentlyContinue
-        $versionMatch = [regex]::Match($headerContent, "\*\s*Version:\s*(\d+\.\d+\.\d+)")
-        if ($versionMatch.Success) {
-            $pluginVersion = $versionMatch.Groups[1].Value
-        }
-    }
-
-    # Build ZIP filename with version
-    $zipFileName = "$zipPluginName-v$pluginVersion.zip"
-    $zipOutputPath = Join-Path (Split-Path $zipPluginPath -Parent) $zipFileName
-
-    Write-Host "  Plugin:  $zipPluginName" -ForegroundColor Yellow
-    Write-Host "  Version: v$pluginVersion" -ForegroundColor Yellow
-    Write-Host "  Source:  $zipPluginPath" -ForegroundColor Gray
-    Write-Host "  Output:  $zipOutputPath" -ForegroundColor Gray
-    Write-Host ""
-
-    # Remove existing ZIP if present
-    if (Test-Path $zipOutputPath) {
-        Remove-Item $zipOutputPath -Force
-        Write-Host "  Replaced existing ZIP" -ForegroundColor DarkGray
-    }
-
-    # Create ZIP using System.IO.Compression for SmallestSize (better than Compress-Archive Optimal)
-    try {
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        # Create temp structure with slug folder for proper ZIP root
-        $tempDir = Join-Path $env:TEMP "wp-zip-$(Get-Random)"
-        $pluginTempDir = Join-Path $tempDir (Split-Path $zipPluginPath -Leaf)
-        New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
-        Copy-Item -Path "$zipPluginPath\*" -Destination $pluginTempDir -Recurse
-        [System.IO.Compression.ZipFile]::CreateFromDirectory(
-            $pluginTempDir,
-            $zipOutputPath,
-            [System.IO.Compression.CompressionLevel]::SmallestSize,
-            $true  # includeBaseDirectory
-        )
-        Remove-Item $tempDir -Recurse -Force
-
-        # Verify the ZIP was created
-        if (Test-Path $zipOutputPath) {
-            $zipSize = (Get-Item $zipOutputPath).Length
-            $zipSizeKB = [math]::Round($zipSize / 1024, 1)
-            $zipSizeMB = [math]::Round($zipSize / 1048576, 2)
-
-            Write-Host ""
-            Write-Host "  ZIP created successfully!" -ForegroundColor Green
-            Write-Host "  File: $zipFileName" -ForegroundColor White
-            if ($zipSizeMB -ge 1) {
-                Write-Host "  Size: $zipSizeMB MB" -ForegroundColor White
-            } else {
-                Write-Host "  Size: $zipSizeKB KB" -ForegroundColor White
+        # Find all plugin folders (must contain a .php file with "Plugin Name:" header)
+        $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
+            $phpFiles = Get-ChildItem $_.FullName -Filter "*.php" -File -ErrorAction SilentlyContinue
+            $hasPluginHeader = $false
+            foreach ($f in $phpFiles) {
+                $head = Get-Content $f.FullName -Head 5 -ErrorAction SilentlyContinue
+                if ($head -match "Plugin Name:") { $hasPluginHeader = $true; break }
             }
-            Write-Host ""
-        } else {
-            Write-Host "ERROR: ZIP file was not created" -ForegroundColor Red
-            exit 1
+            $hasPluginHeader
         }
-    } catch {
-        Write-Host "ERROR: Failed to create ZIP: $_" -ForegroundColor Red
-        exit 1
+
+        if ($pluginFolders.Count -eq 0) {
+            Write-Host "No WordPress plugins found in wp-plugins/" -ForegroundColor Yellow
+            exit 0
+        }
+
+        Write-Host "  Found $($pluginFolders.Count) plugin(s) to ZIP:" -ForegroundColor Cyan
+        foreach ($folder in $pluginFolders) {
+            Write-Host "    - $($folder.Name)" -ForegroundColor Gray
+        }
+        Write-Host ""
+
+        foreach ($folder in $pluginFolders) {
+            New-PluginZip $folder.FullName
+        }
     }
+
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  ZIP complete!" -ForegroundColor Green
+    Write-Host "========================================" -ForegroundColor Cyan
 
     exit 0
 }
