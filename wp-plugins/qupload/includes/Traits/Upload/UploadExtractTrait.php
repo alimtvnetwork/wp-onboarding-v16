@@ -73,6 +73,7 @@ trait UploadExtractTrait
         }
 
         $this->fileLogger->info('Directories verified', ['base' => $baseDir, 'temp' => $tempDir]);
+        $this->traceStage('validateAndWriteZip:directories-ready', ['base' => $baseDir, 'temp' => $tempDir]);
 
         $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
