@@ -512,15 +512,15 @@ internal/enums/status/           // missing type suffix
 ### File-to-Type Mapping Examples
 
 ```
-// ✅ One type per file, name matches
-config.go           → type Config struct
-server_config.go    → type ServerConfig struct
-watcher_config.go   → type WatcherConfig struct
-status_type.go      → type StatusType byte + methods
-error_json.go       → MarshalJSON/UnmarshalJSON on AppError
+// ✅ One type per file, name matches (PascalCase)
+Config.go           → type Config struct
+ServerConfig.go     → type ServerConfig struct
+WatcherConfig.go    → type WatcherConfig struct
+StatusType.go       → type StatusType byte + methods
+ErrorJson.go        → MarshalJSON/UnmarshalJSON on AppError
 
 // ❌ Wrong: multiple unrelated types in one file
-config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
+Config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
 ```
 
 ---
