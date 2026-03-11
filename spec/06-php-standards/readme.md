@@ -768,13 +768,13 @@ Callers provide a `Closure(array): T` mapper for type-safe row mapping (equivale
 
 ## Cross-References
 
-- [WordPress Plugin Development Spec](../07-wordpress-plugin-development/) — Full 10-document guide
-- [Error Handling Spec](../05-error-manage/01-error-handling/) — Cross-language error strategy
-- [Generic Enforce Spec](../12-generic-enforce/) — Type safety rules
-- [DRY Principles](../01-coding-guidelines/dry-principles.md) — Cross-language DRY rules
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
-- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
-- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
+- [WordPress Plugin Development Spec](../09-wordpress-plugin-development/) — Full 10-document guide
+- [Error Handling Spec](../07-error-manage/01-error-handling/) — Cross-language error strategy
+- [Generic Enforce Spec](../14-generic-enforce/) — Type safety rules
+- [DRY Principles](../03-coding-guidelines/dry-principles.md) — Cross-language DRY rules
+- [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
+- [Function Naming](../03-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
+- [Strict Typing](../03-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
 
 ---
 

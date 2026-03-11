@@ -110,11 +110,11 @@ Documents the cross-language alignment between PHP (WordPress plugin) and Go (ba
 
 ## Cross-References
 
-- [Database Naming Convention](../01-coding-guidelines/database-naming.md)
+- [Database Naming Convention](../03-coding-guidelines/database-naming.md)
 - [PHP Enum Specification](./enums.md)
 - [PHP Naming Conventions](./naming-conventions.md)
-- [Go Enum Specification](../03-golang-standards/01-enum-specification/00-overview.md)
-- [Go Required Methods](../03-golang-standards/01-enum-specification/02-required-methods.md)
+- [Go Enum Specification](../05-golang-standards/01-enum-specification/00-overview.md)
+- [Go Required Methods](../05-golang-standards/01-enum-specification/02-required-methods.md)
 - [Enum Consumer Checklist](../01-app/enum-consumer-checklist.md)
 
 ---

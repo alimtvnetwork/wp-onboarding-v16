@@ -485,10 +485,10 @@ The `DateHelper` class itself is the sole place where raw `gmdate()` calls are p
 
 - [PHP Coding Standards](./readme.md) — Full spec with examples
 - [PHP Enum Classes](./enums.md) — `HookType`, `CapabilityType`, `HttpMethodType`, Path enums, `ErrorType`, `ErrorChecker`
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rules 1-9 (braces, nesting, spacing, function size, Throwable, multi-line params)
-- [WordPress Error Handling](../07-wordpress-plugin-development/07-error-handling.md) — Complete error handling patterns
-- [WordPress Initialization](../07-wordpress-plugin-development/01-initialization-patterns.md) — Bootstrap patterns
-- [WordPress API Design](../07-wordpress-plugin-development/04-api-design.md) — REST endpoint patterns
+- [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rules 1-9 (braces, nesting, spacing, function size, Throwable, multi-line params)
+- [WordPress Error Handling](../09-wordpress-plugin-development/07-error-handling.md) — Complete error handling patterns
+- [WordPress Initialization](../09-wordpress-plugin-development/01-initialization-patterns.md) — Bootstrap patterns
+- [WordPress API Design](../09-wordpress-plugin-development/04-api-design.md) — REST endpoint patterns
 
 ---
 
