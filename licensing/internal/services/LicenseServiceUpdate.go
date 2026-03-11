@@ -22,8 +22,8 @@ func (s *LicenseService) Update(
 ) apperror.Result[*models.License] {
 	setClauses, args := buildUpdateClauses(input)
 
-	isNothingToUpdate := len(setClauses) == 0
-	if isNothingToUpdate {
+	isAlreadyCurrent := len(setClauses) == 0
+	if isAlreadyCurrent {
 
 		return s.GetById(id)
 	}
