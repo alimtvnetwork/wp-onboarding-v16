@@ -314,7 +314,7 @@ if (response.status >= 400) {
 
 ## 8. No Raw Negations — Use Positive Guard Functions
 
-> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+> **Canonical source:** [No Raw Negations](../03-coding-guidelines/no-negatives.md)
 
 **Never use `!` on a function call in a condition.** Wrap every negative check in a positively named guard function.
 
@@ -336,14 +336,14 @@ if (isFileMissing(path)) { throw new Error('Missing'); }
 
 ## Cross-References
 
-- [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
-- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
-- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
-- [DRY Principles](../01-coding-guidelines/dry-principles.md)
-- [Golang Standards](../03-golang-standards/readme.md)
-- [Response Envelope Spec](../05-error-manage/05-response-envelope/envelope.schema.json)
+- [No Raw Negations](../03-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
+- [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
+- [Function Naming](../03-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
+- [Strict Typing](../03-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
+- [DRY Principles](../03-coding-guidelines/dry-principles.md)
+- [Golang Standards](../05-golang-standards/readme.md)
+- [Response Envelope Spec](../07-error-manage/05-response-envelope/envelope.schema.json)
 
 ---
 
-*TypeScript standards v3.1.0 — generics-first, zero-any, no-magic-strings, max-15-lines, zero-nesting — 2026-02-14*
+*TypeScript standards v3.2.0 — 2026-03-11*
