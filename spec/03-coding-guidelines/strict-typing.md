@@ -69,7 +69,7 @@ PHP does not support type declarations on local variables. Types apply to parame
 
 Already enforced by the generics-first rule and `strict: true` in tsconfig. Key reinforcements:
 
-- `any` is **prohibited** everywhere (see [TypeScript Standards](../02-typescript-standards/readme.md))
+- `any` is **prohibited** everywhere (see [TypeScript Standards](../04-typescript-standards/readme.md))
 - `unknown` only at parse boundaries with immediate narrowing
 - All function signatures must have explicit parameter and return types
 
