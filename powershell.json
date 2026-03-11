@@ -43,6 +43,7 @@
   },
   "wpPlugins": {
     "defaultUploader": "riseup-asia-uploader",
+    "defaultQUploader": "qupload",
     "pluginsDir": "wp-plugins",
     "plugins": {
       "riseup-asia-uploader": {
@@ -55,6 +56,12 @@
         "name": "Plugins Onboard",
         "path": "wp-plugins/plugins-onboard",
         "mainFile": "plugins-onboard.php",
+        "autoUpload": false
+      },
+      "qupload": {
+        "name": "Quick Upload",
+        "path": "wp-plugins/qupload",
+        "mainFile": "qupload.php",
         "autoUpload": false
       }
     }
