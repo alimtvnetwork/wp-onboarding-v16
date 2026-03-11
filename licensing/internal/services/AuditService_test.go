@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 )
 
 func TestLogBasicEntry(t *testing.T) {
