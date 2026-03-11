@@ -81,7 +81,7 @@ func (h *PublicHandlers) executeActivation(
 		return
 	}
 
-	h.logPublicAudit(r, &licenseId, auditaction.Activated, domain)
+	h.logPublicAudit(r, &licenseId, auditactiontype.Activated, domain)
 	jsonResponse(w, http.StatusOK, actResult.Value())
 }
 
