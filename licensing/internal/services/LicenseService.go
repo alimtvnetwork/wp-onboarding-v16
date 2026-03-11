@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 	"riseup-licensing/internal/models"
