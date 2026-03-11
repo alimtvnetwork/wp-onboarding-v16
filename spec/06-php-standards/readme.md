@@ -466,7 +466,7 @@ if ($hasPermission) { ... }
 ## Code Style — Braces, Nesting, Spacing & Function Size
 
 > These rules apply across **all languages** (PHP, TypeScript, Go).  
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — this section repeats key rules with PHP-specific examples.
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — this section repeats key rules with PHP-specific examples.
 
 ### Rule 1: Always use braces — no single-line returns
 
