@@ -40,9 +40,9 @@
 
 | File | Line | Before | After |
 |---|---|---|---|
-| `spec/07-wordpress-plugin-development/07-error-handling.md` | ~652 | `!is_writable($dir)` | `PathHelper::isDirReadonly($dir)` |
-| `spec/08-wp-plugin-publish/01-backend/06-file-watcher.md` | ~101 | `!file_exists($path)` | `PathHelper::isFileMissing($path)` |
-| `spec/07-wordpress-plugin-development/08-compatibility.md` | ~155 | `!is_dir($path)` | `PathHelper::isDirMissing($path)` |
+| `spec/09-wordpress-plugin-development/07-error-handling.md` | ~652 | `!is_writable($dir)` | `PathHelper::isDirReadonly($dir)` |
+| `spec/10-wp-plugin-publish/01-backend/06-file-watcher.md` | ~101 | `!file_exists($path)` | `PathHelper::isFileMissing($path)` |
+| `spec/09-wordpress-plugin-development/08-compatibility.md` | ~155 | `!is_dir($path)` | `PathHelper::isDirMissing($path)` |
 
 **Additional cleanup:** Added `use RiseupAsia\Helpers\PathHelper` import where missing.
 
