@@ -37,9 +37,9 @@ func writeDetailsSection(b *strings.Builder, e *AppError) {
 
 // writeValuesSection writes injected variable values if present.
 func writeValuesSection(b *strings.Builder, e *AppError) {
-	isValuesEmpty := !e.HasValues()
+	hasValues := e.HasValues()
 
-	if isValuesEmpty {
+	if !hasValues {
 		return
 	}
 
