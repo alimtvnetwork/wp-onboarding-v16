@@ -59,7 +59,7 @@ func TestLogNilDetails(t *testing.T) {
 
 	err := svc.Log(LogInput{
 		LicenseId: nil,
-		Action:    auditaction.Validated,
+		Action:    auditactiontype.Validated,
 		Domain:    "nil.com",
 		IpAddress: "5.6.7.8",
 		Details:   nil,
