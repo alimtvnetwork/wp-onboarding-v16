@@ -1,7 +1,7 @@
 package services
 
 import (
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/models"
 	"riseup-licensing/pkg/apperror"
