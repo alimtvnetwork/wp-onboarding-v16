@@ -531,7 +531,7 @@ Config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
 |---------|-----------|---------|
 | Package names | Lowercase, single word | `wordpress`, `publish`, `apperror` |
 | Package directories | `snake_case` for multi-word | `site_health`, `log_level` |
-| File names | `snake_case.go`, maps to primary type | `server_config.go`, `status_type.go` |
+| File names | `PascalCase.go`, matches primary type | `ServerConfig.go`, `StatusType.go` |
 | Exported functions | PascalCase, verb-led | `EnablePlugin`, `FetchStatus` |
 | Unexported functions | camelCase, verb-led | `resolveNamespace`, `parseStackTrace` |
 | Interfaces | PascalCase, `-er` suffix for single-method | `Publisher`, `PluginStore` |
