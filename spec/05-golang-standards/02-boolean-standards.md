@@ -65,7 +65,7 @@ The following counterparts exist in the codebase and **must** be used instead of
 | `publish` | `isPermanentError(err)` | `!isTransientAppError(err)` |
 | `plugin` | `ScanResult.IsInvalid()` | `!ScanResult.IsValid` |
 | `publishtype` | `Variant.IsUndefined()` | `!Variant.IsDefined()` |
-| `e2e` | `apiResponse.isDataMissing(key)` | `!apiResponse.hasDataField(key)` |
+| `e2e` | `apiResponse.hasDataField(key)` | inline `len(r.Data) == 0` check |
 | `site` | `isStackTraceMissing(result)` | `!hasStackTraceContent(result)` |
 
 ### 2.3 — Enum Comparisons

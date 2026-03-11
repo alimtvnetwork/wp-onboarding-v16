@@ -89,10 +89,10 @@ All sub-phases 7A–7G complete.
 - ✅ Updated `naming-conventions.md` with array key conventions section (v1.1.0)
 - ✅ Created `php-go-consistency-audit.md` — 7-section cross-language audit
 
-### Phase 5: Licensing System Architecture
+### Phase 5: Licensing System Architecture ✅
 
-- License server + WP plugin client (8–10 tasks)
-- Decision needed: Build custom (Go) vs Keygen.sh vs LemonSqueezy vs EDD
+- ✅ Custom Go server built in `licensing/` module (SQLite, HMAC-SHA256, PHP client with 12h cache)
+- See Resolved Design Decisions #4 below
 
 ### Go Phase 4: Positive Logic & Boolean Standards ✅ (2026-03-11)
 
