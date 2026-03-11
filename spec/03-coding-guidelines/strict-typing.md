@@ -79,7 +79,7 @@ Already enforced by the generics-first rule and `strict: true` in tsconfig. Key 
 
 Already statically typed. Key reinforcements:
 
-- `interface{}` / `any` is **prohibited** in exported APIs (see [Go Standards](../03-golang-standards/readme.md))
+- `interface{}` / `any` is **prohibited** in exported APIs (see [Go Standards](../05-golang-standards/readme.md))
 - Use concrete types or constrained generics (`[T any]` in generic signatures is acceptable)
 - All struct fields must use concrete types, not `map[string]interface{}`
 
