@@ -78,7 +78,7 @@ func scanLicenseRow(row scannable) (*models.License, error) {
 
 	m.Product = producttype.Parse(product)
 	m.Type = licensetype.Parse(ltype)
-	m.Status = licensestatus.Parse(status)
+	m.Status = licensestatustype.Parse(status)
 
 	return &m, nil
 }
