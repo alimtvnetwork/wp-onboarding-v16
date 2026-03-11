@@ -46,7 +46,7 @@ func (h *AdminHandlers) UpdateLicense(w http.ResponseWriter, r *http.Request) {
 
 	license := updateResult.Value()
 
-	h.logAudit(r, &license.Id, auditaction.Updated, "")
+	h.logAudit(r, &license.Id, auditactiontype.Updated, "")
 	jsonResponse(w, http.StatusOK, license)
 }
 
