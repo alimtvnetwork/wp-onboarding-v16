@@ -320,6 +320,7 @@ trait UploadExtractTrait
 
     /** Open and extract the ZIP, cleaning up temp file. */
     private function extractZipToTemp(string $tempFile, string $tempExtractDir): ?WP_REST_Response {
+        $this->traceStage('extractZipToTemp:start', ['tempFile' => $tempFile, 'extractDir' => $tempExtractDir]);
         $zip = new ZipArchive();
 
         if ($zip->open($tempFile) !== true) {
