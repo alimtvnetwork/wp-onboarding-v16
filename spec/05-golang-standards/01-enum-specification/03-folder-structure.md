@@ -56,7 +56,7 @@ All Go enum packages MUST end with the `type` suffix (lowercase, no underscores)
 
 ### File Names
 
-- Always name the file `variant.go`
+- Always name the file `Variant.go` (PascalCase per file naming mandate)
 - Additional helper files allowed: `helpers.go`, `validation.go`
 
 ```
