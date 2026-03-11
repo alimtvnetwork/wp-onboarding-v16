@@ -2,7 +2,7 @@
 
 > **Version:** 4.0.0  
 > **Updated:** 2026-02-20  
-> **Consolidates:** [readme.md](./readme.md), [enums.md](./enums.md), [WP Error Handling](../07-wordpress-plugin-development/07-error-handling.md)
+> **Consolidates:** [readme.md](./readme.md), [enums.md](./enums.md), [WP Error Handling](../09-wordpress-plugin-development/07-error-handling.md)
 
 ---
 
