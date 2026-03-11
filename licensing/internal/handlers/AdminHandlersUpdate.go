@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"riseup-licensing/internal/enums/auditaction"
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/auditactiontype"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/services"
 )
