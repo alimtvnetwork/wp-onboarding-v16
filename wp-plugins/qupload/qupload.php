@@ -22,6 +22,7 @@ if (!defined('ABSPATH')) {
 use QUpload\Core\Plugin;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Helpers\ErrorLogHelper;
+use QUpload\Helpers\PathHelper;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all QUpload\ classes resolve automatically
@@ -30,12 +31,36 @@ use QUpload\Helpers\ErrorLogHelper;
 require_once __DIR__ . '/includes/Autoloader.php';
 
 /**
+ * Boot-level fallback trace so we can see whether QUpload initializes at all.
+ */
+function qupload_boot_trace(string $stage, array $context = []): void {
+    if (!class_exists(PathHelper::class)) {
+        error_log('[QUpload Boot] ' . $stage);
+
+        return;
+    }
+
+    $baseDir = PathHelper::getBaseDir();
+    PathHelper::ensureDirectory($baseDir);
+    @file_put_contents(
+        PathHelper::getStageTraceFile(),
+        '[BOOT] ' . gmdate('c') . ' ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)) . PHP_EOL,
+        FILE_APPEND | LOCK_EX,
+    );
+    @error_log('[QUpload Boot] ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)));
+}
+
+/**
  * Initialize the plugin.
  */
 function qupload_init(): void {
+    qupload_boot_trace('init:start');
+
     try {
         Plugin::getInstance();
+        qupload_boot_trace('init:success');
     } catch (Throwable $e) {
+        qupload_boot_trace('init:exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
         ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Plugin init failed:');
     }
 }
@@ -46,9 +71,13 @@ add_action(\QUpload\Enums\HookType::PluginsLoaded->value, 'qupload_init');
  * Handle plugin deactivation — clear temp files.
  */
 function qupload_deactivate(): void {
+    qupload_boot_trace('deactivate:start');
+
     try {
         Plugin::getInstance()->handleDeactivate();
+        qupload_boot_trace('deactivate:success');
     } catch (Throwable $e) {
+        qupload_boot_trace('deactivate:exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
         ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Deactivation cleanup failed:');
     }
 }

@@ -24,6 +24,7 @@ use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\RequestFieldType;
 use QUpload\Enums\ResponseKeyType;
 use QUpload\Helpers\EnvelopeBuilder;
+use QUpload\Helpers\PathHelper;
 
 trait UploadHandlerTrait
 {
@@ -31,6 +32,15 @@ trait UploadHandlerTrait
 
     /** Handle POST /upload endpoint. */
     public function handleUpload(WP_REST_Request $request): WP_REST_Response {
+        $baseDir = PathHelper::getBaseDir();
+        PathHelper::ensureDirectory($baseDir);
+        @file_put_contents(
+            PathHelper::getStageTraceFile(),
+            '[ENTRY] handleUpload reached ' . gmdate('c') . PHP_EOL,
+            FILE_APPEND | LOCK_EX,
+        );
+        @error_log('[QUpload Stage] handleUpload reached');
+
         $this->fileLogger->info('Upload endpoint called');
 
         try {
@@ -43,6 +53,7 @@ trait UploadHandlerTrait
     }
 
     private function executeUploadPipeline(WP_REST_Request $request): WP_REST_Response {
+        $this->traceStage('executeUploadPipeline:start');
         $input = $this->parseUploadInput($request);
 
         if ($input instanceof WP_REST_Response) {
@@ -71,6 +82,7 @@ trait UploadHandlerTrait
     }
 
     private function parseUploadInput(WP_REST_Request $request): array|WP_REST_Response {
+        $this->traceStage('parseUploadInput:start');
         $files = $request->get_file_params();
         $isMultipart = !empty($files[RequestFieldType::PluginZip->value]);
 
@@ -82,6 +94,7 @@ trait UploadHandlerTrait
     }
 
     private function parseMultipartUpload(array $files, WP_REST_Request $request): array|WP_REST_Response {
+        $this->traceStage('parseMultipartUpload:start');
         $this->fileLogger->info('Processing multipart upload');
         $upload = $files[RequestFieldType::PluginZip->value];
 
@@ -105,6 +118,7 @@ trait UploadHandlerTrait
     }
 
     private function parseBase64Upload(WP_REST_Request $request): array|WP_REST_Response {
+        $this->traceStage('parseBase64Upload:start');
         $data = $request->get_json_params();
 
         if (empty($data[RequestFieldType::PluginZip->value])) {
@@ -150,3 +164,4 @@ trait UploadHandlerTrait
             ->toResponse();
     }
 }
+
