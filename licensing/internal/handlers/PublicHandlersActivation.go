@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 	"riseup-licensing/internal/services"
 )
 
@@ -81,7 +81,7 @@ func (h *PublicHandlers) executeActivation(
 		return
 	}
 
-	h.logPublicAudit(r, &licenseId, auditaction.Activated, domain)
+	h.logPublicAudit(r, &licenseId, auditactiontype.Activated, domain)
 	jsonResponse(w, http.StatusOK, actResult.Value())
 }
 
@@ -114,7 +114,7 @@ func (h *PublicHandlers) Deactivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logPublicAudit(r, &license.Id, auditaction.Deactivated, req.Domain)
+	h.logPublicAudit(r, &license.Id, auditactiontype.Deactivated, req.Domain)
 	jsonResponse(w, http.StatusOK, statusBody{Status: "deactivated"})
 }
 

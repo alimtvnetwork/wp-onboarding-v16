@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 	"riseup-licensing/internal/models"
@@ -74,7 +74,7 @@ func (h *AdminHandlers) executeCreate(
 
 	license := createResult.Value()
 
-	h.logAudit(r, &license.Id, auditaction.Created, "")
+	h.logAudit(r, &license.Id, auditactiontype.Created, "")
 	jsonResponse(w, http.StatusCreated, license)
 }
 
@@ -150,7 +150,7 @@ func (h *AdminHandlers) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
 	hasAction := actionParam != ""
 
 	if hasAction {
-		action := auditaction.Variant(actionParam)
+		action := auditactiontype.Variant(actionParam)
 		filter.Action = &action
 	}
 
@@ -189,7 +189,7 @@ func (h *AdminHandlers) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandlers) logAudit(
 	r *http.Request,
 	licenseId *int64,
-	action auditaction.Variant,
+	action auditactiontype.Variant,
 	domain string,
 ) {
 	h.Audit.Log(services.LogInput{

@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"riseup-licensing/internal/enums/auditaction"
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/auditactiontype"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/services"
 )
@@ -46,7 +46,7 @@ func (h *AdminHandlers) UpdateLicense(w http.ResponseWriter, r *http.Request) {
 
 	license := updateResult.Value()
 
-	h.logAudit(r, &license.Id, auditaction.Updated, "")
+	h.logAudit(r, &license.Id, auditactiontype.Updated, "")
 	jsonResponse(w, http.StatusOK, license)
 }
 
@@ -55,7 +55,7 @@ func buildUpdateInput(req updateLicenseRequest) services.UpdateInput {
 	var input services.UpdateInput
 
 	if req.Status != nil {
-		status := licensestatus.Parse(*req.Status)
+		status := licensestatustype.Parse(*req.Status)
 		input.Status = &status
 	}
 
@@ -86,6 +86,6 @@ func (h *AdminHandlers) DeleteLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logAudit(r, &id, auditaction.Deleted, "")
+	h.logAudit(r, &id, auditactiontype.Deleted, "")
 	jsonResponse(w, http.StatusOK, statusBody{Status: "deleted"})
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 	"riseup-licensing/internal/models"
 	"riseup-licensing/pkg/apperror"
 )
@@ -24,7 +24,7 @@ func NewAuditService(db *sql.DB) *AuditService {
 // LogInput holds parameters for recording an audit entry.
 type LogInput struct {
 	LicenseId *int64
-	Action    auditaction.Variant
+	Action    auditactiontype.Variant
 	Domain    string
 	IpAddress string
 	Details   any
@@ -49,7 +49,7 @@ func (s *AuditService) Log(input LogInput) *apperror.AppError {
 
 // ListFilter holds optional filters for listing audit logs.
 type ListFilter struct {
-	Action    *auditaction.Variant
+	Action    *auditactiontype.Variant
 	LicenseId *int64
 }
 

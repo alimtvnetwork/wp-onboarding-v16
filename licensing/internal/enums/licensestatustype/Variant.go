@@ -1,5 +1,5 @@
-// Package licensestatus defines license status enum values.
-package licensestatus
+// Package licensestatustype defines license status enum values.
+package licensestatustype
 
 // Variant represents a license status.
 type Variant string
@@ -28,6 +28,24 @@ func (v Variant) IsRevoked() bool { return v == Revoked }
 
 // IsUsable returns true if the license can be used (only Active).
 func (v Variant) IsUsable() bool { return v == Active }
+
+// IsDefined returns true if the variant is a known value.
+func (v Variant) IsDefined() bool {
+	for _, valid := range All() {
+		if v == valid {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsDefinedAndValid returns true if the variant is both defined and non-empty.
+func (v Variant) IsDefinedAndValid() bool {
+	isNonEmpty := v != ""
+
+	return isNonEmpty && v.IsDefined()
+}
 
 // All returns all valid status variants.
 func All() []Variant {

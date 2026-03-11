@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 	"riseup-licensing/internal/models"
@@ -41,7 +41,7 @@ func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.Licen
 		input.Email,
 		input.Product.String(),
 		input.Type.String(),
-		licensestatus.Active.String(),
+		licensestatustype.Active.String(),
 		input.MaxActivations,
 		input.Notes,
 		input.ExpiresAt,

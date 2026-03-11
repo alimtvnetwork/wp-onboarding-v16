@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 )
 
 func TestLogBasicEntry(t *testing.T) {
@@ -15,7 +15,7 @@ func TestLogBasicEntry(t *testing.T) {
 
 	err := svc.Log(LogInput{
 		LicenseId: &licId,
-		Action:    auditaction.Activated,
+		Action:    auditactiontype.Activated,
 		Domain:    "audit.com",
 		IpAddress: "1.2.3.4",
 		Details:   map[string]string{"reason": "test"},
@@ -59,7 +59,7 @@ func TestLogNilDetails(t *testing.T) {
 
 	err := svc.Log(LogInput{
 		LicenseId: nil,
-		Action:    auditaction.Validated,
+		Action:    auditactiontype.Validated,
 		Domain:    "nil.com",
 		IpAddress: "5.6.7.8",
 		Details:   nil,
@@ -80,7 +80,7 @@ func TestLogAllActions(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewAuditService(db)
 
-	for _, action := range auditaction.All() {
+	for _, action := range auditactiontype.All() {
 		err := svc.Log(LogInput{
 			Action:    action,
 			Domain:    "all-actions.com",
@@ -94,7 +94,7 @@ func TestLogAllActions(t *testing.T) {
 	var count int
 	db.QueryRow("SELECT COUNT(*) FROM audit_log WHERE domain = 'all-actions.com'").Scan(&count)
 
-	expected := len(auditaction.All())
+	expected := len(auditactiontype.All())
 	if count != expected {
 		t.Errorf("count = %d, want %d", count, expected)
 	}

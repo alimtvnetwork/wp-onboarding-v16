@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 	"riseup-licensing/internal/services"
 )
 
@@ -46,7 +46,7 @@ func (h *PublicHandlers) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logPublicAudit(r, &license.Id, auditaction.Validated, "")
+	h.logPublicAudit(r, &license.Id, auditactiontype.Validated, "")
 
 	jsonResponse(w, http.StatusOK, validateResponse{
 		Valid:          license.IsUsable(),
@@ -62,7 +62,7 @@ func (h *PublicHandlers) Validate(w http.ResponseWriter, r *http.Request) {
 func (h *PublicHandlers) logPublicAudit(
 	r *http.Request,
 	licenseId *int64,
-	action auditaction.Variant,
+	action auditactiontype.Variant,
 	domain string,
 ) {
 	h.Audit.Log(services.LogInput{

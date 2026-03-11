@@ -3,8 +3,8 @@ package services
 import (
 	"database/sql"
 
-	"riseup-licensing/internal/enums/auditaction"
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/auditactiontype"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 	"riseup-licensing/internal/models"
@@ -48,7 +48,7 @@ func scanLicense(row scannable) apperror.Result[*models.License] {
 
 	m.Product = producttype.Parse(product)
 	m.Type = licensetype.Parse(ltype)
-	m.Status = licensestatus.Parse(status)
+	m.Status = licensestatustype.Parse(status)
 
 	return apperror.Ok(&m)
 }
@@ -78,7 +78,7 @@ func scanLicenseRow(row scannable) (*models.License, error) {
 
 	m.Product = producttype.Parse(product)
 	m.Type = licensetype.Parse(ltype)
-	m.Status = licensestatus.Parse(status)
+	m.Status = licensestatustype.Parse(status)
 
 	return &m, nil
 }
@@ -180,7 +180,7 @@ func scanAuditLogRows(rows *sql.Rows) apperror.Result[[]models.AuditLog] {
 			return apperror.FailWrap[[]models.AuditLog](scanErr, apperror.ErrDatabaseScan, "scan audit log")
 		}
 
-		m.Action = auditaction.Variant(action)
+		m.Action = auditactiontype.Variant(action)
 		logs = append(logs, m)
 	}
 

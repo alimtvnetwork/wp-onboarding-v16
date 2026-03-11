@@ -1,7 +1,7 @@
 package services
 
 import (
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/models"
 	"riseup-licensing/pkg/apperror"
@@ -9,7 +9,7 @@ import (
 
 // UpdateInput holds parameters for updating an existing license.
 type UpdateInput struct {
-	Status         *licensestatus.Variant
+	Status         *licensestatustype.Variant
 	Type           *licensetype.Variant
 	MaxActivations *int
 	Notes          *string

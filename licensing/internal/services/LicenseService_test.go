@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 )
@@ -107,7 +107,7 @@ func TestUpdate(t *testing.T) {
 		MaxActivations: 1,
 	})
 
-	newStatus := licensestatus.Suspended
+	newStatus := licensestatustype.Suspended
 	newMax := 10
 	newNotes := "updated notes"
 

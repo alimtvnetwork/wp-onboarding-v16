@@ -4,7 +4,7 @@ package models
 import (
 	"time"
 
-	"riseup-licensing/internal/enums/licensestatus"
+	"riseup-licensing/internal/enums/licensestatustype"
 	"riseup-licensing/internal/enums/licensetype"
 	"riseup-licensing/internal/enums/producttype"
 )
@@ -16,7 +16,7 @@ type License struct {
 	Email          string                 `json:"email"`
 	Product        producttype.Variant    `json:"product"`
 	Type           licensetype.Variant    `json:"type"`
-	Status         licensestatus.Variant  `json:"status"`
+	Status         licensestatustype.Variant  `json:"status"`
 	MaxActivations int                    `json:"max_activations"`
 	Notes          string                 `json:"notes,omitempty"`
 	CreatedAt      time.Time              `json:"created_at"`
