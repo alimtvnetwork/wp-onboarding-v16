@@ -754,7 +754,7 @@ final class ErrorType
 
 - [PHP Coding Standards](./readme.md) — Parent spec with forbidden patterns
 - [Naming Conventions](./naming-conventions.md) — PascalCase for enums, camelCase for methods
-- [Golang Standards](../03-golang-standards/readme.md) — Go equivalent patterns
+- [Golang Standards](../05-golang-standards/readme.md) — Go equivalent patterns
 
 ## Log Context Array Keys — camelCase
 

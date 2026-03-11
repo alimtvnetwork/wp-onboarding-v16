@@ -1029,9 +1029,9 @@ func (a *Adapter) GetById(ctx context.Context, id int64) (*Model, error) {
 
 ## Cross-References
 
-- [Golang Coding Standards](../../03-golang-standards/readme.md) — File size, function size, type safety, file naming
-- [Cross-Language Code Style](../../01-coding-guidelines/code-style.md) — Braces, nesting, spacing
-- [Enum Specification](../../03-golang-standards/01-enum-specification/00-overview.md) — Byte-based enum pattern with mandatory JSON marshal
+- [Golang Coding Standards](../../05-golang-standards/readme.md) — File size, function size, type safety, file naming
+- [Cross-Language Code Style](../../03-coding-guidelines/code-style.md) — Braces, nesting, spacing
+- [Enum Specification](../../05-golang-standards/01-enum-specification/00-overview.md) — Byte-based enum pattern with mandatory JSON marshal
 
 ---
 
