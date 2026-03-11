@@ -255,11 +255,11 @@ Raw negation is **only** acceptable for:
 
 ## Cross-References
 
-- [PHP Boolean Logic](../04-php-standards/readme.md#boolean-logic) — PHP-specific helpers
-- [PHP Forbidden Patterns](../04-php-standards/forbidden-patterns.md) — Pattern 4.x
+- [PHP Boolean Logic](../06-php-standards/readme.md#boolean-logic) — PHP-specific helpers
+- [PHP Forbidden Patterns](../06-php-standards/forbidden-patterns.md) — Pattern 4.x
 - [Cross-Language Code Style](./code-style.md) — Braces, nesting, spacing
-- [TypeScript Standards](../02-typescript-standards/readme.md)
-- [Golang Standards](../03-golang-standards/readme.md)
+- [TypeScript Standards](../04-typescript-standards/readme.md)
+- [Golang Standards](../05-golang-standards/readme.md)
 
 ---
 

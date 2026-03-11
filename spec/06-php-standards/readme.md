@@ -385,7 +385,7 @@ class MyPlugin {
 
 ### Rule: No raw negations — use positive guard functions
 
-> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+> **Canonical source:** [No Raw Negations](../03-coding-guidelines/no-negatives.md)
 
 **Never use `!` on a function call in a condition.** Every negative check must be wrapped in a positively named guard function that reads as a single intent. See the canonical spec for the full cross-language rule and all guard function tables.
 
@@ -466,7 +466,7 @@ if ($hasPermission) { ... }
 ## Code Style — Braces, Nesting, Spacing & Function Size
 
 > These rules apply across **all languages** (PHP, TypeScript, Go).  
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — this section repeats key rules with PHP-specific examples.
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — this section repeats key rules with PHP-specific examples.
 
 ### Rule 1: Always use braces — no single-line returns
 
@@ -662,7 +662,7 @@ add_action(Hook::Init->value, [$this, 'setup']);
 
 ### Rule 6: Maximum 15 lines per function
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 6
 
 Every function/method body must be **15 lines or fewer** (excluding blank lines, comments, and the signature). Extract logic into small, well-named helper functions.
 
@@ -709,10 +709,10 @@ public function handleUpload(WP_REST_Request $request): WP_REST_Response {
 | `!file_exists()` / `!is_dir()` | Raw negation | `isFileMissing()` / `isDirMissing()` |
 | `current_user_can('manage_options')` | Magic string | `CapabilityType::ManageOptions->value` |
 | `'POST'` in routes | Inconsistent | `HttpMethodType::Post->value` |
-| Untyped function parameters | No runtime safety | Add type declarations (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
+| Untyped function parameters | No runtime safety | Add type declarations (see [Strict Typing](../03-coding-guidelines/strict-typing.md)) |
 | Untyped return values | No contract enforcement | Add return type declarations |
-| Redundant `@param` on typed signatures | Noisy duplication | Remove; keep summary only (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
-| Boolean flag changing operation meaning | Unreadable call sites | Split into named methods (see [Function Naming](../01-coding-guidelines/function-naming.md)) |
+| Redundant `@param` on typed signatures | Noisy duplication | Remove; keep summary only (see [Strict Typing](../03-coding-guidelines/strict-typing.md)) |
+| Boolean flag changing operation meaning | Unreadable call sites | Split into named methods (see [Function Naming](../03-coding-guidelines/function-naming.md)) |
 | Hardcoded color hex arrays in templates | Unmaintainable, scattered | `ColorConfig::getGroup()` / `ColorConfig::logLevel()` from `data/colors.json` |
 | Inline `#hex` status/theme colors in PHP logic | Theme changes require grep | `ColorConfig::status()` / `ColorConfig::wpAdmin()` |
 
@@ -768,13 +768,13 @@ Callers provide a `Closure(array): T` mapper for type-safe row mapping (equivale
 
 ## Cross-References
 
-- [WordPress Plugin Development Spec](../07-wordpress-plugin-development/) — Full 10-document guide
-- [Error Handling Spec](../05-error-manage/01-error-handling/) — Cross-language error strategy
-- [Generic Enforce Spec](../12-generic-enforce/) — Type safety rules
-- [DRY Principles](../01-coding-guidelines/dry-principles.md) — Cross-language DRY rules
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
-- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
-- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
+- [WordPress Plugin Development Spec](../09-wordpress-plugin-development/) — Full 10-document guide
+- [Error Handling Spec](../07-error-manage/01-error-handling/) — Cross-language error strategy
+- [Generic Enforce Spec](../14-generic-enforce/) — Type safety rules
+- [DRY Principles](../03-coding-guidelines/dry-principles.md) — Cross-language DRY rules
+- [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
+- [Function Naming](../03-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
+- [Strict Typing](../03-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
 
 ---
 

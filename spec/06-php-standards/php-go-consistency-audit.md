@@ -22,7 +22,7 @@ Documents the cross-language alignment between PHP (WordPress plugin) and Go (ba
 | Abbreviations | `Id`, `Url`, `Md5` | `Id`, `Url`, `Md5` | ✅ Aligned |
 | WP core tables | snake_case (exempt) | N/A | ✅ Exempt |
 
-**Reference:** [database-naming.md](../01-coding-guidelines/database-naming.md)
+**Reference:** [database-naming.md](../03-coding-guidelines/database-naming.md)
 
 ---
 
@@ -39,7 +39,7 @@ Documents the cross-language alignment between PHP (WordPress plugin) and Go (ba
 | Zero value | N/A (PHP enums have no zero) | `Invalid = iota` | ✅ By design |
 | Protocol-driven exemptions | N/A | Preserve functional values (`application/json`) | ✅ Documented |
 
-**Reference:** [PHP enums.md](./enums.md), [Go 02-required-methods.md](../03-golang-standards/01-enum-specification/02-required-methods.md)
+**Reference:** [PHP enums.md](./enums.md), [Go 02-required-methods.md](../05-golang-standards/01-enum-specification/02-required-methods.md)
 
 ---
 
@@ -110,11 +110,11 @@ Documents the cross-language alignment between PHP (WordPress plugin) and Go (ba
 
 ## Cross-References
 
-- [Database Naming Convention](../01-coding-guidelines/database-naming.md)
+- [Database Naming Convention](../03-coding-guidelines/database-naming.md)
 - [PHP Enum Specification](./enums.md)
 - [PHP Naming Conventions](./naming-conventions.md)
-- [Go Enum Specification](../03-golang-standards/01-enum-specification/00-overview.md)
-- [Go Required Methods](../03-golang-standards/01-enum-specification/02-required-methods.md)
+- [Go Enum Specification](../05-golang-standards/01-enum-specification/00-overview.md)
+- [Go Required Methods](../05-golang-standards/01-enum-specification/02-required-methods.md)
 - [Enum Consumer Checklist](../01-app/enum-consumer-checklist.md)
 
 ---

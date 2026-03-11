@@ -10,9 +10,9 @@
 ## How to Use This Document
 
 This is the **master reference**. Every rule here is enforced across all languages. Language-specific details are in:
-- [PHP Standards](../04-php-standards/naming-conventions.md)
-- [Go Standards](../03-golang-standards/readme.md)
-- [TypeScript Standards](../02-typescript-standards/readme.md)
+- [PHP Standards](../06-php-standards/naming-conventions.md)
+- [Go Standards](../05-golang-standards/readme.md)
+- [TypeScript Standards](../04-typescript-standards/readme.md)
 - [Database Naming](./database-naming.md)
 - [Boolean Principles](./boolean-principles.md)
 - [No-Negatives](./no-negatives.md)
@@ -418,7 +418,7 @@ func (a *Adapter) GetById(ctx context.Context, id int64) (*models.Plugin, error)
 }
 ```
 
-> **Full examples with PHP/Go/TypeScript:** see [apperror § Result Guard Rule](../05-error-manage/06-apperror-package/readme.md#12-result-guard-rule--mandatory-error-check-before-value-access)
+> **Full examples with PHP/Go/TypeScript:** see [apperror § Result Guard Rule](../07-error-manage/06-apperror-package/readme.md#12-result-guard-rule--mandatory-error-check-before-value-access)
 
 #### Enforcement Checklist
 
@@ -552,13 +552,22 @@ $this->db->insert(TableType::Transactions->value, array('PluginSlug' => $slug));
 
 ---
 
-## 11. Lint Scripts (Go)
+## 11. Lint Scripts
 
 | Script | Rule | Status |
 |--------|------|--------|
-| `scripts/lint-file-size.sh` | No `.go` file > 300 lines | ✅ Active |
+| `scripts/lint-file-size.sh` | No `.go` file > 300 lines (400 hard limit) | ✅ Active |
 | `scripts/lint-func-size.sh` | No function body > 15 lines | ✅ Active |
 | `scripts/lint-negative.sh` | No `IsNot*`, `HasNo*` function names | ✅ Active |
+| `scripts/lint-imports.sh` | Import grouping: stdlib → internal → third-party | ✅ Active |
+| `scripts/lint-ge.sh` | GE-2 zero loose types (`any`, `interface{}`, `map[string]any`) | ✅ Active |
+| `scripts/lint-json-tags.sh` | Redundant JSON tag detection | ✅ Active |
+| `scripts/lint-inline-if.sh` | No single-line if statements | ✅ Active |
+| `scripts/lint-typed-nil.sh` | Typed-nil detection (`error ← *AppError`) | ✅ Active |
+| `scripts/lint-php-file-size.sh` | No `.php` file exceeding size limit | ✅ Active |
+| `scripts/lint-php-func-size.sh` | No PHP function body exceeding size limit | ✅ Active |
+| `scripts/lint-php-import-groups.sh` | PHP import grouping validation | ✅ Active |
+| `scripts/pre-commit.sh` | Unified pre-commit hook running all checks | ✅ Active |
 
 ---
 
@@ -593,4 +602,4 @@ Any modification to an enum must follow the [enum-consumer-checklist.md](../01-a
 
 ---
 
-*Master coding guidelines v1.0.0 — 2026-02-23*
+*Master coding guidelines v1.1.0 — 2026-03-11*

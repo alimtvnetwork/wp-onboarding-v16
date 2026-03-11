@@ -1,6 +1,6 @@
 # Specifications Index
 
-> **Updated:** 2026-02-25  
+> **Updated:** 2026-03-11  
 > **Purpose:** Central index of all specification folders in this project.
 
 ---
@@ -11,7 +11,7 @@
 |--------|-------------|-----------|
 | [01-app/](./01-app/) | Application specs, feature definitions, behavioral requirements | `README.md` |
 | [02-app-issues/](./02-app-issues/) | Issue write-ups — root cause, fix, prevention for every mistake | `README.md` |
-| [03-coding-guidelines/](./03-coding-guidelines/) | DRY principles and general coding standards | `dry-principles.md` |
+| [03-coding-guidelines/](./03-coding-guidelines/) | DRY principles and general coding standards | `00-master-coding-guidelines.md` |
 | [04-typescript-standards/](./04-typescript-standards/) | TypeScript coding standards (no `any`/`unknown` in public APIs) | `readme.md` |
 | [05-golang-standards/](./05-golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `readme.md` |
 | [06-php-standards/](./06-php-standards/) | PHP coding standards (`Throwable`, `safe_execute`, constants) | `readme.md` |
@@ -23,6 +23,7 @@
 | [12-powershell-integration/](./12-powershell-integration/) | PowerShell runner (`run.ps1`) for Go+React projects with pnpm PnP | `00-overview.md` |
 | [13-e2-activity-feed/](./13-e2-activity-feed/) | Fleet-wide activity audit log (Feature E2) | `e2.1-go-endpoint-spec.md` |
 | [14-generic-enforce/](./14-generic-enforce/) | Cross-language generic/type enforcement patterns | `readme.md` |
+| [15-qupload-plugin/](./15-qupload-plugin/) | QUpload plugin specification | `00-overview.md` |
 
 ---
 
@@ -31,6 +32,7 @@
 | File | Description |
 |------|-------------|
 | [dry-refactoring-summary.md](./dry-refactoring-summary.md) | Complete summary of the 10-phase DRY refactoring initiative |
+| [licensing-strategy.md](./licensing-strategy.md) | Licensing strategy and implementation plan |
 
 ---
 

@@ -1,7 +1,7 @@
 # Golang Coding Standards
 
-> **Version:** 3.4.0
-> **Updated:** 2026-02-28
+> **Version:** 3.5.0
+> **Updated:** 2026-03-11
 > **Applies to:** All Go backend code
 
 ---
@@ -21,7 +21,7 @@ Every `.go` file targets **300 lines**. Up to **400 lines is acceptable** but mu
 
 ## Function Size — Max 15 Lines
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 6
 
 Every function body must be **15 lines or fewer**. Extract logic into small, well-named helpers.
 
@@ -50,7 +50,7 @@ func ProcessUpload(ctx context.Context, req UploadRequest) error {
 
 ## Zero Nested `if` — Absolute Ban
 
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 2 & 7
+> **Canonical source:** [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Rule 2 & 7
 
 Nested `if` blocks are **absolutely forbidden** — zero tolerance. Flatten with combined conditions or early returns.
 
@@ -319,7 +319,7 @@ func (h *Handler) GetPlugin(w http.ResponseWriter, r *http.Request) {
 
 ## Database Naming Convention — PascalCase
 
-> **Canonical source:** [Database Naming Convention](../01-coding-guidelines/database-naming.md)
+> **Canonical source:** [Database Naming Convention](../03-coding-guidelines/database-naming.md)
 
 All custom SQLite table names, column names, and index names MUST use **PascalCase**. Go struct `db` tags must match column names. JSON tags are only needed for `omitempty` — see [JSON Tags](#json-tags--pascalcase-convention).
 
@@ -474,23 +474,24 @@ func foo(
 
 | Rule | Convention | Example |
 |------|-----------|---------|
-| File name | `snake_case.go` | `server_config.go`, `status_type.go` |
-| Maps to primary type | File name derived from its exported type | `ServerConfig` → `server_config.go` |
+| File name | `PascalCase.go` | `ServerConfig.go`, `StatusType.go` |
+| Maps to primary type | File name = primary exported type name | `ServerConfig` → `ServerConfig.go` |
 | One exported type per file | Each struct/interface/enum gets its own file | Don't combine `Config` + `ServerConfig` |
-| Related methods stay together | All methods on a type live in its file | `StatusType.IsValid()` stays in `status_type.go` |
-| Suffix convention | Split large types using suffixes | `_crud.go`, `_helpers.go`, `_validation.go` |
+| Related methods stay together | All methods on a type live in its file | `StatusType.IsValid()` stays in `StatusType.go` |
+| Suffix convention | Split large types using PascalCase suffixes | `Crud.go`, `Helpers.go`, `Validation.go` |
 | Package directory | `snake_case` for multi-word services | `site_health/`, `search_mode/` |
 | Enum package directory | lowercase, no underscores, `type` suffix | `httpmethodtype/`, `statustype/` |
+| Test files | `PascalCase_test.go` | `RemoteFiles_test.go` |
 
 ### Splitting Convention (When Files Exceed 300 Lines)
 
 | Suffix | Purpose | Example |
 |--------|---------|---------|
-| `{type}.go` | Struct + constructors | `config.go` |
-| `{type}_crud.go` | Database CRUD operations | `plugin_crud.go` |
-| `{type}_helpers.go` | Private utility functions | `config_helpers.go` |
-| `{type}_validation.go` | Input/business rule validation | `upload_validation.go` |
-| `{type}_json.go` | JSON marshal/unmarshal methods | `error_json.go` |
+| `{Type}.go` | Struct + constructors | `Config.go` |
+| `{Type}Crud.go` | Database CRUD operations | `PluginCrud.go` |
+| `{Type}Helpers.go` | Private utility functions | `ConfigHelpers.go` |
+| `{Type}Validation.go` | Input/business rule validation | `UploadValidation.go` |
+| `{Type}Json.go` | JSON marshal/unmarshal methods | `ErrorJson.go` |
 
 ### Package Directory Naming
 
@@ -511,15 +512,15 @@ internal/enums/status/           // missing type suffix
 ### File-to-Type Mapping Examples
 
 ```
-// ✅ One type per file, name matches
-config.go           → type Config struct
-server_config.go    → type ServerConfig struct
-watcher_config.go   → type WatcherConfig struct
-status_type.go      → type StatusType byte + methods
-error_json.go       → MarshalJSON/UnmarshalJSON on AppError
+// ✅ One type per file, name matches (PascalCase)
+Config.go           → type Config struct
+ServerConfig.go     → type ServerConfig struct
+WatcherConfig.go    → type WatcherConfig struct
+StatusType.go       → type StatusType byte + methods
+ErrorJson.go        → MarshalJSON/UnmarshalJSON on AppError
 
 // ❌ Wrong: multiple unrelated types in one file
-config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
+Config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
 ```
 
 ---
@@ -530,7 +531,7 @@ config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
 |---------|-----------|---------|
 | Package names | Lowercase, single word | `wordpress`, `publish`, `apperror` |
 | Package directories | `snake_case` for multi-word | `site_health`, `log_level` |
-| File names | `snake_case.go`, maps to primary type | `server_config.go`, `status_type.go` |
+| File names | `PascalCase.go`, matches primary type | `ServerConfig.go`, `StatusType.go` |
 | Exported functions | PascalCase, verb-led | `EnablePlugin`, `FetchStatus` |
 | Unexported functions | camelCase, verb-led | `resolveNamespace`, `parseStackTrace` |
 | Interfaces | PascalCase, `-er` suffix for single-method | `Publisher`, `PluginStore` |
@@ -543,7 +544,7 @@ config.go           → Config + ServerConfig + WatcherConfig + BackupConfig
 
 ## No Raw Negations — Use Positive Guard Functions
 
-> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+> **Canonical source:** [No Raw Negations](../03-coding-guidelines/no-negatives.md)
 
 ```go
 // ❌ FORBIDDEN
@@ -821,7 +822,7 @@ func openAndStatZip(path string) (*zipFileHandle, *apperror.AppError) {
 }
 ```
 
-### Mistake 6: `interface{}` / `any` in Business Logic
+### Mistake 7: `interface{}` / `any` in Business Logic
 
 ```go
 // ❌ WRONG — type erasure
@@ -831,7 +832,7 @@ func ProcessData(data interface{}) interface{} { ... }
 func ProcessData(data PluginDetails) (PluginSummary, error) { ... }
 ```
 
-### Mistake 7: snake_case in SQL / Struct Tags After Migration
+### Mistake 8: snake_case in SQL / Struct Tags After Migration
 
 ```go
 // ❌ WRONG — old snake_case
@@ -847,7 +848,7 @@ type Tx struct {
 }
 ```
 
-### Mistake 8: Compound Negation Without Named Boolean
+### Mistake 9: Compound Negation Without Named Boolean
 
 ```go
 // ❌ WRONG — inline negated compound
@@ -866,17 +867,17 @@ if isBuildMissing {
 
 ## Cross-References
 
-- [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules
-- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters
-- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules
-- [DRY Principles](../01-coding-guidelines/dry-principles.md)
+- [No Raw Negations](../03-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
+- [Cross-Language Code Style](../03-coding-guidelines/code-style.md) — Braces, nesting & spacing rules
+- [Function Naming](../03-coding-guidelines/function-naming.md) — No boolean flag parameters
+- [Strict Typing](../03-coding-guidelines/strict-typing.md) — Type declarations & docblock rules
+- [DRY Principles](../03-coding-guidelines/dry-principles.md)
 - [Boolean Standards](02-boolean-standards.md) — Go-specific positive logic rules and exemptions
-- [apperror Package Spec](../05-error-manage/06-apperror-package/readme.md) — Full StackTrace, AppError, Result types specification
+- [apperror Package Spec](../07-error-manage/06-apperror-package/readme.md) — Full StackTrace, AppError, Result types specification
 - [Enum Specification](01-enum-specification/00-overview.md) — Byte-based enum pattern, required methods, folder structure
-- [Master Coding Guidelines](../01-coding-guidelines/00-master-coding-guidelines.md) — Consolidated cross-language reference
-- [Issues & Fixes Log](../01-coding-guidelines/01-issues-and-fixes-log.md) — Full historical fixes
+- [Master Coding Guidelines](../03-coding-guidelines/00-master-coding-guidelines.md) — Consolidated cross-language reference
+- [Issues & Fixes Log](../03-coding-guidelines/01-issues-and-fixes-log.md) — Full historical fixes
 
 ---
 
-*Golang standards specification v3.3.0 — 2026-02-23*
+*Golang standards specification v3.5.0 — 2026-03-11*
