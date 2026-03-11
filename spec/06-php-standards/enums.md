@@ -458,7 +458,7 @@ enum ActionType: string
 
 ### TableType — SQLite Table Names (PascalCase)
 
-All custom SQLite table names use **PascalCase** values. This aligns with the [cross-language database naming convention](../01-coding-guidelines/database-naming.md).
+All custom SQLite table names use **PascalCase** values. This aligns with the [cross-language database naming convention](../03-coding-guidelines/database-naming.md).
 
 ```php
 enum TableType: string
