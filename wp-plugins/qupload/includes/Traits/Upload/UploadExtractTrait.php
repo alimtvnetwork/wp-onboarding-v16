@@ -28,13 +28,36 @@ trait UploadExtractTrait
 
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip(string $zipContent, string $slug): array|WP_REST_Response {
+        // Ensure base uploads dir exists first
+        $baseDir = PathHelper::getBaseDir();
+        $isBaseDirReady = PathHelper::ensureDirectory($baseDir);
+
+        if ($isBaseDirReady === false) {
+            $this->fileLogger->error('Failed to create base uploads directory', ['dir' => $baseDir]);
+
+            return $this->errorResponse('Upload failed: could not create base directory', HttpStatusType::ServerError->value);
+        }
+
+        // Ensure logs dir exists so all subsequent logging works
+        $logsDir = PathHelper::getLogsDir();
+        PathHelper::ensureDirectory($logsDir);
+
+        // Ensure temp dir exists
         $tempDir = PathHelper::getTempDir();
-        PathHelper::ensureDirectory($tempDir);
+        $isTempDirReady = PathHelper::ensureDirectory($tempDir);
+
+        if ($isTempDirReady === false) {
+            $this->fileLogger->error('Failed to create temp directory', ['dir' => $tempDir]);
+
+            return $this->errorResponse('Upload failed: could not create temp directory', HttpStatusType::ServerError->value);
+        }
+
+        $this->fileLogger->info('Directories verified', ['base' => $baseDir, 'temp' => $tempDir]);
 
         $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
         if (file_put_contents($tempFile, $zipContent) === false) {
-            $this->fileLogger->error('Failed to write temp file');
+            $this->fileLogger->error('Failed to write temp file', ['path' => $tempFile]);
 
             return $this->errorResponse('Upload failed: could not write temp file', HttpStatusType::ServerError->value);
         }
@@ -251,7 +274,15 @@ trait UploadExtractTrait
     /** Extract ZIP to temp dir, then move to correct plugin location. */
     private function extractToPluginsDir(string $tempFile, string $slug, string $targetDir): true|WP_REST_Response {
         $tempExtractDir = PathHelper::getTempDir() . '/extract_' . uniqid();
-        wp_mkdir_p($tempExtractDir);
+        $isTempExtractReady = PathHelper::ensureDirectory($tempExtractDir);
+
+        if ($isTempExtractReady === false) {
+            $this->fileLogger->error('Failed to create temp extraction directory', ['dir' => $tempExtractDir]);
+
+            return $this->errorResponse('Upload failed: could not create extraction directory', HttpStatusType::ServerError->value);
+        }
+
+        $this->fileLogger->info('Temp extraction directory created', ['dir' => $tempExtractDir]);
 
         $extractError = $this->extractZipToTemp($tempFile, $tempExtractDir);
 
@@ -309,18 +340,37 @@ trait UploadExtractTrait
 
     /** Move extracted folder to target, with copy fallback. */
     private function moveExtractedPlugin(string $extractedFolder, string $targetDir): bool {
+        // Ensure parent directory of target exists (WP_PLUGIN_DIR)
+        $parentDir = dirname($targetDir);
+
+        if (!is_dir($parentDir)) {
+            $this->fileLogger->error('Plugin parent directory missing', ['dir' => $parentDir]);
+
+            return false;
+        }
+
         if (rename($extractedFolder, $targetDir)) {
-            $this->fileLogger->info('Plugin installed to correct location');
+            $this->fileLogger->info('Plugin installed to correct location', ['target' => $targetDir]);
 
             return true;
         }
 
-        $this->fileLogger->info('Rename failed, falling back to copy');
+        $this->fileLogger->warn('Rename failed, falling back to copy', ['from' => $extractedFolder, 'to' => $targetDir]);
+
+        // Ensure target dir exists for copy fallback
+        $isTargetReady = PathHelper::ensureDirectory($targetDir);
+
+        if ($isTargetReady === false) {
+            $this->fileLogger->error('Failed to create target directory for copy fallback', ['dir' => $targetDir]);
+
+            return false;
+        }
+
         $isCopied = $this->copyDirectory($extractedFolder, $targetDir);
         $this->deleteDirectory($extractedFolder);
 
         if ($isCopied === false) {
-            $this->fileLogger->error('Copy fallback failed during plugin move');
+            $this->fileLogger->error('Copy fallback failed during plugin move', ['from' => $extractedFolder, 'to' => $targetDir]);
         }
 
         return $isCopied;
