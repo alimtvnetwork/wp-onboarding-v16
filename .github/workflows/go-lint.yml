@@ -44,14 +44,8 @@ jobs:
       - name: Lint — File Size (backend)
         run: bash scripts/lint-file-size.sh
 
-      - name: Lint — File Size (tools)
-        run: bash scripts/lint-file-size.sh --dir tools/consistency-checker
-
       - name: Lint — Function Size (backend)
         run: bash scripts/lint-func-size.sh
-
-      - name: Lint — Function Size (tools)
-        run: bash scripts/lint-func-size.sh --dir tools/consistency-checker
 
       - name: Lint — Negative Naming
         run: bash scripts/lint-negative.sh

@@ -109,11 +109,13 @@ All sub-phases 7A–7G complete.
 - ✅ Updated all import paths across 10 files
 - ✅ File naming (PascalCase) and import org (3-block) already compliant
 
-### Go Phase 6: CI Lint Scripts & Integration
+### Go Phase 6: CI Lint Scripts & Integration ✅ (2026-03-11)
 
-- Complete lint script suite (5 scripts)
-- CI pipeline integration
-- **Estimated effort:** 2 tasks
+- ✅ Added `lint-typed-nil` to Makefile `lint-all` target
+- ✅ Created dedicated `lint-tools` CI job in go-lint.yml (build, vet, file-size, func-size, negative, inline-if)
+- ✅ Fixed consistency-checker.yml Go version 1.21 → 1.22 (matches go.mod)
+- ✅ Expanded pre-commit tools section with negative naming and inline-if checks
+- ✅ Removed duplicate tools lint steps from backend CI job
 
 ---
 
