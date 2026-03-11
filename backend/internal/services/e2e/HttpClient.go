@@ -113,8 +113,6 @@ func (r *apiResponse) hasDataField(key string) bool {
 	return ok
 }
 
-// isDataMissing returns true if the data JSON object does NOT contain a given key.
-func (r *apiResponse) isDataMissing(key string) bool { return !r.hasDataField(key) }
 
 // isDataArray checks if the data is a non-empty JSON array.
 func (r *apiResponse) isDataArray() bool {

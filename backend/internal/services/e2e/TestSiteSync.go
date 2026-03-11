@@ -30,7 +30,8 @@ func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) 
 		return appErr
 	}
 
-	if resp.isDataMissing("id") {
+	hasIdField := resp.hasDataField("id")
+	if !hasIdField {
 		return apperror.New(apperror.ErrE2EAssertion, "expected data object in response")
 	}
 

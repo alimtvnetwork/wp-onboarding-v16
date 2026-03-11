@@ -117,9 +117,9 @@ func (s *Service) fillMissingSiteContext(siteId int64, ctx *remoteActionResolved
 // applySiteContextFromDB fetches the site and fills missing name/URL fields.
 func (s *Service) applySiteContextFromDB(siteId int64, ctx *remoteActionResolvedContext) {
 	siteResult := s.GetById(context.Background(), siteId)
-	isUnavailable := !siteResult.IsSafe()
+	isSafe := siteResult.IsSafe()
 
-	if isUnavailable {
+	if !isSafe {
 		return
 	}
 

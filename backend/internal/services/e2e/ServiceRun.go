@@ -194,9 +194,9 @@ type RunSingleCaseInput struct {
 
 // runSingleCase executes one test case. Returns true if run should stop.
 func (s *serviceImpl) runSingleCase(ctx context.Context, input RunSingleCaseInput) bool {
-	isDisabled := !input.Case.Enabled
+	isEnabled := input.Case.Enabled
 
-	if isDisabled {
+	if !isEnabled {
 		input.Run.SkippedTests++
 
 		return false
