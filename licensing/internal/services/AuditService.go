@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"riseup-licensing/internal/enums/auditaction"
+	"riseup-licensing/internal/enums/auditactiontype"
 	"riseup-licensing/internal/models"
 	"riseup-licensing/pkg/apperror"
 )
