@@ -20,11 +20,29 @@ use ZipArchive;
 
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\ResponseKeyType;
+use QUpload\Helpers\DateHelper;
 use QUpload\Helpers\PathHelper;
 
 trait UploadExtractTrait
 {
     private const MAX_SYNTAX_CHECK_FILES = 500;
+
+    /** Write emergency stage trace outside the main logger path. */
+    private function traceStage(string $stage, array $context = []): void {
+        $baseDir = PathHelper::getBaseDir();
+        PathHelper::ensureDirectory($baseDir);
+
+        $line = sprintf(
+            "[%s] %s %s%s",
+            DateHelper::nowUtc(),
+            $stage,
+            empty($context) ? '' : json_encode($context, JSON_UNESCAPED_SLASHES),
+            PHP_EOL,
+        );
+
+        @file_put_contents(PathHelper::getStageTraceFile(), $line, FILE_APPEND | LOCK_EX);
+        @error_log('[QUpload Stage] ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)));
+    }
 
     /** Write ZIP content to temp file and validate its structure. */
     private function validateAndWriteZip(string $zipContent, string $slug): array|WP_REST_Response {
