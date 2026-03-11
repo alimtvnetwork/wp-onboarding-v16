@@ -56,9 +56,9 @@ func appendDetails(b *strings.Builder, e *AppError) {
 
 // appendValues writes the values section if present.
 func appendValues(b *strings.Builder, e *AppError) {
-	isValuesEmpty := !e.HasValues()
+	hasValues := e.HasValues()
 
-	if isValuesEmpty {
+	if !hasValues {
 		return
 	}
 
