@@ -3,18 +3,12 @@ package sync
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"os"
-	"path/filepath"
 
-	changetype "wp-plugin-publish/internal/enums/changetype"
-	syncdirection "wp-plugin-publish/internal/enums/syncdirectiontype"
 	syncstep "wp-plugin-publish/internal/enums/syncsteptype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
-	"wp-plugin-publish/pkg/pathutil"
 )
 
 // pushDeps bundles resolved dependencies for a push operation.
