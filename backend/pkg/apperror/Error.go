@@ -70,9 +70,9 @@ func appendValues(b *strings.Builder, e *AppError) {
 
 // appendDiagnostics writes diagnostic fields if present.
 func appendDiagnostics(b *strings.Builder, e *AppError) {
-	isDiagnosticsEmpty := !e.Diagnostic.HasFields()
+	hasDiagnostics := e.Diagnostic.HasFields()
 
-	if isDiagnosticsEmpty {
+	if !hasDiagnostics {
 		return
 	}
 

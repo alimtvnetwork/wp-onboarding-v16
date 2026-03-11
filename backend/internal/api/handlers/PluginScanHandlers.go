@@ -90,8 +90,8 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 
 // respondScanWithDetection handles the detection file creation logic for ScanDirectoryPath.
 func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult scanDetectionInput) {
-	isDetectionSkipped := !scanResult.Input.CreateDetection
-	if isDetectionSkipped {
+	shouldCreateDetection := scanResult.Input.CreateDetection
+	if !shouldCreateDetection {
 		respondSuccess(w, scanResult.Result)
 
 		return

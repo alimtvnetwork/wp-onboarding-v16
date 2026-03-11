@@ -66,9 +66,9 @@ func (c *Client) ResolvePluginIdentifier(slug string) apperror.Result[string] {
 		return apperror.FailNew[string](apperror.ErrValidation, "empty plugin slug")
 	}
 	if strings.Contains(slug, "/") {
-		isPhpExtensionMissing := !strings.HasSuffix(slug, ".php")
+		hasPhpExtension := strings.HasSuffix(slug, ".php")
 
-		if isPhpExtensionMissing {
+		if !hasPhpExtension {
 			slug = slug + ".php"
 		}
 		return apperror.Ok(slug)

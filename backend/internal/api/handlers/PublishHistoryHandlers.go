@@ -221,8 +221,8 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isUnconfirmed := !input.Confirm
-	if isUnconfirmed {
+	isConfirmed := input.Confirm
+	if !isConfirmed {
 		respondError(
 			w,
 			wordpress.HttpStatusBadRequest,

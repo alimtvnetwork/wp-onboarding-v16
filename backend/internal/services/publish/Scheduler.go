@@ -178,9 +178,11 @@ func (s *PublishScheduler) GetJob(jobId string) (*ScheduledJob, bool) {
 
 // scheduleTimer sets up a timer for the job's next run
 func (s *PublishScheduler) scheduleTimer(job *ScheduledJob) {
-	isDisabled := !job.IsEnabled
-	isUnscheduled := job.NextRunAt == nil
-	if isDisabled || isUnscheduled {
+	isEnabled := job.IsEnabled
+	isScheduled := job.NextRunAt != nil
+	canRun := isEnabled && isScheduled
+
+	if !canRun {
 		return
 	}
 

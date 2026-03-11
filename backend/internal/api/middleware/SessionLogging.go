@@ -65,11 +65,10 @@ func SessionLogging(log *logger.Logger, store SessionStore, isEnabled bool) func
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Skip if session logging is disabled or for non-API routes
-			isDisabled := !isEnabled
-			isExternalRoute := !strings.HasPrefix(r.URL.Path, "/api/")
-			isSkippable := isDisabled || isExternalRoute
+			isApiRoute := strings.HasPrefix(r.URL.Path, "/api/")
+			shouldLog := isEnabled && isApiRoute
 
-			if isSkippable {
+			if !shouldLog {
 				next.ServeHTTP(w, r)
 				return
 			}

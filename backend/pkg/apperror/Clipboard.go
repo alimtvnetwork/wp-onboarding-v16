@@ -63,9 +63,9 @@ func writeLocationSection(b *strings.Builder, e *AppError) {
 
 // writeDiagnosticSection writes diagnostic fields if present.
 func writeDiagnosticSection(b *strings.Builder, e *AppError) {
-	isDiagnosticsEmpty := !e.Diagnostic.HasFields()
+	hasDiagnostics := e.Diagnostic.HasFields()
 
-	if isDiagnosticsEmpty {
+	if !hasDiagnostics {
 		return
 	}
 
