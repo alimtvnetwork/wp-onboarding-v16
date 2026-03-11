@@ -78,6 +78,7 @@ trait UploadExtractTrait
         $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
         if (file_put_contents($tempFile, $zipContent) === false) {
+            $this->traceStage('validateAndWriteZip:temp-write-failed', ['path' => $tempFile]);
             $this->fileLogger->error('Failed to write temp file', ['path' => $tempFile]);
 
             return $this->errorResponse('Upload failed: could not write temp file', HttpStatusType::ServerError->value);
