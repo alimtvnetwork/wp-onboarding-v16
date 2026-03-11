@@ -24,7 +24,7 @@ func NewAuditService(db *sql.DB) *AuditService {
 // LogInput holds parameters for recording an audit entry.
 type LogInput struct {
 	LicenseId *int64
-	Action    auditaction.Variant
+	Action    auditactiontype.Variant
 	Domain    string
 	IpAddress string
 	Details   any
