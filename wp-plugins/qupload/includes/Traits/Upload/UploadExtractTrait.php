@@ -511,7 +511,11 @@ trait UploadExtractTrait
             opcache_reset();
         }
 
-        $pluginFile = $this->findPluginFile($slug);
+        $pluginFile = $this->findPluginMainFileByHeader($slug);
+
+        if (empty($pluginFile)) {
+            $pluginFile = $this->findPluginFile($slug);
+        }
 
         if (empty($pluginFile)) {
             $this->fileLogger->error('Could not find plugin file after extraction', ['slug' => $slug]);
@@ -522,6 +526,36 @@ trait UploadExtractTrait
         wp_cache_delete('plugins', 'plugins');
 
         return $pluginFile;
+    }
+
+    /** Find plugin main file directly from WordPress plugin headers on disk. */
+    private function findPluginMainFileByHeader(string $slug): ?string {
+        $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+
+        if (!is_dir($pluginDir)) {
+            return null;
+        }
+
+        $phpFiles = $this->collectPhpFiles($pluginDir);
+
+        foreach ($phpFiles as $filePath) {
+            $contents = @file_get_contents($filePath);
+
+            if ($contents === false) {
+                $this->fileLogger->warn('Could not read PHP file while locating plugin header', ['slug' => $slug, 'file' => $filePath]);
+
+                continue;
+            }
+
+            if ($this->hasWordPressPluginHeader($contents)) {
+                $relativePath = str_replace($pluginDir . '/', '', $filePath);
+                $relativePath = str_replace('\\', '/', $relativePath);
+
+                return $slug . '/' . ltrim($relativePath, '/');
+            }
+        }
+
+        return null;
     }
 
     /** Activate the plugin if requested or if previously active. */
