@@ -43,9 +43,9 @@ func (l *License) IsExpired() bool {
 		return false
 	}
 
-	hasNoExpiry := l.ExpiresAt == nil
+	isPerpetual := l.ExpiresAt == nil
 
-	if hasNoExpiry {
+	if isPerpetual {
 		return false
 	}
 

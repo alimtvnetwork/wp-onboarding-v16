@@ -53,8 +53,8 @@ func (s *ActivationService) findExisting(
 
 	a, scanErr := scanActivation(row)
 
-	isNotFound := scanErr == sql.ErrNoRows
-	if isNotFound {
+	isMissing := scanErr == sql.ErrNoRows
+	if isMissing {
 
 		return nil, nil
 	}
