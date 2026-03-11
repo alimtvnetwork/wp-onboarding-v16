@@ -10,9 +10,9 @@
 ## How to Use This Document
 
 This is the **master reference**. Every rule here is enforced across all languages. Language-specific details are in:
-- [PHP Standards](../04-php-standards/naming-conventions.md)
-- [Go Standards](../03-golang-standards/readme.md)
-- [TypeScript Standards](../02-typescript-standards/readme.md)
+- [PHP Standards](../06-php-standards/naming-conventions.md)
+- [Go Standards](../05-golang-standards/readme.md)
+- [TypeScript Standards](../04-typescript-standards/readme.md)
 - [Database Naming](./database-naming.md)
 - [Boolean Principles](./boolean-principles.md)
 - [No-Negatives](./no-negatives.md)
