@@ -123,7 +123,7 @@ internal/enums/
 
 - [Error Code Registry](../07-error-code-registry/01-registry.md)
 - [Split DB Architecture](../04-split-db-architecture/00-overview.md)
-- [Coding Guidelines](../.lovable/memories/constraints/coding-guidelines.md)
+- [Coding Guidelines](../../03-coding-guidelines/code-style.md)
 
 ---
 

@@ -108,7 +108,7 @@ db.Raw("SELECT * FROM projects.db JOIN settings.db...")
 
 ### 2. Seedable Configuration Pattern
 
-**Memory:** `.lovable/memories/patterns/seedable-configuration.md`
+**Memory:** `.lovable/memory/features/seedable-configuration.md`
 
 Configuration values are managed through versioned JSON seed files with database persistence.
 
