@@ -848,7 +848,7 @@ type Tx struct {
 }
 ```
 
-### Mistake 8: Compound Negation Without Named Boolean
+### Mistake 9: Compound Negation Without Named Boolean
 
 ```go
 // ❌ WRONG — inline negated compound
