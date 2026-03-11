@@ -830,6 +830,77 @@ if ($upload) {
 }
 
 # ============================================================================
+# QUPLOAD MODE: Upload plugin via QUpload API (-q / -qupload)
+#   Uses upload-plugin-U-Q.ps1 with qupload-config.json credentials.
+#   -q              -> Upload default plugin via QUpload API
+#   -q -pp <path>   -> Upload specific plugin via QUpload API
+# ============================================================================
+if ($qupload) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  QUpload Mode (-q)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Determine plugin path: use -pp override or default from config
+    $qPluginPath = ""
+    if ($pluginpath -ne "") {
+        $qPluginPath = $pluginpath
+        if (-not [System.IO.Path]::IsPathRooted($qPluginPath)) {
+            $qPluginPath = Join-Path $ScriptDir $qPluginPath
+        }
+        if (-not (Test-Path $qPluginPath)) {
+            Write-Host "ERROR: Plugin folder not found: $qPluginPath" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  Using custom plugin path: $qPluginPath" -ForegroundColor Cyan
+    } else {
+        $defaultUploader = $null
+        if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+            $defaultUploader = $Config.wpPlugins.defaultUploader
+        }
+        if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
+            Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+            exit 1
+        }
+
+        $pluginCfg = $Config.wpPlugins.plugins.$defaultUploader
+        $qPluginPath = Resolve-RelativePath $pluginCfg.path
+
+        if (-not (Test-Path $qPluginPath)) {
+            Write-Host "ERROR: Plugin folder not found: $qPluginPath" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
+    }
+
+    # Find the QUpload script
+    $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
+    if (-not (Test-Path $quploadScript)) {
+        Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
+        exit 1
+    }
+
+    # Build config from qupload-config.json
+    $qConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/qupload-config.json"
+    if (Test-Path $qConfigPath) {
+        $qConfig = Get-Content $qConfigPath -Raw | ConvertFrom-Json
+        $qConfig.pluginFolderPath = $qPluginPath
+        $jsonConfigStr = ($qConfig | ConvertTo-Json -Compress)
+        Write-Host "  Path:   $qPluginPath" -ForegroundColor Gray
+        Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
+        Write-Host ""
+        & $quploadScript -jc $jsonConfigStr -a
+    } else {
+        Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
+        Write-Host "Create it with pluginFolderPath, wordPressSiteURL, username, and appPassword." -ForegroundColor Yellow
+        exit 1
+    }
+
+    exit 0
+}
+
+# ============================================================================
 # INSTALL MODE: Install dependencies for both frontend and backend
 # ============================================================================
 if ($install) {
