@@ -832,7 +832,7 @@ func ProcessData(data interface{}) interface{} { ... }
 func ProcessData(data PluginDetails) (PluginSummary, error) { ... }
 ```
 
-### Mistake 7: snake_case in SQL / Struct Tags After Migration
+### Mistake 8: snake_case in SQL / Struct Tags After Migration
 
 ```go
 // ❌ WRONG — old snake_case
