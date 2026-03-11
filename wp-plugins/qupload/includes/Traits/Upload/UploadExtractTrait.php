@@ -274,7 +274,15 @@ trait UploadExtractTrait
     /** Extract ZIP to temp dir, then move to correct plugin location. */
     private function extractToPluginsDir(string $tempFile, string $slug, string $targetDir): true|WP_REST_Response {
         $tempExtractDir = PathHelper::getTempDir() . '/extract_' . uniqid();
-        wp_mkdir_p($tempExtractDir);
+        $isTempExtractReady = PathHelper::ensureDirectory($tempExtractDir);
+
+        if ($isTempExtractReady === false) {
+            $this->fileLogger->error('Failed to create temp extraction directory', ['dir' => $tempExtractDir]);
+
+            return $this->errorResponse('Upload failed: could not create extraction directory', HttpStatusType::ServerError->value);
+        }
+
+        $this->fileLogger->info('Temp extraction directory created', ['dir' => $tempExtractDir]);
 
         $extractError = $this->extractZipToTemp($tempFile, $tempExtractDir);
 
