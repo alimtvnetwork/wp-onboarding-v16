@@ -822,7 +822,7 @@ func openAndStatZip(path string) (*zipFileHandle, *apperror.AppError) {
 }
 ```
 
-### Mistake 6: `interface{}` / `any` in Business Logic
+### Mistake 7: `interface{}` / `any` in Business Logic
 
 ```go
 // ❌ WRONG — type erasure
