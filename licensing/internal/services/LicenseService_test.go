@@ -107,7 +107,7 @@ func TestUpdate(t *testing.T) {
 		MaxActivations: 1,
 	})
 
-	newStatus := licensestatus.Suspended
+	newStatus := licensestatustype.Suspended
 	newMax := 10
 	newNotes := "updated notes"
 

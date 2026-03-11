@@ -9,7 +9,7 @@ import (
 
 // UpdateInput holds parameters for updating an existing license.
 type UpdateInput struct {
-	Status         *licensestatus.Variant
+	Status         *licensestatustype.Variant
 	Type           *licensetype.Variant
 	MaxActivations *int
 	Notes          *string

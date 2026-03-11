@@ -41,7 +41,7 @@ func (s *LicenseService) Create(input CreateInput) apperror.Result[*models.Licen
 		input.Email,
 		input.Product.String(),
 		input.Type.String(),
-		licensestatus.Active.String(),
+		licensestatustype.Active.String(),
 		input.MaxActivations,
 		input.Notes,
 		input.ExpiresAt,
