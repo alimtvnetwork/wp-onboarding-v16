@@ -124,17 +124,57 @@ trait UploadExtractTrait
 
     /** Detect plugin slug from ZIP archive contents. */
     private function detectPluginSlugFromZip(ZipArchive $zip): ?string {
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $name = $zip->getNameIndex($i);
-            $parts = explode('/', $name);
-            $hasPluginFolder = (count($parts) >= 2 && !empty($parts[0]));
+        $fallbackSlug = null;
 
-            if ($hasPluginFolder) {
-                return $parts[0];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = trim((string) $zip->getNameIndex($i), '/');
+
+            if ($name === '' || str_ends_with($name, '/')) {
+                continue;
+            }
+
+            if ($fallbackSlug === null) {
+                $fallbackSlug = $this->extractSlugFromZipPath($name);
+            }
+
+            if (strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) !== 'php') {
+                continue;
+            }
+
+            $contents = $zip->getFromIndex($i);
+
+            if ($contents === false) {
+                continue;
+            }
+
+            if ($this->hasWordPressPluginHeader($contents)) {
+                return $this->extractSlugFromZipPath($name);
             }
         }
 
-        return null;
+        return $fallbackSlug;
+    }
+
+    /** Extract plugin slug from a ZIP entry path. */
+    private function extractSlugFromZipPath(string $path): ?string {
+        $normalizedPath = trim(str_replace('\\', '/', $path), '/');
+
+        if ($normalizedPath === '') {
+            return null;
+        }
+
+        $parts = explode('/', $normalizedPath);
+        $slug = count($parts) > 1 ? $parts[0] : pathinfo($normalizedPath, PATHINFO_FILENAME);
+        $slug = sanitize_file_name($slug);
+
+        return $slug !== '' ? $slug : null;
+    }
+
+    /** Check whether PHP contents contain a WordPress plugin header. */
+    private function hasWordPressPluginHeader(string $contents): bool {
+        $headerSample = substr($contents, 0, 8192);
+
+        return preg_match('/^[ \t\/*#@]*Plugin Name:\s*.+$/mi', $headerSample) === 1;
     }
 
     /** Process extraction, activation, and version detection. */
@@ -346,21 +386,82 @@ trait UploadExtractTrait
         return null;
     }
 
-    /** Locate extracted folder and move it to the target plugin directory. */
+    /** Locate extracted content and move it to the target plugin directory. */
     private function moveExtractedToTarget(string $tempExtractDir, string $targetDir): true|WP_REST_Response {
-        $extractedFolders = glob($tempExtractDir . '/*', GLOB_ONLYDIR);
+        $extractedEntries = glob($tempExtractDir . '/*');
 
-        if (empty($extractedFolders)) {
+        if ($extractedEntries === false || empty($extractedEntries)) {
             $this->deleteDirectory($tempExtractDir);
 
-            return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::ServerError->value);
+            return $this->errorResponse('No content found in extracted ZIP', HttpStatusType::ServerError->value);
         }
 
-        $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
+        $extractedFolders = array_values(array_filter($extractedEntries, 'is_dir'));
+        $isSingleFolder = count($extractedFolders) === 1 && count($extractedEntries) === 1;
+
+        if ($isSingleFolder) {
+            $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
+        } else {
+            $isMoved = $this->moveExtractedContentsToTarget($tempExtractDir, $targetDir);
+        }
+
         $this->deleteDirectory($tempExtractDir);
 
         if ($isMoved === false) {
             return $this->errorResponse('Failed to move plugin to target directory', HttpStatusType::ServerError->value);
+        }
+
+        return true;
+    }
+
+    /** Move extracted root contents into the target plugin directory. */
+    private function moveExtractedContentsToTarget(string $sourceDir, string $targetDir): bool {
+        $isTargetReady = PathHelper::ensureDirectory($targetDir);
+
+        if ($isTargetReady === false) {
+            $this->fileLogger->error('Failed to create target directory for extracted contents', ['dir' => $targetDir]);
+
+            return false;
+        }
+
+        $entries = scandir($sourceDir);
+
+        if ($entries === false) {
+            $this->fileLogger->error('Failed to read extracted source directory', ['dir' => $sourceDir]);
+
+            return false;
+        }
+
+        $items = array_diff($entries, ['.', '..']);
+
+        foreach ($items as $item) {
+            $srcPath = $sourceDir . '/' . $item;
+            $dstPath = $targetDir . '/' . $item;
+
+            if (is_dir($srcPath)) {
+                $isMoved = @rename($srcPath, $dstPath);
+
+                if ($isMoved === false) {
+                    $isMoved = $this->copyDirectory($srcPath, $dstPath);
+                    $this->deleteDirectory($srcPath);
+                }
+            } else {
+                $isMoved = @rename($srcPath, $dstPath);
+
+                if ($isMoved === false) {
+                    $isMoved = copy($srcPath, $dstPath);
+
+                    if ($isMoved !== false) {
+                        @unlink($srcPath);
+                    }
+                }
+            }
+
+            if ($isMoved === false) {
+                $this->fileLogger->error('Failed to move extracted item to target directory', ['source' => $srcPath, 'dest' => $dstPath]);
+
+                return false;
+            }
         }
 
         return true;
@@ -410,7 +511,11 @@ trait UploadExtractTrait
             opcache_reset();
         }
 
-        $pluginFile = $this->findPluginFile($slug);
+        $pluginFile = $this->findPluginMainFileByHeader($slug);
+
+        if (empty($pluginFile)) {
+            $pluginFile = $this->findPluginFile($slug);
+        }
 
         if (empty($pluginFile)) {
             $this->fileLogger->error('Could not find plugin file after extraction', ['slug' => $slug]);
@@ -421,6 +526,36 @@ trait UploadExtractTrait
         wp_cache_delete('plugins', 'plugins');
 
         return $pluginFile;
+    }
+
+    /** Find plugin main file directly from WordPress plugin headers on disk. */
+    private function findPluginMainFileByHeader(string $slug): ?string {
+        $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
+
+        if (!is_dir($pluginDir)) {
+            return null;
+        }
+
+        $phpFiles = $this->collectPhpFiles($pluginDir);
+
+        foreach ($phpFiles as $filePath) {
+            $contents = @file_get_contents($filePath);
+
+            if ($contents === false) {
+                $this->fileLogger->warn('Could not read PHP file while locating plugin header', ['slug' => $slug, 'file' => $filePath]);
+
+                continue;
+            }
+
+            if ($this->hasWordPressPluginHeader($contents)) {
+                $relativePath = str_replace($pluginDir . '/', '', $filePath);
+                $relativePath = str_replace('\\', '/', $relativePath);
+
+                return $slug . '/' . ltrim($relativePath, '/');
+            }
+        }
+
+        return null;
     }
 
     /** Activate the plugin if requested or if previously active. */
