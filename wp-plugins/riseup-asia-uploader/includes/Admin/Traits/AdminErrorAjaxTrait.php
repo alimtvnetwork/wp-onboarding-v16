@@ -169,7 +169,7 @@ trait AdminErrorAjaxTrait {
         );
     }
 
-    /** AJAX handler: Clear (delete) a log file from disk. */
+    /** AJAX handler: Clear all log files from disk. */
     public function ajaxClearLogFile() {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
@@ -178,36 +178,37 @@ trait AdminErrorAjaxTrait {
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : ''; // file_type: external POST param
-        $path = $this->resolveLogFilePath($type);
+        $requestedPath = $this->resolveLogFilePath($type);
 
-        if ($path === false) {
+        if ($requestedPath === false) {
             wp_send_json_error(array(ResponseKeyType::Message->value => 'Invalid file type'));
         }
 
-        if (PathHelper::isFileMissing($path)) {
-            wp_send_json_success(array(
-                ResponseKeyType::Message->value  => 'File already clear',
-                ResponseKeyType::FileType->value => $type,
-                ResponseKeyType::Path->value     => $path,
-            ));
-        }
+        $logger = FileLogger::getInstance();
+        $clearResult = $logger->clearAllLogFiles();
+        $deletedFiles = isset($clearResult['deleted']) && is_array($clearResult['deleted']) ? $clearResult['deleted'] : array();
+        $failedFiles = isset($clearResult['failed']) && is_array($clearResult['failed']) ? $clearResult['failed'] : array();
+        $hasFailures = !empty($failedFiles);
 
-        $isDeleteFailed = (PathHelper::deleteFile($path) === false);
-        clearstatcache(true, $path);
-        $isStillExists = PathHelper::isFileExists($path);
-
-        if ($isDeleteFailed || $isStillExists) {
+        if ($hasFailures) {
             wp_send_json_error(array(
-                ResponseKeyType::Message->value  => 'Failed to delete file from disk',
+                ResponseKeyType::Message->value  => 'Failed to delete one or more log files from disk',
                 ResponseKeyType::FileType->value => $type,
-                ResponseKeyType::Path->value     => $path,
+                ResponseKeyType::Path->value     => $requestedPath,
+                ResponseKeyType::Files->value    => $failedFiles,
+                ResponseKeyType::Count->value    => count($deletedFiles),
             ));
         }
+
+        $hasDeletedFiles = !empty($deletedFiles);
+        $message = $hasDeletedFiles ? 'Log files deleted from disk' : 'No log files found on disk';
 
         wp_send_json_success(array(
-            ResponseKeyType::Message->value  => 'File deleted from disk',
+            ResponseKeyType::Message->value  => $message,
             ResponseKeyType::FileType->value => $type,
-            ResponseKeyType::Path->value     => $path,
+            ResponseKeyType::Path->value     => $requestedPath,
+            ResponseKeyType::Files->value    => $deletedFiles,
+            ResponseKeyType::Count->value    => count($deletedFiles),
         ));
     }
 }

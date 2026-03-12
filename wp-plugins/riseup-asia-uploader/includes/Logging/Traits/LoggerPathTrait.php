@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait LoggerPathTrait {
     /** Initialize log file paths (lazy initialization). */
@@ -96,46 +97,119 @@ trait LoggerPathTrait {
     }
 
     /**
-     * Clear all log files (log, error, stacktrace).
-     * Used during version updates to start with a clean slate.
+     * Collect known log files plus any extra files in the logs directory.
+     *
+     * @return array<int, string>
      */
-    public function clearAllLogFiles(): void {
-        if ($this->isInitialized === false && $this->initializePaths() === false) {
-            return;
+    private function collectLogFiles(): array {
+        $knownFiles = array(
+            $this->logFile,
+            $this->errorFile,
+            $this->stacktraceFile,
+            $this->logsDir . PathLogFileType::FatalError->value,
+        );
+
+        $directoryFiles = $this->collectDirectoryLogFiles();
+        $allFiles = array_merge($knownFiles, $directoryFiles);
+        $filteredFiles = array_filter($allFiles, fn($file) => is_string($file) && $file !== '');
+
+        return array_values(array_unique($filteredFiles));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function collectDirectoryLogFiles(): array {
+        $isLogsDirMissing = ($this->logsDir === null || $this->logsDir === '' || is_dir($this->logsDir) === false);
+
+        if ($isLogsDirMissing) {
+            return array();
         }
 
-        $files = array($this->logFile, $this->errorFile, $this->stacktraceFile);
+        $entries = @scandir($this->logsDir);
+        $isReadFailed = ($entries === false);
+
+        if ($isReadFailed) {
+            InitHelpers::errorLogWithPrefix('Failed to read logs directory: ' . $this->logsDir);
+
+            return array();
+        }
+
+        $files = array();
+
+        foreach ($entries as $entry) {
+            $isDotEntry = ($entry === '.' || $entry === '..');
+
+            if ($isDotEntry) {
+                continue;
+            }
+
+            $candidatePath = $this->logsDir . '/' . $entry;
+            $isRegularFile = is_file($candidatePath);
+
+            if ($isRegularFile) {
+                $files[] = $candidatePath;
+            }
+        }
+
+        return $files;
+    }
+
+    /** Delete a single log file from disk with post-delete verification. */
+    private function clearLogFile(string $filePath): bool {
+        clearstatcache(true, $filePath);
+        $isFileMissing = (file_exists($filePath) === false);
+
+        if ($isFileMissing) {
+            return true;
+        }
+
+        $resolvedPath = realpath($filePath);
+        $targetPath = ($resolvedPath === false) ? $filePath : $resolvedPath;
+        $isDeleted = PathHelper::deleteFile($targetPath);
+
+        clearstatcache(true, $targetPath);
+        $isStillExists = file_exists($targetPath);
+
+        if ($isDeleted && $isStillExists === false) {
+            return true;
+        }
+
+        $error = error_get_last();
+        $errorSuffix = ($error && isset($error['message'])) ? ' | ' . $error['message'] : '';
+        InitHelpers::errorLogWithPrefix('Failed to clear log file: ' . $targetPath . $errorSuffix);
+
+        return false;
+    }
+
+    /**
+     * Clear all log files from disk (log/error/stacktrace/fatal and discovered files).
+     *
+     * @return array{deleted: array<int, string>, failed: array<int, string>}
+     */
+    public function clearAllLogFiles(): array {
+        $isInitFailed = ($this->isInitialized === false && $this->initializePaths() === false);
+
+        if ($isInitFailed) {
+            return array('deleted' => array(), 'failed' => array());
+        }
+
+        $files = $this->collectLogFiles();
+        $deletedFiles = array();
+        $failedFiles = array();
 
         foreach ($files as $file) {
-            if ($file === null || $file === '') {
-                continue;
-            }
+            $isDeleted = $this->clearLogFile($file);
 
-            clearstatcache(true, $file);
-
-            if (file_exists($file) === false) {
-                continue;
-            }
-
-            $resolvedPath = realpath($file);
-            $targetPath = ($resolvedPath === false) ? $file : $resolvedPath;
-
-            $isDeleted = @unlink($targetPath);
-
-            if ($isDeleted === false) {
-                @chmod($targetPath, 0644);
-                $isDeleted = @unlink($targetPath);
-            }
-
-            clearstatcache(true, $targetPath);
-
-            if ($isDeleted === false || file_exists($targetPath)) {
-                $error = error_get_last();
-                $errorSuffix = ($error && isset($error['message'])) ? ' | ' . $error['message'] : '';
-                InitHelpers::errorLogWithPrefix('Failed to clear log file during version update: ' . $targetPath . $errorSuffix);
+            if ($isDeleted) {
+                $deletedFiles[] = $file;
+            } else {
+                $failedFiles[] = $file;
             }
         }
 
         $this->dedupHashes = array();
+
+        return array('deleted' => $deletedFiles, 'failed' => $failedFiles);
     }
 }
