@@ -42,7 +42,7 @@ trait AdminPagesTrait {
 
         $actionLabels = $this->getActionLabels();
 
-        include dirname(__FILE__) . '/../../templates/admin-logs.php';
+        include dirname(__FILE__, 4) . '/templates/admin-logs.php';
     }
 
     /** Build log filters from query parameters. */
