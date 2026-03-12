@@ -40,6 +40,27 @@
 
 1. — None
 
+## Full Audit (2026-03-12)
+
+Audited all 80 backed enum files across both plugins. **No additional duplicates found.**
+
+### Int-backed enums (7 files):
+- `SnapshotConfigType` — ✅ fixed (`WorkerPoolMax` → static method)
+- `HttpStatusType` (both plugins) — ✅ all unique HTTP codes
+- `HttpConfigType` — ✅ (30, 15)
+- `PaginationConfigType` — ✅ fixed (`LogRetrievalMaxLines` → static method)
+- `UpdateConfigType` — ✅ (7, 5)
+- `BackupConfigType` — ✅ (5, 200)
+
+### String-backed enums (73 files):
+- `PluginConfigType` (both plugins) — ✅ fixed (`UploadsSubdir` → static method)
+- `ResponseKeyType` (155 cases) — ✅ all unique PascalCase values
+- `SettingsKeyType` (24 cases) — ✅ all unique
+- `ActionType` (27 cases) — ✅ all unique
+- `EndpointType` (44 cases) — ✅ all unique route fragments
+- `SelfUpdateStatusType` (17 cases) — ✅ all unique
+- All remaining string enums — ✅ no duplicates
+
 ## Done Checklist
 
 - [x] Issue write-up created under `./`
