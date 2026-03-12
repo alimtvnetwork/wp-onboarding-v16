@@ -11,6 +11,16 @@
     {
       "version": "2.9.0",
       "date": "2026-03-12",
+      "title": "Scheduler Config Safety & PHPStan Integration",
+      "changes": [
+        "🐛 Fixed 'Undefined array key schedule_enabled' warning in SchedulerConfigTrait",
+        "🛡️ All scheduler settings keys now use null-coalescing with safe defaults",
+        "🔍 Extracted positive boolean variables for schedule and frequency checks",
+        "🔬 PHPStan level-6 static analysis integrated into pre-upload and pre-commit pipelines"
+      ]
+    },
+    {
+      "date": "2026-03-12",
       "title": "Upload Failure Diagnostics & Auth Fix",
       "changes": [
         "🔧 Fixed checkAuthenticatedOnly() fatal TypeError — WP_User returned instead of true|WP_Error",
