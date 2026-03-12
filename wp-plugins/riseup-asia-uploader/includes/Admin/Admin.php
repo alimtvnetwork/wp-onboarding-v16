@@ -66,7 +66,7 @@ class Admin {
             'include_error_log'  => true,
             'include_full_log'   => false,
             'include_stacktrace' => true,
-            'max_lines'          => PaginationConfigType::LogRetrievalMaxLines->value,
+            'max_lines'          => PaginationConfigType::logRetrievalMaxLines(),
         ),
     );
 
