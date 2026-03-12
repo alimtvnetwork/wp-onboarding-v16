@@ -169,9 +169,7 @@ trait PluginRouteRegistrationTrait {
                 ));
             } catch (Throwable $e) {
                 $failed++;
-                $this->fileLogger->logException($e, 'Agent route ' . $route['endpoint']->name . ' failed');
-
-                throw $e;
+                $this->fileLogger->logCriticalException($e, 'Agent route ' . $route['endpoint']->name . ' failed');
             }
         }
     }

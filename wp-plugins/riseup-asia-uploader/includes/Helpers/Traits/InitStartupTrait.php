@@ -28,10 +28,8 @@ trait InitStartupTrait {
             $result = $initFn();
         } catch (Throwable $e) {
             $error = $e->getMessage();
-            InitHelpers::errorLog($e, 'InitStartupTrait::trackInit(' . $name . ') failed:');
             BootErrorCollector::getInstance()->addError('component_init:' . $name, $error);
-
-            throw $e;
+            InitHelpers::errorLogAndThrow($e, 'InitStartupTrait::trackInit(' . $name . ') failed:');
         }
 
         $elapsedMs = round((microtime(true) - $start) * 1000, 2);
