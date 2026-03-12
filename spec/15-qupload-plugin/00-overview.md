@@ -29,16 +29,16 @@ QUpload is a **thin, single-purpose** WordPress plugin that:
 | Slug | `qupload` |
 | Text Domain | `qupload` |
 | Namespace | `QUpload\` |
-| API Namespace | `qupload/v1` |
-| Version | `1.0.0` |
-| Requires PHP | 8.2 |
+| API Namespace | `qupload-api/v1` |
+| Version | `2.0.3` |
+| Requires PHP | 8.1 |
 | Requires WP | 5.6 |
 | Log Prefix | `[QUpload]` |
 | Uploads Subdir | `qupload` |
 
 ## Endpoints
 
-### POST `/wp-json/qupload/v1/upload`
+### POST `/wp-json/qupload-api/v1/upload`
 
 Accepts a plugin ZIP (multipart `plugin_zip` or base64 JSON), extracts it to `wp-content/plugins/`, replaces any existing version, and activates it.
 
@@ -62,7 +62,7 @@ Accepts a plugin ZIP (multipart `plugin_zip` or base64 JSON), extracts it to `wp
 }
 ```
 
-### POST `/wp-json/qupload/v1/activate`
+### POST `/wp-json/qupload-api/v1/activate`
 
 Activates an already-installed plugin by slug.
 
@@ -85,7 +85,7 @@ Activates an already-installed plugin by slug.
 }
 ```
 
-### GET `/wp-json/qupload/v1/status`
+### GET `/wp-json/qupload-api/v1/status`
 
 Returns plugin health and version info. No authentication required if configured.
 
@@ -116,7 +116,7 @@ Follows the project's WordPress plugin development specification:
 
 A dedicated `upload-plugin-U-Q.ps1` script uploads a plugin ZIP directly to the QUpload endpoint. It:
 - Creates a ZIP of the target plugin folder
-- Uploads via `POST /wp-json/qupload/v1/upload`
+- Uploads via `POST /wp-json/qupload-api/v1/upload`
 - Reports success/failure with colored output
 - Supports config file, CLI params, and inline JSON
 - Includes self-lint header

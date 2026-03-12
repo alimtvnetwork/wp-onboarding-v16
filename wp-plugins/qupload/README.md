@@ -11,9 +11,9 @@ Minimal WordPress plugin for remote plugin upload and activation via REST API.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET`  | `/wp-json/qupload/v1/status` | Health check |
-| `POST` | `/wp-json/qupload/v1/upload` | Upload plugin ZIP |
-| `POST` | `/wp-json/qupload/v1/activate` | Activate installed plugin |
+| `GET`  | `/wp-json/qupload-api/v1/status` | Health check |
+| `POST` | `/wp-json/qupload-api/v1/upload` | Upload plugin ZIP |
+| `POST` | `/wp-json/qupload-api/v1/activate` | Activate installed plugin |
 
 ## Authentication
 
@@ -24,7 +24,7 @@ All endpoints require WordPress Application Password via HTTP Basic Auth.
 Send a multipart form with `plugin_zip` file, or JSON with base64-encoded `plugin_zip`.
 
 ```bash
-curl -X POST https://your-site.com/wp-json/qupload/v1/upload \
+curl -X POST https://your-site.com/wp-json/qupload-api/v1/upload \
   -u "admin:xxxx xxxx xxxx xxxx" \
   -F "plugin_zip=@my-plugin.zip" \
   -F "slug=my-plugin" \
@@ -34,7 +34,7 @@ curl -X POST https://your-site.com/wp-json/qupload/v1/upload \
 ## Activate
 
 ```bash
-curl -X POST https://your-site.com/wp-json/qupload/v1/activate \
+curl -X POST https://your-site.com/wp-json/qupload-api/v1/activate \
   -u "admin:xxxx xxxx xxxx xxxx" \
   -H "Content-Type: application/json" \
   -d '{"slug": "my-plugin"}'

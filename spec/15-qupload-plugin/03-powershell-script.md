@@ -45,7 +45,7 @@ It also supports ZIP-only mode for packaging without upload.
 
 | Feature | upload-plugin.ps1 | upload-plugin-U-Q.ps1 |
 |---------|-------------------|----------------------|
-| Target API | `riseup-asia-uploader/v1/upload` | `qupload/v1/upload` |
+| Target API | `riseup-asia-uploader/v1/upload` | `qupload-api/v1/upload` |
 | Plugin | Riseup Asia Uploader | Quick Upload |
 | Complexity | Full (status check, version detection, etc.) | Minimal (ZIP + upload + result) |
 
@@ -56,9 +56,10 @@ It also supports ZIP-only mode for packaging without upload.
 3. Validate plugin folder exists
 4. Read local plugin version from header
 5. Create ZIP archive
-6. Upload ZIP to `POST /wp-json/qupload/v1/upload`
-7. Parse and display result
-8. Clean up ZIP file (if requested)
+6. Auth pre-check via `GET /wp-json/qupload-api/v1/status` (catches 404/401/403 early)
+7. Upload ZIP to `POST /wp-json/qupload-api/v1/upload`
+8. Parse and display result
+9. Clean up ZIP file (if requested)
 
 ## run.ps1 Shortcuts
 
@@ -66,8 +67,9 @@ Use these shorter commands from project root:
 
 - `./run.ps1 -q` → Upload default QUpload-target plugin
 - `./run.ps1 -q -pp 'wp-plugins/qupload'` → Upload specific plugin through QUpload
-- `./run.ps1 -qz` → ZIP default QUpload-target plugin only
-- `./run.ps1 -qz -pp 'wp-plugins/qupload'` → ZIP specific plugin only via QUpload script
+- `./run.ps1 -u -q` → Upload Riseup Asia Uploader via QUpload API
+- `./run.ps1 -zq` → ZIP default QUpload-target plugin only
+- `./run.ps1 -zq -pp 'wp-plugins/qupload'` → ZIP specific plugin only via QUpload script
 
 ## Output (Quiet Mode)
 

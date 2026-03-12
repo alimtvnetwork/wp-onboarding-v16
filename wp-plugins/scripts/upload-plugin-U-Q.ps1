@@ -353,7 +353,7 @@ Write-Status ""
 # =============================================================================
 # STEP 1: Read plugin info
 # =============================================================================
-Write-Status "[1/4] Plugin: $folderName" -Color Yellow
+Write-Status "[1/5] Plugin: $folderName" -Color Yellow
 Write-Status "      Path: $PluginFolderPath" -Color Gray
 Write-Status "      Slug: $PluginSlug" -Color Gray
 
@@ -364,7 +364,7 @@ Write-Status "      Version: $LocalVersion" -Color Gray
 # STEP 2: Create ZIP file (best compression)
 # =============================================================================
 Write-Status ""
-Write-Status "[2/4] Creating ZIP file (SmallestSize compression)..." -Color Yellow
+Write-Status "[2/5] Creating ZIP file (SmallestSize compression)..." -Color Yellow
 
 try {
     $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
@@ -402,17 +402,70 @@ if ($ZipOnly) {
 }
 
 # =============================================================================
-# STEP 3: Upload to QUpload API
+# STEP 3: Auth pre-check via QUpload /status endpoint
 # =============================================================================
 Write-Status ""
-Write-Status "[3/4] Uploading to QUpload API..." -Color Yellow
-Write-Status "      Site: $WordPressSiteURL" -Color Gray
-Write-Status "      Endpoint: /wp-json/qupload/v1/upload" -Color Gray
+Write-Status "[3/5] Checking auth via QUpload status endpoint..." -Color Yellow
 
-$uploadUrl = "$WordPressSiteURL/wp-json/qupload/v1/upload"
+$apiBase = "$WordPressSiteURL/wp-json/qupload-api/v1"
+$statusUrl = "$apiBase/status"
+$uploadUrl = "$apiBase/upload"
+
+Write-Status "      Site:     $WordPressSiteURL" -Color Gray
+Write-Status "      Status:   $statusUrl" -Color Gray
+Write-Status "      Upload:   $uploadUrl" -Color Gray
+
 $authString = "$($Username):$($AppPassword)"
 $authBytes = [System.Text.Encoding]::UTF8.GetBytes($authString)
 $authBase64 = [Convert]::ToBase64String($authBytes)
+
+$authHeaders = @{
+    "Authorization" = "Basic $authBase64"
+    "Accept" = "application/json"
+}
+
+try {
+    $statusResponse = Invoke-WebRequest -Uri $statusUrl -Method Get -Headers $authHeaders -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop
+    $statusParsed = $statusResponse.Content | ConvertFrom-Json
+
+    $isStatusSuccess = $statusParsed.Status.IsSuccess
+
+    if ($isStatusSuccess) {
+        $statusResult = $statusParsed.Results[0]
+        Write-Status "      Auth OK - QUpload v$($statusResult.Version) on WP $($statusResult.WpVersion)" -Color Green
+    } else {
+        Write-Host "      Auth check returned failure: $($statusParsed.Status.Message)" -ForegroundColor Red
+        exit 1
+    }
+} catch {
+    $errMsg = $_.Exception.Message
+    $statusCode = ""
+
+    if ($_.Exception.Response) {
+        $statusCode = [int]$_.Exception.Response.StatusCode
+    }
+
+    if ($statusCode -eq 401 -or $statusCode -eq 403) {
+        Write-Host "      Authentication FAILED (HTTP $statusCode)" -ForegroundColor Red
+        Write-Host "      Check username and application password in qupload-config.json" -ForegroundColor Yellow
+    } elseif ($statusCode -eq 404) {
+        Write-Host "      QUpload plugin not found on target site (HTTP 404)" -ForegroundColor Red
+        Write-Host "      Endpoint: $statusUrl" -ForegroundColor Gray
+        Write-Host "      Ensure the QUpload plugin is installed and activated." -ForegroundColor Yellow
+    } else {
+        Write-Host "      Auth pre-check failed: $errMsg" -ForegroundColor Red
+        Write-Host "      Endpoint: $statusUrl" -ForegroundColor Gray
+    }
+
+    exit 1
+}
+
+# =============================================================================
+# STEP 4: Upload to QUpload API
+# =============================================================================
+Write-Status ""
+Write-Status "[4/5] Uploading to QUpload API..." -Color Yellow
+Write-Status "      Endpoint: $uploadUrl" -Color Gray
 
 try {
     $zipBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
@@ -424,12 +477,7 @@ try {
         activate = $ActivateAfterInstall
     } | ConvertTo-Json
 
-    $headers = @{
-        "Authorization" = "Basic $authBase64"
-        "Accept" = "application/json"
-    }
-
-    $response = Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $headers -Body $body -ContentType "application/json" -TimeoutSec 120 -UseBasicParsing -ErrorAction Stop
+    $response = Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $authHeaders -Body $body -ContentType "application/json" -TimeoutSec 120 -UseBasicParsing -ErrorAction Stop
     $parsed = $response.Content | ConvertFrom-Json
 
     $isSuccess = $parsed.Status.IsSuccess
@@ -437,7 +485,7 @@ try {
     if ($isSuccess) {
         $result = $parsed.Results[0]
         Write-Status ""
-        Write-Status "[4/4] Upload successful!" -Color Green
+        Write-Status "[5/5] Upload successful!" -Color Green
         Write-Status "      Plugin: $($result.PluginSlug)" -Color White
         Write-Status "      Version: $($result.PluginVersion)" -Color White
         Write-Status "      Is Update: $($result.IsUpdate)" -Color White
@@ -453,7 +501,8 @@ try {
         }
     } else {
         Write-Host ""
-        Write-Host "[4/4] Upload failed!" -ForegroundColor Red
+        Write-Host "[5/5] Upload failed!" -ForegroundColor Red
+        Write-Host "      Endpoint: $uploadUrl" -ForegroundColor Gray
         Write-Host "      Message: $($parsed.Status.Message)" -ForegroundColor Yellow
 
         if ($parsed.Errors) {
@@ -472,7 +521,8 @@ try {
     }
 } catch {
     Write-Host ""
-    Write-Host "[4/4] Upload request failed!" -ForegroundColor Red
+    Write-Host "[5/5] Upload request failed!" -ForegroundColor Red
+    Write-Host "      Endpoint: $uploadUrl" -ForegroundColor Gray
     Write-Host "      Error: $($_.Exception.Message)" -ForegroundColor Yellow
 
     if ($_.ErrorDetails -and $_.ErrorDetails.Message) {

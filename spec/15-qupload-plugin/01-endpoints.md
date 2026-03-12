@@ -2,9 +2,9 @@
 
 ## Base Namespace
 
-`qupload/v1`
+`qupload-api/v1`
 
-Full URL: `https://{site}/wp-json/qupload/v1/{endpoint}`
+Full URL: `https://{site}/wp-json/qupload-api/v1/{endpoint}`
 
 ## Endpoints
 

@@ -222,6 +222,7 @@ if ($help) {
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -u,  -upload        Upload default plugin to WordPress via upload-plugin-v2"
+    Write-Host "  -u -q               Upload Riseup Asia Uploader via QUpload API (shorthand)"
     Write-Host "  -q,  -qupload       Upload plugin to WordPress via QUpload API"
     Write-Host "  -d,  -debug         Enable debug logging for upload (shows all endpoints, paths, responses)"
     Write-Host "  -z,  -zip           ZIP Riseup Asia plugin (default uploader). With -pp: specific plugin"
@@ -240,6 +241,7 @@ if ($help) {
     Write-Host "  .\run.ps1 -b           # Build only, don't start server"
     Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
     Write-Host "  .\run.ps1 -u           # Upload default plugin to WordPress"
+    Write-Host "  .\run.ps1 -u -q        # Upload Riseup Asia Uploader via QUpload"
     Write-Host "  .\run.ps1 -u -d        # Upload with debug logging (shows all endpoints & responses)"
     Write-Host "  .\run.ps1 -u -pp 'C:\path\to\plugin'  # Upload a specific plugin"
     Write-Host "  .\run.ps1 -q           # Upload default plugin via QUpload API"
@@ -842,6 +844,60 @@ if ($zipqupload) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  ZIP complete!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Cyan
+
+    exit 0
+}
+
+# ============================================================================
+# UPLOAD+QUPLOAD COMBO: -u -q = Upload Riseup Asia Uploader via QUpload API
+# ============================================================================
+if ($upload -and $qupload) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Upload via QUpload Mode (-u -q)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Resolve Riseup Asia Uploader path from config
+    $defaultUploader = $null
+    if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+        $defaultUploader = $Config.wpPlugins.defaultUploader
+    }
+    if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
+        Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+        exit 1
+    }
+
+    $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
+    $riseupPath = Resolve-RelativePath $pluginConfig.path
+
+    if (-not (Test-Path $riseupPath)) {
+        Write-Host "ERROR: Plugin folder not found: $riseupPath" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "  Plugin: $defaultUploader (via QUpload)" -ForegroundColor Yellow
+
+    # Use QUpload script with Riseup Asia Uploader path
+    $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
+    if (-not (Test-Path $quploadScript)) {
+        Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
+        exit 1
+    }
+
+    $qConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/qupload-config.json"
+    if (Test-Path $qConfigPath) {
+        $qConfig = Get-Content $qConfigPath -Raw | ConvertFrom-Json
+        $qConfig.pluginFolderPath = $riseupPath
+        $jsonConfigStr = ($qConfig | ConvertTo-Json -Compress)
+        Write-Host "  Path:   $riseupPath" -ForegroundColor Gray
+        Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
+        Write-Host ""
+        & $quploadScript -jc $jsonConfigStr -a
+    } else {
+        Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
+        exit 1
+    }
 
     exit 0
 }
