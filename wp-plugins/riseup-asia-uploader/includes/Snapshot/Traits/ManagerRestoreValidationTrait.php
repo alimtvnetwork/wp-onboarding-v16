@@ -23,7 +23,7 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreValidationTrait {
-    private function validateIncrementalParent(array $snapshot, int $snapshotId): ?array {
+    private function validateIncrementalParent(array $snapshot, int $snapshotId) {
         $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === SnapshotModeType::Incremental->value);
         $isFullSnapshot = ($isIncremental === false);
 
@@ -56,7 +56,7 @@ trait ManagerRestoreValidationTrait {
 
         return ResultHelper::errorWithCode(
             'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
-            SnapshotErrorType::IncrementalNoParent->value,
+            SnapshotErrorType::IncrementalNoParent->value
         );
     }
 
