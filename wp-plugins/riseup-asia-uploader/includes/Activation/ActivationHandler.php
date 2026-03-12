@@ -126,12 +126,11 @@ class ActivationHandler
     }
 
     private static function writeLogFiles(string $logsDir): void {
-        $timestamp = DateHelper::nowUtc();
+        $timestamp = DateHelper::nowLogDisplay();
         $version = PluginConfigType::Version->value;
 
         self::writeMainLog($logsDir, $timestamp, $version);
-        self::writeErrorLog($logsDir, $timestamp, $version);
-        self::writeStacktraceLog($logsDir, $timestamp);
+        self::writeStacktraceLog($logsDir, DateHelper::nowLogDisplay());
     }
 
     private static function writeMainLog(
@@ -141,28 +140,12 @@ class ActivationHandler
     ): void {
         $logFile = $logsDir . PathLogFileType::Log->value;
         $isWriteFailed = (file_put_contents($logFile, sprintf(
-            "[%s] [INFO] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"version\":\"%s\",\"php\":\"%s\",\"wp\":\"%s\"}\n",
+            "[%s v%s] [Info] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"php\":\"%s\",\"wp\":\"%s\"}\n",
             $timestamp, $version, phpversion(), get_bloginfo('version')
         ), FILE_APPEND | LOCK_EX) === false);
 
         if ($isWriteFailed) {
             InitHelpers::errorLogWithPrefix('Failed to write main log file: ' . $logFile);
-        }
-    }
-
-    private static function writeErrorLog(
-        string $logsDir,
-        string $timestamp,
-        string $version,
-    ): void {
-        $errorFile = $logsDir . PathLogFileType::Error->value;
-        $isWriteFailed = (file_put_contents($errorFile, sprintf(
-            "[%s] [INFO] Plugin activated — error log initialized (v%s)\n",
-            $timestamp, $version
-        ), FILE_APPEND | LOCK_EX) === false);
-
-        if ($isWriteFailed) {
-            InitHelpers::errorLogWithPrefix('Failed to write error log file: ' . $errorFile);
         }
     }
 
