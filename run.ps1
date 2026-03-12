@@ -13,6 +13,7 @@ param(
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
     [Alias('q')][switch]$qupload,
+    [Alias('ua')][switch]$uploadall,
     [switch]$za,
     [Alias('zq')][switch]$zipqupload,
     [Alias('z')][switch]$zip,
@@ -230,6 +231,7 @@ if ($help) {
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin"
     Write-Host "  -c,  -clear         Remove all existing ZIP files from wp-plugins/ before zipping"
+    Write-Host "  -ua, -uploadall     ZIP all plugins (except QUpload) and upload each via QUpload API"
     Write-Host "  -pp, -pluginpath    Override plugin folder path or name (use with -u, -q, -zq, or -z)"
     Write-Host "  -t,  -test          Run Go backend tests and exit"
     Write-Host "  -v,  -verbose       Show detailed debug output"
@@ -254,6 +256,7 @@ if ($help) {
     Write-Host "  .\run.ps1 -zq          # ZIP QUpload plugin"
     Write-Host "  .\run.ps1 -z -c        # Clear old ZIPs then ZIP default plugin"
     Write-Host "  .\run.ps1 -za -c       # Clear old ZIPs then ZIP all plugins"
+    Write-Host "  .\run.ps1 -ua          # ZIP + upload all plugins (except QUpload) via QUpload API"
     Write-Host "  .\run.ps1 -t           # Run Go backend tests"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
@@ -856,6 +859,123 @@ if ($zipqupload) {
     Write-Host "========================================" -ForegroundColor Cyan
 
     exit 0
+}
+
+# ============================================================================
+# UPLOAD ALL MODE: ZIP all plugins (except QUpload) and upload via QUpload API
+# ============================================================================
+if ($uploadall) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Upload All Mode (-ua)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Verify QUpload script and config exist
+    $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
+    if (-not (Test-Path $quploadScript)) {
+        Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
+        exit 1
+    }
+
+    $qConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/qupload-config.json"
+    if (-not (Test-Path $qConfigPath)) {
+        Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
+        exit 1
+    }
+
+    $qConfigTemplate = Get-Content $qConfigPath -Raw | ConvertFrom-Json
+
+    # Find all plugins except QUpload
+    $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
+    if (-not (Test-Path $wpPluginsDir)) {
+        Write-Host "ERROR: wp-plugins/ directory not found" -ForegroundColor Red
+        exit 1
+    }
+
+    # Get QUpload slug to exclude it
+    $quploadSlug = "qupload"
+    if ($Config.wpPlugins -and $Config.wpPlugins.defaultQUploader) {
+        $quploadSlug = $Config.wpPlugins.defaultQUploader
+    }
+
+    $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
+        $isQUpload = $_.Name -eq $quploadSlug
+        if ($isQUpload) { return $false }
+
+        $phpFiles = Get-ChildItem $_.FullName -Filter "*.php" -File -ErrorAction SilentlyContinue
+        $hasPluginHeader = $false
+        foreach ($f in $phpFiles) {
+            $head = Get-Content $f.FullName -Head 5 -ErrorAction SilentlyContinue
+            if ($head -match "Plugin Name:") { $hasPluginHeader = $true; break }
+        }
+        $hasPluginHeader
+    }
+
+    if ($pluginFolders.Count -eq 0) {
+        Write-Host "No plugins found to upload (QUpload excluded)" -ForegroundColor Yellow
+        exit 0
+    }
+
+    if ($clear) { Clear-PluginZips }
+
+    Write-Host "  Found $($pluginFolders.Count) plugin(s) to ZIP and upload:" -ForegroundColor Cyan
+    foreach ($folder in $pluginFolders) {
+        Write-Host "    - $($folder.Name)" -ForegroundColor Gray
+    }
+    Write-Host "  Excluded: $quploadSlug (used as the upload transport)" -ForegroundColor DarkGray
+    Write-Host ""
+
+    $uploadResults = @()
+
+    foreach ($folder in $pluginFolders) {
+        $pluginName = $folder.Name
+        Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray
+        Write-Host "  [$($uploadResults.Count + 1)/$($pluginFolders.Count)] $pluginName" -ForegroundColor Cyan
+        Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray
+
+        # Step 1: ZIP the plugin
+        Write-Host "  [ZIP] Creating archive..." -ForegroundColor Yellow
+        New-PluginZip $folder.FullName
+
+        # Step 2: Upload via QUpload
+        Write-Host "  [UPLOAD] Uploading via QUpload API..." -ForegroundColor Yellow
+        $qConfig = $qConfigTemplate.PSObject.Copy()
+        $qConfig.pluginFolderPath = $folder.FullName
+        $jsonConfigStr = ($qConfig | ConvertTo-Json -Compress)
+
+        try {
+            & $quploadScript -jc $jsonConfigStr -a
+            $uploadExitCode = $LASTEXITCODE
+            if ($uploadExitCode -eq 0) {
+                $uploadResults += @{ Name = $pluginName; Status = "OK" }
+                Write-Host "  ✓ $pluginName uploaded successfully" -ForegroundColor Green
+            } else {
+                $uploadResults += @{ Name = $pluginName; Status = "FAILED (exit $uploadExitCode)" }
+                Write-Host "  ✗ $pluginName upload failed (exit code: $uploadExitCode)" -ForegroundColor Red
+            }
+        } catch {
+            $uploadResults += @{ Name = $pluginName; Status = "ERROR: $_" }
+            Write-Host "  ✗ $pluginName upload error: $_" -ForegroundColor Red
+        }
+        Write-Host ""
+    }
+
+    # Summary
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Upload All Summary" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    $successCount = ($uploadResults | Where-Object { $_.Status -eq "OK" }).Count
+    $failCount = $uploadResults.Count - $successCount
+    foreach ($r in $uploadResults) {
+        $color = if ($r.Status -eq "OK") { "Green" } else { "Red" }
+        Write-Host "  $($r.Name): $($r.Status)" -ForegroundColor $color
+    }
+    Write-Host ""
+    Write-Host "  Total: $($uploadResults.Count) | Success: $successCount | Failed: $failCount" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Yellow" })
+    Write-Host "========================================" -ForegroundColor Cyan
+
+    exit $(if ($failCount -eq 0) { 0 } else { 1 })
 }
 
 # ============================================================================
