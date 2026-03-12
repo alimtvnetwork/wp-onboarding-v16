@@ -68,6 +68,23 @@ trait DatabaseMigrationsV14Trait {
         WHERE TriggerSource IN ('api', 'dashboard', 'agent_push', 'cron', 'cli')
     SQL;
 
+    // ── Helpers ────────────────────────────────────────────────────────
+
+    /** Execute SQL only if the target column exists in the table. */
+    private function execIfColumnExists(string $table, string $column, string $sql): void {
+        $stmt = $this->pdo->query("PRAGMA table_info($table)");
+        $columns = $stmt->fetchAll(\PDO::FETCH_COLUMN, 1);
+        $hasColumn = in_array($column, $columns, true);
+
+        if ($hasColumn === false) {
+            $this->fileLogger->info("Skipping migration: column $column not found in $table");
+
+            return;
+        }
+
+        $this->pdo->exec($sql);
+    }
+
     // ── Migration Entry Point ────────────────────────────────────────
 
     private function migrateV14PascalCaseRemainingValues(int $current): void {
@@ -84,16 +101,16 @@ trait DatabaseMigrationsV14Trait {
 
         try {
             // 1. Transactions.TriggeredBy
-            $this->pdo->exec(sprintf(self::V14_TRANSACTIONS_TRIGGERED_BY_QUERY, $txn));
+            $this->execIfColumnExists($txn, 'TriggeredBy', sprintf(self::V14_TRANSACTIONS_TRIGGERED_BY_QUERY, $txn));
 
             // 2. Transactions.UploadSource
-            $this->pdo->exec(sprintf(self::V14_TRANSACTIONS_UPLOAD_SOURCE_QUERY, $txn));
+            $this->execIfColumnExists($txn, 'UploadSource', sprintf(self::V14_TRANSACTIONS_UPLOAD_SOURCE_QUERY, $txn));
 
             // 3. Snapshots.TriggeredBy
-            $this->pdo->exec(sprintf(self::V14_SNAPSHOTS_TRIGGERED_BY_QUERY, $snapshots));
+            $this->execIfColumnExists($snapshots, 'TriggeredBy', sprintf(self::V14_SNAPSHOTS_TRIGGERED_BY_QUERY, $snapshots));
 
             // 4. Snapshots.TriggerSource
-            $this->pdo->exec(sprintf(self::V14_SNAPSHOTS_TRIGGER_SOURCE_QUERY, $snapshots));
+            $this->execIfColumnExists($snapshots, 'TriggerSource', sprintf(self::V14_SNAPSHOTS_TRIGGER_SOURCE_QUERY, $snapshots));
 
             $this->pdo->commit();
         } catch (Throwable $e) {
