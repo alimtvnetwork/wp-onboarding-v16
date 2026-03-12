@@ -91,6 +91,14 @@ function qupload_init(): void {
     qupload_boot_trace('init:start');
 
     try {
+        $logger = \QUpload\Logging\FileLogger::getInstance();
+        $logger->clearAllLogFiles();
+        qupload_boot_trace('init:logs-cleared');
+    } catch (Throwable $e) {
+        qupload_boot_trace('init:log-clear-exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    }
+
+    try {
         Plugin::getInstance();
         qupload_boot_trace('init:success');
     } catch (Throwable $e) {
