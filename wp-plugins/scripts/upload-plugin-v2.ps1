@@ -643,9 +643,12 @@ $headers = @{
 }
 
 $apiNamespaces = @(
-    @{ name = "riseup-asia-uploader/v1"; display = "Riseup Asia Uploader" },
-    @{ name = "riseup-uploader/v1"; display = "Riseup Uploader (Legacy)" }
+    @{ name = "riseup-asia-api/v1"; display = "Riseup Asia API (Current)" },
+    @{ name = "riseup-asia-uploader/v1"; display = "Riseup Asia Uploader (Legacy)" },
+    @{ name = "riseup-uploader/v1"; display = "Riseup Uploader (Legacy v1)" }
 )
+$primaryNamespace = $apiNamespaces[0].name
+$supportedNamespaceNames = $apiNamespaces | ForEach-Object { $_.name }
 
 $activeNamespace = $null
 foreach ($ns in $apiNamespaces) {
