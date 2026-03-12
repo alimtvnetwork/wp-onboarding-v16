@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
