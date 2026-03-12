@@ -467,7 +467,7 @@ logger.Info("retries exhausted", "attempts", retries)
 try {
     $result = $this->execute($sql);
 } catch (Throwable $e) {
-    $this->logger->error($e->getMessage());
+    $this->fileLogger->logException($e, 'execute failed');
 }
 $this->cleanup();
 
@@ -475,7 +475,7 @@ $this->cleanup();
 try {
     $result = $this->execute($sql);
 } catch (Throwable $e) {
-    $this->logger->error($e->getMessage());
+    $this->fileLogger->logException($e, 'execute failed');
 }
 
 $this->cleanup();
