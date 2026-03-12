@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 
@@ -26,8 +27,9 @@ trait LoggerFormatTrait {
     ): string {
         $timestamp = DateHelper::nowLogDisplay();
         $basename  = basename($file);
+        $version   = PluginConfigType::Version->value;
 
-        $entry = sprintf("[%s] [%s] %s (%s:%d)", $timestamp, $level, $message, $basename, $line);
+        $entry = sprintf("[%s] [v%s] [%s] %s (%s:%d)", $timestamp, $version, $level, $message, $basename, $line);
 
         if (!empty($context)) {
             $entry .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES);

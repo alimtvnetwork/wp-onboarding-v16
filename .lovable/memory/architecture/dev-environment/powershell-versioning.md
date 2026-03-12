@@ -42,10 +42,11 @@ Version numbers are tracked across multiple files. The `bump-version.ps1` script
 
 ## Current Versions
 
-- **App Version**: 2.2.0
-- **Plugin Version (QUpload)**: 2.2.0
-- **Plugin Version (Riseup)**: 2.2.0
-- **Spec Version**: 2.2.0
+- **App Version**: 2.7.0
+- **Plugin Version (QUpload)**: 2.7.0
+- **Plugin Version (Riseup)**: 2.7.0
+- **Script Version**: 2.3.0
+- **Spec Version**: 2.3.0
 
 ---
 
