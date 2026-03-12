@@ -1,0 +1,167 @@
+/* QUpload Admin — Error Logs Page Styles */
+
+.qupload-error-log {
+    max-width: 1100px;
+}
+
+/* File Viewer Card */
+.qupload-file-viewer-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+}
+
+.file-viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f6f7f7;
+    border-bottom: 1px solid #dcdcde;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.file-viewer-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.file-viewer-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.file-viewer-actions .button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+    margin-right: 2px;
+}
+
+.file-size-label {
+    color: #787c82;
+    font-size: 12px;
+    margin-right: 4px;
+}
+
+/* Auto-refresh toggle */
+.auto-refresh-toggle {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin-right: 6px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    background: #f0f0f1;
+    border: 1px solid #dcdcde;
+    font-size: 12px;
+    user-select: none;
+}
+
+.auto-refresh-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.auto-refresh-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #dcdcde;
+    transition: background 0.3s;
+}
+
+.auto-refresh-toggle input:checked ~ .auto-refresh-label .live-dot {
+    background: #00a32a;
+    box-shadow: 0 0 4px rgba(0, 163, 42, 0.5);
+    animation: qupload-pulse 1.5s infinite;
+}
+
+@keyframes qupload-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* File Content */
+.file-viewer-body {
+    position: relative;
+    min-height: 200px;
+}
+
+.file-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #787c82;
+    gap: 8px;
+}
+
+.file-content-pre {
+    margin: 0;
+    padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 600px;
+    overflow-y: auto;
+    border: none;
+}
+
+.file-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #00a32a;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.file-empty .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: #00a32a;
+}
+
+/* Copy feedback */
+.qupload-copy-feedback {
+    position: fixed;
+    top: 40px;
+    right: 20px;
+    background: #00a32a;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 100001;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: qupload-fade-in-out 2s ease-in-out;
+}
+
+@keyframes qupload-fade-in-out {
+    0% { opacity: 0; transform: translateY(-10px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
