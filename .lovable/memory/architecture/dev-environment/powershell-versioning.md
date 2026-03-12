@@ -1,5 +1,5 @@
 # Memory: architecture/dev-environment/powershell-versioning
-Updated: 2026-03-01
+Updated: 2026-03-12
 
 ---
 
@@ -42,9 +42,9 @@ Version numbers are tracked across multiple files. The `bump-version.ps1` script
 
 ## Current Versions
 
-- **App Version**: 1.19.4
-- **Plugin Version (QUpload)**: 1.2.0
-- **Plugin Version (Riseup)**: 1.64.0
+- **App Version**: 2.1.0
+- **Plugin Version (QUpload)**: 2.1.0
+- **Plugin Version (Riseup)**: 2.1.0
 - **Spec Version**: 2.1.0
 
 ---
