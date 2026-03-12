@@ -733,10 +733,22 @@ trait UploadExtractTrait
 
         foreach ($items as $item) {
             $path = $dir . '/' . $item;
-            is_dir($path) ? $this->deleteDirectory($path) : @unlink($path);
+            $isDeleted = is_dir($path) ? $this->deleteDirectory($path) : @unlink($path);
+
+            if ($isDeleted === false) {
+                $this->fileLogger->error('Failed to delete path while removing directory', ['path' => $path]);
+
+                return false;
+            }
         }
 
-        return @rmdir($dir);
+        $isRemoved = @rmdir($dir);
+
+        if ($isRemoved === false) {
+            $this->fileLogger->error('Failed to remove directory', ['dir' => $dir]);
+        }
+
+        return $isRemoved;
     }
 
     /** Recursively copy a directory. */
