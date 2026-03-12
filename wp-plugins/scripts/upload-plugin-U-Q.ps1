@@ -253,6 +253,103 @@ function Test-PluginPhpSyntax {
     }
 }
 
+# Test-BackedEnumDuplicateValues: Detects duplicate backed enum values before ZIP/upload
+function Test-BackedEnumDuplicateValues {
+    param([string]$PluginDir)
+
+    $phpFiles = Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Sort-Object FullName
+    $issues = @()
+
+    foreach ($file in $phpFiles) {
+        $lines = Get-Content $file.FullName
+        $isInBackedEnum = $false
+        $hasEnteredEnumBody = $false
+        $enumName = ""
+        $enumType = ""
+        $enumDepth = 0
+        $valueToCase = @{}
+
+        foreach ($line in $lines) {
+            $trimmed = $line.Trim()
+
+            if (-not $isInBackedEnum) {
+                $isBackedEnumDeclaration = $trimmed -match '^enum\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(int|string)\b'
+                if ($isBackedEnumDeclaration) {
+                    $isInBackedEnum = $true
+                    $hasEnteredEnumBody = $false
+                    $enumName = $Matches[1]
+                    $enumType = $Matches[2]
+                    $enumDepth = 0
+                    $valueToCase = @{}
+                } else {
+                    continue
+                }
+            }
+
+            $openCount = ([regex]::Matches($line, '\{')).Count
+            $closeCount = ([regex]::Matches($line, '\}')).Count
+            $enumDepth += ($openCount - $closeCount)
+
+            if ($enumDepth -gt 0) {
+                $hasEnteredEnumBody = $true
+            }
+
+            $isInsideEnumBody = $hasEnteredEnumBody -and ($enumDepth -gt 0)
+            if ($isInsideEnumBody -and ($trimmed -match '^case\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+?)\s*;')) {
+                $caseName = $Matches[1]
+                $rawValue = $Matches[2].Trim()
+                $normalizedValue = $null
+
+                if ($enumType -eq 'int' -and $rawValue -match '^[+-]?\d+$') {
+                    $normalizedValue = [string]([int]$rawValue)
+                }
+
+                if ($enumType -eq 'string') {
+                    if ($rawValue -match "^'((?:\\'|[^'])*)'$") {
+                        $normalizedValue = "'" + $Matches[1] + "'"
+                    } elseif ($rawValue -match '^"((?:\\"|[^"])*)"$') {
+                        $normalizedValue = "'" + $Matches[1] + "'"
+                    }
+                }
+
+                if ($null -ne $normalizedValue) {
+                    $hasExistingCase = $valueToCase.ContainsKey($normalizedValue)
+                    if ($hasExistingCase) {
+                        $issues += [PSCustomObject]@{
+                            File          = $file.FullName
+                            Enum          = $enumName
+                            Value         = $normalizedValue
+                            FirstCase     = $valueToCase[$normalizedValue]
+                            DuplicateCase = $caseName
+                        }
+                    } else {
+                        $valueToCase[$normalizedValue] = $caseName
+                    }
+                }
+            }
+
+            $isEnumClosed = $hasEnteredEnumBody -and ($enumDepth -le 0)
+            if ($isEnumClosed) {
+                $isInBackedEnum = $false
+                $hasEnteredEnumBody = $false
+                $enumName = ""
+                $enumType = ""
+                $enumDepth = 0
+                $valueToCase = @{}
+            }
+        }
+    }
+
+    $isSuccess = ($issues.Count -eq 0)
+
+    return @{
+        IsChecked = $true
+        IsSuccess = $isSuccess
+        Checked   = $phpFiles.Count
+        Issues    = $issues
+    }
+}
+
 # Get-PluginVersionFromHeader: Extracts version from WordPress plugin PHP header
 function Get-PluginVersionFromHeader($PluginDir) {
     $mainFiles = Get-ChildItem $PluginDir -Filter "*.php" | Where-Object {
@@ -458,6 +555,20 @@ if ($isSyntaxChecked) {
 } else {
     Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
 }
+
+$enumLintResult = Test-BackedEnumDuplicateValues $PluginFolderPath
+$isEnumLintSuccess = $enumLintResult.IsSuccess
+
+if (-not $isEnumLintSuccess) {
+    Write-Host "      Duplicate backed enum values detected:" -ForegroundColor Red
+    foreach ($issue in $enumLintResult.Issues) {
+        Write-Host "      - $($issue.Enum) in $($issue.File) => value $($issue.Value) used by $($issue.FirstCase) and $($issue.DuplicateCase)" -ForegroundColor Yellow
+    }
+    Write-Host "      Fix duplicate enum case values before ZIP/upload." -ForegroundColor Red
+    exit 1
+}
+
+Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
 
 try {
     $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
