@@ -50,7 +50,6 @@ class Plugin {
         $this->fileLogger->info('Plugin constructor starting', ['version' => PluginConfigType::Version->value]);
 
         add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
-        $this->registerAdminPage();
 
         $this->fileLogger->info('Plugin constructor complete');
     }
