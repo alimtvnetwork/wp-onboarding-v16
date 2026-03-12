@@ -25,6 +25,7 @@ use RiseupAsia\Activation\ActivationHandler;
 use RiseupAsia\Core\Plugin;
 use RiseupAsia\Admin\Admin;
 use RiseupAsia\ErrorHandling\BootErrorCollector;
+use RiseupAsia\Helpers\InitHelpers;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all RiseupAsia\ classes resolve automatically
