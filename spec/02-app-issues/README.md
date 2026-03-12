@@ -38,8 +38,8 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 
 | # | Slug | Category | Summary |
 |---|------|----------|---------|
-| 03 | hardcoded-color-remediation | UI / Design System | Hardcoded color remediation plan |
-| 03 | hourly-frequency-missing-from-consumers | Enum/Consumer Sync | New enum case requires updating all consumers simultaneously |
+| 03a | hardcoded-color-remediation | UI / Design System | Hardcoded color remediation plan |
+| 03b | hourly-frequency-missing-from-consumers | Enum/Consumer Sync | New enum case requires updating all consumers simultaneously |
 | 04 | r9c-array-literal-formatting | Code Style | PHP arrays with >2 items must be line-by-line |
 | 05 | r10-activation-handler-formatting | Code Style | Blank line required before control structures after assignments |
 | 06 | r9-multi-file-array-formatting | Code Style | Arrays/calls with >2 items must be one-per-line across all files |
@@ -56,3 +56,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 17 | coverage-report-wrong-package-filtering | Tooling / Coverage | Coverage reported test packages instead of source packages |
 | 18 | php-enum-duplicate-value-fatal | PHP / Enum | Duplicate backing value in PluginConfigType caused site-crashing fatal error |
 | 19 | missing-phpdoc-opening-trait-parse-error | PHP / Parse Error | Missing `/**` opening in PHPDoc caused silent trait load failure and site crash |
+| 20 | broken-cross-references-in-memory-files | Documentation / Cross-References | Broken "System memory" references to non-existent entries in 3 memory files |
