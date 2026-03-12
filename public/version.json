@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "releaseDate": "2026-03-12",
   "gitCommit": "dev",
   "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.2.0",
-  "wpPluginVersion": "2.2.0",
-  "quploadVersion": "2.2.0",
+  "scriptVersion": "2.3.0",
+  "wpPluginVersion": "2.3.0",
+  "quploadVersion": "2.3.0",
   "changelog": [
+    {
+      "version": "2.3.0",
+      "date": "2026-03-12",
+      "title": "ORM Case-Sensitivity & Type-Hint Fixes",
+      "changes": [
+        "🐛 Fixed ORM class case-sensitivity issue (ORM → Orm) preventing database initialization on Linux",
+        "🐛 Fixed 4 broken RiseupORM type hints in DatabaseQuerySearchTrait causing fatal errors on filter operations",
+        "🐛 Fixed asset path depth (dirname level 3 → 4) so admin CSS/JS loads correctly"
+      ]
+    },
     {
       "version": "2.2.0",
       "date": "2026-03-12",

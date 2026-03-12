@@ -1,5 +1,5 @@
 # WordPress Plugin Uploader V2
-# Version: 2.2.0
+# Version: 2.3.0
 # Enhanced version with Git Pull, Version Comparison, Self-Update OPcache Flush, and Publish
 # Uses Riseup Asia Uploader API for reliable uploads
 #
