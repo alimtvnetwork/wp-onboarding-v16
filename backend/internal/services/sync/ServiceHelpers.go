@@ -92,6 +92,7 @@ func isFileExcluded(path string, excludePatterns []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
