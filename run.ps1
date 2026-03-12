@@ -20,6 +20,7 @@ param(
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose,
     [Alias('d')][switch]$debug,
+    [Alias('c')][switch]$clear,
     [Alias('pp')][string]$pluginpath = ""
 )
 
