@@ -24,7 +24,6 @@ use QUpload\Core\Plugin;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Helpers\ErrorLogHelper;
 use QUpload\Helpers\PathHelper;
-use QUpload\Helpers\PathHelper;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all QUpload\ classes resolve automatically
