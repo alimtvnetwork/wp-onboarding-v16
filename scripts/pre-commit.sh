@@ -89,6 +89,7 @@ if [[ -d "wp-plugins" ]]; then
   run_check "Function size (≤20 lines)"      bash "$SCRIPT_DIR/lint-php-func-size.sh"
   run_check "Import grouping"                bash "$SCRIPT_DIR/lint-php-import-groups.sh"
   run_check "Global class imports"            bash "$SCRIPT_DIR/lint-php-global-imports.sh"
+  run_check "PHPStan static analysis"          bash "$SCRIPT_DIR/lint-php-phpstan.sh"
   echo ""
 fi
 
