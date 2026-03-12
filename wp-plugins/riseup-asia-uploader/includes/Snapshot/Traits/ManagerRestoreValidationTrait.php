@@ -65,7 +65,7 @@ trait ManagerRestoreValidationTrait {
      *
      * @return int|array|null Backup ID, error array, or null.
      */
-    private function handlePreRestoreBackup(array $options, int $snapshotId): int|array|null {
+    private function handlePreRestoreBackup(array $options, int $snapshotId) {
         $isBackupExplicitlyDisabled = (isset($options['create_backup']) && $options['create_backup'] === false);
 
         if ($isBackupExplicitlyDisabled) {

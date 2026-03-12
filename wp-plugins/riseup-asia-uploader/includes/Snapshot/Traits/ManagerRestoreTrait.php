@@ -194,7 +194,7 @@ trait ManagerRestoreTrait {
     private function restoreAllTables(
         PDO $sqlite,
         array $tables,
-        array $options,
+        array $options
     ): array {
         $totalRows = 0;
         $restoredTables = 0;
