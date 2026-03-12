@@ -185,6 +185,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId 
 	if passwordResult.HasError() {
 		return nil, "Failed to decrypt credentials: " + passwordResult.AppError().Error()
 	}
+
 	password := passwordResult.Value()
 
 	si := siteInfoResult.Value()
