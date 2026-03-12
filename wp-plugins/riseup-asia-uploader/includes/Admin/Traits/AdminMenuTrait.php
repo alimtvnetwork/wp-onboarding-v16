@@ -195,6 +195,10 @@ trait AdminMenuTrait {
                 $this->enqueueLicenseAssets($pluginFile, $version, $pluginSlug);
                 break;
 
+            case AdminPageType::Feedback->value:
+                $this->enqueueFeedbackAssets($pluginFile, $version, $pluginSlug);
+                break;
+
             case $slug: // Main page = Activity Logs
                 $this->enqueueLogsAssets($pluginFile, $version, $pluginSlug);
                 break;
