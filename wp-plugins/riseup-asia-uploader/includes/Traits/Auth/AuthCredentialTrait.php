@@ -98,16 +98,20 @@ trait AuthCredentialTrait
 
     private function buildAuthError(string $reason, array $context = array()): WP_Error {
         $this->fileLogger->warn($reason, $context);
-        $this->logger->logAuthFailure($reason, $context);
+        $this->logAuthFailureSafely($reason, $context);
 
         return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, array('status' => HttpStatusType::Unauthorized->value));
     }
 
     private function buildMissingAuthError(WP_REST_Request $request): WP_Error {
-        $this->fileLogger->warn('Missing Authorization header', array(
-            'reason' => 'Missing Authorization header', 'method' => $request->get_method(), 'endpoint' => $request->get_route(),
-        ));
-        $this->logger->logAuthFailure('Missing Authorization header');
+        $context = array(
+            'reason' => 'Missing Authorization header',
+            'method' => $request->get_method(),
+            'endpoint' => $request->get_route(),
+        );
+
+        $this->fileLogger->warn('Missing Authorization header', $context);
+        $this->logAuthFailureSafely('Missing Authorization header', $context);
 
         return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, array(
             'status' => HttpStatusType::Unauthorized->value,
@@ -152,13 +156,20 @@ trait AuthCredentialTrait
             return true;
         }
 
-        $this->fileLogger->warn('Insufficient permissions', array(
-            'username' => $user->user_login, 'required_cap' => $capability,
-        ));
-        $this->logger->logAuthFailure('Insufficient permissions', array(
-            'username' => $user->user_login, 'required_cap' => $capability,
-        ));
+        $context = array(
+            'username' => $user->user_login,
+            'required_cap' => $capability,
+        );
+
+        $this->fileLogger->warn('Insufficient permissions', $context);
+        $this->logAuthFailureSafely('Insufficient permissions', $context);
 
         return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Forbidden->value, array('status' => HttpStatusType::Forbidden->value));
+    }
+
+    private function logAuthFailureSafely(string $reason, array $context = array()): void {
+        if ($this->logger !== null) {
+            $this->logger->logAuthFailure($reason, $context);
+        }
     }
 }
