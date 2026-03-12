@@ -741,11 +741,31 @@ try {
         Write-Status "      ✓ REST API is reachable (Site: $siteName)" -Color Green
         if ($healthResponse.namespaces) {
             $hasRiseup = $healthResponse.namespaces -contains "riseup-asia-uploader/v1"
+            $hasQUpload = $healthResponse.namespaces -contains "qupload-api/v1"
             if ($hasRiseup) {
                 Write-Status "      ✓ riseup-asia-uploader/v1 namespace registered" -Color Green
             } else {
                 Write-Status "      ⚠ riseup-asia-uploader/v1 namespace NOT found" -Color Yellow
                 Write-Debug-Log "Available namespaces: $($healthResponse.namespaces -join ', ')"
+                if ($hasQUpload) {
+                    Write-Status "" -Color White
+                    Write-Status "      ┌─────────────────────────────────────────────────────────┐" -Color Cyan
+                    Write-Status "      │  Riseup Asia Uploader API is not active on this site.   │" -Color Cyan
+                    Write-Status "      │  But QUpload IS available (qupload-api/v1).             │" -Color Cyan
+                    Write-Status "      │                                                         │" -Color Cyan
+                    Write-Status "      │  Use instead:  .\run.ps1 -u -q                         │" -Color Yellow
+                    Write-Status "      │  This uploads Riseup Asia Uploader via QUpload API.     │" -Color Cyan
+                    Write-Status "      └─────────────────────────────────────────────────────────┘" -Color Cyan
+                    Write-Status "" -Color White
+                    Write-Status "      ✗ Aborting: target plugin API not available." -Color Red
+                    if ($Quiet) {
+                        @{ success = $false; error = "riseup-asia-uploader/v1 not found. Use: .\run.ps1 -u -q" } | ConvertTo-Json -Compress
+                    }
+                    exit 1
+                } else {
+                    Write-Status "      ⚠ Neither riseup-asia-uploader/v1 nor qupload-api/v1 found" -Color Red
+                    Write-Status "      ⚠ Upload will likely fail — no upload API is active on this site" -Color Yellow
+                }
             }
         }
     } else {
