@@ -85,7 +85,7 @@ Activates an already-installed plugin by slug.
 }
 ```
 
-### GET `/wp-json/qupload/v1/status`
+### GET `/wp-json/qupload-api/v1/status`
 
 Returns plugin health and version info. No authentication required if configured.
 
