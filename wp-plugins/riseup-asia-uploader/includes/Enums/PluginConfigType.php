@@ -16,7 +16,7 @@ enum PluginConfigType: string
     case Slug            = 'riseup-asia-uploader';
     case ShortName       = 'RiseupAsia';
     case Name            = 'Riseup Asia Uploader';
-    case Version         = '2.0.2';
+    case Version         = '2.0.3';
     case MinWpVersion    = '5.6';
     case MinPhpVersion   = '8.2';
     case ApiNamespace    = 'riseup-asia-api';
