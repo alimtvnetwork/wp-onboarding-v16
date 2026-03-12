@@ -311,8 +311,43 @@ if ($verbose) {
 }
 
 # ============================================================================
-# UTILITY FUNCTIONS
+# GIT PULL (runs before ALL modes including upload/ZIP early exits)
 # ============================================================================
+function Invoke-GitPull {
+    if ($skippull) {
+        Write-Host "[GIT] Skipping git pull (-p)" -ForegroundColor Gray
+        Write-Host ""
+        return
+    }
+
+    $pullWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Host "[GIT] Pulling latest changes..." -ForegroundColor Yellow
+
+    Push-Location $RootDir
+    try {
+        if (Test-Path ".git") {
+            git pull 2>&1 | Out-Host
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "  WARNING: git pull failed, continuing anyway..." -ForegroundColor Yellow
+            } else {
+                Write-Host "  ✓ Git pull complete" -ForegroundColor Green
+            }
+        } else {
+            Write-Host "  Skipping git pull (not a git repository)" -ForegroundColor Gray
+        }
+    }
+    finally {
+        Pop-Location
+    }
+
+    $pullWatch.Stop()
+    Write-Host "  ⏱ $(Format-ElapsedTime $pullWatch)" -ForegroundColor DarkGray
+    Write-Host ""
+}
+
+Invoke-GitPull
+
+
 
 function Format-ElapsedTime($Stopwatch) {
     $elapsed = $Stopwatch.Elapsed
