@@ -827,7 +827,14 @@ if ($za) {
         exit 1
     }
 
+    $skipList = @()
+    if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
+        $skipList = @($Config.wpPlugins.skipPlugins)
+    }
+
     $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
+        if ($_.Name -in $skipList) { return $false }
+
         $phpFiles = Get-ChildItem $_.FullName -Filter "*.php" -File -ErrorAction SilentlyContinue
         $hasPluginHeader = $false
         foreach ($f in $phpFiles) {
