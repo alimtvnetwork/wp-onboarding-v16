@@ -30,6 +30,8 @@ trait InitStartupTrait {
             $error = $e->getMessage();
             InitHelpers::errorLog($e, 'InitStartupTrait::trackInit(' . $name . ') failed:');
             BootErrorCollector::getInstance()->addError('component_init:' . $name, $error);
+
+            throw $e;
         }
 
         $elapsedMs = round((microtime(true) - $start) * 1000, 2);
