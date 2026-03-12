@@ -869,7 +869,7 @@ if ($zipqupload) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     $qPath = Get-DefaultQUploaderPath
     New-PluginZip $qPath
