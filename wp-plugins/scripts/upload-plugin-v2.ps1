@@ -1144,14 +1144,15 @@ foreach ($candidateNamespace in $namespaceOrder) {
         if (-not $isCandidateSuccess) {
             $candidatePreview = ""
             try {
-                $candidatePreview = ($candidateResponse | ConvertTo-Json -Depth 4 -Compress)
-                if ($candidatePreview.Length -gt 300) { $candidatePreview = $candidatePreview.Substring(0, 300) + "..." }
+                $candidatePreview = ($candidateResponse | ConvertTo-Json -Depth 6 -Compress)
+                if ($candidatePreview.Length -gt 600) { $candidatePreview = $candidatePreview.Substring(0, 600) + "..." }
             } catch {
                 $candidatePreview = "<unserializable response>"
             }
 
             $uploadAttemptErrors += "${candidateNamespace}: non-success response ${candidatePreview}"
             Write-Status "      ⚠ Upload response from ${candidateNamespace} is not success, trying next namespace..." -Color Yellow
+            Write-Status "        Detail: $candidatePreview" -Color DarkYellow
             continue
         }
 
@@ -1161,14 +1162,29 @@ foreach ($candidateNamespace in $namespaceOrder) {
         $uploadUrl = $candidateUploadUrl
         break
     } catch {
-        $attemptErr = $_.Exception.Message
+        $statusCode = Get-ErrorStatusCode $_
         $attemptBody = Get-ErrorResponseBody $_
-        if ($attemptBody -ne "") {
-            $attemptErr = "$attemptErr | body: $($attemptBody.Substring(0, [Math]::Min(250, $attemptBody.Length)))"
+        $jsonSummary = Get-JsonErrorSummary $attemptBody
+        $attemptBodyPreview = Get-ResponsePreview -Body $attemptBody -MaxLength 500
+
+        $attemptErr = $_.Exception.Message
+        if ($null -ne $statusCode) {
+            $attemptErr = "HTTP ${statusCode} | ${attemptErr}"
+        }
+
+        if ($jsonSummary -ne "") {
+            $attemptErr = "${attemptErr} | ${jsonSummary}"
+        } elseif ($attemptBodyPreview -ne "") {
+            $attemptErr = "${attemptErr} | body: ${attemptBodyPreview}"
         }
 
         $uploadAttemptErrors += "${candidateNamespace}: ${attemptErr}"
         Write-Status "      ⚠ Upload failed on ${candidateNamespace}, trying next namespace..." -Color Yellow
+        Write-Status "        Detail: $attemptErr" -Color DarkYellow
+
+        if (Test-ServerCriticalError $attemptBody) {
+            Write-Status "        Server-side critical error marker detected in response body." -Color Red
+        }
     }
 }
 
