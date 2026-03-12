@@ -256,6 +256,7 @@ if ($help) {
     Write-Host "  .\run.ps1 -zq          # ZIP QUpload plugin"
     Write-Host "  .\run.ps1 -z -c        # Clear old ZIPs then ZIP default plugin"
     Write-Host "  .\run.ps1 -za -c       # Clear old ZIPs then ZIP all plugins"
+    Write-Host "  .\run.ps1 -ua          # ZIP + upload all plugins (except QUpload) via QUpload API"
     Write-Host "  .\run.ps1 -t           # Run Go backend tests"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
