@@ -22,7 +22,7 @@ class PathHelper {
             return self::$baseDir;
         }
 
-        self::$baseDir = self::resolveUploadsBaseDir() . '/' . PluginConfigType::UploadsSubdir->value;
+        self::$baseDir = self::resolveUploadsBaseDir() . '/' . PluginConfigType::uploadsSubdir();
 
         return self::$baseDir;
     }
