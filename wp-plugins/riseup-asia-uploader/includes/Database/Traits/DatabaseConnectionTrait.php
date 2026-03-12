@@ -17,7 +17,7 @@ use PDO;
 use PDOException;
 use Throwable;
 
-use RiseupAsia\Database\ORM;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Helpers\PathHelper;
