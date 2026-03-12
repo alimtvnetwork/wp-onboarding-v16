@@ -94,6 +94,7 @@ func (s *Service) insertSite(ctx context.Context, input CreateInput, normalizedU
 	}
 
 	s.log.Info("Site created", "id", res.LastInsertId, "name", input.Name, "url", normalizedUrl)
+
 	return s.GetById(ctx, res.LastInsertId)
 }
 
