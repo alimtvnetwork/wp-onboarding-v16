@@ -154,15 +154,18 @@ func resolveChildPath(dataDir, dbType, entityId string) (string, error) {
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db directory")
 	}
+
 	err = os.MkdirAll(childDir, 0755)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create child db directory").
 			WithPath(childDir)
 	}
+
 	p, err := pathutil.Join(childDir, entityId+".db")
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db path")
 	}
+
 	return p, nil
 }
 
