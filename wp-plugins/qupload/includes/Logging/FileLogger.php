@@ -228,7 +228,7 @@ class FileLogger {
         int $line,
         array $context = [],
     ): string {
-        $timestamp = DateHelper::nowUtc();
+        $timestamp = DateHelper::nowLogDisplay();
         $basename = basename($file);
 
         $entry = sprintf("[%s] [%s] %s (%s:%d)", $timestamp, $level, $message, $basename, $line);
