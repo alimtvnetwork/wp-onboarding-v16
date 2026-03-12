@@ -1,0 +1,107 @@
+/**
+ * Riseup Asia — Feedback Page Styles
+ *
+ * @since 2.6.0
+ */
+
+/* ── Form Layout ─────────────────────────────────────────── */
+.riseup-feedback-page .form-table th {
+    width: 180px;
+    padding-top: 16px;
+}
+
+.riseup-feedback-page .form-table td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.riseup-feedback-page .required {
+    color: #d63638;
+    font-weight: 600;
+}
+
+.riseup-feedback-page textarea {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* ── File List ───────────────────────────────────────────── */
+.feedback-file-list {
+    margin-top: 8px;
+}
+
+.feedback-file-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.feedback-file-item.file-valid {
+    background: #edfaef;
+    color: #1e4620;
+}
+
+.feedback-file-item.file-invalid {
+    background: #fce8e8;
+    color: #8b1a1a;
+}
+
+.feedback-file-item .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* ── Submit Area ─────────────────────────────────────────── */
+.riseup-feedback-page .submit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.riseup-feedback-page .button-large .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: text-bottom;
+}
+
+/* ── Not Ready Card ──────────────────────────────────────── */
+#riseup-feedback-not-ready h2 .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+#riseup-feedback-not-ready .button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: text-bottom;
+}
+
+/* ── Status Notice ───────────────────────────────────────── */
+#riseup-feedback-status {
+    margin: 12px 0;
+}
+
+/* ── Report Issue Button (Error Page) ────────────────────── */
+.riseup-report-issue-btn {
+    margin-left: 12px;
+    vertical-align: middle;
+}
+
+.riseup-report-issue-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+    vertical-align: text-bottom;
+}
