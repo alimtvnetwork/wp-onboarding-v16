@@ -283,6 +283,46 @@ function Invoke-SafeRestRequest {
     return $null
 }
 
+# Test-PluginPhpSyntax: Runs local php -l against plugin PHP files before upload
+function Test-PluginPhpSyntax {
+    param([string]$PluginDir)
+
+    $phpCommand = Get-Command php -ErrorAction SilentlyContinue
+    $isPhpCliAvailable = ($null -ne $phpCommand)
+
+    if (-not $isPhpCliAvailable) {
+        return @{
+            IsChecked = $false
+            IsSuccess = $true
+            Message   = "PHP CLI not found; skipped local syntax validation."
+        }
+    }
+
+    $phpFiles = Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Sort-Object FullName
+
+    foreach ($file in $phpFiles) {
+        $lintOutput = & php -l $file.FullName 2>&1
+        $isLintPassed = ($LASTEXITCODE -eq 0)
+
+        if (-not $isLintPassed) {
+            return @{
+                IsChecked   = $true
+                IsSuccess   = $false
+                FailedFile  = $file.FullName
+                Checked     = $phpFiles.Count
+                LintMessage = (($lintOutput | Out-String).Trim())
+            }
+        }
+    }
+
+    return @{
+        IsChecked = $true
+        IsSuccess = $true
+        Checked   = $phpFiles.Count
+        Message   = "Local PHP syntax validation passed."
+    }
+}
+
 # Test-BackedEnumDuplicateValues: Detects duplicate backed enum values before ZIP/upload
 function Test-BackedEnumDuplicateValues {
     param([string]$PluginDir)
