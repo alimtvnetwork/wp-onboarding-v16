@@ -17,7 +17,7 @@ use PDO;
 use PDOException;
 use Throwable;
 
-use RiseupAsia\Database\ORM;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Helpers\PathHelper;
@@ -85,7 +85,7 @@ trait DatabaseConnectionTrait {
             }
 
             $this->fileLogger->debug('Configuring ORM');
-            ORM::configure($this->pdo);
+            Orm::configure($this->pdo);
             $this->fileLogger->info('ORM configured');
 
             $this->createTables();
