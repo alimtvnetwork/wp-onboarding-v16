@@ -784,7 +784,7 @@ if ($zip) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     if ($pluginpath -ne "") {
         $zipPluginPath = $pluginpath
