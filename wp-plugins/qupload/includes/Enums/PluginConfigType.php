@@ -20,11 +20,15 @@ enum PluginConfigType: string
     case Version       = '2.0.2';
     case MinWpVersion  = '5.6';
     case MinPhpVersion = '8.1';
-    case UploadsSubdir = 'qupload';
-    case ApiNamespace  = 'qupload';
+    case ApiNamespace  = 'qupload-api';
     case ApiVersion    = 'v1';
     case LogPrefix      = '[QUpload]';
     case SettingsGroup  = 'qupload_settings';
+
+    public static function uploadsSubdir(): string
+    {
+        return self::Slug->value;
+    }
 
     public static function apiFullNamespace(): string
     {

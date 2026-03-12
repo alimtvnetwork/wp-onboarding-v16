@@ -89,8 +89,8 @@ class ActivationHandler
         }
 
         return array(
-            'base' => $uploadDir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value,
-            'logs' => $uploadDir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value . PathSubdirType::Logs->value,
+            'base' => $uploadDir['basedir'] . '/' . PluginConfigType::uploadsSubdir(),
+            'logs' => $uploadDir['basedir'] . '/' . PluginConfigType::uploadsSubdir() . PathSubdirType::Logs->value,
         );
     }
 
