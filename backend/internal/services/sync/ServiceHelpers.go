@@ -81,8 +81,8 @@ func (s *serviceImpl) processLocalFile(
 		ModifiedAt: info.ModTime().UTC(),
 		Size:       info.Size(),
 	}
+
 	return nil
-}
 
 // isFileExcluded checks if a file matches any exclude pattern.
 func isFileExcluded(path string, excludePatterns []string) bool {
