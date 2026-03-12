@@ -291,11 +291,12 @@ class FileLogger {
         }
 
         $timestamp = DateHelper::nowLogDisplay();
+        $version = PluginConfigType::Version->value;
         $separator = str_repeat('=', self::SEPARATOR_WIDTH);
         $divider   = str_repeat('-', self::SEPARATOR_WIDTH);
 
         $entry  = $separator . PHP_EOL;
-        $entry .= sprintf("[%s] %s (%s:%d)", $timestamp, $message, basename($file), $line) . PHP_EOL;
+        $entry .= sprintf("[%s v%s] %s (%s:%d)", $timestamp, $version, $message, basename($file), $line) . PHP_EOL;
         $entry .= $divider . PHP_EOL;
         $entry .= $stackTrace . PHP_EOL;
         $entry .= $separator . PHP_EOL . PHP_EOL;
