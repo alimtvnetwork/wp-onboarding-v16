@@ -64,6 +64,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 	}
 
 	encryptedPassword, err := encrypt([]byte(input.Password), s.encryptionKey)
+
 	if err != nil {
 		return apperror.FailWrap[models.Site](err, apperror.ErrInternal, "failed to encrypt password")
 	}
