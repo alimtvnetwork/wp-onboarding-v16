@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
@@ -59,14 +60,16 @@ trait LoggerWriteTrait {
             return;
         }
 
-        $timestamp = DateHelper::nowUtc();
+        $timestamp = DateHelper::nowLogDisplay();
+        $version   = PluginConfigType::Version->value;
         $separator = str_repeat('=', self::SEPARATOR_WIDTH);
         $divider   = str_repeat('-', self::SEPARATOR_WIDTH);
 
         $entry  = $separator . PHP_EOL;
         $entry .= sprintf(
-            "[%s] %s (%s:%d)",
+            "[%s v%s] %s (%s:%d)",
             $timestamp,
+            $version,
             $message,
             basename($file),
             $line,
