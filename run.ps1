@@ -1092,6 +1092,17 @@ if ($upload) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
+    # Resolve configured default uploader (used for auto self-update fallback)
+    $defaultUploader = $null
+    if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+        $defaultUploader = $Config.wpPlugins.defaultUploader
+    }
+
+    $defaultUploaderPath = $null
+    if ($defaultUploader -and $Config.wpPlugins.plugins.$defaultUploader) {
+        $defaultUploaderPath = Resolve-RelativePath $Config.wpPlugins.plugins.$defaultUploader.path
+    }
+
     # Determine plugin path: use -pp override or default from config
     if ($pluginpath -ne "") {
         # Custom plugin path provided via -pp flag
@@ -1106,11 +1117,6 @@ if ($upload) {
         Write-Host "  Using custom plugin path: $pluginPath" -ForegroundColor Cyan
     } else {
         # Resolve default uploader from powershell.json
-        $defaultUploader = $null
-        if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
-            $defaultUploader = $Config.wpPlugins.defaultUploader
-        }
-
         if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
             Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
             exit 1
@@ -1124,6 +1130,45 @@ if ($upload) {
             exit 1
         }
         Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
+    }
+
+    # Auto-fallback: self-updating the uploader should use QUpload transport.
+    $isSelfUploaderTarget = $false
+    if ($defaultUploaderPath -and (Test-Path $defaultUploaderPath)) {
+        try {
+            $resolvedTargetPath = (Resolve-Path -LiteralPath $pluginPath).Path
+            $resolvedDefaultPath = (Resolve-Path -LiteralPath $defaultUploaderPath).Path
+            $isSelfUploaderTarget = ($resolvedTargetPath -eq $resolvedDefaultPath)
+        } catch {
+            $isSelfUploaderTarget = $false
+        }
+    }
+
+    if ($isSelfUploaderTarget) {
+        Write-Host "  Auto-fallback: detected self-update target ($defaultUploader)" -ForegroundColor Yellow
+        Write-Host "  Switching transport to QUpload for reliable bootstrap..." -ForegroundColor Yellow
+
+        $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
+        if (-not (Test-Path $quploadScript)) {
+            Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
+            exit 1
+        }
+
+        $qConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/qupload-config.json"
+        if (Test-Path $qConfigPath) {
+            $qConfig = Get-Content $qConfigPath -Raw | ConvertFrom-Json
+            $qConfig.pluginFolderPath = $pluginPath
+            $jsonConfigStr = ($qConfig | ConvertTo-Json -Compress)
+            Write-Host "  Path:   $pluginPath" -ForegroundColor Gray
+            Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
+            Write-Host ""
+            & $quploadScript -jc $jsonConfigStr -a
+            exit 0
+        }
+
+        Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
+        Write-Host "Create it with pluginFolderPath, wordPressSiteURL, username, and appPassword." -ForegroundColor Yellow
+        exit 1
     }
 
     # Find the upload-plugin-v2.ps1 script
@@ -1153,6 +1198,7 @@ if ($upload) {
 
     exit 0
 }
+
 
 
 
