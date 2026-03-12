@@ -70,15 +70,19 @@ func findPIDOnPort(port int) (int, error) {
 	switch runtime.GOOS {
 	case "windows":
 		out, err := exec.Command("cmd", "/c", fmt.Sprintf("netstat -ano | findstr :%d | findstr LISTENING", port)).CombinedOutput()
+
 		if err != nil {
 			return 0, apperror.Wrap(err, apperror.ErrInternal, "netstat command failed")
 		}
+
 		return parseNetstatWindows(string(out), port)
 	default:
 		out, err := exec.Command("lsof", "-ti", fmt.Sprintf("tcp:%d", port)).CombinedOutput()
+
 		if err != nil {
 			return 0, apperror.Wrap(err, apperror.ErrInternal, "lsof command failed")
 		}
+
 		return strconv.Atoi(strings.TrimSpace(string(out)))
 	}
 }
