@@ -177,6 +177,82 @@ function Write-Status {
     }
 }
 
+# Convert-EscapedUnicodeToText: Decodes \uXXXX sequences for readable console output
+function Convert-EscapedUnicodeToText {
+    param([string]$Text)
+
+    $isTextEmpty = [string]::IsNullOrWhiteSpace($Text)
+
+    if ($isTextEmpty) {
+        return $Text
+    }
+
+    return [regex]::Replace($Text, '\\u([0-9A-Fa-f]{4})', {
+            param($match)
+            $codePoint = [Convert]::ToInt32($match.Groups[1].Value, 16)
+            return [char]::ConvertFromUtf32($codePoint)
+        })
+}
+
+# Format-ApiResponseForConsole: Pretty-prints JSON response and decodes unicode escapes
+function Format-ApiResponseForConsole {
+    param([string]$RawText)
+
+    $isRawTextEmpty = [string]::IsNullOrWhiteSpace($RawText)
+
+    if ($isRawTextEmpty) {
+        return ""
+    }
+
+    try {
+        $parsed = $RawText | ConvertFrom-Json -ErrorAction Stop
+        $pretty = $parsed | ConvertTo-Json -Depth 30
+        return $pretty
+    } catch {
+        return Convert-EscapedUnicodeToText $RawText
+    }
+}
+
+# Test-PluginPhpSyntax: Runs local php -l against plugin PHP files before upload
+function Test-PluginPhpSyntax {
+    param([string]$PluginDir)
+
+    $phpCommand = Get-Command php -ErrorAction SilentlyContinue
+    $isPhpCliAvailable = ($null -ne $phpCommand)
+
+    if (-not $isPhpCliAvailable) {
+        return @{
+            IsChecked = $false
+            IsSuccess = $true
+            Message   = "PHP CLI not found; skipped local syntax validation."
+        }
+    }
+
+    $phpFiles = Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Sort-Object FullName
+
+    foreach ($file in $phpFiles) {
+        $lintOutput = & php -l $file.FullName 2>&1
+        $isLintPassed = ($LASTEXITCODE -eq 0)
+
+        if (-not $isLintPassed) {
+            return @{
+                IsChecked   = $true
+                IsSuccess   = $false
+                FailedFile  = $file.FullName
+                Checked     = $phpFiles.Count
+                LintMessage = (($lintOutput | Out-String).Trim())
+            }
+        }
+    }
+
+    return @{
+        IsChecked = $true
+        IsSuccess = $true
+        Checked   = $phpFiles.Count
+        Message   = "Local PHP syntax validation passed."
+    }
+}
+
 # Get-PluginVersionFromHeader: Extracts version from WordPress plugin PHP header
 function Get-PluginVersionFromHeader($PluginDir) {
     $mainFiles = Get-ChildItem $PluginDir -Filter "*.php" | Where-Object {
