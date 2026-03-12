@@ -55,7 +55,7 @@ The following five files were fixed to replace hardcoded identity strings with `
 - **Data files** (`endpoints.json`) — external-facing, exempt
 
 ## Cross-References
-- **Enum usage constraints:** System memory `architecture/php/enum-usage-constraints`
+- **Enum inventory:** `.lovable/memory/architecture/php/core-enum-inventory.md`
 - **Persistence naming exemptions:** `.lovable/memory/architecture/coding-standards/persistence-naming-exemptions.md`
 - **camelCase migration status:** `.lovable/memory/architecture/php/naming-conventions.md`
 - **QUpload plugin overview:** `.lovable/memory/features/qupload-plugin.md`

@@ -29,6 +29,6 @@ The following identifiers are strictly exempt from camelCase and PascalCase nami
 
 ## Cross-References
 - **camelCase migration status:** `.lovable/memory/architecture/php/naming-conventions.md`
-- **Enum naming standard:** System memory `architecture/coding-standards/enums-standard`
-- **Plugin identity standard:** System memory `architecture/php/plugin-identity-standard`
-- **Enum usage constraints (PHP):** System memory `architecture/php/enum-usage-constraints`
+- **Enum standards:** `spec/06-php-standards/enums.md`
+- **Plugin identity standard:** `.lovable/memory/architecture/php/plugin-identity-standard.md`
+- **Enum inventory (PHP):** `.lovable/memory/architecture/php/core-enum-inventory.md`
