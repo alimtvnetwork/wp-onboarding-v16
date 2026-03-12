@@ -137,7 +137,7 @@ trait AdminMenuTrait {
 
         $version = PluginConfigType::Version->value;
         $pluginSlug = PluginConfigType::Slug->value;
-        $pluginFile = dirname(__FILE__, 3) . '/' . $pluginSlug . '.php';
+        $pluginFile = dirname(__FILE__, 4) . '/' . $pluginSlug . '.php';
 
         // Global admin CSS (always loaded on plugin pages)
         wp_enqueue_style(
