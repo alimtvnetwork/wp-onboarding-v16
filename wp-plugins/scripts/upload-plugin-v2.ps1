@@ -140,6 +140,58 @@ function Get-ErrorResponseBody {
     return ""
 }
 
+function Get-ErrorStatusCode {
+    param($ErrorRecord)
+    try {
+        if ($ErrorRecord.Exception.Response -and $ErrorRecord.Exception.Response.StatusCode) {
+            return [int]$ErrorRecord.Exception.Response.StatusCode
+        }
+    } catch {}
+
+    return $null
+}
+
+function Get-ResponsePreview {
+    param([string]$Body, [int]$MaxLength = 400)
+
+    if ([string]::IsNullOrWhiteSpace($Body)) {
+        return ""
+    }
+
+    $singleLine = ($Body -replace "`r", " " -replace "`n", " ").Trim()
+    if ($singleLine.Length -gt $MaxLength) {
+        return $singleLine.Substring(0, $MaxLength) + "..."
+    }
+
+    return $singleLine
+}
+
+function Get-JsonErrorSummary {
+    param([string]$Body)
+
+    if ([string]::IsNullOrWhiteSpace($Body)) {
+        return ""
+    }
+
+    try {
+        $errJson = $Body | ConvertFrom-Json
+        $parts = @()
+
+        if ($errJson.message) { $parts += "message=$($errJson.message)" }
+        if ($errJson.code) { $parts += "code=$($errJson.code)" }
+        if ($errJson.data -and $errJson.data.status) { $parts += "status=$($errJson.data.status)" }
+        if ($errJson.Status -and $errJson.Status.Message) { $parts += "statusMessage=$($errJson.Status.Message)" }
+        if ($errJson.Status -and $errJson.Status.Code) { $parts += "statusCode=$($errJson.Status.Code)" }
+        if ($errJson.Diagnostics -and $errJson.Diagnostics.RootCause) { $parts += "rootCause=$($errJson.Diagnostics.RootCause)" }
+
+        if ($parts.Count -gt 0) {
+            return ($parts -join "; ")
+        }
+    } catch {}
+
+    return ""
+}
+
 # Print error response body as-is (raw, no HTML stripping)
 function Write-ErrorBody {
     param([string]$Body, [string]$Label = "Response Body")
