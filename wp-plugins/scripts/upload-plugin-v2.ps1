@@ -1034,16 +1034,16 @@ foreach ($candidateNamespace in $namespaceOrder) {
         $candidateResponse = Invoke-SafeRestRequest -Uri $candidateUploadUrl -Method "Post" -Headers $uploadHeaders -Body $uploadBody -ContentType "application/json" -TimeoutSec 300 -Label "Upload ($candidateNamespace)" -MaxRetries 2 -RetryDelaySec 4
 
         if ($null -eq $candidateResponse) {
-            $uploadAttemptErrors += "$candidateNamespace: null/invalid JSON response"
-            Write-Status "      ⚠ $candidateNamespace returned null response, trying next namespace..." -Color Yellow
+            $uploadAttemptErrors += "${candidateNamespace}: null/invalid JSON response"
+            Write-Status "      ⚠ ${candidateNamespace} returned null response, trying next namespace..." -Color Yellow
             continue
         }
 
         $candidateMessage = if ($candidateResponse.message) { $candidateResponse.message } else { $null }
         $isBlockedOrUnauthorized = $candidateMessage -and ($candidateMessage -match "Access denied|bot.protection|not allowed|unauthorized|forbidden")
         if ($isBlockedOrUnauthorized) {
-            $uploadAttemptErrors += "$candidateNamespace: $candidateMessage"
-            Write-Status "      ⚠ $candidateNamespace blocked/unauthorized: $candidateMessage" -Color Yellow
+            $uploadAttemptErrors += "${candidateNamespace}: ${candidateMessage}"
+            Write-Status "      ⚠ ${candidateNamespace} blocked/unauthorized: ${candidateMessage}" -Color Yellow
             continue
         }
 
@@ -1061,8 +1061,8 @@ foreach ($candidateNamespace in $namespaceOrder) {
                 $candidatePreview = "<unserializable response>"
             }
 
-            $uploadAttemptErrors += "$candidateNamespace: non-success response $candidatePreview"
-            Write-Status "      ⚠ Upload response from $candidateNamespace is not success, trying next namespace..." -Color Yellow
+            $uploadAttemptErrors += "${candidateNamespace}: non-success response ${candidatePreview}"
+            Write-Status "      ⚠ Upload response from ${candidateNamespace} is not success, trying next namespace..." -Color Yellow
             continue
         }
 
@@ -1078,14 +1078,14 @@ foreach ($candidateNamespace in $namespaceOrder) {
             $attemptErr = "$attemptErr | body: $($attemptBody.Substring(0, [Math]::Min(250, $attemptBody.Length)))"
         }
 
-        $uploadAttemptErrors += "$candidateNamespace: $attemptErr"
-        Write-Status "      ⚠ Upload failed on $candidateNamespace, trying next namespace..." -Color Yellow
+        $uploadAttemptErrors += "${candidateNamespace}: ${attemptErr}"
+        Write-Status "      ⚠ Upload failed on ${candidateNamespace}, trying next namespace..." -Color Yellow
     }
 }
 
 if (-not $uploadSuccess -or $null -eq $response) {
     $uploadErrorSummary = if ($uploadAttemptErrors.Count -gt 0) { $uploadAttemptErrors -join " || " } else { "No response from any namespace" }
-    throw "Upload failed on all known Riseup namespaces: $uploadErrorSummary"
+    throw "Upload failed on all known Riseup namespaces: ${uploadErrorSummary}"
 }
 
 
