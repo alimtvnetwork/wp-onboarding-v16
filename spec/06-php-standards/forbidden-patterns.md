@@ -429,6 +429,8 @@ Scattered `gmdate('c')`, `gmdate('Y-m-d H:i:s')`, and similar calls make it impo
 | 12.5 | `gmdate('Ymd-His')` | `DateHelper::nowCompact()` | `DateHelper::COMPACT` |
 | 12.6 | `gmdate('c', $ts)` | `DateHelper::formatIso($ts)` | `DateHelper::ISO_8601` |
 | 12.7 | `gmdate('Y-m-d H:i:s', $ts)` | `DateHelper::formatDatetime($ts)` | `DateHelper::DATETIME` |
+| 12.8 | `gmdate('d-M-y g:i A')` | `DateHelper::nowLogDisplay()` | `DateHelper::LOG_DISPLAY` |
+| 12.9 | `gmdate('d-M-y g:i A', $ts)` | `DateHelper::formatLogDisplay($ts)` | `DateHelper::LOG_DISPLAY` |
 
 ### Exception
 
