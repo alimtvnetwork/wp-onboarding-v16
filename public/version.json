@@ -1,13 +1,25 @@
 {
   "appName": "WP Publish",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "releaseDate": "2026-03-12",
   "gitCommit": "dev",
   "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.4.0",
-  "wpPluginVersion": "2.4.0",
-  "quploadVersion": "2.4.0",
+  "scriptVersion": "2.5.0",
+  "wpPluginVersion": "2.5.0",
+  "quploadVersion": "2.5.0",
   "changelog": [
+    {
+      "version": "2.5.0",
+      "date": "2026-03-12",
+      "title": "Clear Button Disk Delete & Upgrade Hook Log Reset",
+      "changes": [
+        "🗑️ Clear Log button now deletes files from disk via PathHelper::deleteFile() instead of truncating",
+        "🔄 Added upgrader_process_complete hook for forced log reset after plugin update",
+        "🐛 Fixed duplicate ResponseMessageType enum case causing PHP fatal on AJAX handlers",
+        "🛡️ DB-ready guards on all error AJAX handlers prevent silent 500 errors",
+        "📋 Activation handler now resets all log files before writing fresh init entries"
+      ]
+    },
     {
       "version": "2.4.0",
       "date": "2026-03-12",
