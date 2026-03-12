@@ -208,14 +208,6 @@ $isActive = $status === 'active';
 | Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
 ```
 
-### When to Use Which Extraction
-
-| Complexity | Extraction | Example |
-|------------|-----------|---------|
-| 2 conditions, used once | Named `$is_*` / `isX` variable | `$hasFile = $req !== null && $req->hasParam('file');` |
-| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::isFatalError($error)` |
-| Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
-
 ---
 
 ## Rule 4: Blank Line Before `return` or `throw` When Preceded by Other Statements
