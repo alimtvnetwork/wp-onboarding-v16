@@ -5,33 +5,59 @@ Updated: 2026-03-12
 
 Every error logging call **MUST** accept the `Throwable` object as the primary input — not a string message. The message is secondary; the **stack trace is the most important part**.
 
-## Critical Rule: Re-Throw After Log in Boot/Load Contexts
+## Critical Rule: Throw From the Helper, Not the Catch Block
 
-In **boot, autoloader, file-loading, and route registration** catch blocks, the exception **MUST be re-thrown** after logging. These are infrastructure-level operations where silent failure causes cascading breakage that is impossible to diagnose. The only place exceptions are caught without re-throwing is at **handler boundaries** (`safeExecute`, `performActivation`) where a structured error response must be returned to the client.
+In **boot, autoloader, file-loading, route registration, migration, and infrastructure** catch blocks, the exception **MUST be re-thrown** after logging. However, the `throw` happens **inside the logging helper** — not at each call site. This eliminates the error-prone pattern of manually adding `throw $e;` after every log call.
 
-### Re-Throw Required (boot/load contexts):
+### Throwing Helpers (boot/infrastructure contexts):
 ```php
-// Autoloader
+// Static helpers — throw internally
+InitHelpers::errorLogAndThrow($e, 'Context:');      // Riseup Asia
+ErrorLogHelper::logAndThrow($e, 'Context:');         // QUpload
+OnboardErrorLog::logAndThrow($e, 'Context:');        // Plugins Onboard
+
+// FileLogger — throw internally
+$this->fileLogger->logCriticalException($e, 'Context');  // Both packages
+```
+
+### Non-Throwing Helpers (handler boundaries):
+```php
+// Static helpers — log only, no throw
+InitHelpers::errorLog($e, 'Context:');               // Riseup Asia
+ErrorLogHelper::log($e, 'Context:');                  // QUpload
+OnboardErrorLog::log($e, 'Context:');                 // Plugins Onboard
+
+// FileLogger — log only, no throw
+$this->fileLogger->logException($e, 'Context');       // Both packages
+$this->fileLogger->logDebugException($e, 'Context');  // Riseup Asia (recoverable)
+```
+
+### Re-Throw Required (boot/load contexts) — use throwing helpers:
+```php
+// Boot initialization
 } catch (Throwable $e) {
-    error_log($message);
-    self::writeDiagnostic($message);
-    throw $e; // MUST re-throw — broken class = broken plugin
+    BootErrorCollector::getInstance()->addError('context', $e->getMessage() . "\n" . $e->getTraceAsString());
+    InitHelpers::errorLogAndThrow($e, 'Plugin init failed:');
 }
 
 // Route registration
 } catch (Throwable $e) {
-    $this->fileLogger->logException($e, 'Failed to register route');
-    throw $e; // MUST re-throw — broken route = silent 404
+    $this->fileLogger->logCriticalException($e, 'Failed to register route');
 }
 
 // Enum/file priming (require_once)
 } catch (Throwable $e) {
-    $this->fileLogger->logException($e, 'Failed to preload dependency');
-    throw $e; // MUST re-throw — missing dependency = runtime crash
+    $this->fileLogger->logCriticalException($e, 'Failed to preload dependency');
+}
+
+// Database migrations
+} catch (Throwable $e) {
+    $this->pdo->rollBack();
+    $this->fileLogger->logCriticalException($e, 'Migration vN failed — rolled back');
 }
 ```
 
-### Re-Throw Prohibited (handler boundaries):
+### Re-Throw Prohibited (handler boundaries) — use non-throwing helpers:
 ```php
 // safeExecute — top-level REST handler boundary
 } catch (Throwable $e) {
@@ -65,40 +91,38 @@ All `safeExecute` and `errorResponse` catch blocks **MUST emit to PHP's native `
 
 ## Mandatory Patterns (by context)
 
-### Pattern 1: FileLogger — `logException()`
+### Pattern 1: FileLogger — `logException()` / `logCriticalException()`
 
 When `$this->fileLogger` is available (Plugin classes, managers, services):
 
 ```php
-} catch (Throwable $e) {
-    $this->fileLogger->logException($e, 'Context message');
-}
+// Non-throwing (handler boundaries, recoverable)
+$this->fileLogger->logException($e, 'Context message');
+
+// Throwing (boot, routes, migrations, infrastructure)
+$this->fileLogger->logCriticalException($e, 'Context message');
 ```
 
-`logException()` internally extracts `$e->getMessage()`, `$e->getTraceAsString()`, file, and line. One call does everything.
+### Pattern 2: ErrorLog helper — `log()` / `logAndThrow()` and `errorLog()` / `errorLogAndThrow()`
 
-### Pattern 2: ErrorLog helper — `log($e, context)` or `errorLog($e, context)`
-
-When FileLogger is not available but namespaced helpers are loaded. Method is named `log()` when the class name already implies error logging, `errorLog()` when it doesn't:
+When FileLogger is not available but namespaced helpers are loaded:
 
 ```php
-// Riseup Asia (InitHelpers is a general helper — keep "errorLog")
-} catch (Throwable $e) {
-    InitHelpers::errorLog($e, 'ClassName::method() failed:');
-}
+// Riseup Asia — non-throwing
+InitHelpers::errorLog($e, 'Context:');
+// Riseup Asia — throwing
+InitHelpers::errorLogAndThrow($e, 'Context:');
 
-// QUpload (ErrorLogHelper — class name implies error logging)
-} catch (Throwable $e) {
-    ErrorLogHelper::log($e, 'ClassName::method() failed:');
-}
+// QUpload — non-throwing
+ErrorLogHelper::log($e, 'Context:');
+// QUpload — throwing
+ErrorLogHelper::logAndThrow($e, 'Context:');
 
-// Plugins Onboard (OnboardErrorLog — class name implies error logging)
-} catch (Exception $e) {
-    OnboardErrorLog::log($e, 'Context message:');
-}
+// Plugins Onboard — non-throwing
+OnboardErrorLog::log($e, 'Context:');
+// Plugins Onboard — throwing
+OnboardErrorLog::logAndThrow($e, 'Context:');
 ```
-
-Internally calls `error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString())`.
 
 ### Pattern 3: Autoloaders — raw `error_log()`
 
@@ -107,37 +131,26 @@ Internally calls `error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTr
 ```php
 } catch (Throwable $e) {
     error_log('Prefix: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-    throw $e; // MUST re-throw after logging
+    throw $e; // Only place where manual throw is acceptable
 }
 ```
 
-This is the **only** context where manual `getMessage()` + `getTraceAsString()` concatenation is acceptable.
+This is the **only** context where manual `getMessage()` + `getTraceAsString()` concatenation and manual `throw $e` are acceptable.
 
 ### Pattern 4: Snapshot trait logError/logWarn
 
-When inside Snapshot traits/classes that have a `log()` method (via `OrchestratorHelpersTrait`, `CleanerHelperTrait`, `ManagerCoreTrait`, or `SnapshotImport`):
+When inside Snapshot traits/classes that have a `log()` method:
 
 ```php
 } catch (Throwable $e) {
     $this->logError($e, 'Context message');
-    // or with extra context:
-    $this->logWarn($e, 'Context message', array('table' => $tableName));
 }
 ```
 
-`logError()`/`logWarn()` auto-inject `'error' => $e->getMessage()` and `'trace' => $e->getTraceAsString()` into the context array before delegating to `$this->log()`. Never manually build these context arrays.
-
 ### Pattern 5: safeExecute / errorResponse (Handler Boundaries)
 
-Top-level REST handler catch blocks use `safeExecute()` which:
-1. Emits to PHP `error_log()` with full trace (visible in PHP debug)
-2. Logs via `fileLogger->logException()` (visible in plugin logs)
-3. Logs detailed context via `fileLogger->error()` (exception class, file, line)
-4. Returns a structured error envelope via `errorResponse()`
+Top-level REST handler catch blocks use `safeExecute()` which handles everything internally. No action needed at the call site:
 
-`errorResponse()` additionally calls `logErrorWithBacktrace()` which captures a 15-frame `debug_backtrace()` when no Throwable is available, ensuring non-exception error paths also have full call-site visibility.
-
-No action needed at the call site — just wrap in `safeExecute()`:
 ```php
 return $this->safeExecute(
     fn () => $this->executePipeline($request),
@@ -146,25 +159,37 @@ return $this->safeExecute(
 );
 ```
 
+### Pattern 6: Transaction rollback + throw
+
+When a catch block must perform cleanup (rollback) before re-throwing, use `logCriticalException()` which handles the throw internally:
+
+```php
+} catch (Throwable $e) {
+    $this->pdo->rollBack();
+    $this->fileLogger->logCriticalException($e, 'Migration failed — rolled back');
+}
+```
+
 ## Rules
 
 1. **Throwable is the primary input** — every error logging method must accept `Throwable` as its first parameter
 2. **Stack trace is the most important output** — must always be logged, never omitted
-3. **Never** manually write `error_log('msg: ' . $e->getMessage() . "\n" . $e->getTraceAsString())` — use `errorLog($e, 'msg:')` instead (except autoloaders)
-4. **Never** log `$e->getMessage()` alone without the trace
-5. **Always re-throw** in boot/load/infrastructure catch blocks after logging
-6. **Never re-throw** in handler boundary catch blocks (return error envelope instead)
-7. **Always emit to PHP error_log()** in handler boundaries so errors surface in PHP debug
-8. This applies to ALL plugins: `riseup-asia-uploader`, `qupload`, `plugins-onboard`
-9. No exceptions to this rule — even in bootstrap, deactivation hooks
-10. Only permitted raw `error_log()` with exception: autoloader files (2 total)
-11. Only permitted silent catch: logger recursion guards (to prevent infinite loops)
-12. Reducing or omitting stack traces is treated as a critical defect
+3. **Throw from the helper, not the catch block** — use `logCriticalException()` / `logAndThrow()` / `errorLogAndThrow()` instead of manual `throw $e;`
+4. **Never** manually write `error_log('msg: ' . $e->getMessage() . "\n" . $e->getTraceAsString())` — use the appropriate helper (except autoloaders)
+5. **Never** log `$e->getMessage()` alone without the trace
+6. **Always emit to PHP error_log()** in handler boundaries so errors surface in PHP debug
+7. This applies to ALL plugins: `riseup-asia-uploader`, `qupload`, `plugins-onboard`
+8. No exceptions to this rule — even in bootstrap, deactivation hooks
+9. Only permitted raw `error_log()` with manual `throw $e`: autoloader files (2 total)
+10. Only permitted silent catch: logger recursion guards (to prevent infinite loops)
+11. Reducing or omitting stack traces is treated as a critical defect
 
 ## Helper Locations
 
-| Plugin | Helper | Method |
-|---|---|---|
-| Riseup Asia | `RiseupAsia\Helpers\InitHelpers` | `::errorLog($e, $context)` |
-| QUpload | `QUpload\Helpers\ErrorLogHelper` | `::log($e, $context)` |
-| Plugins Onboard | `OnboardErrorLog` (global) | `::log($e, $context)` |
+| Plugin | Helper | Non-Throwing Method | Throwing Method |
+|---|---|---|---|
+| Riseup Asia | `RiseupAsia\Helpers\InitHelpers` | `::errorLog($e, $ctx)` | `::errorLogAndThrow($e, $ctx)` |
+| Riseup Asia | `RiseupAsia\Logging\FileLogger` | `->logException($e, $ctx)` | `->logCriticalException($e, $ctx)` |
+| QUpload | `QUpload\Helpers\ErrorLogHelper` | `::log($e, $ctx)` | `::logAndThrow($e, $ctx)` |
+| QUpload | `QUpload\Logging\FileLogger` | `->logException($e, $ctx)` | `->logCriticalException($e, $ctx)` |
+| Plugins Onboard | `OnboardErrorLog` (global) | `::log($e, $ctx)` | `::logAndThrow($e, $ctx)` |
