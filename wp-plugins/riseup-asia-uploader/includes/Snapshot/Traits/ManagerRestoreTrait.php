@@ -120,7 +120,7 @@ trait ManagerRestoreTrait {
     private function finalizeRestoreResult(
         array $result,
         int $snapshotId,
-        int|null $backupId,
+        ?int $backupId
     ): array {
         if ($result[ResponseKeyType::Success->value]) {
             $result[ResponseKeyType::BackupId->value] = $backupId;
@@ -194,7 +194,7 @@ trait ManagerRestoreTrait {
     private function restoreAllTables(
         PDO $sqlite,
         array $tables,
-        array $options,
+        array $options
     ): array {
         $totalRows = 0;
         $restoredTables = 0;
