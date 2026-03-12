@@ -194,7 +194,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                 <div style="display: flex; align-items: center; gap: 12px; max-width: 340px;">
                     <input type="range" id="snap_worker_pool_size" 
                            min="<?php echo esc_attr(SnapshotConfigType::WorkerPoolMin->value); ?>" 
-                           max="<?php echo esc_attr(SnapshotConfigType::WorkerPoolMax->value); ?>" 
+                           max="<?php echo esc_attr(SnapshotConfigType::workerPoolMax()); ?>" 
                            value="<?php echo esc_attr($snapshotSettings['worker_pool_size']); ?>" 
                            style="flex: 1; accent-color: #2271b1;">
                     <span id="snap_worker_pool_value" style="font-family: monospace; font-size: 14px; min-width: 24px; text-align: center; font-weight: 600; color: #2271b1;"><?php echo esc_html($snapshotSettings['worker_pool_size']); ?></span>
