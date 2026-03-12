@@ -119,6 +119,7 @@ func (s *serviceImpl) calculateFileHash(path string) (string, error) {
 func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.FileChange {
 	changes := s.detectLocalChanges(local, remote)
 	deleted := s.detectDeletedFiles(local, remote)
+
 	return append(changes, deleted...)
 }
 
