@@ -147,6 +147,32 @@ trait UploadHandlerTrait
         return ['zipContent' => $zipContent, RequestFieldType::Slug->value => $slug, RequestFieldType::Activate->value => $activate];
     }
 
+    private function primeHttpStatusEnum(): void {
+        if (enum_exists(HttpStatusType::class, false)) {
+            return;
+        }
+
+        $enumPath = dirname(__DIR__, 2) . '/Enums/HttpStatusType.php';
+
+        if (!is_file($enumPath)) {
+            $this->fileLogger->error('HttpStatusType enum file missing', ['path' => $enumPath]);
+
+            return;
+        }
+
+        try {
+            require_once $enumPath;
+        } catch (Throwable $e) {
+            $this->fileLogger->logException($e, 'Failed to preload HttpStatusType enum');
+        }
+    }
+
+    private function resolveServerErrorStatusCode(): int {
+        return enum_exists(HttpStatusType::class, false)
+            ? HttpStatusType::ServerError->value
+            : 500;
+    }
+
     private function buildUploadResponse(array $result): WP_REST_Response {
         $this->fileLogger->info('Upload complete', [
             'slug' => $result[ResponseKeyType::Slug->value],
