@@ -1061,8 +1061,8 @@ foreach ($candidateNamespace in $namespaceOrder) {
                 $candidatePreview = "<unserializable response>"
             }
 
-            $uploadAttemptErrors += "$candidateNamespace: non-success response $candidatePreview"
-            Write-Status "      ⚠ Upload response from $candidateNamespace is not success, trying next namespace..." -Color Yellow
+            $uploadAttemptErrors += "${candidateNamespace}: non-success response ${candidatePreview}"
+            Write-Status "      ⚠ Upload response from ${candidateNamespace} is not success, trying next namespace..." -Color Yellow
             continue
         }
 
