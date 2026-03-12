@@ -345,8 +345,6 @@ function Invoke-GitPull {
     Write-Host ""
 }
 
-Invoke-GitPull
-
 
 
 function Format-ElapsedTime($Stopwatch) {
