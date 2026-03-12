@@ -16,6 +16,7 @@ use PDO;
 use Exception;
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PhpNativeType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
@@ -37,7 +38,7 @@ trait ManagerRestoreTrait {
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
 
-        $isBackupError = gettype($backupId) === 'array';
+        $isBackupError = gettype($backupId) === PhpNativeType::PhpArray->value;
 
         if ($isBackupError) {
             return $backupId;
