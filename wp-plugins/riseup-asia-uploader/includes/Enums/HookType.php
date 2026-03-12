@@ -19,7 +19,8 @@ enum HookType: string
     case PluginsLoaded  = 'plugins_loaded';
     case RestApiInit    = 'rest_api_init';
     case AdminInit      = 'admin_init';
-    case Shutdown       = 'shutdown';
+    case Shutdown               = 'shutdown';
+    case UpgraderProcessComplete = 'upgrader_process_complete';
 
     // ── Plugin Lifecycle ────────────────────────────────────────
     case ActivatedPlugin   = 'activated_plugin';

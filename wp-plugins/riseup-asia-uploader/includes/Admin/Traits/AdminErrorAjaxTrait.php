@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\AdminTabType;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\ResponseKeyType;
@@ -23,6 +24,7 @@ use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\PathHelper;
 
 trait AdminErrorAjaxTrait {
 
