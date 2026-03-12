@@ -62,7 +62,7 @@ Accepts a plugin ZIP (multipart `plugin_zip` or base64 JSON), extracts it to `wp
 }
 ```
 
-### POST `/wp-json/qupload/v1/activate`
+### POST `/wp-json/qupload-api/v1/activate`
 
 Activates an already-installed plugin by slug.
 
