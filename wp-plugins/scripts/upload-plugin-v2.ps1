@@ -974,7 +974,7 @@ $uploadSuccess = $false
 # If no active namespace was detected (HTML challenge blocked Step 3),
 # default to the primary namespace and try uploading anyway.
 if (-not $activeNamespace) {
-    $activeNamespace = "riseup-asia-uploader/v1"
+    $activeNamespace = $primaryNamespace
     Write-Status "      ⚠ No namespace detected in Step 3 — defaulting to $activeNamespace" -Color Yellow
 }
 
