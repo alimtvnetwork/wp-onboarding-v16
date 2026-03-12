@@ -51,6 +51,7 @@ func (r ResultSlice[T]) First() Result[T] {
 	if r.err != nil {
 		return Fail[T](r.err)
 	}
+
 	if len(r.items) == 0 {
 		return Result[T]{}
 	}
