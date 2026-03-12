@@ -24,6 +24,7 @@ It also supports ZIP-only mode for packaging without upload.
 | `-JsonConfig` | string | No | Inline JSON config string |
 | `-Quiet` | switch | No | Suppress output (JSON-only mode) |
 | `-DeleteZip` | switch | No | Delete ZIP after upload |
+| `-ZipOnly` (`-z`) | switch | No | Create ZIP only (skip upload); supports fast mode with `-PluginPath` only |
 
 *Required unless using `-ConfigPath` or `-JsonConfig`.
 
