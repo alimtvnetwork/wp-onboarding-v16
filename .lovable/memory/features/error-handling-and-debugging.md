@@ -1,13 +1,52 @@
 # Memory: features/error-handling-and-debugging
 
 > **Location:** `.lovable/memory/features/error-handling-and-debugging.md`  
-> **Updated:** 2026-02-04
+> **Updated:** 2026-03-12
 
 ---
 
 ## Overview
 
 A robust error handling system captures detailed context for every failure, including **client-side stack traces**. The UI provides interactive modals with copyable debug data, enabling users to easily share full diagnostic information for troubleshooting.
+
+---
+
+## PHP Error Handling Architecture
+
+### Handler Boundaries — `safeExecute()`
+
+All REST endpoint handlers use `safeExecute()` as the top-level catch boundary. This method:
+1. **Emits to PHP `error_log()`** — full message + trace visible in `wp-content/debug.log` and server `php-error.log`
+2. **Logs via `fileLogger->logException()`** — full trace in plugin-specific log files
+3. **Logs detailed context** — exception class, file, line, custom context array
+4. **Returns structured error envelope** — via `errorResponse()` → `EnvelopeBuilder`
+
+```php
+return $this->safeExecute(
+    fn () => $this->executePipeline($request),
+    'handleUpload',
+    ['endpoint' => 'upload'],
+);
+```
+
+### Boot/Load Error Policy — Re-Throw After Log
+
+Infrastructure-level catch blocks (autoloader, route registration, file priming) **always re-throw** after logging. Silent failure in these contexts causes cascading breakage:
+
+- **Autoloader:** broken class file → re-throw (plugin crashes visibly)
+- **Route registration:** failed `register_rest_route` → re-throw (visible 404 instead of silent)
+- **Enum priming:** failed `require_once` → re-throw (dependency missing = runtime crash)
+
+### Error Response with Backtrace — `logErrorWithBacktrace()`
+
+When `errorResponse()` is called without a Throwable (non-exception error paths), it captures a 15-frame `debug_backtrace()` with file/line/class/function info, ensuring full call-site visibility even for logic errors.
+
+### PHP Debug Visibility
+
+All handler boundary catch blocks emit to PHP's native `error_log()` in addition to plugin-specific loggers. This ensures errors are visible in:
+- `wp-content/debug.log` (when `WP_DEBUG_LOG` is enabled)
+- Server `php-error.log`
+- Hosting control panel error logs
 
 ---
 
