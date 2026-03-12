@@ -849,6 +849,60 @@ if ($zipqupload) {
 }
 
 # ============================================================================
+# UPLOAD+QUPLOAD COMBO: -u -q = Upload Riseup Asia Uploader via QUpload API
+# ============================================================================
+if ($upload -and $qupload) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Upload via QUpload Mode (-u -q)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Resolve Riseup Asia Uploader path from config
+    $defaultUploader = $null
+    if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+        $defaultUploader = $Config.wpPlugins.defaultUploader
+    }
+    if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
+        Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+        exit 1
+    }
+
+    $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
+    $riseupPath = Resolve-RelativePath $pluginConfig.path
+
+    if (-not (Test-Path $riseupPath)) {
+        Write-Host "ERROR: Plugin folder not found: $riseupPath" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "  Plugin: $defaultUploader (via QUpload)" -ForegroundColor Yellow
+
+    # Use QUpload script with Riseup Asia Uploader path
+    $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
+    if (-not (Test-Path $quploadScript)) {
+        Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
+        exit 1
+    }
+
+    $qConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/qupload-config.json"
+    if (Test-Path $qConfigPath) {
+        $qConfig = Get-Content $qConfigPath -Raw | ConvertFrom-Json
+        $qConfig.pluginFolderPath = $riseupPath
+        $jsonConfigStr = ($qConfig | ConvertTo-Json -Compress)
+        Write-Host "  Path:   $riseupPath" -ForegroundColor Gray
+        Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
+        Write-Host ""
+        & $quploadScript -jc $jsonConfigStr -a
+    } else {
+        Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
+        exit 1
+    }
+
+    exit 0
+}
+
+# ============================================================================
 # UPLOAD MODE: Upload default plugin to WordPress (early exit - no build/backend)
 # ============================================================================
 if ($upload) {
