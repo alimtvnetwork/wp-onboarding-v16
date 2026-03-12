@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "releaseDate": "2026-03-12",
   "gitCommit": "dev",
   "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.3.0",
-  "wpPluginVersion": "2.3.0",
-  "quploadVersion": "2.3.0",
+  "scriptVersion": "2.4.0",
+  "wpPluginVersion": "2.4.0",
+  "quploadVersion": "2.4.0",
   "changelog": [
+    {
+      "version": "2.4.0",
+      "date": "2026-03-12",
+      "title": "Version-Based Log Clearing on Plugin Update",
+      "changes": [
+        "🧹 Both plugins now clear all log files automatically on version update (not every load)",
+        "📦 Added clearAllLogFiles() to Riseup Asia FileLogger via LoggerPathTrait",
+        "🔖 Version tracked via WP options (riseup_asia_last_version / qupload_last_version)"
+      ]
+    },
     {
       "version": "2.3.0",
       "date": "2026-03-12",
