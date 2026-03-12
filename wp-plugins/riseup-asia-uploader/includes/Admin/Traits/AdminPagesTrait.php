@@ -175,6 +175,6 @@ trait AdminPagesTrait {
 
     /** Render the snapshots page. */
     public function renderSnapshotsPage() {
-        include dirname(__FILE__) . '/../../templates/admin-snapshots.php';
+        include dirname(__FILE__, 4) . '/templates/admin-snapshots.php';
     }
 }
