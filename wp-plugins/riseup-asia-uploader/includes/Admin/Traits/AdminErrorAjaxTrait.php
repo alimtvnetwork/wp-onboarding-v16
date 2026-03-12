@@ -169,7 +169,7 @@ trait AdminErrorAjaxTrait {
         );
     }
 
-    /** AJAX handler: Clear (truncate) a log file. */
+    /** AJAX handler: Clear (delete) a log file from disk. */
     public function ajaxClearLogFile() {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
@@ -184,14 +184,24 @@ trait AdminErrorAjaxTrait {
             wp_send_json_error(array(ResponseKeyType::Message->value => 'Invalid file type'));
         }
 
-        if (file_exists($path)) {
-            $isWriteFailed = (file_put_contents($path, '') === false);
-
-            if ($isWriteFailed) {
-                wp_send_json_error(array(ResponseKeyType::Message->value => 'Failed to clear file'));
-            }
+        if (PathHelper::isFileMissing($path)) {
+            wp_send_json_success(array(
+                ResponseKeyType::Message->value  => 'File already clear',
+                ResponseKeyType::FileType->value => $type,
+                ResponseKeyType::Path->value     => $path,
+            ));
         }
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', ResponseKeyType::FileType->value => $type));
+        $isDeleteFailed = (PathHelper::deleteFile($path) === false);
+
+        if ($isDeleteFailed) {
+            wp_send_json_error(array(ResponseKeyType::Message->value => 'Failed to delete file from disk'));
+        }
+
+        wp_send_json_success(array(
+            ResponseKeyType::Message->value  => 'File deleted from disk',
+            ResponseKeyType::FileType->value => $type,
+            ResponseKeyType::Path->value     => $path,
+        ));
     }
 }
