@@ -1078,8 +1078,8 @@ foreach ($candidateNamespace in $namespaceOrder) {
             $attemptErr = "$attemptErr | body: $($attemptBody.Substring(0, [Math]::Min(250, $attemptBody.Length)))"
         }
 
-        $uploadAttemptErrors += "$candidateNamespace: $attemptErr"
-        Write-Status "      ⚠ Upload failed on $candidateNamespace, trying next namespace..." -Color Yellow
+        $uploadAttemptErrors += "${candidateNamespace}: ${attemptErr}"
+        Write-Status "      ⚠ Upload failed on ${candidateNamespace}, trying next namespace..." -Color Yellow
     }
 }
 
