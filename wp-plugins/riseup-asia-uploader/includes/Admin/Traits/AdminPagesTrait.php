@@ -101,7 +101,7 @@ trait AdminPagesTrait {
         $endpointGroups = $this->buildEndpointGroups();
         $endpointsMeta = $this->flattenEndpointGroups($endpointGroups);
 
-        include dirname(__FILE__) . '/../../templates/admin-settings.php';
+        include dirname(__FILE__, 4) . '/templates/admin-settings.php';
     }
 
     /** Build endpoint group metadata for display. */
