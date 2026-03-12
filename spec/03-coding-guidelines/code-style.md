@@ -989,16 +989,16 @@ if (!data) {
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN
-result, err := doWork(ctx)
-if err != nil {
-    return err
+result, appErr := doWork(ctx)
+if appErr != nil {
+    return appErr
 }
 
 // ✅ REQUIRED
-result, err := doWork(ctx)
+result, appErr := doWork(ctx)
 
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 }
 ```
 
