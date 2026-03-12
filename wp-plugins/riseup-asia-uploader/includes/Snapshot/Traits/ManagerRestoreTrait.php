@@ -37,7 +37,9 @@ trait ManagerRestoreTrait {
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
 
-        if ($backupId instanceof array) {
+        $isBackupError = is_array($backupId);
+
+        if ($isBackupError) {
             return $backupId;
         }
 
