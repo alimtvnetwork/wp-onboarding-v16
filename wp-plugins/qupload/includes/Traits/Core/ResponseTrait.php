@@ -35,6 +35,17 @@ trait ResponseTrait
         try {
             return call_user_func($callback);
         } catch (Throwable $e) {
+            // Emit to PHP error_log so it's visible in WP_DEBUG / php-error.log
+            @error_log(sprintf(
+                '[QUpload] %s: %s in %s:%d%s%s',
+                $context,
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine(),
+                PHP_EOL,
+                $e->getTraceAsString(),
+            ));
+
             $this->fileLogger->logException($e, "Throwable in {$context}");
 
             $this->fileLogger->error("safeExecute caught Throwable", array_merge($logContext, [
@@ -75,6 +86,16 @@ trait ResponseTrait
         ?Throwable $exception,
     ): void {
         if ($exception instanceof Throwable) {
+            // Emit to PHP error_log so it's visible in WP_DEBUG / php-error.log
+            @error_log(sprintf(
+                '[QUpload] %s (HTTP %d): %s%s%s',
+                $message,
+                $status,
+                $exception->getMessage(),
+                PHP_EOL,
+                $exception->getTraceAsString(),
+            ));
+
             $this->fileLogger->logException($exception, $message);
 
             return;
