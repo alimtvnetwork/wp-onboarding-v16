@@ -47,7 +47,7 @@ trait ManagerRestoreTrait {
         return $this->finalizeRestoreResult($result, $snapshotId, $backupId);
     }
 
-    private function logRestoreStart(int $snapshotId, array $snapshot, array $options): void {
+    private function logRestoreStart(int $snapshotId, array $snapshot, array $options) {
         $hasBackupOption = !empty($options['create_backup']);
 
         $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
@@ -57,7 +57,7 @@ trait ManagerRestoreTrait {
         ));
     }
 
-    private function guardRestorePreConditions(int $snapshotId, array $options): ?array {
+    private function guardRestorePreConditions(int $snapshotId, array $options) {
         $confirmGuard = $this->guardConfirmation($options);
 
         if ($confirmGuard !== null) {
@@ -73,7 +73,7 @@ trait ManagerRestoreTrait {
         return $this->guardSnapshotExists($snapshotId);
     }
 
-    private function guardConfirmation(array $options): ?array {
+    private function guardConfirmation(array $options) {
         $isConfirmMissing = empty($options['confirm']);
         $isConfirmNotTrue = !$isConfirmMissing && $options['confirm'] !== true;
         $isUnconfirmed    = $isConfirmMissing || $isConfirmNotTrue;
@@ -81,28 +81,28 @@ trait ManagerRestoreTrait {
         if ($isUnconfirmed) {
             return ResultHelper::errorWithCode(
                 'Restore requires explicit confirmation (confirm=true)',
-                SnapshotErrorType::RestoreNoConfirm->value,
+                SnapshotErrorType::RestoreNoConfirm->value
             );
         }
 
         return null;
     }
 
-    private function guardProviderAvailable(): ?array {
+    private function guardProviderAvailable() {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null || $provider === false);
 
         if ($isProviderMissing) {
             return ResultHelper::errorWithCode(
                 ResponseMessageType::SnapshotProviderMissing->value,
-                SnapshotErrorType::ProviderNotAvail->value,
+                SnapshotErrorType::ProviderNotAvail->value
             );
         }
 
         return null;
     }
 
-    private function guardSnapshotExists(int $snapshotId): ?array {
+    private function guardSnapshotExists(int $snapshotId) {
         $provider = $this->getProvider();
         $snapshot = $provider->getSnapshot($snapshotId);
         $isSnapshotMissing = ($snapshot === null || $snapshot === false);
@@ -110,7 +110,7 @@ trait ManagerRestoreTrait {
         if ($isSnapshotMissing) {
             return ResultHelper::errorWithCode(
                 ResponseMessageType::SnapshotNotFound->value,
-                SnapshotErrorType::NotFound->value,
+                SnapshotErrorType::NotFound->value
             );
         }
 
@@ -120,7 +120,7 @@ trait ManagerRestoreTrait {
     private function finalizeRestoreResult(
         array $result,
         int $snapshotId,
-        ?int $backupId
+        $backupId
     ): array {
         if ($result[ResponseKeyType::Success->value]) {
             $result[ResponseKeyType::BackupId->value] = $backupId;
@@ -132,7 +132,7 @@ trait ManagerRestoreTrait {
         return $result;
     }
 
-    private function logRestoreSuccess(int $snapshotId, array $result): void {
+    private function logRestoreSuccess(int $snapshotId, array $result) {
         $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Tables->value     => $result[ResponseKeyType::Tables->value] ?? 0,
@@ -140,7 +140,7 @@ trait ManagerRestoreTrait {
         ));
     }
 
-    private function logRestoreFailure(int $snapshotId, array $result): void {
+    private function logRestoreFailure(int $snapshotId, array $result) {
         $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array(
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Error->value      => $result[ResponseKeyType::Error->value],
@@ -184,7 +184,7 @@ trait ManagerRestoreTrait {
         ));
     }
 
-    private function logRestoreException(Throwable $e): void {
+    private function logRestoreException(Throwable $e) {
         $this->log(LogLevelType::Error->value, 'Restore exception', array(
             ResponseKeyType::Error->value => $e->getMessage(),
             'trace'                       => $e->getTraceAsString(),
