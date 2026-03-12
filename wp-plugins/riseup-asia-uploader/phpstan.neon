@@ -1,0 +1,22 @@
+parameters:
+  level: 6
+  paths:
+    - includes
+    - riseup-asia-uploader.php
+  scanDirectories:
+    - includes
+  bootstrapFiles:
+    - phpstan-bootstrap.php
+  ignoreErrors:
+    # WordPress global functions not typed in stubs
+    - '#Function wp_\w+ not found\.#'
+    - '#Function get_option not found\.#'
+    - '#Function add_action not found\.#'
+    - '#Function add_filter not found\.#'
+    - '#Function current_user_can not found\.#'
+    - '#Function is_wp_error not found\.#'
+    - '#Function wp_set_current_user not found\.#'
+    - '#Function wp_authenticate_application_password not found\.#'
+    - '#Function getallheaders not found\.#'
+    - '#Function defined not found\.#'
+  treatPhpDocTypesAsCertain: false

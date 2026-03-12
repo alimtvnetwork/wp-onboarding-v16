@@ -391,6 +391,80 @@ function Test-PluginPhpSyntax {
     }
 }
 
+# Test-PhpStanAnalysis: Runs PHPStan static analysis against plugin PHP files before upload
+function Test-PhpStanAnalysis {
+    param([string]$PluginDir)
+
+    $phpstanNeon = Join-Path $PluginDir "phpstan.neon"
+    $hasConfig = (Test-Path $phpstanNeon)
+
+    if (-not $hasConfig) {
+        return @{
+            IsChecked = $false
+            IsSuccess = $true
+            Message   = "No phpstan.neon found; skipped static analysis."
+        }
+    }
+
+    $phpCommand = Get-Command php -ErrorAction SilentlyContinue
+    $isPhpCliAvailable = ($null -ne $phpCommand)
+
+    if (-not $isPhpCliAvailable) {
+        return @{
+            IsChecked = $false
+            IsSuccess = $true
+            Message   = "PHP CLI not found; skipped PHPStan analysis."
+        }
+    }
+
+    $vendorBin = Join-Path $PluginDir "vendor/bin/phpstan"
+    $isVendorInstalled = (Test-Path $vendorBin)
+
+    if (-not $isVendorInstalled) {
+        # Try global phpstan
+        $globalPhpstan = Get-Command phpstan -ErrorAction SilentlyContinue
+        $isGlobalAvailable = ($null -ne $globalPhpstan)
+
+        if (-not $isGlobalAvailable) {
+            return @{
+                IsChecked = $false
+                IsSuccess = $true
+                Message   = "PHPStan not installed (run 'composer install' in plugin dir or install globally)."
+            }
+        }
+
+        $phpstanCmd = "phpstan"
+    } else {
+        $phpstanCmd = $vendorBin
+    }
+
+    try {
+        $phpstanOutput = & $phpstanCmd analyse --configuration $phpstanNeon --no-progress --error-format=raw 2>&1
+        $isAnalysisPassed = ($LASTEXITCODE -eq 0)
+
+        if (-not $isAnalysisPassed) {
+            $errorLines = ($phpstanOutput | Out-String).Trim()
+            return @{
+                IsChecked     = $true
+                IsSuccess     = $false
+                AnalysisOutput = $errorLines
+            }
+        }
+
+        return @{
+            IsChecked = $true
+            IsSuccess = $true
+            Message   = "PHPStan analysis passed (level 6)."
+        }
+    } catch {
+        return @{
+            IsChecked = $false
+            IsSuccess = $true
+            Message   = "PHPStan execution failed: $($_.Exception.Message)"
+        }
+    }
+}
+
 # Test-BackedEnumDuplicateValues: Detects duplicate backed enum values before ZIP/upload
 function Test-BackedEnumDuplicateValues {
     param([string]$PluginDir)
@@ -694,6 +768,23 @@ if (-not $isEnumLintSuccess) {
 }
 
 Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
+
+$phpstanResult = Test-PhpStanAnalysis $PluginFolderPath
+$isPhpstanChecked = $phpstanResult.IsChecked
+$isPhpstanSuccess = $phpstanResult.IsSuccess
+
+if ($isPhpstanChecked -and (-not $isPhpstanSuccess)) {
+    Write-Host "      PHPStan analysis FAILED" -ForegroundColor Red
+    Write-Host "      $($phpstanResult.AnalysisOutput)" -ForegroundColor Yellow
+    exit 1
+}
+
+if ($isPhpstanChecked) {
+    Write-Status "      $($phpstanResult.Message)" -Color Green
+} else {
+    Write-Status "      PHPStan skipped: $($phpstanResult.Message)" -Color DarkYellow
+}
+
 Write-Status ""
 
 # ============================================================================
