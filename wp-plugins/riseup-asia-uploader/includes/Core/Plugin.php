@@ -6,7 +6,7 @@
  * and wires up WordPress hooks during construction.
  *
  * @package RiseupAsia\Core
- * @since   1.61.0
+ * @since   2.0.3
  */
 
 namespace RiseupAsia\Core;

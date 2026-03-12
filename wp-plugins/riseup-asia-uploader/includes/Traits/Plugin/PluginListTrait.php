@@ -106,6 +106,7 @@ trait PluginListTrait
         }, 'plugin_info');
     }
 
+    /**
      * Collect all installed plugins into a normalized array.
      *
      * @return array Plugin list.
