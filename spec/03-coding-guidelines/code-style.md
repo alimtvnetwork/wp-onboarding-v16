@@ -493,8 +493,8 @@ if (ErrorChecker::isFatalError($error)) {
 ```
 
 ```go
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 } // ✅ No blank line — function ends here (outer })
 ```
 
