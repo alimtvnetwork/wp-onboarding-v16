@@ -56,26 +56,27 @@ trait SchedulerConfigTrait {
     public function syncScheduleWithSettings(): void {
         $settings = $this->detector->getSettings();
         $this->clearScheduledSnapshot();
-        $isScheduleDisabled = ($settings['schedule_enabled'] === false || empty($settings['schedule_enabled']));
+        $isScheduleEnabled = !empty($settings['schedule_enabled']);
 
-        if ($isScheduleDisabled) {
+        if (!$isScheduleEnabled) {
             $this->logger->debug('[SCHEDULER] Scheduled snapshots disabled');
 
             return;
         }
 
-        if ($settings['schedule_frequency'] === SnapshotFrequencyType::Manual->value) {
+        $frequency = $settings['schedule_frequency'] ?? SnapshotFrequencyType::Manual->value;
+        $isManualFrequency = ($frequency === SnapshotFrequencyType::Manual->value);
+
+        if ($isManualFrequency) {
             $this->logger->debug('[SCHEDULER] Frequency set to manual - no cron scheduling');
 
             return;
         }
 
-        $nextRun = $this->calculateNextRunTime(
-            $settings['schedule_frequency'],
-            $settings['schedule_time'],
-            $settings['schedule_day'],
-        );
-        $recurrence = $this->mapFrequencyToRecurrence($settings['schedule_frequency']);
+        $scheduleTime = $settings['schedule_time'] ?? '04:00';
+        $scheduleDay = $settings['schedule_day'] ?? 'monday';
+        $nextRun = $this->calculateNextRunTime($frequency, $scheduleTime, $scheduleDay);
+        $recurrence = $this->mapFrequencyToRecurrence($frequency);
         $result = wp_schedule_event(
             $nextRun,
             $recurrence,
@@ -84,7 +85,7 @@ trait SchedulerConfigTrait {
 
         if ($result) {
             $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
-                'frequency'  => $settings['schedule_frequency'],
+                'frequency'  => $frequency,
                 'nextRun'    => date('c', $nextRun),
                 'recurrence' => $recurrence,
             ));
