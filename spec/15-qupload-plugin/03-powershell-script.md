@@ -26,7 +26,7 @@ It also supports ZIP-only mode for packaging without upload.
 | `-DeleteZip` | switch | No | Delete ZIP after upload |
 | `-ZipOnly` (`-z`) | switch | No | Create ZIP only (skip upload); supports fast mode with `-PluginPath` only |
 
-*Required unless using `-ConfigPath` or `-JsonConfig`.
+*Required unless using `-ConfigPath`, `-JsonConfig`, or ZIP-only fast mode (`-ZipOnly -PluginPath`).
 
 ## Config File Format
 
