@@ -1154,24 +1154,6 @@ if ($upload) {
     exit 0
 }
 
-# ── Helper: Clear existing ZIP files from wp-plugins/ ───────────────────
-function Clear-PluginZips {
-    $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
-    if (-not (Test-Path $wpPluginsDir)) { return }
-
-    $zips = Get-ChildItem $wpPluginsDir -Filter "*.zip" -File -ErrorAction SilentlyContinue
-    if ($zips.Count -eq 0) {
-        Write-Host "  No existing ZIP files found" -ForegroundColor DarkGray
-        return
-    }
-
-    Write-Host "  Clearing $($zips.Count) existing ZIP file(s):" -ForegroundColor Yellow
-    foreach ($z in $zips) {
-        Remove-Item $z.FullName -Force
-        Write-Host "    Removed: $($z.Name)" -ForegroundColor DarkGray
-    }
-    Write-Host ""
-}
 
 
 
