@@ -168,6 +168,12 @@
           "default": "wp-plugins",
           "description": "Directory containing WordPress plugin folders"
         },
+        "skipPlugins": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Plugin keys excluded from -za (ZIP all) and -ua (upload all) operations"
+        },
         "plugins": {
           "type": "object",
           "description": "Map of plugin keys to their configuration",
