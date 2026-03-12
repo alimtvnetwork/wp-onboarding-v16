@@ -26,4 +26,18 @@ class DateHelper {
     public static function nowIso(): string {
         return gmdate(self::ISO_8601);
     }
+
+    /**
+     * Current timestamp in log display format (d-M-y g:i A).
+     */
+    public static function nowLogDisplay(): string {
+        return gmdate(self::LOG_DISPLAY);
+    }
+
+    /**
+     * Format a Unix timestamp in log display format (d-M-y g:i A).
+     */
+    public static function formatLogDisplay(int $timestamp): string {
+        return gmdate(self::LOG_DISPLAY, $timestamp);
+    }
 }

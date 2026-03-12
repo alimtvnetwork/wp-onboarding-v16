@@ -152,6 +152,13 @@ class DateHelper {
     }
 
     /**
+     * Format a Unix timestamp in log display format (d-M-y g:i A).
+     */
+    public static function formatLogDisplay(int $timestamp): string {
+        return gmdate(self::LOG_DISPLAY, $timestamp);
+    }
+
+    /**
      * Determine if a timestamp is today or yesterday.
      *
      * @return string|null 'today', 'yesterday', or null for older dates.
