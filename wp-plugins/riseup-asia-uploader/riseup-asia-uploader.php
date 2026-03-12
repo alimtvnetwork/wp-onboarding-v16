@@ -97,14 +97,30 @@ function riseup_asia_handle_plugin_update_complete($upgrader, array $hookExtra):
         return;
     }
 
-    $updatedPlugins = $hookExtra['plugins'] ?? array();
+    $updatedPluginsRaw = $hookExtra['plugins'] ?? array();
+    $updatedPlugins = is_array($updatedPluginsRaw) ? $updatedPluginsRaw : array();
+    $singleUpdatedPlugin = isset($hookExtra['plugin']) && is_string($hookExtra['plugin'])
+        ? $hookExtra['plugin']
+        : '';
 
-    if (!is_array($updatedPlugins)) {
+    $normalizedUpdatedPlugins = array();
+
+    foreach ($updatedPlugins as $updatedPlugin) {
+        if (is_string($updatedPlugin) && $updatedPlugin !== '') {
+            $normalizedUpdatedPlugins[] = $updatedPlugin;
+        }
+    }
+
+    if ($singleUpdatedPlugin !== '') {
+        $normalizedUpdatedPlugins[] = $singleUpdatedPlugin;
+    }
+
+    if (empty($normalizedUpdatedPlugins)) {
         return;
     }
 
     $currentPluginBasename = plugin_basename(PathHelper::getPluginMainFile());
-    $isCurrentPluginUpdated = in_array($currentPluginBasename, $updatedPlugins, true);
+    $isCurrentPluginUpdated = in_array($currentPluginBasename, $normalizedUpdatedPlugins, true);
 
     if ($isCurrentPluginUpdated === false) {
         return;
