@@ -530,10 +530,7 @@ class PluginsOnboard {
         } catch (Exception $e) {
             $this->init_error = $e->getMessage();
             OnboardLogger::critical('Plugin init() failed', $e);
-            OnboardErrorLog::log($e, 'Plugins Onboard Init Error:');
-            error_log('Plugins Onboard: init() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-
-            throw $e;
+            OnboardErrorLog::logAndThrow($e, 'Plugins Onboard Init Error:');
         }
     }
 
