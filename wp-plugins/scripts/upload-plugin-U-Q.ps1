@@ -437,10 +437,27 @@ $LocalVersion = Get-PluginVersionFromHeader $PluginFolderPath
 Write-Status "      Version: $LocalVersion" -Color Gray
 
 # =============================================================================
-# STEP 2: Create ZIP file (best compression)
+# STEP 2: Local PHP syntax check + ZIP creation
 # =============================================================================
 Write-Status ""
-Write-Status "[2/5] Creating ZIP file (SmallestSize compression)..." -Color Yellow
+Write-Status "[2/5] Running local PHP syntax check + creating ZIP..." -Color Yellow
+
+$syntaxResult = Test-PluginPhpSyntax $PluginFolderPath
+$isSyntaxChecked = $syntaxResult.IsChecked
+$isSyntaxSuccess = $syntaxResult.IsSuccess
+
+if ($isSyntaxChecked -and (-not $isSyntaxSuccess)) {
+    Write-Host "      Syntax check FAILED" -ForegroundColor Red
+    Write-Host "      File: $($syntaxResult.FailedFile)" -ForegroundColor Yellow
+    Write-Host "      Detail: $($syntaxResult.LintMessage)" -ForegroundColor Yellow
+    exit 1
+}
+
+if ($isSyntaxChecked) {
+    Write-Status "      Syntax OK ($($syntaxResult.Checked) PHP files checked)" -Color Green
+} else {
+    Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
+}
 
 try {
     $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
