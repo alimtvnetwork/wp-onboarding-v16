@@ -120,7 +120,7 @@ trait ManagerRestoreTrait {
     private function finalizeRestoreResult(
         array $result,
         int $snapshotId,
-        int|null $backupId,
+        ?int $backupId
     ): array {
         if ($result[ResponseKeyType::Success->value]) {
             $result[ResponseKeyType::BackupId->value] = $backupId;
