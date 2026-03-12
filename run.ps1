@@ -926,9 +926,13 @@ if ($uploadall) {
         $quploadSlug = $Config.wpPlugins.defaultQUploader
     }
 
+    $skipList = @($quploadSlug)
+    if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
+        $skipList += @($Config.wpPlugins.skipPlugins)
+    }
+
     $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
-        $isQUpload = $_.Name -eq $quploadSlug
-        if ($isQUpload) { return $false }
+        if ($_.Name -in $skipList) { return $false }
 
         $phpFiles = Get-ChildItem $_.FullName -Filter "*.php" -File -ErrorAction SilentlyContinue
         $hasPluginHeader = $false
