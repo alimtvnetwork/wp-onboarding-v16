@@ -637,6 +637,7 @@ class PluginsOnboard {
                 $this->cleanup->run_all();
             } catch (Exception $e) {
                 OnboardErrorLog::log($e, 'Plugins Onboard Cleanup Error:');
+                error_log('Plugins Onboard: Cleanup failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             }
         }
     }
