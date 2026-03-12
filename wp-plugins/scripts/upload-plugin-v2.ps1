@@ -656,7 +656,7 @@ foreach ($ns in $apiNamespaces) {
     Write-Debug-Log "Trying namespace: $($ns.name)"
     Write-Debug-Log "Status URL: $statusUrl"
     try {
-        $statusResponse = Invoke-SafeRestRequest -Uri $statusUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "Status ($($ns.display))" -MaxRetries 3 -RetryDelaySec 5
+        $statusResponse = Invoke-SafeRestRequest -Uri $statusUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "Status ($($ns.display))" -MaxRetries 1 -RetryDelaySec 2
 
         if ($null -eq $statusResponse) {
             Write-Debug-Log "Status check returned null (HTML challenge or parse error)"
