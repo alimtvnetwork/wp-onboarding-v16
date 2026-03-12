@@ -225,10 +225,8 @@ class PluginsOnboard {
 
         } catch (Exception $e) {
             OnboardLogger::critical('Constructor failed', $e);
-            error_log('Plugins Onboard: Constructor failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             $this->init_error = 'Plugin initialization failed: ' . $e->getMessage();
-
-            throw $e;
+            OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Constructor failed:');
         }
     }
 
