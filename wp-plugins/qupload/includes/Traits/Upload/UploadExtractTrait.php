@@ -633,7 +633,7 @@ trait UploadExtractTrait
                     'file' => $error['file'],
                     'line' => $error['line'],
                 ];
-                @file_put_contents(PathHelper::getStageTraceFile(), sprintf("[%s] %s %s%s", DateHelper::nowUtc(), 'tryActivatePlugin:fatal', json_encode($thisStage, JSON_UNESCAPED_SLASHES), PHP_EOL), FILE_APPEND | LOCK_EX);
+                @file_put_contents(PathHelper::getStageTraceFile(), sprintf("[%s] %s %s%s", DateHelper::nowLogDisplay(), 'tryActivatePlugin:fatal', json_encode($thisStage, JSON_UNESCAPED_SLASHES), PHP_EOL), FILE_APPEND | LOCK_EX);
                 @error_log('[QUpload Stage] tryActivatePlugin:fatal ' . json_encode($thisStage, JSON_UNESCAPED_SLASHES));
                 $message = sprintf(
                     'FATAL during activation of "%s" (%s): %s in %s on line %d',
