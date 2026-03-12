@@ -1,214 +1,391 @@
 /* ================================================================
-   ERROR LOG PAGE STYLES
+   ERROR LOG PAGE STYLES — Modernized
+   @updated 2.6.0 — Rich animations, elevated contrast, modern feel
    ================================================================ */
 
-/* Flash Banner */
+/* ── Flash Banner ──────────────────────────────────── */
 .riseup-flash-banner {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
+    gap: 14px;
+    padding: 14px 18px;
     margin-bottom: 16px;
-    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
-    border: 1px solid #ffc107;
-    border-left: 4px solid #ff9800;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.15);
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fbbf24;
+    border-left: 4px solid #f59e0b;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(245, 158, 11, 0.15);
+    animation: riseupFadeInUp 0.5s ease-out;
 }
-.riseup-flash-banner .flash-icon { font-size: 20px; }
+
+.riseup-flash-banner .flash-icon {
+    font-size: 22px;
+    animation: riseupPulse 2s ease-in-out infinite;
+}
+
 .riseup-flash-banner .flash-content { flex: 1; }
+
 .riseup-flash-banner .flash-time {
     display: block;
     font-size: 12px;
-    color: #856404;
-    margin-top: 2px;
+    color: #92400e;
+    margin-top: 3px;
 }
-.riseup-flash-banner .flash-dismiss { white-space: nowrap; }
 
-/* Tabs */
-.riseup-tabs { margin-bottom: 0; }
-.riseup-tab-content {
-    border: 1px solid #c3c4c7;
-    border-top: none;
-    padding: 16px;
+.riseup-flash-banner .flash-dismiss {
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.riseup-flash-banner .flash-dismiss:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Keyframes (re-declared for standalone loading) ─── */
+@keyframes riseupFadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes riseupPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes riseupScaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes riseupFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+/* ── Tabs ──────────────────────────────────────────── */
+.riseup-tabs {
+    margin-bottom: 0;
+}
+
+.riseup-tabs .nav-tab {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px 8px 0 0;
+    padding: 8px 16px;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+}
+
+.riseup-tabs .nav-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: #1d4ed8;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(-50%);
+}
+
+.riseup-tabs .nav-tab:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.riseup-tabs .nav-tab:hover::after {
+    width: 80%;
+}
+
+.riseup-tabs .nav-tab-active {
     background: #fff;
+    color: #1d4ed8;
+    font-weight: 600;
+    border-bottom-color: #fff;
 }
 
-/* Tab badge */
+.riseup-tabs .nav-tab-active::after {
+    width: 100%;
+    background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+}
+
+.riseup-tabs .nav-tab .dashicons {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.riseup-tabs .nav-tab:hover .dashicons {
+    transform: scale(1.2);
+}
+
+.riseup-tab-content {
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    padding: 20px;
+    background: #fff;
+    border-radius: 0 0 10px 10px;
+    animation: riseupFadeIn 0.3s ease-out;
+}
+
+/* ── Tab Badge ─────────────────────────────────────── */
 .tab-badge {
     display: inline-block;
-    background: #dc3545;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
     color: #fff;
     font-size: 10px;
     font-weight: 700;
-    padding: 1px 6px;
+    padding: 1px 7px;
     border-radius: 10px;
-    margin-left: 4px;
+    margin-left: 5px;
     vertical-align: middle;
+    animation: riseupPulse 2s ease-in-out infinite;
+    box-shadow: 0 1px 4px rgba(220, 38, 38, 0.3);
 }
 
-/* Filters */
+/* ── Filters ───────────────────────────────────────── */
 .riseup-error-log .riseup-filters {
     margin-bottom: 16px;
-    padding: 12px;
-    background: #f8f9fa;
-    border: 1px solid #e2e4e7;
-    border-radius: 4px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.riseup-error-log .riseup-filters:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
 .riseup-error-log .riseup-filters .filter-row {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     align-items: flex-end;
 }
+
 .riseup-error-log .riseup-filters label span {
     display: block;
     font-size: 11px;
-    color: #666;
+    color: #475569;
     margin-bottom: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Stats */
+/* ── Stats ─────────────────────────────────────────── */
 .riseup-error-log .riseup-stats {
     margin-bottom: 12px;
     font-size: 13px;
-    color: #666;
+    color: #475569;
 }
+
 .riseup-error-log .riseup-stats .stat-item {
     margin-right: 16px;
+    transition: color 0.2s;
 }
 
-/* Error table */
+.riseup-error-log .riseup-stats .stat-item:hover {
+    color: #0f172a;
+}
+
+/* ── Error Table ───────────────────────────────────── */
+.riseup-error-table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
 .riseup-error-table .column-id { text-align: center; }
+
 .riseup-error-table .column-timestamp .timestamp {
-    font-family: monospace;
+    font-family: 'SF Mono', 'Fira Code', monospace;
     font-size: 12px;
-    color: #555;
+    color: #475569;
 }
 
-/* Level badges */
+.riseup-error-table tbody tr {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.riseup-error-table tbody tr:hover {
+    background: #eff6ff !important;
+    transform: scale(1.002);
+}
+
+/* ── Level Badges ──────────────────────────────────── */
 .level-badge {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
+    padding: 3px 10px;
+    border-radius: 20px;
     font-size: 11px;
     font-weight: 700;
     color: #fff;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
 }
 
-/* Source file */
+.level-badge:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Source File ────────────────────────────────────── */
 .source-file {
     font-size: 11px;
-    background: #f0f0f1;
-    padding: 2px 6px;
-    border-radius: 3px;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    transition: all 0.2s;
 }
 
-/* New row highlight */
-.error-row-new {
-    background-color: #fff8e1 !important;
+.source-file:hover {
+    background: #e2e8f0;
 }
+
+/* ── New Row Highlight ─────────────────────────────── */
+.error-row-new {
+    background-color: #fffbeb !important;
+    animation: riseupFadeInUp 0.4s ease-out;
+}
+
 .new-badge {
     display: inline-block;
-    background: #ff9800;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
     color: #fff;
     font-size: 9px;
     font-weight: 700;
-    padding: 1px 5px;
-    border-radius: 3px;
+    padding: 1px 6px;
+    border-radius: 6px;
     margin-left: 4px;
     vertical-align: middle;
+    animation: riseupPulse 1.5s ease-in-out infinite;
 }
 
-/* Error count badge (header) */
+/* ── Error Count Badge (header) ────────────────────── */
 .error-count-badge {
     display: inline-block;
-    background: #dc3545;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
     color: #fff;
     font-size: 12px;
     font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 10px;
+    padding: 2px 10px;
+    border-radius: 12px;
     margin-left: 8px;
     vertical-align: middle;
+    animation: riseupPulse 2s ease-in-out infinite;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
 }
 
-/* Version badge */
-.riseup-version-badge {
+/* ── Version Badge (override for error page) ───────── */
+.riseup-error-log .riseup-version-badge {
     font-size: 11px;
-    font-weight: 400;
-    color: #666;
+    font-weight: 500;
+    color: #475569;
     margin-left: 8px;
-    background: #f0f0f1;
-    padding: 2px 8px;
-    border-radius: 3px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    padding: 3px 10px;
+    border-radius: 20px;
     vertical-align: middle;
+    border: 1px solid #e2e8f0;
 }
 
-/* NA placeholder */
-.na { color: #c0c0c0; }
+/* ── NA Placeholder ────────────────────────────────── */
+.na { color: #cbd5e1; }
 
-/* ── File Viewer ──────────────────────────────────── */
+/* ── File Viewer ───────────────────────────────────── */
 .riseup-file-viewer-card {
     background: #fff;
-    border: 1px solid #e2e4e7;
-    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    animation: riseupFadeInUp 0.5s ease-out;
 }
+
 .file-viewer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e2e4e7;
+    padding: 14px 18px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
 }
-.file-viewer-header h2 { margin: 0; font-size: 14px; }
+
+.file-viewer-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
 .file-viewer-actions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
 }
+
 .file-size-label {
     font-size: 12px;
-    color: #666;
+    color: #64748b;
     margin-right: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
 }
+
 .file-viewer-body { padding: 0; }
+
 .file-content-pre {
     margin: 0;
-    padding: 16px;
+    padding: 20px;
     max-height: 600px;
     overflow: auto;
     font-size: 12px;
-    line-height: 1.5;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    line-height: 1.6;
+    background: #0f172a;
+    color: #e2e8f0;
     white-space: pre-wrap;
     word-wrap: break-word;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
 }
+
 .file-loading {
     padding: 40px;
     text-align: center;
-    color: #666;
+    color: #64748b;
+    animation: riseupPulse 1.5s ease-in-out infinite;
 }
+
 .file-empty {
     padding: 40px;
     text-align: center;
-    color: #999;
-}
-.file-empty .dashicons {
-    font-size: 32px;
-    width: 32px;
-    height: 32px;
-    color: #46b450;
-    display: block;
-    margin: 0 auto 8px;
+    color: #94a3b8;
 }
 
-/* Auto-refresh toggle */
+.file-empty .dashicons {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: #22c55e;
+    display: block;
+    margin: 0 auto 10px;
+    animation: riseupPulse 2s ease-in-out infinite;
+}
+
+/* ── Auto-Refresh Toggle ──────────────────────────── */
 .auto-refresh-toggle {
     display: inline-flex;
     align-items: center;
@@ -216,172 +393,270 @@
     cursor: pointer;
     margin-right: 8px;
 }
+
 .auto-refresh-label {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-size: 12px;
     font-weight: 500;
-    color: #666;
+    color: #64748b;
+    transition: color 0.2s;
 }
+
+.auto-refresh-label:hover {
+    color: #0f172a;
+}
+
 .live-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #ccc;
+    background: #cbd5e1;
     display: inline-block;
-    transition: background 0.3s;
-}
-.live-dot.active {
-    background: #46b450;
-    animation: livePulse 1.5s infinite;
-}
-@keyframes livePulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    transition: all 0.3s;
 }
 
-/* ── Modal ────────────────────────────────────────── */
+.live-dot.active {
+    background: #22c55e;
+    animation: livePulse 1.5s infinite;
+}
+
+/* ── Modal (Error Page Specific) ──────────────────── */
 .riseup-error-log .riseup-modal {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     z-index: 100001;
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: riseupFadeIn 0.25s ease-out;
 }
+
 .riseup-modal-fullscreen {
     background: #fff;
-    width: 90%;
+    width: 92%;
     max-width: 1000px;
     max-height: 85vh;
-    border-radius: 8px;
+    border-radius: 14px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    animation: riseupScaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
 .riseup-error-log .riseup-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 20px;
-    border-bottom: 1px solid #ddd;
-    background: #f8f9fa;
+    padding: 16px 22px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
 }
+
 .riseup-error-log .riseup-modal-header .modal-header-left {
     display: flex;
     align-items: center;
     gap: 10px;
 }
+
 .riseup-error-log .riseup-modal-header .modal-header-right {
     display: flex;
     align-items: center;
     gap: 8px;
 }
-.riseup-error-log .riseup-modal-header h3 { margin: 0; }
+
+.riseup-error-log .riseup-modal-header h3 {
+    margin: 0;
+    font-weight: 700;
+    color: #0f172a;
+}
+
 .riseup-error-log .riseup-modal-close {
     background: none;
     border: none;
     font-size: 24px;
     cursor: pointer;
-    color: #666;
+    color: #94a3b8;
     line-height: 1;
+    border-radius: 6px;
+    padding: 4px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.riseup-error-log .riseup-modal-close:hover { color: #dc3232; }
+
+.riseup-error-log .riseup-modal-close:hover {
+    color: #dc2626;
+    background: #fef2f2;
+    transform: rotate(90deg);
+}
+
 .riseup-error-log .riseup-modal-body {
     padding: 0;
     overflow-y: auto;
     flex: 1;
 }
 
-/* Error summary bar */
+/* ── Error Summary Bar ─────────────────────────────── */
 .error-summary-bar {
     display: flex;
-    gap: 20px;
-    padding: 12px 20px;
-    background: #f0f0f1;
-    border-bottom: 1px solid #e2e4e7;
+    gap: 24px;
+    padding: 14px 22px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
     flex-wrap: wrap;
+    animation: riseupFadeInUp 0.4s ease-out 0.1s both;
 }
+
 .summary-item {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-}
-.summary-label {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #666;
-    letter-spacing: 0.5px;
-}
-.summary-value {
-    font-size: 13px;
-    color: #1e1e1e;
+    gap: 3px;
 }
 
-/* Modal tabs */
+.summary-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.6px;
+}
+
+.summary-value {
+    font-size: 13px;
+    color: #0f172a;
+    font-weight: 500;
+}
+
+/* ── Modal Tabs ────────────────────────────────────── */
 .modal-tabs {
     display: flex;
     gap: 0;
-    border-bottom: 1px solid #e2e4e7;
-    padding: 0 20px;
-    background: #fafafa;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0 22px;
+    background: #fafbfc;
 }
+
 .modal-tab {
-    padding: 10px 16px;
+    padding: 10px 18px;
     border: none;
     background: none;
     cursor: pointer;
     font-size: 13px;
-    color: #666;
+    color: #64748b;
     border-bottom: 2px solid transparent;
     display: flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: -2px;
+    font-weight: 500;
+    position: relative;
 }
-.modal-tab:hover { color: #2271b1; }
+
+.modal-tab:hover {
+    color: #1d4ed8;
+    background: #eff6ff;
+}
+
 .modal-tab.active {
-    color: #2271b1;
-    border-bottom-color: #2271b1;
+    color: #1d4ed8;
+    border-bottom-color: #1d4ed8;
     font-weight: 600;
+    background: transparent;
 }
-.modal-tab-pane { padding: 16px 20px; }
 
-/* Context tree */
+.modal-tab .dashicons {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.modal-tab:hover .dashicons {
+    transform: scale(1.2);
+}
+
+.modal-tab-pane {
+    padding: 18px 22px;
+    animation: riseupFadeIn 0.3s ease-out;
+}
+
+/* ── Context Tree ──────────────────────────────────── */
 .context-tree {
-    font-family: 'SFMono-Regular', 'Consolas', monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 12px;
-    line-height: 1.6;
+    line-height: 1.7;
 }
+
 .context-tree .ctx-key {
-    color: #0451a5;
+    color: #1d4ed8;
     font-weight: 600;
 }
-.context-tree .ctx-value { color: #1e1e1e; }
-.context-tree .ctx-null { color: #999; font-style: italic; }
 
-/* Stack trace & raw JSON */
+.context-tree .ctx-value { color: #0f172a; }
+.context-tree .ctx-null { color: #94a3b8; font-style: italic; }
+
+/* ── Stack Trace & Raw JSON ────────────────────────── */
 .stack-trace-pre,
 .raw-json-pre {
     margin: 0;
-    padding: 16px;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    padding: 18px;
+    background: #0f172a;
+    color: #e2e8f0;
     font-size: 12px;
-    line-height: 1.5;
-    border-radius: 4px;
+    line-height: 1.6;
+    border-radius: 8px;
     white-space: pre-wrap;
     word-wrap: break-word;
     max-height: 400px;
     overflow: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    border: 1px solid #1e293b;
 }
 
-/* Modal level badge */
+/* ── Modal Level Badge ─────────────────────────────── */
 .modal-level-badge {
     font-size: 11px;
-    padding: 2px 8px;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+/* ── Report Issue Button (Error Page Header) ───────── */
+.riseup-report-issue-btn {
+    margin-left: 12px;
+    vertical-align: middle;
+    border-radius: 20px !important;
+    padding: 4px 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.riseup-report-issue-btn:hover {
+    background: #1d4ed8 !important;
+    color: #fff !important;
+    border-color: #1d4ed8 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25) !important;
+}
+
+.riseup-report-issue-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    margin-right: 3px;
+    vertical-align: text-bottom;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.riseup-report-issue-btn:hover .dashicons {
+    transform: scale(1.2) rotate(-5deg);
 }
