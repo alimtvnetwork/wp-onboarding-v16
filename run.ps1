@@ -918,66 +918,8 @@ if ($upload) {
     exit 0
 }
 
-# ============================================================================
-# QUPLOAD ZIP MODE: ZIP plugin via upload-plugin-U-Q.ps1 (-qz / -quploadzip)
-#   Uses QUpload plugin resolution and runs upload-plugin-U-Q.ps1 in ZIP-only mode.
-#   -qz              -> ZIP default QUpload target plugin
-#   -qz -pp <path>   -> ZIP specific plugin via QUpload script
-# ============================================================================
-if ($quploadzip) {
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  QUpload ZIP Mode (-qz)" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
 
-    # Determine plugin path: use -pp override or default from config
-    $qPluginPath = ""
-    if ($pluginpath -ne "") {
-        $qPluginPath = $pluginpath
-        if (-not [System.IO.Path]::IsPathRooted($qPluginPath)) {
-            $qPluginPath = Join-Path $ScriptDir $qPluginPath
-        }
-        if (-not (Test-Path $qPluginPath)) {
-            Write-Host "ERROR: Plugin folder not found: $qPluginPath" -ForegroundColor Red
-            exit 1
-        }
-        Write-Host "  Using custom plugin path: $qPluginPath" -ForegroundColor Cyan
-    } else {
-        $defaultQUploader = $null
-        if ($Config.wpPlugins -and $Config.wpPlugins.defaultQUploader) {
-            $defaultQUploader = $Config.wpPlugins.defaultQUploader
-        }
-        if (-not $defaultQUploader -and $Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
-            $defaultQUploader = $Config.wpPlugins.defaultUploader
-        }
-        if (-not $defaultQUploader -or -not $Config.wpPlugins.plugins.$defaultQUploader) {
-            Write-Host "ERROR: No default QUploader configured in powershell.json (wpPlugins.defaultQUploader)" -ForegroundColor Red
-            exit 1
-        }
 
-        $pluginCfg = $Config.wpPlugins.plugins.$defaultQUploader
-        $qPluginPath = Resolve-RelativePath $pluginCfg.path
-
-        if (-not (Test-Path $qPluginPath)) {
-            Write-Host "ERROR: Plugin folder not found: $qPluginPath" -ForegroundColor Red
-            exit 1
-        }
-        Write-Host "  Plugin: $defaultQUploader" -ForegroundColor Yellow
-    }
-
-    $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
-    if (-not (Test-Path $quploadScript)) {
-        Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
-        exit 1
-    }
-
-    Write-Host "  Path:   $qPluginPath" -ForegroundColor Gray
-    Write-Host ""
-    & $quploadScript -z -pp $qPluginPath
-
-    exit 0
-}
 
 # ============================================================================
 # QUPLOAD MODE: Upload plugin via QUpload API (-q / -qupload)
