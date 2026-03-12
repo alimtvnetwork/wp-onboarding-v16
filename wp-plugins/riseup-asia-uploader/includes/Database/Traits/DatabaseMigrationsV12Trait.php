@@ -199,33 +199,33 @@ trait DatabaseMigrationsV12Trait {
 
         try {
             // 1. Transactions.Status
-            $this->pdo->exec(sprintf(self::V12_TRANSACTIONS_STATUS_QUERY, $txn));
+            $this->execIfColumnExists($txn, 'Status', sprintf(self::V12_TRANSACTIONS_STATUS_QUERY, $txn));
 
             // 2. Transactions.Action (WHERE clause catches all-lowercase rows)
-            $this->pdo->exec(sprintf(self::V12_TRANSACTIONS_ACTION_QUERY, $txn));
+            $this->execIfColumnExists($txn, 'Action', sprintf(self::V12_TRANSACTIONS_ACTION_QUERY, $txn));
 
             // 3. AgentSites.Status
-            $this->pdo->exec(sprintf(self::V12_AGENT_SITES_STATUS_QUERY, $agentSites));
+            $this->execIfColumnExists($agentSites, 'Status', sprintf(self::V12_AGENT_SITES_STATUS_QUERY, $agentSites));
 
             // 4. AgentActions.Status
-            $this->pdo->exec(sprintf(self::V12_AGENT_ACTIONS_STATUS_QUERY, $agentActions));
+            $this->execIfColumnExists($agentActions, 'Status', sprintf(self::V12_AGENT_ACTIONS_STATUS_QUERY, $agentActions));
 
             // 5. Snapshots.Status
-            $this->pdo->exec(sprintf(self::V12_SNAPSHOTS_STATUS_QUERY, $snapshots));
+            $this->execIfColumnExists($snapshots, 'Status', sprintf(self::V12_SNAPSHOTS_STATUS_QUERY, $snapshots));
 
             // 6. SnapshotProgress.Status
-            $this->pdo->exec(sprintf(self::V12_SNAPSHOT_PROGRESS_STATUS_QUERY, $snapshotProgress));
+            $this->execIfColumnExists($snapshotProgress, 'Status', sprintf(self::V12_SNAPSHOT_PROGRESS_STATUS_QUERY, $snapshotProgress));
 
             // 7. SnapshotSettings.Value (Key-specific updates)
             foreach (self::V12_SNAPSHOT_SETTINGS_QUERIES as $query) {
-                $this->pdo->exec(sprintf($query, $snapshotSettings));
+                $this->execIfColumnExists($snapshotSettings, 'Value', sprintf($query, $snapshotSettings));
             }
 
             // 8. ErrorSessions.Level
-            $this->pdo->exec(sprintf(self::V12_ERROR_SESSIONS_LEVEL_QUERY, $errorSessions));
+            $this->execIfColumnExists($errorSessions, 'Level', sprintf(self::V12_ERROR_SESSIONS_LEVEL_QUERY, $errorSessions));
 
             // 9. SnapshotExports.Status
-            $this->pdo->exec(sprintf(self::V12_SNAPSHOT_EXPORTS_STATUS_QUERY, $snapshotExports));
+            $this->execIfColumnExists($snapshotExports, 'Status', sprintf(self::V12_SNAPSHOT_EXPORTS_STATUS_QUERY, $snapshotExports));
 
             $this->pdo->commit();
         } catch (Throwable $e) {
