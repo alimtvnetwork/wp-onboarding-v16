@@ -580,19 +580,22 @@ const handleSubmit = async (data: FormData) => {
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN: Long function
-func ProcessUpload(ctx context.Context, req UploadRequest) error {
+func ProcessUpload(ctx context.Context, req UploadRequest) *apperror.AppError {
     // 20+ lines...
 }
 
 // ✅ REQUIRED: Decomposed
-func ProcessUpload(ctx context.Context, req UploadRequest) error {
-    if err := validateUpload(req); err != nil {
-        return err
+func ProcessUpload(ctx context.Context, req UploadRequest) *apperror.AppError {
+    appErr := validateUpload(req)
+
+    if appErr != nil {
+        return appErr
     }
 
-    result, err := executeUpload(ctx, req)
-    if err != nil {
-        return apperror.Wrap(err, apperror.ErrSyncCheck, "upload failed")
+    result, appErr := executeUpload(ctx, req)
+
+    if appErr != nil {
+        return appErr
     }
 
     return logAndRespond(ctx, result)
