@@ -25,7 +25,7 @@ use RiseupAsia\Helpers\ResultHelper;
 trait ManagerRestoreTrait {
     use ManagerRestoreValidationTrait;
 
-    public function restoreSnapshot($snapshotId, $options = array()) {
+    public function restoreSnapshot($snapshotId, $options = []) {
         $guard = $this->guardRestorePreConditions($snapshotId, $options);
 
         if ($guard !== null) {
