@@ -46,6 +46,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 func (s *Service) GetByUrl(ctx context.Context, siteUrl string) apperror.Result[models.Site] {
 	normalizedUrl := normalizeUrl(siteUrl)
 	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByUrlQuery, scanSiteRow, normalizedUrl)
+
 	return result.ToAppResult()
 }
 
