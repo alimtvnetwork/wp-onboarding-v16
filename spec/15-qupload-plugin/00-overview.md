@@ -29,7 +29,7 @@ QUpload is a **thin, single-purpose** WordPress plugin that:
 | Slug | `qupload` |
 | Text Domain | `qupload` |
 | Namespace | `QUpload\` |
-| API Namespace | `qupload/v1` |
+| API Namespace | `qupload-api/v1` |
 | Version | `1.0.0` |
 | Requires PHP | 8.2 |
 | Requires WP | 5.6 |
