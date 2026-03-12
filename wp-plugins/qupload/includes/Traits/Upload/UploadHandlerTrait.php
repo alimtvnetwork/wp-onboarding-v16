@@ -42,13 +42,14 @@ trait UploadHandlerTrait
         @error_log('[QUpload Stage] handleUpload reached');
 
         $this->fileLogger->info('Upload endpoint called');
+        $this->primeHttpStatusEnum();
 
         try {
             return $this->executeUploadPipeline($request);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Upload failed');
 
-            return $this->errorResponse('Upload failed: ' . $e->getMessage(), HttpStatusType::ServerError->value);
+            return $this->errorResponse('Upload failed: ' . $e->getMessage(), $this->resolveServerErrorStatusCode());
         }
     }
 
