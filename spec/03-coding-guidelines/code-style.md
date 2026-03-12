@@ -1124,4 +1124,4 @@ size := pathutil.FileSize(zipPath)
 
 ---
 
-*Cross-language code style specification v3.2.0 — 2026-02-26*
+*Cross-language code style specification v3.3.0 — 2026-03-12*
