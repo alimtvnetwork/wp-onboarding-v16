@@ -45,35 +45,90 @@ trait PathHelperFileTrait {
 
     public static function deleteFile(string $path): bool {
         $path = self::join($path);
-        if (empty($path)) { self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to deleteFile'); return false; }
-        if (self::isFileMissing($path)) { return true; }
-        if (self::isIrregularPath($path)) { self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $path)); return false; }
-        if (!@unlink($path)) {
-            $error = error_get_last();
-            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to delete file', array('path' => $path, 'error' => $error ? $error['message'] : 'Unknown error'));
+
+        if (empty($path)) {
+            self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to deleteFile');
             return false;
         }
+
+        clearstatcache(true, $path);
+
+        if (self::isFileMissing($path)) {
+            return true;
+        }
+
+        $resolvedPath = realpath($path);
+        $targetPath = ($resolvedPath === false) ? $path : $resolvedPath;
+
+        if (self::isIrregularPath($targetPath)) {
+            self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $targetPath));
+            return false;
+        }
+
+        $isDeleted = @unlink($targetPath);
+
+        if ($isDeleted === false) {
+            @chmod($targetPath, 0644);
+            $isDeleted = @unlink($targetPath);
+        }
+
+        clearstatcache(true, $targetPath);
+
+        if ($isDeleted === false || file_exists($targetPath)) {
+            $error = error_get_last();
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to delete file', array(
+                'path' => $targetPath,
+                'error' => $error ? $error['message'] : 'Unknown error',
+                'parent_writable' => is_writable(dirname($targetPath)),
+            ));
+            return false;
+        }
+
         return true;
     }
 
     public static function deleteDir(string $path): bool {
         $path = self::join($path);
-        if (empty($path)) { return false; }
-        if (self::isFileMissing($path)) { return true; }
-        if (self::isDirAbsent($path)) { return false; }
 
-        $files = array_diff(scandir($path), array('.', '..'));
+        if (empty($path)) {
+            return false;
+        }
+
+        if (self::isFileMissing($path)) {
+            return true;
+        }
+
+        if (self::isDirAbsent($path)) {
+            return false;
+        }
+
+        $scanResult = scandir($path);
+
+        if ($scanResult === false) {
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to read directory for deletion', array('path' => $path));
+            return false;
+        }
+
+        $files = array_diff($scanResult, array('.', '..'));
 
         foreach ($files as $file) {
             $filePath = self::join($path, $file);
+
             if (is_dir($filePath)) {
-                if (!self::deleteDir($filePath)) { return false; }
+                if (!self::deleteDir($filePath)) {
+                    return false;
+                }
             } else {
-                if (!self::deleteFile($filePath)) { return false; }
+                if (!self::deleteFile($filePath)) {
+                    return false;
+                }
             }
         }
 
-        if (!@rmdir($path)) { return false; }
+        if (!@rmdir($path)) {
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to remove directory', array('path' => $path));
+            return false;
+        }
 
         return true;
     }
