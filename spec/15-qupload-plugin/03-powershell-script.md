@@ -45,7 +45,7 @@ It also supports ZIP-only mode for packaging without upload.
 
 | Feature | upload-plugin.ps1 | upload-plugin-U-Q.ps1 |
 |---------|-------------------|----------------------|
-| Target API | `riseup-asia-uploader/v1/upload` | `qupload/v1/upload` |
+| Target API | `riseup-asia-uploader/v1/upload` | `qupload-api/v1/upload` |
 | Plugin | Riseup Asia Uploader | Quick Upload |
 | Complexity | Full (status check, version detection, etc.) | Minimal (ZIP + upload + result) |
 

@@ -116,7 +116,7 @@ Follows the project's WordPress plugin development specification:
 
 A dedicated `upload-plugin-U-Q.ps1` script uploads a plugin ZIP directly to the QUpload endpoint. It:
 - Creates a ZIP of the target plugin folder
-- Uploads via `POST /wp-json/qupload/v1/upload`
+- Uploads via `POST /wp-json/qupload-api/v1/upload`
 - Reports success/failure with colored output
 - Supports config file, CLI params, and inline JSON
 - Includes self-lint header
