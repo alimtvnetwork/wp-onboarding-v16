@@ -438,7 +438,9 @@ total := len(results)
 
 // ❌ FORBIDDEN: No blank line after for loop when code follows
 for i := 0; i < retries; i++ {
-    if err = attempt(ctx); err == nil {
+    appErr = tryAttempt(ctx)
+
+    if appErr == nil {
         break
     }
 }
@@ -446,7 +448,9 @@ logger.Info("retries exhausted", "attempts", retries)
 
 // ✅ REQUIRED
 for i := 0; i < retries; i++ {
-    if err = attempt(ctx); err == nil {
+    appErr = tryAttempt(ctx)
+
+    if appErr == nil {
         break
     }
 }
