@@ -13,6 +13,7 @@ param(
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
     [Alias('q')][switch]$qupload,
+    [Alias('qz')][switch]$quploadzip,
     [Alias('z')][switch]$zip,
     [Alias('t')][switch]$test,
     [Alias('h')][switch]$help,
