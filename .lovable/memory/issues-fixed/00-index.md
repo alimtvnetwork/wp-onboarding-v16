@@ -29,9 +29,10 @@
 
 ---
 
-## Cross-References to spec/02-app-issues/
+## Cross-References
 
-Issues 03–19 are documented in `spec/02-app-issues/` — see [spec/02-app-issues/README.md](../../../spec/02-app-issues/README.md) for the full index.
+- **App issues (03–20):** `spec/02-app-issues/` — see [spec/02-app-issues/README.md](../../../spec/02-app-issues/README.md) for the full index
+- **Structural debt issues:** `.lovable/memory/issues/` — [001-missing-stack-traces](../issues/001-missing-stack-traces-in-error-log.md), [002-raw-comparisons](../issues/002-raw-comparisons-in-ternaries.md)
 
 ---
 
