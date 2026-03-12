@@ -221,7 +221,6 @@ trait LoggerLevelMethodsTrait {
 
         throw $e;
     }
-    }
 
     /** Log an exception at debug level (for expected/recoverable exceptions). */
     public function logDebugException(Throwable $e, string $context = ''): bool {
