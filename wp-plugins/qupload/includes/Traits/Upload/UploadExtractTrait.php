@@ -286,6 +286,15 @@ trait UploadExtractTrait
             return $this->errorResponse('Cannot read plugin file before activation: ' . $relativePath, HttpStatusType::ServerError->value);
         }
 
+        $trimmedContent = ltrim($content);
+        $isPhpOnly = str_starts_with($trimmedContent, '<?php');
+        $hasClosingTag = str_contains($content, '?>');
+        $isTemplate = $isPhpOnly && $hasClosingTag;
+
+        if ($isTemplate) {
+            return null;
+        }
+
         try {
             @token_get_all($content, TOKEN_PARSE);
         } catch (Throwable $e) {
