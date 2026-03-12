@@ -38,6 +38,7 @@ trait AdminMenuTrait {
         $this->registerMainMenu();
         $this->registerSubmenus();
         $this->registerErrorSubmenu();
+        $this->registerFeedbackSubmenu();
     }
 
     /** Register the main admin menu page. */
