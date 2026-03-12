@@ -605,38 +605,7 @@ function Ensure-FirewallRules {
 $StepTimes = @{}
 
 # ============================================================================
-# STEP 1: GIT PULL
-# ============================================================================
-$stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
-if (-not $skippull) {
-    Write-Host "[1/5] Pulling latest changes from git..." -ForegroundColor Yellow
-    
-    Push-Location $RootDir
-    try {
-        if (Test-Path ".git") {
-            git pull 2>&1 | Out-Host
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "  WARNING: git pull failed, continuing anyway..." -ForegroundColor Yellow
-            } else {
-                Write-Host "  ✓ Git pull complete" -ForegroundColor Green
-            }
-        } else {
-            Write-Host "  Skipping git pull (not a git repository)" -ForegroundColor Gray
-        }
-    }
-    finally {
-        Pop-Location
-    }
-} else {
-    Write-Host "[1/5] Skipping git pull (-p)" -ForegroundColor Gray
-}
-$stepWatch.Stop()
-$StepTimes["Git Pull"] = $stepWatch.Elapsed
-Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
-Write-Host ""
-
-# ============================================================================
-# STEP 2: PREREQUISITES
+# STEP 1: PREREQUISITES (git pull already done above)
 # ============================================================================
 $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
 Write-Host "[2/5] Checking prerequisites..." -ForegroundColor Yellow
