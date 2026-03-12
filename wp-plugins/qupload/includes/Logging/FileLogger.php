@@ -114,6 +114,34 @@ class FileLogger {
         return $this->stacktraceFile;
     }
 
+    // ── Log Cleanup ───────────────────────────────────────────────────
+
+    /**
+     * Clear all log files (log, error, stacktrace).
+     * Used during plugin activation to start with a clean slate.
+     */
+    public function clearAllLogFiles(): void {
+        if ($this->isInitialized === false) {
+            $this->initializePaths();
+        }
+
+        $files = [$this->logFile, $this->errorFile, $this->stacktraceFile];
+
+        foreach ($files as $file) {
+            if ($file === null) {
+                continue;
+            }
+
+            $isFileExists = file_exists($file);
+
+            if ($isFileExists) {
+                @unlink($file);
+            }
+        }
+
+        $this->dedupHashes = [];
+    }
+
     // ── Public Level Methods ────────────────────────────────────────
 
     public function debug(string $message, array $context = []): bool {
