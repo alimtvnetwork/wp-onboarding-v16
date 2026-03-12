@@ -78,9 +78,11 @@ func (s *Service) checkDuplicateUrl(ctx context.Context, normalizedUrl string) a
 	if existing.HasError() {
 		return existing
 	}
+
 	if existing.IsDefined() {
 		return apperror.FailNew[models.Site](apperror.ErrValidation, "site with this URL already exists")
 	}
+
 	return apperror.Result[models.Site]{}
 }
 

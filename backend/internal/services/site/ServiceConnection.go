@@ -242,6 +242,7 @@ func (s *Service) handleConnectionSuccess(ctx context.Context, ref connTestRef, 
 	s.updateConnectionStatus(ctx, ref.Id, connectionstatus.Connected.DBValue())
 	s.broadcastCompleteStep(ref.Id, stagestatus.Completed.String(), "Connection test completed successfully")
 	s.log.Info("Site connection tested", "id", ref.Id, "success", result.IsSuccess)
+
 	return result
 }
 
