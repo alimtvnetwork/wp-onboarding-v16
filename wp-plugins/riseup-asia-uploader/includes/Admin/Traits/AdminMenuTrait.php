@@ -219,6 +219,7 @@ trait AdminMenuTrait {
                 'markAsSeen'      => __('Mark as Seen', $pluginSlug),
                 'confirmClearAll' => __('Are you sure you want to clear all error sessions? This cannot be undone.', $pluginSlug),
                 'clearFailed'     => __('Failed to clear errors.', $pluginSlug),
+                'clearLogFailed'  => __('Failed to clear log file.', $pluginSlug),
                 'copied'          => __('Copied!', $pluginSlug),
                 'confirmClearLog' => __('Are you sure you want to clear this log file?', $pluginSlug),
                 'noStackTrace'    => __('No stack trace available.', $pluginSlug),

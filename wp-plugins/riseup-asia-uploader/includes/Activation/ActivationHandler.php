@@ -37,6 +37,7 @@ class ActivationHandler
 
             self::ensureDirs($dirs['base'], $dirs['logs']);
             InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — directories ensured');
+            self::resetLogFiles($dirs['logs']);
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
             self::runBootDiagnostics();
@@ -101,6 +102,26 @@ class ActivationHandler
 
         if (PathHelper::isDirMissing($logsDir)) {
             wp_mkdir_p($logsDir);
+        }
+    }
+
+    private static function resetLogFiles(string $logsDir): void {
+        $logFiles = array(
+            $logsDir . PathLogFileType::Log->value,
+            $logsDir . PathLogFileType::Error->value,
+            $logsDir . PathLogFileType::Stacktrace->value,
+        );
+
+        foreach ($logFiles as $logFile) {
+            if (PathHelper::isFileMissing($logFile)) {
+                continue;
+            }
+
+            $isDeleteFailed = (PathHelper::deleteFile($logFile) === false);
+
+            if ($isDeleteFailed) {
+                InitHelpers::errorLogWithPrefix('Failed to reset log file on activation: ' . $logFile);
+            }
         }
     }
 
