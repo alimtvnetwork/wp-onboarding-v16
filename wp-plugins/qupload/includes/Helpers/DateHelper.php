@@ -16,6 +16,9 @@ class DateHelper {
     public const ISO_8601_UTC = 'Y-m-d\TH:i:s\Z';
     public const ISO_8601 = 'c';
 
+    /** Log display format: 15-Jan-24 9:30 AM */
+    public const LOG_DISPLAY = 'd-M-y g:i A';
+
     public static function nowUtc(): string {
         return gmdate(self::ISO_8601_UTC);
     }

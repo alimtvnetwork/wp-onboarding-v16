@@ -43,6 +43,9 @@ class DateHelper {
     /** Filename-safe datetime: 2024-01-15_093000 */
     public const FILENAME_DATETIME = 'Y-m-d_His';
 
+    /** Log display format: 15-Jan-24 9:30 AM */
+    public const LOG_DISPLAY = 'd-M-y g:i A';
+
     /**
      * Current UTC timestamp in ISO 8601 format with Z suffix.
      */
