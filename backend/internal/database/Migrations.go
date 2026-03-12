@@ -31,6 +31,7 @@ func Migrate(db *DB, log *logger.Logger) error {
 	}
 
 	logMigrationSummary(log, appliedCount, currentVersion)
+
 	return nil
 }
 
@@ -43,37 +44,47 @@ func ensureMigrationsTable(db *DB, log *logger.Logger) error {
 			AppliedAt TEXT DEFAULT (datetime('now'))
 		)
 	`)
+
 	if err != nil {
 		log.Error("Failed to create migrations table", "error", err)
+
 		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to create migrations table")
 	}
+
 	return nil
 }
 
 // getCurrentMigrationVersion returns the highest applied migration version.
 func getCurrentMigrationVersion(db *DB, log *logger.Logger) (int, error) {
 	var version int
+
 	err := db.QueryRow("SELECT COALESCE(MAX(Version), 0) FROM _migrations").Scan(&version)
 	if err != nil {
 		log.Error("Failed to get current migration version", "error", err)
+
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to get current migration version")
 	}
+
 	return version, nil
 }
 
 // applyPendingMigrations runs all migrations above currentVersion, returns count applied.
 func applyPendingMigrations(db *DB, log *logger.Logger, currentVersion int) (int, error) {
 	applied := 0
+
 	for _, m := range migrations {
 		if m.Version <= currentVersion {
 			continue
 		}
+
 		err := applySingleMigration(db, log, m)
-	if err != nil {
-		return applied, err
+		if err != nil {
+			return applied, err
 		}
+
 		applied++
 	}
+
 	return applied, nil
 }
 
@@ -99,6 +110,7 @@ func applySingleMigration(db *DB, log *logger.Logger, m Migration) error {
 	}
 
 	log.Info("Migration completed", "version", m.Version)
+
 	return nil
 }
 
@@ -114,6 +126,7 @@ func executeMigrationTx(tx *sql.Tx, m Migration) error {
 	if err != nil {
 		return wrapMigrationError(err, "failed to record migration", m.Version)
 	}
+
 	return nil
 }
 
