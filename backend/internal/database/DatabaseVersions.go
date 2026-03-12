@@ -33,7 +33,6 @@ func (db *DB) CreatePluginVersion(input PluginVersionInput) (int64, *apperror.Ap
 	)
 
 	if err != nil {
-
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create plugin version").
 			WithDetails(fmt.Sprintf("pluginId=%d, siteId=%d", input.PluginId, input.SiteId))
 	}
@@ -68,10 +67,10 @@ func (db *DB) GetPluginVersions(pluginId int64, siteId *int64, limit int) ([]Plu
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to query plugin versions").
 			WithDetails(fmt.Sprintf("pluginId=%d", pluginId))
 	}
+
 	defer rows.Close()
 
 	return scanPluginVersionRows(rows)
@@ -102,7 +101,6 @@ func scanPluginVersionRows(rows *sql.Rows) ([]PluginVersionRow, *apperror.AppErr
 	for rows.Next() {
 		m, scanErr := scanVersionRow(rows)
 		if scanErr != nil {
-
 			continue
 		}
 
@@ -151,7 +149,6 @@ func scanVersionRow(rows *sql.Rows) (PluginVersionRow, *apperror.AppError) {
 	)
 
 	if err != nil {
-
 		return m, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan version row")
 	}
 
@@ -193,7 +190,6 @@ func (db *DB) GetPluginVersionById(versionId int64) (*PluginVersionRow, *apperro
 	)
 
 	if err != nil {
-
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin version by id").
 			WithDetails(fmt.Sprintf("versionId=%d", versionId))
 	}
@@ -206,9 +202,7 @@ func (db *DB) GetPluginVersionById(versionId int64) (*PluginVersionRow, *apperro
 // DeletePluginVersion removes a version entry
 func (db *DB) DeletePluginVersion(versionId int64) *apperror.AppError {
 	_, err := db.Exec("DELETE FROM PluginVersions WHERE Id = ?", versionId)
-
 	if err != nil {
-
 		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to delete plugin version").
 			WithDetails(fmt.Sprintf("versionId=%d", versionId))
 	}
@@ -227,7 +221,6 @@ func (db *DB) GetNextVersionNumber(pluginId, siteId int64) (string, *apperror.Ap
 	).Scan(&count)
 
 	if err != nil {
-
 		return "1.0.0", nil
 	}
 
