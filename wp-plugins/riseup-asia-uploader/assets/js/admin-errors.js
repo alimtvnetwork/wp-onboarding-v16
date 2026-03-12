@@ -49,7 +49,12 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 location.reload();
+                return;
             }
+
+            $btn.prop('disabled', false);
+            var msg = (response.data && response.data[C.responseKeys.message]) ? response.data[C.responseKeys.message] : C.i18n.clearFailed;
+            alert(msg);
         }).fail(function() {
             $btn.prop('disabled', false);
             alert(C.i18n.clearFailed);
