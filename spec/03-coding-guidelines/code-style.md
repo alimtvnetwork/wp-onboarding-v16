@@ -1052,7 +1052,7 @@ Never call `os.Stat()` directly in application code. Always use the `pathutil` p
 // ❌ FORBIDDEN — Raw os.Stat
 info, err := os.Stat(path)
 if os.IsNotExist(err) {
-    return fmt.Errorf("not found")
+    return apperror.New(apperror.ErrFSNotFound, "not found")
 }
 
 // ❌ FORBIDDEN — Inline os.Stat for existence check
