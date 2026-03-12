@@ -45,6 +45,7 @@
     "defaultUploader": "riseup-asia-uploader",
     "defaultQUploader": "qupload",
     "pluginsDir": "wp-plugins",
+    "skipPlugins": ["plugins-onboard"],
     "plugins": {
       "riseup-asia-uploader": {
         "name": "Riseup Asia Uploader",

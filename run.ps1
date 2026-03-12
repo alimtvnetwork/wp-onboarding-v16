@@ -238,7 +238,7 @@ if ($help) {
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin only"
-    Write-Host "  -c,  -clear         Remove existing ZIP files from wp-plugins/ before zipping"
+    Write-Host "  -c,  -clear         (Legacy) Clear is now automatic before all ZIP operations"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
     Write-Host ""
@@ -262,14 +262,14 @@ if ($help) {
     Write-Host ""
     Write-Host "  Upload (all plugins):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload"
-    Write-Host "    .\run.ps1 -ua -c       # Clear old ZIPs first, then ZIP + upload all"
+    Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload (auto-cleans old ZIPs)"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
     Write-Host "    .\run.ps1 -za          # ZIP all plugins in wp-plugins/"
     Write-Host "    .\run.ps1 -zq          # ZIP QUpload plugin"
-    Write-Host "    .\run.ps1 -z -c        # Clear old ZIPs then ZIP default plugin"
-    Write-Host "    .\run.ps1 -za -c       # Clear old ZIPs then ZIP all plugins"
+    Write-Host "    .\run.ps1 -za          # ZIP all plugins (auto-cleans old ZIPs)"
+    Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
     Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
@@ -784,7 +784,7 @@ if ($zip) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     if ($pluginpath -ne "") {
         $zipPluginPath = $pluginpath
@@ -819,7 +819,7 @@ if ($za) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
     if (-not (Test-Path $wpPluginsDir)) {
@@ -827,7 +827,14 @@ if ($za) {
         exit 1
     }
 
+    $skipList = @()
+    if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
+        $skipList = @($Config.wpPlugins.skipPlugins)
+    }
+
     $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
+        if ($_.Name -in $skipList) { return $false }
+
         $phpFiles = Get-ChildItem $_.FullName -Filter "*.php" -File -ErrorAction SilentlyContinue
         $hasPluginHeader = $false
         foreach ($f in $phpFiles) {
@@ -869,7 +876,7 @@ if ($zipqupload) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     $qPath = Get-DefaultQUploaderPath
     New-PluginZip $qPath
@@ -919,9 +926,13 @@ if ($uploadall) {
         $quploadSlug = $Config.wpPlugins.defaultQUploader
     }
 
+    $skipList = @($quploadSlug)
+    if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
+        $skipList += @($Config.wpPlugins.skipPlugins)
+    }
+
     $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
-        $isQUpload = $_.Name -eq $quploadSlug
-        if ($isQUpload) { return $false }
+        if ($_.Name -in $skipList) { return $false }
 
         $phpFiles = Get-ChildItem $_.FullName -Filter "*.php" -File -ErrorAction SilentlyContinue
         $hasPluginHeader = $false
@@ -937,13 +948,13 @@ if ($uploadall) {
         exit 0
     }
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     Write-Host "  Found $($pluginFolders.Count) plugin(s) to ZIP and upload:" -ForegroundColor Cyan
     foreach ($folder in $pluginFolders) {
         Write-Host "    - $($folder.Name)" -ForegroundColor Gray
     }
-    Write-Host "  Excluded: $quploadSlug (used as the upload transport)" -ForegroundColor DarkGray
+    Write-Host "  Excluded: $($skipList -join ', ')" -ForegroundColor DarkGray
     Write-Host ""
 
     $uploadResults = @()
