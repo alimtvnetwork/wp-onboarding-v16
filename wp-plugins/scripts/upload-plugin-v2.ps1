@@ -643,9 +643,12 @@ $headers = @{
 }
 
 $apiNamespaces = @(
-    @{ name = "riseup-asia-uploader/v1"; display = "Riseup Asia Uploader" },
-    @{ name = "riseup-uploader/v1"; display = "Riseup Uploader (Legacy)" }
+    @{ name = "riseup-asia-api/v1"; display = "Riseup Asia API (Current)" },
+    @{ name = "riseup-asia-uploader/v1"; display = "Riseup Asia Uploader (Legacy)" },
+    @{ name = "riseup-uploader/v1"; display = "Riseup Uploader (Legacy v1)" }
 )
+$primaryNamespace = $apiNamespaces[0].name
+$supportedNamespaceNames = $apiNamespaces | ForEach-Object { $_.name }
 
 $activeNamespace = $null
 foreach ($ns in $apiNamespaces) {
@@ -910,17 +913,26 @@ try {
         $siteName = if ($healthResponse.name) { $healthResponse.name } else { "Unknown" }
         Write-Status "      ✓ REST API is reachable (Site: $siteName)" -Color Green
         if ($healthResponse.namespaces) {
-            $hasRiseup = $healthResponse.namespaces -contains "riseup-asia-uploader/v1"
+            $hasRiseup = $false
+            $detectedRiseupNamespace = $null
+            foreach ($nsName in $supportedNamespaceNames) {
+                if ($healthResponse.namespaces -contains $nsName) {
+                    $hasRiseup = $true
+                    $detectedRiseupNamespace = $nsName
+                    break
+                }
+            }
+
             $hasQUpload = $healthResponse.namespaces -contains "qupload-api/v1"
             if ($hasRiseup) {
-                Write-Status "      ✓ riseup-asia-uploader/v1 namespace registered" -Color Green
+                Write-Status "      ✓ $detectedRiseupNamespace namespace registered" -Color Green
             } else {
-                Write-Status "      ⚠ riseup-asia-uploader/v1 namespace NOT found" -Color Yellow
+                Write-Status "      ⚠ Riseup API namespace NOT found ($($supportedNamespaceNames -join ', '))" -Color Yellow
                 Write-Debug-Log "Available namespaces: $($healthResponse.namespaces -join ', ')"
                 if ($hasQUpload) {
                     Write-Status "" -Color White
                     Write-Status "      ┌─────────────────────────────────────────────────────────┐" -Color Cyan
-                    Write-Status "      │  Riseup Asia Uploader API is not active on this site.   │" -Color Cyan
+                    Write-Status "      │  Riseup API namespace is not active on this site.      │" -Color Cyan
                     Write-Status "      │  But QUpload IS available (qupload-api/v1).             │" -Color Cyan
                     Write-Status "      │                                                         │" -Color Cyan
                     Write-Status "      │  Use instead:  .\run.ps1 -u -q                         │" -Color Yellow
@@ -929,11 +941,11 @@ try {
                     Write-Status "" -Color White
                     Write-Status "      ✗ Aborting: target plugin API not available." -Color Red
                     if ($Quiet) {
-                        @{ success = $false; error = "riseup-asia-uploader/v1 not found. Use: .\run.ps1 -u -q" } | ConvertTo-Json -Compress
+                        @{ success = $false; error = "Riseup API namespace not found ($($supportedNamespaceNames -join ', ')). Use: .\run.ps1 -u -q" } | ConvertTo-Json -Compress
                     }
                     exit 1
                 } else {
-                    Write-Status "      ⚠ Neither riseup-asia-uploader/v1 nor qupload-api/v1 found" -Color Red
+                    Write-Status "      ⚠ Neither Riseup API namespaces nor qupload-api/v1 found" -Color Red
                     Write-Status "      ⚠ Upload will likely fail — no upload API is active on this site" -Color Yellow
                 }
             }
@@ -962,7 +974,7 @@ $uploadSuccess = $false
 # If no active namespace was detected (HTML challenge blocked Step 3),
 # default to the primary namespace and try uploading anyway.
 if (-not $activeNamespace) {
-    $activeNamespace = "riseup-asia-uploader/v1"
+    $activeNamespace = $primaryNamespace
     Write-Status "      ⚠ No namespace detected in Step 3 — defaulting to $activeNamespace" -Color Yellow
 }
 
