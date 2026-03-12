@@ -38,6 +38,7 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 
 | # | Slug | Category | Summary |
 |---|------|----------|---------|
+| 03 | hardcoded-color-remediation | UI / Design System | Hardcoded color remediation plan |
 | 03 | hourly-frequency-missing-from-consumers | Enum/Consumer Sync | New enum case requires updating all consumers simultaneously |
 | 04 | r9c-array-literal-formatting | Code Style | PHP arrays with >2 items must be line-by-line |
 | 05 | r10-activation-handler-formatting | Code Style | Blank line required before control structures after assignments |
