@@ -96,6 +96,14 @@ trait AdminSettingsTrait {
         );
     }
 
+    /** Sanitize support settings on save. */
+    public function sanitizeSupportSettings(array $input): array {
+        return array(
+            'support_email' => isset($input['support_email']) ? sanitize_email($input['support_email']) : '',
+            'fallback_url'  => isset($input['fallback_url']) ? esc_url_raw($input['fallback_url']) : '',
+        );
+    }
+
     /** Get plugin settings. */
     public static function getSettings(): array {
         $settings = get_option(OptionNameType::PluginSettings->value, array());
