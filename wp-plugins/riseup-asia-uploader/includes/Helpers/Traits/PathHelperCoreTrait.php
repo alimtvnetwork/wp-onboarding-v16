@@ -85,7 +85,7 @@ trait PathHelperCoreTrait {
     public static function getBaseDir(): string {
         $uploadDir = wp_upload_dir();
 
-        return self::join($uploadDir['basedir'], PluginConfigType::UploadsSubdir->value);
+        return self::join($uploadDir['basedir'], PluginConfigType::uploadsSubdir());
     }
 
     public static function getLogsDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Logs->value); }

@@ -108,6 +108,6 @@ trait InitDirTrait {
             return dirname(__DIR__) . '/data';
         }
 
-        return $uploadDir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value;
+        return $uploadDir['basedir'] . '/' . PluginConfigType::uploadsSubdir();
     }
 }
