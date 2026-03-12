@@ -165,11 +165,6 @@ trait UploadHandlerTrait
         }
     }
 
-    private function resolveServerErrorStatusCode(): int {
-        return enum_exists(HttpStatusType::class, false)
-            ? HttpStatusType::ServerError->value
-            : 500;
-    }
 
     private function buildUploadResponse(array $result): WP_REST_Response {
         $this->fileLogger->info('Upload complete', [
