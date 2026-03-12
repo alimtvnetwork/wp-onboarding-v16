@@ -819,7 +819,7 @@ if ($za) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
     if (-not (Test-Path $wpPluginsDir)) {
