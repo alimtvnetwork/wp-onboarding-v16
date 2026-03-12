@@ -1,13 +1,26 @@
 {
   "appName": "WP Publish",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "releaseDate": "2026-03-12",
   "gitCommit": "dev",
   "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.1.0",
-  "wpPluginVersion": "2.1.0",
-  "quploadVersion": "2.1.0",
+  "scriptVersion": "2.2.0",
+  "wpPluginVersion": "2.2.0",
+  "quploadVersion": "2.2.0",
   "changelog": [
+    {
+      "version": "2.2.0",
+      "date": "2026-03-12",
+      "title": "QUpload Admin Menu & Error Log Viewer",
+      "changes": [
+        "🖥️ QUpload admin menu system with Dashboard and Error Logs pages",
+        "📋 Tabbed error log viewer (Log, Error, Stack Trace) with Copy, Download, Clear, and Live auto-refresh",
+        "🔧 Fixed template include paths across both plugins (dirname depth correction)",
+        "🔧 Fixed duplicate PathHelper import in qupload.php",
+        "🔧 Fixed PaginationConfigType method call in static property default (Admin.php)",
+        "🔧 Fixed duplicate <?php tag in admin-settings.php"
+      ]
+    },
     {
       "version": "2.1.0",
       "date": "2026-03-12",
