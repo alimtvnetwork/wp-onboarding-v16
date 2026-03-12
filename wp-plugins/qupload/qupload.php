@@ -129,3 +129,21 @@ function qupload_deactivate(): void {
 }
 
 register_deactivation_hook(__FILE__, 'qupload_deactivate');
+
+/**
+ * Handle plugin activation — clear stale log files for a fresh start.
+ */
+function qupload_activate(): void {
+    qupload_boot_trace('activate:start');
+
+    try {
+        $logger = \QUpload\Logging\FileLogger::getInstance();
+        $logger->clearAllLogFiles();
+        qupload_boot_trace('activate:logs-cleared');
+    } catch (Throwable $e) {
+        qupload_boot_trace('activate:exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+        ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Activation log cleanup failed:');
+    }
+}
+
+register_activation_hook(__FILE__, 'qupload_activate');
