@@ -140,6 +140,58 @@ function Get-ErrorResponseBody {
     return ""
 }
 
+function Get-ErrorStatusCode {
+    param($ErrorRecord)
+    try {
+        if ($ErrorRecord.Exception.Response -and $ErrorRecord.Exception.Response.StatusCode) {
+            return [int]$ErrorRecord.Exception.Response.StatusCode
+        }
+    } catch {}
+
+    return $null
+}
+
+function Get-ResponsePreview {
+    param([string]$Body, [int]$MaxLength = 400)
+
+    if ([string]::IsNullOrWhiteSpace($Body)) {
+        return ""
+    }
+
+    $singleLine = ($Body -replace "`r", " " -replace "`n", " ").Trim()
+    if ($singleLine.Length -gt $MaxLength) {
+        return $singleLine.Substring(0, $MaxLength) + "..."
+    }
+
+    return $singleLine
+}
+
+function Get-JsonErrorSummary {
+    param([string]$Body)
+
+    if ([string]::IsNullOrWhiteSpace($Body)) {
+        return ""
+    }
+
+    try {
+        $errJson = $Body | ConvertFrom-Json
+        $parts = @()
+
+        if ($errJson.message) { $parts += "message=$($errJson.message)" }
+        if ($errJson.code) { $parts += "code=$($errJson.code)" }
+        if ($errJson.data -and $errJson.data.status) { $parts += "status=$($errJson.data.status)" }
+        if ($errJson.Status -and $errJson.Status.Message) { $parts += "statusMessage=$($errJson.Status.Message)" }
+        if ($errJson.Status -and $errJson.Status.Code) { $parts += "statusCode=$($errJson.Status.Code)" }
+        if ($errJson.Diagnostics -and $errJson.Diagnostics.RootCause) { $parts += "rootCause=$($errJson.Diagnostics.RootCause)" }
+
+        if ($parts.Count -gt 0) {
+            return ($parts -join "; ")
+        }
+    } catch {}
+
+    return ""
+}
+
 # Print error response body as-is (raw, no HTML stripping)
 function Write-ErrorBody {
     param([string]$Body, [string]$Label = "Response Body")
@@ -267,13 +319,29 @@ function Invoke-SafeRestRequest {
 
         } catch {
             $errBody = Get-ErrorResponseBody $_
+            $statusCode = Get-ErrorStatusCode $_
+            $jsonSummary = Get-JsonErrorSummary $errBody
+            $bodyPreview = Get-ResponsePreview -Body $errBody -MaxLength 500
+
             Write-Debug-Log "$Label → Exception: $($_.Exception.Message)"
+            if ($null -ne $statusCode) {
+                Write-Debug-Log "$Label → HTTP status: $statusCode"
+            }
+            if ($jsonSummary -ne "") {
+                Write-Debug-Log "$Label → JSON summary: $jsonSummary"
+            }
             if ($errBody -ne "") {
                 Write-Debug-Log "$Label → Error body (first 300): $($errBody.Substring(0, [Math]::Min(300, $errBody.Length)))"
             }
 
             if ($attempt -lt $MaxRetries) {
-                Write-Status "      ⚠ $Label failed, retrying in ${RetryDelaySec}s..." -Color Yellow
+                $statusPrefix = if ($null -ne $statusCode) { "HTTP ${statusCode} | " } else { "" }
+                Write-Status "      ⚠ $Label failed (${statusPrefix}$($_.Exception.Message)), retrying in ${RetryDelaySec}s..." -Color Yellow
+                if ($jsonSummary -ne "") {
+                    Write-Status "        Detail: $jsonSummary" -Color DarkYellow
+                } elseif ($bodyPreview -ne "") {
+                    Write-Status "        Body: $bodyPreview" -Color DarkYellow
+                }
                 Start-Sleep -Seconds $RetryDelaySec
             } else {
                 throw $_
@@ -1076,14 +1144,15 @@ foreach ($candidateNamespace in $namespaceOrder) {
         if (-not $isCandidateSuccess) {
             $candidatePreview = ""
             try {
-                $candidatePreview = ($candidateResponse | ConvertTo-Json -Depth 4 -Compress)
-                if ($candidatePreview.Length -gt 300) { $candidatePreview = $candidatePreview.Substring(0, 300) + "..." }
+                $candidatePreview = ($candidateResponse | ConvertTo-Json -Depth 6 -Compress)
+                if ($candidatePreview.Length -gt 600) { $candidatePreview = $candidatePreview.Substring(0, 600) + "..." }
             } catch {
                 $candidatePreview = "<unserializable response>"
             }
 
             $uploadAttemptErrors += "${candidateNamespace}: non-success response ${candidatePreview}"
             Write-Status "      ⚠ Upload response from ${candidateNamespace} is not success, trying next namespace..." -Color Yellow
+            Write-Status "        Detail: $candidatePreview" -Color DarkYellow
             continue
         }
 
@@ -1093,18 +1162,40 @@ foreach ($candidateNamespace in $namespaceOrder) {
         $uploadUrl = $candidateUploadUrl
         break
     } catch {
-        $attemptErr = $_.Exception.Message
+        $statusCode = Get-ErrorStatusCode $_
         $attemptBody = Get-ErrorResponseBody $_
-        if ($attemptBody -ne "") {
-            $attemptErr = "$attemptErr | body: $($attemptBody.Substring(0, [Math]::Min(250, $attemptBody.Length)))"
+        $jsonSummary = Get-JsonErrorSummary $attemptBody
+        $attemptBodyPreview = Get-ResponsePreview -Body $attemptBody -MaxLength 500
+
+        $attemptErr = $_.Exception.Message
+        if ($null -ne $statusCode) {
+            $attemptErr = "HTTP ${statusCode} | ${attemptErr}"
+        }
+
+        if ($jsonSummary -ne "") {
+            $attemptErr = "${attemptErr} | ${jsonSummary}"
+        } elseif ($attemptBodyPreview -ne "") {
+            $attemptErr = "${attemptErr} | body: ${attemptBodyPreview}"
         }
 
         $uploadAttemptErrors += "${candidateNamespace}: ${attemptErr}"
         Write-Status "      ⚠ Upload failed on ${candidateNamespace}, trying next namespace..." -Color Yellow
+        Write-Status "        Detail: $attemptErr" -Color DarkYellow
+
+        if (Test-ServerCriticalError $attemptBody) {
+            Write-Status "        Server-side critical error marker detected in response body." -Color Red
+        }
     }
 }
 
 if (-not $uploadSuccess -or $null -eq $response) {
+    if ($uploadAttemptErrors.Count -gt 0) {
+        Write-Status "      Upload diagnostics by namespace:" -Color DarkYellow
+        foreach ($attemptDetail in $uploadAttemptErrors) {
+            Write-Status "        - $attemptDetail" -Color DarkYellow
+        }
+    }
+
     $uploadErrorSummary = if ($uploadAttemptErrors.Count -gt 0) { $uploadAttemptErrors -join " || " } else { "No response from any namespace" }
     throw "Upload failed on all known Riseup namespaces: ${uploadErrorSummary}"
 }
