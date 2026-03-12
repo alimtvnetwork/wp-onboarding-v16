@@ -96,6 +96,13 @@ class DateHelper {
     }
 
     /**
+     * Current timestamp in log display format (d-M-y g:i A).
+     */
+    public static function nowLogDisplay(): string {
+        return gmdate(self::LOG_DISPLAY);
+    }
+
+    /**
      * Format a Unix timestamp as ISO 8601 with timezone offset.
      */
     public static function formatIso(int $timestamp): string {
