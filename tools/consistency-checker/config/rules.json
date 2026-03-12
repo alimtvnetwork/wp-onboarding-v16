@@ -145,6 +145,16 @@
       "reference": "spec/03-rules.md#php-import-groups"
     },
     {
+      "id": "php-global-imports",
+      "name": "PHP Global Class Imports",
+      "enabled": true,
+      "severity": "error",
+      "languages": ["php"],
+      "params": {},
+      "exclude": ["**/plugins-onboard/**"],
+      "reference": "spec/03-rules.md#php-global-imports"
+    },
+    {
       "id": "md-heading",
       "name": "Single H1 Heading",
       "enabled": true,
