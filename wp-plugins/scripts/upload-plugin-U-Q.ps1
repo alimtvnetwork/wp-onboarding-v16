@@ -353,7 +353,7 @@ Write-Status ""
 # =============================================================================
 # STEP 1: Read plugin info
 # =============================================================================
-Write-Status "[1/4] Plugin: $folderName" -Color Yellow
+Write-Status "[1/5] Plugin: $folderName" -Color Yellow
 Write-Status "      Path: $PluginFolderPath" -Color Gray
 Write-Status "      Slug: $PluginSlug" -Color Gray
 
