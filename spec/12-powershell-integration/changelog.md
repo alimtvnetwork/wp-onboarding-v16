@@ -24,6 +24,28 @@ Use this template whenever you change `run.ps1`, upload scripts, or make a funct
 
 ---
 
+## [2.1.0] - 2026-03-12
+
+### Added
+- **QUpload admin menu system**: Full WordPress admin UI with Dashboard and Error Logs pages, replacing the old Tools submenu
+- **QUpload error log viewer**: Tabbed file viewer (Log, Error, Stack Trace) with Copy, Download, Clear, and Live auto-refresh
+- **QUpload Admin class with traits**: `AdminMenuTrait`, `AdminErrorAjaxTrait` for menu registration, asset enqueuing, and AJAX file operations
+- **QUpload enums**: `AdminPageType`, `AdminTabType`, `NonceType`, `AjaxActionType` for admin infrastructure
+- **FileLogger getters**: `getLogFile()`, `getErrorFile()`, `getStacktraceFile()` for AJAX log access
+- **QUpload admin assets**: `admin.css`, `admin-errors.css`, `admin-errors.js`
+
+### Changed
+- **QUpload bootstrap**: Admin initialization moved from `Plugin` constructor trait to standalone `Admin` singleton in `qupload.php` (matches Riseup Asia pattern)
+- **Version bump**: All components synchronized to 2.1.0 (app, PowerShell, both plugins)
+- **HookType enum**: Added `AdminInit`, `AdminEnqueue`, and `ajax()` helper method
+- **CapabilityType enum**: Added `ManageOptions` case
+
+### Fixed
+- **Riseup Asia `admin-settings.php`**: Removed duplicate `<?php` tag causing `unexpected token "<"` parse error on deployment
+- **Riseup Asia `Admin.php`**: Replaced `PaginationConfigType::logRetrievalMaxLines()` method call in static property default with literal `500` (PHP does not allow method calls in constant expressions)
+
+---
+
 ## [upload-plugin-v2 2.1.0] - 2026-02-10
 
 ### Added
