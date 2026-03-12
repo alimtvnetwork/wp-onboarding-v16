@@ -51,11 +51,11 @@ trait ManagerRestoreTrait {
     private function logRestoreStart($snapshotId, $snapshot, $options) {
         $hasBackupOption = !empty($options['create_backup']);
 
-        $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
+        $this->log(LogLevelType::Info->value, 'Starting snapshot restore', [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Filename->value   => $snapshot[ResponseKeyType::Filename->value],
             'createBackup'                     => $hasBackupOption,
-        ));
+        ]);
     }
 
     private function guardRestorePreConditions($snapshotId, $options) {
@@ -140,18 +140,18 @@ trait ManagerRestoreTrait {
         $tablesCount = $hasTablesCount ? $result[ResponseKeyType::Tables->value] : 0;
         $rowsCount = $hasRowsCount ? $result[ResponseKeyType::Rows->value] : 0;
 
-        $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Tables->value     => $tablesCount,
             ResponseKeyType::Rows->value       => $rowsCount,
-        ));
+        ]);
     }
 
     private function logRestoreFailure($snapshotId, $result) {
-        $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array(
+        $this->log(LogLevelType::Error->value, 'Snapshot restore failed', [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Error->value      => $result[ResponseKeyType::Error->value],
-        ));
+        ]);
     }
 
     private function executeRestore($snapshot, $options) {
@@ -187,18 +187,18 @@ trait ManagerRestoreTrait {
         $counts = $this->restoreAllTables($sqlite, $tables, $options);
         $sqlite = null;
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Tables->value   => $counts[ResponseKeyType::Tables->value],
             ResponseKeyType::Rows->value     => $counts[ResponseKeyType::Rows->value],
             ResponseKeyType::Duration->value => microtime(true) - $startTime,
-        ));
+        ]);
     }
 
     private function logRestoreException($e) {
-        $this->log(LogLevelType::Error->value, 'Restore exception', array(
+        $this->log(LogLevelType::Error->value, 'Restore exception', [
             ResponseKeyType::Error->value => $e->getMessage(),
             'trace'                       => $e->getTraceAsString(),
-        ));
+        ]);
     }
 
     private function restoreAllTables($sqlite, $tables, $options) {
@@ -213,10 +213,10 @@ trait ManagerRestoreTrait {
             $restoredTables += $outcome['restored'];
         }
 
-        return array(
+        return [
             ResponseKeyType::Tables->value => $restoredTables,
             ResponseKeyType::Rows->value   => $totalRows,
-        );
+        ];
     }
 
     private function processTableRestoreResult($table, $result, $options) {
@@ -225,12 +225,12 @@ trait ManagerRestoreTrait {
         if ($isTableRestoreSuccess) {
             $this->log(LogLevelType::Info->value, sprintf('Table %s restored (%d rows)', $table, $result[ResponseKeyType::Rows->value]));
 
-            return array('restored' => 1, 'rows' => $result[ResponseKeyType::Rows->value]);
+            return ['restored' => 1, 'rows' => $result[ResponseKeyType::Rows->value]];
         }
 
-        $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array(
+        $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, [
             ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
-        ));
+        ]);
 
         $isStrictMode = !empty($options['strict']);
 
@@ -238,6 +238,6 @@ trait ManagerRestoreTrait {
             throw new Exception('Table restore failed: ' . $table);
         }
 
-        return array('restored' => 0, 'rows' => 0);
+        return ['restored' => 0, 'rows' => 0];
     }
 }
