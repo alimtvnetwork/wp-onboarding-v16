@@ -49,7 +49,9 @@ func Join(elem ...string) (string, error) {
 	if len(elem) == 0 {
 		return "", nil
 	}
+
 	joined := filepath.Join(elem...)
+
 	return ToAbsolute(joined)
 }
 
