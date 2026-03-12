@@ -94,4 +94,28 @@ trait LoggerPathTrait {
 
         return $this->stacktraceFile;
     }
+
+    /**
+     * Clear all log files (log, error, stacktrace).
+     * Used during plugin load to start with a clean slate.
+     */
+    public function clearAllLogFiles(): void {
+        if ($this->isInitialized === false) {
+            $this->initializePaths();
+        }
+
+        $files = array($this->logFile, $this->errorFile, $this->stacktraceFile);
+
+        foreach ($files as $file) {
+            if ($file === null) {
+                continue;
+            }
+
+            if (file_exists($file)) {
+                @unlink($file);
+            }
+        }
+
+        $this->dedupHashes = array();
+    }
 }

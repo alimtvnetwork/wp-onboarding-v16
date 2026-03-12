@@ -40,6 +40,13 @@ register_activation_hook(__FILE__, [ActivationHandler::class, 'activate']);
  */
 function riseup_asia_init(): void {
     try {
+        $logger = \RiseupAsia\Logging\FileLogger::getInstance();
+        $logger->clearAllLogFiles();
+    } catch (Throwable $e) {
+        // Silently continue — log clearing is best-effort
+    }
+
+    try {
         Plugin::getInstance();
     } catch (Throwable $e) {
         BootErrorCollector::getInstance()->addError('plugin_init', $e->getMessage() . "\n" . $e->getTraceAsString());
