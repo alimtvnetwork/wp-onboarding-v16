@@ -79,10 +79,13 @@ func ensureWindowsLongPath(path string) string {
 // Exists checks if a path exists (after resolving to absolute).
 func Exists(path string) bool {
 	abs, err := ToAbsolute(path)
+
 	if err != nil {
 		return false
 	}
+
 	_, err = os.Stat(abs)
+
 	return err == nil
 }
 
