@@ -41,6 +41,7 @@ class Admin {
     use AdminAjaxTrait;
     use AdminErrorPageTrait;
     use AdminErrorAjaxTrait;
+    use AdminFeedbackAjaxTrait;
     use AdminLicensePageTrait;
     use AdminLicenseAjaxTrait;
 
