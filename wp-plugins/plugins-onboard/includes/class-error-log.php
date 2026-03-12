@@ -25,4 +25,19 @@ class OnboardErrorLog {
     public static function log(Throwable $e, string $context): void {
         error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
+
+    /**
+     * Log an exception and re-throw it.
+     *
+     * Use this in boot, hook registration, and infrastructure catch blocks
+     * where silent failure causes cascading breakage. The throw happens internally —
+     * call sites do not need a separate `throw $e;` statement.
+     *
+     * @throws Throwable Always re-throws the original exception after logging.
+     */
+    public static function logAndThrow(Throwable $e, string $context): never {
+        self::log($e, $context);
+
+        throw $e;
+    }
 }
