@@ -937,7 +937,7 @@ if ($uploadall) {
         exit 0
     }
 
-    if ($clear) { Clear-PluginZips }
+    Clear-PluginZips
 
     Write-Host "  Found $($pluginFolders.Count) plugin(s) to ZIP and upload:" -ForegroundColor Cyan
     foreach ($folder in $pluginFolders) {
