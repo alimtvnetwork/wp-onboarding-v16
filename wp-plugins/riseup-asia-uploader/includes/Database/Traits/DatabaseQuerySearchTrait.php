@@ -87,7 +87,7 @@ trait DatabaseQuerySearchTrait {
         $this->applyTextFilters($query, $filters);
     }
 
-    private function applyEqualityFilters(RiseupORM $query, array $filters): void {
+    private function applyEqualityFilters(Orm $query, array $filters): void {
         $hasPlugin = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Plugin->value);
 
         if ($hasPlugin) {
