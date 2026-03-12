@@ -23,12 +23,12 @@ trait AuthPermissionTrait
 {
     /** Check if an endpoint is enabled via settings. */
     private function isEndpointEnabled(string $endpoint): bool {
-        return Admin::is_endpoint_enabled($endpoint);
+        return Admin::isEndpointEnabled($endpoint);
     }
 
     /** Check if an endpoint requires authentication via settings. */
     private function isAuthRequired(string $endpoint): bool {
-        return Admin::is_auth_required($endpoint);
+        return Admin::isAuthRequired($endpoint);
     }
 
     /** Build permission callback with optional auth bypass. */
