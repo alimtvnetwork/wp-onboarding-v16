@@ -94,5 +94,5 @@ Native PHP 8.1 backed enums should encapsulate related helper/check methods with
 ## Cross-References
 - **Persistence naming exemptions:** `.lovable/memory/architecture/coding-standards/persistence-naming-exemptions.md`
 - **Plugin identity standard:** `.lovable/memory/architecture/php/plugin-identity-standard.md`
-- **Enum naming standard:** System memory `architecture/coding-standards/enums-standard`
+- **Enum standards:** `spec/06-php-standards/enums.md`
 - **Global type syntax:** `.lovable/memory/architecture/php/global-type-syntax-standard.md`
