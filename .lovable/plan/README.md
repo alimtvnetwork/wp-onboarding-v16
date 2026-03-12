@@ -1,6 +1,6 @@
 # WP Plugin Publish - Plan Index
 
-**Updated: 2026-02-24**
+**Updated: 2026-03-12**
 
 ## Structure
 
