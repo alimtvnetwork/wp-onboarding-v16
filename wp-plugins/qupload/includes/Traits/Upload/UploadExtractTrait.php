@@ -753,7 +753,14 @@ trait UploadExtractTrait
 
     /** Recursively copy a directory. */
     private function copyDirectory(string $source, string $dest): bool {
-        wp_mkdir_p($dest);
+        $isDestReady = PathHelper::ensureDirectory($dest);
+
+        if ($isDestReady === false) {
+            $this->fileLogger->error('Failed to create destination directory for copy', ['dest' => $dest]);
+
+            return false;
+        }
+
         $entries = scandir($source);
 
         if ($entries === false) {
@@ -771,7 +778,15 @@ trait UploadExtractTrait
             if (is_dir($srcPath)) {
                 $isCopied = $this->copyDirectory($srcPath, $dstPath);
             } else {
-                $isCopied = copy($srcPath, $dstPath);
+                $isFileParentReady = PathHelper::ensureFileParentDirectory($dstPath);
+
+                if ($isFileParentReady === false) {
+                    $this->fileLogger->error('Failed to create parent directory for copied file', ['dest' => $dstPath]);
+
+                    return false;
+                }
+
+                $isCopied = @copy($srcPath, $dstPath);
             }
 
             if ($isCopied === false) {
