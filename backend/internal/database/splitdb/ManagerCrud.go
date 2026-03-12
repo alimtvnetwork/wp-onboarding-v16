@@ -227,6 +227,7 @@ func (m *DBManager) buildDBPath(projectSlug, dbType, entityId string) string {
 	if isGlobalDB {
 		return filepath.Join(projectSlug, dbType+".db")
 	}
+
 	return filepath.Join(projectSlug, dbType, GenerateSlug(entityId)+".db")
 }
 

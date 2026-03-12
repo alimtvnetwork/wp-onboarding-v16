@@ -202,6 +202,7 @@ func (s *Service) appendPasswordUpdate(updates *[]string, args *[]any, password 
 	if isPasswordMissing {
 		return
 	}
+
 	encryptedPassword, err := encrypt([]byte(*password), s.encryptionKey)
 	isEncrypted := err == nil
 
