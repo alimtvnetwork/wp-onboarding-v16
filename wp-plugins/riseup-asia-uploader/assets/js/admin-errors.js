@@ -146,6 +146,9 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+
         $.post(ajaxurl, {
             action: C.actions.clearLogFile,
             nonce: ajaxNonce,
@@ -153,7 +156,16 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 loadLogFile();
+                $btn.prop('disabled', false);
+                return;
             }
+
+            $btn.prop('disabled', false);
+            var msg = (response.data && response.data[C.responseKeys.message]) ? response.data[C.responseKeys.message] : C.i18n.clearFailed;
+            alert(msg);
+        }).fail(function() {
+            $btn.prop('disabled', false);
+            alert(C.i18n.clearFailed);
         });
     });
 

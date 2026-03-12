@@ -57,7 +57,16 @@ trait AdminErrorAjaxTrait {
         }
 
         $db = Database::getInstance();
+
+        if ($db->isReady() === false) {
+            wp_send_json_error(array(ResponseKeyType::Message->value => 'Database is not ready'));
+        }
+
         $pdo = $db->getPdo();
+
+        if ($pdo === null) {
+            wp_send_json_error(array(ResponseKeyType::Message->value => 'Database connection unavailable'));
+        }
 
         $pdo->exec('DELETE FROM ' . TableType::ErrorSessions->value);
         $now = DateHelper::nowUtc();

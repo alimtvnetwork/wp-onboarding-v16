@@ -63,8 +63,8 @@ function riseup_asia_init(): void {
  * Clear all log files when the plugin version changes.
  */
 function riseup_asia_clear_logs_on_version_update(): void {
-    $optionKey = 'riseup_asia_last_version';
-    $currentVersion = \RiseupAsia\Enums\PluginConfigType::Version->value;
+    $optionKey = OptionNameType::LastPluginVersion->value;
+    $currentVersion = PluginConfigType::Version->value;
     $lastVersion = get_option($optionKey, '');
 
     $isVersionChanged = ($lastVersion !== $currentVersion);
