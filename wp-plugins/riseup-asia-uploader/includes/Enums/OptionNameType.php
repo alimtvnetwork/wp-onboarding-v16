@@ -18,6 +18,7 @@ enum OptionNameType: string
     case UpdateSettings     = 'RiseupUpdateSettings';
     case PluginSettings     = 'RiseupAsiaSettings';
     case ErrorNotification  = 'RiseupErrorNotificationSettings';
+    case SupportSettings    = 'RiseupSupportSettings';
     case LastPluginVersion  = 'riseup_asia_last_version';
 
     /** WordPress core — value must remain snake_case. */

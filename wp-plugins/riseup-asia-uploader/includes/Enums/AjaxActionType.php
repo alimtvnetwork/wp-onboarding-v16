@@ -32,6 +32,10 @@ enum AjaxActionType: string
     case ReadLogFile  = 'riseup_read_log_file';
     case ClearLogFile = 'riseup_clear_log_file';
 
+    // ── Feedback Actions ────────────────────────────────────────
+    case SendFeedback        = 'riseup_send_feedback';
+    case CheckFeedbackReady  = 'riseup_check_feedback_ready';
+
     // ── License Actions ─────────────────────────────────────────
     case LicenseSave       = 'riseup_license_save';
     case LicenseActivate   = 'riseup_license_activate';
