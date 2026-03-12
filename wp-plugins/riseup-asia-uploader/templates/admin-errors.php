@@ -180,7 +180,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
                                 <?php endif; ?>
                             </td>
                             <td class="column-timestamp">
-                                <span class="timestamp"><?php echo esc_html(DateHelper::formatDatetime(strtotime($error['CreatedAt']))); ?></span>
+                                <span class="timestamp"><?php echo esc_html(DateHelper::formatLogDisplay(strtotime($error['CreatedAt']))); ?></span>
                             </td>
                             <td class="column-level">
                                 <span class="level-badge" style="background: <?php echo esc_attr($color); ?>;">
