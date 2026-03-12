@@ -794,6 +794,8 @@ if ($za) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
+    if ($clear) { Clear-PluginZips }
+
     $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
     if (-not (Test-Path $wpPluginsDir)) {
         Write-Host "ERROR: wp-plugins/ directory not found" -ForegroundColor Red
