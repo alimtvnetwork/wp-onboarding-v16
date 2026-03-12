@@ -62,12 +62,12 @@ trait AdminMenuTrait {
 
     /** Render the dashboard page. */
     public function renderDashboardPage(): void {
-        include dirname(__FILE__, 3) . '/templates/admin-dashboard.php';
+        include dirname(__FILE__, 4) . '/templates/admin-dashboard.php';
     }
 
     /** Render the error logs page. */
     public function renderErrorsPage(): void {
-        include dirname(__FILE__, 3) . '/templates/admin-errors.php';
+        include dirname(__FILE__, 4) . '/templates/admin-errors.php';
     }
 
     /** Enqueue admin assets. */

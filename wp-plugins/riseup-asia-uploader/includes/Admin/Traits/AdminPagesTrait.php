@@ -42,7 +42,7 @@ trait AdminPagesTrait {
 
         $actionLabels = $this->getActionLabels();
 
-        include dirname(__FILE__) . '/../../templates/admin-logs.php';
+        include dirname(__FILE__, 4) . '/templates/admin-logs.php';
     }
 
     /** Build log filters from query parameters. */
@@ -101,7 +101,7 @@ trait AdminPagesTrait {
         $endpointGroups = $this->buildEndpointGroups();
         $endpointsMeta = $this->flattenEndpointGroups($endpointGroups);
 
-        include dirname(__FILE__) . '/../../templates/admin-settings.php';
+        include dirname(__FILE__, 4) . '/templates/admin-settings.php';
     }
 
     /** Build endpoint group metadata for display. */
@@ -170,11 +170,11 @@ trait AdminPagesTrait {
 
     /** Render the agent sites page. */
     public function renderAgentsPage() {
-        include dirname(__FILE__) . '/../../templates/admin-agents.php';
+        include dirname(__FILE__, 4) . '/templates/admin-agents.php';
     }
 
     /** Render the snapshots page. */
     public function renderSnapshotsPage() {
-        include dirname(__FILE__) . '/../../templates/admin-snapshots.php';
+        include dirname(__FILE__, 4) . '/templates/admin-snapshots.php';
     }
 }

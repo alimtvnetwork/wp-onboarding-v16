@@ -27,6 +27,6 @@ trait AdminLicensePageTrait {
         $licenseStatus = get_option(LicenseOptionType::LicenseStatus->value, '');
         $checkedAt     = get_option(LicenseOptionType::LicenseCheckedAt->value, '');
 
-        include dirname(__FILE__) . '/../../templates/admin-license.php';
+        include dirname(__FILE__, 4) . '/templates/admin-license.php';
     }
 }
