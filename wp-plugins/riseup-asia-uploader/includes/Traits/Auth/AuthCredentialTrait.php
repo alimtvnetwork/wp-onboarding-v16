@@ -121,7 +121,13 @@ trait AuthCredentialTrait
 
     private function checkAuthenticatedOnly(WP_REST_Request $request): true|WP_Error {
         try {
-            return $this->resolveAndAuthenticate($request);
+            $authResult = $this->resolveAndAuthenticate($request);
+
+            if (is_wp_error($authResult)) {
+                return $authResult;
+            }
+
+            return true;
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturnWpError($this->fileLogger, $e, 'Authentication error');
         }
