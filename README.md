@@ -1,24 +1,26 @@
 # WP Plugin Publish
 
-A full-stack WordPress plugin deployment system — React dashboard, Go backend orchestrator, PHP WordPress plugins, and PowerShell automation scripts. Designed for managing plugin deployments across multiple WordPress sites with version tracking, delta sync, and one-command publishing.
+A full-stack WordPress plugin deployment system — React dashboard, Go backend orchestrator, PHP WordPress plugins, PowerShell automation, and a standalone licensing server. Designed for managing plugin deployments across multiple WordPress sites with version tracking, delta sync, remote backups, and one-command publishing.
+
+**Current Version:** `2.8.0` · **Script Version:** `2.4.0`
 
 ---
 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        WP Plugin Publish                            │
-├─────────────┬──────────────┬──────────────────┬─────────────────────┤
-│  React UI   │  Go Backend  │  WordPress Sites │  PowerShell CLI     │
-│  (Vite/TS)  │  (REST+WS)   │  (PHP Plugins)   │  (Automation)       │
-├─────────────┼──────────────┼──────────────────┼─────────────────────┤
-│ Dashboard   │ Orchestrator │ Riseup Asia      │ run.ps1             │
-│ Plugin mgmt │ SQLite DB    │ Uploader (REST)  │ upload-plugin-v2    │
-│ Live logs   │ WebSocket    │ QUpload (REST)   │ upload-plugin-U-Q   │
-│ Version     │ Crypto       │ Plugins Onboard  │ bump-version        │
-│ history     │ Publishing   │                  │                     │
-└─────────────┴──────────────┴──────────────────┴─────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           WP Plugin Publish                                  │
+├─────────────┬──────────────┬──────────────────┬──────────────┬───────────────┤
+│  React UI   │  Go Backend  │  WordPress Sites │  Licensing   │  PowerShell   │
+│  (Vite/TS)  │  (REST+WS)   │  (PHP Plugins)   │  Server (Go) │  CLI          │
+├─────────────┼──────────────┼──────────────────┼──────────────┼───────────────┤
+│ Dashboard   │ Orchestrator │ Riseup Asia      │ License CRUD │ run.ps1       │
+│ Plugin mgmt │ SQLite DB    │ Uploader (REST)  │ Activation   │ upload-v2     │
+│ Live logs   │ WebSocket    │ QUpload (REST)   │ Validation   │ upload-U-Q    │
+│ Diff viewer │ AES-256-GCM  │ Plugins Onboard  │ Domain lock  │ bump-version  │
+│ Bulk ops    │ Backup hooks │                  │ SQLite DB    │ ZIP & deploy  │
+└─────────────┴──────────────┴──────────────────┴──────────────┴───────────────┘
 ```
 
 ---
@@ -28,10 +30,13 @@ A full-stack WordPress plugin deployment system — React dashboard, Go backend 
 | Layer | Technology | Directory |
 |-------|-----------|-----------|
 | **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui · Zustand | `src/` |
-| **Backend** | Go 1.21+ · REST API · WebSocket · SQLite · AES-256 encryption | `backend/` |
+| **Backend** | Go 1.21+ · REST API · WebSocket · SQLite · AES-256-GCM encryption | `backend/` |
+| **Licensing** | Go · REST API · SQLite · HMAC signatures · Rate limiting | `licensing/` |
 | **WordPress Plugins** | PHP 8.1+ · PSR-4 · REST API · WordPress Application Passwords | `wp-plugins/` |
 | **Automation** | PowerShell 5.1+ · Self-linting · JSON config · Semantic versioning | `run.ps1`, `wp-plugins/scripts/` |
-| **Specifications** | Markdown specs for all coding standards and architecture | `spec/` |
+| **Quality Gates** | 15 lint scripts · PHPStan L6 · `go vet` · CI workflows · Pre-commit hook | `scripts/`, `.github/workflows/` |
+| **Specifications** | 17 spec directories · Coding standards · Architecture decisions | `spec/` |
+| **Tools** | Go-based consistency checker for cross-stack enum/endpoint drift | `tools/` |
 
 ---
 
@@ -41,6 +46,7 @@ A full-stack WordPress plugin deployment system — React dashboard, Go backend 
 - [Node.js](https://nodejs.org/) 18+ with [pnpm](https://pnpm.io/)
 - [Go](https://go.dev/) 1.21+
 - [PowerShell](https://learn.microsoft.com/en-us/powershell/) 5.1+ (ships with Windows)
+- PHP 8.1+ with [Composer](https://getcomposer.org/) (for PHPStan static analysis)
 
 ---
 
@@ -76,6 +82,12 @@ pnpm run dev
 .\run.ps1 -s
 ```
 
+### 4. Install Pre-commit Hooks
+
+```bash
+bash scripts/install-hooks.sh
+```
+
 ---
 
 ## Project Structure
@@ -97,12 +109,17 @@ wp-plugin-publish/
 │   │   ├── config/                   # Configuration loading
 │   │   ├── database/                 # SQLite database layer
 │   │   ├── models/                   # Domain models
-│   │   ├── services/                 # Business logic (publish, sync, etc.)
+│   │   ├── services/                 # Business logic (publish, sync, diff, backup)
 │   │   ├── wordpress/                # PowerShell integration (Go ↔ PS1)
 │   │   ├── ws/                       # WebSocket hub for live logs
-│   │   ├── crypto/                   # AES-256 credential encryption
+│   │   ├── crypto/                   # AES-256-GCM credential encryption
 │   │   └── envelope/                 # Response envelope (universal JSON schema)
-│   └── pkg/                          # Shared packages (apperror, pathutil)
+│   └── pkg/                          # Shared packages (apperror, pathutil, dbops)
+│
+├── licensing/                        # Licensing server (standalone Go module)
+│   ├── cmd/                          # Entry point
+│   ├── internal/                     # Handlers, services, database
+│   └── pkg/                          # Shared packages
 │
 ├── wp-plugins/                       # WordPress plugins
 │   ├── riseup-asia-uploader/         # Main deployment plugin (PHP 8.1+)
@@ -115,15 +132,31 @@ wp-plugin-publish/
 │       ├── wp-plugin-config.json     # Riseup Asia site credentials
 │       └── qupload-config.json       # QUpload site credentials
 │
-├── spec/                             # Technical specifications (30+ docs)
-│   ├── 03-coding-guidelines/         # DRY, strict typing, naming rules
-│   ├── 04-typescript-standards/      # Zero-any policy, catch narrowing
-│   ├── 05-golang-standards/          # No interface{}, typed structs
-│   ├── 06-php-standards/             # PSR-4, backed enums, Throwable
-│   ├── 07-error-manage/              # Cross-stack error handling
-│   ├── 12-powershell-integration/    # PowerShell runner spec
-│   └── 15-qupload-plugin/           # QUpload plugin spec
+├── tools/                            # Developer tooling
+│   └── consistency-checker/          # Cross-stack enum/endpoint drift detector (Go)
 │
+├── scripts/                          # Quality gate scripts (Bash)
+│   ├── pre-commit.sh                 # Unified pre-commit hook (all checks)
+│   ├── install-hooks.sh              # One-command hook installation
+│   ├── lint-file-size.sh             # Go file ≤300 lines
+│   ├── lint-func-size.sh             # Go function ≤15 lines
+│   ├── lint-negative.sh              # Positive boolean naming
+│   ├── lint-imports.sh               # Go import grouping
+│   ├── lint-ge.sh                    # Generic enforce (GE-5)
+│   ├── lint-json-tags.sh             # JSON struct tag check
+│   ├── lint-inline-if.sh             # No inline if statements
+│   ├── lint-typed-nil.sh             # Typed-nil prevention
+│   ├── lint-php-file-size.sh         # PHP file ≤500 lines
+│   ├── lint-php-func-size.sh         # PHP function ≤20 lines
+│   ├── lint-php-import-groups.sh     # PHP use-statement grouping
+│   ├── lint-php-global-imports.sh    # PHP global class imports
+│   └── lint-php-phpstan.sh           # PHPStan level-6 static analysis
+│
+├── .github/workflows/               # CI pipelines
+│   ├── go-lint.yml                   # All Go lint checks (backend + licensing)
+│   └── consistency-checker.yml       # Cross-stack drift detection
+│
+├── spec/                             # Technical specifications (17 directories)
 ├── run.ps1                           # Main PowerShell runner (all-in-one CLI)
 ├── powershell.json                   # Runner configuration
 └── public/version.json               # Synchronized version tracking
@@ -135,7 +168,7 @@ wp-plugin-publish/
 
 ### Riseup Asia Uploader
 
-The main deployment plugin. Provides a full REST API for remote plugin management, delta file sync, blog post publishing, and audit logging.
+The main deployment plugin. Provides a full REST API for remote plugin management, delta file sync, blog post publishing, remote backups, and audit logging.
 
 | Property | Value |
 |----------|-------|
@@ -144,7 +177,7 @@ The main deployment plugin. Provides a full REST API for remote plugin managemen
 | **Auth** | WordPress Application Passwords |
 | **Min PHP** | 8.1 |
 
-**Key endpoints:** `/upload`, `/status`, `/activate`, `/sync`, `/posts`, `/categories`
+**Key endpoints:** `/upload`, `/status`, `/activate`, `/sync`, `/posts`, `/categories`, `/plugins/backup`, `/plugins/backup-restore`, `/plugins/backup-list`
 
 ### QUpload (Quick Upload)
 
@@ -170,15 +203,28 @@ Enterprise-grade plugin manager with OAuth 2.0, ephemeral mutation tokens, autom
 
 ---
 
+## Licensing Server
+
+A standalone Go module (`licensing/`) providing license key management for the plugin ecosystem.
+
+| Feature | Detail |
+|---------|--------|
+| **Endpoints** | `POST /licenses`, `GET /licenses/{key}/validate`, `POST /licenses/{key}/activate`, `POST /licenses/{key}/deactivate` |
+| **Storage** | SQLite (portable, no external DB) |
+| **Security** | HMAC signature verification, rate limiting |
+| **Model** | Key, Email, Product, MaxActivations, Activations[], ExpiresAt, Status |
+
+---
+
 ## PowerShell CLI Reference (`run.ps1`)
 
-The `run.ps1` script is the single entry point for all operations: building, running, deploying, zipping, and testing.
+The `run.ps1` script is the single entry point for all operations. **`git pull` always runs first** before any command (use `-p` to skip).
 
 ### Build & Run Flags
 
 | Flag | Description |
 |------|-------------|
-| `(none)` | Full pipeline: git pull → prerequisites → build → run |
+| _(none)_ | Full pipeline: git pull → prerequisites → build → run |
 | `-b` / `-buildonly` | Build frontend only, don't start backend |
 | `-s` / `-skipbuild` | Start backend only, skip frontend build |
 | `-p` / `-skippull` | Skip git pull step |
@@ -196,7 +242,7 @@ The `run.ps1` script is the single entry point for all operations: building, run
 | `-u` / `-upload` | Upload default plugin via Riseup Asia Uploader API |
 | `-q` / `-qupload` | Upload default plugin via QUpload API |
 | `-u -q` | Upload Riseup Asia Uploader itself via QUpload API |
-| `-ua` / `-uploadall` | ZIP + upload **all** plugins (except QUpload) via QUpload API |
+| `-ua` / `-uploadall` | ZIP + upload **all** plugins (except QUpload and skip list) via QUpload API |
 | `-d` / `-debug` | Enable debug logging for uploads |
 | `-pp <path>` | Override plugin folder path |
 
@@ -204,10 +250,10 @@ The `run.ps1` script is the single entry point for all operations: building, run
 
 | Flag | Description |
 |------|-------------|
-| `-z` / `-zip` | ZIP default Riseup Asia plugin (or `-pp` specific plugin) |
-| `-za` | ZIP **all** plugins in `wp-plugins/` |
+| `-z` / `-zip` | ZIP default plugin (auto-cleans old ZIPs) |
+| `-za` | ZIP **all** plugins in `wp-plugins/` (auto-cleans old ZIPs) |
 | `-zq` / `-zipqupload` | ZIP QUpload plugin |
-| `-c` / `-clear` | Remove existing ZIPs before creating new ones |
+| `-c` / `-clear` | Explicit ZIP cleanup (redundant — all ZIP ops auto-clean) |
 
 ### Examples
 
@@ -228,14 +274,11 @@ The `run.ps1` script is the single entry point for all operations: building, run
 
 # ── Upload All Plugins ──
 .\run.ps1 -ua                          # ZIP + upload all plugins via QUpload
-.\run.ps1 -ua -c                       # Clear old ZIPs first, then ZIP + upload all
 
 # ── ZIP Only ──
 .\run.ps1 -z                           # ZIP default plugin
 .\run.ps1 -za                          # ZIP all plugins
 .\run.ps1 -zq                          # ZIP QUpload plugin
-.\run.ps1 -z -c                        # Clear old ZIPs, then ZIP default
-.\run.ps1 -za -c                       # Clear old ZIPs, then ZIP all
 
 # ── Version Bump ──
 .\wp-plugins\scripts\bump-version.ps1 -Target all -Bump patch
@@ -250,12 +293,13 @@ The `run.ps1` script is the single entry point for all operations: building, run
 ### How `-ua` (Upload All) Works
 
 1. Scans `wp-plugins/` for directories with valid WordPress plugin headers
-2. **Excludes QUpload** (it's the upload transport, not a target)
+2. **Excludes QUpload** (it's the upload transport) and plugins in the `skipPlugins` list
 3. For each plugin:
+   - Runs PHPStan static analysis (blocks on failure)
    - Creates a versioned ZIP archive (best compression)
    - Uploads via QUpload's `POST /wp-json/qupload-api/v1/upload`
    - Activates the plugin after upload
-4. Displays a summary with success/failure counts
+4. Displays a summary table with success/failure for each plugin
 
 ### When to Use Each Upload Mode
 
@@ -270,9 +314,43 @@ The `run.ps1` script is the single entry point for all operations: building, run
 
 The upload scripts include automatic pre-flight checks:
 
-- **Namespace detection** — Step 6 of `upload-plugin-v2.ps1` checks if the target API namespace is registered on the site
-- **QUpload fallback suggestion** — If `riseup-asia-uploader/v1` is missing but `qupload-api/v1` is available, the script aborts with a suggestion to use `.\run.ps1 -u -q`
-- **Auth pre-check** — `upload-plugin-U-Q.ps1` hits `GET /status` before uploading to verify credentials and plugin activation
+1. **PHP syntax check** — validates all PHP files before packaging
+2. **Backed enum lint** — detects duplicate enum values
+3. **PHPStan analysis** — level-6 static analysis catches return type mismatches, undefined methods, and incorrect argument types
+4. **Namespace detection** — checks if the target API namespace is registered on the site
+5. **QUpload fallback** — if the primary API is missing but QUpload is available, suggests `.\run.ps1 -u -q`
+6. **Auth pre-check** — hits `GET /status` to verify credentials and plugin activation
+
+---
+
+## Quality Gates
+
+### Pre-commit Hook
+
+The pre-commit hook (`scripts/pre-commit.sh`) runs **all quality gates** across all modules:
+
+| Module | Checks |
+|--------|--------|
+| **Backend** (Go) | File size ≤300 lines, function size ≤15 lines, positive naming, import grouping, generic enforce, JSON tags, inline-if, typed-nil, `go vet` |
+| **Licensing** (Go) | Same as Backend |
+| **Consistency Checker** (Go) | File size, function size, positive naming, inline-if |
+| **PHP** (wp-plugins) | File size ≤500 lines, function size ≤20 lines, import grouping, global imports, PHPStan L6 |
+
+### CI Pipelines
+
+| Workflow | Scope |
+|----------|-------|
+| `go-lint.yml` | All Go lint scripts for `backend/` and `licensing/` |
+| `consistency-checker.yml` | Cross-stack enum/endpoint drift detection |
+
+### PHPStan Static Analysis
+
+Both PHP plugins include PHPStan level-6 configuration:
+
+- `phpstan.neon` — analysis config with WordPress function ignores
+- `phpstan-bootstrap.php` — stubs for `WP_User`, `WP_Error`, `WP_REST_Request`, `WP_REST_Response`
+- Catches: return type mismatches, undefined method/property access, incorrect argument types
+- Graceful degradation: skips if PHPStan or PHP CLI not installed
 
 ---
 
@@ -294,27 +372,18 @@ Main configuration for `run.ps1`. Defines paths, build commands, prerequisites, 
     "defaultUploader": "riseup-asia-uploader",
     "defaultQUploader": "qupload",
     "pluginsDir": "wp-plugins",
-    "plugins": {
-      "riseup-asia-uploader": {
-        "name": "Riseup Asia Uploader",
-        "path": "wp-plugins/riseup-asia-uploader",
-        "mainFile": "riseup-asia-uploader.php",
-        "autoUpload": true
-      },
-      "qupload": {
-        "name": "Quick Upload",
-        "path": "wp-plugins/qupload",
-        "mainFile": "qupload.php",
-        "autoUpload": false
-      }
-    }
+    "skipPlugins": ["plugins-onboard"],
+    "plugins": { ... }
   }
 }
 ```
 
-### `wp-plugins/scripts/wp-plugin-config.json`
+### Site Credential Files
 
-Site credentials for Riseup Asia Uploader API uploads:
+| File | Purpose |
+|------|---------|
+| `wp-plugins/scripts/wp-plugin-config.json` | Riseup Asia Uploader API credentials |
+| `wp-plugins/scripts/qupload-config.json` | QUpload API credentials |
 
 ```json
 {
@@ -324,21 +393,6 @@ Site credentials for Riseup Asia Uploader API uploads:
   "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
   "activateAfterInstall": true,
   "deleteZipAfterUpload": true
-}
-```
-
-### `wp-plugins/scripts/qupload-config.json`
-
-Site credentials for QUpload API uploads:
-
-```json
-{
-  "pluginFolderPath": "wp-plugins/qupload",
-  "wordPressSiteURL": "https://your-site.com",
-  "username": "admin",
-  "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
-  "activateAfterInstall": true,
-  "deleteZipAfterUpload": false
 }
 ```
 
@@ -376,10 +430,13 @@ All versions are synchronized via `bump-version.ps1`:
 - **Zero `any`/`interface{}`** — All stacks enforce strict typing with no type erasure
 - **Backed enums everywhere** — PHP, Go, and TypeScript use typed enums for all constants
 - **PSR-4 namespacing** — WordPress plugins use full PSR-4 autoloading with zero global classes
-- **Response envelope** — Universal JSON Schema shared across all stacks
+- **Response envelope** — Universal JSON schema shared across all stacks
 - **Self-linting scripts** — All PowerShell scripts validate their own syntax before execution
-- **Pre-flight checks** — Upload scripts verify API availability and auth before attempting transfers
+- **Pre-flight checks** — Upload scripts verify API availability, auth, and static analysis before transfers
 - **UTF-8 no BOM** — All PowerShell scripts must use UTF-8 encoding with straight ASCII quotes
+- **`git pull` first** — Every `run.ps1` invocation pulls latest before any operation
+- **Auto-clean ZIPs** — All ZIP operations implicitly remove old archives before creating new ones
+- **PHPStan L6 mandatory** — Static analysis blocks upload on return type mismatches and other errors
 
 ---
 
@@ -389,12 +446,21 @@ All coding standards and architecture decisions are documented in [`spec/`](./sp
 
 | Spec | Description |
 |------|-------------|
+| [App](./spec/01-app/) | Application overview and features |
+| [App Issues](./spec/02-app-issues/) | Bug reports and RCA write-ups |
 | [Coding Guidelines](./spec/03-coding-guidelines/) | DRY principles, strict typing, naming rules |
 | [TypeScript Standards](./spec/04-typescript-standards/) | Zero-`any` policy, catch narrowing, generic envelopes |
 | [Go Standards](./spec/05-golang-standards/) | No `interface{}`, typed structs, error diagnostics |
 | [PHP Standards](./spec/06-php-standards/) | PSR-4, backed enums, `Throwable`, forbidden patterns |
 | [Error System](./spec/07-error-manage/) | Cross-stack error handling, modal UI, response envelope |
+| [WordPress Plugin](./spec/08-wordpress-plugin/) | Plugin architecture and REST API design |
+| [Plugin Development](./spec/09-wordpress-plugin-development/) | Development workflow and testing |
+| [Feedback/Report](./spec/10-feedback-report-feature/) | Bug report submission feature |
+| [WP Plugin Publish](./spec/10-wp-plugin-publish/) | Dashboard and publish pipeline |
+| [Upload Scripts](./spec/11-upload-scripts/) | PowerShell upload script specs |
 | [PowerShell Integration](./spec/12-powershell-integration/) | Runner spec, config schema, script reference |
+| [Activity Feed](./spec/13-e2-activity-feed/) | Enterprise activity feed feature |
+| [Generic Enforce](./spec/14-generic-enforce/) | GE-5 type-safety enforcement rules |
 | [QUpload Plugin](./spec/15-qupload-plugin/) | QUpload endpoints, script, and design |
 
 ---
