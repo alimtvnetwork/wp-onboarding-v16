@@ -45,7 +45,7 @@ function getRetryCount() {}
 
 - Verb or verb phrase
 - Describe behavior, not implementation
-- Avoid prefixes like `do`, `handle`, `run`
+- Avoid prefixes like `do`, `run` (exception: `handle` is permitted for REST/HTTP handler methods)
 
 ```php
 // ✅ Good

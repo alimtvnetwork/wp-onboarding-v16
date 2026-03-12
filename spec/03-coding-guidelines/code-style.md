@@ -208,14 +208,6 @@ $isActive = $status === 'active';
 | Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
 ```
 
-### When to Use Which Extraction
-
-| Complexity | Extraction | Example |
-|------------|-----------|---------|
-| 2 conditions, used once | Named `$is_*` / `isX` variable | `$hasFile = $req !== null && $req->hasParam('file');` |
-| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::isFatalError($error)` |
-| Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
-
 ---
 
 ## Rule 4: Blank Line Before `return` or `throw` When Preceded by Other Statements
@@ -301,13 +293,13 @@ if (!data) {
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN
-func process(data []Item) ([]Item, error) {
+func process(data []Item) ([]Item, *apperror.AppError) {
     filtered := filter(data)
     return filtered, nil
 }
 
 // ✅ REQUIRED
-func process(data []Item) ([]Item, error) {
+func process(data []Item) ([]Item, *apperror.AppError) {
     filtered := filter(data)
 
     return filtered, nil
@@ -362,14 +354,14 @@ const profile = await fetchProfile(user.id);
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 }
 result := compute()
 
 // ✅ REQUIRED
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 }
 
 result := compute()
@@ -446,7 +438,9 @@ total := len(results)
 
 // ❌ FORBIDDEN: No blank line after for loop when code follows
 for i := 0; i < retries; i++ {
-    if err = attempt(ctx); err == nil {
+    appErr = tryAttempt(ctx)
+
+    if appErr == nil {
         break
     }
 }
@@ -454,7 +448,9 @@ logger.Info("retries exhausted", "attempts", retries)
 
 // ✅ REQUIRED
 for i := 0; i < retries; i++ {
-    if err = attempt(ctx); err == nil {
+    appErr = tryAttempt(ctx)
+
+    if appErr == nil {
         break
     }
 }
@@ -471,7 +467,7 @@ logger.Info("retries exhausted", "attempts", retries)
 try {
     $result = $this->execute($sql);
 } catch (Throwable $e) {
-    $this->logger->error($e->getMessage());
+    $this->fileLogger->logException($e, 'execute failed');
 }
 $this->cleanup();
 
@@ -479,7 +475,7 @@ $this->cleanup();
 try {
     $result = $this->execute($sql);
 } catch (Throwable $e) {
-    $this->logger->error($e->getMessage());
+    $this->fileLogger->logException($e, 'execute failed');
 }
 
 $this->cleanup();
@@ -497,8 +493,8 @@ if (ErrorChecker::isFatalError($error)) {
 ```
 
 ```go
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 } // ✅ No blank line — function ends here (outer })
 ```
 
@@ -584,19 +580,22 @@ const handleSubmit = async (data: FormData) => {
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN: Long function
-func ProcessUpload(ctx context.Context, req UploadRequest) error {
+func ProcessUpload(ctx context.Context, req UploadRequest) *apperror.AppError {
     // 20+ lines...
 }
 
 // ✅ REQUIRED: Decomposed
-func ProcessUpload(ctx context.Context, req UploadRequest) error {
-    if err := validateUpload(req); err != nil {
-        return err
+func ProcessUpload(ctx context.Context, req UploadRequest) *apperror.AppError {
+    appErr := validateUpload(req)
+
+    if appErr != nil {
+        return appErr
     }
 
-    result, err := executeUpload(ctx, req)
-    if err != nil {
-        return apperror.Wrap(err, apperror.ErrSyncCheck, "upload failed")
+    result, appErr := executeUpload(ctx, req)
+
+    if appErr != nil {
+        return appErr
     }
 
     return logAndRespond(ctx, result)
@@ -990,16 +989,16 @@ if (!data) {
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN
-result, err := doWork(ctx)
-if err != nil {
-    return err
+result, appErr := doWork(ctx)
+if appErr != nil {
+    return appErr
 }
 
 // ✅ REQUIRED
-result, err := doWork(ctx)
+result, appErr := doWork(ctx)
 
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 }
 ```
 
@@ -1021,7 +1020,7 @@ if _, err := os.Stat(projectDir); os.IsNotExist(err) {
 
 // ❌ FORBIDDEN — Inline stat + mixed polarity
 if _, err := os.Stat(projectDir); err == nil && !isOverwrite {
-    return fmt.Errorf("project exists, use isOverwrite=true to replace")
+    return apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace")
 }
 
 // ✅ REQUIRED — Separate stat call, use pathutil, named booleans
@@ -1053,7 +1052,7 @@ Never call `os.Stat()` directly in application code. Always use the `pathutil` p
 // ❌ FORBIDDEN — Raw os.Stat
 info, err := os.Stat(path)
 if os.IsNotExist(err) {
-    return fmt.Errorf("not found")
+    return apperror.New(apperror.ErrFSNotFound, "not found")
 }
 
 // ❌ FORBIDDEN — Inline os.Stat for existence check
@@ -1125,4 +1124,4 @@ size := pathutil.FileSize(zipPath)
 
 ---
 
-*Cross-language code style specification v3.2.0 — 2026-02-26*
+*Cross-language code style specification v3.3.0 — 2026-03-12*
