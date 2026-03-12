@@ -183,6 +183,7 @@ func (db *DB) CloseChildDBs() {
 // Close closes the main database and all child databases
 func (db *DB) Close() error {
 	db.CloseChildDBs()
+
 	return db.DB.Close()
 }
 
