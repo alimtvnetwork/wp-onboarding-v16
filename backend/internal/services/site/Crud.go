@@ -127,6 +127,7 @@ func (s *Service) executeUpdate(ctx context.Context, id int64, updates []string,
 	}
 
 	s.log.Info("Site updated", "id", id)
+
 	return s.GetById(ctx, id)
 }
 
