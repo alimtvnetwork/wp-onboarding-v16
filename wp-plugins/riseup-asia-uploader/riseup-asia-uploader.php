@@ -19,14 +19,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use RiseupAsia	hEnums	hHookType;
-use RiseupAsia	hEnums	hOptionNameType;
-use RiseupAsia	hEnums	hPluginConfigType;
-use RiseupAsia	hActivation	hActivationHandler;
-use RiseupAsia	hCore	hPlugin;
-use RiseupAsia	hAdmin	hAdmin;
-use RiseupAsia	hErrorHandling	hBootErrorCollector;
-use RiseupAsia	hHelpers	hInitHelpers;
+use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Activation\ActivationHandler;
+use RiseupAsia\Core\Plugin;
+use RiseupAsia\Admin\Admin;
+use RiseupAsia\ErrorHandling\BootErrorCollector;
+use RiseupAsia\Helpers\InitHelpers;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all RiseupAsia\ classes resolve automatically
