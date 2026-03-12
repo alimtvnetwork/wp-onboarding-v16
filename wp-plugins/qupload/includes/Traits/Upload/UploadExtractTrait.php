@@ -490,9 +490,10 @@ trait UploadExtractTrait
     private function moveExtractedPlugin(string $extractedFolder, string $targetDir): bool {
         // Ensure parent directory of target exists (WP_PLUGIN_DIR)
         $parentDir = dirname($targetDir);
+        $isParentReady = PathHelper::ensureDirectory($parentDir);
 
-        if (!is_dir($parentDir)) {
-            $this->fileLogger->error('Plugin parent directory missing', ['dir' => $parentDir]);
+        if ($isParentReady === false) {
+            $this->fileLogger->error('Failed to create plugin parent directory', ['dir' => $parentDir]);
 
             return false;
         }
