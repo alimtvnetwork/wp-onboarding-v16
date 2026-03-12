@@ -60,6 +60,15 @@ It also supports ZIP-only mode for packaging without upload.
 7. Parse and display result
 8. Clean up ZIP file (if requested)
 
+## run.ps1 Shortcuts
+
+Use these shorter commands from project root:
+
+- `./run.ps1 -q` → Upload default QUpload-target plugin
+- `./run.ps1 -q -pp 'wp-plugins/qupload'` → Upload specific plugin through QUpload
+- `./run.ps1 -qz` → ZIP default QUpload-target plugin only
+- `./run.ps1 -qz -pp 'wp-plugins/qupload'` → ZIP specific plugin only via QUpload script
+
 ## Output (Quiet Mode)
 
 ```json
