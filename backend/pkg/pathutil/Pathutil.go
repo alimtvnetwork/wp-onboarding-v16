@@ -27,6 +27,7 @@ func ToAbsolute(path string) (string, error) {
 	// Clean and convert to absolute
 	cleaned := filepath.Clean(path)
 	abs, err := filepath.Abs(cleaned)
+
 	if err != nil {
 		return "", err
 	}
