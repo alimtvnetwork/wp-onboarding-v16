@@ -59,6 +59,8 @@ final class QUploadAutoloader {
             $message = self::LOG_PREFIX . 'failed to load "' . $class . '" — ' . $e->getMessage() . "\n" . $e->getTraceAsString();
             error_log($message);
             self::writeDiagnostic($message);
+
+            throw $e;
         }
     }
 }

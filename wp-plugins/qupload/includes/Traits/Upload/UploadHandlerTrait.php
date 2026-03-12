@@ -162,6 +162,8 @@ trait UploadHandlerTrait
             require_once $enumPath;
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to preload HttpStatusType enum');
+
+            throw $e;
         }
     }
 
