@@ -54,3 +54,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 16 | unused-php-enum-cases | PHP/Audit | Unused enum cases identified across codebase |
 | 17 | coverage-report-wrong-package-filtering | Tooling / Coverage | Coverage reported test packages instead of source packages |
 | 18 | php-enum-duplicate-value-fatal | PHP / Enum | Duplicate backing value in PluginConfigType caused site-crashing fatal error |
+| 19 | missing-phpdoc-opening-trait-parse-error | PHP / Parse Error | Missing `/**` opening in PHPDoc caused silent trait load failure and site crash |
