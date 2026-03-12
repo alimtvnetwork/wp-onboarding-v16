@@ -164,6 +164,32 @@ This ensures the Go backend always receives structured metadata when a delegated
 | `stacktrace.txt` | Raw PHP backtraces (`debug_backtrace(0, 0)`) | Unlimited |
 | `fatal-errors.log` | Fatal errors caught by shutdown handler | With memory usage |
 
+### Throw-From-Helper Pattern (PHP)
+
+In boot, route registration, migration, and infrastructure catch blocks, the exception **must be re-thrown** after logging. The `throw` happens **inside the logging helper** — not at each call site. This eliminates duplicated `throw $e;` statements and prevents accidental silent catches.
+
+```php
+// ❌ WRONG — manual throw at call site
+} catch (Throwable $e) {
+    $this->fileLogger->logException($e, 'Failed to register route');
+    throw $e;  // error-prone duplication
+}
+
+// ✅ CORRECT — throw is internal to the helper
+} catch (Throwable $e) {
+    $this->fileLogger->logCriticalException($e, 'Failed to register route');
+}
+```
+
+| Context | Non-Throwing Method | Throwing Method |
+|---------|-------------------|-----------------|
+| FileLogger available | `->logException($e, ctx)` | `->logCriticalException($e, ctx)` |
+| Static helper (Riseup) | `InitHelpers::errorLog($e, ctx)` | `InitHelpers::errorLogAndThrow($e, ctx)` |
+| Static helper (QUpload) | `ErrorLogHelper::log($e, ctx)` | `ErrorLogHelper::logAndThrow($e, ctx)` |
+| Static helper (Onboard) | `OnboardErrorLog::log($e, ctx)` | `OnboardErrorLog::logAndThrow($e, ctx)` |
+
+Handler boundaries (`safeExecute`, auth callbacks) use the **non-throwing** variants and return structured error envelopes instead.
+
 ### Global Shutdown Handler (PHP Example)
 
 Use `ErrorChecker::isFatalError()` to centralize fatal error detection. `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` (see [PHP Enum Spec](../../06-php-standards/enums.md) for full implementation). Other delegated languages should implement equivalent uncaught-exception handlers (e.g., Node.js `process.on('uncaughtException')`, Python `sys.excepthook`).

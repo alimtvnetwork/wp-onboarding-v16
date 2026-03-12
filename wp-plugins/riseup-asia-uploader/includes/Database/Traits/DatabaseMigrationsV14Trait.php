@@ -98,9 +98,7 @@ trait DatabaseMigrationsV14Trait {
             $this->pdo->commit();
         } catch (Throwable $e) {
             $this->pdo->rollBack();
-            $this->fileLogger->logException($e, 'Migration v14 failed — rolled back');
-
-            throw $e;
+            $this->fileLogger->logCriticalException($e, 'Migration v14 failed — rolled back');
         }
 
         $this->recordMigration(14);

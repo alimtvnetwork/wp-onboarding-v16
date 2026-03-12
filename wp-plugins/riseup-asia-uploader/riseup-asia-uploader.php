@@ -25,6 +25,7 @@ use RiseupAsia\Activation\ActivationHandler;
 use RiseupAsia\Core\Plugin;
 use RiseupAsia\Admin\Admin;
 use RiseupAsia\ErrorHandling\BootErrorCollector;
+use RiseupAsia\Helpers\InitHelpers;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all RiseupAsia\ classes resolve automatically
@@ -42,9 +43,7 @@ function riseup_asia_init(): void {
         Plugin::getInstance();
     } catch (Throwable $e) {
         BootErrorCollector::getInstance()->addError('plugin_init', $e->getMessage() . "\n" . $e->getTraceAsString());
-        error_log('RiseUp Uploader: Plugin init failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-
-        throw $e;
+        InitHelpers::errorLogAndThrow($e, 'RiseUp Uploader: Plugin init failed:');
     }
 
     if (is_admin()) {
@@ -52,9 +51,7 @@ function riseup_asia_init(): void {
             Admin::getInstance();
         } catch (Throwable $e) {
             BootErrorCollector::getInstance()->addError('admin_init', $e->getMessage() . "\n" . $e->getTraceAsString());
-            error_log('RiseUp Uploader: Admin init failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-
-            throw $e;
+            InitHelpers::errorLogAndThrow($e, 'RiseUp Uploader: Admin init failed:');
         }
     }
 }

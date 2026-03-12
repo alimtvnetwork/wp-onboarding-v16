@@ -207,6 +207,21 @@ trait LoggerLevelMethodsTrait {
         return $this->write($entry, true);
     }
 
+    /**
+     * Log an exception and re-throw it.
+     *
+     * Use this in boot, route registration, migration, and infrastructure catch blocks
+     * where silent failure causes cascading breakage. The throw happens internally —
+     * call sites do not need a separate `throw $e;` statement.
+     *
+     * @throws Throwable Always re-throws the original exception after logging.
+     */
+    public function logCriticalException(Throwable $e, string $context = ''): never {
+        $this->logException($e, $context);
+
+        throw $e;
+    }
+
     /** Log an exception at debug level (for expected/recoverable exceptions). */
     public function logDebugException(Throwable $e, string $context = ''): bool {
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();

@@ -225,10 +225,8 @@ class PluginsOnboard {
 
         } catch (Exception $e) {
             OnboardLogger::critical('Constructor failed', $e);
-            error_log('Plugins Onboard: Constructor failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             $this->init_error = 'Plugin initialization failed: ' . $e->getMessage();
-
-            throw $e;
+            OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Constructor failed:');
         }
     }
 
@@ -265,9 +263,7 @@ class PluginsOnboard {
 
         } catch (Exception $e) {
             OnboardLogger::critical('Failed to register hooks', $e);
-            error_log('Plugins Onboard: Hook registration failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-
-            throw $e;
+            OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Hook registration failed:');
         }
     }
 
@@ -412,9 +408,7 @@ class PluginsOnboard {
 
         } catch (Exception $e) {
             OnboardLogger::error('Plugin deactivation error', $e);
-            error_log('Plugins Onboard: Deactivation failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-
-            throw $e;
+            OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Deactivation failed:');
         }
     }
 
@@ -536,10 +530,7 @@ class PluginsOnboard {
         } catch (Exception $e) {
             $this->init_error = $e->getMessage();
             OnboardLogger::critical('Plugin init() failed', $e);
-            OnboardErrorLog::log($e, 'Plugins Onboard Init Error:');
-            error_log('Plugins Onboard: init() failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-
-            throw $e;
+            OnboardErrorLog::logAndThrow($e, 'Plugins Onboard Init Error:');
         }
     }
 

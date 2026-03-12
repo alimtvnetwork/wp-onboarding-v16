@@ -34,9 +34,7 @@ trait RouteRegistrationTrait
                 $registered++;
             } catch (Throwable $e) {
                 $failed++;
-                $this->fileLogger->logException($e, 'Failed to register route: ' . $route);
-
-                throw $e;
+                $this->fileLogger->logCriticalException($e, 'Failed to register route: ' . $route);
             }
         };
 

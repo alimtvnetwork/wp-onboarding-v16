@@ -115,9 +115,7 @@ trait DatabaseConnectionTrait {
 
             $this->fileLogger->info('Database migration complete');
         } catch (PDOException $e) {
-            $this->fileLogger->logException($e, 'Database migration failed');
-
-            throw $e;
+            $this->fileLogger->logCriticalException($e, 'Database migration failed');
         }
     }
 
