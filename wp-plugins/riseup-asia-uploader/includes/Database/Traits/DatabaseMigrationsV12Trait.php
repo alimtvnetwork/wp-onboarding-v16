@@ -80,7 +80,7 @@ trait DatabaseMigrationsV12Trait {
             WHEN 'snapshot_zip_expire'       THEN 'SnapshotZipExpire'
             WHEN 'snapshot_zip_download'     THEN 'SnapshotZipDownload'
         END
-        WHERE Action = LOWER(Action) AND Action NOT LIKE '%[A-Z]%'
+        WHERE Action = LOWER(Action) AND Action NOT LIKE '%%[A-Z]%%'
     SQL;
 
     /** AgentSites.Status: lowercase → PascalCase */
