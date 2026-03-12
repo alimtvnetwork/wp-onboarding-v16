@@ -73,7 +73,13 @@ trait UploadExtractTrait
 
         // Ensure logs dir exists so all subsequent logging works
         $logsDir = PathHelper::getLogsDir();
-        PathHelper::ensureDirectory($logsDir);
+        $isLogsDirReady = PathHelper::ensureDirectory($logsDir);
+
+        if ($isLogsDirReady === false) {
+            $this->traceStage('validateAndWriteZip:logs-dir-failed', ['dir' => $logsDir]);
+
+            return $this->errorResponse('Upload failed: could not create logs directory', HttpStatusType::ServerError->value);
+        }
 
         // Ensure temp dir exists
         $tempDir = PathHelper::getTempDir();
