@@ -164,6 +164,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId 
 	if mappingResult.HasError() {
 		return nil, "No site mapping found: " + mappingResult.AppError().Error()
 	}
+
 	mapping := mappingResult.Value()
 
 	credProgress := SyncProgressInput{
