@@ -1034,8 +1034,8 @@ foreach ($candidateNamespace in $namespaceOrder) {
         $candidateResponse = Invoke-SafeRestRequest -Uri $candidateUploadUrl -Method "Post" -Headers $uploadHeaders -Body $uploadBody -ContentType "application/json" -TimeoutSec 300 -Label "Upload ($candidateNamespace)" -MaxRetries 2 -RetryDelaySec 4
 
         if ($null -eq $candidateResponse) {
-            $uploadAttemptErrors += "$candidateNamespace: null/invalid JSON response"
-            Write-Status "      ⚠ $candidateNamespace returned null response, trying next namespace..." -Color Yellow
+            $uploadAttemptErrors += "${candidateNamespace}: null/invalid JSON response"
+            Write-Status "      ⚠ ${candidateNamespace} returned null response, trying next namespace..." -Color Yellow
             continue
         }
 
