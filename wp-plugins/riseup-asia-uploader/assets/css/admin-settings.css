@@ -1,18 +1,49 @@
 /* ================================================================
-   ADMIN SETTINGS PAGE STYLES
+   ADMIN SETTINGS PAGE STYLES — Modernized
+   @updated 2.6.0
    ================================================================ */
 
 .riseup-admin .button .dashicons {
     vertical-align: middle;
     margin-top: -2px;
-    margin-right: 2px;
+    margin-right: 3px;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.riseup-admin .button:hover .dashicons {
+    transform: scale(1.15);
+}
+
 .riseup-error-text {
-    color: #dc3232;
+    color: #dc2626;
+    font-weight: 500;
 }
+
 .dashicons.spin {
-    animation: spin 1s linear infinite;
+    animation: riseupSpin 0.8s linear infinite;
 }
-@keyframes spin {
+
+@keyframes riseupSpin {
     100% { transform: rotate(360deg); }
+}
+
+/* Settings form table animations */
+.riseup-admin .form-table tr {
+    transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.riseup-admin .form-table tr:hover {
+    background: #f8fafc;
+}
+
+.riseup-admin .form-table th {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.riseup-admin .form-table .description {
+    color: #64748b;
+    font-style: normal;
+    margin-top: 4px;
+    font-size: 12px;
 }
