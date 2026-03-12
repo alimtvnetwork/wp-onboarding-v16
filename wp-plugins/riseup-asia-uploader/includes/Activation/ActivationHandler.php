@@ -105,6 +105,26 @@ class ActivationHandler
         }
     }
 
+    private static function resetLogFiles(string $logsDir): void {
+        $logFiles = array(
+            $logsDir . PathLogFileType::Log->value,
+            $logsDir . PathLogFileType::Error->value,
+            $logsDir . PathLogFileType::Stacktrace->value,
+        );
+
+        foreach ($logFiles as $logFile) {
+            if (PathHelper::isFileMissing($logFile)) {
+                continue;
+            }
+
+            $isDeleteFailed = (PathHelper::deleteFile($logFile) === false);
+
+            if ($isDeleteFailed) {
+                InitHelpers::errorLogWithPrefix('Failed to reset log file on activation: ' . $logFile);
+            }
+        }
+    }
+
     private static function writeLogFiles(string $logsDir): void {
         $timestamp = DateHelper::nowUtc();
         $version = PluginConfigType::Version->value;
