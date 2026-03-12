@@ -1042,8 +1042,8 @@ foreach ($candidateNamespace in $namespaceOrder) {
         $candidateMessage = if ($candidateResponse.message) { $candidateResponse.message } else { $null }
         $isBlockedOrUnauthorized = $candidateMessage -and ($candidateMessage -match "Access denied|bot.protection|not allowed|unauthorized|forbidden")
         if ($isBlockedOrUnauthorized) {
-            $uploadAttemptErrors += "$candidateNamespace: $candidateMessage"
-            Write-Status "      ⚠ $candidateNamespace blocked/unauthorized: $candidateMessage" -Color Yellow
+            $uploadAttemptErrors += "${candidateNamespace}: ${candidateMessage}"
+            Write-Status "      ⚠ ${candidateNamespace} blocked/unauthorized: ${candidateMessage}" -Color Yellow
             continue
         }
 
