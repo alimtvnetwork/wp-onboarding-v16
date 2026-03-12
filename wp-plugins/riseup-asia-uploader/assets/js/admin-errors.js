@@ -155,7 +155,9 @@ jQuery(document).ready(function($) {
             file_type: activeTab
         }, function(response) {
             if (response.success) {
-                loadLogFile();
+                $('#file-content').text('').hide();
+                $('#file-empty').show();
+                $('#file-size-label').text('');
                 $btn.prop('disabled', false);
                 return;
             }

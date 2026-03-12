@@ -100,27 +100,39 @@ trait LoggerPathTrait {
      * Used during version updates to start with a clean slate.
      */
     public function clearAllLogFiles(): void {
-        if ($this->isInitialized === false) {
-            $this->initializePaths();
+        if ($this->isInitialized === false && $this->initializePaths() === false) {
+            return;
         }
 
         $files = array($this->logFile, $this->errorFile, $this->stacktraceFile);
 
         foreach ($files as $file) {
-            if ($file === null) {
+            if ($file === null || $file === '') {
                 continue;
             }
 
-            $isFileExists = file_exists($file);
+            clearstatcache(true, $file);
 
-            if ($isFileExists === false) {
+            if (file_exists($file) === false) {
                 continue;
             }
 
-            $isDeleteFailed = (unlink($file) === false);
+            $resolvedPath = realpath($file);
+            $targetPath = ($resolvedPath === false) ? $file : $resolvedPath;
 
-            if ($isDeleteFailed) {
-                InitHelpers::errorLogWithPrefix('Failed to clear log file during version update: ' . $file);
+            $isDeleted = @unlink($targetPath);
+
+            if ($isDeleted === false) {
+                @chmod($targetPath, 0644);
+                $isDeleted = @unlink($targetPath);
+            }
+
+            clearstatcache(true, $targetPath);
+
+            if ($isDeleted === false || file_exists($targetPath)) {
+                $error = error_get_last();
+                $errorSuffix = ($error && isset($error['message'])) ? ' | ' . $error['message'] : '';
+                InitHelpers::errorLogWithPrefix('Failed to clear log file during version update: ' . $targetPath . $errorSuffix);
             }
         }
 

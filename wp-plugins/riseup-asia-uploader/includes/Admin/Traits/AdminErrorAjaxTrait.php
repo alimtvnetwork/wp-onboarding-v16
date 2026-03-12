@@ -193,9 +193,15 @@ trait AdminErrorAjaxTrait {
         }
 
         $isDeleteFailed = (PathHelper::deleteFile($path) === false);
+        clearstatcache(true, $path);
+        $isStillExists = PathHelper::isFileExists($path);
 
-        if ($isDeleteFailed) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Failed to delete file from disk'));
+        if ($isDeleteFailed || $isStillExists) {
+            wp_send_json_error(array(
+                ResponseKeyType::Message->value  => 'Failed to delete file from disk',
+                ResponseKeyType::FileType->value => $type,
+                ResponseKeyType::Path->value     => $path,
+            ));
         }
 
         wp_send_json_success(array(
