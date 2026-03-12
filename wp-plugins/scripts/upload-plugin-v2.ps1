@@ -319,13 +319,29 @@ function Invoke-SafeRestRequest {
 
         } catch {
             $errBody = Get-ErrorResponseBody $_
+            $statusCode = Get-ErrorStatusCode $_
+            $jsonSummary = Get-JsonErrorSummary $errBody
+            $bodyPreview = Get-ResponsePreview -Body $errBody -MaxLength 500
+
             Write-Debug-Log "$Label → Exception: $($_.Exception.Message)"
+            if ($null -ne $statusCode) {
+                Write-Debug-Log "$Label → HTTP status: $statusCode"
+            }
+            if ($jsonSummary -ne "") {
+                Write-Debug-Log "$Label → JSON summary: $jsonSummary"
+            }
             if ($errBody -ne "") {
                 Write-Debug-Log "$Label → Error body (first 300): $($errBody.Substring(0, [Math]::Min(300, $errBody.Length)))"
             }
 
             if ($attempt -lt $MaxRetries) {
-                Write-Status "      ⚠ $Label failed, retrying in ${RetryDelaySec}s..." -Color Yellow
+                $statusPrefix = if ($null -ne $statusCode) { "HTTP ${statusCode} | " } else { "" }
+                Write-Status "      ⚠ $Label failed (${statusPrefix}$($_.Exception.Message)), retrying in ${RetryDelaySec}s..." -Color Yellow
+                if ($jsonSummary -ne "") {
+                    Write-Status "        Detail: $jsonSummary" -Color DarkYellow
+                } elseif ($bodyPreview -ne "") {
+                    Write-Status "        Body: $bodyPreview" -Color DarkYellow
+                }
                 Start-Sleep -Seconds $RetryDelaySec
             } else {
                 throw $_
