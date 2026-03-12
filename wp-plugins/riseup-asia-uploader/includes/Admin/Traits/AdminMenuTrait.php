@@ -118,6 +118,21 @@ trait AdminMenuTrait {
         );
     }
 
+    /** Register the feedback submenu. */
+    private function registerFeedbackSubmenu() {
+        $slug = PluginConfigType::Slug->value;
+        $pluginSlug = $slug;
+
+        add_submenu_page(
+            $slug,
+            __('Report / Feedback', $pluginSlug),
+            __('Report / Feedback', $pluginSlug),
+            CapabilityType::ManageOptions->value,
+            AdminPageType::Feedback->value,
+            array($this, 'renderFeedbackPage'),
+        );
+    }
+
     /** Build the error count bubble HTML. */
     private function buildErrorBubble(): string {
         $unseen = $this->getUnseenErrorCount();
