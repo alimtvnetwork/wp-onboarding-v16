@@ -23,7 +23,7 @@
 | PHP circular dependency during bootstrap | WordPress/PHP | [12-php-circular-dependency-bootstrap.md](./12-php-circular-dependency-bootstrap.md) |
 | Go `buildWPClient` undefined method | Backend/Go | [13-go-build-wp-client-undefined.md](./13-go-build-wp-client-undefined.md) |
 | Retry/debounce/dedup anti-patterns | Frontend/Reliability | [14-retry-debounce-dedup-anti-patterns.md](./14-retry-debounce-dedup-anti-patterns.md) |
-| Deactivate plugin 404 | Backend/WordPress | [deactivate-plugin-404.md](./deactivate-plugin-404.md) |
+| Deactivate plugin 404 | Backend/WordPress | [15-deactivate-plugin-404.md](./15-deactivate-plugin-404.md) |
 | Health endpoint format mismatch | Frontend/Backend | [See spec/07-error-manage/03-error-resolution/01-health-endpoint-mismatch.md](../../../spec/07-error-manage/03-error-resolution/01-health-endpoint-mismatch.md) |
 | Coverage report wrong package filtering | Tooling/Coverage | [See spec/02-app-issues/17-coverage-report-wrong-package-filtering.md](../../../spec/02-app-issues/17-coverage-report-wrong-package-filtering.md) |
 
