@@ -23,16 +23,18 @@ use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerRestoreValidationTrait {
-    private function validateIncrementalParent(array $snapshot, int $snapshotId) {
-        $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === SnapshotModeType::Incremental->value);
+    private function validateIncrementalParent($snapshot, $snapshotId) {
+        $hasScope = isset($snapshot['scope']);
+        $isIncremental = $hasScope && $snapshot['scope'] === SnapshotModeType::Incremental->value;
         $isFullSnapshot = ($isIncremental === false);
 
         if ($isFullSnapshot) {
             return null;
         }
 
-        $tablesMeta = json_decode($snapshot['tables_json'] ?? '{}', true);
-        $masterDirname = $tablesMeta['master'] ?? null;
+        $tablesJson = isset($snapshot['tables_json']) ? $snapshot['tables_json'] : '{}';
+        $tablesMeta = json_decode($tablesJson, true);
+        $masterDirname = isset($tablesMeta['master']) ? $tablesMeta['master'] : null;
 
         $isMasterDirnameMissing = ($masterDirname === null);
 
@@ -41,7 +43,9 @@ trait ManagerRestoreValidationTrait {
         }
 
         $masterDir = dirname(dirname($snapshot['filepath']));
-        $isMasterMissing = PathHelper::isDirMissing($masterDir) || PathHelper::isFileMissing($masterDir . PathDatabaseType::Root->value);
+        $isMasterDirMissing = PathHelper::isDirMissing($masterDir);
+        $isMasterRootMissing = PathHelper::isFileMissing($masterDir . PathDatabaseType::Root->value);
+        $isMasterMissing = $isMasterDirMissing || $isMasterRootMissing;
         $isMasterPresent = ($isMasterMissing === false);
 
         if ($isMasterPresent) {
@@ -65,16 +69,18 @@ trait ManagerRestoreValidationTrait {
      *
      * @return int|array|null Backup ID, error array, or null.
      */
-    private function handlePreRestoreBackup(array $options, int $snapshotId) {
-        $isBackupExplicitlyDisabled = (isset($options['create_backup']) && $options['create_backup'] === false);
+    private function handlePreRestoreBackup($options, $snapshotId) {
+        $hasCreateBackup = isset($options['create_backup']);
+        $isBackupExplicitlyDisabled = $hasCreateBackup && $options['create_backup'] === false;
 
         if ($isBackupExplicitlyDisabled) {
             return null;
         }
 
         $backupResult = $this->createPreRestoreBackup($snapshotId);
+        $isBackupCreated = !empty($backupResult[ResponseKeyType::Success->value]);
 
-        if ($backupResult[ResponseKeyType::Success->value]) {
+        if ($isBackupCreated) {
             $this->log(LogLevelType::Info->value, 'Pre-restore backup created', array(ResponseKeyType::BackupId->value => $backupResult[ResponseKeyType::SnapshotId->value]));
 
             return $backupResult[ResponseKeyType::SnapshotId->value];
@@ -89,11 +95,12 @@ trait ManagerRestoreValidationTrait {
         return null;
     }
 
-    private function getRestoreTables(array $snapshot, array $options): array {
+    private function getRestoreTables($snapshot, $options) {
         $allTables = json_decode($snapshot['tables_json'], true);
-        $mode = $options['mode'] ?? RestoreModeType::Full->value;
+        $mode = isset($options['mode']) ? $options['mode'] : RestoreModeType::Full->value;
 
-        $isSelective = ($mode === RestoreModeType::Selective->value && !empty($options['tables']));
+        $hasTablesSelection = !empty($options['tables']);
+        $isSelective = ($mode === RestoreModeType::Selective->value) && $hasTablesSelection;
 
         if ($isSelective) {
             return array_intersect($allTables, $options['tables']);
