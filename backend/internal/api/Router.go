@@ -162,6 +162,7 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fi, statErr := pathutil.StatFile(path)
+
 	if statErr != nil {
 		serveIndex()
 		return

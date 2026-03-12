@@ -67,6 +67,7 @@ func collectFrames(rawFrames *runtime.Frames, maxFrames int) []StackFrame {
 
 		isAtLimit := len(frames) >= maxFrames
 		isExhausted := !more
+
 		if isExhausted || isAtLimit {
 			break
 		}

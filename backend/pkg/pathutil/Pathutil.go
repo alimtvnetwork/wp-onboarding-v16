@@ -92,13 +92,17 @@ func Exists(path string) bool {
 // IsDir checks if a path is a directory (after resolving to absolute).
 func IsDir(path string) bool {
 	abs, err := ToAbsolute(path)
+
 	if err != nil {
 		return false
 	}
+
 	info, err := os.Stat(abs)
+
 	if err != nil {
 		return false
 	}
+
 	return info.IsDir()
 }
 

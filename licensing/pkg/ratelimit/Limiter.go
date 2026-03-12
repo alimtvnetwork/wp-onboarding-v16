@@ -50,6 +50,7 @@ func (l *Limiter) Allow(key string) bool {
 
 	if hasTokens {
 		b.tokens--
+
 		return true
 	}
 

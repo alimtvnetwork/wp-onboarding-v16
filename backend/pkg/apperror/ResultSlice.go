@@ -64,6 +64,7 @@ func (r ResultSlice[T]) Last() Result[T] {
 	if r.err != nil {
 		return Fail[T](r.err)
 	}
+
 	if len(r.items) == 0 {
 		return Result[T]{}
 	}

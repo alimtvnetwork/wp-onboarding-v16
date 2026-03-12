@@ -77,6 +77,7 @@ func (r *ResultMap[K, V]) Set(key K, value V) {
 	if r.err != nil {
 		return
 	}
+
 	if r.items == nil {
 		r.items = make(map[K]V)
 	}

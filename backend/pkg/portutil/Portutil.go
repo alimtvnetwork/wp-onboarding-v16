@@ -89,18 +89,23 @@ func findPIDOnPort(port int) (int, error) {
 
 func parseNetstatWindows(output string, port int) (int, error) {
 	needle := fmt.Sprintf(":%d", port)
+
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
 		isEmpty := line == ""
 		isMissingPort := !strings.Contains(line, needle)
+
 		if isEmpty || isMissingPort {
 			continue
 		}
+
 		fields := strings.Fields(line)
+
 		if len(fields) >= 5 {
 			return strconv.Atoi(fields[len(fields)-1])
 		}
 	}
+
 	return 0, apperror.New(apperror.ErrInternal, "no PID found in netstat output").
 		WithValue("port", strconv.Itoa(port))
 }
