@@ -38,7 +38,7 @@ QUpload is a **thin, single-purpose** WordPress plugin that:
 
 ## Endpoints
 
-### POST `/wp-json/qupload/v1/upload`
+### POST `/wp-json/qupload-api/v1/upload`
 
 Accepts a plugin ZIP (multipart `plugin_zip` or base64 JSON), extracts it to `wp-content/plugins/`, replaces any existing version, and activates it.
 
