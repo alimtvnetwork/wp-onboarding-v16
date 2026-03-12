@@ -91,16 +91,20 @@ trait AdminErrorAjaxTrait {
     /** Resolve a log file type to its absolute path. */
     private function resolveLogFilePath(string $type): string|false {
         $logger = FileLogger::getInstance();
-        switch ($type) {
-            case 'log':
-                return $logger->getLogFile();
-            case 'error':
-                return $logger->getErrorFile();
-            case 'stacktrace':
-                return $logger->getStacktraceFile();
-            default:
-                return false;
+
+        if ($type === AdminTabType::Log->value) {
+            return $logger->getLogFile();
         }
+
+        if ($type === AdminTabType::Error->value) {
+            return $logger->getErrorFile();
+        }
+
+        if ($type === AdminTabType::Stacktrace->value) {
+            return $logger->getStacktraceFile();
+        }
+
+        return false;
     }
 
     /** AJAX handler: Read a log file's contents. */
