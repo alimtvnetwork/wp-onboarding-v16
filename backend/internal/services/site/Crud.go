@@ -24,6 +24,7 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 	if isItemsNil {
 		items = []models.Site{}
 	}
+
 	return apperror.OkSlice(items)
 }
 
