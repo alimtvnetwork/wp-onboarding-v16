@@ -18,10 +18,12 @@ enum SnapshotConfigType: int {
     case RetentionDaysDefault  = 30;
     case RetentionCountDefault = 10;
     case WorkerPoolMin         = 1;
-    case WorkerPoolMax         = 10;
     case WorkerPoolDefault     = 5;
     case StuckHours            = 24;
     case LockTimeoutSeconds    = 1800;
+
+    /** WorkerPoolMax as static method to avoid duplicate backed value (same as RetentionCountDefault = 10). */
+    public static function workerPoolMax(): int { return 10; }
 
     /** Default snapshot title prefix. */
     public const DefaultTitle = 'Snapshot';
