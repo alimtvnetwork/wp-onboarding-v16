@@ -107,5 +107,7 @@ class Admin {
         add_action(HookType::ajax(AjaxActionType::LicenseDeactivate->value), array($this, 'ajaxLicenseDeactivate'));
         add_action(HookType::ajax(AjaxActionType::LicenseRemove->value), array($this, 'ajaxLicenseRemove'));
         add_action(HookType::ajax(AjaxActionType::LicenseRefresh->value), array($this, 'ajaxLicenseRefresh'));
+        add_action(HookType::ajax(AjaxActionType::SendFeedback->value), array($this, 'ajaxSendFeedback'));
+        add_action(HookType::ajax(AjaxActionType::CheckFeedbackReady->value), array($this, 'ajaxCheckFeedbackReady'));
     }
 }
