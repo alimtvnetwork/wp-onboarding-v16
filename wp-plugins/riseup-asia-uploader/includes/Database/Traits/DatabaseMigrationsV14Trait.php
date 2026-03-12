@@ -68,6 +68,23 @@ trait DatabaseMigrationsV14Trait {
         WHERE TriggerSource IN ('api', 'dashboard', 'agent_push', 'cron', 'cli')
     SQL;
 
+    // ── Helpers ────────────────────────────────────────────────────────
+
+    /** Execute SQL only if the target column exists in the table. */
+    private function execIfColumnExists(string $table, string $column, string $sql): void {
+        $stmt = $this->pdo->query("PRAGMA table_info($table)");
+        $columns = $stmt->fetchAll(\PDO::FETCH_COLUMN, 1);
+        $hasColumn = in_array($column, $columns, true);
+
+        if ($hasColumn === false) {
+            $this->fileLogger->info("Skipping migration: column $column not found in $table");
+
+            return;
+        }
+
+        $this->pdo->exec($sql);
+    }
+
     // ── Migration Entry Point ────────────────────────────────────────
 
     private function migrateV14PascalCaseRemainingValues(int $current): void {
