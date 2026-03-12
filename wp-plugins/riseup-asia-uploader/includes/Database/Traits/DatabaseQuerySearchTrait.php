@@ -145,7 +145,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyTextFilters(RiseupORM $query, array $filters): void {
+    private function applyTextFilters(Orm $query, array $filters): void {
         $hasSourceMachine = BooleanHelpers::hasFilterValue($filters, FilterKeyType::SourceMachine->value);
 
         if ($hasSourceMachine) {
