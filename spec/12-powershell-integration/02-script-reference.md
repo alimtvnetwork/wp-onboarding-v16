@@ -21,9 +21,14 @@
 | `-fw` | `-openfirewall` | Switch | Add Windows Firewall rules (requires Admin) |
 | `-u` | `-upload` | Switch | Upload default plugin to WordPress via upload-plugin-v2 |
 | `-q` | `-qupload` | Switch | Upload plugin to WordPress via QUpload API (upload-plugin-U-Q.ps1) |
-| `-z` | `-zip` | Switch | Create versioned ZIPs with best compression. With `-pp`: specific plugin. Without: all plugins in `wp-plugins/` |
+| | `-u -q` | Combo | Upload Riseup Asia Uploader via QUpload API (shorthand) |
+| `-ua` | `-uploadall` | Switch | ZIP all plugins (except QUpload) and upload each via QUpload API |
+| `-z` | `-zip` | Switch | ZIP default plugin (or specific via `-pp`) |
+| `-za` | | Switch | ZIP all plugins in `wp-plugins/` with version numbers |
+| `-zq` | `-zipqupload` | Switch | ZIP QUpload plugin |
+| `-c` | `-clear` | Switch | Remove all existing ZIP files from `wp-plugins/` before zipping |
 | `-t` | `-test` | Switch | Run Go backend tests and exit |
-| `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`, `-q`, or `-z`) |
+| `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`, `-q`, `-ua`, or `-z`) |
 | `-d` | `-debug` | Switch | Enable debug logging for upload |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
