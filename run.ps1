@@ -954,7 +954,7 @@ if ($uploadall) {
     foreach ($folder in $pluginFolders) {
         Write-Host "    - $($folder.Name)" -ForegroundColor Gray
     }
-    Write-Host "  Excluded: $quploadSlug (used as the upload transport)" -ForegroundColor DarkGray
+    Write-Host "  Excluded: $($skipList -join ', ')" -ForegroundColor DarkGray
     Write-Host ""
 
     $uploadResults = @()
