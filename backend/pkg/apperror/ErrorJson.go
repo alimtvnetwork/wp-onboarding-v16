@@ -62,6 +62,7 @@ func truncateData(data []byte, maxLen int) string {
 	if len(data) <= maxLen {
 		return string(data)
 	}
+
 	return string(data[:maxLen]) + "..."
 }
 

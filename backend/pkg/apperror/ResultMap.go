@@ -53,6 +53,7 @@ func (r ResultMap[K, V]) Get(key K) Result[V] {
 	}
 
 	val, exists := r.items[key]
+
 	if !exists {
 		return Result[V]{}
 	}
@@ -76,6 +77,7 @@ func (r *ResultMap[K, V]) Set(key K, value V) {
 	if r.err != nil {
 		return
 	}
+
 	if r.items == nil {
 		r.items = make(map[K]V)
 	}

@@ -33,6 +33,7 @@ func Verify(secret, signature, timestampStr string, body []byte) bool {
 	}
 
 	isTimestampStale := isOutsideSkewWindow(timestamp)
+
 	if isTimestampStale {
 		return false
 	}

@@ -27,6 +27,7 @@ func ToAbsolute(path string) (string, error) {
 	// Clean and convert to absolute
 	cleaned := filepath.Clean(path)
 	abs, err := filepath.Abs(cleaned)
+
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +49,9 @@ func Join(elem ...string) (string, error) {
 	if len(elem) == 0 {
 		return "", nil
 	}
+
 	joined := filepath.Join(elem...)
+
 	return ToAbsolute(joined)
 }
 
@@ -76,23 +79,30 @@ func ensureWindowsLongPath(path string) string {
 // Exists checks if a path exists (after resolving to absolute).
 func Exists(path string) bool {
 	abs, err := ToAbsolute(path)
+
 	if err != nil {
 		return false
 	}
+
 	_, err = os.Stat(abs)
+
 	return err == nil
 }
 
 // IsDir checks if a path is a directory (after resolving to absolute).
 func IsDir(path string) bool {
 	abs, err := ToAbsolute(path)
+
 	if err != nil {
 		return false
 	}
+
 	info, err := os.Stat(abs)
+
 	if err != nil {
 		return false
 	}
+
 	return info.IsDir()
 }
 

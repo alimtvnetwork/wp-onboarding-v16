@@ -92,16 +92,21 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func resolveSpaStaticDir(dir string) string {
 	indexPath, err := pathutil.Join(dir, "index.html")
+
 	if err == nil && fileExists(indexPath) {
 		return dir
 	}
+
 	distIndexPath, err := pathutil.Join(dir, "dist", "index.html")
+
 	if err == nil && fileExists(distIndexPath) {
 		distDir, err := pathutil.Join(dir, "dist")
+
 		if err == nil {
 			return distDir
 		}
 	}
+
 	return dir
 }
 
@@ -150,12 +155,14 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path, err := pathutil.Join(h.staticDir, requestedPath)
+
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	fi, statErr := pathutil.StatFile(path)
+
 	if statErr != nil {
 		serveIndex()
 		return

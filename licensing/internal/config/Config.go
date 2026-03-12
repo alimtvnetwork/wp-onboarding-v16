@@ -40,6 +40,7 @@ func (c Config) Validate() []string {
 	if isHMACMissing {
 		missing = append(missing, "LICENSING_HMAC_SECRET")
 	}
+
 	if isAdminTokenMissing {
 		missing = append(missing, "LICENSING_ADMIN_TOKEN")
 	}

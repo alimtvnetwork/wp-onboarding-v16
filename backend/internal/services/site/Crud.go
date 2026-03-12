@@ -24,6 +24,7 @@ func (s *Service) List(ctx context.Context) apperror.ResultSlice[models.Site] {
 	if isItemsNil {
 		items = []models.Site{}
 	}
+
 	return apperror.OkSlice(items)
 }
 
@@ -33,6 +34,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 	if result.HasError() {
 		return apperror.Fail[models.Site](result.AppError())
 	}
+
 	if result.IsEmpty() {
 		return apperror.FailNew[models.Site](apperror.ErrNotFound, "site not found")
 	}
@@ -44,6 +46,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 func (s *Service) GetByUrl(ctx context.Context, siteUrl string) apperror.Result[models.Site] {
 	normalizedUrl := normalizeUrl(siteUrl)
 	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByUrlQuery, scanSiteRow, normalizedUrl)
+
 	return result.ToAppResult()
 }
 
@@ -61,6 +64,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 	}
 
 	encryptedPassword, err := encrypt([]byte(input.Password), s.encryptionKey)
+
 	if err != nil {
 		return apperror.FailWrap[models.Site](err, apperror.ErrInternal, "failed to encrypt password")
 	}
@@ -74,9 +78,11 @@ func (s *Service) checkDuplicateUrl(ctx context.Context, normalizedUrl string) a
 	if existing.HasError() {
 		return existing
 	}
+
 	if existing.IsDefined() {
 		return apperror.FailNew[models.Site](apperror.ErrValidation, "site with this URL already exists")
 	}
+
 	return apperror.Result[models.Site]{}
 }
 

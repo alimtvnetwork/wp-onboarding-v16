@@ -53,10 +53,13 @@ func EnsurePortFree(port int) error {
 
 func isPortInUse(port int) bool {
 	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+
 	if err != nil {
 		return true
 	}
+
 	ln.Close()
+
 	return false
 }
 
@@ -67,33 +70,42 @@ func findPIDOnPort(port int) (int, error) {
 	switch runtime.GOOS {
 	case "windows":
 		out, err := exec.Command("cmd", "/c", fmt.Sprintf("netstat -ano | findstr :%d | findstr LISTENING", port)).CombinedOutput()
+
 		if err != nil {
 			return 0, apperror.Wrap(err, apperror.ErrInternal, "netstat command failed")
 		}
+
 		return parseNetstatWindows(string(out), port)
 	default:
 		out, err := exec.Command("lsof", "-ti", fmt.Sprintf("tcp:%d", port)).CombinedOutput()
+
 		if err != nil {
 			return 0, apperror.Wrap(err, apperror.ErrInternal, "lsof command failed")
 		}
+
 		return strconv.Atoi(strings.TrimSpace(string(out)))
 	}
 }
 
 func parseNetstatWindows(output string, port int) (int, error) {
 	needle := fmt.Sprintf(":%d", port)
+
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
 		isEmpty := line == ""
 		isMissingPort := !strings.Contains(line, needle)
+
 		if isEmpty || isMissingPort {
 			continue
 		}
+
 		fields := strings.Fields(line)
+
 		if len(fields) >= 5 {
 			return strconv.Atoi(fields[len(fields)-1])
 		}
 	}
+
 	return 0, apperror.New(apperror.ErrInternal, "no PID found in netstat output").
 		WithValue("port", strconv.Itoa(port))
 }
