@@ -175,6 +175,7 @@ func appendUrlUpdate(input urlUpdateInput) {
 	if isUrlMissing {
 		return
 	}
+
 	normalizedUrl := normalizeUrl(*input.UrlInput)
 	isUrlChanged := normalizedUrl != input.ExistingUrl
 
