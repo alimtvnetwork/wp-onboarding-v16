@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.0.5",
+  "version": "2.1.0",
   "releaseDate": "2026-03-12",
   "gitCommit": "dev",
   "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.0.5",
-  "wpPluginVersion": "2.0.5",
-  "quploadVersion": "2.0.5",
+  "scriptVersion": "2.1.0",
+  "wpPluginVersion": "2.1.0",
+  "quploadVersion": "2.1.0",
   "changelog": [
+    {
+      "version": "2.1.0",
+      "date": "2026-03-12",
+      "title": "PHP Syntax Fixes & Go Spacing Audit",
+      "changes": [
+        "🔧 Fixed duplicate <?php tag in admin-settings.php causing deployment syntax error",
+        "🛡️ Verified ManagerRestoreTrait.php syntax correctness for PHP 8.2 compatibility",
+        "📏 Full Go source audit: enforced blank-line-before-return and blank-line-before-if spacing rules",
+        "🧹 Fixed spacing violations across 10+ Go files in database, services, envelope, and logger packages"
+      ]
+    },
     {
       "version": "2.0.0",
       "date": "2026-03-09",
