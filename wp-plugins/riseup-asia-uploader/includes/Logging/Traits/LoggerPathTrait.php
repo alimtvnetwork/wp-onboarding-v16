@@ -97,7 +97,7 @@ trait LoggerPathTrait {
 
     /**
      * Clear all log files (log, error, stacktrace).
-     * Used during plugin load to start with a clean slate.
+     * Used during version updates to start with a clean slate.
      */
     public function clearAllLogFiles(): void {
         if ($this->isInitialized === false) {
@@ -111,8 +111,16 @@ trait LoggerPathTrait {
                 continue;
             }
 
-            if (file_exists($file)) {
-                @unlink($file);
+            $isFileExists = file_exists($file);
+
+            if ($isFileExists === false) {
+                continue;
+            }
+
+            $isDeleteFailed = (unlink($file) === false);
+
+            if ($isDeleteFailed) {
+                InitHelpers::errorLogWithPrefix('Failed to clear log file during version update: ' . $file);
             }
         }
 
