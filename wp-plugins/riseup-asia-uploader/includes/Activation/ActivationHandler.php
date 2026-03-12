@@ -37,6 +37,7 @@ class ActivationHandler
 
             self::ensureDirs($dirs['base'], $dirs['logs']);
             InitHelpers::errorLogWithPrefix('ActivationHandler::activate() — directories ensured');
+            self::resetLogFiles($dirs['logs']);
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
             self::runBootDiagnostics();
