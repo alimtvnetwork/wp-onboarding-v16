@@ -364,7 +364,7 @@ Write-Status "      Version: $LocalVersion" -Color Gray
 # STEP 2: Create ZIP file (best compression)
 # =============================================================================
 Write-Status ""
-Write-Status "[2/4] Creating ZIP file (SmallestSize compression)..." -Color Yellow
+Write-Status "[2/5] Creating ZIP file (SmallestSize compression)..." -Color Yellow
 
 try {
     $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
