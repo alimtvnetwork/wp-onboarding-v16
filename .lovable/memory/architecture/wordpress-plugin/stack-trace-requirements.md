@@ -85,7 +85,7 @@ When WordPress returns an empty response body with status 500, the Go backend no
 
 ## Additional Rule: error_log() Must Include Stack Traces
 
-Every `error_log()` call inside a `catch` block that has access to `$e` **MUST** append `"\n" . $e->getTraceAsString()`. Logging only `$e->getMessage()` is a critical defect. See `.lovable/memory/coding-standards/php-exception-handling.md` and issue `001-missing-stack-traces-in-error-log.md`.
+Every `error_log()` call inside a `catch` block that has access to `$e` **MUST** append `"\n" . $e->getTraceAsString()`. Logging only `$e->getMessage()` is a critical defect. See `.lovable/memory/coding-standards/php-exception-handling.md` and `.lovable/memory/issues/001-missing-stack-traces-in-error-log.md`.
 
 ## Version History
 
