@@ -98,6 +98,16 @@ function qupload_init(): void {
         qupload_boot_trace('init:exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
         ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Plugin init failed:');
     }
+
+    if (is_admin()) {
+        try {
+            Admin::getInstance();
+            qupload_boot_trace('admin:success');
+        } catch (Throwable $e) {
+            qupload_boot_trace('admin:exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Admin init failed:');
+        }
+    }
 }
 
 qupload_register_boot_fatal_handler();
