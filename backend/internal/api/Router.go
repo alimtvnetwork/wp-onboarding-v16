@@ -92,16 +92,21 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func resolveSpaStaticDir(dir string) string {
 	indexPath, err := pathutil.Join(dir, "index.html")
+
 	if err == nil && fileExists(indexPath) {
 		return dir
 	}
+
 	distIndexPath, err := pathutil.Join(dir, "dist", "index.html")
+
 	if err == nil && fileExists(distIndexPath) {
 		distDir, err := pathutil.Join(dir, "dist")
+
 		if err == nil {
 			return distDir
 		}
 	}
+
 	return dir
 }
 
