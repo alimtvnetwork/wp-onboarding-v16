@@ -20,6 +20,7 @@ param(
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose,
     [Alias('d')][switch]$debug,
+    [Alias('c')][switch]$clear,
     [Alias('pp')][string]$pluginpath = ""
 )
 
@@ -228,6 +229,7 @@ if ($help) {
     Write-Host "  -z,  -zip           ZIP Riseup Asia plugin (default uploader). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin"
+    Write-Host "  -c,  -clear         Remove all existing ZIP files from wp-plugins/ before zipping"
     Write-Host "  -pp, -pluginpath    Override plugin folder path or name (use with -u, -q, -zq, or -z)"
     Write-Host "  -t,  -test          Run Go backend tests and exit"
     Write-Host "  -v,  -verbose       Show detailed debug output"
@@ -250,6 +252,8 @@ if ($help) {
     Write-Host "  .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
     Write-Host "  .\run.ps1 -za          # ZIP ALL plugins in wp-plugins/"
     Write-Host "  .\run.ps1 -zq          # ZIP QUpload plugin"
+    Write-Host "  .\run.ps1 -z -c        # Clear old ZIPs then ZIP default plugin"
+    Write-Host "  .\run.ps1 -za -c       # Clear old ZIPs then ZIP all plugins"
     Write-Host "  .\run.ps1 -t           # Run Go backend tests"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
@@ -757,6 +761,8 @@ if ($zip) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
+    if ($clear) { Clear-PluginZips }
+
     if ($pluginpath -ne "") {
         $zipPluginPath = $pluginpath
         if (-not [System.IO.Path]::IsPathRooted($zipPluginPath)) {
@@ -789,6 +795,8 @@ if ($za) {
     Write-Host "  ZIP All Mode (-za)" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
+
+    if ($clear) { Clear-PluginZips }
 
     $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
     if (-not (Test-Path $wpPluginsDir)) {
@@ -837,6 +845,8 @@ if ($zipqupload) {
     Write-Host "  ZIP QUpload Mode (-zq)" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
+
+    if ($clear) { Clear-PluginZips }
 
     $qPath = Get-DefaultQUploaderPath
     New-PluginZip $qPath
@@ -972,6 +982,25 @@ if ($upload) {
     }
 
     exit 0
+}
+
+# ── Helper: Clear existing ZIP files from wp-plugins/ ───────────────────
+function Clear-PluginZips {
+    $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
+    if (-not (Test-Path $wpPluginsDir)) { return }
+
+    $zips = Get-ChildItem $wpPluginsDir -Filter "*.zip" -File -ErrorAction SilentlyContinue
+    if ($zips.Count -eq 0) {
+        Write-Host "  No existing ZIP files found" -ForegroundColor DarkGray
+        return
+    }
+
+    Write-Host "  Clearing $($zips.Count) existing ZIP file(s):" -ForegroundColor Yellow
+    foreach ($z in $zips) {
+        Remove-Item $z.FullName -Force
+        Write-Host "    Removed: $($z.Name)" -ForegroundColor DarkGray
+    }
+    Write-Host ""
 }
 
 
@@ -1295,8 +1324,6 @@ if (-not $skipbuild) {
     $StepTimes["Frontend Build"] = [TimeSpan]::Zero
     $StepTimes["Copy Build"] = [TimeSpan]::Zero
 }
-Write-Host ""
-
 
 # ============================================================================
 # BUILD ONLY EXIT
