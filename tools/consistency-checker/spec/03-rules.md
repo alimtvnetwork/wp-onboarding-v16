@@ -19,6 +19,7 @@
 | Rule ID          | Name                | Default          | Severity | Description                                |
 |------------------|---------------------|------------------|----------|--------------------------------------------|
 | `php-file-size`  | File Size Limit     | max: 500 lines   | warning  | PHP files must not exceed line limit        |
+| `php-global-imports` | Global Class Imports | —           | error    | Namespaced files must import global classes  |
 
 ### Markdown Rules
 
