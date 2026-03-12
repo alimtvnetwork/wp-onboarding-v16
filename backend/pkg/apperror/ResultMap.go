@@ -53,6 +53,7 @@ func (r ResultMap[K, V]) Get(key K) Result[V] {
 	}
 
 	val, exists := r.items[key]
+
 	if !exists {
 		return Result[V]{}
 	}
