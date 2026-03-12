@@ -20,6 +20,7 @@ use RiseupAsia\Admin\Traits\AdminPagesTrait;
 use RiseupAsia\Admin\Traits\AdminAjaxTrait;
 use RiseupAsia\Admin\Traits\AdminErrorPageTrait;
 use RiseupAsia\Admin\Traits\AdminErrorAjaxTrait;
+use RiseupAsia\Admin\Traits\AdminFeedbackAjaxTrait;
 use RiseupAsia\Admin\Traits\AdminLicensePageTrait;
 use RiseupAsia\Admin\Traits\AdminLicenseAjaxTrait;
 use RiseupAsia\Enums\AjaxActionType;
@@ -40,6 +41,7 @@ class Admin {
     use AdminAjaxTrait;
     use AdminErrorPageTrait;
     use AdminErrorAjaxTrait;
+    use AdminFeedbackAjaxTrait;
     use AdminLicensePageTrait;
     use AdminLicenseAjaxTrait;
 
@@ -105,5 +107,7 @@ class Admin {
         add_action(HookType::ajax(AjaxActionType::LicenseDeactivate->value), array($this, 'ajaxLicenseDeactivate'));
         add_action(HookType::ajax(AjaxActionType::LicenseRemove->value), array($this, 'ajaxLicenseRemove'));
         add_action(HookType::ajax(AjaxActionType::LicenseRefresh->value), array($this, 'ajaxLicenseRefresh'));
+        add_action(HookType::ajax(AjaxActionType::SendFeedback->value), array($this, 'ajaxSendFeedback'));
+        add_action(HookType::ajax(AjaxActionType::CheckFeedbackReady->value), array($this, 'ajaxCheckFeedbackReady'));
     }
 }

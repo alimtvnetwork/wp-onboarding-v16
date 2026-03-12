@@ -38,6 +38,7 @@ trait AdminMenuTrait {
         $this->registerMainMenu();
         $this->registerSubmenus();
         $this->registerErrorSubmenu();
+        $this->registerFeedbackSubmenu();
     }
 
     /** Register the main admin menu page. */
@@ -117,6 +118,21 @@ trait AdminMenuTrait {
         );
     }
 
+    /** Register the feedback submenu. */
+    private function registerFeedbackSubmenu() {
+        $slug = PluginConfigType::Slug->value;
+        $pluginSlug = $slug;
+
+        add_submenu_page(
+            $slug,
+            __('Report / Feedback', $pluginSlug),
+            __('Report / Feedback', $pluginSlug),
+            CapabilityType::ManageOptions->value,
+            AdminPageType::Feedback->value,
+            array($this, 'renderFeedbackPage'),
+        );
+    }
+
     /** Build the error count bubble HTML. */
     private function buildErrorBubble(): string {
         $unseen = $this->getUnseenErrorCount();
@@ -177,6 +193,10 @@ trait AdminMenuTrait {
 
             case AdminPageType::License->value:
                 $this->enqueueLicenseAssets($pluginFile, $version, $pluginSlug);
+                break;
+
+            case AdminPageType::Feedback->value:
+                $this->enqueueFeedbackAssets($pluginFile, $version, $pluginSlug);
                 break;
 
             case $slug: // Main page = Activity Logs
@@ -497,5 +517,26 @@ trait AdminMenuTrait {
     private function enqueueLogsAssets(string $pluginFile, string $version, string $pluginSlug): void {
         wp_enqueue_style('riseup-admin-logs', plugins_url('assets/css/admin-logs.css', $pluginFile), array(), $version);
         wp_enqueue_script('riseup-admin-logs', plugins_url('assets/js/admin-logs.js', $pluginFile), array('jquery'), $version, true);
+    }
+
+    /** Enqueue Feedback page assets. */
+    private function enqueueFeedbackAssets(string $pluginFile, string $version, string $pluginSlug): void {
+        wp_enqueue_style('riseup-admin-feedback', plugins_url('assets/css/admin-feedback.css', $pluginFile), array(), $version);
+        wp_enqueue_script('riseup-admin-feedback', plugins_url('assets/js/admin-feedback.js', $pluginFile), array('jquery'), $version, true);
+
+        wp_localize_script('riseup-admin-feedback', 'RiseupFeedback', array(
+            'nonce'   => wp_create_nonce(NonceType::Feedback->value),
+            'actions' => array(
+                'send'       => AjaxActionType::SendFeedback->value,
+                'checkReady' => AjaxActionType::CheckFeedbackReady->value,
+            ),
+            'i18n'    => array(
+                'sent'         => __('Feedback sent successfully!', $pluginSlug),
+                'sendFailed'   => __('Failed to send feedback. Please check your email configuration.', $pluginSlug),
+                'checkFailed'  => __('Failed to check feedback readiness.', $pluginSlug),
+                'tooManyFiles' => __('Maximum 3 files allowed.', $pluginSlug),
+                'invalidFile'  => __('Invalid file. Only JPG, PNG, GIF, WebP under 2 MB are allowed.', $pluginSlug),
+            ),
+        ));
     }
 }

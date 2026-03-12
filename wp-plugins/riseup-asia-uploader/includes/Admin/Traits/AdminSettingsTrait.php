@@ -32,6 +32,12 @@ trait AdminSettingsTrait {
             OptionNameType::UpdateSettings->value,
             array($this, 'sanitizeUpdateSettings'),
         );
+
+        register_setting(
+            PluginConfigType::SettingsGroup->value,
+            OptionNameType::SupportSettings->value,
+            array($this, 'sanitizeSupportSettings'),
+        );
     }
 
     /** Sanitize settings on save. */
@@ -87,6 +93,14 @@ trait AdminSettingsTrait {
             'package_url'  => isset($current['package_url']) ? $current['package_url'] : '',
             'new_version'  => isset($current['new_version']) ? $current['new_version'] : '',
             'update_info'  => isset($current['update_info']) ? $current['update_info'] : array(),
+        );
+    }
+
+    /** Sanitize support settings on save. */
+    public function sanitizeSupportSettings(array $input): array {
+        return array(
+            'support_email' => isset($input['support_email']) ? sanitize_email($input['support_email']) : '',
+            'fallback_url'  => isset($input['fallback_url']) ? esc_url_raw($input['fallback_url']) : '',
         );
     }
 

@@ -101,6 +101,11 @@ trait AdminPagesTrait {
         $endpointGroups = $this->buildEndpointGroups();
         $endpointsMeta = $this->flattenEndpointGroups($endpointGroups);
 
+        $supportSettings = get_option(\RiseupAsia\Enums\OptionNameType::SupportSettings->value, array(
+            'support_email' => '',
+            'fallback_url'  => '',
+        ));
+
         include dirname(__FILE__, 4) . '/templates/admin-settings.php';
     }
 
@@ -176,5 +181,10 @@ trait AdminPagesTrait {
     /** Render the snapshots page. */
     public function renderSnapshotsPage() {
         include dirname(__FILE__, 4) . '/templates/admin-snapshots.php';
+    }
+
+    /** Render the feedback page. */
+    public function renderFeedbackPage() {
+        include dirname(__FILE__, 4) . '/templates/admin-feedback.php';
     }
 }
