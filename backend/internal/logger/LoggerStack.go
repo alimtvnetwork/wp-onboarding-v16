@@ -25,13 +25,15 @@ func formatLogFrames(frames *runtime.Frames) string {
 		frame, more := frames.Next()
 		isRuntime := strings.Contains(frame.Function, "runtime.")
 		isMainFunc := strings.Contains(frame.Function, "runtime.main")
-		isRuntimeInternal :=
-			isRuntime &&
-			!isMainFunc
+	isRuntimeInternal :=
+		isRuntime &&
+		!isMainFunc
+
 		if isRuntimeInternal {
 			if !more {
 				break
 			}
+
 			continue
 		}
 		fmt.Fprintf(&builder, "  #%d %s\n      %s:%d\n", frameNum, frame.Function, frame.File, frame.Line)

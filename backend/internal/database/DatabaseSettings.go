@@ -14,13 +14,16 @@ import (
 // GetSeedVersion returns the current seed version from the database
 func (db *DB) GetSeedVersion() (string, *apperror.AppError) {
 	var version string
+
 	err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = 'seed_version'").Scan(&version)
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
+
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get seed version")
 	}
+
 	return version, nil
 }
 
@@ -31,9 +34,11 @@ func (db *DB) SetSeedVersion(version string) *apperror.AppError {
 		VALUES ('seed_version', ?, datetime('now'))
 		ON CONFLICT(Key) DO UPDATE SET Value = ?, UpdatedAt = datetime('now')
 	`, version, version)
+
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set seed version")
 	}
+
 	return nil
 }
 
@@ -43,24 +48,29 @@ func (db *DB) SetSettingIfNotExists(key string, value any) *apperror.AppError {
 		INSERT OR IGNORE INTO AppConfig (Key, Value, UpdatedAt) 
 		VALUES (?, ?, datetime('now'))
 	`, key, fmt.Sprintf("%v", value))
+
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set setting if not exists").
 			WithDetails(fmt.Sprintf("key=%s", key))
 	}
+
 	return nil
 }
 
 // GetSetting retrieves a setting value by key
 func (db *DB) GetSetting(key string) (string, *apperror.AppError) {
 	var value string
+
 	err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = ?", key).Scan(&value)
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
+
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get setting").
 			WithDetails(fmt.Sprintf("key=%s", key))
 	}
+
 	return value, nil
 }
 
@@ -71,23 +81,28 @@ func (db *DB) SetSetting(key, value string) *apperror.AppError {
 		VALUES (?, ?, datetime('now'))
 		ON CONFLICT(Key) DO UPDATE SET Value = ?, UpdatedAt = datetime('now')
 	`, key, value, value)
+
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set setting").
 			WithDetails(fmt.Sprintf("key=%s", key))
 	}
+
 	return nil
 }
 
 // GetDbVersion returns the stored database version for changelog comparison
 func (db *DB) GetDbVersion() (string, *apperror.AppError) {
 	var version string
+
 	err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = 'db.version'").Scan(&version)
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
+
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get db version")
 	}
+
 	return version, nil
 }
 
@@ -98,9 +113,11 @@ func (db *DB) SetDbVersion(version string) *apperror.AppError {
 		VALUES ('db.version', ?, datetime('now'))
 		ON CONFLICT(Key) DO UPDATE SET Value = ?, UpdatedAt = datetime('now')
 	`, version, version)
+
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to set db version")
 	}
+
 	return nil
 }
 
@@ -109,22 +126,26 @@ func (db *DB) SetDbVersion(version string) *apperror.AppError {
 // GetSiteIdByUrl returns the site ID for a given URL
 func (db *DB) GetSiteIdByUrl(url string) (int64, *apperror.AppError) {
 	var id int64
+
 	err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", url).Scan(&id)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site by URL").
 			WithUrl(url)
 	}
+
 	return id, nil
 }
 
 // GetPluginIdByPath returns the plugin ID for a given path
 func (db *DB) GetPluginIdByPath(path string) (int64, *apperror.AppError) {
 	var id int64
+
 	err := db.QueryRow("SELECT Id FROM Plugins WHERE Path = ?", path).Scan(&id)
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin by path").
 			WithPath(path)
 	}
+
 	return id, nil
 }
 
@@ -146,6 +167,7 @@ func (db *DB) CreateSeedSite(input SeedSiteInput) (int64, *apperror.AppError) {
 		INSERT INTO Sites (Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, ?, ?, 'connected', datetime('now'), datetime('now'))
 	`, input.Name, input.Url, input.Username, input.PasswordEncrypted, input.Category)
+
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed site").
 			WithUrl(input.Url)
@@ -171,6 +193,7 @@ type SeedPluginInput struct {
 // CreateSeedPlugin creates a plugin for seeding
 func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, *apperror.AppError) {
 	autoPublishInt := 0
+
 	if input.AutoPublish {
 		autoPublishInt = 1
 	}
@@ -179,13 +202,13 @@ func (db *DB) CreateSeedPlugin(input SeedPluginInput) (int64, *apperror.AppError
 		INSERT INTO Plugins (Name, Path, Category, WatchEnabled, AutoPublish, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, 1, ?, datetime('now'), datetime('now'))
 	`, input.Name, input.Path, input.Category, autoPublishInt)
+
 	if err != nil {
 		return 0, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create seed plugin").
 			WithPath(input.Path)
 	}
 
 	pluginId, lastIdErr := result.LastInsertId()
-
 	if lastIdErr != nil {
 		return 0, apperror.Wrap(lastIdErr, apperror.ErrDatabaseQuery, "failed to get last insert ID for seed plugin")
 	}
@@ -230,6 +253,7 @@ func (db *DB) CreateSeedMapping(input SeedMappingInput) (bool, *apperror.AppErro
 		INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, datetime('now'), datetime('now'))
 	`, input.PluginId, input.SiteId, input.RemoteSlug)
+
 	if mappingErr != nil {
 		return false, apperror.Wrap(mappingErr, apperror.ErrDatabaseInsert, "failed to create seed mapping")
 	}

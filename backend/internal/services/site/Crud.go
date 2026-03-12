@@ -94,6 +94,7 @@ func (s *Service) insertSite(ctx context.Context, input CreateInput, normalizedU
 	}
 
 	s.log.Info("Site created", "id", res.LastInsertId, "name", input.Name, "url", normalizedUrl)
+
 	return s.GetById(ctx, res.LastInsertId)
 }
 
@@ -127,6 +128,7 @@ func (s *Service) executeUpdate(ctx context.Context, id int64, updates []string,
 	}
 
 	s.log.Info("Site updated", "id", id)
+
 	return s.GetById(ctx, id)
 }
 
@@ -174,6 +176,7 @@ func appendUrlUpdate(input urlUpdateInput) {
 	if isUrlMissing {
 		return
 	}
+
 	normalizedUrl := normalizeUrl(*input.UrlInput)
 	isUrlChanged := normalizedUrl != input.ExistingUrl
 
@@ -200,6 +203,7 @@ func (s *Service) appendPasswordUpdate(updates *[]string, args *[]any, password 
 	if isPasswordMissing {
 		return
 	}
+
 	encryptedPassword, err := encrypt([]byte(*password), s.encryptionKey)
 	isEncrypted := err == nil
 

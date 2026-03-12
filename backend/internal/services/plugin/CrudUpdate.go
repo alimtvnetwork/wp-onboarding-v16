@@ -45,6 +45,7 @@ func (s *Service) buildUpdateFields(ctx context.Context, input UpdateInput) ([]s
 		updates = append(updates, "Name = ?")
 		args = append(args, *input.Name)
 	}
+
 	if input.Path != nil {
 		appErr := s.ValidatePath(ctx, *input.Path)
 		isValid := appErr == nil
@@ -56,6 +57,7 @@ func (s *Service) buildUpdateFields(ctx context.Context, input UpdateInput) ([]s
 	}
 
 	appendOptionalFields(&updates, &args, input)
+
 	return updates, args
 }
 
@@ -65,14 +67,17 @@ func appendOptionalFields(updates *[]string, args *[]any, input UpdateInput) {
 		*updates = append(*updates, "WatchEnabled = ?")
 		*args = append(*args, *input.WatchEnabled)
 	}
+
 	if input.AutoPublish != nil {
 		*updates = append(*updates, "AutoPublish = ?")
 		*args = append(*args, *input.AutoPublish)
 	}
+
 	if input.Category != nil {
 		*updates = append(*updates, "Category = ?")
 		*args = append(*args, *input.Category)
 	}
+
 	if input.ExcludePatterns != nil {
 		excludeJson, _ := json.Marshal(*input.ExcludePatterns)
 		*updates = append(*updates, "ExcludePatterns = ?")
@@ -105,6 +110,7 @@ func (s *Service) deletePluginCascade(ctx context.Context, id int64) *apperror.A
 	}
 
 	s.log.Info("Plugin deleted", "pluginId", id)
+
 	return nil
 }
 
@@ -117,6 +123,7 @@ func (s *Service) deletePluginRelated(ctx context.Context, id int64) *apperror.A
 
 	dbutil.Exec(ctx, s.dbu, "DELETE FROM PluginGitConfig WHERE PluginId = ?", id)
 	dbutil.Exec(ctx, s.dbu, "DELETE FROM FileChanges WHERE PluginId = ?", id)
+
 	return nil
 }
 

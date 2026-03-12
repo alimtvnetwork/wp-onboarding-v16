@@ -37,8 +37,9 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 				if strings.Contains(path, pattern) {
 					return filepath.SkipDir
 				}
-			}
-			return nil
+		}
+
+		return nil
 		}
 
 		return s.processLocalFile(files, absPluginPath, path, info, excludePatterns)
@@ -80,8 +81,8 @@ func (s *serviceImpl) processLocalFile(
 		ModifiedAt: info.ModTime().UTC(),
 		Size:       info.Size(),
 	}
+
 	return nil
-}
 
 // isFileExcluded checks if a file matches any exclude pattern.
 func isFileExcluded(path string, excludePatterns []string) bool {
@@ -91,6 +92,7 @@ func isFileExcluded(path string, excludePatterns []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -117,6 +119,7 @@ func (s *serviceImpl) calculateFileHash(path string) (string, error) {
 func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.FileChange {
 	changes := s.detectLocalChanges(local, remote)
 	deleted := s.detectDeletedFiles(local, remote)
+
 	return append(changes, deleted...)
 }
 
@@ -161,6 +164,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId 
 	if mappingResult.HasError() {
 		return nil, "No site mapping found: " + mappingResult.AppError().Error()
 	}
+
 	mapping := mappingResult.Value()
 
 	credProgress := SyncProgressInput{
@@ -171,6 +175,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId 
 		Message:  "Retrieving site credentials...",
 	}
 	s.broadcastProgress(credProgress)
+
 	siteInfoResult := s.getSiteInfo(ctx, siteId)
 	if siteInfoResult.HasError() {
 		return nil, "Failed to get site info: " + siteInfoResult.AppError().Error()
@@ -180,6 +185,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId 
 	if passwordResult.HasError() {
 		return nil, "Failed to decrypt credentials: " + passwordResult.AppError().Error()
 	}
+
 	password := passwordResult.Value()
 
 	si := siteInfoResult.Value()
@@ -270,5 +276,6 @@ func countByType(changes []models.FileChange, changeType string) int {
 			count++
 		}
 	}
+
 	return count
 }

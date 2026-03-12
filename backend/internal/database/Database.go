@@ -133,6 +133,7 @@ func (db *DB) GetChildDB(dbType, entityId string) (*sql.DB, error) {
 	}
 
 	db.childDBs[key] = child
+
 	return child, nil
 }
 
@@ -153,15 +154,18 @@ func resolveChildPath(dataDir, dbType, entityId string) (string, error) {
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db directory")
 	}
+
 	err = os.MkdirAll(childDir, 0755)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create child db directory").
 			WithPath(childDir)
 	}
+
 	p, err := pathutil.Join(childDir, entityId+".db")
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to resolve child db path")
 	}
+
 	return p, nil
 }
 
@@ -179,6 +183,7 @@ func (db *DB) CloseChildDBs() {
 // Close closes the main database and all child databases
 func (db *DB) Close() error {
 	db.CloseChildDBs()
+
 	return db.DB.Close()
 }
 

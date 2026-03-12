@@ -13,12 +13,14 @@ import (
 func (r Response) WithEndpoints(requested, delegated string) Response {
 	r.Attributes.RequestedAt = requested
 	r.Attributes.RequestDelegatedAt = delegated
+
 	return r
 }
 
 // WithSessionId attaches a session ID to the response attributes for frontend diagnostics.
 func (r Response) WithSessionId(sessionId string) Response {
 	r.Attributes.SessionId = sessionId
+
 	return r
 }
 
@@ -35,6 +37,7 @@ func (r Response) WithBackendTrace(lines []string) Response {
 	lines = truncateFrames(lines)
 	r.ensureErrors()
 	r.Errors.Backend = lines
+
 	return r
 }
 
@@ -51,6 +54,7 @@ func (r Response) WithDelegatedErrorStack(lines []string) Response {
 	lines = truncateFrames(lines)
 	r.ensureErrors()
 	r.Errors.DelegatedServiceErrorStack = lines
+
 	return r
 }
 
@@ -80,6 +84,7 @@ func (r Response) WithMethodsStack(frames []MethodFrame) Response {
 		Backend:  frames,
 		Frontend: []MethodFrame{},
 	}
+
 	return r
 }
 
