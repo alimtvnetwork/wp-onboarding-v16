@@ -276,5 +276,6 @@ func countByType(changes []models.FileChange, changeType string) int {
 			count++
 		}
 	}
+
 	return count
 }
