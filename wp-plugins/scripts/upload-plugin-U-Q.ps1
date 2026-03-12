@@ -177,6 +177,82 @@ function Write-Status {
     }
 }
 
+# Convert-EscapedUnicodeToText: Decodes \uXXXX sequences for readable console output
+function Convert-EscapedUnicodeToText {
+    param([string]$Text)
+
+    $isTextEmpty = [string]::IsNullOrWhiteSpace($Text)
+
+    if ($isTextEmpty) {
+        return $Text
+    }
+
+    return [regex]::Replace($Text, '\\u([0-9A-Fa-f]{4})', {
+            param($match)
+            $codePoint = [Convert]::ToInt32($match.Groups[1].Value, 16)
+            return [char]::ConvertFromUtf32($codePoint)
+        })
+}
+
+# Format-ApiResponseForConsole: Pretty-prints JSON response and decodes unicode escapes
+function Format-ApiResponseForConsole {
+    param([string]$RawText)
+
+    $isRawTextEmpty = [string]::IsNullOrWhiteSpace($RawText)
+
+    if ($isRawTextEmpty) {
+        return ""
+    }
+
+    try {
+        $parsed = $RawText | ConvertFrom-Json -ErrorAction Stop
+        $pretty = $parsed | ConvertTo-Json -Depth 30
+        return $pretty
+    } catch {
+        return Convert-EscapedUnicodeToText $RawText
+    }
+}
+
+# Test-PluginPhpSyntax: Runs local php -l against plugin PHP files before upload
+function Test-PluginPhpSyntax {
+    param([string]$PluginDir)
+
+    $phpCommand = Get-Command php -ErrorAction SilentlyContinue
+    $isPhpCliAvailable = ($null -ne $phpCommand)
+
+    if (-not $isPhpCliAvailable) {
+        return @{
+            IsChecked = $false
+            IsSuccess = $true
+            Message   = "PHP CLI not found; skipped local syntax validation."
+        }
+    }
+
+    $phpFiles = Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Sort-Object FullName
+
+    foreach ($file in $phpFiles) {
+        $lintOutput = & php -l $file.FullName 2>&1
+        $isLintPassed = ($LASTEXITCODE -eq 0)
+
+        if (-not $isLintPassed) {
+            return @{
+                IsChecked   = $true
+                IsSuccess   = $false
+                FailedFile  = $file.FullName
+                Checked     = $phpFiles.Count
+                LintMessage = (($lintOutput | Out-String).Trim())
+            }
+        }
+    }
+
+    return @{
+        IsChecked = $true
+        IsSuccess = $true
+        Checked   = $phpFiles.Count
+        Message   = "Local PHP syntax validation passed."
+    }
+}
+
 # Get-PluginVersionFromHeader: Extracts version from WordPress plugin PHP header
 function Get-PluginVersionFromHeader($PluginDir) {
     $mainFiles = Get-ChildItem $PluginDir -Filter "*.php" | Where-Object {
@@ -361,10 +437,27 @@ $LocalVersion = Get-PluginVersionFromHeader $PluginFolderPath
 Write-Status "      Version: $LocalVersion" -Color Gray
 
 # =============================================================================
-# STEP 2: Create ZIP file (best compression)
+# STEP 2: Local PHP syntax check + ZIP creation
 # =============================================================================
 Write-Status ""
-Write-Status "[2/5] Creating ZIP file (SmallestSize compression)..." -Color Yellow
+Write-Status "[2/5] Running local PHP syntax check + creating ZIP..." -Color Yellow
+
+$syntaxResult = Test-PluginPhpSyntax $PluginFolderPath
+$isSyntaxChecked = $syntaxResult.IsChecked
+$isSyntaxSuccess = $syntaxResult.IsSuccess
+
+if ($isSyntaxChecked -and (-not $isSyntaxSuccess)) {
+    Write-Host "      Syntax check FAILED" -ForegroundColor Red
+    Write-Host "      File: $($syntaxResult.FailedFile)" -ForegroundColor Yellow
+    Write-Host "      Detail: $($syntaxResult.LintMessage)" -ForegroundColor Yellow
+    exit 1
+}
+
+if ($isSyntaxChecked) {
+    Write-Status "      Syntax OK ($($syntaxResult.Checked) PHP files checked)" -Color Green
+} else {
+    Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
+}
 
 try {
     $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
@@ -525,14 +618,38 @@ try {
     Write-Host "      Endpoint: $uploadUrl" -ForegroundColor Gray
     Write-Host "      Error: $($_.Exception.Message)" -ForegroundColor Yellow
 
+    $rawErrorResponse = ""
     if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
-        Write-Host "      Response: $($_.ErrorDetails.Message)" -ForegroundColor Gray
+        $rawErrorResponse = $_.ErrorDetails.Message
+    }
+
+    $isRawErrorResponsePresent = -not [string]::IsNullOrWhiteSpace($rawErrorResponse)
+
+    if ($isRawErrorResponsePresent) {
+        $readableResponse = Format-ApiResponseForConsole $rawErrorResponse
+        Write-Host "      Response:" -ForegroundColor Gray
+        Write-Host $readableResponse -ForegroundColor Gray
     }
 
     if ($Quiet) {
+        $quietError = $_.Exception.Message
+
+        if ($isRawErrorResponsePresent) {
+            try {
+                $parsedError = $rawErrorResponse | ConvertFrom-Json -ErrorAction Stop
+                if ($parsedError.Errors -and $parsedError.Errors.BackendMessage) {
+                    $quietError = $parsedError.Errors.BackendMessage
+                } elseif ($parsedError.Status -and $parsedError.Status.Message) {
+                    $quietError = $parsedError.Status.Message
+                }
+            } catch {
+                $quietError = Convert-EscapedUnicodeToText $rawErrorResponse
+            }
+        }
+
         $quietOutput = @{
             success = $false
-            error = $_.Exception.Message
+            error = $quietError
         } | ConvertTo-Json -Compress
         Write-Output $quietOutput
     }
