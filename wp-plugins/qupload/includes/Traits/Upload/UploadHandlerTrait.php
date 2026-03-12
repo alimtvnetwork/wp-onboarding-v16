@@ -44,13 +44,11 @@ trait UploadHandlerTrait
         $this->fileLogger->info('Upload endpoint called');
         $this->primeHttpStatusEnum();
 
-        try {
-            return $this->executeUploadPipeline($request);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Upload failed');
-
-            return $this->errorResponse('Upload failed: ' . $e->getMessage(), $this->resolveServerErrorStatusCode());
-        }
+        return $this->safeExecute(
+            fn () => $this->executeUploadPipeline($request),
+            'handleUpload',
+            ['endpoint' => 'upload'],
+        );
     }
 
     private function executeUploadPipeline(WP_REST_Request $request): WP_REST_Response {
@@ -167,11 +165,6 @@ trait UploadHandlerTrait
         }
     }
 
-    private function resolveServerErrorStatusCode(): int {
-        return enum_exists(HttpStatusType::class, false)
-            ? HttpStatusType::ServerError->value
-            : 500;
-    }
 
     private function buildUploadResponse(array $result): WP_REST_Response {
         $this->fileLogger->info('Upload complete', [
