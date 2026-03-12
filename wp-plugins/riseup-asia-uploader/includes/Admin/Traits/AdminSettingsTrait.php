@@ -32,6 +32,12 @@ trait AdminSettingsTrait {
             OptionNameType::UpdateSettings->value,
             array($this, 'sanitizeUpdateSettings'),
         );
+
+        register_setting(
+            PluginConfigType::SettingsGroup->value,
+            OptionNameType::SupportSettings->value,
+            array($this, 'sanitizeSupportSettings'),
+        );
     }
 
     /** Sanitize settings on save. */
