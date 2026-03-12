@@ -177,4 +177,9 @@ trait AdminPagesTrait {
     public function renderSnapshotsPage() {
         include dirname(__FILE__, 4) . '/templates/admin-snapshots.php';
     }
+
+    /** Render the feedback page. */
+    public function renderFeedbackPage() {
+        include dirname(__FILE__, 4) . '/templates/admin-feedback.php';
+    }
 }
