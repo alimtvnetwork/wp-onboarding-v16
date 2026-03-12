@@ -55,7 +55,7 @@ trait AdminSettingsTrait {
             $sanitized['log_retrieval']['include_stacktrace'] = !empty($input['log_retrieval']['include_stacktrace'] ?? null);
             $sanitized['log_retrieval']['max_lines'] = isset($input['log_retrieval']['max_lines'])
                 ? max(50, min(5000, (int) $input['log_retrieval']['max_lines']))
-                : PaginationConfigType::LogRetrievalMaxLines->value;
+                : PaginationConfigType::logRetrievalMaxLines();
         }
 
         return $sanitized;

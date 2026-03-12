@@ -54,7 +54,7 @@ trait ErrorLogHandlerTrait {
             'include_error_log'  => isset($logSettings['include_error_log']) ? (bool) $logSettings['include_error_log'] : true,
             'include_full_log'   => isset($logSettings['include_full_log']) ? (bool) $logSettings['include_full_log'] : false,
             'include_stacktrace' => isset($logSettings['include_stacktrace']) ? (bool) $logSettings['include_stacktrace'] : true,
-            'max_lines'          => isset($logSettings['max_lines']) ? (int) $logSettings['max_lines'] : PaginationConfigType::LogRetrievalMaxLines->value,
+            'max_lines'          => isset($logSettings['max_lines']) ? (int) $logSettings['max_lines'] : PaginationConfigType::logRetrievalMaxLines(),
         );
 
         foreach (array('include_error_log', 'include_full_log', 'include_stacktrace') as $key) {
