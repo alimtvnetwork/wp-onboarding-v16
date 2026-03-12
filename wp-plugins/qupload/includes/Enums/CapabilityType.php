@@ -15,4 +15,5 @@ if (!defined('ABSPATH')) {
 enum CapabilityType: string
 {
     case ActivatePlugins = 'activate_plugins';
+    case ManageOptions   = 'manage_options';
 }

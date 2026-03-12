@@ -88,6 +88,32 @@ class FileLogger {
         return true;
     }
 
+    // ── File Path Getters ──────────────────────────────────────────
+
+    public function getLogFile(): ?string {
+        if ($this->isInitialized === false) {
+            $this->initializePaths();
+        }
+
+        return $this->logFile;
+    }
+
+    public function getErrorFile(): ?string {
+        if ($this->isInitialized === false) {
+            $this->initializePaths();
+        }
+
+        return $this->errorFile;
+    }
+
+    public function getStacktraceFile(): ?string {
+        if ($this->isInitialized === false) {
+            $this->initializePaths();
+        }
+
+        return $this->stacktraceFile;
+    }
+
     // ── Public Level Methods ────────────────────────────────────────
 
     public function debug(string $message, array $context = []): bool {
