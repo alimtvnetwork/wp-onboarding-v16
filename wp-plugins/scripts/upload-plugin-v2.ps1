@@ -1189,6 +1189,13 @@ foreach ($candidateNamespace in $namespaceOrder) {
 }
 
 if (-not $uploadSuccess -or $null -eq $response) {
+    if ($uploadAttemptErrors.Count -gt 0) {
+        Write-Status "      Upload diagnostics by namespace:" -Color DarkYellow
+        foreach ($attemptDetail in $uploadAttemptErrors) {
+            Write-Status "        - $attemptDetail" -Color DarkYellow
+        }
+    }
+
     $uploadErrorSummary = if ($uploadAttemptErrors.Count -gt 0) { $uploadAttemptErrors -join " || " } else { "No response from any namespace" }
     throw "Upload failed on all known Riseup namespaces: ${uploadErrorSummary}"
 }
