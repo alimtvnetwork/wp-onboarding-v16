@@ -83,7 +83,7 @@ class SnapshotWorker {
     public function setPoolSize(int $size): void {
         $this->poolSize = max(
             SnapshotConfigType::WorkerPoolMin->value,
-            min(SnapshotConfigType::WorkerPoolMax->value, $size),
+            min(SnapshotConfigType::workerPoolMax(), $size),
         );
     }
 

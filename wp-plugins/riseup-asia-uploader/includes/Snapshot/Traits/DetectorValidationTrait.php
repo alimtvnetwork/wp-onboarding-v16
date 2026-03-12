@@ -79,7 +79,7 @@ trait DetectorValidationTrait {
         $settings[SettingsKeyType::ScheduleDay->value]        = max(1, min(28, intval($settings[SettingsKeyType::ScheduleDay->value])));
         $settings[SettingsKeyType::MaxSnapshotSizeMb->value]  = max(50, min(2000, intval($settings[SettingsKeyType::MaxSnapshotSizeMb->value])));
         $settings[SettingsKeyType::BatchSize->value]          = max(100, min(10000, intval($settings[SettingsKeyType::BatchSize->value])));
-        $settings[SettingsKeyType::WorkerPoolSize->value]     = max(SnapshotConfigType::WorkerPoolMin->value, min(SnapshotConfigType::WorkerPoolMax->value, intval($settings[SettingsKeyType::WorkerPoolSize->value] ?? SnapshotConfigType::WorkerPoolDefault->value)));
+        $settings[SettingsKeyType::WorkerPoolSize->value]     = max(SnapshotConfigType::WorkerPoolMin->value, min(SnapshotConfigType::workerPoolMax(), intval($settings[SettingsKeyType::WorkerPoolSize->value] ?? SnapshotConfigType::WorkerPoolDefault->value)));
     }
 
     private function castBooleanFields(array &$settings): void {

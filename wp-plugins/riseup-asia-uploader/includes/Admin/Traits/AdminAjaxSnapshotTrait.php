@@ -101,7 +101,7 @@ trait AdminAjaxSnapshotTrait {
 
         $settings['worker_pool_size'] = max(
             SnapshotConfigType::WorkerPoolMin->value,
-            min(SnapshotConfigType::WorkerPoolMax->value, intval($_POST['worker_pool_size']))
+            min(SnapshotConfigType::workerPoolMax(), intval($_POST['worker_pool_size']))
         );
     }
 

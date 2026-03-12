@@ -199,7 +199,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
                            style="flex: 1; accent-color: #2271b1;">
                     <span id="snap_worker_pool_value" style="font-family: monospace; font-size: 14px; min-width: 24px; text-align: center; font-weight: 600; color: #2271b1;"><?php echo esc_html($snapshotSettings['worker_pool_size']); ?></span>
                 </div>
-                <p class="description"><?php printf(esc_html__('Number of concurrent backup workers (%d–%d). Higher values export faster but use more resources.', $pluginSlug), SnapshotConfigType::WorkerPoolMin->value, SnapshotConfigType::WorkerPoolMax->value); ?></p>
+                <p class="description"><?php printf(esc_html__('Number of concurrent backup workers (%d–%d). Higher values export faster but use more resources.', $pluginSlug), SnapshotConfigType::WorkerPoolMin->value, SnapshotConfigType::workerPoolMax()); ?></p>
             </td>
         </tr>
     </table>
