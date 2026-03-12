@@ -19,9 +19,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use QUpload\Admin\Admin;
 use QUpload\Core\Plugin;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Helpers\ErrorLogHelper;
+use QUpload\Helpers\PathHelper;
 use QUpload\Helpers\PathHelper;
 
 // =============================================================================
