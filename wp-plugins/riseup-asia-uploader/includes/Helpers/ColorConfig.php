@@ -34,7 +34,7 @@ class ColorConfig {
         }
 
         $path = PathHelper::getColorsJsonPath();
-        $isFileMissing = BooleanHelpers::isFileMissing($path);
+        $isFileMissing = PathHelper::isFileMissing($path);
 
         if ($isFileMissing) {
             self::$colors = array();
