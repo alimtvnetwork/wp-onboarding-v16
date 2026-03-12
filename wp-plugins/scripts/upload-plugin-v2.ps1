@@ -970,56 +970,124 @@ Write-Status "      Site: $WordPressSiteURL" -Color Gray
 Write-Status "      User: $Username" -Color Gray
 
 $uploadSuccess = $false
+$response = $null
 
-# If no active namespace was detected (HTML challenge blocked Step 3),
-# default to the primary namespace and try uploading anyway.
-if (-not $activeNamespace) {
-    $activeNamespace = $primaryNamespace
-    Write-Status "      ⚠ No namespace detected in Step 3 — defaulting to $activeNamespace" -Color Yellow
+# Build namespace trial order: detected first, then remaining supported namespaces.
+$namespaceOrder = @()
+if (-not [string]::IsNullOrWhiteSpace($activeNamespace)) {
+    $namespaceOrder += $activeNamespace
+}
+foreach ($nsName in $supportedNamespaceNames) {
+    if ($namespaceOrder -notcontains $nsName) {
+        $namespaceOrder += $nsName
+    }
+}
+if ($namespaceOrder.Count -eq 0) {
+    $namespaceOrder = @($primaryNamespace)
 }
 
-$uploadUrl = "$WordPressSiteURL/wp-json/$activeNamespace/upload"
+if (-not $activeNamespace) {
+    Write-Status "      ⚠ No namespace detected in Step 3 — trying upload with known namespaces" -Color Yellow
+}
 
-Write-Status "      ── Request ──" -Color DarkGray
-Write-Status "      POST $uploadUrl" -Color White
-Write-Status "      Auth: Basic (user=$Username)" -Color Gray
-Write-Status "      Content-Type: application/json" -Color Gray
-Write-Debug-Log "Upload endpoint: $uploadUrl"
-Write-Debug-Log "ZIP file: $OutputZipPath"
-Write-Debug-Log "ZIP size: $([math]::Round((Get-Item $OutputZipPath).Length / 1KB, 1)) KB"
+$fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
+$base64Data = [Convert]::ToBase64String($fileBytes)
 
-try {
-    $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
-    $base64Data = [Convert]::ToBase64String($fileBytes)
+$machineName = $env:COMPUTERNAME
+$uploadBody = @{
+    plugin_zip     = $base64Data
+    slug           = $PluginSlug
+    activate       = $ActivateAfterInstall
+    upload_source  = "upload_script"
+    plugin_version = $LocalVersion
+    machine_name   = $machineName
+} | ConvertTo-Json
 
-    $machineName = $env:COMPUTERNAME
-    $uploadBody = @{
-        plugin_zip     = $base64Data
-        slug           = $PluginSlug
-        activate       = $ActivateAfterInstall
-        upload_source  = "upload_script"
-        plugin_version = $LocalVersion
-        machine_name   = $machineName
-    } | ConvertTo-Json
+$bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
+$uploadHeaders = @{
+    "Authorization"              = "Basic $base64Auth"
+    "Accept"                     = "application/json"
+    "X-Riseup-Source-Machine"    = $machineName
+    "X-Riseup-Plugin-Version"    = $LocalVersion
+}
 
-    $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
+$uploadAttemptErrors = @()
+$uploadUrl = ""
+
+foreach ($candidateNamespace in $namespaceOrder) {
+    $candidateUploadUrl = "$WordPressSiteURL/wp-json/$candidateNamespace/upload"
+
+    Write-Status "      ── Request ──" -Color DarkGray
+    Write-Status "      POST $candidateUploadUrl" -Color White
+    Write-Status "      Auth: Basic (user=$Username)" -Color Gray
+    Write-Status "      Content-Type: application/json" -Color Gray
     Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, upload_source: `"upload_script`", plugin_version: `"$LocalVersion`", machine_name: `"$machineName`", plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
     Write-Status "      Machine: $machineName" -Color Gray
     Write-Status "      ────────────" -Color DarkGray
 
-    $uploadHeaders = @{
-        "Authorization"              = "Basic $base64Auth"
-        "Accept"                     = "application/json"
-        "X-Riseup-Source-Machine"    = $machineName
-        "X-Riseup-Plugin-Version"    = $LocalVersion
-    }
+    Write-Debug-Log "Upload endpoint: $candidateUploadUrl"
+    Write-Debug-Log "ZIP file: $OutputZipPath"
+    Write-Debug-Log "ZIP size: $([math]::Round((Get-Item $OutputZipPath).Length / 1KB, 1)) KB"
 
-    Write-Status "      Uploading via Riseup Asia Uploader..." -Color Gray
-    $response = Invoke-SafeRestRequest -Uri $uploadUrl -Method "Post" -Headers $uploadHeaders -Body $uploadBody -ContentType "application/json" -TimeoutSec 300 -Label "Upload" -MaxRetries 3 -RetryDelaySec 8
+    try {
+        Write-Status "      Uploading via Riseup Asia endpoint ($candidateNamespace)..." -Color Gray
+        $candidateResponse = Invoke-SafeRestRequest -Uri $candidateUploadUrl -Method "Post" -Headers $uploadHeaders -Body $uploadBody -ContentType "application/json" -TimeoutSec 300 -Label "Upload ($candidateNamespace)" -MaxRetries 2 -RetryDelaySec 4
 
-    if ($null -eq $response) {
-        throw "Upload failed — server returned HTML or non-JSON response after retries"
+        if ($null -eq $candidateResponse) {
+            $uploadAttemptErrors += "$candidateNamespace: null/invalid JSON response"
+            Write-Status "      ⚠ $candidateNamespace returned null response, trying next namespace..." -Color Yellow
+            continue
+        }
+
+        $candidateMessage = if ($candidateResponse.message) { $candidateResponse.message } else { $null }
+        $isBlockedOrUnauthorized = $candidateMessage -and ($candidateMessage -match "Access denied|bot.protection|not allowed|unauthorized|forbidden")
+        if ($isBlockedOrUnauthorized) {
+            $uploadAttemptErrors += "$candidateNamespace: $candidateMessage"
+            Write-Status "      ⚠ $candidateNamespace blocked/unauthorized: $candidateMessage" -Color Yellow
+            continue
+        }
+
+        $isCandidateSuccess = (($candidateResponse.Status -and $candidateResponse.Status.IsSuccess -eq $true) -or ($candidateResponse.success -eq $true))
+        if (-not $isCandidateSuccess -and $candidateResponse.Results -and $candidateResponse.Results.Count -gt 0) {
+            $isCandidateSuccess = $true
+        }
+
+        if (-not $isCandidateSuccess) {
+            $candidatePreview = ""
+            try {
+                $candidatePreview = ($candidateResponse | ConvertTo-Json -Depth 4 -Compress)
+                if ($candidatePreview.Length -gt 300) { $candidatePreview = $candidatePreview.Substring(0, 300) + "..." }
+            } catch {
+                $candidatePreview = "<unserializable response>"
+            }
+
+            $uploadAttemptErrors += "$candidateNamespace: non-success response $candidatePreview"
+            Write-Status "      ⚠ Upload response from $candidateNamespace is not success, trying next namespace..." -Color Yellow
+            continue
+        }
+
+        $uploadSuccess = $true
+        $response = $candidateResponse
+        $activeNamespace = $candidateNamespace
+        $uploadUrl = $candidateUploadUrl
+        break
+    } catch {
+        $attemptErr = $_.Exception.Message
+        $attemptBody = Get-ErrorResponseBody $_
+        if ($attemptBody -ne "") {
+            $attemptErr = "$attemptErr | body: $($attemptBody.Substring(0, [Math]::Min(250, $attemptBody.Length)))"
+        }
+
+        $uploadAttemptErrors += "$candidateNamespace: $attemptErr"
+        Write-Status "      ⚠ Upload failed on $candidateNamespace, trying next namespace..." -Color Yellow
     }
+}
+
+if (-not $uploadSuccess -or $null -eq $response) {
+    $uploadErrorSummary = if ($uploadAttemptErrors.Count -gt 0) { $uploadAttemptErrors -join " || " } else { "No response from any namespace" }
+    throw "Upload failed on all known Riseup namespaces: $uploadErrorSummary"
+}
+
 
     # Detect error/access-denied responses that still return JSON
     $respMessage = if ($response.message) { $response.message } else { $null }
