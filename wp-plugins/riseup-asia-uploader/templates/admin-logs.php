@@ -217,7 +217,7 @@ $uploadSourceClasses = array(
                     $logTimestamp = strtotime($log[LogColumnType::CreatedAt->value]);
                     $logDate = DateHelper::formatDateOnly($logTimestamp);
                     $logDateDisplay = DateHelper::formatDisplayDate($logTimestamp);
-                    $logTimeDisplay = DateHelper::formatDisplayTime($logTimestamp);
+                    $logTimeDisplay = DateHelper::formatLogDisplay($logTimestamp);
                     
                     // Insert date group header when date changes
                     if ($logDate !== $currentDateGroup):
