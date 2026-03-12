@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use PDO;
+use SQLite3;
 use Throwable;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\InitHelpers;
@@ -171,7 +172,7 @@ trait DetectorProviderTrait {
     }
 
     private function getSqliteVersion(): ?string {
-        if (class_exists('SQLite3')) {
+        if (class_exists(SQLite3::class)) {
             $version = SQLite3::version();
 
             return $version['versionString'];
