@@ -175,6 +175,7 @@ func (s *serviceImpl) fetchRemoteManifest(ctx context.Context, pluginId, siteId 
 		Message:  "Retrieving site credentials...",
 	}
 	s.broadcastProgress(credProgress)
+
 	siteInfoResult := s.getSiteInfo(ctx, siteId)
 	if siteInfoResult.HasError() {
 		return nil, "Failed to get site info: " + siteInfoResult.AppError().Error()
