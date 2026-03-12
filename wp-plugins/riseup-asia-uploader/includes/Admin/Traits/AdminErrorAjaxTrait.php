@@ -127,27 +127,37 @@ trait AdminErrorAjaxTrait {
 
     /** Read a log file's content with size-based truncation. */
     private function readLogFileContent(string $path): array {
-        $exists = file_exists($path);
+        $exists = PathHelper::isFileExists($path);
         $content = '';
         $size = 0;
 
         if ($exists) {
-            $size = filesize($path);
+            $rawSize = filesize($path);
+            $size = ($rawSize === false) ? 0 : (int) $rawSize;
             $maxBytes = 512 * 1024;
+
             if ($size > $maxBytes) {
-                $fp = @fopen($path, 'r');
+                $fp = fopen($path, 'r');
 
                 if ($fp !== false) {
-                    fseek($fp, -$maxBytes, SEEK_END);
-                    fgets($fp);
-                    $content = fread($fp, $maxBytes);
+                    $isSeekFailed = (fseek($fp, -$maxBytes, SEEK_END) !== 0);
+
+                    if ($isSeekFailed === false) {
+                        fgets($fp);
+                        $tail = fread($fp, $maxBytes);
+                        $content = ($tail === false) ? '(Failed to read log file content)' : $tail;
+                        $content = '... (truncated, showing last ' . round($maxBytes / 1024) . 'KB) ...' . PHP_EOL . $content;
+                    } else {
+                        $content = '(Failed to seek log file for reading)';
+                    }
+
                     fclose($fp);
-                    $content = '... (truncated, showing last ' . round($maxBytes / 1024) . 'KB) ...' . PHP_EOL . $content;
                 } else {
                     $content = '(Failed to open log file for reading)';
                 }
             } else {
-                $content = file_get_contents($path);
+                $raw = file_get_contents($path);
+                $content = ($raw === false) ? '(Failed to read log file content)' : $raw;
             }
         }
 
