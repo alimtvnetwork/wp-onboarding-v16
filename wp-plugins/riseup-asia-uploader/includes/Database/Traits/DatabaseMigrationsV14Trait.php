@@ -84,16 +84,16 @@ trait DatabaseMigrationsV14Trait {
 
         try {
             // 1. Transactions.TriggeredBy
-            $this->pdo->exec(sprintf(self::V14_TRANSACTIONS_TRIGGERED_BY_QUERY, $txn));
+            $this->execIfColumnExists($txn, 'TriggeredBy', sprintf(self::V14_TRANSACTIONS_TRIGGERED_BY_QUERY, $txn));
 
             // 2. Transactions.UploadSource
-            $this->pdo->exec(sprintf(self::V14_TRANSACTIONS_UPLOAD_SOURCE_QUERY, $txn));
+            $this->execIfColumnExists($txn, 'UploadSource', sprintf(self::V14_TRANSACTIONS_UPLOAD_SOURCE_QUERY, $txn));
 
             // 3. Snapshots.TriggeredBy
-            $this->pdo->exec(sprintf(self::V14_SNAPSHOTS_TRIGGERED_BY_QUERY, $snapshots));
+            $this->execIfColumnExists($snapshots, 'TriggeredBy', sprintf(self::V14_SNAPSHOTS_TRIGGERED_BY_QUERY, $snapshots));
 
             // 4. Snapshots.TriggerSource
-            $this->pdo->exec(sprintf(self::V14_SNAPSHOTS_TRIGGER_SOURCE_QUERY, $snapshots));
+            $this->execIfColumnExists($snapshots, 'TriggerSource', sprintf(self::V14_SNAPSHOTS_TRIGGER_SOURCE_QUERY, $snapshots));
 
             $this->pdo->commit();
         } catch (Throwable $e) {
