@@ -85,7 +85,7 @@ trait DatabaseConnectionTrait {
             }
 
             $this->fileLogger->debug('Configuring ORM');
-            ORM::configure($this->pdo);
+            Orm::configure($this->pdo);
             $this->fileLogger->info('ORM configured');
 
             $this->createTables();
