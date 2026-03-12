@@ -34,20 +34,53 @@ require_once __DIR__ . '/includes/Autoloader.php';
  * Boot-level fallback trace so we can see whether QUpload initializes at all.
  */
 function qupload_boot_trace(string $stage, array $context = []): void {
+    $suffix = empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES);
+
     if (!class_exists(PathHelper::class)) {
-        error_log('[QUpload Boot] ' . $stage);
+        error_log('[QUpload Boot] ' . $stage . $suffix);
 
         return;
     }
 
     $baseDir = PathHelper::getBaseDir();
-    PathHelper::ensureDirectory($baseDir);
-    @file_put_contents(
-        PathHelper::getStageTraceFile(),
-        '[BOOT] ' . gmdate('c') . ' ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)) . PHP_EOL,
-        FILE_APPEND | LOCK_EX,
-    );
-    @error_log('[QUpload Boot] ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)));
+    $traceFile = PathHelper::getStageTraceFile();
+    $isBaseReady = PathHelper::ensureDirectory($baseDir);
+    $isTraceParentReady = PathHelper::ensureFileParentDirectory($traceFile);
+
+    if ($isBaseReady === false || $isTraceParentReady === false) {
+        error_log('[QUpload Boot] trace-dir-create-failed ' . json_encode(['baseDir' => $baseDir, 'traceFile' => $traceFile], JSON_UNESCAPED_SLASHES));
+        error_log('[QUpload Boot] ' . $stage . $suffix);
+
+        return;
+    }
+
+    $line = '[BOOT] ' . gmdate('c') . ' ' . $stage . $suffix . PHP_EOL;
+    $isWritten = @file_put_contents($traceFile, $line, FILE_APPEND | LOCK_EX);
+
+    if ($isWritten === false) {
+        error_log('[QUpload Boot] trace-write-failed ' . json_encode(['traceFile' => $traceFile, 'stage' => $stage], JSON_UNESCAPED_SLASHES));
+    }
+
+    @error_log('[QUpload Boot] ' . $stage . $suffix);
+}
+
+/** Capture fatal boot errors that bypass normal exception handling. */
+function qupload_register_boot_fatal_handler(): void {
+    register_shutdown_function(static function (): void {
+        $error = error_get_last();
+        $isFatal = is_array($error) && in_array($error['type'] ?? 0, [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true);
+
+        if ($isFatal === false) {
+            return;
+        }
+
+        qupload_boot_trace('boot:fatal', [
+            'message' => $error['message'] ?? '',
+            'file' => $error['file'] ?? '',
+            'line' => $error['line'] ?? 0,
+            'type' => $error['type'] ?? 0,
+        ]);
+    });
 }
 
 /**
@@ -64,6 +97,8 @@ function qupload_init(): void {
         ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Plugin init failed:');
     }
 }
+
+qupload_register_boot_fatal_handler();
 
 add_action(\QUpload\Enums\HookType::PluginsLoaded->value, 'qupload_init');
 

@@ -22,8 +22,7 @@ class PathHelper {
             return self::$baseDir;
         }
 
-        $uploadDir = wp_upload_dir();
-        self::$baseDir = rtrim($uploadDir['basedir'], '/') . '/' . PluginConfigType::UploadsSubdir->value;
+        self::$baseDir = self::resolveUploadsBaseDir() . '/' . PluginConfigType::UploadsSubdir->value;
 
         return self::$baseDir;
     }
@@ -44,12 +43,50 @@ class PathHelper {
         return !file_exists($path);
     }
 
+    /** Ensure parent directories are created before the target directory. */
     public static function ensureDirectory(string $dir): bool {
-        if (is_dir($dir)) {
+        $normalized = rtrim(str_replace('\\', '/', $dir), '/');
+
+        if ($normalized === '') {
+            return false;
+        }
+
+        if (is_dir($normalized)) {
             return true;
         }
 
-        return wp_mkdir_p($dir);
+        $parent = dirname($normalized);
+        $hasParent = $parent !== '' && $parent !== '.' && $parent !== $normalized;
+
+        if ($hasParent && !is_dir($parent)) {
+            $isParentReady = self::ensureDirectory($parent);
+
+            if ($isParentReady === false) {
+                return false;
+            }
+        }
+
+        return wp_mkdir_p($normalized);
+    }
+
+    /** Ensure all parent directories exist for a file path. */
+    public static function ensureFileParentDirectory(string $filePath): bool {
+        return self::ensureDirectory(dirname($filePath));
+    }
+
+    private static function resolveUploadsBaseDir(): string {
+        $uploadDir = wp_upload_dir();
+        $basedir = '';
+
+        if (is_array($uploadDir) && isset($uploadDir['basedir']) && is_string($uploadDir['basedir'])) {
+            $basedir = trim($uploadDir['basedir']);
+        }
+
+        if ($basedir === '') {
+            $basedir = WP_CONTENT_DIR . '/uploads';
+        }
+
+        return rtrim(str_replace('\\', '/', $basedir), '/');
     }
 }
 

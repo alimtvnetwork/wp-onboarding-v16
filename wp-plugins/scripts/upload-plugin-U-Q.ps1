@@ -139,11 +139,12 @@ if ($Help) {
     Write-Host "  .\upload-plugin-U-Q.ps1                          # Use qupload-config.json"
     Write-Host "  .\upload-plugin-U-Q.ps1 -pp 'wp-plugins/qupload' -s 'https://site.com' -u admin -pw 'pass' -a"
     Write-Host "  .\upload-plugin-U-Q.ps1 -jc '{...}'             # Inline JSON config"
-    Write-Host "  .\upload-plugin-U-Q.ps1 -z -pp 'wp-plugins/qupload'  # ZIP only, no upload"
-    Write-Host "  .\upload-plugin-U-Q.ps1 -z                       # ZIP default plugin only"
+    Write-Host "  .\upload-plugin-U-Q.ps1 -z -pp 'wp-plugins/qupload'  # ZIP only, no upload (no config required)"
+    Write-Host "  .\upload-plugin-U-Q.ps1 -z                       # ZIP default plugin from qupload-config.json"
     Write-Host ""
     Write-Host "ZIP BEHAVIOR:" -ForegroundColor Yellow
     Write-Host "  ZIPs are created with maximum compression (SmallestSize)."
+    Write-Host "  Fast ZIP-only mode: use -z -pp <path> to skip site credential/config checks."
     Write-Host "  The ZIP filename includes the version from the PHP header:"
     Write-Host "    qupload-v1.0.0.zip, riseup-asia-uploader-v1.36.0.zip"
     Write-Host ""
@@ -226,7 +227,7 @@ function New-PluginZipFile($PluginDir, $PluginSlug) {
 
 # =============================================================================
 # CONFIGURATION LOADING
-# Priority: 1) -JsonConfig  2) CLI params  3) Config file
+# Priority: 1) -JsonConfig  2) ZIP-only quick mode (-z + -pp)  3) Full CLI params  4) Config file
 # =============================================================================
 
 $PluginFolderPath = ""
@@ -236,6 +237,8 @@ $AppPassword = ""
 $ActivateAfterInstall = $true
 $DeleteZipAfterUpload = $false
 $PluginSlug = ""
+
+$useZipOnlyQuickPath = $ZipOnly -and $PluginPath -ne "" -and $JsonConfig -eq "" -and $SiteUrl -eq "" -and $User -eq "" -and $Password -eq ""
 
 # Priority 1: Inline JSON config string
 if ($JsonConfig -ne "") {
@@ -254,7 +257,14 @@ if ($JsonConfig -ne "") {
         exit 1
     }
 }
-# Priority 2: Direct CLI parameters
+# Priority 2: ZIP-only quick mode with plugin path (no site creds required)
+elseif ($useZipOnlyQuickPath) {
+    Write-Status "Using ZIP-only quick mode with plugin path..." -Color Gray
+    $PluginFolderPath = $PluginPath
+    if ($Slug -ne "") { $PluginSlug = $Slug }
+    $DeleteZipAfterUpload = $DeleteZip.IsPresent
+}
+# Priority 3: Direct CLI parameters for upload mode
 elseif ($PluginPath -ne "" -and $SiteUrl -ne "" -and $User -ne "" -and $Password -ne "") {
     Write-Status "Using command-line parameters..." -Color Gray
     $PluginFolderPath = $PluginPath
@@ -265,7 +275,7 @@ elseif ($PluginPath -ne "" -and $SiteUrl -ne "" -and $User -ne "" -and $Password
     $DeleteZipAfterUpload = $DeleteZip.IsPresent
     if ($Slug -ne "") { $PluginSlug = $Slug }
 }
-# Priority 3: Config file (qupload-config.json)
+# Priority 4: Config file (qupload-config.json)
 else {
     if ($ConfigPath -eq "") {
         $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -282,6 +292,7 @@ else {
         Write-Host ""
         Write-Host "Or pass params directly:" -ForegroundColor Yellow
         Write-Host "  .\upload-plugin-U-Q.ps1 -pp 'path' -s 'https://site.com' -u 'admin' -pw 'pass'" -ForegroundColor Gray
+        Write-Host "  .\upload-plugin-U-Q.ps1 -z -pp 'path'   # ZIP-only quick mode (no config needed)" -ForegroundColor Gray
         exit 1
     }
 

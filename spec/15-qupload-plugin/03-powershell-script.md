@@ -8,6 +8,7 @@
 
 Upload a plugin ZIP to a WordPress site via the QUpload plugin's `/upload` endpoint.
 This script is specifically for uploading plugins through QUpload (not the Riseup Asia Uploader).
+It also supports ZIP-only mode for packaging without upload.
 
 ## Parameters
 
@@ -23,8 +24,9 @@ This script is specifically for uploading plugins through QUpload (not the Riseu
 | `-JsonConfig` | string | No | Inline JSON config string |
 | `-Quiet` | switch | No | Suppress output (JSON-only mode) |
 | `-DeleteZip` | switch | No | Delete ZIP after upload |
+| `-ZipOnly` (`-z`) | switch | No | Create ZIP only (skip upload); supports fast mode with `-PluginPath` only |
 
-*Required unless using `-ConfigPath` or `-JsonConfig`.
+*Required unless using `-ConfigPath`, `-JsonConfig`, or ZIP-only fast mode (`-ZipOnly -PluginPath`).
 
 ## Config File Format
 
@@ -57,6 +59,15 @@ This script is specifically for uploading plugins through QUpload (not the Riseu
 6. Upload ZIP to `POST /wp-json/qupload/v1/upload`
 7. Parse and display result
 8. Clean up ZIP file (if requested)
+
+## run.ps1 Shortcuts
+
+Use these shorter commands from project root:
+
+- `./run.ps1 -q` → Upload default QUpload-target plugin
+- `./run.ps1 -q -pp 'wp-plugins/qupload'` → Upload specific plugin through QUpload
+- `./run.ps1 -qz` → ZIP default QUpload-target plugin only
+- `./run.ps1 -qz -pp 'wp-plugins/qupload'` → ZIP specific plugin only via QUpload script
 
 ## Output (Quiet Mode)
 

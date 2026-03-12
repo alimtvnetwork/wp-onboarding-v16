@@ -51,21 +51,37 @@ class FileLogger {
             return true;
         }
 
+        $baseDir = PathHelper::getBaseDir();
         $this->logsDir        = PathHelper::getLogsDir();
         $this->logFile        = $this->logsDir . PathLogFileType::Log->value;
         $this->errorFile      = $this->logsDir . PathLogFileType::Error->value;
         $this->stacktraceFile = $this->logsDir . PathLogFileType::Stacktrace->value;
 
-        $isDirCreated = PathHelper::ensureDirectory($this->logsDir);
+        $isBaseDirCreated = PathHelper::ensureDirectory($baseDir);
 
-        if ($isDirCreated === false) {
+        if ($isBaseDirCreated === false) {
+            error_log(PluginConfigType::LogPrefix->value . ' Failed to create base directory: ' . $baseDir);
+
+            return false;
+        }
+
+        $isLogsDirCreated = PathHelper::ensureDirectory($this->logsDir);
+
+        if ($isLogsDirCreated === false) {
             error_log(PluginConfigType::LogPrefix->value . ' Failed to create logs directory: ' . $this->logsDir);
 
             return false;
         }
 
-        // Also ensure parent base dir exists
-        PathHelper::ensureDirectory(PathHelper::getBaseDir());
+        $isLogParentReady = PathHelper::ensureFileParentDirectory($this->logFile)
+            && PathHelper::ensureFileParentDirectory($this->errorFile)
+            && PathHelper::ensureFileParentDirectory($this->stacktraceFile);
+
+        if ($isLogParentReady === false) {
+            error_log(PluginConfigType::LogPrefix->value . ' Failed to create log file parent directories.');
+
+            return false;
+        }
 
         $this->isInitialized = true;
 

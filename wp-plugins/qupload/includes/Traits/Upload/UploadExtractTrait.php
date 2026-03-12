@@ -30,7 +30,15 @@ trait UploadExtractTrait
     /** Write emergency stage trace outside the main logger path. */
     private function traceStage(string $stage, array $context = []): void {
         $baseDir = PathHelper::getBaseDir();
-        PathHelper::ensureDirectory($baseDir);
+        $traceFile = PathHelper::getStageTraceFile();
+        $isBaseReady = PathHelper::ensureDirectory($baseDir);
+        $isTraceParentReady = PathHelper::ensureFileParentDirectory($traceFile);
+
+        if ($isBaseReady === false || $isTraceParentReady === false) {
+            @error_log('[QUpload Stage] trace directory setup failed for stage: ' . $stage);
+
+            return;
+        }
 
         $line = sprintf(
             "[%s] %s %s%s",
@@ -40,7 +48,12 @@ trait UploadExtractTrait
             PHP_EOL,
         );
 
-        @file_put_contents(PathHelper::getStageTraceFile(), $line, FILE_APPEND | LOCK_EX);
+        $isWritten = @file_put_contents($traceFile, $line, FILE_APPEND | LOCK_EX);
+
+        if ($isWritten === false) {
+            @error_log('[QUpload Stage] trace write failed for stage: ' . $stage . ' file: ' . $traceFile);
+        }
+
         @error_log('[QUpload Stage] ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)));
     }
 
@@ -60,7 +73,13 @@ trait UploadExtractTrait
 
         // Ensure logs dir exists so all subsequent logging works
         $logsDir = PathHelper::getLogsDir();
-        PathHelper::ensureDirectory($logsDir);
+        $isLogsDirReady = PathHelper::ensureDirectory($logsDir);
+
+        if ($isLogsDirReady === false) {
+            $this->traceStage('validateAndWriteZip:logs-dir-failed', ['dir' => $logsDir]);
+
+            return $this->errorResponse('Upload failed: could not create logs directory', HttpStatusType::ServerError->value);
+        }
 
         // Ensure temp dir exists
         $tempDir = PathHelper::getTempDir();
@@ -471,9 +490,10 @@ trait UploadExtractTrait
     private function moveExtractedPlugin(string $extractedFolder, string $targetDir): bool {
         // Ensure parent directory of target exists (WP_PLUGIN_DIR)
         $parentDir = dirname($targetDir);
+        $isParentReady = PathHelper::ensureDirectory($parentDir);
 
-        if (!is_dir($parentDir)) {
-            $this->fileLogger->error('Plugin parent directory missing', ['dir' => $parentDir]);
+        if ($isParentReady === false) {
+            $this->fileLogger->error('Failed to create plugin parent directory', ['dir' => $parentDir]);
 
             return false;
         }
@@ -714,15 +734,34 @@ trait UploadExtractTrait
 
         foreach ($items as $item) {
             $path = $dir . '/' . $item;
-            is_dir($path) ? $this->deleteDirectory($path) : @unlink($path);
+            $isDeleted = is_dir($path) ? $this->deleteDirectory($path) : @unlink($path);
+
+            if ($isDeleted === false) {
+                $this->fileLogger->error('Failed to delete path while removing directory', ['path' => $path]);
+
+                return false;
+            }
         }
 
-        return @rmdir($dir);
+        $isRemoved = @rmdir($dir);
+
+        if ($isRemoved === false) {
+            $this->fileLogger->error('Failed to remove directory', ['dir' => $dir]);
+        }
+
+        return $isRemoved;
     }
 
     /** Recursively copy a directory. */
     private function copyDirectory(string $source, string $dest): bool {
-        wp_mkdir_p($dest);
+        $isDestReady = PathHelper::ensureDirectory($dest);
+
+        if ($isDestReady === false) {
+            $this->fileLogger->error('Failed to create destination directory for copy', ['dest' => $dest]);
+
+            return false;
+        }
+
         $entries = scandir($source);
 
         if ($entries === false) {
@@ -740,7 +779,15 @@ trait UploadExtractTrait
             if (is_dir($srcPath)) {
                 $isCopied = $this->copyDirectory($srcPath, $dstPath);
             } else {
-                $isCopied = copy($srcPath, $dstPath);
+                $isFileParentReady = PathHelper::ensureFileParentDirectory($dstPath);
+
+                if ($isFileParentReady === false) {
+                    $this->fileLogger->error('Failed to create parent directory for copied file', ['dest' => $dstPath]);
+
+                    return false;
+                }
+
+                $isCopied = @copy($srcPath, $dstPath);
             }
 
             if ($isCopied === false) {
