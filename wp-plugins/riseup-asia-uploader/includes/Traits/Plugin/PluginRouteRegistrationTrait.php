@@ -142,6 +142,8 @@ trait PluginRouteRegistrationTrait {
             ));
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'PluginRouteRegistrationTrait: Optional media endpoint registration failed:');
+
+            throw $e;
         }
     }
 
