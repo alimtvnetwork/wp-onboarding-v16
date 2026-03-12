@@ -20,6 +20,7 @@ use RiseupAsia\Admin\Traits\AdminPagesTrait;
 use RiseupAsia\Admin\Traits\AdminAjaxTrait;
 use RiseupAsia\Admin\Traits\AdminErrorPageTrait;
 use RiseupAsia\Admin\Traits\AdminErrorAjaxTrait;
+use RiseupAsia\Admin\Traits\AdminFeedbackAjaxTrait;
 use RiseupAsia\Admin\Traits\AdminLicensePageTrait;
 use RiseupAsia\Admin\Traits\AdminLicenseAjaxTrait;
 use RiseupAsia\Enums\AjaxActionType;
