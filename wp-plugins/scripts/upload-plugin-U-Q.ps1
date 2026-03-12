@@ -618,14 +618,38 @@ try {
     Write-Host "      Endpoint: $uploadUrl" -ForegroundColor Gray
     Write-Host "      Error: $($_.Exception.Message)" -ForegroundColor Yellow
 
+    $rawErrorResponse = ""
     if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
-        Write-Host "      Response: $($_.ErrorDetails.Message)" -ForegroundColor Gray
+        $rawErrorResponse = $_.ErrorDetails.Message
+    }
+
+    $isRawErrorResponsePresent = -not [string]::IsNullOrWhiteSpace($rawErrorResponse)
+
+    if ($isRawErrorResponsePresent) {
+        $readableResponse = Format-ApiResponseForConsole $rawErrorResponse
+        Write-Host "      Response:" -ForegroundColor Gray
+        Write-Host $readableResponse -ForegroundColor Gray
     }
 
     if ($Quiet) {
+        $quietError = $_.Exception.Message
+
+        if ($isRawErrorResponsePresent) {
+            try {
+                $parsedError = $rawErrorResponse | ConvertFrom-Json -ErrorAction Stop
+                if ($parsedError.Errors -and $parsedError.Errors.BackendMessage) {
+                    $quietError = $parsedError.Errors.BackendMessage
+                } elseif ($parsedError.Status -and $parsedError.Status.Message) {
+                    $quietError = $parsedError.Status.Message
+                }
+            } catch {
+                $quietError = Convert-EscapedUnicodeToText $rawErrorResponse
+            }
+        }
+
         $quietOutput = @{
             success = $false
-            error = $_.Exception.Message
+            error = $quietError
         } | ConvertTo-Json -Compress
         Write-Output $quietOutput
     }
