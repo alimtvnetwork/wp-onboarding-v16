@@ -1316,8 +1316,9 @@ if (-not $skipbuild) {
     $StepTimes["Frontend Build"] = [TimeSpan]::Zero
     $StepTimes["Copy Build"] = [TimeSpan]::Zero
 }
-Write-Host ""
+    Write-Host ""
 
+    if ($clear) { Clear-PluginZips }
 
 # ============================================================================
 # BUILD ONLY EXIT
