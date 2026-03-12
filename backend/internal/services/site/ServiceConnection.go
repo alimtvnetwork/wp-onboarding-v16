@@ -215,6 +215,7 @@ func (s *Service) handleConnectionFailure(ctx context.Context, ref connTestRef, 
 	s.broadcastApiTestFailure(ref, err)
 	s.updateConnectionStatus(ctx, ref.Id, connectionstatus.Disconnected.DBValue())
 	s.broadcastCompleteStep(ref.Id, stagestatus.Failed.String(), "Connection test failed")
+
 	return result
 }
 
