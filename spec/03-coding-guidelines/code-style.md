@@ -293,13 +293,13 @@ if (!data) {
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN
-func process(data []Item) ([]Item, error) {
+func process(data []Item) ([]Item, *apperror.AppError) {
     filtered := filter(data)
     return filtered, nil
 }
 
 // ✅ REQUIRED
-func process(data []Item) ([]Item, error) {
+func process(data []Item) ([]Item, *apperror.AppError) {
     filtered := filter(data)
 
     return filtered, nil
