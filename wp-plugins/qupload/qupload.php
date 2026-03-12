@@ -90,13 +90,8 @@ function qupload_register_boot_fatal_handler(): void {
 function qupload_init(): void {
     qupload_boot_trace('init:start');
 
-    try {
-        $logger = \QUpload\Logging\FileLogger::getInstance();
-        $logger->clearAllLogFiles();
-        qupload_boot_trace('init:logs-cleared');
-    } catch (Throwable $e) {
-        qupload_boot_trace('init:log-clear-exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
-    }
+    qupload_clear_logs_on_version_update();
+
 
     try {
         Plugin::getInstance();
@@ -155,3 +150,28 @@ function qupload_activate(): void {
 }
 
 register_activation_hook(__FILE__, 'qupload_activate');
+
+/**
+ * Clear all log files when the plugin version changes.
+ */
+function qupload_clear_logs_on_version_update(): void {
+    $optionKey = 'qupload_last_version';
+    $currentVersion = PluginConfigType::Version->value;
+    $lastVersion = get_option($optionKey, '');
+
+    $isVersionChanged = ($lastVersion !== $currentVersion);
+
+    if ($isVersionChanged === false) {
+        return;
+    }
+
+    try {
+        $logger = \QUpload\Logging\FileLogger::getInstance();
+        $logger->clearAllLogFiles();
+        qupload_boot_trace('init:version-logs-cleared', ['from' => $lastVersion, 'to' => $currentVersion]);
+    } catch (Throwable $e) {
+        qupload_boot_trace('init:version-clear-exception', ['message' => $e->getMessage()]);
+    }
+
+    update_option($optionKey, $currentVersion, true);
+}

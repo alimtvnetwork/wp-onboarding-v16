@@ -39,12 +39,7 @@ register_activation_hook(__FILE__, [ActivationHandler::class, 'activate']);
  * Initialize the plugin.
  */
 function riseup_asia_init(): void {
-    try {
-        $logger = \RiseupAsia\Logging\FileLogger::getInstance();
-        $logger->clearAllLogFiles();
-    } catch (Throwable $e) {
-        // Silently continue — log clearing is best-effort
-    }
+    riseup_asia_clear_logs_on_version_update();
 
     try {
         Plugin::getInstance();
@@ -61,6 +56,30 @@ function riseup_asia_init(): void {
             InitHelpers::errorLogAndThrow($e, 'RiseUp Uploader: Admin init failed:');
         }
     }
+}
+
+/**
+ * Clear all log files when the plugin version changes.
+ */
+function riseup_asia_clear_logs_on_version_update(): void {
+    $optionKey = 'riseup_asia_last_version';
+    $currentVersion = \RiseupAsia\Enums\PluginConfigType::Version->value;
+    $lastVersion = get_option($optionKey, '');
+
+    $isVersionChanged = ($lastVersion !== $currentVersion);
+
+    if ($isVersionChanged === false) {
+        return;
+    }
+
+    try {
+        $logger = \RiseupAsia\Logging\FileLogger::getInstance();
+        $logger->clearAllLogFiles();
+    } catch (Throwable $e) {
+        // Best-effort — don't block boot
+    }
+
+    update_option($optionKey, $currentVersion, true);
 }
 
 add_action(HookType::PluginsLoaded->value, 'riseup_asia_init');
