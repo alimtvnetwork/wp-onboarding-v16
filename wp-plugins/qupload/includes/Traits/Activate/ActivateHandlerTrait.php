@@ -29,13 +29,11 @@ trait ActivateHandlerTrait
     public function handleActivate(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Activate endpoint called');
 
-        try {
-            return $this->executeActivation($request);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Activate failed');
-
-            return $this->errorResponse('Activate failed: ' . $e->getMessage(), HttpStatusType::ServerError->value);
-        }
+        return $this->safeExecute(
+            fn () => $this->executeActivation($request),
+            'handleActivate',
+            ['endpoint' => 'activate'],
+        );
     }
 
     private function executeActivation(WP_REST_Request $request): WP_REST_Response {
