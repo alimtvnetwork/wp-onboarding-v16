@@ -34,6 +34,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 	if result.HasError() {
 		return apperror.Fail[models.Site](result.AppError())
 	}
+
 	if result.IsEmpty() {
 		return apperror.FailNew[models.Site](apperror.ErrNotFound, "site not found")
 	}
