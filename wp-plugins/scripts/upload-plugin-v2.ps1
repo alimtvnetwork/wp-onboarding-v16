@@ -714,6 +714,25 @@ foreach ($ns in $apiNamespaces) {
                     Write-Status "      ⚠ $($ns.display) returned HTTP $($errJson.data.status): $($errJson.message)" -Color Yellow
                 }
             } catch {}
+
+            $isKnownAuthReturnTypeFatal = $errBody -match "checkAuthenticatedOnly\(\): Return value must be of type WP_Error\|true, WP_User returned"
+
+            if ($isKnownAuthReturnTypeFatal) {
+                $activeNamespace = $ns.name
+                Write-Status "      ⚠ Known auth return-type fatal detected on $($ns.display); attempting OPcache reset..." -Color Yellow
+
+                try {
+                    $opcacheStatusUrl = "$WordPressSiteURL/wp-json/$($ns.name)/opcache-reset"
+                    $opcachePayload = "{}"
+                    $opcacheResult = Invoke-SafeRestRequest -Uri $opcacheStatusUrl -Method "Post" -Headers $headers -Body $opcachePayload -ContentType "application/json" -TimeoutSec 15 -Label "OPcache reset ($($ns.display))" -MaxRetries 1 -RetryDelaySec 2
+
+                    if ($null -ne $opcacheResult) {
+                        Write-Status "      ✓ OPcache reset attempted for $($ns.display); will continue with upload fallback" -Color Green
+                    }
+                } catch {
+                    Write-Debug-Log "OPcache reset attempt failed for $($ns.name): $($_.Exception.Message)"
+                }
+            }
         }
         # Try next namespace
     }

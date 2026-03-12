@@ -71,6 +71,13 @@ trait AuthPermissionTrait
     /** Check status/openapi permission (any authenticated user). */
     public function checkStatusPermission(WP_REST_Request $request): bool|WP_Error {
         $this->fileLogger->debug('Checking status permission');
-        return $this->checkAuthenticatedOnly($request);
+        $authResult = $this->checkAuthenticatedOnly($request);
+        $isAuthError = is_wp_error($authResult);
+
+        if ($isAuthError) {
+            return $authResult;
+        }
+
+        return true;
     }
 }
