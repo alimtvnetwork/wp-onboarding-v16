@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use PDO;
+use SQLite3;
 use Throwable;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\InitHelpers;
