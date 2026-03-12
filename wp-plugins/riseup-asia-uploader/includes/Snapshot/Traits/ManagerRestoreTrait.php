@@ -38,7 +38,7 @@ trait ManagerRestoreTrait {
 
         $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
 
-        $isBackupError = gettype($backupId) === 'array';
+        $isBackupError = gettype($backupId) === PhpNativeType::PhpArray->value;
 
         if ($isBackupError) {
             return $backupId;
