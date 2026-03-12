@@ -24,7 +24,7 @@ use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Admin\Admin;
 use RiseupAsia\Helpers\BooleanHelpers;
-<?php
+
 $pluginName = PluginConfigType::Name->value;
 $pluginSlug = PluginConfigType::Slug->value;
 ?>
