@@ -53,3 +53,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 15 | r10-full-codebase-audit | Code Style / R10 | 19 missing blank lines before control structures across 8 trait files |
 | 16 | unused-php-enum-cases | PHP/Audit | Unused enum cases identified across codebase |
 | 17 | coverage-report-wrong-package-filtering | Tooling / Coverage | Coverage reported test packages instead of source packages |
+| 18 | php-enum-duplicate-value-fatal | PHP / Enum | Duplicate backing value in PluginConfigType caused site-crashing fatal error |
