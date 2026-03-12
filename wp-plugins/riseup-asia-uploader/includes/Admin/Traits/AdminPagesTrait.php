@@ -101,6 +101,11 @@ trait AdminPagesTrait {
         $endpointGroups = $this->buildEndpointGroups();
         $endpointsMeta = $this->flattenEndpointGroups($endpointGroups);
 
+        $supportSettings = get_option(\RiseupAsia\Enums\OptionNameType::SupportSettings->value, array(
+            'support_email' => '',
+            'fallback_url'  => '',
+        ));
+
         include dirname(__FILE__, 4) . '/templates/admin-settings.php';
     }
 
