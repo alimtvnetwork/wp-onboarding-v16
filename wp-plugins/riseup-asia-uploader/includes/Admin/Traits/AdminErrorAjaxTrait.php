@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\AdminTabType;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\NonceType;
 use RiseupAsia\Enums\ResponseKeyType;
@@ -23,6 +24,7 @@ use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\PathHelper;
 
 trait AdminErrorAjaxTrait {
 
@@ -89,16 +91,20 @@ trait AdminErrorAjaxTrait {
     /** Resolve a log file type to its absolute path. */
     private function resolveLogFilePath(string $type): string|false {
         $logger = FileLogger::getInstance();
-        switch ($type) {
-            case 'log':
-                return $logger->getLogFile();
-            case 'error':
-                return $logger->getErrorFile();
-            case 'stacktrace':
-                return $logger->getStacktraceFile();
-            default:
-                return false;
+
+        if ($type === AdminTabType::Log->value) {
+            return $logger->getLogFile();
         }
+
+        if ($type === AdminTabType::Error->value) {
+            return $logger->getErrorFile();
+        }
+
+        if ($type === AdminTabType::Stacktrace->value) {
+            return $logger->getStacktraceFile();
+        }
+
+        return false;
     }
 
     /** AJAX handler: Read a log file's contents. */
@@ -121,27 +127,37 @@ trait AdminErrorAjaxTrait {
 
     /** Read a log file's content with size-based truncation. */
     private function readLogFileContent(string $path): array {
-        $exists = file_exists($path);
+        $exists = PathHelper::isFileExists($path);
         $content = '';
         $size = 0;
 
         if ($exists) {
-            $size = filesize($path);
+            $rawSize = filesize($path);
+            $size = ($rawSize === false) ? 0 : (int) $rawSize;
             $maxBytes = 512 * 1024;
+
             if ($size > $maxBytes) {
-                $fp = @fopen($path, 'r');
+                $fp = fopen($path, 'r');
 
                 if ($fp !== false) {
-                    fseek($fp, -$maxBytes, SEEK_END);
-                    fgets($fp);
-                    $content = fread($fp, $maxBytes);
+                    $isSeekFailed = (fseek($fp, -$maxBytes, SEEK_END) !== 0);
+
+                    if ($isSeekFailed === false) {
+                        fgets($fp);
+                        $tail = fread($fp, $maxBytes);
+                        $content = ($tail === false) ? '(Failed to read log file content)' : $tail;
+                        $content = '... (truncated, showing last ' . round($maxBytes / 1024) . 'KB) ...' . PHP_EOL . $content;
+                    } else {
+                        $content = '(Failed to seek log file for reading)';
+                    }
+
                     fclose($fp);
-                    $content = '... (truncated, showing last ' . round($maxBytes / 1024) . 'KB) ...' . PHP_EOL . $content;
                 } else {
                     $content = '(Failed to open log file for reading)';
                 }
             } else {
-                $content = file_get_contents($path);
+                $raw = file_get_contents($path);
+                $content = ($raw === false) ? '(Failed to read log file content)' : $raw;
             }
         }
 
@@ -153,7 +169,7 @@ trait AdminErrorAjaxTrait {
         );
     }
 
-    /** AJAX handler: Clear (truncate) a log file. */
+    /** AJAX handler: Clear (delete) a log file from disk. */
     public function ajaxClearLogFile() {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
@@ -168,14 +184,24 @@ trait AdminErrorAjaxTrait {
             wp_send_json_error(array(ResponseKeyType::Message->value => 'Invalid file type'));
         }
 
-        if (file_exists($path)) {
-            $isWriteFailed = (file_put_contents($path, '') === false);
-
-            if ($isWriteFailed) {
-                wp_send_json_error(array(ResponseKeyType::Message->value => 'Failed to clear file'));
-            }
+        if (PathHelper::isFileMissing($path)) {
+            wp_send_json_success(array(
+                ResponseKeyType::Message->value  => 'File already clear',
+                ResponseKeyType::FileType->value => $type,
+                ResponseKeyType::Path->value     => $path,
+            ));
         }
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'File cleared', ResponseKeyType::FileType->value => $type));
+        $isDeleteFailed = (PathHelper::deleteFile($path) === false);
+
+        if ($isDeleteFailed) {
+            wp_send_json_error(array(ResponseKeyType::Message->value => 'Failed to delete file from disk'));
+        }
+
+        wp_send_json_success(array(
+            ResponseKeyType::Message->value  => 'File deleted from disk',
+            ResponseKeyType::FileType->value => $type,
+            ResponseKeyType::Path->value     => $path,
+        ));
     }
 }

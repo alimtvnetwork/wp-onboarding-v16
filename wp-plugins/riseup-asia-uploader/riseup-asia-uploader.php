@@ -27,6 +27,7 @@ use RiseupAsia\Core\Plugin;
 use RiseupAsia\Admin\Admin;
 use RiseupAsia\ErrorHandling\BootErrorCollector;
 use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 // =============================================================================
 // PSR-4 AUTOLOADER — all RiseupAsia\ classes resolve automatically
@@ -62,14 +63,14 @@ function riseup_asia_init(): void {
 /**
  * Clear all log files when the plugin version changes.
  */
-function riseup_asia_clear_logs_on_version_update(): void {
+function riseup_asia_clear_logs_on_version_update(bool $force = false): void {
     $optionKey = OptionNameType::LastPluginVersion->value;
     $currentVersion = PluginConfigType::Version->value;
     $lastVersion = get_option($optionKey, '');
 
     $isVersionChanged = ($lastVersion !== $currentVersion);
 
-    if ($isVersionChanged === false) {
+    if ($force === false && $isVersionChanged === false) {
         return;
     }
 
@@ -83,4 +84,34 @@ function riseup_asia_clear_logs_on_version_update(): void {
     update_option($optionKey, $currentVersion, true);
 }
 
+/**
+ * Force log cleanup after plugin update completion.
+ *
+ * @param mixed $upgrader    WP_Upgrader instance (unused).
+ * @param array $hookExtra   Upgrader metadata.
+ */
+function riseup_asia_handle_plugin_update_complete($upgrader, array $hookExtra): void {
+    $isPluginUpdate = (($hookExtra['action'] ?? '') === 'update') && (($hookExtra['type'] ?? '') === 'plugin');
+
+    if ($isPluginUpdate === false) {
+        return;
+    }
+
+    $updatedPlugins = $hookExtra['plugins'] ?? array();
+
+    if (!is_array($updatedPlugins)) {
+        return;
+    }
+
+    $currentPluginBasename = plugin_basename(PathHelper::getPluginMainFile());
+    $isCurrentPluginUpdated = in_array($currentPluginBasename, $updatedPlugins, true);
+
+    if ($isCurrentPluginUpdated === false) {
+        return;
+    }
+
+    riseup_asia_clear_logs_on_version_update(true);
+}
+
 add_action(HookType::PluginsLoaded->value, 'riseup_asia_init');
+add_action(HookType::UpgraderProcessComplete->value, 'riseup_asia_handle_plugin_update_complete', 10, 2);
