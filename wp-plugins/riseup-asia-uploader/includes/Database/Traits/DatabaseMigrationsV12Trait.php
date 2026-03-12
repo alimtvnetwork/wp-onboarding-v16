@@ -230,9 +230,7 @@ trait DatabaseMigrationsV12Trait {
             $this->pdo->commit();
         } catch (Throwable $e) {
             $this->pdo->rollBack();
-            $this->fileLogger->logException($e, 'Migration v12 failed — rolled back');
-
-            throw $e;
+            $this->fileLogger->logCriticalException($e, 'Migration v12 failed — rolled back');
         }
 
         $this->recordMigration(12);
