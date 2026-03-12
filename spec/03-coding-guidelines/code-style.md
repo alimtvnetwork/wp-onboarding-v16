@@ -354,14 +354,14 @@ const profile = await fetchProfile(user.id);
 // ── Go ───────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 }
 result := compute()
 
 // ✅ REQUIRED
-if err != nil {
-    return err
+if appErr != nil {
+    return appErr
 }
 
 result := compute()
