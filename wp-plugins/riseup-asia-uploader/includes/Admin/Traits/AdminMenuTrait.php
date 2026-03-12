@@ -222,6 +222,7 @@ trait AdminMenuTrait {
                 'clearLogFailed'  => __('Failed to clear log file.', $pluginSlug),
                 'copied'          => __('Copied!', $pluginSlug),
                 'confirmClearLog' => __('Are you sure you want to clear this log file?', $pluginSlug),
+                'noStackTrace'    => __('No stack trace available.', $pluginSlug),
                 'noContextData'   => __('No context data', $pluginSlug),
             ),
         ));

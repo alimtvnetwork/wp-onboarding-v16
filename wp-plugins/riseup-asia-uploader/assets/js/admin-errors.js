@@ -161,11 +161,11 @@ jQuery(document).ready(function($) {
             }
 
             $btn.prop('disabled', false);
-            var msg = (response.data && response.data[C.responseKeys.message]) ? response.data[C.responseKeys.message] : C.i18n.clearFailed;
+            var msg = (response.data && response.data[C.responseKeys.message]) ? response.data[C.responseKeys.message] : (C.i18n.clearLogFailed || C.i18n.clearFailed);
             alert(msg);
         }).fail(function() {
             $btn.prop('disabled', false);
-            alert(C.i18n.clearFailed);
+            alert(C.i18n.clearLogFailed || C.i18n.clearFailed);
         });
     });
 
