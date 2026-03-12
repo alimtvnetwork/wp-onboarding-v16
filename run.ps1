@@ -262,7 +262,7 @@ if ($help) {
     Write-Host ""
     Write-Host "  Upload (all plugins):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload"
-    Write-Host "    .\run.ps1 -ua -c       # Clear old ZIPs first, then ZIP + upload all"
+    Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload (auto-cleans old ZIPs)"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
