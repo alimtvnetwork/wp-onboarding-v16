@@ -63,6 +63,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
     $pageTitle = __('Error Log', $pluginSlug);
     $pageDescription = __('View all errors, warnings, and log files captured by the plugin.', $pluginSlug);
     $headerExtra = ($unseenCount > 0) ? '<span class="error-count-badge">' . esc_html($unseenCount) . '</span>' : '';
+    $headerExtra .= ' <a href="' . esc_url(\RiseupAsia\Enums\AdminPageType::Feedback->adminUrl()) . '" class="button button-secondary riseup-report-issue-btn"><span class="dashicons dashicons-feedback"></span> ' . esc_html__('Report Issue', $pluginSlug) . '</a>';
     include __DIR__ . '/partials/shared/page-header.php';
     ?>
 
