@@ -229,6 +229,7 @@ if ($help) {
     Write-Host "  -z,  -zip           ZIP Riseup Asia plugin (default uploader). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin"
+    Write-Host "  -c,  -clear         Remove all existing ZIP files from wp-plugins/ before zipping"
     Write-Host "  -pp, -pluginpath    Override plugin folder path or name (use with -u, -q, -zq, or -z)"
     Write-Host "  -t,  -test          Run Go backend tests and exit"
     Write-Host "  -v,  -verbose       Show detailed debug output"
