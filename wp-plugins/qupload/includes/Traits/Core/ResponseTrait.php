@@ -86,6 +86,16 @@ trait ResponseTrait
         ?Throwable $exception,
     ): void {
         if ($exception instanceof Throwable) {
+            // Emit to PHP error_log so it's visible in WP_DEBUG / php-error.log
+            @error_log(sprintf(
+                '[QUpload] %s (HTTP %d): %s%s%s',
+                $message,
+                $status,
+                $exception->getMessage(),
+                PHP_EOL,
+                $exception->getTraceAsString(),
+            ));
+
             $this->fileLogger->logException($exception, $message);
 
             return;
