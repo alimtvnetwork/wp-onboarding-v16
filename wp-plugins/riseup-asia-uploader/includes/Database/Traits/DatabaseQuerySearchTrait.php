@@ -81,13 +81,13 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyFilters(RiseupORM $query, array $filters): void {
+    private function applyFilters(Orm $query, array $filters): void {
         $this->applyEqualityFilters($query, $filters);
         $this->applyDateRangeFilters($query, $filters);
         $this->applyTextFilters($query, $filters);
     }
 
-    private function applyEqualityFilters(RiseupORM $query, array $filters): void {
+    private function applyEqualityFilters(Orm $query, array $filters): void {
         $hasPlugin = BooleanHelpers::hasFilterValue($filters, FilterKeyType::Plugin->value);
 
         if ($hasPlugin) {
@@ -131,7 +131,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyDateRangeFilters(RiseupORM $query, array $filters): void {
+    private function applyDateRangeFilters(Orm $query, array $filters): void {
         $hasFrom = BooleanHelpers::hasFilterValue($filters, FilterKeyType::From->value);
 
         if ($hasFrom) {
@@ -145,7 +145,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyTextFilters(RiseupORM $query, array $filters): void {
+    private function applyTextFilters(Orm $query, array $filters): void {
         $hasSourceMachine = BooleanHelpers::hasFilterValue($filters, FilterKeyType::SourceMachine->value);
 
         if ($hasSourceMachine) {
