@@ -19,9 +19,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use QUpload\Admin\Admin;
 use QUpload\Core\Plugin;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Helpers\ErrorLogHelper;
+use QUpload\Helpers\PathHelper;
 use QUpload\Helpers\PathHelper;
 
 // =============================================================================
@@ -95,6 +97,16 @@ function qupload_init(): void {
     } catch (Throwable $e) {
         qupload_boot_trace('init:exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
         ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Plugin init failed:');
+    }
+
+    if (is_admin()) {
+        try {
+            Admin::getInstance();
+            qupload_boot_trace('admin:success');
+        } catch (Throwable $e) {
+            qupload_boot_trace('admin:exception', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            ErrorLogHelper::log($e, PluginConfigType::LogPrefix->value . ' Admin init failed:');
+        }
     }
 }
 
