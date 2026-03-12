@@ -768,6 +768,23 @@ if (-not $isEnumLintSuccess) {
 }
 
 Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
+
+$phpstanResult = Test-PhpStanAnalysis $PluginFolderPath
+$isPhpstanChecked = $phpstanResult.IsChecked
+$isPhpstanSuccess = $phpstanResult.IsSuccess
+
+if ($isPhpstanChecked -and (-not $isPhpstanSuccess)) {
+    Write-Host "      PHPStan analysis FAILED" -ForegroundColor Red
+    Write-Host "      $($phpstanResult.AnalysisOutput)" -ForegroundColor Yellow
+    exit 1
+}
+
+if ($isPhpstanChecked) {
+    Write-Status "      $($phpstanResult.Message)" -Color Green
+} else {
+    Write-Status "      PHPStan skipped: $($phpstanResult.Message)" -Color DarkYellow
+}
+
 Write-Status ""
 
 # ============================================================================
