@@ -8,6 +8,7 @@
 
 Upload a plugin ZIP to a WordPress site via the QUpload plugin's `/upload` endpoint.
 This script is specifically for uploading plugins through QUpload (not the Riseup Asia Uploader).
+It also supports ZIP-only mode for packaging without upload.
 
 ## Parameters
 
