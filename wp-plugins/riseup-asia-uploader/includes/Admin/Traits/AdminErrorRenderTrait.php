@@ -38,7 +38,7 @@ trait AdminErrorRenderTrait {
             );
         }
 
-        include dirname(__FILE__) . '/../../templates/admin-errors.php';
+        include dirname(__FILE__, 4) . '/templates/admin-errors.php';
     }
 
     /** Get safe default values for the error page. */
