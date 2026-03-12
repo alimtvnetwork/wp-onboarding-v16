@@ -133,6 +133,7 @@ func (db *DB) GetChildDB(dbType, entityId string) (*sql.DB, error) {
 	}
 
 	db.childDBs[key] = child
+
 	return child, nil
 }
 
