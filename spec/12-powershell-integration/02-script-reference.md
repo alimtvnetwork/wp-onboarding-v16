@@ -82,6 +82,12 @@
 # ZIP a specific plugin
 .\run.ps1 -z -pp "wp-plugins/qupload"
 
+# ZIP + upload all plugins (except QUpload) via QUpload API
+.\run.ps1 -ua
+
+# Clear old ZIPs, then ZIP + upload all
+.\run.ps1 -ua -c
+
 # Run Go backend tests
 .\run.ps1 -t
 
