@@ -1,13 +1,30 @@
 {
   "appName": "WP Publish",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "releaseDate": "2026-03-12",
   "gitCommit": "dev",
   "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.5.0",
-  "wpPluginVersion": "2.5.0",
-  "quploadVersion": "2.5.0",
+  "scriptVersion": "2.6.0",
+  "wpPluginVersion": "2.6.0",
+  "quploadVersion": "2.6.0",
   "changelog": [
+    {
+      "version": "2.6.0",
+      "date": "2026-03-12",
+      "title": "Report/Feedback Feature & Modern UI Overhaul",
+      "changes": [
+        "📬 New Report/Feedback page — submit bug reports with subject, body, up to 3 screenshot attachments via wp_mail()",
+        "⚙️ Support Settings — configurable support email and fallback ticket URL in Settings page",
+        "🎨 Complete admin UI modernization — CSS variables, gradient buttons, ripple effects, card hover animations",
+        "✨ Modal animations — backdrop blur, scale-in bounce entry, close button rotation",
+        "💊 All badges now pill-shaped with gradient backgrounds and scale-on-hover",
+        "🔵 Enhanced focus states — glowing blue ring on all inputs",
+        "🎚️ Premium toggle switches with gradient checked state and bounce animation",
+        "📊 Staggered card entrance animations with fade-in-up",
+        "🔤 Monospace font upgrade to SF Mono / Fira Code",
+        "🖱️ Report Issue button on Error Log page header"
+      ]
+    },
     {
       "version": "2.5.0",
       "date": "2026-03-12",
