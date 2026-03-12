@@ -170,7 +170,7 @@ trait AdminPagesTrait {
 
     /** Render the agent sites page. */
     public function renderAgentsPage() {
-        include dirname(__FILE__) . '/../../templates/admin-agents.php';
+        include dirname(__FILE__, 4) . '/templates/admin-agents.php';
     }
 
     /** Render the snapshots page. */
