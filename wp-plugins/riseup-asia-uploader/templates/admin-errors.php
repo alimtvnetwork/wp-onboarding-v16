@@ -205,7 +205,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
                                         data-level="<?php echo esc_attr($level); ?>"
                                         data-message="<?php echo esc_attr($error['Message']); ?>"
                                         data-source="<?php echo esc_attr($sourceDisplay); ?>"
-                                        data-timestamp="<?php echo esc_attr(DateHelper::formatDatetime(strtotime($error['CreatedAt']))); ?>">
+                                        data-timestamp="<?php echo esc_attr(DateHelper::formatLogDisplay(strtotime($error['CreatedAt']))); ?>">
                                         <?php esc_html_e('View', $pluginSlug); ?>
                                     </button>
                                 <?php else: ?>

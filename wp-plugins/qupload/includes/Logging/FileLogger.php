@@ -288,7 +288,7 @@ class FileLogger {
             return;
         }
 
-        $timestamp = DateHelper::nowUtc();
+        $timestamp = DateHelper::nowLogDisplay();
         $separator = str_repeat('=', self::SEPARATOR_WIDTH);
         $divider   = str_repeat('-', self::SEPARATOR_WIDTH);
 

@@ -42,7 +42,7 @@ trait UploadExtractTrait
 
         $line = sprintf(
             "[%s] %s %s%s",
-            DateHelper::nowUtc(),
+            DateHelper::nowLogDisplay(),
             $stage,
             empty($context) ? '' : json_encode($context, JSON_UNESCAPED_SLASHES),
             PHP_EOL,
