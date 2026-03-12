@@ -553,6 +553,21 @@ Write-Status "      Local Version:  $LocalVersion" -Color White
 Write-Status "      Plugin Folder:  $folderName" -Color Gray
 Write-Status "      Slug:           $PluginSlug" -Color Gray
 Write-Debug-Log "Plugin path: $PluginFolderPath"
+
+Write-Status "[2.5/8] Checking backed enum duplicate values..." -Color Yellow
+$enumLintResult = Test-BackedEnumDuplicateValues $PluginFolderPath
+$isEnumLintSuccess = $enumLintResult.IsSuccess
+
+if (-not $isEnumLintSuccess) {
+    Write-Host "      Duplicate backed enum values detected:" -ForegroundColor Red
+    foreach ($issue in $enumLintResult.Issues) {
+        Write-Host "      - $($issue.Enum) in $($issue.File) => value $($issue.Value) used by $($issue.FirstCase) and $($issue.DuplicateCase)" -ForegroundColor Yellow
+    }
+    Write-Host "      Fix duplicate enum case values before ZIP/upload." -ForegroundColor Red
+    exit 1
+}
+
+Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
 Write-Status ""
 
 # ============================================================================

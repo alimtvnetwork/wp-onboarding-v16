@@ -556,6 +556,20 @@ if ($isSyntaxChecked) {
     Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
 }
 
+$enumLintResult = Test-BackedEnumDuplicateValues $PluginFolderPath
+$isEnumLintSuccess = $enumLintResult.IsSuccess
+
+if (-not $isEnumLintSuccess) {
+    Write-Host "      Duplicate backed enum values detected:" -ForegroundColor Red
+    foreach ($issue in $enumLintResult.Issues) {
+        Write-Host "      - $($issue.Enum) in $($issue.File) => value $($issue.Value) used by $($issue.FirstCase) and $($issue.DuplicateCase)" -ForegroundColor Yellow
+    }
+    Write-Host "      Fix duplicate enum case values before ZIP/upload." -ForegroundColor Red
+    exit 1
+}
+
+Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
+
 try {
     $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
     $OutputZipPath = $zipResult.Path
