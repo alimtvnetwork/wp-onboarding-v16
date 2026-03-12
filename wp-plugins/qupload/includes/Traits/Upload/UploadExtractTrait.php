@@ -30,7 +30,15 @@ trait UploadExtractTrait
     /** Write emergency stage trace outside the main logger path. */
     private function traceStage(string $stage, array $context = []): void {
         $baseDir = PathHelper::getBaseDir();
-        PathHelper::ensureDirectory($baseDir);
+        $traceFile = PathHelper::getStageTraceFile();
+        $isBaseReady = PathHelper::ensureDirectory($baseDir);
+        $isTraceParentReady = PathHelper::ensureFileParentDirectory($traceFile);
+
+        if ($isBaseReady === false || $isTraceParentReady === false) {
+            @error_log('[QUpload Stage] trace directory setup failed for stage: ' . $stage);
+
+            return;
+        }
 
         $line = sprintf(
             "[%s] %s %s%s",
@@ -40,7 +48,12 @@ trait UploadExtractTrait
             PHP_EOL,
         );
 
-        @file_put_contents(PathHelper::getStageTraceFile(), $line, FILE_APPEND | LOCK_EX);
+        $isWritten = @file_put_contents($traceFile, $line, FILE_APPEND | LOCK_EX);
+
+        if ($isWritten === false) {
+            @error_log('[QUpload Stage] trace write failed for stage: ' . $stage . ' file: ' . $traceFile);
+        }
+
         @error_log('[QUpload Stage] ' . $stage . (empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES)));
     }
 
