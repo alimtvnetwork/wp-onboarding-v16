@@ -9,6 +9,17 @@
   "quploadVersion": "2.7.0",
   "changelog": [
     {
+      "version": "2.7.0",
+      "date": "2026-03-12",
+      "title": "Versioned Log Entries & Minor Version Bump",
+      "changes": [
+        "📋 Log entries now include plugin version tag [vX.Y.Z] in both Riseup Asia and QUpload",
+        "📅 Log display dates use DD-MMM-YY HH:MM AM/PM format",
+        "🛡️ Backed enum duplicate lint added to both upload scripts (-u and -u -q)",
+        "🔢 Minor version bump across all components (app, script, plugin, QUpload)"
+      ]
+    },
+    {
       "version": "2.6.0",
       "date": "2026-03-12",
       "title": "Report/Feedback Feature & Modern UI Overhaul",
