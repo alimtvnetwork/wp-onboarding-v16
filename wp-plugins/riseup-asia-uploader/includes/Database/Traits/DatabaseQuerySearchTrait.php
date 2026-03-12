@@ -131,7 +131,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyDateRangeFilters(RiseupORM $query, array $filters): void {
+    private function applyDateRangeFilters(Orm $query, array $filters): void {
         $hasFrom = BooleanHelpers::hasFilterValue($filters, FilterKeyType::From->value);
 
         if ($hasFrom) {
