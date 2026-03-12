@@ -17,5 +17,6 @@ func RegisterAll(eng *engine.Engine) {
 	eng.Register(&PhpFileSize{})
 	eng.Register(&PhpFuncSize{})
 	eng.Register(&PhpImportGroups{})
+	eng.Register(&PhpGlobalImports{})
 	eng.Register(&MdHeading{})
 }
