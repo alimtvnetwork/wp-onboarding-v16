@@ -26,7 +26,6 @@ use QUpload\Traits\Activate\ActivateHandlerTrait;
 use QUpload\Traits\Deactivate\DeactivateHandlerTrait;
 
 class Plugin {
-    use AdminTrait;
     use AuthTrait;
     use RouteRegistrationTrait;
     use StatusHandlerTrait;
