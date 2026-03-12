@@ -345,8 +345,6 @@ function Invoke-GitPull {
     Write-Host ""
 }
 
-Invoke-GitPull
-
 
 
 function Format-ElapsedTime($Stopwatch) {
@@ -598,6 +596,11 @@ function Ensure-FirewallRules {
         }
     }
 }
+
+# ============================================================================
+# GIT PULL (after utility functions are defined, before all modes)
+# ============================================================================
+Invoke-GitPull
 
 # ============================================================================
 # STEP TRACKING
