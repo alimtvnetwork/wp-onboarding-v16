@@ -191,8 +191,11 @@ trait AdminErrorAjaxTrait {
         $hasFailures = !empty($failedFiles);
 
         if ($hasFailures) {
+            $failedList = implode(', ', $failedFiles);
+            $failureMessage = 'Failed to delete one or more log files from disk: ' . $failedList;
+
             wp_send_json_error(array(
-                ResponseKeyType::Message->value  => 'Failed to delete one or more log files from disk',
+                ResponseKeyType::Message->value  => $failureMessage,
                 ResponseKeyType::FileType->value => $type,
                 ResponseKeyType::Path->value     => $requestedPath,
                 ResponseKeyType::Files->value    => $failedFiles,
@@ -201,7 +204,9 @@ trait AdminErrorAjaxTrait {
         }
 
         $hasDeletedFiles = !empty($deletedFiles);
-        $message = $hasDeletedFiles ? 'Log files deleted from disk' : 'No log files found on disk';
+        $message = $hasDeletedFiles
+            ? 'Log files deleted from disk: ' . implode(', ', $deletedFiles)
+            : 'No log files found on disk';
 
         wp_send_json_success(array(
             ResponseKeyType::Message->value  => $message,

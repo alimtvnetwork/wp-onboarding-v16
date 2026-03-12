@@ -199,6 +199,13 @@ trait LoggerPathTrait {
         $failedFiles = array();
 
         foreach ($files as $file) {
+            clearstatcache(true, $file);
+            $isFileMissing = (file_exists($file) === false);
+
+            if ($isFileMissing) {
+                continue;
+            }
+
             $isDeleted = $this->clearLogFile($file);
 
             if ($isDeleted) {
