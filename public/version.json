@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "releaseDate": "2026-03-12",
   "gitCommit": "dev",
   "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.3.0",
-  "wpPluginVersion": "2.7.0",
-  "quploadVersion": "2.7.0",
+  "scriptVersion": "2.4.0",
+  "wpPluginVersion": "2.8.0",
+  "quploadVersion": "2.8.0",
   "changelog": [
+    {
+      "version": "2.8.0",
+      "date": "2026-03-12",
+      "title": "Upload Failure Diagnostics & Auth Fix",
+      "changes": [
+        "🔧 Fixed checkAuthenticatedOnly() fatal TypeError — WP_User returned instead of true|WP_Error",
+        "📋 Upload script now logs HTTP status, JSON error summary, and response body preview on every failure",
+        "🛡️ Added defensive return type normalization in all permission callbacks",
+        "📝 Issue write-up and memory rules added for return type and diagnostics patterns"
+      ]
+    },
     {
       "version": "2.7.0",
       "date": "2026-03-12",
