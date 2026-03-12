@@ -37,8 +37,9 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 				if strings.Contains(path, pattern) {
 					return filepath.SkipDir
 				}
-			}
-			return nil
+		}
+
+		return nil
 		}
 
 		return s.processLocalFile(files, absPluginPath, path, info, excludePatterns)
