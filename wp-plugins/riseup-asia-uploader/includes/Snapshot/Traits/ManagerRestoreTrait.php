@@ -16,6 +16,7 @@ use PDO;
 use Exception;
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PhpNativeType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\SnapshotErrorType;
