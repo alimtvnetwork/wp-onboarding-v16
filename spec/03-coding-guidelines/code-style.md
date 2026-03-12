@@ -1020,7 +1020,7 @@ if _, err := os.Stat(projectDir); os.IsNotExist(err) {
 
 // ❌ FORBIDDEN — Inline stat + mixed polarity
 if _, err := os.Stat(projectDir); err == nil && !isOverwrite {
-    return fmt.Errorf("project exists, use isOverwrite=true to replace")
+    return apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace")
 }
 
 // ✅ REQUIRED — Separate stat call, use pathutil, named booleans
