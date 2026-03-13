@@ -192,6 +192,9 @@ export default function RequestSessions() {
   const [detailTab, setDetailTab] = useState<string>("response");
   const [liveMode, setLiveMode] = useState(false);
 
+  const captureDeleteError = useCaptureOnError({ source: "RequestSessions.deleteMutation", endpoint: "/request-sessions", method: "DELETE", triggerComponent: "RequestSessions" });
+  const captureClearError = useCaptureOnError({ source: "RequestSessions.clearMutation", endpoint: "/request-sessions", method: "DELETE", triggerComponent: "RequestSessions" });
+
   // Fetch sessions
   const { data: sessionsData, isLoading, refetch } = useQuery({
     queryKey: ["request-sessions"],
