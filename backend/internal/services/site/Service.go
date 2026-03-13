@@ -132,8 +132,31 @@ func (s *Service) broadcastProgress(input ConnectionProgressInput) {
 	s.log.Debug("Connection test progress", "siteId", input.SiteId, "step", input.Step, "status", input.Status, "message", input.Message)
 }
 
-// GetDecryptedPassword returns the decrypted password for a site
+// GetDecryptedPassword returns the decrypted password for a site.
+// Prefers the default credential from SiteCredentials; falls back to legacy site fields.
 func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) apperror.Result[string] {
+	// Try default credential first
+	defaultCred, credErr := s.db.GetDefaultCredential(id)
+	hasDefaultCredential := credErr == nil && defaultCred != nil
+
+	if hasDefaultCredential {
+		s.log.Debug("GetDecryptedPassword using default credential",
+			"siteId", id,
+			"credId", defaultCred.Id,
+			"username", defaultCred.Username,
+		)
+
+		password, err := decrypt(defaultCred.PasswordEncrypted, s.encryptionKey)
+		if err != nil {
+			return apperror.FailWrap[string](err, apperror.ErrInternal, "failed to decrypt credential password")
+		}
+
+		return apperror.Ok(string(password))
+	}
+
+	// Fall back to legacy site-level password
+	s.log.Warn("GetDecryptedPassword falling back to legacy site password", "siteId", id)
+
 	result := s.GetById(ctx, id)
 	if result.HasError() {
 		return apperror.Fail[string](result.AppError())
