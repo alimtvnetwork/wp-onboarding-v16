@@ -176,7 +176,7 @@ class OnboardAPI {
         ));
 
         register_rest_route($namespace, '/mutations/(?P<mutation_token>[a-f0-9]+)/plugins/(?P<slug>[a-z0-9\-_]+)/enable', array(
-            'methods' => 'POST',
+            'methods' => 'PUT',
             'callback' => array($this, 'enable_plugin'),
             'permission_callback' => array($this, 'verify_mutation_token_enable'),
         ));
