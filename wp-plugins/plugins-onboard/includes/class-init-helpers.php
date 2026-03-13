@@ -106,7 +106,7 @@ class OnboardInitHelpers {
             OnboardLogger::debug('=== ALL DIRECTORIES READY ===');
             return true;
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('[Directories] Exception during initialization', $e);
             return false;
         }
