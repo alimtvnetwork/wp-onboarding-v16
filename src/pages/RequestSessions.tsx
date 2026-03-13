@@ -245,7 +245,7 @@ export default function RequestSessions() {
       queryClient.invalidateQueries({ queryKey: ["request-sessions"] });
       setSelectedId(null);
     },
-    onError: () => toast.error("Failed to clear sessions"),
+    onError: (error: Error) => { captureClearError(error); toast.error("Failed to clear sessions"); },
   });
 
   // Filter & search
