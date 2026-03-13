@@ -126,6 +126,11 @@ func (db *DB) GetDefaultCredential(siteId int64) (*SiteCredential, *apperror.App
 }
 
 // scanCredentialRow scans a single credential from a Row.
+// ScanCredentialRowExported is the exported version for use by other packages.
+func ScanCredentialRowExported(row *sql.Row) (*SiteCredential, *apperror.AppError) {
+	return scanCredentialRow(row)
+}
+
 func scanCredentialRow(row *sql.Row) (*SiteCredential, *apperror.AppError) {
 	var cred SiteCredential
 	var isDefaultInt int

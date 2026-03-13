@@ -101,6 +101,18 @@ export const api = {
     ),
   getSiteCredentials: (siteId: number) =>
     request<{ url: string; username: string; appPassword: string }>(`/sites/${siteId}/credentials`),
+  
+  // Site Credentials CRUD (multi-user per site)
+  listSiteCredentials: (siteId: number) =>
+    request<SiteCredentialResponse[]>(`/sites/${siteId}/credentials`),
+  createSiteCredential: (siteId: number, input: { appName: string; username: string; password: string }) =>
+    request<SiteCredentialResponse>(`/sites/${siteId}/credentials`, { method: "POST", body: JSON.stringify(input) }),
+  updateSiteCredential: (siteId: number, credId: number, input: { appName: string; username: string; password: string }) =>
+    request<SiteCredentialResponse>(`/sites/${siteId}/credentials/${credId}`, { method: "PUT", body: JSON.stringify(input) }),
+  deleteSiteCredential: (siteId: number, credId: number) =>
+    request<void>(`/sites/${siteId}/credentials/${credId}`, { method: "DELETE" }),
+  setDefaultCredential: (siteId: number, credId: number) =>
+    request<void>(`/sites/${siteId}/credentials/${credId}/default`, { method: "PUT" }),
 
   // Plugins
   getPlugins: () => request<Plugin[]>("/plugins"),
