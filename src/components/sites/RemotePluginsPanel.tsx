@@ -130,6 +130,18 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     meta: { suppressGlobalError: true },
   });
 
+  // Capture query errors for persistence without showing modal
+  useEffect(() => {
+    if (isError && queryError) {
+      captureException(queryError, {
+        source: "RemotePluginsPanel.fetchPlugins",
+        endpoint: `/sites/${site.id}/remote-plugins`,
+        method: "GET",
+        triggerComponent: "RemotePluginsPanel",
+      });
+    }
+  }, [isError, queryError, captureException, site.id]);
+
   // Force sync mutation (bypasses cache)
   const forceSyncMutation = useMutation({
     meta: { suppressGlobalError: true },
