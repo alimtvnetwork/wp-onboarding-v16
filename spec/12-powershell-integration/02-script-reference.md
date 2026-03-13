@@ -90,6 +90,18 @@
 # ZIP + upload all plugins (except QUpload) via QUpload API
 .\run.ps1 -ua
 
+# Multi-site: upload all plugins to all enabled sites
+.\run.ps1 -uas
+
+# Multi-site: upload to a specific site
+.\run.ps1 -uas -site "Test V1"
+
+# Multi-site: upload to all except one site
+.\run.ps1 -uas -xs "Test V1"
+
+# Multi-site: exclude multiple sites (comma-separated)
+.\run.ps1 -uas -xs "Test V1,Test V2"
+
 # Clear old ZIPs, then ZIP + upload all
 .\run.ps1 -ua -c
 
