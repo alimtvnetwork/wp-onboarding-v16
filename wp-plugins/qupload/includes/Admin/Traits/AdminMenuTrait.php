@@ -110,7 +110,7 @@ trait AdminMenuTrait {
         wp_enqueue_style(
             'qupload-admin-errors',
             plugins_url('assets/css/admin-errors.css', $pluginDir . '/' . $pluginSlug . '.php'),
-            ['qupload-admin-styles'],
+            ['qupload-admin-shared', 'qupload-admin-styles'],
             $version,
         );
 

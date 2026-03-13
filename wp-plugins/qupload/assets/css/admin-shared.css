@@ -1,0 +1,289 @@
+/**
+ * QUpload Admin — Shared Styles
+ *
+ * Common CSS variables, keyframe animations, modal structure, and reusable
+ * component styles. Enqueued as a dependency for all page-specific CSS files
+ * to prevent style duplication.
+ *
+ * @package QUpload
+ * @since   2.1.0
+ */
+
+/* ============================================================================
+   FONTS
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================================
+   CSS VARIABLES — Design Tokens
+   ============================================================================ */
+
+:root {
+    /* ── Brand ─────────────────────────────────────────── */
+    --qu-primary: #0c63e4;
+    --qu-primary-light: #3d8bfd;
+    --qu-primary-glow: rgba(13, 110, 253, 0.2);
+    --qu-primary-bg: #eff6ff;
+    --qu-accent: #6366f1;
+    --qu-accent-glow: rgba(99, 102, 241, 0.2);
+
+    /* ── Semantic ──────────────────────────────────────── */
+    --qu-success: #059669;
+    --qu-success-bg: #ecfdf5;
+    --qu-danger: #dc2626;
+    --qu-danger-bg: #fef2f2;
+    --qu-warning: #d97706;
+    --qu-warning-bg: #fffbeb;
+
+    /* ── Text ──────────────────────────────────────────── */
+    --qu-text: #0f172a;
+    --qu-text-secondary: #475569;
+    --qu-text-muted: #94a3b8;
+
+    /* ── Surfaces & Borders ────────────────────────────── */
+    --qu-border: #e2e8f0;
+    --qu-border-strong: #cbd5e1;
+    --qu-bg: #f8fafc;
+    --qu-card-bg: #ffffff;
+
+    /* ── Shadows ───────────────────────────────────────── */
+    --qu-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --qu-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --qu-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    --qu-shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    --qu-shadow-xl: 0 20px 50px -12px rgba(0, 0, 0, 0.2);
+
+    /* ── Radii ─────────────────────────────────────────── */
+    --qu-radius: 8px;
+    --qu-radius-lg: 12px;
+    --qu-radius-xl: 16px;
+
+    /* ── Motion ────────────────────────────────────────── */
+    --qu-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --qu-transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================================================
+   KEYFRAME ANIMATIONS
+   ============================================================================ */
+
+@keyframes quFadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes quFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes quScaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes quSlideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes quPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes quRipple {
+    0% { transform: scale(0); opacity: 0.5; }
+    100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes quSpin {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes quGlow {
+    0%, 100% { box-shadow: 0 0 5px var(--qu-primary-glow); }
+    50% { box-shadow: 0 0 20px var(--qu-primary-glow), 0 0 40px rgba(13, 110, 253, 0.1); }
+}
+
+@keyframes quShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* ============================================================================
+   SHARED MODAL STYLES — Cinematic entrance, blur backdrop, elevated shadows
+   ============================================================================ */
+
+.qupload-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qupload-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: quFadeIn 0.25s ease-out;
+}
+
+.qupload-modal-content {
+    position: relative;
+    background: var(--qu-card-bg);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    border-radius: var(--qu-radius-lg);
+    box-shadow: var(--qu-shadow-xl), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: quScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.qupload-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--qu-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--qu-bg);
+}
+
+.qupload-modal-header .modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.qupload-modal-header h3 {
+    margin: 0;
+    font-weight: 700;
+    color: var(--qu-text);
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.qupload-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--qu-text-muted);
+    line-height: 1;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all var(--qu-transition);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qupload-modal-close:hover {
+    color: var(--qu-danger);
+    background: var(--qu-danger-bg);
+    transform: rotate(90deg);
+}
+
+.qupload-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.qupload-modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--qu-border);
+    background: var(--qu-bg);
+}
+
+.qupload-modal-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.qupload-warning-text {
+    color: var(--qu-danger);
+    font-weight: 500;
+}
+
+/* ============================================================================
+   SHARED STATUS BADGES
+   ============================================================================ */
+
+.qupload-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all var(--qu-transition);
+}
+
+.qupload-status-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.qupload-status-success {
+    background: linear-gradient(135deg, var(--qu-success-bg), #d1fae5);
+    color: var(--qu-success);
+    border: 1px solid #a7f3d0;
+}
+
+.qupload-status-error {
+    background: linear-gradient(135deg, var(--qu-danger-bg), #fecaca);
+    color: var(--qu-danger);
+    border: 1px solid #fca5a5;
+}
+
+.qupload-status-warning {
+    background: linear-gradient(135deg, var(--qu-warning-bg), #fef3c7);
+    color: var(--qu-warning);
+    border: 1px solid #fbbf24;
+}
+
+.qupload-status-neutral {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: var(--qu-text-secondary);
+    border: 1px solid var(--qu-border-strong);
+}
+
+/* ============================================================================
+   SHARED INLINE STATUS TEXT
+   ============================================================================ */
+
+.qupload-inline-status {
+    margin-left: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.qupload-inline-status.success { color: var(--qu-success); }
+.qupload-inline-status.error { color: var(--qu-danger); }
+
+/* ============================================================================
+   SHARED SPINNER
+   ============================================================================ */
+
+.qupload-admin .dashicons.spin {
+    animation: quSpin 0.8s linear infinite;
+}

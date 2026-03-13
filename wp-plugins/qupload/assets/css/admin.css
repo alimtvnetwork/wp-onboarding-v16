@@ -517,13 +517,7 @@
     transform: rotate(15deg) scale(1.1);
 }
 
-/* ============================================================================
-   SPINNER
-   ============================================================================ */
-
-.qupload-admin .dashicons.spin {
-    animation: quSpin 0.8s linear infinite;
-}
+/* Spinner now in admin-shared.css */
 
 /* ============================================================================
    SCROLLBAR STYLING
