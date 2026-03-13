@@ -779,6 +779,66 @@ function Get-DefaultQUploaderPath {
     return $resolved
 }
 
+# ── Helper: Decode Base64 string ───────────────────────────────────────
+function Decode-Base64 {
+    param([string]$Encoded)
+    return [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Encoded))
+}
+
+# ── Helper: Get default credential from a site config ──────────────────
+function Get-DefaultSiteCredential {
+    param($SiteConfig)
+
+    $defaultCred = $null
+    foreach ($cred in $SiteConfig.credentials) {
+        if ($cred.isDefault -eq $true) {
+            $defaultCred = $cred
+            break
+        }
+    }
+
+    # Fall back to first credential if none marked as default
+    if (-not $defaultCred -and $SiteConfig.credentials.Count -gt 0) {
+        $defaultCred = $SiteConfig.credentials[0]
+        Write-Host "    No default credential found, using first: $($defaultCred.appName)" -ForegroundColor DarkYellow
+    }
+
+    if (-not $defaultCred) {
+        Write-Host "    ERROR: No credentials configured for site $($SiteConfig.name)" -ForegroundColor Red
+        return $null
+    }
+
+    $username = Decode-Base64 $defaultCred.usernameBase64
+    $password = Decode-Base64 $defaultCred.passwordBase64
+
+    Write-Host "    Credential: $($defaultCred.appName)" -ForegroundColor Gray
+    Write-Host "    Username:   $username" -ForegroundColor Gray
+
+    return @{
+        Username = $username
+        Password = $password
+        AppName  = $defaultCred.appName
+    }
+}
+
+# ── Helper: List all configured sites ──────────────────────────────────
+function Show-ConfiguredSites {
+    if (-not $Config.wpPlugins -or -not $Config.wpPlugins.sites -or $Config.wpPlugins.sites.Count -eq 0) {
+        Write-Host "  No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "  Configured sites:" -ForegroundColor Cyan
+    $siteIndex = 0
+    foreach ($s in $Config.wpPlugins.sites) {
+        $siteIndex++
+        $enabledLabel = if ($s.enabled -eq $false) { " [DISABLED]" } else { "" }
+        $credCount = if ($s.credentials) { $s.credentials.Count } else { 0 }
+        Write-Host "    $siteIndex. $($s.name)$enabledLabel - $($s.url) ($credCount credential(s))" -ForegroundColor $(if ($s.enabled -eq $false) { "DarkGray" } else { "White" })
+    }
+    Write-Host ""
+}
+
 # ── Helper: Clear existing ZIP files from wp-plugins/ ───────────────────
 function Clear-PluginZips {
     $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
