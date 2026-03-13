@@ -178,19 +178,88 @@ func (s *Service) logActivateSkipped(pctx *publishContext) {
 	s.broadcastStageLog(skipLog)
 }
 
-// activateViaUploader attempts plugin activation via the Riseup Asia Uploader
+// activateViaUploader attempts plugin activation via Riseup Asia Uploader, falling back to QUpload.
 func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time) *apperror.AppError {
 	availResult := pctx.WPClient.CheckRiseupAsiaAvailable()
 	availability := availResult.ValueOr(nil)
 
-	if availability.IsUnavailable() {
+	if availability.IsAvailable() {
+		endpointUrl := buildActivateEndpointUrl(pctx.SiteInfo.Url)
+		s.logActivateRequest(pctx, endpointUrl)
+
+		activateErr := s.executeActivation(pctx, endpointUrl, startTime)
+		if activateErr == nil {
+			return nil
+		}
+
+		s.log.Warn("Riseup Asia activation failed, trying QUpload fallback",
+			"slug", pctx.Mapping.RemoteSlug,
+			"error", activateErr.Error(),
+		)
+	}
+
+	return s.activateViaQUploadFallback(pctx, startTime)
+}
+
+// activateViaQUploadFallback attempts activation via QUpload.
+func (s *Service) activateViaQUploadFallback(pctx *publishContext, startTime time.Time) *apperror.AppError {
+	s.log.Info("Checking QUpload availability for activation fallback",
+		"slug", pctx.Mapping.RemoteSlug,
+	)
+
+	qAvailResult := pctx.WPClient.CheckQUploadAvailable()
+	qAvail := qAvailResult.Value()
+
+	if qAvail.IsUnavailable() {
+		s.log.Error("QUpload also not available for activation",
+			"slug", pctx.Mapping.RemoteSlug,
+		)
+
 		return s.failActivateNoUploader(pctx)
 	}
 
-	endpointUrl := buildActivateEndpointUrl(pctx.SiteInfo.Url)
+	s.log.Info("Using QUpload for activation fallback",
+		"slug", pctx.Mapping.RemoteSlug,
+		"namespace", qAvail.Namespace,
+	)
+
+	endpointUrl := wordpress.BuildWpPluginUrl(
+		pctx.SiteInfo.Url,
+		wordpress.QUploadNamespace,
+		endpointtype.Enable,
+	)
 	s.logActivateRequest(pctx, endpointUrl)
 
-	return s.executeActivation(pctx, endpointUrl, startTime)
+	return s.executeQUploadActivation(pctx, endpointUrl, startTime)
+}
+
+// executeQUploadActivation performs plugin activation via QUpload.
+func (s *Service) executeQUploadActivation(pctx *publishContext, endpointUrl string, startTime time.Time) *apperror.AppError {
+	enableErr := pctx.WPClient.EnablePluginViaQUpload(pctx.Mapping.RemoteSlug)
+	if enableErr != nil {
+		activateErr := apperror.Wrap(enableErr, apperror.ErrWPConnection, "QUpload plugin activation failed")
+
+		s.log.Error("QUpload activation failed",
+			"slug", pctx.Mapping.RemoteSlug,
+			"error", activateErr.Error(),
+		)
+
+		errInput := activationErrorInput{
+			EndpointUrl: endpointUrl,
+			StartTime:   startTime,
+			Err:         activateErr,
+		}
+		s.logActivationError(pctx, errInput)
+
+		return activateErr
+	}
+
+	s.log.Info("Plugin activated via QUpload (fallback)",
+		"slug", pctx.Mapping.RemoteSlug,
+	)
+	s.logActivateSuccess(pctx, endpointUrl, startTime)
+
+	return nil
 }
 
 // buildActivateEndpointUrl constructs the activation endpoint URL.
