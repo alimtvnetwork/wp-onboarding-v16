@@ -17,7 +17,7 @@ Both are in `src/hooks/useCaptureQueryError.ts`.
 | File | Queries/Mutations |
 |------|-------------------|
 | `src/App.tsx` | Global `queryCache.onError` and `mutationCache.onError` both check the flag |
-| `src/components/sites/RemotePluginsPanel.tsx` | remote-plugins query, forceSyncMutation, toggleMutation, deleteMutation |
+| `src/components/sites/RemotePluginsPanel.tsx` | remote-plugins query (useCaptureQueryError), forceSyncMutation (captureException in onError), toggleMutation (captureException in onError), deleteMutation (captureException in onError) |
 | `src/components/sites/RemotePluginFileBrowser.tsx` | plugin files query (useCaptureQueryError) |
 | `src/components/sites/SiteCard.tsx` | snapshots query, cron jobs query (useCaptureQueryError) |
 | `src/hooks/useRemoteSnapshots.ts` | All queries (snapshots, settings, providers — useEffect) and all mutations (create, delete, restore, updateSettings, fullBackup, incrementalBackup, import, cleanup — handleSnapshotError) |
