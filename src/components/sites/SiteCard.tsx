@@ -431,6 +431,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         open={showSnapshots}
         onOpenChange={setShowSnapshots}
       />
+      <SiteCredentialsPanel
+        site={site}
+        open={showCredentials}
+        onOpenChange={setShowCredentials}
+      />
     </Card>
   );
 }
