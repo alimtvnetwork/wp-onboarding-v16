@@ -1,6 +1,6 @@
 # Master Coding Guidelines — Cross-Language Enforcement Reference
 
-> **Version:** 1.0.0
+> **Version:** 1.2.0
 > **Updated:** 2026-02-23
 > **Applies to:** PHP, Go, TypeScript — all code in this project
 > **Purpose:** Single source of truth for any developer or AI to produce standards-compliant code
