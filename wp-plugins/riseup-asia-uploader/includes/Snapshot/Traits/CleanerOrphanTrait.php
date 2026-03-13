@@ -25,13 +25,15 @@ use RiseupAsia\Helpers\PathHelper;
 trait CleanerOrphanTrait {
     private function cleanupOrphanFiles(bool $dryRun = false): array {
         $result = array(
-            ResponseKeyType::Removed->value => 0,
-            ResponseKeyType::Errors->value  => array(),
+            ResponseKeyType::Removed->value    => 0,
+            ResponseKeyType::BytesFreed->value => 0,
+            ResponseKeyType::Errors->value     => array(),
         );
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
         $knownPaths = array_map(function ($f) { return $f['Filepath']; }, $files);
-        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
+        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
         if (PathHelper::isDirMissing($scanDir)) {
             return $result;
@@ -57,8 +59,11 @@ trait CleanerOrphanTrait {
 
             if ($isLiveRun) {
                 try {
+                    $fileSize = @filesize($path) ?: 0;
+
                     if (@unlink($path)) {
                         $result[ResponseKeyType::Removed->value]++;
+                        $result[ResponseKeyType::BytesFreed->value] += $fileSize;
                     } else {
                         $result[ResponseKeyType::Errors->value][] = "Failed to delete orphan file: {$path}";
                         $this->log(LogLevelType::Error->value, 'Failed to delete orphan file', array(ResponseKeyType::Path->value => $path));
@@ -86,7 +91,8 @@ trait CleanerOrphanTrait {
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
         $knownFiles = array_map(function ($f) { return $f['Filename']; }, $files);
-        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
+        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
         if (PathHelper::isDirMissing($scanDir)) {
             return $result;
@@ -143,7 +149,8 @@ trait CleanerOrphanTrait {
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
         $knownPaths = array_map(function ($f) { return dirname($f['Filepath']); }, $files);
         $knownPaths = array_unique($knownPaths);
-        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
+        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
         if (PathHelper::isDirMissing($scanDir)) {
             return $result;
