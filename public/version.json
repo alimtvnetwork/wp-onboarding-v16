@@ -9,6 +9,16 @@
   "quploadVersion": "2.10.0",
   "changelog": [
     {
+      "version": "2.10.0",
+      "date": "2026-03-13",
+      "title": "Multi-User Per Site Spec & Version Bump",
+      "changes": [
+        "📋 Multi-user per site credential spec created (SiteCredentials table, CRUD API, React UI)",
+        "🌱 Test V1 & Test V2 sites added to seed config with credentials",
+        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+      ]
+    },
+    {
       "version": "2.9.0",
       "date": "2026-03-12",
       "title": "Scheduler Config Safety & PHPStan Integration",

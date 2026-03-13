@@ -1,5 +1,5 @@
 {
-  "Version": "2.1.0",
+  "Version": "2.10.0",
 
   "DatabasePath": "data/app.db",
   "TempDir": ".temp",
