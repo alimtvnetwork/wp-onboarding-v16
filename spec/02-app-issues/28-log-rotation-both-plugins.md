@@ -34,13 +34,24 @@ Add to `settings.json` for both plugins:
 {
   "logging": {
     "maxLogSizeBytes": 524288,
+    "maxRotations": 10,
     "archiveEnabled": true
   }
 }
 ```
 
 - `maxLogSizeBytes`: Default 524288 (512 KB). Maximum size before rotation.
+- `maxRotations`: Default 10. Maximum number of archived rotations to keep. When exceeded, the **oldest** archive folder is deleted before creating a new one.
 - `archiveEnabled`: Default `true`. Set to `false` to disable rotation.
+
+### Rotation Pruning
+
+When a new rotation would create archive folder `N` and `N > maxRotations`:
+1. List all archive folders sorted numerically
+2. Delete the oldest folder(s) until count is `maxRotations - 1`
+3. Create the new archive folder
+
+This ensures disk usage is bounded to approximately `maxRotations × maxLogSizeBytes` per log type.
 
 ### Archive Directory Structure
 
