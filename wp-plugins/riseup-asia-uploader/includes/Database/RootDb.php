@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 
 use LogicException;
 use PDO;
+use Throwable;
 
 use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
 use RiseupAsia\Database\Traits\RootDbSchemaTrait;
