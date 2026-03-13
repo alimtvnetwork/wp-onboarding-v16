@@ -139,7 +139,6 @@ class OnboardDatabase {
             if (OnboardBooleanHelpers::isDirMissing($db_dir)) {
                 $this->last_error = "Database directory does not exist: {$db_dir}. CRITICAL: Directories must be created first via OnboardInitHelpers::ensure_directories_exist()";
                 OnboardLogger::error('[DB] ' . $this->last_error);
-                error_log('Onboard DB: ' . $this->last_error);
                 return;
             }
             OnboardLogger::debug('[DB] ✓ Database directory exists');
