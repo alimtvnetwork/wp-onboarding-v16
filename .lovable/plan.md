@@ -248,14 +248,55 @@ Build a self-hosted licensing server in Go that issues, validates, and manages l
 
 ---
 
+## Active Issues (March 2026)
+
+### 1. 🔴 ORM PDO Fix — Redeploy Riseup Asia Uploader
+- **Issue:** `spec/02-app-issues/25-orm-pdo-class-not-found.md`
+- **Action:** Redeploy plugin to remote site; verify `use PDO;` is present in deployed `OrmQueryTrait.php`
+- **Scope:** Deployment only (code already fixed locally)
+
+### 2. 🟡 QUpload Activate → PUT (All Layers)
+- **Issue:** `spec/02-app-issues/26-qupload-activate-should-use-put.md`
+- **Action:** Change HTTP method from POST to PUT across:
+  - [ ] PHP: `QUpload/RouteRegistrationTrait.php` — `HttpMethodType::Put`
+  - [ ] PHP: `QUpload/Enums/HttpMethodType.php` — add `Put` case if missing
+  - [ ] PHP: `plugins-onboard/api/Api.php` — enable endpoint → PUT
+  - [ ] Go: `QUploader.go` line 76 → `httpmethod.Put`
+  - [ ] Go: `EndpointMap.go` EPEnablePlugin → `httpmethod.Put`
+  - [ ] Frontend: API client enable/activate calls → PUT
+  - [ ] PowerShell: Any direct activate calls → `-Method PUT`
+  - [ ] Specs: Update endpoint documentation
+
+### 3. 🟡 QUpload Admin UI Uplift
+- **Issue:** `spec/02-app-issues/27-qupload-ui-uplift-version-header.md`
+- **Action:**
+  - [ ] Add version number badge to QUpload admin header
+  - [ ] Apply shared `admin-shared.css` animations (fadeInUp, shimmer)
+  - [ ] Match Riseup Asia Uploader's gradient button + high-contrast design
+  - [ ] Visual QA against Riseup Asia reference
+
+### 4. 🟡 Log Rotation for Both Plugins
+- **Issue:** `spec/02-app-issues/28-log-rotation-both-plugins.md`
+- **Action:**
+  - [ ] Add `settings.json` with `logging.maxLogSizeBytes: 524288` to both plugins
+  - [ ] Implement rotation in `FileLogger.php` (both plugins): check size before write, move to `archive/{NNN}/`
+  - [ ] Rotate `log.txt`, `error.txt`, `stacktrace.txt` independently
+  - [ ] Test with synthetic large writes
+  - [ ] Verify admin log viewer still works post-rotation
+
+---
+
 ## Next Task Selection
 
 > For handoff to other AI models: pick the next unchecked (🔲) task from "Remaining Work" above.
 
 **Recommended order:**
-1. **Pre-publish backup hook** (7A remaining) — wire backup call into Go publish pipeline
-2. **Type-safety audit** — confirm remaining `interface{}` scope, migrate any outstanding packages
-3. **Future considerations** (not yet scoped):
+1. **ORM PDO Fix** — redeploy Riseup Asia Uploader (critical, admin broken)
+2. **QUpload Activate → PUT** — all-layer HTTP method fix
+3. **QUpload UI Uplift** — version header + design parity
+4. **Log Rotation** — both plugins
+5. **Type-safety audit** — confirm remaining `interface{}` scope
+6. **Future considerations** (not yet scoped):
    - Admin dashboard for licensing server (React SPA or Go templates)
    - Publish analytics / history reporting
    - Plugin dependency graph visualization

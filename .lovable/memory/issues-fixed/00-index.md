@@ -32,8 +32,8 @@
 
 ## Cross-References
 
-- **App issues (03–20):** `spec/02-app-issues/` — see [spec/02-app-issues/README.md](../../../spec/02-app-issues/README.md) for the full index
-- **Structural debt issues:** `.lovable/memory/issues/` — [001-missing-stack-traces](../issues/001-missing-stack-traces-in-error-log.md), [002-raw-comparisons](../issues/002-raw-comparisons-in-ternaries.md)
+- **App issues (03–28):** `spec/02-app-issues/` — see [spec/02-app-issues/README.md](../../../spec/02-app-issues/README.md) for the full index
+- **Structural debt issues:** `.lovable/memory/issues/` — [001-missing-stack-traces](../issues/001-missing-stack-traces-in-error-log.md), [002-raw-comparisons](../issues/002-raw-comparisons-in-ternaries.md), [003-orm-pdo](../issues/003-orm-pdo-class-not-found.md), [004-activate-put](../issues/004-qupload-activate-put-not-post.md), [005-log-rotation](../issues/005-log-rotation-missing.md)
 
 ---
 
