@@ -145,7 +145,7 @@ trait OrmQueryTrait {
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return (int) ($result['count'] ?? 0);
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'OrmQueryTrait::count() failed:');
             return 0;
         }
