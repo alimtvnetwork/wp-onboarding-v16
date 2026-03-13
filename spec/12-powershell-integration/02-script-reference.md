@@ -32,6 +32,8 @@
 | | `-uas -xs 'name'` | Combo | Upload ALL plugins to all sites EXCEPT named one(s) (comma-separated) |
 | `-t` | `-test` | Switch | Run Go backend tests and exit |
 | `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`, `-q`, `-ua`, or `-z`) |
+| | `-site` | String | Target a specific site by name (use with `-uas`) |
+| `-xs` | `-exclude` | String | Exclude site(s) by name, comma-separated (use with `-uas`) |
 | `-d` | `-debug` | Switch | Enable debug logging for upload |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
