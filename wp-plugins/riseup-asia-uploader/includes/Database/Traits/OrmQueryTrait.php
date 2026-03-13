@@ -13,6 +13,9 @@ namespace RiseupAsia\Database\Traits;
 if (!defined('ABSPATH')) {
     exit;
 }
+use PDO;
+use Throwable;
+
 use RiseupAsia\Helpers\InitHelpers;
 
 trait OrmQueryTrait {
