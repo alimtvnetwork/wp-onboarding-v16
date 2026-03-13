@@ -452,9 +452,16 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     );
 
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
+    const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    failedResults.forEach((r) => {
+      captureException(r.reason instanceof Error ? r.reason : new Error(String(r.reason)), {
+        endpoint: `/sites/${site.id}/remote-plugins/disable`,
+        method: "POST",
+        triggerComponent: "RemotePluginsPanel.bulkDeactivate",
+      });
+    });
     if (succeeded > 0) toast.success(`Deactivated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failed > 0) toast.error(`Failed to deactivate ${failed} plugin${failed !== 1 ? "s" : ""}`);
+    if (failedResults.length > 0) toast.error(`Failed to deactivate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`);
     queryClient.invalidateQueries({ queryKey });
     setBulkActionPending(false);
     setSelectedPlugins(new Set());
