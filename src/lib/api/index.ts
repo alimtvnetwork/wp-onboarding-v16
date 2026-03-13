@@ -92,6 +92,7 @@ export type {
   PluginActivityEntry,
   ConfigActivityEntry,
   ConnectionActivityEntry,
+  SiteCredentialResponse,
 } from './types';
 
 // Envelope utilities

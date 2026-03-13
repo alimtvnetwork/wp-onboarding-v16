@@ -22,6 +22,7 @@ import {
   Activity,
   Clock,
   Calendar,
+  Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord, SnapshotCronJob } from "@/lib/api";
@@ -32,6 +33,7 @@ import { useErrorStore } from "@/stores/errorStore";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { RemotePluginsPanel } from "./RemotePluginsPanel";
 import { RemoteSnapshotsPanel } from "./RemoteSnapshotsPanel";
+import { SiteCredentialsPanel } from "./SiteCredentialsPanel";
 import { useSettings } from "@/hooks/useSettings";
 
 interface SiteCardProps {
@@ -48,6 +50,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [deployingUploader, setDeployingUploader] = useState(false);
   const [showRemotePlugins, setShowRemotePlugins] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
   const { data: settings } = useSettings();
   const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
@@ -392,6 +395,16 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => setShowCredentials(true)}
+            title="Manage credentials for this site"
+          >
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Users</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => onEdit(site)}
           >
             <Edit className="h-4 w-4 shrink-0" />
@@ -418,6 +431,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         site={site}
         open={showSnapshots}
         onOpenChange={setShowSnapshots}
+      />
+      <SiteCredentialsPanel
+        site={site}
+        open={showCredentials}
+        onOpenChange={setShowCredentials}
       />
     </Card>
   );

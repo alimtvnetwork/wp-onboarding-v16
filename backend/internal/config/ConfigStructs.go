@@ -97,13 +97,24 @@ type SeedConfig struct {
 	Plugins []SeedPlugin
 }
 
+// SeedCredential represents a single credential entry for a seed site
+type SeedCredential struct {
+	AppName             string
+	Username            string
+	ApplicationPassword string
+	IsDefault           bool
+}
+
 // SeedSite represents a site to seed
 type SeedSite struct {
 	Name                string
 	URL                 string
+	// Legacy single-credential fields (backward compat)
 	Username            string
 	ApplicationPassword string
 	Category            string
+	// Multi-credential support
+	Credentials         []SeedCredential
 }
 
 // SeedPlugin represents a plugin to seed

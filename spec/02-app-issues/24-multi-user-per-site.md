@@ -125,19 +125,22 @@ CREATE INDEX IF NOT EXISTS idx_sitecredentials_default ON SiteCredentials(SiteId
 
 ## Implementation Phases
 
-### Phase 1 (Current)
-- ✅ Added Test V1 and Test V2 sites to `config.json` with first credential
-- 📋 This spec created
+### Phase 1 ✅
+- Added Test V1 and Test V2 sites to `config.json` with multi-credential format
+- This spec created
 
-### Phase 2: Backend
-- DB migration v10 (SiteCredentials table + data migration)
-- Update `SeedSite`/`SeedCredential` structs
-- Update seed logic for multi-credential
-- CRUD database operations
-- REST API endpoints
+### Phase 2 ✅ Backend
+- DB migration v10 (SiteCredentials table + data migration from Sites)
+- `SeedCredential` struct added to `ConfigStructs.go`
+- Multi-credential seed logic in `ConfigSeed.go` (backward-compat with legacy single-credential)
+- `DatabaseCredentials.go` — full CRUD helpers
+- `CrudCredentials.go` — site service credential methods
+- `CredentialHandlers.go` — REST API handlers
+- Routes registered in `RouterRoutes.go`
+- `AdapterSite.go` — interface + adapter methods
 
-### Phase 3: Frontend
-- Credentials list component
-- Add/Edit/Delete credential modals
-- Default credential selector
-- Integration with connection test flow
+### Phase 3 ✅ Frontend
+- `SiteCredentialsPanel.tsx` — full CRUD dialog (list, add, edit, delete, set default)
+- "Users" button added to `SiteCard.tsx`
+- API methods added to `methods.ts` (list, create, update, delete, setDefault)
+- `SiteCredentialResponse` type added to `types.ts`

@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/wordpress"
@@ -23,6 +24,13 @@ type SiteServiceInterface interface {
 	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (*site.ConnectionResult, *apperror.AppError)
 	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, *apperror.AppError)
 	GetCredentials(ctx context.Context, siteId int64) (site.SiteCredentials, *apperror.AppError)
+
+	// Credential CRUD
+	ListCredentials(ctx context.Context, siteId int64) ([]database.SiteCredential, *apperror.AppError)
+	CreateCredential(ctx context.Context, siteId int64, input CredentialCreateInput) (*database.SiteCredential, *apperror.AppError)
+	UpdateCredential(ctx context.Context, credId int64, input CredentialUpdateInput) (*database.SiteCredential, *apperror.AppError)
+	DeleteCredential(ctx context.Context, credId int64) *apperror.AppError
+	SetDefaultCredential(ctx context.Context, siteId, credId int64) *apperror.AppError
 
 	// Remote plugin proxy — typed returns
 	GetRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, *apperror.AppError)
@@ -236,4 +244,24 @@ func (a *SiteServiceAdapter) CleanupRemoteSnapshots(ctx context.Context, siteId 
 
 func (a *SiteServiceAdapter) ClearErrorLogHashes() int {
 	return a.Service.ClearErrorLogHashes()
+}
+
+func (a *SiteServiceAdapter) ListCredentials(_ context.Context, siteId int64) ([]database.SiteCredential, *apperror.AppError) {
+	return a.Service.DB().ListSiteCredentials(siteId)
+}
+
+func (a *SiteServiceAdapter) CreateCredential(_ context.Context, siteId int64, input CredentialCreateInput) (*database.SiteCredential, *apperror.AppError) {
+	return a.Service.CreateCredential(siteId, input.AppName, input.Username, input.Password)
+}
+
+func (a *SiteServiceAdapter) UpdateCredential(_ context.Context, credId int64, input CredentialUpdateInput) (*database.SiteCredential, *apperror.AppError) {
+	return a.Service.UpdateCredential(credId, input.AppName, input.Username, input.Password)
+}
+
+func (a *SiteServiceAdapter) DeleteCredential(_ context.Context, credId int64) *apperror.AppError {
+	return a.Service.DB().DeleteSiteCredential(credId)
+}
+
+func (a *SiteServiceAdapter) SetDefaultCredential(_ context.Context, siteId, credId int64) *apperror.AppError {
+	return a.Service.DB().SetDefaultCredential(siteId, credId)
 }

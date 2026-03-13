@@ -245,6 +245,18 @@ export interface Site {
   updatedAt: string;
 }
 
+export interface SiteCredentialResponse {
+  id: number;
+  siteId: number;
+  appName: string;
+  username: string;
+  isDefault: boolean;
+  connectionStatus: string;
+  lastTestedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Plugin {
   id: number;
   name: string;
