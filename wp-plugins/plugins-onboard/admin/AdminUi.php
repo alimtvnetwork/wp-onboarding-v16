@@ -631,7 +631,7 @@ class OnboardAdminUI {
     public function render_tests() {
         $test_runner = new OnboardTestRunner();
         
-        include ONBOARD_PLUGIN_DIR . 'admin/views/tests.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Tests.php';
     }
 
     /**
