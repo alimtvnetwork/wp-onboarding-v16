@@ -601,7 +601,7 @@ class OnboardAdminUI {
             delete_transient('onboard_new_app_' . $_GET['app_id']);
         }
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/applications.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Applications.php';
     }
 
     /**
