@@ -1,25 +1,99 @@
-/* QUpload Admin — Error Logs Page Styles */
+/**
+ * QUpload Admin — Error Logs Page Styles (Modernized)
+ *
+ * @package QUpload
+ * @updated 2026-03-13 — Modern design system matching admin.css
+ */
+
+/* ============================================================================
+   KEYFRAMES (standalone for pages loading only this file)
+   ============================================================================ */
+
+@keyframes quFadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes quFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes quScaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes quPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+/* ============================================================================
+   ERROR LOG CONTAINER
+   ============================================================================ */
 
 .qupload-error-log {
     max-width: 1100px;
 }
 
-/* File Viewer Card */
-.qupload-file-viewer-card {
-    background: #fff;
-    border: 1px solid #c3c4c7;
+/* ============================================================================
+   TAB CONTENT PANEL
+   ============================================================================ */
+
+.qupload-tab-content {
+    border: 1px solid var(--qu-border, #e2e8f0);
     border-top: none;
-    border-radius: 0 0 4px 4px;
+    padding: 20px;
+    background: var(--qu-card-bg, #ffffff);
+    border-radius: 0 0 var(--qu-radius-lg, 12px) var(--qu-radius-lg, 12px);
+    animation: quFadeIn 0.3s ease-out;
+}
+
+/* ============================================================================
+   TAB BADGE (error count on tab)
+   ============================================================================ */
+
+.tab-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 5px;
+    vertical-align: middle;
+    animation: quPulse 2s ease-in-out infinite;
+    box-shadow: 0 1px 4px rgba(220, 38, 38, 0.3);
+}
+
+/* ============================================================================
+   FILE VIEWER CARD
+   ============================================================================ */
+
+.qupload-file-viewer-card {
+    background: var(--qu-card-bg, #ffffff);
+    border: 1px solid var(--qu-border, #e2e8f0);
+    border-top: none;
+    border-radius: 0 0 var(--qu-radius-lg, 12px) var(--qu-radius-lg, 12px);
     overflow: hidden;
+    box-shadow: var(--qu-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+    animation: quFadeInUp 0.5s ease-out;
 }
 
 .file-viewer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background: #f6f7f7;
-    border-bottom: 1px solid #dcdcde;
+    padding: 14px 18px;
+    background: var(--qu-bg, #f8fafc);
+    border-bottom: 1px solid var(--qu-border, #e2e8f0);
     flex-wrap: wrap;
     gap: 8px;
 }
@@ -27,13 +101,15 @@
 .file-viewer-header h2 {
     margin: 0;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--qu-text, #0f172a);
+    font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .file-viewer-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
@@ -46,23 +122,34 @@
 }
 
 .file-size-label {
-    color: #787c82;
+    color: var(--qu-text-muted, #94a3b8);
     font-size: 12px;
-    margin-right: 4px;
+    margin-right: 8px;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
 }
 
-/* Auto-refresh toggle */
+/* ============================================================================
+   AUTO-REFRESH TOGGLE
+   ============================================================================ */
+
 .auto-refresh-toggle {
     display: inline-flex;
     align-items: center;
+    gap: 6px;
     cursor: pointer;
-    margin-right: 6px;
-    padding: 4px 8px;
-    border-radius: 3px;
-    background: #f0f0f1;
-    border: 1px solid #dcdcde;
+    margin-right: 8px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--qu-bg, #f8fafc);
+    border: 1px solid var(--qu-border, #e2e8f0);
     font-size: 12px;
     user-select: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auto-refresh-toggle:hover {
+    border-color: var(--qu-primary-light, #3d8bfd);
+    background: var(--qu-primary-bg, #eff6ff);
 }
 
 .auto-refresh-toggle input[type="checkbox"] {
@@ -72,7 +159,14 @@
 .auto-refresh-label {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    font-weight: 500;
+    color: var(--qu-text-secondary, #475569);
+    transition: color 0.2s;
+}
+
+.auto-refresh-label:hover {
+    color: var(--qu-text, #0f172a);
 }
 
 .live-dot {
@@ -80,25 +174,25 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #dcdcde;
-    transition: background 0.3s;
+    background: var(--qu-border-strong, #cbd5e1);
+    transition: all 0.3s;
 }
 
-.auto-refresh-toggle input:checked ~ .auto-refresh-label .live-dot {
-    background: #00a32a;
-    box-shadow: 0 0 4px rgba(0, 163, 42, 0.5);
-    animation: qupload-pulse 1.5s infinite;
+.auto-refresh-toggle input:checked ~ .auto-refresh-label .live-dot,
+.live-dot.active {
+    background: #22c55e;
+    box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+    animation: livePulse 1.5s infinite;
 }
 
-@keyframes qupload-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
+/* ============================================================================
+   FILE CONTENT
+   ============================================================================ */
 
-/* File Content */
 .file-viewer-body {
     position: relative;
     min-height: 200px;
+    padding: 0;
 }
 
 .file-loading {
@@ -106,18 +200,19 @@
     align-items: center;
     justify-content: center;
     padding: 40px;
-    color: #787c82;
+    color: var(--qu-text-muted, #94a3b8);
     gap: 8px;
+    animation: quPulse 1.5s ease-in-out infinite;
 }
 
 .file-content-pre {
     margin: 0;
-    padding: 16px;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    padding: 20px;
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 12px;
-    line-height: 1.6;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    line-height: 1.7;
+    background: #0f172a;
+    color: #e2e8f0;
     overflow-x: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -126,42 +221,86 @@
     border: none;
 }
 
+.file-content-pre::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.file-content-pre::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+.file-content-pre::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+}
+
+.file-content-pre::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
 .file-empty {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 40px;
-    color: #00a32a;
+    color: #22c55e;
     gap: 8px;
     font-size: 14px;
+    font-weight: 500;
 }
 
 .file-empty .dashicons {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    color: #00a32a;
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: #22c55e;
+    display: block;
+    animation: quPulse 2s ease-in-out infinite;
 }
 
-/* Copy feedback */
+/* ============================================================================
+   COPY FEEDBACK TOAST
+   ============================================================================ */
+
 .qupload-copy-feedback {
     position: fixed;
     top: 40px;
     right: 20px;
-    background: #00a32a;
+    background: linear-gradient(135deg, #059669, #10b981);
     color: #fff;
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 10px 20px;
+    border-radius: var(--qu-radius, 8px);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     z-index: 100001;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    animation: qupload-fade-in-out 2s ease-in-out;
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.3);
+    animation: qupload-toast-in-out 2s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-@keyframes qupload-fade-in-out {
-    0% { opacity: 0; transform: translateY(-10px); }
-    15% { opacity: 1; transform: translateY(0); }
-    85% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-10px); }
+@keyframes qupload-toast-in-out {
+    0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    15% { opacity: 1; transform: translateY(0) scale(1); }
+    85% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media screen and (max-width: 782px) {
+    .file-viewer-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .file-viewer-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }

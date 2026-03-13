@@ -1,56 +1,426 @@
-/* QUpload Admin — Global Styles */
+/**
+ * QUpload Admin — Global Styles (Modernized)
+ *
+ * @package QUpload
+ * @updated 2026-03-13 — Modern design system with CSS variables, animations, elevated UI
+ */
+
+/* ============================================================================
+   FONTS & VARIABLES
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+    --qu-primary: #0c63e4;
+    --qu-primary-light: #3d8bfd;
+    --qu-primary-glow: rgba(13, 110, 253, 0.2);
+    --qu-primary-bg: #eff6ff;
+    --qu-accent: #6366f1;
+    --qu-accent-glow: rgba(99, 102, 241, 0.2);
+    --qu-success: #059669;
+    --qu-success-bg: #ecfdf5;
+    --qu-danger: #dc2626;
+    --qu-danger-bg: #fef2f2;
+    --qu-warning: #d97706;
+    --qu-warning-bg: #fffbeb;
+    --qu-text: #0f172a;
+    --qu-text-secondary: #475569;
+    --qu-text-muted: #94a3b8;
+    --qu-border: #e2e8f0;
+    --qu-border-strong: #cbd5e1;
+    --qu-bg: #f8fafc;
+    --qu-card-bg: #ffffff;
+    --qu-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --qu-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --qu-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    --qu-shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    --qu-shadow-xl: 0 20px 50px -12px rgba(0, 0, 0, 0.2);
+    --qu-radius: 8px;
+    --qu-radius-lg: 12px;
+    --qu-radius-xl: 16px;
+    --qu-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --qu-transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================================================
+   KEYFRAME ANIMATIONS
+   ============================================================================ */
+
+@keyframes quFadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes quFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes quScaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes quSlideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes quPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes quRipple {
+    0% { transform: scale(0); opacity: 0.5; }
+    100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes quSpin {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes quGlow {
+    0%, 100% { box-shadow: 0 0 5px var(--qu-primary-glow); }
+    50% { box-shadow: 0 0 20px var(--qu-primary-glow), 0 0 40px rgba(13, 110, 253, 0.1); }
+}
+
+@keyframes quShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* ============================================================================
+   GENERAL LAYOUT
+   ============================================================================ */
 
 .qupload-admin {
-    max-width: 900px;
+    max-width: 1000px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    animation: quFadeIn 0.4s ease-out;
+}
+
+.qupload-admin,
+.qupload-admin p,
+.qupload-admin td,
+.qupload-admin th,
+.qupload-admin label,
+.qupload-admin input,
+.qupload-admin select,
+.qupload-admin button,
+.qupload-admin .description {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.qupload-admin h1,
+.qupload-admin h2,
+.qupload-admin h3 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
 }
 
 .qupload-admin h1 {
     display: flex;
     align-items: center;
-    margin-bottom: 20px;
-    font-size: 23px;
-    font-weight: 400;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 15px 0;
+    padding: 9px 0 4px;
+    line-height: 1.3;
+    color: var(--qu-text);
+    animation: quFadeInUp 0.5s ease-out;
 }
+
+.qupload-admin h1 .dashicons {
+    font-size: 26px;
+    width: 26px;
+    height: 26px;
+    color: var(--qu-primary);
+    transition: transform var(--qu-transition);
+}
+
+.qupload-admin h1:hover .dashicons {
+    transform: rotate(-5deg) scale(1.1);
+}
+
+.qupload-version-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--qu-primary-bg), #dbeafe);
+    color: var(--qu-primary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    vertical-align: middle;
+    margin-left: 6px;
+    transition: all var(--qu-transition);
+    letter-spacing: 0.3px;
+}
+
+.qupload-version-badge:hover {
+    background: var(--qu-primary);
+    color: #fff;
+    border-color: var(--qu-primary);
+    transform: scale(1.05);
+}
+
+.qupload-admin .description {
+    color: var(--qu-text-secondary);
+    font-style: italic;
+    margin-bottom: 20px;
+    animation: quFadeInUp 0.5s ease-out 0.1s both;
+}
+
+/* ============================================================================
+   CARDS — Elevated Modern Style
+   ============================================================================ */
 
 .qupload-card {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
-    padding: 16px 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    background: var(--qu-card-bg);
+    border: 1px solid var(--qu-border);
+    border-radius: var(--qu-radius-lg);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--qu-shadow-sm);
+    transition: all var(--qu-transition);
+    animation: quFadeInUp 0.5s ease-out both;
+    position: relative;
+    overflow: hidden;
 }
 
+.qupload-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--qu-primary), var(--qu-accent));
+    opacity: 0;
+    transition: opacity var(--qu-transition);
+}
+
+.qupload-card:hover {
+    border-color: var(--qu-border-strong);
+    box-shadow: var(--qu-shadow-md);
+    transform: translateY(-1px);
+}
+
+.qupload-card:hover::before {
+    opacity: 1;
+}
+
+/* Stagger card animations */
+.qupload-card:nth-child(1) { animation-delay: 0s; }
+.qupload-card:nth-child(2) { animation-delay: 0.08s; }
+.qupload-card:nth-child(3) { animation-delay: 0.16s; }
+.qupload-card:nth-child(4) { animation-delay: 0.24s; }
+.qupload-card:nth-child(5) { animation-delay: 0.32s; }
+
 .qupload-card h2 {
-    margin: 0 0 12px;
+    margin: 0 0 16px;
+    padding: 0 0 12px;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--qu-text);
+    border-bottom: 2px solid var(--qu-border);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .qupload-card h2 .dashicons {
+    color: var(--qu-primary);
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: #2271b1;
+    transition: transform var(--qu-transition-bounce);
+}
+
+.qupload-card:hover h2 .dashicons {
+    transform: scale(1.15);
+}
+
+.qupload-card table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
 .qupload-card table th {
     text-align: left;
     width: 160px;
+    padding: 8px 12px 8px 0;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--qu-text-secondary);
+    border-bottom: 1px solid var(--qu-border);
+    vertical-align: top;
+}
+
+.qupload-card table td {
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--qu-text);
+    border-bottom: 1px solid var(--qu-border);
+}
+
+.qupload-card table tr:last-child th,
+.qupload-card table tr:last-child td {
+    border-bottom: none;
+}
+
+.qupload-card table tr {
+    transition: background var(--qu-transition);
+}
+
+.qupload-card table tr:hover {
+    background: var(--qu-bg);
+}
+
+.qupload-card table code {
+    background: var(--qu-bg);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid var(--qu-border);
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    color: var(--qu-accent);
 }
 
 .qupload-card ol {
     margin-left: 20px;
+    padding: 0;
 }
 
 .qupload-card ol li {
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    line-height: 1.5;
+    color: var(--qu-text-secondary);
 }
 
-/* Tab Navigation */
+/* ============================================================================
+   BUTTONS — Rich Interactive Effects
+   ============================================================================ */
+
+.qupload-admin .button,
+.qupload-admin .button-primary,
+.qupload-admin .button-secondary {
+    position: relative;
+    overflow: hidden;
+    transition: all var(--qu-transition);
+    border-radius: 6px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+/* Ripple effect */
+.qupload-admin .button::after,
+.qupload-admin .button-primary::after,
+.qupload-admin .button-secondary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    transform: scale(0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.qupload-admin .button:active::after,
+.qupload-admin .button-primary:active::after,
+.qupload-admin .button-secondary:active::after {
+    animation: quRipple 0.6s ease-out;
+}
+
+/* Primary buttons */
+.qupload-admin .button-primary {
+    background: linear-gradient(135deg, var(--qu-primary) 0%, var(--qu-primary-light) 100%);
+    border-color: var(--qu-primary);
+    box-shadow: var(--qu-shadow-sm), 0 1px 2px rgba(12, 99, 228, 0.2);
+    color: #fff;
+}
+
+.qupload-admin .button-primary:hover,
+.qupload-admin .button-primary:focus {
+    background: linear-gradient(135deg, #0a52be 0%, var(--qu-primary) 100%);
+    border-color: #0a52be;
+    box-shadow: var(--qu-shadow), 0 4px 12px rgba(12, 99, 228, 0.3);
+    transform: translateY(-1px);
+    color: #fff;
+}
+
+.qupload-admin .button-primary:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: var(--qu-shadow-sm);
+}
+
+/* Secondary buttons */
+.qupload-admin .button-secondary,
+.qupload-admin .button:not(.button-primary):not(.button-link) {
+    background: var(--qu-card-bg);
+    border: 1px solid var(--qu-border-strong);
+    color: var(--qu-text);
+    box-shadow: var(--qu-shadow-sm);
+}
+
+.qupload-admin .button-secondary:hover,
+.qupload-admin .button:not(.button-primary):not(.button-link):hover {
+    background: var(--qu-bg);
+    border-color: var(--qu-primary-light);
+    color: var(--qu-primary);
+    box-shadow: var(--qu-shadow);
+    transform: translateY(-1px);
+}
+
+.qupload-admin .button-secondary:active,
+.qupload-admin .button:not(.button-primary):not(.button-link):active {
+    transform: translateY(0px) scale(0.98);
+    background: var(--qu-border);
+}
+
+/* Danger button */
+.qupload-admin .button-link-delete,
+.qupload-admin .button.danger {
+    color: var(--qu-danger);
+}
+
+.qupload-admin .button-link-delete:hover,
+.qupload-admin .button.danger:hover {
+    color: #fff;
+    background: var(--qu-danger);
+    border-color: var(--qu-danger);
+}
+
+/* Button icon animations */
+.qupload-admin .button .dashicons,
+.qupload-admin .button-primary .dashicons,
+.qupload-admin .button-secondary .dashicons {
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 3px;
+    transition: transform var(--qu-transition);
+}
+
+.qupload-admin .button:hover .dashicons {
+    transform: scale(1.15);
+}
+
+.qupload-admin .button .spinner {
+    margin: 0 4px;
+}
+
+/* ============================================================================
+   TAB NAVIGATION — Modern Underline Style
+   ============================================================================ */
+
 .qupload-tabs {
     margin-bottom: 0;
 }
@@ -58,11 +428,225 @@
 .qupload-tabs .nav-tab {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    transition: all var(--qu-transition);
+    border-radius: var(--qu-radius) var(--qu-radius) 0 0;
+    padding: 8px 18px;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+    font-size: 13px;
+}
+
+.qupload-tabs .nav-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--qu-primary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(-50%);
+}
+
+.qupload-tabs .nav-tab:hover {
+    background: var(--qu-primary-bg);
+    color: var(--qu-primary);
+}
+
+.qupload-tabs .nav-tab:hover::after {
+    width: 80%;
+}
+
+.qupload-tabs .nav-tab-active {
+    background: var(--qu-card-bg);
+    color: var(--qu-primary);
+    font-weight: 600;
+    border-bottom-color: var(--qu-card-bg);
+}
+
+.qupload-tabs .nav-tab-active::after {
+    width: 100%;
+    background: linear-gradient(90deg, var(--qu-primary), var(--qu-accent));
 }
 
 .qupload-tabs .nav-tab .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+    transition: transform var(--qu-transition);
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.qupload-tabs .nav-tab:hover .dashicons {
+    transform: scale(1.2);
+}
+
+/* ============================================================================
+   FORM INPUTS — Enhanced Focus States
+   ============================================================================ */
+
+.qupload-admin input[type="text"],
+.qupload-admin input[type="url"],
+.qupload-admin input[type="email"],
+.qupload-admin input[type="number"],
+.qupload-admin input[type="password"],
+.qupload-admin textarea,
+.qupload-admin select {
+    border: 1px solid var(--qu-border);
+    border-radius: 6px;
+    transition: all var(--qu-transition);
+    padding: 6px 10px;
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.qupload-admin input[type="text"]:focus,
+.qupload-admin input[type="url"]:focus,
+.qupload-admin input[type="email"]:focus,
+.qupload-admin input[type="number"]:focus,
+.qupload-admin input[type="password"]:focus,
+.qupload-admin textarea:focus,
+.qupload-admin select:focus {
+    border-color: var(--qu-primary);
+    box-shadow: 0 0 0 3px var(--qu-primary-glow);
+    outline: none;
+}
+
+/* ============================================================================
+   FORM TABLE (settings)
+   ============================================================================ */
+
+.qupload-admin .form-table tr {
+    transition: background var(--qu-transition);
+}
+
+.qupload-admin .form-table tr:hover {
+    background: var(--qu-bg);
+}
+
+.qupload-admin .form-table th {
+    color: var(--qu-text);
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.qupload-admin .form-table .description {
+    color: var(--qu-text-muted);
+    font-style: normal;
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+/* ============================================================================
+   WP LIST TABLE
+   ============================================================================ */
+
+.qupload-admin .wp-list-table {
+    border-radius: var(--qu-radius);
+    overflow: hidden;
+    border: 1px solid var(--qu-border);
+}
+
+.qupload-admin .wp-list-table thead th {
+    background: var(--qu-bg);
+    color: var(--qu-text);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--qu-border-strong);
+}
+
+.qupload-admin .wp-list-table tbody tr {
+    transition: background var(--qu-transition);
+}
+
+.qupload-admin .wp-list-table tbody tr:hover {
+    background: var(--qu-primary-bg) !important;
+}
+
+/* ============================================================================
+   NOTICES
+   ============================================================================ */
+
+.qupload-admin .notice {
+    animation: quSlideDown 0.4s ease-out;
+    border-radius: var(--qu-radius);
+    transition: opacity 0.3s ease-out;
+}
+
+/* ============================================================================
+   WARNING
+   ============================================================================ */
+
+.qupload-warning {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--qu-warning-bg), #fef3c7);
+    border-left: 4px solid var(--qu-warning);
+    padding: 14px 18px;
+    margin-top: 20px;
+    border-radius: 0 var(--qu-radius) var(--qu-radius) 0;
+    animation: quFadeInUp 0.4s ease-out;
+    box-shadow: var(--qu-shadow-sm);
+}
+
+.qupload-warning .dashicons {
+    color: var(--qu-warning);
+    transition: transform var(--qu-transition-bounce);
+}
+
+.qupload-warning:hover .dashicons {
+    transform: rotate(15deg) scale(1.1);
+}
+
+/* ============================================================================
+   SPINNER
+   ============================================================================ */
+
+.qupload-admin .dashicons.spin {
+    animation: quSpin 0.8s linear infinite;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+.qupload-admin ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.qupload-admin ::-webkit-scrollbar-track {
+    background: var(--qu-bg);
+    border-radius: 3px;
+}
+
+.qupload-admin ::-webkit-scrollbar-thumb {
+    background: var(--qu-border-strong);
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.qupload-admin ::-webkit-scrollbar-thumb:hover {
+    background: var(--qu-text-muted);
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media screen and (max-width: 782px) {
+    .qupload-card {
+        padding: 16px;
+    }
+
+    .qupload-card table th {
+        width: 120px;
+    }
+
+    .qupload-admin h1 {
+        font-size: 20px;
+    }
 }
