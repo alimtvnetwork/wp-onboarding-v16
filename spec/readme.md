@@ -18,6 +18,7 @@
 | [07-error-manage/](./07-error-manage/) | Error handling, modal, logging, response envelope | Per-feature files |
 | [08-wordpress-plugin/](./08-wordpress-plugin/) | WordPress companion plugin features (snapshots, auto-update redirects) | `database-snapshots.md` |
 | [09-wordpress-plugin-development/](./09-wordpress-plugin-development/) | Plugin development workflow and conventions | Per-topic files |
+| [10-feedback-report-feature/](./10-feedback-report-feature/) | Feedback report feature specification | `01-overview.md` |
 | [10-wp-plugin-publish/](./10-wp-plugin-publish/) | Publishing pipeline specification | Per-feature files |
 | [11-upload-scripts/](./11-upload-scripts/) | PowerShell upload scripts (V1, V2, V3) for WordPress plugin deployment | `readme.md` |
 | [12-powershell-integration/](./12-powershell-integration/) | PowerShell runner (`run.ps1`) for Go+React projects with pnpm PnP | `00-overview.md` |

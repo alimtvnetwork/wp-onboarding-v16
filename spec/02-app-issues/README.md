@@ -58,3 +58,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 19 | missing-phpdoc-opening-trait-parse-error | PHP / Parse Error | Missing `/**` opening in PHPDoc caused silent trait load failure and site crash |
 | 20 | broken-cross-references-in-memory-files | Documentation / Cross-References | Broken "System memory" references to non-existent entries in 3 memory files |
 | 21 | wrong-qupload-api-namespace-in-script | PowerShell / REST API | Upload script used `qupload/v1` instead of `qupload-api/v1` — every upload 404'd |
+| 22 | auth-return-type-fatal-error | WordPress/PHP — Auth/REST | `checkAuthenticatedOnly()` returned `WP_User` instead of `true\|WP_Error` — fatal TypeError |

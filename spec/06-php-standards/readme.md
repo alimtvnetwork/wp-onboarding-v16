@@ -2,7 +2,7 @@
 
 > **Version:** 5.0.0  
 > **Updated:** 2026-02-14  
-> **Applies to:** WordPress companion plugins (PHP 7.4+)
+> **Applies to:** WordPress companion plugins (PHP 8.1+)
 
 ---
 
