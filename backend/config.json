@@ -71,6 +71,20 @@
         "Username": "admin",
         "ApplicationPassword": "RUtSTSBwUENNIGF1ZzkgRTRqOCBvM3JQIHNsOUE=",
         "Category": "Development"
+      },
+      {
+        "Name": "Test V1",
+        "Url": "https://testv1.developers-organism.com",
+        "Username": "test-plugins@pxdmail.net",
+        "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+        "Category": "Testing"
+      },
+      {
+        "Name": "Test V2",
+        "Url": "https://testv2.developers-organism.com",
+        "Username": "test-plugins@pxdmail.net",
+        "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+        "Category": "Testing"
       }
     ],
     "Plugins": [
