@@ -24,7 +24,8 @@ param(
     [Alias('d')][switch]$debug,
     [Alias('c')][switch]$clear,
     [Alias('pp')][string]$pluginpath = "",
-    [string]$site = ""
+    [string]$site = "",
+    [Alias('xs')][string]$exclude = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
