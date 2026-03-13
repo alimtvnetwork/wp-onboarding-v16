@@ -1,95 +1,11 @@
 /**
  * QUpload Admin — Global Styles (Modernized)
  *
+ * Variables, keyframes, and modal styles are in admin-shared.css (enqueued as dependency).
+ *
  * @package QUpload
  * @updated 2026-03-13 — Modern design system with CSS variables, animations, elevated UI
  */
-
-/* ============================================================================
-   FONTS & VARIABLES
-   ============================================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-:root {
-    --qu-primary: #0c63e4;
-    --qu-primary-light: #3d8bfd;
-    --qu-primary-glow: rgba(13, 110, 253, 0.2);
-    --qu-primary-bg: #eff6ff;
-    --qu-accent: #6366f1;
-    --qu-accent-glow: rgba(99, 102, 241, 0.2);
-    --qu-success: #059669;
-    --qu-success-bg: #ecfdf5;
-    --qu-danger: #dc2626;
-    --qu-danger-bg: #fef2f2;
-    --qu-warning: #d97706;
-    --qu-warning-bg: #fffbeb;
-    --qu-text: #0f172a;
-    --qu-text-secondary: #475569;
-    --qu-text-muted: #94a3b8;
-    --qu-border: #e2e8f0;
-    --qu-border-strong: #cbd5e1;
-    --qu-bg: #f8fafc;
-    --qu-card-bg: #ffffff;
-    --qu-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --qu-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --qu-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-    --qu-shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
-    --qu-shadow-xl: 0 20px 50px -12px rgba(0, 0, 0, 0.2);
-    --qu-radius: 8px;
-    --qu-radius-lg: 12px;
-    --qu-radius-xl: 16px;
-    --qu-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    --qu-transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* ============================================================================
-   KEYFRAME ANIMATIONS
-   ============================================================================ */
-
-@keyframes quFadeInUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes quFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes quScaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes quSlideDown {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes quPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-@keyframes quRipple {
-    0% { transform: scale(0); opacity: 0.5; }
-    100% { transform: scale(4); opacity: 0; }
-}
-
-@keyframes quSpin {
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes quGlow {
-    0%, 100% { box-shadow: 0 0 5px var(--qu-primary-glow); }
-    50% { box-shadow: 0 0 20px var(--qu-primary-glow), 0 0 40px rgba(13, 110, 253, 0.1); }
-}
-
-@keyframes quShimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-}
 
 /* ============================================================================
    GENERAL LAYOUT
