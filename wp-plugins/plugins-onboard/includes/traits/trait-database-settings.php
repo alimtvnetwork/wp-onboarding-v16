@@ -46,7 +46,7 @@ trait OnboardDatabaseSettingsTrait {
                 return ($decoded !== null || $result['setting_value'] === 'null') ? $decoded : $result['setting_value'];
             }
             return null;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Onboard get_setting error:');
             return null;
         }
