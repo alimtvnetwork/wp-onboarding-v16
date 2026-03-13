@@ -83,6 +83,7 @@ func (s *serviceImpl) processLocalFile(
 	}
 
 	return nil
+}
 
 // isFileExcluded checks if a file matches any exclude pattern.
 func isFileExcluded(path string, excludePatterns []string) bool {
