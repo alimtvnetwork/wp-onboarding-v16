@@ -88,7 +88,7 @@ trait OnboardDatabaseSettingsTrait {
                 );
             }
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Onboard save_setting error:');
             return false;
         }
