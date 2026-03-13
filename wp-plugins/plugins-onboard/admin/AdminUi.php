@@ -584,7 +584,7 @@ class OnboardAdminUI {
     public function render_settings() {
         $settings = $this->db->get_all_settings();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/settings.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Settings.php';
     }
 
     /**
