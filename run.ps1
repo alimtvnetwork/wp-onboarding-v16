@@ -24,7 +24,8 @@ param(
     [Alias('d')][switch]$debug,
     [Alias('c')][switch]$clear,
     [Alias('pp')][string]$pluginpath = "",
-    [string]$site = ""
+    [string]$site = "",
+    [Alias('xs')][string]$exclude = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -235,6 +236,7 @@ if ($help) {
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (multi-site)"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
+    Write-Host "  -uas -xs 'name'     Upload ALL plugins to all sites EXCEPT the named one(s)"
     Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host ""
@@ -270,6 +272,8 @@ if ($help) {
     Write-Host "  Upload (multi-site):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -uas                     # Upload all plugins to all sites"
     Write-Host "    .\run.ps1 -uas -site 'Test V1'     # Upload all plugins to specific site"
+    Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
+    Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites (comma-separated)"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
@@ -993,7 +997,7 @@ if ($uas) {
 
     Show-ConfiguredSites
 
-    # Filter sites: by name if -site provided, or all enabled sites
+    # Filter sites: by name if -site provided, exclude if -exclude provided, or all enabled sites
     $targetSites = @()
     if ($site -ne "") {
         $matchedSite = $Config.wpPlugins.sites | Where-Object { $_.name -eq $site }
@@ -1005,6 +1009,19 @@ if ($uas) {
         }
         $targetSites += $matchedSite
         Write-Host "  Target site: $site" -ForegroundColor Cyan
+    } elseif ($exclude -ne "") {
+        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+        $allEnabled = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
+        $targetSites = @($allEnabled | Where-Object { $_.name -notin $excludeNames })
+        $excludedSites = @($allEnabled | Where-Object { $_.name -in $excludeNames })
+
+        if ($excludedSites.Count -eq 0) {
+            Write-Host "WARNING: No matching sites found to exclude: $exclude" -ForegroundColor Yellow
+            Write-Host "Available sites:" -ForegroundColor Yellow
+            foreach ($s in $Config.wpPlugins.sites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
+        }
+
+        Write-Host "  Target: $($targetSites.Count) site(s) (excluded: $($excludeNames -join ', '))" -ForegroundColor Cyan
     } else {
         $targetSites = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
         Write-Host "  Target: All enabled sites ($($targetSites.Count))" -ForegroundColor Cyan

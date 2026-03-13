@@ -27,8 +27,13 @@
 | `-za` | | Switch | ZIP all plugins in `wp-plugins/` with version numbers |
 | `-zq` | `-zipqupload` | Switch | ZIP QUpload plugin |
 | `-c` | `-clear` | Switch | Remove all existing ZIP files from `wp-plugins/` before zipping |
+| | `-uas` | Switch | Upload ALL plugins to ALL configured sites (multi-site) |
+| | `-uas -site 'name'` | Combo | Upload ALL plugins to a specific site by name |
+| | `-uas -xs 'name'` | Combo | Upload ALL plugins to all sites EXCEPT named one(s) (comma-separated) |
 | `-t` | `-test` | Switch | Run Go backend tests and exit |
 | `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`, `-q`, `-ua`, or `-z`) |
+| | `-site` | String | Target a specific site by name (use with `-uas`) |
+| `-xs` | `-exclude` | String | Exclude site(s) by name, comma-separated (use with `-uas`) |
 | `-d` | `-debug` | Switch | Enable debug logging for upload |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
@@ -84,6 +89,18 @@
 
 # ZIP + upload all plugins (except QUpload) via QUpload API
 .\run.ps1 -ua
+
+# Multi-site: upload all plugins to all enabled sites
+.\run.ps1 -uas
+
+# Multi-site: upload to a specific site
+.\run.ps1 -uas -site "Test V1"
+
+# Multi-site: upload to all except one site
+.\run.ps1 -uas -xs "Test V1"
+
+# Multi-site: exclude multiple sites (comma-separated)
+.\run.ps1 -uas -xs "Test V1,Test V2"
 
 # Clear old ZIPs, then ZIP + upload all
 .\run.ps1 -ua -c
