@@ -175,7 +175,7 @@ class OnboardConfig {
                 if ($db_value !== null) {
                     $value = $db_value;
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 // Database read failed, keep constant value.
                 OnboardErrorLog::log($e, 'Onboard Config DB read error for ' . $key . ':');
             }
