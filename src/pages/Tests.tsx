@@ -163,7 +163,8 @@ export default function Tests() {
       toast.success("Test run started");
       queryClient.invalidateQueries({ queryKey: ["e2e", "runs"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      captureStartRunError(error);
       toast.error(`Failed to start: ${error.message}`);
     },
   });
