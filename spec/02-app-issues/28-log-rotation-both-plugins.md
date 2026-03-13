@@ -34,13 +34,24 @@ Add to `settings.json` for both plugins:
 {
   "logging": {
     "maxLogSizeBytes": 524288,
+    "maxRotations": 10,
     "archiveEnabled": true
   }
 }
 ```
 
 - `maxLogSizeBytes`: Default 524288 (512 KB). Maximum size before rotation.
+- `maxRotations`: Default 10. Maximum number of archived rotations to keep. When exceeded, the **oldest** archive folder is deleted before creating a new one.
 - `archiveEnabled`: Default `true`. Set to `false` to disable rotation.
+
+### Rotation Pruning
+
+When a new rotation would create archive folder `N` and `N > maxRotations`:
+1. List all archive folders sorted numerically
+2. Delete the oldest folder(s) until count is `maxRotations - 1`
+3. Create the new archive folder
+
+This ensures disk usage is bounded to approximately `maxRotations × maxLogSizeBytes` per log type.
 
 ### Archive Directory Structure
 
@@ -73,12 +84,13 @@ Each rotation creates a new numbered folder only for the specific file that exce
 
 ## Prevention and Non-Regression
 
-1. **Prevention rule:** All file-based logging MUST implement size-based rotation with configurable thresholds.
+1. **Prevention rule:** All file-based logging MUST implement size-based rotation with configurable thresholds and a max rotation count.
 2. **Acceptance criteria:**
    - Write >512 KB to a log file → file is rotated to `archive/001/`
    - Write another >512 KB → rotated to `archive/002/`
-   - `settings.json` override works (e.g., set to 1 MB)
-3. **Guardrails:** FileLogger constructor should validate `maxLogSizeBytes` is between 64 KB and 10 MB.
+   - Write 11 rotations with `maxRotations: 10` → `archive/001/` is deleted, only `002`–`011` remain
+   - `settings.json` override works (e.g., set to 1 MB, max 5 rotations)
+3. **Guardrails:** FileLogger constructor should validate `maxLogSizeBytes` is between 64 KB and 10 MB. `maxRotations` must be between 1 and 100.
 
 ## TODO and Follow-Ups
 
