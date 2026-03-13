@@ -394,6 +394,16 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => setShowCredentials(true)}
+            title="Manage credentials for this site"
+          >
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Users</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => onEdit(site)}
           >
             <Edit className="h-4 w-4 shrink-0" />
