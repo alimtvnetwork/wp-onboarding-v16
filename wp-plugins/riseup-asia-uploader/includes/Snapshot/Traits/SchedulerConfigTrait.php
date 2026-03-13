@@ -73,8 +73,8 @@ trait SchedulerConfigTrait {
             return;
         }
 
-        $scheduleTime = $settings['schedule_time'] ?? '04:00';
-        $scheduleDay = $settings['schedule_day'] ?? 'monday';
+        $scheduleTime = $settings[SettingsKeyType::ScheduleTime->value] ?? '04:00';
+        $scheduleDay = $settings[SettingsKeyType::ScheduleDay->value] ?? 'monday';
         $nextRun = $this->calculateNextRunTime($frequency, $scheduleTime, $scheduleDay);
         $recurrence = $this->mapFrequencyToRecurrence($frequency);
         $result = wp_schedule_event(
