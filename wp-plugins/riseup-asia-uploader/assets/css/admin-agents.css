@@ -1,43 +1,110 @@
 /* ================================================================
-   ADMIN AGENTS PAGE STYLES
+   ADMIN AGENTS PAGE STYLES — Modernized
+   @updated 2026-03-13 — Aligned with modern design system
    ================================================================ */
 
-.riseup-form .required { color: #dc3232; }
-.riseup-status { margin-left: 10px; }
-.riseup-status.success { color: #46b450; }
-.riseup-status.error { color: #dc3232; }
+/* ── Keyframes ───────────────────────────────────────── */
+@keyframes riseupFadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
+/* ── Form ─────────────────────────────────────────────── */
+.riseup-form .required {
+    color: var(--riseup-danger, #dc2626);
+    font-weight: 700;
+}
+
+.riseup-status {
+    margin-left: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: color 0.2s;
+}
+
+.riseup-status.success { color: var(--riseup-success, #059669); }
+.riseup-status.error { color: var(--riseup-danger, #dc2626); }
+
+/* ── Table Column Widths ──────────────────────────────── */
 .riseup-admin.riseup-agents .column-name { width: 20%; }
 .riseup-admin.riseup-agents .column-url { width: 30%; }
 .riseup-admin.riseup-agents .column-status { width: 10%; }
 .riseup-admin.riseup-agents .column-sync { width: 15%; }
 .riseup-admin.riseup-agents .column-actions { width: 25%; }
 
-.status-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: 500;
+/* ── Status Badges ────────────────────────────────────── */
+.riseup-admin.riseup-agents .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.status-Pending   { background: #f0f0f1; color: #50575e; }
-.status-Connected { background: #d4edda; color: #155724; }
-.status-Error     { background: #f8d7da; color: #721c24; }
 
-/* Agent-specific modal overrides */
+.riseup-admin.riseup-agents .status-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.status-Pending {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: var(--riseup-text-secondary, #475569);
+    border: 1px solid var(--riseup-border-strong, #cbd5e1);
+}
+
+.status-Connected {
+    background: linear-gradient(135deg, var(--riseup-success-bg, #ecfdf5), #d1fae5);
+    color: var(--riseup-success, #059669);
+    border: 1px solid #a7f3d0;
+}
+
+.status-Error {
+    background: linear-gradient(135deg, var(--riseup-danger-bg, #fef2f2), #fecaca);
+    color: var(--riseup-danger, #dc2626);
+    border: 1px solid #fca5a5;
+}
+
+/* ── Agent Modal Overrides ────────────────────────────── */
 .riseup-admin.riseup-agents .riseup-modal-content {
     max-width: 800px;
 }
 
-.riseup-admin .button .dashicons {
-    vertical-align: middle;
-    margin-top: -2px;
-    margin-right: 2px;
+/* ── Action Buttons ───────────────────────────────────── */
+.riseup-admin.riseup-agents .action-btn {
+    margin-right: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.action-btn { margin-right: 5px; }
+
+.riseup-admin.riseup-agents .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
 .action-btn .dashicons {
     font-size: 16px;
     width: 16px;
     height: 16px;
     vertical-align: middle;
+    transition: transform 0.2s;
 }
+
+.action-btn:hover .dashicons {
+    transform: scale(1.15);
+}
+
+/* ── Table Row Animation ──────────────────────────────── */
+.riseup-admin.riseup-agents .wp-list-table tbody tr {
+    animation: riseupFadeInUp 0.4s ease-out both;
+}
+
+.riseup-admin.riseup-agents .wp-list-table tbody tr:nth-child(1) { animation-delay: 0s; }
+.riseup-admin.riseup-agents .wp-list-table tbody tr:nth-child(2) { animation-delay: 0.06s; }
+.riseup-admin.riseup-agents .wp-list-table tbody tr:nth-child(3) { animation-delay: 0.12s; }
+.riseup-admin.riseup-agents .wp-list-table tbody tr:nth-child(4) { animation-delay: 0.18s; }
+.riseup-admin.riseup-agents .wp-list-table tbody tr:nth-child(5) { animation-delay: 0.24s; }

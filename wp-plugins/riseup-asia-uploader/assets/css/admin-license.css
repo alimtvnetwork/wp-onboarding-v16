@@ -1,55 +1,103 @@
 /* ================================================================
-   ADMIN LICENSE PAGE STYLES
+   ADMIN LICENSE PAGE STYLES — Modernized
+   @updated 2026-03-13 — Aligned with modern design system
    ================================================================ */
 
+/* ── Keyframes ───────────────────────────────────────── */
+@keyframes riseupFadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes riseupPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+
+/* ── License Status Badge ─────────────────────────────── */
 .license-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 4px;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: riseupFadeInUp 0.5s ease-out;
 }
+
+.license-status-badge:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .license-active {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #a3d9a5;
+    background: linear-gradient(135deg, var(--riseup-success-bg, #ecfdf5), #d1fae5);
+    color: var(--riseup-success, #059669);
+    border: 1px solid #a7f3d0;
 }
+
 .license-inactive {
-    background: #f0f0f1;
-    color: #50575e;
-    border: 1px solid #c3c4c7;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: var(--riseup-text-secondary, #475569);
+    border: 1px solid var(--riseup-border-strong, #cbd5e1);
 }
+
 .license-expired {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background: linear-gradient(135deg, var(--riseup-danger-bg, #fef2f2), #fecaca);
+    color: var(--riseup-danger, #dc2626);
+    border: 1px solid #fca5a5;
+    animation: riseupPulse 3s ease-in-out infinite;
 }
+
 .license-none {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffc107;
+    background: linear-gradient(135deg, var(--riseup-warning-bg, #fffbeb), #fef3c7);
+    color: var(--riseup-warning, #d97706);
+    border: 1px solid #fbbf24;
 }
+
+/* ── License Key Display ──────────────────────────────── */
 .license-key-display {
     font-size: 13px;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: var(--riseup-bg, #f8fafc);
+    padding: 6px 14px;
+    border-radius: var(--riseup-radius, 8px);
+    border: 1px solid var(--riseup-border, #e2e8f0);
+    display: inline-block;
 }
+
+/* ── Inline Status ────────────────────────────────────── */
 .riseup-inline-status {
     margin-left: 10px;
     font-size: 13px;
+    font-weight: 600;
+    transition: color 0.2s;
 }
-.riseup-inline-status.success { color: #46b450; }
-.riseup-inline-status.error { color: #dc3232; }
+
+.riseup-inline-status.success { color: var(--riseup-success, #059669); }
+.riseup-inline-status.error { color: var(--riseup-danger, #dc2626); }
+
+/* ── Button Dashicons ─────────────────────────────────── */
 .riseup-admin .button .dashicons {
     vertical-align: middle;
     margin-top: -2px;
-    margin-right: 2px;
+    margin-right: 3px;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dashicons.spin {
-    animation: spin 1s linear infinite;
+.riseup-admin .button:hover .dashicons {
+    transform: scale(1.15);
 }
-@keyframes spin {
+
+/* ── Spinner ──────────────────────────────────────────── */
+.dashicons.spin {
+    animation: riseupSpin 0.8s linear infinite;
+}
+
+@keyframes riseupSpin {
     100% { transform: rotate(360deg); }
 }
