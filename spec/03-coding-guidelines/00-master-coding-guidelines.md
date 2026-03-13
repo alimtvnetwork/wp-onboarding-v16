@@ -567,6 +567,7 @@ $this->db->insert(TableType::Transactions->value, array('PluginSlug' => $slug));
 | `scripts/lint-php-file-size.sh` | No `.php` file exceeding size limit | ✅ Active |
 | `scripts/lint-php-func-size.sh` | No PHP function body exceeding size limit | ✅ Active |
 | `scripts/lint-php-import-groups.sh` | PHP import grouping validation | ✅ Active |
+| `scripts/lint-php-phpstan.sh` | PHPStan Level-6 static analysis for wp-plugins | ✅ Active |
 | `scripts/pre-commit.sh` | Unified pre-commit hook running all checks | ✅ Active |
 
 ---
