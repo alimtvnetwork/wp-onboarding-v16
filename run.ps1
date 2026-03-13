@@ -236,6 +236,7 @@ if ($help) {
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (multi-site)"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
+    Write-Host "  -uas -xs 'name'     Upload ALL plugins to all sites EXCEPT the named one(s)"
     Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host ""
