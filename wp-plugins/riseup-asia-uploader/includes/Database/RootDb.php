@@ -94,7 +94,7 @@ class RootDb {
         }
     }
 
-    private function logError(\Throwable $e, string $message, array $context = array()): void {
+    private function logError(Throwable $e, string $message, array $context = array()): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Error->value, $message, $context);
