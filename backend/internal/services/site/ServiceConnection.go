@@ -32,7 +32,13 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	}
 
 	callback := s.buildProgressCallback(id)
-	client := s.wpClientFactory(prepared.Site.Url, prepared.Site.Username, string(prepared.Password), callback)
+	client := s.wpClientFactory(prepared.Site.Url, prepared.Username, string(prepared.Password), callback)
+
+	s.log.Info("Connection test using credential",
+		"siteId", id,
+		"username", prepared.Username,
+		"source", prepared.CredentialSource,
+	)
 
 	return s.executeConnectionTest(ctx, id, prepared.Site, client)
 }
@@ -63,11 +69,14 @@ func (s *Service) buildProgressCallback(id int64) func(wordpress.ProgressEvent) 
 
 // connectionTestContext holds the site and decrypted password for a connection test.
 type connectionTestContext struct {
-	Site     *models.Site
-	Password []byte
+	Site             *models.Site
+	Username         string
+	Password         []byte
+	CredentialSource string // "SiteCredentials" or "legacy"
 }
 
-// prepareConnectionTest loads the site and decrypts credentials.
+// prepareConnectionTest loads the site and resolves credentials from the default SiteCredential,
+// falling back to the legacy Sites.Username/PasswordEncrypted fields.
 func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*connectionTestContext, *apperror.AppError) {
 	site, siteErr := s.loadSiteWithProgress(ctx, id)
 	if siteErr != nil {
@@ -75,13 +84,49 @@ func (s *Service) prepareConnectionTest(ctx context.Context, id int64) (*connect
 		return nil, siteErr
 	}
 
+	// Try default credential from SiteCredentials table first
+	defaultCred, credErr := s.db.GetDefaultCredential(id)
+	hasDefaultCredential := credErr == nil && defaultCred != nil
+
+	if hasDefaultCredential {
+		s.log.Info("Using default credential from SiteCredentials",
+			"siteId", id,
+			"credId", defaultCred.Id,
+			"appName", defaultCred.AppName,
+			"username", defaultCred.Username,
+		)
+
+		password, decryptErr := s.decryptWithProgress(id, defaultCred.PasswordEncrypted)
+		if decryptErr != nil {
+
+			return nil, decryptErr
+		}
+
+		return &connectionTestContext{
+			Site:             site,
+			Username:         defaultCred.Username,
+			Password:         password,
+			CredentialSource: "SiteCredentials",
+		}, nil
+	}
+
+	// Fall back to legacy site-level credentials
+	s.log.Warn("No default credential found in SiteCredentials, falling back to legacy site fields",
+		"siteId", id,
+	)
+
 	password, decryptErr := s.decryptWithProgress(id, site.PasswordEncrypted)
 	if decryptErr != nil {
 
 		return nil, decryptErr
 	}
 
-	return &connectionTestContext{Site: site, Password: password}, nil
+	return &connectionTestContext{
+		Site:             site,
+		Username:         site.Username,
+		Password:         password,
+		CredentialSource: "legacy",
+	}, nil
 }
 
 // loadSiteWithProgress loads a site and broadcasts progress updates.
