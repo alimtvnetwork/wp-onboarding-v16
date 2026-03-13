@@ -22,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { SnapshotInterval, SnapshotSchedule, SnapshotRecord, SnapshotCronJob } from "@/lib/api/types";
 import { useApiQuery } from "@/hooks/useApiQuery";
+import { useCaptureQueryError } from "@/hooks/useCaptureQueryError";
 import { api, requireSuccess } from "@/lib/api";
 import { CronJobStatus } from "@/lib/constants";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
