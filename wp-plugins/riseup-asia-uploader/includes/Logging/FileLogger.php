@@ -57,6 +57,7 @@ class FileLogger {
     private ?string $errorFile = null;
     private ?string $stacktraceFile = null;
     private bool $isInitialized = false;
+    private int $maxLogSizeBytes = self::DEFAULT_MAX_LOG_SIZE_BYTES;
 
     /**
      * Maximum stack frames to capture in debug_backtrace().
