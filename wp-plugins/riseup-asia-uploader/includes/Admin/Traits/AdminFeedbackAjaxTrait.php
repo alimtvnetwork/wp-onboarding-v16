@@ -21,6 +21,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Logging\FileLogger;
+use Throwable;
 
 trait AdminFeedbackAjaxTrait {
 
