@@ -288,4 +288,32 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_sitehealthchecks_status ON SiteHealthChecks(Status);
 		`,
 	},
+	{
+		Version:     10,
+		Description: "SiteCredentials table for multi-user per site",
+		SQL: `
+			CREATE TABLE IF NOT EXISTS SiteCredentials (
+				Id INTEGER PRIMARY KEY AUTOINCREMENT,
+				SiteId INTEGER NOT NULL,
+				AppName TEXT NOT NULL,
+				Username TEXT NOT NULL,
+				PasswordEncrypted BLOB NOT NULL,
+				IsDefault INTEGER DEFAULT 0,
+				ConnectionStatus TEXT DEFAULT 'unknown',
+				LastTestedAt TEXT,
+				CreatedAt TEXT DEFAULT (datetime('now')),
+				UpdatedAt TEXT DEFAULT (datetime('now')),
+				FOREIGN KEY (SiteId) REFERENCES Sites(Id) ON DELETE CASCADE,
+				UNIQUE(SiteId, Username, AppName)
+			);
+			CREATE INDEX IF NOT EXISTS idx_sitecredentials_site ON SiteCredentials(SiteId);
+			CREATE INDEX IF NOT EXISTS idx_sitecredentials_default ON SiteCredentials(SiteId, IsDefault);
+
+			-- Migrate existing credentials from Sites table into SiteCredentials
+			INSERT OR IGNORE INTO SiteCredentials (SiteId, AppName, Username, PasswordEncrypted, IsDefault, ConnectionStatus, CreatedAt, UpdatedAt)
+			SELECT Id, 'default', Username, PasswordEncrypted, 1, ConnectionStatus, CreatedAt, UpdatedAt
+			FROM Sites
+			WHERE Username != '' AND PasswordEncrypted IS NOT NULL;
+		`,
+	},
 }
