@@ -27,6 +27,9 @@
 | `-za` | | Switch | ZIP all plugins in `wp-plugins/` with version numbers |
 | `-zq` | `-zipqupload` | Switch | ZIP QUpload plugin |
 | `-c` | `-clear` | Switch | Remove all existing ZIP files from `wp-plugins/` before zipping |
+| | `-uas` | Switch | Upload ALL plugins to ALL configured sites (multi-site) |
+| | `-uas -site 'name'` | Combo | Upload ALL plugins to a specific site by name |
+| | `-uas -xs 'name'` | Combo | Upload ALL plugins to all sites EXCEPT named one(s) (comma-separated) |
 | `-t` | `-test` | Switch | Run Go backend tests and exit |
 | `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`, `-q`, `-ua`, or `-z`) |
 | `-d` | `-debug` | Switch | Enable debug logging for upload |
