@@ -146,6 +146,8 @@ trait LoggerWriteTrait {
 
         return $maxIndex + 1;
     }
+
+    /** Persist an error/warn entry to the error_sessions SQLite table. */
     private function persistToErrorSessions(
         string $level,
         string $message,
