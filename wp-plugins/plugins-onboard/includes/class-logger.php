@@ -134,7 +134,7 @@ class OnboardLogger {
             // Write to file.
             @error_log($log_entry, 3, $log_file);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             // Silently fail if logging fails.
         }
     }

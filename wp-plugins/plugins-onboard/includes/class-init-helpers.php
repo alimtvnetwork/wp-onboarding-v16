@@ -165,7 +165,7 @@ class OnboardInitHelpers {
             OnboardLogger::debug('=== DATABASE READY ===');
             return $db;
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('[Database] Exception during initialization', $e);
             return null;
         }

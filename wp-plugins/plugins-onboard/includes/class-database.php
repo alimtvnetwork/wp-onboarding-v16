@@ -197,7 +197,7 @@ class OnboardDatabase {
             OnboardLogger::critical('Database PDO exception', $e);
             OnboardErrorLog::log($e, 'Onboard DB:');
             $this->connected = false;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->last_error = 'Database error: ' . $e->getMessage();
             OnboardLogger::critical('Unexpected database exception', $e);
             OnboardErrorLog::log($e, 'Onboard DB:');

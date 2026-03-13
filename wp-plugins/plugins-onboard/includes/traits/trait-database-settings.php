@@ -118,7 +118,7 @@ trait OnboardDatabaseSettingsTrait {
                 $settings[$row['setting_key']] = ($decoded !== null || $row['setting_value'] === 'null') ? $decoded : $row['setting_value'];
             }
             return $settings;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Onboard get_all_settings error:');
             return array();
         }

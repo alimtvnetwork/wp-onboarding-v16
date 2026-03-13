@@ -285,7 +285,7 @@ class OnboardConfig {
             // Update cache.
             $this->cache[$key] = $value;
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Onboard Config set error for ' . $key . ':');
             return false;
         }
