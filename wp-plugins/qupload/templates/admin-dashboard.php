@@ -31,6 +31,7 @@ $errorFileSize = file_exists($errorFile) ? size_format(filesize($errorFile)) : '
     <h1>
         <span class="dashicons dashicons-upload" style="font-size: 28px; margin-right: 8px;"></span>
         <?php echo esc_html($pluginName); ?>
+        <span class="qupload-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
 
     <!-- Status Card -->

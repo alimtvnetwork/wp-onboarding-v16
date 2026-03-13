@@ -23,6 +23,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
     <h1>
         <span class="dashicons dashicons-warning" style="font-size: 28px; margin-right: 8px;"></span>
         <?php echo esc_html($pluginName); ?> — <?php esc_html_e('Error Logs', $pluginSlug); ?>
+        <span class="qupload-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
 
     <!-- Tab Navigation -->
