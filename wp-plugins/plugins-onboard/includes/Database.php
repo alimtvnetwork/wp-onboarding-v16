@@ -148,7 +148,6 @@ class OnboardDatabase {
             if (OnboardBooleanHelpers::isDirReadonly($db_dir)) {
                 $this->last_error = "Database directory is read-only: {$db_dir}";
                 OnboardLogger::error('[DB] ' . $this->last_error);
-                error_log('Onboard DB: ' . $this->last_error);
                 return;
             }
             OnboardLogger::debug('[DB] ✓ Database directory is writable');
