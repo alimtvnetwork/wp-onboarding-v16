@@ -1204,6 +1204,11 @@ if ($uploadall) {
     if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
         $skipList += @($Config.wpPlugins.skipPlugins)
     }
+    if ($exclude -ne "") {
+        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+        $skipList += $excludeNames
+        Write-Host "  User-excluded plugins: $($excludeNames -join ', ')" -ForegroundColor Yellow
+    }
 
     $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
         if ($_.Name -in $skipList) { return $false }
