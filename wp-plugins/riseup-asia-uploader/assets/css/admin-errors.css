@@ -658,5 +658,6 @@
 }
 
 .riseup-report-issue-btn:hover .dashicons {
+    color: #fff !important;
     transform: scale(1.2) rotate(-5deg);
 }
