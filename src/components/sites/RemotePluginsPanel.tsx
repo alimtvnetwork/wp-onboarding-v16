@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -129,6 +129,18 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     retry: false,
     meta: { suppressGlobalError: true },
   });
+
+  // Capture query errors for persistence without showing modal
+  useEffect(() => {
+    if (isError && queryError) {
+      captureException(queryError, {
+        source: "RemotePluginsPanel.fetchPlugins",
+        endpoint: `/sites/${site.id}/remote-plugins`,
+        method: "GET",
+        triggerComponent: "RemotePluginsPanel",
+      });
+    }
+  }, [isError, queryError, captureException, site.id]);
 
   // Force sync mutation (bypasses cache)
   const forceSyncMutation = useMutation({
