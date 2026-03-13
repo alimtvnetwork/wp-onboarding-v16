@@ -32,7 +32,13 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	}
 
 	callback := s.buildProgressCallback(id)
-	client := s.wpClientFactory(prepared.Site.Url, prepared.Site.Username, string(prepared.Password), callback)
+	client := s.wpClientFactory(prepared.Site.Url, prepared.Username, string(prepared.Password), callback)
+
+	s.log.Info("Connection test using credential",
+		"siteId", id,
+		"username", prepared.Username,
+		"source", prepared.CredentialSource,
+	)
 
 	return s.executeConnectionTest(ctx, id, prepared.Site, client)
 }
