@@ -994,7 +994,7 @@ if ($uas) {
 
     Show-ConfiguredSites
 
-    # Filter sites: by name if -site provided, or all enabled sites
+    # Filter sites: by name if -site provided, exclude if -exclude provided, or all enabled sites
     $targetSites = @()
     if ($site -ne "") {
         $matchedSite = $Config.wpPlugins.sites | Where-Object { $_.name -eq $site }
@@ -1006,6 +1006,19 @@ if ($uas) {
         }
         $targetSites += $matchedSite
         Write-Host "  Target site: $site" -ForegroundColor Cyan
+    } elseif ($exclude -ne "") {
+        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+        $allEnabled = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
+        $targetSites = @($allEnabled | Where-Object { $_.name -notin $excludeNames })
+        $excludedSites = @($allEnabled | Where-Object { $_.name -in $excludeNames })
+
+        if ($excludedSites.Count -eq 0) {
+            Write-Host "WARNING: No matching sites found to exclude: $exclude" -ForegroundColor Yellow
+            Write-Host "Available sites:" -ForegroundColor Yellow
+            foreach ($s in $Config.wpPlugins.sites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
+        }
+
+        Write-Host "  Target: $($targetSites.Count) site(s) (excluded: $($excludeNames -join ', '))" -ForegroundColor Cyan
     } else {
         $targetSites = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
         Write-Host "  Target: All enabled sites ($($targetSites.Count))" -ForegroundColor Cyan
