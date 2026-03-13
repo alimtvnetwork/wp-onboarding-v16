@@ -51,6 +51,7 @@ import type {
   E2ECase,
   E2ERun,
   E2ERunSummary,
+  SiteCredentialResponse,
 } from './types';
 
 // ---------------------------------------------------------------------------
