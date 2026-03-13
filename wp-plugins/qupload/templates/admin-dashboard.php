@@ -95,7 +95,7 @@ $errorFileSize = file_exists($errorFile) ? size_format(filesize($errorFile)) : '
                     <td><?php esc_html_e('Upload plugin ZIP', $pluginSlug); ?></td>
                 </tr>
                 <tr>
-                    <td><code>POST</code></td>
+                    <td><code>PUT</code></td>
                     <td><code><?php echo esc_html(EndpointType::Activate->route()); ?></code></td>
                     <td><?php esc_html_e('Activate installed plugin', $pluginSlug); ?></td>
                 </tr>

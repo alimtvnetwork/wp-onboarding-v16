@@ -73,7 +73,7 @@ func (c *Client) EnablePluginViaQUpload(slug string) *apperror.AppError {
 	endpoint := "/" + QUploadNamespace + ep.Enable.String()
 
 	callInput := apiCallInput{
-		Method:     httpmethod.Post,
+		Method:     httpmethod.Put,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
 		Operation:  operationtype.EnablePlugin,
