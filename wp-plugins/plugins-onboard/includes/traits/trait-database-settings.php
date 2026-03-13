@@ -46,7 +46,7 @@ trait OnboardDatabaseSettingsTrait {
                 return ($decoded !== null || $result['setting_value'] === 'null') ? $decoded : $result['setting_value'];
             }
             return null;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Onboard get_setting error:');
             return null;
         }
@@ -88,7 +88,7 @@ trait OnboardDatabaseSettingsTrait {
                 );
             }
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Onboard save_setting error:');
             return false;
         }
@@ -118,7 +118,7 @@ trait OnboardDatabaseSettingsTrait {
                 $settings[$row['setting_key']] = ($decoded !== null || $row['setting_value'] === 'null') ? $decoded : $row['setting_value'];
             }
             return $settings;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Onboard get_all_settings error:');
             return array();
         }

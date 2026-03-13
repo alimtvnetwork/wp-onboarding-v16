@@ -223,7 +223,7 @@ class PluginsOnboard {
             $this->init_hooks();
             OnboardLogger::debug('Hooks initialized successfully');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('Constructor failed', $e);
             $this->init_error = 'Plugin initialization failed: ' . $e->getMessage();
             OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Constructor failed:');
@@ -261,7 +261,7 @@ class PluginsOnboard {
 
             OnboardLogger::debug('All hooks registered successfully');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('Failed to register hooks', $e);
             OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Hook registration failed:');
         }
@@ -320,7 +320,7 @@ class PluginsOnboard {
 
             OnboardLogger::debug('=== PLUGIN ACTIVATION COMPLETED SUCCESSFULLY ===');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('Plugin activation failed', $e);
             OnboardErrorLog::log($e, 'Plugins Onboard Activation Error:');
 
@@ -355,7 +355,7 @@ class PluginsOnboard {
                 $base = OnboardPaths::get(OnboardPaths::DIR_DATABASE);
                 return dirname($base) . '/';
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Plugins Onboard: get_base_path_for_display failed:');
         }
 
@@ -376,7 +376,7 @@ class PluginsOnboard {
             if (class_exists('OnboardPaths')) {
                 return OnboardPaths::get(OnboardPaths::DIR_SECURITY_LOGS);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Plugins Onboard: get_log_dir_for_display failed:');
         }
 
@@ -406,7 +406,7 @@ class PluginsOnboard {
 
             OnboardLogger::debug('=== PLUGIN DEACTIVATION COMPLETED ===');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::error('Plugin deactivation error', $e);
             OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Deactivation failed:');
         }
@@ -430,7 +430,7 @@ class PluginsOnboard {
                 if ($existing === null) {
                     $this->db->save_setting($key, $value);
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 OnboardErrorLog::log($e, 'Plugins Onboard: Failed to save setting ' . $key . ':');
             }
         }
@@ -527,7 +527,7 @@ class PluginsOnboard {
 
             OnboardLogger::debug('=== PLUGIN INIT() COMPLETED SUCCESSFULLY ===');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->init_error = $e->getMessage();
             OnboardLogger::critical('Plugin init() failed', $e);
             OnboardErrorLog::logAndThrow($e, 'Plugins Onboard Init Error:');
@@ -626,7 +626,7 @@ class PluginsOnboard {
         if ($this->cleanup) {
             try {
                 $this->cleanup->run_all();
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 OnboardErrorLog::log($e, 'Plugins Onboard Cleanup Error:');
                 error_log('Plugins Onboard: Cleanup failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             }

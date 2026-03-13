@@ -30,7 +30,7 @@ trait OnboardDatabaseSchemaTrait {
             $this->create_plugin_manager_tables();
             $this->create_audit_tables();
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->last_error = 'Failed to create tables: ' . $e->getMessage();
             OnboardErrorLog::log($e, 'Onboard DB:');
             return false;

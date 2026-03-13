@@ -232,7 +232,7 @@ class OnboardPaths {
         foreach (self::REQUIRED_DIRECTORIES as $dir_type) {
             try {
                 self::ensure_directory_exists($dir_type);
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $errors[] = $e->getMessage();
                 OnboardErrorLog::log($e, 'Plugins Onboard: Directory creation failed:');
             }
