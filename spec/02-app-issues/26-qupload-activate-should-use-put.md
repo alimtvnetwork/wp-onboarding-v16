@@ -3,7 +3,7 @@
 > **ID:** 26-qupload-activate-should-use-put
 > **Date:** 2026-03-13
 > **Category:** API/REST Convention
-> **Status:** Open
+> **Status:** Resolved
 
 ---
 

@@ -3,7 +3,7 @@
 > **ID:** 28-log-rotation-both-plugins
 > **Date:** 2026-03-13
 > **Category:** WordPress/PHP/Logging
-> **Status:** Open
+> **Status:** Resolved
 
 ---
 

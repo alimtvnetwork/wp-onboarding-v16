@@ -3,7 +3,7 @@
 > **ID:** 27-qupload-ui-uplift-version-header
 > **Date:** 2026-03-13
 > **Category:** WordPress/UI
-> **Status:** Open
+> **Status:** Resolved
 
 ---
 
