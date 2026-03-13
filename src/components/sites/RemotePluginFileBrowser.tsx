@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useCaptureQueryError } from "@/hooks/useCaptureQueryError";
 import {
   Dialog,
   DialogContent,
