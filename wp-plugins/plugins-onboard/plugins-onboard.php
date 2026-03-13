@@ -430,7 +430,7 @@ class PluginsOnboard {
                 if ($existing === null) {
                     $this->db->save_setting($key, $value);
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 OnboardErrorLog::log($e, 'Plugins Onboard: Failed to save setting ' . $key . ':');
             }
         }
