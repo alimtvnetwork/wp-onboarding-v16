@@ -110,7 +110,7 @@
         "Category": "Development",
         "GitEnabled": true,
         "AutoPublish": false,
-        "SiteNames": ["Atto Property Demo"]
+        "SiteNames": ["Atto Property Demo", "Test V1", "Test V2"]
       },
       {
         "Name": "Link Manager",
