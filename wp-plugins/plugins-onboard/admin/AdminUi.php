@@ -575,7 +575,7 @@ class OnboardAdminUI {
         $temp_info = $this->backup_manager->get_temp_info();
         $cleanup_status = $this->cleanup->get_status();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/database.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Database.php';
     }
 
     /**
