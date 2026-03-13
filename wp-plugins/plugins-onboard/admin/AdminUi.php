@@ -538,7 +538,7 @@ class OnboardAdminUI {
         $maintenance_status = OnboardDebugMaintenance::get_maintenance_status();
         $pending_approvals = $this->ip_whitelist->get_pending_approvals();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/dashboard.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Dashboard.php';
     }
 
     /**
@@ -548,7 +548,7 @@ class OnboardAdminUI {
         $plugins = $this->plugin_manager->get_all_plugins();
         $uploaded_plugins = $this->plugin_manager->get_uploaded_plugins();
         
-        include ONBOARD_PLUGIN_DIR . 'admin/views/plugins.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Plugins.php';
     }
 
     /**
@@ -564,7 +564,7 @@ class OnboardAdminUI {
             $snapshots = $this->snapshot->get_all_snapshots(50);
         }
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/backups.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Backups.php';
     }
 
     /**
@@ -575,7 +575,7 @@ class OnboardAdminUI {
         $temp_info = $this->backup_manager->get_temp_info();
         $cleanup_status = $this->cleanup->get_status();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/database.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Database.php';
     }
 
     /**
@@ -584,7 +584,7 @@ class OnboardAdminUI {
     public function render_settings() {
         $settings = $this->db->get_all_settings();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/settings.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Settings.php';
     }
 
     /**
@@ -601,7 +601,7 @@ class OnboardAdminUI {
             delete_transient('onboard_new_app_' . $_GET['app_id']);
         }
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/applications.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Applications.php';
     }
 
     /**
@@ -622,7 +622,7 @@ class OnboardAdminUI {
         $total_pages = ceil($total / $per_page);
         $unique_actions = $this->audit_logger->get_unique_actions();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/audit-logs.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/AuditLogs.php';
     }
 
     /**
@@ -631,13 +631,13 @@ class OnboardAdminUI {
     public function render_tests() {
         $test_runner = new OnboardTestRunner();
         
-        include ONBOARD_PLUGIN_DIR . 'admin/views/tests.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Tests.php';
     }
 
     /**
      * Render help page.
      */
     public function render_help() {
-        include ONBOARD_PLUGIN_DIR . 'admin/views/help.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Help.php';
     }
 }

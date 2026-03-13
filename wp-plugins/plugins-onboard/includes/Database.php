@@ -9,8 +9,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/traits/trait-database-schema.php';
-require_once __DIR__ . '/traits/trait-database-settings.php';
+require_once __DIR__ . '/traits/DatabaseSchemaTrait.php';
+require_once __DIR__ . '/traits/DatabaseSettingsTrait.php';
 
 /**
  * Class OnboardDatabase
