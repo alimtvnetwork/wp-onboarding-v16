@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, requireSuccess, Settings } from "@/lib/api";
 import { useApiQuery } from "@/hooks/useApiQuery";
+import { useErrorStore } from "@/stores/errorStore";
 
 type DeepPartial<T> = { [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P] };
 
