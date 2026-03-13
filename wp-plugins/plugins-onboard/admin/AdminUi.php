@@ -638,6 +638,6 @@ class OnboardAdminUI {
      * Render help page.
      */
     public function render_help() {
-        include ONBOARD_PLUGIN_DIR . 'admin/views/help.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Help.php';
     }
 }
