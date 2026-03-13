@@ -590,6 +590,8 @@ function CronJobsPanel() {
   const {
     data: cronJobs,
     isLoading,
+    isError: cronError,
+    error: cronQueryError,
     refetch,
     isFetching,
   } = useApiQuery<SnapshotCronJob[]>({
@@ -597,6 +599,12 @@ function CronJobsPanel() {
     apiFn: () => api.getSnapshotCronJobs(0),
     endpoint: "/sites/0/snapshots/cron",
     queryOptions: { retry: false, meta: { suppressGlobalError: true } },
+  });
+
+  useCaptureQueryError(cronError, cronQueryError, {
+    source: "CronJobsPanel.fetchCronJobs",
+    endpoint: "/sites/0/snapshots/cron",
+    triggerComponent: "SnapshotSettingsTab",
   });
 
   const [syncing, setSyncing] = useState(false);
