@@ -548,7 +548,7 @@ class OnboardAdminUI {
         $plugins = $this->plugin_manager->get_all_plugins();
         $uploaded_plugins = $this->plugin_manager->get_uploaded_plugins();
         
-        include ONBOARD_PLUGIN_DIR . 'admin/views/plugins.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Plugins.php';
     }
 
     /**
