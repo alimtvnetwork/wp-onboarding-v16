@@ -14,6 +14,7 @@ param(
     [Alias('u')][switch]$upload,
     [Alias('q')][switch]$qupload,
     [Alias('ua')][switch]$uploadall,
+    [switch]$uas,
     [switch]$za,
     [Alias('zq')][switch]$zipqupload,
     [Alias('z')][switch]$zip,
@@ -22,7 +23,8 @@ param(
     [Alias('v')][switch]$verbose,
     [Alias('d')][switch]$debug,
     [Alias('c')][switch]$clear,
-    [Alias('pp')][string]$pluginpath = ""
+    [Alias('pp')][string]$pluginpath = "",
+    [string]$site = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
