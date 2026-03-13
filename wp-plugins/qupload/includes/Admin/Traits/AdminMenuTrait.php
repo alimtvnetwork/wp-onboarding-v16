@@ -82,11 +82,19 @@ trait AdminMenuTrait {
         $pluginSlug = PluginConfigType::Slug->value;
         $pluginDir = dirname(__FILE__, 4);
 
+        // Shared CSS (variables, keyframes, modals)
+        wp_enqueue_style(
+            'qupload-admin-shared',
+            plugins_url('assets/css/admin-shared.css', $pluginDir . '/' . $pluginSlug . '.php'),
+            [],
+            $version,
+        );
+
         // Global admin CSS
         wp_enqueue_style(
             'qupload-admin-styles',
             plugins_url('assets/css/admin.css', $pluginDir . '/' . $pluginSlug . '.php'),
-            [],
+            ['qupload-admin-shared'],
             $version,
         );
 
@@ -102,7 +110,7 @@ trait AdminMenuTrait {
         wp_enqueue_style(
             'qupload-admin-errors',
             plugins_url('assets/css/admin-errors.css', $pluginDir . '/' . $pluginSlug . '.php'),
-            ['qupload-admin-styles'],
+            ['qupload-admin-shared', 'qupload-admin-styles'],
             $version,
         );
 

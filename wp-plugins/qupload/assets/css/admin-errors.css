@@ -1,33 +1,11 @@
 /**
  * QUpload Admin — Error Logs Page Styles (Modernized)
  *
+ * Variables, keyframes, and modal styles are in admin-shared.css (enqueued as dependency).
+ *
  * @package QUpload
  * @updated 2026-03-13 — Modern design system matching admin.css
  */
-
-/* ============================================================================
-   KEYFRAMES (standalone for pages loading only this file)
-   ============================================================================ */
-
-@keyframes quFadeInUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes quFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes quScaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes quPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
 
 @keyframes livePulse {
     0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
