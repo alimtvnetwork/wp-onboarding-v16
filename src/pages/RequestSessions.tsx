@@ -230,7 +230,7 @@ export default function RequestSessions() {
       queryClient.invalidateQueries({ queryKey: ["request-sessions"] });
       if (selectedId === id) setSelectedId(null);
     },
-    onError: () => toast.error("Failed to delete"),
+    onError: (error: Error) => { captureDeleteError(error); toast.error("Failed to delete"); },
   });
 
   // Clear all mutation
