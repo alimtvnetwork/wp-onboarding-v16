@@ -21,6 +21,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Logging\FileLogger;
+use Throwable;
 
 trait AdminFeedbackAjaxTrait {
 
@@ -114,7 +115,7 @@ trait AdminFeedbackAjaxTrait {
             $logger->info('Feedback email sent successfully', array('to' => $recipient, 'subject' => $emailSubject));
             wp_send_json_success(array(ResponseKeyType::Message->value => 'Feedback sent successfully!'));
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $logger->error('Feedback send error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             wp_send_json_error(array(ResponseKeyType::Message->value => 'Error sending feedback: ' . $e->getMessage()));
         }
