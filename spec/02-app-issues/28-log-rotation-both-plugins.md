@@ -84,12 +84,13 @@ Each rotation creates a new numbered folder only for the specific file that exce
 
 ## Prevention and Non-Regression
 
-1. **Prevention rule:** All file-based logging MUST implement size-based rotation with configurable thresholds.
+1. **Prevention rule:** All file-based logging MUST implement size-based rotation with configurable thresholds and a max rotation count.
 2. **Acceptance criteria:**
    - Write >512 KB to a log file → file is rotated to `archive/001/`
    - Write another >512 KB → rotated to `archive/002/`
-   - `settings.json` override works (e.g., set to 1 MB)
-3. **Guardrails:** FileLogger constructor should validate `maxLogSizeBytes` is between 64 KB and 10 MB.
+   - Write 11 rotations with `maxRotations: 10` → `archive/001/` is deleted, only `002`–`011` remain
+   - `settings.json` override works (e.g., set to 1 MB, max 5 rotations)
+3. **Guardrails:** FileLogger constructor should validate `maxLogSizeBytes` is between 64 KB and 10 MB. `maxRotations` must be between 1 and 100.
 
 ## TODO and Follow-Ups
 
