@@ -355,7 +355,7 @@ class PluginsOnboard {
                 $base = OnboardPaths::get(OnboardPaths::DIR_DATABASE);
                 return dirname($base) . '/';
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Plugins Onboard: get_base_path_for_display failed:');
         }
 
