@@ -564,7 +564,7 @@ class OnboardAdminUI {
             $snapshots = $this->snapshot->get_all_snapshots(50);
         }
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/backups.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Backups.php';
     }
 
     /**
