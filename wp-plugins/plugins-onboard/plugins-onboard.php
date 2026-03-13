@@ -406,7 +406,7 @@ class PluginsOnboard {
 
             OnboardLogger::debug('=== PLUGIN DEACTIVATION COMPLETED ===');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::error('Plugin deactivation error', $e);
             OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Deactivation failed:');
         }
