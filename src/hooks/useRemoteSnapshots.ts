@@ -110,6 +110,30 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     meta: { suppressGlobalError: true },
   });
 
+  // Capture query errors for persistence
+  useEffect(() => {
+    const queries = [
+      { q: snapshotsQuery, label: "snapshots", ep: `/sites/${siteId}/snapshots` },
+      { q: settingsQuery, label: "settings", ep: `/sites/${siteId}/snapshots/settings` },
+      { q: providersQuery, label: "providers", ep: `/sites/${siteId}/snapshots/providers` },
+    ];
+    for (const { q, label, ep } of queries) {
+      if (q.isError && q.error) {
+        captureException(q.error, {
+          source: `useRemoteSnapshots.${label}`,
+          endpoint: ep,
+          method: "GET",
+          triggerComponent: "RemoteSnapshots",
+        });
+      }
+    }
+  }, [
+    snapshotsQuery.isError, snapshotsQuery.error,
+    settingsQuery.isError, settingsQuery.error,
+    providersQuery.isError, providersQuery.error,
+    captureException, siteId,
+  ]);
+
   const tablesQuery = useQuery({
     queryKey: [...queryKey, "tables"],
     queryFn: async () => {
