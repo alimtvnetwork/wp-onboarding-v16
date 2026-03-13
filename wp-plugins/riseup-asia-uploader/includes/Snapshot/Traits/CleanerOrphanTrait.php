@@ -59,8 +59,11 @@ trait CleanerOrphanTrait {
 
             if ($isLiveRun) {
                 try {
+                    $fileSize = @filesize($path) ?: 0;
+
                     if (@unlink($path)) {
                         $result[ResponseKeyType::Removed->value]++;
+                        $result[ResponseKeyType::BytesFreed->value] += $fileSize;
                     } else {
                         $result[ResponseKeyType::Errors->value][] = "Failed to delete orphan file: {$path}";
                         $this->log(LogLevelType::Error->value, 'Failed to delete orphan file', array(ResponseKeyType::Path->value => $path));
