@@ -13,17 +13,16 @@ if (!defined('ABSPATH')) {
 
 class OnboardErrorLog {
     /**
-     * Log an exception with context message to PHP's native error_log.
+     * Log an exception with context message via OnboardLogger.
      *
-     * Internally appends $e->getMessage() and $e->getTraceAsString().
-     * Use this in catch blocks where OnboardLogger is not available or
-     * as a supplementary log alongside OnboardLogger.
+     * Delegates to OnboardLogger::error() which writes to the structured
+     * error log file. Replaces direct error_log() calls.
      *
      * @param Throwable $e       The exception to log.
      * @param string    $context Human-readable context message.
      */
     public static function log(Throwable $e, string $context): void {
-        error_log($context . ' ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        OnboardLogger::error($context . ' ' . $e->getMessage(), $e);
     }
 
     /**
