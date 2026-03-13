@@ -717,7 +717,25 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                           })
                         );
                         const succeeded = results.filter((r) => r.status === "fulfilled" && r.value.success).length;
-                        const failed = results.length - succeeded;
+                        const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+                        const failedFulfilled = results.filter((r) => r.status === "fulfilled" && !r.value.success);
+                        failedResults.forEach((r) => {
+                          captureException(r.reason instanceof Error ? r.reason : new Error(String(r.reason)), {
+                            endpoint: `/sites/${site.id}/remote-plugins/upload`,
+                            method: "POST",
+                            triggerComponent: "RemotePluginsPanel.upload",
+                          });
+                        });
+                        failedFulfilled.forEach((r) => {
+                          if (r.status === "fulfilled") {
+                            captureException(new Error(r.value.error || "Upload failed"), {
+                              endpoint: `/sites/${site.id}/remote-plugins/upload`,
+                              method: "POST",
+                              triggerComponent: "RemotePluginsPanel.upload",
+                            });
+                          }
+                        });
+                        const failed = failedResults.length + failedFulfilled.length;
                         if (succeeded > 0) toast.success(`Uploaded ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
                         if (failed > 0) toast.error(`Failed to upload ${failed} plugin${failed !== 1 ? "s" : ""}`);
                         setUploadFiles([]);
