@@ -538,7 +538,7 @@ class OnboardAdminUI {
         $maintenance_status = OnboardDebugMaintenance::get_maintenance_status();
         $pending_approvals = $this->ip_whitelist->get_pending_approvals();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/dashboard.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/Dashboard.php';
     }
 
     /**
