@@ -320,7 +320,7 @@ class PluginsOnboard {
 
             OnboardLogger::debug('=== PLUGIN ACTIVATION COMPLETED SUCCESSFULLY ===');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('Plugin activation failed', $e);
             OnboardErrorLog::log($e, 'Plugins Onboard Activation Error:');
 
