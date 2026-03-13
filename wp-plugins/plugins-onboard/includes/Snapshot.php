@@ -9,9 +9,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/class-filesystem-utils.php';
-require_once __DIR__ . '/traits/trait-snapshot-restore.php';
-require_once __DIR__ . '/traits/trait-snapshot-query.php';
+require_once __DIR__ . '/FilesystemUtils.php';
+require_once __DIR__ . '/traits/SnapshotRestoreTrait.php';
+require_once __DIR__ . '/traits/SnapshotQueryTrait.php';
 
 /**
  * Class OnboardSnapshot
