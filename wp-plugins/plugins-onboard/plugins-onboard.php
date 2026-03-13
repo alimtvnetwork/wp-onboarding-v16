@@ -223,7 +223,7 @@ class PluginsOnboard {
             $this->init_hooks();
             OnboardLogger::debug('Hooks initialized successfully');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('Constructor failed', $e);
             $this->init_error = 'Plugin initialization failed: ' . $e->getMessage();
             OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Constructor failed:');
