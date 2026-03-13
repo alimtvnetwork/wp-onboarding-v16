@@ -376,7 +376,7 @@ class PluginsOnboard {
             if (class_exists('OnboardPaths')) {
                 return OnboardPaths::get(OnboardPaths::DIR_SECURITY_LOGS);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardErrorLog::log($e, 'Plugins Onboard: get_log_dir_for_display failed:');
         }
 
