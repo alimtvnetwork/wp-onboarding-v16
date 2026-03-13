@@ -14,6 +14,7 @@ param(
     [Alias('u')][switch]$upload,
     [Alias('q')][switch]$qupload,
     [Alias('ua')][switch]$uploadall,
+    [switch]$uas,
     [switch]$za,
     [Alias('zq')][switch]$zipqupload,
     [Alias('z')][switch]$zip,
@@ -22,7 +23,8 @@ param(
     [Alias('v')][switch]$verbose,
     [Alias('d')][switch]$debug,
     [Alias('c')][switch]$clear,
-    [Alias('pp')][string]$pluginpath = ""
+    [Alias('pp')][string]$pluginpath = "",
+    [string]$site = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -231,6 +233,8 @@ if ($help) {
     Write-Host "  -q,  -qupload       Upload default plugin via QUpload API"
     Write-Host "  -u -q               Upload Riseup Asia Uploader itself via QUpload API"
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
+    Write-Host "  -uas                Upload ALL plugins to ALL configured sites (multi-site)"
+    Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
     Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host ""
@@ -262,7 +266,10 @@ if ($help) {
     Write-Host ""
     Write-Host "  Upload (all plugins):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload"
-    Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload (auto-cleans old ZIPs)"
+    Write-Host ""
+    Write-Host "  Upload (multi-site):" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -uas                     # Upload all plugins to all sites"
+    Write-Host "    .\run.ps1 -uas -site 'Test V1'     # Upload all plugins to specific site"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
@@ -772,6 +779,66 @@ function Get-DefaultQUploaderPath {
     return $resolved
 }
 
+# ── Helper: Decode Base64 string ───────────────────────────────────────
+function Decode-Base64 {
+    param([string]$Encoded)
+    return [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Encoded))
+}
+
+# ── Helper: Get default credential from a site config ──────────────────
+function Get-DefaultSiteCredential {
+    param($SiteConfig)
+
+    $defaultCred = $null
+    foreach ($cred in $SiteConfig.credentials) {
+        if ($cred.isDefault -eq $true) {
+            $defaultCred = $cred
+            break
+        }
+    }
+
+    # Fall back to first credential if none marked as default
+    if (-not $defaultCred -and $SiteConfig.credentials.Count -gt 0) {
+        $defaultCred = $SiteConfig.credentials[0]
+        Write-Host "    No default credential found, using first: $($defaultCred.appName)" -ForegroundColor DarkYellow
+    }
+
+    if (-not $defaultCred) {
+        Write-Host "    ERROR: No credentials configured for site $($SiteConfig.name)" -ForegroundColor Red
+        return $null
+    }
+
+    $username = Decode-Base64 $defaultCred.usernameBase64
+    $password = Decode-Base64 $defaultCred.passwordBase64
+
+    Write-Host "    Credential: $($defaultCred.appName)" -ForegroundColor Gray
+    Write-Host "    Username:   $username" -ForegroundColor Gray
+
+    return @{
+        Username = $username
+        Password = $password
+        AppName  = $defaultCred.appName
+    }
+}
+
+# ── Helper: List all configured sites ──────────────────────────────────
+function Show-ConfiguredSites {
+    if (-not $Config.wpPlugins -or -not $Config.wpPlugins.sites -or $Config.wpPlugins.sites.Count -eq 0) {
+        Write-Host "  No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "  Configured sites:" -ForegroundColor Cyan
+    $siteIndex = 0
+    foreach ($s in $Config.wpPlugins.sites) {
+        $siteIndex++
+        $enabledLabel = if ($s.enabled -eq $false) { " [DISABLED]" } else { "" }
+        $credCount = if ($s.credentials) { $s.credentials.Count } else { 0 }
+        Write-Host "    $siteIndex. $($s.name)$enabledLabel - $($s.url) ($credCount credential(s))" -ForegroundColor $(if ($s.enabled -eq $false) { "DarkGray" } else { "White" })
+    }
+    Write-Host ""
+}
+
 # ── Helper: Clear existing ZIP files from wp-plugins/ ───────────────────
 function Clear-PluginZips {
     $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
@@ -905,6 +972,177 @@ if ($zipqupload) {
     Write-Host "========================================" -ForegroundColor Cyan
 
     exit 0
+}
+
+# ============================================================================
+# UPLOAD ALL SITES MODE: Upload ALL plugins to ALL configured sites (-uas)
+# ============================================================================
+if ($uas) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "  Multi-Site Upload Mode (-uas)" -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host ""
+
+    # Validate sites config exists
+    if (-not $Config.wpPlugins -or -not $Config.wpPlugins.sites -or $Config.wpPlugins.sites.Count -eq 0) {
+        Write-Host "ERROR: No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Red
+        Write-Host "Add a 'sites' array with Base64-encoded credentials." -ForegroundColor Yellow
+        exit 1
+    }
+
+    Show-ConfiguredSites
+
+    # Filter sites: by name if -site provided, or all enabled sites
+    $targetSites = @()
+    if ($site -ne "") {
+        $matchedSite = $Config.wpPlugins.sites | Where-Object { $_.name -eq $site }
+        if (-not $matchedSite) {
+            Write-Host "ERROR: Site '$site' not found in configuration." -ForegroundColor Red
+            Write-Host "Available sites:" -ForegroundColor Yellow
+            foreach ($s in $Config.wpPlugins.sites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
+            exit 1
+        }
+        $targetSites += $matchedSite
+        Write-Host "  Target site: $site" -ForegroundColor Cyan
+    } else {
+        $targetSites = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
+        Write-Host "  Target: All enabled sites ($($targetSites.Count))" -ForegroundColor Cyan
+    }
+
+    if ($targetSites.Count -eq 0) {
+        Write-Host "No enabled sites found." -ForegroundColor Yellow
+        exit 0
+    }
+
+    # Verify QUpload script exists
+    $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
+    if (-not (Test-Path $quploadScript)) {
+        Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
+        exit 1
+    }
+
+    # Get QUpload slug to exclude it
+    $quploadSlug = "qupload"
+    if ($Config.wpPlugins -and $Config.wpPlugins.defaultQUploader) {
+        $quploadSlug = $Config.wpPlugins.defaultQUploader
+    }
+
+    $skipList = @($quploadSlug)
+    if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
+        $skipList += @($Config.wpPlugins.skipPlugins)
+    }
+
+    # Find all uploadable plugins
+    $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
+    $pluginFolders = Get-ChildItem $wpPluginsDir -Directory | Where-Object {
+        if ($_.Name -in $skipList) { return $false }
+        $phpFiles = Get-ChildItem $_.FullName -Filter "*.php" -File -ErrorAction SilentlyContinue
+        $hasPluginHeader = $false
+        foreach ($f in $phpFiles) {
+            $head = Get-Content $f.FullName -Head 5 -ErrorAction SilentlyContinue
+            if ($head -match "Plugin Name:") { $hasPluginHeader = $true; break }
+        }
+        $hasPluginHeader
+    }
+
+    if ($pluginFolders.Count -eq 0) {
+        Write-Host "No plugins found to upload." -ForegroundColor Yellow
+        exit 0
+    }
+
+    # ZIP all plugins once
+    Write-Host ""
+    Write-Host "  Preparing $($pluginFolders.Count) plugin(s):" -ForegroundColor Cyan
+    foreach ($folder in $pluginFolders) {
+        Write-Host "    - $($folder.Name)" -ForegroundColor Gray
+    }
+    Write-Host "  Excluded: $($skipList -join ', ')" -ForegroundColor DarkGray
+    Write-Host ""
+
+    Clear-PluginZips
+
+    foreach ($folder in $pluginFolders) {
+        Write-Host "  [ZIP] $($folder.Name)..." -ForegroundColor Yellow
+        New-PluginZip $folder.FullName
+    }
+
+    Write-Host ""
+
+    # Upload to each site
+    $globalResults = @()
+
+    foreach ($targetSite in $targetSites) {
+        Write-Host "========================================" -ForegroundColor Magenta
+        Write-Host "  Site: $($targetSite.name)" -ForegroundColor Magenta
+        Write-Host "  URL:  $($targetSite.url)" -ForegroundColor Gray
+        Write-Host "========================================" -ForegroundColor Magenta
+        Write-Host ""
+
+        # Get default credential and decode Base64
+        $cred = Get-DefaultSiteCredential $targetSite
+        if (-not $cred) {
+            Write-Host "  SKIPPED: No valid credentials for $($targetSite.name)" -ForegroundColor Red
+            $globalResults += @{ Site = $targetSite.name; Plugin = "*"; Status = "SKIPPED (no credentials)" }
+            continue
+        }
+
+        $decodedUsername = $cred.Username
+        $decodedPassword = $cred.Password
+
+        Write-Host ""
+
+        foreach ($folder in $pluginFolders) {
+            $pluginName = $folder.Name
+            Write-Host "  ────────────────────────────────────" -ForegroundColor DarkGray
+            Write-Host "    Plugin: $pluginName -> $($targetSite.name)" -ForegroundColor Cyan
+            Write-Host "  ────────────────────────────────────" -ForegroundColor DarkGray
+
+            # Build inline JSON config with decoded credentials
+            $uploadConfig = @{
+                pluginFolderPath     = $folder.FullName
+                wordPressSiteURL     = $targetSite.url.TrimEnd("/")
+                username             = $decodedUsername
+                appPassword          = $decodedPassword
+                activateAfterInstall = $true
+                deleteZipAfterUpload = $false
+            }
+            $jsonConfigStr = ($uploadConfig | ConvertTo-Json -Compress)
+
+            try {
+                & $quploadScript -jc $jsonConfigStr -a
+                $uploadExitCode = $LASTEXITCODE
+                if ($uploadExitCode -eq 0) {
+                    $globalResults += @{ Site = $targetSite.name; Plugin = $pluginName; Status = "OK" }
+                    Write-Host "    OK $pluginName -> $($targetSite.name)" -ForegroundColor Green
+                } else {
+                    $globalResults += @{ Site = $targetSite.name; Plugin = $pluginName; Status = "FAILED (exit $uploadExitCode)" }
+                    Write-Host "    FAILED $pluginName -> $($targetSite.name) (exit: $uploadExitCode)" -ForegroundColor Red
+                }
+            } catch {
+                $globalResults += @{ Site = $targetSite.name; Plugin = $pluginName; Status = "ERROR: $_" }
+                Write-Host "    ERROR $pluginName -> $($targetSite.name)`: $_" -ForegroundColor Red
+            }
+            Write-Host ""
+        }
+    }
+
+    # Summary
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "  Multi-Site Upload Summary" -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+    $successCount = ($globalResults | Where-Object { $_.Status -eq "OK" }).Count
+    $failCount = $globalResults.Count - $successCount
+    foreach ($r in $globalResults) {
+        $color = if ($r.Status -eq "OK") { "Green" } else { "Red" }
+        Write-Host "  [$($r.Site)] $($r.Plugin): $($r.Status)" -ForegroundColor $color
+    }
+    Write-Host ""
+    Write-Host "  Sites: $($targetSites.Count) | Plugins: $($pluginFolders.Count) | Success: $successCount | Failed: $failCount" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Yellow" })
+    Write-Host "========================================" -ForegroundColor Magenta
+
+    exit $(if ($failCount -eq 0) { 0 } else { 1 })
 }
 
 # ============================================================================
@@ -1153,6 +1391,7 @@ if ($upload) {
 
     exit 0
 }
+
 
 
 

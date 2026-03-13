@@ -46,6 +46,44 @@
     "defaultQUploader": "qupload",
     "pluginsDir": "wp-plugins",
     "skipPlugins": ["plugins-onboard"],
+    "sites": [
+      {
+        "name": "Test V1",
+        "url": "https://testv1.developers-organism.com",
+        "enabled": true,
+        "credentials": [
+          {
+            "appName": "test-plg-v1",
+            "usernameBase64": "dGVzdC1wbHVnaW5zQHB4ZG1haWwubmV0",
+            "passwordBase64": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+            "isDefault": true
+          },
+          {
+            "appName": "test-plg-v2",
+            "usernameBase64": "dGVzdC1wbHVnaW5zLXYyQHB4ZG1haWwubmV0",
+            "passwordBase64": "bjdOTCBENG1WIDNGRFIgcUV1ZiByVE5PIE5NM1k="
+          }
+        ]
+      },
+      {
+        "name": "Test V2",
+        "url": "https://testv2.developers-organism.com",
+        "enabled": true,
+        "credentials": [
+          {
+            "appName": "test-plg-v1",
+            "usernameBase64": "dGVzdC1wbHVnaW5zQHB4ZG1haWwubmV0",
+            "passwordBase64": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+            "isDefault": true
+          },
+          {
+            "appName": "test-plg-v2",
+            "usernameBase64": "dGVzdC1wbHVnaW5zLXYyQHB4ZG1haWwubmV0",
+            "passwordBase64": "bjdOTCBENG1WIDNGRFIgcUV1ZiByVE5PIE5NM1k="
+          }
+        ]
+      }
+    ],
     "plugins": {
       "riseup-asia-uploader": {
         "name": "Riseup Asia Uploader",
@@ -67,4 +105,5 @@
       }
     }
   }
+}
 }

@@ -174,6 +174,58 @@
           "default": [],
           "description": "Plugin keys excluded from -za (ZIP all) and -ua (upload all) operations"
         },
+        "sites": {
+          "type": "array",
+          "description": "WordPress sites for multi-site deployment. Credentials are Base64-encoded for security.",
+          "items": {
+            "type": "object",
+            "required": ["name", "url", "credentials"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Human-readable site name for logging"
+              },
+              "url": {
+                "type": "string",
+                "description": "WordPress site URL (without trailing slash or /wp-admin)"
+              },
+              "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "Whether this site is included in multi-site uploads"
+              },
+              "credentials": {
+                "type": "array",
+                "description": "Credentials for this site. First entry with isDefault=true is used for uploads.",
+                "items": {
+                  "type": "object",
+                  "required": ["appName", "usernameBase64", "passwordBase64"],
+                  "properties": {
+                    "appName": {
+                      "type": "string",
+                      "description": "Application password name for identification"
+                    },
+                    "usernameBase64": {
+                      "type": "string",
+                      "description": "Base64-encoded WordPress username"
+                    },
+                    "passwordBase64": {
+                      "type": "string",
+                      "description": "Base64-encoded WordPress application password"
+                    },
+                    "isDefault": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Whether this is the default credential used for uploads"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         "plugins": {
           "type": "object",
           "description": "Map of plugin keys to their configuration",
