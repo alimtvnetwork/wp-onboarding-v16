@@ -70,7 +70,7 @@ func (c *Client) UploadPluginViaQUpload(input UploadInput) apperror.Result[*Uplo
 // EnablePluginViaQUpload activates a plugin via QUpload's activate endpoint.
 func (c *Client) EnablePluginViaQUpload(slug string) *apperror.AppError {
 	normalizedSlug := normalizePluginSlug(slug)
-	endpoint := "/" + QUploadNamespace + ep.Activate.String()
+	endpoint := "/" + QUploadNamespace + ep.Enable.String()
 
 	callInput := apiCallInput{
 		Method:     httpmethod.Post,
