@@ -31,37 +31,37 @@ class OnboardIncludeFiles {
     // Each constant maps to the relative path from the plugin root.
 
     /** Core infrastructure */
-    const CONSTANTS       = 'includes/constants.php';
-    const LOGGER          = 'includes/class-logger.php';
-    const PATHS           = 'includes/class-paths.php';
-    const BOOLEAN_HELPERS = 'includes/class-boolean-helpers.php';
-    const INIT_HELPERS    = 'includes/class-init-helpers.php';
-    const CONFIG          = 'includes/class-config.php';
+    const CONSTANTS       = 'includes/Constants.php';
+    const LOGGER          = 'includes/Logger.php';
+    const PATHS           = 'includes/Paths.php';
+    const BOOLEAN_HELPERS = 'includes/BooleanHelpers.php';
+    const INIT_HELPERS    = 'includes/InitHelpers.php';
+    const CONFIG          = 'includes/Config.php';
 
     /** Data layer */
-    const DATABASE         = 'includes/class-database.php';
-    const TOKEN_ENCRYPTION = 'includes/class-token-encryption.php';
+    const DATABASE         = 'includes/Database.php';
+    const TOKEN_ENCRYPTION = 'includes/TokenEncryption.php';
 
     /** Security */
-    const RATE_LIMITER   = 'includes/class-rate-limiter.php';
-    const AUDIT_LOGGER   = 'includes/class-audit-logger.php';
-    const OAUTH          = 'includes/class-oauth.php';
-    const MUTATION_TOKEN = 'includes/class-mutation-token.php';
-    const IP_WHITELIST   = 'includes/class-ip-whitelist.php';
-    const SECURITY_UTILS = 'includes/security-utils.php';
+    const RATE_LIMITER   = 'includes/RateLimiter.php';
+    const AUDIT_LOGGER   = 'includes/AuditLogger.php';
+    const OAUTH          = 'includes/OAuth.php';
+    const MUTATION_TOKEN = 'includes/MutationToken.php';
+    const IP_WHITELIST   = 'includes/IpWhitelist.php';
+    const SECURITY_UTILS = 'includes/SecurityUtils.php';
 
     /** Feature modules */
-    const SNAPSHOT         = 'includes/class-snapshot.php';
-    const BACKUP_MANAGER   = 'includes/class-backup-manager.php';
-    const PLUGIN_MANAGER   = 'includes/class-plugin-manager.php';
-    const UPLOAD_VALIDATOR = 'includes/class-upload-validator.php';
-    const DEBUG_MAINTENANCE = 'includes/class-debug-maintenance.php';
-    const CLEANUP          = 'includes/class-cleanup.php';
+    const SNAPSHOT         = 'includes/Snapshot.php';
+    const BACKUP_MANAGER   = 'includes/BackupManager.php';
+    const PLUGIN_MANAGER   = 'includes/PluginManager.php';
+    const UPLOAD_VALIDATOR = 'includes/UploadValidator.php';
+    const DEBUG_MAINTENANCE = 'includes/DebugMaintenance.php';
+    const CLEANUP          = 'includes/Cleanup.php';
 
     /** API & Admin */
-    const API      = 'api/class-api.php';
-    const API_PERMISSIONS = 'api/class-permissions.php';
-    const ADMIN_UI = 'admin/class-admin-ui.php';
+    const API      = 'api/Api.php';
+    const API_PERMISSIONS = 'api/Permissions.php';
+    const ADMIN_UI = 'admin/AdminUi.php';
 
     // ─── Tracking ───────────────────────────────────────────────────
 

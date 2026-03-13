@@ -30,9 +30,9 @@ define('ONBOARD_PLUGIN_BASENAME', plugin_basename(__FILE__));
  * Foundation files — loaded raw (no loader available yet).
  * Order matters: constants → logger → boolean helpers → include-files loader.
  */
-require_once ONBOARD_PLUGIN_DIR . 'includes/constants.php';
-require_once ONBOARD_PLUGIN_DIR . 'includes/class-logger.php';
-require_once ONBOARD_PLUGIN_DIR . 'includes/class-error-log.php';
+require_once ONBOARD_PLUGIN_DIR . 'includes/Constants.php';
+require_once ONBOARD_PLUGIN_DIR . 'includes/Logger.php';
+require_once ONBOARD_PLUGIN_DIR . 'includes/ErrorLog.php';
 
 // Log plugin initialization start.
 OnboardLogger::debug('=== PLUGIN INITIALIZATION STARTED ===');
@@ -40,8 +40,8 @@ OnboardLogger::debug('Plugin Version: ' . ONBOARD_PLUGIN_VERSION);
 OnboardLogger::debug('WordPress Version: ' . (function_exists('get_bloginfo') ? get_bloginfo('version') : 'Unknown'));
 OnboardLogger::debug('PHP Version: ' . PHP_VERSION);
 
-require_once ONBOARD_PLUGIN_DIR . 'includes/class-boolean-helpers.php';
-require_once ONBOARD_PLUGIN_DIR . 'includes/class-include-files.php';
+require_once ONBOARD_PLUGIN_DIR . 'includes/BooleanHelpers.php';
+require_once ONBOARD_PLUGIN_DIR . 'includes/IncludeFiles.php';
 
 /**
  * Load remaining foundation files via OnboardIncludeFiles.
