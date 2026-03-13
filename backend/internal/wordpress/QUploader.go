@@ -53,7 +53,7 @@ func (c *Client) UploadPluginViaQUpload(input UploadInput) apperror.Result[*Uplo
 	// Override namespace and endpoint to use QUpload
 	uc.Namespace = QUploadNamespace
 	uc.UploadEndpoint = "/" + QUploadNamespace + ep.Upload.String()
-	uc.UploadUrl = BuildWpJsonUrl(c.BaseUrl, uc.UploadEndpoint)
+	uc.UploadUrl = BuildWpJsonUrl(c.baseUrl, uc.UploadEndpoint)
 
 	c.reportUploadInitProgress(uc)
 
