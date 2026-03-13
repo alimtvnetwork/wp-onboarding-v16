@@ -233,6 +233,8 @@ if ($help) {
     Write-Host "  -q,  -qupload       Upload default plugin via QUpload API"
     Write-Host "  -u -q               Upload Riseup Asia Uploader itself via QUpload API"
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
+    Write-Host "  -uas                Upload ALL plugins to ALL configured sites (multi-site)"
+    Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
     Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host ""
@@ -264,7 +266,10 @@ if ($help) {
     Write-Host ""
     Write-Host "  Upload (all plugins):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload"
-    Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload (auto-cleans old ZIPs)"
+    Write-Host ""
+    Write-Host "  Upload (multi-site):" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -uas                     # Upload all plugins to all sites"
+    Write-Host "    .\run.ps1 -uas -site 'Test V1'     # Upload all plugins to specific site"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
