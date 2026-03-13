@@ -269,6 +269,7 @@ if ($help) {
     Write-Host ""
     Write-Host "  Upload (all plugins):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ua          # ZIP + upload all plugins via QUpload"
+    Write-Host "    .\run.ps1 -ua -xs 'riseup-asia-uploader'  # Exclude specific plugin"
     Write-Host ""
     Write-Host "  Upload (multi-site):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -uas                     # Upload all plugins to all sites"

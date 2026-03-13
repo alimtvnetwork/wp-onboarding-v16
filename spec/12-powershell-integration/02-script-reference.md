@@ -23,6 +23,7 @@
 | `-q` | `-qupload` | Switch | Upload plugin to WordPress via QUpload API (upload-plugin-U-Q.ps1) |
 | | `-u -q` | Combo | Upload Riseup Asia Uploader via QUpload API (shorthand) |
 | `-ua` | `-uploadall` | Switch | ZIP all plugins (except QUpload) and upload each via QUpload API |
+| | `-ua -xs 'slug'` | Combo | ZIP + upload all plugins EXCEPT named one(s), comma-separated |
 | `-z` | `-zip` | Switch | ZIP default plugin (or specific via `-pp`) |
 | `-za` | | Switch | ZIP all plugins in `wp-plugins/` with version numbers |
 | `-zq` | `-zipqupload` | Switch | ZIP QUpload plugin |
