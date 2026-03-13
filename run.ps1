@@ -234,6 +234,7 @@ if ($help) {
     Write-Host "  -q,  -qupload       Upload default plugin via QUpload API"
     Write-Host "  -u -q               Upload Riseup Asia Uploader itself via QUpload API"
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
+    Write-Host "  -ua -xs 'slug'      ZIP + upload ALL plugins EXCEPT the named one(s)"
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (multi-site)"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
     Write-Host "  -uas -xs 'name'     Upload ALL plugins to all sites EXCEPT the named one(s)"
