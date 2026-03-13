@@ -25,13 +25,15 @@ use RiseupAsia\Helpers\PathHelper;
 trait CleanerOrphanTrait {
     private function cleanupOrphanFiles(bool $dryRun = false): array {
         $result = array(
-            ResponseKeyType::Removed->value => 0,
-            ResponseKeyType::Errors->value  => array(),
+            ResponseKeyType::Removed->value    => 0,
+            ResponseKeyType::BytesFreed->value => 0,
+            ResponseKeyType::Errors->value     => array(),
         );
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
         $knownPaths = array_map(function ($f) { return $f['Filepath']; }, $files);
-        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
+        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
         if (PathHelper::isDirMissing($scanDir)) {
             return $result;
