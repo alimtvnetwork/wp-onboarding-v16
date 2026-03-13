@@ -622,7 +622,7 @@ class OnboardAdminUI {
         $total_pages = ceil($total / $per_page);
         $unique_actions = $this->audit_logger->get_unique_actions();
 
-        include ONBOARD_PLUGIN_DIR . 'admin/views/audit-logs.php';
+        include ONBOARD_PLUGIN_DIR . 'admin/views/AuditLogs.php';
     }
 
     /**
