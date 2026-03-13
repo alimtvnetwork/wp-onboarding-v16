@@ -22,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { SnapshotInterval, SnapshotSchedule, SnapshotRecord, SnapshotCronJob } from "@/lib/api/types";
 import { useApiQuery } from "@/hooks/useApiQuery";
+import { useCaptureQueryError } from "@/hooks/useCaptureQueryError";
 import { api, requireSuccess } from "@/lib/api";
 import { CronJobStatus } from "@/lib/constants";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
@@ -590,6 +591,8 @@ function CronJobsPanel() {
   const {
     data: cronJobs,
     isLoading,
+    isError: cronError,
+    error: cronQueryError,
     refetch,
     isFetching,
   } = useApiQuery<SnapshotCronJob[]>({
@@ -597,6 +600,12 @@ function CronJobsPanel() {
     apiFn: () => api.getSnapshotCronJobs(0),
     endpoint: "/sites/0/snapshots/cron",
     queryOptions: { retry: false, meta: { suppressGlobalError: true } },
+  });
+
+  useCaptureQueryError(cronError, cronQueryError, {
+    source: "CronJobsPanel.fetchCronJobs",
+    endpoint: "/sites/0/snapshots/cron",
+    triggerComponent: "SnapshotSettingsTab",
   });
 
   const [syncing, setSyncing] = useState(false);
@@ -815,6 +824,8 @@ function SnapshotHistoryViewer() {
   const {
     data: snapshots,
     isLoading,
+    isError: snapshotsError,
+    error: snapshotsQueryError,
     refetch,
     isFetching,
   } = useApiQuery<SnapshotRecord[]>({
@@ -824,13 +835,27 @@ function SnapshotHistoryViewer() {
     queryOptions: { retry: false, meta: { suppressGlobalError: true } },
   });
 
+  useCaptureQueryError(snapshotsError, snapshotsQueryError, {
+    source: "SnapshotHistoryViewer.fetchSnapshots",
+    endpoint: "/sites/0/snapshots",
+    triggerComponent: "SnapshotSettingsTab",
+  });
+
   const {
     data: cronJobsData,
+    isError: calendarCronError,
+    error: calendarCronQueryError,
   } = useApiQuery<SnapshotCronJob[]>({
     queryKey: ["snapshot-cron-jobs-calendar"],
     apiFn: () => api.getSnapshotCronJobs(0),
     endpoint: "/sites/0/snapshots/cron",
     queryOptions: { retry: false, meta: { suppressGlobalError: true } },
+  });
+
+  useCaptureQueryError(calendarCronError, calendarCronQueryError, {
+    source: "SnapshotHistoryViewer.fetchCronJobsCalendar",
+    endpoint: "/sites/0/snapshots/cron",
+    triggerComponent: "SnapshotSettingsTab",
   });
 
   const [selectedSnapshot, setSelectedSnapshot] = useState<SnapshotRecord | null>(null);

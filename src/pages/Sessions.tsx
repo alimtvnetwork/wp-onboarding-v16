@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCaptureOnError } from "@/hooks/useCaptureQueryError";
 import { SessionStatus } from "@/lib/constants";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistance } from "date-fns";
@@ -103,6 +104,8 @@ export default function Sessions() {
   const [detailTab, setDetailTab] = useState<string>("logs");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const captureDeleteError = useCaptureOnError({ source: "Sessions.deleteMutation", endpoint: "/sessions", method: "DELETE", triggerComponent: "Sessions" });
+
   // Fetch sessions list
   const { data: sessionsResult, isLoading: sessionsLoading, refetch } = useQuery({
     queryKey: ["sessions", currentPage],
@@ -151,7 +154,8 @@ export default function Sessions() {
         setSelectedSessionId(null);
       }
     },
-    onError: () => {
+    onError: (error: Error) => {
+      captureDeleteError(error);
       toast.error("Failed to delete session");
     },
   });

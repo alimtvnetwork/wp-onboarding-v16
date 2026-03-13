@@ -3,7 +3,7 @@ import { api, ApiResponse, SnapshotRecord, SnapshotSettings, SnapshotProviderInf
 import { SnapshotRunStatus, POLL_INTERVAL_RUNNING_SNAPSHOT_MS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useErrorStore, CapturedError } from "@/stores/errorStore";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 
 const POLL_INTERVAL = POLL_INTERVAL_RUNNING_SNAPSHOT_MS;
 
@@ -109,6 +109,30 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     refetchOnWindowFocus: false,
     meta: { suppressGlobalError: true },
   });
+
+  // Capture query errors for persistence
+  useEffect(() => {
+    const queries = [
+      { q: snapshotsQuery, label: "snapshots", ep: `/sites/${siteId}/snapshots` },
+      { q: settingsQuery, label: "settings", ep: `/sites/${siteId}/snapshots/settings` },
+      { q: providersQuery, label: "providers", ep: `/sites/${siteId}/snapshots/providers` },
+    ];
+    for (const { q, label, ep } of queries) {
+      if (q.isError && q.error) {
+        captureException(q.error, {
+          source: `useRemoteSnapshots.${label}`,
+          endpoint: ep,
+          method: "GET",
+          triggerComponent: "RemoteSnapshots",
+        });
+      }
+    }
+  }, [
+    snapshotsQuery.isError, snapshotsQuery.error,
+    settingsQuery.isError, settingsQuery.error,
+    providersQuery.isError, providersQuery.error,
+    captureException, siteId,
+  ]);
 
   const tablesQuery = useQuery({
     queryKey: [...queryKey, "tables"],

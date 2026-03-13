@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useCaptureOnError } from "@/hooks/useCaptureQueryError";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, isToday, isYesterday } from "date-fns";
 import {
@@ -191,6 +192,9 @@ export default function RequestSessions() {
   const [detailTab, setDetailTab] = useState<string>("response");
   const [liveMode, setLiveMode] = useState(false);
 
+  const captureDeleteError = useCaptureOnError({ source: "RequestSessions.deleteMutation", endpoint: "/request-sessions", method: "DELETE", triggerComponent: "RequestSessions" });
+  const captureClearError = useCaptureOnError({ source: "RequestSessions.clearMutation", endpoint: "/request-sessions", method: "DELETE", triggerComponent: "RequestSessions" });
+
   // Fetch sessions
   const { data: sessionsData, isLoading, refetch } = useQuery({
     queryKey: ["request-sessions"],
@@ -226,7 +230,7 @@ export default function RequestSessions() {
       queryClient.invalidateQueries({ queryKey: ["request-sessions"] });
       if (selectedId === id) setSelectedId(null);
     },
-    onError: () => toast.error("Failed to delete"),
+    onError: (error: Error) => { captureDeleteError(error); toast.error("Failed to delete"); },
   });
 
   // Clear all mutation
@@ -241,7 +245,7 @@ export default function RequestSessions() {
       queryClient.invalidateQueries({ queryKey: ["request-sessions"] });
       setSelectedId(null);
     },
-    onError: () => toast.error("Failed to clear sessions"),
+    onError: (error: Error) => { captureClearError(error); toast.error("Failed to clear sessions"); },
   });
 
   // Filter & search

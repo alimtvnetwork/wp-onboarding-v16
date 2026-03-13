@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, requireSuccess, Settings } from "@/lib/api";
 import { useApiQuery } from "@/hooks/useApiQuery";
+import { useErrorStore } from "@/stores/errorStore";
 
 type DeepPartial<T> = { [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P] };
 
@@ -14,6 +15,7 @@ export function useSettings() {
 
 export function useSaveSettings() {
   const queryClient = useQueryClient();
+  const { captureException } = useErrorStore();
   return useMutation({
     meta: { suppressGlobalError: true },
     mutationFn: async (patch: DeepPartial<Settings>) => {
@@ -27,6 +29,14 @@ export function useSaveSettings() {
         const key = q.queryKey;
         return Array.isArray(key) && key.includes("snapshots") && (key.includes("settings") || key.includes("cron"));
       }});
+    },
+    onError: (error: Error) => {
+      captureException(error, {
+        source: "useSettings.saveMutation",
+        endpoint: "/settings",
+        method: "PUT",
+        triggerComponent: "Settings",
+      });
     },
   });
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCaptureOnError } from "@/hooks/useCaptureQueryError";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -132,6 +133,9 @@ export default function Tests() {
 
   const { liveResults, progress, isStreaming } = useE2ETestStream();
 
+  const captureStartRunError = useCaptureOnError({ source: "Tests.startRun", endpoint: "/e2e/runs", method: "POST", triggerComponent: "Tests" });
+  const captureRerunError = useCaptureOnError({ source: "Tests.rerunCase", endpoint: "/e2e/rerun", method: "POST", triggerComponent: "Tests" });
+
   // Build a map of caseId -> last known status from live results
   const liveStatusMap = new Map(
     liveResults.map((r) => [r.caseId, { status: r.status, durationMs: r.durationMs }])
@@ -159,7 +163,8 @@ export default function Tests() {
       toast.success("Test run started");
       queryClient.invalidateQueries({ queryKey: ["e2e", "runs"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      captureStartRunError(error);
       toast.error(`Failed to start: ${error.message}`);
     },
   });
@@ -190,7 +195,8 @@ export default function Tests() {
       toast.success("Test rerun started");
       queryClient.invalidateQueries({ queryKey: ["e2e", "runs"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      captureRerunError(error);
       toast.error(`Rerun failed: ${error.message}`);
     },
     onSettled: () => {
