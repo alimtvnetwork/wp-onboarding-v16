@@ -728,7 +728,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                         });
                         failedFulfilled.forEach((r) => {
                           if (r.status === "fulfilled") {
-                            captureException(new Error(r.value.error || "Upload failed"), {
+                            const errMsg = typeof r.value.error === "string" ? r.value.error : "Upload failed";
+                            captureException(new Error(errMsg), {
                               endpoint: `/sites/${site.id}/remote-plugins/upload`,
                               method: "POST",
                               triggerComponent: "RemotePluginsPanel.upload",
