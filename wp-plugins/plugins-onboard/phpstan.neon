@@ -1,0 +1,40 @@
+parameters:
+  level: 6
+  paths:
+    - includes
+    - api
+    - admin
+    - plugins-onboard.php
+  scanDirectories:
+    - includes
+    - api
+    - admin
+  bootstrapFiles:
+    - phpstan-bootstrap.php
+  ignoreErrors:
+    # WordPress global functions not typed in stubs
+    - '#Function wp_\w+ not found\.#'
+    - '#Function get_option not found\.#'
+    - '#Function add_action not found\.#'
+    - '#Function add_filter not found\.#'
+    - '#Function current_user_can not found\.#'
+    - '#Function is_wp_error not found\.#'
+    - '#Function is_admin not found\.#'
+    - '#Function esc_html not found\.#'
+    - '#Function esc_attr not found\.#'
+    - '#Function esc_url not found\.#'
+    - '#Function plugin_dir_path not found\.#'
+    - '#Function plugin_dir_url not found\.#'
+    - '#Function plugin_basename not found\.#'
+    - '#Function register_activation_hook not found\.#'
+    - '#Function register_deactivation_hook not found\.#'
+    - '#Function register_rest_route not found\.#'
+    - '#Function flush_rewrite_rules not found\.#'
+    - '#Function sanitize_text_field not found\.#'
+    - '#Function check_ajax_referer not found\.#'
+    - '#Function defined not found\.#'
+    - '#Function getallheaders not found\.#'
+    - '#Function get_bloginfo not found\.#'
+    - '#Function error_log not found\.#'
+    - '#Class WP_REST_Server not found\.#'
+  treatPhpDocTypesAsCertain: false
