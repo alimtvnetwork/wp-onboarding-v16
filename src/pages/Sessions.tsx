@@ -104,6 +104,8 @@ export default function Sessions() {
   const [detailTab, setDetailTab] = useState<string>("logs");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const captureDeleteError = useCaptureOnError({ source: "Sessions.deleteMutation", endpoint: "/sessions", method: "DELETE", triggerComponent: "Sessions" });
+
   // Fetch sessions list
   const { data: sessionsResult, isLoading: sessionsLoading, refetch } = useQuery({
     queryKey: ["sessions", currentPage],
