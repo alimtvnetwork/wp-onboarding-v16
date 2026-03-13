@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.9.0",
-  "releaseDate": "2026-03-12",
+  "version": "2.10.0",
+  "releaseDate": "2026-03-13",
   "gitCommit": "dev",
-  "buildTime": "2026-03-12T00:00:00Z",
-  "scriptVersion": "2.5.0",
-  "wpPluginVersion": "2.9.0",
-  "quploadVersion": "2.9.0",
+  "buildTime": "2026-03-13T00:00:00Z",
+  "scriptVersion": "2.10.0",
+  "wpPluginVersion": "2.10.0",
+  "quploadVersion": "2.10.0",
   "changelog": [
+    {
+      "version": "2.10.0",
+      "date": "2026-03-13",
+      "title": "Multi-User Per Site Spec & Version Bump",
+      "changes": [
+        "📋 Multi-user per site credential spec created (SiteCredentials table, CRUD API, React UI)",
+        "🌱 Test V1 & Test V2 sites added to seed config with credentials",
+        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+      ]
+    },
     {
       "version": "2.9.0",
       "date": "2026-03-12",
