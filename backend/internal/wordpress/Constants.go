@@ -19,6 +19,9 @@ const (
 	// PluginUploaderNamespace is deprecated, use RiseupAsiaNamespace.
 	// Kept for backward compatibility.
 	PluginUploaderNamespace = "plugin-uploader/v1"
+
+	// QUploadNamespace is the REST API namespace for the QUpload (Quick Upload) plugin.
+	QUploadNamespace = "qupload-api/v1"
 )
 
 // NOTE: REST API Endpoints have been migrated to endpoint_type.go (EndpointType).

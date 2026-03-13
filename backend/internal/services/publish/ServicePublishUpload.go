@@ -178,20 +178,29 @@ func (s *Service) logActivateSkipped(pctx *publishContext) {
 	s.broadcastStageLog(skipLog)
 }
 
-// activateViaUploader attempts plugin activation via the Riseup Asia Uploader
+// activateViaUploader attempts plugin activation via Riseup Asia Uploader, falling back to QUpload.
 func (s *Service) activateViaUploader(pctx *publishContext, startTime time.Time) *apperror.AppError {
 	availResult := pctx.WPClient.CheckRiseupAsiaAvailable()
 	availability := availResult.ValueOr(nil)
 
-	if availability.IsUnavailable() {
-		return s.failActivateNoUploader(pctx)
+	if availability.IsAvailable() {
+		endpointUrl := buildActivateEndpointUrl(pctx.SiteInfo.Url)
+		s.logActivateRequest(pctx, endpointUrl)
+
+		activateErr := s.executeActivation(pctx, endpointUrl, startTime)
+		if activateErr == nil {
+			return nil
+		}
+
+		s.log.Warn("Riseup Asia activation failed, trying QUpload fallback",
+			"slug", pctx.Mapping.RemoteSlug,
+			"error", activateErr.Error(),
+		)
 	}
 
-	endpointUrl := buildActivateEndpointUrl(pctx.SiteInfo.Url)
-	s.logActivateRequest(pctx, endpointUrl)
-
-	return s.executeActivation(pctx, endpointUrl, startTime)
+	return s.activateViaQUploadFallback(pctx, startTime)
 }
+
 
 // buildActivateEndpointUrl constructs the activation endpoint URL.
 func buildActivateEndpointUrl(siteUrl string) string {

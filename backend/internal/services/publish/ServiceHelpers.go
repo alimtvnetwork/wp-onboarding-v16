@@ -180,21 +180,51 @@ type UploadOutcome struct {
 	IsActivated  bool
 }
 
-// uploadPlugin uploads a plugin ZIP via the Riseup Asia Uploader.
+// uploadPlugin uploads a plugin ZIP via the Riseup Asia Uploader, falling back to QUpload on failure.
 func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) apperror.Result[UploadOutcome] {
+	s.log.Info("Upload pipeline starting", "slug", slug, "zipPath", zipPath)
+
+	riseupResult := s.tryRiseupAsiaUpload(ctx, wpClient, zipPath, slug)
+	isRiseupSuccess := !riseupResult.HasError()
+
+	if isRiseupSuccess {
+		return riseupResult
+	}
+
+	s.log.Warn("Riseup Asia Uploader failed, attempting QUpload fallback",
+		"slug", slug,
+		"riseupError", riseupResult.AppError().Error(),
+	)
+
+	return s.tryQUploadFallback(ctx, wpClient, zipPath, slug)
+}
+
+// tryRiseupAsiaUpload attempts upload via Riseup Asia Uploader.
+func (s *Service) tryRiseupAsiaUpload(_ context.Context, wpClient *wordpress.Client, zipPath, slug string) apperror.Result[UploadOutcome] {
+	s.log.Info("Checking Riseup Asia Uploader availability", "slug", slug)
+
 	availabilityResult := wpClient.CheckRiseupAsiaAvailable()
 	availability := availabilityResult.Value()
 
 	if availability.IsUnavailable() {
-		return s.simulateUpload(zipPath, slug)
+		s.log.Warn("Riseup Asia Uploader not available on remote site", "slug", slug)
+
+		return apperror.Fail[UploadOutcome](
+			apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available"),
+		)
 	}
+
+	s.log.Info("Riseup Asia Uploader available",
+		"slug", slug,
+		"namespace", availability.Namespace,
+	)
 
 	return s.performRealUpload(wpClient, zipPath, slug)
 }
 
 // simulateUpload logs a simulated upload when no uploader is available.
 func (s *Service) simulateUpload(zipPath, slug string) apperror.Result[UploadOutcome] {
-	s.log.Warn("Riseup Asia Uploader not available; upload simulated", "slug", slug)
+	s.log.Warn("No uploader available (Riseup Asia or QUpload); upload simulated", "slug", slug)
 	fi, appErr := pathutil.StatFile(zipPath)
 	if appErr == nil {
 		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", fi.Info.Size())
