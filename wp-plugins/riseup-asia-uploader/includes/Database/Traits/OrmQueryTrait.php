@@ -117,7 +117,7 @@ trait OrmQueryTrait {
             $stmt->execute($this->whereParams);
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'OrmQueryTrait::findMany() failed:');
             return array();
         }
