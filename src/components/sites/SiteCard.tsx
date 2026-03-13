@@ -22,6 +22,7 @@ import {
   Activity,
   Clock,
   Calendar,
+  Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord, SnapshotCronJob } from "@/lib/api";
