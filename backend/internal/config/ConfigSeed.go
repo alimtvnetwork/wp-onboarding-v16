@@ -128,17 +128,48 @@ func seedAllSites(db *database.DB, cfg *Config, log *logger.Logger, encryptionKe
 // seedSingleSite creates or finds a single site; returns its ID or 0 on failure.
 func seedSingleSite(db *database.DB, log *logger.Logger, site SeedSite, encryptionKey []byte) int64 {
 	normalizedUrl := normalizeUrl(site.URL)
-	password := decodePassword(site.ApplicationPassword, site.Name, log)
+	credentials := resolveCredentials(site)
 
 	existingId, lookupErr := db.GetSiteIdByUrl(normalizedUrl)
 	isExisting := lookupErr == nil && existingId > 0
 
 	if isExisting {
 		log.Info("Site exists in DB", "id", existingId, "name", site.Name)
+		seedCredentialsForSite(db, log, existingId, credentials, encryptionKey)
+
 		return existingId
 	}
 
-	return createSeedSite(db, log, site, normalizedUrl, password, encryptionKey)
+	id := createSeedSiteRow(db, log, site, normalizedUrl, credentials, encryptionKey)
+	isCreated := id > 0
+
+	if isCreated {
+		seedCredentialsForSite(db, log, id, credentials, encryptionKey)
+	}
+
+	return id
+}
+
+// resolveCredentials merges legacy single-credential with Credentials slice.
+func resolveCredentials(site SeedSite) []SeedCredential {
+	hasCredentials := len(site.Credentials) > 0
+
+	if hasCredentials {
+		return site.Credentials
+	}
+
+	hasLegacyCredential := site.Username != "" && site.ApplicationPassword != ""
+
+	if hasLegacyCredential {
+		return []SeedCredential{{
+			AppName:             "default",
+			Username:            site.Username,
+			ApplicationPassword: site.ApplicationPassword,
+			IsDefault:           true,
+		}}
+	}
+
+	return nil
 }
 
 // decodePassword decodes a base64 application password, falling back to raw bytes.
@@ -146,31 +177,36 @@ func decodePassword(encoded string, siteName string, log *logger.Logger) []byte 
 	decoded, decodeErr := base64.StdEncoding.DecodeString(encoded)
 	if decodeErr != nil {
 		log.Warn("Base64 decode failed for site password, using raw", "site", siteName)
+
 		return []byte(encoded)
 	}
 
 	return decoded
 }
 
-// createSeedSite encrypts the password and inserts a new site row.
-func createSeedSite(
+// createSeedSiteRow encrypts the first credential password and inserts a new site row.
+func createSeedSiteRow(
 	db *database.DB,
 	log *logger.Logger,
 	site SeedSite,
 	normalizedUrl string,
-	password []byte,
+	credentials []SeedCredential,
 	encryptionKey []byte,
 ) int64 {
+	firstCred := pickFirstCredential(credentials, site)
+	password := decodePassword(firstCred.ApplicationPassword, site.Name, log)
+
 	encryptedPassword, encryptErr := crypto.Encrypt(password, encryptionKey)
 	if encryptErr != nil {
 		log.Error("Failed to encrypt password for site", "site", site.Name, "error", encryptErr)
+
 		return 0
 	}
 
 	input := database.SeedSiteInput{
 		Name:              site.Name,
 		Url:               normalizedUrl,
-		Username:          site.Username,
+		Username:          firstCred.Username,
 		PasswordEncrypted: encryptedPassword,
 		Category:          site.Category,
 	}
@@ -178,12 +214,72 @@ func createSeedSite(
 	id, createErr := db.CreateSeedSite(input)
 	if createErr != nil {
 		log.Error("Failed to create seed site", "name", site.Name, "error", createErr)
+
 		return 0
 	}
 
 	log.Info("Site CREATED", "name", site.Name, "id", id)
 
 	return id
+}
+
+// pickFirstCredential returns the first credential or builds one from legacy fields.
+func pickFirstCredential(credentials []SeedCredential, site SeedSite) SeedCredential {
+	hasCreds := len(credentials) > 0
+
+	if hasCreds {
+		return credentials[0]
+	}
+
+	return SeedCredential{
+		AppName:             "default",
+		Username:            site.Username,
+		ApplicationPassword: site.ApplicationPassword,
+		IsDefault:           true,
+	}
+}
+
+// seedCredentialsForSite inserts all credentials for a site into SiteCredentials.
+func seedCredentialsForSite(db *database.DB, log *logger.Logger, siteId int64, credentials []SeedCredential, encryptionKey []byte) {
+	for _, cred := range credentials {
+		seedSingleCredential(db, log, siteId, cred, encryptionKey)
+	}
+}
+
+// seedSingleCredential inserts one credential if it doesn't already exist.
+func seedSingleCredential(db *database.DB, log *logger.Logger, siteId int64, cred SeedCredential, encryptionKey []byte) {
+	exists, existsErr := db.CredentialExistsBySiteAndAppName(siteId, cred.AppName)
+	if existsErr == nil && exists {
+		log.Debug("Credential already exists", "siteId", siteId, "appName", cred.AppName)
+
+		return
+	}
+
+	password := decodePassword(cred.ApplicationPassword, cred.AppName, log)
+
+	encrypted, encErr := crypto.Encrypt(password, encryptionKey)
+	if encErr != nil {
+		log.Error("Failed to encrypt credential password", "appName", cred.AppName, "error", encErr)
+
+		return
+	}
+
+	input := database.SeedCredentialInput{
+		SiteId:            siteId,
+		AppName:           cred.AppName,
+		Username:          cred.Username,
+		PasswordEncrypted: encrypted,
+		IsDefault:         cred.IsDefault,
+	}
+
+	id, createErr := db.CreateSiteCredential(input)
+	if createErr != nil {
+		log.Error("Failed to create seed credential", "appName", cred.AppName, "error", createErr)
+
+		return
+	}
+
+	log.Info("Credential CREATED", "credId", id, "siteId", siteId, "appName", cred.AppName)
 }
 
 // seedAllPlugins processes all configured seed plugins and returns total mappings created.
