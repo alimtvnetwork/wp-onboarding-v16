@@ -261,7 +261,7 @@ class PluginsOnboard {
 
             OnboardLogger::debug('All hooks registered successfully');
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             OnboardLogger::critical('Failed to register hooks', $e);
             OnboardErrorLog::logAndThrow($e, 'Plugins Onboard: Hook registration failed:');
         }
