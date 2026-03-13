@@ -154,7 +154,8 @@ export default function Sessions() {
         setSelectedSessionId(null);
       }
     },
-    onError: () => {
+    onError: (error: Error) => {
+      captureDeleteError(error);
       toast.error("Failed to delete session");
     },
   });
