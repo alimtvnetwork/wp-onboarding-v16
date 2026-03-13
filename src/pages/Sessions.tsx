@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCaptureOnError } from "@/hooks/useCaptureQueryError";
 import { SessionStatus } from "@/lib/constants";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistance } from "date-fns";

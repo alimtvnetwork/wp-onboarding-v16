@@ -15,6 +15,7 @@ export function useSettings() {
 
 export function useSaveSettings() {
   const queryClient = useQueryClient();
+  const { captureException } = useErrorStore();
   return useMutation({
     meta: { suppressGlobalError: true },
     mutationFn: async (patch: DeepPartial<Settings>) => {
@@ -28,6 +29,14 @@ export function useSaveSettings() {
         const key = q.queryKey;
         return Array.isArray(key) && key.includes("snapshots") && (key.includes("settings") || key.includes("cron"));
       }});
+    },
+    onError: (error: Error) => {
+      captureException(error, {
+        source: "useSettings.saveMutation",
+        endpoint: "/settings",
+        method: "PUT",
+        triggerComponent: "Settings",
+      });
     },
   });
 }

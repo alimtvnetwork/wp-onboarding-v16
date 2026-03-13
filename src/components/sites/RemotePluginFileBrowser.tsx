@@ -251,7 +251,7 @@ export function RemotePluginFileBrowser({
 
   const queryKey = ["sites", siteId, "remote-plugins", pluginSlug, "files"];
 
-  const { data: filesResult, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data: filesResult, isLoading, isError, error: queryError, refetch, isFetching } = useQuery({
     queryKey,
     queryFn: async () => {
       const response = await api.getRemotePluginFiles(siteId, pluginSlug);
@@ -261,6 +261,12 @@ export function RemotePluginFileBrowser({
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
     meta: { suppressGlobalError: true },
+  });
+
+  useCaptureQueryError(isError, queryError, {
+    source: "RemotePluginFileBrowser.fetchFiles",
+    endpoint: `/sites/${siteId}/remote-plugins/${pluginSlug}/files`,
+    triggerComponent: "RemotePluginFileBrowser",
   });
 
   const tree = useMemo(() => {

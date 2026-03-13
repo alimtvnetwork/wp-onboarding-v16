@@ -3,7 +3,7 @@ import { api, ApiResponse, SnapshotRecord, SnapshotSettings, SnapshotProviderInf
 import { SnapshotRunStatus, POLL_INTERVAL_RUNNING_SNAPSHOT_MS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useErrorStore, CapturedError } from "@/stores/errorStore";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 
 const POLL_INTERVAL = POLL_INTERVAL_RUNNING_SNAPSHOT_MS;
 

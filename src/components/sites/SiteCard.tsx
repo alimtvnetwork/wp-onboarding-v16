@@ -66,7 +66,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   });
 
   // Fetch latest snapshot for "last backup" badge
-  const { data: snapshots } = useQuery({
+  const { data: snapshots, isError: snapshotsError, error: snapshotsQueryError } = useQuery({
     queryKey: ["sites", site.id, "snapshots", "latest"],
     queryFn: async () => {
       const res = await api.getRemoteSnapshots(site.id);
@@ -79,8 +79,14 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     meta: { suppressGlobalError: true },
   });
 
+  useCaptureQueryError(snapshotsError, snapshotsQueryError, {
+    source: "SiteCard.fetchSnapshots",
+    endpoint: `/sites/${site.id}/snapshots`,
+    triggerComponent: "SiteCard",
+  });
+
   // Fetch cron jobs for "next backup" badge
-  const { data: cronJobs } = useQuery({
+  const { data: cronJobs, isError: cronError, error: cronQueryError } = useQuery({
     queryKey: ["sites", site.id, "snapshots", "cron"],
     queryFn: async () => {
       const res = await api.getSnapshotCronJobs(site.id);
@@ -91,6 +97,12 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     staleTime: STALE_TIME_DEFAULT_MS,
     retry: false,
     meta: { suppressGlobalError: true },
+  });
+
+  useCaptureQueryError(cronError, cronQueryError, {
+    source: "SiteCard.fetchCronJobs",
+    endpoint: `/sites/${site.id}/snapshots/cron`,
+    triggerComponent: "SiteCard",
   });
 
   // Derive running backup

@@ -195,7 +195,8 @@ export default function Tests() {
       toast.success("Test rerun started");
       queryClient.invalidateQueries({ queryKey: ["e2e", "runs"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      captureRerunError(error);
       toast.error(`Rerun failed: ${error.message}`);
     },
     onSettled: () => {
