@@ -1,5 +1,5 @@
 {
-  "Version": "2.0.0",
+  "Version": "2.1.0",
 
   "DatabasePath": "data/app.db",
   "TempDir": ".temp",
@@ -71,6 +71,20 @@
         "Username": "admin",
         "ApplicationPassword": "RUtSTSBwUENNIGF1ZzkgRTRqOCBvM3JQIHNsOUE=",
         "Category": "Development"
+      },
+      {
+        "Name": "Test V1",
+        "Url": "https://testv1.developers-organism.com",
+        "Username": "test-plugins@pxdmail.net",
+        "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+        "Category": "Testing"
+      },
+      {
+        "Name": "Test V2",
+        "Url": "https://testv2.developers-organism.com",
+        "Username": "test-plugins@pxdmail.net",
+        "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+        "Category": "Testing"
       }
     ],
     "Plugins": [
@@ -80,7 +94,7 @@
         "Category": "Core",
         "GitEnabled": false,
         "AutoPublish": false,
-        "SiteNames": ["Atto Property Demo"]
+        "SiteNames": ["Atto Property Demo", "Test V1", "Test V2"]
       },
       {
         "Name": "Plugins Onboard",
@@ -88,7 +102,7 @@
         "Category": "Development",
         "GitEnabled": true,
         "AutoPublish": false,
-        "SiteNames": ["Atto Property Demo"]
+        "SiteNames": ["Atto Property Demo", "Test V1", "Test V2"]
       },
       {
         "Name": "Category Generator",
@@ -96,7 +110,7 @@
         "Category": "Development",
         "GitEnabled": true,
         "AutoPublish": false,
-        "SiteNames": ["Atto Property Demo"]
+        "SiteNames": ["Atto Property Demo", "Test V1", "Test V2"]
       },
       {
         "Name": "Link Manager",
@@ -104,7 +118,7 @@
         "Category": "Development",
         "GitEnabled": true,
         "AutoPublish": false,
-        "SiteNames": ["Atto Property Demo"]
+        "SiteNames": ["Atto Property Demo", "Test V1", "Test V2"]
       }
     ]
   }
