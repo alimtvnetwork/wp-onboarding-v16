@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "releaseDate": "2026-03-13",
   "gitCommit": "dev",
   "buildTime": "2026-03-13T00:00:00Z",
-  "scriptVersion": "2.10.0",
-  "wpPluginVersion": "2.10.0",
-  "quploadVersion": "2.10.0",
+  "scriptVersion": "2.11.0",
+  "wpPluginVersion": "2.11.0",
+  "quploadVersion": "2.11.0",
   "changelog": [
+    {
+      "version": "2.11.0",
+      "date": "2026-03-13",
+      "title": "Multi-Site Deployment, QUpload Fallback & Default Credential Flow",
+      "changes": [
+        "🌐 Multi-site deployment (-uas) with Base64-encoded credentials in powershell.json",
+        "🔄 QUpload fallback in Go publish pipeline (upload + activation)",
+        "🔑 Connection test & GetDecryptedPassword now use default SiteCredential over legacy fields",
+        "📋 Multi-site schema added to powershell.schema.json"
+      ]
+    },
     {
       "version": "2.10.0",
       "date": "2026-03-13",
