@@ -22,6 +22,7 @@ use QUpload\Helpers\PathHelper;
 
 class FileLogger {
     private const SEPARATOR_WIDTH = 80;
+    private const DEFAULT_MAX_LOG_SIZE_BYTES = 524288; // 512 KB
 
     private static ?self $instance = null;
     private ?string $logsDir = null;
@@ -29,6 +30,7 @@ class FileLogger {
     private ?string $errorFile = null;
     private ?string $stacktraceFile = null;
     private bool $isInitialized = false;
+    private int $maxLogSizeBytes = self::DEFAULT_MAX_LOG_SIZE_BYTES;
 
     /** @var array<string, bool> */
     private array $dedupHashes = [];
@@ -265,9 +267,11 @@ class FileLogger {
             return false;
         }
 
+        $this->rotateIfNeeded($this->logFile);
         $result = @file_put_contents($this->logFile, $entry, FILE_APPEND | LOCK_EX);
 
         if ($isError) {
+            $this->rotateIfNeeded($this->errorFile);
             @file_put_contents($this->errorFile, $entry, FILE_APPEND | LOCK_EX);
         }
 
@@ -301,7 +305,71 @@ class FileLogger {
         $entry .= $stackTrace . PHP_EOL;
         $entry .= $separator . PHP_EOL . PHP_EOL;
 
+        $this->rotateIfNeeded($this->stacktraceFile);
         @file_put_contents($this->stacktraceFile, $entry, FILE_APPEND | LOCK_EX);
+    }
+
+    // ── Log Rotation ──────────────────────────────────────────────────
+
+    /** Rotate a log file to archive if it exceeds the size threshold. */
+    private function rotateIfNeeded(?string $filePath): void {
+        if ($filePath === null) {
+            return;
+        }
+
+        $isFileExists = file_exists($filePath);
+
+        if ($isFileExists === false) {
+            return;
+        }
+
+        $fileSize = @filesize($filePath);
+        $isUnderLimit = ($fileSize === false) || ($fileSize < $this->maxLogSizeBytes);
+
+        if ($isUnderLimit) {
+            return;
+        }
+
+        $archiveDir = $this->logsDir . '/archive';
+        $nextIndex = $this->getNextArchiveIndex($archiveDir);
+        $targetDir = $archiveDir . '/' . str_pad((string) $nextIndex, 3, '0', STR_PAD_LEFT);
+
+        PathHelper::ensureDirectory($targetDir);
+
+        $targetPath = $targetDir . '/' . basename($filePath);
+        @rename($filePath, $targetPath);
+    }
+
+    /** Find the next sequential archive folder index. */
+    private function getNextArchiveIndex(string $archiveDir): int {
+        $isArchiveMissing = !is_dir($archiveDir);
+
+        if ($isArchiveMissing) {
+            return 1;
+        }
+
+        $maxIndex = 0;
+        $entries = @scandir($archiveDir);
+        $hasEntries = is_array($entries);
+
+        if ($hasEntries) {
+            foreach ($entries as $entry) {
+                $isDotEntry = ($entry === '.' || $entry === '..');
+
+                if ($isDotEntry) {
+                    continue;
+                }
+
+                $index = (int) $entry;
+                $isHigher = ($index > $maxIndex);
+
+                if ($isHigher) {
+                    $maxIndex = $index;
+                }
+            }
+        }
+
+        return $maxIndex + 1;
     }
 
     private function isDuplicate(string $level, string $message, string $file, int $line): bool {

@@ -42,6 +42,7 @@ class FileLogger {
     private const TABLE_FLASH_STATE = 'FlashState'; // TableType::FlashState
     private const KEY_HAS_UNSEEN_ERRORS = 'has_unseen_errors';
     private const USER_AGENT_MAX_LENGTH = 200;
+    private const DEFAULT_MAX_LOG_SIZE_BYTES = 524288; // 512 KB
 
     private static ?self $instance = null;
     private ?string $baseDir = null;
@@ -50,6 +51,7 @@ class FileLogger {
     private ?string $errorFile = null;
     private ?string $stacktraceFile = null;
     private bool $isInitialized = false;
+    private int $maxLogSizeBytes = self::DEFAULT_MAX_LOG_SIZE_BYTES;
 
     /**
      * Maximum stack frames to capture in debug_backtrace().

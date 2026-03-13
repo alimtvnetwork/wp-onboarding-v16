@@ -57,7 +57,7 @@ trait RouteRegistrationTrait
         ]);
 
         $safeRegister(EndpointType::Activate->route(), [
-            'methods'             => HttpMethodType::Post->value,
+            'methods'             => HttpMethodType::Put->value,
             'callback'            => [$this, 'handleActivate'],
             'permission_callback' => [$this, 'checkPluginPermission'],
         ]);

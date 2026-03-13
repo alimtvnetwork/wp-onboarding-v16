@@ -167,12 +167,12 @@ export const api = {
   enableRemotePlugin: (siteId: number, pluginSlug: string, version?: string) =>
     request<{ enabled: boolean; plugin: string }>(
       `/sites/${siteId}/remote-plugins/enable`,
-      { method: "POST", body: JSON.stringify({ plugin: pluginSlug, ...(version ? { version } : {}) }) }
+      { method: "PUT", body: JSON.stringify({ plugin: pluginSlug, ...(version ? { version } : {}) }) }
     ),
   disableRemotePlugin: (siteId: number, pluginSlug: string, version?: string) =>
     request<{ disabled: boolean; plugin: string }>(
       `/sites/${siteId}/remote-plugins/disable`,
-      { method: "POST", body: JSON.stringify({ plugin: pluginSlug, ...(version ? { version } : {}) }) }
+      { method: "PUT", body: JSON.stringify({ plugin: pluginSlug, ...(version ? { version } : {}) }) }
     ),
   deleteRemotePlugin: (siteId: number, pluginSlug: string, version?: string) =>
     request<{ deleted: boolean; plugin: string }>(
