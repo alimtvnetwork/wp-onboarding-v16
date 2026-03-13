@@ -96,7 +96,7 @@ trait OrmQueryTrait {
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $result ?: null;
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'OrmQueryTrait::findOne() failed:');
             return null;
         }
