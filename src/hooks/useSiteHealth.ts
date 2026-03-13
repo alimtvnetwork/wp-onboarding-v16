@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import type { SiteHealthSummary, SiteHealthStats } from "@/types/siteHealth";
+import { useErrorStore } from "@/stores/errorStore";
 
 export function useSiteHealthSummaries(pollInterval = 30000) {
   return useQuery({
