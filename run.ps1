@@ -272,6 +272,8 @@ if ($help) {
     Write-Host "  Upload (multi-site):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -uas                     # Upload all plugins to all sites"
     Write-Host "    .\run.ps1 -uas -site 'Test V1'     # Upload all plugins to specific site"
+    Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
+    Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites (comma-separated)"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
