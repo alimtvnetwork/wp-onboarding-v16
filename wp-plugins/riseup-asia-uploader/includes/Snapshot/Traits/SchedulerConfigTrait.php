@@ -56,7 +56,7 @@ trait SchedulerConfigTrait {
     public function syncScheduleWithSettings(): void {
         $settings = $this->detector->getSettings();
         $this->clearScheduledSnapshot();
-        $isScheduleEnabled = !empty($settings['schedule_enabled']);
+        $isScheduleEnabled = !empty($settings[SettingsKeyType::ScheduleEnabled->value]);
 
         if (!$isScheduleEnabled) {
             $this->logger->debug('[SCHEDULER] Scheduled snapshots disabled');
@@ -64,7 +64,7 @@ trait SchedulerConfigTrait {
             return;
         }
 
-        $frequency = $settings['schedule_frequency'] ?? SnapshotFrequencyType::Manual->value;
+        $frequency = $settings[SettingsKeyType::ScheduleFrequency->value] ?? SnapshotFrequencyType::Manual->value;
         $isManualFrequency = ($frequency === SnapshotFrequencyType::Manual->value);
 
         if ($isManualFrequency) {
@@ -73,8 +73,8 @@ trait SchedulerConfigTrait {
             return;
         }
 
-        $scheduleTime = $settings['schedule_time'] ?? '04:00';
-        $scheduleDay = $settings['schedule_day'] ?? 'monday';
+        $scheduleTime = $settings[SettingsKeyType::ScheduleTime->value] ?? '04:00';
+        $scheduleDay = $settings[SettingsKeyType::ScheduleDay->value] ?? 'monday';
         $nextRun = $this->calculateNextRunTime($frequency, $scheduleTime, $scheduleDay);
         $recurrence = $this->mapFrequencyToRecurrence($frequency);
         $result = wp_schedule_event(
