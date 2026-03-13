@@ -118,7 +118,6 @@ class OnboardDatabase {
         if (OnboardBooleanHelpers::isExtensionMissing('pdo_sqlite')) {
             $this->last_error = 'PDO SQLite extension is not loaded.';
             OnboardLogger::error('[DB] ' . $this->last_error);
-            error_log('Onboard DB: ' . $this->last_error);
             return;
         }
         OnboardLogger::debug('[DB] ✓ pdo_sqlite extension is loaded');
