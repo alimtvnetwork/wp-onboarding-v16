@@ -133,6 +133,9 @@ export default function Tests() {
 
   const { liveResults, progress, isStreaming } = useE2ETestStream();
 
+  const captureStartRunError = useCaptureOnError({ source: "Tests.startRun", endpoint: "/e2e/runs", method: "POST", triggerComponent: "Tests" });
+  const captureRerunError = useCaptureOnError({ source: "Tests.rerunCase", endpoint: "/e2e/rerun", method: "POST", triggerComponent: "Tests" });
+
   // Build a map of caseId -> last known status from live results
   const liveStatusMap = new Map(
     liveResults.map((r) => [r.caseId, { status: r.status, durationMs: r.durationMs }])
