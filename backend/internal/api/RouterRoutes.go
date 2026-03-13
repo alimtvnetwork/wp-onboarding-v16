@@ -69,7 +69,11 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/remote-plugins/delete", handlers.DeleteRemotePlugin).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/files", handlers.GetRemotePluginFiles).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/file", handlers.GetRemotePluginFileContent).Methods("POST")
-	api.HandleFunc("/sites/{id}/credentials", handlers.GetSiteCredentials).Methods("GET")
+	api.HandleFunc("/sites/{id}/credentials", handlers.GetSiteCredentialsList).Methods("GET")
+	api.HandleFunc("/sites/{id}/credentials", handlers.CreateSiteCredential).Methods("POST")
+	api.HandleFunc("/sites/{id}/credentials/{credId}", handlers.UpdateSiteCredential).Methods("PUT")
+	api.HandleFunc("/sites/{id}/credentials/{credId}", handlers.DeleteSiteCredentialHandler).Methods("DELETE")
+	api.HandleFunc("/sites/{id}/credentials/{credId}/default", handlers.SetDefaultSiteCredential).Methods("PUT")
 	registerSnapshotRoutes(api)
 }
 

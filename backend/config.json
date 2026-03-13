@@ -75,16 +75,40 @@
       {
         "Name": "Test V1",
         "Url": "https://testv1.developers-organism.com",
-        "Username": "test-plugins@pxdmail.net",
-        "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
-        "Category": "Testing"
+        "Category": "Testing",
+        "Credentials": [
+          {
+            "AppName": "test-plg-v1",
+            "Username": "test-plugins@pxdmail.net",
+            "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+            "IsDefault": true
+          },
+          {
+            "AppName": "test-plg-v2",
+            "Username": "test-plugins-v2@pxdmail.net",
+            "ApplicationPassword": "bjdOTCBENG1WIDNGRFIgcUV1ZiByVE5PIE5NM1k=",
+            "IsDefault": false
+          }
+        ]
       },
       {
         "Name": "Test V2",
         "Url": "https://testv2.developers-organism.com",
-        "Username": "test-plugins@pxdmail.net",
-        "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
-        "Category": "Testing"
+        "Category": "Testing",
+        "Credentials": [
+          {
+            "AppName": "test-plg-v1",
+            "Username": "test-plugins@pxdmail.net",
+            "ApplicationPassword": "U2NaWCBmT2ExIGpxQWsgRlduViBUdUdBIEtJck4=",
+            "IsDefault": true
+          },
+          {
+            "AppName": "test-plg-v2",
+            "Username": "test-plugins-v2@pxdmail.net",
+            "ApplicationPassword": "bjdOTCBENG1WIDNGRFIgcUV1ZiByVE5PIE5NM1k=",
+            "IsDefault": false
+          }
+        ]
       }
     ],
     "Plugins": [

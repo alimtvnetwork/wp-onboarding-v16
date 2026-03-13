@@ -24,6 +24,13 @@ type SiteServiceInterface interface {
 	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, *apperror.AppError)
 	GetCredentials(ctx context.Context, siteId int64) (site.SiteCredentials, *apperror.AppError)
 
+	// Credential CRUD
+	ListCredentials(ctx context.Context, siteId int64) ([]database.SiteCredential, *apperror.AppError)
+	CreateCredential(ctx context.Context, siteId int64, input CredentialCreateInput) (*database.SiteCredential, *apperror.AppError)
+	UpdateCredential(ctx context.Context, credId int64, input CredentialUpdateInput) (*database.SiteCredential, *apperror.AppError)
+	DeleteCredential(ctx context.Context, credId int64) *apperror.AppError
+	SetDefaultCredential(ctx context.Context, siteId, credId int64) *apperror.AppError
+
 	// Remote plugin proxy — typed returns
 	GetRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, *apperror.AppError)
 	ForceSyncRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, *apperror.AppError)
