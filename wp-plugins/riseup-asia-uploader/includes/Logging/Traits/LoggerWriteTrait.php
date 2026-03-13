@@ -33,9 +33,11 @@ trait LoggerWriteTrait {
             return false;
         }
 
+        $this->rotateIfNeeded($this->logFile);
         $result = @file_put_contents($this->logFile, $entry, FILE_APPEND | LOCK_EX);
 
         if ($isError) {
+            $this->rotateIfNeeded($this->errorFile);
             @file_put_contents($this->errorFile, $entry, FILE_APPEND | LOCK_EX);
         }
 
