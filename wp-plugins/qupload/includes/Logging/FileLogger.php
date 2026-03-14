@@ -318,6 +318,12 @@ class FileLogger {
             return;
         }
 
+        $isRotationDisabled = ($this->archiveEnabled === false);
+
+        if ($isRotationDisabled) {
+            return;
+        }
+
         $isFileExists = file_exists($filePath);
 
         if ($isFileExists === false) {
@@ -332,6 +338,8 @@ class FileLogger {
         }
 
         $archiveDir = $this->logsDir . '/archive';
+        $this->pruneOldArchives($archiveDir);
+
         $nextIndex = $this->getNextArchiveIndex($archiveDir);
         $targetDir = $archiveDir . '/' . str_pad((string) $nextIndex, 3, '0', STR_PAD_LEFT);
 
@@ -371,6 +379,161 @@ class FileLogger {
         }
 
         return $maxIndex + 1;
+    }
+
+    /**
+     * Prune oldest archive folders when count reaches maxRotations.
+     * Deletes oldest folders until count is maxRotations - 1 (to make room for the new one).
+     */
+    private function pruneOldArchives(string $archiveDir): void {
+        $isArchiveMissing = !is_dir($archiveDir);
+
+        if ($isArchiveMissing) {
+            return;
+        }
+
+        $folders = $this->getSortedArchiveFolders($archiveDir);
+        $folderCount = count($folders);
+        $pruneThreshold = $this->maxRotations - 1;
+        $needsPruning = ($folderCount >= $this->maxRotations);
+
+        if ($needsPruning === false) {
+            return;
+        }
+
+        $foldersToRemove = $folderCount - $pruneThreshold;
+
+        for ($i = 0; $i < $foldersToRemove; $i++) {
+            $folderPath = $archiveDir . '/' . $folders[$i];
+            $this->deleteDirectoryRecursive($folderPath);
+        }
+    }
+
+    /**
+     * Get archive folder names sorted numerically (ascending = oldest first).
+     *
+     * @return array<int, string>
+     */
+    private function getSortedArchiveFolders(string $archiveDir): array {
+        $entries = @scandir($archiveDir);
+        $isReadFailed = ($entries === false);
+
+        if ($isReadFailed) {
+            return [];
+        }
+
+        $folders = [];
+
+        foreach ($entries as $entry) {
+            $isDotEntry = ($entry === '.' || $entry === '..');
+
+            if ($isDotEntry) {
+                continue;
+            }
+
+            $fullPath = $archiveDir . '/' . $entry;
+            $isDirectory = is_dir($fullPath);
+
+            if ($isDirectory) {
+                $folders[] = $entry;
+            }
+        }
+
+        sort($folders, SORT_NATURAL);
+
+        return $folders;
+    }
+
+    /** Recursively delete a directory and its contents. */
+    private function deleteDirectoryRecursive(string $dir): void {
+        $isNotDirectory = !is_dir($dir);
+
+        if ($isNotDirectory) {
+            return;
+        }
+
+        $entries = @scandir($dir);
+        $isReadFailed = ($entries === false);
+
+        if ($isReadFailed) {
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            $isDotEntry = ($entry === '.' || $entry === '..');
+
+            if ($isDotEntry) {
+                continue;
+            }
+
+            $fullPath = $dir . '/' . $entry;
+            $isSubDirectory = is_dir($fullPath);
+
+            if ($isSubDirectory) {
+                $this->deleteDirectoryRecursive($fullPath);
+            } else {
+                @unlink($fullPath);
+            }
+        }
+
+        @rmdir($dir);
+    }
+
+    // ── Settings Loading ──────────────────────────────────────────────
+
+    /** Load logging settings from the plugin settings.json file. */
+    private function loadLoggingSettings(): void {
+        $pluginDir = dirname(__DIR__, 2);
+        $settingsPath = $pluginDir . '/settings.json';
+        $isSettingsExists = file_exists($settingsPath);
+
+        if ($isSettingsExists === false) {
+            return;
+        }
+
+        $contents = @file_get_contents($settingsPath);
+        $isReadFailed = ($contents === false);
+
+        if ($isReadFailed) {
+            return;
+        }
+
+        $settings = json_decode($contents, true);
+        $isDecodeFailed = !is_array($settings);
+
+        if ($isDecodeFailed) {
+            return;
+        }
+
+        $hasLogging = isset($settings['logging']) && is_array($settings['logging']);
+
+        if ($hasLogging === false) {
+            return;
+        }
+
+        $logging = $settings['logging'];
+
+        $hasMaxSize = isset($logging['maxLogSizeBytes']);
+
+        if ($hasMaxSize) {
+            $rawSize = (int) $logging['maxLogSizeBytes'];
+            $isWithinRange = ($rawSize >= self::MIN_MAX_LOG_SIZE_BYTES && $rawSize <= self::MAX_MAX_LOG_SIZE_BYTES);
+            $this->maxLogSizeBytes = $isWithinRange ? $rawSize : self::DEFAULT_MAX_LOG_SIZE_BYTES;
+        }
+
+        $hasMaxRotations = isset($logging['maxRotations']);
+
+        if ($hasMaxRotations) {
+            $rawRotations = (int) $logging['maxRotations'];
+            $isWithinRange = ($rawRotations >= self::MIN_MAX_ROTATIONS && $rawRotations <= self::MAX_MAX_ROTATIONS);
+            $this->maxRotations = $isWithinRange ? $rawRotations : self::DEFAULT_MAX_ROTATIONS;
+        }
+
+        $hasArchiveEnabled = isset($logging['archiveEnabled']);
+
+        if ($hasArchiveEnabled) {
+            $this->archiveEnabled = (bool) $logging['archiveEnabled'];
+        }
     }
 
     private function isDuplicate(string $level, string $message, string $file, int $line): bool {
