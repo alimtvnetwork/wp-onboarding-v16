@@ -278,6 +278,13 @@ trait UploadExtractTrait
         $targetDir = WP_PLUGIN_DIR . '/' . $slug;
         $isUpdate = is_dir($targetDir);
 
+        // Log upload activity
+        $this->fileLogger->info('Plugin upload processing started', [
+            'slug' => $slug,
+            'isUpdate' => $isUpdate,
+            'activate' => $input['activate'],
+        ]);
+
         // Create backup before replacing (rollback safety net)
         $backupHelper = new UploadBackupHelper($this->fileLogger);
         $backupDir = $isUpdate ? $backupHelper->createBackup($slug) : false;
@@ -286,12 +293,16 @@ trait UploadExtractTrait
         $extractResult = $this->extractToPluginsDir($tempFile, $slug, $targetDir);
 
         if ($extractResult instanceof WP_REST_Response) {
+            $this->logExternalPluginFailure($slug, 'extraction', 'ZIP extraction to plugins directory failed');
+
             return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $extractResult);
         }
 
         $result = $this->resolvePluginAfterExtract($slug, $isUpdate, $input['activate'], $isPreviouslyActive);
 
         if ($result instanceof WP_REST_Response) {
+            $this->logExternalPluginFailure($slug, 'activation', 'Plugin activation or post-extract validation failed');
+
             return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $result);
         }
 
@@ -300,7 +311,40 @@ trait UploadExtractTrait
             $backupHelper->cleanup($backupDir);
         }
 
+        $this->fileLogger->info('Plugin upload completed successfully', [
+            'slug' => $slug,
+            'version' => $result[ResponseKeyType::PluginVersion->value] ?? '',
+            'isUpdate' => $isUpdate,
+            'activated' => $result[ResponseKeyType::Activated->value] ?? false,
+        ]);
+
         return $result;
+    }
+
+    /**
+     * Log an upload failure caused by an external (third-party) plugin.
+     *
+     * This writes to both the error log and stack trace with an explicit disclaimer
+     * that the failure originates from the uploaded plugin's own code, not from QUpload.
+     */
+    private function logExternalPluginFailure(string $slug, string $phase, string $detail): void
+    {
+        $message = sprintf(
+            'EXTERNAL PLUGIN FAILURE [%s] — The uploaded plugin "%s" failed during the %s phase. '
+            . 'This error originates from the third-party plugin code, not from QUpload. '
+            . 'QUpload has no control over external plugin code quality or compatibility. '
+            . 'Detail: %s',
+            strtoupper($phase),
+            $slug,
+            $phase,
+            $detail,
+        );
+
+        $this->fileLogger->error($message, [
+            'slug' => $slug,
+            'phase' => $phase,
+            'source' => 'external-plugin',
+        ]);
     }
 
     /** Roll back to backup on upload failure and return the original error response. */
@@ -313,15 +357,22 @@ trait UploadExtractTrait
     ): WP_REST_Response {
         if ($backupDir === false) {
             $this->traceStage('rollbackOnFailure:no-backup', ['slug' => $slug]);
+            $this->fileLogger->warn('Upload failed with no backup available — cannot rollback', ['slug' => $slug]);
 
             return $errorResponse;
         }
 
         $this->traceStage('rollbackOnFailure:start', ['slug' => $slug, 'backupDir' => $backupDir]);
+        $this->fileLogger->warn('Upload failed — initiating rollback to previous version', ['slug' => $slug]);
         $isRolledBack = $backupHelper->rollback($backupDir, $slug);
 
         if ($isRolledBack && $wasPreviouslyActive) {
             $backupHelper->reactivateAfterRollback($slug);
+            $this->fileLogger->info('Rollback complete — previous version restored and re-activated', ['slug' => $slug]);
+        } elseif ($isRolledBack) {
+            $this->fileLogger->info('Rollback complete — previous version restored (was not active)', ['slug' => $slug]);
+        } else {
+            $this->fileLogger->error('Rollback FAILED — plugin may be in a broken state', ['slug' => $slug]);
         }
 
         $this->traceStage('rollbackOnFailure:complete', ['slug' => $slug, 'success' => $isRolledBack]);
