@@ -71,7 +71,7 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
 
     try {
       const response = await api.getRemoteLogsStatus(siteId);
-      setStatus(response.Data ?? response);
+      setStatus(response.data ?? response as any);
     } catch {
       toast.error("Failed to fetch log status");
     } finally {
