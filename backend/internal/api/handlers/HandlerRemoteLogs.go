@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
