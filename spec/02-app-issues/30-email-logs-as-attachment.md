@@ -3,7 +3,7 @@
 > **ID:** 30-email-logs-as-attachment
 > **Date:** 2026-03-13
 > **Category:** REST API / Notification / Logging
-> **Status:** Open
+> **Status:** Resolved
 
 ---
 
