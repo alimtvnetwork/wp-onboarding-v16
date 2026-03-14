@@ -27,7 +27,8 @@ param(
     [string]$site = "",
     [Alias('xs')][string]$exclude = "",
     [Alias('ls','lr')][switch]$listsites,
-    [switch]$sync
+    [switch]$sync,
+    [Alias('cl')][switch]$clearlogs
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -83,6 +84,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-upload-all-sites.ps1")
 . (Join-Path $ModulesDir "mode-list-sites.ps1")
 . (Join-Path $ModulesDir "mode-test.ps1")
+. (Join-Path $ModulesDir "mode-clear-logs.ps1")
 
 # ============================================================================
 # TEST MODE: Run Go tests and exit early
@@ -185,6 +187,11 @@ if ($help) {
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
     Write-Host ""
+    Write-Host "LOG MANAGEMENT:" -ForegroundColor Yellow
+    Write-Host "  -cl, -clearlogs     Clear logs on ALL configured sites (both plugins)"
+    Write-Host "  -cl -site 'name'    Clear logs on a specific site"
+    Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
@@ -224,6 +231,11 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas -site 'Test V1'     # Upload all plugins to specific site"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
+    Write-Host ""
+    Write-Host "  Log management:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -cl                      # Clear logs on all sites (both plugins)"
+    Write-Host "    .\run.ps1 -cl -site 'Test V1'      # Clear logs on specific site"
+    Write-Host "    .\run.ps1 -cl -xs 'Test V1'        # Clear logs on all sites EXCEPT Test V1"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
@@ -344,6 +356,7 @@ if ($zip) { Invoke-ZipMode }
 if ($za) { Invoke-ZipAllMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
+if ($clearlogs) { Invoke-ClearLogsMode }
 if ($uploadall) { Invoke-UploadAllMode }
 if ($upload -and $qupload) { Invoke-UploadComboMode }
 if ($upload) { Invoke-UploadMode }
