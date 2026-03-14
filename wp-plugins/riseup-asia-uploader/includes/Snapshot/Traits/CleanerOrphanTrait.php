@@ -42,7 +42,7 @@ trait CleanerOrphanTrait {
 
         $knownPaths = array_map(function ($f) { return $f['Filepath'] ?? ''; }, $files);
         $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
-        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
+        $scanDir = trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
         if (PathHelper::isDirMissing($scanDir)) {
             return $result;
@@ -101,7 +101,7 @@ trait CleanerOrphanTrait {
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
         $knownFiles = array_map(function ($f) { return $f['Filename']; }, $files);
         $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
-        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
+        $scanDir = trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
         if (PathHelper::isDirMissing($scanDir)) {
             return $result;
@@ -159,7 +159,7 @@ trait CleanerOrphanTrait {
         $knownPaths = array_map(function ($f) { return dirname($f['Filepath']); }, $files);
         $knownPaths = array_unique($knownPaths);
         $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
-        $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
+        $scanDir = trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
         if (PathHelper::isDirMissing($scanDir)) {
             return $result;
