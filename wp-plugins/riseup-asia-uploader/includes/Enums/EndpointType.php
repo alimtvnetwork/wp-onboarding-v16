@@ -109,4 +109,5 @@ enum EndpointType: string
     public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshots/'); }
     public function isAgent(): bool    { return str_starts_with($this->value, 'agents'); }
     public function isPlugin(): bool   { return str_starts_with($this->value, 'plugins/'); }
+    public function isUser(): bool     { return str_starts_with($this->value, 'users'); }
 }
