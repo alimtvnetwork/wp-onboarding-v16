@@ -243,6 +243,12 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
     Write-Host ""
+    Write-Host "  Upload (default plugin, multi-site):" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -u -as                   # Upload default plugin to all sites (parallel)"
+    Write-Host "    .\run.ps1 -u -as -sync             # Upload default plugin to all sites (sequential)"
+    Write-Host "    .\run.ps1 -u -as -site 'Test V1'   # Upload default plugin to specific site"
+    Write-Host "    .\run.ps1 -u -as -xs 'Test V1'     # Exclude specific site"
+    Write-Host ""
     Write-Host "  Log management:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -cl                      # Clear logs on all sites (both plugins)"
     Write-Host "    .\run.ps1 -cl -site 'Test V1'      # Clear logs on specific site"
