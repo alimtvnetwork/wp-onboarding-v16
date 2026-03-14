@@ -3,7 +3,7 @@
 > **ID:** 29-two-step-remote-log-clearing
 > **Date:** 2026-03-13
 > **Category:** REST API / Security / Logging
-> **Status:** Open
+> **Status:** Resolved
 
 ---
 
