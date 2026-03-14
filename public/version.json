@@ -9,6 +9,18 @@
   "quploadVersion": "2.12.0",
   "changelog": [
     {
+      "version": "2.12.0",
+      "date": "2026-03-14",
+      "title": "Timezone-Aware Logging, Log Clearing Endpoints & Remote Log Management",
+      "changes": [
+        "🕐 Timezone-aware log formatting using WordPress site timezone (Settings > General)",
+        "🗑️ REST API endpoints for log status, clear, and confirm across both plugins",
+        "📋 Admin dashboard endpoint reference tables for QUpload and Riseup Asia",
+        "🧹 PowerShell -cl flag for remote log clearing across all configured sites",
+        "🔢 Version bump across all components (app, script, plugins, spec)"
+      ]
+    },
+    {
       "version": "2.11.0",
       "date": "2026-03-13",
       "title": "Multi-Site Deployment, QUpload Fallback & Default Credential Flow",
