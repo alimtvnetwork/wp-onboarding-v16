@@ -80,6 +80,8 @@ class Plugin {
     use SnapshotExportTrait;
     use SnapshotBackupTrait;
     use FileSystemTrait;
+    use LogStatusTrait;
+    use LogClearingTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
