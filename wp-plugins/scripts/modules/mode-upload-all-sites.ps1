@@ -210,6 +210,7 @@ function Invoke-UasSyncUpload {
         $TargetSites,
         $PluginFolders,
         $ZipByPlugin,
+        $VersionByPlugin,
         [string]$QUploadScript,
         [string]$UploadLogsDir,
         [string]$LogStamp
