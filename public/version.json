@@ -1,13 +1,27 @@
 {
   "appName": "WP Publish",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "releaseDate": "2026-03-14",
   "gitCommit": "dev",
   "buildTime": "2026-03-14T00:00:00Z",
-  "scriptVersion": "2.13.0",
-  "wpPluginVersion": "2.13.0",
-  "quploadVersion": "2.13.0",
+  "scriptVersion": "2.14.0",
+  "wpPluginVersion": "2.14.0",
+  "quploadVersion": "2.14.0",
   "changelog": [
+    {
+      "version": "2.14.0",
+      "date": "2026-03-14",
+      "title": "User Management System — CRUD, App Passwords, Yoast SEO & Bulk Import/Export",
+      "changes": [
+        "👤 Full user CRUD endpoints (GET, POST, PUT, DELETE) with pagination and search",
+        "🔑 Application password creation for users via REST API",
+        "📱 11 social platform fields (Facebook, Instagram, LinkedIn, X, Mastodon, etc.)",
+        "🎓 12 Yoast SEO metadata fields (Honorifics, Expertise, Employer, Job Title, etc.)",
+        "📥 Bulk import/export via CSV and SQLite ZIP bundles with password hash preservation",
+        "🔒 Password hashes preserved in exports, never returned in GET responses",
+        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+      ]
+    },
     {
       "version": "2.13.0",
       "date": "2026-03-14",
