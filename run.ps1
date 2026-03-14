@@ -88,6 +88,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-upload.ps1")
 . (Join-Path $ModulesDir "mode-upload-all.ps1")
 . (Join-Path $ModulesDir "mode-upload-all-sites.ps1")
+. (Join-Path $ModulesDir "mode-upload-default-all-sites.ps1")
 . (Join-Path $ModulesDir "mode-list-sites.ps1")
 . (Join-Path $ModulesDir "mode-test.ps1")
 . (Join-Path $ModulesDir "mode-clear-logs.ps1")
