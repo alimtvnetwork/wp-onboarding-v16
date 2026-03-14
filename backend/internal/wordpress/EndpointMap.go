@@ -190,6 +190,11 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPErrorLogs:     {Method: httpmethod.Get, Endpoint: ep.ErrorLogs},
 	EPErrorSessions: {Method: httpmethod.Get, Endpoint: ep.ErrorSessions},
 
+	// Remote log management
+	EPLogsStatus:  {Method: httpmethod.Get, Endpoint: ep.LogsStatus},
+	EPLogsClear:   {Method: httpmethod.Delete, Endpoint: ep.LogsClear},
+	EPLogsConfirm: {Method: httpmethod.Post, Endpoint: ep.LogsConfirm},
+
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Endpoint: ep.SnapshotsList},
 	EPSnapshotSchedule:       {Method: httpmethod.Post, Endpoint: ep.SnapshotsSchedule},
