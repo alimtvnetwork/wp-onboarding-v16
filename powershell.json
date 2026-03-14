@@ -1,6 +1,6 @@
 {
   "$schema": "./spec/powershell-integration/schemas/powershell.schema.json",
-  "version": "2.3.0",
+  "version": "2.12.0",
   "projectName": "WP Plugin Publish",
   "rootDir": ".",
   "backendDir": "backend",
