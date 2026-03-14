@@ -335,6 +335,6 @@ case Delete = 'DELETE';
 - [x] PHP implementation complete (QUpload)
 - [x] PHP implementation complete (Riseup Asia)
 - [x] Go backend proxy complete
-- [ ] React UI complete (RemoteLogsPanel)
+- [x] React UI complete (RemoteLogsPanel)
 - [ ] Settings UI for approved machines
 - [ ] End-to-end tested
