@@ -187,6 +187,11 @@ if ($help) {
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
     Write-Host ""
+    Write-Host "LOG MANAGEMENT:" -ForegroundColor Yellow
+    Write-Host "  -cl, -clearlogs     Clear logs on ALL configured sites (both plugins)"
+    Write-Host "  -cl -site 'name'    Clear logs on a specific site"
+    Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
