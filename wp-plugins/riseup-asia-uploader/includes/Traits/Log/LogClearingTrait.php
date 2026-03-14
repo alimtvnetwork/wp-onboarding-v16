@@ -154,7 +154,7 @@ trait LogClearingTrait
                     ResponseKeyType::Error->value   => 'Token expired or not found',
                     'code'                          => 'token_expired',
                 ),
-                410,
+                HttpStatusType::Gone->value,
             );
         }
 

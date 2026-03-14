@@ -67,7 +67,7 @@ trait LogEmailTrait
                     ResponseKeyType::Error->value   => 'Rate limit exceeded (max ' . self::EMAIL_MAX_PER_HOUR . '/hour)',
                     'code'                          => 'rate_limited',
                 ),
-                429,
+                HttpStatusType::TooManyRequests->value,
             );
         }
 
