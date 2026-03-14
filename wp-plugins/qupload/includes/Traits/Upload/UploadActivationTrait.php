@@ -148,20 +148,28 @@ trait UploadActivationTrait
             return false;
         }
 
-        $pluginFile = $this->findPluginFile($slug);
-        $isPreviouslyActive = false;
-
-        if ($pluginFile) {
-            $isPreviouslyActive = is_plugin_active($pluginFile);
-
-            if ($isPreviouslyActive) {
-                deactivate_plugins($pluginFile);
-            }
-        }
-
+        $isPreviouslyActive = $this->deactivateExistingPlugin($slug);
         $this->deleteDirectory($targetDir);
 
         return $isPreviouslyActive;
+    }
+
+    /** Deactivate an existing plugin and return whether it was active. */
+    private function deactivateExistingPlugin(string $slug): bool
+    {
+        $pluginFile = $this->findPluginFile($slug);
+
+        if (empty($pluginFile)) {
+            return false;
+        }
+
+        $isActive = is_plugin_active($pluginFile);
+
+        if ($isActive) {
+            deactivate_plugins($pluginFile);
+        }
+
+        return $isActive;
     }
 
     // ── Activation ──────────────────────────────────────────────
