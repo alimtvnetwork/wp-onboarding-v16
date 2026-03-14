@@ -1,7 +1,8 @@
 # QUpload — Suggested Additional Endpoints
 
-> **Status:** Proposed  
-> **Created:** 2026-03-14  
+> **Status:** Partially Implemented
+> **Created:** 2026-03-14
+> **Updated:** 2026-03-14
 > **Plugin:** QUpload
 
 ---
