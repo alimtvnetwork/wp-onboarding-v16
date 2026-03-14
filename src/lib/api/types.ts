@@ -1023,3 +1023,9 @@ export interface RemoteLogsEmailResponse {
   AttachmentCount: number;
   TotalSizeBytes: number;
 }
+
+export interface RemoteLogsEmailOptions {
+  recipient?: string;
+  include_archives?: boolean;
+  log_types?: string[];
+}

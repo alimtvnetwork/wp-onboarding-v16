@@ -52,6 +52,11 @@ import type {
   E2ERun,
   E2ERunSummary,
   SiteCredentialResponse,
+  RemoteLogsStatusResponse,
+  RemoteLogsClearResponse,
+  RemoteLogsClearConfirmResponse,
+  RemoteLogsEmailResponse,
+  RemoteLogsEmailOptions,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -732,11 +737,11 @@ export const api = {
 
   // Remote Logs
   getRemoteLogsStatus: (siteId: number) =>
-    request<any>(`/sites/${siteId}/remote-logs`),
+    request<RemoteLogsStatusResponse>(`/sites/${siteId}/remote-logs`),
   clearRemoteLogs: (siteId: number) =>
-    request<any>(`/sites/${siteId}/remote-logs/clear`, { method: "DELETE" }),
+    request<RemoteLogsClearResponse>(`/sites/${siteId}/remote-logs/clear`, { method: "DELETE" }),
   confirmClearRemoteLogs: (siteId: number, token: string) =>
-    request<any>(`/sites/${siteId}/remote-logs/confirm`, { method: "POST", body: JSON.stringify({ token }) }),
-  emailRemoteLogs: (siteId: number, opts?: { recipient?: string; include_archives?: boolean; log_types?: string[] }) =>
-    request<any>(`/sites/${siteId}/remote-logs/email`, { method: "POST", body: JSON.stringify(opts || {}) }),
+    request<RemoteLogsClearConfirmResponse>(`/sites/${siteId}/remote-logs/confirm`, { method: "POST", body: JSON.stringify({ token }) }),
+  emailRemoteLogs: (siteId: number, opts?: RemoteLogsEmailOptions) =>
+    request<RemoteLogsEmailResponse>(`/sites/${siteId}/remote-logs/email`, { method: "POST", body: JSON.stringify(opts || {}) }),
 };

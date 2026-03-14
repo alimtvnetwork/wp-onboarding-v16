@@ -33,6 +33,7 @@ import {
 import { api } from "@/lib/api";
 import type {
   RemoteLogsStatusResponse,
+  RemoteLogsClearResponse,
 } from "@/lib/api/types";
 import { toast } from "sonner";
 
@@ -70,7 +71,10 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
 
     try {
       const response = await api.getRemoteLogsStatus(siteId);
-      setStatus(response.data ?? response as any);
+
+      if (response.data) {
+        setStatus(response.data);
+      }
     } catch {
       toast.error("Failed to fetch log status");
     } finally {
@@ -96,10 +100,13 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
 
     try {
       const response = await api.clearRemoteLogs(siteId);
-      const data = response.data ?? response as any;
-      setClearToken(data.Token ?? data.token);
-      setClearExpiry(data.ExpiresIn ?? data.expiresIn ?? 60);
-      toast.info("Clear token issued — confirm within " + (data.ExpiresIn ?? data.expiresIn ?? 60) + "s");
+      const data: RemoteLogsClearResponse | undefined = response.data;
+
+      if (data) {
+        setClearToken(data.Token);
+        setClearExpiry(data.ExpiresIn);
+        toast.info("Clear token issued — confirm within " + data.ExpiresIn + "s");
+      }
     } catch {
       toast.error("Failed to initiate log clearing");
     } finally {
