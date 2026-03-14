@@ -1270,6 +1270,8 @@ if ($uas) {
             $pluginFullPath = $folder.FullName
             $prebuiltZipPath = $zipByPlugin[$pluginName]
             $jobName = "$pluginName->$siteName"
+            $zipLabel = if ($prebuiltZipPath) { $prebuiltZipPath } else { "(no prebuilt ZIP)" }
+            Write-Host "      [$jobName] ZIP: $zipLabel" -ForegroundColor DarkGray
 
             $uploadJobs += Start-Job -Name $jobName -ScriptBlock {
                 param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName)
