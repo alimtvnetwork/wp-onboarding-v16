@@ -40,9 +40,7 @@ func ConfirmClearRemoteLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body struct {
-		Token string `json:"token"`
-	}
+	var body wordpress.ClearTokenRequest
 
 	decodeErr := json.NewDecoder(r.Body).Decode(&body)
 	if decodeErr != nil {
