@@ -74,6 +74,10 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/credentials/{credId}", handlers.UpdateSiteCredential).Methods("PUT")
 	api.HandleFunc("/sites/{id}/credentials/{credId}", handlers.DeleteSiteCredentialHandler).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/credentials/{credId}/default", handlers.SetDefaultSiteCredential).Methods("PUT")
+	// Remote log management
+	api.HandleFunc("/sites/{id}/remote-logs", handlers.GetRemoteLogs).Methods("GET")
+	api.HandleFunc("/sites/{id}/remote-logs/clear", handlers.ClearRemoteLogs).Methods("DELETE")
+	api.HandleFunc("/sites/{id}/remote-logs/confirm", handlers.ConfirmClearRemoteLogs).Methods("POST")
 	registerSnapshotRoutes(api)
 }
 
