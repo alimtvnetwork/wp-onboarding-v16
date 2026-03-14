@@ -59,6 +59,7 @@ const (
 	GetLogsStatus
 	RequestLogsClear
 	ConfirmLogsClear
+	EmailLogs
 )
 
 var variantLabels = [...]string{
