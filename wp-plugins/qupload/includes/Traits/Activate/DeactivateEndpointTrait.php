@@ -29,12 +29,12 @@ use QUpload\Helpers\EnvelopeBuilder;
 trait DeactivateEndpointTrait
 {
     /** Handle PUT /deactivate endpoint. */
-    public function handleDeactivate(WP_REST_Request $request): WP_REST_Response {
+    public function handleDeactivatePlugin(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Deactivate endpoint called');
 
         return $this->safeExecute(
             fn () => $this->executeDeactivation($request),
-            'handleDeactivate',
+            'handleDeactivatePlugin',
             ['endpoint' => 'deactivate'],
         );
     }
