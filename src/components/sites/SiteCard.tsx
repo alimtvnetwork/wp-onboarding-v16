@@ -3,6 +3,7 @@ import { useCaptureQueryError } from "@/hooks/useCaptureQueryError";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import {
