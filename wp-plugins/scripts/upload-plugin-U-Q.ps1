@@ -644,9 +644,14 @@ try {
 } catch {
     $errMsg = $_.Exception.Message
     $statusCode = ""
+    $rawBody = ""
 
     if ($_.Exception.Response) {
         $statusCode = [int]$_.Exception.Response.StatusCode
+    }
+
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $rawBody = $_.ErrorDetails.Message
     }
 
     if ($statusCode -eq 401 -or $statusCode -eq 403) {
@@ -657,8 +662,37 @@ try {
         Write-Host "      Endpoint: $statusUrl" -ForegroundColor Gray
         Write-Host "      Ensure the QUpload plugin is installed and activated." -ForegroundColor Yellow
     } else {
-        Write-Host "      Auth pre-check failed: $errMsg" -ForegroundColor Red
+        Write-Host "      Auth pre-check failed (HTTP $statusCode): $errMsg" -ForegroundColor Red
         Write-Host "      Endpoint: $statusUrl" -ForegroundColor Gray
+    }
+
+    # Show JSON error summary from response body
+    $isBodyPresent = -not [string]::IsNullOrWhiteSpace($rawBody)
+
+    if ($isBodyPresent) {
+        try {
+            $parsedBody = $rawBody | ConvertFrom-Json -ErrorAction Stop
+
+            if ($parsedBody.message) {
+                Write-Host "      REST message: $($parsedBody.message)" -ForegroundColor Yellow
+            }
+
+            if ($parsedBody.Status -and $parsedBody.Status.Message) {
+                Write-Host "      Status: $($parsedBody.Status.Message)" -ForegroundColor Yellow
+            }
+
+            if ($parsedBody.Errors -and $parsedBody.Errors.BackendMessage) {
+                Write-Host "      Error: $($parsedBody.Errors.BackendMessage)" -ForegroundColor Yellow
+            }
+
+            $hasRootCause = $parsedBody.data -and $parsedBody.data.rootCause
+            if ($hasRootCause) {
+                Write-Host "      Root cause: $($parsedBody.data.rootCause)" -ForegroundColor Yellow
+            }
+        } catch {
+            $truncated = if ($rawBody.Length -gt 500) { $rawBody.Substring(0, 500) + "..." } else { $rawBody }
+            Write-Host "      Response: $truncated" -ForegroundColor Gray
+        }
     }
 
     exit 1
