@@ -398,6 +398,7 @@ function Invoke-UasParallelUpload {
             $result = @{
                 Site                = "Unknown"
                 Plugin              = $job.Name
+                Version             = "unknown"
                 ZipPath             = ""
                 ExitCode            = 1
                 NativeExitCode      = $null
@@ -411,8 +412,9 @@ function Invoke-UasParallelUpload {
         $isSuccess = ($result.ExitCode -eq 0)
         $icon = if ($isSuccess) { "OK" } else { "FAILED" }
         $color = if ($isSuccess) { "Green" } else { "Red" }
+        $vLabel = if ($result.Version -and $result.Version -ne "unknown") { " v$($result.Version)" } else { "" }
 
-        Write-Host "  [$($result.Site)] $($result.Plugin): $icon" -ForegroundColor $color
+        Write-Host "  [$($result.Site)] $($result.Plugin)${vLabel}: $icon" -ForegroundColor $color
 
         $isFailure = ($isSuccess -eq $false)
         if ($isFailure) {
