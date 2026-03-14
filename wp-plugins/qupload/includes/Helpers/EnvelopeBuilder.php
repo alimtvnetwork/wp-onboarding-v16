@@ -61,6 +61,12 @@ class EnvelopeBuilder {
         return $this;
     }
 
+    public function setListResult(array $items): static {
+        $this->results = $items;
+
+        return $this;
+    }
+
     public function setRequestedAt(string $path): static {
         $this->requestedAt = $path;
 

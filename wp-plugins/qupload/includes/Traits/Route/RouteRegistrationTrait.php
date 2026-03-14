@@ -88,5 +88,17 @@ trait RouteRegistrationTrait
             'callback'            => [$this, 'handleActivate'],
             'permission_callback' => [$this, 'checkPluginPermission'],
         ]);
+
+        $safeRegister(EndpointType::Deactivate->route(), [
+            'methods'             => HttpMethodType::Put->value,
+            'callback'            => [$this, 'handleDeactivate'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
+
+        $safeRegister(EndpointType::Plugins->route(), [
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => [$this, 'handlePlugins'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
     }
 }
