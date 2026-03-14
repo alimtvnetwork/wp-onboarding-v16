@@ -35,118 +35,81 @@ trait LogEmailTrait
     /** Handle POST /logs/email — collect log files and email them as attachments. */
     public function handleLogsEmail(WP_REST_Request $request): WP_REST_Response {
         $machineName = $request->get_header('X-Riseup-Source-Machine');
-        $isMachineMissing = empty($machineName);
+        $machineError = $this->validateMachineHeader($machineName);
 
-        if ($isMachineMissing) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'X-Riseup-Source-Machine header is required',
-                    'code'                          => 'machine_header_missing',
-                ),
-                HttpStatusType::BadRequest->value,
-            );
-        }
-
-        $isMachineApproved = $this->isMachineApproved($machineName);
-
-        if ($isMachineApproved === false) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Machine not in approved list',
-                    'code'                          => 'machine_not_approved',
-                ),
-                HttpStatusType::Forbidden->value,
-            );
+        if ($machineError !== null) {
+            return $machineError;
         }
 
         $isRateLimited = $this->isEmailRateLimited();
 
         if ($isRateLimited) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Rate limit exceeded (max ' . self::EMAIL_MAX_PER_HOUR . '/hour)',
-                    'code'                          => 'rate_limited',
-                ),
-                HttpStatusType::TooManyRequests->value,
-            );
+            return $this->buildLogErrorResponse('Rate limit exceeded (max ' . self::EMAIL_MAX_PER_HOUR . '/hour)', 'rate_limited', HttpStatusType::TooManyRequests);
         }
 
+        return $this->processEmailRequest($request, $machineName);
+    }
+
+    /** Parse the request body, collect log files, and delegate to send. */
+    private function processEmailRequest(WP_REST_Request $request, string $machineName): WP_REST_Response {
         $body = $request->get_json_params();
         $recipient = $this->resolveEmailRecipient($body);
         $includeArchives = (bool) ($body['include_archives'] ?? false);
         $logTypes = $body['log_types'] ?? self::LOG_FILE_NAMES;
-
         $logsDir = $this->fileLogger->getLogsDir();
         $collected = $this->collectLogFiles($logsDir, $logTypes, $includeArchives);
+
+        return $this->validateAndSendLogEmail($machineName, $recipient, $collected);
+    }
+
+    /** Validate collected files and send the email. */
+    private function validateAndSendLogEmail(string $machineName, string $recipient, array $collected): WP_REST_Response {
         $hasNoFiles = empty($collected['attachments']);
 
         if ($hasNoFiles) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'No log files found',
-                    'code'                          => 'no_logs_found',
-                ),
-                HttpStatusType::NotFound->value,
-            );
+            return $this->buildLogErrorResponse('No log files found', 'no_logs_found', HttpStatusType::NotFound);
         }
 
-        $totalSize = $collected['total_size'];
-        $isTooLarge = ($totalSize > self::EMAIL_MAX_ATTACHMENT_BYTES);
+        $isTooLarge = ($collected['total_size'] > self::EMAIL_MAX_ATTACHMENT_BYTES);
 
         if ($isTooLarge) {
             $this->cleanupTempFiles($collected['temp_files']);
 
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Total attachment size exceeds 10 MB. Try with include_archives: false.',
-                    'code'                          => 'size_exceeded',
-                ),
-                HttpStatusType::BadRequest->value,
-            );
+            return $this->buildLogErrorResponse('Total attachment size exceeds 10 MB. Try with include_archives: false.', 'size_exceeded', HttpStatusType::BadRequest);
         }
 
+        return $this->sendLogEmail($machineName, $recipient, $collected);
+    }
+
+    /** Build and send the email, then return the appropriate response. */
+    private function sendLogEmail(string $machineName, string $recipient, array $collected): WP_REST_Response {
         $clientIp = $this->resolveClientIp();
         $subject = $this->buildLogEmailSubject();
-        $emailBody = $this->buildLogEmailBody($collected['file_names'], $totalSize, $machineName, $clientIp);
+        $emailBody = $this->buildLogEmailBody($collected['file_names'], $collected['total_size'], $machineName, $clientIp);
         $headers = array('Content-Type: text/plain; charset=UTF-8');
 
         $wasSent = wp_mail($recipient, $subject, $emailBody, $headers, $collected['attachments']);
-
         $this->cleanupTempFiles($collected['temp_files']);
-
         $isSendFailed = ($wasSent === false);
 
         if ($isSendFailed) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'wp_mail_failed',
-                    'message'                       => 'Failed to send email. Ensure WordPress has email sending configured (e.g., GoSMTP, WP Mail SMTP).',
-                ),
-                HttpStatusType::ServerError->value,
-            );
+            return $this->buildLogErrorResponse('wp_mail_failed', 'wp_mail_failed', HttpStatusType::ServerError, 'Failed to send email. Ensure WordPress has email sending configured (e.g., GoSMTP, WP Mail SMTP).');
         }
 
         $this->incrementEmailCount();
+        $this->fileLogger->info('Log files emailed', array('recipient' => $recipient, 'files' => $collected['file_names'], 'machine' => $machineName, 'ip' => $clientIp));
 
-        $this->fileLogger->info('Log files emailed', array(
-            'recipient' => $recipient,
-            'files'     => $collected['file_names'],
-            'machine'   => $machineName,
-            'ip'        => $clientIp,
-        ));
+        return $this->buildEmailSuccessResponse($recipient, $collected, $machineName, $clientIp);
+    }
 
+    /** Build the success response after sending log email. */
+    private function buildEmailSuccessResponse(string $recipient, array $collected, string $machineName, string $clientIp): WP_REST_Response {
         return new WP_REST_Response(
             array(
                 ResponseKeyType::Success->value => true,
                 'sent_to'                       => $recipient,
                 'files_attached'                => $collected['file_names'],
-                'total_size_bytes'              => $totalSize,
+                'total_size_bytes'              => $collected['total_size'],
                 'requested_by'                  => array(
                     'machine' => $machineName,
                     'ip'      => $clientIp,
@@ -158,42 +121,14 @@ trait LogEmailTrait
 
     // ── Log File Collection ──────────────────────────────────────────
 
-    /**
-     * Collect log files and optionally archived rotations.
-     *
-     * @param string   $logsDir         Base logs directory.
-     * @param string[] $logTypes        Which log file names to include.
-     * @param bool     $includeArchives Whether to include archive folders.
-     * @return array{attachments: string[], file_names: string[], total_size: int, temp_files: string[]}
-     */
+    /** Collect log files and optionally archived rotations. */
     private function collectLogFiles(string $logsDir, array $logTypes, bool $includeArchives): array {
-        $attachments = array();
-        $fileNames = array();
-        $totalSize = 0;
+        $activeResult = $this->collectActiveLogFiles($logsDir, $logTypes);
+        $attachments = $activeResult['attachments'];
+        $fileNames = $activeResult['file_names'];
+        $totalSize = $activeResult['total_size'];
         $tempFiles = array();
 
-        // Collect active log files
-        foreach ($logTypes as $logType) {
-            $filePath = $logsDir . '/' . $logType;
-            $isFileExists = file_exists($filePath);
-
-            if ($isFileExists === false) {
-                continue;
-            }
-
-            $size = @filesize($filePath);
-            $isValidSize = ($size !== false && $size > 0);
-
-            if ($isValidSize === false) {
-                continue;
-            }
-
-            $attachments[] = $filePath;
-            $fileNames[] = $logType;
-            $totalSize += $size;
-        }
-
-        // Collect archived log files
         if ($includeArchives) {
             $archiveResult = $this->collectArchivedFiles($logsDir . '/archive', $logTypes);
             $attachments = array_merge($attachments, $archiveResult['attachments']);
@@ -210,73 +145,106 @@ trait LogEmailTrait
         );
     }
 
-    /**
-     * Collect archived log files, copying with renamed names for clarity.
-     *
-     * @param string   $archiveDir Base archive directory.
-     * @param string[] $logTypes   Which log file names to include.
-     * @return array{attachments: string[], file_names: string[], total_size: int, temp_files: string[]}
-     */
-    private function collectArchivedFiles(string $archiveDir, array $logTypes): array {
+    /** Collect active (non-archived) log files. */
+    private function collectActiveLogFiles(string $logsDir, array $logTypes): array {
         $attachments = array();
         $fileNames = array();
         $totalSize = 0;
-        $tempFiles = array();
 
+        foreach ($logTypes as $logType) {
+            $filePath = $logsDir . '/' . $logType;
+            $size = $this->getValidFileSize($filePath);
+            $isValidFile = ($size > 0);
+
+            if ($isValidFile) {
+                $attachments[] = $filePath;
+                $fileNames[] = $logType;
+                $totalSize += $size;
+            }
+        }
+
+        return array('attachments' => $attachments, 'file_names' => $fileNames, 'total_size' => $totalSize);
+    }
+
+    /** Return file size in bytes if valid, or 0 if missing/empty. */
+    private function getValidFileSize(string $filePath): int {
+        $isFileExists = file_exists($filePath);
+
+        if ($isFileExists === false) {
+            return 0;
+        }
+
+        $size = @filesize($filePath);
+        $isValidSize = ($size !== false && $size > 0);
+
+        return $isValidSize ? $size : 0;
+    }
+
+    /** Collect archived log files from rotation folders. */
+    private function collectArchivedFiles(string $archiveDir, array $logTypes): array {
+        $result = array('attachments' => array(), 'file_names' => array(), 'total_size' => 0, 'temp_files' => array());
         $isArchiveMissing = !is_dir($archiveDir);
 
         if ($isArchiveMissing) {
-            return array('attachments' => $attachments, 'file_names' => $fileNames, 'total_size' => $totalSize, 'temp_files' => $tempFiles);
+            return $result;
         }
 
         $folders = $this->getEmailSortedArchiveFolders($archiveDir);
 
         foreach ($folders as $folder) {
             $folderPath = $archiveDir . '/' . $folder;
-
-            foreach ($logTypes as $logType) {
-                $sourceFile = $folderPath . '/' . $logType;
-                $isFileExists = file_exists($sourceFile);
-
-                if ($isFileExists === false) {
-                    continue;
-                }
-
-                $size = @filesize($sourceFile);
-                $isValidSize = ($size !== false && $size > 0);
-
-                if ($isValidSize === false) {
-                    continue;
-                }
-
-                // Rename for clarity: log.txt → log_001.txt
-                $baseName = pathinfo($logType, PATHINFO_FILENAME);
-                $extension = pathinfo($logType, PATHINFO_EXTENSION);
-                $renamedName = $baseName . '_' . $folder . '.' . $extension;
-
-                $tempDir = PathHelper::getTempDir() . '/log-email';
-                PathHelper::ensureDirectory($tempDir);
-                $tempPath = $tempDir . '/' . $renamedName;
-
-                $isCopied = @copy($sourceFile, $tempPath);
-
-                if ($isCopied === false) {
-                    continue;
-                }
-
-                $attachments[] = $tempPath;
-                $fileNames[] = $renamedName;
-                $totalSize += $size;
-                $tempFiles[] = $tempPath;
-            }
+            $this->collectFolderFiles($folderPath, $folder, $logTypes, $result);
         }
 
-        return array(
-            'attachments' => $attachments,
-            'file_names'  => $fileNames,
-            'total_size'  => $totalSize,
-            'temp_files'  => $tempFiles,
-        );
+        return $result;
+    }
+
+    /** Collect log files from a single archive folder. */
+    private function collectFolderFiles(string $folderPath, string $folder, array $logTypes, array &$result): void {
+        foreach ($logTypes as $logType) {
+            $sourceFile = $folderPath . '/' . $logType;
+            $copyResult = $this->copyArchivedLogFile($sourceFile, $logType, $folder);
+
+            if ($copyResult === null) {
+                continue;
+            }
+
+            $result['attachments'][] = $copyResult['path'];
+            $result['file_names'][] = $copyResult['name'];
+            $result['total_size'] += $copyResult['size'];
+            $result['temp_files'][] = $copyResult['path'];
+        }
+    }
+
+    /** Copy an archived log file to a temp location with a renamed name. */
+    private function copyArchivedLogFile(string $sourceFile, string $logType, string $folder): ?array {
+        $size = $this->getValidFileSize($sourceFile);
+        $isInvalidFile = ($size === 0);
+
+        if ($isInvalidFile) {
+            return null;
+        }
+
+        $baseName = pathinfo($logType, PATHINFO_FILENAME);
+        $extension = pathinfo($logType, PATHINFO_EXTENSION);
+        $renamedName = $baseName . '_' . $folder . '.' . $extension;
+        $tempPath = $this->buildArchiveTempPath($renamedName);
+
+        $isCopied = @copy($sourceFile, $tempPath);
+
+        if ($isCopied === false) {
+            return null;
+        }
+
+        return array('path' => $tempPath, 'name' => $renamedName, 'size' => $size);
+    }
+
+    /** Build the temp file path for an archived log copy. */
+    private function buildArchiveTempPath(string $fileName): string {
+        $tempDir = PathHelper::getTempDir() . '/log-email';
+        PathHelper::ensureDirectory($tempDir);
+
+        return $tempDir . '/' . $fileName;
     }
 
     /** Get sorted archive folder names (natural sort). */
@@ -288,6 +256,14 @@ trait LogEmailTrait
             return array();
         }
 
+        $folders = $this->filterDirectoryEntries($archiveDir, $entries);
+        natsort($folders);
+
+        return array_values($folders);
+    }
+
+    /** Filter directory entries to only include subdirectories. */
+    private function filterDirectoryEntries(string $parentDir, array $entries): array {
         $folders = array();
 
         foreach ($entries as $entry) {
@@ -297,16 +273,14 @@ trait LogEmailTrait
                 continue;
             }
 
-            $isDirectory = is_dir($archiveDir . '/' . $entry);
+            $isDirectory = is_dir($parentDir . '/' . $entry);
 
             if ($isDirectory) {
                 $folders[] = $entry;
             }
         }
 
-        natsort($folders);
-
-        return array_values($folders);
+        return $folders;
     }
 
     // ── Email Composition ────────────────────────────────────────────
@@ -319,27 +293,9 @@ trait LogEmailTrait
         return '[' . PluginConfigType::ShortName->value . '] Log Files — ' . $siteName . ' — ' . $timestamp;
     }
 
-    /**
-     * Build the email body.
-     *
-     * @param string[] $fileNames   List of attached file names.
-     * @param int      $totalSize   Total attachment size in bytes.
-     * @param string   $machineName Requesting machine name.
-     * @param string   $clientIp    Requesting IP address.
-     */
+    /** Build the email body text. */
     private function buildLogEmailBody(array $fileNames, int $totalSize, string $machineName, string $clientIp): string {
-        $lines = array();
-        $lines[] = PluginConfigType::Name->value . ' — Log File Export';
-        $lines[] = str_repeat('=', 50);
-        $lines[] = '';
-        $lines[] = 'Site URL:        ' . get_site_url();
-        $lines[] = 'Plugin Version:  ' . PluginConfigType::Version->value;
-        $lines[] = 'PHP Version:     ' . phpversion();
-        $lines[] = 'WordPress:       ' . get_bloginfo('version');
-        $lines[] = 'Requested By:    ' . $machineName . ' (' . $clientIp . ')';
-        $lines[] = 'Timestamp:       ' . DateHelper::nowUtc();
-        $lines[] = '';
-        $lines[] = 'Attached Files:';
+        $lines = $this->buildEmailHeaderLines($machineName, $clientIp);
 
         foreach ($fileNames as $fileName) {
             $lines[] = '  - ' . $fileName;
@@ -352,6 +308,23 @@ trait LogEmailTrait
         $lines[] = 'This email was sent from the ' . PluginConfigType::Name->value . ' plugin.';
 
         return implode("\n", $lines);
+    }
+
+    /** Build the header lines for the email body. */
+    private function buildEmailHeaderLines(string $machineName, string $clientIp): array {
+        return array(
+            PluginConfigType::Name->value . ' — Log File Export',
+            str_repeat('=', 50),
+            '',
+            'Site URL:        ' . get_site_url(),
+            'Plugin Version:  ' . PluginConfigType::Version->value,
+            'PHP Version:     ' . phpversion(),
+            'WordPress:       ' . get_bloginfo('version'),
+            'Requested By:    ' . $machineName . ' (' . $clientIp . ')',
+            'Timestamp:       ' . DateHelper::nowUtc(),
+            '',
+            'Attached Files:',
+        );
     }
 
     /** Format bytes into human-readable string. */
@@ -376,32 +349,35 @@ trait LogEmailTrait
     /** Resolve the email recipient: request body → support_email → admin_email. */
     private function resolveEmailRecipient(array $body): string {
         $customRecipient = $body['recipient'] ?? '';
-        $hasCustomRecipient = (is_string($customRecipient) && strlen(trim($customRecipient)) > 0);
+        $validCustom = $this->sanitizeAndValidateEmail($customRecipient);
 
-        if ($hasCustomRecipient) {
-            $sanitized = sanitize_email(trim($customRecipient));
-            $isValidEmail = is_email($sanitized);
-
-            if ($isValidEmail) {
-                return $sanitized;
-            }
+        if ($validCustom !== null) {
+            return $validCustom;
         }
 
-        // Fall back to configured support email
         $supportSettings = get_option(OptionNameType::SupportSettings->value, array());
         $supportEmail = $supportSettings['support_email'] ?? '';
-        $hasSupportEmail = (is_string($supportEmail) && strlen(trim($supportEmail)) > 0);
+        $validSupport = $this->sanitizeAndValidateEmail($supportEmail);
 
-        if ($hasSupportEmail) {
-            $sanitized = sanitize_email(trim($supportEmail));
-            $isValidEmail = is_email($sanitized);
-
-            if ($isValidEmail) {
-                return $sanitized;
-            }
+        if ($validSupport !== null) {
+            return $validSupport;
         }
 
         return get_option('admin_email');
+    }
+
+    /** Sanitize and validate an email address, returning null if invalid. */
+    private function sanitizeAndValidateEmail(string $email): ?string {
+        $hasValue = (strlen(trim($email)) > 0);
+
+        if ($hasValue === false) {
+            return null;
+        }
+
+        $sanitized = sanitize_email(trim($email));
+        $isValidEmail = is_email($sanitized);
+
+        return $isValidEmail ? $sanitized : null;
     }
 
     // ── Rate Limiting ────────────────────────────────────────────────

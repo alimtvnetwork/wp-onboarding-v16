@@ -34,47 +34,23 @@ trait LogClearingTrait
     /** Handle DELETE /logs/clear — validate machine, issue confirmation token. */
     public function handleLogsClearRequest(WP_REST_Request $request): WP_REST_Response {
         $machineName = $request->get_header('X-Riseup-Source-Machine');
-        $isMachineMissing = empty($machineName);
+        $machineError = $this->validateMachineHeader($machineName);
 
-        if ($isMachineMissing) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'X-Riseup-Source-Machine header is required',
-                    'code'                          => 'machine_header_missing',
-                ),
-                HttpStatusType::BadRequest->value,
-            );
-        }
-
-        $isMachineApproved = $this->isMachineApproved($machineName);
-
-        if ($isMachineApproved === false) {
-            $this->fileLogger->warn('Log clear rejected: machine not approved', array('machine' => $machineName));
-
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Machine not in approved list',
-                    'code'                          => 'machine_not_approved',
-                ),
-                HttpStatusType::Forbidden->value,
-            );
+        if ($machineError !== null) {
+            return $machineError;
         }
 
         $isRateLimited = $this->isLogClearRateLimited($machineName);
 
         if ($isRateLimited) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Rate limit exceeded (max ' . self::MAX_CLEARS_PER_HOUR . '/hour)',
-                    'code'                          => 'rate_limited',
-                ),
-                HttpStatusType::TooManyRequests->value,
-            );
+            return $this->buildLogErrorResponse('Rate limit exceeded (max ' . self::MAX_CLEARS_PER_HOUR . '/hour)', 'rate_limited', HttpStatusType::TooManyRequests);
         }
 
+        return $this->issueClearToken($machineName);
+    }
+
+    /** Generate a clear token, store it as a transient, and return the response. */
+    private function issueClearToken(string $machineName): WP_REST_Response {
         $token = bin2hex(random_bytes(self::CLEAR_TOKEN_LENGTH / 2));
         $transientKey = $this->buildClearTokenKey($machineName);
         $clientIp = $this->resolveClientIp();
@@ -87,11 +63,14 @@ trait LogClearingTrait
         );
 
         set_transient($transientKey, $tokenData, self::CLEAR_TOKEN_TTL_SECONDS);
-
         $this->fileLogger->info('Log clear token issued', array('machine' => $machineName, 'ip' => $clientIp));
-
         $namespace = PluginConfigType::apiFullNamespace();
 
+        return $this->buildClearTokenResponse($token, $namespace);
+    }
+
+    /** Build the WP_REST_Response for a newly issued clear token. */
+    private function buildClearTokenResponse(string $token, string $namespace): WP_REST_Response {
         return new WP_REST_Response(
             array(
                 ResponseKeyType::Success->value => true,
@@ -113,29 +92,26 @@ trait LogClearingTrait
         $isMachineMissing = empty($machineName);
 
         if ($isMachineMissing) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'X-Riseup-Source-Machine header is required',
-                    'code'                          => 'machine_header_missing',
-                ),
-                HttpStatusType::BadRequest->value,
-            );
+            return $this->buildLogErrorResponse('X-Riseup-Source-Machine header is required', 'machine_header_missing', HttpStatusType::BadRequest);
         }
 
         $body = $request->get_json_params();
         $token = $body['token'] ?? '';
+        $tokenError = $this->validateStoredClearToken($machineName, $token);
+
+        if ($tokenError !== null) {
+            return $tokenError;
+        }
+
+        return $this->executeClearConfirm($machineName);
+    }
+
+    /** Validate the clear token against stored transient data. */
+    private function validateStoredClearToken(string $machineName, string $token): ?WP_REST_Response {
         $isTokenMissing = empty($token);
 
         if ($isTokenMissing) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Token is required in request body',
-                    'code'                          => 'token_missing',
-                ),
-                HttpStatusType::BadRequest->value,
-            );
+            return $this->buildLogErrorResponse('Token is required in request body', 'token_missing', HttpStatusType::BadRequest);
         }
 
         $transientKey = $this->buildClearTokenKey($machineName);
@@ -143,51 +119,30 @@ trait LogClearingTrait
         $isTokenExpired = ($storedData === false);
 
         if ($isTokenExpired) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Token expired or not found',
-                    'code'                          => 'token_expired',
-                ),
-                HttpStatusType::Gone->value,
-            );
+            return $this->buildLogErrorResponse('Token expired or not found', 'token_expired', HttpStatusType::Gone);
         }
 
         $isTokenMismatch = ($storedData['token'] !== $token);
-
-        if ($isTokenMismatch) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Invalid token',
-                    'code'                          => 'token_invalid',
-                ),
-                HttpStatusType::Forbidden->value,
-            );
-        }
-
         $isMachineMismatch = (strtolower($storedData['machine']) !== strtolower($machineName));
 
-        if ($isMachineMismatch) {
-            return new WP_REST_Response(
-                array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Machine name mismatch',
-                    'code'                          => 'machine_mismatch',
-                ),
-                HttpStatusType::Forbidden->value,
-            );
+        if ($isTokenMismatch) {
+            return $this->buildLogErrorResponse('Invalid token', 'token_invalid', HttpStatusType::Forbidden);
         }
 
-        // Consume token (single-use)
-        delete_transient($transientKey);
+        if ($isMachineMismatch) {
+            return $this->buildLogErrorResponse('Machine name mismatch', 'machine_mismatch', HttpStatusType::Forbidden);
+        }
 
-        // Increment rate limiter
+        return null;
+    }
+
+    /** Consume the token, execute clearing, and return the result. */
+    private function executeClearConfirm(string $machineName): WP_REST_Response {
+        $transientKey = $this->buildClearTokenKey($machineName);
+        delete_transient($transientKey);
         $this->incrementLogClearCount($machineName);
 
-        // Execute the actual clearing
         $clearResult = $this->executeLogClearing();
-
         $clientIp = $this->resolveClientIp();
 
         $this->fileLogger->info('Logs cleared remotely', array(
@@ -196,6 +151,11 @@ trait LogClearingTrait
             'cleared' => $clearResult,
         ));
 
+        return $this->buildClearSuccessResponse($machineName, $clientIp, $clearResult);
+    }
+
+    /** Build the success response after log clearing. */
+    private function buildClearSuccessResponse(string $machineName, string $clientIp, array $clearResult): WP_REST_Response {
         return new WP_REST_Response(
             array(
                 ResponseKeyType::Success->value => true,
@@ -226,6 +186,25 @@ trait LogClearingTrait
 
     // ── Machine Validation ────────────────────────────────────────────
 
+    /** Validate the machine header — returns error response or null. Shared with LogEmailTrait. */
+    private function validateMachineHeader(?string $machineName): ?WP_REST_Response {
+        $isMachineMissing = empty($machineName);
+
+        if ($isMachineMissing) {
+            return $this->buildLogErrorResponse('X-Riseup-Source-Machine header is required', 'machine_header_missing', HttpStatusType::BadRequest);
+        }
+
+        $isMachineApproved = $this->isMachineApproved($machineName);
+
+        if ($isMachineApproved === false) {
+            $this->fileLogger->warn('Log action rejected: machine not approved', array('machine' => $machineName));
+
+            return $this->buildLogErrorResponse('Machine not in approved list', 'machine_not_approved', HttpStatusType::Forbidden);
+        }
+
+        return null;
+    }
+
     /** Check if a machine name is in the approved list (case-insensitive). */
     private function isMachineApproved(string $machineName): bool {
         $settings = get_option(PluginConfigType::SettingsGroup->value, array());
@@ -233,7 +212,7 @@ trait LogClearingTrait
         $hasNoApprovedMachines = empty($approvedMachines);
 
         if ($hasNoApprovedMachines) {
-            return false; // Fail-closed
+            return false;
         }
 
         $lowerMachine = strtolower($machineName);
@@ -267,7 +246,24 @@ trait LogClearingTrait
         set_transient($rateKey, $count + 1, 3600);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────
+    // ── Shared Helpers ────────────────────────────────────────────────
+
+    /** Build a standardized error response. Shared with LogEmailTrait. */
+    private function buildLogErrorResponse(string $error, string $code, HttpStatusType $status, string $message = ''): WP_REST_Response {
+        $data = array(
+            ResponseKeyType::Success->value => false,
+            ResponseKeyType::Error->value   => $error,
+            'code'                          => $code,
+        );
+
+        $hasMessage = ($message !== '');
+
+        if ($hasMessage) {
+            $data['message'] = $message;
+        }
+
+        return new WP_REST_Response($data, $status->value);
+    }
 
     /** Build the transient key for a clear token. */
     private function buildClearTokenKey(string $machineName): string {
