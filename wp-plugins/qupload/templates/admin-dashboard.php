@@ -76,7 +76,7 @@ $errorFileSize = file_exists($errorFile) ? size_format(filesize($errorFile)) : '
     <div class="qupload-card">
         <h2><span class="dashicons dashicons-rest-api"></span> <?php esc_html_e('REST API Endpoints', $pluginSlug); ?></h2>
         <p><?php esc_html_e('Base URL:', $pluginSlug); ?> <code><?php echo esc_url($restUrl); ?></code></p>
-        <table class="widefat striped" style="max-width: 600px;">
+        <table class="widefat striped qupload-endpoints-table">
             <thead>
                 <tr>
                     <th><?php esc_html_e('Method', $pluginSlug); ?></th>
@@ -86,19 +86,42 @@ $errorFileSize = file_exists($errorFile) ? size_format(filesize($errorFile)) : '
             </thead>
             <tbody>
                 <tr>
-                    <td><code>GET</code></td>
+                    <td><span class="qupload-method-badge method-get">GET</span></td>
                     <td><code><?php echo esc_html(EndpointType::Status->route()); ?></code></td>
                     <td><?php esc_html_e('Health check', $pluginSlug); ?></td>
                 </tr>
                 <tr>
-                    <td><code>POST</code></td>
+                    <td><span class="qupload-method-badge method-post">POST</span></td>
                     <td><code><?php echo esc_html(EndpointType::Upload->route()); ?></code></td>
                     <td><?php esc_html_e('Upload plugin ZIP', $pluginSlug); ?></td>
                 </tr>
                 <tr>
-                    <td><code>PUT</code></td>
+                    <td><span class="qupload-method-badge method-put">PUT</span></td>
                     <td><code><?php echo esc_html(EndpointType::Activate->route()); ?></code></td>
                     <td><?php esc_html_e('Activate installed plugin', $pluginSlug); ?></td>
+                </tr>
+                <tr class="qupload-endpoint-separator">
+                    <td colspan="3"><strong><?php esc_html_e('Log Management', $pluginSlug); ?></strong></td>
+                </tr>
+                <tr>
+                    <td><span class="qupload-method-badge method-get">GET</span></td>
+                    <td><code><?php echo esc_html(EndpointType::LogsStatus->route()); ?></code></td>
+                    <td><?php esc_html_e('Log file sizes, line counts, archive info', $pluginSlug); ?></td>
+                </tr>
+                <tr>
+                    <td><span class="qupload-method-badge method-delete">DELETE</span></td>
+                    <td><code><?php echo esc_html(EndpointType::LogsClear->route()); ?></code></td>
+                    <td><?php esc_html_e('Request log clearing (returns confirmation token)', $pluginSlug); ?></td>
+                </tr>
+                <tr>
+                    <td><span class="qupload-method-badge method-post">POST</span></td>
+                    <td><code><?php echo esc_html(EndpointType::LogsConfirm->route()); ?></code></td>
+                    <td><?php esc_html_e('Confirm log clearing (consumes token)', $pluginSlug); ?></td>
+                </tr>
+                <tr>
+                    <td><span class="qupload-method-badge method-post">POST</span></td>
+                    <td><code><?php echo esc_html(EndpointType::LogsEmail->route()); ?></code></td>
+                    <td><?php esc_html_e('Email log files as attachments', $pluginSlug); ?></td>
                 </tr>
             </tbody>
         </table>
