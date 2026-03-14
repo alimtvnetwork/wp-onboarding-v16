@@ -317,9 +317,10 @@ trait LoggerWriteTrait {
         $now = DateHelper::nowUtc();
         $hasContext = !empty($context);
         $contextJson = $hasContext ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
+        $pluginVersion = PluginConfigType::Version->value;
 
         $stmt = $pdo->prepare(
-            'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (Level, Message, File, Line, ContextJson, StackTrace, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (Level, Message, File, Line, ContextJson, StackTrace, PluginVersion, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute(array(
             $level,
@@ -328,6 +329,7 @@ trait LoggerWriteTrait {
             $line,
             $contextJson,
             $stackTrace ?: null,
+            $pluginVersion,
             $now,
         ));
 
