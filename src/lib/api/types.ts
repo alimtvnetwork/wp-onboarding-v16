@@ -991,3 +991,35 @@ export interface RequestSessionListResponse {
   limit?: number;
   offset?: number;
 }
+
+// Remote Logs Types
+export interface RemoteLogFileInfo {
+  Name: string;
+  SizeBytes: number;
+  LineCount: number;
+}
+
+export interface RemoteLogsStatusResponse {
+  Files: RemoteLogFileInfo[];
+  TotalSizeBytes: number;
+  ArchiveCount: number;
+}
+
+export interface RemoteLogsClearResponse {
+  Token: string;
+  ExpiresIn: number;
+  Message: string;
+}
+
+export interface RemoteLogsClearConfirmResponse {
+  Deleted: string[];
+  Failed: string[];
+  Message: string;
+}
+
+export interface RemoteLogsEmailResponse {
+  Message: string;
+  Recipient: string;
+  AttachmentCount: number;
+  TotalSizeBytes: number;
+}
