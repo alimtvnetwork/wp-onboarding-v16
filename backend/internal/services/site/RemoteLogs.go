@@ -55,7 +55,9 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 		return nil, appErr
 	}
 
-	body := map[string]string{"token": token}
+	body := wordpress.ClearTokenRequest{
+		Token: token,
+	}
 
 	result := doApiCall[map[string]any](client, apiCallInput{
 		Method:    httpmethod.Post,
