@@ -134,6 +134,13 @@ var variantLabels = [...]string{
 	AgentsPlugins:           "AgentsPlugins",
 	AgentAction:             "AgentAction",
 	AgentHistory:            "AgentHistory",
+	Users:                   "Users",
+	UserId:                  "UserId",
+	UserAppPassword:         "UserAppPassword",
+	UsersExport:             "UsersExport",
+	UsersImport:             "UsersImport",
+	UsersExportSqlite:       "UsersExportSqlite",
+	UsersImportSqlite:       "UsersImportSqlite",
 }
 
 var variantValues = [...]string{
