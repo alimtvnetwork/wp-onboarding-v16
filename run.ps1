@@ -1201,7 +1201,7 @@ if ($uas) {
         Write-Host "    [ZIP] Starting: $folderName" -ForegroundColor DarkGray
         $zipJobs += Start-Job -Name "zip-$folderName" -ScriptBlock {
             param($ScriptDir, $FolderPath)
-            . (Join-Path $ScriptDir "run-helpers.ps1") 2>$null
+            # No dot-source needed — ZIP logic is self-contained
             $pluginDir = $FolderPath
             $pluginSlug = Split-Path $pluginDir -Leaf
             $mainFiles = Get-ChildItem $pluginDir -Filter "*.php" | Where-Object {
