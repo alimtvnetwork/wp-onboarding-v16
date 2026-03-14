@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\SettingsKeyType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
