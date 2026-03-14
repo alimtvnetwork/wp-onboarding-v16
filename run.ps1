@@ -232,6 +232,7 @@ if ($help) {
     Write-Host ""
     Write-Host "UPLOAD:" -ForegroundColor Yellow
     Write-Host "  -u,  -upload        Upload default plugin via Riseup Asia Uploader API"
+    Write-Host "  -u -site 'name'    Upload default plugin to a specific site (via QUpload API)"
     Write-Host "  -q,  -qupload       Upload default plugin via QUpload API"
     Write-Host "  -u -q               Upload Riseup Asia Uploader itself via QUpload API"
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
