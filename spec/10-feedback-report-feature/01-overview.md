@@ -33,14 +33,14 @@ If no support email is configured, a warning banner is displayed **above** the f
 - If a fallback URL is configured, a link: "Or submit a ticket manually at [URL]".
 - Submitting the form while email is not configured shows an inline error.
 
-## 5. Settings (Admin Settings Page)
+## 4. Email Delivery
 
-New settings section "Support & Feedback" added to the existing Settings page:
-
-| Setting | Type | Default | Stored In |
-|---------|------|---------|-----------|
-| Support Email | email input | (empty) | `OptionNameType::SupportSettings` → `support_email` |
-| Fallback Ticket URL | url input | (empty) | `OptionNameType::SupportSettings` → `fallback_url` |
+- Uses `wp_mail()` which respects any SMTP plugin (GoSMTP, WP Mail SMTP, etc.).
+- From: WordPress configured sender.
+- To: Support email from plugin settings (`OptionNameType::SupportSettings`).
+- Attachments: Screenshot files + optional log ZIP, passed to `wp_mail()`, cleaned up after send.
+- Body: Plain text with system info footer (if checkbox selected).
+- **Log ZIP attachment:** When "Include Logs" is checked, the system creates a temporary ZIP containing `log.txt`, `error.txt`, and `stacktrace.txt` (whichever exist). The ZIP is attached to the email and deleted after send.
 
 ## 6. Enums & Keys
 
