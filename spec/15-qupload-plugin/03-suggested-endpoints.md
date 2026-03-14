@@ -14,6 +14,8 @@
 | GET | `/status` | Health check |
 | POST | `/upload` | Upload plugin ZIP |
 | PUT | `/activate` | Activate installed plugin |
+| PUT | `/deactivate` | Deactivate installed plugin |
+| GET | `/plugins` | List all installed plugins with status |
 | GET | `/logs/status` | Log file sizes and line counts |
 | DELETE | `/logs/clear` | Request log clearing (returns token) |
 | POST | `/logs/clear/confirm` | Confirm log clearing |
