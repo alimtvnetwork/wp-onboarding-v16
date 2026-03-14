@@ -145,10 +145,12 @@ function Invoke-UploadAllSitesMode {
 
     Write-Host ""
 
-    # Build ZIP lookup
+    # Build ZIP lookup (path + version)
     $zipByPlugin = @{}
+    $versionByPlugin = @{}
     foreach ($zipInfo in $zipResults) {
         $zipByPlugin[$zipInfo.Slug] = $zipInfo.Path
+        $versionByPlugin[$zipInfo.Slug] = $zipInfo.Version
     }
 
     $missingZipPlugins = @()
