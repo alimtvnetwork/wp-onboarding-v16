@@ -159,7 +159,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
             <tbody>
                 <?php if (empty($errors)): ?>
                     <tr>
-                        <td colspan="6" class="no-items"><?php esc_html_e('No errors found. 🎉', $pluginSlug); ?></td>
+                        <td colspan="7" class="no-items"><?php esc_html_e('No errors found. 🎉', $pluginSlug); ?></td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($errors as $error): ?>
