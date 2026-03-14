@@ -182,14 +182,10 @@ function Get-UploadablePlugins {
 
     $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
 
-    $quploadSlug = "qupload"
-    if ($Config.wpPlugins -and $Config.wpPlugins.defaultQUploader) {
-        $quploadSlug = $Config.wpPlugins.defaultQUploader
-    }
-
-    $skipList = @($quploadSlug)
+    # skipPlugins from config is the SOLE exclusion mechanism (no hardcoded QUpload exclusion)
+    $skipList = @()
     if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
-        $skipList += @($Config.wpPlugins.skipPlugins)
+        $skipList = @($Config.wpPlugins.skipPlugins)
     }
     $skipList += $ExtraSkipList
 
