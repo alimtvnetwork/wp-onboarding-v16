@@ -247,6 +247,7 @@ if ($help) {
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin only"
     Write-Host "  -c,  -clear         (Legacy) Clear is now automatic before all ZIP operations"
+    Write-Host "  -ls, -listsites     List all configured sites from powershell.json"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
     Write-Host ""
