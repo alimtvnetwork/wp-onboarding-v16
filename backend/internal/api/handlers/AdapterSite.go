@@ -283,3 +283,7 @@ func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId 
 func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError) {
 	return a.Service.ConfirmRemoteLogsClear(ctx, siteId, token)
 }
+
+func (a *SiteServiceAdapter) EmailRemoteLogs(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError) {
+	return a.Service.EmailRemoteLogs(ctx, siteId, body)
+}

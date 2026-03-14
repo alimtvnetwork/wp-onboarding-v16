@@ -729,4 +729,14 @@ export const api = {
   // Activity Feed
   getActivityFeed: (params?: ActivityFeedParams) =>
     request<ActivityFeedResponse>(`/activity${buildQuery((params || {}) as Record<string, string | number | undefined>)}`),
+
+  // Remote Logs
+  getRemoteLogsStatus: (siteId: number) =>
+    request<any>(`/sites/${siteId}/remote-logs`),
+  clearRemoteLogs: (siteId: number) =>
+    request<any>(`/sites/${siteId}/remote-logs/clear`, { method: "DELETE" }),
+  confirmClearRemoteLogs: (siteId: number, token: string) =>
+    request<any>(`/sites/${siteId}/remote-logs/confirm`, { method: "POST", body: JSON.stringify({ token }) }),
+  emailRemoteLogs: (siteId: number, opts?: { recipient?: string; include_archives?: boolean; log_types?: string[] }) =>
+    request<any>(`/sites/${siteId}/remote-logs/email`, { method: "POST", body: JSON.stringify(opts || {}) }),
 };

@@ -162,6 +162,10 @@ var variantValues = [...]string{
 	GetSnapshotsFallback:   "get snapshots (array fallback)",
 	CheckUploaderNamespace: "check uploader namespace",
 	RemotePluginBackup:     "remote plugin backup",
+	GetLogsStatus:          "get logs status",
+	RequestLogsClear:       "request logs clear",
+	ConfirmLogsClear:       "confirm logs clear",
+	EmailLogs:              "email logs",
 }
 
 func (v Variant) String() string  { return v.Value() }

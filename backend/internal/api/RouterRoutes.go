@@ -78,6 +78,7 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/remote-logs", handlers.GetRemoteLogs).Methods("GET")
 	api.HandleFunc("/sites/{id}/remote-logs/clear", handlers.ClearRemoteLogs).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/remote-logs/confirm", handlers.ConfirmClearRemoteLogs).Methods("POST")
+	api.HandleFunc("/sites/{id}/remote-logs/email", handlers.EmailRemoteLogs).Methods("POST")
 	registerSnapshotRoutes(api)
 }
 
