@@ -376,6 +376,7 @@ function Invoke-UasParallelUpload {
                 return @{
                     Site                = $SiteName
                     Plugin              = $PluginName
+                    Version             = $PluginVersion
                     ZipPath             = $PrebuiltZipPath
                     ExitCode            = $resolvedExitCode
                     NativeExitCode      = $nativeExitCode
@@ -383,7 +384,7 @@ function Invoke-UasParallelUpload {
                     Output              = $output
                     Status              = if ($resolvedExitCode -eq 0) { "OK" } else { "FAILED (exit $resolvedExitCode)" }
                 }
-            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName
+            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion
         }
     }
 
