@@ -33,7 +33,6 @@ import {
 import { api } from "@/lib/api";
 import type {
   RemoteLogsStatusResponse,
-  RemoteLogsClearResponse,
 } from "@/lib/api/types";
 import { toast } from "sonner";
 
