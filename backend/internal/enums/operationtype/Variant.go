@@ -108,6 +108,9 @@ var variantLabels = [...]string{
 	GetSnapshotsFallback:   "GetSnapshotsFallback",
 	CheckUploaderNamespace: "CheckUploaderNamespace",
 	RemotePluginBackup:     "RemotePluginBackup",
+	GetLogsStatus:          "GetLogsStatus",
+	RequestLogsClear:       "RequestLogsClear",
+	ConfirmLogsClear:       "ConfirmLogsClear",
 }
 
 var variantValues = [...]string{
