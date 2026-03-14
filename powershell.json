@@ -48,6 +48,19 @@
     "skipPlugins": ["plugins-onboard"],
     "sites": [
       {
+        "name": "Atto Property Demo",
+        "url": "https://demoat.attoproperty.com.au",
+        "enabled": true,
+        "credentials": [
+          {
+            "appName": "admin",
+            "usernameBase64": "YWRtaW4=",
+            "passwordBase64": "RUtSTSBwUENNIGF1ZzkgRTRqOCBvM3JQIHNsOUE=",
+            "isDefault": true
+          }
+        ]
+      },
+      {
         "name": "Test V1",
         "url": "https://testv1.developers-organism.com",
         "enabled": true,
