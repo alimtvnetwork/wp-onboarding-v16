@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDOException;
+
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
