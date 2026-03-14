@@ -492,7 +492,7 @@ function Test-BackedEnumDuplicateValues {
                     $enumName = $Matches[1]
                     $enumType = $Matches[2]
                     $enumDepth = 0
-                    $valueToCase = @{}
+                    $valueToCase = [System.Collections.Hashtable]::new([StringComparer]::Ordinal)
                 } else {
                     continue
                 }
