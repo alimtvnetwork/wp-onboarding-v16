@@ -112,6 +112,7 @@ var variantLabels = [...]string{
 	GetLogsStatus:          "GetLogsStatus",
 	RequestLogsClear:       "RequestLogsClear",
 	ConfirmLogsClear:       "ConfirmLogsClear",
+	EmailLogs:              "EmailLogs",
 }
 
 var variantValues = [...]string{
