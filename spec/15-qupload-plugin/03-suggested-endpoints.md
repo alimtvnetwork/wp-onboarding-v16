@@ -82,8 +82,8 @@ Force an OPcache reset.
 
 ## Implementation Priority
 
-1. **PUT /deactivate** — Completes the activate/deactivate pair
-2. **GET /plugins** — Enables remote inventory
+1. ~~**PUT /deactivate**~~ ✅ Done
+2. ~~**GET /plugins**~~ ✅ Done
 3. **POST /upload-active** — Reduces deployment round-trips
 4. **POST /opcache/reset** — Already partially implemented, easy to expose
 5. **GET /opcache/status** — Nice-to-have diagnostics
