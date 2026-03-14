@@ -14,7 +14,8 @@ if (!defined('ABSPATH')) {
 
 enum HttpMethodType: string
 {
-    case Get  = 'GET';
-    case Post = 'POST';
-    case Put  = 'PUT';
+    case Get    = 'GET';
+    case Post   = 'POST';
+    case Put    = 'PUT';
+    case Delete = 'DELETE';
 }
