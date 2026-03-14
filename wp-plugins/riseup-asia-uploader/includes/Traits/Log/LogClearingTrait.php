@@ -76,7 +76,7 @@ trait LogClearingTrait
                     ResponseKeyType::Error->value   => 'Rate limit exceeded (max ' . self::MAX_CLEARS_PER_HOUR . '/hour)',
                     'code'                          => 'rate_limited',
                 ),
-                429,
+                HttpStatusType::TooManyRequests->value,
             );
         }
 
