@@ -175,11 +175,11 @@ function Invoke-UploadAllSitesMode {
     if ($sync) {
         Write-Host "  Uploading to $($targetSites.Count) site(s) sequentially..." -ForegroundColor Yellow
         Write-Host ""
-        $globalResults = Invoke-UasSyncUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
+        $globalResults = Invoke-UasSyncUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -VersionByPlugin $versionByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
     } else {
         Write-Host "  Uploading to $($targetSites.Count) site(s) in parallel..." -ForegroundColor Yellow
         Write-Host ""
-        $globalResults = Invoke-UasParallelUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
+        $globalResults = Invoke-UasParallelUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -VersionByPlugin $versionByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
     }
 
     # Summary
