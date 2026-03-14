@@ -81,10 +81,11 @@ enum EndpointType: string
     case ErrorLogs     = 'error-logs';
     case ErrorSessions = 'error-sessions';
 
-    // ── Remote Log Clearing ─────────────────────────────────────────
+    // ── Remote Log Management ────────────────────────────────────────
     case LogsStatus    = 'logs/status';
     case LogsClear     = 'logs/clear';
     case LogsConfirm   = 'logs/clear/confirm';
+    case LogsEmail     = 'logs/email';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

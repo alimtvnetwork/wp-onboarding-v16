@@ -63,3 +63,46 @@ func ConfirmClearRemoteLogs(w http.ResponseWriter, r *http.Request) {
 
 	respondSuccess(w, result)
 }
+
+// --- Email Logs ---
+
+// EmailRemoteLogs sends log files as email attachments from a remote WordPress site
+func EmailRemoteLogs(w http.ResponseWriter, r *http.Request) {
+	if isSiteServiceMissing(w) {
+		return
+	}
+
+	siteId, err := getIdParam(r, "id")
+	if err != nil {
+		respondBadRequest(w, apperror.ErrConfigParse, "Invalid site ID")
+		return
+	}
+
+	var body struct {
+		Recipient       string   `json:"recipient"`
+		IncludeArchives bool     `json:"include_archives"`
+		LogTypes        []string `json:"log_types"`
+	}
+
+	decodeErr := json.NewDecoder(r.Body).Decode(&body)
+	if decodeErr != nil {
+		respondBadRequest(w, apperror.ErrConfigParse, "Invalid request body")
+		return
+	}
+
+	reqBody := map[string]any{
+		"recipient":        body.Recipient,
+		"include_archives": body.IncludeArchives,
+	}
+	if len(body.LogTypes) > 0 {
+		reqBody["log_types"] = body.LogTypes
+	}
+
+	result, appErr := Services.SiteService.EmailRemoteLogs(r.Context(), siteId, reqBody)
+	if appErr != nil {
+		respondError(w, appErr.HttpStatus(), apperror.ErrWPConnection, appErr.Error())
+		return
+	}
+
+	respondSuccess(w, result)
+}

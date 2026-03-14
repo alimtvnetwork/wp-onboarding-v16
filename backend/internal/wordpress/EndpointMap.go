@@ -50,6 +50,7 @@ const (
 	EPLogsStatus  WPEndpointName = "LogsStatus"
 	EPLogsClear   WPEndpointName = "LogsClear"
 	EPLogsConfirm WPEndpointName = "LogsConfirm"
+	EPLogsEmail   WPEndpointName = "LogsEmail"
 
 	// Snapshot endpoints
 	EPSnapshotList           WPEndpointName = "SnapshotList"
@@ -128,6 +129,7 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPLogsStatus:  {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs"},
 	EPLogsClear:   {Method: httpmethod.Delete, Pattern: "/api/v1/sites/{id}/remote-logs/clear"},
 	EPLogsConfirm: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/confirm"},
+	EPLogsEmail:   {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/email"},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/snapshots"},
@@ -194,6 +196,7 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPLogsStatus:  {Method: httpmethod.Get, Endpoint: ep.LogsStatus},
 	EPLogsClear:   {Method: httpmethod.Delete, Endpoint: ep.LogsClear},
 	EPLogsConfirm: {Method: httpmethod.Post, Endpoint: ep.LogsConfirm},
+	EPLogsEmail:   {Method: httpmethod.Post, Endpoint: ep.LogsEmail},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Endpoint: ep.SnapshotsList},

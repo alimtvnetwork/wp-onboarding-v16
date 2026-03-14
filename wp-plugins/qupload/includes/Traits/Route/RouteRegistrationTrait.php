@@ -62,6 +62,12 @@ trait RouteRegistrationTrait
             'callback'            => [$this, 'handleLogsClearConfirm'],
             'permission_callback' => [$this, 'checkPluginPermission'],
         ]);
+
+        $safeRegister(EndpointType::LogsEmail->route(), [
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => [$this, 'handleLogsEmail'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
     }
 
     private function registerCoreRoutes(callable $safeRegister): void {

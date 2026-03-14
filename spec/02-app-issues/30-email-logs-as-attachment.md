@@ -208,8 +208,9 @@ Add an "Email Logs" button to the RemoteLogsPanel (from spec #29):
 ## Done Checklist
 
 - [x] Spec created under `spec/02-app-issues/`
-- [ ] PHP implementation complete (QUpload)
-- [ ] PHP implementation complete (Riseup Asia)
-- [ ] Go backend proxy complete
-- [ ] React UI complete
+- [x] PHP implementation complete (QUpload)
+- [x] PHP implementation complete (Riseup Asia)
+- [x] Go backend proxy complete
+- [x] React API methods added
+- [ ] React UI complete (Email Logs button + modal in RemoteLogsPanel)
 - [ ] End-to-end tested
