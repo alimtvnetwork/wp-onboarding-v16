@@ -33,6 +33,7 @@ trait LogClearingTrait
 
     /** Handle DELETE /logs/clear — validate machine, issue confirmation token. */
     public function handleLogsClearRequest(WP_REST_Request $request): WP_REST_Response {
+        $this->fileLogger->info('Logs clear request endpoint called', ['endpoint' => 'logs/clear']);
         $machineName = $request->get_header('X-Riseup-Source-Machine');
         $machineError = $this->validateMachineHeader($machineName);
 
