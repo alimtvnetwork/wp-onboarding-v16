@@ -45,6 +45,7 @@ trait RouteRegistrationTrait
         $this->registerPluginRoutes($safeRegister);
         $this->registerPostRoutes($safeRegister);
         $this->registerLogRoutes($safeRegister);
+        $this->registerLogManagementRoutes($safeRegister);
         $this->registerAgentRoutes($safeRegister, $failed);
         $this->registerSnapshotRoutes($safeRegister);
         $this->registerCatchAllRoute($safeRegister);
