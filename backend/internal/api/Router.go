@@ -15,6 +15,7 @@ import (
 	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -81,13 +82,25 @@ func NewServer(cfg ServerConfig) *Server {
 }
 
 // Start begins listening for HTTP connections.
-func (s *Server) Start() error {
-	return s.server.ListenAndServe()
+func (s *Server) Start() *apperror.AppError {
+	listenErr := s.server.ListenAndServe()
+
+	if listenErr != nil {
+		return apperror.Wrap(listenErr, apperror.ErrServerStart, "listen and serve")
+	}
+
+	return nil
 }
 
 // Shutdown gracefully stops the server.
-func (s *Server) Shutdown(ctx context.Context) error {
-	return s.server.Shutdown(ctx)
+func (s *Server) Shutdown(ctx context.Context) *apperror.AppError {
+	shutdownErr := s.server.Shutdown(ctx)
+
+	if shutdownErr != nil {
+		return apperror.Wrap(shutdownErr, apperror.ErrServerShutdown, "graceful shutdown")
+	}
+
+	return nil
 }
 
 func resolveSpaStaticDir(dir string) string {
