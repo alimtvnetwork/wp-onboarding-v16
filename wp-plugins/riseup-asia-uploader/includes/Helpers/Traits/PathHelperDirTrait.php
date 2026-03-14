@@ -167,4 +167,54 @@ trait PathHelperDirTrait {
 
         return $path;
     }
+
+    // ── Directory Ensure ──
+
+    /** Ensure a directory exists, creating parent directories recursively. */
+    public static function ensureDirectory(string $dir): bool {
+        $normalized = rtrim(str_replace('\\', '/', $dir), '/');
+
+        if ($normalized === '') {
+            return false;
+        }
+
+        if (is_dir($normalized)) {
+            return true;
+        }
+
+        $parent = dirname($normalized);
+        $hasParent = ($parent !== '' && $parent !== '.' && $parent !== $normalized);
+
+        if ($hasParent && !is_dir($parent)) {
+            $isParentReady = self::ensureDirectory($parent);
+
+            if ($isParentReady === false) {
+                return false;
+            }
+        }
+
+        return wp_mkdir_p($normalized);
+    }
+
+    /** Ensure all parent directories exist for a file path. */
+    public static function ensureFileParentDirectory(string $filePath): bool {
+        return self::ensureDirectory(dirname($filePath));
+    }
+
+    /** Check if a directory is empty (no files or subdirectories). */
+    public static function isDirEmpty(string $dirPath): bool {
+        if (self::isDirMissing($dirPath)) {
+            return true;
+        }
+
+        $scanResult = scandir($dirPath);
+
+        if ($scanResult === false) {
+            return true;
+        }
+
+        $entries = array_diff($scanResult, array('.', '..'));
+
+        return empty($entries);
+    }
 }
