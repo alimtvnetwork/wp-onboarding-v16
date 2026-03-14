@@ -22,6 +22,7 @@ use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\ResponseKeyType;
 use QUpload\Helpers\DateHelper;
 use QUpload\Helpers\PathHelper;
+use QUpload\Helpers\UploadBackupHelper;
 
 trait UploadExtractTrait
 {
@@ -268,7 +269,7 @@ trait UploadExtractTrait
 
     // ── Extraction Orchestration ────────────────────────────────
 
-    /** Process extraction, activation, and version detection. */
+    /** Process extraction, activation, and version detection with rollback on failure. */
     private function processExtraction(array $input, array $zipResult): array|WP_REST_Response
     {
         $slug     = $zipResult[ResponseKeyType::Slug->value];
@@ -277,14 +278,55 @@ trait UploadExtractTrait
         $targetDir = WP_PLUGIN_DIR . '/' . $slug;
         $isUpdate = is_dir($targetDir);
 
+        // Create backup before replacing (rollback safety net)
+        $backupHelper = new UploadBackupHelper($this->fileLogger);
+        $backupDir = $isUpdate ? $backupHelper->createBackup($slug) : false;
+
         $isPreviouslyActive = $this->deactivateIfUpdating($slug, $isUpdate, $targetDir);
         $extractResult = $this->extractToPluginsDir($tempFile, $slug, $targetDir);
 
         if ($extractResult instanceof WP_REST_Response) {
-            return $extractResult;
+            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $extractResult);
         }
 
-        return $this->resolvePluginAfterExtract($slug, $isUpdate, $input['activate'], $isPreviouslyActive);
+        $result = $this->resolvePluginAfterExtract($slug, $isUpdate, $input['activate'], $isPreviouslyActive);
+
+        if ($result instanceof WP_REST_Response) {
+            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $result);
+        }
+
+        // Success — clean up backup
+        if ($backupDir !== false) {
+            $backupHelper->cleanup($backupDir);
+        }
+
+        return $result;
+    }
+
+    /** Roll back to backup on upload failure and return the original error response. */
+    private function rollbackOnFailure(
+        UploadBackupHelper $backupHelper,
+        string|false $backupDir,
+        string $slug,
+        bool $wasPreviouslyActive,
+        WP_REST_Response $errorResponse,
+    ): WP_REST_Response {
+        if ($backupDir === false) {
+            $this->traceStage('rollbackOnFailure:no-backup', ['slug' => $slug]);
+
+            return $errorResponse;
+        }
+
+        $this->traceStage('rollbackOnFailure:start', ['slug' => $slug, 'backupDir' => $backupDir]);
+        $isRolledBack = $backupHelper->rollback($backupDir, $slug);
+
+        if ($isRolledBack && $wasPreviouslyActive) {
+            $backupHelper->reactivateAfterRollback($slug);
+        }
+
+        $this->traceStage('rollbackOnFailure:complete', ['slug' => $slug, 'success' => $isRolledBack]);
+
+        return $errorResponse;
     }
 
     /** Find plugin file, activate if needed, and build the result. */
