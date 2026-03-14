@@ -153,6 +153,7 @@ trait DatabaseConnectionTrait {
         $this->migrateV13PascalCaseTableAndColumnNames($current);
         $this->migrateV14PascalCaseRemainingValues($current);
         $this->migrateV15UploadSourceAbbreviationFix($current);
+        $this->migrateV16ErrorSessionVersion($current);
     }
 
     /**

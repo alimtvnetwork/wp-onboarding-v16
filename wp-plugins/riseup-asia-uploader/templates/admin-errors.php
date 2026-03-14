@@ -150,6 +150,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
                     <th class="column-id" style="width: 50px;"><?php esc_html_e('ID', $pluginSlug); ?></th>
                     <th class="column-timestamp" style="width: 160px;"><?php esc_html_e('Timestamp', $pluginSlug); ?></th>
                     <th class="column-level" style="width: 70px;"><?php esc_html_e('Level', $pluginSlug); ?></th>
+                    <th class="column-version" style="width: 70px;"><?php esc_html_e('Version', $pluginSlug); ?></th>
                     <th class="column-file" style="width: 180px;"><?php esc_html_e('Source', $pluginSlug); ?></th>
                     <th class="column-message"><?php esc_html_e('Message', $pluginSlug); ?></th>
                     <th class="column-actions" style="width: 80px;"><?php esc_html_e('Details', $pluginSlug); ?></th>
@@ -158,7 +159,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
             <tbody>
                 <?php if (empty($errors)): ?>
                     <tr>
-                        <td colspan="6" class="no-items"><?php esc_html_e('No errors found. 🎉', $pluginSlug); ?></td>
+                        <td colspan="7" class="no-items"><?php esc_html_e('No errors found. 🎉', $pluginSlug); ?></td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($errors as $error): ?>
@@ -186,6 +187,16 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
                                 <span class="level-badge" style="background: <?php echo esc_attr($color); ?>;">
                                     <?php echo esc_html($level); ?>
                                 </span>
+                            </td>
+                            <td class="column-version">
+                                <?php
+                                $hasVersion = !empty($error['PluginVersion']);
+                                ?>
+                                <?php if ($hasVersion): ?>
+                                    <code class="version-tag">v<?php echo esc_html($error['PluginVersion']); ?></code>
+                                <?php else: ?>
+                                    <span class="na">—</span>
+                                <?php endif; ?>
                             </td>
                             <td class="column-file">
                                 <?php if ($hasFile): ?>
