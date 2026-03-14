@@ -102,8 +102,8 @@ Each rotation creates a new numbered folder only for the specific file that exce
 
 ## Done Checklist
 
-- [ ] Spec updated
+- [x] Spec updated
 - [x] Issue write-up created
-- [ ] PHP implementation complete
-- [ ] Settings.json updated
+- [x] PHP implementation complete
+- [x] Settings.json updated
 - [ ] Tested on dev site
