@@ -10,6 +10,8 @@
 
 namespace RiseupAsia\Database\Traits;
 
+use PDOException;
+
 use RiseupAsia\Helpers\InitHelpers;
 
 if (!defined('ABSPATH')) {

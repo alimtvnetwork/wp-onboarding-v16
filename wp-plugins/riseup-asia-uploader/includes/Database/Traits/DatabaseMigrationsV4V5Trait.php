@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDOException;
+
 use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV4V5Trait {
