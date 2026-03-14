@@ -50,6 +50,8 @@ use RiseupAsia\Traits\Snapshot\SnapshotCrudTrait;
 use RiseupAsia\Traits\Snapshot\SnapshotExportTrait;
 use RiseupAsia\Traits\Snapshot\SnapshotBackupTrait;
 use RiseupAsia\Traits\FileSystem\FileSystemTrait;
+use RiseupAsia\Traits\Log\LogStatusTrait;
+use RiseupAsia\Traits\Log\LogClearingTrait;
 
 class Plugin {
     // Wave 1 traits
