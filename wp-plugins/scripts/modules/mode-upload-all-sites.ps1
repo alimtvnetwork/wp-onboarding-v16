@@ -145,10 +145,12 @@ function Invoke-UploadAllSitesMode {
 
     Write-Host ""
 
-    # Build ZIP lookup
+    # Build ZIP lookup (path + version)
     $zipByPlugin = @{}
+    $versionByPlugin = @{}
     foreach ($zipInfo in $zipResults) {
         $zipByPlugin[$zipInfo.Slug] = $zipInfo.Path
+        $versionByPlugin[$zipInfo.Slug] = $zipInfo.Version
     }
 
     $missingZipPlugins = @()
@@ -173,11 +175,11 @@ function Invoke-UploadAllSitesMode {
     if ($sync) {
         Write-Host "  Uploading to $($targetSites.Count) site(s) sequentially..." -ForegroundColor Yellow
         Write-Host ""
-        $globalResults = Invoke-UasSyncUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
+        $globalResults = Invoke-UasSyncUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -VersionByPlugin $versionByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
     } else {
         Write-Host "  Uploading to $($targetSites.Count) site(s) in parallel..." -ForegroundColor Yellow
         Write-Host ""
-        $globalResults = Invoke-UasParallelUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
+        $globalResults = Invoke-UasParallelUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -VersionByPlugin $versionByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp
     }
 
     # Summary
@@ -189,7 +191,8 @@ function Invoke-UploadAllSitesMode {
     $failCount = $globalResults.Count - $successCount
     foreach ($r in $globalResults) {
         $color = if ($r.Status -eq "OK") { "Green" } else { "Red" }
-        Write-Host "  [$($r.Site)] $($r.Plugin): $($r.Status)" -ForegroundColor $color
+        $vLabel = if ($r.Version -and $r.Version -ne "unknown") { " v$($r.Version)" } else { "" }
+        Write-Host "  [$($r.Site)] $($r.Plugin)${vLabel}: $($r.Status)" -ForegroundColor $color
     }
     Write-Host ""
     Write-Host "  Sites: $($targetSites.Count) | Plugins: $($pluginFolders.Count) | Success: $successCount | Failed: $failCount" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Yellow" })
@@ -207,6 +210,7 @@ function Invoke-UasSyncUpload {
         $TargetSites,
         $PluginFolders,
         $ZipByPlugin,
+        $VersionByPlugin,
         [string]$QUploadScript,
         [string]$UploadLogsDir,
         [string]$LogStamp
@@ -285,7 +289,8 @@ function Invoke-UasSyncUpload {
                 Write-Host "    Log: $failureLogPath" -ForegroundColor Yellow
             }
 
-            $results += @{ Site = $siteName; Plugin = $pluginName; Status = $status; ExitCode = $uploadExitCode }
+            $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
+            $results += @{ Site = $siteName; Plugin = $pluginName; Version = $pluginVersion; Status = $status; ExitCode = $uploadExitCode }
         }
     }
 
@@ -298,6 +303,7 @@ function Invoke-UasParallelUpload {
         $TargetSites,
         $PluginFolders,
         $ZipByPlugin,
+        $VersionByPlugin,
         [string]$QUploadScript,
         [string]$UploadLogsDir,
         [string]$LogStamp
@@ -322,12 +328,13 @@ function Invoke-UasParallelUpload {
             $pluginName = $folder.Name
             $pluginFullPath = $folder.FullName
             $prebuiltZipPath = $ZipByPlugin[$pluginName]
+            $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
             $jobName = "$pluginName->$siteName"
             $zipLabel = if ($prebuiltZipPath) { $prebuiltZipPath } else { "(no prebuilt ZIP)" }
             Write-Host "      [$jobName] ZIP: $zipLabel" -ForegroundColor DarkGray
 
             $uploadJobs += Start-Job -Name $jobName -ScriptBlock {
-                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName)
+                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion)
 
                 $uploadConfig = @{
                     pluginFolderPath     = $PluginPath
@@ -369,6 +376,7 @@ function Invoke-UasParallelUpload {
                 return @{
                     Site                = $SiteName
                     Plugin              = $PluginName
+                    Version             = $PluginVersion
                     ZipPath             = $PrebuiltZipPath
                     ExitCode            = $resolvedExitCode
                     NativeExitCode      = $nativeExitCode
@@ -376,7 +384,7 @@ function Invoke-UasParallelUpload {
                     Output              = $output
                     Status              = if ($resolvedExitCode -eq 0) { "OK" } else { "FAILED (exit $resolvedExitCode)" }
                 }
-            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName
+            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion
         }
     }
 
@@ -390,6 +398,7 @@ function Invoke-UasParallelUpload {
             $result = @{
                 Site                = "Unknown"
                 Plugin              = $job.Name
+                Version             = "unknown"
                 ZipPath             = ""
                 ExitCode            = 1
                 NativeExitCode      = $null
@@ -403,8 +412,9 @@ function Invoke-UasParallelUpload {
         $isSuccess = ($result.ExitCode -eq 0)
         $icon = if ($isSuccess) { "OK" } else { "FAILED" }
         $color = if ($isSuccess) { "Green" } else { "Red" }
+        $vLabel = if ($result.Version -and $result.Version -ne "unknown") { " v$($result.Version)" } else { "" }
 
-        Write-Host "  [$($result.Site)] $($result.Plugin): $icon" -ForegroundColor $color
+        Write-Host "  [$($result.Site)] $($result.Plugin)${vLabel}: $icon" -ForegroundColor $color
 
         $isFailure = ($isSuccess -eq $false)
         if ($isFailure) {
