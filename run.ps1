@@ -1192,69 +1192,132 @@ if ($uas) {
 
     Clear-PluginZips
 
+    # ── Parallel ZIP ─────────────────────────────────────────────────────────
+    Write-Host "  Zipping $($pluginFolders.Count) plugin(s) in parallel..." -ForegroundColor Yellow
+    $zipJobs = @()
     foreach ($folder in $pluginFolders) {
-        Write-Host "  [ZIP] $($folder.Name)..." -ForegroundColor Yellow
-        New-PluginZip $folder.FullName
+        $folderPath = $folder.FullName
+        $folderName = $folder.Name
+        Write-Host "    [ZIP] Starting: $folderName" -ForegroundColor DarkGray
+        $zipJobs += Start-Job -Name "zip-$folderName" -ScriptBlock {
+            param($ScriptDir, $FolderPath)
+            . (Join-Path $ScriptDir "run-helpers.ps1") 2>$null
+            $pluginDir = $FolderPath
+            $pluginSlug = Split-Path $pluginDir -Leaf
+            $mainFiles = Get-ChildItem $pluginDir -Filter "*.php" | Where-Object {
+                (Get-Content $_.FullName -Head 5) -match "Plugin Name:"
+            } | Select-Object -First 1
+            $version = "unknown"
+            if ($mainFiles) {
+                $content = Get-Content $mainFiles.FullName -Raw
+                $match = [regex]::Match($content, "Version:\s*(\d+\.\d+\.\d+)")
+                if ($match.Success) { $version = $match.Groups[1].Value }
+            }
+            $zipFileName = "$pluginSlug-v$version.zip"
+            $zipOutputPath = Join-Path (Split-Path $pluginDir -Parent) $zipFileName
+            if (Test-Path $zipOutputPath) { Remove-Item $zipOutputPath -Force }
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $tempDir = Join-Path $env:TEMP "uas-zip-$pluginSlug-$(Get-Random)"
+            $pluginTempDir = Join-Path $tempDir $pluginSlug
+            New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
+            Copy-Item -Path "$pluginDir\*" -Destination $pluginTempDir -Recurse
+            [System.IO.Compression.ZipFile]::CreateFromDirectory(
+                $tempDir, $zipOutputPath,
+                [System.IO.Compression.CompressionLevel]::SmallestSize, $false
+            )
+            Remove-Item $tempDir -Recurse -Force
+            $sizeKB = [math]::Round((Get-Item $zipOutputPath).Length / 1024, 1)
+            return @{ Slug = $pluginSlug; Version = $version; Path = $zipOutputPath; SizeKB = $sizeKB }
+        } -ArgumentList $ScriptDir, $folderPath
+    }
+
+    $zipResults = @()
+    foreach ($job in $zipJobs) {
+        $result = Receive-Job -Job $job -Wait
+        $zipResults += $result
+        $pluginLabel = "$($result.Slug)-v$($result.Version)"
+        Write-Host "    [ZIP] Done: $pluginLabel ($($result.SizeKB) KB)" -ForegroundColor Green
+        Remove-Job -Job $job -Force
     }
 
     Write-Host ""
 
-    # Upload to each site
-    $globalResults = @()
+    # ── Parallel Upload (all sites in parallel) ──────────────────────────────
+    Write-Host "  Uploading to $($targetSites.Count) site(s) in parallel..." -ForegroundColor Yellow
+    Write-Host ""
+
+    $uploadJobs = @()
 
     foreach ($targetSite in $targetSites) {
-        Write-Host "========================================" -ForegroundColor Magenta
-        Write-Host "  Site: $($targetSite.name)" -ForegroundColor Magenta
-        Write-Host "  URL:  $($targetSite.url)" -ForegroundColor Gray
-        Write-Host "========================================" -ForegroundColor Magenta
-        Write-Host ""
-
-        # Get default credential and decode Base64
+        $siteName = $targetSite.name
+        $siteUrl = $targetSite.url
         $cred = Get-DefaultSiteCredential $targetSite
+
         if (-not $cred) {
-            Write-Host "  SKIPPED: No valid credentials for $($targetSite.name)" -ForegroundColor Red
-            $globalResults += @{ Site = $targetSite.name; Plugin = "*"; Status = "SKIPPED (no credentials)" }
+            Write-Host "  [$siteName] SKIPPED: No valid credentials" -ForegroundColor Red
             continue
         }
 
         $decodedUsername = $cred.Username
         $decodedPassword = $cred.Password
 
-        Write-Host ""
-
         foreach ($folder in $pluginFolders) {
             $pluginName = $folder.Name
-            Write-Host "  ────────────────────────────────────" -ForegroundColor DarkGray
-            Write-Host "    Plugin: $pluginName -> $($targetSite.name)" -ForegroundColor Cyan
-            Write-Host "  ────────────────────────────────────" -ForegroundColor DarkGray
+            $pluginFullPath = $folder.FullName
+            $jobName = "$pluginName->$siteName"
 
-            # Build inline JSON config with decoded credentials
-            $uploadConfig = @{
-                pluginFolderPath     = $folder.FullName
-                wordPressSiteURL     = $targetSite.url.TrimEnd("/")
-                username             = $decodedUsername
-                appPassword          = $decodedPassword
-                activateAfterInstall = $true
-                deleteZipAfterUpload = $false
-            }
-            $jsonConfigStr = ($uploadConfig | ConvertTo-Json -Compress)
+            $uploadJobs += Start-Job -Name $jobName -ScriptBlock {
+                param($QUploadScript, $PluginPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName)
 
-            try {
-                & $quploadScript -jc $jsonConfigStr -a
-                $uploadExitCode = $LASTEXITCODE
-                if ($uploadExitCode -eq 0) {
-                    $globalResults += @{ Site = $targetSite.name; Plugin = $pluginName; Status = "OK" }
-                    Write-Host "    OK $pluginName -> $($targetSite.name)" -ForegroundColor Green
-                } else {
-                    $globalResults += @{ Site = $targetSite.name; Plugin = $pluginName; Status = "FAILED (exit $uploadExitCode)" }
-                    Write-Host "    FAILED $pluginName -> $($targetSite.name) (exit: $uploadExitCode)" -ForegroundColor Red
+                $uploadConfig = @{
+                    pluginFolderPath     = $PluginPath
+                    wordPressSiteURL     = $SiteUrl.TrimEnd("/")
+                    username             = $Username
+                    appPassword          = $Password
+                    activateAfterInstall = $true
+                    deleteZipAfterUpload = $false
                 }
-            } catch {
-                $globalResults += @{ Site = $targetSite.name; Plugin = $pluginName; Status = "ERROR: $_" }
-                Write-Host "    ERROR $pluginName -> $($targetSite.name)`: $_" -ForegroundColor Red
-            }
-            Write-Host ""
+                $jsonConfigStr = ($uploadConfig | ConvertTo-Json -Compress)
+
+                $output = & $QUploadScript -jc $jsonConfigStr -a 2>&1 | Out-String
+                $exitCode = $LASTEXITCODE
+
+                return @{
+                    Site       = $SiteName
+                    Plugin     = $PluginName
+                    ExitCode   = $exitCode
+                    Output     = $output
+                    Status     = if ($exitCode -eq 0) { "OK" } else { "FAILED (exit $exitCode)" }
+                }
+            } -ArgumentList $quploadScript, $pluginFullPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName
         }
+    }
+
+    # Collect results as they complete
+    $globalResults = @()
+
+    foreach ($job in $uploadJobs) {
+        $result = Receive-Job -Job $job -Wait
+        $globalResults += $result
+        $isSuccess = ($result.ExitCode -eq 0)
+        $icon = if ($isSuccess) { "OK" } else { "FAILED" }
+        $color = if ($isSuccess) { "Green" } else { "Red" }
+
+        Write-Host "  [$($result.Site)] $($result.Plugin): $icon" -ForegroundColor $color
+
+        $isFailure = ($isSuccess -eq $false)
+        if ($isFailure) {
+            $outputLines = $result.Output -split "`n" | Where-Object { $_ -match '(failed|error|FAILED|Error|REST message|Root cause|Status:)' }
+            foreach ($line in $outputLines) {
+                $trimmed = $line.Trim()
+                $isLineNotEmpty = ($trimmed -ne "")
+                if ($isLineNotEmpty) {
+                    Write-Host "    $trimmed" -ForegroundColor Yellow
+                }
+            }
+        }
+
+        Remove-Job -Job $job -Force
     }
 
     # Summary
