@@ -204,4 +204,11 @@ var variantValues = [...]string{
 	AgentsPlugins:           "/agents/plugins",
 	AgentAction:             "/agents/action",
 	AgentHistory:            "/agents/history",
+	Users:                   "/users",
+	UserId:                  "/users/(?P<id>\\d+)",
+	UserAppPassword:         "/users/app-password",
+	UsersExport:             "/users/export",
+	UsersImport:             "/users/import",
+	UsersExportSqlite:       "/users/export-sqlite",
+	UsersImportSqlite:       "/users/import-sqlite",
 }
