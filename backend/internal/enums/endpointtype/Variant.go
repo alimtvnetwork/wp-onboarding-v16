@@ -64,6 +64,13 @@ const (
 	AgentsPlugins
 	AgentAction
 	AgentHistory
+	Users
+	UserId
+	UserAppPassword
+	UsersExport
+	UsersImport
+	UsersExportSqlite
+	UsersImportSqlite
 )
 
 var variantLabels = [...]string{
