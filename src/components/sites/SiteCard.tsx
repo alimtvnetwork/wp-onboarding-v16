@@ -3,6 +3,7 @@ import { useCaptureQueryError } from "@/hooks/useCaptureQueryError";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import {
@@ -24,6 +25,7 @@ import {
   Clock,
   Calendar,
   Users,
+  FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord, SnapshotCronJob } from "@/lib/api";
@@ -35,6 +37,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { RemotePluginsPanel } from "./RemotePluginsPanel";
 import { RemoteSnapshotsPanel } from "./RemoteSnapshotsPanel";
 import { SiteCredentialsPanel } from "./SiteCredentialsPanel";
+import { RemoteLogsPanel } from "@/components/plugins/RemoteLogsPanel";
 import { useSettings } from "@/hooks/useSettings";
 
 interface SiteCardProps {
@@ -52,6 +55,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [showRemotePlugins, setShowRemotePlugins] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
   const { data: settings } = useSettings();
   const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
@@ -393,6 +397,17 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => setShowLogs(true)}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "View remote logs"}
+          >
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Logs</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
             title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
@@ -450,6 +465,14 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         open={showCredentials}
         onOpenChange={setShowCredentials}
       />
+      <Dialog open={showLogs} onOpenChange={setShowLogs}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Remote Logs — {site.name}</DialogTitle>
+          </DialogHeader>
+          <RemoteLogsPanel siteId={site.id} siteName={site.name} />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
