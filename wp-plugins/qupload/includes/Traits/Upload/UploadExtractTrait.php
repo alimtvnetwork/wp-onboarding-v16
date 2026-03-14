@@ -22,6 +22,7 @@ use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\ResponseKeyType;
 use QUpload\Helpers\DateHelper;
 use QUpload\Helpers\PathHelper;
+use QUpload\Helpers\UploadBackupHelper;
 
 trait UploadExtractTrait
 {
