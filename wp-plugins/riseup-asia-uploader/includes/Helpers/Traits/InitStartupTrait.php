@@ -16,6 +16,7 @@ use Throwable;
 
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\ErrorHandling\BootErrorCollector;
+use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Logging\FileLogger;
 
 trait InitStartupTrait {
