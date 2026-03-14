@@ -100,6 +100,16 @@ $errorFileSize = file_exists($errorFile) ? size_format(filesize($errorFile)) : '
                     <td><code><?php echo esc_html(EndpointType::Activate->route()); ?></code></td>
                     <td><?php esc_html_e('Activate installed plugin', $pluginSlug); ?></td>
                 </tr>
+                <tr>
+                    <td><span class="qupload-method-badge method-put">PUT</span></td>
+                    <td><code><?php echo esc_html(EndpointType::Deactivate->route()); ?></code></td>
+                    <td><?php esc_html_e('Deactivate installed plugin', $pluginSlug); ?></td>
+                </tr>
+                <tr>
+                    <td><span class="qupload-method-badge method-get">GET</span></td>
+                    <td><code><?php echo esc_html(EndpointType::Plugins->route()); ?></code></td>
+                    <td><?php esc_html_e('List all installed plugins with status', $pluginSlug); ?></td>
+                </tr>
                 <tr class="qupload-endpoint-separator">
                     <td colspan="3"><strong><?php esc_html_e('Log Management', $pluginSlug); ?></strong></td>
                 </tr>

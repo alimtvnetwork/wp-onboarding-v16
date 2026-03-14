@@ -17,6 +17,8 @@ enum EndpointType: string
     case Status       = 'status';
     case Upload       = 'upload';
     case Activate     = 'activate';
+    case Deactivate   = 'deactivate';
+    case Plugins      = 'plugins';
     case LogsStatus   = 'logs/status';
     case LogsClear    = 'logs/clear';
     case LogsConfirm  = 'logs/clear/confirm';

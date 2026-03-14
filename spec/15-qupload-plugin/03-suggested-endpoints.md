@@ -1,7 +1,8 @@
 # QUpload — Suggested Additional Endpoints
 
-> **Status:** Proposed  
-> **Created:** 2026-03-14  
+> **Status:** Partially Implemented
+> **Created:** 2026-03-14
+> **Updated:** 2026-03-14
 > **Plugin:** QUpload
 
 ---
@@ -13,6 +14,8 @@
 | GET | `/status` | Health check |
 | POST | `/upload` | Upload plugin ZIP |
 | PUT | `/activate` | Activate installed plugin |
+| PUT | `/deactivate` | Deactivate installed plugin |
+| GET | `/plugins` | List all installed plugins with status |
 | GET | `/logs/status` | Log file sizes and line counts |
 | DELETE | `/logs/clear` | Request log clearing (returns token) |
 | POST | `/logs/clear/confirm` | Confirm log clearing |
@@ -22,25 +25,15 @@
 
 ## Suggested Additions
 
-### 1. `PUT /deactivate`
+### ~~1. `PUT /deactivate`~~ ✅ Implemented
 
-Deactivate an installed plugin by slug.
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `slug` | string | Yes | Plugin slug to deactivate |
-
-**Rationale:** Currently QUpload can activate but not deactivate. Needed for safe remote management and pre-maintenance workflows.
+Deactivate an installed plugin by slug. Returns idempotent success if already inactive.
 
 ---
 
-### 2. `GET /plugins`
+### ~~2. `GET /plugins`~~ ✅ Implemented
 
-List all installed plugins with status.
-
-**Response:** Array of `{ slug, name, version, isActive, file }` for each installed plugin.
-
-**Rationale:** Enables remote inventory — the Go backend can verify deployment state without SSH access.
+List all installed plugins with slug, name, version, active status, and file path. Sorted alphabetically by slug.
 
 ---
 
@@ -89,8 +82,8 @@ Force an OPcache reset.
 
 ## Implementation Priority
 
-1. **PUT /deactivate** — Completes the activate/deactivate pair
-2. **GET /plugins** — Enables remote inventory
+1. ~~**PUT /deactivate**~~ ✅ Done
+2. ~~**GET /plugins**~~ ✅ Done
 3. **POST /upload-active** — Reduces deployment round-trips
 4. **POST /opcache/reset** — Already partially implemented, easy to expose
 5. **GET /opcache/status** — Nice-to-have diagnostics

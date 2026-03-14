@@ -21,6 +21,7 @@ enum ResponseKeyType: string
     case PluginSlug    = 'PluginSlug';
     case IsUpdate      = 'IsUpdate';
     case Activated     = 'Activated';
+    case Deactivated   = 'Deactivated';
     case PluginVersion = 'PluginVersion';
     case TempFile      = 'TempFile';
     case Version       = 'Version';
