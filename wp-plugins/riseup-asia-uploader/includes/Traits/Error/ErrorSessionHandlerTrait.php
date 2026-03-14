@@ -109,6 +109,7 @@ trait ErrorSessionHandlerTrait {
                 'file' => $row['File'], 'fileBase' => $row['File'] ? basename($row['File']) : null,
                 'line' => $row['Line'] ? (int) $row['Line'] : null, 'stackTrace' => $row['StackTrace'],
                 'context' => $this->parseContextJson($row['ContextJson'] ?? ''), 'createdAt' => $row['CreatedAt'],
+                'pluginVersion' => $row['PluginVersion'] ?? null,
             );
             if (!empty($row['StackTrace'])) {
                 $entry['stackTraceFrames'] = $this->parseStackTraceString($row['StackTrace']);

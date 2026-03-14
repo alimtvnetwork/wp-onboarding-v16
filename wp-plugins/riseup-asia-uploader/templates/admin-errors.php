@@ -188,6 +188,16 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
                                     <?php echo esc_html($level); ?>
                                 </span>
                             </td>
+                            <td class="column-version">
+                                <?php
+                                $hasVersion = !empty($error['PluginVersion']);
+                                ?>
+                                <?php if ($hasVersion): ?>
+                                    <code class="version-tag">v<?php echo esc_html($error['PluginVersion']); ?></code>
+                                <?php else: ?>
+                                    <span class="na">—</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="column-file">
                                 <?php if ($hasFile): ?>
                                     <code class="source-file"><?php echo esc_html(basename($error['File'])); ?>:<?php echo esc_html($error['Line']); ?></code>
