@@ -3,6 +3,7 @@
  * Admin Feedback Page Template
  *
  * Dedicated page for submitting feedback / bug reports.
+ * Form is always visible. A warning banner shows if email is not configured.
  *
  * @package RiseupAsiaUploader
  * @since   2.6.0
@@ -28,25 +29,29 @@ $pluginSlug = PluginConfigType::Slug->value;
 
     <div id="riseup-feedback-status" style="display: none;"></div>
 
-    <div id="riseup-feedback-not-ready" class="riseup-card" style="display: none;">
-        <h2>
-            <span class="dashicons dashicons-warning" style="color: #dba617;"></span>
-            <?php esc_html_e('Email Not Configured', $pluginSlug); ?>
-        </h2>
-        <p><?php esc_html_e('A support email address must be configured before you can send feedback.', $pluginSlug); ?></p>
-        <p>
-            <a href="<?php echo esc_url(AdminPageType::Settings->adminUrl()); ?>" class="button button-primary">
-                <span class="dashicons dashicons-admin-settings"></span>
-                <?php esc_html_e('Go to Settings', $pluginSlug); ?>
-            </a>
-        </p>
-        <p id="riseup-feedback-fallback" style="display: none;">
-            <?php esc_html_e('Or submit a ticket manually:', $pluginSlug); ?>
-            <a id="riseup-feedback-fallback-link" href="#" target="_blank" rel="noopener noreferrer"></a>
-        </p>
+    <!-- Warning banner — shown only when email is not configured -->
+    <div id="riseup-feedback-email-warning" class="riseup-card riseup-feedback-warning-card" style="display: none;">
+        <div class="riseup-feedback-warning-inner">
+            <span class="dashicons dashicons-warning"></span>
+            <div class="riseup-feedback-warning-content">
+                <strong><?php esc_html_e('Email Not Configured', $pluginSlug); ?></strong>
+                <p><?php esc_html_e('A support email address must be configured before feedback can be sent. You can still fill out the form below.', $pluginSlug); ?></p>
+                <div class="riseup-feedback-warning-actions">
+                    <a href="<?php echo esc_url(AdminPageType::Settings->adminUrl()); ?>" class="button button-small">
+                        <span class="dashicons dashicons-admin-settings"></span>
+                        <?php esc_html_e('Go to Settings', $pluginSlug); ?>
+                    </a>
+                    <span id="riseup-feedback-fallback" style="display: none;">
+                        <?php esc_html_e('Or submit a ticket manually:', $pluginSlug); ?>
+                        <a id="riseup-feedback-fallback-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="riseup-feedback-form-container" class="riseup-card" style="display: none;">
+    <!-- Form is always visible -->
+    <div id="riseup-feedback-form-container" class="riseup-card">
         <h2>
             <span class="dashicons dashicons-email-alt"></span>
             <?php esc_html_e('Send Feedback', $pluginSlug); ?>
@@ -85,9 +90,21 @@ $pluginSlug = PluginConfigType::Slug->value;
                     </td>
                 </tr>
                 <tr>
+                    <th scope="row"><?php esc_html_e('Include Logs', $pluginSlug); ?></th>
+                    <td>
+                        <label class="riseup-feedback-checkbox-label">
+                            <input type="checkbox" id="feedback-include-logs" name="include_logs" value="1">
+                            <?php esc_html_e('Attach log files as a ZIP (error log, stack trace, info log)', $pluginSlug); ?>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('If checked, the current log files will be compressed and attached to the email automatically.', $pluginSlug); ?>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
                     <th scope="row"><?php esc_html_e('System Information', $pluginSlug); ?></th>
                     <td>
-                        <label>
+                        <label class="riseup-feedback-checkbox-label">
                             <input type="checkbox" id="feedback-system-info" name="include_system_info" value="1" checked>
                             <?php esc_html_e('Include system info (PHP version, WordPress version, plugin version, site URL)', $pluginSlug); ?>
                         </label>

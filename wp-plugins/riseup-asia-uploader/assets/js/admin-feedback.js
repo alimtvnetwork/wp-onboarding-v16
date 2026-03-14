@@ -7,6 +7,7 @@
     'use strict';
 
     var C = window.RiseupFeedback || {};
+    var emailReady = false;
 
     $(function () {
         checkFeedbackReady();
@@ -20,11 +21,11 @@
             nonce: C.nonce
         }).done(function (res) {
             if (res.success && res.data.ready) {
-                $('#riseup-feedback-form-container').show();
-                $('#riseup-feedback-not-ready').hide();
+                emailReady = true;
+                $('#riseup-feedback-email-warning').hide();
             } else {
-                $('#riseup-feedback-form-container').hide();
-                $('#riseup-feedback-not-ready').show();
+                emailReady = false;
+                $('#riseup-feedback-email-warning').show();
 
                 if (res.data && res.data.fallback_url) {
                     $('#riseup-feedback-fallback-link')
@@ -41,6 +42,11 @@
     function bindFormSubmit() {
         $('#riseup-feedback-form').on('submit', function (e) {
             e.preventDefault();
+
+            if (!emailReady) {
+                showStatus(C.i18n.emailNotConfigured || 'Support email is not configured. Please configure it in Settings before sending.', 'error');
+                return;
+            }
 
             var $btn = $('#feedback-submit-btn');
             var $spinner = $('#feedback-spinner');

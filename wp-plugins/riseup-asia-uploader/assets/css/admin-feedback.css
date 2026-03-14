@@ -165,26 +165,64 @@
     transform: scale(1.2) rotate(-5deg);
 }
 
-/* ── Not Ready Card ──────────────────────────────────── */
-#riseup-feedback-not-ready {
-    animation: riseupScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+/* ── Warning Banner ──────────────────────────────────── */
+.riseup-feedback-warning-card {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+    border-left: 4px solid #d97706 !important;
+    animation: riseupFadeInUp 0.4s ease-out;
 }
 
-#riseup-feedback-not-ready h2 .dashicons {
+.riseup-feedback-warning-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.riseup-feedback-warning-inner > .dashicons {
     font-size: 24px;
     width: 24px;
     height: 24px;
-    margin-right: 8px;
-    vertical-align: middle;
     color: #d97706;
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
-#riseup-feedback-not-ready .button .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+.riseup-feedback-warning-content {
+    flex: 1;
+}
+
+.riseup-feedback-warning-content strong {
+    color: #92400e;
+    font-size: 14px;
+}
+
+.riseup-feedback-warning-content p {
+    margin: 4px 0 8px;
+    color: #78350f;
+    font-size: 13px;
+}
+
+.riseup-feedback-warning-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.riseup-feedback-warning-actions .button .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
     margin-right: 4px;
     vertical-align: text-bottom;
+}
+
+/* ── Checkbox Label ─────────────────────────────────── */
+.riseup-feedback-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
 }
 
 /* ── Status Notice ───────────────────────────────────── */
