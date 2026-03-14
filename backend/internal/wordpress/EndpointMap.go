@@ -124,6 +124,11 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPErrorLogs:     {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/error-logs"},
 	EPErrorSessions: {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/error-sessions"},
 
+	// Remote log management
+	EPLogsStatus:  {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs"},
+	EPLogsClear:   {Method: httpmethod.Delete, Pattern: "/api/v1/sites/{id}/remote-logs/clear"},
+	EPLogsConfirm: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/confirm"},
+
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/snapshots"},
 	EPSnapshotSchedule:       {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/snapshots"},
