@@ -86,6 +86,9 @@ class Plugin {
     use LogClearingTrait;
     use LogEmailTrait;
 
+    // Wave 4 traits
+    use UserCrudTrait;
+
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
     private ?Database $db = null;
