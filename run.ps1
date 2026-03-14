@@ -617,9 +617,38 @@ try {
     }
     
     $TotalStopwatch.Stop()
+
+    # Read version info from version.json
+    $versionJsonPath = Join-Path $ScriptDir "public" "version.json"
+    $appVersion = ""
+    $scriptVersionLabel = ""
+    $wpPluginVersionLabel = ""
+    $quploadVersionLabel = ""
+    if (Test-Path $versionJsonPath) {
+        try {
+            $versionData = Get-Content $versionJsonPath -Raw | ConvertFrom-Json
+            if ($versionData.version) { $appVersion = $versionData.version }
+            if ($versionData.scriptVersion) { $scriptVersionLabel = $versionData.scriptVersion }
+            if ($versionData.wpPluginVersion) { $wpPluginVersionLabel = $versionData.wpPluginVersion }
+            if ($versionData.quploadVersion) { $quploadVersionLabel = $versionData.quploadVersion }
+        } catch { }
+    }
+
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  $ProjectName starting..." -ForegroundColor Cyan
+    if ($appVersion) {
+        Write-Host "  App Version:    v$appVersion" -ForegroundColor White
+    }
+    if ($wpPluginVersionLabel) {
+        Write-Host "  WP Plugin:      v$wpPluginVersionLabel" -ForegroundColor White
+    }
+    if ($quploadVersionLabel) {
+        Write-Host "  QUpload:        v$quploadVersionLabel" -ForegroundColor White
+    }
+    if ($scriptVersionLabel) {
+        Write-Host "  Script:         v$scriptVersionLabel" -ForegroundColor White
+    }
     Write-Host "  Open: http://localhost:$($Ports[0])" -ForegroundColor Cyan
     Write-Host "  Press Ctrl+C to stop" -ForegroundColor Cyan
     Write-Host "  Build time: $(Format-ElapsedTime $TotalStopwatch)" -ForegroundColor Cyan
