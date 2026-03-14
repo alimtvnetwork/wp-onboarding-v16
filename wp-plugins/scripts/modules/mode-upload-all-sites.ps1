@@ -328,12 +328,13 @@ function Invoke-UasParallelUpload {
             $pluginName = $folder.Name
             $pluginFullPath = $folder.FullName
             $prebuiltZipPath = $ZipByPlugin[$pluginName]
+            $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
             $jobName = "$pluginName->$siteName"
             $zipLabel = if ($prebuiltZipPath) { $prebuiltZipPath } else { "(no prebuilt ZIP)" }
             Write-Host "      [$jobName] ZIP: $zipLabel" -ForegroundColor DarkGray
 
             $uploadJobs += Start-Job -Name $jobName -ScriptBlock {
-                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName)
+                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion)
 
                 $uploadConfig = @{
                     pluginFolderPath     = $PluginPath
