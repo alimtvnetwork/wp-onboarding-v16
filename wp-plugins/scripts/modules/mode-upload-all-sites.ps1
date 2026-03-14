@@ -191,7 +191,8 @@ function Invoke-UploadAllSitesMode {
     $failCount = $globalResults.Count - $successCount
     foreach ($r in $globalResults) {
         $color = if ($r.Status -eq "OK") { "Green" } else { "Red" }
-        Write-Host "  [$($r.Site)] $($r.Plugin): $($r.Status)" -ForegroundColor $color
+        $vLabel = if ($r.Version -and $r.Version -ne "unknown") { " v$($r.Version)" } else { "" }
+        Write-Host "  [$($r.Site)] $($r.Plugin)${vLabel}: $($r.Status)" -ForegroundColor $color
     }
     Write-Host ""
     Write-Host "  Sites: $($targetSites.Count) | Plugins: $($pluginFolders.Count) | Success: $successCount | Failed: $failCount" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Yellow" })
