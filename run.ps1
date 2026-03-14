@@ -307,6 +307,53 @@ if ($help) {
 }
 
 # ============================================================================
+# LIST SITES (-ls): Show all configured sites and exit
+# ============================================================================
+if ($listsites) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Configured Sites (powershell.json)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $hasSites = $Config.wpPlugins -and $Config.wpPlugins.sites -and $Config.wpPlugins.sites.Count -gt 0
+
+    if (-not $hasSites) {
+        Write-Host "  No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Yellow
+        Write-Host ""
+        exit 0
+    }
+
+    $siteIndex = 0
+    foreach ($s in $Config.wpPlugins.sites) {
+        $siteIndex++
+        $isEnabled = $s.enabled -ne $false
+        $statusIcon = if ($isEnabled) { "[ON]" } else { "[OFF]" }
+        $statusColor = if ($isEnabled) { "Green" } else { "DarkGray" }
+        $credCount = if ($s.credentials) { $s.credentials.Count } else { 0 }
+
+        Write-Host "  $siteIndex. " -NoNewline -ForegroundColor White
+        Write-Host "$statusIcon " -NoNewline -ForegroundColor $statusColor
+        Write-Host "$($s.name)" -NoNewline -ForegroundColor $(if ($isEnabled) { "White" } else { "DarkGray" })
+        Write-Host ""
+        Write-Host "     URL:         $($s.url)" -ForegroundColor Gray
+        Write-Host "     Credentials: $credCount configured" -ForegroundColor Gray
+
+        if ($s.credentials -and $s.credentials.Count -gt 0) {
+            foreach ($cred in $s.credentials) {
+                $isDefault = if ($cred.isDefault) { " (default)" } else { "" }
+                Write-Host "       - $($cred.appName)$isDefault" -ForegroundColor DarkGray
+            }
+        }
+        Write-Host ""
+    }
+
+    Write-Host "  Total: $siteIndex site(s)" -ForegroundColor Cyan
+    Write-Host ""
+    exit 0
+}
+
+# ============================================================================
 # BANNER
 # ============================================================================
 Write-Host ""
