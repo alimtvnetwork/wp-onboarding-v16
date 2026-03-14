@@ -479,7 +479,7 @@ function Test-BackedEnumDuplicateValues {
         $enumName = ""
         $enumType = ""
         $enumDepth = 0
-        $valueToCase = @{}
+        $valueToCase = [System.Collections.Hashtable]::new([StringComparer]::Ordinal)
 
         foreach ($line in $lines) {
             $trimmed = $line.Trim()
@@ -492,7 +492,7 @@ function Test-BackedEnumDuplicateValues {
                     $enumName = $Matches[1]
                     $enumType = $Matches[2]
                     $enumDepth = 0
-                    $valueToCase = @{}
+                    $valueToCase = [System.Collections.Hashtable]::new([StringComparer]::Ordinal)
                 } else {
                     continue
                 }
