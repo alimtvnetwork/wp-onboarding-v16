@@ -1412,6 +1412,9 @@ if ($uas) {
     }
     Write-Host ""
     Write-Host "  Sites: $($targetSites.Count) | Plugins: $($pluginFolders.Count) | Success: $successCount | Failed: $failCount" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Yellow" })
+    if ($failCount -gt 0) {
+        Write-Host "  Failure logs: $uploadLogsDir" -ForegroundColor Yellow
+    }
     Write-Host "========================================" -ForegroundColor Magenta
 
     exit $(if ($failCount -eq 0) { 0 } else { 1 })
