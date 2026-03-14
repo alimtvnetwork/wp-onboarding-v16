@@ -343,7 +343,9 @@ if ($listsites) {
             Write-Host "$statusIcon " -NoNewline -ForegroundColor $statusColor
             Write-Host "$($s.name)" -ForegroundColor $(if ($isEnabled) { "White" } else { "DarkGray" })
             Write-Host "       URL:         $($s.url)" -ForegroundColor Gray
-            Write-Host "       Upload cmd:  " -NoNewline -ForegroundColor Gray
+            Write-Host "       Upload:      " -NoNewline -ForegroundColor Gray
+            Write-Host ".\run.ps1 -u -site '$($s.name)'" -ForegroundColor DarkYellow
+            Write-Host "       Upload all:  " -NoNewline -ForegroundColor Gray
             Write-Host ".\run.ps1 -uas -site '$($s.name)'" -ForegroundColor DarkYellow
             Write-Host "       Credentials: $credCount configured" -ForegroundColor Gray
 
