@@ -25,25 +25,15 @@
 
 ## Suggested Additions
 
-### 1. `PUT /deactivate`
+### ~~1. `PUT /deactivate`~~ ✅ Implemented
 
-Deactivate an installed plugin by slug.
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `slug` | string | Yes | Plugin slug to deactivate |
-
-**Rationale:** Currently QUpload can activate but not deactivate. Needed for safe remote management and pre-maintenance workflows.
+Deactivate an installed plugin by slug. Returns idempotent success if already inactive.
 
 ---
 
-### 2. `GET /plugins`
+### ~~2. `GET /plugins`~~ ✅ Implemented
 
-List all installed plugins with status.
-
-**Response:** Array of `{ slug, name, version, isActive, file }` for each installed plugin.
-
-**Rationale:** Enables remote inventory — the Go backend can verify deployment state without SSH access.
+List all installed plugins with slug, name, version, active status, and file path. Sorted alphabetically by slug.
 
 ---
 
