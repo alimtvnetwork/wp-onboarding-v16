@@ -242,6 +242,24 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* ── Version Tag ───────────────────────────────────── */
+.version-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #f0f4ff;
+    color: #4a6fa5;
+    border: 1px solid #d4e0f7;
+    letter-spacing: 0.3px;
+}
+
+.riseup-error-table .column-version {
+    text-align: center;
+}
+
 /* ── Source File ────────────────────────────────────── */
 .source-file {
     font-size: 11px;
