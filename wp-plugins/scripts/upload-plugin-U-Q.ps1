@@ -410,6 +410,7 @@ $AppPassword = ""
 $ActivateAfterInstall = $true
 $DeleteZipAfterUpload = $false
 $PluginSlug = ""
+$ConfiguredOutputZipPath = ""
 
 $useZipOnlyQuickPath = $ZipOnly -and $PluginPath -ne "" -and $JsonConfig -eq "" -and $SiteUrl -eq "" -and $User -eq "" -and $Password -eq ""
 
@@ -425,6 +426,7 @@ if ($JsonConfig -ne "") {
         if ($null -ne $config.activateAfterInstall) { $ActivateAfterInstall = $config.activateAfterInstall }
         if ($null -ne $config.deleteZipAfterUpload) { $DeleteZipAfterUpload = $config.deleteZipAfterUpload }
         if ($config.pluginSlug) { $PluginSlug = $config.pluginSlug }
+        if ($config.outputZipPath) { $ConfiguredOutputZipPath = $config.outputZipPath }
     } catch {
         Write-Host "Error: Invalid JSON config: $_" -ForegroundColor Red
         exit 1
@@ -478,6 +480,7 @@ else {
     if ($null -ne $config.activateAfterInstall) { $ActivateAfterInstall = $config.activateAfterInstall }
     if ($null -ne $config.deleteZipAfterUpload) { $DeleteZipAfterUpload = $config.deleteZipAfterUpload }
     if ($config.pluginSlug) { $PluginSlug = $config.pluginSlug }
+    if ($config.outputZipPath) { $ConfiguredOutputZipPath = $config.outputZipPath }
 }
 
 # =============================================================================
@@ -570,15 +573,29 @@ if (-not $isEnumLintSuccess) {
 
 Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
 
-try {
-    $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
-    $OutputZipPath = $zipResult.Path
+$hasPrebuiltZip = -not [string]::IsNullOrWhiteSpace($ConfiguredOutputZipPath)
+
+if ($hasPrebuiltZip) {
+    if (-not (Test-Path $ConfiguredOutputZipPath)) {
+        Write-Host "Error: Prebuilt ZIP not found at: $ConfiguredOutputZipPath" -ForegroundColor Red
+        exit 1
+    }
+
+    $OutputZipPath = $ConfiguredOutputZipPath
     $zipSize = (Get-Item $OutputZipPath).Length
     $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
-    Write-Status "      ZIP created: $($zipResult.FileName) ($zipSizeMB MB)" -Color Green
-} catch {
-    Write-Host "Error creating ZIP: $_" -ForegroundColor Red
-    exit 1
+    Write-Status "      ZIP reused: $OutputZipPath ($zipSizeMB MB)" -Color Green
+} else {
+    try {
+        $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
+        $OutputZipPath = $zipResult.Path
+        $zipSize = (Get-Item $OutputZipPath).Length
+        $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
+        Write-Status "      ZIP created: $($zipResult.FileName) ($zipSizeMB MB)" -Color Green
+    } catch {
+        Write-Host "Error creating ZIP: $_" -ForegroundColor Red
+        exit 1
+    }
 }
 
 # =============================================================================
