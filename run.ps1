@@ -363,6 +363,7 @@ if ($za) { Invoke-ZipAllMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogs) { Invoke-ClearLogsMode }
+if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }
 if ($upload -and $qupload) { Invoke-UploadComboMode }
 if ($upload) { Invoke-UploadMode }
