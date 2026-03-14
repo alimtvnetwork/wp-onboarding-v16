@@ -52,7 +52,7 @@ $errorFileSize = file_exists($errorFile) ? size_format(filesize($errorFile)) : '
                     <td><code><?php echo esc_html(get_bloginfo('version')); ?></code></td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e('Server Time (UTC)', $pluginSlug); ?></th>
+                    <th scope="row"><?php esc_html_e('Server Time', $pluginSlug); ?> (<?php echo esc_html(DateHelper::getTimezoneLabel()); ?>)</th>
                     <td><code><?php echo esc_html(DateHelper::nowLogDisplay()); ?></code></td>
                 </tr>
                 <tr>
