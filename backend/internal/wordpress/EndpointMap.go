@@ -46,6 +46,11 @@ const (
 	EPErrorLogs     WPEndpointName = "ErrorLogs"
 	EPErrorSessions WPEndpointName = "ErrorSessions"
 
+	// Remote log management endpoints
+	EPLogsStatus  WPEndpointName = "LogsStatus"
+	EPLogsClear   WPEndpointName = "LogsClear"
+	EPLogsConfirm WPEndpointName = "LogsConfirm"
+
 	// Snapshot endpoints
 	EPSnapshotList           WPEndpointName = "SnapshotList"
 	EPSnapshotSchedule       WPEndpointName = "SnapshotSchedule"
@@ -119,6 +124,11 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPErrorLogs:     {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/error-logs"},
 	EPErrorSessions: {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/error-sessions"},
 
+	// Remote log management
+	EPLogsStatus:  {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs"},
+	EPLogsClear:   {Method: httpmethod.Delete, Pattern: "/api/v1/sites/{id}/remote-logs/clear"},
+	EPLogsConfirm: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/confirm"},
+
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/snapshots"},
 	EPSnapshotSchedule:       {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/snapshots"},
@@ -179,6 +189,11 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	// Error log operations
 	EPErrorLogs:     {Method: httpmethod.Get, Endpoint: ep.ErrorLogs},
 	EPErrorSessions: {Method: httpmethod.Get, Endpoint: ep.ErrorSessions},
+
+	// Remote log management
+	EPLogsStatus:  {Method: httpmethod.Get, Endpoint: ep.LogsStatus},
+	EPLogsClear:   {Method: httpmethod.Delete, Endpoint: ep.LogsClear},
+	EPLogsConfirm: {Method: httpmethod.Post, Endpoint: ep.LogsConfirm},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Endpoint: ep.SnapshotsList},

@@ -60,6 +60,11 @@ type SiteServiceInterface interface {
 	ImportRemoteSnapshot(ctx context.Context, siteId int64, zipPath string) (*wordpress.SnapshotImportResult, *apperror.AppError)
 	CleanupRemoteSnapshots(ctx context.Context, siteId int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, *apperror.AppError)
 	ClearErrorLogHashes() int
+
+	// Remote log management
+	GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
@@ -264,4 +269,16 @@ func (a *SiteServiceAdapter) DeleteCredential(_ context.Context, credId int64) *
 
 func (a *SiteServiceAdapter) SetDefaultCredential(_ context.Context, siteId, credId int64) *apperror.AppError {
 	return a.Service.DB().SetDefaultCredential(siteId, credId)
+}
+
+func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteLogsStatus(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.RequestRemoteLogsClear(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError) {
+	return a.Service.ConfirmRemoteLogsClear(ctx, siteId, token)
 }

@@ -38,6 +38,9 @@ const (
 	SyncManifest
 	ErrorLogs
 	ErrorSessions
+	LogsStatus
+	LogsClear
+	LogsConfirm
 	Openapi
 	OpcacheReset
 	SnapshotsList
@@ -97,6 +100,9 @@ var variantLabels = [...]string{
 	SyncManifest:            "SyncManifest",
 	ErrorLogs:               "ErrorLogs",
 	ErrorSessions:           "ErrorSessions",
+	LogsStatus:              "LogsStatus",
+	LogsClear:               "LogsClear",
+	LogsConfirm:             "LogsConfirm",
 	Openapi:                 "Openapi",
 	OpcacheReset:            "OpcacheReset",
 	SnapshotsList:           "SnapshotsList",
@@ -156,6 +162,9 @@ var variantValues = [...]string{
 	SyncManifest:            "/plugins/sync-manifest",
 	ErrorLogs:               "/error-logs",
 	ErrorSessions:           "/error-sessions",
+	LogsStatus:              "/logs/status",
+	LogsClear:               "/logs/clear",
+	LogsConfirm:             "/logs/clear/confirm",
 	Openapi:                 "/openapi",
 	OpcacheReset:            "/opcache-reset",
 	SnapshotsList:           "/snapshots/list",

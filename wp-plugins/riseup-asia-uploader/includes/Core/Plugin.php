@@ -50,6 +50,8 @@ use RiseupAsia\Traits\Snapshot\SnapshotCrudTrait;
 use RiseupAsia\Traits\Snapshot\SnapshotExportTrait;
 use RiseupAsia\Traits\Snapshot\SnapshotBackupTrait;
 use RiseupAsia\Traits\FileSystem\FileSystemTrait;
+use RiseupAsia\Traits\Log\LogStatusTrait;
+use RiseupAsia\Traits\Log\LogClearingTrait;
 
 class Plugin {
     // Wave 1 traits
@@ -78,6 +80,8 @@ class Plugin {
     use SnapshotExportTrait;
     use SnapshotBackupTrait;
     use FileSystemTrait;
+    use LogStatusTrait;
+    use LogClearingTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;

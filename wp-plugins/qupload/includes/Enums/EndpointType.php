@@ -14,9 +14,12 @@ if (!defined('ABSPATH')) {
 
 enum EndpointType: string
 {
-    case Status   = 'status';
-    case Upload   = 'upload';
-    case Activate = 'activate';
+    case Status       = 'status';
+    case Upload       = 'upload';
+    case Activate     = 'activate';
+    case LogsStatus   = 'logs/status';
+    case LogsClear    = 'logs/clear';
+    case LogsConfirm  = 'logs/clear/confirm';
 
     /** Prefixes value with '/' for register_rest_route(). */
     public function route(): string
