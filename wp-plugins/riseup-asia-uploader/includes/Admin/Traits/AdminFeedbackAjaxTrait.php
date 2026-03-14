@@ -225,6 +225,52 @@ trait AdminFeedbackAjaxTrait {
     }
 
     /**
+     * Build a ZIP archive containing current log files for attachment.
+     *
+     * @return string|null Path to the ZIP file, or null if no logs or ZIP failed.
+     */
+    private function buildLogZipAttachment(FileLogger $logger): ?string {
+        $logFile        = $logger->getLogFile();
+        $errorFile      = $logger->getErrorFile();
+        $stacktraceFile = $logger->getStacktraceFile();
+
+        $logFiles = array();
+        if (is_file($logFile))        { $logFiles['log.txt']        = $logFile; }
+        if (is_file($errorFile))      { $logFiles['error.txt']      = $errorFile; }
+        if (is_file($stacktraceFile)) { $logFiles['stacktrace.txt'] = $stacktraceFile; }
+
+        if (count($logFiles) === 0) {
+            $logger->info('No log files found to attach to feedback');
+            return null;
+        }
+
+        $tmpDir  = get_temp_dir();
+        $zipPath = $tmpDir . 'riseup_feedback_logs_' . wp_generate_uuid4() . '.zip';
+
+        $zip = new \ZipArchive();
+        $opened = $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+        if ($opened !== true) {
+            $logger->error('Failed to create log ZIP archive', array('path' => $zipPath));
+            return null;
+        }
+
+        foreach ($logFiles as $entryName => $filePath) {
+            $zip->addFile($filePath, $entryName);
+        }
+
+        $zip->close();
+
+        $logger->info('Log ZIP archive created for feedback', array(
+            'path'  => $zipPath,
+            'files' => array_keys($logFiles),
+            'size'  => filesize($zipPath),
+        ));
+
+        return $zipPath;
+    }
+
+    /**
      * Get support settings from the database.
      *
      * @return array{support_email: string, fallback_url: string}
