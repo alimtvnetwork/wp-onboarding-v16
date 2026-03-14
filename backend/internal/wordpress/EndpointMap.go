@@ -46,6 +46,11 @@ const (
 	EPErrorLogs     WPEndpointName = "ErrorLogs"
 	EPErrorSessions WPEndpointName = "ErrorSessions"
 
+	// Remote log management endpoints
+	EPLogsStatus  WPEndpointName = "LogsStatus"
+	EPLogsClear   WPEndpointName = "LogsClear"
+	EPLogsConfirm WPEndpointName = "LogsConfirm"
+
 	// Snapshot endpoints
 	EPSnapshotList           WPEndpointName = "SnapshotList"
 	EPSnapshotSchedule       WPEndpointName = "SnapshotSchedule"
