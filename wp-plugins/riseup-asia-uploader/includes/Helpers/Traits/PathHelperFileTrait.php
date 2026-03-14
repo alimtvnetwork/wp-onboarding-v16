@@ -152,4 +152,9 @@ trait PathHelperFileTrait {
             $units[$factor],
         );
     }
+
+    /** Alias for deleteDir — removes a directory and all its contents recursively. */
+    public static function deleteDirectory(string $path): bool {
+        return self::deleteDir($path);
+    }
 }
