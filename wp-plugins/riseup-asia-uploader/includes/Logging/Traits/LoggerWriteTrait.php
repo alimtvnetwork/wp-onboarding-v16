@@ -92,6 +92,12 @@ trait LoggerWriteTrait {
             return;
         }
 
+        $isRotationDisabled = ($this->archiveEnabled === false);
+
+        if ($isRotationDisabled) {
+            return;
+        }
+
         $isFileExists = file_exists($filePath);
 
         if ($isFileExists === false) {
@@ -106,6 +112,8 @@ trait LoggerWriteTrait {
         }
 
         $archiveDir = $this->logsDir . '/archive';
+        $this->pruneOldArchives($archiveDir);
+
         $nextIndex = $this->getNextArchiveIndex($archiveDir);
         $targetDir = $archiveDir . '/' . str_pad((string) $nextIndex, 3, '0', STR_PAD_LEFT);
 
@@ -145,6 +153,104 @@ trait LoggerWriteTrait {
         }
 
         return $maxIndex + 1;
+    }
+
+    /**
+     * Prune oldest archive folders when count reaches maxRotations.
+     * Deletes oldest folders until count is maxRotations - 1 (to make room for the new one).
+     */
+    private function pruneOldArchives(string $archiveDir): void {
+        $isArchiveMissing = !is_dir($archiveDir);
+
+        if ($isArchiveMissing) {
+            return;
+        }
+
+        $folders = $this->getSortedArchiveFolders($archiveDir);
+        $folderCount = count($folders);
+        $needsPruning = ($folderCount >= $this->maxRotations);
+
+        if ($needsPruning === false) {
+            return;
+        }
+
+        $pruneThreshold = $this->maxRotations - 1;
+        $foldersToRemove = $folderCount - $pruneThreshold;
+
+        for ($i = 0; $i < $foldersToRemove; $i++) {
+            $folderPath = $archiveDir . '/' . $folders[$i];
+            $this->deleteDirectoryRecursive($folderPath);
+        }
+    }
+
+    /**
+     * Get archive folder names sorted numerically (ascending = oldest first).
+     *
+     * @return array<int, string>
+     */
+    private function getSortedArchiveFolders(string $archiveDir): array {
+        $entries = @scandir($archiveDir);
+        $isReadFailed = ($entries === false);
+
+        if ($isReadFailed) {
+            return array();
+        }
+
+        $folders = array();
+
+        foreach ($entries as $entry) {
+            $isDotEntry = ($entry === '.' || $entry === '..');
+
+            if ($isDotEntry) {
+                continue;
+            }
+
+            $fullPath = $archiveDir . '/' . $entry;
+            $isDirectory = is_dir($fullPath);
+
+            if ($isDirectory) {
+                $folders[] = $entry;
+            }
+        }
+
+        sort($folders, SORT_NATURAL);
+
+        return $folders;
+    }
+
+    /** Recursively delete a directory and its contents. */
+    private function deleteDirectoryRecursive(string $dir): void {
+        $isNotDirectory = !is_dir($dir);
+
+        if ($isNotDirectory) {
+            return;
+        }
+
+        $entries = @scandir($dir);
+        $isReadFailed = ($entries === false);
+
+        if ($isReadFailed) {
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            $isDotEntry = ($entry === '.' || $entry === '..');
+
+            if ($isDotEntry) {
+                continue;
+            }
+
+            $fullPath = $dir . '/' . $entry;
+            $isSubDirectory = is_dir($fullPath);
+
+            if ($isSubDirectory) {
+                $this->deleteDirectoryRecursive($fullPath);
+            } else {
+                @unlink($fullPath);
+            }
+        }
+
+        @rmdir($dir);
     }
 
     /** Persist an error/warn entry to the error_sessions SQLite table. */

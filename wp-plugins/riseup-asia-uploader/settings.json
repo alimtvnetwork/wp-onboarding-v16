@@ -1,0 +1,7 @@
+{
+  "logging": {
+    "maxLogSizeBytes": 524288,
+    "maxRotations": 10,
+    "archiveEnabled": true
+  }
+}

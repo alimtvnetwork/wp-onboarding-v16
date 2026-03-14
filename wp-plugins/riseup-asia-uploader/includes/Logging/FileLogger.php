@@ -43,6 +43,11 @@ class FileLogger {
     private const KEY_HAS_UNSEEN_ERRORS = 'has_unseen_errors';
     private const USER_AGENT_MAX_LENGTH = 200;
     private const DEFAULT_MAX_LOG_SIZE_BYTES = 524288; // 512 KB
+    private const DEFAULT_MAX_ROTATIONS = 10;
+    private const MIN_MAX_LOG_SIZE_BYTES = 65536;      // 64 KB
+    private const MAX_MAX_LOG_SIZE_BYTES = 10485760;    // 10 MB
+    private const MIN_MAX_ROTATIONS = 1;
+    private const MAX_MAX_ROTATIONS = 100;
 
     private static ?self $instance = null;
     private ?string $baseDir = null;
@@ -52,6 +57,8 @@ class FileLogger {
     private ?string $stacktraceFile = null;
     private bool $isInitialized = false;
     private int $maxLogSizeBytes = self::DEFAULT_MAX_LOG_SIZE_BYTES;
+    private int $maxRotations = self::DEFAULT_MAX_ROTATIONS;
+    private bool $archiveEnabled = true;
 
     /**
      * Maximum stack frames to capture in debug_backtrace().
@@ -72,6 +79,7 @@ class FileLogger {
     }
 
     private function __construct() {
+        $this->loadLoggingSettings();
     }
 
     /** Set the maximum stack trace depth for debug_backtrace() calls. */
@@ -82,5 +90,62 @@ class FileLogger {
     /** Get the configured stack trace depth (0 = unlimited). */
     public function getStackTraceDepth(): int {
         return $this->stackTraceDepth;
+    }
+
+    // ── Settings Loading ──────────────────────────────────────────────
+
+    /** Load logging settings from the plugin settings.json file. */
+    private function loadLoggingSettings(): void {
+        $pluginDir = dirname(__DIR__, 2);
+        $settingsPath = $pluginDir . '/settings.json';
+        $isSettingsExists = file_exists($settingsPath);
+
+        if ($isSettingsExists === false) {
+            return;
+        }
+
+        $contents = @file_get_contents($settingsPath);
+        $isReadFailed = ($contents === false);
+
+        if ($isReadFailed) {
+            return;
+        }
+
+        $settings = json_decode($contents, true);
+        $isDecodeFailed = !is_array($settings);
+
+        if ($isDecodeFailed) {
+            return;
+        }
+
+        $hasLogging = isset($settings['logging']) && is_array($settings['logging']);
+
+        if ($hasLogging === false) {
+            return;
+        }
+
+        $logging = $settings['logging'];
+
+        $hasMaxSize = isset($logging['maxLogSizeBytes']);
+
+        if ($hasMaxSize) {
+            $rawSize = (int) $logging['maxLogSizeBytes'];
+            $isWithinRange = ($rawSize >= self::MIN_MAX_LOG_SIZE_BYTES && $rawSize <= self::MAX_MAX_LOG_SIZE_BYTES);
+            $this->maxLogSizeBytes = $isWithinRange ? $rawSize : self::DEFAULT_MAX_LOG_SIZE_BYTES;
+        }
+
+        $hasMaxRotations = isset($logging['maxRotations']);
+
+        if ($hasMaxRotations) {
+            $rawRotations = (int) $logging['maxRotations'];
+            $isWithinRange = ($rawRotations >= self::MIN_MAX_ROTATIONS && $rawRotations <= self::MAX_MAX_ROTATIONS);
+            $this->maxRotations = $isWithinRange ? $rawRotations : self::DEFAULT_MAX_ROTATIONS;
+        }
+
+        $hasArchiveEnabled = isset($logging['archiveEnabled']);
+
+        if ($hasArchiveEnabled) {
+            $this->archiveEnabled = (bool) $logging['archiveEnabled'];
+        }
     }
 }
