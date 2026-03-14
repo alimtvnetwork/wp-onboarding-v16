@@ -1,7 +1,7 @@
 # 26 — Parallel PowerShell Scripts: Overview
 
 > **Created:** 2026-03-14  
-> **Status:** Spec (pre-implementation)  
+> **Status:** Implemented  
 > **Relates to:** [spec/12-powershell-integration](../12-powershell-integration/), [parallel-work-sync-output](../12-powershell-integration/parallel-work-sync-output.md)
 
 ---
