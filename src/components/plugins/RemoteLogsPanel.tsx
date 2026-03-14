@@ -96,11 +96,11 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
     setIsClearing(true);
 
     try {
-      const response: RemoteLogsClearResponse = await api.clearRemoteLogs(siteId);
-      const data = (response as any).Data ?? response;
-      setClearToken(data.Token);
-      setClearExpiry(data.ExpiresIn ?? 60);
-      toast.info("Clear token issued — confirm within " + (data.ExpiresIn ?? 60) + "s");
+      const response = await api.clearRemoteLogs(siteId);
+      const data = response.data ?? response as any;
+      setClearToken(data.Token ?? data.token);
+      setClearExpiry(data.ExpiresIn ?? data.expiresIn ?? 60);
+      toast.info("Clear token issued — confirm within " + (data.ExpiresIn ?? data.expiresIn ?? 60) + "s");
     } catch {
       toast.error("Failed to initiate log clearing");
     } finally {
