@@ -104,6 +104,7 @@ var variantLabels = [...]string{
 	LogsStatus:              "LogsStatus",
 	LogsClear:               "LogsClear",
 	LogsConfirm:             "LogsConfirm",
+	LogsEmail:               "LogsEmail",
 	Openapi:                 "Openapi",
 	OpcacheReset:            "OpcacheReset",
 	SnapshotsList:           "SnapshotsList",
