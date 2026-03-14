@@ -79,6 +79,7 @@ class FileLogger {
     }
 
     private function __construct() {
+        $this->loadLoggingSettings();
     }
 
     /** Set the maximum stack trace depth for debug_backtrace() calls. */
