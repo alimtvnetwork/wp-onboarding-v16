@@ -289,7 +289,8 @@ function Invoke-UasSyncUpload {
                 Write-Host "    Log: $failureLogPath" -ForegroundColor Yellow
             }
 
-            $results += @{ Site = $siteName; Plugin = $pluginName; Status = $status; ExitCode = $uploadExitCode }
+            $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
+            $results += @{ Site = $siteName; Plugin = $pluginName; Version = $pluginVersion; Status = $status; ExitCode = $uploadExitCode }
         }
     }
 
