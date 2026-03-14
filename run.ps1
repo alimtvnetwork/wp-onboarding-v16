@@ -1503,22 +1503,69 @@ if ($upload) {
         exit 1
     }
 
-    # Build config JSON from wp-plugin-config.json if it exists
-    $wpConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/wp-plugin-config.json"
-    if (Test-Path $wpConfigPath) {
-        $wpConfig = Get-Content $wpConfigPath -Raw | ConvertFrom-Json
-        $wpConfig.pluginFolderPath = $pluginPath
-        $jsonConfigStr = ($wpConfig | ConvertTo-Json -Compress)
-        Write-Host "  Path:   $pluginPath" -ForegroundColor Gray
-        Write-Host "  Site:   $($wpConfig.wordPressSiteURL)" -ForegroundColor Gray
+    # Determine target site: use -site flag for powershell.json site, or fall back to wp-plugin-config.json
+    if ($site -ne "") {
+        # Upload to a specific site from powershell.json
+        if (-not $Config.wpPlugins -or -not $Config.wpPlugins.sites) {
+            Write-Host "ERROR: No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Red
+            exit 1
+        }
+
+        $matchedSite = $Config.wpPlugins.sites | Where-Object { $_.name -eq $site }
+        if (-not $matchedSite) {
+            Write-Host "ERROR: Site '$site' not found in configuration." -ForegroundColor Red
+            Write-Host "Available sites:" -ForegroundColor Yellow
+            foreach ($s in $Config.wpPlugins.sites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
+            exit 1
+        }
+
+        $cred = Get-DefaultSiteCredential $matchedSite
+        if (-not $cred) {
+            Write-Host "ERROR: No valid credentials for site '$site'" -ForegroundColor Red
+            exit 1
+        }
+
+        $quploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
+        if (-not (Test-Path $quploadScript)) {
+            Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
+            exit 1
+        }
+
+        Write-Host "  Site:   $($matchedSite.name)" -ForegroundColor Yellow
+        Write-Host "  URL:    $($matchedSite.url)" -ForegroundColor Gray
+        Write-Host "  User:   $($cred.Username)" -ForegroundColor Gray
         Write-Host ""
+
+        $uploadConfig = @{
+            pluginFolderPath     = $pluginPath
+            wordPressSiteURL     = $matchedSite.url.TrimEnd("/")
+            username             = $cred.Username
+            appPassword          = $cred.Password
+            activateAfterInstall = $true
+            deleteZipAfterUpload = $false
+        }
+        $jsonConfigStr = ($uploadConfig | ConvertTo-Json -Compress)
         $debugArgs = @()
         if ($debug) { $debugArgs += "-DebugMode" }
-        & $uploadScript -JsonConfig $jsonConfigStr -Activate @debugArgs
+        & $quploadScript -jc $jsonConfigStr -a @debugArgs
     } else {
-        Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red
-        Write-Host "Create it with site URL, username, and app password." -ForegroundColor Yellow
-        exit 1
+        # Fall back to wp-plugin-config.json (legacy single-site mode)
+        $wpConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/wp-plugin-config.json"
+        if (Test-Path $wpConfigPath) {
+            $wpConfig = Get-Content $wpConfigPath -Raw | ConvertFrom-Json
+            $wpConfig.pluginFolderPath = $pluginPath
+            $jsonConfigStr = ($wpConfig | ConvertTo-Json -Compress)
+            Write-Host "  Path:   $pluginPath" -ForegroundColor Gray
+            Write-Host "  Site:   $($wpConfig.wordPressSiteURL)" -ForegroundColor Gray
+            Write-Host ""
+            $debugArgs = @()
+            if ($debug) { $debugArgs += "-DebugMode" }
+            & $uploadScript -JsonConfig $jsonConfigStr -Activate @debugArgs
+        } else {
+            Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red
+            Write-Host "Create it with site URL, username, and app password." -ForegroundColor Yellow
+            exit 1
+        }
     }
 
     exit 0
