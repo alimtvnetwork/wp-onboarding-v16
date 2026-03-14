@@ -270,3 +270,15 @@ func (a *SiteServiceAdapter) DeleteCredential(_ context.Context, credId int64) *
 func (a *SiteServiceAdapter) SetDefaultCredential(_ context.Context, siteId, credId int64) *apperror.AppError {
 	return a.Service.DB().SetDefaultCredential(siteId, credId)
 }
+
+func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteLogsStatus(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.RequestRemoteLogsClear(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError) {
+	return a.Service.ConfirmRemoteLogsClear(ctx, siteId, token)
+}
