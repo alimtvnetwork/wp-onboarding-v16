@@ -15,6 +15,7 @@ param(
     [Alias('q')][switch]$qupload,
     [Alias('ua')][switch]$uploadall,
     [switch]$uas,
+    [Alias('as')][switch]$allsites,
     [switch]$za,
     [Alias('zq')][switch]$zipqupload,
     [Alias('z')][switch]$zip,
