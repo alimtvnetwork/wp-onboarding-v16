@@ -26,6 +26,7 @@ use QUpload\Traits\Activate\ActivateHandlerTrait;
 use QUpload\Traits\Deactivate\DeactivateHandlerTrait;
 use QUpload\Traits\Log\LogStatusTrait;
 use QUpload\Traits\Log\LogClearingTrait;
+use QUpload\Traits\Log\LogEmailTrait;
 
 class Plugin {
     use AuthTrait;
@@ -37,6 +38,7 @@ class Plugin {
     use DeactivateHandlerTrait;
     use LogStatusTrait;
     use LogClearingTrait;
+    use LogEmailTrait;
 
     private FileLogger $fileLogger;
     private static ?self $instance = null;

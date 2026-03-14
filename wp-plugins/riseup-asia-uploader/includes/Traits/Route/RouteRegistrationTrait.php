@@ -169,6 +169,12 @@ trait RouteRegistrationTrait
             'callback'            => array($this, 'handleLogsClearConfirm'),
             'permission_callback' => $this->buildPermissionCallback('logs_confirm', array($this, 'checkPluginPermission')),
         ));
+
+        $safeRegister(EndpointType::LogsEmail->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleLogsEmail'),
+            'permission_callback' => $this->buildPermissionCallback('logs_email', array($this, 'checkPluginPermission')),
+        ));
     }
 
     /**
