@@ -1287,15 +1287,41 @@ if ($uas) {
                 }
                 $jsonConfigStr = ($uploadConfig | ConvertTo-Json -Compress)
 
-                $output = & $QUploadScript -jc $jsonConfigStr -a 2>&1 | Out-String
-                $exitCode = $LASTEXITCODE
+                $output = ""
+                $invokeSucceeded = $false
+                $resolvedExitCode = 1
+                $nativeExitCode = $null
+
+                try {
+                    $ErrorActionPreference = "Stop"
+                    $global:LASTEXITCODE = $null
+                    $output = (& $QUploadScript -jc $jsonConfigStr -a 2>&1 | Out-String)
+                    $invokeSucceeded = $true
+                } catch {
+                    $output = ($_ | Out-String).Trim()
+                    if ([string]::IsNullOrWhiteSpace($output)) {
+                        $output = $_.Exception.Message
+                    }
+                }
+
+                $nativeExitCode = $LASTEXITCODE
+                $hasNativeExitCode = ($null -ne $nativeExitCode -and "$nativeExitCode" -match '^-?\d+$')
+
+                if ($hasNativeExitCode) {
+                    $resolvedExitCode = [int]$nativeExitCode
+                } elseif ($invokeSucceeded) {
+                    $resolvedExitCode = 0
+                }
 
                 return @{
-                    Site       = $SiteName
-                    Plugin     = $PluginName
-                    ExitCode   = $exitCode
-                    Output     = $output
-                    Status     = if ($exitCode -eq 0) { "OK" } else { "FAILED (exit $exitCode)" }
+                    Site               = $SiteName
+                    Plugin             = $PluginName
+                    ZipPath            = $PrebuiltZipPath
+                    ExitCode           = $resolvedExitCode
+                    NativeExitCode     = $nativeExitCode
+                    InvocationSucceeded = $invokeSucceeded
+                    Output             = $output
+                    Status             = if ($resolvedExitCode -eq 0) { "OK" } else { "FAILED (exit $resolvedExitCode)" }
                 }
             } -ArgumentList $quploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName
         }
