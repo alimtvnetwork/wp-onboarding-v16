@@ -285,9 +285,11 @@ if ($help) {
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
     Write-Host "    .\run.ps1 -za          # ZIP all plugins in wp-plugins/"
     Write-Host "    .\run.ps1 -zq          # ZIP QUpload plugin"
-    Write-Host "    .\run.ps1 -za          # ZIP all plugins (auto-cleans old ZIPs)"
     Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
-    Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
+    Write-Host ""
+    Write-Host "  Info:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -ls          # List all sites (deploy + backend)"
+    Write-Host "    .\run.ps1 -lr          # Same as -ls"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
