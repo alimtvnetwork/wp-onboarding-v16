@@ -1329,9 +1329,28 @@ if ($uas) {
 
     # Collect results as they complete
     $globalResults = @()
+    $uploadLogsDir = Join-Path $ScriptDir "logs\uas-upload"
+    if (-not (Test-Path $uploadLogsDir)) {
+        New-Item -ItemType Directory -Path $uploadLogsDir -Force | Out-Null
+    }
+    $logStamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
     foreach ($job in $uploadJobs) {
-        $result = Receive-Job -Job $job -Wait
+        $result = Receive-Job -Job $job -Wait | Select-Object -First 1
+
+        if ($null -eq $result) {
+            $result = @{
+                Site                = "Unknown"
+                Plugin              = $job.Name
+                ZipPath             = ""
+                ExitCode            = 1
+                NativeExitCode      = $null
+                InvocationSucceeded = $false
+                Output              = "No result object returned by upload job."
+                Status              = "FAILED (exit 1)"
+            }
+        }
+
         $globalResults += $result
         $isSuccess = ($result.ExitCode -eq 0)
         $icon = if ($isSuccess) { "OK" } else { "FAILED" }
@@ -1341,6 +1360,28 @@ if ($uas) {
 
         $isFailure = ($isSuccess -eq $false)
         if ($isFailure) {
+            $safeSite = ($result.Site -replace '[^A-Za-z0-9_.-]', '_')
+            $safePlugin = ($result.Plugin -replace '[^A-Za-z0-9_.-]', '_')
+            $failureLogPath = Join-Path $uploadLogsDir "$logStamp-$safePlugin-$safeSite.log"
+
+            $failureLog = @(
+                "Timestamp: $(Get-Date -Format \"yyyy-MM-dd HH:mm:ss\")"
+                "Job: $($job.Name)"
+                "Site: $($result.Site)"
+                "Plugin: $($result.Plugin)"
+                "ZIP: $($result.ZipPath)"
+                "ExitCode: $($result.ExitCode)"
+                "NativeExitCode: $($result.NativeExitCode)"
+                "InvocationSucceeded: $($result.InvocationSucceeded)"
+                "PowerShellJobState: $($job.State)"
+                ""
+                "Output:"
+                $result.Output
+            ) -join "`r`n"
+
+            $failureLog | Out-File -FilePath $failureLogPath -Encoding UTF8
+            Write-Host "    Log file: $failureLogPath" -ForegroundColor Yellow
+
             $outputLines = $result.Output -split "`n" | Where-Object { $_ -match '(failed|error|FAILED|Error|REST message|Root cause|Status:)' }
             foreach ($line in $outputLines) {
                 $trimmed = $line.Trim()
@@ -1348,6 +1389,10 @@ if ($uas) {
                 if ($isLineNotEmpty) {
                     Write-Host "    $trimmed" -ForegroundColor Yellow
                 }
+            }
+
+            if ($outputLines.Count -eq 0) {
+                Write-Host "    No failure keyword matches found; check log file for full output." -ForegroundColor DarkYellow
             }
         }
 
