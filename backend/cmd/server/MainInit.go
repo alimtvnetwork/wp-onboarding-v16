@@ -142,10 +142,11 @@ func launchServer(server *api.Server, cfg *config.Config, log *logger.Logger, vi
 
 	go func() {
 		startErr := server.Start()
-		isRealError := startErr != nil && startErr.Error() != "http: Server closed"
+		isServerClosed := startErr != nil && startErr.Cause != nil && startErr.Cause.Error() == "http: Server closed"
+		isRealError := startErr != nil && !isServerClosed
 
 		if isRealError {
-			log.Fatal("Server failed", "error", startErr)
+			log.Fatal("Server failed", "error", startErr.Error())
 		}
 	}()
 	log.Info("Server started", "port", cfg.Server.Port)
