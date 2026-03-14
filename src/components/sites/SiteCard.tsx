@@ -395,6 +395,16 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "View remote logs"}
+          >
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Logs</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
             title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
