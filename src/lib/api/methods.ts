@@ -52,6 +52,11 @@ import type {
   E2ERun,
   E2ERunSummary,
   SiteCredentialResponse,
+  RemoteLogsStatusResponse,
+  RemoteLogsClearResponse,
+  RemoteLogsClearConfirmResponse,
+  RemoteLogsEmailResponse,
+  RemoteLogsEmailOptions,
 } from './types';
 
 // ---------------------------------------------------------------------------
