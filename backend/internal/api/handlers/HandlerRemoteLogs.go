@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -39,9 +40,7 @@ func ConfirmClearRemoteLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body struct {
-		Token string `json:"token"`
-	}
+	var body wordpress.ClearTokenRequest
 
 	decodeErr := json.NewDecoder(r.Body).Decode(&body)
 	if decodeErr != nil {
@@ -78,11 +77,7 @@ func EmailRemoteLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body struct {
-		Recipient       string   `json:"recipient"`
-		IncludeArchives bool     `json:"include_archives"`
-		LogTypes        []string `json:"log_types"`
-	}
+	var body wordpress.EmailLogsRequest
 
 	decodeErr := json.NewDecoder(r.Body).Decode(&body)
 	if decodeErr != nil {
@@ -90,15 +85,7 @@ func EmailRemoteLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reqBody := map[string]any{
-		"recipient":        body.Recipient,
-		"include_archives": body.IncludeArchives,
-	}
-	if len(body.LogTypes) > 0 {
-		reqBody["log_types"] = body.LogTypes
-	}
-
-	result, appErr := Services.SiteService.EmailRemoteLogs(r.Context(), siteId, reqBody)
+	result, appErr := Services.SiteService.EmailRemoteLogs(r.Context(), siteId, body)
 	if appErr != nil {
 		respondError(w, appErr.HttpStatus(), apperror.ErrWPConnection, appErr.Error())
 		return

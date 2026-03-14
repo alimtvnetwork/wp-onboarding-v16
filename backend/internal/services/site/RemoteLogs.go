@@ -7,6 +7,7 @@ import (
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/enums/operationtype"
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -55,7 +56,9 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 		return nil, appErr
 	}
 
-	body := map[string]string{"token": token}
+	body := wordpress.ClearTokenRequest{
+		Token: token,
+	}
 
 	result := doApiCall[map[string]any](client, apiCallInput{
 		Method:    httpmethod.Post,
@@ -71,7 +74,7 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 }
 
 // EmailRemoteLogs proxies the email logs request to the WordPress site.
-func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError) {
+func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr

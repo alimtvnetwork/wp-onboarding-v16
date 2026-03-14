@@ -34,3 +34,15 @@ type SyncRequestBody struct {
 	Plugin string     `json:"plugin"` // external key (Riseup Asia Uploader API)
 	Files  []SyncFile `json:"files"`  // external key
 }
+
+// ClearTokenRequest is the request body for confirming a two-step log clear.
+type ClearTokenRequest struct {
+	Token string `json:"token"`
+}
+
+// EmailLogsRequest is the request body for emailing log files as attachments.
+type EmailLogsRequest struct {
+	Recipient       string   `json:"recipient"`
+	IncludeArchives bool     `json:"include_archives"`
+	LogTypes        []string `json:"log_types,omitempty"`
+}
