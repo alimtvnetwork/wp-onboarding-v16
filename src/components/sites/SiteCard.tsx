@@ -396,6 +396,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => setShowLogs(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "View remote logs"}
           >
