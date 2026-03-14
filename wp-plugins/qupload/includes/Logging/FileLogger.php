@@ -23,6 +23,11 @@ use QUpload\Helpers\PathHelper;
 class FileLogger {
     private const SEPARATOR_WIDTH = 80;
     private const DEFAULT_MAX_LOG_SIZE_BYTES = 524288; // 512 KB
+    private const DEFAULT_MAX_ROTATIONS = 10;
+    private const MIN_MAX_LOG_SIZE_BYTES = 65536;      // 64 KB
+    private const MAX_MAX_LOG_SIZE_BYTES = 10485760;    // 10 MB
+    private const MIN_MAX_ROTATIONS = 1;
+    private const MAX_MAX_ROTATIONS = 100;
 
     private static ?self $instance = null;
     private ?string $logsDir = null;
@@ -31,6 +36,8 @@ class FileLogger {
     private ?string $stacktraceFile = null;
     private bool $isInitialized = false;
     private int $maxLogSizeBytes = self::DEFAULT_MAX_LOG_SIZE_BYTES;
+    private int $maxRotations = self::DEFAULT_MAX_ROTATIONS;
+    private bool $archiveEnabled = true;
 
     /** @var array<string, bool> */
     private array $dedupHashes = [];
