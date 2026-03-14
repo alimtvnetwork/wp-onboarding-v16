@@ -44,6 +44,7 @@ class FileLogger {
     }
 
     private function __construct() {
+        $this->loadLoggingSettings();
     }
 
     // ── Path Initialization ─────────────────────────────────────────
