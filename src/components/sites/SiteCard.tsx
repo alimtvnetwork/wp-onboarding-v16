@@ -35,6 +35,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { RemotePluginsPanel } from "./RemotePluginsPanel";
 import { RemoteSnapshotsPanel } from "./RemoteSnapshotsPanel";
 import { SiteCredentialsPanel } from "./SiteCredentialsPanel";
+import { RemoteLogsPanel } from "@/components/plugins/RemoteLogsPanel";
 import { useSettings } from "@/hooks/useSettings";
 
 interface SiteCardProps {
