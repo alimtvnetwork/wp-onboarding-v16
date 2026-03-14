@@ -15,6 +15,7 @@ param(
     [Alias('q')][switch]$qupload,
     [Alias('ua')][switch]$uploadall,
     [switch]$uas,
+    [Alias('as')][switch]$allsites,
     [switch]$za,
     [Alias('zq')][switch]$zipqupload,
     [Alias('z')][switch]$zip,
@@ -87,6 +88,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-upload.ps1")
 . (Join-Path $ModulesDir "mode-upload-all.ps1")
 . (Join-Path $ModulesDir "mode-upload-all-sites.ps1")
+. (Join-Path $ModulesDir "mode-upload-default-all-sites.ps1")
 . (Join-Path $ModulesDir "mode-list-sites.ps1")
 . (Join-Path $ModulesDir "mode-test.ps1")
 . (Join-Path $ModulesDir "mode-clear-logs.ps1")
@@ -188,6 +190,10 @@ if ($help) {
     Write-Host "  -uas -sync          Upload ALL plugins to ALL sites SEQUENTIALLY"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
     Write-Host "  -uas -xs 'name'     Upload ALL plugins to all sites EXCEPT the named one(s)"
+    Write-Host "  -u -as              Upload DEFAULT plugin only to ALL configured sites (parallel)"
+    Write-Host "  -u -as -sync        Upload DEFAULT plugin to ALL sites SEQUENTIALLY"
+    Write-Host "  -u -as -site 'name' Upload DEFAULT plugin to a specific site"
+    Write-Host "  -u -as -xs 'name'   Upload DEFAULT plugin to all sites EXCEPT the named one(s)"
     Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
@@ -236,6 +242,12 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas -site 'Test V1'     # Upload all plugins to specific site"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
+    Write-Host ""
+    Write-Host "  Upload (default plugin, multi-site):" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -u -as                   # Upload default plugin to all sites (parallel)"
+    Write-Host "    .\run.ps1 -u -as -sync             # Upload default plugin to all sites (sequential)"
+    Write-Host "    .\run.ps1 -u -as -site 'Test V1'   # Upload default plugin to specific site"
+    Write-Host "    .\run.ps1 -u -as -xs 'Test V1'     # Exclude specific site"
     Write-Host ""
     Write-Host "  Log management:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -cl                      # Clear logs on all sites (both plugins)"
@@ -362,6 +374,7 @@ if ($za) { Invoke-ZipAllMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogs) { Invoke-ClearLogsMode }
+if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }
 if ($upload -and $qupload) { Invoke-UploadComboMode }
 if ($upload) { Invoke-UploadMode }
