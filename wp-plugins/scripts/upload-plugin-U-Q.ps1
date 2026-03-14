@@ -410,6 +410,7 @@ $AppPassword = ""
 $ActivateAfterInstall = $true
 $DeleteZipAfterUpload = $false
 $PluginSlug = ""
+$ConfiguredOutputZipPath = ""
 
 $useZipOnlyQuickPath = $ZipOnly -and $PluginPath -ne "" -and $JsonConfig -eq "" -and $SiteUrl -eq "" -and $User -eq "" -and $Password -eq ""
 
