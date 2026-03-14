@@ -56,6 +56,9 @@ const (
 	GetSnapshotsFallback
 	CheckUploaderNamespace
 	RemotePluginBackup
+	GetLogsStatus
+	RequestLogsClear
+	ConfirmLogsClear
 )
 
 var variantLabels = [...]string{
