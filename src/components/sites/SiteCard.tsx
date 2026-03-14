@@ -54,6 +54,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [showRemotePlugins, setShowRemotePlugins] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
   const { data: settings } = useSettings();
   const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
