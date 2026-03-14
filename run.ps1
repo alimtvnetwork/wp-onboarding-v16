@@ -1233,6 +1233,23 @@ if ($uas) {
     Write-Host "  Uploading to $($targetSites.Count) site(s) in parallel..." -ForegroundColor Yellow
     Write-Host ""
 
+    $zipByPlugin = @{}
+    foreach ($zipInfo in $zipResults) {
+        $zipByPlugin[$zipInfo.Slug] = $zipInfo.Path
+    }
+
+    $missingZipPlugins = @()
+    foreach ($folder in $pluginFolders) {
+        if (-not $zipByPlugin.ContainsKey($folder.Name)) {
+            $missingZipPlugins += $folder.Name
+        }
+    }
+
+    if ($missingZipPlugins.Count -gt 0) {
+        Write-Host "ERROR: Missing ZIP for plugin(s): $($missingZipPlugins -join ', ')" -ForegroundColor Red
+        exit 1
+    }
+
     $uploadJobs = @()
 
     foreach ($targetSite in $targetSites) {
@@ -1251,13 +1268,15 @@ if ($uas) {
         foreach ($folder in $pluginFolders) {
             $pluginName = $folder.Name
             $pluginFullPath = $folder.FullName
+            $prebuiltZipPath = $zipByPlugin[$pluginName]
             $jobName = "$pluginName->$siteName"
 
             $uploadJobs += Start-Job -Name $jobName -ScriptBlock {
-                param($QUploadScript, $PluginPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName)
+                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName)
 
                 $uploadConfig = @{
                     pluginFolderPath     = $PluginPath
+                    outputZipPath        = $PrebuiltZipPath
                     wordPressSiteURL     = $SiteUrl.TrimEnd("/")
                     username             = $Username
                     appPassword          = $Password
@@ -1276,7 +1295,7 @@ if ($uas) {
                     Output     = $output
                     Status     = if ($exitCode -eq 0) { "OK" } else { "FAILED (exit $exitCode)" }
                 }
-            } -ArgumentList $quploadScript, $pluginFullPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName
+            } -ArgumentList $quploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName
         }
     }
 
