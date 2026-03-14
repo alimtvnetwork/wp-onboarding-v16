@@ -274,13 +274,18 @@ trait UploadFileSystemTrait
             return false;
         }
 
+        return $this->deleteDirectoryEntries($items, $dir);
+    }
+
+    /** Delete all entries within a directory, then remove it. */
+    private function deleteDirectoryEntries(array $items, string $dir): bool
+    {
         foreach ($items as $item) {
             $path = $dir . '/' . $item;
             $isDeleted = is_dir($path) ? $this->deleteDirectory($path) : @unlink($path);
 
             if ($isDeleted === false) {
                 $this->fileLogger->error('Failed to delete path', ['path' => $path]);
-
                 return false;
             }
         }

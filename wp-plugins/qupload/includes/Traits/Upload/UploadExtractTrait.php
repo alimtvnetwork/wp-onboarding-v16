@@ -181,7 +181,6 @@ trait UploadExtractTrait
         if ($zip->open($tempFile) !== true) {
             @unlink($tempFile);
             $this->fileLogger->error('Invalid ZIP archive');
-
             return $this->errorResponse('Invalid ZIP archive', HttpStatusType::BadRequest->value);
         }
 
@@ -191,7 +190,6 @@ trait UploadExtractTrait
         if ($detectedSlug === null) {
             @unlink($tempFile);
             $this->fileLogger->error('Could not detect plugin in ZIP');
-
             return $this->errorResponse('Could not detect plugin in ZIP', HttpStatusType::BadRequest->value);
         }
 

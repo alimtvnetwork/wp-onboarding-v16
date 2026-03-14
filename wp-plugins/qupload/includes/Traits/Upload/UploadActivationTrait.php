@@ -249,25 +249,24 @@ trait UploadActivationTrait
             $result = activate_plugin($pluginFile);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Plugin activation threw an exception for slug: ' . $slug);
-
-            return $this->errorResponse(
-                'Plugin uploaded but activation failed: ' . $e->getMessage(),
-                HttpStatusType::ServerError->value,
-                $e,
-            );
+            return $this->errorResponse('Plugin uploaded but activation failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
 
         $fatalLogged = true;
 
+        return $this->handleActivationResult($result, $slug);
+    }
+
+    /** Handle the result of activate_plugin. */
+    private function handleActivationResult(mixed $result, string $slug): ?WP_REST_Response
+    {
         if (is_wp_error($result)) {
             $this->traceStage('tryActivatePlugin:wp-error', ['slug' => $slug, 'message' => $result->get_error_message()]);
-
             return $this->buildActivationWpError($slug, $result);
         }
 
         $this->traceStage('tryActivatePlugin:success', ['slug' => $slug]);
         $this->fileLogger->info('Plugin activated successfully', ['slug' => $slug]);
-
         return null;
     }
 
