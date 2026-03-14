@@ -23,6 +23,7 @@ trait LogStatusTrait
 {
     /** Handle GET /logs/status — return log file sizes, line counts, archive info. */
     public function handleLogsStatus(WP_REST_Request $request): WP_REST_Response {
+        $this->fileLogger->info('Logs status endpoint called', ['endpoint' => 'logs/status']);
         $logsDir = PathHelper::getLogsDir();
 
         $logStatus = $this->buildFileStatus($logsDir . '/log.txt');

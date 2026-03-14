@@ -89,6 +89,7 @@ trait LogClearingTrait
 
     /** Handle POST /logs/clear/confirm — validate token, execute log clearing. */
     public function handleLogsClearConfirm(WP_REST_Request $request): WP_REST_Response {
+        $this->fileLogger->info('Logs clear confirm endpoint called', ['endpoint' => 'logs/clear/confirm']);
         $machineName = $request->get_header('X-Riseup-Source-Machine');
         $isMachineMissing = empty($machineName);
 
