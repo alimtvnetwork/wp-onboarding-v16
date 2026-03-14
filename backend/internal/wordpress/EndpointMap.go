@@ -50,6 +50,7 @@ const (
 	EPLogsStatus  WPEndpointName = "LogsStatus"
 	EPLogsClear   WPEndpointName = "LogsClear"
 	EPLogsConfirm WPEndpointName = "LogsConfirm"
+	EPLogsEmail   WPEndpointName = "LogsEmail"
 
 	// Snapshot endpoints
 	EPSnapshotList           WPEndpointName = "SnapshotList"
