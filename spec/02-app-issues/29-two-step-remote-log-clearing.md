@@ -3,7 +3,7 @@
 > **ID:** 29-two-step-remote-log-clearing
 > **Date:** 2026-03-13
 > **Category:** REST API / Security / Logging
-> **Status:** Open
+> **Status:** Resolved
 
 ---
 
@@ -335,6 +335,6 @@ case Delete = 'DELETE';
 - [x] PHP implementation complete (QUpload)
 - [x] PHP implementation complete (Riseup Asia)
 - [x] Go backend proxy complete
-- [ ] React UI complete (RemoteLogsPanel)
+- [x] React UI complete (RemoteLogsPanel)
 - [ ] Settings UI for approved machines
 - [ ] End-to-end tested

@@ -3,7 +3,7 @@
 > **ID:** 30-email-logs-as-attachment
 > **Date:** 2026-03-13
 > **Category:** REST API / Notification / Logging
-> **Status:** Open
+> **Status:** Resolved
 
 ---
 
@@ -212,5 +212,5 @@ Add an "Email Logs" button to the RemoteLogsPanel (from spec #29):
 - [x] PHP implementation complete (Riseup Asia)
 - [x] Go backend proxy complete
 - [x] React API methods added
-- [ ] React UI complete (Email Logs button + modal in RemoteLogsPanel)
+- [x] React UI complete (Email Logs button + modal in RemoteLogsPanel)
 - [ ] End-to-end tested
