@@ -80,4 +80,10 @@ trait AuthPermissionTrait
 
         return true;
     }
+
+    /** Check user management permission. */
+    public function checkUserPermission(WP_REST_Request $request): bool|WP_Error {
+        $this->fileLogger->debug('Checking user management permission');
+        return $this->checkAuthenticatedCapability($request, CapabilityType::EditUsers->value);
+    }
 }

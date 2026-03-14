@@ -61,6 +61,11 @@ func (v Variant) IsAgent() bool {
 	return strings.HasPrefix(v.Value(), "/agents")
 }
 
+// IsUser checks if this endpoint belongs to the user management domain.
+func (v Variant) IsUser() bool {
+	return strings.HasPrefix(v.Value(), "/users")
+}
+
 func All() []Variant {
 	all := make([]Variant, 0, len(variantLabels)-1)
 

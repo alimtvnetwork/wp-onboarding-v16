@@ -87,6 +87,15 @@ enum EndpointType: string
     case LogsConfirm   = 'logs/clear/confirm';
     case LogsEmail     = 'logs/email';
 
+    // ── User Management ─────────────────────────────────────────────
+    case Users             = 'users';
+    case UserId            = 'users/(?P<id>\d+)';
+    case UserAppPassword   = 'users/app-password';
+    case UsersExport       = 'users/export';
+    case UsersImport       = 'users/import';
+    case UsersExportSqlite = 'users/export-sqlite';
+    case UsersImportSqlite = 'users/import-sqlite';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
@@ -100,4 +109,5 @@ enum EndpointType: string
     public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshots/'); }
     public function isAgent(): bool    { return str_starts_with($this->value, 'agents'); }
     public function isPlugin(): bool   { return str_starts_with($this->value, 'plugins/'); }
+    public function isUser(): bool     { return str_starts_with($this->value, 'users'); }
 }

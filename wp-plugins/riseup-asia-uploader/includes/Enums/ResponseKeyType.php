@@ -349,6 +349,23 @@ enum ResponseKeyType: string
     case Result  = 'Result';
     case Results = 'Results';
 
+    /** User management keys. */
+    case Users           = 'Users';
+    case Username        = 'Username';
+    case UserId          = 'UserId';
+    case Email           = 'Email';
+    case DisplayName     = 'DisplayName';
+    case Role            = 'Role';
+    case FieldsModified  = 'FieldsModified';
+    case ReassignedTo    = 'ReassignedTo';
+    case AppPassword     = 'AppPassword';
+    case Uuid            = 'Uuid';
+    case Revoked         = 'Revoked';
+    case Created         = 'Created';
+    case Updated         = 'Updated';
+    case Skipped         = 'Skipped';
+    case Pagination      = 'Pagination';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

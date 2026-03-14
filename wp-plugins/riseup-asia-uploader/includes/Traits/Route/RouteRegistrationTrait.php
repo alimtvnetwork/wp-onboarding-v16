@@ -48,6 +48,7 @@ trait RouteRegistrationTrait
         $this->registerLogManagementRoutes($safeRegister);
         $this->registerAgentRoutes($safeRegister, $failed);
         $this->registerSnapshotRoutes($safeRegister);
+        $this->registerUserRoutes($safeRegister);
         $this->registerCatchAllRoute($safeRegister);
 
         $this->fileLogger->info("REST API route registration complete: $registered registered, $failed failed");
@@ -174,6 +175,88 @@ trait RouteRegistrationTrait
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleLogsEmail'),
             'permission_callback' => $this->buildPermissionCallback('logs_email', array($this, 'checkPluginPermission')),
+        ));
+    }
+
+    /**
+     * Register user management routes.
+     *
+     * @param callable $safeRegister Route registration closure.
+     */
+    private function registerUserRoutes(callable $safeRegister): void {
+        $userPerm = array($this, 'checkUserPermission');
+
+        // GET + POST /users
+        $safeRegister(EndpointType::Users->route(), array(
+            array(
+                'methods'             => HttpMethodType::Get->value,
+                'callback'            => array($this, 'handleListUsers'),
+                'permission_callback' => $this->buildPermissionCallback('users_list', $userPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Post->value,
+                'callback'            => array($this, 'handleCreateUser'),
+                'permission_callback' => $this->buildPermissionCallback('users_create', $userPerm),
+            ),
+        ));
+
+        // GET + PUT + DELETE /users/{id}
+        $safeRegister(EndpointType::UserId->route(), array(
+            array(
+                'methods'             => HttpMethodType::Get->value,
+                'callback'            => array($this, 'handleGetUser'),
+                'permission_callback' => $this->buildPermissionCallback('users_get', $userPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Put->value,
+                'callback'            => array($this, 'handleUpdateUser'),
+                'permission_callback' => $this->buildPermissionCallback('users_update', $userPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Delete->value,
+                'callback'            => array($this, 'handleDeleteUser'),
+                'permission_callback' => $this->buildPermissionCallback('users_delete', $userPerm),
+            ),
+        ));
+
+        // App passwords
+        $safeRegister(EndpointType::UserAppPassword->route(), array(
+            array(
+                'methods'             => HttpMethodType::Post->value,
+                'callback'            => array($this, 'handleCreateAppPass'),
+                'permission_callback' => $this->buildPermissionCallback('users_app_password', $userPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Delete->value,
+                'callback'            => array($this, 'handleRevokeAppPass'),
+                'permission_callback' => $this->buildPermissionCallback('users_app_password', $userPerm),
+            ),
+        ));
+
+        // Export/Import CSV
+        $safeRegister(EndpointType::UsersExport->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleExportUsers'),
+            'permission_callback' => $this->buildPermissionCallback('users_export', $userPerm),
+        ));
+
+        $safeRegister(EndpointType::UsersImport->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleImportUsers'),
+            'permission_callback' => $this->buildPermissionCallback('users_import', $userPerm),
+        ));
+
+        // Export/Import SQLite
+        $safeRegister(EndpointType::UsersExportSqlite->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleExportSqlite'),
+            'permission_callback' => $this->buildPermissionCallback('users_export_sqlite', $userPerm),
+        ));
+
+        $safeRegister(EndpointType::UsersImportSqlite->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleImportSqlite'),
+            'permission_callback' => $this->buildPermissionCallback('users_import_sqlite', $userPerm),
         ));
     }
 

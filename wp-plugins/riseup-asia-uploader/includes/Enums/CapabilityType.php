@@ -25,6 +25,10 @@ enum CapabilityType: string
     case SwitchThemes    = 'switch_themes';
     case ManageUsers     = 'manage_users';
     case ManageNetwork   = 'manage_network';
+    case CreateUsers     = 'create_users';
+    case EditUsers       = 'edit_users';
+    case DeleteUsers     = 'delete_users';
+    case ListUsers       = 'list_users';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

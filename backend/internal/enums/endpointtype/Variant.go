@@ -64,6 +64,13 @@ const (
 	AgentsPlugins
 	AgentAction
 	AgentHistory
+	Users
+	UserId
+	UserAppPassword
+	UsersExport
+	UsersImport
+	UsersExportSqlite
+	UsersImportSqlite
 )
 
 var variantLabels = [...]string{
@@ -127,6 +134,13 @@ var variantLabels = [...]string{
 	AgentsPlugins:           "AgentsPlugins",
 	AgentAction:             "AgentAction",
 	AgentHistory:            "AgentHistory",
+	Users:                   "Users",
+	UserId:                  "UserId",
+	UserAppPassword:         "UserAppPassword",
+	UsersExport:             "UsersExport",
+	UsersImport:             "UsersImport",
+	UsersExportSqlite:       "UsersExportSqlite",
+	UsersImportSqlite:       "UsersImportSqlite",
 }
 
 var variantValues = [...]string{
@@ -190,4 +204,11 @@ var variantValues = [...]string{
 	AgentsPlugins:           "/agents/plugins",
 	AgentAction:             "/agents/action",
 	AgentHistory:            "/agents/history",
+	Users:                   "/users",
+	UserId:                  "/users/(?P<id>\\d+)",
+	UserAppPassword:         "/users/app-password",
+	UsersExport:             "/users/export",
+	UsersImport:             "/users/import",
+	UsersExportSqlite:       "/users/export-sqlite",
+	UsersImportSqlite:       "/users/import-sqlite",
 }
