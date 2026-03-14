@@ -124,15 +124,23 @@ trait CleanerHelperTrait {
     }
 
     private function logError(Throwable $e, string $message, array $context = array()): void {
-        $context[ResponseKeyType::Error->value] = $e->getMessage();
-        $context['trace'] = $e->getTraceAsString();
-        $this->log(LogLevelType::Error->value, $message, $context);
+        try {
+            $context[ResponseKeyType::Error->value] = $e->getMessage();
+            $context['trace'] = $e->getTraceAsString();
+            $this->log(LogLevelType::Error->value, $message, $context);
+        } catch (Throwable $logException) {
+            // Prevent logging failures from crashing the caller
+        }
     }
 
     private function logWarn(Throwable $e, string $message, array $context = array()): void {
-        $context[ResponseKeyType::Error->value] = $e->getMessage();
-        $context['trace'] = $e->getTraceAsString();
-        $this->log(LogLevelType::Warn->value, $message, $context);
+        try {
+            $context[ResponseKeyType::Error->value] = $e->getMessage();
+            $context['trace'] = $e->getTraceAsString();
+            $this->log(LogLevelType::Warn->value, $message, $context);
+        } catch (Throwable $logException) {
+            // Prevent logging failures from crashing the caller
+        }
     }
 
     private function log(
@@ -140,26 +148,35 @@ trait CleanerHelperTrait {
         string $message,
         array $context = array(),
     ): void {
-        $prefix = '[SNAPSHOT] [CLEANER]';
-        $fullMessage = $prefix . ' ' . $message;
-        $hasContext = !empty($context);
-
-        if ($hasContext) {
-            $fullMessage .= ' ' . json_encode($context);
-        }
-
         $isLoggerMissing = ($this->logger === null);
 
         if ($isLoggerMissing) {
             return;
         }
 
-        switch ($level) {
-            case LogLevelType::Debug->value: $this->logger->debug($fullMessage); break;
-            case LogLevelType::Info->value:  $this->logger->info($fullMessage);  break;
-            case LogLevelType::Warn->value:  $this->logger->warn($fullMessage);  break;
-            case LogLevelType::Error->value: $this->logger->error($fullMessage); break;
-            default:      $this->logger->info($fullMessage);
+        $prefix = '[SNAPSHOT] [CLEANER]';
+        $fullMessage = $prefix . ' ' . $message;
+        $hasContext = !empty($context);
+
+        if ($hasContext) {
+            $encoded = json_encode($context, JSON_UNESCAPED_SLASHES);
+            $isEncoded = ($encoded !== false);
+
+            if ($isEncoded) {
+                $fullMessage .= ' ' . $encoded;
+            }
+        }
+
+        try {
+            switch ($level) {
+                case LogLevelType::Debug->value: $this->logger->debug($fullMessage); break;
+                case LogLevelType::Info->value:  $this->logger->info($fullMessage);  break;
+                case LogLevelType::Warn->value:  $this->logger->warn($fullMessage);  break;
+                case LogLevelType::Error->value: $this->logger->error($fullMessage); break;
+                default:      $this->logger->info($fullMessage);
+            }
+        } catch (Throwable $logException) {
+            // Prevent logger failures from propagating — we are a helper, not the primary operation
         }
     }
 }

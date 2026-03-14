@@ -27,11 +27,20 @@ trait CleanerOrphanTrait {
         $result = array(
             ResponseKeyType::Removed->value    => 0,
             ResponseKeyType::BytesFreed->value => 0,
+            ResponseKeyType::Files->value      => array(),
             ResponseKeyType::Errors->value     => array(),
         );
 
-        $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
-        $knownPaths = array_map(function ($f) { return $f['Filepath']; }, $files);
+        try {
+            $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: array();
+        } catch (Throwable $e) {
+            $result[ResponseKeyType::Errors->value][] = 'DB query failed: ' . $e->getMessage();
+            $this->logError($e, 'Failed to query snapshots for orphan cleanup');
+
+            return $result;
+        }
+
+        $knownPaths = array_map(function ($f) { return $f['Filepath'] ?? ''; }, $files);
         $snapshotSubdir = defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots';
         $scanDir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . $snapshotSubdir);
 
