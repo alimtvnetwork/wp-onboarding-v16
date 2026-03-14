@@ -833,3 +833,4 @@ Write-Status ""
 Write-Status "========================================" -Color Cyan
 Write-Status "  Done!" -Color Green
 Write-Status "========================================" -Color Cyan
+exit 0
