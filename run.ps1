@@ -232,6 +232,11 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
     Write-Host ""
+    Write-Host "  Log management:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -cl                      # Clear logs on all sites (both plugins)"
+    Write-Host "    .\run.ps1 -cl -site 'Test V1'      # Clear logs on specific site"
+    Write-Host "    .\run.ps1 -cl -xs 'Test V1'        # Clear logs on all sites EXCEPT Test V1"
+    Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
     Write-Host "    .\run.ps1 -za          # ZIP all plugins in wp-plugins/"
