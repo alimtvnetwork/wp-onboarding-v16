@@ -145,6 +145,33 @@ trait RouteRegistrationTrait
     }
 
     /**
+     * Register remote log management routes (status, clear, confirm).
+     *
+     * @param callable $safeRegister Route registration closure.
+     */
+    private function registerLogManagementRoutes(callable $safeRegister): void {
+        $logPerm = array($this, 'checkLogsPermission');
+
+        $safeRegister(EndpointType::LogsStatus->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleLogsStatus'),
+            'permission_callback' => $this->buildPermissionCallback('logs_status', $logPerm),
+        ));
+
+        $safeRegister(EndpointType::LogsClear->route(), array(
+            'methods'             => HttpMethodType::Delete->value,
+            'callback'            => array($this, 'handleLogsClearRequest'),
+            'permission_callback' => $this->buildPermissionCallback('logs_clear', array($this, 'checkPluginPermission')),
+        ));
+
+        $safeRegister(EndpointType::LogsConfirm->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleLogsClearConfirm'),
+            'permission_callback' => $this->buildPermissionCallback('logs_confirm', array($this, 'checkPluginPermission')),
+        ));
+    }
+
+    /**
      * Register catch-all route for invalid paths.
      *
      * @param callable $safeRegister Route registration closure.

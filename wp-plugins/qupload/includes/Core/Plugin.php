@@ -24,6 +24,8 @@ use QUpload\Traits\Core\ResponseTrait;
 use QUpload\Traits\Upload\UploadHandlerTrait;
 use QUpload\Traits\Activate\ActivateHandlerTrait;
 use QUpload\Traits\Deactivate\DeactivateHandlerTrait;
+use QUpload\Traits\Log\LogStatusTrait;
+use QUpload\Traits\Log\LogClearingTrait;
 
 class Plugin {
     use AuthTrait;
@@ -33,6 +35,8 @@ class Plugin {
     use UploadHandlerTrait;
     use ActivateHandlerTrait;
     use DeactivateHandlerTrait;
+    use LogStatusTrait;
+    use LogClearingTrait;
 
     private FileLogger $fileLogger;
     private static ?self $instance = null;

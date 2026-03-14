@@ -39,8 +39,29 @@ trait RouteRegistrationTrait
         };
 
         $this->registerCoreRoutes($safeRegister);
+        $this->registerLogManagementRoutes($safeRegister);
 
         $this->fileLogger->info("Route registration complete: $registered registered, $failed failed");
+    }
+
+    private function registerLogManagementRoutes(callable $safeRegister): void {
+        $safeRegister(EndpointType::LogsStatus->route(), [
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => [$this, 'handleLogsStatus'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
+
+        $safeRegister(EndpointType::LogsClear->route(), [
+            'methods'             => HttpMethodType::Delete->value,
+            'callback'            => [$this, 'handleLogsClearRequest'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
+
+        $safeRegister(EndpointType::LogsConfirm->route(), [
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => [$this, 'handleLogsClearConfirm'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
     }
 
     private function registerCoreRoutes(callable $safeRegister): void {
