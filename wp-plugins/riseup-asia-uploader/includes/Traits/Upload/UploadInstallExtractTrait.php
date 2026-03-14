@@ -64,18 +64,27 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zipResult) {
         $context = $this->prepareExtractionContext($input, $zipResult);
 
-        // Phase 1: Create backup before self-update
+        // Create backup before replacement for ALL updates (self and non-self)
         $backupDir = null;
+        $isExistingUpdate = $context[ResponseKeyType::IsUpdate->value];
 
-        if ($context[ResponseKeyType::IsSelfUpdate->value]) {
+        if ($isExistingUpdate) {
             $backupHelper = new SelfUpdateBackupHelper($this->fileLogger);
             $backupDir = $backupHelper->createBackup();
 
-            if ($backupDir === false) {
+            if ($context[ResponseKeyType::IsSelfUpdate->value] && $backupDir === false) {
                 return $this->errorResponse(
                     SelfUpdateStatusType::BackupCreationFailed->label(),
                     HttpStatusType::ServerError->value,
                 );
+            }
+
+            if ($backupDir !== false) {
+                $this->fileLogger->info('Pre-upload backup created', array(
+                    'slug' => $context[ResponseKeyType::Slug->value],
+                    'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
+                    'backupDir' => $backupDir,
+                ));
             }
         }
 
@@ -88,6 +97,27 @@ trait UploadInstallExtractTrait
         $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input, $backupDir);
 
         if ($stepResult instanceof WP_REST_Response) {
+            // Rollback for non-self updates (self-update rollback handled in executeExtractionSteps)
+            $isNonSelfFailure = !$context[ResponseKeyType::IsSelfUpdate->value] && $backupDir !== null;
+
+            if ($isNonSelfFailure) {
+                $this->fileLogger->warn('Upload failed — rolling back to previous version', array(
+                    'slug' => $context[ResponseKeyType::Slug->value],
+                ));
+
+                $rollbackHelper = new SelfUpdateBackupHelper($this->fileLogger);
+                $isRolledBack = $rollbackHelper->rollback($backupDir);
+
+                if ($isRolledBack && $isPreviouslyActive) {
+                    $pluginFile = $this->findPluginFile($context[ResponseKeyType::Slug->value]);
+
+                    if ($pluginFile) {
+                        activate_plugin($pluginFile);
+                        $this->fileLogger->info('Rolled-back plugin re-activated', array('slug' => $context[ResponseKeyType::Slug->value]));
+                    }
+                }
+            }
+
             return $stepResult;
         }
 
