@@ -86,8 +86,18 @@ trait AdminFeedbackAjaxTrait {
             // Build email body
             $emailBody = $this->buildFeedbackBody($subject, $body, $includeSystemInfo);
 
-            // Process attachments
+            // Process screenshot attachments
             $attachments = $this->processFeedbackAttachments($logger);
+
+            // Process log zip attachment if requested
+            $includeLogs = !empty($_POST['include_logs']);
+            $logZipPath = null;
+            if ($includeLogs) {
+                $logZipPath = $this->buildLogZipAttachment($logger);
+                if ($logZipPath !== null) {
+                    $attachments[] = $logZipPath;
+                }
+            }
 
             // Build subject line
             $siteName = get_bloginfo('name');
