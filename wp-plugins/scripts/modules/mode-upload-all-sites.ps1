@@ -303,6 +303,7 @@ function Invoke-UasParallelUpload {
         $TargetSites,
         $PluginFolders,
         $ZipByPlugin,
+        $VersionByPlugin,
         [string]$QUploadScript,
         [string]$UploadLogsDir,
         [string]$LogStamp
