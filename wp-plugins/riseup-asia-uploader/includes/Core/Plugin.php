@@ -53,6 +53,7 @@ use RiseupAsia\Traits\FileSystem\FileSystemTrait;
 use RiseupAsia\Traits\Log\LogStatusTrait;
 use RiseupAsia\Traits\Log\LogClearingTrait;
 use RiseupAsia\Traits\Log\LogEmailTrait;
+use RiseupAsia\Traits\User\UserCrudTrait;
 
 class Plugin {
     // Wave 1 traits
