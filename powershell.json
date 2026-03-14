@@ -45,7 +45,7 @@
     "defaultUploader": "riseup-asia-uploader",
     "defaultQUploader": "qupload",
     "pluginsDir": "wp-plugins",
-    "skipPlugins": ["plugins-onboard"],
+    "skipPlugins": ["plugins-onboard", "qupload"],
     "sites": [
       {
         "name": "Atto Property Demo",
