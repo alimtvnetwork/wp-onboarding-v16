@@ -12,33 +12,26 @@ Allow WordPress admins to submit bug reports and feature feedback directly from 
 
 - **Dedicated submenu:** "Report / Feedback" under the Riseup Uploader main menu.
 - **Quick button:** On the Error Log page header — a "Report Issue" button that opens the same modal.
+- **Form is always visible** regardless of email configuration. If no support email is set, a warning banner appears above the form with a link to Settings (and optional fallback URL). The submit button shows an error if email is not configured.
 
-## 3. Feedback Modal
+## 3. Feedback Form
 
-A modal overlay (using the existing `modal-wrapper.php` partial) with:
+The form (always visible on the page) contains:
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | Subject | Text input | Yes | Max 200 chars |
 | Description | Textarea | Yes | Min 20 chars |
 | Screenshots | File input (multiple) | No | Up to 3 images, max 2 MB each. Accepted: jpg, jpeg, png, gif, webp |
+| Include Logs | Checkbox | No | Default: unchecked. Zips `log.txt`, `error.txt`, `stacktrace.txt` and attaches the ZIP to the email |
 | Include system info | Checkbox | No | Default: checked. Appends PHP version, WP version, plugin version, active theme, site URL |
 
-## 4. Email Delivery
+### Email Not Configured Warning
 
-- Uses `wp_mail()` which respects any SMTP plugin (GoSMTP, WP Mail SMTP, etc.).
-- From: WordPress configured sender.
-- To: Support email from plugin settings (`OptionNameType::SupportSettings`).
-- Attachments: Temporary uploaded files passed to `wp_mail()`, cleaned up after send.
-- Body: Plain text with system info footer (if checkbox selected).
-
-### Email Readiness Check
-
-Before showing the modal, an AJAX call checks if:
-1. A support email is configured in settings.
-2. If no support email is configured, show an inline notice with:
-   - A link to the settings page to configure the support email.
-   - If a fallback URL is configured, show a link: "Or submit a ticket manually at [URL]".
+If no support email is configured, a warning banner is displayed **above** the form (the form itself remains visible and fillable). The banner includes:
+- A link to the Settings page to configure the support email.
+- If a fallback URL is configured, a link: "Or submit a ticket manually at [URL]".
+- Submitting the form while email is not configured shows an inline error.
 
 ## 5. Settings (Admin Settings Page)
 
