@@ -1192,51 +1192,38 @@ if ($uas) {
 
     Clear-PluginZips
 
-    # ── Parallel ZIP ─────────────────────────────────────────────────────────
+    # ── Parallel ZIP (delegates to upload-plugin-U-Q.ps1 -ZipOnly) ──────────
     Write-Host "  Zipping $($pluginFolders.Count) plugin(s) in parallel..." -ForegroundColor Yellow
+    $quploadZipScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-U-Q.ps1"
     $zipJobs = @()
     foreach ($folder in $pluginFolders) {
         $folderPath = $folder.FullName
         $folderName = $folder.Name
         Write-Host "    [ZIP] Starting: $folderName" -ForegroundColor DarkGray
         $zipJobs += Start-Job -Name "zip-$folderName" -ScriptBlock {
-            param($ScriptDir, $FolderPath)
-            # No dot-source needed — ZIP logic is self-contained
-            $pluginDir = $FolderPath
-            $pluginSlug = Split-Path $pluginDir -Leaf
-            $mainFiles = Get-ChildItem $pluginDir -Filter "*.php" | Where-Object {
-                (Get-Content $_.FullName -Head 5) -match "Plugin Name:"
-            } | Select-Object -First 1
-            $version = "unknown"
-            if ($mainFiles) {
-                $content = Get-Content $mainFiles.FullName -Raw
-                $match = [regex]::Match($content, "Version:\s*(\d+\.\d+\.\d+)")
-                if ($match.Success) { $version = $match.Groups[1].Value }
-            }
-            $zipFileName = "$pluginSlug-v$version.zip"
-            $zipOutputPath = Join-Path (Split-Path $pluginDir -Parent) $zipFileName
-            if (Test-Path $zipOutputPath) { Remove-Item $zipOutputPath -Force }
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            $tempDir = Join-Path $env:TEMP "uas-zip-$pluginSlug-$(Get-Random)"
-            $pluginTempDir = Join-Path $tempDir $pluginSlug
-            New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
-            Copy-Item -Path "$pluginDir\*" -Destination $pluginTempDir -Recurse
-            [System.IO.Compression.ZipFile]::CreateFromDirectory(
-                $tempDir, $zipOutputPath,
-                [System.IO.Compression.CompressionLevel]::SmallestSize, $false
-            )
-            Remove-Item $tempDir -Recurse -Force
-            $sizeKB = [math]::Round((Get-Item $zipOutputPath).Length / 1024, 1)
-            return @{ Slug = $pluginSlug; Version = $version; Path = $zipOutputPath; SizeKB = $sizeKB }
-        } -ArgumentList $ScriptDir, $folderPath
+            param($Script, $PluginPath)
+            & $Script -ZipOnly -PluginPath $PluginPath -Quiet
+        } -ArgumentList $quploadZipScript, $folderPath
     }
 
     $zipResults = @()
     foreach ($job in $zipJobs) {
-        $result = Receive-Job -Job $job -Wait
-        $zipResults += $result
-        $pluginLabel = "$($result.Slug)-v$($result.Version)"
-        Write-Host "    [ZIP] Done: $pluginLabel ($($result.SizeKB) KB)" -ForegroundColor Green
+        $rawOutput = Receive-Job -Job $job -Wait 2>&1
+        $exitCode = if ($job.State -eq "Completed") { 0 } else { 1 }
+        $folderName = $job.Name -replace '^zip-', ''
+        # Find the versioned ZIP in wp-plugins/
+        $wpPluginsDir = Join-Path $ScriptDir "wp-plugins"
+        $zipFile = Get-ChildItem $wpPluginsDir -Filter "$folderName-v*.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($zipFile) {
+            $sizeKB = [math]::Round($zipFile.Length / 1024, 1)
+            $versionMatch = [regex]::Match($zipFile.Name, '-v(\d+\.\d+\.\d+)\.zip$')
+            $version = if ($versionMatch.Success) { $versionMatch.Groups[1].Value } else { "unknown" }
+            $zipResults += @{ Slug = $folderName; Version = $version; Path = $zipFile.FullName; SizeKB = $sizeKB }
+            Write-Host "    [ZIP] Done: $folderName-v$version ($sizeKB KB)" -ForegroundColor Green
+        } else {
+            Write-Host "    [ZIP] FAILED: $folderName" -ForegroundColor Red
+            if ($rawOutput) { Write-Host "      $rawOutput" -ForegroundColor DarkGray }
+        }
         Remove-Job -Job $job -Force
     }
 
