@@ -150,6 +150,7 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
                     <th class="column-id" style="width: 50px;"><?php esc_html_e('ID', $pluginSlug); ?></th>
                     <th class="column-timestamp" style="width: 160px;"><?php esc_html_e('Timestamp', $pluginSlug); ?></th>
                     <th class="column-level" style="width: 70px;"><?php esc_html_e('Level', $pluginSlug); ?></th>
+                    <th class="column-version" style="width: 70px;"><?php esc_html_e('Version', $pluginSlug); ?></th>
                     <th class="column-file" style="width: 180px;"><?php esc_html_e('Source', $pluginSlug); ?></th>
                     <th class="column-message"><?php esc_html_e('Message', $pluginSlug); ?></th>
                     <th class="column-actions" style="width: 80px;"><?php esc_html_e('Details', $pluginSlug); ?></th>
