@@ -38,6 +38,9 @@ const (
 	SyncManifest
 	ErrorLogs
 	ErrorSessions
+	LogsStatus
+	LogsClear
+	LogsConfirm
 	Openapi
 	OpcacheReset
 	SnapshotsList
