@@ -113,6 +113,12 @@ const (
 	ErrBuildTimeout       ErrorCode = "E8003" // Build command timed out
 )
 
+// Server errors (E16xxx)
+const (
+	ErrServerStart    ErrorCode = "E16001" // Failed to start HTTP server
+	ErrServerShutdown ErrorCode = "E16002" // Failed to shut down HTTP server
+)
+
 // General errors (E9xxx)
 const (
 	ErrNotFound       ErrorCode = "E9001" // Resource not found
