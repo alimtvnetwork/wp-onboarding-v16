@@ -51,7 +51,6 @@ trait UploadActivationTrait
         foreach ($phpFiles as $filePath) {
             if ($checkedCount >= self::MAX_SYNTAX_CHECK_FILES) {
                 $this->fileLogger->warn('Syntax check limit reached', ['slug' => $slug, 'limit' => self::MAX_SYNTAX_CHECK_FILES]);
-
                 break;
             }
 
@@ -60,12 +59,10 @@ trait UploadActivationTrait
             if ($syntaxError instanceof WP_REST_Response) {
                 return $syntaxError;
             }
-
             $checkedCount++;
         }
 
         $this->fileLogger->info('Pre-activation syntax validation passed', ['slug' => $slug, 'filesChecked' => $checkedCount]);
-
         return null;
     }
 
