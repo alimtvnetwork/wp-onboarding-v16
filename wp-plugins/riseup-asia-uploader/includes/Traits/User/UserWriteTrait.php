@@ -162,7 +162,6 @@ trait UserWriteTrait {
             $coreFieldMap = array(
                 'Email'       => 'user_email',
                 'DisplayName' => 'display_name',
-                'Website'     => 'user_url',
             );
 
             foreach ($coreFieldMap as $jsonKey => $wpKey) {
@@ -174,12 +173,19 @@ trait UserWriteTrait {
                 }
             }
 
+            // Website needs esc_url_raw, not sanitize_text_field
+            $hasWebsite = isset($body['Website']);
+
+            if ($hasWebsite) {
+                $userdata['user_url'] = esc_url_raw($body['Website']);
+                $modified[] = 'Website';
+            }
+
             // Meta fields mapping
             $metaFieldMap = array(
                 'FirstName' => 'first_name',
                 'LastName'  => 'last_name',
                 'Nickname'  => 'nickname',
-                'Bio'       => 'description',
             );
 
             foreach ($metaFieldMap as $jsonKey => $metaKey) {
@@ -189,6 +195,14 @@ trait UserWriteTrait {
                     update_user_meta($userId, $metaKey, sanitize_text_field($body[$jsonKey]));
                     $modified[] = $jsonKey;
                 }
+            }
+
+            // Bio needs sanitize_textarea_field for multi-line content
+            $hasBio = isset($body['Bio']);
+
+            if ($hasBio) {
+                update_user_meta($userId, 'description', sanitize_textarea_field($body['Bio']));
+                $modified[] = 'Bio';
             }
 
             // Password
