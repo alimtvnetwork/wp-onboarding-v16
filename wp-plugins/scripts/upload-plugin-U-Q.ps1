@@ -426,6 +426,7 @@ if ($JsonConfig -ne "") {
         if ($null -ne $config.activateAfterInstall) { $ActivateAfterInstall = $config.activateAfterInstall }
         if ($null -ne $config.deleteZipAfterUpload) { $DeleteZipAfterUpload = $config.deleteZipAfterUpload }
         if ($config.pluginSlug) { $PluginSlug = $config.pluginSlug }
+        if ($config.outputZipPath) { $ConfiguredOutputZipPath = $config.outputZipPath }
     } catch {
         Write-Host "Error: Invalid JSON config: $_" -ForegroundColor Red
         exit 1
