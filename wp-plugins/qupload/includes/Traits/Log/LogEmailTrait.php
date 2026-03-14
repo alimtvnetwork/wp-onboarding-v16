@@ -31,6 +31,7 @@ trait LogEmailTrait
 
     /** Handle POST /logs/email — collect log files and email them as attachments. */
     public function handleLogsEmail(WP_REST_Request $request): WP_REST_Response {
+        $this->fileLogger->info('Logs email endpoint called', ['endpoint' => 'logs/email']);
         $machineName = $request->get_header('X-Riseup-Source-Machine');
         $machineError = $this->validateMachineHeader($machineName);
 

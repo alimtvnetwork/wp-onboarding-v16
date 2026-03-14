@@ -64,6 +64,14 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zipResult) {
         $context = $this->prepareExtractionContext($input, $zipResult);
 
+        // Log upload activity
+        $this->fileLogger->info('Plugin upload processing started', array(
+            'slug' => $context[ResponseKeyType::Slug->value],
+            'isUpdate' => $context[ResponseKeyType::IsUpdate->value],
+            'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
+            'activate' => $input['activate'],
+        ));
+
         // Create backup before replacement for ALL updates (self and non-self)
         $backupDir = null;
         $isExistingUpdate = $context[ResponseKeyType::IsUpdate->value];
@@ -97,6 +105,17 @@ trait UploadInstallExtractTrait
         $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input, $backupDir);
 
         if ($stepResult instanceof WP_REST_Response) {
+            // Log external plugin failure for non-self updates
+            $isExternalPluginFailure = !$context[ResponseKeyType::IsSelfUpdate->value];
+
+            if ($isExternalPluginFailure) {
+                $this->logExternalPluginFailure(
+                    $context[ResponseKeyType::Slug->value],
+                    'upload',
+                    'Plugin upload, extraction, or activation failed',
+                );
+            }
+
             // Rollback for non-self updates (self-update rollback handled in executeExtractionSteps)
             $isNonSelfFailure = !$context[ResponseKeyType::IsSelfUpdate->value] && $backupDir !== null;
 
@@ -116,6 +135,16 @@ trait UploadInstallExtractTrait
                         $this->fileLogger->info('Rolled-back plugin re-activated', array('slug' => $context[ResponseKeyType::Slug->value]));
                     }
                 }
+
+                if ($isRolledBack) {
+                    $this->fileLogger->info('Rollback complete — previous version restored', array(
+                        'slug' => $context[ResponseKeyType::Slug->value],
+                    ));
+                } else {
+                    $this->fileLogger->error('Rollback FAILED — plugin may be in a broken state', array(
+                        'slug' => $context[ResponseKeyType::Slug->value],
+                    ));
+                }
             }
 
             return $stepResult;
@@ -127,7 +156,42 @@ trait UploadInstallExtractTrait
             $backupHelper->cleanup($backupDir);
         }
 
+        $this->fileLogger->info('Plugin upload completed successfully', array(
+            'slug' => $context[ResponseKeyType::Slug->value],
+            'version' => $stepResult[ResponseKeyType::PluginVersion->value] ?? '',
+            'isUpdate' => $context[ResponseKeyType::IsUpdate->value],
+            'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
+            'activated' => $stepResult[ResponseKeyType::Activated->value] ?? false,
+        ));
+
         return $stepResult;
+    }
+
+    /**
+     * Log an upload failure caused by an external (third-party) plugin.
+     *
+     * Writes to the error log and SQLite error_sessions table with an explicit
+     * disclaimer that the failure originates from the uploaded plugin's own code,
+     * not from Riseup Asia Uploader.
+     */
+    private function logExternalPluginFailure(string $slug, string $phase, string $detail): void
+    {
+        $message = sprintf(
+            'EXTERNAL PLUGIN FAILURE [%s] — The uploaded plugin "%s" failed during the %s phase. '
+            . 'This error originates from the third-party plugin code, not from Riseup Asia Uploader. '
+            . 'Riseup Asia Uploader has no control over external plugin code quality or compatibility. '
+            . 'Detail: %s',
+            strtoupper($phase),
+            $slug,
+            $phase,
+            $detail,
+        );
+
+        $this->fileLogger->error($message, array(
+            'slug' => $slug,
+            'phase' => $phase,
+            'source' => 'external-plugin',
+        ));
     }
 
     /** Prepare extraction context from input and ZIP result. */

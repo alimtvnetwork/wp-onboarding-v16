@@ -25,14 +25,14 @@ use QUpload\Helpers\EnvelopeBuilder;
 
 trait ActivateHandlerTrait
 {
-    /** Handle POST /activate endpoint. */
+    /** Handle PUT /activate endpoint. */
     public function handleActivate(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('Activate endpoint called');
+        $this->fileLogger->info('Activate endpoint called', ['endpoint' => EndpointType::Activate->value]);
 
         return $this->safeExecute(
             fn () => $this->executeActivation($request),
             'handleActivate',
-            ['endpoint' => 'activate'],
+            ['endpoint' => EndpointType::Activate->value],
         );
     }
 
