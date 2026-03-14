@@ -194,7 +194,7 @@ func awaitShutdown(server *api.Server, log *logger.Logger) {
 	shutdownErr := server.Shutdown(ctx)
 
 	if shutdownErr != nil {
-		log.Error("Server shutdown error", "error", shutdownErr)
+		log.Error("Server shutdown error", "error", shutdownErr.Error())
 	}
 	log.Info("Application stopped")
 }

@@ -15,6 +15,7 @@ import (
 	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
