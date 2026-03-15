@@ -4,12 +4,14 @@
 **Depends On**: `01-overview.md`, `05-github-implementation.md`, `06-gitlab-implementation.md`
 **Version**: 2.15.0+
 
-### Design Decisions (Confirmed)
+### Design Decisions (Confirmed 2026-03-15)
 
-- **Incremental detection**: Timestamp-based (`post_modified_gmt`, `option_value` changes)
-- **Cron reliability**: WP-Cron default + documentation for real system cron setup
-- **Restore method**: Git shallow clone first, API download fallback if `git` binary unavailable
-- **Branch cleanup**: Auto-delete incremental branch when parent full backup is rotated out
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **Incremental detection** | Timestamp-based (`post_modified_gmt`) | Fastest approach; avoids full table scans. Only exports rows where `post_modified_gmt > lastBackupTimestamp`. Works natively for `wp_posts`, `wp_postmeta` (via post join), `wp_options` (compare serialized values). Tables without timestamps are included in full backups only. |
+| **Cron reliability** | WP-Cron default + real cron documentation | WP-Cron requires zero server config. For low-traffic sites, document a `*/15 * * * * curl` system cron as recommended best practice. Plugin does NOT disable `DISABLE_WP_CRON` — that's the user's choice. |
+| **Restore method** | Git-first (shallow clone), API fallback | `git clone --depth 1 --single-branch` is the fastest way to fetch a single branch. Falls back to GitHub Contents API / GitLab Files API when `exec('git')` is unavailable (shared hosting without shell access). Fallback has a 100 MB limit on GitHub. |
+| **Branch cleanup** | Auto-delete with full backup rotation | When a full backup is rotated out (exceeds retention count), the system automatically deletes the associated `incremental/{YYYY-Www}` branch via `DELETE /git/refs/heads/...`. This prevents branch clutter. Orphaned branches are never left behind. |
 
 ---
 
