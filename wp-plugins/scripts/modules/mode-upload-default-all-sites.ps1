@@ -3,7 +3,7 @@
 # ZIPs and uploads ONLY the default uploader plugin to all enabled sites (parallel).
 # This excludes QUpload and other plugins — only the default uploader is deployed.
 # Dot-sourced by run.ps1 — expects all helpers, plugin-helpers, zip-*, upload-*, summary-printer loaded.
-# Expects: $site, $exclude, $sync, $ScriptDir, $Config
+# Expects: $site, $index, $exclude, $sync, $ScriptDir, $Config
 
 function Invoke-UploadDefaultAllSitesMode {
     Write-Host ""
