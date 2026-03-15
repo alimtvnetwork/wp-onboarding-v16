@@ -128,6 +128,7 @@ trait UploadInstallExtractTrait
             if ($isNonSelfFailure) {
                 $this->fileLogger->warn('Upload failed — rolling back to previous version', array(
                     'slug' => $context[ResponseKeyType::Slug->value],
+                    'previousVersion' => $previousVersion,
                 ));
 
                 $rollbackHelper = new SelfUpdateBackupHelper($this->fileLogger);
@@ -142,15 +143,26 @@ trait UploadInstallExtractTrait
                     }
                 }
 
+                $restoredVersion = $isRolledBack
+                    ? $this->detectInstalledVersionBySlug($context[ResponseKeyType::Slug->value])
+                    : null;
+
                 if ($isRolledBack) {
                     $this->fileLogger->info('Rollback complete — previous version restored', array(
                         'slug' => $context[ResponseKeyType::Slug->value],
+                        'restoredVersion' => $restoredVersion,
                     ));
                 } else {
                     $this->fileLogger->error('Rollback FAILED — plugin may be in a broken state', array(
                         'slug' => $context[ResponseKeyType::Slug->value],
                     ));
                 }
+
+                // Inject rollback metadata into the error response
+                $data = $stepResult->get_data();
+                $data[ResponseKeyType::RollbackSuccess->value] = $isRolledBack;
+                $data[ResponseKeyType::RestoredVersion->value] = $restoredVersion;
+                $stepResult->set_data($data);
             }
 
             return $stepResult;
