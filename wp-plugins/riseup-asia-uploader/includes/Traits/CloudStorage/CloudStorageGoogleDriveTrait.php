@@ -403,11 +403,10 @@ trait CloudStorageGoogleDriveTrait {
             'name'    => $fileName,
             'parents' => array($folderId),
         ));
-
         $initOptions = $this->googleDriveBuildOptions('POST', $token);
-        $initOptions['headers']['Content-Type']            = 'application/json; charset=UTF-8';
-        $initOptions['headers']['X-Upload-Content-Type']   = 'application/zip';
-        $initOptions['headers']['X-Upload-Content-Length']  = $fileSize;
+        $initOptions['headers']['Content-Type']           = 'application/json; charset=UTF-8';
+        $initOptions['headers']['X-Upload-Content-Type']  = 'application/zip';
+        $initOptions['headers']['X-Upload-Content-Length'] = $fileSize;
         $initOptions['body'] = $metadata;
 
         $initUrl      = self::GDRIVE_UPLOAD . '/files?uploadType=resumable&fields=id,name,webViewLink';
