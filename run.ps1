@@ -31,7 +31,8 @@ param(
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
     [Alias('cla')][switch]$clearlogsall,
-    [Alias('am')][string]$approvemachine = "",
+    [Alias('am')][switch]$approvemachine,
+    [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = ""
 )
 

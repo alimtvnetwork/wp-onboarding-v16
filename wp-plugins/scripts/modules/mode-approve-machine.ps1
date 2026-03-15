@@ -126,6 +126,12 @@ function Invoke-ApproveMachineMode {
                 }
             } catch {
                 $errorMsg = Get-ApproveMachineErrorMessage $_
+                $isNoRoute = ($errorMsg -match 'rest_no_route' -or $errorMsg -match '(^|\s)404(\s|$)')
+
+                if ($isNoRoute) {
+                    $errorMsg = "$errorMsg (machines/approve endpoint is not deployed on the remote site yet)"
+                }
+
                 Write-Host " FAILED" -ForegroundColor Red
                 Write-Host "    Error: $errorMsg" -ForegroundColor DarkYellow
 
