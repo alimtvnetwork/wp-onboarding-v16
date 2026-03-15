@@ -7,8 +7,9 @@
 function Invoke-ClearLogsMode {
     param([switch]$ForceAll)
     Write-Host ""
+    $modeLabel = if ($ForceAll) { "Remote Log Clearing Mode (-cla: ALL sites)" } else { "Remote Log Clearing Mode (-cl)" }
     Write-Host "========================================" -ForegroundColor Magenta
-    Write-Host "  Remote Log Clearing Mode (-cl)" -ForegroundColor Magenta
+    Write-Host "  $modeLabel" -ForegroundColor Magenta
     Write-Host "========================================" -ForegroundColor Magenta
     Write-Host ""
 
