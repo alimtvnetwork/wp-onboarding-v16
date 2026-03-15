@@ -169,7 +169,7 @@ export function PublishProgressDialog({
   onComplete,
 }: PublishProgressDialogProps) {
   const { captureError, openErrorModal } = useErrorStore();
-  const [stages, setStages] = useState<PublishStage[]>(DEFAULT_STAGES);
+  const [stages, setStages] = useState<PublishStage[]>(buildDefaultStages);
   const [overallProgress, setOverallProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
