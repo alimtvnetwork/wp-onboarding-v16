@@ -1,121 +1,92 @@
 # Active & Future Phases
 
-**Updated: 2026-02-23**
+**Updated: 2026-03-15**
 
 ---
 
-## Current Status: All Compliance Sweeps Complete ✅
+## Current Status: Cloud Storage Providers Complete ✅
 
-All formatting, ABSPATH guard, dead code, magic string, DateHelper, and ResponseKeyType work is done. Remaining work is future architecture phases.
+All three phases of cloud storage providers (GitHub, GitLab, Google Drive) are implemented with React dashboard, publish integration, and quick publish support. Remaining work is backend pipeline integration and admin settings.
 
 ---
 
-## Recently Completed (2026-02-23)
+## Recently Completed (2026-03-15)
+
+### Phase 7E: Cloud Storage Providers ✅
+
+| Sub-phase | Description | Status |
+|-----------|-------------|--------|
+| Phase 1 | GitHub — PAT, Git Data API | ✅ Done |
+| Phase 2 | GitLab — Private-Token, self-hosted | ✅ Done |
+| Phase 3 | Google Drive — OAuth2, resumable uploads | ✅ Done |
+| Dashboard | CloudStorageSettingsPage with tabs, cards, dialogs | ✅ Done |
+| Backup Selector | CloudStorageBackupSelector in publish dialog | ✅ Done |
+| Quick Publish | cloudStorageAccountIds in useQuickPublish + useBulkQuickPublish | ✅ Done |
+| Progress Stage | cloud_upload stage in PublishProgressDialog | ✅ Done |
+
+### Files Created/Modified
+
+**PHP Traits (Cloud Storage):**
+- `CloudStorageGitHubTrait.php`
+- `CloudStorageGitLabTrait.php`
+- `CloudStorageGoogleDriveTrait.php`
+- `CloudStorageOAuthTrait.php`
+- `CloudStorageTrait.php` (updated)
+- `CloudStorageUploadTrait.php` (updated)
+- `CloudStorageFileTrait.php` (updated)
+- `CloudStorageAccountCrudTrait.php` (updated)
+
+**React Components:**
+- `src/components/cloud-storage/CloudStorageAccountCard.tsx`
+- `src/components/cloud-storage/CloudStorageAccountDialog.tsx`
+- `src/components/cloud-storage/CloudStorageProviderSettings.tsx`
+- `src/components/cloud-storage/CloudStorageBackupSelector.tsx`
+- `src/pages/CloudStorage.tsx`
+- `src/types/cloudStorage.ts`
+- `src/hooks/useCloudStorage.ts`
+
+**Updated:**
+- `src/lib/api/methods.ts` — 9 new API methods (8 CRUD + 1 OAuth)
+- `src/hooks/useQuickPublish.ts` — reads cloudStorageAccountIds from localStorage
+- `src/hooks/useBulkQuickPublish.ts` — reads cloudStorageAccountIds from localStorage
+- `src/components/plugins/PublishProgressDialog.tsx` — cloud_upload stage
+- `src/pages/Plugins.tsx` — CloudStorageBackupSelector integration
+- `src/App.tsx` — /cloud-storage route
+- `src/components/layout/Sidebar.tsx` — navigation item
+
+---
+
+## Previously Completed (2026-02-23)
 
 ### S-033–S-038: Code Quality Improvements ✅
-
-| ID | Description | Status |
-|----|-------------|--------|
-| S-033 | Expand DateHelper + replace all raw date()/gmdate() calls (21 files) | ✅ Done |
-| S-034 | Rename snake_case vars in admin-logs.php to camelCase (19 vars) | ✅ Done |
-| S-035 | Replace magic string keys with ResponseKeyType enum (8 Snapshot files) | ✅ Done |
-| S-036 | Add SEPARATOR_WIDTH constant to AdminMailer | ✅ Done |
-| S-037 | Replace gmdate() in test file (done with S-033) | ✅ Done |
-| S-038 | Add DateHelper::relativeDayKey() helper | ✅ Done |
-
-### Phase 8: Plugin Identity Strings ✅ (2026-02-23)
-
-All 5 files fixed to replace hardcoded identity strings with `PluginConfigType` enum references. Full audit confirmed zero remaining violations.
-
+### Phase 8: Plugin Identity Strings ✅
 ### Formatting Sweep — All Directories ✅
-
-| Directory | Status |
-|-----------|--------|
-| Snapshot/Traits/ | ✅ Done |
-| Database/Traits/ | ✅ Done |
-| Admin/Traits/ | ✅ Done |
-| Logging/Traits/ | ✅ Done |
-| Agent/Traits/ | ✅ Done |
-| Helpers/Traits/ | ✅ Done |
-| Traits/Route/ | ✅ Done |
-| Go Handlers | ✅ Done |
-| Go Services | ✅ Done |
-| Database/*.php | ✅ Done |
-| ErrorHandling/*.php | ✅ Done |
-| Core/Plugin.php | ✅ Done (S-021: already compliant) |
-| Admin/Admin.php | ✅ Done (S-021: already compliant) |
-| Logging/FileLogger.php | ✅ Done (S-021: already compliant) |
-| Activation/ActivationHandler.php | ✅ Done (S-031: already resolved) |
-| Templates/*.php | ✅ Done (S-022: no violations) |
-| Root files | ✅ Done (S-023: fully compliant) |
-
 ### ABSPATH Guard Sweep ✅
-
-All 53 enum files and 13 Logging/ErrorHandling files confirmed to have guards (S-029, S-030).
-
 ### Dead Code Cleanup ✅
-
-`loadDependencies()` and redundant `class_exists` already removed (S-032).
-
 ### PascalCase Enum Labels — Cross-System ✅
-
-| Phase | Status |
-|-------|--------|
-| Go Backend (10 enums) | ✅ Done |
-| PHP Plugin (24 enums) | ✅ Done |
-| TypeScript Frontend (3 enums + 8 files) | ✅ Done (S-026) |
-| PHP hardcoded string comparisons | ✅ Done (S-025: zero violations) |
-| WP database stored values | ✅ Done (Phase 7G: V12 + V14 migrations) |
-| Settings migration helper | ✅ Done (Phase 7G) |
-
 ### Template Magic String Elimination (Phase 7) ✅
-
-All sub-phases 7A–7G complete.
+### PHP Plugin SQLite PascalCase Migration (Phase 3) ✅
+### PascalCase Spec Documentation Updates (Phase 4) ✅
+### Phase 5: Licensing System Architecture ✅
+### Go Phase 4: Positive Logic & Boolean Standards ✅
+### Go Phase 5: Code Organization Standards ✅
+### Go Phase 6: CI Lint Scripts & Integration ✅
 
 ---
 
-## ✅ COMPLETED — PHP Plugin SQLite PascalCase Migration (Phase 3)
+## Pending Tasks
 
-- Phase 3A: ✅ `TableType` enum values already PascalCase
-- Phase 3B: ✅ Migration v13 — table renames via `ALTER TABLE`
-- Phase 3C: ✅ Migration v13 — column renames via `ALTER TABLE ... RENAME COLUMN`
-- Phase 3D: ✅ Updated all PHP code references (9 files fixed — Issue #07)
-- Phase 3E: ✅ Batch F camelCase refactor — internal array keys in enhanced fields
-
-### ✅ COMPLETED — PascalCase Spec Documentation Updates (Phase 4) (2026-02-23)
-
-- ✅ Updated `02-required-methods.md` with PascalCase label convention (v4.1.0)
-- ✅ Updated PHP `enums.md` with full `TableType`, `LogColumnType`, log context keys rule (v7.1.0)
-- ✅ Updated `naming-conventions.md` with array key conventions section (v1.1.0)
-- ✅ Created `php-go-consistency-audit.md` — 7-section cross-language audit
-
-### Phase 5: Licensing System Architecture ✅
-
-- ✅ Custom Go server built in `licensing/` module (SQLite, HMAC-SHA256, PHP client with 12h cache)
-- See Resolved Design Decisions #4 below
-
-### Go Phase 4: Positive Logic & Boolean Standards ✅ (2026-03-11)
-
-- ✅ Positive boolean naming — renamed 12 negative variables across 10 files
-- ✅ Removed `isDataMissing` method, replaced with positive `hasDataField` at call sites
-- ✅ Lint script `lint-negative.sh` already in place (zero violations)
-- ✅ `IsOtherThan` pattern already implemented as `IsOther` in enum variants
-
-### Go Phase 5: Code Organization Standards ✅ (2026-03-11)
-
-- ✅ Split oversized `ServicePush.go` (334→266 lines) → extracted `ServicePushFiles.go`
-- ✅ Renamed licensing enum dirs: `auditaction/` → `auditactiontype/`, `licensestatus/` → `licensestatustype/`
-- ✅ Added `IsDefined()`, `IsDefinedAndValid()`, `Parse()` to all 4 licensing enum packages
-- ✅ Updated all import paths across 10 files
-- ✅ File naming (PascalCase) and import org (3-block) already compliant
-
-### Go Phase 6: CI Lint Scripts & Integration ✅ (2026-03-11)
-
-- ✅ Added `lint-typed-nil` to Makefile `lint-all` target
-- ✅ Created dedicated `lint-tools` CI job in go-lint.yml (build, vet, file-size, func-size, negative, inline-if)
-- ✅ Fixed consistency-checker.yml Go version 1.21 → 1.22 (matches go.mod)
-- ✅ Expanded pre-commit tools section with negative naming and inline-if checks
-- ✅ Removed duplicate tools lint steps from backend CI job
+| # | Task | Priority | Status |
+|---|------|----------|--------|
+| 1 | ORM PDO Fix — Redeploy | 🔴 Critical | Blocked (deployment) |
+| 2 | Cloud Storage — Go pipeline `cloud_upload` stage | 🟡 Medium | Pending |
+| 3 | Google OAuth admin settings UI | 🟡 Medium | Pending |
+| 4 | Conditionally show cloud_upload stage | 🟡 Medium | Pending |
+| 5 | QUpload Activate → PUT | 🟡 Medium | Pending |
+| 6 | QUpload Admin UI Uplift | 🟡 Medium | Pending |
+| 7 | Log Rotation for both plugins | 🟡 Medium | Pending |
+| 8 | Bump versions to 2.15.0 | 🟢 Low | Pending |
+| 9 | Type-safety `interface{}` audit | 🟢 Low | Pending |
 
 ---
 
@@ -123,11 +94,12 @@ All sub-phases 7A–7G complete.
 
 | # | Question | Decision | Implementation |
 |---|----------|----------|----------------|
-| 1 | Remote Plugin Backups | **WP site only** | `wp-content/uploads/riseup-asia-uploader/backups/{slug}/`, 5-backup retention, pre-publish hook in `ServicePublishPipeline.go` |
-| 2 | Bulk Quick Publish | **Yes — sequential server-side** | `ServiceBulkPublish.go` with WebSocket progress events (`bulkPublishStarted`, `bulkPublishProgress`, `bulkPublishComplete`) |
-| 3 | True Diff Comparison | **Yes — remote MD5 hashes** | `sync-manifest` endpoint with 5-min TTL in-memory cache (`ManifestCache.go`), UI categorizes added/modified/deleted/unchanged |
-| 4 | Licensing | **Custom Go server** | `licensing/` module, SQLite (WAL), HMAC-SHA256, PHP client with 12h cache + WP-Cron revalidation |
+| 1 | Remote Plugin Backups | **WP site only** | `wp-content/uploads/riseup-asia-uploader/backups/{slug}/`, 5-backup retention, pre-publish hook |
+| 2 | Bulk Quick Publish | **Yes — sequential server-side** | `ServiceBulkPublish.go` with WebSocket progress events |
+| 3 | True Diff Comparison | **Yes — remote MD5 hashes** | `sync-manifest` endpoint with 5-min TTL cache |
+| 4 | Licensing | **Custom Go server** | `licensing/` module, SQLite (WAL), HMAC-SHA256, PHP client with 12h cache |
+| 5 | Cloud Storage Providers | **GitHub + GitLab + Google Drive** | AES-256-CBC credential encryption, provider-agnostic interface, resumable uploads for large files |
 
 ---
 
-*Master plan details in `plan.md` (repo root). Suggestions tracked in `.lovable/memory/suggestions/01-suggestions-tracker.md`. Issues tracked in `/spec/02-app/issues/README.md`.*
+*Master plan details in `plan.md` (repo root). Suggestions tracked in `.lovable/memory/suggestions/01-suggestions-tracker.md`.*

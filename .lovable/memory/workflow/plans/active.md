@@ -1,38 +1,44 @@
 # Active Development Plan
 
-Updated: 2026-02-23
+Updated: 2026-03-15
 
 ## Current Focus Areas
 
+- **Cloud Storage Integration**: Frontend complete (3 providers + dashboard + publish integration). Backend Go pipeline integration pending.
+- **Issue Resolution**: ORM PDO fix needs redeployment (critical). QUpload PUT migration and UI uplift pending.
 - **Code Quality & Standards**: Ongoing enforcement of formatting rules and code consistency.
-- **Refactoring & Modernization**: Strategic refactoring for improved maintainability and adherence to architectural patterns.
-- **Issue Documentation**: Every fix now requires a write-up under `/spec/02-app-issues/` per the post-fix workflow.
+- **Issue Documentation**: Every fix requires a write-up under `/spec/02-app-issues/` per the post-fix workflow.
 
-## Recently Completed
+## Recently Completed (2026-03-15)
 
-> Note: Items prefixed with `E-` were ad-hoc enum migration tasks tracked outside the suggestions tracker.
+### Phase 7E: Cloud Storage Providers ✅
 
-- **E-009**: `WpErrorCodeType` already had PascalCase custom values — verified complete.
-- **E-010**: Migrated `FilterKeyType` query parameters to `camelCase`.
-- **E-011**: Migrated `OptionNameType` keys to PascalCase with `wp_options` data migration routine.
-- **E-016**: Scanned TypeScript/React files — zero R12/R13 violations found.
-- **E-024**: Added `Hourly` case to `SnapshotFrequencyType` and wired into all consumers.
-- **E-025**: Fixed R9c violation in `ManagerImportValidationTrait.php`.
-- **S-021**: R12 formatting in Plugin.php, Admin.php, FileLogger.php — audit confirmed already compliant (2026-02-23).
-- **S-029**: ABSPATH guards — audit confirmed all 53 enum files already compliant (2026-02-23).
-- **S-030**: ABSPATH guards — audit confirmed all 13 Logging/ErrorHandling files already compliant (2026-02-23).
-- **S-031**: ActivationHandler R12/R4/indentation — audit confirmed already resolved (2026-02-23).
-- **S-032**: Dead `loadDependencies()` and redundant `class_exists` — audit confirmed already removed (2026-02-23).
-- **Phase 8**: Plugin identity hardcoded strings replaced with `PluginConfigType` enum (2026-02-23).
-- **Memory review**: Cross-references audited and fixed across all architecture docs (2026-02-23).
+- **CS-001**: Cloud Storage Settings Page — provider tabs, account cards, account dialog with dynamic fields
+- **CS-002**: Google Drive OAuth2 — `CloudStorageGoogleDriveTrait.php`, `CloudStorageOAuthTrait.php`, resumable uploads
+- **CS-003**: CloudStorageBackupSelector — collapsible selector in publish dialog with localStorage persistence
+- **CS-004**: `cloudStorageAccountIds` passed through `useQuickPublish` hook
+- **CS-005**: `cloudStorageAccountIds` passed through `useBulkQuickPublish` hook
+- **CS-006**: `cloud_upload` stage added to `PublishProgressDialog` (between backup and package)
 
-- **S-024**: Database pagination constants — audit confirmed already deduplicated (2026-02-23).
+### Previously Completed (2026-02-23)
 
-- **S-022**: Templates formatting — all 5 templates audited, fully compliant (2026-02-23).
-- **S-023**: Root files formatting — both files audited, fully compliant (2026-02-23).
-
-- **S-026**: TypeScript enum PascalCase — converted ActivityType, BackupOperation, NotificationType + all 8 consumer files (2026-02-23).
+- **S-033–S-040**: Code quality improvements (DateHelper, camelCase, ResponseKeyType, etc.)
+- **Phase 8**: Plugin identity strings replaced with PluginConfigType enum
+- **Go Phases 4–6**: Boolean standards, code organization, CI lint integration
+- **All compliance sweeps**: Formatting, ABSPATH guards, dead code, PascalCase enums
 
 ## Pending Tasks
 
-**All 32 suggestions completed.** 🎉
+| # | Task | Priority | Blocked? |
+|---|------|----------|----------|
+| 1 | ORM PDO Fix — Redeploy | 🔴 Critical | Yes (deployment) |
+| 2 | Cloud Storage Go pipeline `cloud_upload` stage (S-044) | 🟡 Medium | No |
+| 3 | Google OAuth admin settings page (S-042) | 🟡 Medium | No |
+| 4 | Conditionally show cloud_upload stage in UI (S-041) | 🟡 Medium | Depends on #2 |
+| 5 | QUpload Activate → PUT (all layers) | 🟡 Medium | No |
+| 6 | QUpload Admin UI Uplift | 🟡 Medium | No |
+| 7 | Log Rotation for both plugins | 🟡 Medium | No |
+| 8 | Bump versions to 2.15.0 (S-043) | 🟢 Low | After #2 |
+| 9 | Type-safety `interface{}` audit | 🟢 Low | No |
+| 10 | Licensing admin dashboard (S-045) | 🟢 Low | No |
+| 11 | Publish analytics dashboard (S-046) | 🟢 Low | No |
