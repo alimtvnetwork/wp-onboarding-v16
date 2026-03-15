@@ -1,12 +1,12 @@
 {
   "appName": "WP Publish",
-  "version": "2.15.0",
+  "version": "2.16.0",
   "releaseDate": "2026-03-15",
   "gitCommit": "dev",
   "buildTime": "2026-03-15T00:00:00Z",
-  "scriptVersion": "2.15.0",
-  "wpPluginVersion": "2.15.0",
-  "quploadVersion": "2.15.0",
+  "scriptVersion": "2.16.0",
+  "wpPluginVersion": "2.16.0",
+  "quploadVersion": "2.16.0",
   "changelog": [
     {
       "version": "2.15.0",
