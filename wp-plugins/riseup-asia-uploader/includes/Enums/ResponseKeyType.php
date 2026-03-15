@@ -381,6 +381,15 @@ enum ResponseKeyType: string
     case OAuthUrl          = 'OAuthUrl';
     case OAuthState        = 'OAuthState';
 
+    /** Cloud storage backup history keys. */
+    case BackupHistory     = 'BackupHistory';
+    case Backup            = 'Backup';
+    case Repositories      = 'Repositories';
+    case Branches          = 'Branches';
+    case BranchName        = 'BranchName';
+    case CommitSha         = 'CommitSha';
+    case BaseFullBackupId  = 'BaseFullBackupId';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
