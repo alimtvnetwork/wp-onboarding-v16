@@ -1,13 +1,26 @@
 {
   "appName": "WP Publish",
-  "version": "2.15.0",
+  "version": "2.16.0",
   "releaseDate": "2026-03-15",
   "gitCommit": "dev",
   "buildTime": "2026-03-15T00:00:00Z",
-  "scriptVersion": "2.15.0",
-  "wpPluginVersion": "2.15.0",
-  "quploadVersion": "2.15.0",
+  "scriptVersion": "2.16.0",
+  "wpPluginVersion": "2.16.0",
+  "quploadVersion": "2.16.0",
   "changelog": [
+    {
+      "version": "2.16.0",
+      "date": "2026-03-15",
+      "title": "Clear Logs Diagnostics & PS 7+ Error Extraction Fix",
+      "changes": [
+        "🐛 Fixed -cla showing bare '403' with no response body (PS 7+ compatible error extraction)",
+        "📋 Clear logs now shows full WordPress REST error details (code, message, status)",
+        "🔍 Response body preview shown on failure for immediate diagnostics",
+        "💡 Troubleshooting guide printed on failures (403, 404, 401 causes)",
+        "📋 Summary now includes error reason per site/plugin",
+        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+      ]
+    },
     {
       "version": "2.15.0",
       "date": "2026-03-15",
