@@ -492,4 +492,25 @@ trait UploadInstallExtractTrait
 
         return $isCopied;
     }
+
+    /** Detect the currently installed version of a plugin by slug. */
+    private function detectInstalledVersionBySlug(string $slug): ?string
+    {
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        wp_cache_delete('plugins', 'plugins');
+        $allPlugins = get_plugins();
+
+        foreach ($allPlugins as $file => $data) {
+            $isMatch = (dirname($file) === $slug);
+
+            if ($isMatch) {
+                return $data['Version'] ?? null;
+            }
+        }
+
+        return null;
+    }
 }
