@@ -27,6 +27,7 @@
 | Health endpoint format mismatch | Frontend/Backend | [See spec/07-error-manage/03-error-resolution/01-health-endpoint-mismatch.md](../../../spec/07-error-manage/03-error-resolution/01-health-endpoint-mismatch.md) |
 | Coverage report wrong package filtering | Tooling/Coverage | [See spec/02-app-issues/17-coverage-report-wrong-package-filtering.md](../../../spec/02-app-issues/17-coverage-report-wrong-package-filtering.md) |
 | checkAuthenticatedOnly() return type fatal (WP_User instead of true) | WordPress/PHP | [See spec/02-app-issues/22-auth-return-type-fatal-error.md](../../../spec/02-app-issues/22-auth-return-type-fatal-error.md) |
+| `-cla` fails with `rest_disabled` + `machine_not_approved` | PowerShell/WordPress REST | [See spec/02-app-issues/31-cla-failure-endpoint-gating-and-machine-approval.md](../../../spec/02-app-issues/31-cla-failure-endpoint-gating-and-machine-approval.md) |
 
 ---
 
