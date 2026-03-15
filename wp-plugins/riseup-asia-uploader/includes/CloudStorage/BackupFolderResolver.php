@@ -99,7 +99,7 @@ class BackupFolderResolver
      */
     public function parseFullFolderName(string $folderName): ?array
     {
-        $pattern = '/^(\d{3}) - (\d{2} [A-Za-z]{3} \d{4}) - W(\d{1,2})(?:\s-\s(.+))?$/';
+        $pattern = '/^(\d{3}) - (\d{2} [A-Za-z]{3} \d{4}) - W(\d{2})(?:\s-\s(.+))?$/';
         $isMatch = preg_match($pattern, $folderName, $matches);
 
         if (!$isMatch) {
@@ -307,10 +307,12 @@ class BackupFolderResolver
         $hasTimestamp = ($timestamp !== null);
 
         if ($hasTimestamp) {
-            return DateHelper::format($timestamp, 'W');
+            $raw = DateHelper::format($timestamp, 'W');
+        } else {
+            $raw = gmdate('W');
         }
 
-        return gmdate('W');
+        return str_pad($raw, 2, '0', STR_PAD_LEFT);
     }
 
     /**
