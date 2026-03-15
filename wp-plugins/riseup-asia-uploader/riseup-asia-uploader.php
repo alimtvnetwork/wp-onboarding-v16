@@ -129,5 +129,80 @@ function riseup_asia_handle_plugin_update_complete($upgrader, array $hookExtra):
     riseup_asia_clear_logs_on_version_update(true);
 }
 
+/**
+ * Handle plugin deactivation — clear cron schedules and temp files.
+ */
+function riseup_asia_deactivate(): void {
+    try {
+        // Clear cloud backup cron events
+        $fullCronHook = 'riseup_cloud_full_backup';
+        $incrCronHook = 'riseup_cloud_incremental_backup';
+
+        $fullTimestamp = wp_next_scheduled($fullCronHook);
+        $isFullScheduled = ($fullTimestamp !== false);
+
+        if ($isFullScheduled) {
+            wp_unschedule_event($fullTimestamp, $fullCronHook);
+        }
+
+        $incrTimestamp = wp_next_scheduled($incrCronHook);
+        $isIncrScheduled = ($incrTimestamp !== false);
+
+        if ($isIncrScheduled) {
+            wp_unschedule_event($incrTimestamp, $incrCronHook);
+        }
+
+        // Clear any temp directories
+        $uploadDir = wp_upload_dir();
+        $tempDir = rtrim($uploadDir['basedir'], '/') . '/riseup-asia-uploader/temp';
+        $isTempDirPresent = is_dir($tempDir);
+
+        if ($isTempDirPresent) {
+            riseup_asia_delete_temp_dir($tempDir);
+        }
+    } catch (\Throwable $e) {
+        error_log('RiseUp Uploader: Deactivation cleanup failed: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Recursively delete a temp directory.
+ */
+function riseup_asia_delete_temp_dir(string $dir): void {
+    $isDirMissing = !is_dir($dir);
+
+    if ($isDirMissing) {
+        return;
+    }
+
+    $items = scandir($dir);
+    $isReadFailed = ($items === false);
+
+    if ($isReadFailed) {
+        return;
+    }
+
+    foreach ($items as $item) {
+        $isNavEntry = ($item === '.' || $item === '..');
+
+        if ($isNavEntry) {
+            continue;
+        }
+
+        $path = $dir . '/' . $item;
+        $isDirectory = is_dir($path);
+
+        if ($isDirectory) {
+            riseup_asia_delete_temp_dir($path);
+        } else {
+            @unlink($path);
+        }
+    }
+
+    @rmdir($dir);
+}
+
+register_deactivation_hook(__FILE__, 'riseup_asia_deactivate');
+
 add_action(HookType::PluginsLoaded->value, 'riseup_asia_init');
 add_action(HookType::UpgraderProcessComplete->value, 'riseup_asia_handle_plugin_update_complete', 10, 2);

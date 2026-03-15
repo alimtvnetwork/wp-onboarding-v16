@@ -29,7 +29,8 @@ param(
     [Alias('xs')][string]$exclude = "",
     [Alias('ls','lr')][switch]$listsites,
     [switch]$sync,
-    [Alias('cl')][switch]$clearlogs
+    [Alias('cl')][switch]$clearlogs,
+    [int]$index = 0
 )
 
 # -rebuild is a convenience flag that combines -force and -install
