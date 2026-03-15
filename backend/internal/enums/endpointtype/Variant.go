@@ -151,6 +151,16 @@ var variantLabels = [...]string{
 	UsersImport:             "UsersImport",
 	UsersExportSqlite:       "UsersExportSqlite",
 	UsersImportSqlite:       "UsersImportSqlite",
+	CloudStorageAccounts:        "CloudStorageAccounts",
+	CloudStorageAccountId:       "CloudStorageAccountId",
+	CloudStorageAccountTest:     "CloudStorageAccountTest",
+	CloudStorageSettings:        "CloudStorageSettings",
+	CloudStorageSettingsProvider: "CloudStorageSettingsProvider",
+	CloudStorageUpload:          "CloudStorageUpload",
+	CloudStorageFiles:           "CloudStorageFiles",
+	CloudStorageDelete:          "CloudStorageDelete",
+	CloudStorageOAuthCallback:   "CloudStorageOAuthCallback",
+	CloudStorageOAuthInitiate:   "CloudStorageOAuthInitiate",
 }
 
 var variantValues = [...]string{
