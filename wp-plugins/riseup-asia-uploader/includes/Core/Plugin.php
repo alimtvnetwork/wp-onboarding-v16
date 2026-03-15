@@ -54,6 +54,7 @@ use RiseupAsia\Traits\Log\LogStatusTrait;
 use RiseupAsia\Traits\Log\LogClearingTrait;
 use RiseupAsia\Traits\Log\LogEmailTrait;
 use RiseupAsia\Traits\User\UserCrudTrait;
+use RiseupAsia\Traits\CloudStorage\CloudStorageTrait;
 
 class Plugin {
     // Wave 1 traits
@@ -88,6 +89,9 @@ class Plugin {
 
     // Wave 4 traits
     use UserCrudTrait;
+
+    // Wave 5 traits
+    use CloudStorageTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
