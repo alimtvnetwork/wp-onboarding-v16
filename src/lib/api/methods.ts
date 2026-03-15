@@ -468,6 +468,7 @@ export const api = {
     mode?: string;
     createBackup?: boolean;
     keepZipFiles?: boolean;
+    cloudStorageAccountIds?: number[];
   }) =>
     request<import('./types').BulkPublishResponse>("/publish/bulk", {
       method: "POST",
