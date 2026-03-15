@@ -382,6 +382,32 @@ trait CloudStorageGitLabTrait {
         return $decoded;
     }
 
+    /** Make a GitLab API request and return the raw response body (for binary file downloads). */
+    private function gitlabApiRequestRaw(string $method, string $path, string $token, array $account): string
+    {
+        $apiBase  = $this->gitlabGetApiBase($account);
+        $url      = $apiBase . $path;
+        $options  = $this->gitlabBuildOptions($method, $token);
+        $response = wp_remote_request($url, $options);
+
+        $isWpError = is_wp_error($response);
+
+        if ($isWpError) {
+            throw new RuntimeException('GitLab raw API request failed: ' . $response->get_error_message());
+        }
+
+        $statusCode    = (int) wp_remote_retrieve_response_code($response);
+        $isClientError = ($statusCode >= 400);
+
+        if ($isClientError) {
+            throw new RuntimeException(
+                sprintf('GitLab raw API error [%d] for %s', $statusCode, $path),
+            );
+        }
+
+        return wp_remote_retrieve_body($response);
+    }
+
     /** Get the HTTP status code for a GitLab API request. */
     private function gitlabApiStatusCode(string $method, string $apiBase, string $path, string $token): int
     {
