@@ -131,6 +131,7 @@ export default function Plugins() {
   const [addMethod, setAddMethod] = useState<"path" | "browse">("path");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [cloudStorageAccountIds, setCloudStorageAccountIds] = useState<number[]>([]);
   const [publishPlugin, setPublishPlugin] = useState<Plugin | null>(null);
   const [publishSiteId, setPublishSiteId] = useState<number | null>(null);
   const [showPublishProgress, setShowPublishProgress] = useState(false);
