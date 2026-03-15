@@ -95,7 +95,7 @@
 |------|-------------|---------|
 | `{seq}` | 3-digit zero-padded sequence | `001` |
 | `{DD MMM YYYY}` | Date with spaces | `15 Mar 2026` |
-| `W{weekNumber}` | ISO week of year (1–53) | `W11` |
+| `W{weekNumber}` | ISO week of year, zero-padded (01–53) | `W01`, `W11` |
 | `{label}` | Optional user-provided name (sanitized, hyphens only) | `my-snapshot` |
 
 **Examples:**
