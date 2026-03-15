@@ -137,6 +137,7 @@ trait CloudStorageFileTrait {
         foreach ($filesToDelete as $file) {
             $wasDeleted = match(true) {
                 $provider->isGitHub() => $this->githubDeleteFile($account, $token, $file['Path']),
+                $provider->isGitLab() => $this->gitlabDeleteFile($account, $token, $file['Path']),
                 default               => false,
             };
 

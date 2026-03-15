@@ -17,6 +17,7 @@ trait CloudStorageTrait {
     use CloudStorageAccountCrudTrait;
     use CloudStorageSettingsTrait;
     use CloudStorageGitHubTrait;
+    use CloudStorageGitLabTrait;
     use CloudStorageUploadTrait;
     use CloudStorageFileTrait;
 

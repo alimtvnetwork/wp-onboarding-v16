@@ -249,6 +249,7 @@ trait CloudStorageAccountCrudTrait {
 
             $result = match(true) {
                 $provider->isGitHub() => $this->githubTestConnection($account, $token),
+                $provider->isGitLab() => $this->gitlabTestConnection($account, $token),
                 default               => array('Success' => false, 'Error' => 'Provider not yet supported'),
             };
 
