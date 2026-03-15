@@ -137,9 +137,19 @@ Migrate remaining ~2,680 `interface{}` instances across ~58 Go files to typed al
 ### 5. 🟡 Cloud Storage — Pending Backend Integration
 - **Action:**
   - [ ] Add `cloud_upload` stage to `ServicePublishPipeline.go` — emit WS events for cloud upload progress (S-044)
-  - [ ] Add Google OAuth settings to admin Settings page (S-042)
-  - [ ] Conditionally show `cloud_upload` stage in PublishProgressDialog only when accounts selected (S-041)
+  - [x] Add Google OAuth settings to admin Settings page (S-042)
+  - [x] Conditionally show `cloud_upload` stage in PublishProgressDialog only when accounts selected (S-041)
   - [ ] Bump plugin versions to 2.15.0 (S-043)
+
+### 6. 🟡 Cloud Storage — Git Backup Strategy (NEW)
+- **Spec:** `spec/17-cloud-storage-providers/09-git-backup-strategy.md`
+- **Action (Phases 5A–5F):**
+  - [ ] Phase 5A: Repo selection + branch management (migration v19, list repos/branches endpoints, UI)
+  - [ ] Phase 5B: Full + incremental backup engine (migration v20, BackupHistory table, enums)
+  - [ ] Phase 5C: Automated scheduling (WP-Cron, schedule settings)
+  - [ ] Phase 5D: Git clone restore (shallow clone, API fallback, restore endpoint)
+  - [ ] Phase 5E: Backup history visualization (timeline UI, history endpoints)
+  - [ ] Phase 5F: Google Drive folder structure adaptation
 
 ---
 
