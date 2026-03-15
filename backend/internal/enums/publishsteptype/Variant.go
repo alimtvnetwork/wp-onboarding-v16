@@ -74,7 +74,8 @@ var variantValues = [...]string{
 	Completed:    "completed",
 	Failed:       "failed",
 	Running:      "running",
-	RemoteBackup: "remote-backup",
+	RemoteBackup:  "remote-backup",
+	CloudUpload:   "cloud_upload",
 }
 
 func (v Variant) String() string {
