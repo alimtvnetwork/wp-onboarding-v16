@@ -41,6 +41,7 @@ const TABS: TabItem[] = [
   { id: "backups", label: "Backups", icon: <Archive className="h-4 w-4" /> },
   { id: "snapshots", label: "Snapshots", icon: <Database className="h-4 w-4" /> },
   { id: "publish", label: "Publish", icon: <Upload className="h-4 w-4" /> },
+  { id: "cloud-storage", label: "Cloud Storage", icon: <Cloud className="h-4 w-4" /> },
   { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
   { id: "developer", label: "Developer", icon: <Bug className="h-4 w-4" /> },
   { id: "about", label: "About", icon: <Info className="h-4 w-4" /> },
