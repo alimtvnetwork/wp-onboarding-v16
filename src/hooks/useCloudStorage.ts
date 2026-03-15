@@ -53,7 +53,7 @@ export function useUpdateCloudStorageAccount() {
   return useMutation({
     mutationKey: ["cloud-storage-account-update"],
     mutationFn: async ({ id, body }: { id: number; body: CloudStorageAccountUpdateRequest }) => {
-      const res = await api.updateCloudStorageAccount(id, body);
+      const res = await api.updateCloudStorageAccount(id, body as unknown as Record<string, unknown>);
       return requireSuccess(res, { endpoint: `/cloud-storage/accounts/${id}`, method: "PUT" });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [ACCOUNTS_KEY] }),
