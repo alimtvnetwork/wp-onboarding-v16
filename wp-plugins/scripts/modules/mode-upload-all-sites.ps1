@@ -2,7 +2,7 @@
 # Multi-site upload mode: -uas (upload all plugins to all configured sites)
 # Thin orchestrator — delegates to zip-parallel.ps1, upload-parallel.ps1, summary-printer.ps1
 # Dot-sourced by run.ps1 — expects all helpers, plugin-helpers, zip-*, upload-*, summary-printer loaded.
-# Expects: $site, $exclude, $sync, $ScriptDir, $Config
+# Expects: $site, $index, $exclude, $sync, $ScriptDir, $Config
 
 function Invoke-UploadAllSitesMode {
     Write-Host ""
