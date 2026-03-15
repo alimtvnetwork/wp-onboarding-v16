@@ -4,12 +4,14 @@
 **Depends On**: `01-overview.md`, `05-github-implementation.md`, `06-gitlab-implementation.md`
 **Version**: 2.15.0+
 
-### Design Decisions (Confirmed)
+### Design Decisions (Confirmed 2026-03-15)
 
-- **Incremental detection**: Timestamp-based (`post_modified_gmt`, `option_value` changes)
-- **Cron reliability**: WP-Cron default + documentation for real system cron setup
-- **Restore method**: Git shallow clone first, API download fallback if `git` binary unavailable
-- **Branch cleanup**: Auto-delete incremental branch when parent full backup is rotated out
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **Incremental detection** | Timestamp-based (`post_modified_gmt`) | Fastest approach; avoids full table scans. Only exports rows where `post_modified_gmt > lastBackupTimestamp`. Works natively for `wp_posts`, `wp_postmeta` (via post join), `wp_options` (compare serialized values). Tables without timestamps are included in full backups only. |
+| **Cron reliability** | WP-Cron default + real cron documentation | WP-Cron requires zero server config. For low-traffic sites, document a `*/15 * * * * curl` system cron as recommended best practice. Plugin does NOT disable `DISABLE_WP_CRON` — that's the user's choice. |
+| **Restore method** | Git-first (shallow clone), API fallback | `git clone --depth 1 --single-branch` is the fastest way to fetch a single branch. Falls back to GitHub Contents API / GitLab Files API when `exec('git')` is unavailable (shared hosting without shell access). Fallback has a 100 MB limit on GitHub. |
+| **Branch cleanup** | Auto-delete with full backup rotation | When a full backup is rotated out (exceeds retention count), the system automatically deletes the associated `incremental/{YYYY-Www}` branch via `DELETE /git/refs/heads/...`. This prevents branch clutter. Orphaned branches are never left behind. |
 
 ---
 
@@ -137,12 +139,25 @@ main ─────●───────────────────
 
 ### 2.4 Incremental Detection
 
-The plugin tracks changes using a **change manifest**:
+The plugin uses **timestamp-based detection** to identify changed data since the last backup.
+
+#### Detection Strategy
+
+1. **`wp_posts` / `wp_postmeta`**: Query `WHERE post_modified_gmt > '{lastBackupTimestamp}'`
+2. **`wp_options`**: Compare `option_value` checksums against a stored manifest from the last backup
+3. **`wp_comments` / `wp_commentmeta`**: Query `WHERE comment_date_gmt > '{lastBackupTimestamp}'`
+4. **`wp_terms` / `wp_term_taxonomy`**: Always included (small tables, no reliable timestamp)
+5. **Custom tables without timestamps**: Excluded from incrementals — only captured in full backups
+6. **`wp-content/uploads/`**: Compare `filemtime()` against last backup timestamp
+
+#### Manifest (included in incremental ZIP)
 
 ```json
 {
   "baseFullBackup": "wp-backup-full-2026-03-09-000000.zip",
   "baseCommitSha": "abc123...",
+  "lastBackupTimestamp": "2026-03-09T02:00:00Z",
+  "detectionMethod": "timestamp",
   "tablesChanged": ["wp_posts", "wp_postmeta", "wp_options"],
   "filesChanged": ["wp-content/uploads/2026/03/new-image.jpg"],
   "totalRowsChanged": 42,
@@ -152,6 +167,11 @@ The plugin tracks changes using a **change manifest**:
 ```
 
 This manifest is included inside the incremental ZIP alongside the delta data.
+
+#### Limitations
+
+- Tables without `modified_date` or `created_at` columns are only captured in full backups
+- If the WordPress database clock drifts, rows may be missed — full weekly backups serve as the safety net
 
 ### 2.5 Database Changes
 
@@ -256,9 +276,9 @@ enum CloudStorageBackupStatusType: string
 
 ## 3. Automated Scheduling
 
-### 3.1 WordPress Cron
+### 3.1 WordPress Cron (Default)
 
-Register two WP-Cron events:
+Register two WP-Cron events. WP-Cron fires on page visits, which is acceptable for most sites.
 
 ```php
 // In Plugin activation hook
@@ -279,7 +299,18 @@ if (!wp_next_scheduled('riseup_cloud_incremental_backup')) {
 }
 ```
 
-### 3.2 Cron Handlers
+### 3.2 Real System Cron (Recommended for Reliability)
+
+For low-traffic sites where WP-Cron may miss schedules, document this setup:
+
+```bash
+# Add to crontab (crontab -e) or cPanel Cron Jobs:
+*/15 * * * * curl -sf https://your-site.com/wp-cron.php >/dev/null 2>&1
+```
+
+**Important**: Do NOT set `DISABLE_WP_CRON` in the plugin — that's the user's choice. The plugin should work with both WP-Cron and real cron.
+
+### 3.3 Cron Handlers
 
 ```php
 add_action('riseup_cloud_full_backup', array($this, 'handleScheduledFullBackup'));
@@ -340,9 +371,9 @@ GET /repos/{owner}/{repo}/branches/incremental/2026-W11
 
 ## 4. Git Clone Restore
 
-### 4.1 Restore Flow
+### 4.1 Restore Flow (Git-First Strategy)
 
-```
+The restore always attempts `git clone` first. If the `git` binary is unavailable (shared hosting), it falls back to the provider's file download API.
 1. User selects a backup from the history (full or incremental)
 2. System creates a temp directory: /tmp/riseup-restore-{uuid}/
 3. System performs a sparse/shallow git clone of the specific branch:
@@ -469,17 +500,34 @@ Body: { "BackupId": 42 }
 → { Success: true, Message: "Backup restored successfully" }
 ```
 
-### 4.5 Alternative: Download via API (No Git Required)
+### 4.5 Fallback: Download via API (No Git Binary)
 
-For environments where `git` is not available, fall back to API download:
+For shared hosting environments where `exec('git')` is unavailable, the restore handler
+detects this and falls back to downloading the ZIP via the provider's REST API.
 
-**GitHub**:
+**Detection**:
+```php
+$isGitAvailable = $this->isShellCommandAvailable('git');
+
+if ($isGitAvailable) {
+    $this->gitCloneShallow($account, $branch, $tempDir);
+} else {
+    $this->downloadViaApi($account, $backup['RemotePath'], $branch, $tempDir);
+}
+```
+
+**GitHub** (files ≤100 MB):
 ```
 GET /repos/{owner}/{repo}/contents/{path}?ref={branch}
 ```
-(For files ≤100 MB; response includes base64-encoded content)
+Response includes base64-encoded content. Decode and write to temp dir.
 
-**GitLab**:
+**GitHub** (files >100 MB — use Git Data API):
+```
+GET /repos/{owner}/{repo}/git/blobs/{sha}
+```
+
+**GitLab** (no size limit on raw endpoint):
 ```
 GET /projects/{id}/repository/files/{urlEncodedPath}/raw?ref={branch}
 ```
@@ -575,14 +623,19 @@ DELETE /cloud-storage/backup-history/{id}
 ### 6.1 Full Backup Rotation
 
 - Retention count applies to full backups on `main` branch
-- When a full backup is deleted, its associated incremental branch is also deleted
+- **Auto-delete**: When a full backup exceeds retention, the system:
+  1. Deletes the full backup file from the `main` branch
+  2. Deletes all `CloudStorageBackupHistory` records linked via `BaseFullBackupId`
+  3. Deletes the associated `incremental/{YYYY-Www}` branch entirely (see §6.3)
 - Default retention: 4 full backups (≈ 1 month of weekly fulls)
+- **No orphaned branches**: This is enforced — there is no "keep orphaned branches" mode
 
 ### 6.2 Incremental Rotation
 
 - Each full backup cycle has its own incremental branch
 - Incrementals within a branch are capped (default: 6 per cycle)
-- When the full backup is rotated out, the entire incremental branch is pruned
+- When the parent full backup is rotated out, the entire incremental branch is pruned automatically
+- Individual incremental files can also be manually deleted without affecting the branch
 
 ### 6.3 Branch Deletion
 
