@@ -151,6 +151,48 @@ trait RouteRegistrationTrait
             'callback'            => array($this, 'handleCloudStorageOAuthCallback'),
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_oauth_callback', $csPerm),
         ));
+
+        // GET /cloud-storage/repos
+        $safeRegister(EndpointType::CloudStorageRepos->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleListCloudStorageRepos'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_repos', $csPerm),
+        ));
+
+        // GET /cloud-storage/branches
+        $safeRegister(EndpointType::CloudStorageBranches->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleListCloudStorageBranches'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_branches', $csPerm),
+        ));
+
+        // GET + DELETE /cloud-storage/backup-history
+        $safeRegister(EndpointType::CloudStorageBackupHistory->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleListBackupHistory'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_backup_history', $csPerm),
+        ));
+
+        // GET + DELETE /cloud-storage/backup-history/{id}
+        $safeRegister(EndpointType::CloudStorageBackupHistoryId->route(), array(
+            array(
+                'methods'             => HttpMethodType::Get->value,
+                'callback'            => array($this, 'handleGetBackupHistoryRecord'),
+                'permission_callback' => $this->buildPermissionCallback('cloud_storage_backup_history_get', $csPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Delete->value,
+                'callback'            => array($this, 'handleDeleteBackupHistoryRecord'),
+                'permission_callback' => $this->buildPermissionCallback('cloud_storage_backup_history_delete', $csPerm),
+            ),
+        ));
+
+        // POST /cloud-storage/restore
+        $safeRegister(EndpointType::CloudStorageRestore->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleCloudStorageRestore'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_restore', $csPerm),
+        ));
     }
 
     /**
