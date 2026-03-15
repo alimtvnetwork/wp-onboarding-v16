@@ -426,6 +426,7 @@ export default function Plugins() {
         files: files,
         createBackup: true,
         keepZipFiles,
+        cloudStorageAccountIds: cloudStorageAccountIds.length > 0 ? cloudStorageAccountIds : undefined,
       });
       if (response.success) {
         // Toast is handled by WebSocket PUBLISH_COMPLETE event — do not duplicate here
