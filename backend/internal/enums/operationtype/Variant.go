@@ -60,6 +60,7 @@ const (
 	RequestLogsClear
 	ConfirmLogsClear
 	EmailLogs
+	CloudStorageUpload
 )
 
 var variantLabels = [...]string{
