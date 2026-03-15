@@ -261,9 +261,12 @@ if ($help) {
     Write-Host "    .\run.ps1 -u -as -xs 'Test V1'     # Exclude specific site"
     Write-Host ""
     Write-Host "  Log management:" -ForegroundColor DarkGray
-    Write-Host "    .\run.ps1 -cl                      # Clear logs on all sites (both plugins)"
+    Write-Host "    .\run.ps1 -cl                      # Clear logs on default site (both plugins)"
     Write-Host "    .\run.ps1 -cl -site 'Test V1'      # Clear logs on specific site"
+    Write-Host "    .\run.ps1 -cl -i 1                 # Clear logs on site #1"
+    Write-Host "    .\run.ps1 -cl -i 1,2,3             # Clear logs on sites #1, #2, #3"
     Write-Host "    .\run.ps1 -cl -xs 'Test V1'        # Clear logs on all sites EXCEPT Test V1"
+    Write-Host "    .\run.ps1 -cla                     # Clear logs on ALL configured sites"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
