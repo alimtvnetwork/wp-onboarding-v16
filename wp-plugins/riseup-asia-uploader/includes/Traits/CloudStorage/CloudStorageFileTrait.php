@@ -119,9 +119,10 @@ trait CloudStorageFileTrait {
         $provider = CloudStorageProviderType::from($account['Provider']);
 
         $files = match(true) {
-            $provider->isGitHub() => $this->githubListFiles($account, $token, $backupDir),
-            $provider->isGitLab() => $this->gitlabListFiles($account, $token, $backupDir),
-            default               => array(),
+            $provider->isGitHub()      => $this->githubListFiles($account, $token, $backupDir),
+            $provider->isGitLab()      => $this->gitlabListFiles($account, $token, $backupDir),
+            $provider->isGoogleDrive() => $this->googleDriveListFiles($account, $token, $backupDir),
+            default                    => array(),
         };
 
         usort($files, fn($a, $b) => strcmp($a['Name'], $b['Name']));
