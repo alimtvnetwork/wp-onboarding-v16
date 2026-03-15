@@ -307,7 +307,7 @@ trait UploadExtractTrait
         if ($result instanceof WP_REST_Response) {
             $this->logExternalPluginFailure($slug, 'activation', 'Plugin activation or post-extract validation failed');
 
-            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $result);
+            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $result, $previousVersion);
         }
 
         // Success — clean up backup
