@@ -238,16 +238,7 @@ trait CloudStorageScheduleHelpersTrait {
         }
     }
 
-    /**
-     * Dispatch upload to the appropriate provider.
-     *
-     * @param array  $account    Account row.
-     * @param string $token      Decrypted token.
-     * @param string $localPath  Local file path.
-     * @param string $remotePath Remote file path.
-     * @param string $branch     Target branch name.
-     * @return array Upload result from the provider.
-     */
+    /** Dispatch upload to the appropriate provider. */
     private function dispatchCloudUpload(
         array $account,
         string $token,
