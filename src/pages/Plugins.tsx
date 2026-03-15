@@ -1491,6 +1491,11 @@ export default function Plugins() {
                 </Button>
               </div>
             )}
+
+            <CloudStorageBackupSelector
+              selectedAccountIds={cloudStorageAccountIds}
+              onSelectionChange={setCloudStorageAccountIds}
+            />
           </div>
 
           <DialogFooter>
