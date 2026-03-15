@@ -71,6 +71,16 @@ const (
 	UsersImport
 	UsersExportSqlite
 	UsersImportSqlite
+	CloudStorageAccounts
+	CloudStorageAccountId
+	CloudStorageAccountTest
+	CloudStorageSettings
+	CloudStorageSettingsProvider
+	CloudStorageUpload
+	CloudStorageFiles
+	CloudStorageDelete
+	CloudStorageOAuthCallback
+	CloudStorageOAuthInitiate
 )
 
 var variantLabels = [...]string{
