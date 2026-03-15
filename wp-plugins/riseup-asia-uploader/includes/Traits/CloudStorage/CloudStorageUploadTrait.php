@@ -113,7 +113,7 @@ trait CloudStorageUploadTrait {
             array($provider),
         );
 
-        $isRotationDisabled = empty($settings) || !((bool) ($settings['RotationEnabled'] ?? false));
+        $isRotationDisabled = ($settings === false) || !((bool) ($settings['RotationEnabled'] ?? false));
 
         if ($isRotationDisabled) {
             return array('applied' => false, 'deleted' => 0);
