@@ -13,8 +13,6 @@ if (!defined('ABSPATH')) {
 }
 
 use RuntimeException;
-use Throwable;
-
 use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\HttpHeaderType;
 use RiseupAsia\Enums\HttpStatusType;
