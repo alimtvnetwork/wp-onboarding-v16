@@ -26,6 +26,7 @@ import { VersionHistoryPanel } from "@/components/plugins/VersionHistoryPanel";
 import { ScanDirectoryPanel } from "@/components/plugins/ScanDirectoryPanel";
 import { QuickPublishIndicator } from "@/components/plugins/QuickPublishIndicator";
 import { DiffPreviewDialog } from "@/components/plugins/DiffPreviewDialog";
+import { CloudStorageBackupSelector } from "@/components/cloud-storage/CloudStorageBackupSelector";
 import { SiteVersionBadge } from "@/components/publish/SiteVersionBadge";
 import {
   Dialog,
