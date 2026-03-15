@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useErrorStore } from "@/stores/errorStore";
 
-type SettingsTab = "watching" | "backups" | "snapshots" | "publish" | "appearance" | "developer" | "about";
+type SettingsTab = "watching" | "backups" | "snapshots" | "publish" | "cloud-storage" | "appearance" | "developer" | "about";
 
 interface TabItem {
   id: SettingsTab;
