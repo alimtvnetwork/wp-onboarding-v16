@@ -330,14 +330,7 @@ class BackupFolderResolver
         $hyphenated = str_replace(' ', '-', $lowered);
         $cleaned = preg_replace('/[^a-z0-9\-]/', '', $hyphenated);
         $deduped = preg_replace('/-{2,}/', '-', $cleaned);
-        $trimmed = trim($deduped, '-');
 
-        $isTooLong = (strlen($trimmed) > 50);
-
-        if ($isTooLong) {
-            return substr($trimmed, 0, 50);
-        }
-
-        return $trimmed;
+        return trim($deduped, '-');
     }
 }
