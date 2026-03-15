@@ -140,6 +140,7 @@ func (v Variant) IsCompleted() bool  { return v == Completed }
 func (v Variant) IsFailed() bool     { return v == Failed }
 func (v Variant) IsRunning() bool       { return v == Running }
 func (v Variant) IsRemoteBackup() bool  { return v == RemoteBackup }
+func (v Variant) IsCloudUpload() bool   { return v == CloudUpload }
 
 func (v Variant) IsAnyOf(others ...Variant) bool {
 	for _, o := range others {
