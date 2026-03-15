@@ -23,4 +23,6 @@ trait DatabaseMigrationsLateTrait {
     use DatabaseMigrationsV14Trait;
     use DatabaseMigrationsV15Trait;
     use DatabaseMigrationsV16Trait;
+    use DatabaseMigrationsV17Trait;
+    use DatabaseMigrationsV18Trait;
 }
