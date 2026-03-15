@@ -580,6 +580,9 @@ export default function Settings() {
           </div>
         );
         
+      case "cloud-storage":
+        return <GoogleOAuthSettingsPanel />;
+        
       case "appearance":
         return <ThemeSelector />;
         
