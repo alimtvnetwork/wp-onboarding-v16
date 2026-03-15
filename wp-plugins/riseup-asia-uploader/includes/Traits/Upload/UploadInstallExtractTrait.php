@@ -64,12 +64,18 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zipResult) {
         $context = $this->prepareExtractionContext($input, $zipResult);
 
+        // Capture previous version before any replacement
+        $previousVersion = $context[ResponseKeyType::IsUpdate->value]
+            ? $this->detectInstalledVersionBySlug($context[ResponseKeyType::Slug->value])
+            : null;
+
         // Log upload activity
         $this->fileLogger->info('Plugin upload processing started', array(
             'slug' => $context[ResponseKeyType::Slug->value],
             'isUpdate' => $context[ResponseKeyType::IsUpdate->value],
             'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
             'activate' => $input['activate'],
+            'previousVersion' => $previousVersion,
         ));
 
         // Create backup before replacement for ALL updates (self and non-self)
