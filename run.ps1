@@ -1,5 +1,5 @@
 # WP Plugin Publish - PowerShell Build & Run Script
-# Version: 2.14.0
+# Version: 2.15.0
 # Supports pnpm with PnP for disk-efficient Node.js dependency management
 # All paths are relative to script location (working directory)
 
@@ -30,6 +30,7 @@ param(
     [Alias('ls','lr')][switch]$listsites,
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
+    [Alias('cla')][switch]$clearlogsall,
     [Alias('i')][string]$index = ""
 )
 
@@ -203,9 +204,12 @@ if ($help) {
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
     Write-Host ""
     Write-Host "LOG MANAGEMENT:" -ForegroundColor Yellow
-    Write-Host "  -cl, -clearlogs     Clear logs on ALL configured sites (both plugins)"
+    Write-Host "  -cl, -clearlogs     Clear logs on default site (both plugins)"
     Write-Host "  -cl -site 'name'    Clear logs on a specific site"
+    Write-Host "  -cl -i N            Clear logs on site #N (1-based index from -ls)"
+    Write-Host "  -cl -i 1,2,3        Clear logs on multiple sites by index"
     Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
+    Write-Host "  -cla                Clear logs on ALL configured sites (both plugins)"
     Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
@@ -257,9 +261,12 @@ if ($help) {
     Write-Host "    .\run.ps1 -u -as -xs 'Test V1'     # Exclude specific site"
     Write-Host ""
     Write-Host "  Log management:" -ForegroundColor DarkGray
-    Write-Host "    .\run.ps1 -cl                      # Clear logs on all sites (both plugins)"
+    Write-Host "    .\run.ps1 -cl                      # Clear logs on default site (both plugins)"
     Write-Host "    .\run.ps1 -cl -site 'Test V1'      # Clear logs on specific site"
+    Write-Host "    .\run.ps1 -cl -i 1                 # Clear logs on site #1"
+    Write-Host "    .\run.ps1 -cl -i 1,2,3             # Clear logs on sites #1, #2, #3"
     Write-Host "    .\run.ps1 -cl -xs 'Test V1'        # Clear logs on all sites EXCEPT Test V1"
+    Write-Host "    .\run.ps1 -cla                     # Clear logs on ALL configured sites"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
@@ -380,6 +387,7 @@ if ($zip) { Invoke-ZipMode }
 if ($za) { Invoke-ZipAllMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
+if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
 if ($clearlogs) { Invoke-ClearLogsMode }
 if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }

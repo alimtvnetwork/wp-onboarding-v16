@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.14.0",
-  "releaseDate": "2026-03-14",
+  "version": "2.15.0",
+  "releaseDate": "2026-03-15",
   "gitCommit": "dev",
-  "buildTime": "2026-03-14T00:00:00Z",
-  "scriptVersion": "2.14.0",
-  "wpPluginVersion": "2.14.0",
-  "quploadVersion": "2.14.0",
+  "buildTime": "2026-03-15T00:00:00Z",
+  "scriptVersion": "2.15.0",
+  "wpPluginVersion": "2.15.0",
+  "quploadVersion": "2.15.0",
   "changelog": [
+    {
+      "version": "2.15.0",
+      "date": "2026-03-15",
+      "title": "Settings UI Fix, Clear Logs Targeting & REST Conventions",
+      "changes": [
+        "🐛 Fixed 'Undefined array key' warnings in Snapshot Settings UI (PascalCase key migration)",
+        "🧹 -cla flag clears logs on ALL sites; -cl now supports -site, -i, -xs targeting",
+        "📋 Updated help text with full log management examples",
+        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+      ]
+    },
     {
       "version": "2.14.0",
       "date": "2026-03-14",
