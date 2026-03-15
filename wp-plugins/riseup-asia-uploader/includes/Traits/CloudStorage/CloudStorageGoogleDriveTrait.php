@@ -122,7 +122,10 @@ trait CloudStorageGoogleDriveTrait {
             return array();
         }
 
-        $query = sprintf("'%s' in parents and trashed=false", $folderId);
+        $query = sprintf(
+            "'%s' in parents and mimeType!='application/vnd.google-apps.folder' and trashed=false",
+            $folderId,
+        );
 
         $url = self::GDRIVE_API . '/files?' . http_build_query(array(
             'q'       => $query,
@@ -148,6 +151,60 @@ trait CloudStorageGoogleDriveTrait {
         }
 
         return $files;
+    }
+
+    /**
+     * List subfolder names in the backup root folder.
+     *
+     * For Google Drive, the `$dir` parameter is used to resolve a subfolder
+     * by path from the account's root FolderId.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token (unused — refreshed internally).
+     * @param string $dir     Relative folder path (e.g., "full-backup").
+     * @return array<string> Subfolder names.
+     */
+    private function googleDriveListDirectories(array $account, string $token, string $dir): array
+    {
+        $validToken   = $this->googleDriveEnsureValidToken($account);
+        $rootFolderId = $account['FolderId'] ?? '';
+        $isRootEmpty  = empty($rootFolderId);
+
+        if ($isRootEmpty) {
+            return array();
+        }
+
+        // Resolve the target folder by walking the path
+        $parentId = $this->googleDriveResolveFolderByPath($validToken, $rootFolderId, $dir);
+        $isNotFound = empty($parentId);
+
+        if ($isNotFound) {
+            return array();
+        }
+
+        $query = sprintf(
+            "'%s' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            $parentId,
+        );
+
+        $url = self::GDRIVE_API . '/files?' . http_build_query(array(
+            'q'       => $query,
+            'fields'  => 'files(id,name)',
+            'orderBy' => 'name',
+        ));
+
+        $options  = $this->googleDriveBuildOptions('GET', $validToken);
+        $response = wp_remote_get($url, $options);
+        $body     = $this->googleDriveParseResponse($response);
+
+        $dirs  = array();
+        $items = $body['files'] ?? array();
+
+        foreach ($items as $item) {
+            $dirs[] = $item['name'] ?? '';
+        }
+
+        return $dirs;
     }
 
     /** Delete a file from Google Drive by file ID. */
