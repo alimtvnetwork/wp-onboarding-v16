@@ -140,8 +140,8 @@ trait CloudStorageHistoryTrait {
         $table = TableType::CloudStorageBackupHistory->value;
 
         $sql = sprintf(
-            "INSERT INTO %s (AccountId, BackupType, FileName, RemotePath, RemoteUrl, CommitSha, BranchName, BaseFullBackupId, FileSizeBytes, TablesChanged, RowsChanged, Duration, Status, ErrorMessage)
-             VALUES (:accountId, :backupType, :fileName, :remotePath, :remoteUrl, :commitSha, :branchName, :baseFullBackupId, :fileSizeBytes, :tablesChanged, :rowsChanged, :duration, :status, :errorMessage)",
+            "INSERT INTO %s (AccountId, BackupType, FileName, RemotePath, RemoteUrl, CommitSha, BranchName, BaseFullBackupId, FileSizeBytes, TablesChanged, RowsChanged, Duration, Status, ErrorMessage, FolderPath, ChunkCount, TotalSize)
+             VALUES (:accountId, :backupType, :fileName, :remotePath, :remoteUrl, :commitSha, :branchName, :baseFullBackupId, :fileSizeBytes, :tablesChanged, :rowsChanged, :duration, :status, :errorMessage, :folderPath, :chunkCount, :totalSize)",
             $table,
         );
 
@@ -160,6 +160,9 @@ trait CloudStorageHistoryTrait {
             'duration'         => $data['Duration'] ?? 0,
             'status'           => $data['Status'] ?? CloudStorageBackupStatusType::Pending->value,
             'errorMessage'     => $data['ErrorMessage'] ?? '',
+            'folderPath'       => $data['FolderPath'] ?? '',
+            'chunkCount'       => $data['ChunkCount'] ?? 0,
+            'totalSize'        => $data['TotalSize'] ?? 0,
         ));
 
         return (int) $this->db->lastInsertId();

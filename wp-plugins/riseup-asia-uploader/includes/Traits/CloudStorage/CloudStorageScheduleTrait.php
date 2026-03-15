@@ -17,6 +17,8 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 
+use RiseupAsia\CloudStorage\BackupFolderResolver;
+use RiseupAsia\CloudStorage\ZipSplitter;
 use RiseupAsia\Enums\BackupScheduleType;
 use RiseupAsia\Enums\BackupStrategyType;
 use RiseupAsia\Enums\CloudStorageBackupStatusType;
@@ -26,6 +28,8 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Snapshot\SnapshotOrchestrator;
 
 trait CloudStorageScheduleTrait {
 
@@ -169,24 +173,58 @@ trait CloudStorageScheduleTrait {
         }
     }
 
-    /** Execute a full backup for a single account. */
-    private function executeFullBackupForAccount(array $account): void
+    /**
+     * Handle a manual backup triggered by the user.
+     *
+     * @param string $label User-provided label for the backup folder.
+     */
+    public function handleManualBackup(string $label): void
     {
-        $accountId  = (int) $account['Id'];
-        $provider   = CloudStorageProviderType::from($account['Provider']);
-        $token      = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
-        $prefix     = $this->getBackupPrefixForAccount($account);
-        $timestamp  = gmdate('Y-m-d-His');
-        $fileName   = sprintf('%s-full-%s.zip', $prefix, $timestamp);
-        $branchName = $account['DefaultBranch'] ?? 'main';
-        $remotePath = sprintf('backups/%s', $fileName);
+        $this->fileLogger->info('[CLOUD-BACKUP] Starting manual backup', array('label' => $label));
+
+        try {
+            $accounts = $this->getEnabledCloudStorageAccounts();
+
+            foreach ($accounts as $account) {
+                $this->executeFullBackupForAccount($account, $label);
+            }
+
+            $this->fileLogger->info('[CLOUD-BACKUP] Manual backup complete', array('label' => $label));
+
+        } catch (Throwable $e) {
+            $this->fileLogger->logException($e, '[CLOUD-BACKUP] Manual backup failed');
+        }
+    }
+
+    /** Execute a full backup for a single account. */
+    private function executeFullBackupForAccount(array $account, ?string $label = null): void
+    {
+        $accountId = (int) $account['Id'];
+        $provider  = CloudStorageProviderType::from($account['Provider']);
+        $token     = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
+        $timestamp = time();
+
+        $resolver = new BackupFolderResolver();
+        $existingFolders = $this->listRemoteFolders($account, $token, BackupFolderResolver::FULL_ROOT);
+        $sequence = $resolver->resolveNextFullSequence($existingFolders);
+
+        $folderName = $resolver->buildFullFolderName($sequence, $timestamp, $label);
+        $folderPath = $resolver->buildFullPath($sequence, $timestamp, $label);
+        $commitMessage = $resolver->buildCommitMessage(
+            CloudStorageBackupType::Full,
+            $sequence,
+            null,
+            $timestamp,
+            $label,
+        );
 
         $historyId = $this->insertBackupHistory(array(
             'AccountId'  => $accountId,
             'BackupType' => CloudStorageBackupType::Full->value,
-            'FileName'   => $fileName,
-            'RemotePath' => $remotePath,
-            'BranchName' => $branchName,
+            'FileName'   => $folderName,
+            'RemotePath' => $folderPath,
+            'BranchName' => 'main',
+            'FolderPath' => $folderPath,
             'Status'     => CloudStorageBackupStatusType::Pending->value,
         ));
 
@@ -195,31 +233,43 @@ trait CloudStorageScheduleTrait {
 
             $startTime = microtime(true);
 
-            // Create snapshot ZIP using existing backup system
-            $zipPath = $this->createFullBackupZip($prefix, $timestamp);
+            // ── 1. Create snapshot ZIP via SnapshotOrchestrator ──
+            $zipPath = $this->createFullBackupZip();
 
-            $fileSizeBytes = filesize($zipPath);
+            // ── 2. Split into ≤ 3 MB chunks ────────────────────
+            $splitResult = $this->splitBackupZip(
+                $zipPath,
+                CloudStorageBackupType::Full,
+                $sequence,
+                $folderName,
+            );
 
-            // Upload to provider
-            $uploadResult = $this->dispatchCloudUpload($account, $token, $zipPath, $remotePath, $branchName);
+            // ── 3. Upload chunks + manifest to remote folder ───
+            $this->uploadSplitChunks($account, $token, $splitResult, $folderPath, $commitMessage);
 
             $duration = round(microtime(true) - $startTime, 2);
 
             $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Success, array(
-                'RemoteUrl'     => $uploadResult['RemoteUrl'] ?? '',
-                'CommitSha'     => $uploadResult['CommitSha'] ?? '',
-                'FileSizeBytes' => $fileSizeBytes,
+                'FolderPath'    => $folderPath,
+                'ChunkCount'    => $splitResult['chunkCount'],
+                'TotalSize'     => $splitResult['totalSize'],
+                'FileSizeBytes' => $splitResult['totalSize'],
                 'Duration'      => $duration,
             ));
 
-            // Apply rotation
+            // ── 4. Rotation ────────────────────────────────────
             $this->applyFullBackupRotation($account, $token);
 
             $this->fileLogger->info('[CLOUD-BACKUP] Full backup uploaded', array(
-                'accountId' => $accountId,
-                'file'      => $fileName,
-                'duration'  => $duration,
+                'accountId'  => $accountId,
+                'folder'     => $folderPath,
+                'chunks'     => $splitResult['chunkCount'],
+                'totalSize'  => $splitResult['totalSize'],
+                'duration'   => $duration,
             ));
+
+            // ── 5. Cleanup temp files ──────────────────────────
+            $this->cleanupTempDir($splitResult['tempDir']);
 
         } catch (Throwable $e) {
             $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Failed, array(
@@ -251,19 +301,31 @@ trait CloudStorageScheduleTrait {
             return;
         }
 
-        $prefix     = $this->getBackupPrefixForAccount($account);
-        $timestamp  = gmdate('Y-m-d-His');
-        $isoWeek    = gmdate('Y-\WW');
-        $fileName   = sprintf('%s-incr-%s.zip', $prefix, $timestamp);
-        $branchName = sprintf('incremental/%s', $isoWeek);
-        $remotePath = sprintf('backups/%s', $fileName);
+        $resolver = new BackupFolderResolver();
+        $parentFolderName = basename($latestFull['FolderPath'] ?? $latestFull['RemotePath'] ?? '');
+        $existingIncrSubs = $this->listRemoteFolders(
+            $account,
+            $token,
+            $resolver->getIncrementalRootForFull($parentFolderName),
+        );
+        $incrSequence = $resolver->resolveNextIncrementalSequence($existingIncrSubs);
+
+        $incrFolderPath = $resolver->buildIncrementalPath($parentFolderName, $incrSequence);
+        $timestamp = time();
+        $commitMessage = $resolver->buildCommitMessage(
+            CloudStorageBackupType::Incremental,
+            (int) ($latestFull['Id'] ?? 0),
+            $incrSequence,
+            $timestamp,
+        );
 
         $historyId = $this->insertBackupHistory(array(
             'AccountId'        => $accountId,
             'BackupType'       => CloudStorageBackupType::Incremental->value,
-            'FileName'         => $fileName,
-            'RemotePath'       => $remotePath,
-            'BranchName'       => $branchName,
+            'FileName'         => str_pad((string) $incrSequence, 3, '0', STR_PAD_LEFT),
+            'RemotePath'       => $incrFolderPath,
+            'BranchName'       => 'main',
+            'FolderPath'       => $incrFolderPath,
             'BaseFullBackupId' => (int) $latestFull['Id'],
             'Status'           => CloudStorageBackupStatusType::Pending->value,
         ));
@@ -271,43 +333,47 @@ trait CloudStorageScheduleTrait {
         try {
             $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Uploading);
 
-            // Ensure the incremental branch exists
-            $isBranchMissing = !$this->branchExists($account, $token, $branchName);
-
-            if ($isBranchMissing) {
-                $fullCommitSha = $latestFull['CommitSha'] ?? '';
-                $this->createBranch($account, $token, $branchName, $fullCommitSha);
-            }
-
             $startTime = microtime(true);
 
-            // Create incremental ZIP based on timestamp detection
+            // ── 1. Create incremental ZIP ──────────────────────
             $lastBackupTimestamp = $latestFull['CreatedAt'] ?? gmdate('Y-m-d H:i:s');
-            $incrementalResult  = $this->createIncrementalBackupZip($prefix, $timestamp, $lastBackupTimestamp);
+            $incrResult = $this->createIncrementalBackupZip($lastBackupTimestamp);
 
-            $zipPath       = $incrementalResult['ZipPath'];
-            $fileSizeBytes = filesize($zipPath);
+            $zipPath = $incrResult[ResponseKeyType::ZipPath->value];
 
-            // Upload to provider on the incremental branch
-            $uploadResult = $this->dispatchCloudUpload($account, $token, $zipPath, $remotePath, $branchName);
+            // ── 2. Split into ≤ 3 MB chunks ────────────────────
+            $splitResult = $this->splitBackupZip(
+                $zipPath,
+                CloudStorageBackupType::Incremental,
+                $incrSequence,
+                str_pad((string) $incrSequence, 3, '0', STR_PAD_LEFT),
+            );
+
+            // ── 3. Upload chunks + manifest ────────────────────
+            $this->uploadSplitChunks($account, $token, $splitResult, $incrFolderPath, $commitMessage);
 
             $duration = round(microtime(true) - $startTime, 2);
 
             $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Success, array(
-                'RemoteUrl'     => $uploadResult['RemoteUrl'] ?? '',
-                'CommitSha'     => $uploadResult['CommitSha'] ?? '',
-                'FileSizeBytes' => $fileSizeBytes,
-                'TablesChanged' => $incrementalResult['TablesChanged'] ?? '',
-                'RowsChanged'   => $incrementalResult['RowsChanged'] ?? 0,
+                'FolderPath'    => $incrFolderPath,
+                'ChunkCount'    => $splitResult['chunkCount'],
+                'TotalSize'     => $splitResult['totalSize'],
+                'FileSizeBytes' => $splitResult['totalSize'],
+                'TablesChanged' => $incrResult[ResponseKeyType::TablesChanged->value] ?? '',
+                'RowsChanged'   => $incrResult[ResponseKeyType::TotalNewRows->value] ?? 0,
                 'Duration'      => $duration,
             ));
 
             $this->fileLogger->info('[CLOUD-BACKUP] Incremental backup uploaded', array(
-                'accountId' => $accountId,
-                'file'      => $fileName,
-                'branch'    => $branchName,
-                'duration'  => $duration,
+                'accountId'     => $accountId,
+                'folder'        => $incrFolderPath,
+                'chunks'        => $splitResult['chunkCount'],
+                'tablesChanged' => $incrResult[ResponseKeyType::TablesChanged->value] ?? '',
+                'duration'      => $duration,
             ));
+
+            // ── 4. Cleanup temp files ──────────────────────────
+            $this->cleanupTempDir($splitResult['tempDir']);
 
         } catch (Throwable $e) {
             $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Failed, array(
@@ -318,7 +384,232 @@ trait CloudStorageScheduleTrait {
         }
     }
 
-    // ── Private helpers ──────────────────────────────────────────
+    // ── Snapshot + Split helpers ─────────────────────────────────
+
+    /**
+     * Create a full backup ZIP via the existing SnapshotOrchestrator.
+     *
+     * @return string Absolute path to the created ZIP file.
+     * @throws \RuntimeException If snapshot creation fails.
+     */
+    private function createFullBackupZip(): string
+    {
+        $orchestrator = SnapshotOrchestrator::getInstance();
+
+        $result = $orchestrator->executeFullBackup(array(
+            ResponseKeyType::Async->value => false,
+        ));
+
+        $isSuccess = !empty($result[ResponseKeyType::Success->value]);
+
+        if (!$isSuccess) {
+            throw new \RuntimeException(
+                'Full snapshot creation failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown error'),
+            );
+        }
+
+        $zipPath = $result[ResponseKeyType::ZipPath->value] ?? '';
+        $isZipMissing = empty($zipPath) || PathHelper::isFileMissing($zipPath);
+
+        if ($isZipMissing) {
+            throw new \RuntimeException('Full snapshot ZIP not found after creation');
+        }
+
+        return $zipPath;
+    }
+
+    /**
+     * Create an incremental backup ZIP with delta data since the given timestamp.
+     *
+     * @param string $lastBackupTimestamp ISO timestamp of the last full backup.
+     * @return array{ZipPath: string, TablesChanged: string, TotalNewRows: int}
+     * @throws \RuntimeException If incremental backup fails.
+     */
+    private function createIncrementalBackupZip(string $lastBackupTimestamp): array
+    {
+        $orchestrator = SnapshotOrchestrator::getInstance();
+
+        $result = $orchestrator->executeIncrementalBackup(array(
+            ResponseKeyType::Async->value => false,
+        ));
+
+        $isSuccess = !empty($result[ResponseKeyType::Success->value]);
+
+        if (!$isSuccess) {
+            throw new \RuntimeException(
+                'Incremental backup failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown error'),
+            );
+        }
+
+        $zipPath = $result[ResponseKeyType::ZipPath->value] ?? '';
+        $isZipMissing = empty($zipPath) || PathHelper::isFileMissing($zipPath);
+
+        if ($isZipMissing) {
+            throw new \RuntimeException('Incremental backup ZIP not found after creation');
+        }
+
+        return array(
+            ResponseKeyType::ZipPath->value        => $zipPath,
+            ResponseKeyType::TablesChanged->value   => $result[ResponseKeyType::TablesChanged->value] ?? '',
+            ResponseKeyType::TotalNewRows->value    => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
+        );
+    }
+
+    /**
+     * Split a backup ZIP into ≤ 3 MB chunks with a manifest.
+     *
+     * @param string                 $zipPath   Source ZIP path.
+     * @param CloudStorageBackupType $type      Full or Incremental.
+     * @param int                    $sequence  Sequence number.
+     * @param string                 $label     Label for the manifest.
+     * @return array{tempDir: string, chunks: array, manifestPath: string, chunkCount: int, totalSize: int}
+     * @throws \RuntimeException If splitting fails.
+     */
+    private function splitBackupZip(
+        string $zipPath,
+        CloudStorageBackupType $type,
+        int $sequence,
+        string $label,
+    ): array {
+        $tempDir = PathHelper::getTempDir('cloud-backup-split-' . uniqid());
+        $splitter = new ZipSplitter();
+        $result = $splitter->split($zipPath, $tempDir, $type, $sequence, $label);
+
+        $isSuccess = !empty($result[ResponseKeyType::Success->value]);
+
+        if (!$isSuccess) {
+            throw new \RuntimeException(
+                'ZIP splitting failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown error'),
+            );
+        }
+
+        return array(
+            'tempDir'      => $tempDir,
+            'chunks'       => $result['chunks'],
+            'manifestPath' => $result['manifestPath'],
+            'chunkCount'   => $result['chunkCount'],
+            'totalSize'    => $result['totalSize'],
+        );
+    }
+
+    /**
+     * Upload split chunks + manifest to the remote folder path.
+     *
+     * @param array  $account       Account row.
+     * @param string $token         Decrypted token.
+     * @param array  $splitResult   Output from splitBackupZip().
+     * @param string $folderPath    Remote folder path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
+     * @param string $commitMessage Git commit message.
+     */
+    private function uploadSplitChunks(
+        array $account,
+        string $token,
+        array $splitResult,
+        string $folderPath,
+        string $commitMessage,
+    ): void {
+        $provider = CloudStorageProviderType::from($account['Provider']);
+        $branch = $account['DefaultBranch'] ?? 'main';
+
+        // Upload manifest.json first
+        $manifestRemotePath = $folderPath . '/manifest.json';
+
+        $this->dispatchCloudUpload(
+            $account,
+            $token,
+            $splitResult['manifestPath'],
+            $manifestRemotePath,
+            $branch,
+        );
+
+        // Upload each chunk
+        foreach ($splitResult['chunks'] as $chunk) {
+            $chunkRemotePath = $folderPath . '/' . $chunk['file'];
+
+            $chunkLocalPath = dirname($splitResult['manifestPath'])
+                . DIRECTORY_SEPARATOR . $chunk['file'];
+
+            $this->dispatchCloudUpload(
+                $account,
+                $token,
+                $chunkLocalPath,
+                $chunkRemotePath,
+                $branch,
+            );
+        }
+
+        $this->fileLogger->info('[CLOUD-UPLOAD] All chunks uploaded', array(
+            'folder' => $folderPath,
+            'chunks' => count($splitResult['chunks']),
+        ));
+    }
+
+    /**
+     * List remote folder names at a given path (for sequence resolution).
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted token.
+     * @param string $path    Remote directory path.
+     * @return array<string> Folder names.
+     */
+    private function listRemoteFolders(array $account, string $token, string $path): array
+    {
+        try {
+            $provider = CloudStorageProviderType::from($account['Provider']);
+
+            $result = match(true) {
+                $provider->isGitHub()      => $this->githubListFiles($account, $token, $path),
+                $provider->isGitLab()      => $this->gitlabListFiles($account, $token, $path),
+                $provider->isGoogleDrive() => $this->googleDriveListFiles($account, $token, $path),
+                default                    => array(),
+            };
+
+            $folders = array();
+
+            foreach ($result as $item) {
+                $isDirectory = ($item['type'] ?? '') === 'dir';
+
+                if ($isDirectory) {
+                    $folders[] = $item['name'] ?? basename($item['path'] ?? '');
+                }
+            }
+
+            return $folders;
+
+        } catch (Throwable $e) {
+            $this->fileLogger->logException($e, '[CLOUD-BACKUP] Failed to list remote folders at ' . $path);
+
+            return array();
+        }
+    }
+
+    /**
+     * Clean up a temporary directory and its contents.
+     *
+     * @param string $dirPath Absolute path to the temp directory.
+     */
+    private function cleanupTempDir(string $dirPath): void
+    {
+        $isDirExists = is_dir($dirPath);
+
+        if (!$isDirExists) {
+            return;
+        }
+
+        $files = glob($dirPath . DIRECTORY_SEPARATOR . '*');
+
+        foreach ($files as $file) {
+            $isFile = is_file($file);
+
+            if ($isFile) {
+                unlink($file);
+            }
+        }
+
+        rmdir($dirPath);
+    }
+
+    // ── Private helpers ─────────────────────────────────────────
 
     /** Get all enabled cloud storage accounts with auto-backup on. */
     private function getEnabledCloudStorageAccounts(): array
@@ -416,12 +707,13 @@ trait CloudStorageScheduleTrait {
 
     /**
      * Apply full backup rotation — delete oldest backups beyond retention count.
-     * Also prunes associated incremental branches.
+     * Uses folder-based pruning: deletes remote folder + associated incremental folders.
      */
     private function applyFullBackupRotation(array $account, string $token): void
     {
         $accountId      = (int) $account['Id'];
         $retentionCount = $this->getRetentionCountForAccount($account);
+        $resolver       = new BackupFolderResolver();
 
         $table = TableType::CloudStorageBackupHistory->value;
 
@@ -444,22 +736,19 @@ trait CloudStorageScheduleTrait {
         $expiredBackups = array_slice($fullBackups, $retentionCount);
 
         foreach ($expiredBackups as $expired) {
-            $expiredId = (int) $expired['Id'];
+            $expiredId  = (int) $expired['Id'];
+            $folderPath = $expired['FolderPath'] ?? '';
+            $folderName = basename($folderPath);
 
-            // Find and delete associated incremental branches
-            $incrementals = $this->db->queryAll(
-                "SELECT DISTINCT BranchName FROM {$table} WHERE BaseFullBackupId = :baseId",
-                array('baseId' => $expiredId),
-            );
+            // Delete remote full-backup folder
+            $hasFolderPath = !empty($folderPath);
 
-            foreach ($incrementals as $incr) {
-                $branchName = $incr['BranchName'] ?? '';
-                $isBranchPresent = !empty($branchName);
+            if ($hasFolderPath) {
+                $this->deleteRemoteFolder($account, $token, $folderPath);
 
-                if ($isBranchPresent) {
-                    $this->deleteBranch($account, $token, $branchName);
-                    $this->fileLogger->info('[CLOUD-ROTATION] Deleted incremental branch', array('branch' => $branchName));
-                }
+                // Delete associated incremental folder
+                $incrRoot = $resolver->getIncrementalRootForFull($folderName);
+                $this->deleteRemoteFolder($account, $token, $incrRoot);
             }
 
             // Delete all history records linked to this full backup
@@ -474,9 +763,14 @@ trait CloudStorageScheduleTrait {
                 array('id' => $expiredId),
             );
 
+            $parsed = $resolver->parseFullFolderName($folderName);
+            $seq = $parsed['sequence'] ?? $expiredId;
+            $cleanupMessage = $resolver->buildCleanupCommitMessage($seq);
+
             $this->fileLogger->info('[CLOUD-ROTATION] Rotated full backup', array(
                 'backupId' => $expiredId,
-                'file'     => $expired['FileName'] ?? '',
+                'folder'   => $folderPath,
+                'message'  => $cleanupMessage,
             ));
         }
     }
@@ -495,46 +789,54 @@ trait CloudStorageScheduleTrait {
         return (int) ($settings['RetentionCount'] ?? 10);
     }
 
-    // ── Stub methods (implemented by backup system) ──────────────
-
     /**
-     * Create a full backup ZIP. Delegates to the existing snapshot system.
+     * Delete a remote folder and all its contents.
      *
-     * @param string $prefix    Backup file prefix.
-     * @param string $timestamp Formatted timestamp for filename.
-     * @return string Absolute path to the created ZIP.
+     * @param array  $account Account row.
+     * @param string $token   Decrypted token.
+     * @param string $path    Remote folder path.
      */
-    abstract private function createFullBackupZip(string $prefix, string $timestamp): string;
+    private function deleteRemoteFolder(array $account, string $token, string $path): void
+    {
+        try {
+            $provider = CloudStorageProviderType::from($account['Provider']);
 
-    /**
-     * Create an incremental backup ZIP with delta data since the given timestamp.
-     *
-     * @param string $prefix             Backup file prefix.
-     * @param string $timestamp          Formatted timestamp for filename.
-     * @param string $lastBackupTimestamp ISO timestamp of the last backup.
-     * @return array{ZipPath: string, TablesChanged: string, RowsChanged: int}
-     */
-    abstract private function createIncrementalBackupZip(
-        string $prefix,
-        string $timestamp,
-        string $lastBackupTimestamp
-    ): array;
+            match(true) {
+                $provider->isGitHub()      => $this->githubDeleteFolder($account, $token, $path),
+                $provider->isGitLab()      => $this->gitlabDeleteFolder($account, $token, $path),
+                $provider->isGoogleDrive() => $this->googleDriveDeleteFolder($account, $token, $path),
+                default                    => null,
+            };
+
+        } catch (Throwable $e) {
+            $this->fileLogger->logException($e, '[CLOUD-ROTATION] Failed to delete remote folder: ' . $path);
+        }
+    }
 
     /**
      * Dispatch upload to the appropriate provider.
      *
      * @param array  $account    Account row.
      * @param string $token      Decrypted token.
-     * @param string $localPath  Local ZIP path.
+     * @param string $localPath  Local file path.
      * @param string $remotePath Remote file path.
      * @param string $branch     Target branch name.
      * @return array{RemoteUrl: string, CommitSha: string}
      */
-    abstract private function dispatchCloudUpload(
+    private function dispatchCloudUpload(
         array $account,
         string $token,
         string $localPath,
         string $remotePath,
         string $branch
-    ): array;
+    ): array {
+        $provider = CloudStorageProviderType::from($account['Provider']);
+
+        return match(true) {
+            $provider->isGitHub()      => $this->githubUploadFile($account, $token, $localPath, $remotePath),
+            $provider->isGitLab()      => $this->gitlabUploadFile($account, $token, $localPath, $remotePath),
+            $provider->isGoogleDrive() => $this->googleDriveUploadFile($account, $token, $localPath, $remotePath),
+            default                    => throw new \RuntimeException('Provider not supported: ' . $provider->value),
+        };
+    }
 }
