@@ -254,7 +254,7 @@ export function PublishProgressDialog({
   // Reset state when dialog opens & fetch version info immediately
   useEffect(() => {
     if (open) {
-      setStages(DEFAULT_STAGES.map(s => ({ ...s, status: "pending" })));
+      setStages(buildDefaultStages());
       setOverallProgress(0);
       setIsComplete(false);
       setIsSuccess(false);
