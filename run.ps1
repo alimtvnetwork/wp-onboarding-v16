@@ -174,7 +174,7 @@ if ($help) {
     Write-Host "  -s,  -skipbuild     Skip frontend build, only run the backend server"
     Write-Host "  -p,  -skippull      Skip git pull step"
     Write-Host "  -f,  -force         Clean build: remove caches, dependencies, databases"
-    Write-Host "  -i,  -install       Install/update dependencies (frontend + backend)"
+    Write-Host "       -install       Install/update dependencies (frontend + backend)"
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -t,  -test          Run Go backend tests and exit"
