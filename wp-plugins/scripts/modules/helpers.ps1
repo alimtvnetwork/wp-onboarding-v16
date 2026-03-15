@@ -126,19 +126,48 @@ function Resolve-TargetSites {
     $isSiteNameProvided = ($SiteName -ne "")
 
     if ($isSiteNameProvided) {
+        # Try exact match first
         $matchedSite = $AllSites | Where-Object { $_.name -eq $SiteName }
+
+        # Fallback: case-insensitive match (ignoring spaces, hyphens, underscores)
         $isNotFound = (-not $matchedSite)
 
         if ($isNotFound) {
+            $normalizedInput = ($SiteName -replace '[\s\-_]', '').ToLower()
+            $matchedSite = $AllSites | Where-Object {
+                ($_.name -replace '[\s\-_]', '').ToLower() -eq $normalizedInput
+            }
+        }
+
+        $isStillNotFound = (-not $matchedSite)
+
+        if ($isStillNotFound) {
+            # Fallback: substring/contains match
+            $matchedSite = $AllSites | Where-Object { $_.name -like "*$SiteName*" }
+        }
+
+        $isNoMatch = (-not $matchedSite)
+
+        if ($isNoMatch) {
             Write-Host "ERROR: Site '$SiteName' not found in configuration." -ForegroundColor Red
             Write-Host "Available sites:" -ForegroundColor Yellow
             foreach ($s in $AllSites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
             exit 1
         }
 
-        Write-Host "  Target site: $SiteName" -ForegroundColor Cyan
+        # If multiple matches from fuzzy search, take first and warn
+        $resolvedSites = @($matchedSite)
+        $isAmbiguous = ($resolvedSites.Count -gt 1)
 
-        return @($matchedSite)
+        if ($isAmbiguous) {
+            Write-Host "  WARNING: '$SiteName' matched $($resolvedSites.Count) sites, using first: $($resolvedSites[0].name)" -ForegroundColor Yellow
+            $matchedSite = $resolvedSites[0]
+        }
+
+        $resolvedName = if ($resolvedSites.Count -gt 1) { $resolvedSites[0].name } else { $matchedSite.name }
+        Write-Host "  Target site: $resolvedName" -ForegroundColor Cyan
+
+        return @($matchedSite)[0..0]
     }
 
     $hasExclusions = ($ExcludedSiteNames.Count -gt 0)
