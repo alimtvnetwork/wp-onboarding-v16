@@ -87,6 +87,7 @@ trait CloudStorageFileTrait {
 
             $deleted = match(true) {
                 $provider->isGitHub() => $this->githubDeleteFile($account, $token, $remotePath),
+                $provider->isGitLab() => $this->gitlabDeleteFile($account, $token, $remotePath),
                 default               => false,
             };
 
