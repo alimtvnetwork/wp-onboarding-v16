@@ -156,6 +156,9 @@ trait DatabaseConnectionTrait {
         $this->migrateV16ErrorSessionVersion($current);
         $this->migrateV17CloudStorageAccounts($current);
         $this->migrateV18CloudStorageSettings($current);
+        $this->migrateV19CloudStorageBackupColumns($current);
+        $this->migrateV20CloudStorageBackupHistory($current);
+        $this->migrateV21CloudStorageBackupHistoryFolderColumns($current);
     }
 
     /**

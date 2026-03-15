@@ -261,7 +261,6 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| Migration v21 | `Database/Traits/DatabaseMigrationsV21Trait.php` | Add `folder_path`, `chunk_count`, `total_size`; drop `branch_name`, `commit_sha` |
 | Go pipeline wiring | `ServicePublishPipeline.go` | Wire `cloud_upload` stage + WebSocket progress events |
 | Google Drive adaptation | Phase 5F | Folder hierarchy for GDrive (non-Git provider) |
 
