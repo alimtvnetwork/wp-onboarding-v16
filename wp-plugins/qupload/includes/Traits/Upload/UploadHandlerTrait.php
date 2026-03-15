@@ -23,7 +23,6 @@ use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\RequestFieldType;
 use QUpload\Enums\ResponseKeyType;
-use QUpload\Helpers\EnvelopeBuilder;
 use QUpload\Helpers\PathHelper;
 
 trait UploadHandlerTrait
