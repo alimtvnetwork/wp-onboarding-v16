@@ -19,4 +19,22 @@ trait CloudStorageTrait {
     use CloudStorageGitHubTrait;
     use CloudStorageUploadTrait;
     use CloudStorageFileTrait;
+
+    /** POST /cloud-storage/oauth/initiate — Stub for Phase 3 (Google Drive). */
+    public function handleCloudStorageOAuthInitiate(\WP_REST_Request $request): \WP_REST_Response
+    {
+        return new \WP_REST_Response(array(
+            'Success' => false,
+            'Error'   => 'OAuth flow not yet implemented. Google Drive support coming in Phase 3.',
+        ), 501);
+    }
+
+    /** GET /cloud-storage/oauth/callback — Stub for Phase 3 (Google Drive). */
+    public function handleCloudStorageOAuthCallback(\WP_REST_Request $request): \WP_REST_Response
+    {
+        return new \WP_REST_Response(array(
+            'Success' => false,
+            'Error'   => 'OAuth callback not yet implemented. Google Drive support coming in Phase 3.',
+        ), 501);
+    }
 }
