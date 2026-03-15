@@ -623,14 +623,19 @@ DELETE /cloud-storage/backup-history/{id}
 ### 6.1 Full Backup Rotation
 
 - Retention count applies to full backups on `main` branch
-- When a full backup is deleted, its associated incremental branch is also deleted
+- **Auto-delete**: When a full backup exceeds retention, the system:
+  1. Deletes the full backup file from the `main` branch
+  2. Deletes all `CloudStorageBackupHistory` records linked via `BaseFullBackupId`
+  3. Deletes the associated `incremental/{YYYY-Www}` branch entirely (see §6.3)
 - Default retention: 4 full backups (≈ 1 month of weekly fulls)
+- **No orphaned branches**: This is enforced — there is no "keep orphaned branches" mode
 
 ### 6.2 Incremental Rotation
 
 - Each full backup cycle has its own incremental branch
 - Incrementals within a branch are capped (default: 6 per cycle)
-- When the full backup is rotated out, the entire incremental branch is pruned
+- When the parent full backup is rotated out, the entire incremental branch is pruned automatically
+- Individual incremental files can also be manually deleted without affecting the branch
 
 ### 6.3 Branch Deletion
 
