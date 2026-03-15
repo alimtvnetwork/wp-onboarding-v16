@@ -242,12 +242,16 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 | `ZipSplitter` | `CloudStorage/ZipSplitter.php` | Needs no changes — splitting logic is correct |
 | `ZipReassembler` | `CloudStorage/ZipReassembler.php` | Needs no changes — reassembly logic is correct |
 | `BackupFolderResolver` | `CloudStorage/BackupFolderResolver.php` | ✅ Updated — new naming format applied |
-| `CloudStorageScheduleTrait` | `Traits/CloudStorage/CloudStorageScheduleTrait.php` | ✅ Wired — Orchestrator + ZipSplitter + folder-based flow |
+| `CloudStorageScheduleTrait` | `Traits/CloudStorage/CloudStorageScheduleTrait.php` | ✅ Refactored — per-account isolation, finally cleanup, split to helpers |
+| `CloudStorageScheduleHelpersTrait` | `Traits/CloudStorage/CloudStorageScheduleHelpersTrait.php` | ✅ New — extracted helpers, rotation, recursive cleanup |
 | `CloudStorageHistoryTrait` | `Traits/CloudStorage/CloudStorageHistoryTrait.php` | ✅ Updated — v21 columns (FolderPath, ChunkCount, TotalSize) |
 | `CloudStorageRestoreTrait` | `Traits/CloudStorage/CloudStorageRestoreTrait.php` | ✅ Wired — ZipReassembler + folder-based download + extract |
 | `githubDeleteFolder` | `Traits/CloudStorage/CloudStorageGitHubTrait.php` | ✅ Git Data API atomic folder removal |
+| `githubListDirectories` | `Traits/CloudStorage/CloudStorageGitHubTrait.php` | ✅ Dedicated directory listing (fixes listRemoteFolders bug) |
 | `gitlabDeleteFolder` | `Traits/CloudStorage/CloudStorageGitLabTrait.php` | ✅ Commits API multi-action folder removal |
+| `gitlabListDirectories` | `Traits/CloudStorage/CloudStorageGitLabTrait.php` | ✅ Dedicated directory listing via tree API |
 | `googleDriveDeleteFolder` | `Traits/CloudStorage/CloudStorageGoogleDriveTrait.php` | ✅ Path-walking folder resolution + cascading delete |
+| `googleDriveListDirectories` | `Traits/CloudStorage/CloudStorageGoogleDriveTrait.php` | ✅ Folder-type query with path resolution |
 
 ### ❌ Not Yet Created
 
