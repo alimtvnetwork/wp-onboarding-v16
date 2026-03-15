@@ -139,12 +139,25 @@ main ─────●───────────────────
 
 ### 2.4 Incremental Detection
 
-The plugin tracks changes using a **change manifest**:
+The plugin uses **timestamp-based detection** to identify changed data since the last backup.
+
+#### Detection Strategy
+
+1. **`wp_posts` / `wp_postmeta`**: Query `WHERE post_modified_gmt > '{lastBackupTimestamp}'`
+2. **`wp_options`**: Compare `option_value` checksums against a stored manifest from the last backup
+3. **`wp_comments` / `wp_commentmeta`**: Query `WHERE comment_date_gmt > '{lastBackupTimestamp}'`
+4. **`wp_terms` / `wp_term_taxonomy`**: Always included (small tables, no reliable timestamp)
+5. **Custom tables without timestamps**: Excluded from incrementals — only captured in full backups
+6. **`wp-content/uploads/`**: Compare `filemtime()` against last backup timestamp
+
+#### Manifest (included in incremental ZIP)
 
 ```json
 {
   "baseFullBackup": "wp-backup-full-2026-03-09-000000.zip",
   "baseCommitSha": "abc123...",
+  "lastBackupTimestamp": "2026-03-09T02:00:00Z",
+  "detectionMethod": "timestamp",
   "tablesChanged": ["wp_posts", "wp_postmeta", "wp_options"],
   "filesChanged": ["wp-content/uploads/2026/03/new-image.jpg"],
   "totalRowsChanged": 42,
@@ -154,6 +167,11 @@ The plugin tracks changes using a **change manifest**:
 ```
 
 This manifest is included inside the incremental ZIP alongside the delta data.
+
+#### Limitations
+
+- Tables without `modified_date` or `created_at` columns are only captured in full backups
+- If the WordPress database clock drifts, rows may be missed — full weekly backups serve as the safety net
 
 ### 2.5 Database Changes
 
