@@ -2,6 +2,58 @@
 
 export type CloudStorageProvider = 'GitHub' | 'GitLab' | 'GoogleDrive';
 
+// ── Phase 5A: Repo selection mode ───────────────────────────────
+export type RepoSelectionMode = 'create' | 'existing';
+
+export interface CloudStorageRepository {
+  Name: string;
+  FullName: string;
+  IsPrivate: boolean;
+  DefaultBranch: string;
+  UpdatedAt: string;
+}
+
+export interface CloudStorageBranch {
+  Name: string;
+  IsDefault: boolean;
+  LastCommitSha: string;
+  LastCommitDate: string;
+}
+
+// ── Phase 5B: Backup strategy types ─────────────────────────────
+export type BackupStrategyType = 'full_only' | 'full_and_incremental';
+export type BackupScheduleType = 'hourly' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'manual';
+export type CloudStorageBackupType = 'full' | 'incremental';
+export type CloudStorageBackupStatus = 'pending' | 'uploading' | 'success' | 'failed';
+
+export interface CloudStorageBackupHistoryRecord {
+  Id: number;
+  AccountId: number;
+  BackupType: CloudStorageBackupType;
+  FileName: string;
+  RemotePath: string;
+  RemoteUrl: string;
+  CommitSha: string;
+  BranchName: string;
+  BaseFullBackupId: number | null;
+  FileSizeBytes: number;
+  TablesChanged: string;
+  RowsChanged: number;
+  Duration: number;
+  Status: CloudStorageBackupStatus;
+  ErrorMessage: string;
+  CreatedAt: string;
+}
+
+export interface CloudStorageBackupHistoryListResponse {
+  BackupHistory: CloudStorageBackupHistoryRecord[];
+  Total: number;
+  Page: number;
+  PerPage: number;
+}
+
+// ── Core account types ──────────────────────────────────────────
+
 export interface CloudStorageAccount {
   Id: number;
   Provider: CloudStorageProvider;
@@ -12,6 +64,8 @@ export interface CloudStorageAccount {
   BaseUrl: string;
   RepoName: string;
   RepoOwner: string;
+  RepoSelectionMode: RepoSelectionMode;
+  DefaultBranch: string;
   FolderId: string;
   FolderName: string;
   IsActive: boolean;
@@ -30,6 +84,8 @@ export interface CloudStorageAccountCreateRequest {
   BaseUrl?: string;
   RepoName?: string;
   RepoOwner?: string;
+  RepoSelectionMode?: RepoSelectionMode;
+  DefaultBranch?: string;
   FolderId?: string;
   FolderName?: string;
 }
@@ -43,6 +99,8 @@ export interface CloudStorageAccountUpdateRequest {
   BaseUrl?: string;
   RepoName?: string;
   RepoOwner?: string;
+  RepoSelectionMode?: RepoSelectionMode;
+  DefaultBranch?: string;
   FolderId?: string;
   FolderName?: string;
   IsActive?: boolean;
@@ -55,6 +113,12 @@ export interface CloudStorageSettings {
   RetentionCount: number;
   RotationEnabled: boolean;
   BackupPrefix: string;
+  BackupType: BackupStrategyType;
+  FullBackupSchedule: BackupScheduleType;
+  IncrementalBackupSchedule: BackupScheduleType;
+  FullBackupDayOfWeek: number;
+  FullBackupTimeUtc: string;
+  IncrementalBackupTimeUtc: string;
 }
 
 export interface CloudStorageTestResult {
@@ -96,7 +160,6 @@ export const PROVIDER_CONFIG: Record<CloudStorageProvider, {
     fields: [
       { key: 'Username', label: 'Username', placeholder: 'octocat', help: 'Your GitHub username', required: false },
       { key: 'RepoOwner', label: 'Repository Owner', placeholder: 'octocat', help: 'Owner of the backup repo (user or org)', required: false },
-      { key: 'RepoName', label: 'Repository Name', placeholder: 'wp-backups', help: 'Repository to store backups (created if missing)', required: false },
     ],
   },
   GitLab: {
@@ -112,7 +175,6 @@ export const PROVIDER_CONFIG: Record<CloudStorageProvider, {
       { key: 'Username', label: 'Username', placeholder: 'john.doe', help: 'Your GitLab username', required: false },
       { key: 'BaseUrl', label: 'Base URL', placeholder: 'https://gitlab.com', help: 'Leave blank for gitlab.com, or enter your self-hosted URL', required: false },
       { key: 'RepoOwner', label: 'Namespace', placeholder: 'john.doe', help: 'Your username or group path (e.g., my-org/sub-group)', required: false },
-      { key: 'RepoName', label: 'Project Name', placeholder: 'wp-backups', help: 'Project (repository) to store backups', required: false },
     ],
   },
   GoogleDrive: {
@@ -130,3 +192,23 @@ export const PROVIDER_CONFIG: Record<CloudStorageProvider, {
     ],
   },
 };
+
+// ── Backup schedule display helpers ─────────────────────────────
+
+export const BACKUP_STRATEGY_LABELS: Record<BackupStrategyType, string> = {
+  full_only: 'Full backups only',
+  full_and_incremental: 'Full + Incremental backups',
+};
+
+export const BACKUP_SCHEDULE_LABELS: Record<BackupScheduleType, string> = {
+  hourly: 'Hourly',
+  daily: 'Daily',
+  weekly: 'Weekly',
+  biweekly: 'Bi-weekly',
+  monthly: 'Monthly',
+  manual: 'Manual only',
+};
+
+export const DAY_OF_WEEK_LABELS = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+] as const;

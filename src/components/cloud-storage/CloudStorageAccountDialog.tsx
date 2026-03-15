@@ -24,8 +24,10 @@ import type {
   CloudStorageAccountCreateRequest,
   CloudStorageAccountUpdateRequest,
   CloudStorageProvider,
+  RepoSelectionMode,
 } from "@/types/cloudStorage";
 import { PROVIDER_CONFIG } from "@/types/cloudStorage";
+import { CloudStorageRepoSelector } from "./CloudStorageRepoSelector";
 
 interface CloudStorageAccountDialogProps {
   open: boolean;
@@ -52,6 +54,12 @@ export function CloudStorageAccountDialog({
   const [showToken, setShowToken] = useState(false);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
 
+  // Phase 5A: Repo selection state
+  const [repoSelectionMode, setRepoSelectionMode] = useState<RepoSelectionMode>("create");
+  const [repoName, setRepoName] = useState("");
+  const [repoOwner, setRepoOwner] = useState("");
+  const [defaultBranch, setDefaultBranch] = useState("main");
+
   // Reset form when dialog opens/account changes
   useEffect(() => {
     if (open) {
@@ -59,12 +67,14 @@ export function CloudStorageAccountDialog({
         setProvider(account.Provider);
         setLabel(account.AccountLabel);
         setToken("");
+        setRepoSelectionMode(account.RepoSelectionMode || "create");
+        setRepoName(account.RepoName || "");
+        setRepoOwner(account.RepoOwner || "");
+        setDefaultBranch(account.DefaultBranch || "main");
         setFieldValues({
           Username: account.Username || "",
           Email: account.Email || "",
           BaseUrl: account.BaseUrl || "",
-          RepoOwner: account.RepoOwner || "",
-          RepoName: account.RepoName || "",
           FolderId: account.FolderId || "",
           FolderName: account.FolderName || "",
         });
@@ -73,20 +83,35 @@ export function CloudStorageAccountDialog({
         setLabel("");
         setToken("");
         setShowToken(false);
+        setRepoSelectionMode("create");
+        setRepoName("wp-backups");
+        setRepoOwner("");
+        setDefaultBranch("main");
         setFieldValues({});
       }
     }
   }, [open, account]);
 
   const config = PROVIDER_CONFIG[provider];
+  const isGitProvider = provider === "GitHub" || provider === "GitLab";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const repoFields = isGitProvider
+      ? {
+          RepoName: repoName,
+          RepoOwner: repoOwner,
+          RepoSelectionMode: repoSelectionMode,
+          DefaultBranch: defaultBranch,
+        }
+      : {};
 
     if (isEditing && account) {
       const body: CloudStorageAccountUpdateRequest = {
         AccountLabel: label,
         ...fieldValues,
+        ...repoFields,
       };
 
       const hasNewToken = token.trim().length > 0;
@@ -102,6 +127,7 @@ export function CloudStorageAccountDialog({
         AccountLabel: label,
         AccessToken: token,
         ...fieldValues,
+        ...repoFields,
       };
 
       onSubmit(data);
@@ -117,7 +143,7 @@ export function CloudStorageAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] backdrop-blur-xl">
+      <DialogContent className="sm:max-w-[520px] backdrop-blur-xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Account" : "Add Cloud Storage Account"}
@@ -139,6 +165,10 @@ export function CloudStorageAccountDialog({
                 onValueChange={(v) => {
                   setProvider(v as CloudStorageProvider);
                   setFieldValues({});
+                  setRepoName("wp-backups");
+                  setRepoOwner("");
+                  setDefaultBranch("main");
+                  setRepoSelectionMode("create");
                 }}
               >
                 <SelectTrigger>
@@ -204,7 +234,7 @@ export function CloudStorageAccountDialog({
             </div>
           )}
 
-          {/* Dynamic provider fields */}
+          {/* Dynamic provider fields (non-repo fields) */}
           {config?.fields.map((field) => (
             <div key={field.key} className="space-y-2">
               <div className="flex items-center gap-2">
@@ -226,6 +256,22 @@ export function CloudStorageAccountDialog({
               />
             </div>
           ))}
+
+          {/* Phase 5A: Repository selector for Git providers */}
+          {isGitProvider && (
+            <CloudStorageRepoSelector
+              provider={provider}
+              accountId={isEditing ? account?.Id : undefined}
+              repoSelectionMode={repoSelectionMode}
+              onRepoSelectionModeChange={setRepoSelectionMode}
+              repoName={repoName}
+              onRepoNameChange={setRepoName}
+              repoOwner={repoOwner}
+              onRepoOwnerChange={setRepoOwner}
+              defaultBranch={defaultBranch}
+              onDefaultBranchChange={setDefaultBranch}
+            />
+          )}
 
           <DialogFooter>
             <Button
