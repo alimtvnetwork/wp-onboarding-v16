@@ -500,17 +500,34 @@ Body: { "BackupId": 42 }
 → { Success: true, Message: "Backup restored successfully" }
 ```
 
-### 4.5 Alternative: Download via API (No Git Required)
+### 4.5 Fallback: Download via API (No Git Binary)
 
-For environments where `git` is not available, fall back to API download:
+For shared hosting environments where `exec('git')` is unavailable, the restore handler
+detects this and falls back to downloading the ZIP via the provider's REST API.
 
-**GitHub**:
+**Detection**:
+```php
+$isGitAvailable = $this->isShellCommandAvailable('git');
+
+if ($isGitAvailable) {
+    $this->gitCloneShallow($account, $branch, $tempDir);
+} else {
+    $this->downloadViaApi($account, $backup['RemotePath'], $branch, $tempDir);
+}
+```
+
+**GitHub** (files ≤100 MB):
 ```
 GET /repos/{owner}/{repo}/contents/{path}?ref={branch}
 ```
-(For files ≤100 MB; response includes base64-encoded content)
+Response includes base64-encoded content. Decode and write to temp dir.
 
-**GitLab**:
+**GitHub** (files >100 MB — use Git Data API):
+```
+GET /repos/{owner}/{repo}/git/blobs/{sha}
+```
+
+**GitLab** (no size limit on raw endpoint):
 ```
 GET /projects/{id}/repository/files/{urlEncodedPath}/raw?ref={branch}
 ```
