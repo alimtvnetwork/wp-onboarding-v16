@@ -172,15 +172,15 @@ trait UploadHandlerTrait
             'activated' => $result[ResponseKeyType::Activated->value],
         ]);
 
-        return EnvelopeBuilder::success()
-            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route())
-            ->setSingleResult([
+        return $this->successResponse(
+            [[
                 ResponseKeyType::PluginSlug->value    => $result[ResponseKeyType::Slug->value],
                 ResponseKeyType::IsUpdate->value      => $result[ResponseKeyType::IsUpdate->value],
                 ResponseKeyType::Activated->value     => $result[ResponseKeyType::Activated->value],
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
-            ])
-            ->toResponse();
+            ]],
+            '/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route(),
+        );
     }
 }
 
