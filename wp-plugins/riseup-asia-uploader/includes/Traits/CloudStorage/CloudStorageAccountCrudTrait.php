@@ -361,7 +361,7 @@ trait CloudStorageAccountCrudTrait {
     }
 
     /** Fetch an account by its primary key. */
-    private function getCloudStorageAccountById(int $id): ?array
+    private function getCloudStorageAccountById(int $id): array|false
     {
         $table = TableType::CloudStorageAccounts->value;
 
