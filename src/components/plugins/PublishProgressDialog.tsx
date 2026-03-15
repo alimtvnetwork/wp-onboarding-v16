@@ -133,14 +133,30 @@ const STAGE_LABELS: Record<string, string> = {
   version_check: "Verifying Version",
 };
 
-const DEFAULT_STAGES: PublishStage[] = [
-  { name: "backup", label: "Creating Backup", status: "pending" },
-  { name: "cloud_upload", label: "Uploading to Cloud Storage", status: "pending" },
-  { name: "package", label: "Packaging Files", status: "pending" },
-  { name: "upload", label: "Uploading to Site", status: "pending" },
-  { name: "activate", label: "Activating Plugin", status: "pending" },
-  { name: "version_check", label: "Verifying Version", status: "pending" },
-];
+function buildDefaultStages(): PublishStage[] {
+  const stages: PublishStage[] = [
+    { name: "backup", label: "Creating Backup", status: "pending" },
+  ];
+
+  try {
+    const saved = localStorage.getItem("wppp_cloud_storage_accounts");
+    if (saved) {
+      const ids = JSON.parse(saved) as number[];
+      if (ids.length > 0) {
+        stages.push({ name: "cloud_upload", label: "Uploading to Cloud Storage", status: "pending" });
+      }
+    }
+  } catch { /* ignore */ }
+
+  stages.push(
+    { name: "package", label: "Packaging Files", status: "pending" },
+    { name: "upload", label: "Uploading to Site", status: "pending" },
+    { name: "activate", label: "Activating Plugin", status: "pending" },
+    { name: "version_check", label: "Verifying Version", status: "pending" },
+  );
+
+  return stages;
+}
 
 export function PublishProgressDialog({
   open,
