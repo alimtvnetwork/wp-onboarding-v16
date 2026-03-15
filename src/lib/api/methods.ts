@@ -744,4 +744,25 @@ export const api = {
     request<RemoteLogsClearConfirmResponse>(`/sites/${siteId}/remote-logs/confirm`, { method: "POST", body: JSON.stringify({ token }) }),
   emailRemoteLogs: (siteId: number, opts?: RemoteLogsEmailOptions) =>
     request<RemoteLogsEmailResponse>(`/sites/${siteId}/remote-logs/email`, { method: "POST", body: JSON.stringify(opts || {}) }),
+
+  // Cloud Storage
+  getCloudStorageAccounts: () =>
+    request<{ Accounts: unknown[] }>("/cloud-storage/accounts"),
+  getCloudStorageAccount: (id: number) =>
+    request<{ Account: unknown }>(`/cloud-storage/accounts/${id}`),
+  createCloudStorageAccount: (body: Record<string, unknown>) =>
+    request<{ Account: unknown }>("/cloud-storage/accounts", { method: "POST", body: JSON.stringify(body) }),
+  updateCloudStorageAccount: (id: number, body: Record<string, unknown>) =>
+    request<{ Account: unknown }>(`/cloud-storage/accounts/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteCloudStorageAccount: (id: number) =>
+    request<{ Success: boolean }>(`/cloud-storage/accounts/${id}`, { method: "DELETE" }),
+  testCloudStorageAccount: (accountId: number) =>
+    request<{ Success: boolean; ConnectionStatus?: string; Username?: string; Message?: string; Error?: string }>(
+      "/cloud-storage/accounts/test",
+      { method: "POST", body: JSON.stringify({ AccountId: accountId }) },
+    ),
+  getCloudStorageSettings: (provider: string) =>
+    request<Record<string, unknown>>(`/cloud-storage/settings/${provider}`),
+  updateCloudStorageSettings: (provider: string, settings: Record<string, unknown>) =>
+    request<Record<string, unknown>>(`/cloud-storage/settings/${provider}`, { method: "PUT", body: JSON.stringify(settings) }),
 };
