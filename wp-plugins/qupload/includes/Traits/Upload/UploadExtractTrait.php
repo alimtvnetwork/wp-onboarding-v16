@@ -278,11 +278,15 @@ trait UploadExtractTrait
         $targetDir = WP_PLUGIN_DIR . '/' . $slug;
         $isUpdate = is_dir($targetDir);
 
+        // Capture previous version before replacement
+        $previousVersion = $isUpdate ? $this->detectPreviousVersion($slug) : null;
+
         // Log upload activity
         $this->fileLogger->info('Plugin upload processing started', [
             'slug' => $slug,
             'isUpdate' => $isUpdate,
             'activate' => $input['activate'],
+            'previousVersion' => $previousVersion,
         ]);
 
         // Create backup before replacing (rollback safety net)
@@ -295,7 +299,7 @@ trait UploadExtractTrait
         if ($extractResult instanceof WP_REST_Response) {
             $this->logExternalPluginFailure($slug, 'extraction', 'ZIP extraction to plugins directory failed');
 
-            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $extractResult);
+            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $extractResult, $previousVersion);
         }
 
         $result = $this->resolvePluginAfterExtract($slug, $isUpdate, $input['activate'], $isPreviouslyActive);
