@@ -1,7 +1,7 @@
 # Cloud Storage Integration in Publish Flow
 
 > **Updated:** 2026-03-15  
-> **Status:** Frontend complete, backend pipeline pending
+> **Status:** ✅ Complete (frontend + backend)
 
 ---
 
@@ -13,10 +13,10 @@ Users can select cloud storage accounts as backup destinations during plugin pub
 
 ```
 Publish Flow:
-  backup → cloud_upload → package → upload → activate → version_check
+  backup → remote_backup → cloud_upload → package → upload → activate → version_check
 ```
 
-The `cloud_upload` stage runs after backup creation and before packaging. It uploads the backup ZIP to all selected cloud storage accounts.
+The `cloud_upload` stage runs after remote backup and before packaging. It uploads the backup to all selected cloud storage accounts via the WordPress `POST /cloud-storage/upload` endpoint.
 
 ## Frontend Implementation (✅ Complete)
 
@@ -40,13 +40,23 @@ The `cloud_upload` stage runs after backup creation and before packaging. It upl
 - `publishPlugin()` accepts `cloudStorageAccountIds?: number[]`
 - `bulkPublish()` accepts `cloudStorageAccountIds?: number[]`
 
-## Backend Implementation (🔲 Pending)
+## Backend Implementation (✅ Complete)
 
-### Required Changes
-1. `ServicePublishPipeline.go` — after backup stage, invoke cloud upload for each selected account
-2. Emit `publish_progress` WS events with `stage: "cloud_upload"` and per-account progress
-3. Cloud upload failures should log warnings but not block publish (same as backup failures)
-4. Skip `cloud_upload` stage entirely if no accounts selected (mark as `skipped`)
+### Changes Made
+1. **`publishsteptype`** — Added `CloudUpload` variant with value `cloud_upload`
+2. **`operationtype`** — Added `CloudStorageUpload` variant
+3. **`PublishOptions`** — Added `CloudStorageAccountIds []int` field
+4. **`ClientCloudStorage.go`** — WordPress client method `UploadToCloudStorage()` calling `POST /cloud-storage/upload`
+5. **`ServicePublishCloudUpload.go`** — Cloud upload stage with per-account iteration, WS progress, and non-blocking failure handling
+6. **`ServicePublishPipeline.go`** — Wired `runCloudUploadStage()` between remote backup and upload stages
+7. **`DetailTypes.go`** — Added `CloudUploadInitDetails`, `CloudUploadAccountResultDetails`, `CloudUploadSummaryDetails`
+8. **API handlers** — Both `PublishInput` and `BulkPublishInput` accept `cloudStorageAccountIds`
+
+### Behavior
+- If no accounts selected → stage is skipped with info log
+- Per-account upload broadcasts progress events with `stage: "cloud_upload"`
+- Individual account failures log warnings but do NOT block the publish pipeline
+- Summary log emitted after all accounts processed
 
 ## Related Files
 
@@ -54,4 +64,5 @@ The `cloud_upload` stage runs after backup creation and before packaging. It upl
 - `src/hooks/useCloudStorage.ts` — TanStack Query hooks for account CRUD
 - `src/components/cloud-storage/` — All UI components
 - `src/pages/CloudStorage.tsx` — Dashboard page
-- `spec/10-wp-plugin-publish/02-frontend/27-quick-publish.md` — Quick publish spec
+- `backend/internal/wordpress/ClientCloudStorage.go` — WP client cloud upload method
+- `backend/internal/services/publish/ServicePublishCloudUpload.go` — Cloud upload stage logic
