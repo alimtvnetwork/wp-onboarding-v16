@@ -74,9 +74,83 @@ trait ResponseTrait
 
         $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
-        return EnvelopeBuilder::error($message, $status, $exception)
-            ->setRequestedAt($requestedAt)
-            ->toResponse();
+        return $this->buildEnvelopeResponse(false, $message, $status, [], $requestedAt, $exception);
+    }
+
+    /** Build a success response envelope with fallback safety. */
+    protected function successResponse(
+        array $results,
+        string $requestedAt,
+        string $message = 'OK',
+        int $status = HttpStatusType::Ok->value,
+    ): WP_REST_Response {
+        return $this->buildEnvelopeResponse(true, $message, $status, $results, $requestedAt, null);
+    }
+
+    /** Build a standard response envelope, falling back when EnvelopeBuilder is unavailable. */
+    private function buildEnvelopeResponse(
+        bool $isSuccess,
+        string $message,
+        int $status,
+        array $results,
+        string $requestedAt,
+        ?Throwable $exception,
+    ): WP_REST_Response {
+        try {
+            if (class_exists(EnvelopeBuilder::class)) {
+                if ($isSuccess) {
+                    return EnvelopeBuilder::success($message, $status)
+                        ->setRequestedAt($requestedAt)
+                        ->setListResult($results)
+                        ->toResponse();
+                }
+
+                return EnvelopeBuilder::error($message, $status, $exception)
+                    ->setRequestedAt($requestedAt)
+                    ->toResponse();
+            }
+        } catch (Throwable $builderError) {
+            $this->fileLogger->logException($builderError, 'EnvelopeBuilder failed; falling back to inline response');
+        }
+
+        return $this->buildFallbackResponse($isSuccess, $message, $status, $results, $requestedAt, $exception);
+    }
+
+    /** Build an inline response envelope when helper classes cannot be loaded. */
+    private function buildFallbackResponse(
+        bool $isSuccess,
+        string $message,
+        int $status,
+        array $results,
+        string $requestedAt,
+        ?Throwable $exception,
+    ): WP_REST_Response {
+        $envelope = [
+            'Status' => [
+                'IsSuccess' => $isSuccess,
+                'IsFailed'  => !$isSuccess,
+                'Code'      => $status,
+                'Message'   => $message,
+                'Timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+            ],
+            'Attributes' => [
+                'RequestedAt' => $requestedAt,
+                'TotalRecords' => count($results),
+            ],
+            'Results' => $results,
+        ];
+
+        if (!$isSuccess) {
+            $errors = ['BackendMessage' => $message, 'Backend' => []];
+
+            if ($exception instanceof Throwable) {
+                $errors['Backend'] = explode("\n", $exception->getTraceAsString());
+            }
+
+            $envelope['Errors'] = $errors;
+        }
+
+        return new WP_REST_Response($envelope, $status);
     }
 
     /** Log an error with backtrace context. */
