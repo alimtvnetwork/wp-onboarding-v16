@@ -49,9 +49,108 @@ trait RouteRegistrationTrait
         $this->registerAgentRoutes($safeRegister, $failed);
         $this->registerSnapshotRoutes($safeRegister);
         $this->registerUserRoutes($safeRegister);
+        $this->registerCloudStorageRoutes($safeRegister);
         $this->registerCatchAllRoute($safeRegister);
 
         $this->fileLogger->info("REST API route registration complete: $registered registered, $failed failed");
+    }
+
+    /**
+     * Register cloud storage routes.
+     *
+     * @param callable $safeRegister Route registration closure.
+     */
+    private function registerCloudStorageRoutes(callable $safeRegister): void {
+        $csPerm = array($this, 'checkCloudStoragePermission');
+
+        // GET + POST /cloud-storage/accounts
+        $safeRegister(EndpointType::CloudStorageAccounts->route(), array(
+            array(
+                'methods'             => HttpMethodType::Get->value,
+                'callback'            => array($this, 'handleListCloudStorageAccounts'),
+                'permission_callback' => $this->buildPermissionCallback('cloud_storage_accounts', $csPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Post->value,
+                'callback'            => array($this, 'handleCreateCloudStorageAccount'),
+                'permission_callback' => $this->buildPermissionCallback('cloud_storage_accounts_create', $csPerm),
+            ),
+        ));
+
+        // GET + PUT + DELETE /cloud-storage/accounts/{id}
+        $safeRegister(EndpointType::CloudStorageAccountId->route(), array(
+            array(
+                'methods'             => HttpMethodType::Get->value,
+                'callback'            => array($this, 'handleGetCloudStorageAccount'),
+                'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_get', $csPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Put->value,
+                'callback'            => array($this, 'handleUpdateCloudStorageAccount'),
+                'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_update', $csPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Delete->value,
+                'callback'            => array($this, 'handleDeleteCloudStorageAccount'),
+                'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_delete', $csPerm),
+            ),
+        ));
+
+        // POST /cloud-storage/accounts/test
+        $safeRegister(EndpointType::CloudStorageAccountTest->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleTestCloudStorageAccount'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_test', $csPerm),
+        ));
+
+        // GET /cloud-storage/settings
+        $safeRegister(EndpointType::CloudStorageSettings->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleGetCloudStorageSettings'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_settings', $csPerm),
+        ));
+
+        // PUT /cloud-storage/settings/{provider}
+        $safeRegister(EndpointType::CloudStorageSettingsProvider->route(), array(
+            'methods'             => HttpMethodType::Put->value,
+            'callback'            => array($this, 'handleUpdateCloudStorageSettings'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_settings_update', $csPerm),
+        ));
+
+        // POST /cloud-storage/upload
+        $safeRegister(EndpointType::CloudStorageUpload->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleCloudStorageUpload'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_upload', $csPerm),
+        ));
+
+        // GET /cloud-storage/files
+        $safeRegister(EndpointType::CloudStorageFiles->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleListCloudStorageFiles'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_files', $csPerm),
+        ));
+
+        // DELETE /cloud-storage/delete
+        $safeRegister(EndpointType::CloudStorageDelete->route(), array(
+            'methods'             => HttpMethodType::Delete->value,
+            'callback'            => array($this, 'handleDeleteCloudStorageFile'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_delete', $csPerm),
+        ));
+
+        // POST /cloud-storage/oauth/initiate
+        $safeRegister(EndpointType::CloudStorageOAuthInitiate->route(), array(
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => array($this, 'handleCloudStorageOAuthInitiate'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_oauth_initiate', $csPerm),
+        ));
+
+        // GET /cloud-storage/oauth/callback
+        $safeRegister(EndpointType::CloudStorageOAuthCallback->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleCloudStorageOAuthCallback'),
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_oauth_callback', $csPerm),
+        ));
     }
 
     /**

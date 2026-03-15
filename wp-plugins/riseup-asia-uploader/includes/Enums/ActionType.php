@@ -65,13 +65,20 @@ enum ActionType: string
     case SnapshotZipExpire       = 'SnapshotZipExpire';
     case SnapshotZipDownload     = 'SnapshotZipDownload';
 
+    // Cloud storage actions
+    case CloudStorageUpload        = 'CloudStorageUpload';
+    case CloudStorageDelete        = 'CloudStorageDelete';
+    case CloudStorageRotation      = 'CloudStorageRotation';
+    case CloudStorageAccountAdd    = 'CloudStorageAccountAdd';
+    case CloudStorageAccountRemove = 'CloudStorageAccountRemove';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    public function isSnapshot(): bool { return str_starts_with($this->value, 'Snapshot'); }
-    public function isAgent(): bool    { return str_starts_with($this->value, 'Agent'); }
-    
+    public function isSnapshot(): bool     { return str_starts_with($this->value, 'Snapshot'); }
+    public function isAgent(): bool        { return str_starts_with($this->value, 'Agent'); }
+    public function isCloudStorage(): bool { return str_starts_with($this->value, 'CloudStorage'); }
 
     public function isLifecycle(): bool
     {

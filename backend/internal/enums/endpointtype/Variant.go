@@ -71,6 +71,16 @@ const (
 	UsersImport
 	UsersExportSqlite
 	UsersImportSqlite
+	CloudStorageAccounts
+	CloudStorageAccountId
+	CloudStorageAccountTest
+	CloudStorageSettings
+	CloudStorageSettingsProvider
+	CloudStorageUpload
+	CloudStorageFiles
+	CloudStorageDelete
+	CloudStorageOAuthCallback
+	CloudStorageOAuthInitiate
 )
 
 var variantLabels = [...]string{
@@ -141,6 +151,16 @@ var variantLabels = [...]string{
 	UsersImport:             "UsersImport",
 	UsersExportSqlite:       "UsersExportSqlite",
 	UsersImportSqlite:       "UsersImportSqlite",
+	CloudStorageAccounts:        "CloudStorageAccounts",
+	CloudStorageAccountId:       "CloudStorageAccountId",
+	CloudStorageAccountTest:     "CloudStorageAccountTest",
+	CloudStorageSettings:        "CloudStorageSettings",
+	CloudStorageSettingsProvider: "CloudStorageSettingsProvider",
+	CloudStorageUpload:          "CloudStorageUpload",
+	CloudStorageFiles:           "CloudStorageFiles",
+	CloudStorageDelete:          "CloudStorageDelete",
+	CloudStorageOAuthCallback:   "CloudStorageOAuthCallback",
+	CloudStorageOAuthInitiate:   "CloudStorageOAuthInitiate",
 }
 
 var variantValues = [...]string{
@@ -211,4 +231,14 @@ var variantValues = [...]string{
 	UsersImport:             "/users/import",
 	UsersExportSqlite:       "/users/export-sqlite",
 	UsersImportSqlite:       "/users/import-sqlite",
+	CloudStorageAccounts:        "/cloud-storage/accounts",
+	CloudStorageAccountId:       "/cloud-storage/accounts/(?P<id>\\d+)",
+	CloudStorageAccountTest:     "/cloud-storage/accounts/test",
+	CloudStorageSettings:        "/cloud-storage/settings",
+	CloudStorageSettingsProvider: "/cloud-storage/settings/(?P<provider>[a-zA-Z]+)",
+	CloudStorageUpload:          "/cloud-storage/upload",
+	CloudStorageFiles:           "/cloud-storage/files",
+	CloudStorageDelete:          "/cloud-storage/delete",
+	CloudStorageOAuthCallback:   "/cloud-storage/oauth/callback",
+	CloudStorageOAuthInitiate:   "/cloud-storage/oauth/initiate",
 }

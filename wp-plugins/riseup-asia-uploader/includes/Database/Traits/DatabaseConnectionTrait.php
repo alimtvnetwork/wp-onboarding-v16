@@ -154,6 +154,8 @@ trait DatabaseConnectionTrait {
         $this->migrateV14PascalCaseRemainingValues($current);
         $this->migrateV15UploadSourceAbbreviationFix($current);
         $this->migrateV16ErrorSessionVersion($current);
+        $this->migrateV17CloudStorageAccounts($current);
+        $this->migrateV18CloudStorageSettings($current);
     }
 
     /**

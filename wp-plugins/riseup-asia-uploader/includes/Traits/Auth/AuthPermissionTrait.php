@@ -86,4 +86,10 @@ trait AuthPermissionTrait
         $this->fileLogger->debug('Checking user management permission');
         return $this->checkAuthenticatedCapability($request, CapabilityType::EditUsers->value);
     }
+
+    /** Check cloud storage management permission. */
+    public function checkCloudStoragePermission(WP_REST_Request $request): bool|WP_Error {
+        $this->fileLogger->debug('Checking cloud storage permission');
+        return $this->checkAuthenticatedCapability($request, CapabilityType::ManageOptions->value);
+    }
 }

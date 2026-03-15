@@ -38,10 +38,15 @@ enum TableType: string
     case ErrorSessions      = 'ErrorSessions';
     case FlashState         = 'FlashState';
 
+    // ── Cloud Storage ───────────────────────────────────────────────
+    case CloudStorageAccounts  = 'CloudStorageAccounts';
+    case CloudStorageSettings  = 'CloudStorageSettings';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 
-    public function isSnapshot(): bool { return str_starts_with($this->value, 'Snapshot'); }
-    public function isAgent(): bool    { return str_starts_with($this->value, 'Agent'); }
+    public function isSnapshot(): bool     { return str_starts_with($this->value, 'Snapshot'); }
+    public function isAgent(): bool        { return str_starts_with($this->value, 'Agent'); }
+    public function isCloudStorage(): bool { return str_starts_with($this->value, 'CloudStorage'); }
 }

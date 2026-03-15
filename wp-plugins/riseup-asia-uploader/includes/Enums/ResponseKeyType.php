@@ -366,6 +366,21 @@ enum ResponseKeyType: string
     case Skipped         = 'Skipped';
     case Pagination      = 'Pagination';
 
+    /** Cloud storage keys. */
+    case Accounts          = 'Accounts';
+    case Account           = 'Account';
+    case AccountId         = 'AccountId';
+    case AccountLabel      = 'AccountLabel';
+    case TokenMask         = 'TokenMask';
+    case ConnectionStatus  = 'ConnectionStatus';
+    case ProviderSettings  = 'ProviderSettings';
+    case UploadResult      = 'UploadResult';
+    case RemotePath        = 'RemotePath';
+    case RemoteUrl         = 'RemoteUrl';
+    case RotationApplied   = 'RotationApplied';
+    case OAuthUrl          = 'OAuthUrl';
+    case OAuthState        = 'OAuthState';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

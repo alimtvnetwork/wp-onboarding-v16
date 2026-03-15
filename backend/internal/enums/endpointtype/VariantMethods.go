@@ -66,6 +66,11 @@ func (v Variant) IsUser() bool {
 	return strings.HasPrefix(v.Value(), "/users")
 }
 
+// IsCloudStorage checks if this endpoint belongs to the cloud storage domain.
+func (v Variant) IsCloudStorage() bool {
+	return strings.HasPrefix(v.Value(), "/cloud-storage/")
+}
+
 func All() []Variant {
 	all := make([]Variant, 0, len(variantLabels)-1)
 
