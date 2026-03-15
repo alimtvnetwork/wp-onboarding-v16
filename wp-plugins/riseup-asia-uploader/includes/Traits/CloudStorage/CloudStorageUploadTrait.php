@@ -108,7 +108,7 @@ trait CloudStorageUploadTrait {
         $table    = TableType::CloudStorageSettings->value;
         $provider = $account['Provider'];
 
-        $settings = $this->db->fetchOne(
+        $settings = $this->db->querySingle(
             "SELECT * FROM {$table} WHERE Provider = ?",
             array($provider),
         );

@@ -28,7 +28,7 @@ trait CloudStorageSettingsTrait {
     {
         try {
             $table = TableType::CloudStorageSettings->value;
-            $rows  = $this->db->fetchAll("SELECT * FROM {$table} ORDER BY Provider ASC");
+            $rows  = $this->db->queryAll("SELECT * FROM {$table} ORDER BY Provider ASC");
 
             $settings = array();
 
@@ -83,7 +83,7 @@ trait CloudStorageSettingsTrait {
                 $values,
             );
 
-            $row = $this->db->fetchOne(
+            $row = $this->db->querySingle(
                 "SELECT * FROM {$table} WHERE Provider = ?",
                 array($providerType->value),
             );

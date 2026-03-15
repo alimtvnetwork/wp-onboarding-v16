@@ -31,7 +31,7 @@ trait CloudStorageAccountCrudTrait {
     {
         try {
             $table = TableType::CloudStorageAccounts->value;
-            $rows  = $this->db->fetchAll("SELECT * FROM {$table} ORDER BY CreatedAt DESC");
+            $rows  = $this->db->queryAll("SELECT * FROM {$table} ORDER BY CreatedAt DESC");
 
             $accounts = array_map(
                 fn(array $row) => $this->formatAccountForResponse($row),
@@ -365,7 +365,7 @@ trait CloudStorageAccountCrudTrait {
     {
         $table = TableType::CloudStorageAccounts->value;
 
-        return $this->db->fetchOne("SELECT * FROM {$table} WHERE Id = ?", array($id));
+        return $this->db->querySingle("SELECT * FROM {$table} WHERE Id = ?", array($id));
     }
 
     /** Apply update fields to SET clause arrays. */
