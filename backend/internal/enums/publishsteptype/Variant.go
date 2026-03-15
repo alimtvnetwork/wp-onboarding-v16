@@ -29,6 +29,7 @@ const (
 	Failed
 	Running
 	RemoteBackup
+	CloudUpload
 )
 
 var variantLabels = [...]string{
