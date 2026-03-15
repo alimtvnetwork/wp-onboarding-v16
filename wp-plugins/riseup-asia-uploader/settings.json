@@ -4,5 +4,5 @@
     "maxRotations": 10,
     "archiveEnabled": true
   },
-  "approved_machines": []
+  "approved_machines": ["ALIM-DESKTOP"]
 }
