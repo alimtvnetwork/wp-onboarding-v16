@@ -440,7 +440,6 @@ trait CloudStorageGoogleDriveTrait {
 
             if ($isIncomplete) {
                 $offset += $chunkLen;
-
                 continue;
             }
 
