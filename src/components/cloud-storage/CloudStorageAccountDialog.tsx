@@ -35,7 +35,7 @@ interface CloudStorageAccountDialogProps {
   isSubmitting: boolean;
 }
 
-const PROVIDERS: CloudStorageProvider[] = ["GitHub", "GitLab"];
+const PROVIDERS: CloudStorageProvider[] = ["GitHub", "GitLab", "GoogleDrive"];
 
 export function CloudStorageAccountDialog({
   open,
