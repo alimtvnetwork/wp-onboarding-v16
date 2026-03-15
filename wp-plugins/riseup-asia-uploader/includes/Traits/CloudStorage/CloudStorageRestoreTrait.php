@@ -1,12 +1,12 @@
 <?php
 /**
- * CloudStorageRestoreTrait — Git-first restore with API fallback.
+ * CloudStorageRestoreTrait — Folder-based restore with ZipReassembler.
  *
- * Restores backups by cloning the specific branch via `git clone --depth 1`,
- * falling back to provider REST APIs when the git binary is unavailable.
+ * Downloads manifest + chunks from the remote folder, reassembles via
+ * ZipReassembler (SHA-256 verification), then extracts the restored ZIP.
  *
  * @package RiseupAsia\Traits\CloudStorage
- * @since   2.16.0
+ * @since   2.17.0
  */
 
 namespace RiseupAsia\Traits\CloudStorage;
@@ -19,7 +19,9 @@ use RuntimeException;
 use Throwable;
 use WP_REST_Request;
 use WP_REST_Response;
+use ZipArchive;
 
+use RiseupAsia\CloudStorage\ZipReassembler;
 use RiseupAsia\Enums\CloudStorageBackupType;
 use RiseupAsia\Enums\CloudStorageProviderType;
 use RiseupAsia\Enums\HttpStatusType;
@@ -57,28 +59,16 @@ trait CloudStorageRestoreTrait {
             }
 
             $tempDir = sys_get_temp_dir() . '/riseup-restore-' . wp_generate_uuid4();
+            mkdir($tempDir, 0755, true);
 
-            $this->downloadBackupToTemp($account, $backup, $tempDir);
-
-            $zipPath      = $tempDir . '/' . $backup['RemotePath'];
-            $isZipMissing = !file_exists($zipPath);
-
-            if ($isZipMissing) {
-                $this->cleanupTempDir($tempDir);
-
-                return new WP_REST_Response(array(
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Backup ZIP not found after download',
-                ), HttpStatusType::InternalServerError->value);
-            }
-
-            // For incremental restore: also fetch and restore the base full backup first
+            // For incremental restore: restore full base first, then apply incremental
             $isIncremental = ($backup['BackupType'] === CloudStorageBackupType::Incremental->value);
 
             if ($isIncremental) {
-                $this->restoreIncrementalWithBase($account, $backup, $zipPath);
+                $this->restoreIncrementalWithBase($account, $backup, $tempDir);
             } else {
-                $this->restoreFromZip($zipPath);
+                $zipPath = $this->downloadAndReassemble($account, $backup, $tempDir);
+                $this->extractRestoredZip($zipPath);
             }
 
             $this->cleanupTempDir($tempDir);
@@ -99,26 +89,100 @@ trait CloudStorageRestoreTrait {
     }
 
     /**
-     * Download a backup to a temp directory using git clone or API fallback.
+     * Download chunks from a remote folder and reassemble into a ZIP.
+     *
+     * Steps:
+     *   1. List files in the remote folder (manifest.json + chunks)
+     *   2. Download each file to a local temp directory
+     *   3. Run ZipReassembler to verify SHA-256 checksums and concatenate
      *
      * @param array  $account Account row.
-     * @param array  $backup  Backup history row.
-     * @param string $tempDir Temp directory path.
+     * @param array  $backup  Backup history row (must have FolderPath).
+     * @param string $tempDir Base temp directory.
+     * @return string Absolute path to the reassembled ZIP.
      */
-    private function downloadBackupToTemp(array $account, array $backup, string $tempDir): void
+    private function downloadAndReassemble(array $account, array $backup, string $tempDir): string
     {
-        $branchName   = $backup['BranchName'] ?? 'main';
-        $isGitPresent = $this->isShellCommandAvailable('git');
+        $folderPath = $backup['FolderPath'] ?? '';
+        $isFolderEmpty = empty($folderPath);
 
-        if ($isGitPresent) {
-            $this->gitCloneShallow($account, $branchName, $tempDir);
-        } else {
-            $this->downloadViaApi($account, $backup['RemotePath'], $branchName, $tempDir);
+        if ($isFolderEmpty) {
+            throw new RuntimeException('Backup has no FolderPath — cannot restore');
         }
+
+        $chunksDir = $tempDir . '/chunks';
+        mkdir($chunksDir, 0755, true);
+
+        $this->downloadFolderContents($account, $folderPath, $chunksDir);
+
+        $outputPath = $tempDir . '/restored.zip';
+        $reassembler = new ZipReassembler();
+        $result = $reassembler->reassemble($chunksDir, $outputPath);
+
+        $isFailed = !$result[ResponseKeyType::Success->value];
+
+        if ($isFailed) {
+            throw new RuntimeException(
+                'ZipReassembler failed: ' . ($result[ResponseKeyType::Error->value] ?? 'unknown error')
+            );
+        }
+
+        $this->fileLogger->info('[CLOUD-RESTORE] Reassembled ZIP', array(
+            'folderPath' => $folderPath,
+            'totalSize'  => $result['totalSize'] ?? 0,
+            'chunkCount' => $result['chunkCount'] ?? 0,
+        ));
+
+        return $outputPath;
+    }
+
+    /**
+     * Download all files from a remote folder to a local directory.
+     *
+     * @param array  $account   Account row.
+     * @param string $folderPath Remote folder path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
+     * @param string $localDir  Local directory to write files into.
+     */
+    private function downloadFolderContents(array $account, string $folderPath, string $localDir): void
+    {
+        $provider = CloudStorageProviderType::from($account['Provider']);
+        $token    = $this->decryptToken($account['AccessToken']);
+        $branch   = $account['DefaultBranch'] ?? 'main';
+
+        $files = match(true) {
+            $provider->isGitHub() => $this->githubListFiles($account, $token, $folderPath),
+            $provider->isGitLab() => $this->gitlabListFiles($account, $token, $folderPath),
+            default               => throw new RuntimeException('Folder download not supported for ' . $provider->label()),
+        };
+
+        $isEmptyFolder = empty($files);
+
+        if ($isEmptyFolder) {
+            throw new RuntimeException('Remote folder is empty or not found: ' . $folderPath);
+        }
+
+        foreach ($files as $file) {
+            $fileName   = $file['name'] ?? basename($file['path'] ?? '');
+            $remotePath = $file['path'] ?? ($folderPath . '/' . $fileName);
+
+            $content = match(true) {
+                $provider->isGitHub() => $this->githubDownloadFile($account, $token, $remotePath, $branch),
+                $provider->isGitLab() => $this->gitlabDownloadFile($account, $token, $remotePath, $branch),
+                default               => throw new RuntimeException('File download not supported for ' . $provider->label()),
+            };
+
+            $localPath = $localDir . '/' . $fileName;
+            file_put_contents($localPath, $content);
+        }
+
+        $this->fileLogger->info('[CLOUD-RESTORE] Downloaded folder contents', array(
+            'folderPath' => $folderPath,
+            'fileCount'  => count($files),
+        ));
     }
 
     /** Restore an incremental backup by first restoring its base full backup. */
-    private function restoreIncrementalWithBase(array $account, array $backup, string $incrZipPath): void
+    private function restoreIncrementalWithBase(array $account, array $backup, string $tempDir): void
     {
         $baseFullId = $backup['BaseFullBackupId'] ?? null;
         $hasNoBase  = ($baseFullId === null);
@@ -134,119 +198,56 @@ trait CloudStorageRestoreTrait {
             throw new RuntimeException('Base full backup record not found');
         }
 
-        // Download and restore the full backup first
-        $fullTempDir = sys_get_temp_dir() . '/riseup-restore-full-' . wp_generate_uuid4();
+        // Download and reassemble both ZIPs
+        $fullTempDir = $tempDir . '/full';
+        $incrTempDir = $tempDir . '/incr';
+        mkdir($fullTempDir, 0755, true);
+        mkdir($incrTempDir, 0755, true);
 
-        try {
-            $this->downloadBackupToTemp($account, $fullBackup, $fullTempDir);
+        $fullZipPath = $this->downloadAndReassemble($account, $fullBackup, $fullTempDir);
+        $incrZipPath = $this->downloadAndReassemble($account, $backup, $incrTempDir);
 
-            $fullZipPath      = $fullTempDir . '/' . $fullBackup['RemotePath'];
-            $isFullZipMissing = !file_exists($fullZipPath);
-
-            if ($isFullZipMissing) {
-                throw new RuntimeException('Base full backup ZIP not found after download');
-            }
-
-            // Restore full first, then apply incremental on top
-            $this->restoreFromZip($fullZipPath);
-            $this->restoreFromZip($incrZipPath, true); // true = incremental merge
-
-        } finally {
-            $this->cleanupTempDir($fullTempDir);
-        }
+        // Restore full first, then apply incremental on top
+        $this->extractRestoredZip($fullZipPath);
+        $this->extractRestoredZip($incrZipPath, true);
     }
 
     /**
-     * Shallow clone a specific branch from the remote repository.
+     * Extract a reassembled ZIP to the WordPress plugins directory.
      *
-     * @param array  $account Account row with Provider, RepoOwner, RepoName, AccessToken.
-     * @param string $branch  Branch name to clone.
-     * @param string $destDir Destination directory.
+     * @param string $zipPath      Absolute path to the ZIP file.
+     * @param bool   $isIncremental Whether to merge incrementally (true) or replace (false).
      */
-    private function gitCloneShallow(array $account, string $branch, string $destDir): void
+    private function extractRestoredZip(string $zipPath, bool $isIncremental = false): void
     {
-        $provider = CloudStorageProviderType::from($account['Provider']);
-        $token    = $this->decryptToken($account['AccessToken']);
+        $isZipMissing = PathHelper::isFileMissing($zipPath);
 
-        $repoUrl = match(true) {
-            $provider->isGitHub() => sprintf(
-                'https://%s@github.com/%s/%s.git',
-                $token,
-                $account['RepoOwner'] ?? '',
-                $account['RepoName'] ?? '',
-            ),
-            $provider->isGitLab() => sprintf(
-                'https://oauth2:%s@%s/%s/%s.git',
-                $token,
-                rtrim($account['BaseUrl'] ?: 'gitlab.com', '/'),
-                $account['RepoOwner'] ?? '',
-                $account['RepoName'] ?? '',
-            ),
-            default => throw new RuntimeException('Git clone not supported for ' . $provider->label()),
-        };
-
-        $command = sprintf(
-            'git clone --depth 1 --branch %s --single-branch %s %s 2>&1',
-            escapeshellarg($branch),
-            escapeshellarg($repoUrl),
-            escapeshellarg($destDir),
-        );
-
-        $output   = array();
-        $exitCode = 0;
-        exec($command, $output, $exitCode);
-
-        $isCloneFailed = ($exitCode !== 0);
-
-        if ($isCloneFailed) {
-            throw new RuntimeException(
-                sprintf('Git clone failed (exit %d): %s', $exitCode, implode("\n", $output)),
-            );
+        if ($isZipMissing) {
+            throw new RuntimeException('Restored ZIP not found: ' . $zipPath);
         }
 
-        $this->fileLogger->info('[CLOUD-RESTORE] Git clone successful', array(
-            'branch' => $branch,
-            'dest'   => $destDir,
-        ));
-    }
+        $zip = new ZipArchive();
+        $openResult = $zip->open($zipPath);
 
-    /**
-     * Download a backup file via provider REST API (fallback when git is unavailable).
-     *
-     * @param array  $account    Account row.
-     * @param string $remotePath Path within the repository.
-     * @param string $branch     Branch name.
-     * @param string $tempDir    Local temp directory to write the file into.
-     */
-    private function downloadViaApi(
-        array $account,
-        string $remotePath,
-        string $branch,
-        string $tempDir
-    ): void {
-        $provider = CloudStorageProviderType::from($account['Provider']);
-        $token    = $this->decryptToken($account['AccessToken']);
+        $isOpenFailed = ($openResult !== true);
 
-        $content = match(true) {
-            $provider->isGitHub() => $this->githubDownloadFile($account, $token, $remotePath, $branch),
-            $provider->isGitLab() => $this->gitlabDownloadFile($account, $token, $remotePath, $branch),
-            default               => throw new RuntimeException('API download not supported for ' . $provider->label()),
-        };
-
-        $localPath = $tempDir . '/' . $remotePath;
-        $localDir  = dirname($localPath);
-
-        $isDirMissing = !is_dir($localDir);
-
-        if ($isDirMissing) {
-            mkdir($localDir, 0755, true);
+        if ($isOpenFailed) {
+            throw new RuntimeException('Failed to open restored ZIP: ' . $zipPath);
         }
 
-        file_put_contents($localPath, $content);
+        $extractDir = WP_PLUGIN_DIR;
+        $isExtracted = $zip->extractTo($extractDir);
+        $zip->close();
 
-        $this->fileLogger->info('[CLOUD-RESTORE] API download successful', array(
-            'remotePath' => $remotePath,
-            'branch'     => $branch,
+        if ($isExtracted === false) {
+            throw new RuntimeException('Failed to extract restored ZIP contents');
+        }
+
+        $label = $isIncremental ? 'incremental' : 'full';
+
+        $this->fileLogger->info('[CLOUD-RESTORE] Extracted ' . $label . ' ZIP', array(
+            'zipPath'    => $zipPath,
+            'extractDir' => $extractDir,
         ));
     }
 
@@ -354,14 +355,4 @@ trait CloudStorageRestoreTrait {
 
         rmdir($dir);
     }
-
-    // ── Stub methods (implemented by snapshot restore system) ────
-
-    /**
-     * Restore site data from a ZIP file.
-     *
-     * @param string $zipPath      Absolute path to the ZIP.
-     * @param bool   $isIncremental Whether to merge incrementally (true) or replace (false).
-     */
-    abstract private function restoreFromZip(string $zipPath, bool $isIncremental = false): void;
 }

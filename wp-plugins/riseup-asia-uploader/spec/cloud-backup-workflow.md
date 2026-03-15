@@ -244,13 +244,7 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 | `BackupFolderResolver` | `CloudStorage/BackupFolderResolver.php` | ✅ Updated — new naming format applied |
 | `CloudStorageScheduleTrait` | `Traits/CloudStorage/CloudStorageScheduleTrait.php` | ✅ Wired — Orchestrator + ZipSplitter + folder-based flow |
 | `CloudStorageHistoryTrait` | `Traits/CloudStorage/CloudStorageHistoryTrait.php` | ✅ Updated — v21 columns (FolderPath, ChunkCount, TotalSize) |
-| `CloudStorageRestoreTrait` | `Traits/CloudStorage/CloudStorageRestoreTrait.php` | Git-first restore exists — needs ZipReassembler |
-
-### ⚠️ Needs Changes (Existing Files)
-
-| File | What Changes |
-|------|-------------|
-| `CloudStorageRestoreTrait.php` | Wire `ZipReassembler` into `restoreFromZip()` |
+| `CloudStorageRestoreTrait` | `Traits/CloudStorage/CloudStorageRestoreTrait.php` | ✅ Wired — ZipReassembler + folder-based download + extract |
 
 ### ❌ Not Yet Created
 

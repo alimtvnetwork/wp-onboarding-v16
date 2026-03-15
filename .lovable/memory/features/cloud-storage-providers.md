@@ -120,8 +120,8 @@ The cloud storage provider system supports remote backups to three providers:
 2. Emit WebSocket progress events for cloud upload
 3. Cloud upload failures should warn, not block publish
 4. Skip stage if no accounts selected
-5. Wire `ZipSplitter` into `createFullBackupZip()` and `createIncrementalBackupZip()`
+5. ~~Wire `ZipSplitter` into `createFullBackupZip()` and `createIncrementalBackupZip()`~~ ✅ Done
 6. Implement `dispatchCloudUpload()` with Contents API upload (split chunks, single commit)
-7. Wire `ZipReassembler` into `restoreFromZip()` in CloudStorageRestoreTrait
+7. ~~Wire `ZipReassembler` into `restoreFromZip()` in CloudStorageRestoreTrait~~ ✅ Done
 8. Implement `gitlabApiRequestRaw()` for raw file downloads
-9. Migration v21: add `chunk_count`, `total_size`, `folder_path` to BackupHistory; drop `branch_name`, `commit_sha`
+9. ~~Migration v21: add `chunk_count`, `total_size`, `folder_path` to BackupHistory; drop `branch_name`, `commit_sha`~~ ✅ Done
