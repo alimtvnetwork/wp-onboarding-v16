@@ -26,6 +26,7 @@ import { VersionHistoryPanel } from "@/components/plugins/VersionHistoryPanel";
 import { ScanDirectoryPanel } from "@/components/plugins/ScanDirectoryPanel";
 import { QuickPublishIndicator } from "@/components/plugins/QuickPublishIndicator";
 import { DiffPreviewDialog } from "@/components/plugins/DiffPreviewDialog";
+import { CloudStorageBackupSelector } from "@/components/cloud-storage/CloudStorageBackupSelector";
 import { SiteVersionBadge } from "@/components/publish/SiteVersionBadge";
 import {
   Dialog,
@@ -130,6 +131,7 @@ export default function Plugins() {
   const [addMethod, setAddMethod] = useState<"path" | "browse">("path");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [cloudStorageAccountIds, setCloudStorageAccountIds] = useState<number[]>([]);
   const [publishPlugin, setPublishPlugin] = useState<Plugin | null>(null);
   const [publishSiteId, setPublishSiteId] = useState<number | null>(null);
   const [showPublishProgress, setShowPublishProgress] = useState(false);
@@ -424,6 +426,7 @@ export default function Plugins() {
         files: files,
         createBackup: true,
         keepZipFiles,
+        cloudStorageAccountIds: cloudStorageAccountIds.length > 0 ? cloudStorageAccountIds : undefined,
       });
       if (response.success) {
         // Toast is handled by WebSocket PUBLISH_COMPLETE event — do not duplicate here
@@ -1488,6 +1491,11 @@ export default function Plugins() {
                 </Button>
               </div>
             )}
+
+            <CloudStorageBackupSelector
+              selectedAccountIds={cloudStorageAccountIds}
+              onSelectionChange={setCloudStorageAccountIds}
+            />
           </div>
 
           <DialogFooter>

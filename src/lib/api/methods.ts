@@ -417,7 +417,7 @@ export const api = {
     return (
       pluginId: number,
       siteId: number,
-      options: { mode: "selected" | "full"; files?: string[]; createBackup: boolean; keepZipFiles?: boolean }
+      options: { mode: "selected" | "full"; files?: string[]; createBackup: boolean; keepZipFiles?: boolean; cloudStorageAccountIds?: number[] }
     ) => {
       const key = `${pluginId}:${siteId}`;
       // Block if already in-flight
