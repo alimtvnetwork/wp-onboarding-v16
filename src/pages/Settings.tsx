@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/api";
-import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield, Database } from "lucide-react";
+import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield, Database, Cloud } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
 import { SnapshotSettingsTab } from "@/components/settings/SnapshotSettingsTab";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
