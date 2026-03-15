@@ -3,8 +3,8 @@
  * BackupFolderResolver — Generates folder names and resolves parent/child
  * relationships for the Git-based backup hierarchy.
  *
- * Folder structure:
- *   full-backup/{seq}_{DD-MMM-YYYY}[_{label}]/
+ * Folder structure (all hyphens, no underscores):
+ *   full-backup/{seq}-W{week}-{DD-MMM-YYYY}[-{label}]/
  *   incremental-backup/{parent-folder}/{inc-seq}/
  *
  * @package RiseupAsia\CloudStorage
@@ -34,25 +34,26 @@ class BackupFolderResolver
     /**
      * Build the full-backup folder name.
      *
-     * Format: {seq}_{DD-MMM-YYYY}[_{label}]
+     * Format: {seq}-W{week}-{DD-MMM-YYYY}[-{label}]
      *
-     * @param int         $sequence Backup sequence number.
+     * @param int         $sequence  Backup sequence number.
      * @param int|null    $timestamp Unix timestamp (null = now).
-     * @param string|null $label    Optional user-provided label.
-     * @return string Folder name (e.g., "001_15-Mar-2026" or "001_15-Mar-2026_weekly").
+     * @param string|null $label     Optional user-provided label (manual backups).
+     * @return string Folder name (e.g., "001-W11-15-Mar-2026" or "001-W11-15-Mar-2026-pre-deployment").
      */
     public function buildFullFolderName(int $sequence, ?int $timestamp = null, ?string $label = null): string
     {
         $seq = $this->padSequence($sequence);
         $date = $this->formatDate($timestamp);
-        $base = $seq . '_' . $date;
+        $week = $this->formatWeekNumber($timestamp);
+        $base = $seq . '-W' . $week . '-' . $date;
 
         $hasLabel = !empty($label);
 
         if ($hasLabel) {
             $sanitized = $this->sanitizeLabel($label);
 
-            return $base . '_' . $sanitized;
+            return $base . '-' . $sanitized;
         }
 
         return $base;
@@ -64,7 +65,7 @@ class BackupFolderResolver
      * @param int         $sequence  Backup sequence number.
      * @param int|null    $timestamp Unix timestamp (null = now).
      * @param string|null $label     Optional label.
-     * @return string Path like "full-backup/001_15-Mar-2026".
+     * @return string Path like "full-backup/001-W11-15-Mar-2026".
      */
     public function buildFullPath(int $sequence, ?int $timestamp = null, ?string $label = null): string
     {
@@ -78,7 +79,7 @@ class BackupFolderResolver
      *
      * @param string $parentFolderName The parent full-backup folder name.
      * @param int    $incrementalSeq   Incremental sequence within this parent.
-     * @return string Path like "incremental-backup/001_15-Mar-2026/003".
+     * @return string Path like "incremental-backup/001-W11-15-Mar-2026/003".
      */
     public function buildIncrementalPath(string $parentFolderName, int $incrementalSeq): string
     {
@@ -90,31 +91,32 @@ class BackupFolderResolver
     /**
      * Parse a full-backup folder name into its components.
      *
-     * @param string $folderName e.g., "001_15-Mar-2026_weekly-checkpoint"
-     * @return array{sequence: int, date: string, label: string|null}|null
+     * @param string $folderName e.g., "001-W11-15-Mar-2026-pre-deployment"
+     * @return array{sequence: int, week: int, date: string, label: string|null}|null
      */
     public function parseFullFolderName(string $folderName): ?array
     {
-        $pattern = '/^(\d{3})_(\d{2}-[A-Za-z]{3}-\d{4})(?:_(.+))?$/';
+        $pattern = '/^(\d{3})-W(\d{1,2})-(\d{2}-[A-Za-z]{3}-\d{4})(?:-(.+))?$/';
         $isMatch = preg_match($pattern, $folderName, $matches);
 
         if (!$isMatch) {
             return null;
         }
 
-        $hasLabel = !empty($matches[3]);
+        $hasLabel = !empty($matches[4]);
 
         return array(
             'sequence' => (int) $matches[1],
-            'date'     => $matches[2],
-            'label'    => $hasLabel ? $matches[3] : null,
+            'week'     => (int) $matches[2],
+            'date'     => $matches[3],
+            'label'    => $hasLabel ? $matches[4] : null,
         );
     }
 
     /**
      * Parse an incremental path to extract parent and incremental sequence.
      *
-     * @param string $path e.g., "incremental-backup/001_15-Mar-2026/003"
+     * @param string $path e.g., "incremental-backup/001-W11-15-Mar-2026/003"
      * @return array{parentFolder: string, incrementalSequence: int}|null
      */
     public function parseIncrementalPath(string $path): ?array
@@ -204,7 +206,7 @@ class BackupFolderResolver
      * Get the corresponding incremental root for a full-backup folder.
      *
      * @param string $fullFolderName Full-backup folder name.
-     * @return string Path like "incremental-backup/001_15-Mar-2026".
+     * @return string Path like "incremental-backup/001-W11-15-Mar-2026".
      */
     public function getIncrementalRootForFull(string $fullFolderName): string
     {
@@ -230,11 +232,12 @@ class BackupFolderResolver
     ): string {
         $seq = $this->padSequence($sequence);
         $date = $this->formatDate($timestamp);
+        $week = $this->formatWeekNumber($timestamp);
 
         $isFull = $type->isFull();
 
         if ($isFull) {
-            $message = 'backup: full #' . $seq . ' — ' . $date;
+            $message = 'backup: full #' . $seq . ' W' . $week . ' — ' . $date;
             $hasLabel = !empty($label);
 
             if ($hasLabel) {
@@ -246,7 +249,7 @@ class BackupFolderResolver
 
         $incSeq = $this->padSequence($incrementalSeq ?? 0);
 
-        return 'backup: incremental #' . $seq . '/' . $incSeq . ' — ' . $date;
+        return 'backup: incremental #' . $seq . '/' . $incSeq . ' W' . $week . ' — ' . $date;
     }
 
     /**
@@ -288,6 +291,23 @@ class BackupFolderResolver
         }
 
         return gmdate(self::FOLDER_DATE_FORMAT);
+    }
+
+    /**
+     * Get the ISO week number for a timestamp.
+     *
+     * @param int|null $timestamp Unix timestamp (null = now).
+     * @return string Week number (e.g., "11").
+     */
+    private function formatWeekNumber(?int $timestamp = null): string
+    {
+        $hasTimestamp = ($timestamp !== null);
+
+        if ($hasTimestamp) {
+            return DateHelper::format($timestamp, 'W');
+        }
+
+        return gmdate('W');
     }
 
     /**
