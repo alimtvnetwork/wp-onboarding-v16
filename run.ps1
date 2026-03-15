@@ -278,6 +278,21 @@ if ($help) {
     Write-Host "    .\run.ps1 -ls          # List all sites (deploy + backend)"
     Write-Host "    .\run.ps1 -lr          # Same as -ls"
     Write-Host ""
+    Write-Host "MACHINE APPROVAL (for -cl/-cla):" -ForegroundColor Yellow
+    Write-Host "  Remote log clearing requires your machine name in the approved list." -ForegroundColor Gray
+    Write-Host "  Your machine: $($env:COMPUTERNAME)" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Option 1: Edit settings.json (deployed with plugin ZIP)" -ForegroundColor DarkGray
+    Write-Host "    File: wp-plugins/qupload/settings.json" -ForegroundColor Gray
+    Write-Host "    File: wp-plugins/riseup-asia-uploader/settings.json" -ForegroundColor Gray
+    Write-Host '    { "approved_machines": ["ALIM-DESKTOP", "CI-SERVER"] }' -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  Option 2: WordPress Admin (per-site, no redeploy needed)" -ForegroundColor DarkGray
+    Write-Host "    Riseup: Settings > API Endpoints > enable logs_clear + logs_confirm" -ForegroundColor Gray
+    Write-Host "    QUpload: wp_options > qupload_settings > approved_machines array" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  After adding, redeploy plugins: .\run.ps1 -uas" -ForegroundColor DarkGray
+    Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
     Write-Host "  Project: $ProjectName"
