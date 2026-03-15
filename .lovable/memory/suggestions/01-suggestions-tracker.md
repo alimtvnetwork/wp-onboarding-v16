@@ -2,7 +2,7 @@
 
 > **Location:** `.lovable/memory/suggestions/01-suggestions-tracker.md`  
 > **Purpose:** Track AI suggestions for improvements (consolidated single file)  
-> **Updated:** 2026-02-24
+> **Updated:** 2026-03-15
 
 ---
 
@@ -10,8 +10,12 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-
-*No open suggestions.*
+| S-041 | 2026-03-15 | Medium | Lovable | open | Conditionally show `cloud_upload` stage in PublishProgressDialog only when cloud storage accounts are selected |
+| S-042 | 2026-03-15 | Medium | Lovable | open | Add Google OAuth settings section to Settings page for admins to configure `google_oauth_client_id` and `google_oauth_client_secret` |
+| S-043 | 2026-03-15 | Low | Lovable | open | Bump all plugin versions to 2.15.0 to reflect cloud storage providers feature |
+| S-044 | 2026-03-15 | Medium | Lovable | open | Add `cloud_upload` progress stage to backend `ServicePublishPipeline.go` to emit WebSocket events for cloud upload progress |
+| S-045 | 2026-03-15 | Low | Lovable | open | Admin dashboard for licensing server (React SPA or Go templates) |
+| S-046 | 2026-03-15 | Low | Lovable | open | Publish analytics / history reporting dashboard |
 
 ---
 
@@ -62,6 +66,17 @@
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
+### Recently Completed (Cloud Storage — 2026-03-15)
+
+| ID | Title | Completed | Notes |
+|----|-------|-----------|-------|
+| CS-001 | Cloud Storage Settings Page with provider tabs | 2026-03-15 | `CloudStorageSettingsPage`, `AccountCard`, `AccountDialog` |
+| CS-002 | Google Drive OAuth2 + resumable uploads (Phase 3) | 2026-03-15 | `CloudStorageGoogleDriveTrait.php`, `CloudStorageOAuthTrait.php` |
+| CS-003 | CloudStorageBackupSelector component | 2026-03-15 | Integrated into publish dialog with localStorage persistence |
+| CS-004 | Pass cloudStorageAccountIds through useQuickPublish | 2026-03-15 | Reads from localStorage, passes to `api.publishPlugin()` |
+| CS-005 | Pass cloudStorageAccountIds through useBulkQuickPublish | 2026-03-15 | Reads from localStorage, passes to `api.bulkPublish()` |
+| CS-006 | Add cloud_upload stage to PublishProgressDialog | 2026-03-15 | Between backup and package stages |
+
 ---
 
 ## Rejected Suggestions
@@ -76,11 +91,11 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 0 |
-| Completed | 39 |
+| Open | 6 |
+| Completed | 46 |
 | Closed N/A | 1 |
 | Rejected | 1 |
-| **Total** | **41** |
+| **Total** | **54** |
 
 ---
 
@@ -91,7 +106,7 @@ All suggestions tracked in this single file: `.lovable/memory/suggestions/01-sug
 
 ### Adding a New Suggestion
 Add to "Active Suggestions (Open)" section with:
-- **ID:** S-NNN (sequential, next is S-041)
+- **ID:** S-NNN (sequential, next is S-047)
 - **Created:** date
 - **Source:** where the suggestion originated (e.g., "Lovable", "User", "Audit")
 - **Priority:** low / medium / high
