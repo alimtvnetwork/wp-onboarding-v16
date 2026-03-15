@@ -29,6 +29,7 @@ use QUpload\Traits\Deactivate\DeactivateHandlerTrait;
 use QUpload\Traits\Log\LogStatusTrait;
 use QUpload\Traits\Log\LogClearingTrait;
 use QUpload\Traits\Log\LogEmailTrait;
+use QUpload\Traits\Machine\MachineApprovalTrait;
 
 class Plugin {
     use AuthTrait;
