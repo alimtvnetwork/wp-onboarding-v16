@@ -447,7 +447,6 @@ trait CloudStorageGoogleDriveTrait {
 
             if ($isComplete) {
                 fclose($handle);
-
                 return json_decode(wp_remote_retrieve_body($chunkResponse), true) ?? array();
             }
 
