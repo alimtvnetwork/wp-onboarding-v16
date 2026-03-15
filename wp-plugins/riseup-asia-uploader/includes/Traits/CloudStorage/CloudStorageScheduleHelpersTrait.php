@@ -200,14 +200,7 @@ trait CloudStorageScheduleHelpersTrait {
 
     // ── Remote folder operations ────────────────────────────────
 
-    /**
-     * List remote directory names at a given path (for sequence resolution).
-     *
-     * @param array  $account Account row.
-     * @param string $token   Decrypted token.
-     * @param string $path    Remote directory path.
-     * @return array<string> Directory names.
-     */
+    /** List remote directory names at a given path (for sequence resolution). */
     private function listRemoteDirectories(array $account, string $token, string $path): array
     {
         try {
