@@ -22,15 +22,22 @@ function Invoke-ClearLogsMode {
 
     # Resolve target sites using shared helper (supports -site, -i, -xs)
     $allSites = @($Config.wpPlugins.sites)
-    $excludeNames = @()
 
-    $hasExclude = ($exclude -ne "")
+    if ($ForceAll) {
+        # -cla: target ALL enabled sites, ignore -site/-i/-xs
+        $targetSites = @($allSites | Where-Object { $_.enabled -ne $false })
+        Write-Host "  Target: All enabled sites ($($targetSites.Count))" -ForegroundColor Cyan
+    } else {
+        $excludeNames = @()
 
-    if ($hasExclude) {
-        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+        $hasExclude = ($exclude -ne "")
+
+        if ($hasExclude) {
+            $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+        }
+
+        $targetSites = Resolve-TargetSites -Index $index -SiteName $site -ExcludedSiteNames $excludeNames -AllSites $allSites
     }
-
-    $targetSites = Resolve-TargetSites -Index $index -SiteName $site -ExcludedSiteNames $excludeNames -AllSites $allSites
 
     if ($targetSites.Count -eq 0) {
         Write-Host "No enabled sites found." -ForegroundColor Yellow
