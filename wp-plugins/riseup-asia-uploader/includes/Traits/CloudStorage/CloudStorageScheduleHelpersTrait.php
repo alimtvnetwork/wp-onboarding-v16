@@ -178,12 +178,7 @@ trait CloudStorageScheduleHelpersTrait {
         ));
     }
 
-    /**
-     * Clean up source ZIP and split temp directory after backup (success or failure).
-     *
-     * @param string|null $zipPath     Source ZIP path (may be null if creation failed).
-     * @param array|null  $splitResult Split result with tempDir key (may be null if split failed).
-     */
+    /** Clean up source ZIP and split temp directory after backup (success or failure). */
     private function cleanupBackupTempFiles(?string $zipPath, ?array $splitResult): void
     {
         $hasZipPath = !empty($zipPath);
