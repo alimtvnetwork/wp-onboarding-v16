@@ -414,6 +414,7 @@ if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
 if ($clearlogs) { Invoke-ClearLogsMode }
+if ($approvemachine -ne "" -or $PSBoundParameters.ContainsKey('approvemachine')) { Invoke-ApproveMachineMode -MachineNameToApprove $approvemachine }
 if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }
 if ($upload -and $qupload) { Invoke-UploadComboMode }
