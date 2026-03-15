@@ -371,9 +371,9 @@ GET /repos/{owner}/{repo}/branches/incremental/2026-W11
 
 ## 4. Git Clone Restore
 
-### 4.1 Restore Flow
+### 4.1 Restore Flow (Git-First Strategy)
 
-```
+The restore always attempts `git clone` first. If the `git` binary is unavailable (shared hosting), it falls back to the provider's file download API.
 1. User selects a backup from the history (full or incremental)
 2. System creates a temp directory: /tmp/riseup-restore-{uuid}/
 3. System performs a sparse/shallow git clone of the specific branch:
