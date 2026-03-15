@@ -29,7 +29,7 @@ export function useCloudStorageSettings(provider: CloudStorageProvider) {
     queryFn: async () => {
       const res = await api.getCloudStorageSettings(provider);
       const data = requireSuccess(res, { endpoint: `/cloud-storage/settings/${provider}` });
-      return data as CloudStorageSettings;
+      return data as unknown as CloudStorageSettings;
     },
   });
 }
