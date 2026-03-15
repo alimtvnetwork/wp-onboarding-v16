@@ -81,6 +81,11 @@ const (
 	CloudStorageDelete
 	CloudStorageOAuthCallback
 	CloudStorageOAuthInitiate
+	CloudStorageRepos
+	CloudStorageBranches
+	CloudStorageBackupHistory
+	CloudStorageBackupHistoryId
+	CloudStorageRestore
 )
 
 var variantLabels = [...]string{
@@ -159,8 +164,13 @@ var variantLabels = [...]string{
 	CloudStorageUpload:          "CloudStorageUpload",
 	CloudStorageFiles:           "CloudStorageFiles",
 	CloudStorageDelete:          "CloudStorageDelete",
-	CloudStorageOAuthCallback:   "CloudStorageOAuthCallback",
-	CloudStorageOAuthInitiate:   "CloudStorageOAuthInitiate",
+	CloudStorageOAuthCallback:       "CloudStorageOAuthCallback",
+	CloudStorageOAuthInitiate:       "CloudStorageOAuthInitiate",
+	CloudStorageRepos:               "CloudStorageRepos",
+	CloudStorageBranches:            "CloudStorageBranches",
+	CloudStorageBackupHistory:       "CloudStorageBackupHistory",
+	CloudStorageBackupHistoryId:     "CloudStorageBackupHistoryId",
+	CloudStorageRestore:             "CloudStorageRestore",
 }
 
 var variantValues = [...]string{
@@ -239,6 +249,11 @@ var variantValues = [...]string{
 	CloudStorageUpload:          "/cloud-storage/upload",
 	CloudStorageFiles:           "/cloud-storage/files",
 	CloudStorageDelete:          "/cloud-storage/delete",
-	CloudStorageOAuthCallback:   "/cloud-storage/oauth/callback",
-	CloudStorageOAuthInitiate:   "/cloud-storage/oauth/initiate",
+	CloudStorageOAuthCallback:       "/cloud-storage/oauth/callback",
+	CloudStorageOAuthInitiate:       "/cloud-storage/oauth/initiate",
+	CloudStorageRepos:               "/cloud-storage/repos",
+	CloudStorageBranches:            "/cloud-storage/branches",
+	CloudStorageBackupHistory:       "/cloud-storage/backup-history",
+	CloudStorageBackupHistoryId:     "/cloud-storage/backup-history/(?P<id>\\d+)",
+	CloudStorageRestore:             "/cloud-storage/restore",
 }

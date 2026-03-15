@@ -1,7 +1,7 @@
 # Cloud Storage Providers
 
 > **Updated:** 2026-03-15  
-> **Status:** Frontend complete, backend pipeline integration pending
+> **Status:** Frontend complete, backup engine + scheduling + restore implemented
 
 ---
 
@@ -33,6 +33,27 @@ The cloud storage provider system supports remote backups to three providers:
 | `CloudStorageGitLabTrait.php` | GitLab REST API operations |
 | `CloudStorageGoogleDriveTrait.php` | Google Drive v3 API + resumable uploads |
 | `CloudStorageOAuthTrait.php` | OAuth2 initiate/callback flow |
+| `CloudStorageBranchTrait.php` | Git branch create/delete/list for GitHub + GitLab |
+| `CloudStorageHistoryTrait.php` | Backup history CRUD (CloudStorageBackupHistory table) |
+| `CloudStorageScheduleTrait.php` | WP-Cron registration + full/incremental backup handlers |
+| `CloudStorageRestoreTrait.php` | Git-first shallow clone restore with API fallback |
+
+## Enums (Phase 5)
+
+| Enum | Purpose |
+|------|---------|
+| `BackupStrategyType.php` | FullOnly / FullAndIncremental |
+| `BackupScheduleType.php` | Hourly / Daily / Weekly / Biweekly / Monthly / Manual |
+| `CloudStorageBackupType.php` | Full / Incremental |
+| `CloudStorageBackupStatusType.php` | Pending / Uploading / Success / Failed |
+
+## Database Migrations
+
+| Migration | Tables/Columns |
+|-----------|---------------|
+| v18 | CloudStorageSettings table (base) |
+| v19 | Accounts: RepoSelectionMode, DefaultBranch; Settings: BackupType, schedule columns |
+| v20 | CloudStorageBackupHistory table (full/incremental tracking with branch + commit SHA) |
 
 ## React Components
 
@@ -43,6 +64,9 @@ The cloud storage provider system supports remote backups to three providers:
 | `CloudStorageAccountDialog` | `src/components/cloud-storage/` | Dynamic form per provider |
 | `CloudStorageProviderSettings` | `src/components/cloud-storage/` | Auto-backup, retention, prefix settings |
 | `CloudStorageBackupSelector` | `src/components/cloud-storage/` | Publish dialog selector |
+| `CloudStorageRepoSelector` | `src/components/cloud-storage/` | Create new / select existing repo |
+| `CloudStorageBackupTimeline` | `src/components/cloud-storage/` | Weekly grouped backup timeline |
+| `CloudStorageScheduleSettings` | `src/components/cloud-storage/` | Strategy + schedule configuration |
 
 ## Publish Integration
 
@@ -66,6 +90,21 @@ The cloud storage provider system supports remote backups to three providers:
 | `updateCloudStorageSettings` | `PUT /cloud-storage/settings` |
 | `getCloudStorageFiles` | `GET /cloud-storage/accounts/{id}/files` |
 | `initiateCloudStorageOAuth` | `POST /cloud-storage/oauth/initiate` |
+| `getCloudStorageRepos` | `GET /cloud-storage/repos` |
+| `getCloudStorageBranches` | `GET /cloud-storage/branches` |
+| `getCloudStorageBackupHistory` | `GET /cloud-storage/backup-history` |
+| `getCloudStorageBackupHistoryRecord` | `GET /cloud-storage/backup-history/{id}` |
+| `deleteCloudStorageBackupHistoryRecord` | `DELETE /cloud-storage/backup-history/{id}` |
+| `restoreCloudStorageBackup` | `POST /cloud-storage/restore` |
+
+## Git Backup Strategy (Confirmed Decisions)
+
+| Decision | Choice |
+|----------|--------|
+| Incremental detection | Timestamp-based (`post_modified_gmt`, `filemtime`) |
+| Cron reliability | WP-Cron default + real cron documentation |
+| Restore method | Git-first (shallow clone), API fallback |
+| Branch cleanup | Auto-delete with full backup rotation |
 
 ## Pending Backend Work
 
@@ -73,3 +112,7 @@ The cloud storage provider system supports remote backups to three providers:
 2. Emit WebSocket progress events for cloud upload
 3. Cloud upload failures should warn, not block publish
 4. Skip stage if no accounts selected
+5. Implement `createFullBackupZip()` and `createIncrementalBackupZip()` stubs
+6. Implement `dispatchCloudUpload()` stub with branch-aware commit
+7. Implement `restoreFromZip()` stub in CloudStorageRestoreTrait
+8. Implement `gitlabApiRequestRaw()` for raw file downloads

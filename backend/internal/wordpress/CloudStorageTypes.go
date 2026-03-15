@@ -3,61 +3,73 @@ package wordpress
 
 // CloudStorageAccount represents a cloud storage account in API responses.
 type CloudStorageAccount struct {
-	Id           int    `json:"Id"`
-	Provider     string `json:"Provider"`
-	AccountLabel string `json:"AccountLabel"`
-	Username     string `json:"Username,omitempty"`
-	Email        string `json:"Email,omitempty"`
-	TokenMask    string `json:"TokenMask"`
-	BaseUrl      string `json:"BaseUrl,omitempty"`
-	RepoName     string `json:"RepoName,omitempty"`
-	RepoOwner    string `json:"RepoOwner,omitempty"`
-	FolderId     string `json:"FolderId,omitempty"`
-	FolderName   string `json:"FolderName,omitempty"`
-	IsActive     bool   `json:"IsActive"`
-	LastUsedAt   string `json:"LastUsedAt,omitempty"`
-	LastError    string `json:"LastError,omitempty"`
-	CreatedAt    string `json:"CreatedAt"`
+	Id                int    `json:"Id"`
+	Provider          string `json:"Provider"`
+	AccountLabel      string `json:"AccountLabel"`
+	Username          string `json:"Username,omitempty"`
+	Email             string `json:"Email,omitempty"`
+	TokenMask         string `json:"TokenMask"`
+	BaseUrl           string `json:"BaseUrl,omitempty"`
+	RepoName          string `json:"RepoName,omitempty"`
+	RepoOwner         string `json:"RepoOwner,omitempty"`
+	RepoSelectionMode string `json:"RepoSelectionMode,omitempty"`
+	DefaultBranch     string `json:"DefaultBranch,omitempty"`
+	FolderId          string `json:"FolderId,omitempty"`
+	FolderName        string `json:"FolderName,omitempty"`
+	IsActive          bool   `json:"IsActive"`
+	LastUsedAt        string `json:"LastUsedAt,omitempty"`
+	LastError         string `json:"LastError,omitempty"`
+	CreatedAt         string `json:"CreatedAt"`
 }
 
 // CloudStorageAccountCreateRequest is the request body for creating an account.
 type CloudStorageAccountCreateRequest struct {
-	Provider     string `json:"Provider"`
-	AccountLabel string `json:"AccountLabel"`
-	Username     string `json:"Username,omitempty"`
-	Email        string `json:"Email,omitempty"`
-	AccessToken  string `json:"AccessToken"`
-	RefreshToken string `json:"RefreshToken,omitempty"`
-	BaseUrl      string `json:"BaseUrl,omitempty"`
-	RepoName     string `json:"RepoName,omitempty"`
-	RepoOwner    string `json:"RepoOwner,omitempty"`
-	FolderId     string `json:"FolderId,omitempty"`
-	FolderName   string `json:"FolderName,omitempty"`
+	Provider          string `json:"Provider"`
+	AccountLabel      string `json:"AccountLabel"`
+	Username          string `json:"Username,omitempty"`
+	Email             string `json:"Email,omitempty"`
+	AccessToken       string `json:"AccessToken"`
+	RefreshToken      string `json:"RefreshToken,omitempty"`
+	BaseUrl           string `json:"BaseUrl,omitempty"`
+	RepoName          string `json:"RepoName,omitempty"`
+	RepoOwner         string `json:"RepoOwner,omitempty"`
+	RepoSelectionMode string `json:"RepoSelectionMode,omitempty"`
+	DefaultBranch     string `json:"DefaultBranch,omitempty"`
+	FolderId          string `json:"FolderId,omitempty"`
+	FolderName        string `json:"FolderName,omitempty"`
 }
 
 // CloudStorageAccountUpdateRequest is the request body for updating an account.
 type CloudStorageAccountUpdateRequest struct {
-	AccountLabel string `json:"AccountLabel,omitempty"`
-	Username     string `json:"Username,omitempty"`
-	Email        string `json:"Email,omitempty"`
-	AccessToken  string `json:"AccessToken,omitempty"`
-	RefreshToken string `json:"RefreshToken,omitempty"`
-	BaseUrl      string `json:"BaseUrl,omitempty"`
-	RepoName     string `json:"RepoName,omitempty"`
-	RepoOwner    string `json:"RepoOwner,omitempty"`
-	FolderId     string `json:"FolderId,omitempty"`
-	FolderName   string `json:"FolderName,omitempty"`
-	IsActive     *bool  `json:"IsActive,omitempty"`
+	AccountLabel      string `json:"AccountLabel,omitempty"`
+	Username          string `json:"Username,omitempty"`
+	Email             string `json:"Email,omitempty"`
+	AccessToken       string `json:"AccessToken,omitempty"`
+	RefreshToken      string `json:"RefreshToken,omitempty"`
+	BaseUrl           string `json:"BaseUrl,omitempty"`
+	RepoName          string `json:"RepoName,omitempty"`
+	RepoOwner         string `json:"RepoOwner,omitempty"`
+	RepoSelectionMode string `json:"RepoSelectionMode,omitempty"`
+	DefaultBranch     string `json:"DefaultBranch,omitempty"`
+	FolderId          string `json:"FolderId,omitempty"`
+	FolderName        string `json:"FolderName,omitempty"`
+	IsActive          *bool  `json:"IsActive,omitempty"`
 }
 
 // CloudStorageSettings represents per-provider settings.
 type CloudStorageSettings struct {
-	IsEnabled         bool  `json:"IsEnabled"`
-	AutoBackupEnabled bool  `json:"AutoBackupEnabled"`
-	DefaultAccountId  *int  `json:"DefaultAccountId"`
-	RetentionCount    int   `json:"RetentionCount"`
-	RotationEnabled   bool  `json:"RotationEnabled"`
-	BackupPrefix      string `json:"BackupPrefix"`
+	IsEnabled                   bool   `json:"IsEnabled"`
+	AutoBackupEnabled           bool   `json:"AutoBackupEnabled"`
+	DefaultAccountId            *int   `json:"DefaultAccountId"`
+	RetentionCount              int    `json:"RetentionCount"`
+	RotationEnabled             bool   `json:"RotationEnabled"`
+	BackupPrefix                string `json:"BackupPrefix"`
+	BackupType                  string `json:"BackupType"`
+	FullBackupSchedule          string `json:"FullBackupSchedule"`
+	IncrementalBackupSchedule   string `json:"IncrementalBackupSchedule"`
+	FullBackupDayOfWeek         int    `json:"FullBackupDayOfWeek"`
+	FullBackupTimeUtc           string `json:"FullBackupTimeUtc"`
+	IncrementalBackupTimeUtc    string `json:"IncrementalBackupTimeUtc"`
 }
 
 // CloudStorageUploadRequest is the request body for uploading a backup.
@@ -82,4 +94,54 @@ type CloudStorageFileInfo struct {
 	Size      int64  `json:"Size"`
 	CreatedAt string `json:"CreatedAt,omitempty"`
 	RemoteUrl string `json:"RemoteUrl,omitempty"`
+}
+
+// CloudStorageRepository represents a repository in the list repos response.
+type CloudStorageRepository struct {
+	Name          string `json:"Name"`
+	FullName      string `json:"FullName"`
+	IsPrivate     bool   `json:"IsPrivate"`
+	DefaultBranch string `json:"DefaultBranch"`
+	UpdatedAt     string `json:"UpdatedAt"`
+}
+
+// CloudStorageBranch represents a branch in the list branches response.
+type CloudStorageBranch struct {
+	Name           string `json:"Name"`
+	IsDefault      bool   `json:"IsDefault"`
+	LastCommitSha  string `json:"LastCommitSha"`
+	LastCommitDate string `json:"LastCommitDate"`
+}
+
+// CloudStorageBackupHistoryRecord represents a backup history entry.
+type CloudStorageBackupHistoryRecord struct {
+	Id               int     `json:"Id"`
+	AccountId        int     `json:"AccountId"`
+	BackupType       string  `json:"BackupType"`
+	FileName         string  `json:"FileName"`
+	RemotePath       string  `json:"RemotePath"`
+	RemoteUrl        string  `json:"RemoteUrl"`
+	CommitSha        string  `json:"CommitSha"`
+	BranchName       string  `json:"BranchName"`
+	BaseFullBackupId *int    `json:"BaseFullBackupId"`
+	FileSizeBytes    int64   `json:"FileSizeBytes"`
+	TablesChanged    string  `json:"TablesChanged"`
+	RowsChanged      int     `json:"RowsChanged"`
+	Duration         float64 `json:"Duration"`
+	Status           string  `json:"Status"`
+	ErrorMessage     string  `json:"ErrorMessage"`
+	CreatedAt        string  `json:"CreatedAt"`
+}
+
+// CloudStorageBackupHistoryListResponse is the response for listing backup history.
+type CloudStorageBackupHistoryListResponse struct {
+	BackupHistory []CloudStorageBackupHistoryRecord `json:"BackupHistory"`
+	Total         int                               `json:"Total"`
+	Page          int                               `json:"Page"`
+	PerPage       int                               `json:"PerPage"`
+}
+
+// CloudStorageRestoreRequest is the request body for restoring from a backup.
+type CloudStorageRestoreRequest struct {
+	BackupId int `json:"BackupId"`
 }
