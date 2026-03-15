@@ -9,6 +9,7 @@ The PowerShell automation suite (run.ps1, upload-plugin-U-Q.ps1) provides integr
 - **ZIP:** `-z` (default plugin), `-za` (all plugins), `-zq` (QUpload plugin). **All ZIP operations automatically clean old ZIPs first** — no `-c` flag needed (kept for legacy but redundant).
 - **Skip list:** `wpPlugins.skipPlugins` in `powershell.json` is the **sole exclusion mechanism** for bulk operations. QUpload is NOT in skipPlugins (it IS included in `-uas`). `plugins-onboard` is in this list.
 - **Build:** `-b` (build only), `-s` (skip build), `-r` (rebuild), `-f` (force clean), `-i` (install deps)
+- **Machine management:** `-am` (approve current machine on all sites via REST API), `-am 'NAME'` (approve specific machine). Calls `PUT /machines/approve` on both plugins for each enabled site. No redeployment needed.
 
 **CRITICAL: `git pull` MUST always run first before any command** — including upload, ZIP, and build modes. In run.ps1, `Invoke-GitPull` is called immediately after the banner, before all early-exit paths (ZIP, upload). The `-p` / `-skippull` flag skips it. Upload script (upload-plugin-U-Q.ps1) is called from run.ps1 which handles the pull.
 

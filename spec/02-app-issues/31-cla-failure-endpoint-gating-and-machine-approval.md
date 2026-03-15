@@ -78,16 +78,52 @@
    - `wp-plugins/qupload/includes/Traits/Log/LogClearingTrait.php`
    - `wp-plugins/scripts/modules/mode-clear-logs.ps1`
 
+## Follow-Up: Remote Machine Approval (`-am` command)
+
+**Added in v2.17.0** — A new `.\run.ps1 -am` command that remotely approves a machine via REST API on all sites, eliminating the need for redeployment.
+
+### Architecture
+
+1. **New REST endpoint:** `PUT /machines/approve` on both plugins (Riseup Asia + QUpload).
+   - Accepts JSON body: `{ "machine": "MACHINE-NAME" }`
+   - Requires `activate_plugins` capability (same as upload/log-clear).
+   - Stores the machine in the WP option (`approved_machines` array) — persists without redeployment.
+   - Idempotent: returns success with `already_approved: true` if machine is already in the list.
+
+2. **New PowerShell module:** `wp-plugins/scripts/modules/mode-approve-machine.ps1`
+   - `.\run.ps1 -am` — approves current machine (`$env:COMPUTERNAME`) on all enabled sites.
+   - `.\run.ps1 -am 'CI-SERVER'` — approves a specific machine name on all sites.
+   - Iterates all enabled sites × both plugins, calls `PUT /machines/approve` for each.
+   - Summary table with per-site/plugin status.
+
+3. **Files added/modified:**
+   - `wp-plugins/riseup-asia-uploader/includes/Traits/Machine/MachineApprovalTrait.php` (new)
+   - `wp-plugins/qupload/includes/Traits/Machine/MachineApprovalTrait.php` (new)
+   - `wp-plugins/scripts/modules/mode-approve-machine.ps1` (new)
+   - Both `EndpointType.php` enums: added `MachinesApprove` case
+   - Both `RouteRegistrationTrait.php`: registered new route
+   - Both `Plugin.php`: added `use MachineApprovalTrait`
+   - `run.ps1`: added `-am` parameter, module dot-source, help text, early-exit handler
+
+### Recommended Workflow
+
+```
+.\run.ps1 -uas          # Deploy v2.17.0 with the new endpoint to all sites
+.\run.ps1 -am           # Remotely approve your machine on all sites (no redeploy needed)
+.\run.ps1 -cla          # Now log clearing should succeed 6/6
+```
+
 ## TODO and Follow-Ups
 
 1. Deploy v2.17.0 to all target WordPress sites.
-2. Add `ALIM-DESKTOP` (or your CI machine name) to `approved_machines` for both plugins on each site.
-3. Re-run `./run.ps1 -cla` and verify 6/6 success.
+2. Run `.\run.ps1 -am` to approve `ALIM-DESKTOP` on all sites via REST API.
+3. Re-run `.\run.ps1 -cla` and verify 6/6 success.
 
 ## Done Checklist
 
-- [ ] Spec updated under `../01-app/`
+- [x] Spec updated under `../01-app/`
 - [x] Issue write-up created under `./`
 - [x] Memory updated with summary and prevention rule (this issue doc)
 - [x] Acceptance criteria updated or added
 - [x] Iterations recorded
+- [x] Remote machine approval endpoint and CLI command added
