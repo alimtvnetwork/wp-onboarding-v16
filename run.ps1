@@ -204,9 +204,12 @@ if ($help) {
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
     Write-Host ""
     Write-Host "LOG MANAGEMENT:" -ForegroundColor Yellow
-    Write-Host "  -cl, -clearlogs     Clear logs on ALL configured sites (both plugins)"
+    Write-Host "  -cl, -clearlogs     Clear logs on default site (both plugins)"
     Write-Host "  -cl -site 'name'    Clear logs on a specific site"
+    Write-Host "  -cl -i N            Clear logs on site #N (1-based index from -ls)"
+    Write-Host "  -cl -i 1,2,3        Clear logs on multiple sites by index"
     Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
+    Write-Host "  -cla                Clear logs on ALL configured sites (both plugins)"
     Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
