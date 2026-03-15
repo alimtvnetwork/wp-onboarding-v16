@@ -1,9 +1,6 @@
 <?php
 /**
- * CloudStorageScheduleHelpersTrait — Snapshot creation, splitting, upload dispatch,
- * rotation, and cron scheduling helpers for cloud backups.
- *
- * Extracted from CloudStorageScheduleTrait to stay under the 500-line file cap.
+ * CloudStorageScheduleHelpersTrait — Snapshot, splitting, upload, rotation, and cron helpers.
  *
  * @package RiseupAsia\Traits\CloudStorage
  * @since   2.17.0
