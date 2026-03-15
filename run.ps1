@@ -30,6 +30,7 @@ param(
     [Alias('ls','lr')][switch]$listsites,
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
+    [Alias('cla')][switch]$clearlogsall,
     [Alias('i')][string]$index = ""
 )
 

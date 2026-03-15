@@ -1,8 +1,8 @@
 # Module: mode-clear-logs.ps1
-# Remote log clearing for all configured sites via the logs/clear API.
-# Two-step flow: DELETE /logs/clear → POST /logs/clear/confirm with token.
+# Remote log clearing for configured sites via the logs/clear API.
+# Two-step flow: DELETE /logs/clear -> POST /logs/clear/confirm with token.
 # Dot-sourced by run.ps1 — expects $Config, $ScriptDir, helpers, plugin-helpers loaded.
-# Expects: $site, $exclude, $sync
+# Expects: $site, $exclude, $sync, $index
 
 function Invoke-ClearLogsMode {
     Write-Host ""
@@ -18,8 +18,17 @@ function Invoke-ClearLogsMode {
 
     Show-ConfiguredSites
 
-    # Resolve target sites
-    $targetSites = Get-TargetSites
+    # Resolve target sites using shared helper (supports -site, -i, -xs)
+    $allSites = @($Config.wpPlugins.sites)
+    $excludeNames = @()
+
+    $hasExclude = ($exclude -ne "")
+
+    if ($hasExclude) {
+        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+    }
+
+    $targetSites = Resolve-TargetSites -Index $index -SiteName $site -ExcludedSiteNames $excludeNames -AllSites $allSites
 
     if ($targetSites.Count -eq 0) {
         Write-Host "No enabled sites found." -ForegroundColor Yellow
@@ -240,28 +249,4 @@ function Get-RestErrorMessage {
     }
 
     return $ErrorRecord.Exception.Message
-}
-
-function Get-TargetSites {
-    $allEnabled = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
-
-    if ($site -ne "") {
-        $matchedSite = $Config.wpPlugins.sites | Where-Object { $_.name -eq $site }
-
-        if (-not $matchedSite) {
-            Write-Host "ERROR: Site '$site' not found." -ForegroundColor Red
-            foreach ($s in $Config.wpPlugins.sites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
-            exit 1
-        }
-
-        return @($matchedSite)
-    }
-
-    if ($exclude -ne "") {
-        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
-
-        return @($allEnabled | Where-Object { $_.name -notin $excludeNames })
-    }
-
-    return $allEnabled
 }
