@@ -419,6 +419,10 @@ if ($clearlogs) { Invoke-ClearLogsMode }
 if ($approvemachine) {
     $machineNameForApproval = $approvemachinename
 
+    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and -not [string]::IsNullOrWhiteSpace($pluginpath)) {
+        $machineNameForApproval = $pluginpath
+    }
+
     if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and $args.Count -gt 0) {
         $firstArg = [string]$args[0]
         $isFlagLike = $firstArg.StartsWith("-")
