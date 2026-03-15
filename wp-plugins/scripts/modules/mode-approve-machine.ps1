@@ -167,6 +167,16 @@ function Invoke-ApproveMachineMode {
 
         foreach ($ns in $pluginNamespaces) {
             $pluginLabel = $ns.Name
+            $key = "$siteName|$pluginLabel"
+            $isEndpointReady = ($readySites.ContainsKey($key) -and $readySites[$key] -eq $true)
+
+            if (-not $isEndpointReady) {
+                Write-Host "  [$siteName] $pluginLabel..." -ForegroundColor DarkGray -NoNewline
+                Write-Host " SKIPPED (not ready)" -ForegroundColor DarkGray
+                $results += @{ Site = $siteName; Plugin = $pluginLabel; Status = "SKIPPED"; Error = "Endpoint not deployed (needs v2.17.0+)"; Detail = $null }
+                continue
+            }
+
             $apiBase = "$siteUrl/wp-json/$($ns.Namespace)"
             $approveUrl = "$apiBase/machines/approve"
 
