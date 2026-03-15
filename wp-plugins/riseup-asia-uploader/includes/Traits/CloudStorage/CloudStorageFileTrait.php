@@ -84,12 +84,13 @@ trait CloudStorageFileTrait {
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
-            $token    = $this->decryptToken($account['AccessToken']);
+            $token    = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
 
             $deleted = match(true) {
-                $provider->isGitHub() => $this->githubDeleteFile($account, $token, $remotePath),
-                $provider->isGitLab() => $this->gitlabDeleteFile($account, $token, $remotePath),
-                default               => false,
+                $provider->isGitHub()      => $this->githubDeleteFile($account, $token, $remotePath),
+                $provider->isGitLab()      => $this->gitlabDeleteFile($account, $token, $remotePath),
+                $provider->isGoogleDrive() => $this->googleDriveDeleteFile($account, $token, $remotePath),
+                default                    => false,
             };
 
             $this->logCloudStorageAction(ActionType::CloudStorageDelete, array(
