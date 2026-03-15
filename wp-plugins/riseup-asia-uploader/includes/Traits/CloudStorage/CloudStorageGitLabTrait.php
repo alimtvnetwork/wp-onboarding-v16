@@ -189,6 +189,98 @@ trait CloudStorageGitLabTrait {
         return true;
     }
 
+    /**
+     * Delete a folder and all its contents from the repository in a single commit.
+     *
+     * Uses the GitLab Commits API with multiple `delete` actions to remove
+     * all files under the given path atomically.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token.
+     * @param string $path    Remote folder path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
+     */
+    private function gitlabDeleteFolder(array $account, string $token, string $path): void
+    {
+        $apiBase     = $this->gitlabGetApiBase($account);
+        $namespace   = $account['RepoOwner'] ?? '';
+        $projectName = $account['RepoName'] ?? 'wp-backups';
+        $projectPath = urlencode($namespace . '/' . $projectName);
+
+        // 1. List all files under the path recursively via repository tree
+        $filePaths = $this->gitlabListFolderFilesRecursive($apiBase, $projectPath, $token, $path);
+        $hasNoFiles = empty($filePaths);
+
+        if ($hasNoFiles) {
+            return;
+        }
+
+        // 2. Build delete actions for the Commits API
+        $actions = array();
+
+        foreach ($filePaths as $filePath) {
+            $actions[] = array(
+                'action'    => 'delete',
+                'file_path' => $filePath,
+            );
+        }
+
+        // 3. Create a single commit with all delete actions
+        $commitUrl = sprintf('/projects/%s/repository/commits', $projectPath);
+
+        $this->gitlabApiRequest('POST', $apiBase, $commitUrl, $token, array(
+            'branch'         => 'main',
+            'commit_message' => sprintf('cleanup: remove folder %s', $path),
+            'actions'        => $actions,
+        ));
+
+        $this->fileLogger->info('[CLOUD-GITLAB] Deleted folder', array(
+            'path'      => $path,
+            'fileCount' => count($filePaths),
+        ));
+    }
+
+    /**
+     * Recursively list all file paths under a directory via the repository tree API.
+     *
+     * @param string $apiBase     API base URL.
+     * @param string $projectPath URL-encoded project path.
+     * @param string $token       Decrypted access token.
+     * @param string $dir         Directory path.
+     * @return array<string> Flat list of file paths.
+     */
+    private function gitlabListFolderFilesRecursive(
+        string $apiBase,
+        string $projectPath,
+        string $token,
+        string $dir
+    ): array {
+        $treePath = sprintf(
+            '/projects/%s/repository/tree?path=%s&ref=main&recursive=true&per_page=100',
+            $projectPath,
+            urlencode($dir),
+        );
+
+        $statusCode = $this->gitlabApiStatusCode('GET', $apiBase, $treePath, $token);
+        $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
+
+        if ($isNotFound) {
+            return array();
+        }
+
+        $body  = $this->gitlabApiRequest('GET', $apiBase, $treePath, $token);
+        $paths = array();
+
+        foreach ($body as $item) {
+            $isBlob = (($item['type'] ?? '') === 'blob');
+
+            if ($isBlob) {
+                $paths[] = $item['path'] ?? '';
+            }
+        }
+
+        return $paths;
+    }
+
     // ── GitLab Private Helpers ─────────────────────────────────────
 
     /** Derive the API base URL from account BaseUrl (supports self-hosted). */

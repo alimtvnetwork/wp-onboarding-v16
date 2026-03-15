@@ -222,6 +222,118 @@ trait CloudStorageGitHubTrait {
         return true;
     }
 
+    /**
+     * Delete a folder and all its contents from the repository in a single commit.
+     *
+     * Uses the Git Data API (tree → commit → ref update) to remove all files
+     * under the given path atomically, avoiding per-file API calls.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token.
+     * @param string $path    Remote folder path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
+     */
+    private function githubDeleteFolder(array $account, string $token, string $path): void
+    {
+        $owner = $account['RepoOwner'] ?? '';
+        $repo  = $account['RepoName'] ?? 'wp-backups';
+        $base  = sprintf('/repos/%s/%s', urlencode($owner), urlencode($repo));
+
+        // 1. List all files in the folder recursively
+        $filePaths = $this->githubListFolderFilesRecursive($account, $token, $path);
+        $hasNoFiles = empty($filePaths);
+
+        if ($hasNoFiles) {
+            return;
+        }
+
+        // 2. Get current HEAD commit and its tree
+        $refBody       = $this->githubApiRequest('GET', "{$base}/git/refs/heads/main", $token);
+        $lastCommitSha = $refBody['object']['sha'] ?? '';
+
+        $commitBody  = $this->githubApiRequest('GET', "{$base}/git/commits/{$lastCommitSha}", $token);
+        $baseTreeSha = $commitBody['tree']['sha'] ?? '';
+
+        // 3. Build tree entries that delete each file (sha = null removes it)
+        $treeEntries = array();
+
+        foreach ($filePaths as $filePath) {
+            $treeEntries[] = array(
+                'path' => $filePath,
+                'mode' => '100644',
+                'type' => 'blob',
+                'sha'  => null,
+            );
+        }
+
+        $treeBody = $this->githubApiRequest('POST', "{$base}/git/trees", $token, array(
+            'base_tree' => $baseTreeSha,
+            'tree'      => $treeEntries,
+        ));
+        $newTreeSha = $treeBody['sha'] ?? '';
+
+        // 4. Create commit and update ref
+        $newCommitBody = $this->githubApiRequest('POST', "{$base}/git/commits", $token, array(
+            'message' => sprintf('cleanup: remove folder %s', $path),
+            'tree'    => $newTreeSha,
+            'parents' => array($lastCommitSha),
+        ));
+        $newCommitSha = $newCommitBody['sha'] ?? '';
+
+        $this->githubApiRequest('PATCH', "{$base}/git/refs/heads/main", $token, array(
+            'sha' => $newCommitSha,
+        ));
+
+        $this->fileLogger->info('[CLOUD-GITHUB] Deleted folder', array(
+            'path'      => $path,
+            'fileCount' => count($filePaths),
+        ));
+    }
+
+    /**
+     * Recursively list all file paths under a directory in the repository.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token.
+     * @param string $dir     Directory path.
+     * @return array<string> Flat list of file paths.
+     */
+    private function githubListFolderFilesRecursive(array $account, string $token, string $dir): array
+    {
+        $owner = $account['RepoOwner'] ?? '';
+        $repo  = $account['RepoName'] ?? 'wp-backups';
+
+        $contentsPath = sprintf('/repos/%s/%s/contents/%s', urlencode($owner), urlencode($repo), $dir);
+        $statusCode   = $this->githubApiStatusCode('GET', $contentsPath, $token);
+        $isNotFound   = ($statusCode === HttpStatusType::NotFound->value);
+
+        if ($isNotFound) {
+            return array();
+        }
+
+        $body  = $this->githubApiRequest('GET', $contentsPath, $token);
+        $paths = array();
+
+        foreach ($body as $item) {
+            $type = $item['type'] ?? '';
+            $itemPath = $item['path'] ?? '';
+
+            $isFile = ($type === 'file');
+
+            if ($isFile) {
+                $paths[] = $itemPath;
+            }
+
+            $isDir = ($type === 'dir');
+
+            if ($isDir) {
+                $subPaths = $this->githubListFolderFilesRecursive($account, $token, $itemPath);
+                $paths = array_merge($paths, $subPaths);
+            }
+        }
+
+        return $paths;
+    }
+
     // ── GitHub Private Helpers ──────────────────────────────────────
 
     /** Build authenticated HTTP options for GitHub. */

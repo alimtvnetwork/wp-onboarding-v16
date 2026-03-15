@@ -245,13 +245,15 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 | `CloudStorageScheduleTrait` | `Traits/CloudStorage/CloudStorageScheduleTrait.php` | ✅ Wired — Orchestrator + ZipSplitter + folder-based flow |
 | `CloudStorageHistoryTrait` | `Traits/CloudStorage/CloudStorageHistoryTrait.php` | ✅ Updated — v21 columns (FolderPath, ChunkCount, TotalSize) |
 | `CloudStorageRestoreTrait` | `Traits/CloudStorage/CloudStorageRestoreTrait.php` | ✅ Wired — ZipReassembler + folder-based download + extract |
+| `githubDeleteFolder` | `Traits/CloudStorage/CloudStorageGitHubTrait.php` | ✅ Git Data API atomic folder removal |
+| `gitlabDeleteFolder` | `Traits/CloudStorage/CloudStorageGitLabTrait.php` | ✅ Commits API multi-action folder removal |
+| `googleDriveDeleteFolder` | `Traits/CloudStorage/CloudStorageGoogleDriveTrait.php` | ✅ Path-walking folder resolution + cascading delete |
 
 ### ❌ Not Yet Created
 
 | Component | File | Purpose |
 |-----------|------|---------|
 | Go pipeline wiring | `ServicePublishPipeline.go` | Wire `cloud_upload` stage + WebSocket progress events |
-| Google Drive adaptation | Phase 5F | Folder hierarchy for GDrive (non-Git provider) |
 
 ---
 
