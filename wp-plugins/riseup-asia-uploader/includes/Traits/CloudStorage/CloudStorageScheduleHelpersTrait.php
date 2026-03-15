@@ -135,15 +135,7 @@ trait CloudStorageScheduleHelpersTrait {
         );
     }
 
-    /**
-     * Upload split chunks + manifest to the remote folder path.
-     *
-     * @param array  $account       Account row.
-     * @param string $token         Decrypted token.
-     * @param array  $splitResult   Output from splitBackupZip().
-     * @param string $folderPath    Remote folder path.
-     * @param string $commitMessage Git commit message.
-     */
+    /** Upload split chunks + manifest to the remote folder path. */
     private function uploadSplitChunks(
         array $account,
         string $token,
