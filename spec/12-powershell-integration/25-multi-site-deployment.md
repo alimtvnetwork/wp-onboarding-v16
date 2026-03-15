@@ -65,8 +65,14 @@ All credentials are Base64-encoded for basic obfuscation (not encryption):
 # Upload all plugins to ALL enabled sites
 .\run.ps1 -uas
 
-# Upload all plugins to a specific site
+# Upload all plugins to a specific site by name
 .\run.ps1 -uas -site "Test V1"
+
+# Upload all plugins to site #1 (1-based index from -ls)
+.\run.ps1 -uas -index 1
+
+# Upload all plugins to site #2
+.\run.ps1 -uas -index 2
 ```
 
 ## Flow
