@@ -451,6 +451,7 @@ trait CloudStorageGoogleDriveTrait {
             }
 
             fclose($handle);
+            throw new RuntimeException(
                 sprintf('Google Drive chunk upload failed at offset %d [HTTP %d]', $offset, $chunkStatus),
             );
         }
