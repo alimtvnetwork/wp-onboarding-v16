@@ -31,7 +31,8 @@ param(
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
     [Alias('cla')][switch]$clearlogsall,
-    [Alias('am')][string]$approvemachine = "",
+    [Alias('am')][switch]$approvemachine,
+    [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = ""
 )
 
@@ -216,6 +217,7 @@ if ($help) {
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
     Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
+    Write-Host "  -am -machine 'NAME' Approve a specific machine name (explicit arg)"
     Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
@@ -414,7 +416,24 @@ if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
 if ($clearlogs) { Invoke-ClearLogsMode }
-if ($approvemachine -ne "" -or $PSBoundParameters.ContainsKey('approvemachine')) { Invoke-ApproveMachineMode -MachineNameToApprove $approvemachine }
+if ($approvemachine) {
+    $machineNameForApproval = $approvemachinename
+
+    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and -not $PSBoundParameters.ContainsKey('pluginpath') -and -not [string]::IsNullOrWhiteSpace($pluginpath)) {
+        $machineNameForApproval = $pluginpath
+    }
+
+    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and $args.Count -gt 0) {
+        $firstArg = [string]$args[0]
+        $isFlagLike = $firstArg.StartsWith("-")
+
+        if (-not $isFlagLike) {
+            $machineNameForApproval = $firstArg
+        }
+    }
+
+    Invoke-ApproveMachineMode -MachineNameToApprove $machineNameForApproval
+}
 if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }
 if ($upload -and $qupload) { Invoke-UploadComboMode }

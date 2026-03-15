@@ -126,6 +126,12 @@ function Invoke-ApproveMachineMode {
                 }
             } catch {
                 $errorMsg = Get-ApproveMachineErrorMessage $_
+                $isNoRoute = ($errorMsg -match 'rest_no_route' -or $errorMsg -match '(^|\s)404(\s|$)')
+
+                if ($isNoRoute) {
+                    $errorMsg = "$errorMsg (machines/approve endpoint is not deployed on the remote site yet)"
+                }
+
                 Write-Host " FAILED" -ForegroundColor Red
                 Write-Host "    Error: $errorMsg" -ForegroundColor DarkYellow
 
@@ -163,7 +169,8 @@ function Invoke-ApproveMachineMode {
     if ($failCount -gt 0) {
         Write-Host ""
         Write-Host "  TROUBLESHOOTING:" -ForegroundColor Yellow
-        Write-Host "    404 Not Found: Plugin may need v2.17.0+ deployed (endpoint not available)" -ForegroundColor Gray
+        Write-Host "    404 Not Found / rest_no_route: Deploy latest plugins first to add PUT /machines/approve" -ForegroundColor Gray
+        Write-Host "      Command: .\run.ps1 -uas" -ForegroundColor DarkGray
         Write-Host "    403 Forbidden: Check that the WordPress user has 'activate_plugins' capability" -ForegroundColor Gray
         Write-Host "    401 Unauthorized: Verify Base64 credentials in powershell.json" -ForegroundColor Gray
     }
