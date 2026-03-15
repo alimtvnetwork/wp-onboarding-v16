@@ -73,7 +73,81 @@ function Invoke-ApproveMachineMode {
     }
     Write-Host ""
 
-    # Execute approval calls
+    # ── Preflight: check endpoint availability ───────────────────────
+    Write-Host "  Preflight: checking /machines/approve availability..." -ForegroundColor DarkCyan
+    Write-Host ""
+
+    $readySites = @{}
+
+    foreach ($targetSite in $targetSites) {
+        $siteName = $targetSite.name
+        $siteUrl = $targetSite.url.TrimEnd("/")
+        $cred = Get-DefaultSiteCredential $targetSite
+
+        if (-not $cred) {
+            foreach ($ns in $pluginNamespaces) {
+                $key = "$siteName|$($ns.Name)"
+                $readySites[$key] = $false
+            }
+            Write-Host "    [$siteName] SKIP - no credentials" -ForegroundColor Red
+            continue
+        }
+
+        $authHeader = Build-BasicAuthHeader $cred.Username $cred.Password
+
+        foreach ($ns in $pluginNamespaces) {
+            $key = "$siteName|$($ns.Name)"
+            $statusUrl = "$siteUrl/wp-json/$($ns.Namespace)/status"
+
+            try {
+                $headers = @{ "Authorization" = $authHeader }
+                $statusResp = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
+                $hasVersion = ($null -ne $statusResp -and $statusResp.version)
+
+                if ($hasVersion) {
+                    $ver = $statusResp.version
+                    $parts = $ver -split '\.'
+                    $major = [int]$parts[0]
+                    $minor = if ($parts.Count -gt 1) { [int]$parts[1] } else { 0 }
+                    $isReady = ($major -gt 2 -or ($major -eq 2 -and $minor -ge 17))
+
+                    $readySites[$key] = $isReady
+
+                    if ($isReady) {
+                        Write-Host "    [$siteName] $($ns.Name) v$ver" -ForegroundColor Green -NoNewline
+                        Write-Host " READY" -ForegroundColor Green
+                    } else {
+                        Write-Host "    [$siteName] $($ns.Name) v$ver" -ForegroundColor Yellow -NoNewline
+                        Write-Host " NOT READY (needs v2.17.0+)" -ForegroundColor Yellow
+                    }
+                } else {
+                    $readySites[$key] = $false
+                    Write-Host "    [$siteName] $($ns.Name)" -ForegroundColor Yellow -NoNewline
+                    Write-Host " NOT READY (no version in response)" -ForegroundColor Yellow
+                }
+            } catch {
+                $readySites[$key] = $false
+                Write-Host "    [$siteName] $($ns.Name)" -ForegroundColor Red -NoNewline
+                Write-Host " UNREACHABLE" -ForegroundColor Red
+            }
+        }
+    }
+
+    $readyCount = ($readySites.Values | Where-Object { $_ -eq $true }).Count
+    $totalCount = $readySites.Count
+
+    Write-Host ""
+    Write-Host "  Preflight: $readyCount/$totalCount endpoints ready" -ForegroundColor $(if ($readyCount -eq $totalCount) { "Green" } elseif ($readyCount -gt 0) { "Yellow" } else { "Red" })
+    Write-Host ""
+
+    if ($readyCount -eq 0) {
+        Write-Host "  All endpoints unavailable. Deploy v2.17.0+ first:" -ForegroundColor Red
+        Write-Host "    .\run.ps1 -uas" -ForegroundColor DarkGray
+        Write-Host "========================================" -ForegroundColor Magenta
+        exit 1
+    }
+
+    # Execute approval calls (only for ready endpoints)
     $results = @()
 
     foreach ($targetSite in $targetSites) {
