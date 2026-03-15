@@ -213,6 +213,10 @@ if ($help) {
     Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
     Write-Host "  -cla                Clear logs on ALL configured sites (both plugins)"
     Write-Host ""
+    Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
+    Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
+    Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
