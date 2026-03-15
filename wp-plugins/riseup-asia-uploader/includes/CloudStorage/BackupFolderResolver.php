@@ -307,10 +307,12 @@ class BackupFolderResolver
         $hasTimestamp = ($timestamp !== null);
 
         if ($hasTimestamp) {
-            return DateHelper::format($timestamp, 'W');
+            $raw = DateHelper::format($timestamp, 'W');
+        } else {
+            $raw = gmdate('W');
         }
 
-        return gmdate('W');
+        return str_pad($raw, 2, '0', STR_PAD_LEFT);
     }
 
     /**
