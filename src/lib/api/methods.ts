@@ -771,4 +771,34 @@ export const api = {
       "/cloud-storage/oauth/initiate",
       { method: "POST", body: JSON.stringify({ AccountLabel: accountLabel }) },
     ),
+
+  // Cloud Storage — Phase 5A: Repo & branch browsing
+  getCloudStorageRepos: (accountId: number) =>
+    request<{ Repositories: import('@/types/cloudStorage').CloudStorageRepository[] }>(
+      `/cloud-storage/repos${buildQuery({ account_id: accountId })}`,
+    ),
+  getCloudStorageBranches: (accountId: number, repo: string) =>
+    request<{ Branches: import('@/types/cloudStorage').CloudStorageBranch[] }>(
+      `/cloud-storage/branches${buildQuery({ account_id: accountId, repo })}`,
+    ),
+
+  // Cloud Storage — Phase 5B: Backup history
+  getCloudStorageBackupHistory: (accountId: number, page?: number, perPage?: number) =>
+    request<import('@/types/cloudStorage').CloudStorageBackupHistoryListResponse>(
+      `/cloud-storage/backup-history${buildQuery({ account_id: accountId, page, per_page: perPage })}`,
+    ),
+  getCloudStorageBackupDetail: (backupId: number) =>
+    request<{ Backup: import('@/types/cloudStorage').CloudStorageBackupHistoryRecord }>(
+      `/cloud-storage/backup-history/${backupId}`,
+    ),
+  deleteCloudStorageBackup: (backupId: number) =>
+    request<{ Success: boolean; Message: string }>(
+      `/cloud-storage/backup-history/${backupId}`,
+      { method: "DELETE" },
+    ),
+  restoreCloudStorageBackup: (backupId: number) =>
+    request<{ Success: boolean; Message: string }>(
+      "/cloud-storage/restore",
+      { method: "POST", body: JSON.stringify({ BackupId: backupId }) },
+    ),
 };
