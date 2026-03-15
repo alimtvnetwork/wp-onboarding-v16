@@ -164,8 +164,13 @@ var variantLabels = [...]string{
 	CloudStorageUpload:          "CloudStorageUpload",
 	CloudStorageFiles:           "CloudStorageFiles",
 	CloudStorageDelete:          "CloudStorageDelete",
-	CloudStorageOAuthCallback:   "CloudStorageOAuthCallback",
-	CloudStorageOAuthInitiate:   "CloudStorageOAuthInitiate",
+	CloudStorageOAuthCallback:       "CloudStorageOAuthCallback",
+	CloudStorageOAuthInitiate:       "CloudStorageOAuthInitiate",
+	CloudStorageRepos:               "CloudStorageRepos",
+	CloudStorageBranches:            "CloudStorageBranches",
+	CloudStorageBackupHistory:       "CloudStorageBackupHistory",
+	CloudStorageBackupHistoryId:     "CloudStorageBackupHistoryId",
+	CloudStorageRestore:             "CloudStorageRestore",
 }
 
 var variantValues = [...]string{
