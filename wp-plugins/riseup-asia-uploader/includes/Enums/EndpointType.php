@@ -96,6 +96,18 @@ enum EndpointType: string
     case UsersExportSqlite = 'users/export-sqlite';
     case UsersImportSqlite = 'users/import-sqlite';
 
+    // ── Cloud Storage ───────────────────────────────────────────────
+    case CloudStorageAccounts        = 'cloud-storage/accounts';
+    case CloudStorageAccountId       = 'cloud-storage/accounts/(?P<id>\d+)';
+    case CloudStorageAccountTest     = 'cloud-storage/accounts/test';
+    case CloudStorageSettings        = 'cloud-storage/settings';
+    case CloudStorageSettingsProvider = 'cloud-storage/settings/(?P<provider>[a-zA-Z]+)';
+    case CloudStorageUpload          = 'cloud-storage/upload';
+    case CloudStorageFiles           = 'cloud-storage/files';
+    case CloudStorageDelete          = 'cloud-storage/delete';
+    case CloudStorageOAuthCallback   = 'cloud-storage/oauth/callback';
+    case CloudStorageOAuthInitiate   = 'cloud-storage/oauth/initiate';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
@@ -106,8 +118,9 @@ enum EndpointType: string
         return '/' . $this->value;
     }
 
-    public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshots/'); }
-    public function isAgent(): bool    { return str_starts_with($this->value, 'agents'); }
-    public function isPlugin(): bool   { return str_starts_with($this->value, 'plugins/'); }
-    public function isUser(): bool     { return str_starts_with($this->value, 'users'); }
+    public function isSnapshot(): bool     { return str_starts_with($this->value, 'snapshots/'); }
+    public function isAgent(): bool        { return str_starts_with($this->value, 'agents'); }
+    public function isPlugin(): bool       { return str_starts_with($this->value, 'plugins/'); }
+    public function isUser(): bool         { return str_starts_with($this->value, 'users'); }
+    public function isCloudStorage(): bool { return str_starts_with($this->value, 'cloud-storage/'); }
 }

@@ -22,7 +22,8 @@ enum LogCategoryType: string
     case Post     = 'Post';
     case Media    = 'Media';
     case Auth     = 'Auth';
-    case Export   = 'Export';
+    case Export       = 'Export';
+    case CloudStorage = 'CloudStorage';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
