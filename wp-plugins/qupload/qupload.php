@@ -155,23 +155,22 @@ register_activation_hook(__FILE__, 'qupload_activate');
  * Clear all log files when the plugin version changes.
  */
 function qupload_clear_logs_on_version_update(): void {
-    $optionKey = 'qupload_last_version';
-    $currentVersion = PluginConfigType::Version->value;
-    $lastVersion = get_option($optionKey, '');
-
-    $isVersionChanged = ($lastVersion !== $currentVersion);
-
-    if ($isVersionChanged === false) {
-        return;
-    }
-
     try {
+        $optionKey = 'qupload_last_version';
+        $currentVersion = PluginConfigType::Version->value;
+        $lastVersion = get_option($optionKey, '');
+
+        $isVersionChanged = ($lastVersion !== $currentVersion);
+
+        if ($isVersionChanged === false) {
+            return;
+        }
+
         $logger = \QUpload\Logging\FileLogger::getInstance();
         $logger->clearAllLogFiles();
         qupload_boot_trace('init:version-logs-cleared', ['from' => $lastVersion, 'to' => $currentVersion]);
+        update_option($optionKey, $currentVersion, true);
     } catch (Throwable $e) {
         qupload_boot_trace('init:version-clear-exception', ['message' => $e->getMessage()]);
     }
-
-    update_option($optionKey, $currentVersion, true);
 }
