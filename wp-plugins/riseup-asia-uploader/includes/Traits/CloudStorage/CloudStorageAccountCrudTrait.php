@@ -331,7 +331,7 @@ trait CloudStorageAccountCrudTrait {
     }
 
     /** Format account row for API response (mask tokens, never expose plaintext). */
-    private function formatAccountForResponse(?array $row): array
+    private function formatAccountForResponse(array|false $row): array
     {
         $isNull = ($row === false);
 
