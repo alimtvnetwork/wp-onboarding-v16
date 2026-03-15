@@ -2,15 +2,23 @@ import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Loader2, ExternalLink } from "lucide-react";
+import { Eye, EyeOff, Loader2, ExternalLink, Copy, Check } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSites } from "@/hooks/useSites";
 
 interface GoogleOAuthSettings {
   GoogleOAuthClientId?: string;
   GoogleOAuthClientSecret?: string;
   GoogleOAuthConfigured?: boolean;
+}
+
+/** Builds the Google OAuth redirect URI for a WordPress site. */
+function buildRedirectUri(siteUrl: string): string {
+  const base = siteUrl.replace(/\/+$/, "");
+
+  return `${base}/wp-json/riseup-asia-uploader/v1/cloud-storage/oauth/callback`;
 }
 
 export function GoogleOAuthSettingsPanel() {
@@ -19,6 +27,9 @@ export function GoogleOAuthSettingsPanel() {
   const [clientSecret, setClientSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
+  const [copiedUri, setCopiedUri] = useState<string | null>(null);
+
+  const { data: sites } = useSites();
 
   const { data, isLoading } = useQuery({
     queryKey: ["cloud-storage-settings", "googledrive"],
@@ -76,6 +87,17 @@ export function GoogleOAuthSettingsPanel() {
     },
   });
 
+  const handleCopyUri = async (uri: string) => {
+    try {
+      await navigator.clipboard.writeText(uri);
+      setCopiedUri(uri);
+      toast.success("Redirect URI copied to clipboard");
+      setTimeout(() => setCopiedUri(null), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -83,6 +105,10 @@ export function GoogleOAuthSettingsPanel() {
       </div>
     );
   }
+
+  const connectedSites = sites?.filter((s) => s.connectionStatus === "connected") ?? [];
+  const allSites = sites ?? [];
+  const displaySites = connectedSites.length > 0 ? connectedSites : allSites;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -158,6 +184,53 @@ export function GoogleOAuthSettingsPanel() {
         </div>
       </div>
 
+      {/* Redirect URI Helper */}
+      <div className="pt-4 border-t space-y-3">
+        <div>
+          <p className="text-xs font-medium">Authorized Redirect URIs</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Add these URIs to your Google Cloud Console OAuth client's <strong>Authorized redirect URIs</strong>.
+          </p>
+        </div>
+
+        {displaySites.length > 0 ? (
+          <div className="space-y-2">
+            {displaySites.map((site) => {
+              const uri = buildRedirectUri(site.url);
+              const isCopied = copiedUri === uri;
+
+              return (
+                <div
+                  key={site.id}
+                  className="flex items-center gap-2 p-2 rounded-md border bg-muted/30"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{site.name}</p>
+                    <p className="text-xs font-mono text-muted-foreground truncate">{uri}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 h-7 w-7 p-0"
+                    onClick={() => handleCopyUri(uri)}
+                  >
+                    {isCopied ? (
+                      <Check className="h-3.5 w-3.5 text-green-500" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground italic">
+            No WordPress sites connected. Add a site first to see redirect URIs.
+          </p>
+        )}
+      </div>
+
       <div className="pt-4 border-t space-y-2">
         <p className="text-xs font-medium text-muted-foreground">How to obtain credentials</p>
         <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
@@ -165,7 +238,7 @@ export function GoogleOAuthSettingsPanel() {
           <li>Create or select a project</li>
           <li>Navigate to <strong>APIs & Services → Credentials</strong></li>
           <li>Create an <strong>OAuth 2.0 Client ID</strong> (Web application type)</li>
-          <li>Add your WordPress site URL as an authorized redirect URI</li>
+          <li>Add the redirect URIs above as <strong>Authorized redirect URIs</strong></li>
           <li>Copy the Client ID and Client Secret here</li>
         </ol>
         <a
