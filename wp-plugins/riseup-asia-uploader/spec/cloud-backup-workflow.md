@@ -242,20 +242,15 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 | `ZipSplitter` | `CloudStorage/ZipSplitter.php` | Needs no changes — splitting logic is correct |
 | `ZipReassembler` | `CloudStorage/ZipReassembler.php` | Needs no changes — reassembly logic is correct |
 | `BackupFolderResolver` | `CloudStorage/BackupFolderResolver.php` | ✅ Updated — new naming format applied |
-| `CloudStorageScheduleTrait` | `Traits/CloudStorage/CloudStorageScheduleTrait.php` | Has stubs — needs real wiring |
-| `CloudStorageHistoryTrait` | `Traits/CloudStorage/CloudStorageHistoryTrait.php` | CRUD exists — needs v21 columns |
+| `CloudStorageScheduleTrait` | `Traits/CloudStorage/CloudStorageScheduleTrait.php` | ✅ Wired — Orchestrator + ZipSplitter + folder-based flow |
+| `CloudStorageHistoryTrait` | `Traits/CloudStorage/CloudStorageHistoryTrait.php` | ✅ Updated — v21 columns (FolderPath, ChunkCount, TotalSize) |
 | `CloudStorageRestoreTrait` | `Traits/CloudStorage/CloudStorageRestoreTrait.php` | Git-first restore exists — needs ZipReassembler |
 
 ### ⚠️ Needs Changes (Existing Files)
 
 | File | What Changes |
 |------|-------------|
-| `CloudStorageScheduleTrait.php` | Wire `createFullBackupZip()` / `createIncrementalBackupZip()` stubs → call Orchestrator + ZipSplitter |
-| `CloudStorageScheduleTrait.php` | Add `handleManualBackup($label)` method for user-named backups |
-| `CloudStorageUploadTrait.php` | Implement `dispatchCloudUpload()` — upload split chunks via Contents API |
 | `CloudStorageRestoreTrait.php` | Wire `ZipReassembler` into `restoreFromZip()` |
-| `CloudStorageHistoryTrait.php` | Support new `folder_path`, `chunk_count`, `total_size` columns after v21 |
-| `applyFullBackupRotation()` | Switch from branch deletion to folder-based pruning |
 
 ### ❌ Not Yet Created
 
