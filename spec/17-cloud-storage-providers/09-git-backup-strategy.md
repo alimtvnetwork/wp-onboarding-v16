@@ -4,6 +4,13 @@
 **Depends On**: `01-overview.md`, `05-github-implementation.md`, `06-gitlab-implementation.md`
 **Version**: 2.15.0+
 
+### Design Decisions (Confirmed)
+
+- **Incremental detection**: Timestamp-based (`post_modified_gmt`, `option_value` changes)
+- **Cron reliability**: WP-Cron default + documentation for real system cron setup
+- **Restore method**: Git shallow clone first, API download fallback if `git` binary unavailable
+- **Branch cleanup**: Auto-delete incremental branch when parent full backup is rotated out
+
 ---
 
 ## Purpose
