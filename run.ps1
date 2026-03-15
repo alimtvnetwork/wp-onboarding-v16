@@ -274,6 +274,10 @@ if ($help) {
     Write-Host "    .\run.ps1 -cl -xs 'Test V1'        # Clear logs on all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -cla                     # Clear logs on ALL configured sites"
     Write-Host ""
+    Write-Host "  Machine management:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -am                      # Approve current machine on all sites"
+    Write-Host "    .\run.ps1 -am 'CI-SERVER'          # Approve a specific machine name"
+    Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
     Write-Host "    .\run.ps1 -za          # ZIP all plugins in wp-plugins/"
