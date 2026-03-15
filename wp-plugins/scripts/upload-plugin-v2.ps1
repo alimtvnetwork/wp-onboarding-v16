@@ -167,7 +167,7 @@ function Get-ResponsePreview {
 }
 
 function Get-JsonErrorSummary {
-    param([string]$Body)
+     param([string]$Body)
 
     if ([string]::IsNullOrWhiteSpace($Body)) {
         return ""
@@ -183,6 +183,22 @@ function Get-JsonErrorSummary {
         if ($errJson.Status -and $errJson.Status.Message) { $parts += "statusMessage=$($errJson.Status.Message)" }
         if ($errJson.Status -and $errJson.Status.Code) { $parts += "statusCode=$($errJson.Status.Code)" }
         if ($errJson.Diagnostics -and $errJson.Diagnostics.RootCause) { $parts += "rootCause=$($errJson.Diagnostics.RootCause)" }
+
+        # Rollback information
+        if ($errJson.RollbackSuccess -eq $true -or $errJson.RolledBack -eq $true) {
+            $parts += "rolledBack=true"
+            if ($errJson.RestoredVersion) { $parts += "restoredVersion=$($errJson.RestoredVersion)" }
+        }
+
+        # Check Results array for rollback data
+        if ($errJson.Results -and $errJson.Results.Count -gt 0) {
+            $r = $errJson.Results[0]
+            if ($r.RolledBack -eq $true -or $r.RollbackSuccess -eq $true) {
+                $parts += "rolledBack=true"
+                if ($r.RestoredVersion) { $parts += "restoredVersion=$($r.RestoredVersion)" }
+                if ($r.PreviousVersion) { $parts += "previousVersion=$($r.PreviousVersion)" }
+            }
+        }
 
         if ($parts.Count -gt 0) {
             return ($parts -join "; ")
@@ -1275,6 +1291,31 @@ foreach ($candidateNamespace in $namespaceOrder) {
 
         if (Test-ServerCriticalError $attemptBody) {
             Write-Status "        Server-side critical error marker detected in response body." -Color Red
+        }
+
+        # Display rollback information if present in error response
+        if (-not [string]::IsNullOrWhiteSpace($attemptBody)) {
+            try {
+                $errParsed = $attemptBody | ConvertFrom-Json -ErrorAction Stop
+                $hasRollback = ($errParsed.RollbackSuccess -eq $true) -or ($errParsed.RolledBack -eq $true)
+
+                # Also check Results array
+                if (-not $hasRollback -and $errParsed.Results -and $errParsed.Results.Count -gt 0) {
+                    $r = $errParsed.Results[0]
+                    $hasRollback = ($r.RollbackSuccess -eq $true) -or ($r.RolledBack -eq $true)
+                    if ($hasRollback) { $errParsed = $r }
+                }
+
+                if ($hasRollback) {
+                    Write-Status "" -Color Yellow
+                    Write-Status "        ╔══════════════════════════════════════════════╗" -Color Yellow
+                    Write-Status "        ║  ROLLBACK: Previous version restored        ║" -Color Yellow
+                    Write-Status "        ╚══════════════════════════════════════════════╝" -Color Yellow
+                    if ($errParsed.RestoredVersion) {
+                        Write-Status "        Restored Version: $($errParsed.RestoredVersion)" -Color Green
+                    }
+                }
+            } catch {}
         }
     }
 }

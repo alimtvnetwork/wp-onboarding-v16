@@ -64,12 +64,18 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zipResult) {
         $context = $this->prepareExtractionContext($input, $zipResult);
 
+        // Capture previous version before any replacement
+        $previousVersion = $context[ResponseKeyType::IsUpdate->value]
+            ? $this->detectInstalledVersionBySlug($context[ResponseKeyType::Slug->value])
+            : null;
+
         // Log upload activity
         $this->fileLogger->info('Plugin upload processing started', array(
             'slug' => $context[ResponseKeyType::Slug->value],
             'isUpdate' => $context[ResponseKeyType::IsUpdate->value],
             'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
             'activate' => $input['activate'],
+            'previousVersion' => $previousVersion,
         ));
 
         // Create backup before replacement for ALL updates (self and non-self)
@@ -122,6 +128,7 @@ trait UploadInstallExtractTrait
             if ($isNonSelfFailure) {
                 $this->fileLogger->warn('Upload failed — rolling back to previous version', array(
                     'slug' => $context[ResponseKeyType::Slug->value],
+                    'previousVersion' => $previousVersion,
                 ));
 
                 $rollbackHelper = new SelfUpdateBackupHelper($this->fileLogger);
@@ -136,15 +143,26 @@ trait UploadInstallExtractTrait
                     }
                 }
 
+                $restoredVersion = $isRolledBack
+                    ? $this->detectInstalledVersionBySlug($context[ResponseKeyType::Slug->value])
+                    : null;
+
                 if ($isRolledBack) {
                     $this->fileLogger->info('Rollback complete — previous version restored', array(
                         'slug' => $context[ResponseKeyType::Slug->value],
+                        'restoredVersion' => $restoredVersion,
                     ));
                 } else {
                     $this->fileLogger->error('Rollback FAILED — plugin may be in a broken state', array(
                         'slug' => $context[ResponseKeyType::Slug->value],
                     ));
                 }
+
+                // Inject rollback metadata into the error response
+                $data = $stepResult->get_data();
+                $data[ResponseKeyType::RollbackSuccess->value] = $isRolledBack;
+                $data[ResponseKeyType::RestoredVersion->value] = $restoredVersion;
+                $stepResult->set_data($data);
             }
 
             return $stepResult;
@@ -473,5 +491,26 @@ trait UploadInstallExtractTrait
         }
 
         return $isCopied;
+    }
+
+    /** Detect the currently installed version of a plugin by slug. */
+    private function detectInstalledVersionBySlug(string $slug): ?string
+    {
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        wp_cache_delete('plugins', 'plugins');
+        $allPlugins = get_plugins();
+
+        foreach ($allPlugins as $file => $data) {
+            $isMatch = (dirname($file) === $slug);
+
+            if ($isMatch) {
+                return $data['Version'] ?? null;
+            }
+        }
+
+        return null;
     }
 }

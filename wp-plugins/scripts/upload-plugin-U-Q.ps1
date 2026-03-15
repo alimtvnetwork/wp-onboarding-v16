@@ -764,6 +764,40 @@ try {
             Write-Host "      Error: $($parsed.Errors.BackendMessage)" -ForegroundColor Yellow
         }
 
+        # Display rollback information if present
+        $isRolledBack = $false
+        if ($null -ne $parsed.Results -and $parsed.Results.Count -gt 0) {
+            $resultData = $parsed.Results[0]
+            $isRolledBack = $resultData.RolledBack -eq $true
+
+            if ($isRolledBack) {
+                Write-Host "" -ForegroundColor Yellow
+                Write-Host "      ╔══════════════════════════════════════════════╗" -ForegroundColor Yellow
+                Write-Host "      ║  ROLLBACK: Previous version restored        ║" -ForegroundColor Yellow
+                Write-Host "      ╚══════════════════════════════════════════════╝" -ForegroundColor Yellow
+                if ($resultData.PreviousVersion) {
+                    Write-Host "      Previous Version: $($resultData.PreviousVersion)" -ForegroundColor Cyan
+                }
+                if ($resultData.RestoredVersion) {
+                    Write-Host "      Restored Version: $($resultData.RestoredVersion)" -ForegroundColor Green
+                }
+            }
+        }
+
+        # Also check top-level rollback keys (direct error envelope)
+        if (-not $isRolledBack -and $parsed.RolledBack -eq $true) {
+            Write-Host "" -ForegroundColor Yellow
+            Write-Host "      ╔══════════════════════════════════════════════╗" -ForegroundColor Yellow
+            Write-Host "      ║  ROLLBACK: Previous version restored        ║" -ForegroundColor Yellow
+            Write-Host "      ╚══════════════════════════════════════════════╝" -ForegroundColor Yellow
+            if ($parsed.PreviousVersion) {
+                Write-Host "      Previous Version: $($parsed.PreviousVersion)" -ForegroundColor Cyan
+            }
+            if ($parsed.RestoredVersion) {
+                Write-Host "      Restored Version: $($parsed.RestoredVersion)" -ForegroundColor Green
+            }
+        }
+
         if ($Quiet) {
             $quietOutput = @{
                 success = $false
@@ -791,6 +825,25 @@ try {
         $readableResponse = Format-ApiResponseForConsole $rawErrorResponse
         Write-Host "      Response:" -ForegroundColor Gray
         Write-Host $readableResponse -ForegroundColor Gray
+
+        # Check for rollback information in error response
+        try {
+            $errParsed = $rawErrorResponse | ConvertFrom-Json -ErrorAction Stop
+            $hasRollback = ($errParsed.RolledBack -eq $true) -or ($errParsed.RollbackSuccess -eq $true)
+
+            if ($hasRollback) {
+                Write-Host "" -ForegroundColor Yellow
+                Write-Host "      ╔══════════════════════════════════════════════╗" -ForegroundColor Yellow
+                Write-Host "      ║  ROLLBACK: Previous version restored        ║" -ForegroundColor Yellow
+                Write-Host "      ╚══════════════════════════════════════════════╝" -ForegroundColor Yellow
+                if ($errParsed.PreviousVersion) {
+                    Write-Host "      Previous Version: $($errParsed.PreviousVersion)" -ForegroundColor Cyan
+                }
+                if ($errParsed.RestoredVersion) {
+                    Write-Host "      Restored Version: $($errParsed.RestoredVersion)" -ForegroundColor Green
+                }
+            }
+        } catch {}
     }
 
     if ($Quiet) {

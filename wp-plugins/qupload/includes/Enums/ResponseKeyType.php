@@ -29,5 +29,8 @@ enum ResponseKeyType: string
     case Timestamp     = 'Timestamp';
     case PhpVersion    = 'PhpVersion';
     case WpVersion     = 'WpVersion';
-    case ActivationError = 'ActivationError';
+    case ActivationError  = 'ActivationError';
+    case RolledBack       = 'RolledBack';
+    case PreviousVersion  = 'PreviousVersion';
+    case RestoredVersion  = 'RestoredVersion';
 }

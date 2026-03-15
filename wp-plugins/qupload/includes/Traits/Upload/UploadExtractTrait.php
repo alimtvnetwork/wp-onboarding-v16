@@ -278,11 +278,15 @@ trait UploadExtractTrait
         $targetDir = WP_PLUGIN_DIR . '/' . $slug;
         $isUpdate = is_dir($targetDir);
 
+        // Capture previous version before replacement
+        $previousVersion = $isUpdate ? $this->detectPreviousVersion($slug) : null;
+
         // Log upload activity
         $this->fileLogger->info('Plugin upload processing started', [
             'slug' => $slug,
             'isUpdate' => $isUpdate,
             'activate' => $input['activate'],
+            'previousVersion' => $previousVersion,
         ]);
 
         // Create backup before replacing (rollback safety net)
@@ -295,7 +299,7 @@ trait UploadExtractTrait
         if ($extractResult instanceof WP_REST_Response) {
             $this->logExternalPluginFailure($slug, 'extraction', 'ZIP extraction to plugins directory failed');
 
-            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $extractResult);
+            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $extractResult, $previousVersion);
         }
 
         $result = $this->resolvePluginAfterExtract($slug, $isUpdate, $input['activate'], $isPreviouslyActive);
@@ -303,7 +307,7 @@ trait UploadExtractTrait
         if ($result instanceof WP_REST_Response) {
             $this->logExternalPluginFailure($slug, 'activation', 'Plugin activation or post-extract validation failed');
 
-            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $result);
+            return $this->rollbackOnFailure($backupHelper, $backupDir, $slug, $isPreviouslyActive, $result, $previousVersion);
         }
 
         // Success — clean up backup
@@ -347,13 +351,14 @@ trait UploadExtractTrait
         ]);
     }
 
-    /** Roll back to backup on upload failure and return the original error response. */
+    /** Roll back to backup on upload failure and return the error response with rollback data. */
     private function rollbackOnFailure(
         UploadBackupHelper $backupHelper,
         string|false $backupDir,
         string $slug,
         bool $wasPreviouslyActive,
         WP_REST_Response $errorResponse,
+        ?string $previousVersion = null,
     ): WP_REST_Response {
         if ($backupDir === false) {
             $this->traceStage('rollbackOnFailure:no-backup', ['slug' => $slug]);
@@ -375,9 +380,45 @@ trait UploadExtractTrait
             $this->fileLogger->error('Rollback FAILED — plugin may be in a broken state', ['slug' => $slug]);
         }
 
-        $this->traceStage('rollbackOnFailure:complete', ['slug' => $slug, 'success' => $isRolledBack]);
+        // Detect restored version after rollback
+        $restoredVersion = $isRolledBack ? $this->detectPreviousVersion($slug) : null;
+
+        // Inject rollback metadata into the error response
+        $data = $errorResponse->get_data();
+        $data[ResponseKeyType::RolledBack->value] = $isRolledBack;
+        $data[ResponseKeyType::PreviousVersion->value] = $previousVersion;
+        $data[ResponseKeyType::RestoredVersion->value] = $restoredVersion;
+        $errorResponse->set_data($data);
+
+        $this->traceStage('rollbackOnFailure:complete', [
+            'slug' => $slug,
+            'success' => $isRolledBack,
+            'previousVersion' => $previousVersion,
+            'restoredVersion' => $restoredVersion,
+        ]);
 
         return $errorResponse;
+    }
+
+    /** Detect the currently installed version of a plugin by slug. */
+    private function detectPreviousVersion(string $slug): ?string
+    {
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        wp_cache_delete('plugins', 'plugins');
+        $allPlugins = get_plugins();
+
+        foreach ($allPlugins as $file => $data) {
+            $isMatch = (dirname($file) === $slug);
+
+            if ($isMatch) {
+                return $data['Version'] ?? null;
+            }
+        }
+
+        return null;
     }
 
     /** Find plugin file, activate if needed, and build the result. */
