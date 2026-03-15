@@ -247,14 +247,7 @@ trait CloudStorageGoogleDriveTrait {
         }
     }
 
-    /**
-     * Resolve a folder ID by walking a slash-separated path from a parent folder.
-     *
-     * @param string $token        Valid access token.
-     * @param string $parentId     Parent folder ID to start from.
-     * @param string $relativePath Slash-separated path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
-     * @return string Folder ID or empty string if not found.
-     */
+    /** Resolve a folder ID by walking a slash-separated path from a parent folder. */
     private function googleDriveResolveFolderByPath(string $token, string $parentId, string $relativePath): string
     {
         $segments  = explode('/', trim($relativePath, '/'));
