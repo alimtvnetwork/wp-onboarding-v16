@@ -12,11 +12,12 @@ import (
 
 // BulkPublishInput represents the request body for bulk publishing.
 type BulkPublishInput struct {
-	PluginIds    []int64  `json:"pluginIds"`
-	SiteIds      []int64  `json:"siteIds"`
-	Mode         string   `json:"mode"`
-	CreateBackup bool     `json:"createBackup"`
-	KeepZipFiles bool     `json:"keepZipFiles"`
+	PluginIds              []int64 `json:"pluginIds"`
+	SiteIds                []int64 `json:"siteIds"`
+	Mode                   string  `json:"mode"`
+	CreateBackup           bool    `json:"createBackup"`
+	KeepZipFiles           bool    `json:"keepZipFiles"`
+	CloudStorageAccountIds []int   `json:"cloudStorageAccountIds"`
 }
 
 // BulkPublishPlugin publishes multiple plugins to multiple sites sequentially.
