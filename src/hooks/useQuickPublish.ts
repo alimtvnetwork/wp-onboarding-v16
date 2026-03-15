@@ -51,6 +51,16 @@ export function useQuickPublish() {
       // Default to false
     }
 
+    // Get cloud storage account IDs
+    let cloudStorageAccountIds: number[] | undefined;
+    try {
+      const saved = localStorage.getItem("wppp_cloud_storage_accounts");
+      if (saved) {
+        const ids = JSON.parse(saved) as number[];
+        if (ids.length > 0) cloudStorageAccountIds = ids;
+      }
+    } catch { /* default */ }
+
     const publishMode = uploadMode === "zip" ? "full" : "selected";
 
     try {
@@ -58,6 +68,7 @@ export function useQuickPublish() {
         mode: publishMode,
         createBackup: true,
         keepZipFiles,
+        cloudStorageAccountIds,
       });
 
       if (response.success) {
