@@ -44,10 +44,11 @@ func BulkPublishPlugin(w http.ResponseWriter, r *http.Request) {
 		PluginIds: input.PluginIds,
 		SiteIds:   input.SiteIds,
 		Options: publish.PublishOptions{
-			Mode:                mode,
-			IsCreateBackup:      input.CreateBackup,
-			IsKeepZipFiles:      input.KeepZipFiles,
-			IsRollbackOnFailure: true,
+			Mode:                   mode,
+			IsCreateBackup:         input.CreateBackup,
+			IsKeepZipFiles:         input.KeepZipFiles,
+			IsRollbackOnFailure:    true,
+			CloudStorageAccountIds: input.CloudStorageAccountIds,
 		},
 	}
 

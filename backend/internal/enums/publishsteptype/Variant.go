@@ -156,7 +156,7 @@ func All() []Variant {
 		Init, Backup, Package, Packaging, Connect,
 		Upload, Uploading, Activate, Activating, Cleanup,
 		PreBackup, Complete, Rollback, Started, Completed, Failed, Running,
-		RemoteBackup,
+		RemoteBackup, CloudUpload,
 	}
 }
 

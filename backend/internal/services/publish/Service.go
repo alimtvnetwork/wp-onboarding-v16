@@ -96,11 +96,12 @@ func New(cfg Config) *Service {
 
 // PublishOptions configures the publish operation
 type PublishOptions struct {
-	Mode                publishtype.Variant // Full or Selected
-	Files               []string            // files to publish (for Selected mode)
-	IsCreateBackup      bool                // create backup before publishing
-	IsKeepZipFiles      bool                // keep ZIP files after publish (for debugging)
-	IsRollbackOnFailure bool                // auto-rollback if activation fails (default: true)
+	Mode                    publishtype.Variant // Full or Selected
+	Files                   []string            // files to publish (for Selected mode)
+	IsCreateBackup          bool                // create backup before publishing
+	IsKeepZipFiles          bool                // keep ZIP files after publish (for debugging)
+	IsRollbackOnFailure     bool                // auto-rollback if activation fails (default: true)
+	CloudStorageAccountIds  []int               // cloud storage accounts to upload backup to
 }
 
 // PublishResult represents the result of a publish operation

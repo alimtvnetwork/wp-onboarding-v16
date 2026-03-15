@@ -39,6 +39,7 @@ func (s *Service) runPublishPipeline(ctx context.Context, pctx *publishContext, 
 	}
 
 	s.runRemoteBackupStage(pctx)
+	s.runCloudUploadStage(pctx)
 
 	return s.runUploadAndActivate(ctx, pctx)
 }

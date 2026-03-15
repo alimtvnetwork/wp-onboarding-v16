@@ -168,6 +168,7 @@ var variantValues = [...]string{
 	RequestLogsClear:       "request logs clear",
 	ConfirmLogsClear:       "confirm logs clear",
 	EmailLogs:              "email logs",
+	CloudStorageUpload:     "cloud storage upload",
 }
 
 func (v Variant) String() string  { return v.Value() }
