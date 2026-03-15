@@ -416,7 +416,20 @@ if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
 if ($clearlogs) { Invoke-ClearLogsMode }
-if ($approvemachine -ne "" -or $PSBoundParameters.ContainsKey('approvemachine')) { Invoke-ApproveMachineMode -MachineNameToApprove $approvemachine }
+if ($approvemachine) {
+    $machineNameForApproval = $approvemachinename
+
+    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and $args.Count -gt 0) {
+        $firstArg = [string]$args[0]
+        $isFlagLike = $firstArg.StartsWith("-")
+
+        if (-not $isFlagLike) {
+            $machineNameForApproval = $firstArg
+        }
+    }
+
+    Invoke-ApproveMachineMode -MachineNameToApprove $machineNameForApproval
+}
 if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }
 if ($upload -and $qupload) { Invoke-UploadComboMode }
