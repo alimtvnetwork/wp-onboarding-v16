@@ -1,9 +1,6 @@
 <?php
 /**
- * CloudStorageGoogleDriveTrait — Google Drive API operations for cloud storage.
- *
- * Supports OAuth2 Bearer authentication, resumable uploads for large files,
- * folder creation, file listing, and deletion via the Drive v3 API.
+ * CloudStorageGoogleDriveTrait — Google Drive v3 API operations.
  *
  * @package RiseupAsia\Traits\CloudStorage
  * @since   2.15.0
