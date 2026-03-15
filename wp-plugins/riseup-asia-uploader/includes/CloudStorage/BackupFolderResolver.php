@@ -3,8 +3,8 @@
  * BackupFolderResolver — Generates folder names and resolves parent/child
  * relationships for the Git-based backup hierarchy.
  *
- * Folder structure (all hyphens, no underscores):
- *   full-backup/{seq}-W{week}-{DD-MMM-YYYY}[-{label}]/
+ * Folder structure (space-dash-space separators):
+ *   full-backup/{seq} - {DD MMM YYYY} - W{week}[ - {label}]/
  *   incremental-backup/{parent-folder}/{inc-seq}/
  *
  * @package RiseupAsia\CloudStorage
@@ -28,32 +28,35 @@ class BackupFolderResolver
     /** Root folder for incremental backups. */
     public const INCREMENTAL_ROOT = 'incremental-backup';
 
-    /** Date format for folder names: DD-MMM-YYYY (e.g., 15-Mar-2026). */
-    private const FOLDER_DATE_FORMAT = 'd-M-Y';
+    /** Date format for folder names: DD MMM YYYY (e.g., 15 Mar 2026). */
+    private const FOLDER_DATE_FORMAT = 'd M Y';
+
+    /** Separator between major parts of the folder name. */
+    private const PART_SEPARATOR = ' - ';
 
     /**
      * Build the full-backup folder name.
      *
-     * Format: {seq}-W{week}-{DD-MMM-YYYY}[-{label}]
+     * Format: {seq} - {DD MMM YYYY} - W{week}[ - {label}]
      *
      * @param int         $sequence  Backup sequence number.
      * @param int|null    $timestamp Unix timestamp (null = now).
      * @param string|null $label     Optional user-provided label (manual backups).
-     * @return string Folder name (e.g., "001-W11-15-Mar-2026" or "001-W11-15-Mar-2026-pre-deployment").
+     * @return string Folder name (e.g., "001 - 15 Mar 2026 - W11").
      */
     public function buildFullFolderName(int $sequence, ?int $timestamp = null, ?string $label = null): string
     {
         $seq = $this->padSequence($sequence);
         $date = $this->formatDate($timestamp);
         $week = $this->formatWeekNumber($timestamp);
-        $base = $seq . '-W' . $week . '-' . $date;
+        $base = $seq . self::PART_SEPARATOR . $date . self::PART_SEPARATOR . 'W' . $week;
 
         $hasLabel = !empty($label);
 
         if ($hasLabel) {
             $sanitized = $this->sanitizeLabel($label);
 
-            return $base . '-' . $sanitized;
+            return $base . self::PART_SEPARATOR . $sanitized;
         }
 
         return $base;
@@ -65,7 +68,7 @@ class BackupFolderResolver
      * @param int         $sequence  Backup sequence number.
      * @param int|null    $timestamp Unix timestamp (null = now).
      * @param string|null $label     Optional label.
-     * @return string Path like "full-backup/001-W11-15-Mar-2026".
+     * @return string Path like "full-backup/001 - 15 Mar 2026 - W11".
      */
     public function buildFullPath(int $sequence, ?int $timestamp = null, ?string $label = null): string
     {
@@ -79,7 +82,7 @@ class BackupFolderResolver
      *
      * @param string $parentFolderName The parent full-backup folder name.
      * @param int    $incrementalSeq   Incremental sequence within this parent.
-     * @return string Path like "incremental-backup/001-W11-15-Mar-2026/003".
+     * @return string Path like "incremental-backup/001 - 15 Mar 2026 - W11/003".
      */
     public function buildIncrementalPath(string $parentFolderName, int $incrementalSeq): string
     {
@@ -91,12 +94,12 @@ class BackupFolderResolver
     /**
      * Parse a full-backup folder name into its components.
      *
-     * @param string $folderName e.g., "001-W11-15-Mar-2026-pre-deployment"
+     * @param string $folderName e.g., "001 - 15 Mar 2026 - W11 - pre-deployment"
      * @return array{sequence: int, week: int, date: string, label: string|null}|null
      */
     public function parseFullFolderName(string $folderName): ?array
     {
-        $pattern = '/^(\d{3})-W(\d{1,2})-(\d{2}-[A-Za-z]{3}-\d{4})(?:-(.+))?$/';
+        $pattern = '/^(\d{3}) - (\d{2} [A-Za-z]{3} \d{4}) - W(\d{1,2})(?:\s-\s(.+))?$/';
         $isMatch = preg_match($pattern, $folderName, $matches);
 
         if (!$isMatch) {
@@ -107,8 +110,8 @@ class BackupFolderResolver
 
         return array(
             'sequence' => (int) $matches[1],
-            'week'     => (int) $matches[2],
-            'date'     => $matches[3],
+            'date'     => $matches[2],
+            'week'     => (int) $matches[3],
             'label'    => $hasLabel ? $matches[4] : null,
         );
     }
@@ -116,7 +119,7 @@ class BackupFolderResolver
     /**
      * Parse an incremental path to extract parent and incremental sequence.
      *
-     * @param string $path e.g., "incremental-backup/001-W11-15-Mar-2026/003"
+     * @param string $path e.g., "incremental-backup/001 - 15 Mar 2026 - W11/003"
      * @return array{parentFolder: string, incrementalSequence: int}|null
      */
     public function parseIncrementalPath(string $path): ?array
@@ -206,7 +209,7 @@ class BackupFolderResolver
      * Get the corresponding incremental root for a full-backup folder.
      *
      * @param string $fullFolderName Full-backup folder name.
-     * @return string Path like "incremental-backup/001-W11-15-Mar-2026".
+     * @return string Path like "incremental-backup/001 - 15 Mar 2026 - W11".
      */
     public function getIncrementalRootForFull(string $fullFolderName): string
     {
@@ -280,7 +283,7 @@ class BackupFolderResolver
      * Format a timestamp for folder naming.
      *
      * @param int|null $timestamp Unix timestamp (null = now).
-     * @return string Formatted date (e.g., "15-Mar-2026").
+     * @return string Formatted date (e.g., "15 Mar 2026").
      */
     private function formatDate(?int $timestamp = null): string
     {

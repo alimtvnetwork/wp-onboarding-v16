@@ -50,12 +50,13 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                  FOLDER RESOLVER                                 │
 │  BackupFolderResolver.php                                       │
-│  ├── Full:  "full-backup/001-W11-15-Mar-2026/"                 │
-│  ├── Full:  "full-backup/002-W12-22-Mar-2026-my-snapshot/"     │
-│  └── Incr:  "incremental-backup/001-W11-15-Mar-2026/001/"     │
+│  ├── Full:  "full-backup/001 - 15 Mar 2026 - W11/"             │
+│  ├── Full:  "full-backup/002 - 22 Mar 2026 - W12 - my-snap/"  │
+│  └── Incr:  "incremental-backup/001 - 15 Mar 2026 - W11/001/" │
 │                                                                 │
-│  ⚠ ALL separators are HYPHENS — no underscores anywhere.       │
-│  ⚠ Week number (ISO week of year) included after sequence.     │
+│  ⚠ Separator between parts: SPACE-DASH-SPACE ( - )             │
+│  ⚠ Date format: DD MMM YYYY (e.g., 15 Mar 2026)               │
+│  ⚠ Order: {seq} - {date} - W{week}[ - {label}]                │
 └────────┬────────────────────────────────────────────────────────┘
          │
          ▼
@@ -81,32 +82,33 @@
 
 ## 2. Naming Convention
 
-**ALL separators are hyphens.** No underscores anywhere in folder or file names.
+**Separator between parts: ` - ` (space-dash-space).**  
+**Date format: `DD MMM YYYY` (e.g., `15 Mar 2026`).**
 
 ### Full Backup Folder Format
 
 ```
-{seq}-W{weekNumber}-{DD-MMM-YYYY}[-{label}]
+{seq} - {DD MMM YYYY} - W{weekNumber}[ - {label}]
 ```
 
 | Part | Description | Example |
 |------|-------------|---------|
 | `{seq}` | 3-digit zero-padded sequence | `001` |
+| `{DD MMM YYYY}` | Date with spaces | `15 Mar 2026` |
 | `W{weekNumber}` | ISO week of year (1–53) | `W11` |
-| `{DD-MMM-YYYY}` | Date | `15-Mar-2026` |
 | `{label}` | Optional user-provided name (sanitized, hyphens only) | `my-snapshot` |
 
 **Examples:**
-- Auto backup: `001-W11-15-Mar-2026`
-- Manual backup with label: `002-W12-22-Mar-2026-pre-deployment`
+- Auto backup: `001 - 15 Mar 2026 - W11`
+- Manual backup with label: `002 - 22 Mar 2026 - W12 - pre-deployment`
 
-### Incremental Folder Format
+### Incremental Folder Format (unchanged)
 
 ```
 incremental-backup/{parent-full-folder}/{inc-seq}/
 ```
 
-**Example:** `incremental-backup/001-W11-15-Mar-2026/003/`
+**Example:** `incremental-backup/001 - 15 Mar 2026 - W11/003/`
 
 ---
 
@@ -131,7 +133,7 @@ incremental-backup/{parent-full-folder}/{inc-seq}/
 | 4 | HistoryTrait | Insert history row with status = `Pending` | historyId |
 | 5 | SnapshotOrchestrator | `createFullSnapshot()` — exports all WP tables + `uploads/` | `/tmp/backup.zip` |
 | 6 | **ZipSplitter** | `split($zipPath, $outputDir, Full, $seq, $label)` | `backup.zip.001`, `.002`, `manifest.json` |
-| 7 | **BackupFolderResolver** | `buildFullPath($seq, $timestamp, $label)` | `full-backup/001-W11-15-Mar-2026/` |
+| 7 | **BackupFolderResolver** | `buildFullPath($seq, $timestamp, $label)` | `full-backup/001 - 15 Mar 2026 - W11/` |
 | 8 | UploadTrait | Upload `manifest.json` + all chunks to resolved folder path | RemoteUrl |
 | 9 | HistoryTrait | Update status = `Success`, store `folder_path`, `chunk_count`, `total_size` | — |
 | 10 | ScheduleTrait | `applyFullBackupRotation()` — prune if count > retention | Deleted old folders |
@@ -149,7 +151,7 @@ incremental-backup/{parent-full-folder}/{inc-seq}/
 | 5 | HistoryTrait | If no full exists → fall back to `executeFullBackupForAccount()` | — |
 | 6 | IncrementalBackup | `execute()` — detect changes via `post_modified_gmt` / `filemtime()` | `/tmp/incr.zip` |
 | 7 | **ZipSplitter** | `split($zipPath, $outputDir, Incremental, $incSeq, $label)` | Chunks + manifest |
-| 8 | **BackupFolderResolver** | `buildIncrementalPath($parentFolder, $incSeq)` | `incremental-backup/001-W11-15-Mar-2026/003/` |
+| 8 | **BackupFolderResolver** | `buildIncrementalPath($parentFolder, $incSeq)` | `incremental-backup/001 - 15 Mar 2026 - W11/003/` |
 | 9 | UploadTrait | Upload chunks to resolved incremental folder path | RemoteUrl |
 | 10 | HistoryTrait | Record with `BaseFullBackupId` link | — |
 
@@ -173,17 +175,17 @@ incremental-backup/{parent-full-folder}/{inc-seq}/
 ```
 repo-root/
 ├── full-backup/
-│   ├── 001-W11-15-Mar-2026/
+│   ├── 001 - 15 Mar 2026 - W11/
 │   │   ├── manifest.json
 │   │   ├── backup.zip.001        ← ≤ 3 MB
 │   │   ├── backup.zip.002        ← ≤ 3 MB
 │   │   └── backup.zip.003        ← ≤ 3 MB (remainder)
-│   └── 002-W12-22-Mar-2026-pre-deployment/
+│   └── 002 - 22 Mar 2026 - W12 - pre-deployment/
 │       ├── manifest.json
 │       └── backup.zip.001
 │
 ├── incremental-backup/
-│   ├── 001-W11-15-Mar-2026/           ← matches full-backup/001-*
+│   ├── 001 - 15 Mar 2026 - W11/           ← matches full-backup/001-*
 │   │   ├── 001/
 │   │   │   ├── manifest.json
 │   │   │   └── backup.zip.001
@@ -193,7 +195,7 @@ repo-root/
 │   │   └── 003/
 │   │       ├── manifest.json
 │   │       └── backup.zip.001
-│   └── 002-W12-22-Mar-2026-pre-deployment/
+│   └── 002 - 22 Mar 2026 - W12 - pre-deployment/
 │       └── 001/
 │           ├── manifest.json
 │           └── backup.zip.001
@@ -224,8 +226,9 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 | Git Blob API (base64 whole ZIP) | **Split ≤ 3 MB chunks** via Contents API | Avoids blob size issues, stays under API limits |
 | Branch-based rotation | **Folder-based rotation** | Delete folder = delete backup, cleaner |
 | `commit_sha` + `branch_name` in history | **`folder_path` + `chunk_count` + `total_size`** | Matches folder-based approach |
-| Underscore separators (`001_15-Mar-2026`) | **Hyphen separators (`001-W11-15-Mar-2026`)** | Consistent, no mixed separators |
-| No week number | **ISO week number (`W11`)** | Easier to identify backup timing |
+| Hyphen separators (`001-W11-15-Mar-2026`) | **Space-dash-space (`001 - 15 Mar 2026 - W11`)** | Readable, user-requested format |
+| Date: `DD-MMM-YYYY` | **Date: `DD MMM YYYY`** | Spaces instead of hyphens in date |
+| Order: seq-week-date | **Order: seq-date-week** | Date before week number |
 | No manual backups | **Manual with user label** | Users can name their own backups |
 
 ---
@@ -238,7 +241,7 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 |-----------|------|-------|
 | `ZipSplitter` | `CloudStorage/ZipSplitter.php` | Needs no changes — splitting logic is correct |
 | `ZipReassembler` | `CloudStorage/ZipReassembler.php` | Needs no changes — reassembly logic is correct |
-| `BackupFolderResolver` | `CloudStorage/BackupFolderResolver.php` | ⚠️ **Needs update** — add week number, switch to hyphens |
+| `BackupFolderResolver` | `CloudStorage/BackupFolderResolver.php` | ✅ Updated — new naming format applied |
 | `CloudStorageScheduleTrait` | `Traits/CloudStorage/CloudStorageScheduleTrait.php` | Has stubs — needs real wiring |
 | `CloudStorageHistoryTrait` | `Traits/CloudStorage/CloudStorageHistoryTrait.php` | CRUD exists — needs v21 columns |
 | `CloudStorageRestoreTrait` | `Traits/CloudStorage/CloudStorageRestoreTrait.php` | Git-first restore exists — needs ZipReassembler |
@@ -247,7 +250,6 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 
 | File | What Changes |
 |------|-------------|
-| `BackupFolderResolver.php` | Replace `_` with `-`, add `W{week}` to folder format, update regex parser |
 | `CloudStorageScheduleTrait.php` | Wire `createFullBackupZip()` / `createIncrementalBackupZip()` stubs → call Orchestrator + ZipSplitter |
 | `CloudStorageScheduleTrait.php` | Add `handleManualBackup($label)` method for user-named backups |
 | `CloudStorageUploadTrait.php` | Implement `dispatchCloudUpload()` — upload split chunks via Contents API |
@@ -267,21 +269,16 @@ The `ZipSplitter` class reads the source ZIP in 3 MB blocks via `fread()`, write
 
 ## 11. Change Summary for `BackupFolderResolver.php`
 
-The following changes are needed:
+Current implementation reflects the approved naming format:
 
-```diff
-- FOLDER_DATE_FORMAT:  {seq}_{DD-MMM-YYYY}[_{label}]
-+ FOLDER_DATE_FORMAT:  {seq}-W{week}-{DD-MMM-YYYY}[-{label}]
+```
+Format:     {seq} - {DD MMM YYYY} - W{week}[ - {label}]
+Separator:  " - " (space-dash-space)
+Date:       DD MMM YYYY (spaces, not hyphens)
+Order:      sequence → date → week → label
 
-- Example: 001_15-Mar-2026
-+ Example: 001-W11-15-Mar-2026
+Regex:      /^(\d{3}) - (\d{2} [A-Za-z]{3} \d{4}) - W(\d{1,2})(?:\s-\s(.+))?$/
 
-- Example: 001_15-Mar-2026_weekly
-+ Example: 001-W11-15-Mar-2026-pre-deployment
-
-- Regex: /^(\d{3})_(\d{2}-[A-Za-z]{3}-\d{4})(?:_(.+))?$/
-+ Regex: /^(\d{3})-W(\d{1,2})-(\d{2}-[A-Za-z]{3}-\d{4})(?:-(.+))?$/
-
-- buildFullFolderName: $seq . '_' . $date
-+ buildFullFolderName: $seq . '-W' . $week . '-' . $date
+Example (auto):    001 - 15 Mar 2026 - W11
+Example (manual):  002 - 22 Mar 2026 - W12 - pre-deployment
 ```
