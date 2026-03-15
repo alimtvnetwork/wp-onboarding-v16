@@ -419,7 +419,7 @@ if ($clearlogs) { Invoke-ClearLogsMode }
 if ($approvemachine) {
     $machineNameForApproval = $approvemachinename
 
-    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and -not [string]::IsNullOrWhiteSpace($pluginpath)) {
+    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and -not $PSBoundParameters.ContainsKey('pluginpath') -and -not [string]::IsNullOrWhiteSpace($pluginpath)) {
         $machineNameForApproval = $pluginpath
     }
 
