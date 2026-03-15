@@ -212,16 +212,7 @@ trait CloudStorageGoogleDriveTrait {
         return $isDeleted;
     }
 
-    /**
-     * Delete a folder and all its contents from Google Drive.
-     *
-     * Finds the folder by navigating the path hierarchy (e.g., "full-backup/001 - …"),
-     * then deletes the folder by ID — Google Drive cascades to all children.
-     *
-     * @param array  $account Account row.
-     * @param string $token   Decrypted access token (unused — refreshed internally).
-     * @param string $path    Folder path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
-     */
+    /** Delete a folder by resolving its path, then deleting by ID (cascades to children). */
     private function googleDriveDeleteFolder(array $account, string $token, string $path): void
     {
         $validToken  = $this->googleDriveEnsureValidToken($account);
