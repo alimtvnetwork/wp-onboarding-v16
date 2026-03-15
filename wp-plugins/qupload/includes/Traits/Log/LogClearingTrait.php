@@ -207,14 +207,20 @@ trait LogClearingTrait
         return null;
     }
 
-    /** Check if a machine name is in the approved list (case-insensitive). */
+    /** Check if a machine name is in the approved list (case-insensitive, fail-closed). */
     private function isMachineApproved(string $machineName): bool {
-        $settings = get_option(PluginConfigType::SettingsGroup->value, array());
-        $approvedMachines = $settings['approved_machines'] ?? array();
+        $settingsJson = $this->loadPluginSettings();
+        $approvedMachines = $settingsJson['approved_machines'] ?? array();
         $hasNoApprovedMachines = empty($approvedMachines);
 
         if ($hasNoApprovedMachines) {
-            return false;
+            $settingsOption = get_option(PluginConfigType::SettingsGroup->value, array());
+            $approvedMachines = $settingsOption['approved_machines'] ?? array();
+            $hasNoApprovedMachines = empty($approvedMachines);
+
+            if ($hasNoApprovedMachines) {
+                return false;
+            }
         }
 
         $lowerMachine = strtolower($machineName);
@@ -228,6 +234,28 @@ trait LogClearingTrait
         }
 
         return false;
+    }
+
+    /** Load plugin settings from settings.json. */
+    private function loadPluginSettings(): array {
+        $settingsPath = dirname(__DIR__, 2) . '/settings.json';
+        $isSettingsExists = file_exists($settingsPath);
+
+        if ($isSettingsExists === false) {
+            return array();
+        }
+
+        $contents = @file_get_contents($settingsPath);
+        $isReadFailed = ($contents === false);
+
+        if ($isReadFailed) {
+            return array();
+        }
+
+        $settings = json_decode($contents, true);
+        $isValidSettings = is_array($settings);
+
+        return $isValidSettings ? $settings : array();
     }
 
     // ── Rate Limiting ─────────────────────────────────────────────────
