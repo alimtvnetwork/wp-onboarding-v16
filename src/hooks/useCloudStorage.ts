@@ -40,7 +40,7 @@ export function useCreateCloudStorageAccount() {
   return useMutation({
     mutationKey: ["cloud-storage-account-create"],
     mutationFn: async (body: CloudStorageAccountCreateRequest) => {
-      const res = await api.createCloudStorageAccount(body);
+      const res = await api.createCloudStorageAccount(body as unknown as Record<string, unknown>);
       return requireSuccess(res, { endpoint: "/cloud-storage/accounts", method: "POST" });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [ACCOUNTS_KEY] }),
