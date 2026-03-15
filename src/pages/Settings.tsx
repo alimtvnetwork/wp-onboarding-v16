@@ -17,6 +17,7 @@ import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, Chev
 import { AboutPanel } from "@/components/settings/AboutPanel";
 import { SnapshotSettingsTab } from "@/components/settings/SnapshotSettingsTab";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
+import { GoogleOAuthSettingsPanel } from "@/components/settings/GoogleOAuthSettingsPanel";
 import { useLocation } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { logger } from "@/lib/logger";
