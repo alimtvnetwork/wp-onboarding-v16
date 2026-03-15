@@ -57,7 +57,7 @@ trait CloudStorageSettingsTrait {
             $providerParam = $request->get_param('provider');
             $providerType  = CloudStorageProviderType::tryFrom($providerParam);
 
-            $isInvalidProvider = ($providerType === null);
+            $isInvalidProvider = ($providerType === false);
 
             if ($isInvalidProvider) {
                 return new WP_REST_Response(array(
@@ -105,7 +105,7 @@ trait CloudStorageSettingsTrait {
     /** Format a settings row for API response. */
     private function formatSettingsRow(?array $row): array
     {
-        $isNull = ($row === null);
+        $isNull = ($row === false);
 
         if ($isNull) {
             return array();

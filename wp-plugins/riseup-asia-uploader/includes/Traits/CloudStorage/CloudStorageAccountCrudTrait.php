@@ -59,7 +59,7 @@ trait CloudStorageAccountCrudTrait {
             $id      = (int) $request->get_param('id');
             $account = $this->getCloudStorageAccountById($id);
 
-            $isNotFound = ($account === null);
+            $isNotFound = ($account === false);
 
             if ($isNotFound) {
                 return new WP_REST_Response(array(
@@ -139,7 +139,7 @@ trait CloudStorageAccountCrudTrait {
             $id       = (int) $request->get_param('id');
             $existing = $this->getCloudStorageAccountById($id);
 
-            $isNotFound = ($existing === null);
+            $isNotFound = ($existing === false);
 
             if ($isNotFound) {
                 return new WP_REST_Response(array(
@@ -188,7 +188,7 @@ trait CloudStorageAccountCrudTrait {
             $id       = (int) $request->get_param('id');
             $existing = $this->getCloudStorageAccountById($id);
 
-            $isNotFound = ($existing === null);
+            $isNotFound = ($existing === false);
 
             if ($isNotFound) {
                 return new WP_REST_Response(array(
@@ -235,7 +235,7 @@ trait CloudStorageAccountCrudTrait {
             $accountId = (int) ($params[ResponseKeyType::AccountId->value] ?? 0);
             $account   = $this->getCloudStorageAccountById($accountId);
 
-            $isNotFound = ($account === null);
+            $isNotFound = ($account === false);
 
             if ($isNotFound) {
                 return new WP_REST_Response(array(
@@ -282,7 +282,7 @@ trait CloudStorageAccountCrudTrait {
         }
 
         $providerType     = CloudStorageProviderType::tryFrom($provider);
-        $isProviderInvalid = ($providerType === null);
+        $isProviderInvalid = ($providerType === false);
 
         if ($isProviderInvalid) {
             $errors[] = 'Invalid provider: ' . $provider;
@@ -333,7 +333,7 @@ trait CloudStorageAccountCrudTrait {
     /** Format account row for API response (mask tokens, never expose plaintext). */
     private function formatAccountForResponse(?array $row): array
     {
-        $isNull = ($row === null);
+        $isNull = ($row === false);
 
         if ($isNull) {
             return array();

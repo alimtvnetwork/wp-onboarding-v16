@@ -31,7 +31,7 @@ trait CloudStorageFileTrait {
             $path      = $request->get_param('path') ?? '';
             $account   = $this->getCloudStorageAccountById($accountId);
 
-            $isNotFound = ($account === null);
+            $isNotFound = ($account === false);
 
             if ($isNotFound) {
                 return new WP_REST_Response(array(
@@ -72,7 +72,7 @@ trait CloudStorageFileTrait {
             $remotePath = $params[ResponseKeyType::RemotePath->value] ?? '';
             $account    = $this->getCloudStorageAccountById($accountId);
 
-            $isNotFound = ($account === null);
+            $isNotFound = ($account === false);
 
             if ($isNotFound) {
                 return new WP_REST_Response(array(

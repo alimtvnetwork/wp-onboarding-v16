@@ -38,7 +38,7 @@ trait CloudStorageUploadTrait {
 
             $account = $this->getCloudStorageAccountById($accountId);
 
-            $isNotFound = ($account === null);
+            $isNotFound = ($account === false);
 
             if ($isNotFound) {
                 return new WP_REST_Response(array(
