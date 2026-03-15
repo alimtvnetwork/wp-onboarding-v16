@@ -249,6 +249,11 @@ var variantValues = [...]string{
 	CloudStorageUpload:          "/cloud-storage/upload",
 	CloudStorageFiles:           "/cloud-storage/files",
 	CloudStorageDelete:          "/cloud-storage/delete",
-	CloudStorageOAuthCallback:   "/cloud-storage/oauth/callback",
-	CloudStorageOAuthInitiate:   "/cloud-storage/oauth/initiate",
+	CloudStorageOAuthCallback:       "/cloud-storage/oauth/callback",
+	CloudStorageOAuthInitiate:       "/cloud-storage/oauth/initiate",
+	CloudStorageRepos:               "/cloud-storage/repos",
+	CloudStorageBranches:            "/cloud-storage/branches",
+	CloudStorageBackupHistory:       "/cloud-storage/backup-history",
+	CloudStorageBackupHistoryId:     "/cloud-storage/backup-history/(?P<id>\\d+)",
+	CloudStorageRestore:             "/cloud-storage/restore",
 }
